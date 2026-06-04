@@ -9,6 +9,7 @@ import { captureDropClick } from './useDropClickCapture'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const routes = getRoutes(locale)
+const dropsUrl = `comfy.org${routes.drops}`
 </script>
 
 <template>
@@ -60,10 +61,10 @@ const routes = getRoutes(locale)
       </BrandButton>
     </div>
     <a
-      :href="routes.gallery"
+      :href="routes.drops"
       class="mt-8 inline-block text-xs tracking-widest text-primary-comfy-canvas/40 uppercase"
     >
-      comfy.com/drops
+      {{ dropsUrl }}
     </a>
   </section>
 </template>

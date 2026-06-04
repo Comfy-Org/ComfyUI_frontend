@@ -36,6 +36,7 @@ type Routes = typeof baseRoutes
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
+  'drops',
   'termsOfService'
 ])
 

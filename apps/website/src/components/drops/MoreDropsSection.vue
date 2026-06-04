@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { DropItem } from './dropItems'
 import type { Locale } from '../../i18n/translations'
 
@@ -45,10 +47,12 @@ function handleClick(item: DropItem) {
         :data-testid="`drops-item-${item.id}`"
       >
         <div
-          :class="[
-            'flex aspect-video items-center justify-center overflow-hidden bg-primary-comfy-ink/40 p-8 lg:col-span-2 lg:aspect-auto',
-            index % 2 === 1 && 'lg:order-2'
-          ]"
+          :class="
+            cn(
+              'flex aspect-video items-center justify-center overflow-hidden bg-primary-comfy-ink/40 p-8 lg:col-span-2 lg:aspect-auto',
+              index % 2 === 1 && 'lg:order-2'
+            )
+          "
         >
           <img
             :src="item.imageUrl"
