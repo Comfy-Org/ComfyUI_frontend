@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyExtension } from '@/types/comfy'
@@ -9,17 +10,21 @@ const {
   waitForLoad3dMock,
   onLoad3dReadyMock,
   configureMock,
+  configureForSaveMeshMock,
   getLoad3dMock,
   toastAddAlertMock,
-  getNodeByLocatorIdMock
+  getNodeByLocatorIdMock,
+  nodeToLoad3dMap
 } = vi.hoisted(() => ({
   registerExtensionMock: vi.fn(),
   waitForLoad3dMock: vi.fn(),
   onLoad3dReadyMock: vi.fn(),
   configureMock: vi.fn(),
+  configureForSaveMeshMock: vi.fn(),
   getLoad3dMock: vi.fn(),
   toastAddAlertMock: vi.fn(),
-  getNodeByLocatorIdMock: vi.fn()
+  getNodeByLocatorIdMock: vi.fn(),
+  nodeToLoad3dMap: new Map<object, unknown>()
 }))
 
 vi.mock('@/services/extensionService', () => ({
@@ -38,12 +43,13 @@ vi.mock('@/composables/useLoad3d', () => ({
     waitForLoad3d: waitForLoad3dMock,
     onLoad3dReady: onLoad3dReadyMock
   }),
-  nodeToLoad3dMap: new Map()
+  nodeToLoad3dMap
 }))
 
 vi.mock('@/extensions/core/load3d/Load3DConfiguration', () => ({
   default: class {
     configure = configureMock
+    configureForSaveMesh = configureForSaveMeshMock
   }
 }))
 
@@ -116,18 +122,21 @@ type ExtCreated = ComfyExtension & {
   onNodeOutputsUpdated: (
     nodeOutputs: Record<string, Record<string, unknown>>
   ) => void
+  getCustomWidgets: () => Record<string, (node: LGraphNode) => unknown>
 }
 
 async function loadExtensionsFresh(): Promise<{
   load3DExt: ExtCreated
   preview3DExt: ExtCreated
+  preview3DAdvancedExt: ExtCreated
 }> {
   vi.resetModules()
   registerExtensionMock.mockClear()
   await import('@/extensions/core/load3d')
   return {
     load3DExt: registerExtensionMock.mock.calls[0][0] as ExtCreated,
-    preview3DExt: registerExtensionMock.mock.calls[1][0] as ExtCreated
+    preview3DExt: registerExtensionMock.mock.calls[1][0] as ExtCreated,
+    preview3DAdvancedExt: registerExtensionMock.mock.calls[2][0] as ExtCreated
   }
 }
 
@@ -149,6 +158,22 @@ function makePreview3DNode(
     size: [400, 550],
     setSize: vi.fn(),
     widgets: overrides.widgets ?? [{ name: 'model_file', value: '' }],
+    properties: overrides.properties ?? {}
+  } as unknown as LGraphNode
+}
+
+function makePreview3DAdvancedNode(
+  overrides: Partial<{
+    comfyClass: string
+    properties: Record<string, unknown>
+    widgets: FakeWidget[]
+  }> = {}
+): LGraphNode {
+  return {
+    constructor: { comfyClass: overrides.comfyClass ?? 'Preview3DAdvanced' },
+    size: [400, 550],
+    setSize: vi.fn(),
+    widgets: overrides.widgets ?? [{ name: 'image', value: '' }],
     properties: overrides.properties ?? {}
   } as unknown as LGraphNode
 }
@@ -179,7 +204,14 @@ interface FakeLoad3d {
   whenLoadIdle: () => Promise<void>
   setCameraFromMatrices: ReturnType<typeof vi.fn>
   setBackgroundImage: ReturnType<typeof vi.fn>
+  setCameraState: ReturnType<typeof vi.fn>
+  getCameraState: ReturnType<typeof vi.fn>
+  getCurrentCameraType: ReturnType<typeof vi.fn>
+  getModelInfo: ReturnType<typeof vi.fn>
+  applyModelTransform: ReturnType<typeof vi.fn>
   isSplatModel: ReturnType<typeof vi.fn>
+  forceRender: ReturnType<typeof vi.fn>
+  cameraManager: { perspectiveCamera: { fov: number } }
   currentLoadGeneration: number
 }
 
@@ -188,7 +220,14 @@ function makeLoad3dMock(): FakeLoad3d {
     whenLoadIdle: vi.fn().mockResolvedValue(undefined),
     setCameraFromMatrices: vi.fn(),
     setBackgroundImage: vi.fn(),
+    setCameraState: vi.fn(),
+    getCameraState: vi.fn(() => ({ position: [0, 0, 5], target: [0, 0, 0] })),
+    getCurrentCameraType: vi.fn(() => 'perspective'),
+    getModelInfo: vi.fn(() => null),
+    applyModelTransform: vi.fn(),
     isSplatModel: vi.fn(() => false),
+    forceRender: vi.fn(),
+    cameraManager: { perspectiveCamera: { fov: 35 } },
     currentLoadGeneration: 0
   }
 }
@@ -199,6 +238,7 @@ async function flush() {
 
 function setupBaseMocks() {
   vi.clearAllMocks()
+  nodeToLoad3dMap.clear()
   waitForLoad3dMock.mockImplementation((cb: (load3d: FakeLoad3d) => void) => {
     cb(makeLoad3dMock())
   })
@@ -210,12 +250,14 @@ function setupBaseMocks() {
 describe('load3d module registration', () => {
   beforeEach(setupBaseMocks)
 
-  it('registers Comfy.Load3D and Comfy.Preview3D extensions on import', async () => {
-    const { load3DExt, preview3DExt } = await loadExtensionsFresh()
+  it('registers Comfy.Load3D, Comfy.Preview3D, and Comfy.Preview3DAdvanced extensions on import', async () => {
+    const { load3DExt, preview3DExt, preview3DAdvancedExt } =
+      await loadExtensionsFresh()
 
-    expect(registerExtensionMock).toHaveBeenCalledTimes(2)
+    expect(registerExtensionMock).toHaveBeenCalledTimes(3)
     expect(load3DExt.name).toBe('Comfy.Load3D')
     expect(preview3DExt.name).toBe('Comfy.Preview3D')
+    expect(preview3DAdvancedExt.name).toBe('Comfy.Preview3DAdvanced')
   })
 })
 
@@ -476,6 +518,47 @@ describe('Comfy.Load3D.nodeCreated', () => {
   })
 })
 
+describe('Comfy.Load3D.getCustomWidgets LOAD_3D', () => {
+  beforeEach(setupBaseMocks)
+
+  it('adds upload and clear buttons when the node has a model_file widget', async () => {
+    const { load3DExt } = await loadExtensionsFresh()
+    const node = makeLoad3DNode()
+    const addWidget = node.addWidget as ReturnType<typeof vi.fn>
+
+    load3DExt.getCustomWidgets().LOAD_3D(node)
+
+    const buttonNames = addWidget.mock.calls
+      .filter(([type]) => type === 'button')
+      .map(([, name]) => name)
+    expect(buttonNames).toEqual([
+      'upload 3d model',
+      'upload extra resources',
+      'clear'
+    ])
+  })
+
+  it('skips upload and clear buttons when the node has no model_file widget (e.g. Preview3DAdvanced)', async () => {
+    const { load3DExt } = await loadExtensionsFresh()
+    const node = makeLoad3DNode({
+      comfyClass: 'Preview3DAdvanced',
+      widgets: [
+        { name: 'width', value: 512 },
+        { name: 'height', value: 512 },
+        { name: 'image', value: '' }
+      ]
+    })
+    const addWidget = node.addWidget as ReturnType<typeof vi.fn>
+
+    load3DExt.getCustomWidgets().LOAD_3D(node)
+
+    const buttonCalls = addWidget.mock.calls.filter(
+      ([type]) => type === 'button'
+    )
+    expect(buttonCalls).toEqual([])
+  })
+})
+
 describe('getNodeMenuItems', () => {
   beforeEach(setupBaseMocks)
 
@@ -608,5 +691,326 @@ describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
         bgImagePath: 'new-bg.png'
       })
     )
+  })
+})
+
+describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
+  beforeEach(setupBaseMocks)
+
+  it('skips nodes whose comfyClass is not Preview3DAdvanced', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const node = makePreview3DAdvancedNode({ comfyClass: 'OtherNode' })
+
+    await preview3DAdvancedExt.nodeCreated(node)
+
+    expect(waitForLoad3dMock).not.toHaveBeenCalled()
+    expect(configureForSaveMeshMock).not.toHaveBeenCalled()
+  })
+
+  it('does not call configureForSaveMesh on creation when no Last Time Model File is persisted', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const node = makePreview3DAdvancedNode()
+
+    await preview3DAdvancedExt.nodeCreated(node)
+
+    expect(configureForSaveMeshMock).not.toHaveBeenCalled()
+  })
+
+  it('restores via configureForSaveMesh when Last Time Model File is persisted', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const node = makePreview3DAdvancedNode({
+      properties: { 'Last Time Model File': 'prev/model.glb' }
+    })
+
+    await preview3DAdvancedExt.nodeCreated(node)
+
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'output',
+      'prev/model.glb',
+      { silentOnNotFound: true }
+    )
+  })
+
+  it('restores the saved camera state after model load when reloading the page', async () => {
+    const persistedCameraState = {
+      position: [1, 2, 3],
+      target: [0, 0, 0]
+    } as unknown as CameraState
+    const load3dInstance = makeLoad3dMock()
+    onLoad3dReadyMock.mockImplementationOnce(
+      (cb: (load3d: FakeLoad3d) => void) => {
+        cb(load3dInstance)
+      }
+    )
+
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const node = makePreview3DAdvancedNode({
+      properties: {
+        'Last Time Model File': 'prev/model.glb',
+        'Camera Config': {
+          cameraType: 'perspective',
+          fov: 35,
+          state: persistedCameraState
+        }
+      }
+    })
+
+    await preview3DAdvancedExt.nodeCreated(node)
+    await flush()
+
+    expect(load3dInstance.setCameraState).toHaveBeenCalledWith(
+      persistedCameraState
+    )
+    expect(load3dInstance.forceRender).toHaveBeenCalled()
+  })
+
+  it('does not call setCameraState when no Camera Config state is persisted', async () => {
+    const load3dInstance = makeLoad3dMock()
+    onLoad3dReadyMock.mockImplementationOnce(
+      (cb: (load3d: FakeLoad3d) => void) => {
+        cb(load3dInstance)
+      }
+    )
+
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const node = makePreview3DAdvancedNode({
+      properties: { 'Last Time Model File': 'prev/model.glb' }
+    })
+
+    await preview3DAdvancedExt.nodeCreated(node)
+    await flush()
+
+    expect(load3dInstance.setCameraState).not.toHaveBeenCalled()
+  })
+
+  it('attaches a camera-only serializeValue to the image widget', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const widgets: FakeWidget[] = [{ name: 'image', value: '' }]
+    const node = makePreview3DAdvancedNode({ widgets })
+
+    await preview3DAdvancedExt.nodeCreated(node)
+
+    expect(typeof widgets[0].serializeValue).toBe('function')
+  })
+
+  it('serializeValue returns live camera_info plus empty media fields, omitting model_3d_info when none', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const widgets: FakeWidget[] = [{ name: 'image', value: '' }]
+    const node = makePreview3DAdvancedNode({ widgets })
+
+    const load3d = makeLoad3dMock()
+    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+      cb(load3d)
+    )
+    nodeToLoad3dMap.set(node, load3d)
+
+    await preview3DAdvancedExt.nodeCreated(node)
+    const payload = await widgets[0].serializeValue!()
+
+    expect(payload).toEqual({
+      image: '',
+      mask: '',
+      normal: '',
+      camera_info: { position: [0, 0, 5], target: [0, 0, 0] },
+      recording: '',
+      model_3d_info: []
+    })
+  })
+
+  it('serializeValue wraps a present getModelInfo result in a single-element list', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const widgets: FakeWidget[] = [{ name: 'image', value: '' }]
+    const node = makePreview3DAdvancedNode({ widgets })
+
+    const load3d = makeLoad3dMock()
+    const modelInfo = {
+      position: { x: 1, y: 2, z: 3 },
+      quaternion: { x: 0, y: 0, z: 0, w: 1 },
+      scale: { x: 1, y: 1, z: 1 }
+    }
+    load3d.getModelInfo = vi.fn(() => modelInfo)
+    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+      cb(load3d)
+    )
+    nodeToLoad3dMap.set(node, load3d)
+
+    await preview3DAdvancedExt.nodeCreated(node)
+    const payload = (await widgets[0].serializeValue!()) as {
+      model_3d_info: unknown[]
+    }
+
+    expect(payload.model_3d_info).toEqual([modelInfo])
+  })
+
+  it('onExecuted persists Last Time Model File with normalized slashes and calls configureForSaveMesh', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const node = makePreview3DAdvancedNode()
+
+    await preview3DAdvancedExt.nodeCreated(node)
+    node.onExecuted!({ result: ['sub\\nested\\mesh.glb'] })
+
+    expect(node.properties['Last Time Model File']).toBe('sub/nested/mesh.glb')
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'output',
+      'sub/nested/mesh.glb',
+      { silentOnNotFound: true }
+    )
+  })
+
+  it('onExecuted applies the input cameraState when one is forwarded via PreviewUI3D', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const load3d = makeLoad3dMock()
+    load3d.currentLoadGeneration = 5
+    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+      cb(load3d)
+    )
+    const cameraState = { position: [1, 2, 3] }
+    const node = makePreview3DAdvancedNode()
+
+    await preview3DAdvancedExt.nodeCreated(node)
+    node.onExecuted!({ result: ['mesh.glb', cameraState] })
+    await flush()
+
+    expect(load3d.setCameraState).toHaveBeenCalledWith(cameraState)
+  })
+
+  it('onExecuted applies the first model_3d_info entry to the viewport when present', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const load3d = makeLoad3dMock()
+    load3d.currentLoadGeneration = 5
+    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+      cb(load3d)
+    )
+    const transform = {
+      position: { x: 1, y: 2, z: 3 },
+      quaternion: { x: 0, y: 0, z: 0, w: 1 },
+      scale: { x: 2, y: 2, z: 2 }
+    }
+    const node = makePreview3DAdvancedNode()
+
+    await preview3DAdvancedExt.nodeCreated(node)
+    node.onExecuted!({
+      result: ['mesh.glb', undefined, [transform]]
+    })
+    await flush()
+
+    expect(load3d.applyModelTransform).toHaveBeenCalledWith(transform)
+  })
+
+  it('onExecuted does not call applyModelTransform when model_3d_info is empty', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const load3d = makeLoad3dMock()
+    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+      cb(load3d)
+    )
+    const node = makePreview3DAdvancedNode()
+
+    await preview3DAdvancedExt.nodeCreated(node)
+    node.onExecuted!({
+      result: ['mesh.glb', undefined, []]
+    })
+    await flush()
+
+    expect(load3d.applyModelTransform).not.toHaveBeenCalled()
+  })
+
+  it('onExecuted defensively skips cameraState apply when result[1] is missing', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const load3d = makeLoad3dMock()
+    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+      cb(load3d)
+    )
+    const node = makePreview3DAdvancedNode()
+
+    await preview3DAdvancedExt.nodeCreated(node)
+    node.onExecuted!({ result: ['mesh.glb'] })
+    await flush()
+
+    expect(load3d.setCameraState).not.toHaveBeenCalled()
+  })
+
+  it('onExecuted skips cameraState apply when load3d generation changes before whenLoadIdle resolves', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const load3d = makeLoad3dMock()
+    load3d.currentLoadGeneration = 5
+    let resolveIdle: () => void = () => {}
+    load3d.whenLoadIdle = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveIdle = resolve
+        })
+    )
+    waitForLoad3dMock.mockImplementation((cb: (l: FakeLoad3d) => void) =>
+      cb(load3d)
+    )
+
+    const node = makePreview3DAdvancedNode()
+
+    await preview3DAdvancedExt.nodeCreated(node)
+    node.onExecuted!({ result: ['mesh.glb', { position: [1, 2, 3] }] })
+
+    load3d.currentLoadGeneration = 6
+    resolveIdle()
+    await flush()
+
+    expect(load3d.setCameraState).not.toHaveBeenCalled()
+  })
+
+  it('onExecuted shows an error toast when no file path is returned', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const node = makePreview3DAdvancedNode()
+
+    await preview3DAdvancedExt.nodeCreated(node)
+    node.onExecuted!({ result: [] })
+
+    expect(toastAddAlertMock).toHaveBeenCalledWith(
+      'toastMessages.unableToGetModelFilePath'
+    )
+    expect(configureForSaveMeshMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('Comfy.Preview3DAdvanced.getNodeMenuItems', () => {
+  beforeEach(setupBaseMocks)
+
+  it('returns [] for non-Preview3DAdvanced nodes', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    const node = {
+      constructor: { comfyClass: 'OtherNode' }
+    } as unknown as LGraphNode
+
+    expect(preview3DAdvancedExt.getNodeMenuItems(node)).toEqual([])
+  })
+
+  it('returns [] when no load3d instance exists for the node', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    getLoad3dMock.mockReturnValue(null)
+    const node = {
+      constructor: { comfyClass: 'Preview3DAdvanced' }
+    } as unknown as LGraphNode
+
+    expect(preview3DAdvancedExt.getNodeMenuItems(node)).toEqual([])
+  })
+
+  it('returns [] for splat models', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    getLoad3dMock.mockReturnValue({ isSplatModel: () => true })
+    const node = {
+      constructor: { comfyClass: 'Preview3DAdvanced' }
+    } as unknown as LGraphNode
+
+    expect(preview3DAdvancedExt.getNodeMenuItems(node)).toEqual([])
+  })
+
+  it('returns export menu items for non-splat models', async () => {
+    const { preview3DAdvancedExt } = await loadExtensionsFresh()
+    getLoad3dMock.mockReturnValue({ isSplatModel: () => false })
+    const node = {
+      constructor: { comfyClass: 'Preview3DAdvanced' }
+    } as unknown as LGraphNode
+
+    expect(preview3DAdvancedExt.getNodeMenuItems(node)).toEqual([
+      { content: 'Export' }
+    ])
   })
 })
