@@ -593,6 +593,32 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "description": "Remove o fundo de um vídeo usando Bria e retorna os frames recortados mais uma máscara alfa. Conecte ambos a um nó de composição ou envie-os para Salvar WEBM para gerar um vídeo transparente.",
+    "display_name": "Bria Remover Fundo de Vídeo (Transparente)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagens",
+        "tooltip": null
+      },
+      "1": {
+        "name": "máscara",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Gere vídeo usando Seedance 2.0 a partir de uma imagem do primeiro frame e, opcionalmente, uma imagem do último frame.",
     "display_name": "ByteDance Seedance 2.0 Primeiro-Último-Frame para Vídeo",
@@ -1208,6 +1234,29 @@
     "outputs": {
       "0": {
         "name": "modelo_patchado",
+        "tooltip": null
+      }
+    }
+  },
+  "CFGOverride": {
+    "description": "Substitua o cfg por um valor fixo em um intervalo de [início, fim] por cento dos passos. Com múltiplas substituições, a mais próxima do sampler prevalece em caso de sobreposição.",
+    "display_name": "Substituir CFG",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "percentual_final"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "start_percent": {
+        "name": "percentual_inicial"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2954,6 +3003,34 @@
       },
       "type": {
         "name": "tipo"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "Orientador CFG de Dois Modelos",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo usado para a passagem positiva (condicional)."
+      },
+      "model_negative": {
+        "name": "modelo_negativo",
+        "tooltip": "Modelo usado para a passagem negativa (incondicional). Use o mesmo modelo para CFG comum."
+      },
+      "negative": {
+        "name": "negativo",
+        "tooltip": "Condicionamento negativo executado no modelo negativo. Deixe desconectado para uma passagem incondicional sem texto (apenas imagem)."
+      },
+      "positive": {
+        "name": "positivo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5679,6 +5756,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Agendador Ideogram 4",
+    "inputs": {
+      "height": {
+        "name": "altura"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "std"
+      },
+      "steps": {
+        "name": "passos"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "Gera imagens usando o modelo Ideogram V1.",
     "display_name": "Ideogram V1",
@@ -5812,6 +5914,34 @@
       "resolution": {
         "name": "resolução",
         "tooltip": "A resolução para geração de imagem. Se não estiver definida como Automática, esta opção sobrescreve a configuração de proporção."
+      },
+      "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "Gera imagens usando o modelo Ideogram 4.0 a partir de um prompt de texto.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para a geração da imagem."
+      },
+      "rendering_speed": {
+        "name": "velocidade_de_renderização",
+        "tooltip": "Controla o equilíbrio entre velocidade de geração e qualidade."
+      },
+      "resolution": {
+        "name": "resolução"
       },
       "seed": {
         "name": "semente"
@@ -16564,7 +16694,8 @@
         "name": "fps"
       },
       "images": {
-        "name": "imagens"
+        "name": "imagens",
+        "tooltip": "Imagens RGBA são salvas com seu canal alfa como transparência (apenas codec vp9)."
       }
     }
   },

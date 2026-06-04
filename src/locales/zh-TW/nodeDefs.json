@@ -593,6 +593,32 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "description": "使用 Bria 移除影片背景，並返回去背後的影格及 alpha 遮罩。可將兩者連接到合成節點，或傳送到『儲存 WEBM』以輸出透明影片。",
+    "display_name": "Bria 移除影片背景（透明）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非確定性。"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "遮罩",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0，從首幀圖像與可選的末幀圖像產生影片。",
     "display_name": "ByteDance Seedance 2.0 首末幀轉影片",
@@ -1208,6 +1234,29 @@
     "outputs": {
       "0": {
         "name": "修補模型",
+        "tooltip": null
+      }
+    }
+  },
+  "CFGOverride": {
+    "description": "將 cfg 覆蓋為固定值，於步驟的 [起始, 結束] 百分比區間內生效。若有多個覆蓋，重疊時以最接近取樣器者為準。",
+    "display_name": "CFG 覆蓋",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "結束百分比"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "start_percent": {
+        "name": "起始百分比"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2954,6 +3003,34 @@
       },
       "type": {
         "name": "type"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "雙模型 CFG 引導器",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於正向（條件）階段的模型。"
+      },
+      "model_negative": {
+        "name": "負向模型",
+        "tooltip": "用於負向（無條件）階段的模型。一般 CFG 請使用相同模型。"
+      },
+      "negative": {
+        "name": "負向",
+        "tooltip": "在負向模型上執行的負向條件。若不連接則為無文字（僅圖像）無條件階段。"
+      },
+      "positive": {
+        "name": "正向"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5679,6 +5756,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Ideogram 4 排程器",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "mu": {
+        "name": "μ"
+      },
+      "std": {
+        "name": "標準差"
+      },
+      "steps": {
+        "name": "步驟數"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "使用 Ideogram V1 模型同步產生影像。\n\n影像連結僅限時有效；如需保留影像，請務必下載。",
     "display_name": "Ideogram V1",
@@ -5815,6 +5917,34 @@
       },
       "seed": {
         "name": "種子值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "使用 Ideogram 4.0 模型，根據文字提示生成影像。",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於影像生成的文字提示。"
+      },
+      "rendering_speed": {
+        "name": "渲染速度",
+        "tooltip": "控制生成速度與品質的取捨。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子"
       }
     },
     "outputs": {
@@ -16564,7 +16694,8 @@
         "name": "每秒影格數"
       },
       "images": {
-        "name": "images"
+        "name": "images",
+        "tooltip": "RGBA 影像將以 alpha 通道作為透明度儲存（僅限 vp9 編解碼器）。"
       }
     }
   },

@@ -593,6 +593,32 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "description": "پس‌زمینه یک ویدیو را با استفاده از Bria حذف کنید و فریم‌های برش‌خورده به همراه ماسک آلفا را دریافت نمایید. هر دو را به یک node ترکیب‌کننده متصل کنید یا برای ذخیره ویدیو شفاف به Save WEBM ارسال نمایید.",
+    "display_name": "حذف پس‌زمینه ویدیو با Bria (شفاف)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed کنترل می‌کند که node دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصاویر",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ماسک",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "تولید ویدیو با استفاده از Seedance 2.0 از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم.",
     "display_name": "ByteDance Seedance 2.0 تبدیل اولین-آخرین فریم به ویدیو",
@@ -1208,6 +1234,29 @@
     "outputs": {
       "0": {
         "name": "مدل_اصلاح‌شده",
+        "tooltip": null
+      }
+    }
+  },
+  "CFGOverride": {
+    "description": "cfg را در یک بازه درصدی [شروع، پایان] از مراحل به مقدار ثابت تغییر دهید. در صورت وجود چند جایگزینی، نزدیک‌ترین به نمونه‌گیر در هم‌پوشانی برنده می‌شود.",
+    "display_name": "جایگزینی CFG",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "درصد پایان"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "start_percent": {
+        "name": "درصد شروع"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2954,6 +3003,34 @@
       },
       "type": {
         "name": "نوع"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "راهنمای CFG دو مدل",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای عبور مثبت (شرطی)."
+      },
+      "model_negative": {
+        "name": "مدل منفی",
+        "tooltip": "مدل مورد استفاده برای عبور منفی (غیرشرطی). برای CFG معمولی از همان مدل استفاده کنید."
+      },
+      "negative": {
+        "name": "منفی",
+        "tooltip": "شرط‌گذاری منفی روی مدل منفی اجرا می‌شود. برای عبور غیرشرطی بدون متن (فقط تصویر) متصل نکنید."
+      },
+      "positive": {
+        "name": "مثبت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -5679,6 +5756,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "زمان‌بندی‌کننده Ideogram 4",
+    "inputs": {
+      "height": {
+        "name": "ارتفاع"
+      },
+      "mu": {
+        "name": "میانگین"
+      },
+      "std": {
+        "name": "انحراف معیار"
+      },
+      "steps": {
+        "name": "گام‌ها"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "تولید تصویر با استفاده از مدل Ideogram V1.",
     "display_name": "Ideogram V1",
@@ -5815,6 +5917,34 @@
       },
       "seed": {
         "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "تولید تصویر با استفاده از مدل Ideogram 4.0 از یک متن راهنما.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "prompt": {
+        "name": "متن راهنما",
+        "tooltip": "متن راهنما برای تولید تصویر."
+      },
+      "rendering_speed": {
+        "name": "سرعت رندر",
+        "tooltip": "تعادل بین سرعت تولید و کیفیت را کنترل می‌کند."
+      },
+      "resolution": {
+        "name": "وضوح"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -16564,7 +16694,8 @@
         "name": "فریم بر ثانیه"
       },
       "images": {
-        "name": "تصاویر"
+        "name": "تصاویر",
+        "tooltip": "تصاویر RGBA با کانال آلفا به صورت شفاف ذخیره می‌شوند (فقط کدک vp9)."
       }
     }
   },
