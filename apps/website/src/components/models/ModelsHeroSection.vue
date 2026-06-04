@@ -9,7 +9,7 @@ const {
   modelName,
   ctaHref,
   videoSrc,
-  videoAriaLabel = ''
+  videoAriaLabel
 } = defineProps<{
   locale?: Locale
   modelName: string
@@ -22,12 +22,12 @@ const {
 <template>
   <section class="flex flex-col items-center px-6 pt-16 text-center lg:pt-36">
     <h1
-      class="text-primary-comfy-canvas max-w-4xl text-4xl font-light tracking-tight lg:text-6xl"
+      class="max-w-4xl text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
     >
       {{ modelName }} in <span class="text-primary-comfy-yellow">ComfyUI</span>
     </h1>
     <p
-      class="text-primary-comfy-canvas mt-6 max-w-2xl text-sm text-pretty lg:text-base"
+      class="mt-6 max-w-2xl text-sm text-pretty text-primary-comfy-canvas lg:text-base"
     >
       {{ t('hero.subtitle', locale) }}
     </p>
@@ -42,7 +42,8 @@ const {
     <div class="mt-16 w-full max-w-5xl">
       <video
         :src="videoSrc"
-        :aria-label="videoAriaLabel"
+        :aria-label="videoAriaLabel || undefined"
+        :aria-hidden="videoAriaLabel ? undefined : true"
         autoplay
         loop
         muted
