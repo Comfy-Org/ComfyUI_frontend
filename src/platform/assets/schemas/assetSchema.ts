@@ -5,6 +5,7 @@ import { z } from 'zod'
 const zAsset = z.object({
   id: z.string(),
   name: z.string(),
+  hash: z.string().nullish(),
   asset_hash: z.string().nullish(),
   size: z.number().optional(), // TBD: Will be provided by history API in the future
   mime_type: z.string().nullish(),

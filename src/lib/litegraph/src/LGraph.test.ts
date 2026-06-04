@@ -13,8 +13,8 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { zeroUuid } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/utils/uuid'
+import { zeroUuid } from '@/utils/uuid'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import {

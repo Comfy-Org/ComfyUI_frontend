@@ -352,8 +352,9 @@ export const useAssetsStore = defineStore('assets', () => {
   const inputAssetsByFilename = computed(() => {
     const map = new Map<string, AssetItem>()
     for (const asset of inputAssets.value) {
-      if (asset.asset_hash) {
-        map.set(asset.asset_hash, asset)
+      const hash = asset.hash ?? asset.asset_hash
+      if (hash) {
+        map.set(hash, asset)
       }
     }
     return map

@@ -233,7 +233,8 @@
       "auth/user-disabled": "Ce compte a été désactivé. Veuillez contacter le support.",
       "auth/user-not-found": "Aucun compte trouvé avec cette adresse e-mail. Souhaitez-vous créer un nouveau compte ?",
       "auth/weak-password": "Le mot de passe est trop faible. Veuillez utiliser un mot de passe plus fort avec au moins 6 caractères.",
-      "auth/wrong-password": "Le mot de passe que vous avez saisi est incorrect. Veuillez réessayer."
+      "auth/wrong-password": "Le mot de passe que vous avez saisi est incorrect. Veuillez réessayer.",
+      "generic": "Une erreur s'est produite lors de votre connexion. Veuillez réessayer."
     },
     "login": {
       "andText": "et",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "Réinitialisation du mot de passe envoyée",
   "cloudForgotPassword_sendResetLink": "Envoyer le lien de réinitialisation",
   "cloudForgotPassword_title": "Mot de passe oublié",
+  "cloudHero": {
+    "nextSlide": "Diapositive suivante",
+    "previousSlide": "Diapositive précédente",
+    "slidePagerLabel": "Aller à la diapositive {index}",
+    "slides": {
+      "cloud": {
+        "description": "Idéal pour la plupart des utilisateurs souhaitant travailler de n'importe où avec des modèles vérifiés pour une licence commerciale.",
+        "title": "Cloud"
+      },
+      "models": {
+        "description": "Modèles sélectionnés et licenciés commercialement, prêts à l’emploi sans configuration.",
+        "title": "Modèles"
+      },
+      "team": {
+        "description": "Intégrez votre équipe dès aujourd'hui. Partagez des workflows et des ressources dans toute votre organisation.",
+        "title": "Équipe"
+      },
+      "workflows": {
+        "description": "De l’idée au résultat en quelques minutes. Générez plusieurs variantes côte à côte.",
+        "title": "Workflows"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "Continuer localement",
     "exploreCloud": "Essayer le cloud gratuitement",
@@ -805,7 +829,11 @@
     "FILE_3D_FBX": "FICHIER_3D_FBX",
     "FILE_3D_GLB": "FICHIER_3D_GLB",
     "FILE_3D_GLTF": "FICHIER_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FICHIER_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FICHIER_3D_STL",
     "FILE_3D_USDZ": "FICHIER_3D_USDZ",
     "FLOAT": "FLOTTANT",
@@ -821,10 +849,12 @@
     "IMAGECOMPARE": "COMPARAISON_IMAGE",
     "INT": "ENTIER",
     "INTERP_MODEL": "MODÈLE_INTERP",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "OPERATION_LATENTE",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "Charger la caméra 3D",
+    "LOAD3D_MODEL_INFO": "CHARGER_INFO_MODÈLE_3D",
     "LOAD_3D": "CHARGER_3D",
     "LORA_MODEL": "MODÈLE_LORA",
     "LOSS_MAP": "CARTE_PERTES",
@@ -854,6 +884,7 @@
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "ÉCHANTILLONNEUR",
     "SIGMAS": "SIGMAS",
+    "SPLAT": "SPLAT",
     "STRING": "CHAÎNE",
     "STYLE_MODEL": "MODÈLE_DE_STYLE",
     "SVG": "SVG",
@@ -916,10 +947,6 @@
       "nodeName": "Ce nœud"
     },
     "promptErrors": {
-      "image_not_loaded": {
-        "desc": "Le système n'a pas pu charger cette image.",
-        "title": "Image non chargée"
-      },
       "missing_node_type": {
         "desc": "Un type de nœud est manquant ou indisponible. Le workflow peut être corrompu ou nécessiter un nœud personnalisé.",
         "title": "Type de nœud manquant"
@@ -927,11 +954,6 @@
       "no_prompt": {
         "desc": "Les données du workflow envoyées au serveur sont vides. Il peut s’agir d’une erreur système inattendue.",
         "title": "Les données du workflow sont vides"
-      },
-      "out_of_memory": {
-        "descCloud": "Pas assez de mémoire GPU. Essayez de réduire la complexité et relancez. Aucun crédit n'a été débité.",
-        "descLocal": "Pas assez de mémoire GPU. Essayez de réduire la complexité et relancez.",
-        "title": "Échec de la génération"
       },
       "prompt_no_outputs": {
         "desc": "Le workflow ne contient aucun nœud de sortie (par exemple, Enregistrer l’image, Prévisualiser l’image) pour produire un résultat.",
@@ -948,6 +970,191 @@
       "server_error_local": {
         "desc": "Le serveur a rencontré une erreur inattendue. Veuillez consulter les journaux du serveur.",
         "title": "Erreur du serveur"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Cette exécution nécessite un accès qui n'est pas disponible pour le compte actuel.",
+        "title": "Accès requis",
+        "toastMessage": "Cette exécution nécessite un accès qui n'est pas disponible pour le compte actuel.",
+        "toastTitle": "Accès requis"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "Cette requête a été bloquée par le système de modération de contenu. Essayez de modifier l'invite ou les entrées.",
+        "title": "Contenu bloqué",
+        "toastMessage": "Cette requête a été bloquée par le système de modération de contenu. Essayez de modifier l'invite ou les entrées.",
+        "toastTitle": "Contenu bloqué"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Le nœud a généré une erreur lors de l'exécution.",
+        "title": "Échec de l'exécution",
+        "toastMessage": "Ce nœud a généré une erreur lors de l'exécution. Vérifiez ses entrées ou essayez une configuration différente.",
+        "toastTitle": "{nodeName} a échoué"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "Ce workflow a cessé de progresser. Essayez de le relancer.",
+        "title": "Génération bloquée",
+        "toastMessage": "Ce workflow a cessé de progresser. Essayez de le relancer.",
+        "toastTitle": "Génération bloquée"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "Le système n'a pas pu charger cette image.",
+        "title": "Image non chargée",
+        "toastMessage": "L'image pour {nodeName} n'a pas pu être chargée. Essayez de l'ajouter à nouveau.",
+        "toastTitle": "Impossible de charger l'image d'entrée"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Ajoutez des crédits à votre compte pour utiliser ce nœud.",
+        "title": "Crédits insuffisants",
+        "toastMessage": "Ajoutez des crédits à votre compte pour utiliser ce nœud.",
+        "toastTitle": "Crédits insuffisants"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "L'entrée CLIP est manquante ou invalide. Vérifiez le checkpoint connecté ou le chargeur CLIP.",
+        "title": "Entrée CLIP invalide",
+        "toastMessage": "{nodeName} a une entrée CLIP manquante ou invalide.",
+        "toastTitle": "Entrée CLIP invalide"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "Saisissez une invite avant d'exécuter ce workflow.",
+        "title": "Invite vide",
+        "toastMessage": "Saisissez une invite avant d'exécuter ce workflow.",
+        "toastTitle": "Invite vide"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "La requête de workflow est invalide. Vérifiez le workflow et réessayez.",
+        "title": "Requête de workflow invalide",
+        "toastMessage": "La requête de workflow est invalide. Vérifiez le workflow et réessayez.",
+        "toastTitle": "Requête de workflow invalide"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "Un ou plusieurs modèles requis n'ont pas pu être accédés.",
+        "title": "Accès au modèle requis",
+        "toastMessage": "Un ou plusieurs modèles requis n'ont pas pu être accédés.",
+        "toastTitle": "Accès au modèle requis"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Un modèle n'a pas pu être téléchargé. Réessayez.",
+        "title": "Échec du téléchargement du modèle",
+        "toastMessage": "Un modèle n'a pas pu être téléchargé. Réessayez.",
+        "toastTitle": "Échec du téléchargement du modèle"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "Mémoire GPU insuffisante. Essayez de réduire la résolution de l'image ou la taille du lot, puis relancez.",
+        "title": "Échec de la génération",
+        "toastMessage": "Mémoire GPU insuffisante. Essayez de réduire la résolution de l'image ou la taille du lot, puis relancez.",
+        "toastTitle": "Échec de la génération"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Le workflow n'a pas pu être préparé. Essayez de le relancer.",
+        "title": "Échec de la préparation",
+        "toastMessage": "Le workflow n'a pas pu être préparé. Essayez de le relancer.",
+        "toastTitle": "Échec de la préparation"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "Le workflow a mis trop de temps à se préparer. Essayez de le relancer.",
+        "title": "Délai de préparation dépassé",
+        "toastMessage": "Le workflow a mis trop de temps à se préparer. Essayez de le relancer.",
+        "toastTitle": "Délai de préparation dépassé"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "Forte demande en ce moment. Réessayez dans un instant.",
+        "title": "Serveurs occupés",
+        "toastMessage": "Forte demande en ce moment. Réessayez dans un instant.",
+        "toastTitle": "Serveurs occupés"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "La requête a échoué avant la fin de l'exécution. Réessayez.",
+        "title": "Échec de la requête",
+        "toastMessage": "La requête a échoué avant la fin de l'exécution. Réessayez.",
+        "toastTitle": "Échec de la requête"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "L'exécution s'est terminée de façon inattendue. Réessayez.",
+        "title": "Exécution terminée de façon inattendue",
+        "toastMessage": "L'exécution s'est terminée de façon inattendue. Réessayez.",
+        "toastTitle": "Exécution terminée de façon inattendue"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "L'exécution n'a pas pu démarrer. Réessayez.",
+        "title": "Impossible de démarrer l'exécution",
+        "toastMessage": "L'exécution n'a pas pu démarrer. Réessayez.",
+        "toastTitle": "Impossible de démarrer l'exécution"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "Les serveurs sont occupés en ce moment. Réessayez dans un instant.",
+        "title": "Serveurs occupés",
+        "toastMessage": "Les serveurs sont occupés en ce moment. Réessayez dans un instant.",
+        "toastTitle": "Serveurs occupés"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "Le serveur s'est arrêté pendant l'exécution de ce workflow. Réessayez.",
+        "title": "Serveur arrêté",
+        "toastMessage": "Le serveur s'est arrêté pendant l'exécution de ce workflow. Réessayez.",
+        "toastTitle": "Serveur arrêté"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Les nœuds partenaires nécessitent un compte Comfy. Connectez-vous pour continuer.",
+        "title": "Connexion requise",
+        "toastMessage": "Les nœuds partenaires nécessitent un compte Comfy. Connectez-vous pour continuer.",
+        "toastTitle": "Connectez-vous pour utiliser ce nœud"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Abonnez-vous à un forfait pour continuer à exécuter ce workflow.",
+        "title": "Abonnement requis",
+        "toastMessage": "Abonnez-vous à un forfait pour continuer à exécuter ce workflow.",
+        "toastTitle": "Abonnement requis"
+      },
+      "subscription_upgrade_required": {
+        "details": "Les modèles privés nécessitent une mise à niveau d'abonnement : {modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "Mettez à niveau votre abonnement pour utiliser les modèles privés dans ce workflow.",
+        "title": "Mise à niveau d'abonnement requise",
+        "toastMessage": "Mettez à niveau votre abonnement pour utiliser ces modèles privés : {modelNames}.",
+        "toastTitle": "Mise à niveau d'abonnement requise"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "Ce workflow a atteint la durée maximale d'exécution. Essayez de réduire la résolution de l'image, la taille du lot ou la longueur du workflow, puis relancez.",
+        "title": "Délai de génération dépassé",
+        "toastMessage": "Ce workflow a atteint la durée maximale d'exécution. Essayez de réduire la résolution de l'image, la taille du lot ou la longueur du workflow, puis relancez.",
+        "toastTitle": "Délai de génération dépassé"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "Le service a rencontré une erreur inattendue. Réessayez.",
+        "title": "Erreur du service",
+        "toastMessage": "Le service a rencontré une erreur inattendue. Réessayez.",
+        "toastTitle": "Erreur du service"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Ajoutez des crédits à votre espace de travail pour continuer.",
+        "title": "Crédits insuffisants",
+        "toastMessage": "Ajoutez des crédits à votre espace de travail pour continuer.",
+        "toastTitle": "Crédits insuffisants"
       }
     },
     "validationErrors": {
@@ -1362,6 +1569,7 @@
     "logs": "Journaux",
     "manageExtensions": "Gérer les extensions",
     "markdown": "markdown",
+    "maximizeDialog": "Agrandir la boîte de dialogue",
     "micPermissionDenied": "Permission du microphone refusée",
     "migrate": "Migrer",
     "missing": "Manquant",
@@ -1462,6 +1670,7 @@
     "resizeFromTopLeft": "Redimensionner depuis le coin supérieur gauche",
     "resizeFromTopRight": "Redimensionner depuis le coin supérieur droit",
     "restart": "Redémarrer",
+    "restoreDialog": "Restaurer la boîte de dialogue",
     "resultsCount": "{count} Résultats Trouvés",
     "running": "En cours",
     "save": "Enregistrer",
@@ -1821,6 +2030,7 @@
       "orthographic": "Orthographique",
       "perspective": "Perspective"
     },
+    "centerCameraOnModel": "Centrer la caméra sur le modèle",
     "clearRecording": "Effacer l'enregistrement",
     "dropToLoad": "Déposez un modèle 3D à charger",
     "edgeThreshold": "Seuil de bord",
@@ -2420,6 +2630,7 @@
     "3d_models": "modèles_3d",
     "Anthropic": "Anthropic",
     "BFL": "BFL",
+    "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
@@ -2428,6 +2639,7 @@
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
@@ -2453,7 +2665,6 @@
     "WaveSpeed": "WaveSpeed",
     "adjustments": "ajustements",
     "advanced": "avancé",
-    "api node": "nœud api",
     "attention_experiments": "expériences_d'attention",
     "audio": "audio",
     "background removal": "suppression de l’arrière-plan",
@@ -2469,7 +2680,6 @@
     "controlnet": "controlnet",
     "create": "créer",
     "custom_sampling": "échantillonnage_personnalisé",
-    "dataset": "jeu de données",
     "debug": "débogage",
     "deprecated": "déprécié",
     "detection": "détection",
@@ -2477,7 +2687,7 @@
     "experimental": "expérimental",
     "filters": "filtres",
     "flux": "flux",
-    "geometry_estimation": "estimation_de_géométrie",
+    "geometry estimation": "estimation de la géométrie",
     "gligen": "gligen",
     "guidance": "guidance",
     "guiders": "guides",
@@ -2494,11 +2704,12 @@
     "mask": "masque",
     "model": "modèle",
     "model_merging": "fusion_de_modèles",
-    "model_patches": "patches_de_modèle",
     "model_specific": "spécifique_au_modèle",
     "multigpu": "multigpu",
     "noise": "bruit",
     "operations": "opérations",
+    "partner": "partenaire",
+    "patch": "correctif",
     "photomaker": "photomaker",
     "preprocessors": "préprocesseurs",
     "primitive": "primitif",
@@ -2510,6 +2721,7 @@
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "sigmas",
+    "splat": "splat",
     "stable_cascade": "stable_cascade",
     "style_model": "modèle_de_style",
     "supir": "supir",
@@ -2519,7 +2731,7 @@
     "unet": "unet",
     "upscale_diffusion": "diffusion_de_mise_à_l'échelle",
     "upscaling": "mise_à_l'échelle",
-    "utils": "utilitaires",
+    "utilities": "outils",
     "video": "vidéo",
     "video_models": "modèles_vidéo",
     "zimage": "zimage"
@@ -3112,6 +3324,7 @@
     "Other": "Autre",
     "PLY": "PLY",
     "PlanCredits": "Forfait et crédits",
+    "PointCloud": "Nuage de points",
     "Pointer": "Pointeur",
     "Queue": "File d'Attente",
     "QueueButton": "Bouton de File d'Attente",

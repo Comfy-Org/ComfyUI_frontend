@@ -1,7 +1,11 @@
 import { onScopeDispose, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import { isMiddlePointerInput } from '@/base/pointerUtils'
+import {
+  isMiddleButtonEvent,
+  isMiddleButtonHeld,
+  isMiddlePointerInput
+} from '@/base/pointerUtils'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
@@ -21,8 +25,11 @@ export function useNodePointerInteractions(
     useNodeEventHandlers()
   const { nodeManager } = useVueNodeLifecycle()
 
-  const forwardMiddlePointerIfNeeded = (event: PointerEvent) => {
-    if (!isMiddlePointerInput(event)) return false
+  const forwardMiddlePointerIfNeeded = (
+    event: PointerEvent,
+    isMiddleInput: (event: PointerEvent) => boolean
+  ) => {
+    if (!isMiddleInput(event)) return false
     forwardEventToCanvas(event)
     return true
   }
@@ -32,7 +39,7 @@ export function useNodePointerInteractions(
   const dragGuard = useClickDragGuard(3)
 
   function onPointerdown(event: PointerEvent) {
-    if (forwardMiddlePointerIfNeeded(event)) return
+    if (forwardMiddlePointerIfNeeded(event, isMiddlePointerInput)) return
 
     // Only start drag on left-click (button 0)
     if (event.button !== 0) return
@@ -62,7 +69,7 @@ export function useNodePointerInteractions(
   }
 
   function onPointermove(event: PointerEvent) {
-    if (forwardMiddlePointerIfNeeded(event)) return
+    if (forwardMiddlePointerIfNeeded(event, isMiddleButtonHeld)) return
 
     // Don't activate drag while resizing
     if (layoutStore.isResizingVueNodes.value) return
@@ -76,7 +83,12 @@ export function useNodePointerInteractions(
     const multiSelect = isMultiSelectKey(event)
 
     const lmbDown = event.buttons & 1
-    if (lmbDown && multiSelect && !layoutStore.isDraggingVueNodes.value) {
+    if (
+      lmbDown &&
+      multiSelect &&
+      !layoutStore.isDraggingVueNodes.value &&
+      dragGuard.wasDragged(event)
+    ) {
       layoutStore.isDraggingVueNodes.value = true
       handleNodeSelect(event, nodeId)
       safeDragStart(event, nodeId)
@@ -120,7 +132,7 @@ export function useNodePointerInteractions(
   }
 
   function onPointerup(event: PointerEvent) {
-    if (forwardMiddlePointerIfNeeded(event)) return
+    if (forwardMiddlePointerIfNeeded(event, isMiddleButtonEvent)) return
     // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
     const canHandlePointer = shouldHandleNodePointerEvents.value
     if (!canHandlePointer) {
