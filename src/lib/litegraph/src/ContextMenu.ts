@@ -56,6 +56,7 @@ export class ContextMenu<TValue = unknown> {
   root: ContextMenuDivElement<TValue>
   current_submenu?: ContextMenu<TValue>
   lock?: boolean
+  ownerDocument: Document
 
   controller: AbortController = new AbortController()
 
@@ -105,7 +106,13 @@ export class ContextMenu<TValue = unknown> {
       options.event = undefined
     }
 
-    const root: ContextMenuDivElement<TValue> = document.createElement('div')
+    const ownerDocument =
+      (options.event?.target as Node | null | undefined)?.ownerDocument ??
+      document
+    this.ownerDocument = ownerDocument
+
+    const root: ContextMenuDivElement<TValue> =
+      ownerDocument.createElement('div')
     let classes = 'litegraph litecontextmenu litemenubar-panel'
     if (options.className) classes += ` ${options.className}`
     root.className = classes
@@ -117,12 +124,22 @@ export class ContextMenu<TValue = unknown> {
     const eventOptions = { capture: true, signal }
 
     if (!this.parentMenu) {
-      document.addEventListener(
+      ownerDocument.addEventListener(
         'pointerdown',
         (e) => {
           if (e.target instanceof Node && !this.containsNode(e.target)) {
             this.close()
           }
+        },
+        eventOptions
+      )
+      ownerDocument.addEventListener(
+        'keydown',
+        (e) => {
+          if (e.key !== 'Escape' || e.ctrlKey || e.altKey || e.metaKey) return
+          this.close()
+          e.preventDefault()
+          e.stopPropagation()
         },
         eventOptions
       )
@@ -179,13 +196,9 @@ export class ContextMenu<TValue = unknown> {
     }
 
     // insert before checking position
-    const ownerDocument = (options.event?.target as Node | null | undefined)
-      ?.ownerDocument
-    const root_document = ownerDocument || document
-
-    if (root_document.fullscreenElement)
-      root_document.fullscreenElement.append(root)
-    else root_document.body.append(root)
+    if (ownerDocument.fullscreenElement)
+      ownerDocument.fullscreenElement.append(root)
+    else ownerDocument.body.append(root)
 
     // compute best position
     let left = options.left || 0
@@ -200,7 +213,7 @@ export class ContextMenu<TValue = unknown> {
         left = rect.left + rect.width
       }
 
-      const body_rect = document.body.getBoundingClientRect()
+      const body_rect = ownerDocument.body.getBoundingClientRect()
       const root_rect = root.getBoundingClientRect()
       if (body_rect.height == 0)
         console.error(
@@ -218,6 +231,14 @@ export class ContextMenu<TValue = unknown> {
 
     if (LiteGraph.context_menu_scaling && options.scale) {
       root.style.transform = `scale(${Math.round(options.scale * 4) * 0.25})`
+    }
+
+    if (!parent) {
+      ownerDocument.dispatchEvent(
+        new CustomEvent('litegraph:contextmenu', {
+          detail: { type: 'open', menu: this }
+        })
+      )
     }
   }
 
@@ -402,6 +423,13 @@ export class ContextMenu<TValue = unknown> {
       }
     }
     this.current_submenu?.close(e, true)
+    if (!this.parentMenu) {
+      this.ownerDocument.dispatchEvent(
+        new CustomEvent('litegraph:contextmenu', {
+          detail: { type: 'close', menu: this }
+        })
+      )
+    }
   }
 
   /** @deprecated Likely unused, however code search was inconclusive (too many results to check by hand). */
