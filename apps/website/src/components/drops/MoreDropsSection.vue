@@ -21,6 +21,7 @@ function hrefFor(cta: DropCta): string {
 function handleCtaClick(item: DropItem, cta: DropCta) {
   captureDropClick('more_drops', {
     drop_id: item.id,
+    cta: cta.labelKey,
     href: hrefFor(cta),
     external: cta.external
   })
