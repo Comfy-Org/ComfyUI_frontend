@@ -54,17 +54,20 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     })
   }
 
-  const getShowAdvancedButton = (node: Locator) =>
+  const advancedButtonOverflowPx = 24
+  const holdPointCanvasInsetPx = 8
+
+  const getAdvancedInputsButton = (node: Locator) =>
     node.getByTestId('advanced-inputs-button')
 
-  const moveButtonRightEdgePastCanvas = async (
+  const moveAdvancedButtonRightEdgePastCanvas = async (
     comfyPage: ComfyPage,
     button: Locator,
     overflow: number
   ) => {
     const box = await button.boundingBox()
     const canvasBox = await comfyPage.canvas.boundingBox()
-    if (!box) throw new Error('Tab button has no bounding box')
+    if (!box) throw new Error('Advanced button has no bounding box')
     if (!canvasBox) throw new Error('Canvas has no bounding box')
 
     const scale = await comfyPage.canvasOps.getScale()
@@ -149,7 +152,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await comfyPage.vueNodes.waitForNodes()
 
     const node = comfyPage.vueNodes.getNodeByTitle('ModelSamplingFlux')
-    const showButton = getShowAdvancedButton(node)
+    const showButton = getAdvancedInputsButton(node)
     const widgets = node.locator('.lg-node-widget')
 
     await expect(showButton).toBeVisible()
@@ -188,10 +191,14 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       await comfyPage.vueNodes.waitForNodes()
 
       const node = comfyPage.vueNodes.getNodeByTitle('ModelSamplingFlux')
-      const showButton = getShowAdvancedButton(node)
+      const showButton = getAdvancedInputsButton(node)
       await expect(showButton).toBeVisible()
 
-      await moveButtonRightEdgePastCanvas(comfyPage, showButton, 24)
+      await moveAdvancedButtonRightEdgePastCanvas(
+        comfyPage,
+        showButton,
+        advancedButtonOverflowPx
+      )
 
       const buttonBox = await showButton.boundingBox()
       const canvasBox = await comfyPage.canvas.boundingBox()
@@ -206,7 +213,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       ).toBeGreaterThan(canvasRight)
 
       const holdPoint = {
-        x: canvasRight - 8,
+        x: canvasRight - holdPointCanvasInsetPx,
         y: buttonBox.y + buttonBox.height / 2
       }
       expect(
