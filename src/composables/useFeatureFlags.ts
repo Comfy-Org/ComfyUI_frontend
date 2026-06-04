@@ -28,7 +28,8 @@ export enum ServerFeatureFlag {
   WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
-  SHOW_SIGNIN_BUTTON = 'show_signin_button'
+  SHOW_SIGNIN_BUTTON = 'show_signin_button',
+  SUPPORTS_TERMINAL = 'supports_terminal'
 }
 
 /**
@@ -165,6 +166,10 @@ export function useFeatureFlags() {
         ServerFeatureFlag.SHOW_SIGNIN_BUTTON,
         undefined
       )
+    },
+    /** A terminal host (e.g. ComfyUI Desktop) is available for this server. */
+    get supportsTerminal(): boolean {
+      return api.serverSupportsFeature(ServerFeatureFlag.SUPPORTS_TERMINAL)
     }
   })
 

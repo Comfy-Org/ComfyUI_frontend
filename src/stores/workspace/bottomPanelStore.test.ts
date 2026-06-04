@@ -56,6 +56,17 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
+// The store now gates the interactive terminal tab on a terminal host + the
+// server feature flag. These tests don't exercise the gate, so keep the
+// dependencies inert.
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: { supportsTerminal: false } })
+}))
+
+vi.mock('@/composables/bottomPanelTabs/useTerminalBridge', () => ({
+  isTerminalHostAvailable: vi.fn(() => false)
+}))
+
 describe('useBottomPanelStore', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))

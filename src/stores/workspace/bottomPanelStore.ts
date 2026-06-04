@@ -1,8 +1,10 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useShortcutsTab } from '@/composables/bottomPanelTabs/useShortcutsTab'
+import { isTerminalHostAvailable } from '@/composables/bottomPanelTabs/useTerminalBridge'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isDesktop } from '@/platform/distribution/types'
 import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyExtension } from '@/types/comfy'
@@ -128,6 +130,33 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     })
   }
 
+  // The interactive terminal tab needs a host that provides one
+  // (`isTerminalHostAvailable`) AND permission to surface it: legacy desktop
+  // is gated at compile time via `isDesktop`, while ComfyUI Desktop 2.0 gates
+  // on the server-reported `supports_terminal` flag, which arrives over the
+  // websocket handshake — so register reactively once it does.
+  const registerCommandTerminalTab = (tab: BottomPanelExtension) => {
+    if (!isTerminalHostAvailable()) return
+    if (isDesktop) {
+      registerBottomPanelTab(tab)
+      return
+    }
+    const { flags } = useFeatureFlags()
+    if (flags.supportsTerminal) {
+      registerBottomPanelTab(tab)
+      return
+    }
+    const stop = watch(
+      () => flags.supportsTerminal,
+      (supported) => {
+        if (supported) {
+          registerBottomPanelTab(tab)
+          stop()
+        }
+      }
+    )
+  }
+
   const registerCoreBottomPanelTabs = async () => {
     // Register shortcuts tabs first (synchronous, always available)
     useShortcutsTab().forEach(registerBottomPanelTab)
@@ -138,9 +167,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
         const { useLogsTerminalTab, useCommandTerminalTab } =
           await import('@/composables/bottomPanelTabs/useTerminalTabs')
         registerBottomPanelTab(useLogsTerminalTab())
-        if (isDesktop) {
-          registerBottomPanelTab(useCommandTerminalTab())
-        }
+        registerCommandTerminalTab(useCommandTerminalTab())
       } catch (error) {
         console.error('Failed to load terminal tabs:', error)
       }

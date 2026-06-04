@@ -640,6 +640,10 @@
     "briefcase": "Briefcase",
     "exclamation-triangle": "Warning"
   },
+  "terminal": {
+    "sessionEnded": "This terminal session ended. Restart it to keep using the console.",
+    "restart": "Restart"
+  },
   "welcome": {
     "title": "Welcome to ComfyUI",
     "getStarted": "Get Started"
