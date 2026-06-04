@@ -5,7 +5,7 @@ import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil
 
 import { useAppMode } from '@/composables/useAppMode'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
@@ -268,12 +268,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   private setSubscriptionProperties(): void {
-    const { subscriptionTier } = useSubscription()
+    const { tier } = useBillingContext()
     watch(
-      subscriptionTier,
-      (tier) => {
-        if (tier && this.posthog) {
-          this.posthog.people.set({ subscription_tier: tier })
+      tier,
+      (value) => {
+        if (value && this.posthog) {
+          this.posthog.people.set({ subscription_tier: value })
         }
       },
       { immediate: true }
