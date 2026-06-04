@@ -952,6 +952,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     recordingStatusChange: (value: boolean) => {
       isRecording.value = value
 
+      if (value) markDirty()
+
       if (!value && load3d) {
         recordingDuration.value = load3d.getRecordingDuration()
         hasRecording.value = recordingDuration.value > 0
@@ -1025,7 +1027,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   }
 
   const handleCenterCameraOnModel = () => {
-    load3d?.centerCameraOnModel()
+    if (!load3d) return
+    load3d.centerCameraOnModel()
+    markDirty()
   }
 
   const handleResetGizmoTransform = () => {

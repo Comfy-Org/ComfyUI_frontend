@@ -193,6 +193,7 @@ describe('useLoad3d', () => {
       resetGizmoTransform: vi.fn(),
       applyGizmoTransform: vi.fn(),
       fitToViewer: vi.fn(),
+      centerCameraOnModel: vi.fn(),
       getGizmoTransform: vi.fn().mockReturnValue({
         position: { x: 0, y: 0, z: 0 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -1874,6 +1875,44 @@ describe('useLoad3d', () => {
       setLoad3dOutputCache(mockNode, fakeCache)
       composable.handleClearRecording()
 
+      expect(isLoad3dSceneDirty(mockNode)).toBe(true)
+    })
+
+    it('recordingStatusChange marks dirty when a recording starts', async () => {
+      let recordingStatusHandler: ((value: boolean) => void) | undefined
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          if (event === 'recordingStatusChange') {
+            recordingStatusHandler = handler as (value: boolean) => void
+          }
+        }
+      )
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+      await nextTick()
+
+      setLoad3dOutputCache(mockNode, fakeCache)
+      expect(isLoad3dSceneDirty(mockNode)).toBe(false)
+
+      recordingStatusHandler!(true)
+
+      expect(isLoad3dSceneDirty(mockNode)).toBe(true)
+    })
+
+    it('handleCenterCameraOnModel marks dirty', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+      await nextTick()
+
+      setLoad3dOutputCache(mockNode, fakeCache)
+      expect(isLoad3dSceneDirty(mockNode)).toBe(false)
+
+      composable.handleCenterCameraOnModel()
+
+      expect(mockLoad3d.centerCameraOnModel).toHaveBeenCalledTimes(1)
       expect(isLoad3dSceneDirty(mockNode)).toBe(true)
     })
 
