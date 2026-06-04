@@ -25,9 +25,13 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
   }) => {
     await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
+    const missingModelsGroup = comfyPage.page.getByTestId(
+      TestIds.dialogs.missingModelsGroup
+    )
+    await expect(missingModelsGroup).toBeVisible()
     await expect(
-      comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
-    ).toBeVisible()
+      missingModelsGroup.getByTestId(TestIds.dialogs.errorGroupDisplayMessage)
+    ).toHaveText(/\S/)
   })
 
   test('Should display model name with referencing node count', async ({

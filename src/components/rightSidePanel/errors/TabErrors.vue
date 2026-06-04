@@ -156,6 +156,7 @@
 
           <div
             v-if="group.type !== 'execution' && group.displayMessage"
+            data-testid="error-group-display-message"
             class="px-4 pt-1 pb-3"
           >
             <p

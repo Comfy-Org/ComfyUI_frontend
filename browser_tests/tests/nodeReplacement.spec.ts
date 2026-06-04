@@ -11,6 +11,7 @@ import {
   getSwapNodesGroup,
   setupNodeReplacement
 } from '@e2e/fixtures/helpers/NodeReplacementHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 const renderModes = [
   { name: 'vue nodes', vueNodesEnabled: true },
@@ -38,6 +39,9 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
         }) => {
           const swapGroup = getSwapNodesGroup(comfyPage.page)
           await expect(swapGroup).toBeVisible()
+          await expect(
+            swapGroup.getByTestId(TestIds.dialogs.errorGroupDisplayMessage)
+          ).toHaveText(/\S/)
           await expect(swapGroup).toContainText('E2E_OldSampler')
           await expect(
             swapGroup.getByRole('button', { name: 'Replace All', exact: true })
