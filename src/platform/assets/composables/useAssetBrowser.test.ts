@@ -36,7 +36,6 @@ describe('useAssetBrowser', () => {
     id: 'test-id',
     name: 'test-asset.safetensors',
     hash: 'blake3:abc123',
-    asset_hash: 'blake3:abc123',
     size: 1024,
     mime_type: 'application/octet-stream',
     tags: ['models', 'checkpoints'],

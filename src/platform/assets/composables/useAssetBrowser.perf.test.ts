@@ -27,7 +27,6 @@ function makeAsset(index: number): AssetItem {
     id: `asset-${index}`,
     name: `asset-${index}.safetensors`,
     hash: `blake3:${index}`,
-    asset_hash: `blake3:${index}`,
     size: 1024,
     mime_type: 'application/octet-stream',
     tags: ['models', category],

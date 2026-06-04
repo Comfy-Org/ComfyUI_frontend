@@ -103,7 +103,6 @@ export function createMockAssets(count: number = 20): AssetItem[] {
       id: `mock-asset-uuid-${(index + 1).toString().padStart(3, '0')}-fake`,
       name: fakeFileName,
       hash: fakeAssetHash,
-      asset_hash: fakeAssetHash,
       size: sizeInBytes,
       mime_type: mimeType,
       tags: [

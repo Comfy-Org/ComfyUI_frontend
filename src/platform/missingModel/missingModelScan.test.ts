@@ -1446,14 +1446,12 @@ describe('verifyAssetSupportedCandidates', () => {
         id: '1',
         name: 'my_model.safetensors',
         hash: null,
-        asset_hash: null,
         metadata: { filename: 'my_model.safetensors' }
       },
       {
         id: '2',
         name: 'other_model.safetensors',
         hash: null,
-        asset_hash: null,
         metadata: { filename: 'other_model.safetensors' }
       }
     ])
@@ -1490,7 +1488,6 @@ describe('verifyAssetSupportedCandidates', () => {
         id: '1',
         name: 'my_model.safetensors',
         hash: null,
-        asset_hash: null,
         metadata: { filename: 'my_model.safetensors' }
       }
     ])
@@ -1582,7 +1579,6 @@ describe('verifyAssetSupportedCandidates', () => {
               id: '1',
               name: 'checkpoint.safetensors',
               hash: null,
-              asset_hash: null,
               metadata: { filename: 'checkpoint.safetensors' }
             }
           ]
@@ -1606,7 +1602,6 @@ describe('verifyAssetSupportedCandidates', () => {
         id: '1',
         name: 'model.safetensors',
         hash: null,
-        asset_hash: null,
         metadata: { filename: 'model.safetensors' }
       }
     ])
@@ -1623,7 +1618,6 @@ describe('verifyAssetSupportedCandidates', () => {
         id: '1',
         name: 'my_model.safetensors',
         hash: null,
-        asset_hash: null,
         metadata: { filename: 'subfolder/my_model.safetensors' }
       }
     ])

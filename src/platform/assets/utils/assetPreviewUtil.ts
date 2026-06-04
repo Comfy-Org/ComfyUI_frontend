@@ -6,7 +6,6 @@ interface AssetRecord {
   id: string
   name: string
   hash?: string
-  asset_hash?: string
   preview_url?: string
   preview_id?: string | null
 }

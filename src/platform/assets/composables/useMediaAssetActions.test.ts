@@ -229,8 +229,7 @@ function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
     tags: ['input'],
     ...overrides
   }
-  // Canonical reads use `hash`; mirror `asset_hash` unless explicitly set.
-  return { hash: overrides.hash ?? base.asset_hash, ...base }
+  return base
 }
 
 function createMockMediaAsset(overrides: Partial<AssetMeta> = {}): AssetMeta {
@@ -298,7 +297,7 @@ describe('useMediaAssetActions', () => {
 
         const asset = createMockAsset({
           name: 'my-image.jpeg',
-          asset_hash: 'hash123.jpeg'
+          hash: 'hash123.jpeg'
         })
 
         await actions.addWorkflow(asset)
@@ -312,12 +311,12 @@ describe('useMediaAssetActions', () => {
         mockIsCloud.value = true
       })
 
-      it('should use asset_hash as filename when available', async () => {
+      it('should use hash as filename when available', async () => {
         const actions = useMediaAssetActions()
 
         const asset = createMockAsset({
           name: 'original.jpeg',
-          asset_hash: 'abc123hash.jpeg'
+          hash: 'abc123hash.jpeg'
         })
 
         await actions.addWorkflow(asset)
@@ -325,12 +324,12 @@ describe('useMediaAssetActions', () => {
         expect(capturedFilenames.values).toContain('abc123hash.jpeg')
       })
 
-      it('should fall back to asset.name when asset_hash is not available', async () => {
+      it('should fall back to asset.name when hash is not available', async () => {
         const actions = useMediaAssetActions()
 
         const asset = createMockAsset({
           name: 'fallback-name.jpeg',
-          asset_hash: undefined
+          hash: undefined
         })
 
         await actions.addWorkflow(asset)
@@ -338,12 +337,12 @@ describe('useMediaAssetActions', () => {
         expect(capturedFilenames.values).toContain('fallback-name.jpeg')
       })
 
-      it('should fall back to asset.name when asset_hash is null', async () => {
+      it('should fall back to asset.name when hash is null', async () => {
         const actions = useMediaAssetActions()
 
         const asset = createMockAsset({
           name: 'fallback-null.jpeg',
-          asset_hash: null
+          hash: null
         })
 
         await actions.addWorkflow(asset)
@@ -359,19 +358,19 @@ describe('useMediaAssetActions', () => {
         mockIsCloud.value = true
       })
 
-      it('should use asset_hash for each asset', async () => {
+      it('should use hash for each asset', async () => {
         const actions = useMediaAssetActions()
 
         const assets = [
           createMockAsset({
             id: '1',
             name: 'file1.jpeg',
-            asset_hash: 'hash1.jpeg'
+            hash: 'hash1.jpeg'
           }),
           createMockAsset({
             id: '2',
             name: 'file2.jpeg',
-            asset_hash: 'hash2.jpeg'
+            hash: 'hash2.jpeg'
           })
         ]
 
@@ -975,7 +974,7 @@ describe('useMediaAssetActions', () => {
       const asset = createMockAsset({
         id: 'asset-match',
         name: 'foo.png',
-        asset_hash: 'abc123.png',
+        hash: 'abc123.png',
         tags: ['input']
       })
 
@@ -1053,7 +1052,7 @@ describe('useMediaAssetActions', () => {
       const asset = createMockAsset({
         id: 'asset-failed',
         name: 'failed.png',
-        asset_hash: 'failhash.png'
+        hash: 'failhash.png'
       })
 
       await actions.deleteAssets(asset)

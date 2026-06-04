@@ -22,7 +22,6 @@ describe('assetMetadataUtils', () => {
     id: 'test-id',
     name: 'test-model',
     hash: 'hash123',
-    asset_hash: 'hash123',
     size: 1024,
     mime_type: 'application/octet-stream',
     tags: ['models', 'checkpoints'],

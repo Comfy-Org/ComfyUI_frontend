@@ -51,7 +51,6 @@ function makeAsset(name: string, assetHash: string | null = null): AssetItem {
     id: name,
     name,
     hash: assetHash,
-    asset_hash: assetHash,
     mime_type: null,
     tags: ['input']
   }

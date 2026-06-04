@@ -13,7 +13,7 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
   const base = {
     id: 'test-asset-id',
     name: 'test-image.png',
-    asset_hash: 'hash123',
+    hash: 'hash123',
     size: 1024,
     mime_type: 'image/png',
     tags: ['input'],
@@ -22,8 +22,7 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
     last_access_time: new Date().toISOString(),
     ...overrides
   }
-  // Canonical reads use `hash`; mirror `asset_hash` unless explicitly set.
-  return { hash: overrides.hash ?? base.asset_hash, ...base }
+  return base
 }
 
 // Use vi.hoisted() to ensure mock state is initialized before mocks
@@ -541,7 +540,7 @@ describe('useComboWidget', () => {
         createMockAssetItem({
           id: 'asset-123',
           name: 'image1.png',
-          asset_hash: HASH_FILENAME
+          hash: HASH_FILENAME
         })
       ]
       mockAssetsStoreState.inputLoading = false

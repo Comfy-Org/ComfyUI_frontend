@@ -57,7 +57,6 @@ const cloudAsset = {
   id: '72d169cc-7f9a-40d2-9382-35eadcba0a6a',
   name: 'mesh/ComfyUI_00003_.glb',
   hash: 'c6cadcee57dd.glb',
-  asset_hash: 'c6cadcee57dd.glb',
   preview_id: null,
   preview_url: undefined
 }
