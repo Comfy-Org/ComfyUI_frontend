@@ -117,13 +117,13 @@ export function useImageMenuOptions() {
     if (hasImages) {
       options.push(
         {
-          label: t('contextMenu.Open in Mask Editor'),
-          action: () => openMaskEditor()
-        },
-        {
           label: t('contextMenu.Open Image'),
           icon: 'icon-[lucide--external-link]',
           action: () => openImage(node)
+        },
+        {
+          label: t('contextMenu.Open in Mask Editor'),
+          action: () => openMaskEditor()
         },
         {
           label: t('contextMenu.Copy Image'),

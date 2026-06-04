@@ -21,6 +21,7 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
   SearchQueryMetadata,
@@ -460,6 +461,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackSearchQuery(metadata: SearchQueryMetadata): void {
     this.trackEvent(TelemetryEvents.SEARCH_QUERY, metadata)
+  }
+
+  trackNodeAdded(metadata: NodeAddedMetadata): void {
+    this.trackEvent(TelemetryEvents.NODE_ADDED, metadata)
   }
 
   trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void {

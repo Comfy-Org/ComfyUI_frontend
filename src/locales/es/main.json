@@ -233,7 +233,8 @@
       "auth/user-disabled": "Esta cuenta ha sido deshabilitada. Por favor, contacta al soporte.",
       "auth/user-not-found": "No se encontró ninguna cuenta con este correo electrónico. ¿Te gustaría crear una nueva cuenta?",
       "auth/weak-password": "La contraseña es demasiado débil. Por favor, usa una contraseña más segura con al menos 6 caracteres.",
-      "auth/wrong-password": "La contraseña que ingresaste es incorrecta. Por favor, inténtalo de nuevo."
+      "auth/wrong-password": "La contraseña que ingresaste es incorrecta. Por favor, inténtalo de nuevo.",
+      "generic": "Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo."
     },
     "login": {
       "andText": "y",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "Restablecimiento de contraseña enviado",
   "cloudForgotPassword_sendResetLink": "Enviar enlace de restablecimiento",
   "cloudForgotPassword_title": "¿Olvidaste tu contraseña?",
+  "cloudHero": {
+    "nextSlide": "Siguiente diapositiva",
+    "previousSlide": "Diapositiva anterior",
+    "slidePagerLabel": "Ir a la diapositiva {index}",
+    "slides": {
+      "cloud": {
+        "description": "Ideal para la mayoría de los usuarios que desean trabajar desde cualquier lugar con modelos verificados para uso comercial.",
+        "title": "Nube"
+      },
+      "models": {
+        "description": "Modelos seleccionados y con licencia comercial listos para usar sin configuración previa.",
+        "title": "Modelos"
+      },
+      "team": {
+        "description": "Incorpora a tu equipo hoy. Comparte flujos de trabajo y recursos en toda tu organización.",
+        "title": "Equipo"
+      },
+      "workflows": {
+        "description": "De la idea al resultado en minutos. Genera múltiples variaciones en paralelo.",
+        "title": "Flujos de trabajo"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
     "exploreCloud": "Probar la Nube Gratis",

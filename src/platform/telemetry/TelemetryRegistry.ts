@@ -12,6 +12,7 @@ import type {
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
   SearchQueryMetadata,
@@ -201,6 +202,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackSearchQuery(metadata: SearchQueryMetadata): void {
     this.dispatch((provider) => provider.trackSearchQuery?.(metadata))
+  }
+
+  trackNodeAdded(metadata: NodeAddedMetadata): void {
+    this.dispatch((provider) => provider.trackNodeAdded?.(metadata))
   }
 
   trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void {

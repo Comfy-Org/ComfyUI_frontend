@@ -139,9 +139,23 @@ export interface CreditTopupMetadata {
 /**
  * Workflow import metadata
  */
+export interface MissingNodePack {
+  /**
+   * Custom node pack identifier (cnrId / aux_id from node properties).
+   * `'unknown'` when the workflow JSON has no pack hint for the node.
+   */
+  pack_id: string
+  node_types: string[]
+}
+
 export interface WorkflowImportMetadata {
   missing_node_count: number
   missing_node_types: string[]
+  /**
+   * Missing nodes grouped by their custom node pack. Populated from the
+   * `cnr_id` / `aux_id` baked into node properties — no network lookups.
+   */
+  missing_node_packs?: MissingNodePack[]
   /**
    * The source of the workflow open/import action
    */
@@ -252,6 +266,23 @@ export interface SearchQueryMetadata {
 }
 
 /**
+ * Node added metadata. `source` indicates how the user initiated the add.
+ * Bulk additions during workflow load are excluded — workflow_imported
+ * already covers that.
+ */
+export type NodeAddSource =
+  | 'sidebar_drag'
+  | 'search_modal'
+  | 'paste'
+  | 'programmatic'
+  | 'unknown'
+
+export interface NodeAddedMetadata {
+  node_type: string
+  source: NodeAddSource
+}
+
+/**
  * Node search result selection metadata
  */
 export interface NodeSearchResultMetadata {
@@ -344,6 +375,7 @@ export interface CheckoutAttributionMetadata {
   ga_session_id?: string
   ga_session_number?: string
   im_ref?: string
+  rewardful_referral?: string
   utm_source?: string
   utm_medium?: string
   utm_campaign?: string
@@ -459,6 +491,9 @@ export interface TelemetryProvider {
   // Search query analytics
   trackSearchQuery?(metadata: SearchQueryMetadata): void
 
+  // Node-added-to-canvas analytics
+  trackNodeAdded?(metadata: NodeAddedMetadata): void
+
   // Template filter tracking events
   trackTemplateFilterChanged?(metadata: TemplateFilterMetadata): void
 
@@ -546,6 +581,7 @@ export const TelemetryEvents = {
   NODE_SEARCH: 'app:node_search',
   NODE_SEARCH_RESULT_SELECTED: 'app:node_search_result_selected',
   SEARCH_QUERY: 'app:search_query',
+  NODE_ADDED: 'app:node_added_to_workflow',
 
   // Template Filter Analytics
   TEMPLATE_FILTER_CHANGED: 'app:template_filter_changed',
