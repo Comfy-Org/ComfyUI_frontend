@@ -803,7 +803,7 @@ describe('Pre-remove vueNodeData drain', () => {
     ).toBe(false)
   })
 
-  it('clears vueNodeData via the onNodeRemoved fallback when LGraph.clear() bypasses node:before-removed', () => {
+  it('clears vueNodeData when LGraph.clear() dispatches node:before-removed for each node', () => {
     const graph = new LGraph()
     const nodeA = new LGraphNode('a')
     const nodeB = new LGraphNode('b')
@@ -820,11 +820,11 @@ describe('Pre-remove vueNodeData drain', () => {
 
     expect(
       beforeRemovedSpy,
-      'clear() does not dispatch node:before-removed - cleanup comes from the onNodeRemoved fallback'
-    ).not.toHaveBeenCalled()
+      'clear() must dispatch node:before-removed so reactive consumers can drop refs before nodes detach'
+    ).toHaveBeenCalledTimes(2)
     expect(
       vueNodeData.size,
-      'onNodeRemoved fallback must clear vueNodeData when the event path is bypassed'
+      'node:before-removed listener must drain vueNodeData when clear() removes every node'
     ).toBe(0)
   })
 })
