@@ -62,7 +62,12 @@ const dropsUrl = `comfy.org${routes.drops}`
         size="lg"
         data-testid="drops-hero-secondary-cta"
         class="px-8 py-4 text-base"
-        @click="captureDropClick('hero', { cta: 'see_all_workflows' })"
+        @click="
+          captureDropClick('hero', {
+            cta: 'see_all_workflows',
+            href: externalLinks.workflows
+          })
+        "
       >
         {{ t('drops-landing.hero.secondaryCta', locale) }}
       </BrandButton>
