@@ -152,7 +152,10 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       const widthWidget = node.widgets?.find((w) => w.name === 'width')
       const heightWidget = node.widgets?.find((w) => w.name === 'height')
 
-      if (!(widthWidget && heightWidget)) {
+      if (
+        node.constructor.comfyClass?.startsWith('Preview') ||
+        !(widthWidget && heightWidget)
+      ) {
         isPreview.value = true
       }
 
@@ -484,7 +487,6 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         nodeRef.value.properties['Camera Config'] = newValue
         load3d.toggleCamera(newValue.cameraType)
         load3d.setFOV(newValue.fov)
-        load3d.setRetainViewOnReload(newValue.retainViewOnReload ?? false)
       }
     },
     { deep: true }
