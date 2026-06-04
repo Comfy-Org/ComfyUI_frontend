@@ -115,7 +115,7 @@ function makeAsset(name: string, assetHash: string | null = null): AssetItem {
   return {
     id: name,
     name,
-    asset_hash: assetHash,
+    hash: assetHash,
     mime_type: null,
     tags: ['input']
   }
@@ -532,7 +532,7 @@ describe('verifyMediaCandidates', () => {
     })
   })
 
-  it('matches asset names when asset_hash is null', async () => {
+  it('matches asset names when hash is null', async () => {
     const candidates = [
       makeCandidate('1', 'legacy-photo.png', { isMissing: undefined }),
       makeCandidate('2', 'missing-photo.png', { isMissing: undefined })
