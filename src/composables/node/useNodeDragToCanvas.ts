@@ -11,7 +11,7 @@ const isDragging = ref(false)
 const draggedNode = shallowRef<ComfyNodeDefImpl | null>(null)
 const cursorPosition = ref({ x: 0, y: 0 })
 const dragMode = ref<DragMode>('click')
-const lastNativeDragPosition = shallowRef<{ x: number; y: number } | null>(null)
+const lastNativeDragPosition = shallowRef<{ x: number; y: number }>()
 let listenersSetup = false
 
 function updatePosition(e: PointerEvent) {
@@ -31,7 +31,7 @@ function cancelDrag() {
   isDragging.value = false
   draggedNode.value = null
   dragMode.value = 'click'
-  lastNativeDragPosition.value = null
+  lastNativeDragPosition.value = undefined
 }
 
 function isOverCanvas(clientX: number, clientY: number): boolean {
