@@ -4,7 +4,7 @@ import type { TranslationKey } from '../../i18n/translations'
 
 import { getRoutes } from '../../config/routes'
 import { hasKey, t, translationKeys } from '../../i18n/translations'
-import { dropItems, resolveDropHref } from './dropItems'
+import { dropItems, resolveCtaHref } from './dropItems'
 
 const PREFIX = 'drops-landing'
 
@@ -61,12 +61,18 @@ describe('drops landing i18n', () => {
     expect(hasKey(`${PREFIX}.footerCta.line2`)).toBe(true)
   })
 
-  it('matches every drop item to title, tagline, body, and cta translation keys', () => {
+  it('matches every drop item to title, tagline, and body translation keys', () => {
     for (const item of dropItems) {
       expect(hasKey(item.titleKey)).toBe(true)
       expect(hasKey(item.taglineKey)).toBe(true)
       expect(hasKey(item.bodyKey)).toBe(true)
-      expect(hasKey(item.ctaKey)).toBe(true)
+    }
+  })
+
+  it('matches every CTA label to a translation key', () => {
+    for (const item of dropItems) {
+      if (!item.cta) continue
+      expect(hasKey(item.cta.labelKey)).toBe(true)
     }
   })
 
@@ -103,33 +109,49 @@ describe('drops landing i18n', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it('has a non-empty image url and resolvable href for every drop item', () => {
+  it('has a non-empty image url and resolvable href for every drop item with a CTA', () => {
     const routes = getRoutes('en')
     for (const item of dropItems) {
       expect(item.imageUrl.length).toBeGreaterThan(0)
-      expect(resolveDropHref(item, routes).length).toBeGreaterThan(0)
+      if (!item.cta) continue
+      expect(resolveCtaHref(item.cta, routes).length).toBeGreaterThan(0)
     }
   })
 
-  it('resolves internal drop hrefs through the locale-aware route helper', () => {
-    const internalItems = dropItems.filter((item) => !item.external)
-    expect(internalItems.length).toBeGreaterThan(0)
+  it('resolves internal CTA hrefs through the locale-aware route helper', () => {
+    const internalCtas = dropItems
+      .map((item) => item.cta)
+      .filter(
+        (cta): cta is NonNullable<typeof cta> & { external: false } =>
+          cta !== undefined && !cta.external
+      )
+    expect(internalCtas.length).toBeGreaterThan(0)
     const enRoutes = getRoutes('en')
     const zhRoutes = getRoutes('zh-CN')
-    for (const item of internalItems) {
-      expect(resolveDropHref(item, enRoutes)).toBe(enRoutes[item.routeKey])
-      expect(resolveDropHref(item, zhRoutes)).toBe(zhRoutes[item.routeKey])
+    for (const cta of internalCtas) {
+      expect(resolveCtaHref(cta, enRoutes)).toBe(enRoutes[cta.routeKey])
+      expect(resolveCtaHref(cta, zhRoutes)).toBe(zhRoutes[cta.routeKey])
     }
   })
 
-  it('preserves external drop hrefs regardless of locale', () => {
-    const externalItems = dropItems.filter((item) => item.external)
-    expect(externalItems.length).toBeGreaterThan(0)
+  it('preserves external CTA hrefs regardless of locale', () => {
+    const externalCtas = dropItems
+      .map((item) => item.cta)
+      .filter(
+        (cta): cta is NonNullable<typeof cta> & { external: true } =>
+          cta !== undefined && cta.external
+      )
+    expect(externalCtas.length).toBeGreaterThan(0)
     const enRoutes = getRoutes('en')
     const zhRoutes = getRoutes('zh-CN')
-    for (const item of externalItems) {
-      expect(resolveDropHref(item, enRoutes)).toBe(item.url)
-      expect(resolveDropHref(item, zhRoutes)).toBe(item.url)
+    for (const cta of externalCtas) {
+      expect(resolveCtaHref(cta, enRoutes)).toBe(cta.url)
+      expect(resolveCtaHref(cta, zhRoutes)).toBe(cta.url)
     }
+  })
+
+  it('omits the CTA button for items without a CTA (e.g. oss-vram pending blog post)', () => {
+    const itemsWithoutCta = dropItems.filter((item) => !item.cta)
+    expect(itemsWithoutCta.map((item) => item.id)).toContain('oss-vram')
   })
 })

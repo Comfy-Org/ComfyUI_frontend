@@ -1,28 +1,28 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { DropItem } from './dropItems'
+import type { DropCta, DropItem } from './dropItems'
 import type { Locale } from '../../i18n/translations'
 
 import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
-import { dropItems, resolveDropHref } from './dropItems'
+import { dropItems, resolveCtaHref } from './dropItems'
 import { captureDropClick } from './useDropClickCapture'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const routes = getRoutes(locale)
 
-function hrefFor(item: DropItem): string {
-  return resolveDropHref(item, routes)
+function hrefFor(cta: DropCta): string {
+  return resolveCtaHref(cta, routes)
 }
 
-function handleClick(item: DropItem) {
+function handleCtaClick(item: DropItem, cta: DropCta) {
   captureDropClick('more_drops', {
     drop_id: item.id,
-    href: hrefFor(item),
-    external: item.external
+    href: hrefFor(cta),
+    external: cta.external
   })
 }
 </script>
@@ -81,17 +81,17 @@ function handleClick(item: DropItem) {
           <p class="text-base text-primary-comfy-canvas/70">
             {{ t(item.bodyKey, locale) }}
           </p>
-          <div class="mt-2">
+          <div v-if="item.cta" class="mt-2">
             <BrandButton
-              :href="hrefFor(item)"
-              :target="item.external ? '_blank' : undefined"
-              :rel="item.external ? 'noopener noreferrer' : undefined"
+              :href="hrefFor(item.cta)"
+              :target="item.cta.external ? '_blank' : undefined"
+              :rel="item.cta.external ? 'noopener noreferrer' : undefined"
               size="md"
               :data-testid="`drops-item-${item.id}-cta`"
               class="px-6 py-3 text-sm"
-              @click="handleClick(item)"
+              @click="handleCtaClick(item, item.cta)"
             >
-              {{ t(item.ctaKey, locale) }}
+              {{ t(item.cta.labelKey, locale) }}
             </BrandButton>
           </div>
         </div>

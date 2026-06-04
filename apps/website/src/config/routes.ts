@@ -55,8 +55,6 @@ export const externalLinks = {
   affiliateApplicationForm: 'https://forms.gle/RS8L2ttcuGap4Q1v6',
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
   blog: 'https://blog.comfy.org/',
-  blogDynamicVram:
-    'https://blog.comfy.org/p/dynamic-vram-in-comfyui-saving-local',
   cloud: 'https://cloud.comfy.org',
   cloudStatus: 'https://status.comfy.org',
   discord: 'https://discord.com/invite/comfyorg',

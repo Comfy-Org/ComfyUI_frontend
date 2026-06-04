@@ -4813,10 +4813,6 @@ const translations = {
     'zh-CN':
       'Significant open-source VRAM optimizations so you can run larger models, deeper pipelines, and more complex workflows — without hitting the ceiling.'
   },
-  'drops-landing.item.oss-vram.cta': {
-    en: 'SEE THE IMPROVEMENTS',
-    'zh-CN': 'SEE THE IMPROVEMENTS'
-  },
   'drops-landing.item.comfy-mcp.title': {
     en: 'Comfy MCP',
     'zh-CN': 'Comfy MCP'

@@ -3,26 +3,34 @@ import type { TranslationKey } from '../../i18n/translations'
 
 type Routes = ReturnType<typeof getRoutes>
 
-interface DropItemBase {
-  id: string
-  titleKey: TranslationKey
-  taglineKey: TranslationKey
-  bodyKey: TranslationKey
-  ctaKey: TranslationKey
-  imageUrl: string
-}
-
-interface InternalDropItem extends DropItemBase {
+interface InternalCta {
+  labelKey: TranslationKey
   external: false
   routeKey: keyof Routes
 }
 
-interface ExternalDropItem extends DropItemBase {
+interface ExternalCta {
+  labelKey: TranslationKey
   external: true
   url: string
 }
 
-export type DropItem = InternalDropItem | ExternalDropItem
+export type DropCta = InternalCta | ExternalCta
+
+export interface DropItem {
+  id: string
+  titleKey: TranslationKey
+  taglineKey: TranslationKey
+  bodyKey: TranslationKey
+  imageUrl: string
+  cta?: DropCta
+}
+
+const REGISTER_FOR_LIVE_DEMO_CTA: ExternalCta = {
+  labelKey: 'drops-landing.item.register-for-live-demo.cta',
+  external: true,
+  url: 'https://luma.com/l7c5z4gp?tk=nm3dWZ'
+}
 
 export const dropItems: DropItem[] = [
   {
@@ -30,53 +38,46 @@ export const dropItems: DropItem[] = [
     titleKey: 'drops-landing.item.desktop-client.title',
     taglineKey: 'drops-landing.item.desktop-client.tagline',
     bodyKey: 'drops-landing.item.desktop-client.body',
-    ctaKey: 'drops-landing.item.desktop-client.cta',
     imageUrl: '/drops/desktop-client.svg',
-    external: false,
-    routeKey: 'download'
+    cta: {
+      labelKey: 'drops-landing.item.desktop-client.cta',
+      external: false,
+      routeKey: 'download'
+    }
   },
   {
     id: 'oss-vram',
     titleKey: 'drops-landing.item.oss-vram.title',
     taglineKey: 'drops-landing.item.oss-vram.tagline',
     bodyKey: 'drops-landing.item.oss-vram.body',
-    ctaKey: 'drops-landing.item.oss-vram.cta',
-    imageUrl: '/drops/oss-vram.svg',
-    external: true,
-    url: 'https://blog.comfy.org/p/dynamic-vram-in-comfyui-saving-local'
+    imageUrl: '/drops/oss-vram.svg'
   },
   {
     id: 'comfy-mcp',
     titleKey: 'drops-landing.item.comfy-mcp.title',
     taglineKey: 'drops-landing.item.comfy-mcp.tagline',
     bodyKey: 'drops-landing.item.comfy-mcp.body',
-    ctaKey: 'drops-landing.item.register-for-live-demo.cta',
     imageUrl: '/drops/comfy-mcp.svg',
-    external: true,
-    url: 'https://luma.com/l7c5z4gp?tk=nm3dWZ'
+    cta: REGISTER_FOR_LIVE_DEMO_CTA
   },
   {
     id: 'comfy-cli',
     titleKey: 'drops-landing.item.comfy-cli.title',
     taglineKey: 'drops-landing.item.comfy-cli.tagline',
     bodyKey: 'drops-landing.item.comfy-cli.body',
-    ctaKey: 'drops-landing.item.register-for-live-demo.cta',
     imageUrl: '/drops/comfy-cli.svg',
-    external: true,
-    url: 'https://luma.com/l7c5z4gp?tk=nm3dWZ'
+    cta: REGISTER_FOR_LIVE_DEMO_CTA
   },
   {
     id: 'team-plans',
     titleKey: 'drops-landing.item.team-plans.title',
     taglineKey: 'drops-landing.item.team-plans.tagline',
     bodyKey: 'drops-landing.item.team-plans.body',
-    ctaKey: 'drops-landing.item.register-for-live-demo.cta',
     imageUrl: '/drops/team-plans.svg',
-    external: true,
-    url: 'https://luma.com/l7c5z4gp?tk=nm3dWZ'
+    cta: REGISTER_FOR_LIVE_DEMO_CTA
   }
 ]
 
-export function resolveDropHref(item: DropItem, routes: Routes): string {
-  return item.external ? item.url : routes[item.routeKey]
+export function resolveCtaHref(cta: DropCta, routes: Routes): string {
+  return cta.external ? cta.url : routes[cta.routeKey]
 }
