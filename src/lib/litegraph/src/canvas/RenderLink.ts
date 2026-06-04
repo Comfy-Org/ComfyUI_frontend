@@ -95,9 +95,4 @@ export interface RenderLink {
     output: INodeOutputSlot,
     events: CustomEventTarget<LinkConnectorEventMap>
   ): void
-
-  drawConnectionCircle?(
-    ctx: CanvasRenderingContext2D,
-    to: Readonly<Point>
-  ): void
 }
