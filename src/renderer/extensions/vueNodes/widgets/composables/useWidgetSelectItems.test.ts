@@ -684,15 +684,14 @@ describe('useWidgetSelectItems', () => {
 
     it('does not expand a hash-keyed asset even if its metadata reports outputCount > 1', async () => {
       // Defense against future cloud-schema changes: if a flat output row
-      // ever ships with both asset_hash AND multi-output user_metadata, the
+      // ever ships with both hash AND multi-output user_metadata, the
       // watcher must NOT replace it with synthesized AssetItems lacking the
       // hash, or select+load reverts to the FE-227 broken state.
       mockMediaAssets.media.value = [
         {
           id: 'asset-flat-1',
           name: 'z-image-turbo_00093_.png',
-          asset_hash:
-            '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png',
+          hash: '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png',
           tags: ['output'],
           user_metadata: {
             jobId: 'job-future',
@@ -729,13 +728,12 @@ describe('useWidgetSelectItems', () => {
       )
     })
 
-    it('uses asset_hash (not human filename) as the dropdown value when present, so cloud /view can resolve by hash', async () => {
+    it('uses hash (not human filename) as the dropdown value when present, so cloud /view can resolve by hash', async () => {
       mockMediaAssets.media.value = [
         {
           id: 'asset-out-1',
           name: 'z-image-turbo_00093_.png',
-          asset_hash:
-            '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png',
+          hash: '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png',
           preview_url: '/api/view?filename=039b...0b13.png',
           tags: ['output']
         }
@@ -753,7 +751,7 @@ describe('useWidgetSelectItems', () => {
       expect(dropdownItems.value).toHaveLength(1)
       // The value (item.name) — what becomes modelValue on click — must be the
       // hash-keyed path so /api/view resolves it. Cloud's hash is in
-      // asset_hash, not asset.name (which is the human filename).
+      // asset.hash, not asset.name (which is the human filename).
       expect(dropdownItems.value[0].name).toBe(
         '039b051670f08941649419dcecea41cb9057f2895388f2e8165ec99df3af0b13.png [output]'
       )
@@ -761,7 +759,7 @@ describe('useWidgetSelectItems', () => {
       expect(dropdownItems.value[0].label).toContain('z-image-turbo_00093_.png')
     })
 
-    it('falls back to asset.name when asset_hash is absent (local/history path)', async () => {
+    it('falls back to asset.name when hash is absent (local/history path)', async () => {
       mockMediaAssets.media.value = [
         {
           id: 'local-1',
@@ -973,8 +971,7 @@ describe('useWidgetSelectItems', () => {
         {
           id: 'asset-hash-1',
           name: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5.png',
-          asset_hash:
-            'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5',
+          hash: 'a1ef7d292026e89ce9bbbd8093e2d0ed6a8850361a0c22e49522ac7baa5494e5',
           preview_url: '/preview.png',
           tags: ['output'],
           metadata: {

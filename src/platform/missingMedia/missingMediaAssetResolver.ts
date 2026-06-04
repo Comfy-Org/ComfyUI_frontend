@@ -85,7 +85,7 @@ export function getAssetDetectionNames(
 ): string[] {
   const names = new Set<string>()
   // Treat names and hashes as opaque match keys because Cloud may use either in widget values.
-  addPathDetectionNames(names, asset.hash ?? asset.asset_hash, options)
+  addPathDetectionNames(names, asset.hash, options)
   addPathDetectionNames(names, asset.name, options)
 
   const subfolder = asset.user_metadata?.subfolder

@@ -43,8 +43,8 @@ const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
  *
  * Output assets emit `<name> [output]` (and the subfolder-prefixed form when
  * present in metadata). Input/temp assets emit the bare name plus the explicit
- * annotation. `asset_hash` is included whenever present, since cloud-stored
- * assets can be referenced by hash.
+ * annotation. The content `hash` is included whenever present, since
+ * cloud-stored assets can be referenced by hash.
  */
 function widgetValueVariantsForAsset(asset: AssetItem): string[] {
   const variants: string[] = []
@@ -62,7 +62,7 @@ function widgetValueVariantsForAsset(asset: AssetItem): string[] {
       variants.push(`${name} [input]`)
     }
   }
-  const hash = asset.hash ?? asset.asset_hash
+  const hash = asset.hash
   if (hash) variants.push(hash)
   return variants
 }
@@ -300,10 +300,9 @@ export function useMediaAssetActions() {
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
     const assetType = getAssetType(targetAsset, 'input')
 
-    // In Cloud mode, use the content hash (the actual stored filename),
-    // preferring hash and falling back to the deprecated asset_hash alias.
+    // In Cloud mode, use the content hash (the actual stored filename).
     // In OSS mode, use the original name.
-    const cloudHash = targetAsset.hash ?? targetAsset.asset_hash
+    const cloudHash = targetAsset.hash
     const filename = isCloud && cloudHash ? cloudHash : targetAsset.name
 
     // Create annotated path for the asset
@@ -445,10 +444,9 @@ export function useMediaAssetActions() {
       const metadata = getOutputAssetMetadata(asset.user_metadata)
       const assetType = getAssetType(asset, 'input')
 
-      // In Cloud mode, use the content hash (the actual stored filename),
-      // preferring hash and falling back to the deprecated asset_hash alias.
+      // In Cloud mode, use the content hash (the actual stored filename).
       // In OSS mode, use the original name.
-      const cloudHash = asset.hash ?? asset.asset_hash
+      const cloudHash = asset.hash
       const filename = isCloud && cloudHash ? cloudHash : asset.name
 
       const annotated = createAnnotatedPath(
