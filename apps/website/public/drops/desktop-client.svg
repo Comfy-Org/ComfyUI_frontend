@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 270" fill="none">
+  <rect width="480" height="270" fill="#211927"/>
+  <rect x="80" y="55" width="320" height="200" rx="12" fill="#f2ff59" opacity="0.08" stroke="#f2ff59" stroke-width="2"/>
+  <rect x="80" y="55" width="320" height="28" rx="12" fill="#f2ff59" opacity="0.15"/>
+  <circle cx="96" cy="69" r="4" fill="#f2ff59"/>
+  <circle cx="110" cy="69" r="4" fill="#f2ff59" opacity="0.6"/>
+  <circle cx="124" cy="69" r="4" fill="#f2ff59" opacity="0.4"/>
+  <rect x="104" y="110" width="100" height="60" rx="8" fill="#f2ff59" opacity="0.25"/>
+  <rect x="220" y="110" width="100" height="60" rx="8" fill="#f2ff59" opacity="0.4"/>
+  <rect x="104" y="185" width="216" height="40" rx="8" fill="#f2ff59" opacity="0.15"/>
+  <text x="240" y="42" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#c2bfb9" letter-spacing="2">DESKTOP CLIENT</text>
+</svg>

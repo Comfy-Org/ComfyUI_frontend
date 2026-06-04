@@ -12,6 +12,7 @@ const baseRoutes = {
   careers: '/careers',
   customers: '/customers',
   demos: '/demos',
+  drops: '/drops',
   termsOfService: '/terms-of-service',
   privacyPolicy: '/privacy-policy',
   affiliates: '/affiliates',
@@ -35,6 +36,7 @@ type Routes = typeof baseRoutes
 const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliates',
   'affiliateTerms',
+  'drops',
   'termsOfService'
 ])
 
@@ -61,6 +63,7 @@ export const externalLinks = {
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   github: 'https://github.com/Comfy-Org/ComfyUI',
   githubInstall: 'https://github.com/Comfy-Org/ComfyUI#installing',
+  liveDemoEvent: 'https://luma.com/l7c5z4gp?tk=nm3dWZ',
   platform: 'https://platform.comfy.org',
   platformUsage: 'https://platform.comfy.org/profile/usage',
   support: 'https://support.comfy.org/hc/en-us',

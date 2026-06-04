@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 270" fill="none">
+  <rect width="480" height="270" fill="#211927"/>
+  <text x="240" y="40" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#c2bfb9" letter-spacing="2">TEAM PLANS</text>
+  <g transform="translate(80, 85)">
+    <circle cx="40" cy="40" r="32" fill="#f2ff59" opacity="0.9"/>
+    <circle cx="110" cy="40" r="32" fill="#f2ff59" opacity="0.7"/>
+    <circle cx="180" cy="40" r="32" fill="#f2ff59" opacity="0.5"/>
+    <circle cx="250" cy="40" r="32" fill="#f2ff59" opacity="0.3"/>
+    <circle cx="320" cy="40" r="32" fill="#c2bfb9" opacity="0.2" stroke="#c2bfb9" stroke-width="2" stroke-dasharray="4 4"/>
+    <text x="320" y="46" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="700" fill="#c2bfb9">+</text>
+  </g>
+  <text x="240" y="220" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="300" fill="#c2bfb9">Shared workspace • Pooled credits</text>
+</svg>

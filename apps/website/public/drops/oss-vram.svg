@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 270" fill="none">
+  <rect width="480" height="270" fill="#211927"/>
+  <text x="240" y="40" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#c2bfb9" letter-spacing="2">VRAM IMPROVEMENTS</text>
+  <g transform="translate(80, 80)">
+    <rect width="320" height="24" rx="4" fill="#f2ff59" opacity="0.1"/>
+    <rect width="280" height="24" rx="4" fill="#f2ff59" opacity="0.4"/>
+    <text x="160" y="17" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#211927" font-weight="700">BEFORE: 22GB / 24GB</text>
+  </g>
+  <g transform="translate(80, 130)">
+    <rect width="320" height="24" rx="4" fill="#f2ff59" opacity="0.1"/>
+    <rect width="180" height="24" rx="4" fill="#f2ff59"/>
+    <text x="160" y="17" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#211927" font-weight="700">AFTER: 14GB / 24GB</text>
+  </g>
+  <text x="240" y="210" text-anchor="middle" font-family="monospace" font-size="32" font-weight="700" fill="#f2ff59">-36%</text>
+</svg>

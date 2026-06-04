@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 270" fill="none">
+  <rect width="480" height="270" fill="#211927"/>
+  <text x="240" y="40" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="600" fill="#c2bfb9" letter-spacing="2">COMFY MCP</text>
+  <circle cx="240" cy="155" r="44" fill="#f2ff59"/>
+  <text x="240" y="165" text-anchor="middle" font-family="sans-serif" font-size="20" font-weight="800" fill="#211927">MCP</text>
+  <g stroke="#f2ff59" stroke-width="2" opacity="0.6">
+    <line x1="240" y1="155" x2="120" y2="100"/>
+    <line x1="240" y1="155" x2="120" y2="210"/>
+    <line x1="240" y1="155" x2="360" y2="100"/>
+    <line x1="240" y1="155" x2="360" y2="210"/>
+  </g>
+  <g fill="#f2ff59" opacity="0.4">
+    <circle cx="120" cy="100" r="14"/>
+    <circle cx="120" cy="210" r="14"/>
+    <circle cx="360" cy="100" r="14"/>
+    <circle cx="360" cy="210" r="14"/>
+  </g>
+</svg>
