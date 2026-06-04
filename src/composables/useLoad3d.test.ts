@@ -1878,16 +1878,7 @@ describe('useLoad3d', () => {
       expect(isLoad3dSceneDirty(mockNode)).toBe(true)
     })
 
-    it('recordingStatusChange marks dirty when a recording starts', async () => {
-      let recordingStatusHandler: ((value: boolean) => void) | undefined
-      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
-        (event: string, handler: unknown) => {
-          if (event === 'recordingStatusChange') {
-            recordingStatusHandler = handler as (value: boolean) => void
-          }
-        }
-      )
-
+    it('handleStartRecording marks dirty so an in-progress recording forces a re-capture', async () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
@@ -1896,8 +1887,9 @@ describe('useLoad3d', () => {
       setLoad3dOutputCache(mockNode, fakeCache)
       expect(isLoad3dSceneDirty(mockNode)).toBe(false)
 
-      recordingStatusHandler!(true)
+      await composable.handleStartRecording()
 
+      expect(mockLoad3d.startRecording).toHaveBeenCalledTimes(1)
       expect(isLoad3dSceneDirty(mockNode)).toBe(true)
     })
 

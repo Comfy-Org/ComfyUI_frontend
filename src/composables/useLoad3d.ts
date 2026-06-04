@@ -618,6 +618,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     if (load3d) {
       await load3d.startRecording()
       isRecording.value = true
+      markDirty()
     }
   }
 
@@ -951,8 +952,6 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     },
     recordingStatusChange: (value: boolean) => {
       isRecording.value = value
-
-      if (value) markDirty()
 
       if (!value && load3d) {
         recordingDuration.value = load3d.getRecordingDuration()
