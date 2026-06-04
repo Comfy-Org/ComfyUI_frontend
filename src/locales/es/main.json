@@ -2077,7 +2077,6 @@
     "reloadingModel": "Recargando modelo...",
     "removeBackgroundImage": "Eliminar imagen de fondo",
     "resizeNodeMatchOutput": "Redimensionar nodo para coincidir con la salida",
-    "retainViewOnReload": "Bloquear la vista de la cámara al recargar el modelo",
     "scene": "Escena",
     "showGrid": "Mostrar cuadrícula",
     "showSkeleton": "Mostrar esqueleto",

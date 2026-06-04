@@ -29,6 +29,9 @@ type Matrix = number[][]
 type Load3dPreviewOutput = NodeOutputWith<{
   result?: [string?, CameraState?, string?, Matrix?, Matrix?]
 }>
+type Preview3DAdvancedOutput = NodeOutputWith<{
+  result?: [string?, CameraState?, Model3DInfo?]
+}>
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { api } from '@/scripts/api'
 import { ComfyApp, app } from '@/scripts/app'
@@ -269,7 +272,10 @@ useExtensionService().registerExtension({
   getCustomWidgets() {
     return {
       LOAD_3D(node) {
-        if (node.constructor.comfyClass === 'Load3D') {
+        const hasModelFileWidget = node.widgets?.some(
+          (w) => w.name === 'model_file'
+        )
+        if (hasModelFileWidget) {
           const fileInput = createFileInput(SUPPORTED_EXTENSIONS_ACCEPT, false)
 
           node.properties['Resource Folder'] = ''
@@ -646,6 +652,159 @@ useExtensionService().registerExtension({
                 )
               })
           }
+        }
+      }
+    })
+  }
+})
+
+useExtensionService().registerExtension({
+  name: 'Comfy.Preview3DAdvanced',
+
+  getNodeMenuItems(node: LGraphNode): (IContextMenuValue | null)[] {
+    if (node.constructor.comfyClass !== 'Preview3DAdvanced') return []
+
+    const load3d = useLoad3dService().getLoad3d(node)
+    if (!load3d) return []
+
+    if (load3d.isSplatModel()) return []
+
+    return createExportMenuItems(load3d)
+  },
+
+  async nodeCreated(node: LGraphNode) {
+    if (node.constructor.comfyClass !== 'Preview3DAdvanced') return
+
+    const [oldWidth, oldHeight] = node.size
+
+    node.setSize([Math.max(oldWidth, 400), Math.max(oldHeight, 550)])
+
+    await nextTick()
+
+    const onExecuted = node.onExecuted
+
+    useLoad3d(node).onLoad3dReady((load3d) => {
+      const lastTimeModelFile = node.properties['Last Time Model File']
+      if (!lastTimeModelFile) return
+
+      const config = new Load3DConfiguration(load3d, node.properties)
+      config.configureForSaveMesh('output', lastTimeModelFile as string, {
+        silentOnNotFound: true
+      })
+
+      const cameraConfig = node.properties['Camera Config'] as
+        | CameraConfig
+        | undefined
+      const cameraState = cameraConfig?.state
+      if (!cameraState) return
+
+      const targetGeneration = load3d.currentLoadGeneration
+      void load3d
+        .whenLoadIdle()
+        .then(() => {
+          if (load3d.currentLoadGeneration !== targetGeneration) return
+          load3d.setCameraState(cameraState)
+          load3d.forceRender()
+        })
+        .catch((error) => {
+          console.error(
+            'Failed to restore camera state for Preview3DAdvanced:',
+            error
+          )
+        })
+    })
+
+    useLoad3d(node).waitForLoad3d((load3d) => {
+      const sceneWidget = node.widgets?.find((w) => w.name === 'image')
+      if (!sceneWidget) return
+
+      const resolveLoad3d = () => nodeToLoad3dMap.get(node) ?? load3d
+
+      const widthWidget = node.widgets?.find((w) => w.name === 'width')
+      const heightWidget = node.widgets?.find((w) => w.name === 'height')
+      if (widthWidget && heightWidget) {
+        load3d.setTargetSize(
+          widthWidget.value as number,
+          heightWidget.value as number
+        )
+        widthWidget.callback = (value: number) => {
+          resolveLoad3d().setTargetSize(value, heightWidget.value as number)
+        }
+        heightWidget.callback = (value: number) => {
+          resolveLoad3d().setTargetSize(widthWidget.value as number, value)
+        }
+      }
+
+      sceneWidget.serializeValue = async () => {
+        const currentLoad3d = nodeToLoad3dMap.get(node)
+        if (!currentLoad3d) {
+          console.error('No load3d instance found for node')
+          return null
+        }
+
+        const cameraConfig: CameraConfig = (node.properties['Camera Config'] as
+          | CameraConfig
+          | undefined) || {
+          cameraType: currentLoad3d.getCurrentCameraType(),
+          fov: currentLoad3d.cameraManager.perspectiveCamera.fov
+        }
+        cameraConfig.state = currentLoad3d.getCameraState()
+        node.properties['Camera Config'] = cameraConfig
+
+        const modelInfo = currentLoad3d.getModelInfo()
+        const model_3d_info: Model3DInfo = modelInfo ? [modelInfo] : []
+
+        return {
+          image: '',
+          mask: '',
+          normal: '',
+          camera_info: cameraConfig.state || null,
+          recording: '',
+          model_3d_info
+        }
+      }
+
+      node.onExecuted = function (output: Preview3DAdvancedOutput) {
+        onExecuted?.call(this, output)
+
+        const result = output.result
+        const filePath = result?.[0]
+
+        if (!filePath) {
+          const msg = t('toastMessages.unableToGetModelFilePath')
+          console.error(msg)
+          useToastStore().addAlert(msg)
+          return
+        }
+
+        const normalizedPath = filePath.replaceAll('\\', '/')
+        node.properties['Last Time Model File'] = normalizedPath
+
+        const currentLoad3d = resolveLoad3d()
+        const config = new Load3DConfiguration(currentLoad3d, node.properties)
+        config.configureForSaveMesh('output', normalizedPath, {
+          silentOnNotFound: true
+        })
+
+        const cameraState = result?.[1]
+        const modelTransform = result?.[2]?.[0]
+        if (cameraState || modelTransform) {
+          const targetGeneration = currentLoad3d.currentLoadGeneration
+          void currentLoad3d
+            .whenLoadIdle()
+            .then(() => {
+              if (currentLoad3d.currentLoadGeneration !== targetGeneration)
+                return
+              if (cameraState) currentLoad3d.setCameraState(cameraState)
+              if (modelTransform)
+                currentLoad3d.applyModelTransform(modelTransform)
+            })
+            .catch((error) => {
+              console.error(
+                'Failed to apply input camera_info / model_3d_info from Preview3DAdvanced:',
+                error
+              )
+            })
         }
       }
     })

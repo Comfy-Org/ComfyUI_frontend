@@ -2077,7 +2077,6 @@
     "reloadingModel": "モデルを再読み込み中...",
     "removeBackgroundImage": "背景画像を削除",
     "resizeNodeMatchOutput": "ノードを出力に合わせてリサイズ",
-    "retainViewOnReload": "モデルの再読み込み時にカメラビューを固定する",
     "scene": "シーン",
     "showGrid": "グリッドを表示",
     "showSkeleton": "スケルトンを表示",

@@ -71,7 +71,6 @@
         v-if="showCameraControls"
         v-model:camera-type="cameraConfig!.cameraType"
         v-model:fov="cameraConfig!.fov"
-        v-model:retain-view-on-reload="cameraConfig!.retainViewOnReload"
       />
 
       <div v-if="showLightControls" class="flex flex-col">

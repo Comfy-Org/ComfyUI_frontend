@@ -2077,7 +2077,6 @@
     "reloadingModel": "重新載入模型中...",
     "removeBackgroundImage": "移除背景圖片",
     "resizeNodeMatchOutput": "調整節點以符合輸出",
-    "retainViewOnReload": "鎖定相機視角於模型重新載入時保持不變",
     "scene": "場景",
     "showGrid": "顯示格線",
     "showSkeleton": "顯示骨架",
