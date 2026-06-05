@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import type { Locale } from '../../i18n/translations'
 import BrandButton from '../common/BrandButton.vue'
 import ProductHeroBadge from '../common/ProductHeroBadge.vue'
+import VideoPlayer from '../common/VideoPlayer.vue'
 import CheckIcon from '../icons/CheckIcon.vue'
 
 type Cta = {
@@ -11,7 +13,15 @@ type Cta = {
   target?: '_blank' | '_self' | '_parent' | '_top'
 }
 
+type VideoTrack = {
+  src: string
+  kind: 'subtitles' | 'captions' | 'descriptions'
+  srclang: string
+  label: string
+}
+
 const {
+  locale = 'en',
   badgeText,
   badgeLogoSrc,
   badgeLogoAlt,
@@ -24,8 +34,16 @@ const {
   imageAlt = '',
   imageWidth = 800,
   imageHeight = 600,
-  imagePosition = 'right'
+  imagePosition = 'right',
+  videoSrc,
+  videoPoster,
+  videoTracks = [],
+  videoAutoplay = false,
+  videoLoop = false,
+  videoMinimal = false,
+  videoHideControls = false
 } = defineProps<{
+  locale?: Locale
   badgeText: string
   badgeLogoSrc?: string
   badgeLogoAlt?: string
@@ -34,11 +52,18 @@ const {
   features?: string[]
   primaryCta: Cta
   secondaryCta?: Cta
-  imageSrc: string
+  imageSrc?: string
   imageAlt?: string
   imageWidth?: number
   imageHeight?: number
   imagePosition?: 'left' | 'right'
+  videoSrc?: string
+  videoPoster?: string
+  videoTracks?: VideoTrack[]
+  videoAutoplay?: boolean
+  videoLoop?: boolean
+  videoMinimal?: boolean
+  videoHideControls?: boolean
 }>()
 </script>
 
@@ -59,7 +84,7 @@ const {
       />
 
       <h1
-        class="text-primary-comfy-canvas mt-8 text-2xl leading-[125%] font-light tracking-[-1.44px] md:text-4xl lg:text-5xl"
+        class="mt-8 text-2xl leading-[125%] font-light tracking-[-1.44px] text-primary-comfy-canvas md:text-4xl lg:text-5xl"
       >
         <template v-if="titleHighlight">
           <span class="text-primary-warm-white">{{ titleHighlight }}</span>
@@ -72,7 +97,7 @@ const {
         <li
           v-for="feature in features"
           :key="feature"
-          class="text-primary-comfy-canvas flex items-start gap-3 text-base"
+          class="flex items-start gap-3 text-base text-primary-comfy-canvas"
         >
           <CheckIcon class="text-primary-comfy-yellow mt-1 size-5 shrink-0" />
           {{ feature }}
@@ -102,7 +127,19 @@ const {
     </div>
 
     <div class="w-full lg:flex-1">
+      <VideoPlayer
+        v-if="videoSrc"
+        :locale
+        :src="videoSrc"
+        :poster="videoPoster"
+        :tracks="videoTracks"
+        :autoplay="videoAutoplay"
+        :loop="videoLoop"
+        :minimal="videoMinimal"
+        :hide-controls="videoHideControls"
+      />
       <img
+        v-else-if="imageSrc"
         :src="imageSrc"
         :alt="imageAlt"
         :width="imageWidth"

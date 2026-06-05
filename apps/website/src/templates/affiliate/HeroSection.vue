@@ -22,7 +22,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       label: t('affiliate.hero.apply', locale),
       href: '#apply'
     }"
-    image-src="https://media.comfy.org/website/cloud/audience-team.webp"
+    video-autoplay
+    video-loop
+    video-hide-controls
+    video-src="https://media.comfy.org/website/affiliates/rainlit-ronin_compressed.mp4"
     :image-alt="t('affiliate.hero.imageAlt', locale)"
   />
 </template>

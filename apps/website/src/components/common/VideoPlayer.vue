@@ -28,14 +28,18 @@ const {
   poster,
   tracks = [],
   autoplay = false,
-  minimal = false
+  loop = false,
+  minimal = false,
+  hideControls = false
 } = defineProps<{
   locale?: Locale
   src?: string
   poster?: string
   tracks?: VideoTrack[]
   autoplay?: boolean
+  loop?: boolean
   minimal?: boolean
+  hideControls?: boolean
 }>()
 
 const playerEl = useTemplateRef<HTMLDivElement>('playerEl')
@@ -200,8 +204,9 @@ function toggleFullscreen() {
       crossorigin="anonymous"
       playsinline
       :autoplay
+      :loop
       muted
-      @click="playing = !playing"
+      @click="hideControls ? undefined : (playing = !playing)"
     >
       <track
         v-for="track in tracks"
@@ -215,7 +220,7 @@ function toggleFullscreen() {
 
     <!-- Minimal centered play/pause button -->
     <div
-      v-if="minimal && src"
+      v-if="minimal && src && !hideControls"
       :class="
         cn(
           'absolute inset-0 flex items-center justify-center transition-opacity duration-300',
@@ -235,7 +240,7 @@ function toggleFullscreen() {
 
     <!-- Bottom control bar -->
     <div
-      v-if="src && !minimal"
+      v-if="src && !minimal && !hideControls"
       :class="
         cn(
           'absolute inset-x-0 bottom-0 flex items-center gap-3 p-4 transition-opacity duration-300 lg:px-6 lg:py-5',
@@ -285,7 +290,7 @@ function toggleFullscreen() {
         @click="toggleFullscreen"
       >
         <svg
-          class="text-primary-comfy-ink size-3.5 lg:size-4"
+          class="size-3.5 text-primary-comfy-ink lg:size-4"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -331,7 +336,7 @@ function toggleFullscreen() {
         <!-- Muted icon -->
         <svg
           v-if="muted"
-          class="text-primary-comfy-ink size-3.5 lg:size-4"
+          class="size-3.5 text-primary-comfy-ink lg:size-4"
           viewBox="0 0 24 24"
           fill="currentColor"
           stroke="currentColor"
@@ -349,7 +354,7 @@ function toggleFullscreen() {
         <!-- Unmuted icon -->
         <svg
           v-else
-          class="text-primary-comfy-ink size-3.5 lg:size-4"
+          class="size-3.5 text-primary-comfy-ink lg:size-4"
           viewBox="0 0 24 24"
           fill="currentColor"
           stroke="currentColor"
