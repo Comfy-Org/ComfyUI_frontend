@@ -7,6 +7,8 @@ import { createI18n } from 'vue-i18n'
 import TabErrors from './TabErrors.vue'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import type { MissingNodeType } from '@/types/comfy'
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -36,6 +38,16 @@ vi.mock('@/services/litegraphService', () => ({
   }))
 }))
 
+vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+  downloadModel: vi.fn(),
+  fetchModelMetadata: vi.fn().mockResolvedValue({
+    fileSize: null,
+    gatedRepoUrl: null
+  }),
+  isModelDownloadable: vi.fn(() => true),
+  toBrowsableUrl: vi.fn((url: string) => url)
+}))
+
 describe('TabErrors.vue', () => {
   let i18n: ReturnType<typeof createI18n>
 
@@ -57,6 +69,18 @@ describe('TabErrors.vue', () => {
               downloadAll: 'Download all',
               refresh: 'Refresh',
               refreshing: 'Refreshing missing models.'
+            },
+            missingMedia: {
+              missingMediaTitle: 'Missing Inputs',
+              image: 'Images',
+              uploadFile: 'Upload {type}',
+              useFromLibrary: 'Use from Library',
+              confirmSelection: 'Confirm selection',
+              locateNode: 'Locate node',
+              expandNodes: 'Show referencing nodes',
+              collapseNodes: 'Hide referencing nodes',
+              cancelSelection: 'Cancel selection',
+              or: 'OR'
             }
           }
         }
@@ -280,6 +304,85 @@ describe('TabErrors.vue', () => {
     await user.click(screen.getByTestId('missing-model-header-refresh'))
 
     expect(missingModelStore.refreshMissingModels).toHaveBeenCalled()
+  })
+
+  it('renders missing model display message below the section title', () => {
+    const missingModel = {
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'local-only.safetensors',
+      directory: 'checkpoints',
+      isMissing: true,
+      isAssetSupported: true
+    } satisfies MissingModelCandidate
+
+    renderComponent({
+      missingModel: {
+        missingModelCandidates: [missingModel]
+      }
+    })
+
+    expect(screen.getByText('Missing Models (1)')).toBeInTheDocument()
+    expect(
+      screen.getByText('Download a model, or open the node to replace it.')
+    ).toBeInTheDocument()
+  })
+
+  it('renders missing media display message below the section title', () => {
+    const missingMedia = {
+      nodeId: '3',
+      nodeType: 'LoadImage',
+      widgetName: 'image',
+      mediaType: 'image',
+      name: 'portrait.png',
+      isMissing: true
+    } satisfies MissingMediaCandidate
+
+    renderComponent({
+      missingMedia: {
+        missingMediaCandidates: [missingMedia]
+      }
+    })
+
+    expect(screen.getByText('Missing Inputs (1)')).toBeInTheDocument()
+    expect(
+      screen.getByText('A required media input has no file selected.')
+    ).toBeInTheDocument()
+  })
+
+  it('renders swap node rows below the section display message', () => {
+    const swapNode = {
+      type: 'OldSampler',
+      nodeId: '1',
+      isReplaceable: true,
+      replacement: {
+        old_node_id: 'OldSampler',
+        new_node_id: 'KSampler',
+        old_widget_ids: null,
+        input_mapping: null,
+        output_mapping: null
+      }
+    } satisfies MissingNodeType
+
+    renderComponent({
+      missingNodesError: {
+        missingNodesError: {
+          message: 'Missing Node Packs',
+          nodeTypes: [swapNode]
+        }
+      }
+    })
+
+    expect(screen.getByText('Swap Nodes (1)')).toBeInTheDocument()
+    expect(
+      screen.getByText('Some nodes can be replaced with alternatives')
+    ).toBeInTheDocument()
+    expect(screen.getByText('OldSampler (1)')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Replace Node/ })
+    ).toBeInTheDocument()
   })
 
   it('keeps missing model Refresh in the card actions when models are downloadable', () => {
