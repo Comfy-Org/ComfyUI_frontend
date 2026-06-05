@@ -17,9 +17,26 @@ import {
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { CreditStop } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 
-const { disabled = false, class: rootClass } = defineProps<{
+const {
+  disabled = false,
+  class: rootClass,
+  stops = TEAM_PLAN_CREDIT_STOPS,
+  defaultStopIndex = DEFAULT_TEAM_PLAN_STOP_INDEX
+} = defineProps<{
   disabled?: boolean
   class?: HTMLAttributes['class']
+  /**
+   * The fixed credit stops the slider snaps to. Defaults to the hardcoded
+   * DES-197 set; pass the backend-sourced stops once the contract lands —
+   * map `GET /api/billing/plans → team_credit_stops.stops` to `CreditStop[]`
+   * (credits, the pre-discount `usd`, and `discountPercentYearly`).
+   */
+  stops?: readonly CreditStop[]
+  /**
+   * Stop selected when the bound value matches none (e.g. first render).
+   * Maps to `team_credit_stops.default_stop_index`. Defaults to DES-197 ($700).
+   */
+  defaultStopIndex?: number
 }>()
 
 const emit = defineEmits<{
@@ -27,19 +44,22 @@ const emit = defineEmits<{
   change: [stop: { index: number; usd: number; credits: number }]
 }>()
 
-/** v-model carries the selected USD value (one of the TEAM_PLAN_CREDIT_STOPS). */
+/**
+ * v-model carries the selected USD value (one of the `stops`). The literal
+ * default keeps `defineModel` statically analyzable; when custom `stops` are
+ * passed without a matching v-model, `selectedIndex` falls back to
+ * `defaultStopIndex`, so the displayed stop is still correct.
+ */
 const usd = defineModel<number>({
   default: TEAM_PLAN_CREDIT_STOPS[DEFAULT_TEAM_PLAN_STOP_INDEX].usd
 })
 
 const selectedIndex = computed(() => {
-  const i = TEAM_PLAN_CREDIT_STOPS.findIndex((stop) => stop.usd === usd.value)
-  return i === -1 ? DEFAULT_TEAM_PLAN_STOP_INDEX : i
+  const i = stops.findIndex((stop) => stop.usd === usd.value)
+  return i === -1 ? defaultStopIndex : i
 })
 
-const current = computed<CreditStop>(
-  () => TEAM_PLAN_CREDIT_STOPS[selectedIndex.value]
-)
+const current = computed<CreditStop>(() => stops[selectedIndex.value])
 
 // Yearly commitment (per DES-197): the discount applies to the monthly figure.
 // The card shows the discounted monthly price, the struck pre-discount price,
@@ -82,14 +102,14 @@ const displayBilledYearly = computed(() => displayMonthly.value * 12)
 const sliderModel = computed<number[]>({
   get: () => [selectedIndex.value],
   set: ([index]) => {
-    const stop = TEAM_PLAN_CREDIT_STOPS[index]
+    const stop = stops[index]
     if (!stop) return
     usd.value = stop.usd
     emit('change', { index, usd: stop.usd, credits: stop.credits })
   }
 })
 
-const lastIndex = TEAM_PLAN_CREDIT_STOPS.length - 1
+const lastIndex = computed(() => stops.length - 1)
 
 const formatUsd = (value: number) => `$${value.toLocaleString('en-US')}`
 const formatCreditsCompact = (value: number) =>
@@ -165,7 +185,7 @@ const { t } = useI18n()
       class="m-0 flex list-none justify-between p-0"
     >
       <li
-        v-for="(stop, i) in TEAM_PLAN_CREDIT_STOPS"
+        v-for="(stop, i) in stops"
         :key="stop.usd"
         :data-selected="i === selectedIndex ? '' : undefined"
         :class="

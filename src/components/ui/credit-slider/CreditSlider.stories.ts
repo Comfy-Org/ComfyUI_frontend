@@ -50,3 +50,61 @@ export const Disabled: Story = {
     template: '<CreditSlider v-model="value" :disabled="args.disabled" />'
   })
 }
+
+// Sample `GET /api/billing/plans → team_credit_stops` payload (DES-197 yearly).
+// In production this comes from the API; here it shows the stops being driven
+// entirely through props rather than the hardcoded default constant.
+const apiTeamCreditStops = {
+  default_stop_index: 2,
+  stops: [
+    {
+      id: 'team_200',
+      credits: 42_200,
+      yearly: { price_cents: 20_000, discount_percent: 0 }
+    },
+    {
+      id: 'team_400',
+      credits: 84_400,
+      yearly: { price_cents: 38_000, discount_percent: 5 }
+    },
+    {
+      id: 'team_700',
+      credits: 147_700,
+      yearly: { price_cents: 63_000, discount_percent: 10 }
+    },
+    {
+      id: 'team_1400',
+      credits: 295_400,
+      yearly: { price_cents: 119_000, discount_percent: 15 }
+    },
+    {
+      id: 'team_2500',
+      credits: 527_500,
+      yearly: { price_cents: 200_000, discount_percent: 20 }
+    }
+  ]
+}
+
+// Reference adapter (FE-934 will own this in the data layer): API → CreditStop[].
+// The pre-discount list price is recovered as discounted / (1 - discount).
+const mappedStops = apiTeamCreditStops.stops.map((s) => ({
+  credits: s.credits,
+  discountPercentYearly: s.yearly.discount_percent,
+  usd: Math.round(
+    s.yearly.price_cents / 100 / (1 - s.yearly.discount_percent / 100)
+  )
+}))
+
+export const BackendDrivenStops: Story = {
+  name: 'Backend-driven stops (props)',
+  render: (args) => ({
+    components: { CreditSlider },
+    setup() {
+      const defaultStopIndex = apiTeamCreditStops.default_stop_index
+      const value = ref(mappedStops[defaultStopIndex].usd)
+      return { args, value, mappedStops, defaultStopIndex }
+    },
+    template:
+      '<CreditSlider v-model="value" :stops="mappedStops" :default-stop-index="defaultStopIndex" :disabled="args.disabled" />'
+  })
+}
