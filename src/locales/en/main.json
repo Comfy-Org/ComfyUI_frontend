@@ -2413,6 +2413,7 @@
     "member": "member",
     "usdPerMonth": "USD / mo",
     "usdPerMonthPerMember": "USD / mo / member",
+    "creditSliderSave": "Save {percent}% ({amount})",
     "renewsDate": "Renews {date}",
     "expiresDate": "Expires {date}",
     "manageSubscription": "Manage subscription",

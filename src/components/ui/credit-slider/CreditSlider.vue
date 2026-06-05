@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import BadgePill from '@/components/common/BadgePill.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
@@ -36,6 +37,18 @@ const current = computed<CreditStop>(
   () => TEAM_PLAN_CREDIT_STOPS[selectedIndex.value]
 )
 
+// Yearly commitment (per DES-197): the discount applies to the monthly figure.
+// The card shows the discounted monthly price, the struck pre-discount price,
+// the saving, and the annual total.
+const discountedMonthly = computed(() =>
+  Math.round(
+    current.value.usd * (1 - current.value.discountPercentYearly / 100)
+  )
+)
+const saveAmount = computed(() => current.value.usd - discountedMonthly.value)
+const billedYearly = computed(() => discountedMonthly.value * 12)
+const hasDiscount = computed(() => current.value.discountPercentYearly > 0)
+
 /**
  * Bridge the discrete stop index (0..n-1) to the reka-ui slider's `number[]`
  * model. Driving the slider in index space with `step = 1` guarantees the
@@ -52,28 +65,57 @@ const sliderModel = computed<number[]>({
 })
 
 const lastIndex = TEAM_PLAN_CREDIT_STOPS.length - 1
-const formatNumber = (value: number) => value.toLocaleString('en-US')
+
+const formatUsd = (value: number) => `$${value.toLocaleString('en-US')}`
+const formatCreditsCompact = (value: number) =>
+  new Intl.NumberFormat('en-US', {
+    notation: 'compact',
+    maximumFractionDigits: 1
+  }).format(value)
 
 const { t } = useI18n()
 </script>
 
 <template>
   <div :class="cn('flex w-full flex-col gap-3', rootClass)">
-    <!-- Live selection -->
-    <div class="flex items-baseline justify-between">
-      <span class="text-2xl font-semibold text-base-foreground">
-        ${{ formatNumber(current.usd) }}
-        <span class="text-sm font-normal text-muted-foreground">{{
-          t('subscription.perMonth')
-        }}</span>
-      </span>
-      <span class="text-secondary-foreground flex items-center gap-1 text-sm">
-        <i
-          class="icon-[comfy--credits] size-4 bg-amber-400"
-          aria-hidden="true"
+    <!-- Price: discounted monthly + struck pre-discount + save badge -->
+    <div class="flex flex-col gap-1">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="flex items-baseline gap-1.5">
+          <span
+            class="text-2xl font-semibold text-base-foreground"
+            data-testid="credit-slider-price"
+          >
+            {{ formatUsd(discountedMonthly) }}
+          </span>
+          <span
+            v-if="hasDiscount"
+            class="text-base text-muted-foreground line-through"
+            data-testid="credit-slider-original-price"
+          >
+            {{ formatUsd(current.usd) }}
+          </span>
+          <span class="text-sm text-muted-foreground">
+            {{ t('subscription.usdPerMonth') }}
+          </span>
+        </span>
+        <BadgePill
+          v-if="hasDiscount"
+          data-testid="credit-slider-save"
+          :text="
+            t('subscription.creditSliderSave', {
+              percent: current.discountPercentYearly,
+              amount: formatUsd(saveAmount)
+            })
+          "
         />
-        {{ formatNumber(current.credits) }} {{ t('credits.credits') }}
-      </span>
+      </div>
+      <p
+        class="m-0 text-sm text-muted-foreground"
+        data-testid="credit-slider-billed-yearly"
+      >
+        {{ t('subscription.billedYearly', { total: formatUsd(billedYearly) }) }}
+      </p>
     </div>
 
     <!-- Discrete slider: snaps to the 5 fixed DES-197 stops -->
@@ -85,18 +127,35 @@ const { t } = useI18n()
       :disabled="disabled"
     />
 
-    <!-- Stop labels; the selected stop is emphasized -->
-    <div
+    <!-- Credit stop labels; the selected stop is emphasized -->
+    <ol
       data-testid="credit-slider-stops"
-      class="text-xxs flex justify-between text-muted-foreground"
+      class="m-0 flex list-none justify-between p-0"
     >
-      <span
+      <li
         v-for="(stop, i) in TEAM_PLAN_CREDIT_STOPS"
         :key="stop.usd"
-        :class="cn(i === selectedIndex && 'font-semibold text-base-foreground')"
+        :data-selected="i === selectedIndex ? '' : undefined"
+        :class="
+          cn(
+            'flex items-center gap-1 text-xs',
+            i === selectedIndex
+              ? 'font-semibold text-base-foreground'
+              : 'text-muted-foreground'
+          )
+        "
       >
-        ${{ formatNumber(stop.usd) }}
-      </span>
-    </div>
+        <i
+          :class="
+            cn(
+              'icon-[comfy--credits] size-3 shrink-0',
+              i === selectedIndex ? 'bg-amber-400' : 'bg-muted-foreground'
+            )
+          "
+          aria-hidden="true"
+        />
+        {{ formatCreditsCompact(stop.credits) }}
+      </li>
+    </ol>
   </div>
 </template>

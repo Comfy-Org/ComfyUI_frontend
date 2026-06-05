@@ -14,8 +14,11 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      subscription: { perMonth: '/ month' },
-      credits: { credits: 'Credits' }
+      subscription: {
+        usdPerMonth: 'USD / mo',
+        billedYearly: '{total} Billed yearly',
+        creditSliderSave: 'Save {percent}% ({amount})'
+      }
     }
   }
 })
@@ -83,12 +86,39 @@ describe('CreditSlider', () => {
     })
   })
 
-  it('renders all five fixed USD stop labels', async () => {
+  it('shows the discounted price, struck original, save badge and yearly total (DES-197)', async () => {
+    renderSlider() // default $700 stop → 10% yearly discount
+    await flush()
+
+    expect(screen.getByTestId('credit-slider-price')).toHaveTextContent('$630')
+    expect(
+      screen.getByTestId('credit-slider-original-price')
+    ).toHaveTextContent('$700')
+    expect(screen.getByTestId('credit-slider-save')).toHaveTextContent(
+      'Save 10% ($70)'
+    )
+    expect(screen.getByTestId('credit-slider-billed-yearly')).toHaveTextContent(
+      '$7,560'
+    )
+  })
+
+  it('hides the discount UI at the 0% stop ($200)', async () => {
+    renderSlider({ modelValue: 200 })
+    await flush()
+
+    expect(screen.getByTestId('credit-slider-price')).toHaveTextContent('$200')
+    expect(
+      screen.queryByTestId('credit-slider-original-price')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('credit-slider-save')).not.toBeInTheDocument()
+  })
+
+  it('renders all five fixed credit stop labels', async () => {
     renderSlider({ modelValue: 700 })
     await flush()
 
     const stops = within(screen.getByTestId('credit-slider-stops'))
-    for (const label of ['$200', '$400', '$700', '$1,400', '$2,500']) {
+    for (const label of ['42.2K', '84.4K', '147.7K', '295.4K', '527.5K']) {
       expect(stops.getByText(label)).toBeInTheDocument()
     }
   })
