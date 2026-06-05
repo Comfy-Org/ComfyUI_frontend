@@ -193,7 +193,7 @@
     <div v-else class="flex flex-col items-stretch gap-4 xl:flex-row">
       <!-- Team plan card -->
       <div
-        class="flex flex-[2] flex-col gap-4 rounded-2xl border border-border-default bg-base-background p-6 shadow-[0_0_12px_rgba(0,0,0,0.1)]"
+        class="flex flex-2 flex-col gap-4 rounded-2xl border border-border-default bg-base-background p-6 shadow-[0_0_12px_rgba(0,0,0,0.1)]"
       >
         <div class="flex flex-col gap-1">
           <span
@@ -213,7 +213,9 @@
           <div class="flex flex-row items-center gap-2">
             <i class="pi pi-check text-success-foreground text-xs" />
             <span class="text-foreground text-sm font-normal">
-              {{ t('subscription.teamPlan.invite', { count: TEAM_MAX_MEMBERS }) }}
+              {{
+                t('subscription.teamPlan.invite', { count: TEAM_MAX_MEMBERS })
+              }}
             </span>
           </div>
           <div class="flex flex-row items-center gap-2">
@@ -254,7 +256,7 @@
             {{ t('subscription.enterprise.tagline') }}
           </span>
         </div>
-        <p class="m-0 flex-1 text-sm/relaxed text-foreground">
+        <p class="text-foreground m-0 flex-1 text-sm/relaxed">
           {{ t('subscription.enterprise.description') }}
         </p>
         <Button
@@ -463,8 +465,12 @@ const tiers: PricingTierConfig[] = [
   }
 ]
 
-const { plans: apiPlans, currentPlanSlug, fetchPlans, subscription } =
-  useBillingContext()
+const {
+  plans: apiPlans,
+  currentPlanSlug,
+  fetchPlans,
+  subscription
+} = useBillingContext()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 

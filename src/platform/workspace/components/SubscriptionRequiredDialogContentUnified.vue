@@ -24,9 +24,7 @@
     </Button>
 
     <div class="flex flex-col items-center gap-3">
-      <h2
-        class="m-0 font-inter text-2xl font-semibold text-base-foreground"
-      >
+      <h2 class="m-0 font-inter text-2xl font-semibold text-base-foreground">
         {{ $t('subscription.descriptionWorkspace') }}
       </h2>
     </div>
