@@ -105,8 +105,8 @@ const { t } = useI18n()
   <div :class="cn('flex w-full flex-col gap-3', rootClass)">
     <!-- Price: discounted monthly + struck pre-discount + save badge -->
     <div class="flex flex-col gap-1">
-      <div class="flex items-center gap-2">
-        <span class="flex items-baseline gap-1.5">
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span class="flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
           <span
             class="text-[2rem] leading-none font-semibold text-base-foreground"
             data-testid="credit-slider-price"

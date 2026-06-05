@@ -17,7 +17,10 @@ const meta: Meta<typeof CreditSlider> = {
   decorators: [
     (story) => ({
       components: { story },
-      template: '<div class="w-96"><story /></div>'
+      // Previews at the real layout width: the Figma "Team Plan" card column is
+      // 512px wide with 32px padding (DES-197), i.e. a 448px content area — the
+      // width the slider actually renders into inside PricingTableWorkspace.
+      template: '<div class="w-[512px] px-8"><story /></div>'
     })
   ]
 }
