@@ -88,4 +88,20 @@ describe('useSearchQueryTracking', () => {
     await flush()
     expect(hoisted.trackSearchQuery).not.toHaveBeenCalled()
   })
+
+  it('truncates query to 100 chars while preserving original length', async () => {
+    const query = ref('')
+    const results = ref<string[]>(['a'])
+    track(query, results)
+    const long = 'x'.repeat(250)
+    query.value = long
+    await flush()
+    expect(hoisted.trackSearchQuery).toHaveBeenCalledExactlyOnceWith({
+      surface: 'node_sidebar',
+      query: 'x'.repeat(100),
+      query_length: 250,
+      result_count: 1,
+      has_results: true
+    })
+  })
 })

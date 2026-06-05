@@ -6,6 +6,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { SearchSurface } from '@/platform/telemetry/types'
 
 const DEBOUNCE_MS = 500
+const MAX_QUERY_CHARS = 100
 
 /**
  * Fires `app:search_query` for the given surface, debounced 500ms.
@@ -14,6 +15,11 @@ const DEBOUNCE_MS = 500
  * suggestions, displayed results, etc.). The pending debounced call is
  * cancelled on scope dispose so a user who types-and-closes within the
  * window doesn't emit a stale event.
+ *
+ * The captured `query` is truncated to MAX_QUERY_CHARS to cap PII
+ * exposure (mirrors GTM provider's sanitizeProperties cap). `query_length`
+ * remains the full pre-truncation length so we keep the distributional
+ * signal.
  */
 export function useSearchQueryTracking(
   surface: SearchSurface,
@@ -26,7 +32,7 @@ export function useSearchQueryTracking(
     const count = results.value.length
     useTelemetry()?.trackSearchQuery({
       surface,
-      query: trimmed,
+      query: trimmed.slice(0, MAX_QUERY_CHARS),
       query_length: trimmed.length,
       result_count: count,
       has_results: count > 0
