@@ -165,10 +165,12 @@
               </Button>
             </template>
             <template #default="{ close }">
-              <div class="flex flex-col p-1">
-                <div
+              <div role="menu" class="flex flex-col p-1">
+                <button
+                  type="button"
+                  role="menuitem"
                   data-testid="assets-download-no-previews"
-                  class="my-1 flex cursor-pointer flex-row items-center gap-2 rounded-sm p-2 hover:bg-secondary-background-hover"
+                  class="my-1 flex w-full cursor-pointer flex-row items-center gap-2 rounded-sm p-2 text-left hover:bg-secondary-background-hover"
                   @click="
                     () => {
                       handleDownloadSelected(false)
@@ -180,10 +182,12 @@
                   <span class="text-sm">{{
                     $t('mediaAsset.selection.downloadSelected')
                   }}</span>
-                </div>
-                <div
+                </button>
+                <button
+                  type="button"
+                  role="menuitem"
                   data-testid="assets-download-with-previews"
-                  class="my-1 flex cursor-pointer flex-row items-center gap-2 rounded-sm p-2 hover:bg-secondary-background-hover"
+                  class="my-1 flex w-full cursor-pointer flex-row items-center gap-2 rounded-sm p-2 text-left hover:bg-secondary-background-hover"
                   @click="
                     () => {
                       handleDownloadSelected(true)
@@ -195,7 +199,7 @@
                   <span class="text-sm">{{
                     $t('mediaAsset.selection.downloadWithPreviews')
                   }}</span>
-                </div>
+                </button>
               </div>
             </template>
           </Popover>

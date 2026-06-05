@@ -382,11 +382,13 @@ export class AssetsSidebarTab extends SidebarTab {
 
   async downloadSelected() {
     await this.downloadSelectedButton.click()
+    await this.downloadNoPreviewsButton.waitFor({ state: 'visible' })
     await this.downloadNoPreviewsButton.click()
   }
 
   async downloadSelectedWithPreviews() {
     await this.downloadSelectedButton.click()
+    await this.downloadWithPreviewsButton.waitFor({ state: 'visible' })
     await this.downloadWithPreviewsButton.click()
   }
 
