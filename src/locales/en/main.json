@@ -3230,6 +3230,7 @@
       "downloadStarted": "Downloading {count} file... | Downloading {count} files...",
       "downloadsStarted": "Started downloading {count} file | Started downloading {count} files",
       "exportStarted": "Preparing ZIP export for {count} file | Preparing ZIP export for {count} files",
+      "exportStartedJobs": "Downloading assets from {count} job | Downloading assets from {count} jobs",
       "assetsDeletedSuccessfully": "{count} asset deleted successfully | {count} assets deleted successfully",
       "failedToDeleteAssets": "Failed to delete selected assets",
       "partialDeleteSuccess": "{succeeded} deleted successfully, {failed} failed",

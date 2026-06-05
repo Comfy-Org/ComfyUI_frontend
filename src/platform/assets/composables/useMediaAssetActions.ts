@@ -210,14 +210,27 @@ export function useMediaAssetActions() {
 
       assetExportStore.trackExport(result.task_id)
 
+      // For output exports the precise file count is unknown up front: the
+      // job's output count includes preview/temp assets, which are only in
+      // the archive when include_previews is set. Report the job count
+      // instead so the number is accurate; with previews the count already
+      // matches the archive.
+      const useJobCount = !includePreviews && jobIds.length > 0
+
       toast.add({
         severity: 'info',
         summary: t('exportToast.exportStarted'),
-        detail: t(
-          'mediaAsset.selection.exportStarted',
-          { count: fileCount },
-          fileCount
-        ),
+        detail: useJobCount
+          ? t(
+              'mediaAsset.selection.exportStartedJobs',
+              { count: jobIds.length },
+              jobIds.length
+            )
+          : t(
+              'mediaAsset.selection.exportStarted',
+              { count: fileCount },
+              fileCount
+            ),
         life: 3000
       })
     } catch (error) {

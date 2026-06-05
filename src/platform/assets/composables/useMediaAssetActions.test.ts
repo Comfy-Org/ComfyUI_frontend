@@ -753,7 +753,7 @@ describe('useMediaAssetActions', () => {
       })
     }
 
-    async function expectExportToastFileCount(count: number) {
+    async function expectExportToast(key: string, count: number) {
       await vi.waitFor(() => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
       })
@@ -761,58 +761,42 @@ describe('useMediaAssetActions', () => {
       const { add } = useToast()
       await vi.waitFor(() => {
         expect(add).toHaveBeenCalledWith(
-          expect.objectContaining({
-            detail: 'mediaAsset.selection.exportStarted'
-          })
+          expect.objectContaining({ detail: key })
         )
       })
 
       const { t } = useI18n()
-      expect(t).toHaveBeenCalledWith(
-        'mediaAsset.selection.exportStarted',
-        { count },
-        count
-      )
+      expect(t).toHaveBeenCalledWith(key, { count }, count)
     }
 
-    it('should report total file count, not job count, for multi-output jobs', async () => {
+    it('reports the job count for an output export without previews', async () => {
       const j1 = createOutputAsset('a1', 'img1.png', 'job1', 2)
       const j2 = createOutputAsset('a2', 'img2.png', 'job2', 4)
 
       const actions = useMediaAssetActions()
       actions.downloadAssets([j1, j2])
 
-      await expectExportToastFileCount(6)
+      await expectExportToast('mediaAsset.selection.exportStartedJobs', 2)
     })
 
-    it('should treat assets without outputCount as a single file', async () => {
-      const a1 = createOutputAsset('a1', 'img1.png', 'job1')
-      const a2 = createOutputAsset('a2', 'img2.png', 'job2')
-
-      const actions = useMediaAssetActions()
-      actions.downloadAssets([a1, a2])
-
-      await expectExportToastFileCount(2)
-    })
-
-    it('should mix multi-output and single-output assets correctly', async () => {
-      const j1 = createOutputAsset('a1', 'img1.png', 'job1', 3)
-      const a2 = createOutputAsset('a2', 'img2.png', 'job2')
-
-      const actions = useMediaAssetActions()
-      actions.downloadAssets([j1, a2])
-
-      await expectExportToastFileCount(4)
-    })
-
-    it('should only count duplicate job-level output selections once', async () => {
+    it('counts distinct jobs, not selected assets', async () => {
       const j1 = createOutputAsset('a1', 'img1.png', 'job1', 3)
       const j1Duplicate = createOutputAsset('a2', 'img2.png', 'job1', 3)
 
       const actions = useMediaAssetActions()
       actions.downloadAssets([j1, j1Duplicate])
 
-      await expectExportToastFileCount(3)
+      await expectExportToast('mediaAsset.selection.exportStartedJobs', 1)
+    })
+
+    it('reports the preview-inclusive file count when exporting with previews', async () => {
+      const j1 = createOutputAsset('a1', 'img1.png', 'job1', 2)
+      const j2 = createOutputAsset('a2', 'img2.png', 'job2', 4)
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([j1, j2], true)
+
+      await expectExportToast('mediaAsset.selection.exportStarted', 6)
     })
   })
 
