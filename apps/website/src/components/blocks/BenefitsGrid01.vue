@@ -19,7 +19,7 @@ defineProps<{
 <template>
   <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
     <h2
-      class="text-primary-comfy-canvas mb-12 text-center text-4xl font-light tracking-tight lg:mb-16 lg:text-6xl"
+      class="mb-12 text-center text-4xl font-light tracking-tight text-primary-comfy-canvas lg:mb-16 lg:text-6xl"
     >
       {{ heading }}
     </h2>
@@ -29,7 +29,7 @@ defineProps<{
         <article
           v-for="(benefit, index) in benefits"
           :key="benefit.id"
-          class="bg-primary-comfy-ink flex flex-col gap-6 rounded-4xl p-6 lg:p-8"
+          class="flex flex-col gap-6 rounded-4xl bg-primary-comfy-ink p-6 lg:p-8"
         >
           <span
             class="text-primary-comfy-yellow font-mono text-sm font-bold tracking-wide"
@@ -37,7 +37,7 @@ defineProps<{
             {{ String(index + 1).padStart(2, '0') }}
           </span>
           <p
-            class="text-primary-comfy-canvas text-base/relaxed font-medium lg:text-xl"
+            class="text-base/relaxed font-medium text-primary-comfy-canvas lg:text-xl"
           >
             {{ benefit.description }}
           </p>
@@ -51,6 +51,7 @@ defineProps<{
         :target="primaryCta.target"
         size="lg"
         class="px-20 py-4 text-base uppercase"
+        variant="outline"
       >
         {{ primaryCta.label }}
       </BrandButton>

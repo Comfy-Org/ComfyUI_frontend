@@ -3,6 +3,7 @@ import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
 import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
+import { externalLinks } from '@/config/routes.ts'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
@@ -20,7 +21,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     ]"
     :primary-cta="{
       label: t('affiliate.hero.apply', locale),
-      href: '#apply'
+      href: externalLinks.affiliateApplicationForm
     }"
     video-autoplay
     video-loop

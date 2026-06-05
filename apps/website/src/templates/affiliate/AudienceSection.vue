@@ -17,7 +17,6 @@ const criteria = affiliateAudienceCriteria.map((criterion) => ({
   <ChecklistSplit01
     :heading="t('affiliate.audience.heading', locale)"
     :subheading="t('affiliate.audience.subheading', locale)"
-    :eyebrow="t('affiliate.audience.eyebrow', locale)"
     :criteria="criteria"
   />
 </template>

@@ -7,7 +7,7 @@ type Criterion = { id: string; label: string }
 defineProps<{
   heading: string
   subheading: string
-  eyebrow: string
+  eyebrow?: string
   criteria: readonly Criterion[]
 }>()
 </script>
@@ -15,7 +15,7 @@ defineProps<{
 <template>
   <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
     <h2
-      class="text-primary-comfy-canvas mb-12 text-center text-4xl font-light tracking-tight lg:mb-16 lg:text-6xl"
+      class="mb-12 text-center text-4xl font-light tracking-tight text-primary-comfy-canvas lg:mb-16 lg:text-6xl"
     >
       {{ heading }}
     </h2>
@@ -24,13 +24,14 @@ defineProps<{
       <div
         class="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16"
       >
-        <h3 class="text-primary-comfy-canvas text-2xl font-light lg:text-4xl">
+        <h3 class="text-2xl font-light text-primary-comfy-canvas lg:text-4xl">
           {{ subheading }}
         </h3>
 
         <div class="flex flex-col gap-6">
           <span
-            class="text-primary-comfy-canvas text-xs font-bold tracking-widest uppercase"
+            v-if="eyebrow"
+            class="text-xs font-bold tracking-widest text-primary-comfy-canvas uppercase"
           >
             {{ eyebrow }}
           </span>
@@ -43,7 +44,7 @@ defineProps<{
               <CheckIcon
                 class="text-primary-comfy-yellow mt-0.5 size-5 shrink-0"
               />
-              <span class="text-primary-comfy-canvas text-sm lg:text-base">
+              <span class="text-sm text-primary-comfy-canvas lg:text-base">
                 {{ criterion.label }}
               </span>
             </li>
