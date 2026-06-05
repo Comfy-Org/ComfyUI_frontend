@@ -2509,6 +2509,25 @@
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
     "viewEnterprise": "View enterprise",
+    "planScope": {
+      "personal": "Personal",
+      "team": "Team"
+    },
+    "teamPlan": {
+      "name": "Team",
+      "tagline": "For teams that build together",
+      "invite": "Invite up to {count} teammates",
+      "sharedCredits": "Shared credit pool across the workspace",
+      "allProFeatures": "Everything in Pro",
+      "cta": "Subscribe to Team",
+      "comingSoon": "Team plan checkout is coming soon."
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "tagline": "For organizations at scale",
+      "description": "Custom credit volumes, dedicated support, security reviews, and invoicing for larger teams.",
+      "cta": "Contact sales"
+    },
     "freeTier": {
       "title": "You're on the Free plan",
       "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",

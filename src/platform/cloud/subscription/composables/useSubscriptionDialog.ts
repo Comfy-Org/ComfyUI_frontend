@@ -30,45 +30,52 @@ export const useSubscriptionDialog = () => {
   function showPricingTable(options?: { reason?: SubscriptionDialogReason }) {
     if (!isCloud) return
 
-    const useWorkspaceVariant =
-      flags.teamWorkspacesEnabled && !workspaceStore.isInPersonalWorkspace
-
-    const component = useWorkspaceVariant
-      ? defineAsyncComponent(
-          () =>
-            import('@/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.vue')
-        )
-      : defineAsyncComponent(
-          () =>
-            import('@/platform/cloud/subscription/components/SubscriptionRequiredDialogContent.vue')
-        )
-
-    const personalProps = {
-      onClose: hide,
-      reason: options?.reason,
-      onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
+    // Shared dialog shell styling for both variants.
+    const dialogComponentProps = {
+      style: 'width: min(1328px, 95vw); max-height: 958px;',
+      pt: {
+        root: {
+          class: 'rounded-2xl bg-transparent h-full'
+        },
+        content: {
+          class:
+            '!p-0 rounded-2xl border border-border-default bg-base-background/60 backdrop-blur-md shadow-[0_25px_80px_rgba(5,6,12,0.45)] h-full'
+        }
+      }
     }
-    const workspaceProps = {
-      onClose: hide,
-      reason: options?.reason
+
+    // Jun-5 model: a single unified pricing table (personal/team plan toggle on
+    // one workspace) when team workspaces are enabled. Replaces the old
+    // personal-vs-team workspace fork. Flag-off keeps the legacy table.
+    if (flags.teamWorkspacesEnabled) {
+      dialogService.showLayoutDialog({
+        key: DIALOG_KEY,
+        component: defineAsyncComponent(
+          () =>
+            import(
+              '@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue'
+            )
+        ),
+        props: { onClose: hide, reason: options?.reason },
+        dialogComponentProps
+      })
+      return
     }
 
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
-      component,
-      props: useWorkspaceVariant ? workspaceProps : personalProps,
-      dialogComponentProps: {
-        style: 'width: min(1328px, 95vw); max-height: 958px;',
-        pt: {
-          root: {
-            class: 'rounded-2xl bg-transparent h-full'
-          },
-          content: {
-            class:
-              '!p-0 rounded-2xl border border-border-default bg-base-background/60 backdrop-blur-md shadow-[0_25px_80px_rgba(5,6,12,0.45)] h-full'
-          }
-        }
-      }
+      component: defineAsyncComponent(
+        () =>
+          import(
+            '@/platform/cloud/subscription/components/SubscriptionRequiredDialogContent.vue'
+          )
+      ),
+      props: {
+        onClose: hide,
+        reason: options?.reason,
+        onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
+      },
+      dialogComponentProps
     })
   }
 
