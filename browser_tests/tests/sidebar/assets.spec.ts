@@ -765,9 +765,10 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await tab.open()
 
       await tab.assetCards.first().click()
-      await expect(tab.downloadWithPreviewsButton).toBeVisible()
+      await expect(tab.includePreviewsCheckbox).toBeVisible()
 
-      await tab.downloadWithPreviewsButton.click()
+      await tab.includePreviewsCheckbox.click()
+      await tab.downloadSelectedButton.click()
 
       await expect.poll(() => exportRequests).toHaveLength(1)
 

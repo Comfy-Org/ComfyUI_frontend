@@ -3220,7 +3220,7 @@
       "multipleSelectedAssets": "Multiple assets selected",
       "deselectAll": "Deselect all",
       "downloadSelected": "Download",
-      "downloadWithPreviews": "Download with previews",
+      "includePreviews": "Include previews",
       "downloadSelectedAll": "Download all",
       "deleteSelected": "Delete",
       "deleteSelectedAll": "Delete all",

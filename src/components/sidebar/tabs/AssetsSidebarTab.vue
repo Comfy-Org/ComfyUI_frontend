@@ -150,29 +150,45 @@
             }}</span>
             <i class="icon-[lucide--trash-2] size-4" />
           </Button>
-          <Button
+          <div
             v-if="canIncludePreviews"
             v-tooltip.top="
-              isCompact ? $t('mediaAsset.selection.downloadWithPreviews') : ''
+              isCompact ? $t('mediaAsset.selection.includePreviews') : ''
             "
-            :variant="isCompact ? undefined : 'secondary'"
-            :size="isCompact ? 'icon' : undefined"
-            :aria-label="
-              isCompact ? $t('mediaAsset.selection.downloadWithPreviews') : null
-            "
-            data-testid="assets-download-with-previews"
-            @click="handleDownloadSelected(true)"
+            role="checkbox"
+            :aria-checked="includePreviews"
+            :aria-label="$t('mediaAsset.selection.includePreviews')"
+            tabindex="0"
+            data-testid="assets-include-previews"
+            class="flex shrink-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-1 hover:bg-secondary-background-hover"
+            @click="includePreviews = !includePreviews"
+            @keydown.enter.prevent="includePreviews = !includePreviews"
+            @keydown.space.prevent="includePreviews = !includePreviews"
           >
-            <span v-if="!isCompact">{{
-              $t('mediaAsset.selection.downloadWithPreviews')
+            <div
+              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200"
+              :class="
+                includePreviews
+                  ? 'bg-primary-background'
+                  : 'bg-secondary-background'
+              "
+            >
+              <i
+                v-if="includePreviews"
+                class="icon-[lucide--check] size-3 text-white"
+              />
+            </div>
+            <span v-if="!isCompact" class="text-sm whitespace-nowrap">{{
+              $t('mediaAsset.selection.includePreviews')
             }}</span>
-            <i class="icon-[lucide--images] size-4" />
-          </Button>
+          </div>
           <Button
             :variant="isCompact ? undefined : 'secondary'"
             :size="isCompact ? 'icon' : undefined"
             data-testid="assets-download-selected"
-            @click="handleDownloadSelected(false)"
+            @click="
+              handleDownloadSelected(canIncludePreviews && includePreviews)
+            "
           >
             <span v-if="!isCompact">{{
               $t('mediaAsset.selection.downloadSelected')
@@ -568,6 +584,7 @@ const handleDownloadSelected = (includePreviews = false) => {
 }
 
 const canIncludePreviews = computed(() => activeTab.value === 'output')
+const includePreviews = ref(false)
 
 const handleDeleteSelected = async () => {
   if (await deleteAssets(selectedAssets.value)) {
