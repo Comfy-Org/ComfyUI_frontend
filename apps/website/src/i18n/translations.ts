@@ -4559,6 +4559,20 @@ const translations = {
     'zh-CN': '为什么联盟创作者选择 ComfyUI'
   },
 
+  // AffiliateProgramDetailsSection
+  'affiliate.details.heading': {
+    en: 'Program details',
+    'zh-CN': '项目详情'
+  },
+  'affiliate.details.headerLabel': {
+    en: 'Detail',
+    'zh-CN': '项目'
+  },
+  'affiliate.details.headerValue': {
+    en: 'Value',
+    'zh-CN': '数值'
+  },
+
   // AffiliateFAQSection
   'affiliate.faq.heading': {
     en: 'Frequently asked questions',
