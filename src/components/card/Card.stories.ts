@@ -289,11 +289,11 @@ const createCardWithRatingPanelTemplate = (args: CardStoryArgs) => ({
     }
   },
   template: `
-    <div class="flex gap-0 p-8 bg-white/90! rounded-2xl items-start justify-left">
+    <div class="flex gap-0 p-8 bg-white/90 rounded-2xl items-start justify-left">
       <div class="flex-0">
         <RatingPanel/>
       </div>
-      <div class="flex-1 max-w-xs bg-white/90! rounded-2xl shadow p-0 flex flex-col gap-4">
+      <div class="flex-1 max-w-xs bg-white/90 rounded-2xl shadow p-0 flex flex-col gap-4">
         <CardContainer 
           :size="args.containerSize"
           :variant="args.variant"
@@ -327,14 +327,14 @@ const createCardWithRatingPanelTemplate = (args: CardStoryArgs) => ({
               
               <template v-if="args.showTopRight" #top-right>
                 <Button
-                  class="bg-white/90! text-neutral-900!"
+                  class="bg-white/90 text-neutral-900"
                   @click="() => console.log('Info clicked')"
                 >
                   <i class="icon-[lucide--info] size-4" />
                 </Button>
                 <Button
-                  class="bg-white/90!"
-                  :class="favorited ? 'text-red-500!' : 'text-neutral-900!'"
+                  class="bg-white/90"
+                  :class="favorited ? 'text-red-500' : 'text-neutral-900'"
                   @click="toggleFavorite"
                 >
                   <i class="icon-[lucide--heart] size-4" :class="favorited ? 'fill-current' : ''" />

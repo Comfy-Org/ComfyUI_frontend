@@ -10,7 +10,6 @@
     <button
       v-for="value in [5, 4, 3, 2, 1]"
       :key="value"
-      :aria-label="`Rate ${value} out of 5`"
       class="cursor-pointer rounded-full border-0 p-0 transition-colors hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
       @click="setScore(value)"
     >
@@ -28,32 +27,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-
-const props = defineProps({
-  modelValue: {
-    type: Number,
-    default: 3,
-    validator: (v: number) => v >= 1 && v <= 5
-  }
+const score = defineModel<number>({
+  default: 3,
+  validator: (v: number) => v >= 1 && v <= 5
 })
-
-const emit = defineEmits<{
-  'update:modelValue': [value: number]
-}>()
-
-const score = ref(props.modelValue)
-
-watch(
-  () => props.modelValue,
-  (newVal) => {
-    score.value = newVal
-  }
-)
 
 function setScore(value: number) {
   score.value = value
-  emit('update:modelValue', value)
 }
 
 function isActive(value: number) {
