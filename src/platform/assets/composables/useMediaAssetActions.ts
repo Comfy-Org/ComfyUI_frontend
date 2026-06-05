@@ -105,7 +105,10 @@ export function useMediaAssetActions() {
   /**
    * Download one or more assets.
    * In cloud mode, creates a ZIP export via the backend when called with
-   * 2+ assets or with any asset whose job has `outputCount > 1`.
+   * 2+ assets, with any asset whose job has `outputCount > 1`, or when
+   * `includePreviews` is set. Previews are only retrievable via the export
+   * endpoint, so requesting them must force the ZIP path even for a single
+   * asset; the direct-download branch only fetches visible output URLs.
    * Falls back to direct downloads in OSS mode and for single single-output
    * assets. With no argument, uses the asset from `MediaAssetKey` context.
    */
@@ -119,7 +122,10 @@ export function useMediaAssetActions() {
       return typeof count === 'number' && count > 1
     })
 
-    if (isCloud && (targetAssets.length > 1 || hasMultiOutputJobs)) {
+    if (
+      isCloud &&
+      (includePreviews || targetAssets.length > 1 || hasMultiOutputJobs)
+    ) {
       void downloadAssetsAsZip(targetAssets, includePreviews)
       return
     }

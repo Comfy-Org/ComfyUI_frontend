@@ -547,6 +547,35 @@ describe('useMediaAssetActions', () => {
       expect(mockTrackExport).not.toHaveBeenCalled()
     })
 
+    it('forces the ZIP export path for a single asset when previews are requested', async () => {
+      mockIsCloud.value = true
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockReturnValue({
+        jobId: 'job1',
+        outputCount: 1
+      })
+
+      const asset = createMockAsset({
+        id: 'single-output',
+        name: 'single-output.png',
+        preview_url: 'https://example.com/single-output.png',
+        tags: ['output'],
+        user_metadata: { jobId: 'job1', outputCount: 1 }
+      })
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([asset], true)
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      expect(mockDownloadFile).not.toHaveBeenCalled()
+      const payload = mockCreateAssetExport.mock.calls[0][0]
+      expect(payload.include_previews).toBe(true)
+      expect(payload.job_ids).toEqual(['job1'])
+    })
+
     it('uses ZIP export for an injected single multi-output asset in cloud', async () => {
       mockIsCloud.value = true
       mockGetAssetType.mockReturnValue('output')
