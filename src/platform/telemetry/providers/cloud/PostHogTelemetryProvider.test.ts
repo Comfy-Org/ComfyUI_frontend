@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TelemetryEvents } from '../../types'
 
@@ -7,20 +7,30 @@ const hoisted = vi.hoisted(() => {
   const mockInit = vi.fn()
   const mockIdentify = vi.fn()
   const mockPeopleSet = vi.fn()
+  const mockPeopleSetOnce = vi.fn()
+  const mockRegister = vi.fn()
+  const mockReset = vi.fn()
   const mockOnUserResolved = vi.fn()
+  const mockOnUserLogout = vi.fn()
 
   return {
     mockCapture,
     mockInit,
     mockIdentify,
     mockPeopleSet,
+    mockPeopleSetOnce,
+    mockRegister,
+    mockReset,
     mockOnUserResolved,
+    mockOnUserLogout,
     mockPosthog: {
       default: {
         init: mockInit,
         capture: mockCapture,
         identify: mockIdentify,
-        people: { set: mockPeopleSet }
+        register: mockRegister,
+        people: { set: mockPeopleSet, set_once: mockPeopleSetOnce },
+        reset: mockReset
       }
     }
   }
@@ -36,7 +46,8 @@ vi.mock('vue', async () => {
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
-    onUserResolved: hoisted.mockOnUserResolved
+    onUserResolved: hoisted.mockOnUserResolved,
+    onUserLogout: hoisted.mockOnUserLogout
   })
 }))
 
@@ -130,7 +141,7 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockOnUserResolved).toHaveBeenCalledOnce()
     })
 
-    it('identifies user when onUserResolved fires', async () => {
+    it('identifies user without setting first_auth_at when onUserResolved fires', async () => {
       createProvider()
       await vi.dynamicImportSettled()
 
@@ -138,6 +149,99 @@ describe('PostHogTelemetryProvider', () => {
       callback({ id: 'user-123' })
 
       expect(hoisted.mockIdentify).toHaveBeenCalledWith('user-123')
+    })
+  })
+
+  describe('desktop entry capture', () => {
+    function setLocation(search: string): void {
+      Object.defineProperty(window.location, 'search', {
+        configurable: true,
+        value: search,
+        writable: true
+      })
+    }
+
+    afterEach(() => {
+      setLocation('')
+    })
+
+    it('does not register desktop props when utm_source is absent', async () => {
+      setLocation('')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).not.toHaveBeenCalled()
+    })
+
+    it('does not register desktop props when utm_source is not comfy.desktop', async () => {
+      setLocation('?utm_source=google&desktop_device_id=should-be-ignored')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).not.toHaveBeenCalled()
+    })
+
+    it('registers source_app and desktop_device_id when arriving from desktop', async () => {
+      setLocation(
+        '?utm_source=comfy.desktop&utm_medium=app_feature&desktop_device_id=device-abc'
+      )
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+        source_app: 'desktop',
+        desktop_device_id: 'device-abc'
+      })
+    })
+
+    it('registers source_app alone when desktop_device_id is missing', async () => {
+      setLocation('?utm_source=comfy.desktop')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+        source_app: 'desktop'
+      })
+    })
+
+    it('persists desktop props to the person on identify so backend events inherit them', async () => {
+      setLocation('?utm_source=comfy.desktop&desktop_device_id=device-xyz')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      callback({ id: 'user-456' })
+
+      const setCall = hoisted.mockPeopleSet.mock.calls.find(
+        ([props]) => props && 'desktop_device_id' in props
+      )
+      expect(setCall?.[0]).toEqual(
+        expect.objectContaining({
+          source_app: 'desktop',
+          desktop_device_id: 'device-xyz',
+          last_seen_via_desktop: expect.any(String)
+        })
+      )
+      expect(hoisted.mockPeopleSetOnce).toHaveBeenCalledWith(
+        expect.objectContaining({ first_seen_via_desktop: expect.any(String) })
+      )
+    })
+
+    it('does not touch the person profile on identify for non-desktop visitors', async () => {
+      setLocation('')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      callback({ id: 'user-789' })
+
+      const desktopSetCall = hoisted.mockPeopleSet.mock.calls.find(
+        ([props]) =>
+          props &&
+          ('desktop_device_id' in props || 'last_seen_via_desktop' in props)
+      )
+      expect(desktopSetCall).toBeUndefined()
+      expect(hoisted.mockPeopleSetOnce).not.toHaveBeenCalled()
     })
   })
 
@@ -163,6 +267,88 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
         { method: 'google' }
+      )
+    })
+
+    it('sets first_auth_at on new-user auth', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAuth({
+        method: 'google',
+        is_new_user: true,
+        user_id: 'user-123'
+      })
+
+      expect(hoisted.mockIdentify).toHaveBeenCalledWith(
+        'user-123',
+        undefined,
+        expect.objectContaining({
+          first_auth_at: expect.any(String)
+        })
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.USER_AUTH_COMPLETED,
+        {
+          method: 'google',
+          is_new_user: true,
+          user_id: 'user-123'
+        }
+      )
+    })
+
+    it('does not set first_auth_at on returning-user auth', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAuth({
+        method: 'google',
+        is_new_user: false,
+        user_id: 'user-123'
+      })
+
+      expect(hoisted.mockIdentify).not.toHaveBeenCalled()
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.USER_AUTH_COMPLETED,
+        {
+          method: 'google',
+          is_new_user: false,
+          user_id: 'user-123'
+        }
+      )
+    })
+
+    it('flushes queued first_auth_at before queued auth event', async () => {
+      const provider = createProvider()
+
+      provider.trackAuth({
+        method: 'google',
+        is_new_user: true,
+        user_id: 'user-123'
+      })
+
+      expect(hoisted.mockIdentify).not.toHaveBeenCalled()
+      expect(hoisted.mockCapture).not.toHaveBeenCalled()
+
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockIdentify).toHaveBeenCalledWith(
+        'user-123',
+        undefined,
+        expect.objectContaining({
+          first_auth_at: expect.any(String)
+        })
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.USER_AUTH_COMPLETED,
+        {
+          method: 'google',
+          is_new_user: true,
+          user_id: 'user-123'
+        }
+      )
+      expect(hoisted.mockIdentify.mock.invocationCallOrder[0]).toBeLessThan(
+        hoisted.mockCapture.mock.invocationCallOrder[0]
       )
     })
 
@@ -236,6 +422,32 @@ describe('PostHogTelemetryProvider', () => {
     })
   })
 
+  describe('logout', () => {
+    it('registers onUserLogout watcher after init', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockOnUserLogout).toHaveBeenCalledOnce()
+    })
+
+    it('calls posthog.reset(true) when the watcher fires', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const callback = hoisted.mockOnUserLogout.mock.calls[0][0]
+      callback()
+
+      expect(hoisted.mockReset).toHaveBeenCalledWith(true)
+    })
+
+    it('does not register the watcher before init resolves', () => {
+      createProvider()
+
+      expect(hoisted.mockOnUserLogout).not.toHaveBeenCalled()
+      expect(hoisted.mockReset).not.toHaveBeenCalled()
+    })
+  })
+
   describe('page view', () => {
     it('captures page view with page_name property', async () => {
       const provider = createProvider()
@@ -261,6 +473,74 @@ describe('PostHogTelemetryProvider', () => {
         TelemetryEvents.PAGE_VIEW,
         { page_name: 'workflow_editor', path: '/workflows/123' }
       )
+    })
+  })
+
+  describe('before_send', () => {
+    it('strips PII keys from event properties, $set, and $set_once', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const { before_send } = hoisted.mockInit.mock.calls[0][1]
+
+      const event = {
+        event: 'test',
+        properties: {
+          email: 'props@example.com',
+          prompt: 'hello',
+          user_email: 'props_user@example.com',
+          $email: 'props_posthog@example.com',
+          method: 'google'
+        },
+        $set: {
+          email: 'set@example.com',
+          user_email: 'set_user@example.com',
+          $email: 'set_posthog@example.com',
+          name: 'keep me'
+        },
+        $set_once: {
+          email: 'set_once@example.com',
+          plan: 'free'
+        }
+      }
+
+      const result = before_send(event)
+
+      // event.properties — all four PII keys stripped, non-PII preserved
+      expect(result.properties).not.toHaveProperty('email')
+      expect(result.properties).not.toHaveProperty('prompt')
+      expect(result.properties).not.toHaveProperty('user_email')
+      expect(result.properties).not.toHaveProperty('$email')
+      expect(result.properties).toHaveProperty('method', 'google')
+
+      // event.$set — PII stripped, non-PII preserved
+      // posthog.identify(id, { email }) lands here, not in properties
+      expect(result.$set).not.toHaveProperty('email')
+      expect(result.$set).not.toHaveProperty('user_email')
+      expect(result.$set).not.toHaveProperty('$email')
+      expect(result.$set).toHaveProperty('name', 'keep me')
+
+      // event.$set_once — PII stripped, non-PII preserved
+      expect(result.$set_once).not.toHaveProperty('email')
+      expect(result.$set_once).toHaveProperty('plan', 'free')
+    })
+
+    it('remoteConfig.posthog_config cannot override before_send or person_profiles', async () => {
+      const remoteBefore_send = vi.fn()
+      mockRemoteConfig.value = {
+        posthog_config: {
+          before_send: remoteBefore_send,
+          person_profiles: 'always'
+        }
+      }
+
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const initConfig = hoisted.mockInit.mock.calls[0][1]
+
+      expect(initConfig.before_send).not.toBe(remoteBefore_send)
+      expect(initConfig.person_profiles).toBe('identified_only')
     })
   })
 })

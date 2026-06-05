@@ -593,6 +593,32 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "description": "إزالة الخلفية من الفيديو باستخدام Bria وإرجاع الإطارات المقطوعة بالإضافة إلى قناع ألفا. قم بتوصيلهما مع عقدة تركيب، أو مررهما إلى حفظ WEBM لكتابة فيديو شفاف.",
+    "display_name": "Bria إزالة خلفية الفيديو (شفافة)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "video": {
+        "name": "فيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صور",
+        "tooltip": null
+      },
+      "1": {
+        "name": "قناع",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "إنشاء فيديو باستخدام Seedance 2.0 من صورة الإطار الأول وصورة الإطار الأخير (اختياري).",
     "display_name": "ByteDance Seedance 2.0 من الإطار الأول/الأخير إلى فيديو",
@@ -1212,6 +1238,29 @@
       }
     }
   },
+  "CFGOverride": {
+    "description": "تجاوز قيمة cfg إلى قيمة ثابتة خلال شريحة [بداية، نهاية] مئوية من الخطوات. مع وجود عدة تجاوزات، يتم اختيار الأقرب إلى العينة في حالة التداخل.",
+    "display_name": "تجاوز cfg",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "النسبة المئوية للنهاية"
+      },
+      "model": {
+        "name": "نموذج"
+      },
+      "start_percent": {
+        "name": "النسبة المئوية للبداية"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CFGZeroStar": {
     "display_name": "CFGZeroStar",
     "inputs": {
@@ -1720,6 +1769,10 @@
       "end_sigma": {
         "name": "end_sigma",
         "tooltip": "آخر قيمة سيجما التي ستكون هذه الخيارات سارية المفعول عندها."
+      },
+      "force_sequential_txt_ids": {
+        "name": "فرض استخدام معرفات نصية متسلسلة",
+        "tooltip": "فرض استخدام معرفات رموز نصية متسلسلة بدلاً من الأصفار. يجب استخدام هذا الخيار لنقاط التحقق من ٢٠٢٦-٠٥-٢٢ إلى ٢٠٢٦-٠٦-٠١ التي تم تدريبها بهذه الطريقة ولكن لا تحتوي على المفتاح __sequential__ في قاموس الحالة."
       },
       "model": {
         "name": "النموذج"
@@ -2523,6 +2576,57 @@
       }
     }
   },
+  "CreateCameraInfo": {
+    "description": "إنشاء camera_info. وضع 'orbit' يوجه الكاميرا حول الهدف باستخدام yaw/pitch/distance؛ وضع 'look_at' يضع الكاميرا في موقع محدد في العالم. الإحداثيات في فضاء العالم للمشاهد (نظام اليد اليمنى، المحور Y للأعلى).",
+    "display_name": "إنشاء معلومات الكاميرا",
+    "inputs": {
+      "camera_type": {
+        "name": "camera_type",
+        "tooltip": "الإسقاط المستخدم بواسطة Render Splat: منظور (تقريب المسافات) أو متوازي (خطوط متوازية)."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "مجال الرؤية العمودي بالدرجات."
+      },
+      "mode": {
+        "name": "الوضع",
+        "tooltip": "كيفية تحديد الكاميرا: زوايا المدار، موقع محدد، أو موقع + كواتيرنيون."
+      },
+      "mode_distance": {
+        "name": "المسافة"
+      },
+      "mode_pitch": {
+        "name": "الارتفاع"
+      },
+      "mode_yaw": {
+        "name": "الانحراف"
+      },
+      "roll": {
+        "name": "roll",
+        "tooltip": "تدوير الكاميرا حول محور الرؤية، بالدرجات."
+      },
+      "target_x": {
+        "name": "target_x",
+        "tooltip": "نقطة النظر (محور المدار / الهدف). في وضع المدار، حركها لتحريك/ترجمة الكاميرا بالكامل. يتم تجاهلها في وضع الكواتيرنيون. الافتراضي هو الأصل."
+      },
+      "target_y": {
+        "name": "target_y"
+      },
+      "target_z": {
+        "name": "target_z"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "تكبير رقمي (معامل الطول البؤري). >١ للتكبير دون تحريك الكاميرا."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      }
+    }
+  },
   "CreateHookKeyframe": {
     "display_name": "إنشاء إطار مفتاحي للخطاف",
     "inputs": {
@@ -2899,6 +3003,34 @@
       },
       "type": {
         "name": "النوع"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "موجه نموذج مزدوج CFG",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "نموذج",
+        "tooltip": "النموذج المستخدم للتمرير الإيجابي (الشرطي)."
+      },
+      "model_negative": {
+        "name": "نموذج سلبي",
+        "tooltip": "النموذج المستخدم للتمرير السلبي (غير الشرطي). استخدم نفس النموذج لـ CFG العادي."
+      },
+      "negative": {
+        "name": "سلبي",
+        "tooltip": "تشغيل التكييف السلبي على النموذج السلبي. اتركه غير متصل للحصول على تمرير غير شرطي بدون نص (صور فقط)."
+      },
+      "positive": {
+        "name": "إيجابي"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3696,6 +3828,22 @@
       }
     }
   },
+  "File3DToSplat": {
+    "description": "تحويل ملف File3D splat إلى gaussian splat. عكس عملية إنشاء ملف ثلاثي الأبعاد (من Splat). الصيغ المدعومة: PLY، SPLAT، KSPLAT، SPZ. صيغة PLY تدعم التوافقيات الكروية الكاملة، أما الصيغ الأخرى فهي تدعم اللون الأساسي فقط. يتم اكتشاف الصيغة تلقائيًا من محتوى الملف.",
+    "display_name": "الحصول على Splat",
+    "inputs": {
+      "model_3d": {
+        "name": "نموذج_٣دي",
+        "tooltip": "ملف ثلاثي الأبعاد من نوع gaussian splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "FlipSigmas": {
     "display_name": "عكس قيم السيغما",
     "inputs": {
@@ -3837,6 +3985,28 @@
     "inputs": {
       "conditioning": {
         "name": "التهيئة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxEraseNode": {
+    "description": "إزالة الكائن المحدد بالقناع من الصورة وإعادة بناء الخلفية. قم برسم القناع فوق ما تريد مسحه.",
+    "display_name": "Flux مسح الصورة",
+    "inputs": {
+      "dilate_pixels": {
+        "name": "توسيع_البكسلات",
+        "tooltip": "يوسع حدود القناع لضمان تغطية حواف الكائن بشكل نظيف."
+      },
+      "image": {
+        "name": "الصورة"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "المناطق البيضاء تُزال؛ المناطق السوداء تُحفظ."
       }
     },
     "outputs": {
@@ -4114,6 +4284,36 @@
       "seed": {
         "name": "البذرة",
         "tooltip": "البذرة العشوائية المستخدمة لإنشاء الضجيج."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVTONode": {
+    "description": "تجربة الملابس الافتراضية: يلبس الشخص الملابس المقدمة.",
+    "display_name": "Flux تجربة الملابس الافتراضية",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "garment": {
+        "name": "الملابس",
+        "tooltip": "صورة الملابس التي سيتم تطبيقها."
+      },
+      "person": {
+        "name": "الشخص",
+        "tooltip": "صورة الشخص الذي سيتم تلبيسه."
+      },
+      "prompt": {
+        "name": "التعليمات",
+        "tooltip": "تعليمات اختيارية لوصف النمط (مثال: كيف يجب أن يكون مقاس الملابس)."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة العشوائية المستخدمة لإنشاء الضوضاء."
       }
     },
     "outputs": {
@@ -4716,6 +4916,25 @@
       }
     }
   },
+  "GetSplatCount": {
+    "description": "يعيد عدد السبلاطات المجمعة عبر الدفعة.",
+    "display_name": "احصل على عدد السبلاطات",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "count",
+        "tooltip": null
+      }
+    }
+  },
   "GetVideoComponents": {
     "description": "يستخرج جميع المكونات من الفيديو: الإطارات، الصوت، ومعدل الإطارات.",
     "display_name": "استخراج مكونات الفيديو",
@@ -4926,10 +5145,12 @@
         "tooltip": "مدة الفيديو الناتج بالثواني."
       },
       "image": {
-        "name": "الصورة"
+        "name": "الصورة",
+        "tooltip": "صورة بداية اختيارية لـ grok-imagine-video. مطلوبة لـ grok-imagine-video-1.5."
       },
       "model": {
-        "name": "النموذج"
+        "name": "النموذج",
+        "tooltip": "يتطلب grok-imagine-video-1.5 دائماً صورة إدخال."
       },
       "prompt": {
         "name": "المطالبة",
@@ -5535,6 +5756,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "مجدول Ideogram 4",
+    "inputs": {
+      "height": {
+        "name": "الارتفاع"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "std"
+      },
+      "steps": {
+        "name": "خطوات"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "ينشئ صورًا تزامنيًا باستخدام نموذج Ideogram V1.\n\nروابط الصور متاحة لفترة محدودة؛ إذا أردت الاحتفاظ بالصورة، يجب تنزيلها.",
     "display_name": "Ideogram V1",
@@ -5668,6 +5914,34 @@
       "resolution": {
         "name": "الدقة",
         "tooltip": "دقة توليد الصورة. إذا لم يتم تعيينها إلى تلقائي، فإنها تتجاوز إعداد نسبة العرض إلى الارتفاع."
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "ينتج صورًا باستخدام نموذج Ideogram 4.0 من خلال موجه نصي.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "prompt": {
+        "name": "موجه",
+        "tooltip": "موجه نصي لتوليد الصورة."
+      },
+      "rendering_speed": {
+        "name": "سرعة العرض",
+        "tooltip": "يتحكم في التوازن بين سرعة التوليد والجودة."
+      },
+      "resolution": {
+        "name": "الدقة"
       },
       "seed": {
         "name": "البذرة"
@@ -9662,6 +9936,21 @@
       }
     }
   },
+  "MergeSplat": {
+    "description": "دمج أي عدد من السبلاطات الغاوسية في واحدة. توحيد عدة عمليات فك تشفير لنفس الـ latent مع بذور مختلفة يزيد من كثافة السطح، مما قد يحسن جودة السطح عند إنشاء الشبكة.",
+    "display_name": "دمج السبلاطات",
+    "inputs": {
+      "splats": {
+        "name": "splats"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "MergeTextLists": {
     "display_name": "دمج قوائم النصوص",
     "inputs": {
@@ -13427,6 +13716,52 @@
       }
     }
   },
+  "Preview3DAdvanced": {
+    "display_name": "معاينة ثلاثية الأبعاد (متقدم)",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "image": {
+        "name": "image"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "model_file": {
+        "name": "model_file",
+        "tooltip": "ملف نموذج ثلاثي الأبعاد من عقدة ثلاثية الأبعاد سابقة."
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewAny": {
     "display_name": "معاينة أي",
     "inputs": {
@@ -14412,6 +14747,66 @@
       "0": {
         "name": "القناع",
         "tooltip": "قناع المقدمة المُنتج"
+      }
+    }
+  },
+  "RenderSplat": {
+    "description": "عرض gaussian splat كصورة باستخدام أداة rasterizer EWA غير متجانسة (splat بيضاوي موجه، مضاد للتعرج، مرتبة حسب العمق من الأمام إلى الخلف). تأتي الكاميرا من مدخل camera_info (تحميل / معاينة ثلاثية الأبعاد، أو عقدة Create Camera Info)؛ اتركه فارغًا لتأطير splat تلقائيًا. عيّن الإطارات أكبر من 1 للحصول على مجموعة صور دوران لتغذية عقدة فيديو.",
+    "display_name": "عرض Splat",
+    "inputs": {
+      "background": {
+        "name": "الخلفية"
+      },
+      "bg_image": {
+        "name": "صورة الخلفية",
+        "tooltip": "صورة خلفية اختيارية توضع خلف splat (تتجاوز لون الخلفية الصلب). يتم تغيير حجمها حسب حجم العرض؛ تُستخدم مجموعة لكل إطار، أو صورة واحدة للجميع. للون/الطين فقط."
+      },
+      "camera_info": {
+        "name": "معلومات الكاميرا",
+        "tooltip": "الكاميرا التي يتم العرض منها - كاميرا Load3D / Preview3D أو عقدة Create Camera Info. إذا كانت فارغة، يتم تأطير splat تلقائيًا من زاوية ٣/٤ افتراضية."
+      },
+      "frames": {
+        "name": "الإطارات",
+        "tooltip": "-1، 0، 1 = صورة ثابتة واحدة؛ >1 = دوران، تدور الكاميرا دورة كاملة ٣٦٠ درجة (يعمل مع أي camera_info). القيمة السالبة تدور بالعكس."
+      },
+      "headlight_shading": {
+        "name": "تظليل ضوء أمامي",
+        "tooltip": "تظليل منتشر من ضوء عند الكاميرا (ضوء أمامي)، باستخدام اتجاهات splat: يظلم الأسطح التي تدور بعيدًا عن الرؤية لإظهار الشكل/الانحناء. ٠ = لون مسطح، ١ = أقوى تظليل."
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "opacity_threshold": {
+        "name": "عتبة الشفافية",
+        "tooltip": "استبعاد gaussians ذات الشفافية الأقل من هذه القيمة (يزيل العناصر الطافية الخفيفة)."
+      },
+      "render_style": {
+        "name": "نمط العرض",
+        "tooltip": "ما الذي تعرضه الصورة: اللون، طين (تظليل بلون محايد)، العمق (القريب = فاتح)، العادي (خريطة عادية OpenGL)."
+      },
+      "sharpen": {
+        "name": "حدة",
+        "tooltip": "زيادة وضوح splats المتداخلة: ١.٠ = دمج فيزيائي صحيح؛ القيم الأعلى تجعل كل بكسل أقرب إلى splat المسيطر (الأقرب) لنسيج أوضح، دون تصغير splats أو فتح فجوات. غير فيزيائي فوق ١."
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "splat_scale": {
+        "name": "مقياس splat",
+        "tooltip": "معامل ضرب على مساحة splat المتوقعة (أقل = نقاط أوضح، أعلى = سطح أنعم/أكمل)."
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صورة",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
       }
     }
   },
@@ -16299,7 +16694,8 @@
         "name": "معدل الإطارات في الثانية"
       },
       "images": {
-        "name": "الصور"
+        "name": "الصور",
+        "tooltip": "يتم حفظ صور RGBA مع قناة ألفا الخاصة بها كشفافية (ترميز vp9 فقط)."
       }
     }
   },
@@ -16681,6 +17077,68 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToFile3D": {
+    "description": "تسلسل gaussian splat إلى كائن File3D لعقدتي Save / Preview 3D. يدعم عنصرًا واحدًا فقط لكل مجموعة.",
+    "display_name": "إنشاء ملف ثلاثي الأبعاد (من Splat)",
+    "inputs": {
+      "format": {
+        "name": "الصيغة",
+        "tooltip": "ply: Gaussian Splat ثلاثي الأبعاد قياسي مع توافقيات كروية كاملة. ksplat: mkkellogg SplatBuffer (المستوى ٠، غير مضغوط)، لون أساسي فقط spz: Niantic مضغوط gzip (~١٠ مرات أصغر)، لون أساسي فقط"
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "نموذج ثلاثي الأبعاد",
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToMesh": {
+    "description": "استخراج شبكة ملونة من gaussian splat.",
+    "display_name": "استخراج شبكة من Splat",
+    "inputs": {
+      "color_sharpen": {
+        "name": "حدة اللون",
+        "tooltip": "زيادة وضوح نسيج الرؤوس: 1.0 = دمج فيزيائي صحيح؛ القيم الأعلى تميل لون كل voxel نحو gaussian المهيمن بدلاً من متوسط الجيران (يزيل التمويه من النسيج). اللون فقط - الهندسة لا تتغير."
+      },
+      "kernel": {
+        "name": "النواة",
+        "tooltip": "أقصى نصف عرض splat بوحدة voxels. كل gaussian يتم تحويله إلى صورة ضمن نافذة بحجم 3-سيغما الخاصة به، ويتم تحديد الحد الأعلى هنا - surfels الصغيرة تبقى منخفضة التكلفة، والكبيرة لا يتم اقتطاعها. زد القيمة إذا تركت splats المتفرقة فراغات."
+      },
+      "level": {
+        "name": "المستوى",
+        "tooltip": "مستوى iso-surface. يتم اختياره تلقائياً بواسطة Otsu؛ هذا يغيره (1.0 = تلقائي، أقل = سطح أكثر سماكة/اتصالاً، أعلى = سطح أرفع/أضيق)."
+      },
+      "min_component": {
+        "name": "أصغر مكون",
+        "tooltip": "إسقاط المكونات المتصلة الأصغر من هذا العدد من الرؤوس (0 = احتفظ بالجميع). يزيل الكتل المنفصلة والقشرة الداخلية للجدار المزدوج."
+      },
+      "min_opacity": {
+        "name": "أقل شفافية",
+        "tooltip": "تجاهل gaussians الأضعف من هذه القيمة قبل إنشاء الشبكة."
+      },
+      "resolution": {
+        "name": "الدقة",
+        "tooltip": "دقة شبكة الكثافة على المحور الأطول. قيمة أعلى = سطح أدق، المزيد من VRAM/الوقت (تزداد مع resolution^3)."
+      },
+      "smooth": {
+        "name": "التنعيم",
+        "tooltip": "عدد تكرارات تنعيم الشبكة (Taubin). ينعم السطح دون تقليصه (يحافظ على الحجم)، على عكس تمويه الكثافة. 0 = سطح خام."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شبكة",
         "tooltip": null
       }
     }
@@ -18383,6 +18841,48 @@
       }
     }
   },
+  "TransformSplat": {
+    "description": "تحريك، تدوير، وتغيير حجم gaussian splat. تغيير الحجم غير المتساوي يعيد تشكيل كل splat فردي أيضاً، وهي عملية أبطأ.",
+    "display_name": "تحويل Splat",
+    "inputs": {
+      "rotate_x": {
+        "name": "تدوير_x"
+      },
+      "rotate_y": {
+        "name": "تدوير_y"
+      },
+      "rotate_z": {
+        "name": "تدوير_z"
+      },
+      "scale_x": {
+        "name": "تغيير_الحجم_x"
+      },
+      "scale_y": {
+        "name": "تغيير_الحجم_y"
+      },
+      "scale_z": {
+        "name": "تغيير_الحجم_z"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "translate_x": {
+        "name": "نقل_x"
+      },
+      "translate_y": {
+        "name": "نقل_y"
+      },
+      "translate_z": {
+        "name": "نقل_z"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "TrimAudioDuration": {
     "description": "قص موتر الصوت إلى النطاق الزمني المختار.",
     "display_name": "قص مدة الصوت",
@@ -18862,6 +19362,101 @@
       }
     }
   },
+  "TripoSplatConditioning": {
+    "description": "ترميز الصورة باستخدام DINOv3 وFlux2 VAE إلى تهيئة إيجابية/سلبية لـ TripoSplat، وإنشاء هدف الضوضاء ذو الحجم الثابت (latent + camera) لـ KSampler",
+    "display_name": "تهيئة TripoSplat",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision",
+        "tooltip": "مشفر الصور DINOv3 ViT-H/16+"
+      },
+      "image": {
+        "name": "صورة"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Flux2 VAE"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "إيجابي",
+        "tooltip": null
+      },
+      "1": {
+        "name": "سلبي",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "هدف الضوضاء ذو الحجم الثابت (latent + camera)."
+      }
+    }
+  },
+  "TripoSplatPreprocessImage": {
+    "description": "قص مركز كل صورة إلى لوحة مربعة على خلفية سوداء مع إضافة حواف.",
+    "display_name": "معالجة صورة TripoSplat",
+    "inputs": {
+      "erode_radius": {
+        "name": "نصف قطر التآكل",
+        "tooltip": "تآكل قناة ألفا بهذا العدد من البكسلات قبل القص (لتجنب تسرب الحواف)."
+      },
+      "image": {
+        "name": "صورة"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "size": {
+        "name": "الحجم",
+        "tooltip": "حجم الصورة المربعة. تم تدريب النموذج على 1024؛ الأحجام الأخرى تعمل ولكنها خارج التوزيع."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صورة",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatSamplingPreview": {
+    "description": "تعديل نموذج TripoSplat لعقدة Ksampler القياسية لعرض معاينة مباشرة لفك ترميز gaussian splat في كل خطوة.",
+    "display_name": "معاينة أخذ عينات TripoSplat",
+    "inputs": {
+      "model": {
+        "name": "النموذج"
+      },
+      "num_gaussians": {
+        "name": "عدد gaussians",
+        "tooltip": "عدد gaussians المطلوب إنتاجها للمعاينة (يتم تقريبه إلى مضاعفات 32)."
+      },
+      "octree_level": {
+        "name": "مستوى octree",
+        "tooltip": "عمق octree لفك ترميز المعاينة (أقل = أرخص/أكثر خشونة)."
+      },
+      "pitch": {
+        "name": "زاوية الميل",
+        "tooltip": "زاوية ميل الكاميرا للمعاينة بالدرجات."
+      },
+      "point_size": {
+        "name": "حجم النقطة",
+        "tooltip": "أقصى نصف قطر splat بالبكسل. يتم تحديد حجم كل gaussian من مقياسه ويقتصر هنا؛ أقل = أدق/أكثر حدة، أعلى = أكثر سماكة."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAE decoder"
+      },
+      "yaw": {
+        "name": "زاوية الانحراف",
+        "tooltip": "زاوية انحراف الكاميرا للمعاينة بالدرجات."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TripoTextToModelNode": {
     "display_name": "Tripo: النص إلى نموذج",
     "inputs": {
@@ -19190,6 +19785,36 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTripoSplat": {
+    "description": "فك ترميز TripoSplat latent المأخوذ إلى gaussian splat ثلاثي الأبعاد. عدل عدد gaussians لتغيير الكثافة.",
+    "display_name": "فك ترميز TripoSplat",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "num_gaussians": {
+        "name": "عدد gaussians",
+        "tooltip": "عدد gaussians المطلوب إنتاجها (يتم تقريبه إلى مضاعفات 32). 262144 يطابق كثافة نقاط octree؛ القيم الأعلى تعيد أخذ عينات من نفس النقاط (أكثر كثافة، لكن بدون تفاصيل جديدة) وتكلف المزيد من VRAM/الوقت."
+      },
+      "samples": {
+        "name": "عينات"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تستخدم لتوليد نقاط octree بشكل محدد (RNG عالمي) لفك ترميز حتمي."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAE decoder"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },

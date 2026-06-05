@@ -233,7 +233,8 @@
       "auth/user-disabled": "Эта учетная запись отключена. Пожалуйста, обратитесь в службу поддержки.",
       "auth/user-not-found": "Учетная запись с этим email не найдена. Хотите создать новую учетную запись?",
       "auth/weak-password": "Пароль слишком слабый. Пожалуйста, используйте более надежный пароль длиной не менее 6 символов.",
-      "auth/wrong-password": "Введенный пароль неверен. Пожалуйста, попробуйте еще раз."
+      "auth/wrong-password": "Введенный пароль неверен. Пожалуйста, попробуйте еще раз.",
+      "generic": "Произошла ошибка при входе в систему. Пожалуйста, попробуйте еще раз."
     },
     "login": {
       "andText": "и",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "Запрос на сброс пароля отправлен",
   "cloudForgotPassword_sendResetLink": "Отправить ссылку для сброса",
   "cloudForgotPassword_title": "Забыли пароль",
+  "cloudHero": {
+    "nextSlide": "Следующий слайд",
+    "previousSlide": "Предыдущий слайд",
+    "slidePagerLabel": "Перейти к слайду {index}",
+    "slides": {
+      "cloud": {
+        "description": "Лучший выбор для большинства пользователей, которые хотят работать из любой точки мира с моделями, проверенными на коммерческую лицензию.",
+        "title": "Облако"
+      },
+      "models": {
+        "description": "Отобранные, коммерчески лицензированные модели, готовые к запуску без дополнительной настройки.",
+        "title": "Модели"
+      },
+      "team": {
+        "description": "Подключите свою команду уже сегодня. Делитесь рабочими процессами и ресурсами внутри вашей организации.",
+        "title": "Команда"
+      },
+      "workflows": {
+        "description": "От идеи до результата за считанные минуты. Генерируйте несколько вариантов одновременно.",
+        "title": "Рабочие процессы"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "Продолжить локально",
     "exploreCloud": "Попробовать облако бесплатно",
@@ -805,7 +829,11 @@
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
     "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "ПЛАВАЮЩИЙ",
@@ -856,6 +884,7 @@
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "СЭМПЛЕР",
     "SIGMAS": "СИГМЫ",
+    "SPLAT": "SPLAT",
     "STRING": "СТРОКА",
     "STYLE_MODEL": "МОДЕЛЬ_СТИЛЯ",
     "SVG": "SVG",
@@ -2001,6 +2030,7 @@
       "orthographic": "Ортографическая",
       "perspective": "Перспектива"
     },
+    "centerCameraOnModel": "Центрировать камеру на модели",
     "clearRecording": "Очистить запись",
     "dropToLoad": "Перетащите 3D-модель для загрузки",
     "edgeThreshold": "Порог края",
@@ -2047,7 +2077,6 @@
     "reloadingModel": "Перезагрузка модели...",
     "removeBackgroundImage": "Удалить фоновое изображение",
     "resizeNodeMatchOutput": "Изменить размер узла под вывод",
-    "retainViewOnReload": "Зафиксировать вид камеры при перезагрузке модели",
     "scene": "Сцена",
     "showGrid": "Показать сетку",
     "showSkeleton": "Показать скелет",
@@ -2691,6 +2720,7 @@
     "sd3": "sd3",
     "shader": "шейдер",
     "sigmas": "сигмы",
+    "splat": "splat",
     "stable_cascade": "стабильная_каскадная",
     "style_model": "модель_стиля",
     "supir": "supir",
@@ -3293,6 +3323,7 @@
     "Other": "Другое",
     "PLY": "PLY",
     "PlanCredits": "План и кредиты",
+    "PointCloud": "Облако точек",
     "Pointer": "Указатель",
     "Queue": "Очередь",
     "QueueButton": "Кнопка очереди",

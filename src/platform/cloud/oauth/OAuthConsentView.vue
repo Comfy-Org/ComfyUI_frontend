@@ -1,5 +1,7 @@
 <template>
-  <main class="mx-auto flex min-h-screen max-w-md flex-col justify-center p-6">
+  <main
+    class="dark-theme mx-auto flex min-h-screen max-w-md flex-col justify-center p-6"
+  >
     <section
       v-if="challenge"
       class="flex flex-col gap-6 rounded-2xl border border-solid border-muted bg-secondary-background p-6 shadow-sm"

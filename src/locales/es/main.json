@@ -233,7 +233,8 @@
       "auth/user-disabled": "Esta cuenta ha sido deshabilitada. Por favor, contacta al soporte.",
       "auth/user-not-found": "No se encontró ninguna cuenta con este correo electrónico. ¿Te gustaría crear una nueva cuenta?",
       "auth/weak-password": "La contraseña es demasiado débil. Por favor, usa una contraseña más segura con al menos 6 caracteres.",
-      "auth/wrong-password": "La contraseña que ingresaste es incorrecta. Por favor, inténtalo de nuevo."
+      "auth/wrong-password": "La contraseña que ingresaste es incorrecta. Por favor, inténtalo de nuevo.",
+      "generic": "Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo."
     },
     "login": {
       "andText": "y",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "Restablecimiento de contraseña enviado",
   "cloudForgotPassword_sendResetLink": "Enviar enlace de restablecimiento",
   "cloudForgotPassword_title": "¿Olvidaste tu contraseña?",
+  "cloudHero": {
+    "nextSlide": "Siguiente diapositiva",
+    "previousSlide": "Diapositiva anterior",
+    "slidePagerLabel": "Ir a la diapositiva {index}",
+    "slides": {
+      "cloud": {
+        "description": "Ideal para la mayoría de los usuarios que desean trabajar desde cualquier lugar con modelos verificados para uso comercial.",
+        "title": "Nube"
+      },
+      "models": {
+        "description": "Modelos seleccionados y con licencia comercial listos para usar sin configuración previa.",
+        "title": "Modelos"
+      },
+      "team": {
+        "description": "Incorpora a tu equipo hoy. Comparte flujos de trabajo y recursos en toda tu organización.",
+        "title": "Equipo"
+      },
+      "workflows": {
+        "description": "De la idea al resultado en minutos. Genera múltiples variaciones en paralelo.",
+        "title": "Flujos de trabajo"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
     "exploreCloud": "Probar la Nube Gratis",
@@ -805,7 +829,11 @@
     "FILE_3D_FBX": "ARCHIVO_3D_FBX",
     "FILE_3D_GLB": "ARCHIVO_3D_GLB",
     "FILE_3D_GLTF": "ARCHIVO_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "ARCHIVO_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "ARCHIVO_3D_STL",
     "FILE_3D_USDZ": "ARCHIVO_3D_USDZ",
     "FLOAT": "FLOTANTE",
@@ -856,6 +884,7 @@
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "MUESTREADOR",
     "SIGMAS": "SIGMAS",
+    "SPLAT": "SPLAT",
     "STRING": "CADENA",
     "STYLE_MODEL": "MODELO_DE_ESTILO",
     "SVG": "SVG",
@@ -2001,6 +2030,7 @@
       "orthographic": "Ortográfica",
       "perspective": "Perspectiva"
     },
+    "centerCameraOnModel": "Centrar la cámara en el modelo",
     "clearRecording": "Borrar grabación",
     "dropToLoad": "Suelta el modelo 3D para cargar",
     "edgeThreshold": "Umbral de borde",
@@ -2047,7 +2077,6 @@
     "reloadingModel": "Recargando modelo...",
     "removeBackgroundImage": "Eliminar imagen de fondo",
     "resizeNodeMatchOutput": "Redimensionar nodo para coincidir con la salida",
-    "retainViewOnReload": "Bloquear la vista de la cámara al recargar el modelo",
     "scene": "Escena",
     "showGrid": "Mostrar cuadrícula",
     "showSkeleton": "Mostrar esqueleto",
@@ -2691,6 +2720,7 @@
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "sigmas",
+    "splat": "splat",
     "stable_cascade": "stable_cascade",
     "style_model": "modelo_de_estilo",
     "supir": "supir",
@@ -3293,6 +3323,7 @@
     "Other": "Otros",
     "PLY": "PLY",
     "PlanCredits": "Plan y créditos",
+    "PointCloud": "Nube de puntos",
     "Pointer": "Puntero",
     "Queue": "Cola",
     "QueueButton": "Botón de Cola",

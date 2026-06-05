@@ -12,11 +12,10 @@ const WORKFLOW = 'missing/nested_subgraph_installed_model'
 const OUTER_SUBGRAPH_NODE_ID = '205'
 const LOTUS_MODEL_NAME = 'lotus-depth-d-v1-1.safetensors'
 
-const LOTUS_DIFFUSION_MODEL: Asset = {
+const LOTUS_DIFFUSION_MODEL: Asset & { hash?: string } = {
   id: 'test-lotus-depth-d-v1-1',
   name: LOTUS_MODEL_NAME,
-  asset_hash:
-    'blake3:0000000000000000000000000000000000000000000000000000000000000203',
+  hash: 'blake3:0000000000000000000000000000000000000000000000000000000000000203',
   size: 1_024,
   mime_type: 'application/octet-stream',
   tags: ['models', 'diffusion_models'],

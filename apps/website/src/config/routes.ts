@@ -12,15 +12,32 @@ const baseRoutes = {
   careers: '/careers',
   customers: '/customers',
   demos: '/demos',
+  learning: '/learning',
   termsOfService: '/terms-of-service',
   privacyPolicy: '/privacy-policy',
+  affiliates: '/affiliates',
+  affiliateTerms: '/affiliates/terms',
   contact: '/contact',
   models: '/p/supported-models'
 } as const
 
 type Routes = typeof baseRoutes
 
-const localeInvariantRouteKeys = new Set<keyof Routes>(['termsOfService'])
+// Routes that are served only at their canonical path regardless of the
+// active locale. Localized variants of these routes intentionally do not
+// exist, so getRoutes(<non-en>) must not prefix them — emitting
+// /zh-CN/<route> would produce a dead link.
+//
+// affiliateTerms: legal-reviewed English-only document. See the comment
+// header in src/pages/affiliates/terms.astro and the affiliate-terms i18n
+// block in src/i18n/translations.ts for the reasoning.
+//
+// termsOfService: legal-reviewed English-only document, same reasoning.
+const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
+  'affiliates',
+  'affiliateTerms',
+  'termsOfService'
+])
 
 export function getRoutes(locale: Locale = 'en'): Routes {
   if (locale === 'en') return baseRoutes
@@ -28,12 +45,13 @@ export function getRoutes(locale: Locale = 'en'): Routes {
   return Object.fromEntries(
     Object.entries(baseRoutes).map(([k, v]) => [
       k,
-      localeInvariantRouteKeys.has(k as keyof Routes) ? v : `${prefix}${v}`
+      LOCALE_INVARIANT_ROUTE_KEYS.has(k as keyof Routes) ? v : `${prefix}${v}`
     ])
   ) as unknown as Routes
 }
 
 export const externalLinks = {
+  affiliateApplicationForm: 'https://forms.gle/RS8L2ttcuGap4Q1v6',
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',

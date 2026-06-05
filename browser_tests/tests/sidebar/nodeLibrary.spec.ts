@@ -289,17 +289,17 @@ test.describe('Node library sidebar', () => {
     await customColorOption.click()
     await customColorOption.click()
 
-    // Use the color picker
-    await comfyPage.page
-      .getByLabel('Customize Folder')
-      .getByRole('textbox')
-      .click()
-    await comfyPage.page.locator('.p-colorpicker-color-background').click()
-
-    // Finalize the customization
     const dialog = comfyPage.page.getByRole('dialog', {
       name: 'Customize Folder'
     })
+    await dialog
+      .locator('.color-customization-selector-container > button')
+      .last()
+      .click()
+    await comfyPage.page
+      .getByLabel('Color saturation and brightness')
+      .click({ position: { x: 10, y: 10 } })
+
     // Select Folder icon (2nd button in Icon group)
     const iconGroup = dialog.getByText('Icon').locator('..').getByRole('group')
     await iconGroup.getByRole('button').nth(1).click()

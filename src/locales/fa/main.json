@@ -233,7 +233,8 @@
       "auth/user-disabled": "این حساب غیرفعال شده است. لطفاً با پشتیبانی تماس بگیرید.",
       "auth/user-not-found": "حسابی با این ایمیل یافت نشد. مایل به ایجاد حساب جدید هستید؟",
       "auth/weak-password": "رمز عبور خیلی ضعیف است. لطفاً از رمز عبور قوی‌تر با حداقل ۶ کاراکتر استفاده کنید.",
-      "auth/wrong-password": "رمز عبور وارد شده نادرست است. لطفاً دوباره تلاش کنید."
+      "auth/wrong-password": "رمز عبور وارد شده نادرست است. لطفاً دوباره تلاش کنید.",
+      "generic": "در ورود شما مشکلی پیش آمد. لطفاً دوباره تلاش کنید."
     },
     "login": {
       "andText": "و",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "لینک بازنشانی رمز عبور ارسال شد",
   "cloudForgotPassword_sendResetLink": "ارسال لینک بازنشانی",
   "cloudForgotPassword_title": "فراموشی رمز عبور",
+  "cloudHero": {
+    "nextSlide": "اسلاید بعدی",
+    "previousSlide": "اسلاید قبلی",
+    "slidePagerLabel": "رفتن به اسلاید {index}",
+    "slides": {
+      "cloud": {
+        "description": "مناسب برای اکثر کاربران که می‌خواهند از هر مکانی با مدل‌های دارای مجوز تجاری کار کنند.",
+        "title": "ابر"
+      },
+      "models": {
+        "description": "مدل‌های منتخب با مجوز تجاری آماده اجرا بدون نیاز به تنظیمات اولیه.",
+        "title": "مدل‌ها"
+      },
+      "team": {
+        "description": "تیم خود را امروز اضافه کنید. به اشتراک‌گذاری workflowها و دارایی‌ها در سراسر سازمان شما.",
+        "title": "تیم"
+      },
+      "workflows": {
+        "description": "از ایده تا خروجی در چند دقیقه. تولید چندین واریاسیون به صورت همزمان.",
+        "title": "Workflowها"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "ادامه به صورت محلی",
     "exploreCloud": "امتحان رایگان فضای ابری",
@@ -805,7 +829,11 @@
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
     "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "عدد اعشاری",
@@ -856,6 +884,7 @@
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "نمونه‌گیر",
     "SIGMAS": "سیگماها",
+    "SPLAT": "SPLAT",
     "STRING": "رشته",
     "STYLE_MODEL": "مدل سبک",
     "SVG": "SVG",
@@ -2001,6 +2030,7 @@
       "orthographic": "اورتوگرافیک",
       "perspective": "پرسپکتیو"
     },
+    "centerCameraOnModel": "مرکز دوربین روی مدل",
     "clearRecording": "پاک کردن ضبط",
     "dropToLoad": "مدل سه‌بعدی را برای بارگذاری رها کنید",
     "edgeThreshold": "آستانه لبه",
@@ -2047,7 +2077,6 @@
     "reloadingModel": "در حال بارگذاری مجدد مدل...",
     "removeBackgroundImage": "حذف تصویر پس‌زمینه",
     "resizeNodeMatchOutput": "تغییر اندازه node مطابق خروجی",
-    "retainViewOnReload": "قفل کردن نمای دوربین هنگام بارگذاری مجدد مدل",
     "scene": "صحنه",
     "showGrid": "نمایش شبکه",
     "showSkeleton": "نمایش اسکلت",
@@ -2691,6 +2720,7 @@
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "سیگماها",
+    "splat": "splat",
     "stable_cascade": "stable cascade",
     "style_model": "مدل سبک",
     "supir": "supir",
@@ -3293,6 +3323,7 @@
     "Other": "سایر",
     "PLY": "PLY",
     "PlanCredits": "طرح و اعتبارات",
+    "PointCloud": "ابر نقاط",
     "Pointer": "اشاره‌گر",
     "Queue": "صف",
     "QueueButton": "دکمه صف",

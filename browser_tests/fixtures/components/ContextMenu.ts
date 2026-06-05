@@ -27,6 +27,10 @@ export class ContextMenu {
     await this.waitForHidden()
   }
 
+  menuItem(name: string): Locator {
+    return this.anyMenu.getByRole('menuitem', { name, exact: true })
+  }
+
   /**
    * Click a litegraph menu entry. Selects the most recently opened matching
    * entry so nested submenu items can be reached without being shadowed by

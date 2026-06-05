@@ -125,7 +125,11 @@ vi.mock('./Load3d', () => ({
   }
 }))
 
-type FakeLoaderManager = { adapterRefArg: { current: ModelAdapter | null } }
+type FakeAdapterRef = {
+  current: ModelAdapter | null
+  capabilities: ModelAdapterCapabilities | null
+}
+type FakeLoaderManager = { adapterRefArg: FakeAdapterRef }
 type FakeSceneModelManager = {
   getCurrentCapabilities: () => unknown
   getBoundsFromAdapter: (model: unknown) => unknown
@@ -134,7 +138,7 @@ type FakeSceneModelManager = {
 }
 type FakeLoad3d = {
   deps: {
-    adapterRef: { current: ModelAdapter | null }
+    adapterRef: FakeAdapterRef
     loaderManager: FakeLoaderManager
     modelManager: FakeSceneModelManager
   }
@@ -222,6 +226,7 @@ describe('createLoad3d', () => {
     function withAdapter(adapter: ModelAdapter) {
       const instance = createLoad3d(createContainer()) as unknown as FakeLoad3d
       instance.deps.adapterRef.current = adapter
+      instance.deps.adapterRef.capabilities = adapter.capabilities
       return instance
     }
 

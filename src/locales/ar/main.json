@@ -233,7 +233,8 @@
       "auth/user-disabled": "تم تعطيل هذا الحساب. يرجى الاتصال بالدعم.",
       "auth/user-not-found": "لم يتم العثور على حساب بهذا البريد الإلكتروني. هل ترغب في إنشاء حساب جديد؟",
       "auth/weak-password": "كلمة المرور ضعيفة جداً. يرجى استخدام كلمة مرور أقوى تحتوي على 6 أحرف على الأقل.",
-      "auth/wrong-password": "كلمة المرور التي أدخلتها غير صحيحة. يرجى المحاولة مرة أخرى."
+      "auth/wrong-password": "كلمة المرور التي أدخلتها غير صحيحة. يرجى المحاولة مرة أخرى.",
+      "generic": "حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مرة أخرى."
     },
     "login": {
       "andText": "و",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "تم إرسال إعادة تعيين كلمة المرور",
   "cloudForgotPassword_sendResetLink": "إرسال رابط إعادة التعيين",
   "cloudForgotPassword_title": "نسيت كلمة المرور",
+  "cloudHero": {
+    "nextSlide": "الشريحة التالية",
+    "previousSlide": "الشريحة السابقة",
+    "slidePagerLabel": "انتقل إلى الشريحة {index}",
+    "slides": {
+      "cloud": {
+        "description": "الأفضل لمعظم المستخدمين الذين يرغبون في العمل من أي مكان مع نماذج تم التحقق من تراخيصها التجارية.",
+        "title": "السحابة"
+      },
+      "models": {
+        "description": "نماذج مختارة ومرخصة تجاريًا جاهزة للتشغيل دون أي إعداد.",
+        "title": "النماذج"
+      },
+      "team": {
+        "description": "قم بإضافة فريقك اليوم. شارك سير العمل والموارد عبر مؤسستك.",
+        "title": "الفريق"
+      },
+      "workflows": {
+        "description": "من الفكرة إلى الناتج في دقائق. أنشئ عدة تنويعات جنبًا إلى جنب.",
+        "title": "سير العمل"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "المتابعة محليًا",
     "exploreCloud": "جرّب السحابة مجانًا",
@@ -805,7 +829,11 @@
     "FILE_3D_FBX": "ملف FBX ثلاثي الأبعاد",
     "FILE_3D_GLB": "ملف GLB ثلاثي الأبعاد",
     "FILE_3D_GLTF": "ملف GLTF ثلاثي الأبعاد",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "ملف OBJ ثلاثي الأبعاد",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "ملف STL ثلاثي الأبعاد",
     "FILE_3D_USDZ": "ملف USDZ ثلاثي الأبعاد",
     "FLOAT": "رقم عشري",
@@ -856,6 +884,7 @@
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "جهاز تجميع",
     "SIGMAS": "سيجمات",
+    "SPLAT": "SPLAT",
     "STRING": "نص",
     "STYLE_MODEL": "نموذج النمط",
     "SVG": "SVG",
@@ -2001,6 +2030,7 @@
       "orthographic": "أرثوغرافي",
       "perspective": "منظور"
     },
+    "centerCameraOnModel": "توسيط الكاميرا على النموذج",
     "clearRecording": "مسح التسجيل",
     "dropToLoad": "أسقط نموذج ثلاثي الأبعاد للتحميل",
     "edgeThreshold": "عتبة الحافة",
@@ -2047,7 +2077,6 @@
     "reloadingModel": "جاري إعادة تحميل النموذج...",
     "removeBackgroundImage": "إزالة صورة الخلفية",
     "resizeNodeMatchOutput": "تغيير حجم العقدة لتتناسب مع المخرج",
-    "retainViewOnReload": "تثبيت عرض الكاميرا عند إعادة تحميل النموذج",
     "scene": "المشهد",
     "showGrid": "عرض الشبكة",
     "showSkeleton": "إظهار الهيكل العظمي",
@@ -2691,6 +2720,7 @@
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "سيجمات",
+    "splat": "splat",
     "stable_cascade": "سلسلة ثابتة",
     "style_model": "نموذج النمط",
     "supir": "supir",
@@ -3293,6 +3323,7 @@
     "Other": "أخرى",
     "PLY": "PLY",
     "PlanCredits": "الخطة والاعتمادات",
+    "PointCloud": "سحابة نقطية",
     "Pointer": "المؤشر",
     "Queue": "قائمة الانتظار",
     "QueueButton": "زر قائمة الانتظار",

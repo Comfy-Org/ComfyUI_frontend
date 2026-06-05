@@ -54,6 +54,7 @@ export const TestIds = {
     errorDialogFindIssues: 'error-dialog-find-issues',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
+    errorGroupDisplayMessage: 'error-group-display-message',
     missingNodePacksGroup: 'error-group-missing-node',
     missingModelsGroup: 'error-group-missing-model',
     missingModelExpand: 'missing-model-expand',
@@ -137,7 +138,8 @@ export const TestIds = {
     colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
-    colorRed: 'red'
+    colorRed: 'red',
+    convertSubgraph: 'convert-to-subgraph-button'
   },
   menu: {
     moreMenuContent: 'more-menu-content'
@@ -303,12 +305,3 @@ export const TestIds = {
     typeFilter: (key: 'input' | 'output') => `search-filter-${key}`
   }
 } as const
-
-export type TestId<K extends keyof typeof TestIds> = Exclude<
-  (typeof TestIds)[K][keyof (typeof TestIds)[K]],
-  (...args: never[]) => string
->
-
-export type TestIdValue = {
-  [K in keyof typeof TestIds]: TestId<K>
-}[keyof typeof TestIds]

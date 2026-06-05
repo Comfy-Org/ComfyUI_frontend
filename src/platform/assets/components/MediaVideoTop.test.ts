@@ -13,7 +13,7 @@ function createVideoAsset(
   return {
     id: 'video-1',
     name: 'clip.mp4',
-    asset_hash: null,
+    hash: null,
     mime_type: mimeType,
     tags: [],
     kind: 'video',

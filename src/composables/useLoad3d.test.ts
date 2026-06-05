@@ -144,7 +144,6 @@ describe('useLoad3d', () => {
       setMaterialMode: vi.fn(),
       toggleCamera: vi.fn(),
       setFOV: vi.fn(),
-      setRetainViewOnReload: vi.fn(),
       setLightIntensity: vi.fn(),
       setCameraState: vi.fn(),
       loadModel: vi.fn().mockResolvedValue(undefined),
@@ -325,6 +324,20 @@ describe('useLoad3d', () => {
 
     it('should set preview mode when no width/height widgets', async () => {
       mockNode.widgets = []
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+
+      await composable.initializeLoad3d(containerRef)
+
+      expect(composable.isPreview.value).toBe(true)
+    })
+
+    it('should set preview mode when comfyClass starts with Preview, even with width/height widgets', async () => {
+      Object.defineProperty(mockNode, 'constructor', {
+        value: { comfyClass: 'Preview3DAdvanced' },
+        configurable: true
+      })
 
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
@@ -570,21 +583,17 @@ describe('useLoad3d', () => {
 
       vi.mocked(mockLoad3d.toggleCamera!).mockClear()
       vi.mocked(mockLoad3d.setFOV!).mockClear()
-      vi.mocked(mockLoad3d.setRetainViewOnReload!).mockClear()
 
       composable.cameraConfig.value.cameraType = 'orthographic'
       composable.cameraConfig.value.fov = 90
-      composable.cameraConfig.value.retainViewOnReload = true
       await nextTick()
 
       expect(mockLoad3d.toggleCamera).toHaveBeenCalledWith('orthographic')
       expect(mockLoad3d.setFOV).toHaveBeenCalledWith(90)
-      expect(mockLoad3d.setRetainViewOnReload).toHaveBeenCalledWith(true)
       expect(mockNode.properties['Camera Config']).toEqual({
         cameraType: 'orthographic',
         fov: 90,
-        state: null,
-        retainViewOnReload: true
+        state: null
       })
     })
 
@@ -1503,9 +1512,11 @@ describe('useLoad3d', () => {
       const composable = useLoad3d(mockNode)
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
-      const call = vi
-        .mocked(mockLoad3d.addEventListener!)
-        .mock.calls.find(([event]) => event === 'modelReady')
+      const addEventListenerCalls = vi.mocked(mockLoad3d.addEventListener!).mock
+        .calls
+      const call = addEventListenerCalls.find(
+        ([event]) => event === 'modelReady'
+      )
       return { composable, handler: call![1] as () => void }
     }
 
@@ -1514,9 +1525,9 @@ describe('useLoad3d', () => {
       const containerRef = document.createElement('div')
       await composable.initializeLoad3d(containerRef)
 
-      const events = vi
-        .mocked(mockLoad3d.addEventListener!)
-        .mock.calls.map(([event]) => event)
+      const addEventListenerCalls = vi.mocked(mockLoad3d.addEventListener!).mock
+        .calls
+      const events = addEventListenerCalls.map(([event]) => event)
       expect(events).toContain('modelReady')
       expect(events).toContain('modelLoadingEnd')
       expect(composable).toBeDefined()
