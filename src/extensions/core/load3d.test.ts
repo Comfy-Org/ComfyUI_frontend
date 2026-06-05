@@ -725,7 +725,7 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     await preview3DAdvancedExt.nodeCreated(node)
 
     expect(configureForSaveMeshMock).toHaveBeenCalledWith(
-      'output',
+      'temp',
       'prev/model.glb',
       { silentOnNotFound: true }
     )
@@ -851,7 +851,7 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
 
     expect(node.properties['Last Time Model File']).toBe('sub/nested/mesh.glb')
     expect(configureForSaveMeshMock).toHaveBeenCalledWith(
-      'output',
+      'temp',
       'sub/nested/mesh.glb',
       { silentOnNotFound: true }
     )
