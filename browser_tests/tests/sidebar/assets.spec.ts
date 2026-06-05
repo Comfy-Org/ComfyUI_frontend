@@ -743,7 +743,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await tab.assetCards.first().click()
       await expect(tab.downloadSelectedButton).toBeVisible()
 
-      await tab.downloadSelected()
+      await tab.downloadSelectedButton.click()
 
       await expect.poll(() => exportRequests).toHaveLength(1)
 
@@ -765,9 +765,9 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await tab.open()
 
       await tab.assetCards.first().click()
-      await expect(tab.downloadSelectedButton).toBeVisible()
+      await expect(tab.downloadWithPreviewsButton).toBeVisible()
 
-      await tab.downloadSelectedWithPreviews()
+      await tab.downloadWithPreviewsButton.click()
 
       await expect.poll(() => exportRequests).toHaveLength(1)
 
@@ -802,7 +802,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await comfyPage.page.keyboard.up('Control')
 
       await expect(tab.selectedCards).toHaveCount(2)
-      await tab.downloadSelected()
+      await tab.downloadSelectedButton.click()
 
       await expect.poll(() => exportRequests).toHaveLength(1)
 
@@ -830,7 +830,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await comfyPage.page.keyboard.up('Control')
 
       await expect(tab.selectedCards).toHaveCount(2)
-      await tab.downloadSelected()
+      await tab.downloadSelectedButton.click()
 
       await expect.poll(() => exportRequests).toHaveLength(1)
 

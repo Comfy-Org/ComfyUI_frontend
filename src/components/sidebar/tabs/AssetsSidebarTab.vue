@@ -150,61 +150,25 @@
             }}</span>
             <i class="icon-[lucide--trash-2] size-4" />
           </Button>
-          <Popover v-if="canIncludePreviews">
-            <template #button>
-              <Button
-                :variant="isCompact ? undefined : 'secondary'"
-                :size="isCompact ? 'icon' : undefined"
-                data-testid="assets-download-selected"
-              >
-                <span v-if="!isCompact">{{
-                  $t('mediaAsset.selection.downloadSelected')
-                }}</span>
-                <i class="icon-[lucide--download] size-4" />
-                <i class="icon-[lucide--chevron-down] size-3" />
-              </Button>
-            </template>
-            <template #default="{ close }">
-              <div role="menu" class="flex flex-col p-1">
-                <button
-                  type="button"
-                  role="menuitem"
-                  data-testid="assets-download-no-previews"
-                  class="my-1 flex w-full cursor-pointer flex-row items-center gap-2 rounded-sm p-2 text-left hover:bg-secondary-background-hover"
-                  @click="
-                    () => {
-                      handleDownloadSelected(false)
-                      close()
-                    }
-                  "
-                >
-                  <i class="icon-[lucide--download] size-4" />
-                  <span class="text-sm">{{
-                    $t('mediaAsset.selection.downloadSelected')
-                  }}</span>
-                </button>
-                <button
-                  type="button"
-                  role="menuitem"
-                  data-testid="assets-download-with-previews"
-                  class="my-1 flex w-full cursor-pointer flex-row items-center gap-2 rounded-sm p-2 text-left hover:bg-secondary-background-hover"
-                  @click="
-                    () => {
-                      handleDownloadSelected(true)
-                      close()
-                    }
-                  "
-                >
-                  <i class="icon-[lucide--images] size-4" />
-                  <span class="text-sm">{{
-                    $t('mediaAsset.selection.downloadWithPreviews')
-                  }}</span>
-                </button>
-              </div>
-            </template>
-          </Popover>
           <Button
-            v-else
+            v-if="canIncludePreviews"
+            v-tooltip.top="
+              isCompact ? $t('mediaAsset.selection.downloadWithPreviews') : ''
+            "
+            :variant="isCompact ? undefined : 'secondary'"
+            :size="isCompact ? 'icon' : undefined"
+            :aria-label="
+              isCompact ? $t('mediaAsset.selection.downloadWithPreviews') : null
+            "
+            data-testid="assets-download-with-previews"
+            @click="handleDownloadSelected(true)"
+          >
+            <span v-if="!isCompact">{{
+              $t('mediaAsset.selection.downloadWithPreviews')
+            }}</span>
+            <i class="icon-[lucide--images] size-4" />
+          </Button>
+          <Button
             :variant="isCompact ? undefined : 'secondary'"
             :size="isCompact ? 'icon' : undefined"
             data-testid="assets-download-selected"
@@ -273,7 +237,6 @@ import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/Popover.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
