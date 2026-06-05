@@ -1,8 +1,9 @@
-import type { NodeValidationError, ResolvedErrorMessage } from './types'
+import type { NodeValidationError, ResolvedCatalogErrorMessage } from './types'
 
 import {
   IMAGE_NOT_LOADED_CATALOG_ID,
-  MISSING_CONNECTION_CATALOG_ID
+  MISSING_CONNECTION_CATALOG_ID,
+  UNKNOWN_VALIDATION_ERROR_CATALOG_ID
 } from './catalogIds'
 import {
   normalizeNodeName,
@@ -115,6 +116,11 @@ const IMAGE_NOT_LOADED_VALIDATION_RULE = {
   catalogId: IMAGE_NOT_LOADED_CATALOG_ID,
   itemLabel: 'node',
   copyKeys: DEFAULT_COPY_KEYS
+} satisfies ValidationCatalogRule
+
+const UNKNOWN_VALIDATION_ERROR_RULE = {
+  catalogId: UNKNOWN_VALIDATION_ERROR_CATALOG_ID,
+  itemLabel: 'node'
 } satisfies ValidationCatalogRule
 
 function getInputName(error: NodeValidationError): string {
@@ -272,7 +278,7 @@ function resolveValidationCatalogCopy(
   context: ErrorResolveContext,
   localeKey: string,
   rule: ValidationCatalogRule
-): ResolvedErrorMessage {
+): ResolvedCatalogErrorMessage {
   const nodeName = normalizeNodeName(context.nodeDisplayName)
   const inputName = getInputName(error)
   const trimmedDetails = error.details.trim()
@@ -282,6 +288,7 @@ function resolveValidationCatalogCopy(
       : trimmedDetails
   const params = {
     ...getValidationParams(error, nodeName, inputName),
+    errorType: error.type,
     rawDetails
   }
   const keyPrefix = `errorCatalog.validationErrors.${localeKey}`
@@ -330,7 +337,7 @@ function resolveValidationCatalogCopy(
 export function resolveNodeValidationErrorMessage(
   error: NodeValidationError,
   context: ErrorResolveContext
-): ResolvedErrorMessage {
+): ResolvedCatalogErrorMessage {
   if (isImageNotLoadedValidationError(error)) {
     return resolveValidationCatalogCopy(
       error,
@@ -341,7 +348,17 @@ export function resolveNodeValidationErrorMessage(
   }
 
   const rule = VALIDATION_ERROR_RULES[error.type]
-  if (!rule) return {}
+  if (!rule) {
+    return resolveValidationCatalogCopy(
+      error,
+      context,
+      'unknown_validation_error',
+      {
+        ...UNKNOWN_VALIDATION_ERROR_RULE,
+        copyKeys: getRawDetailsOnlyCopyKeys(error)
+      }
+    )
+  }
 
   return resolveValidationCatalogCopy(error, context, error.type, rule)
 }
