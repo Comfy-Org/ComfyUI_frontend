@@ -138,44 +138,79 @@
           </div>
         </div>
         <div class="flex shrink items-center-safe justify-end-safe gap-2 pr-4">
-          <template v-if="isCompact">
-            <!-- Compact mode: Icon only -->
-            <Button
-              v-if="shouldShowDeleteButton"
-              size="icon"
-              data-testid="assets-delete-selected"
-              @click="handleDeleteSelected"
-            >
-              <i class="icon-[lucide--trash-2] size-4" />
-            </Button>
-            <Button
-              size="icon"
-              data-testid="assets-download-selected"
-              @click="handleDownloadSelected"
-            >
-              <i class="icon-[lucide--download] size-4" />
-            </Button>
-          </template>
-          <template v-else>
-            <!-- Normal mode: Icon + Text -->
-            <Button
-              v-if="shouldShowDeleteButton"
-              variant="secondary"
-              data-testid="assets-delete-selected"
-              @click="handleDeleteSelected"
-            >
-              <span>{{ $t('mediaAsset.selection.deleteSelected') }}</span>
-              <i class="icon-[lucide--trash-2] size-4" />
-            </Button>
-            <Button
-              variant="secondary"
-              data-testid="assets-download-selected"
-              @click="handleDownloadSelected"
-            >
-              <span>{{ $t('mediaAsset.selection.downloadSelected') }}</span>
-              <i class="icon-[lucide--download] size-4" />
-            </Button>
-          </template>
+          <Button
+            v-if="shouldShowDeleteButton"
+            :variant="isCompact ? undefined : 'secondary'"
+            :size="isCompact ? 'icon' : undefined"
+            data-testid="assets-delete-selected"
+            @click="handleDeleteSelected"
+          >
+            <span v-if="!isCompact">{{
+              $t('mediaAsset.selection.deleteSelected')
+            }}</span>
+            <i class="icon-[lucide--trash-2] size-4" />
+          </Button>
+          <Popover v-if="canIncludePreviews">
+            <template #button>
+              <Button
+                :variant="isCompact ? undefined : 'secondary'"
+                :size="isCompact ? 'icon' : undefined"
+                data-testid="assets-download-selected"
+              >
+                <span v-if="!isCompact">{{
+                  $t('mediaAsset.selection.downloadSelected')
+                }}</span>
+                <i class="icon-[lucide--download] size-4" />
+                <i class="icon-[lucide--chevron-down] size-3" />
+              </Button>
+            </template>
+            <template #default="{ close }">
+              <div class="flex flex-col p-1">
+                <div
+                  data-testid="assets-download-no-previews"
+                  class="my-1 flex cursor-pointer flex-row items-center gap-2 rounded-sm p-2 hover:bg-secondary-background-hover"
+                  @click="
+                    () => {
+                      handleDownloadSelected(false)
+                      close()
+                    }
+                  "
+                >
+                  <i class="icon-[lucide--download] size-4" />
+                  <span class="text-sm">{{
+                    $t('mediaAsset.selection.downloadSelected')
+                  }}</span>
+                </div>
+                <div
+                  data-testid="assets-download-with-previews"
+                  class="my-1 flex cursor-pointer flex-row items-center gap-2 rounded-sm p-2 hover:bg-secondary-background-hover"
+                  @click="
+                    () => {
+                      handleDownloadSelected(true)
+                      close()
+                    }
+                  "
+                >
+                  <i class="icon-[lucide--images] size-4" />
+                  <span class="text-sm">{{
+                    $t('mediaAsset.selection.downloadWithPreviews')
+                  }}</span>
+                </div>
+              </div>
+            </template>
+          </Popover>
+          <Button
+            v-else
+            :variant="isCompact ? undefined : 'secondary'"
+            :size="isCompact ? 'icon' : undefined"
+            data-testid="assets-download-selected"
+            @click="handleDownloadSelected(false)"
+          >
+            <span v-if="!isCompact">{{
+              $t('mediaAsset.selection.downloadSelected')
+            }}</span>
+            <i class="icon-[lucide--download] size-4" />
+          </Button>
         </div>
       </div>
     </template>
@@ -234,6 +269,7 @@ import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Popover from '@/components/ui/Popover.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
@@ -559,10 +595,12 @@ const handleBulkExportWorkflow = async (assets: AssetItem[]) => {
   clearSelection()
 }
 
-const handleDownloadSelected = () => {
-  downloadAssets(selectedAssets.value)
+const handleDownloadSelected = (includePreviews = false) => {
+  downloadAssets(selectedAssets.value, includePreviews)
   clearSelection()
 }
+
+const canIncludePreviews = computed(() => activeTab.value === 'output')
 
 const handleDeleteSelected = async () => {
   if (await deleteAssets(selectedAssets.value)) {

@@ -109,7 +109,7 @@ export function useMediaAssetActions() {
    * Falls back to direct downloads in OSS mode and for single single-output
    * assets. With no argument, uses the asset from `MediaAssetKey` context.
    */
-  const downloadAssets = (assets?: AssetItem[]) => {
+  const downloadAssets = (assets?: AssetItem[], includePreviews = false) => {
     const targetAssets =
       assets ?? (mediaContext?.asset.value ? [mediaContext.asset.value] : [])
     if (targetAssets.length === 0) return
@@ -120,7 +120,7 @@ export function useMediaAssetActions() {
     })
 
     if (isCloud && (targetAssets.length > 1 || hasMultiOutputJobs)) {
-      void downloadAssetsAsZip(targetAssets)
+      void downloadAssetsAsZip(targetAssets, includePreviews)
       return
     }
 
@@ -147,7 +147,10 @@ export function useMediaAssetActions() {
     }
   }
 
-  async function downloadAssetsAsZip(assets: AssetItem[]) {
+  async function downloadAssetsAsZip(
+    assets: AssetItem[],
+    includePreviews = false
+  ) {
     const assetExportStore = useAssetExportStore()
 
     try {
@@ -201,6 +204,7 @@ export function useMediaAssetActions() {
         ...(Object.keys(jobAssetNameFilters).length > 0
           ? { job_asset_name_filters: jobAssetNameFilters }
           : {}),
+        ...(includePreviews ? { include_previews: true } : {}),
         naming_strategy: namingStrategy
       })
 

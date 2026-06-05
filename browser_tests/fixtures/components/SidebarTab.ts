@@ -318,6 +318,8 @@ export class AssetsSidebarTab extends SidebarTab {
   public readonly deselectAllButton: Locator
   public readonly deleteSelectedButton: Locator
   public readonly downloadSelectedButton: Locator
+  public readonly downloadNoPreviewsButton: Locator
+  public readonly downloadWithPreviewsButton: Locator
 
   // --- Folder view ---
   public readonly backToAssetsButton: Locator
@@ -366,10 +368,26 @@ export class AssetsSidebarTab extends SidebarTab {
       .getByTestId('assets-download-selected')
       .or(page.locator('button:has(.icon-\\[lucide--download\\])').last())
       .first()
+    this.downloadNoPreviewsButton = page.getByTestId(
+      'assets-download-no-previews'
+    )
+    this.downloadWithPreviewsButton = page.getByTestId(
+      'assets-download-with-previews'
+    )
     this.backToAssetsButton = page.getByText('Back to all assets')
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'
     )
+  }
+
+  async downloadSelected() {
+    await this.downloadSelectedButton.click()
+    await this.downloadNoPreviewsButton.click()
+  }
+
+  async downloadSelectedWithPreviews() {
+    await this.downloadSelectedButton.click()
+    await this.downloadWithPreviewsButton.click()
   }
 
   emptyStateTitle(title: string) {

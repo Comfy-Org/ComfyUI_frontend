@@ -698,6 +698,34 @@ describe('useMediaAssetActions', () => {
       })
       expect(payload.naming_strategy).toBe('preserve')
     })
+
+    it('omits include_previews by default', async () => {
+      const assets = [createOutputAsset('a1', 'img1.png', 'job1', 3)]
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets(assets)
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      const payload = mockCreateAssetExport.mock.calls[0][0]
+      expect(payload.include_previews).toBeUndefined()
+    })
+
+    it('sends include_previews when requested', async () => {
+      const assets = [createOutputAsset('a1', 'img1.png', 'job1', 3)]
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets(assets, true)
+
+      await vi.waitFor(() => {
+        expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
+      })
+
+      const payload = mockCreateAssetExport.mock.calls[0][0]
+      expect(payload.include_previews).toBe(true)
+    })
   })
 
   describe('downloadAssets - export toast file count', () => {

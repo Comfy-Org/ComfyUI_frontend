@@ -743,7 +743,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await tab.assetCards.first().click()
       await expect(tab.downloadSelectedButton).toBeVisible()
 
-      await tab.downloadSelectedButton.click()
+      await tab.downloadSelected()
 
       await expect.poll(() => exportRequests).toHaveLength(1)
 
@@ -751,6 +751,31 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       expect(payload.job_ids).toEqual(['job-gamma'])
       expect(payload.job_asset_name_filters).toBeUndefined()
       expect(payload.naming_strategy).toBe('preserve')
+      expect('include_previews' in payload).toBe(false)
+    }
+  )
+
+  cloudTest(
+    'Download with previews sets include_previews on the export request',
+    async ({ comfyPage, mockCloudAssetSidebarData }) => {
+      void mockCloudAssetSidebarData
+      const exportRequests = await comfyPage.assets.captureAssetExportRequests()
+
+      const tab = comfyPage.menu.assetsTab
+      await tab.open()
+
+      await tab.assetCards.first().click()
+      await expect(tab.downloadSelectedButton).toBeVisible()
+
+      await tab.downloadSelectedWithPreviews()
+
+      await expect.poll(() => exportRequests).toHaveLength(1)
+
+      const payload = exportRequests[0]
+      expect(payload.job_ids).toEqual(['job-gamma'])
+      expect(
+        'include_previews' in payload ? payload.include_previews : false
+      ).toBe(true)
     }
   )
 
@@ -777,7 +802,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await comfyPage.page.keyboard.up('Control')
 
       await expect(tab.selectedCards).toHaveCount(2)
-      await tab.downloadSelectedButton.click()
+      await tab.downloadSelected()
 
       await expect.poll(() => exportRequests).toHaveLength(1)
 
@@ -805,7 +830,7 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
       await comfyPage.page.keyboard.up('Control')
 
       await expect(tab.selectedCards).toHaveCount(2)
-      await tab.downloadSelectedButton.click()
+      await tab.downloadSelected()
 
       await expect.poll(() => exportRequests).toHaveLength(1)
 
