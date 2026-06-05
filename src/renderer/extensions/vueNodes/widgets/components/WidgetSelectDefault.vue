@@ -60,7 +60,7 @@
         </ComboboxTrigger>
       </ComboboxAnchor>
 
-      <ComboboxPortal :to="portalTarget" :disabled="isPortalDisabled">
+      <ComboboxPortal>
         <ComboboxContent
           data-capture-wheel="true"
           data-testid="widget-select-default-overlay"
@@ -161,7 +161,6 @@ import {
 import { computed, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
-import { useTransformCompatOverlayProps } from '@/composables/useTransformCompatOverlayProps'
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -242,18 +241,9 @@ const searchInputContainerRef = ref<HTMLElement>()
 const { handleFocusOutside, handleViewportPointerDown } =
   useRestoreFocusOnViewportPointer(focusSearchInput)
 
-const transformCompatProps = useTransformCompatOverlayProps()
-
 const widgetOptions = computed(
   () => widget.options as SelectWidgetOptions | undefined
 )
-
-const portalTarget = computed(() => {
-  const appendTo = transformCompatProps.value.appendTo
-  return appendTo === 'self' ? undefined : appendTo
-})
-
-const isPortalDisabled = computed(() => !portalTarget.value)
 
 const disabled = computed(() => Boolean(widgetOptions.value?.disabled))
 const placeholder = computed(() => widgetOptions.value?.placeholder ?? '')
