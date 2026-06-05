@@ -49,6 +49,7 @@ interface Window {
     posthog_project_token?: string
     posthog_api_host?: string
     posthog_config?: Record<string, unknown>
+    syftdata_source_id?: string
     require_whitelist?: boolean
     subscription_required?: boolean
     max_upload_size?: number
