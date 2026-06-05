@@ -352,6 +352,30 @@ export function useJobMenu(
         }
       ]
     }
+    if (state === 'cancelled') {
+      return [
+        {
+          key: 'open-workflow',
+          label: jobMenuOpenWorkflowFailedLabel.value,
+          icon: 'icon-[comfy--workflow]',
+          onClick: openJobWorkflow
+        },
+        { kind: 'divider', key: 'd1' },
+        {
+          key: 'copy-id',
+          label: jobMenuCopyJobIdLabel.value,
+          icon: 'icon-[lucide--copy]',
+          onClick: copyJobId
+        },
+        { kind: 'divider', key: 'd2' },
+        {
+          key: 'delete',
+          label: st('queue.jobMenu.removeJob', 'Remove job'),
+          icon: 'icon-[lucide--circle-minus]',
+          onClick: removeFailedJob
+        }
+      ]
+    }
     return [
       {
         key: 'open-workflow',
