@@ -318,7 +318,7 @@ export class AssetsSidebarTab extends SidebarTab {
   public readonly deselectAllButton: Locator
   public readonly deleteSelectedButton: Locator
   public readonly downloadSelectedButton: Locator
-  public readonly includePreviewsCheckbox: Locator
+  public readonly includePreviewsToggle: Locator
 
   // --- Folder view ---
   public readonly backToAssetsButton: Locator
@@ -367,7 +367,7 @@ export class AssetsSidebarTab extends SidebarTab {
       .getByTestId('assets-download-selected')
       .or(page.locator('button:has(.icon-\\[lucide--download\\])').last())
       .first()
-    this.includePreviewsCheckbox = page.getByTestId('assets-include-previews')
+    this.includePreviewsToggle = page.getByTestId('assets-include-previews')
     this.backToAssetsButton = page.getByText('Back to all assets')
     this.skeletonLoaders = page.locator(
       '.sidebar-content-container .animate-pulse'

@@ -150,38 +150,18 @@
             }}</span>
             <i class="icon-[lucide--trash-2] size-4" />
           </Button>
-          <div
+          <Button
             v-if="canIncludePreviews"
-            v-tooltip.top="
-              isCompact ? $t('mediaAsset.selection.includePreviews') : ''
-            "
-            role="checkbox"
-            :aria-checked="includePreviews"
+            v-tooltip.top="$t('mediaAsset.selection.includePreviews')"
+            :variant="includePreviews ? 'primary' : 'secondary'"
+            size="icon"
+            :aria-pressed="includePreviews"
             :aria-label="$t('mediaAsset.selection.includePreviews')"
-            tabindex="0"
             data-testid="assets-include-previews"
-            class="flex shrink-0 cursor-pointer items-center gap-2 rounded-lg px-2 py-1 hover:bg-secondary-background-hover"
             @click="includePreviews = !includePreviews"
-            @keydown.enter.prevent="includePreviews = !includePreviews"
-            @keydown.space.prevent="includePreviews = !includePreviews"
           >
-            <div
-              class="flex size-4 shrink-0 items-center justify-center rounded-sm transition-all duration-200"
-              :class="
-                includePreviews
-                  ? 'bg-primary-background'
-                  : 'bg-secondary-background'
-              "
-            >
-              <i
-                v-if="includePreviews"
-                class="icon-[lucide--check] size-3 text-white"
-              />
-            </div>
-            <span v-if="!isCompact" class="text-sm whitespace-nowrap">{{
-              $t('mediaAsset.selection.includePreviews')
-            }}</span>
-          </div>
+            <i class="icon-[lucide--images] size-4" />
+          </Button>
           <Button
             :variant="isCompact ? undefined : 'secondary'"
             :size="isCompact ? 'icon' : undefined"
