@@ -54,6 +54,35 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     })
   }
 
+  const advancedButtonOverflowPx = 24
+  const holdPointCanvasInsetPx = 8
+
+  const getAdvancedInputsButton = (node: Locator) =>
+    node.getByTestId('advanced-inputs-button')
+
+  const moveAdvancedButtonRightEdgePastCanvas = async (
+    comfyPage: ComfyPage,
+    button: Locator,
+    overflow: number
+  ) => {
+    const box = await button.boundingBox()
+    const canvasBox = await comfyPage.canvas.boundingBox()
+    if (!box) throw new Error('Advanced button has no bounding box')
+    if (!canvasBox) throw new Error('Canvas has no bounding box')
+
+    const scale = await comfyPage.canvasOps.getScale()
+    const deltaX = canvasBox.x + canvasBox.width + overflow - box.x - box.width
+    await comfyPage.page.evaluate(
+      ({ deltaX, scale }) => {
+        const canvas = window.app!.canvas
+        canvas.ds.offset[0] += deltaX / scale
+        canvas.setDirty(true, true)
+      },
+      { deltaX, scale }
+    )
+    await comfyPage.idleFrames(2)
+  }
+
   test('should allow moving nodes by dragging', async ({ comfyPage }) => {
     const loadCheckpointHeaderPos = await getLoadCheckpointHeaderPos(comfyPage)
     await comfyPage.canvasOps.dragAndDrop(loadCheckpointHeaderPos, {
@@ -123,7 +152,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await comfyPage.vueNodes.waitForNodes()
 
     const node = comfyPage.vueNodes.getNodeByTitle('ModelSamplingFlux')
-    const showButton = node.getByText('Show advanced inputs')
+    const showButton = getAdvancedInputsButton(node)
     const widgets = node.locator('.lg-node-widget')
 
     await expect(showButton).toBeVisible()
@@ -142,6 +171,83 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     if (!afterPos) throw new Error('Node missing after drag')
     await expectPosChanged(beforePos, afterPos)
   })
+
+  test(
+    'should not pan while holding the Advanced button without dragging',
+    { tag: ['@canvas', '@widget'] },
+    async ({ comfyPage }) => {
+      await comfyPage.settings.setSetting(
+        'Comfy.Node.AlwaysShowAdvancedWidgets',
+        false
+      )
+      await comfyPage.nodeOps.addNode(
+        'ModelSamplingFlux',
+        {},
+        {
+          x: 500,
+          y: 200
+        }
+      )
+      await comfyPage.vueNodes.waitForNodes()
+
+      const node = comfyPage.vueNodes.getNodeByTitle('ModelSamplingFlux')
+      const showButton = getAdvancedInputsButton(node)
+      await expect(showButton).toBeVisible()
+
+      await moveAdvancedButtonRightEdgePastCanvas(
+        comfyPage,
+        showButton,
+        advancedButtonOverflowPx
+      )
+
+      const buttonBox = await showButton.boundingBox()
+      const canvasBox = await comfyPage.canvas.boundingBox()
+      if (!buttonBox) throw new Error('Advanced button has no bounding box')
+      if (!canvasBox) throw new Error('Canvas has no bounding box')
+
+      const canvasRight = canvasBox.x + canvasBox.width
+      const buttonRight = buttonBox.x + buttonBox.width
+      expect(
+        buttonRight,
+        'Advanced button should extend past the canvas right edge'
+      ).toBeGreaterThan(canvasRight)
+
+      const holdPoint = {
+        x: canvasRight - holdPointCanvasInsetPx,
+        y: buttonBox.y + buttonBox.height / 2
+      }
+      expect(
+        holdPoint.x,
+        'Hold point should stay inside the visible part of the Advanced button'
+      ).toBeGreaterThanOrEqual(buttonBox.x)
+      expect(
+        holdPoint.x,
+        'Hold point should stay inside the visible canvas'
+      ).toBeLessThanOrEqual(canvasRight)
+      expect(
+        holdPoint.y,
+        'Hold point should stay inside the Advanced button height'
+      ).toBeGreaterThanOrEqual(buttonBox.y)
+      expect(
+        holdPoint.y,
+        'Hold point should stay inside the Advanced button height'
+      ).toBeLessThanOrEqual(buttonBox.y + buttonBox.height)
+
+      const beforeOffset = await comfyPage.canvasOps.getOffset()
+
+      await comfyPage.page.mouse.move(holdPoint.x, holdPoint.y)
+      await comfyPage.page.mouse.down()
+      try {
+        await comfyPage.idleFrames(8)
+      } finally {
+        await comfyPage.page.mouse.up()
+      }
+
+      const afterOffset = await comfyPage.canvasOps.getOffset()
+      expect(afterOffset[0]).toBeCloseTo(beforeOffset[0], 3)
+      expect(afterOffset[1]).toBeCloseTo(beforeOffset[1], 3)
+    }
+  )
 
   test('should not enter subgraph when dragging by the Enter Subgraph button', async ({
     comfyPage

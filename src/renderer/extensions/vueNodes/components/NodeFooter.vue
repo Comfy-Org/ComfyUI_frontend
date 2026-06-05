@@ -73,6 +73,7 @@
 
     <Button
       variant="textonly"
+      data-testid="advanced-inputs-button"
       :class="
         cn(
           tabStyles,
@@ -169,6 +170,7 @@
   >
     <Button
       variant="textonly"
+      data-testid="advanced-inputs-button"
       :class="
         cn(
           tabStyles,
