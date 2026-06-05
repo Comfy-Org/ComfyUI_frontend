@@ -66,6 +66,7 @@
         <p
           v-if="getDisplayMessage(error)"
           class="m-0 max-h-[4lh] overflow-y-auto px-0.5 text-sm/relaxed wrap-break-word whitespace-pre-wrap"
+          data-testid="error-card-message"
         >
           {{ getDisplayMessage(error) }}
         </p>
