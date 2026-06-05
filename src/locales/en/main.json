@@ -3810,6 +3810,15 @@
         "toastTitle": "Invalid input",
         "toastMessage": "{nodeName} rejected the value for {inputName}."
       },
+      "unknown_validation_error": {
+        "title": "Validation failed",
+        "message": "A node returned a validation error ComfyUI does not recognize.",
+        "details": "{nodeName} returned an unrecognized validation error: {errorType}",
+        "detailsWithRawDetails": "{nodeName} returned an unrecognized validation error ({errorType}): {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Validation failed",
+        "toastMessage": "{nodeName} returned an unrecognized validation error."
+      },
       "exception_during_inner_validation": {
         "title": "Validation failed",
         "message": "The workflow couldn't validate a connected node.",

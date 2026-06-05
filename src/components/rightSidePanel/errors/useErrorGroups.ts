@@ -30,6 +30,7 @@ import type {
   MissingModelCandidate,
   MissingModelGroup
 } from '@/platform/missingModel/types'
+import type { ResolvedCatalogErrorMessage } from '@/platform/errorCatalog/types'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import { groupCandidatesByName } from '@/platform/missingModel/missingModelScan'
 import { groupCandidatesByMediaType } from '@/platform/missingMedia/missingMediaScan'
@@ -43,7 +44,6 @@ import {
 } from '@/types/nodeIdentification'
 
 const PROMPT_CARD_ID = '__prompt__'
-const SINGLE_GROUP_KEY = '__single__'
 
 /** Sentinel: distinguishes "fetch in-flight" from "fetch done, pack not found (null)". */
 const RESOLVING = '__RESOLVING__'
@@ -78,6 +78,8 @@ interface ErrorSearchItem {
   searchableMessage: string
   searchableDetails: string
 }
+
+type CataloguedErrorItem = ErrorItem & ResolvedCatalogErrorMessage
 
 /**
  * Resolve display info for a node by its execution ID.
@@ -136,44 +138,6 @@ function createErrorCard(
     isSubgraphNode: isNodeExecutionId(nodeId) && !nodeInfo.isParentGroupNode,
     errors: []
   }
-}
-
-/**
- * In single-node mode, regroup cards by error message instead of class_type.
- * This lets the user see "what kinds of errors this node has" at a glance.
- */
-function regroupByErrorMessage(
-  groupsMap: Map<string, GroupEntry>
-): Map<string, GroupEntry> {
-  const allCards = Array.from(groupsMap.values()).flatMap((g) =>
-    Array.from(g.cards.values())
-  )
-
-  const cardErrorPairs = allCards.flatMap((card) =>
-    card.errors.map((error) => ({ card, error }))
-  )
-
-  const messageMap = new Map<string, GroupEntry>()
-  for (const { card, error } of cardErrorPairs) {
-    addCardErrorToGroup(messageMap, card, error)
-  }
-
-  return messageMap
-}
-
-function addCardErrorToGroup(
-  messageMap: Map<string, GroupEntry>,
-  card: ErrorCardData,
-  error: ErrorItem
-) {
-  const displayTitle =
-    error.displayTitle ?? error.displayMessage ?? error.message
-  const groupKey = error.catalogId ?? displayTitle
-  const group = getOrCreateGroup(messageMap, groupKey, displayTitle, 1)
-  if (!group.has(card.id)) {
-    group.set(card.id, { ...card, errors: [] })
-  }
-  group.get(card.id)?.errors.push(error)
 }
 
 function compareNodeId(a: ErrorCardData, b: ErrorCardData): number {
@@ -333,18 +297,22 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     nodeId: string,
     classType: string,
     idPrefix: string,
-    errors: ErrorItem[],
+    error: CataloguedErrorItem,
     filterBySelection = false
   ) {
     if (filterBySelection && !isErrorInSelection(nodeId)) return
-    const groupKey = isSingleNodeSelected.value ? SINGLE_GROUP_KEY : classType
-    const cards = getOrCreateGroup(groupsMap, groupKey, classType, 1)
+    const cards = getOrCreateGroup(
+      groupsMap,
+      error.catalogId,
+      error.displayTitle ?? classType,
+      1
+    )
     if (!cards.has(nodeId)) {
       cards.set(nodeId, createErrorCard(nodeId, classType, idPrefix))
     }
     const card = cards.get(nodeId)
     if (!card) return
-    card.errors.push(...errors)
+    card.errors.push(error)
   }
 
   function processPromptError(
@@ -395,13 +363,13 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     )) {
       const nodeDisplayName =
         resolveNodeInfo(nodeId).title || nodeError.class_type
-      addNodeErrorToGroup(
-        groupsMap,
-        nodeId,
-        nodeError.class_type,
-        'node',
-        nodeError.errors.map((e) => {
-          return {
+      for (const e of nodeError.errors) {
+        addNodeErrorToGroup(
+          groupsMap,
+          nodeId,
+          nodeError.class_type,
+          'node',
+          {
             message: e.message,
             details: e.details ?? undefined,
             ...resolveRunErrorMessage({
@@ -409,10 +377,10 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
               error: e,
               nodeDisplayName
             })
-          }
-        }),
-        filterBySelection
-      )
+          },
+          filterBySelection
+        )
+      }
     }
   }
 
@@ -428,20 +396,18 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       String(e.node_id),
       e.node_type,
       'exec',
-      [
-        {
-          message: `${e.exception_type}: ${e.exception_message}`,
-          details: e.traceback.join('\n'),
-          isRuntimeError: true,
-          exceptionType: e.exception_type,
-          ...resolveRunErrorMessage({
-            kind: 'execution',
-            error: e,
-            nodeDisplayName:
-              resolveNodeInfo(String(e.node_id)).title || e.node_type
-          })
-        }
-      ],
+      {
+        message: `${e.exception_type}: ${e.exception_message}`,
+        details: e.traceback.join('\n'),
+        isRuntimeError: true,
+        exceptionType: e.exception_type,
+        ...resolveRunErrorMessage({
+          kind: 'execution',
+          error: e,
+          nodeDisplayName:
+            resolveNodeInfo(String(e.node_id)).title || e.node_type
+        })
+      },
       filterBySelection
     )
   }
@@ -867,10 +833,6 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     processNodeErrors(groupsMap, true)
     processExecutionError(groupsMap, true)
 
-    const executionGroups = isSingleNodeSelected.value
-      ? toSortedGroups(regroupByErrorMessage(groupsMap))
-      : toSortedGroups(groupsMap)
-
     const filterByNode = selectedNodeInfo.value.nodeIds !== null
 
     // Missing nodes are intentionally unfiltered — they represent
@@ -883,7 +845,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       ...(filterByNode
         ? buildMissingMediaGroupsFiltered()
         : buildMissingMediaGroups()),
-      ...executionGroups
+      ...toSortedGroups(groupsMap)
     ]
   })
 
@@ -898,7 +860,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       if (group.type === 'execution') {
         for (const card of group.cards) {
           for (const err of card.errors) {
-            messages.add(err.displayMessage ?? err.message)
+            messages.add(err.message)
           }
         }
       } else {

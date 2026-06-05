@@ -1,4 +1,8 @@
-import type { ResolvedErrorMessage, RunErrorMessageSource } from './types'
+import type {
+  ResolvedCatalogErrorMessage,
+  ResolvedErrorMessage,
+  RunErrorMessageSource
+} from './types'
 
 import { resolveExecutionErrorMessage } from './executionErrorResolver'
 import { resolveMissingErrorMessage } from './missingErrorResolver'
@@ -9,6 +13,15 @@ import { resolveNodeValidationErrorMessage } from './validationErrorResolver'
 // own the actual matching/copy rules so this file stays as the routing boundary.
 export { resolveMissingErrorMessage }
 
+export function resolveRunErrorMessage(
+  source: Extract<RunErrorMessageSource, { kind: 'node_validation' }>
+): ResolvedCatalogErrorMessage
+export function resolveRunErrorMessage(
+  source: Extract<RunErrorMessageSource, { kind: 'execution' }>
+): ResolvedCatalogErrorMessage
+export function resolveRunErrorMessage(
+  source: RunErrorMessageSource
+): ResolvedErrorMessage
 export function resolveRunErrorMessage(
   source: RunErrorMessageSource
 ): ResolvedErrorMessage {

@@ -1,4 +1,4 @@
-import type { ResolvedErrorMessage } from './types'
+import type { ResolvedCatalogErrorMessage } from './types'
 
 import {
   normalizeNodeName,
@@ -19,7 +19,7 @@ export function resolveRuntimeCatalogCopy(
     params?: CatalogParams
     detailsFallback?: string
   } = {}
-): ResolvedErrorMessage {
+): ResolvedCatalogErrorMessage {
   const keyPrefix = `errorCatalog.runtimeErrors.${catalogId}`
   const nodeName = normalizeNodeName(context.nodeDisplayName)
   const params = { nodeName, ...options.params }
@@ -27,7 +27,7 @@ export function resolveRuntimeCatalogCopy(
     translateCatalogMessage(`${keyPrefix}.${suffix}`, fallback, params)
 
   const displayMessage = resolveMessage('message')
-  const result: ResolvedErrorMessage = {
+  const result: ResolvedCatalogErrorMessage = {
     catalogId,
     displayTitle: resolveMessage('title'),
     displayMessage
