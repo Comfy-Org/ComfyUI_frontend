@@ -4508,8 +4508,8 @@ const translations = {
     'zh-CN': '赚取 30%'
   },
   'affiliate.hero.headingMuted': {
-    en: 'Commission Month 1.\n20% Recurring After.',
-    'zh-CN': '首月佣金，\n之后 20% 持续返佣。'
+    en: 'recurring commission for 3 months.',
+    'zh-CN': '持续返佣 3 个月。'
   },
   'affiliate.hero.feature1': {
     en: '30% recurring commission for 3 months',
