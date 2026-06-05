@@ -1,11 +1,15 @@
 <script setup lang="ts">
+import {
+  TransitionPresets,
+  usePreferredReducedMotion,
+  useTransition
+} from '@vueuse/core'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import BadgePill from '@/components/common/BadgePill.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
@@ -46,8 +50,29 @@ const discountedMonthly = computed(() =>
   )
 )
 const saveAmount = computed(() => current.value.usd - discountedMonthly.value)
-const billedYearly = computed(() => discountedMonthly.value * 12)
 const hasDiscount = computed(() => current.value.discountPercentYearly > 0)
+
+/**
+ * Smoothly count the price figures up/down as the slider moves between stops
+ * instead of snapping. Honors the user's reduced-motion preference. The save
+ * badge ("X% ($Y)") is intentionally left snapping — its percent is a discrete
+ * tier, so animating the bracketed amount alone would read inconsistently.
+ */
+const prefersReducedMotion = usePreferredReducedMotion()
+const priceTween = {
+  duration: 350,
+  easing: TransitionPresets.easeOutCubic,
+  disabled: computed(() => prefersReducedMotion.value === 'reduce')
+}
+const animatedMonthly = useTransition(discountedMonthly, priceTween)
+const animatedOriginal = useTransition(() => current.value.usd, priceTween)
+
+const displayMonthly = computed(() => Math.round(animatedMonthly.value))
+const displayOriginal = computed(() => Math.round(animatedOriginal.value))
+// Derive the yearly total from the displayed monthly so it always reads as
+// exactly 12× the price shown — even mid-count — rather than drifting as a
+// second, independently-phased tween would.
+const displayBilledYearly = computed(() => displayMonthly.value * 12)
 
 /**
  * Bridge the discrete stop index (0..n-1) to the reka-ui slider's `number[]`
@@ -80,41 +105,48 @@ const { t } = useI18n()
   <div :class="cn('flex w-full flex-col gap-3', rootClass)">
     <!-- Price: discounted monthly + struck pre-discount + save badge -->
     <div class="flex flex-col gap-1">
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="flex items-center gap-2">
         <span class="flex items-baseline gap-1.5">
           <span
-            class="text-2xl font-semibold text-base-foreground"
+            class="text-[2rem] leading-none font-semibold text-base-foreground"
             data-testid="credit-slider-price"
           >
-            {{ formatUsd(discountedMonthly) }}
+            {{ formatUsd(displayMonthly) }}
           </span>
           <span
             v-if="hasDiscount"
             class="text-base text-muted-foreground line-through"
             data-testid="credit-slider-original-price"
           >
-            {{ formatUsd(current.usd) }}
+            {{ formatUsd(displayOriginal) }}
           </span>
-          <span class="text-sm text-muted-foreground">
+          <span class="text-base text-muted-foreground">
             {{ t('subscription.usdPerMonth') }}
           </span>
         </span>
-        <BadgePill
+        <!-- Save badge: outlined primary pill, pushed to the right (DES-197) -->
+        <span
           v-if="hasDiscount"
           data-testid="credit-slider-save"
-          :text="
+          class="ms-auto shrink-0 rounded-full border-2 border-primary-background px-2 py-1 text-sm font-bold whitespace-nowrap text-primary-background"
+        >
+          {{
             t('subscription.creditSliderSave', {
               percent: current.discountPercentYearly,
               amount: formatUsd(saveAmount)
             })
-          "
-        />
+          }}
+        </span>
       </div>
       <p
         class="m-0 text-sm text-muted-foreground"
         data-testid="credit-slider-billed-yearly"
       >
-        {{ t('subscription.billedYearly', { total: formatUsd(billedYearly) }) }}
+        {{
+          t('subscription.billedYearly', {
+            total: formatUsd(displayBilledYearly)
+          })
+        }}
       </p>
     </div>
 
