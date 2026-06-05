@@ -13,7 +13,7 @@
       :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
     >
       <Button
-        v-for="(url, index) in imageUrls"
+        v-for="(url, index) in gridImageUrls"
         :key="index"
         size="unset"
         class="ring-ring overflow-hidden rounded-none p-0 hover:ring-1 focus-visible:ring-2"
@@ -179,6 +179,7 @@ import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -227,6 +228,7 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
 )
 
 const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
+const gridImageUrls = computed(() => imageUrls.map(getGridThumbnailUrl))
 const hasMultipleImages = computed(() => imageUrls.length > 1)
 const imageAltText = computed(() =>
   t('g.viewImageOfTotal', {

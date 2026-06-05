@@ -379,6 +379,16 @@ describe('ImagePreview', () => {
       expect(gridThumbnails).toHaveLength(2)
     })
 
+    it('requests lightweight thumbnails for grid cells instead of full-resolution images', () => {
+      renderImagePreview()
+
+      const gridImages = screen.getAllByRole('img')
+      expect(gridImages).toHaveLength(2)
+      for (const img of gridImages) {
+        expect(img.getAttribute('src')).toMatch(/[?&]preview=/)
+      }
+    })
+
     it('defaults to gallery mode for single image', () => {
       renderImagePreview({
         imageUrls: [defaultProps.imageUrls[0]]
