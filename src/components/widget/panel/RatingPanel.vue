@@ -15,10 +15,9 @@
     >
       <i
         :class="[
-          'text-neutral',
           'icon-[lucide--star]',
+          'size-4',
           'shrink-0',
-          'text-xs',
           isActive(value) ? 'text-yellow-500' : 'text-gray-500'
         ]"
       />
