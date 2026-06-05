@@ -90,8 +90,6 @@ const i18n = createI18n({
     en: {
       rightSidePanel: {
         missingNodePacks: {
-          ossMessage: 'Missing node packs detected. Install them.',
-          cloudMessage: 'Unsupported node packs detected.',
           ossManagerDisabledHint:
             'To install missing nodes, first run {pipCmd} in your Python environment to install Node Manager, then restart ComfyUI with the {flag} flag.',
           applyChanges: 'Apply Changes'
@@ -159,21 +157,6 @@ describe('MissingNodeCard', () => {
   })
 
   describe('Rendering & Props', () => {
-    it('renders cloud message when isCloud is true', () => {
-      mockIsCloud.value = true
-      renderCard()
-      expect(
-        screen.getByText('Unsupported node packs detected.')
-      ).toBeInTheDocument()
-    })
-
-    it('renders OSS message when isCloud is false', () => {
-      renderCard()
-      expect(
-        screen.getByText('Missing node packs detected. Install them.')
-      ).toBeInTheDocument()
-    })
-
     it('renders correct number of MissingPackGroupRow components', () => {
       renderCard({ missingPackGroups: makePackGroups(3) })
       expect(screen.getAllByTestId('pack-row')).toHaveLength(3)

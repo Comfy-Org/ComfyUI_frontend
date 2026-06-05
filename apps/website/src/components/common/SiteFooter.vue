@@ -43,6 +43,7 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
   {
     title: t('footer.resources', locale),
     links: [
+      { label: t('nav.learning', locale), href: routes.learning },
       {
         label: t('footer.blog', locale),
         href: externalLinks.blog,
@@ -67,6 +68,10 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         label: t('nav.youtube', locale),
         href: externalLinks.youtube,
         external: true
+      },
+      {
+        label: t('footer.affiliateProgram', locale),
+        href: routes.affiliates
       }
     ]
   }

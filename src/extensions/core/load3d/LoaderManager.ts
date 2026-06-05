@@ -4,9 +4,14 @@ import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { MeshModelAdapter } from './MeshModelAdapter'
-import { createAdapterRef } from './ModelAdapter'
-import type { AdapterRef, ModelAdapter, ModelLoadContext } from './ModelAdapter'
-import { PointCloudModelAdapter, getPLYEngine } from './PointCloudModelAdapter'
+import { createAdapterRef, fetchModelData } from './ModelAdapter'
+import type {
+  AdapterRef,
+  ModelAdapter,
+  ModelAdapterCapabilities,
+  ModelLoadContext
+} from './ModelAdapter'
+import { PointCloudModelAdapter } from './PointCloudModelAdapter'
 import { SplatModelAdapter } from './SplatModelAdapter'
 import type {
   EventManagerInterface,
@@ -36,14 +41,16 @@ function isNotFoundError(error: unknown): boolean {
 }
 
 /**
- * Default adapter set: mesh + pointCloud + splat. Each adapter declares the
- * file extensions it owns; LoaderManager picks one by extension.
+ * Default adapter set: mesh + splat + pointCloud. Each adapter declares the
+ * file extensions it owns. For shared extensions (.ply), the adapter with an
+ * async `matches()` tiebreaker is tried first; the unconditional adapter acts
+ * as the fallback — so SplatModelAdapter precedes PointCloudModelAdapter.
  */
 function defaultAdapters(): ModelAdapter[] {
   return [
     new MeshModelAdapter(),
-    new PointCloudModelAdapter(),
-    new SplatModelAdapter()
+    new SplatModelAdapter(),
+    new PointCloudModelAdapter()
   ]
 }
 
@@ -86,6 +93,7 @@ export class LoaderManager implements LoaderManagerInterface {
 
       this.modelManager.clearModel()
       this.adapterRef.current = null
+      this.adapterRef.capabilities = null
 
       this.modelManager.originalURL = url
 
@@ -122,7 +130,8 @@ export class LoaderManager implements LoaderManagerInterface {
         // can't clobber adapterRef.current that a newer load already
         // wrote (or cleared).
         this.adapterRef.current = result.adapter
-        await this.modelManager.setupModel(result.model)
+        this.adapterRef.capabilities = result.capabilities
+        await this.modelManager.setupModel(result.object)
       }
 
       this.eventManager.emitEvent('modelLoadingEnd', null)
@@ -137,19 +146,18 @@ export class LoaderManager implements LoaderManagerInterface {
     }
   }
 
-  private pickAdapter(extension: string): ModelAdapter | null {
-    const match = this.adapters.find((adapter) =>
-      adapter.extensions.includes(extension)
+  private async pickAdapter(
+    extension: string,
+    fetchBytes: () => Promise<ArrayBuffer>
+  ): Promise<ModelAdapter | null> {
+    const candidates = this.adapters.filter((a) =>
+      a.extensions.includes(extension)
     )
-    if (!match) return null
-
-    // PLY may be routed through the splat adapter when the PLYEngine setting
-    // is sparkjs. Only honor the routing when both adapters are registered.
-    if (match.kind === 'pointCloud' && getPLYEngine() === 'sparkjs') {
-      const splat = this.adapters.find((adapter) => adapter.kind === 'splat')
-      if (splat) return splat
+    for (const adapter of candidates) {
+      if (!adapter.matches) return adapter
+      if (await adapter.matches(extension, fetchBytes)) return adapter
     }
-    return match
+    return null
   }
 
   private createLoadContext(): ModelLoadContext {
@@ -170,7 +178,11 @@ export class LoaderManager implements LoaderManagerInterface {
   private async loadModelInternal(
     url: string,
     fileExtension: string
-  ): Promise<{ model: THREE.Object3D; adapter: ModelAdapter } | null> {
+  ): Promise<{
+    object: THREE.Object3D
+    adapter: ModelAdapter
+    capabilities: ModelAdapterCapabilities
+  } | null> {
     const params = new URLSearchParams(url.split('?')[1])
     const filename = params.get('filename')
 
@@ -179,7 +191,11 @@ export class LoaderManager implements LoaderManagerInterface {
       return null
     }
 
-    const loadRootFolder = params.get('type') === 'output' ? 'output' : 'input'
+    const requestedType = params.get('type')
+    const loadRootFolder =
+      requestedType === 'output' || requestedType === 'temp'
+        ? requestedType
+        : 'input'
     const subfolder = params.get('subfolder') ?? ''
     const path =
       'api/view?type=' +
@@ -188,10 +204,24 @@ export class LoaderManager implements LoaderManagerInterface {
       encodeURIComponent(subfolder) +
       '&filename='
 
-    const adapter = this.pickAdapter(fileExtension)
+    let bytesPromise: Promise<ArrayBuffer> | null = null
+    const fetchBytes = () => (bytesPromise ??= fetchModelData(path, filename))
+
+    const adapter = await this.pickAdapter(fileExtension, fetchBytes)
     if (!adapter) return null
 
-    const model = await adapter.load(this.createLoadContext(), path, filename)
-    return model ? { model, adapter } : null
+    const loadResult = await adapter.load(
+      this.createLoadContext(),
+      path,
+      filename,
+      fetchBytes
+    )
+    return loadResult
+      ? {
+          object: loadResult.object,
+          capabilities: loadResult.capabilities,
+          adapter
+        }
+      : null
   }
 }

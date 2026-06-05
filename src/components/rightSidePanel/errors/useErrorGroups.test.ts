@@ -174,6 +174,7 @@ describe('useErrorGroups', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     mockIsCloud.value = false
+    vi.mocked(isLGraphNode).mockReturnValue(false)
   })
 
   describe('missingPackGroups', () => {
@@ -301,7 +302,24 @@ describe('useErrorGroups', () => {
       expect(missingGroup?.groupKey).toBe('missing_node')
       expect(missingGroup?.displayTitle).toBe('Missing Node Packs (1)')
       expect(missingGroup?.displayMessage).toBe(
-        'Some nodes are missing and need to be installed'
+        'Install missing packs to use this workflow.'
+      )
+    })
+
+    it('uses Cloud copy for missing_node group in Cloud', async () => {
+      mockIsCloud.value = true
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('NodeA', { cnrId: 'pack-1' })
+      ])
+      await nextTick()
+
+      const missingGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'missing_node'
+      )
+      expect(missingGroup?.displayMessage).toBe(
+        "Required custom nodes aren't supported on Cloud. Replace them with supported nodes."
       )
     })
 
@@ -510,6 +528,28 @@ describe('useErrorGroups', () => {
 
     it('includes prompt error when present', async () => {
       const { store, groups } = createErrorGroups()
+      store.lastPromptError = {
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      }
+      await nextTick()
+
+      const promptGroup = groups.allErrorGroups.value.find(
+        (g) =>
+          g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
+      )
+      expect(promptGroup).toBeDefined()
+    })
+
+    it('includes prompt error when a node is selected', async () => {
+      const { store, groups } = createErrorGroups()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '1' }])
       store.lastPromptError = {
         type: 'prompt_no_outputs',
         message: 'No outputs',
@@ -958,6 +998,30 @@ describe('useErrorGroups', () => {
       expect(groups.filteredMissingModelGroups.value).not.toBe(
         groups.missingModelGroups.value
       )
+    })
+  })
+
+  describe('tabErrorGroups', () => {
+    it('filters prompt error when a node is selected', async () => {
+      const { store, groups } = createErrorGroups()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '1' }])
+      store.lastPromptError = {
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      }
+      await nextTick()
+
+      const promptGroup = groups.tabErrorGroups.value.find(
+        (g) =>
+          g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
+      )
+      expect(promptGroup).toBeUndefined()
     })
   })
 })

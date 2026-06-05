@@ -46,7 +46,7 @@ class Load3DConfiguration {
   ) {}
 
   configureForSaveMesh(
-    loadFolder: 'input' | 'output',
+    loadFolder: 'input' | 'output' | 'temp',
     filePath: string,
     options?: { silentOnNotFound?: boolean }
   ) {

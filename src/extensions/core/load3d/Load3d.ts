@@ -105,7 +105,6 @@ class Load3d {
   private disposeContextMenuGuard: (() => void) | null = null
   private resizeObserver: ResizeObserver | null = null
   private getZoomScaleCallback: (() => number) | undefined
-  private retainViewOnReload: boolean = false
   private hasLoadedModel: boolean = false
 
   constructor(
@@ -161,9 +160,21 @@ class Load3d {
     this.handleResize()
     this.startAnimation()
 
+    this.eventManager.addEventListener('modelReady', () => {
+      if (this.adapterRef.current?.kind !== 'splat') return
+      void this.repaintWhenSparkPaintable()
+    })
+
     setTimeout(() => {
       this.forceRender()
     }, 100)
+  }
+
+  private async repaintWhenSparkPaintable(): Promise<void> {
+    const sortComplete = this.sceneManager.awaitNextSparkDirty()
+    this.forceRender()
+    await sortComplete
+    this.forceRender()
   }
 
   private initResizeObserver(container: Element | HTMLElement): void {
@@ -567,17 +578,14 @@ class Load3d {
     }
   }
 
-  public setRetainViewOnReload(value: boolean): void {
-    this.retainViewOnReload = value
-  }
-
   private async _loadModelInternal(
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
   ): Promise<void> {
-    // First load always uses default framing; retain only applies on reload.
-    const shouldRetainView = this.retainViewOnReload && this.hasLoadedModel
+    // First load always uses default framing; subsequent reloads preserve
+    // the user's framing.
+    const shouldRetainView = this.hasLoadedModel
     const savedCameraState = shouldRetainView
       ? this.cameraManager.getCameraState()
       : null
@@ -626,7 +634,7 @@ class Load3d {
   }
 
   getCurrentModelCapabilities(): ModelAdapterCapabilities {
-    return this.adapterRef.current?.capabilities ?? DEFAULT_MODEL_CAPABILITIES
+    return this.adapterRef.capabilities ?? DEFAULT_MODEL_CAPABILITIES
   }
 
   clearModel(): void {
@@ -907,6 +915,12 @@ class Load3d {
     this.forceRender()
   }
 
+  public applyModelTransform(transform: Model3DTransform): void {
+    if (!this.getCurrentModelCapabilities().gizmoTransform) return
+    this.gizmoManager.applyModelTransform(transform)
+    this.forceRender()
+  }
+
   public getGizmoTransform(): {
     position: { x: number; y: number; z: number }
     rotation: { x: number; y: number; z: number }
@@ -921,6 +935,22 @@ class Load3d {
 
   public fitToViewer(): void {
     this.modelManager.fitToViewer()
+    this.forceRender()
+  }
+
+  public centerCameraOnModel(): void {
+    const bounds = this.modelManager.getCurrentBounds()
+    if (!bounds || bounds.isEmpty()) return
+
+    const center = bounds.getCenter(new THREE.Vector3())
+    const camera = this.cameraManager.activeCamera
+    const controls = this.controlsManager.controls
+    const offset = center.clone().sub(camera.position)
+
+    camera.position.add(offset)
+    controls.target.add(offset)
+    camera.updateMatrixWorld(true)
+    controls.update()
     this.forceRender()
   }
 

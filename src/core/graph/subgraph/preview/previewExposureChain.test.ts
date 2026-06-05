@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/utils/uuid'
 
 import type { PreviewExposureChainContext } from './previewExposureChain'
 import { resolvePreviewExposureChain } from './previewExposureChain'

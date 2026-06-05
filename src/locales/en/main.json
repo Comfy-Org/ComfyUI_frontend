@@ -1524,7 +1524,8 @@
     "Error System": "Error System",
     "Other": "Other",
     "Secrets": "Secrets",
-    "Node Library": "Node Library"
+    "Node Library": "Node Library",
+    "PointCloud": "Point Cloud"
   },
   "serverConfigItems": {
     "listen": {
@@ -1663,10 +1664,10 @@
     "experimental": "experimental",
     "custom_sampling": "custom_sampling",
     "noise": "noise",
-    "dataset": "dataset",
     "text": "text",
     "image": "image",
     "adjustments": "adjustments",
+    "model": "model",
     "sampling": "sampling",
     "schedulers": "schedulers",
     "conditioning": "conditioning",
@@ -1677,7 +1678,7 @@
     "batch": "batch",
     "latent": "latent",
     "mask": "mask",
-    "api node": "api node",
+    "partner": "partner",
     "Beeble": "Beeble",
     "video": "video",
     "Bria": "Bria",
@@ -1687,32 +1688,32 @@
     "advanced": "advanced",
     "guidance": "guidance",
     "model_merging": "model_merging",
-    "model_patches": "model_patches",
+    "patch": "patch",
     "chroma_radiance": "chroma_radiance",
     "Anthropic": "Anthropic",
     "attention_experiments": "attention_experiments",
     "flux": "flux",
     "kandinsky5": "kandinsky5",
-    "utils": "utils",
+    "utilities": "utilities",
     "hooks": "hooks",
     "combine": "combine",
     "logic": "logic",
     "cond single": "cond single",
     "controlnet": "controlnet",
     "inpaint": "inpaint",
+    "3d": "3d",
     "scheduling": "scheduling",
     "create": "create",
     "deprecated": "deprecated",
     "detection": "detection",
     "debug": "debug",
-    "model": "model",
     "ElevenLabs": "ElevenLabs",
-    "3d": "3d",
     "ltxv": "ltxv",
     "qwen": "qwen",
     "sd3": "sd3",
     "unet": "unet",
     "sigmas": "sigmas",
+    "splat": "splat",
     "BFL": "BFL",
     "Gemini": "Gemini",
     "gligen": "gligen",
@@ -1739,7 +1740,7 @@
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "model_specific": "model_specific",
-    "geometry_estimation": "geometry_estimation",
+    "geometry estimation": "geometry estimation",
     "multigpu": "multigpu",
     "OpenAI": "OpenAI",
     "Sora": "Sora",
@@ -1799,7 +1800,11 @@
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
     "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "FLOAT",
@@ -1821,6 +1826,7 @@
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD_3D": "LOAD_3D",
     "LOAD3D_CAMERA": "LOAD3D_CAMERA",
+    "LOAD3D_MODEL_INFO": "LOAD3D_MODEL_INFO",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
     "LUMA_CONCEPTS": "LUMA_CONCEPTS",
@@ -1849,6 +1855,7 @@
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "SAMPLER",
     "SIGMAS": "SIGMAS",
+    "SPLAT": "SPLAT",
     "STRING": "STRING",
     "STYLE_MODEL": "STYLE_MODEL",
     "SVG": "SVG",
@@ -1961,7 +1968,6 @@
   },
   "load3d": {
     "switchCamera": "Switch Camera",
-    "retainViewOnReload": "Lock camera view across model reloads",
     "showGrid": "Show Grid",
     "backgroundColor": "Background Color",
     "lightIntensity": "Light Intensity",
@@ -1976,6 +1982,7 @@
     "materialMode": "Material Mode",
     "showSkeleton": "Show Skeleton",
     "fitToViewer": "Fit to Viewer",
+    "centerCameraOnModel": "Center Camera on Model",
     "scene": "Scene",
     "model": "Model",
     "camera": "Camera",
@@ -2288,7 +2295,8 @@
       "auth/invalid-credential": "Invalid login credentials. Please check your email and password.",
       "auth/network-request-failed": "Network error. Please check your connection and try again.",
       "auth/popup-closed-by-user": "Sign-in was cancelled. Please try again.",
-      "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again."
+      "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again.",
+      "generic": "Something went wrong while signing you in. Please try again."
     },
     "deleteAccount": {
       "contactSupport": "To delete your account, please contact {email}"
@@ -2959,6 +2967,29 @@
   "cloudStart_learnAboutButton": "Learn about Cloud",
   "cloudStart_wantToRun": "Want to run ComfyUI locally instead?",
   "cloudStart_download": "Download ComfyUI",
+  "cloudHero": {
+    "previousSlide": "Previous slide",
+    "nextSlide": "Next slide",
+    "slidePagerLabel": "Go to slide {index}",
+    "slides": {
+      "cloud": {
+        "title": "Cloud",
+        "description": "Best for most users who want to work from anywhere with models verified for commercial license."
+      },
+      "workflows": {
+        "title": "Workflows",
+        "description": "From idea to output in minutes. Generate multiple variations side by side."
+      },
+      "team": {
+        "title": "Team",
+        "description": "Onboard your team today. Share workflows and assets across your organization."
+      },
+      "models": {
+        "title": "Models",
+        "description": "Curated, commercially licensed models ready to run with zero setup."
+      }
+    }
+  },
   "cloudWaitlist_questionsText": "Questions? Contact us",
   "cloudWaitlist_contactLink": "here",
   "cloudSorryContactSupport_title": "Sorry, contact support",
@@ -3506,7 +3537,6 @@
     "skipForNow": "Skip for Now",
     "installMissingNodes": "Install Missing Nodes",
     "replaceWarning": "This will permanently modify the workflow. Save a copy first if unsure.",
-    "swapNodesGuide": "The following nodes can be automatically replaced with compatible alternatives.",
     "willBeReplacedBy": "This node will be replaced by:",
     "replaceNode": "Replace Node",
     "replaceAll": "Replace All",
@@ -3588,8 +3618,6 @@
     "missingNodePacks": {
       "title": "Missing Node Packs",
       "unsupportedTitle": "Unsupported Node Packs",
-      "cloudMessage": "This workflow requires custom nodes not yet available on Comfy Cloud.",
-      "ossMessage": "This workflow uses custom nodes you haven't installed yet.",
       "ossManagerDisabledHint": "To install missing nodes, first run {pipCmd} in your Python environment to install Node Manager, then restart ComfyUI with the {flag} flag.",
       "installAll": "Install All",
       "installNodePack": "Install node pack",
@@ -3654,20 +3682,57 @@
   },
   "errorOverlay": {
     "errorCount": "{count} ERROR | {count} ERRORS",
-    "seeErrors": "See Errors",
-    "showMissingNodes": "Show missing nodes",
-    "showMissingModels": "Show missing models",
-    "showSwapNodes": "Show swap nodes",
-    "showMissingMedia": "Show missing inputs",
+    "multipleErrorCount": "{count} error found | {count} errors found",
+    "multipleErrorsMessage": "Resolve them before running the workflow.",
+    "viewDetails": "View details",
     "missingNodes": "Some nodes are missing and need to be installed",
     "missingModels": "{count} required model is missing | {count} required models are missing",
-    "swapNodes": "Some nodes can be replaced with alternatives",
     "missingMedia": "Some nodes are missing required inputs"
   },
   "errorCatalog": {
     "fallbacks": {
       "nodeName": "This node",
       "inputName": "unknown input"
+    },
+    "missingErrors": {
+      "missing_node": {
+        "displayMessageCloud": "Required custom nodes aren't supported on Cloud. Replace them with supported nodes.",
+        "displayMessageOss": "Install missing packs to use this workflow.",
+        "toastTitleOneCloud": "{nodeType} isn't available on Cloud",
+        "toastTitleOneOss": "Missing node: {nodeType}",
+        "toastTitleManyCloud": "Nodes aren't available on Cloud",
+        "toastTitleManyOss": "Missing nodes",
+        "toastMessageOneCloud": "This node isn't supported on Cloud.",
+        "toastMessageOneOss": "This workflow uses a custom node that isn't installed. Install it from the registry or replace the node.",
+        "toastMessageManyCloud": "This workflow uses nodes that aren't supported on Cloud.",
+        "toastMessageManyOss": "{count} nodes require missing node packs."
+      },
+      "swap_nodes": {
+        "displayMessage": "Some nodes can be replaced with alternatives",
+        "toastTitleOne": "{nodeType} can be replaced",
+        "toastTitleMany": "Nodes can be replaced",
+        "toastMessageOne": "Replace it with {replacementNodeType} from the error panel.",
+        "toastMessageMany": "{count} node types can be replaced with compatible alternatives."
+      },
+      "missing_model": {
+        "displayMessageCloud": "Import a model, or open the node to replace it.",
+        "displayMessageOss": "Download a model, or open the node to replace it.",
+        "toastTitleOneCloud": "{modelName} isn't available on Cloud",
+        "toastTitleOneOss": "{modelName} is missing",
+        "toastTitleMany": "Missing models",
+        "toastTitleManyCloud": "Models aren't available on Cloud",
+        "toastMessageOneCloud": "This model isn't supported. Choose a different one.",
+        "toastMessageOneOss": "{nodeName} is missing a required model file.",
+        "toastMessageManyCloud": "Some models aren't supported. Choose different ones.",
+        "toastMessageManyOss": "{count} model files are missing."
+      },
+      "missing_media": {
+        "displayMessage": "A required media input has no file selected.",
+        "toastTitleOne": "Media input missing",
+        "toastTitleMany": "Missing media inputs",
+        "toastMessageWithNode": "{nodeName} is missing a required media file.",
+        "toastMessageMany": "Please select the missing media inputs before running this workflow."
+      }
     },
     "validationErrors": {
       "required_input_missing": {

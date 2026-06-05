@@ -593,6 +593,32 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "description": "Elimina el fondo de un video usando Bria y devuelve los fotogramas recortados más una máscara alfa. Conéctalos ambos a un nodo de composición, o envíalos a Guardar WEBM para crear un video transparente.",
+    "display_name": "Bria Eliminar Fondo de Video (Transparente)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados son no deterministas independientemente de la semilla."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imágenes",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Genera un video usando Seedance 2.0 a partir de una imagen del primer fotograma y, opcionalmente, una imagen del último fotograma.",
     "display_name": "ByteDance Seedance 2.0 Primer-Último Fotograma a Video",
@@ -1212,6 +1238,29 @@
       }
     }
   },
+  "CFGOverride": {
+    "description": "Anula cfg a un valor fijo sobre un intervalo de porcentaje [inicio, fin] de los pasos. Con múltiples anulaciones, la más cercana al muestreador prevalece en caso de solapamiento.",
+    "display_name": "Anulación de CFG",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "porcentaje_fin"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "start_percent": {
+        "name": "porcentaje_inicio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CFGZeroStar": {
     "display_name": "CFGZeroStar",
     "inputs": {
@@ -1720,6 +1769,10 @@
       "end_sigma": {
         "name": "sigma_final",
         "tooltip": "Último sigma para el cual estas opciones estarán en efecto."
+      },
+      "force_sequential_txt_ids": {
+        "name": "forzar_ids_de_texto_secuenciales",
+        "tooltip": "Forzar el uso de identificadores de tokens de texto secuenciales en lugar de ceros. Debe usarse para los checkpoints del 22-05-2026 al 01-06-2026 que fueron entrenados de esta manera pero no contienen la clave __sequential__ en el state dict."
       },
       "model": {
         "name": "modelo"
@@ -2523,6 +2576,57 @@
       }
     }
   },
+  "CreateCameraInfo": {
+    "description": "Construye una camera_info. El modo 'orbit' apunta con yaw/pitch/distancia alrededor del objetivo; 'look_at' coloca la cámara en una posición del mundo. Las coordenadas están en el espacio mundial del espectador (mano derecha, Y-arriba).",
+    "display_name": "Crear información de cámara",
+    "inputs": {
+      "camera_type": {
+        "name": "tipo_de_cámara",
+        "tooltip": "Proyección usada por Render Splat: perspectiva (con acortamiento) u ortográfica (paralela)."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "Campo de visión vertical en grados."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Cómo definir la cámara: ángulos de órbita, una posición explícita o una posición + cuaternión."
+      },
+      "mode_distance": {
+        "name": "distancia"
+      },
+      "mode_pitch": {
+        "name": "inclinación"
+      },
+      "mode_yaw": {
+        "name": "giro"
+      },
+      "roll": {
+        "name": "rotación",
+        "tooltip": "Rotación de la cámara sobre el eje de visión, en grados."
+      },
+      "target_x": {
+        "name": "objetivo_x",
+        "tooltip": "Punto de enfoque (pivote/objetivo de órbita). En modo órbita, muévelo para desplazar/trasladar toda la cámara. Se ignora en modo cuaternión. Por defecto es el origen."
+      },
+      "target_y": {
+        "name": "objetivo_y"
+      },
+      "target_z": {
+        "name": "objetivo_z"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Zoom digital (multiplicador de distancia focal). >1 acerca la imagen sin mover la cámara."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      }
+    }
+  },
   "CreateHookKeyframe": {
     "display_name": "Crear Hook Keyframe",
     "inputs": {
@@ -2899,6 +3003,34 @@
       },
       "type": {
         "name": "tipo"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "Guía CFG de Doble Modelo",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo usado para el pase positivo (condicional)."
+      },
+      "model_negative": {
+        "name": "modelo_negativo",
+        "tooltip": "Modelo usado para el pase negativo (incondicional). Usa el mismo modelo para CFG ordinario."
+      },
+      "negative": {
+        "name": "negativo",
+        "tooltip": "Condicionamiento negativo ejecutado en el modelo negativo. Déjalo sin conectar para un pase incondicional sin texto (solo imagen)."
+      },
+      "positive": {
+        "name": "positivo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3696,6 +3828,22 @@
       }
     }
   },
+  "File3DToSplat": {
+    "description": "Analiza un archivo File3D splat en un gaussian splat. Inverso de Crear archivo 3D (desde Splat). Formatos soportados: PLY, SPLAT, KSPLAT, SPZ. PLY contiene armónicos esféricos completos, los otros formatos solo color base. El formato se detecta automáticamente por el contenido del archivo.",
+    "display_name": "Obtener Splat",
+    "inputs": {
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Un archivo 3D gaussian splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "FlipSigmas": {
     "display_name": "FlipSigmas",
     "inputs": {
@@ -3837,6 +3985,28 @@
     "inputs": {
       "conditioning": {
         "name": "acondicionamiento"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxEraseNode": {
+    "description": "Elimina el objeto enmascarado de una imagen y reconstruye el fondo. Pinta la máscara sobre lo que deseas borrar.",
+    "display_name": "Flux Borrar imagen",
+    "inputs": {
+      "dilate_pixels": {
+        "name": "dilatar_pixeles",
+        "tooltip": "Expande los bordes de la máscara para asegurar una cobertura limpia de los bordes del objeto."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "mask": {
+        "name": "máscara",
+        "tooltip": "Las áreas blancas se eliminan; las áreas negras se conservan."
       }
     },
     "outputs": {
@@ -4113,6 +4283,36 @@
       },
       "seed": {
         "name": "seed",
+        "tooltip": "La semilla aleatoria utilizada para crear el ruido."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVTONode": {
+    "description": "Prueba virtual: viste a la persona con la prenda proporcionada.",
+    "display_name": "Flux Prueba virtual de ropa",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "garment": {
+        "name": "prenda",
+        "tooltip": "Imagen de la prenda a aplicar."
+      },
+      "person": {
+        "name": "persona",
+        "tooltip": "Imagen de la persona a vestir."
+      },
+      "prompt": {
+        "name": "instrucción",
+        "tooltip": "Instrucción opcional de estilo en lenguaje natural (por ejemplo, cómo debe ajustarse la prenda)."
+      },
+      "seed": {
+        "name": "semilla",
         "tooltip": "La semilla aleatoria utilizada para crear el ruido."
       }
     },
@@ -4716,6 +4916,25 @@
       }
     }
   },
+  "GetSplatCount": {
+    "description": "Devuelve el número de splats sumados en el lote.",
+    "display_name": "Obtener recuento de splats",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "recuento",
+        "tooltip": null
+      }
+    }
+  },
   "GetVideoComponents": {
     "description": "Extrae todos los componentes de un video: fotogramas, audio y velocidad de fotogramas.",
     "display_name": "Obtener componentes de video",
@@ -4926,10 +5145,12 @@
         "tooltip": "La duración del video de salida en segundos."
       },
       "image": {
-        "name": "imagen"
+        "name": "imagen",
+        "tooltip": "Imagen inicial opcional para grok-imagine-video. Requerida para grok-imagine-video-1.5."
       },
       "model": {
-        "name": "modelo"
+        "name": "modelo",
+        "tooltip": "grok-imagine-video-1.5 actualmente siempre requiere una imagen de entrada."
       },
       "prompt": {
         "name": "indicación",
@@ -5535,6 +5756,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Planificador Ideogram 4",
+    "inputs": {
+      "height": {
+        "name": "alto"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "std"
+      },
+      "steps": {
+        "name": "pasos"
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "Genera imágenes de forma sincrónica usando el modelo Ideogram V1.\n\nLos enlaces de las imágenes están disponibles por un período limitado; si deseas conservar la imagen, debes descargarla.",
     "display_name": "Ideogram V1",
@@ -5671,6 +5917,34 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "Genera imágenes usando el modelo Ideogram 4.0 a partir de un prompt de texto.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para la generación de la imagen."
+      },
+      "rendering_speed": {
+        "name": "velocidad_de_renderizado",
+        "tooltip": "Controla el equilibrio entre la velocidad de generación y la calidad."
+      },
+      "resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla"
       }
     },
     "outputs": {
@@ -8530,6 +8804,10 @@
       "6": {
         "name": "model_3d",
         "tooltip": null
+      },
+      "7": {
+        "name": "model_3d_info",
+        "tooltip": null
       }
     }
   },
@@ -9655,6 +9933,21 @@
       "0": {
         "name": "imágenes",
         "tooltip": "Imágenes procesadas"
+      }
+    }
+  },
+  "MergeSplat": {
+    "description": "Concatena cualquier número de splats gaussianos en uno solo. Unir varias decodificaciones del mismo latent con diferentes seeds densifica la superficie, lo que puede mejorar la calidad de la superficie al crear la malla.",
+    "display_name": "Unir splats",
+    "inputs": {
+      "splats": {
+        "name": "splats"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },
@@ -13423,6 +13716,52 @@
       }
     }
   },
+  "Preview3DAdvanced": {
+    "display_name": "Vista previa 3D (Avanzado)",
+    "inputs": {
+      "camera_info": {
+        "name": "info_cámara"
+      },
+      "height": {
+        "name": "alto"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "model_3d_info": {
+        "name": "info_modelo_3d"
+      },
+      "model_file": {
+        "name": "archivo_modelo",
+        "tooltip": "Archivo de modelo 3D de un nodo 3D anterior."
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "info_cámara",
+        "tooltip": null
+      },
+      "2": {
+        "name": "info_modelo_3d",
+        "tooltip": null
+      },
+      "3": {
+        "name": "ancho",
+        "tooltip": null
+      },
+      "4": {
+        "name": "alto",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewAny": {
     "display_name": "Vista previa de cualquier",
     "inputs": {
@@ -14408,6 +14747,66 @@
       "0": {
         "name": "máscara",
         "tooltip": "Máscara de primer plano generada"
+      }
+    }
+  },
+  "RenderSplat": {
+    "description": "Renderiza un gaussian splat como una imagen usando un rasterizador EWA anisotrópico (splats elípticos orientados, antialiasing, ordenados por profundidad de adelante hacia atrás). La cámara proviene de una entrada camera_info (Load / Preview 3D, o un nodo Create Camera Info); déjalo vacío para encuadrar automáticamente el splat. Establece frames mayores a 1 para un lote de imágenes tipo turntable para alimentar un nodo Video.",
+    "display_name": "Render Splat",
+    "inputs": {
+      "background": {
+        "name": "fondo"
+      },
+      "bg_image": {
+        "name": "imagen_fondo",
+        "tooltip": "Placa de fondo opcional compuesta detrás del splat (anula el color de fondo sólido). Redimensionada al tamaño de render; se usa un lote por fotograma, una sola imagen para todos. Solo color/clay."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "Cámara desde la que renderizar: una cámara Load3D / Preview3D o un nodo Create Camera Info. Si está vacío, el splat se encuadra automáticamente desde una vista predeterminada de 3/4."
+      },
+      "frames": {
+        "name": "fotogramas",
+        "tooltip": "-1, 0, 1 = imagen fija única; >1 = turntable, la cámara orbita en un giro completo de 360° (funciona con cualquier camera_info). Un valor negativo orbita en la dirección opuesta."
+      },
+      "headlight_shading": {
+        "name": "sombreado_faroles",
+        "tooltip": "Sombreado difuso desde una luz en la cámara (faroles), usando las normales de los surfels del splat: oscurece superficies que se alejan de la vista para revelar forma/curvatura. 0 = albedo plano, 1 = sombreado más fuerte."
+      },
+      "height": {
+        "name": "alto"
+      },
+      "opacity_threshold": {
+        "name": "umbral_opacidad",
+        "tooltip": "Descarta gaussians con opacidad por debajo de este valor (elimina flotantes tenues)."
+      },
+      "render_style": {
+        "name": "estilo_renderizado",
+        "tooltip": "Qué muestra la imagen de salida: color, clay (sombreado de albedo neutro), depth (cerca=brillante), normal (mapa de normales OpenGL)."
+      },
+      "sharpen": {
+        "name": "enfocar",
+        "tooltip": "Enfoca splats superpuestos: 1.0 = mezcla físicamente correcta; valores mayores sesgan cada píxel hacia su splat dominante (más cercano) para una textura más nítida, sin reducir los splats ni abrir huecos. No físico por encima de 1."
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "splat_scale": {
+        "name": "escala_splat",
+        "tooltip": "Multiplicador en la huella proyectada de cada splat (más bajo = puntos más nítidos, más alto = superficie más suave/llena)."
+      },
+      "width": {
+        "name": "ancho"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagen",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
       }
     }
   },
@@ -16152,6 +16551,10 @@
       "images": {
         "name": "images",
         "tooltip": "Lista de imágenes para guardar."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Indica si se deben sobrescribir los archivos existentes o incrementar los nombres de archivo para evitar sobrescribir."
       }
     }
   },
@@ -16170,6 +16573,10 @@
       "images": {
         "name": "images",
         "tooltip": "Lista de imágenes para guardar."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Indica si se deben sobrescribir los archivos existentes o incrementar los nombres de archivo para evitar sobrescribir."
       },
       "texts": {
         "name": "texts",
@@ -16287,7 +16694,8 @@
         "name": "fps"
       },
       "images": {
-        "name": "imágenes"
+        "name": "imágenes",
+        "tooltip": "Las imágenes RGBA se guardan con su canal alfa como transparencia (solo códec vp9)."
       }
     }
   },
@@ -16669,6 +17077,68 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToFile3D": {
+    "description": "Serializa un gaussian splat a un objeto File3D para los nodos Save / Preview 3D. Solo admite un elemento por lote.",
+    "display_name": "Crear archivo 3D (desde Splat)",
+    "inputs": {
+      "format": {
+        "name": "formato",
+        "tooltip": "ply: Gaussian Splat 3D estándar con armónicos esféricos completos. ksplat: mkkellogg SplatBuffer (nivel 0, sin comprimir), solo color base. spz: Niantic comprimido con gzip (~10x más pequeño), solo color base."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modelo_3d",
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToMesh": {
+    "description": "Extrae una malla coloreada de un gaussian splat.",
+    "display_name": "Extraer malla de Splat",
+    "inputs": {
+      "color_sharpen": {
+        "name": "enfocar_color",
+        "tooltip": "Acentúa la textura de los vértices: 1.0 = mezcla físicamente correcta; valores mayores sesgan el color de cada vóxel hacia su gaussiana dominante en vez de promediar vecinos (reduce el difuminado de la textura). Solo color: la geometría no cambia."
+      },
+      "kernel": {
+        "name": "kernel",
+        "tooltip": "Ancho máximo de splat a la mitad en vóxeles. Cada gaussiana se rasteriza sobre una ventana del tamaño de su propio 3-sigma, limitado aquí: los surfels pequeños siguen siendo económicos, los grandes no se truncan. Aumenta si los splats dispersos dejan huecos."
+      },
+      "level": {
+        "name": "nivel",
+        "tooltip": "Nivel de iso-superficie. Seleccionado automáticamente por Otsu; esto lo sesga (1.0 = auto, menor = superficie más gruesa/conectada, mayor = más delgada/ajustada)."
+      },
+      "min_component": {
+        "name": "componente_mínima",
+        "tooltip": "Descarta componentes conectados más pequeños que esta cantidad de vértices (0 = conservar todos). Elimina fragmentos flotantes y la capa interna de la doble pared."
+      },
+      "min_opacity": {
+        "name": "opacidad_mínima",
+        "tooltip": "Ignora gaussianas más tenues que este valor antes de crear la malla."
+      },
+      "resolution": {
+        "name": "resolución",
+        "tooltip": "Resolución de la cuadrícula de densidad a lo largo del eje más largo. Más alto = superficie más fina, más VRAM/tiempo (crece con resolución^3)."
+      },
+      "smooth": {
+        "name": "suavizar",
+        "tooltip": "Iteraciones de suavizado de malla Taubin. Suaviza la superficie sin encogerla (conserva el volumen), a diferencia de difuminar la densidad. 0 = superficie sin procesar."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "malla",
         "tooltip": null
       }
     }
@@ -18371,6 +18841,48 @@
       }
     }
   },
+  "TransformSplat": {
+    "description": "Traslada, rota y escala un gaussian splat. El escalado no uniforme también deforma cada splat individualmente, proceso más lento.",
+    "display_name": "Transformar Splat",
+    "inputs": {
+      "rotate_x": {
+        "name": "rotar_x"
+      },
+      "rotate_y": {
+        "name": "rotar_y"
+      },
+      "rotate_z": {
+        "name": "rotar_z"
+      },
+      "scale_x": {
+        "name": "escalar_x"
+      },
+      "scale_y": {
+        "name": "escalar_y"
+      },
+      "scale_z": {
+        "name": "escalar_z"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "translate_x": {
+        "name": "trasladar_x"
+      },
+      "translate_y": {
+        "name": "trasladar_y"
+      },
+      "translate_z": {
+        "name": "trasladar_z"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "TrimAudioDuration": {
     "description": "Recortar tensor de audio al rango de tiempo elegido.",
     "display_name": "Recortar Duración de Audio",
@@ -18616,6 +19128,169 @@
       }
     }
   },
+  "TripoP1ImageToModelNode": {
+    "description": "Tripo P1 de imagen a 3D. Optimizado para mallas low-poly listas para videojuegos.",
+    "display_name": "Tripo P1: Imagen a Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_escala",
+        "tooltip": "Escala la salida para aproximar metros reales."
+      },
+      "compress_geometry": {
+        "name": "comprimir_geometría",
+        "tooltip": "Aplicar compresión basada en geometría. Descomprimir antes de editar."
+      },
+      "enable_image_autofix": {
+        "name": "activar_autocorrección_imagen",
+        "tooltip": "Preprocesa la imagen de entrada para mejorar la calidad de generación."
+      },
+      "export_uv": {
+        "name": "exportar_uv",
+        "tooltip": "Desplegar UV durante la generación. Desactivar para ejecuciones solo de geometría más rápidas."
+      },
+      "face_limit": {
+        "name": "límite_de_caras",
+        "tooltip": "Cantidad objetivo de caras, 48-20000. -1 permite que Tripo elija adaptativamente."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "model_seed": {
+        "name": "semilla_modelo"
+      },
+      "output_mode": {
+        "name": "modo_de_salida",
+        "tooltip": "\"Solo geometría\" devuelve una malla sin texturas. \"Texturizado\" añade mapas de color/PBR."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_tarea_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1MultiviewToModelNode": {
+    "description": "Tripo P1 de multivista a 3D a partir de 2-4 imágenes de referencia en orden [frontal, izquierda, trasera, derecha]. La vista frontal es obligatoria; cualquier combinación de las otras tres puede omitirse.",
+    "display_name": "Tripo P1: Multivista a Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_escala",
+        "tooltip": "Escala la salida para aproximar metros reales."
+      },
+      "compress_geometry": {
+        "name": "comprimir_geometría",
+        "tooltip": "Aplicar compresión basada en geometría. Descomprimir antes de editar."
+      },
+      "export_uv": {
+        "name": "exportar_uv",
+        "tooltip": "Desplegar UV durante la generación. Desactivar para ejecuciones solo de geometría más rápidas."
+      },
+      "face_limit": {
+        "name": "límite_de_caras",
+        "tooltip": "Cantidad objetivo de caras, 48-20000. -1 permite que Tripo elija adaptativamente."
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Vista frontal (0°). Obligatoria."
+      },
+      "image_back": {
+        "name": "imagen_trasera",
+        "tooltip": "Vista trasera (180°)."
+      },
+      "image_left": {
+        "name": "imagen_izquierda",
+        "tooltip": "Vista izquierda (90°), es decir, el lado izquierdo del sujeto."
+      },
+      "image_right": {
+        "name": "imagen_derecha",
+        "tooltip": "Vista derecha (270°), es decir, el lado derecho del sujeto."
+      },
+      "model_seed": {
+        "name": "semilla_modelo"
+      },
+      "output_mode": {
+        "name": "modo_de_salida",
+        "tooltip": "\"Solo geometría\" devuelve una malla sin texturas. \"Texturizado\" añade mapas de color/PBR."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_tarea_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoP1TextToModelNode": {
+    "description": "Tripo P1 texto a 3D. Optimizado para mallas low-poly, listas para juegos, con topología estable.",
+    "display_name": "Tripo P1: Texto a Modelo",
+    "inputs": {
+      "auto_size": {
+        "name": "auto_escala",
+        "tooltip": "Escala la salida para aproximar metros reales."
+      },
+      "compress_geometry": {
+        "name": "comprimir_geometría",
+        "tooltip": "Aplicar compresión basada en geometría. Descomprime antes de editar."
+      },
+      "export_uv": {
+        "name": "exportar_uv",
+        "tooltip": "Desplegar UV durante la generación. Desactiva para ejecuciones solo de geometría más rápidas."
+      },
+      "face_limit": {
+        "name": "límite_de_caras",
+        "tooltip": "Cantidad objetivo de caras, 48-20000. -1 permite que Tripo elija de forma adaptativa."
+      },
+      "image_seed": {
+        "name": "semilla_imagen"
+      },
+      "model_seed": {
+        "name": "semilla_modelo"
+      },
+      "negative_prompt": {
+        "name": "prompt_negativo",
+        "tooltip": "Hasta 255 caracteres."
+      },
+      "output_mode": {
+        "name": "modo_de_salida",
+        "tooltip": "\"Solo geometría\" devuelve una malla sin texturas. \"Texturizado\" añade mapas de color/PBR."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Hasta 1024 caracteres."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "archivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "id_tarea_modelo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
   "TripoRefineNode": {
     "description": "Refina un modelo borrador creado únicamente por modelos Tripo v1.4.",
     "display_name": "Tripo: Refinar modelo borrador",
@@ -18683,6 +19358,101 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatConditioning": {
+    "description": "Codifica la imagen con DINOv3 y el Flux2 VAE en condicionamiento positivo/negativo de TripoSplat, y crea el objetivo de ruido de tamaño fijo (latent + cámara) para el KSampler",
+    "display_name": "Condicionamiento TripoSplat",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision",
+        "tooltip": "Codificador de imágenes DINOv3 ViT-H/16+"
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Flux2 VAE"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latente",
+        "tooltip": "El objetivo de ruido de tamaño fijo (latente + cámara)."
+      }
+    }
+  },
+  "TripoSplatPreprocessImage": {
+    "description": "Recorta el centro de cada imagen a un lienzo cuadrado sobre un fondo negro y añade relleno.",
+    "display_name": "TripoSplat Preprocesar Imagen",
+    "inputs": {
+      "erode_radius": {
+        "name": "radio_de_erosión",
+        "tooltip": "Erosiona el canal alfa por este radio de píxeles antes de recortar (evita el sangrado en los bordes)."
+      },
+      "image": {
+        "name": "imagen"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "size": {
+        "name": "tamaño",
+        "tooltip": "Tamaño de la imagen cuadrada. El modelo está entrenado a 1024; otros tamaños funcionan pero están fuera de la distribución."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagen",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatSamplingPreview": {
+    "description": "Parchea el modelo TripoSplat para el nodo estándar Ksampler y muestra una vista previa en vivo del gaussian splat decodificado en cada paso.",
+    "display_name": "Vista Previa de Muestreo TripoSplat",
+    "inputs": {
+      "model": {
+        "name": "modelo"
+      },
+      "num_gaussians": {
+        "name": "número_de_gaussianos",
+        "tooltip": "Número de gaussianos a producir para la vista previa (redondeado a múltiplos de 32)."
+      },
+      "octree_level": {
+        "name": "nivel_octree",
+        "tooltip": "Profundidad del octree para la decodificación de la vista previa (menor = más barato/más grueso)."
+      },
+      "pitch": {
+        "name": "pitch",
+        "tooltip": "Ángulo de elevación de la cámara de vista previa en grados."
+      },
+      "point_size": {
+        "name": "tamaño_de_punto",
+        "tooltip": "Radio máximo del splat en píxeles. Cada gaussiano se dimensiona según su escala y se limita aquí; menor = más fino/puntiagudo, mayor = más grueso."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Decodificador VAE de TripoSplat"
+      },
+      "yaw": {
+        "name": "yaw",
+        "tooltip": "Inclinación de la cámara de vista previa en grados."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -19015,6 +19785,36 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTripoSplat": {
+    "description": "Decodifica el latent de TripoSplat muestreado en un gaussian splat 3D. Modifica el número de gaussianos para variar la densidad.",
+    "display_name": "Decodificar TripoSplat",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar después de generar"
+      },
+      "num_gaussians": {
+        "name": "número_de_gaussianos",
+        "tooltip": "Número de gaussianos a producir (redondeado a múltiplos de 32). 262144 coincide con la densidad de puntos del octree; valores mayores sobremuestrean los mismos puntos (más denso, pero sin nuevo detalle) y consumen proporcionalmente más VRAM/tiempo."
+      },
+      "samples": {
+        "name": "muestras"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "Semilla para el muestreador de puntos del octree (RNG global) para decodificaciones deterministas."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Decodificador VAE de TripoSplat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },
