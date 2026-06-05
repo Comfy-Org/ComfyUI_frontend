@@ -99,15 +99,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import SubscriptionBenefits from '@/platform/cloud/subscription/components/SubscriptionBenefits.vue'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useTelemetry } from '@/platform/telemetry'
 
-defineProps<{
+const { reason } = defineProps<{
   reason?: SubscriptionDialogReason
 }>()
 
@@ -116,7 +117,15 @@ defineEmits<{
   upgrade: []
 }>()
 
-const { formattedRenewalDate } = useSubscription()
+const { formattedRenewalDate, subscriptionTier } = useSubscription()
 
 const freeTierCredits = computed(() => getTierCredits('free'))
+
+onMounted(() => {
+  useTelemetry()?.trackPaywallViewed({
+    surface: 'free_tier_dialog',
+    current_tier: subscriptionTier.value?.toLowerCase(),
+    reason
+  })
+})
 </script>

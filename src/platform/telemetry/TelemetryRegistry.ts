@@ -16,6 +16,7 @@ import type {
   NodeSearchMetadata,
   NodeSearchResultMetadata,
   PageViewMetadata,
+  PaywallViewedMetadata,
   PageVisibilityMetadata,
   SettingChangedMetadata,
   SubscriptionMetadata,
@@ -76,6 +77,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     metadata?: SubscriptionMetadata
   ): void {
     this.dispatch((provider) => provider.trackSubscription?.(event, metadata))
+  }
+
+  trackPaywallViewed(metadata: PaywallViewedMetadata): void {
+    this.dispatch((provider) => provider.trackPaywallViewed?.(metadata))
   }
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {

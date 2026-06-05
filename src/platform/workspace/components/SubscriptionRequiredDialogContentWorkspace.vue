@@ -94,8 +94,12 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted } from 'vue'
+
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useTelemetry } from '@/platform/telemetry'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
@@ -106,6 +110,16 @@ const { onClose, reason } = defineProps<{
   onClose: () => void
   reason?: SubscriptionDialogReason
 }>()
+
+const { subscription } = useBillingContext()
+
+onMounted(() => {
+  useTelemetry()?.trackPaywallViewed({
+    surface: 'subscription_required_dialog_workspace',
+    current_tier: subscription.value?.tier?.toLowerCase(),
+    reason
+  })
+})
 
 const emit = defineEmits<{
   close: [subscribed: boolean]

@@ -30,6 +30,7 @@ import type {
   PageVisibilityMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
+  PaywallViewedMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -230,6 +231,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
         : TelemetryEvents.SUBSCRIBE_NOW_BUTTON_CLICKED
 
     this.trackEvent(eventName, metadata)
+  }
+
+  trackPaywallViewed(metadata: PaywallViewedMetadata): void {
+    this.trackEvent(TelemetryEvents.PAYWALL_VIEWED, metadata)
   }
 
   trackAddApiCreditButtonClicked(): void {
