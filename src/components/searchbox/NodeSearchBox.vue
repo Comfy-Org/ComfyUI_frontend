@@ -129,17 +129,16 @@ const nodeFrequencyStore = useNodeFrequencyStore()
 
 useSearchQueryTracking('node_modal', currentQuery, suggestions)
 
-// Preserve the legacy `app:node_search` signal that previously flowed to GA4
-// via the GTM provider. PostHog and Mixpanel gate this event in their
-// `DEFAULT_DISABLED_EVENTS`; GTM does not, so this remains the GA4 path.
-const debouncedTrackNodeSearch = debounce((query: string) => {
-  if (query.trim()) telemetry?.trackNodeSearch({ query })
+// Debounced search tracking (500ms as per implementation plan)
+const debouncedTrackSearch = debounce((query: string) => {
+  if (query.trim()) {
+    telemetry?.trackNodeSearch({ query })
+  }
 }, 500)
 
 const search = (query: string) => {
   const queryIsEmpty = query === '' && filters.length === 0
   currentQuery.value = query
-  debouncedTrackNodeSearch(query)
   suggestions.value = queryIsEmpty
     ? nodeFrequencyStore.topNodeDefs
     : [
@@ -147,6 +146,9 @@ const search = (query: string) => {
           limit: searchLimit
         })
       ]
+
+  // Track search queries with debounce
+  debouncedTrackSearch(query)
 }
 
 const emit = defineEmits<{
