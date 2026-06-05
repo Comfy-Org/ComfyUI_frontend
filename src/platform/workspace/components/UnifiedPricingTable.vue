@@ -365,9 +365,16 @@ type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 interface Props {
   isLoading?: boolean
   loadingTier?: CheckoutTierKey | null
+  /** Initial plan scope. The toggle to switch is only shown when team plans
+   *  are available (`teamWorkspacesEnabled`). */
+  initialPlanMode?: 'personal' | 'team'
 }
 
-const { isLoading, loadingTier = null } = defineProps<Props>()
+const {
+  isLoading,
+  loadingTier = null,
+  initialPlanMode = 'personal'
+} = defineProps<Props>()
 
 const emit = defineEmits<{
   subscribe: [payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }]
@@ -384,7 +391,7 @@ const { flags } = useFeatureFlags()
 /** Team plans only exist behind the flag (mirrors useBillingContext type). */
 const showTeam = computed(() => flags.teamWorkspacesEnabled)
 
-const planMode = ref<'personal' | 'team'>('personal')
+const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
 const TEAM_MAX_MEMBERS = 30
 
