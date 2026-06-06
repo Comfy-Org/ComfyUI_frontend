@@ -251,18 +251,18 @@ describe('TabErrors.vue', () => {
       itemDetail.getAttribute('id')
     )
 
-    await user.click(
-      within(itemRows[1]).getByRole('button', {
-        name: 'KSampler - positive'
-      })
-    )
+    const labelLocateButton = within(itemRows[1]).getByRole('button', {
+      name: 'KSampler - positive'
+    })
+
+    await user.click(labelLocateButton)
     expect(mockFocusNode.mock.calls.at(-1)?.[0]).toBe('1')
 
-    await user.click(
-      within(itemRows[2]).getByRole('button', {
-        name: 'Locate CLIP Text Encode - clip'
-      })
-    )
+    const iconLocateButton = within(itemRows[2]).getByRole('button', {
+      name: 'Locate CLIP Text Encode - clip'
+    })
+
+    await user.click(iconLocateButton)
     expect(mockFocusNode.mock.calls.at(-1)?.[0]).toBe('2')
 
     expect(
