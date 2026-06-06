@@ -186,7 +186,7 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
 
     expect(node.properties['Last Time Model File']).toBe('scene.ply')
     expect(configureForSaveMeshMock).toHaveBeenLastCalledWith(
-      'output',
+      'temp',
       'scene.ply',
       expect.objectContaining({ silentOnNotFound: true })
     )
@@ -231,7 +231,7 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
     const node = makePreviewNode({
       widgets: [
         { name: 'model_file', value: '' },
-        { name: 'image', value: '' },
+        { name: 'viewport_state', value: '' },
         widthWidget,
         heightWidget
       ]
@@ -262,7 +262,7 @@ describe('Comfy.PreviewGaussianSplat.nodeCreated', () => {
     )
     const sceneWidget: FakeWidget & {
       serializeValue?: () => Promise<unknown>
-    } = { name: 'image', value: '' }
+    } = { name: 'viewport_state', value: '' }
     const node = makePreviewNode({
       widgets: [{ name: 'model_file', value: '' }, sceneWidget]
     })
@@ -318,7 +318,7 @@ describe('Comfy.PreviewPointCloud.nodeCreated', () => {
 
     expect(node.properties['Last Time Model File']).toBe('pointcloud.ply')
     expect(configureForSaveMeshMock).toHaveBeenLastCalledWith(
-      'output',
+      'temp',
       'pointcloud.ply',
       expect.objectContaining({ silentOnNotFound: true })
     )

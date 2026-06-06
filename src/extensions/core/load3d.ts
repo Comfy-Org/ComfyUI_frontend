@@ -270,8 +270,16 @@ useExtensionService().registerExtension({
     }
   ],
   getCustomWidgets() {
+    const VIEWPORT_STATE_NODES = new Set([
+      'Preview3DAdvanced',
+      'PreviewGaussianSplat',
+      'PreviewPointCloud'
+    ])
     return {
       LOAD_3D(node) {
+        const inputName = VIEWPORT_STATE_NODES.has(node.constructor.comfyClass)
+          ? 'viewport_state'
+          : 'image'
         const hasModelFileWidget = node.widgets?.some(
           (w) => w.name === 'model_file'
         )
@@ -316,9 +324,9 @@ useExtensionService().registerExtension({
 
         const widget = new ComponentWidgetImpl({
           node: node,
-          name: 'image',
+          name: inputName,
           component: Load3D,
-          inputSpec: inputSpecLoad3D,
+          inputSpec: { ...inputSpecLoad3D, name: inputName },
           options: {}
         })
 
@@ -715,7 +723,7 @@ useExtensionService().registerExtension({
     })
 
     useLoad3d(node).waitForLoad3d((load3d) => {
-      const sceneWidget = node.widgets?.find((w) => w.name === 'image')
+      const sceneWidget = node.widgets?.find((w) => w.name === 'viewport_state')
       if (!sceneWidget) return
 
       const resolveLoad3d = () => nodeToLoad3dMap.get(node) ?? load3d
