@@ -3,7 +3,14 @@ import { nextTick, reactive, ref, shallowRef } from 'vue'
 import type { Pinia } from 'pinia'
 import { getActivePinia } from 'pinia'
 
-import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
+import {
+  getLoad3dOutputCache,
+  isLoad3dSceneDirty,
+  markLoad3dSceneDirty,
+  nodeToLoad3dMap,
+  setLoad3dOutputCache,
+  useLoad3d
+} from '@/composables/useLoad3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
@@ -186,6 +193,7 @@ describe('useLoad3d', () => {
       resetGizmoTransform: vi.fn(),
       applyGizmoTransform: vi.fn(),
       fitToViewer: vi.fn(),
+      centerCameraOnModel: vi.fn(),
       getGizmoTransform: vi.fn().mockReturnValue({
         position: { x: 0, y: 0, z: 0 },
         rotation: { x: 0, y: 0, z: 0 },
@@ -1740,6 +1748,186 @@ describe('useLoad3d', () => {
       mockNode.onRemoved?.()
 
       expect(originalOnRemoved).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('scene dirty tracking', () => {
+    const fakeCache = {
+      image: 'threed/scene-1.png [temp]',
+      mask: 'threed/scene_mask-1.png [temp]',
+      normal: 'threed/scene_normal-1.png [temp]',
+      camera_info: null,
+      recording: '',
+      model_3d_info: []
+    }
+
+    it('treats an unseen node as dirty by default', () => {
+      const fresh = createMockLGraphNode({ properties: {} })
+      expect(isLoad3dSceneDirty(fresh)).toBe(true)
+    })
+
+    it('markLoad3dSceneDirty sets the node dirty', () => {
+      const fresh = createMockLGraphNode({ properties: {} })
+      setLoad3dOutputCache(fresh, fakeCache)
+      expect(isLoad3dSceneDirty(fresh)).toBe(false)
+
+      markLoad3dSceneDirty(fresh)
+      expect(isLoad3dSceneDirty(fresh)).toBe(true)
+    })
+
+    it('setLoad3dOutputCache stores the output and clears dirty', () => {
+      const fresh = createMockLGraphNode({ properties: {} })
+      setLoad3dOutputCache(fresh, fakeCache)
+
+      expect(getLoad3dOutputCache(fresh)).toBe(fakeCache)
+      expect(isLoad3dSceneDirty(fresh)).toBe(false)
+    })
+
+    it('two nodes keep independent dirty state', () => {
+      const a = createMockLGraphNode({ properties: {} })
+      const b = createMockLGraphNode({ properties: {} })
+
+      setLoad3dOutputCache(a, fakeCache)
+      expect(isLoad3dSceneDirty(a)).toBe(false)
+      expect(isLoad3dSceneDirty(b)).toBe(true)
+
+      markLoad3dSceneDirty(a)
+      expect(isLoad3dSceneDirty(a)).toBe(true)
+      expect(isLoad3dSceneDirty(b)).toBe(true)
+    })
+
+    it('markLoad3dSceneDirty on null is a no-op', () => {
+      expect(() => markLoad3dSceneDirty(null)).not.toThrow()
+    })
+
+    it('sceneConfig changes flip the node dirty', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+      await nextTick()
+
+      setLoad3dOutputCache(mockNode, fakeCache)
+      expect(isLoad3dSceneDirty(mockNode)).toBe(false)
+
+      composable.sceneConfig.value.backgroundColor = '#ffffff'
+      await nextTick()
+
+      expect(isLoad3dSceneDirty(mockNode)).toBe(true)
+    })
+
+    it('cameraChanged event marks the node dirty', async () => {
+      let cameraChangedHandler: ((state: unknown) => void) | undefined
+      vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
+        (event: string, handler: unknown) => {
+          if (event === 'cameraChanged') {
+            cameraChangedHandler = handler as (state: unknown) => void
+          }
+        }
+      )
+
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+      await nextTick()
+
+      setLoad3dOutputCache(mockNode, fakeCache)
+      expect(isLoad3dSceneDirty(mockNode)).toBe(false)
+
+      cameraChangedHandler!({ position: { x: 1, y: 2, z: 3 } })
+
+      expect(isLoad3dSceneDirty(mockNode)).toBe(true)
+    })
+
+    it('handleStopRecording marks dirty when a recording was produced', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+      await nextTick()
+
+      setLoad3dOutputCache(mockNode, fakeCache)
+
+      vi.mocked(mockLoad3d.getRecordingDuration!).mockReturnValue(5)
+      composable.handleStopRecording()
+
+      expect(isLoad3dSceneDirty(mockNode)).toBe(true)
+    })
+
+    it('handleStopRecording leaves dirty alone when no recording was produced', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+      await nextTick()
+
+      setLoad3dOutputCache(mockNode, fakeCache)
+
+      vi.mocked(mockLoad3d.getRecordingDuration!).mockReturnValue(0)
+      composable.handleStopRecording()
+
+      expect(isLoad3dSceneDirty(mockNode)).toBe(false)
+    })
+
+    it('handleClearRecording marks dirty', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+      await nextTick()
+
+      setLoad3dOutputCache(mockNode, fakeCache)
+      composable.handleClearRecording()
+
+      expect(isLoad3dSceneDirty(mockNode)).toBe(true)
+    })
+
+    it('handleStartRecording marks dirty so an in-progress recording forces a re-capture', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+      await nextTick()
+
+      setLoad3dOutputCache(mockNode, fakeCache)
+      expect(isLoad3dSceneDirty(mockNode)).toBe(false)
+
+      await composable.handleStartRecording()
+
+      expect(mockLoad3d.startRecording).toHaveBeenCalledTimes(1)
+      expect(isLoad3dSceneDirty(mockNode)).toBe(true)
+    })
+
+    it('handleCenterCameraOnModel marks dirty', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+      await nextTick()
+
+      setLoad3dOutputCache(mockNode, fakeCache)
+      expect(isLoad3dSceneDirty(mockNode)).toBe(false)
+
+      composable.handleCenterCameraOnModel()
+
+      expect(mockLoad3d.centerCameraOnModel).toHaveBeenCalledTimes(1)
+      expect(isLoad3dSceneDirty(mockNode)).toBe(true)
+    })
+
+    it('handleSeek marks dirty when the animation has a duration', async () => {
+      const composable = useLoad3d(mockNode)
+      const containerRef = document.createElement('div')
+      await composable.initializeLoad3d(containerRef)
+      await nextTick()
+
+      const calls = vi.mocked(mockLoad3d.addEventListener!).mock.calls
+      const match = calls.find(([event]) => event === 'animationProgressChange')
+      const animationProgressHandler = match![1] as (d: {
+        progress: number
+        currentTime: number
+        duration: number
+      }) => void
+
+      animationProgressHandler({ progress: 0, currentTime: 0, duration: 10 })
+      setLoad3dOutputCache(mockNode, fakeCache)
+
+      composable.handleSeek(50)
+
+      expect(isLoad3dSceneDirty(mockNode)).toBe(true)
     })
   })
 })
