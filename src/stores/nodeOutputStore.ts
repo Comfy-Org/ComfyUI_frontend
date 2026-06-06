@@ -1,4 +1,5 @@
 import { useTimeoutFn } from '@vueuse/core'
+import { mapKeys } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -358,11 +359,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function restoreOutputs(
     outputs: Record<string, ExecutedWsMessage['output']>
   ) {
-    const parsedOutputs = Object.fromEntries(
-      Object.entries(outputs).map(([id, output]) => [
-        executionIdToNodeLocatorId(app.rootGraph, id) ?? id,
-        output
-      ])
+    const parsedOutputs = mapKeys(
+      outputs,
+      (_, id) => executionIdToNodeLocatorId(app.rootGraph, id) ?? id
     )
     app.nodeOutputs = parsedOutputs
     nodeOutputs.value = { ...parsedOutputs }
