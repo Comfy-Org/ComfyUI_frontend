@@ -70,10 +70,13 @@
                   {{ group.displayTitle }}
                 </span>
                 <span
-                  v-if="group.type === 'execution' && group.cards.length > 1"
+                  v-if="
+                    group.type === 'execution' &&
+                    getExecutionGroupCount(group) > 1
+                  "
                   class="text-destructive-background-hover"
                 >
-                  ({{ group.cards.length }})
+                  ({{ getExecutionGroupCount(group) }})
                 </span>
               </span>
               <Button
@@ -155,7 +158,7 @@
           </template>
 
           <div
-            v-if="group.type !== 'execution' && group.displayMessage"
+            v-if="group.displayMessage"
             data-testid="error-group-display-message"
             class="px-4 pt-1 pb-3"
           >
@@ -186,7 +189,69 @@
           />
 
           <!-- Execution Errors -->
-          <div v-if="group.type === 'execution'" class="space-y-3 px-4">
+          <div v-if="isExecutionItemListGroup(group)" class="px-4">
+            <ul class="m-0 list-none space-y-1 p-0">
+              <li
+                v-for="item in getExecutionItemList(group)"
+                :key="item.key"
+                class="min-w-0"
+              >
+                <div class="flex min-w-0 items-center gap-2">
+                  <span class="flex min-w-0 flex-1 items-center gap-1">
+                    <button
+                      v-tooltip.top="{
+                        value: item.displayDetails ?? '',
+                        showDelay: 300
+                      }"
+                      type="button"
+                      class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
+                      @click="handleLocateNode(item.nodeId)"
+                    >
+                      {{ item.label }}
+                    </button>
+                    <Button
+                      v-if="item.displayDetails"
+                      variant="textonly"
+                      size="icon-sm"
+                      :class="
+                        cn(
+                          'size-6 shrink-0 text-muted-foreground hover:text-base-foreground',
+                          isExecutionItemDetailExpanded(item.key) &&
+                            'bg-secondary-background-selected text-base-foreground hover:bg-secondary-background-selected'
+                        )
+                      "
+                      :aria-label="t('rightSidePanel.info')"
+                      :aria-expanded="isExecutionItemDetailExpanded(item.key)"
+                      @click.stop="toggleExecutionItemDetail(item.key)"
+                    >
+                      <i class="icon-[lucide--info] size-3.5" />
+                    </Button>
+                  </span>
+                  <Button
+                    variant="textonly"
+                    size="icon-sm"
+                    class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+                    :aria-label="t('rightSidePanel.locateNode')"
+                    @click.stop="handleLocateNode(item.nodeId)"
+                  >
+                    <i class="icon-[lucide--locate] size-4" />
+                  </Button>
+                </div>
+                <TransitionCollapse>
+                  <p
+                    v-if="
+                      item.displayDetails &&
+                      isExecutionItemDetailExpanded(item.key)
+                    "
+                    class="m-0 mt-0.5 pr-10 text-2xs/relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
+                  >
+                    {{ item.displayDetails }}
+                  </p>
+                </TransitionCollapse>
+              </li>
+            </ul>
+          </div>
+          <div v-else-if="group.type === 'execution'" class="space-y-3 px-4">
             <ErrorNodeCard
               v-for="card in group.cards"
               :key="card.id"
@@ -255,6 +320,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
@@ -266,6 +332,7 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import CollapseToggleButton from '../layout/CollapseToggleButton.vue'
+import TransitionCollapse from '../layout/TransitionCollapse.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
@@ -284,6 +351,13 @@ import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup } from './types'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
+
+interface ExecutionItemListEntry {
+  key: string
+  nodeId: string
+  label: string
+  displayDetails?: string
+}
 
 const ErrorPanelSurveyCta =
   isNightly && !isCloud && !isDesktop
@@ -307,6 +381,7 @@ const { isInstalling: isInstallingAll, installAllPacks: installAll } =
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 
 const searchQuery = ref('')
+const expandedExecutionItemDetailKeys = ref(new Set<string>())
 const isSearching = computed(() => searchQuery.value.trim() !== '')
 
 const fullSizeGroupTypes = new Set([
@@ -324,6 +399,72 @@ const showNodeIdBadge = computed(
     (settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode) !==
     NodeBadgeMode.None
 )
+
+function isExecutionItemListGroup(group: ErrorGroup) {
+  return (
+    group.type === 'execution' &&
+    group.cards.length > 0 &&
+    group.cards.every(
+      (card) =>
+        card.nodeId &&
+        card.errors.length > 0 &&
+        card.errors.every(
+          (error) => !error.isRuntimeError && Boolean(error.displayItemLabel)
+        )
+    )
+  )
+}
+
+function getExecutionItemList(group: ErrorGroup): ExecutionItemListEntry[] {
+  if (group.type !== 'execution') return []
+
+  const items: ExecutionItemListEntry[] = []
+  for (const card of group.cards) {
+    if (!card.nodeId) continue
+    for (let idx = 0; idx < card.errors.length; idx++) {
+      const error = card.errors[idx]
+      const label = error.displayItemLabel
+      if (!label) continue
+      items.push({
+        key: `${card.id}:${idx}`,
+        nodeId: card.nodeId,
+        label,
+        displayDetails: error.displayDetails
+      })
+    }
+  }
+  return items.sort(compareExecutionItemListEntry)
+}
+
+function compareExecutionItemListEntry(
+  a: ExecutionItemListEntry,
+  b: ExecutionItemListEntry
+) {
+  return (
+    a.nodeId.localeCompare(b.nodeId, undefined, { numeric: true }) ||
+    a.label.localeCompare(b.label)
+  )
+}
+
+function getExecutionGroupCount(group: ErrorGroup) {
+  if (group.type !== 'execution') return 0
+  if (isExecutionItemListGroup(group)) return getExecutionItemList(group).length
+  return group.cards.length
+}
+
+function isExecutionItemDetailExpanded(key: string) {
+  return expandedExecutionItemDetailKeys.value.has(key)
+}
+
+function toggleExecutionItemDetail(key: string) {
+  const nextKeys = new Set(expandedExecutionItemDetailKeys.value)
+  if (nextKeys.has(key)) {
+    nextKeys.delete(key)
+  } else {
+    nextKeys.add(key)
+  }
+  expandedExecutionItemDetailKeys.value = nextKeys
+}
 
 const {
   allErrorGroups,
