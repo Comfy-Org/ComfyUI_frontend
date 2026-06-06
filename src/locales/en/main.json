@@ -88,7 +88,7 @@
     "color": "Color",
     "error": "Error",
     "enter": "Enter",
-    "enterSubgraph": "Enter Subgraph",
+    "enterSubgraph": "Enter subgraph",
     "inSubgraph": "in subgraph '{name}'",
     "resizeFromBottomRight": "Resize from bottom-right corner",
     "resizeFromTopRight": "Resize from top-right corner",

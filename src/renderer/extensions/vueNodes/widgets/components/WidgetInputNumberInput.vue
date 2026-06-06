@@ -164,11 +164,11 @@ const inputAriaAttrs = computed(() => ({
       :hide-buttons="buttonsDisabled"
       :parse-value="parseWidgetValue"
       :input-attrs="inputAriaAttrs"
-      :class="cn(WidgetInputBaseClass, 'relative flex h-7 grow text-xs')"
+      :class="cn(WidgetInputBaseClass, 'relative flex h-6 grow text-xs')"
     >
       <template #background>
         <div
-          class="pointer-events-none absolute size-full overflow-clip rounded-lg"
+          class="pointer-events-none absolute size-full overflow-clip rounded-md"
         >
           <div
             class="size-full bg-primary-background/15"
