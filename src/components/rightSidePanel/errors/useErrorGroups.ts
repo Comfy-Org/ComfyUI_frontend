@@ -66,6 +66,7 @@ export interface SwapNodeGroup {
 interface GroupEntry {
   type: 'execution'
   displayTitle: string
+  displayMessage?: string
   priority: number
   cards: Map<string, ErrorCardData>
 }
@@ -75,6 +76,8 @@ interface ErrorSearchItem {
   cardIndex: number
   searchableNodeId: string
   searchableNodeTitle: string
+  searchableRawMessage: string
+  searchableRawDetails: string
   searchableMessage: string
   searchableDetails: string
 }
@@ -108,17 +111,21 @@ function getOrCreateGroup(
   groupsMap: Map<string, GroupEntry>,
   groupKey: string,
   displayTitle = groupKey,
-  priority = 1
+  priority = 1,
+  displayMessage?: string
 ): Map<string, ErrorCardData> {
   let entry = groupsMap.get(groupKey)
   if (!entry) {
     entry = {
       type: 'execution',
       displayTitle,
+      displayMessage,
       priority,
       cards: new Map()
     }
     groupsMap.set(groupKey, entry)
+  } else if (!entry.displayMessage && displayMessage) {
+    entry.displayMessage = displayMessage
   }
   return entry.cards
 }
@@ -150,6 +157,7 @@ function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
       type: 'execution' as const,
       groupKey: `execution:${rawGroupKey}`,
       displayTitle: groupData.displayTitle,
+      displayMessage: groupData.displayMessage,
       cards: Array.from(groupData.cards.values()).sort(compareNodeId),
       priority: groupData.priority
     }))
@@ -173,6 +181,8 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
         cardIndex: ci,
         searchableNodeId: card.nodeId ?? '',
         searchableNodeTitle: card.nodeTitle ?? '',
+        searchableRawMessage: card.errors.map((e) => e.message).join(' '),
+        searchableRawDetails: card.errors.map((e) => e.details).join(' '),
         searchableMessage: card.errors
           .map((e) =>
             [e.displayTitle, e.displayMessage, e.message]
@@ -189,9 +199,11 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
 
   const fuseOptions: IFuseOptions<ErrorSearchItem> = {
     keys: [
-      { name: 'searchableNodeId', weight: 0.3 },
-      { name: 'searchableNodeTitle', weight: 0.3 },
-      { name: 'searchableMessage', weight: 0.3 },
+      { name: 'searchableRawMessage', weight: 0.3 },
+      { name: 'searchableNodeId', weight: 0.2 },
+      { name: 'searchableNodeTitle', weight: 0.2 },
+      { name: 'searchableMessage', weight: 0.2 },
+      { name: 'searchableRawDetails', weight: 0.1 },
       { name: 'searchableDetails', weight: 0.1 }
     ],
     threshold: 0.3
@@ -305,7 +317,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       groupsMap,
       error.catalogId,
       error.displayTitle ?? classType,
-      1
+      1,
+      error.displayMessage
     )
     if (!cards.has(nodeId)) {
       cards.set(nodeId, createErrorCard(nodeId, classType, idPrefix))
@@ -336,7 +349,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       groupsMap,
       `prompt:${error.type}`,
       groupDisplayTitle,
-      0
+      0,
+      resolvedDisplay.displayMessage
     )
 
     // Prompt errors are not tied to a node, so they bypass addNodeErrorToGroup.
@@ -860,7 +874,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       if (group.type === 'execution') {
         for (const card of group.cards) {
           for (const err of card.errors) {
-            messages.add(err.message)
+            messages.add(err.displayMessage ?? err.message)
           }
         }
       } else {

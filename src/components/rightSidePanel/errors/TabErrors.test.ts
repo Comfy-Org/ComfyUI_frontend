@@ -6,8 +6,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import TabErrors from './TabErrors.vue'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
 
 const mockFocusNode = vi.hoisted(() => vi.fn())
@@ -71,13 +71,21 @@ describe('TabErrors.vue', () => {
           g: {
             workflow: 'Workflow',
             copy: 'Copy',
-            details: 'Details'
+            details: 'Details',
+            findOnGithub: 'Find on GitHub',
+            getHelpAction: 'Get Help'
           },
           rightSidePanel: {
             noErrors: 'No errors',
             noneSearchDesc: 'No results found',
+            errorHelp: 'Error help',
+            errorLog: 'Error log',
+            findOnGithubTooltip: 'Search GitHub issues',
+            getHelpTooltip: 'Get help',
             info: 'Info',
+            infoFor: 'Info for {item}',
             locateNode: 'Locate node',
+            locateNodeFor: 'Locate {item}',
             missingModels: {
               missingModelsTitle: 'Missing Models',
               downloadAll: 'Download all',
@@ -229,6 +237,20 @@ describe('TabErrors.vue', () => {
     expect(itemRows[1]).toHaveTextContent('KSampler - positive')
     expect(itemRows[2]).toHaveTextContent('CLIP Text Encode - clip')
 
+    const infoButton = within(itemRows[1]).getByRole('button', {
+      name: 'Info for KSampler - positive'
+    })
+
+    await user.click(infoButton)
+
+    const itemDetail = screen.getByText(
+      'KSampler is missing a required input: positive'
+    )
+    expect(infoButton).toHaveAttribute(
+      'aria-controls',
+      itemDetail.getAttribute('id')
+    )
+
     await user.click(
       within(itemRows[1]).getByRole('button', {
         name: 'KSampler - positive'
@@ -237,7 +259,9 @@ describe('TabErrors.vue', () => {
     expect(mockFocusNode.mock.calls.at(-1)?.[0]).toBe('1')
 
     await user.click(
-      within(itemRows[2]).getByRole('button', { name: 'Locate node' })
+      within(itemRows[2]).getByRole('button', {
+        name: 'Locate CLIP Text Encode - clip'
+      })
     )
     expect(mockFocusNode.mock.calls.at(-1)?.[0]).toBe('2')
 
@@ -255,7 +279,7 @@ describe('TabErrors.vue', () => {
       title: 'KSampler'
     } as ReturnType<typeof getNodeByExecutionId>)
 
-    renderComponent({
+    const { user } = renderComponent({
       executionError: {
         lastExecutionError: {
           prompt_id: 'abc',
@@ -270,12 +294,16 @@ describe('TabErrors.vue', () => {
     })
 
     expect(screen.getAllByText('KSampler').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('#10')).toBeInTheDocument()
     expect(screen.getByText('Execution failed')).toBeInTheDocument()
     expect(
       screen.getByText('Node threw an error during execution.')
     ).toBeInTheDocument()
+    expect(screen.getByText('Error log')).toBeInTheDocument()
     expect(screen.getByText(/Line 1/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Details' }))
+
+    expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
   })
 
   it('filters errors based on search query', async () => {
@@ -310,7 +338,7 @@ describe('TabErrors.vue', () => {
     expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
   })
 
-  it('calls copyToClipboard when copy button is clicked', async () => {
+  it('calls copyToClipboard when a runtime error copy button is clicked', async () => {
     const { useCopyToClipboard } =
       await import('@/composables/useCopyToClipboard')
     const mockCopy = vi.fn()
@@ -318,21 +346,26 @@ describe('TabErrors.vue', () => {
 
     const { user } = renderComponent({
       executionError: {
-        lastNodeErrors: {
-          '1': {
-            class_type: 'TestNode',
-            errors: [{ message: 'Test message', details: 'Test details' }]
-          }
+        lastExecutionError: {
+          prompt_id: 'abc',
+          node_id: '1',
+          node_type: 'TestNode',
+          exception_message: 'Test message',
+          exception_type: 'RuntimeError',
+          traceback: ['Test details'],
+          timestamp: Date.now()
         }
       }
     })
 
     await user.click(screen.getByTestId('error-card-copy'))
 
-    expect(mockCopy).toHaveBeenCalledWith('Test message\n\nTest details')
+    expect(mockCopy).toHaveBeenCalledWith(
+      'Node threw an error during execution.\n\nTest details'
+    )
   })
 
-  it('renders single runtime error outside accordion in full-height panel', async () => {
+  it('renders a single runtime error in the normal execution group', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue({
       title: 'KSampler'
@@ -354,7 +387,11 @@ describe('TabErrors.vue', () => {
 
     expect(screen.getAllByText('KSampler').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Execution failed')).toBeInTheDocument()
-    expect(screen.getByTestId('runtime-error-panel')).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('error-group-execution')).getByTestId(
+        'runtime-error-panel'
+      )
+    ).toBeInTheDocument()
     expect(screen.getAllByText('Execution failed')).toHaveLength(1)
   })
 

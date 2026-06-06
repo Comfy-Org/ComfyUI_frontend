@@ -11,32 +11,7 @@
       />
     </div>
 
-    <!-- Runtime error: full-height panel outside accordion -->
-    <div
-      v-if="singleRuntimeErrorCard"
-      data-testid="runtime-error-panel"
-      aria-live="polite"
-      class="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3"
-    >
-      <div
-        class="shrink-0 pb-2 text-sm font-semibold text-destructive-background-hover"
-      >
-        {{ singleRuntimeErrorGroup?.displayTitle }}
-      </div>
-      <ErrorNodeCard
-        :key="singleRuntimeErrorCard.id"
-        :card="singleRuntimeErrorCard"
-        :show-node-id-badge="showNodeIdBadge"
-        full-height
-        class="min-h-0 flex-1"
-        @locate-node="handleLocateNode"
-        @enter-subgraph="handleEnterSubgraph"
-        @copy-to-clipboard="copyToClipboard"
-      />
-    </div>
-
-    <!-- Scrollable content (non-runtime or mixed errors) -->
-    <div v-else class="min-w-0 flex-1 overflow-y-auto" aria-live="polite">
+    <div class="min-w-0 flex-1 overflow-y-auto" aria-live="polite">
       <TransitionGroup tag="div" name="list-scale" class="relative">
         <div
           v-if="filteredGroups.length === 0"
@@ -200,7 +175,7 @@
                   <span class="flex min-w-0 flex-1 items-center gap-1">
                     <button
                       v-tooltip.top="{
-                        value: item.displayDetails ?? '',
+                        value: item.displayDetails || undefined,
                         showDelay: 300
                       }"
                       type="button"
@@ -220,7 +195,10 @@
                             'bg-secondary-background-selected text-base-foreground hover:bg-secondary-background-selected'
                         )
                       "
-                      :aria-label="t('rightSidePanel.info')"
+                      :aria-label="
+                        t('rightSidePanel.infoFor', { item: item.label })
+                      "
+                      :aria-controls="getExecutionItemDetailId(item.key)"
                       :aria-expanded="isExecutionItemDetailExpanded(item.key)"
                       @click.stop="toggleExecutionItemDetail(item.key)"
                     >
@@ -231,7 +209,9 @@
                     variant="textonly"
                     size="icon-sm"
                     class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
-                    :aria-label="t('rightSidePanel.locateNode')"
+                    :aria-label="
+                      t('rightSidePanel.locateNodeFor', { item: item.label })
+                    "
                     @click.stop="handleLocateNode(item.nodeId)"
                   >
                     <i class="icon-[lucide--locate] size-4" />
@@ -243,6 +223,7 @@
                       item.displayDetails &&
                       isExecutionItemDetailExpanded(item.key)
                     "
+                    :id="getExecutionItemDetailId(item.key)"
                     class="m-0 mt-0.5 pr-10 text-2xs/relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
                   >
                     {{ item.displayDetails }}
@@ -256,7 +237,6 @@
               v-for="card in group.cards"
               :key="card.id"
               :card="card"
-              :show-node-id-badge="showNodeIdBadge"
               :compact="isSingleNodeSelected"
               @locate-node="handleLocateNode"
               @enter-subgraph="handleEnterSubgraph"
@@ -448,7 +428,9 @@ function compareExecutionItemListEntry(
 
 function getExecutionGroupCount(group: ErrorGroup) {
   if (group.type !== 'execution') return 0
-  if (isExecutionItemListGroup(group)) return getExecutionItemList(group).length
+  if (isExecutionItemListGroup(group)) {
+    return group.cards.reduce((count, card) => count + card.errors.length, 0)
+  }
   return group.cards.length
 }
 
@@ -464,6 +446,10 @@ function toggleExecutionItemDetail(key: string) {
     nextKeys.add(key)
   }
   expandedExecutionItemDetailKeys.value = nextKeys
+}
+
+function getExecutionItemDetailId(key: string) {
+  return `execution-item-detail-${key}`
 }
 
 const {
@@ -496,20 +482,6 @@ const showMissingModelHeaderRefresh = computed(
 function handleMissingModelRefresh() {
   void missingModelStore.refreshMissingModels()
 }
-
-const singleRuntimeErrorGroup = computed(() => {
-  if (filteredGroups.value.length !== 1) return null
-  const group = filteredGroups.value[0]
-  const isSoleRuntimeError =
-    group.type === 'execution' &&
-    group.cards.length === 1 &&
-    group.cards[0].errors.every((e) => e.isRuntimeError)
-  return isSoleRuntimeError ? group : null
-})
-
-const singleRuntimeErrorCard = computed(
-  () => singleRuntimeErrorGroup.value?.cards[0] ?? null
-)
 
 const isAllCollapsed = computed({
   get() {

@@ -23,6 +23,9 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 }))
 
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
+const unknownValidationMessage = vi.hoisted(
+  () => 'A node returned a validation error ComfyUI does not recognize.'
+)
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
     return mockIsCloud.value
@@ -46,7 +49,7 @@ vi.mock('@/i18n', () => {
     'errorCatalog.validationErrors.unknown_validation_error.title':
       'Validation failed',
     'errorCatalog.validationErrors.unknown_validation_error.message':
-      'A node returned a validation error ComfyUI does not recognize.',
+      unknownValidationMessage,
     'errorCatalog.validationErrors.unknown_validation_error.detailsWithRawDetails':
       '{nodeName} returned an unrecognized validation error ({errorType}): {rawDetails}',
     'errorCatalog.validationErrors.unknown_validation_error.itemLabel':
@@ -777,7 +780,7 @@ describe('useErrorGroups', () => {
       expect(groups.groupedErrorMessages.value).toEqual([])
     })
 
-    it('collects unique error messages from node errors', async () => {
+    it('collects unique display messages from node errors', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
         '1': {
@@ -797,10 +800,7 @@ describe('useErrorGroups', () => {
       await nextTick()
 
       const messages = groups.groupedErrorMessages.value
-      expect(messages).toContain('Error A')
-      expect(messages).toContain('Error B')
-      // Deduplication: Error A appears twice but should only be listed once
-      expect(messages.filter((m) => m === 'Error A')).toHaveLength(1)
+      expect(messages).toEqual([unknownValidationMessage])
     })
 
     it('includes missing node group display message', async () => {
