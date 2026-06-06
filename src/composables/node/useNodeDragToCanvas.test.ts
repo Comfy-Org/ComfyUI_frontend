@@ -456,4 +456,105 @@ describe('useNodeDragToCanvas', () => {
       expect(dispatchPointerDown(600, 250)).not.toHaveBeenCalled()
     })
   })
+
+  describe('native drag position tracking', () => {
+    beforeEach(() => {
+      mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
+        left: 0,
+        right: 500,
+        top: 0,
+        bottom: 500
+      })
+      mockConvertEventToCanvasOffset.mockReturnValue([300, 300])
+    })
+
+    // happy-dom has no DragEvent constructor; MouseEvent works since the
+    // handler only reads clientX/clientY.
+    function fireDrag(x: number, y: number) {
+      document.dispatchEvent(
+        new MouseEvent('dragover', { clientX: x, clientY: y, bubbles: true })
+      )
+    }
+
+    it('should prefer tracked drag position over dragend coordinates', () => {
+      const { startDrag, setupGlobalListeners, handleNativeDrop } =
+        useNodeDragToCanvas()
+      setupGlobalListeners()
+      startDrag(mockNodeDef, 'native')
+
+      fireDrag(250, 250)
+      // dragend supplies a bad position (the Firefox bug); the tracked one
+      // from the last drag event should win.
+      handleNativeDrop(1505, 102)
+
+      expect(mockConvertEventToCanvasOffset).toHaveBeenCalledWith({
+        clientX: 250,
+        clientY: 250
+      })
+    })
+
+    it('should ignore drag events with (0, 0)', () => {
+      const { startDrag, setupGlobalListeners, handleNativeDrop } =
+        useNodeDragToCanvas()
+      setupGlobalListeners()
+      startDrag(mockNodeDef, 'native')
+
+      fireDrag(250, 250)
+      fireDrag(0, 0)
+      handleNativeDrop(1505, 102)
+
+      expect(mockConvertEventToCanvasOffset).toHaveBeenCalledWith({
+        clientX: 250,
+        clientY: 250
+      })
+    })
+
+    it('should fall back to dragend coordinates when no drag fired', () => {
+      const { startDrag, setupGlobalListeners, handleNativeDrop } =
+        useNodeDragToCanvas()
+      setupGlobalListeners()
+      startDrag(mockNodeDef, 'native')
+
+      handleNativeDrop(250, 250)
+
+      expect(mockConvertEventToCanvasOffset).toHaveBeenCalledWith({
+        clientX: 250,
+        clientY: 250
+      })
+    })
+
+    it('should ignore dragover events fired before startDrag', () => {
+      const { startDrag, setupGlobalListeners, handleNativeDrop } =
+        useNodeDragToCanvas()
+      setupGlobalListeners()
+
+      fireDrag(250, 250)
+      startDrag(mockNodeDef, 'native')
+      handleNativeDrop(300, 300)
+
+      expect(mockConvertEventToCanvasOffset).toHaveBeenCalledWith({
+        clientX: 300,
+        clientY: 300
+      })
+    })
+
+    it('should clear tracked position between drags', () => {
+      const { startDrag, setupGlobalListeners, handleNativeDrop } =
+        useNodeDragToCanvas()
+      setupGlobalListeners()
+
+      startDrag(mockNodeDef, 'native')
+      fireDrag(250, 250)
+      handleNativeDrop(1505, 102)
+
+      // Second drag - no drag events, so we should fall back to args.
+      startDrag(mockNodeDef, 'native')
+      handleNativeDrop(300, 300)
+
+      expect(mockConvertEventToCanvasOffset).toHaveBeenLastCalledWith({
+        clientX: 300,
+        clientY: 300
+      })
+    })
+  })
 })

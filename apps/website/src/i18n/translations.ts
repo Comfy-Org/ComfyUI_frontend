@@ -1,6 +1,22 @@
 type Locale = 'en' | 'zh-CN'
 
 const translations = {
+  // Tags (global, reusable across sections)
+  'tags.partnerNodes': {
+    en: 'Partner Nodes',
+    'zh-CN': '合作伙伴节点'
+  },
+  'tags.imageToVideo': {
+    en: 'Image To Video',
+    'zh-CN': '图像生成视频'
+  },
+
+  // CTAs (global, reusable across sections)
+  'cta.tryWorkflow': {
+    en: 'Try Workflow',
+    'zh-CN': '试用工作流'
+  },
+
   // HeroSection
   'hero.title': {
     en: 'Professional Control\nof Visual AI',
@@ -1435,6 +1451,62 @@ const translations = {
   'player.subtitlesOn': { en: 'Subtitles on', 'zh-CN': '开启字幕' },
   'player.subtitlesOff': { en: 'Subtitles off', 'zh-CN': '关闭字幕' },
 
+  // LearningHeroSection
+  'learning.heroTitle.before': { en: 'Learn', 'zh-CN': '学习' },
+  'learning.heroTitle.after': { en: '.', 'zh-CN': '。' },
+  'learning.heroTitle.line2': {
+    en: 'Build what doesn’t exist yet.',
+    'zh-CN': '构建尚未存在之物。'
+  },
+
+  // LearningFeaturedWorkflowSection
+  'learning.featured.title': {
+    en: 'Sky Replacement',
+    'zh-CN': '天空替换'
+  },
+  'learning.featured.author': {
+    en: 'by Doug Hogan',
+    'zh-CN': '作者：Doug Hogan'
+  },
+  'learning.featured.description': {
+    en: 'A sky replacement workflow built on Wan AI models. WanVideoSampler and WanVideoDecode synthesize new sky visuals into existing footage. CLIPVisionLoader and WanVideoClipVisionEncode ensure replacements feel native, not composited.',
+    'zh-CN':
+      '基于 Wan AI 模型构建的天空替换工作流。WanVideoSampler 与 WanVideoDecode 将全新的天空视觉合成到现有素材中。CLIPVisionLoader 与 WanVideoClipVisionEncode 确保替换效果自然融合，而非生硬叠加。'
+  },
+  'learning.featured.watchDemo': {
+    en: 'Watch Demo',
+    'zh-CN': '观看演示'
+  },
+
+  // LearningTutorialsSection
+  'learning.tutorials.heading': {
+    en: 'Featured Demos',
+    'zh-CN': '精选演示'
+  },
+  'learning.tutorials.titlePrefix': {
+    en: 'Learn how to:',
+    'zh-CN': '学习如何：'
+  },
+
+  // LearningCallToActionSection
+  'learning.cta.heading': {
+    en: 'Schedule a demo and see how ComfyUI fits your team’s creative needs.',
+    'zh-CN': '预约演示，了解 ComfyUI 如何契合你的团队创作需求。'
+  },
+  'learning.cta.contactSales': {
+    en: 'Contact Sales',
+    'zh-CN': '联系销售'
+  },
+
+  // LearningEventsSection
+  'learning.events.heading': { en: 'Events', 'zh-CN': '活动' },
+  'learning.events.description': {
+    en: 'Check out our upcoming live streams and community meetings. We’re always open to your questions, ideas, and conversations.',
+    'zh-CN':
+      '查看我们即将举办的直播和社区聚会。我们随时欢迎你的提问、想法和交流。'
+  },
+  'learning.events.getNotified': { en: 'Get Notified', 'zh-CN': '获取通知' },
+
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
   'gallery.heroTitle.before': {
@@ -1471,9 +1543,13 @@ const translations = {
   },
   'about.hero.body': {
     en: 'The team behind Comfy is small, intense, and building what we intend to be our life\u2019s work.',
-    'zh-CN': 'Comfy 背后的团队规模虽小，但充满热情，致力于打造我们毕生的事业。'
+    'zh-CN':
+      'Comfy \u80cc\u540e\u7684\u56e2\u961f\u89c4\u6a21\u867d\u5c0f\uff0c\u4f46\u5145\u6ee1\u70ed\u60c5\uff0c\u81f4\u529b\u4e8e\u6253\u9020\u6211\u4eec\u6bd5\u751f\u7684\u4e8b\u4e1a\u3002'
   },
-  'about.hero.cta': { en: 'SEE OPEN ROLES', 'zh-CN': '查看开放职位' },
+  'about.hero.cta': {
+    en: 'SEE OPEN ROLES',
+    'zh-CN': '\u67e5\u770b\u5f00\u653e\u804c\u4f4d'
+  },
 
   // AboutStorySection
   'about.story.label': { en: 'OUR STORY', 'zh-CN': '我们的故事' },
@@ -1743,6 +1819,7 @@ const translations = {
   },
   'nav.comfyHub': { en: 'Comfy Hub', 'zh-CN': 'Comfy Hub' },
   'nav.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
+  'nav.learning': { en: 'Learning', 'zh-CN': '学习' },
   'nav.blogs': { en: 'Blog', 'zh-CN': '博客' },
   'nav.github': { en: 'GitHub', 'zh-CN': 'GitHub' },
   'nav.discord': { en: 'Discord', 'zh-CN': 'Discord' },
@@ -4736,6 +4813,8 @@ const translations = {
 
 type TranslationKey = keyof typeof translations
 
+type LocalizedText = Record<Locale, string>
+
 export function t(key: TranslationKey, locale: Locale = 'en'): string {
   return translations[key][locale] ?? translations[key].en
 }
@@ -4746,4 +4825,4 @@ export function hasKey(key: string): boolean {
   return key in translations
 }
 
-export type { Locale, TranslationKey }
+export type { Locale, LocalizedText, TranslationKey }

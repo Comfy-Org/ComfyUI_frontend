@@ -2077,7 +2077,6 @@
     "reloadingModel": "모델 다시 로드 중...",
     "removeBackgroundImage": "배경 이미지 제거",
     "resizeNodeMatchOutput": "노드 크기를 출력에 맞추기",
-    "retainViewOnReload": "모델을 다시 불러와도 카메라 뷰 고정",
     "scene": "장면",
     "showGrid": "그리드 표시",
     "showSkeleton": "스켈레톤 표시",

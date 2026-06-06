@@ -36,19 +36,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Sub-label: cloud or OSS message shown above all pack groups -->
-    <p
-      class="m-0 text-sm/relaxed text-muted-foreground"
-      :class="showManagerHint ? 'pb-3' : 'pb-5'"
-    >
-      {{
-        isCloud
-          ? t('rightSidePanel.missingNodePacks.cloudMessage')
-          : t('rightSidePanel.missingNodePacks.ossMessage')
-      }}
-    </p>
-
     <!-- Manager disabled hint: shown on OSS when manager is not active -->
     <i18n-t
       v-if="showManagerHint"

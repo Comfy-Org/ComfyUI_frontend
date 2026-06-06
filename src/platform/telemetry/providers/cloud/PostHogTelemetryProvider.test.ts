@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TelemetryEvents } from '../../types'
 
@@ -7,6 +7,8 @@ const hoisted = vi.hoisted(() => {
   const mockInit = vi.fn()
   const mockIdentify = vi.fn()
   const mockPeopleSet = vi.fn()
+  const mockPeopleSetOnce = vi.fn()
+  const mockRegister = vi.fn()
   const mockReset = vi.fn()
   const mockOnUserResolved = vi.fn()
   const mockOnUserLogout = vi.fn()
@@ -16,6 +18,8 @@ const hoisted = vi.hoisted(() => {
     mockInit,
     mockIdentify,
     mockPeopleSet,
+    mockPeopleSetOnce,
+    mockRegister,
     mockReset,
     mockOnUserResolved,
     mockOnUserLogout,
@@ -24,7 +28,8 @@ const hoisted = vi.hoisted(() => {
         init: mockInit,
         capture: mockCapture,
         identify: mockIdentify,
-        people: { set: mockPeopleSet },
+        register: mockRegister,
+        people: { set: mockPeopleSet, set_once: mockPeopleSetOnce },
         reset: mockReset
       }
     }
@@ -144,6 +149,99 @@ describe('PostHogTelemetryProvider', () => {
       callback({ id: 'user-123' })
 
       expect(hoisted.mockIdentify).toHaveBeenCalledWith('user-123')
+    })
+  })
+
+  describe('desktop entry capture', () => {
+    function setLocation(search: string): void {
+      Object.defineProperty(window.location, 'search', {
+        configurable: true,
+        value: search,
+        writable: true
+      })
+    }
+
+    afterEach(() => {
+      setLocation('')
+    })
+
+    it('does not register desktop props when utm_source is absent', async () => {
+      setLocation('')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).not.toHaveBeenCalled()
+    })
+
+    it('does not register desktop props when utm_source is not comfy.desktop', async () => {
+      setLocation('?utm_source=google&desktop_device_id=should-be-ignored')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).not.toHaveBeenCalled()
+    })
+
+    it('registers source_app and desktop_device_id when arriving from desktop', async () => {
+      setLocation(
+        '?utm_source=comfy.desktop&utm_medium=app_feature&desktop_device_id=device-abc'
+      )
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+        source_app: 'desktop',
+        desktop_device_id: 'device-abc'
+      })
+    })
+
+    it('registers source_app alone when desktop_device_id is missing', async () => {
+      setLocation('?utm_source=comfy.desktop')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+        source_app: 'desktop'
+      })
+    })
+
+    it('persists desktop props to the person on identify so backend events inherit them', async () => {
+      setLocation('?utm_source=comfy.desktop&desktop_device_id=device-xyz')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      callback({ id: 'user-456' })
+
+      const setCall = hoisted.mockPeopleSet.mock.calls.find(
+        ([props]) => props && 'desktop_device_id' in props
+      )
+      expect(setCall?.[0]).toEqual(
+        expect.objectContaining({
+          source_app: 'desktop',
+          desktop_device_id: 'device-xyz',
+          last_seen_via_desktop: expect.any(String)
+        })
+      )
+      expect(hoisted.mockPeopleSetOnce).toHaveBeenCalledWith(
+        expect.objectContaining({ first_seen_via_desktop: expect.any(String) })
+      )
+    })
+
+    it('does not touch the person profile on identify for non-desktop visitors', async () => {
+      setLocation('')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      callback({ id: 'user-789' })
+
+      const desktopSetCall = hoisted.mockPeopleSet.mock.calls.find(
+        ([props]) =>
+          props &&
+          ('desktop_device_id' in props || 'last_seen_via_desktop' in props)
+      )
+      expect(desktopSetCall).toBeUndefined()
+      expect(hoisted.mockPeopleSetOnce).not.toHaveBeenCalled()
     })
   })
 

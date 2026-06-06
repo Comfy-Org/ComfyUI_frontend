@@ -723,7 +723,6 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           kind: 'missing_media',
           groups: missingMediaGroups.value,
           count: totalItems,
-          mediaTypes: missingMediaGroups.value.map((group) => group.mediaType),
           isCloud
         })
       }
@@ -840,9 +839,6 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           kind: 'missing_media',
           groups: filteredMissingMediaGroups.value,
           count: totalItems,
-          mediaTypes: filteredMissingMediaGroups.value.map(
-            (group) => group.mediaType
-          ),
           isCloud
         })
       }

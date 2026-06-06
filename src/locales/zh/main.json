@@ -2077,7 +2077,6 @@
     "reloadingModel": "正在重新加载模型...",
     "removeBackgroundImage": "移除背景图片",
     "resizeNodeMatchOutput": "调整节点以匹配输出",
-    "retainViewOnReload": "模型重新加载时锁定相机视角",
     "scene": "场景",
     "showGrid": "显示网格",
     "showSkeleton": "显示骨架",
