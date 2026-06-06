@@ -113,6 +113,8 @@ function resolveCanvasPathPromotedWidgetTargets(
 ): WidgetErrorClearingTarget[] {
   if (!hostNode.isSubgraphNode?.() || isPromotedWidgetView(widget)) return []
 
+  // Canvas-path events lose promoted identity, so the post-write value
+  // disambiguates same-named promoted widgets.
   return (hostNode.widgets ?? [])
     .filter(isPromotedWidgetView)
     .filter((promotedWidget) => promotedWidget.sourceWidgetName === widget.name)
