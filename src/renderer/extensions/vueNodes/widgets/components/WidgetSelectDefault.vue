@@ -26,7 +26,7 @@
             :class="
               cn(
                 WidgetInputBaseClass,
-                'flex h-7 w-full min-w-0 cursor-pointer items-center overflow-hidden outline-none hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50 disabled:hover:bg-component-node-widget-background',
+                'flex h-6 w-full min-w-0 cursor-pointer items-center overflow-hidden p-0 outline-none hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50 disabled:hover:bg-component-node-widget-background',
                 isInvalid && 'ring-1 ring-destructive-background'
               )
             "
@@ -34,7 +34,7 @@
             <span
               :class="
                 cn(
-                  'min-w-[4ch] flex-1 truncate pr-3 pl-1 text-left',
+                  'min-w-[4ch] flex-1 truncate pr-1 pl-7 text-left text-xs',
                   $slots.default && 'mr-5'
                 )
               "
@@ -42,12 +42,12 @@
               {{ selectedLabel || placeholder || '\u00a0' }}
             </span>
             <span
-              class="flex h-full w-8 shrink-0 items-center justify-center rounded-r-lg"
+              class="flex h-full w-6 shrink-0 items-center justify-center rounded-r-md"
             >
               <i
                 :class="
                   cn(
-                    'icon-[lucide--chevron-down] size-4 translate-x-1.5',
+                    'icon-[lucide--chevron-down] size-4',
                     disabled
                       ? 'bg-component-node-foreground-secondary'
                       : 'bg-muted-foreground'
