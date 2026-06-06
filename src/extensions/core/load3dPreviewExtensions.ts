@@ -46,7 +46,7 @@ function applyResultToLoad3d(
   }
 
   const config = new Load3DConfiguration(load3d, node.properties)
-  config.configureForSaveMesh('output', normalizedPath, {
+  config.configureForSaveMesh('temp', normalizedPath, {
     silentOnNotFound: true
   })
 
@@ -119,7 +119,7 @@ function createPreview3DExtension(
         if (!lastTimeModelFile) return
 
         const config = new Load3DConfiguration(load3d, node.properties)
-        config.configureForSaveMesh('output', lastTimeModelFile as string, {
+        config.configureForSaveMesh('temp', lastTimeModelFile as string, {
           silentOnNotFound: true
         })
 
@@ -136,7 +136,9 @@ function createPreview3DExtension(
       })
 
       waitForLoad3d((load3d) => {
-        const sceneWidget = node.widgets?.find((w) => w.name === 'image')
+        const sceneWidget = node.widgets?.find(
+          (w) => w.name === 'viewport_state'
+        )
         const widthWidget = node.widgets?.find((w) => w.name === 'width')
         const heightWidget = node.widgets?.find((w) => w.name === 'height')
 

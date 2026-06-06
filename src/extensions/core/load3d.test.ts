@@ -173,7 +173,7 @@ function makePreview3DAdvancedNode(
     constructor: { comfyClass: overrides.comfyClass ?? 'Preview3DAdvanced' },
     size: [400, 550],
     setSize: vi.fn(),
-    widgets: overrides.widgets ?? [{ name: 'image', value: '' }],
+    widgets: overrides.widgets ?? [{ name: 'viewport_state', value: '' }],
     properties: overrides.properties ?? {}
   } as unknown as LGraphNode
 }
@@ -783,9 +783,9 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     expect(load3dInstance.setCameraState).not.toHaveBeenCalled()
   })
 
-  it('attaches a camera-only serializeValue to the image widget', async () => {
+  it('attaches a camera-only serializeValue to the viewport_state widget', async () => {
     const { preview3DAdvancedExt } = await loadExtensionsFresh()
-    const widgets: FakeWidget[] = [{ name: 'image', value: '' }]
+    const widgets: FakeWidget[] = [{ name: 'viewport_state', value: '' }]
     const node = makePreview3DAdvancedNode({ widgets })
 
     await preview3DAdvancedExt.nodeCreated(node)
@@ -795,7 +795,7 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
 
   it('serializeValue returns live camera_info plus empty media fields, omitting model_3d_info when none', async () => {
     const { preview3DAdvancedExt } = await loadExtensionsFresh()
-    const widgets: FakeWidget[] = [{ name: 'image', value: '' }]
+    const widgets: FakeWidget[] = [{ name: 'viewport_state', value: '' }]
     const node = makePreview3DAdvancedNode({ widgets })
 
     const load3d = makeLoad3dMock()
@@ -819,7 +819,7 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
 
   it('serializeValue wraps a present getModelInfo result in a single-element list', async () => {
     const { preview3DAdvancedExt } = await loadExtensionsFresh()
-    const widgets: FakeWidget[] = [{ name: 'image', value: '' }]
+    const widgets: FakeWidget[] = [{ name: 'viewport_state', value: '' }]
     const node = makePreview3DAdvancedNode({ widgets })
 
     const load3d = makeLoad3dMock()
