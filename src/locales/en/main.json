@@ -3005,6 +3005,11 @@
   "cloudSurvey_steps_familiarity": "How familiar are you with ComfyUI?",
   "cloudSurvey_steps_intent": "What do you want to create with ComfyUI?",
   "cloudSurvey_steps_source": "Where did you hear about ComfyUI?",
+  "assetRating": {
+    "label": "Asset rating",
+    "rateAsset": "Rate {rating} out of {max}",
+    "clearRating": "Clear {rating} out of {max} rating"
+  },
   "assetBrowser": {
     "allCategory": "All {category}",
     "allModels": "All Models",
