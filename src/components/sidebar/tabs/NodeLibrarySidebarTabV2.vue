@@ -4,6 +4,17 @@
       <NodeDragPreview />
       <div class="flex h-full flex-col">
         <div
+          v-if="hasNoMatches"
+          class="flex min-h-0 flex-1 items-center justify-center px-6 py-8 text-center text-sm text-muted-foreground"
+        >
+          {{
+            $t('sideToolbar.nodeLibraryTab.noMatchingNodes', {
+              query: searchQuery
+            })
+          }}
+        </div>
+        <div
+          v-else
           ref="scrollContainerRef"
           class="min-h-0 flex-1 scrollbar-gutter-stable overflow-y-auto overscroll-none"
         >
@@ -464,9 +475,13 @@ const filteredNodeDefs = computed(() => {
 })
 
 const activeNodes = computed(() =>
-  filteredNodeDefs.value.length > 0
-    ? filteredNodeDefs.value
-    : nodeDefStore.visibleNodeDefs
+  searchQuery.value.length === 0
+    ? nodeDefStore.visibleNodeDefs
+    : filteredNodeDefs.value
+)
+
+const hasNoMatches = computed(
+  () => searchQuery.value.length > 0 && filteredNodeDefs.value.length === 0
 )
 
 const sections = computed(() => {

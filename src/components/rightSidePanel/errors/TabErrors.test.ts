@@ -7,6 +7,8 @@ import { createI18n } from 'vue-i18n'
 import TabErrors from './TabErrors.vue'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import type { MissingNodeType } from '@/types/comfy'
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -36,6 +38,16 @@ vi.mock('@/services/litegraphService', () => ({
   }))
 }))
 
+vi.mock('@/platform/missingModel/missingModelDownload', () => ({
+  downloadModel: vi.fn(),
+  fetchModelMetadata: vi.fn().mockResolvedValue({
+    fileSize: null,
+    gatedRepoUrl: null
+  }),
+  isModelDownloadable: vi.fn(() => true),
+  toBrowsableUrl: vi.fn((url: string) => url)
+}))
+
 describe('TabErrors.vue', () => {
   let i18n: ReturnType<typeof createI18n>
 
@@ -58,10 +70,17 @@ describe('TabErrors.vue', () => {
               refresh: 'Refresh',
               refreshing: 'Refreshing missing models.'
             },
-            promptErrors: {
-              prompt_no_outputs: {
-                desc: 'Prompt has no outputs'
-              }
+            missingMedia: {
+              missingMediaTitle: 'Missing Inputs',
+              image: 'Images',
+              uploadFile: 'Upload {type}',
+              useFromLibrary: 'Use from Library',
+              confirmSelection: 'Confirm selection',
+              locateNode: 'Locate node',
+              expandNodes: 'Show referencing nodes',
+              collapseNodes: 'Hide referencing nodes',
+              cancelSelection: 'Cancel selection',
+              or: 'OR'
             }
           }
         }
@@ -82,7 +101,7 @@ describe('TabErrors.vue', () => {
           })
         ],
         stubs: {
-          FormSearchInput: {
+          AsyncSearchInput: {
             template:
               '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
           },
@@ -103,7 +122,7 @@ describe('TabErrors.vue', () => {
     expect(screen.getByText('No errors')).toBeInTheDocument()
   })
 
-  it('renders prompt-level errors (Group title = error message)', async () => {
+  it('renders prompt-level errors with resolved display message', async () => {
     renderComponent({
       executionError: {
         lastPromptError: {
@@ -114,8 +133,14 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    expect(screen.getByText('Server Error: No outputs')).toBeInTheDocument()
-    expect(screen.getByText('Prompt has no outputs')).toBeInTheDocument()
+    expect(screen.getAllByText('Prompt has no outputs').length).toBeGreaterThan(
+      0
+    )
+    expect(
+      screen.getByText(
+        'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
+      )
+    ).toBeInTheDocument()
     expect(screen.queryByText('Error details')).not.toBeInTheDocument()
   })
 
@@ -166,7 +191,10 @@ describe('TabErrors.vue', () => {
 
     expect(screen.getAllByText('KSampler').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('#10')).toBeInTheDocument()
-    expect(screen.getByText('RuntimeError: Out of memory')).toBeInTheDocument()
+    expect(screen.getByText('Execution failed')).toBeInTheDocument()
+    expect(
+      screen.getByText('Node threw an error during execution.')
+    ).toBeInTheDocument()
     expect(screen.getByText(/Line 1/)).toBeInTheDocument()
   })
 
@@ -245,9 +273,9 @@ describe('TabErrors.vue', () => {
     })
 
     expect(screen.getAllByText('KSampler').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('RuntimeError: Out of memory')).toBeInTheDocument()
+    expect(screen.getByText('Execution failed')).toBeInTheDocument()
     expect(screen.getByTestId('runtime-error-panel')).toBeInTheDocument()
-    expect(screen.getAllByText('RuntimeError: Out of memory')).toHaveLength(1)
+    expect(screen.getAllByText('Execution failed')).toHaveLength(1)
   })
 
   it('shows missing model Refresh in the section header when no model is downloadable', async () => {
@@ -276,6 +304,85 @@ describe('TabErrors.vue', () => {
     await user.click(screen.getByTestId('missing-model-header-refresh'))
 
     expect(missingModelStore.refreshMissingModels).toHaveBeenCalled()
+  })
+
+  it('renders missing model display message below the section title', () => {
+    const missingModel = {
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'local-only.safetensors',
+      directory: 'checkpoints',
+      isMissing: true,
+      isAssetSupported: true
+    } satisfies MissingModelCandidate
+
+    renderComponent({
+      missingModel: {
+        missingModelCandidates: [missingModel]
+      }
+    })
+
+    expect(screen.getByText('Missing Models (1)')).toBeInTheDocument()
+    expect(
+      screen.getByText('Download a model, or open the node to replace it.')
+    ).toBeInTheDocument()
+  })
+
+  it('renders missing media display message below the section title', () => {
+    const missingMedia = {
+      nodeId: '3',
+      nodeType: 'LoadImage',
+      widgetName: 'image',
+      mediaType: 'image',
+      name: 'portrait.png',
+      isMissing: true
+    } satisfies MissingMediaCandidate
+
+    renderComponent({
+      missingMedia: {
+        missingMediaCandidates: [missingMedia]
+      }
+    })
+
+    expect(screen.getByText('Missing Inputs (1)')).toBeInTheDocument()
+    expect(
+      screen.getByText('A required media input has no file selected.')
+    ).toBeInTheDocument()
+  })
+
+  it('renders swap node rows below the section display message', () => {
+    const swapNode = {
+      type: 'OldSampler',
+      nodeId: '1',
+      isReplaceable: true,
+      replacement: {
+        old_node_id: 'OldSampler',
+        new_node_id: 'KSampler',
+        old_widget_ids: null,
+        input_mapping: null,
+        output_mapping: null
+      }
+    } satisfies MissingNodeType
+
+    renderComponent({
+      missingNodesError: {
+        missingNodesError: {
+          message: 'Missing Node Packs',
+          nodeTypes: [swapNode]
+        }
+      }
+    })
+
+    expect(screen.getByText('Swap Nodes (1)')).toBeInTheDocument()
+    expect(
+      screen.getByText('Some nodes can be replaced with alternatives')
+    ).toBeInTheDocument()
+    expect(screen.getByText('OldSampler (1)')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /Replace Node/ })
+    ).toBeInTheDocument()
   })
 
   it('keeps missing model Refresh in the card actions when models are downloadable', () => {

@@ -11,14 +11,12 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row lg:items-center lg:overflow-visible lg:pb-[min(8vw,10rem)]"
+    class="max-w-9xl relative mx-auto mb-12 flex flex-col items-center overflow-hidden px-4 md:flex-row md:overflow-visible md:pt-20 lg:items-center lg:space-x-20"
   >
     <!-- Illustration (stacks above on mobile, left on lg) -->
-    <div
-      class="aspect-square w-4/5 max-w-md scale-125 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-mr-12 lg:translate-10 lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
-    >
+    <div class="pointer-events-none mx-auto w-full flex-1 md:-translate-x-20">
       <svg
-        class="block size-full overflow-visible"
+        class="mx-auto block size-full max-w-lg overflow-visible md:ml-auto md:scale-125"
         viewBox="50 50 900 900"
         fill="none"
         aria-hidden="true"
@@ -378,19 +376,17 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
     </div>
 
     <!-- Text -->
-    <div
-      class="relative z-10 mt-17 w-full px-4 pb-16 lg:mt-0 lg:min-w-160 lg:flex-1 lg:translate-x-[25%] lg:px-20 lg:py-14"
-    >
+    <div class="relative z-10 lg:flex-1">
       <ProductHeroBadge text="CLOUD" />
 
       <h1
-        class="text-primary-comfy-canvas mt-6 text-3xl/tight font-light whitespace-pre-line md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
+        class="mt-6 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
       >
         {{ t('cloud.hero.heading', locale) }}
       </h1>
 
       <p
-        class="text-primary-comfy-canvas mt-6 max-w-md text-sm lg:mt-6 lg:text-base"
+        class="mt-6 max-w-lg text-sm text-primary-comfy-canvas lg:mt-6 lg:text-base"
       >
         {{ t('cloud.hero.subtitle', locale) }}
       </p>

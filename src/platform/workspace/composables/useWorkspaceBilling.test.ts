@@ -337,7 +337,7 @@ describe('useWorkspaceBilling', () => {
       Object.defineProperty(window, 'location', {
         configurable: true,
         writable: true,
-        value: { ...originalLocation, href: 'https://app.example/settings' }
+        value: { href: 'https://app.example/settings' }
       })
     })
 

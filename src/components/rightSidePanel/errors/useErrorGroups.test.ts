@@ -29,9 +29,62 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/i18n', () => ({
-  st: vi.fn((_key: string, fallback: string) => fallback)
-}))
+vi.mock('@/i18n', () => {
+  const messages: Record<string, string> = {
+    'errorCatalog.validationErrors.required_input_missing.title':
+      'Missing connection',
+    'errorCatalog.validationErrors.required_input_missing.message':
+      'Required input slots have no connection feeding them.',
+    'errorCatalog.validationErrors.required_input_missing.details':
+      '{nodeName} is missing a required input: {inputName}',
+    'errorCatalog.validationErrors.required_input_missing.itemLabel':
+      '{nodeName} - {inputName}',
+    'errorCatalog.validationErrors.required_input_missing.toastTitle':
+      'Required input missing',
+    'errorCatalog.validationErrors.required_input_missing.toastMessage':
+      '{nodeName} is missing a required input: {inputName}',
+    'errorCatalog.promptErrors.prompt_no_outputs.title':
+      'Prompt has no outputs',
+    'errorCatalog.promptErrors.prompt_no_outputs.desc':
+      'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.',
+    'errorCatalog.runtimeErrors.execution_failed.title': 'Execution failed',
+    'errorCatalog.runtimeErrors.execution_failed.message':
+      'Node threw an error during execution.',
+    'errorCatalog.runtimeErrors.execution_failed.itemLabel': '{nodeName}',
+    'errorCatalog.runtimeErrors.execution_failed.toastTitle':
+      '{nodeName} failed',
+    'errorCatalog.runtimeErrors.execution_failed.toastMessage':
+      'This node threw an error during execution. Check its inputs or try a different configuration.',
+    'errorCatalog.runtimeErrors.out_of_memory.title': 'Generation failed',
+    'errorCatalog.runtimeErrors.out_of_memory.message':
+      'Not enough GPU memory. Try reducing image resolution or batch size and run again.',
+    'errorCatalog.runtimeErrors.out_of_memory.itemLabel': '{nodeName}',
+    'errorCatalog.runtimeErrors.out_of_memory.toastTitle': 'Generation failed',
+    'errorCatalog.runtimeErrors.out_of_memory.toastMessage':
+      'Not enough GPU memory. Try reducing image resolution or batch size and run again.'
+  }
+
+  const interpolate = (
+    message: string,
+    params?: Record<string, string | number>
+  ) =>
+    message.replace(/\{(\w+)\}/g, (match, paramName) =>
+      params?.[paramName] === undefined ? match : String(params[paramName])
+    )
+
+  return {
+    te: vi.fn((key: string) => key in messages),
+    st: vi.fn((key: string, fallback: string) => messages[key] ?? fallback),
+    t: vi.fn((key: string, params?: Record<string, string | number>) => {
+      if (key === 'errorOverlay.missingModels') {
+        const count = Number(params?.count ?? 0)
+        return `${count} required ${count === 1 ? 'model is' : 'models are'} missing`
+      }
+
+      return interpolate(messages[key] ?? key, params)
+    })
+  }
+})
 
 vi.mock('@/stores/comfyRegistryStore', () => ({
   useComfyRegistryStore: () => ({
@@ -113,14 +166,15 @@ function makeModel(
 function createErrorGroups() {
   const store = useExecutionErrorStore()
   const searchQuery = ref('')
-  const t = (key: string) => key
-  const groups = useErrorGroups(searchQuery, t)
+  const groups = useErrorGroups(searchQuery)
   return { store, searchQuery, groups }
 }
 
 describe('useErrorGroups', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    mockIsCloud.value = false
+    vi.mocked(isLGraphNode).mockReturnValue(false)
   })
 
   describe('missingPackGroups', () => {
@@ -245,6 +299,28 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'missing_node'
       )
       expect(missingGroup).toBeDefined()
+      expect(missingGroup?.groupKey).toBe('missing_node')
+      expect(missingGroup?.displayTitle).toBe('Missing Node Packs (1)')
+      expect(missingGroup?.displayMessage).toBe(
+        'Install missing packs to use this workflow.'
+      )
+    })
+
+    it('uses Cloud copy for missing_node group in Cloud', async () => {
+      mockIsCloud.value = true
+      const { groups } = createErrorGroups()
+      const missingNodesStore = useMissingNodesErrorStore()
+      missingNodesStore.setMissingNodeTypes([
+        makeMissingNodeType('NodeA', { cnrId: 'pack-1' })
+      ])
+      await nextTick()
+
+      const missingGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'missing_node'
+      )
+      expect(missingGroup?.displayMessage).toBe(
+        "Required custom nodes aren't supported on Cloud. Replace them with supported nodes."
+      )
     })
 
     it('includes swap_nodes group when replaceable nodes exist', async () => {
@@ -329,9 +405,58 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'execution'
       )
       expect(execGroups.length).toBeGreaterThan(0)
+      expect(execGroups[0].groupKey).toBe('execution:KSampler')
+      expect(execGroups[0].displayTitle).toBe('KSampler')
     })
 
-    it('includes execution error from runtime errors', async () => {
+    it('resolves required_input_missing item display copy', async () => {
+      const { store, groups } = createErrorGroups()
+      store.lastNodeErrors = {
+        '1': {
+          class_type: 'KSampler',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Required input is missing',
+              details: 'model',
+              extra_info: {
+                input_name: 'model'
+              }
+            }
+          ]
+        }
+      }
+      await nextTick()
+
+      const execGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'execution'
+      )
+      expect(execGroup?.type).toBe('execution')
+      if (execGroup?.type !== 'execution') return
+
+      const card = execGroup.cards[0]
+      const error = card.errors[0]
+
+      expect(error.message).toBe('Required input is missing')
+      expect(error.details).toBe('model')
+      expect(error.catalogId).toBe('missing_connection')
+      expect(error.displayTitle).toBe('Missing connection')
+      expect(error.displayMessage).toBe(
+        'Required input slots have no connection feeding them.'
+      )
+      expect(error.displayDetails).toBe(
+        'KSampler is missing a required input: model'
+      )
+      expect(error.displayItemLabel).toBe('KSampler - model')
+      expect(error.toastTitle).toBe('Required input missing')
+      expect(error.toastMessage).toBe(
+        'KSampler is missing a required input: model'
+      )
+    })
+
+    it('uses general execution_failed display fields for unrecognized runtime execution errors', async () => {
+      mockIsCloud.value = true
       const { store, groups } = createErrorGroups()
       store.lastExecutionError = {
         prompt_id: 'test-prompt',
@@ -340,7 +465,7 @@ describe('useErrorGroups', () => {
         node_type: 'KSampler',
         executed: [],
         exception_type: 'RuntimeError',
-        exception_message: 'CUDA out of memory',
+        exception_message: 'mat1 and mat2 shapes cannot be multiplied',
         traceback: ['line 1', 'line 2'],
         current_inputs: {},
         current_outputs: {}
@@ -351,6 +476,54 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'execution'
       )
       expect(execGroups.length).toBeGreaterThan(0)
+      if (execGroups[0].type !== 'execution') return
+      expect(execGroups[0].cards[0].errors[0]).toMatchObject({
+        message: 'RuntimeError: mat1 and mat2 shapes cannot be multiplied',
+        details: 'line 1\nline 2',
+        isRuntimeError: true,
+        exceptionType: 'RuntimeError',
+        catalogId: 'execution_failed',
+        displayTitle: 'Execution failed',
+        displayMessage: 'Node threw an error during execution.',
+        displayItemLabel: 'KSampler',
+        toastTitle: 'KSampler failed',
+        toastMessage:
+          'This node threw an error during execution. Check its inputs or try a different configuration.'
+      })
+    })
+
+    it('adds display fields for targeted runtime execution errors', async () => {
+      mockIsCloud.value = true
+      const { store, groups } = createErrorGroups()
+      store.lastExecutionError = {
+        prompt_id: 'test-prompt',
+        timestamp: Date.now(),
+        node_id: 5,
+        node_type: 'KSampler',
+        executed: [],
+        exception_type: 'torch.OutOfMemoryError',
+        exception_message:
+          'Allocation on device 0 failed.\nThis error means you ran out of memory on your GPU.',
+        traceback: ['line 1', 'line 2'],
+        current_inputs: {},
+        current_outputs: {}
+      }
+      await nextTick()
+
+      const execGroup = groups.allErrorGroups.value.find(
+        (g) => g.type === 'execution'
+      )
+      expect(execGroup?.type).toBe('execution')
+      if (execGroup?.type !== 'execution') return
+
+      const error = execGroup.cards[0].errors[0]
+      expect(error.message).toContain('torch.OutOfMemoryError:')
+      expect(error.catalogId).toBe('out_of_memory')
+      expect(error.displayMessage).toBe(
+        'Not enough GPU memory. Try reducing image resolution or batch size and run again.'
+      )
+      expect(error.displayItemLabel).toBe('KSampler')
+      expect(error.toastTitle).toBe('Generation failed')
     })
 
     it('includes prompt error when present', async () => {
@@ -363,7 +536,30 @@ describe('useErrorGroups', () => {
       await nextTick()
 
       const promptGroup = groups.allErrorGroups.value.find(
-        (g) => g.type === 'execution' && g.title === 'No outputs'
+        (g) =>
+          g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
+      )
+      expect(promptGroup).toBeDefined()
+    })
+
+    it('includes prompt error when a node is selected', async () => {
+      const { store, groups } = createErrorGroups()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '1' }])
+      store.lastPromptError = {
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      }
+      await nextTick()
+
+      const promptGroup = groups.allErrorGroups.value.find(
+        (g) =>
+          g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
       )
       expect(promptGroup).toBeDefined()
     })
@@ -546,7 +742,7 @@ describe('useErrorGroups', () => {
       expect(messages.filter((m) => m === 'Error A')).toHaveLength(1)
     })
 
-    it('includes missing node group title as message', async () => {
+    it('includes missing node group display message', async () => {
       const { groups } = createErrorGroups()
       const missingNodesStore = useMissingNodesErrorStore()
       missingNodesStore.setMissingNodeTypes([
@@ -558,7 +754,9 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'missing_node'
       )
       expect(missingGroup).toBeDefined()
-      expect(groups.groupedErrorMessages.value).toContain(missingGroup!.title)
+      expect(groups.groupedErrorMessages.value).toContain(
+        missingGroup!.displayMessage
+      )
     })
   })
 
@@ -703,6 +901,8 @@ describe('useErrorGroups', () => {
         (g) => g.type === 'missing_model'
       )
       expect(modelGroup).toBeDefined()
+      expect(modelGroup?.groupKey).toBe('missing_model')
+      expect(modelGroup?.displayTitle).toBe('Missing Models (1)')
     })
   })
 
@@ -798,6 +998,30 @@ describe('useErrorGroups', () => {
       expect(groups.filteredMissingModelGroups.value).not.toBe(
         groups.missingModelGroups.value
       )
+    })
+  })
+
+  describe('tabErrorGroups', () => {
+    it('filters prompt error when a node is selected', async () => {
+      const { store, groups } = createErrorGroups()
+      const canvasStore = useCanvasStore()
+      vi.mocked(isLGraphNode).mockReturnValue(true)
+      canvasStore.selectedItems = fromAny<
+        typeof canvasStore.selectedItems,
+        unknown
+      >([{ id: '1' }])
+      store.lastPromptError = {
+        type: 'prompt_no_outputs',
+        message: 'No outputs',
+        details: ''
+      }
+      await nextTick()
+
+      const promptGroup = groups.tabErrorGroups.value.find(
+        (g) =>
+          g.type === 'execution' && g.displayTitle === 'Prompt has no outputs'
+      )
+      expect(promptGroup).toBeUndefined()
     })
   })
 })

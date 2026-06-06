@@ -14,8 +14,8 @@ reads could collapse back to the interior source widget, while host
 flowchart TD
   workflow[Workflow JSON] --> proxyWidgets[properties.proxyWidgets]
   workflow --> hostValues[host widgets_values]
-  proxyWidgets --> promotionStore[PromotionStore / promotion runtime]
-  promotionStore --> sourceWidget[Interior source widget]
+  proxyWidgets --> legacyRuntime[Legacy promotion runtime (removed)]
+  legacyRuntime --> sourceWidget[Interior source widget]
   linkedInput[Linked SubgraphInput] --> hostWidget[Host promoted widget]
   sourceWidget --> hostWidget
   hostValues --> hostWidget
@@ -27,7 +27,7 @@ flowchart TD
   classDef ambiguous fill:#f8d7da,stroke:#842029,color:#330000
   classDef canonical fill:#d1e7dd,stroke:#0f5132,color:#052e16
 
-  class proxyWidgets,promotionStore legacy
+  class proxyWidgets,legacyRuntime legacy
   class sourceWidget,hostValues ambiguous
   class linkedInput,hostWidget canonical
 ```

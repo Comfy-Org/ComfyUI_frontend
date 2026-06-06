@@ -37,7 +37,7 @@ const allCards: (ReturnType<typeof cardDef> & { product: Product })[] = [
   cardDef('local', routes.download, 'bg-primary-warm-gray'),
   cardDef('cloud', routes.cloud, 'bg-secondary-mauve'),
   cardDef('api', routes.api, 'bg-primary-comfy-plum'),
-  cardDef('enterprise', routes.cloudEnterprise, 'bg-illustration-forest')
+  cardDef('enterprise', routes.cloudEnterprise, 'bg-secondary-cool-gray')
 ]
 
 const cards = excludeProduct
@@ -46,18 +46,20 @@ const cards = excludeProduct
 </script>
 
 <template>
-  <section class="bg-primary-comfy-ink px-0 py-20 lg:px-20 lg:py-24">
+  <section
+    class="max-w-9xl mx-auto bg-primary-comfy-ink px-0 py-20 lg:px-20 lg:py-24"
+  >
     <!-- Header -->
     <div class="flex flex-col items-center px-4 text-center">
       <SectionLabel v-if="labelKey">
         {{ t(labelKey, locale) }}
       </SectionLabel>
       <h2
-        class="text-primary-comfy-canvas mt-4 text-4xl font-light whitespace-pre-line lg:text-5xl"
+        class="mt-4 text-4xl font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
       >
         {{ t('products.heading', locale) }}
       </h2>
-      <p class="text-primary-comfy-canvas/70 mt-4 text-sm">
+      <p class="mt-4 text-sm text-primary-comfy-canvas/70">
         {{ t('products.subheading', locale) }}
       </p>
     </div>

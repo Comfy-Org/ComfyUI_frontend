@@ -36,16 +36,18 @@ const steps = [
 </script>
 
 <template>
-  <section class="bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24">
+  <section
+    class="max-w-9xl mx-auto bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24"
+  >
     <div class="flex flex-col gap-12 lg:flex-row lg:gap-8">
       <!-- Left heading -->
       <div
-        class="bg-primary-comfy-ink sticky top-20 shrink-0 py-2 lg:top-28 lg:w-115 lg:self-start"
+        class="sticky top-20 shrink-0 bg-primary-comfy-ink py-2 lg:top-28 lg:w-115 lg:self-start"
       >
-        <h2 class="text-primary-comfy-canvas text-5xl font-light">
+        <h2 class="text-5xl font-light text-primary-comfy-canvas">
           {{ t('getStarted.heading', locale) }}
         </h2>
-        <p class="text-primary-comfy-canvas mt-8 text-base">
+        <p class="mt-8 text-base text-primary-comfy-canvas">
           {{ t('getStarted.subheading', locale) }}
         </p>
       </div>
@@ -55,27 +57,27 @@ const steps = [
         <div
           v-for="step in steps"
           :key="step.number"
-          class="border-primary-comfy-canvas flex flex-col gap-4 border-b py-12 first:pt-0 last:border-b lg:flex-row lg:items-start lg:gap-8"
+          class="flex flex-col gap-4 border-b border-primary-comfy-canvas py-12 first:pt-0 last:border-b lg:flex-row lg:items-start lg:gap-8"
         >
           <span
-            class="text-primary-comfy-canvas w-16 shrink-0 text-6xl font-light lg:text-7xl"
+            class="w-16 shrink-0 text-6xl font-light text-primary-comfy-canvas lg:text-7xl"
           >
             {{ step.number }}
           </span>
           <h3
-            class="text-primary-comfy-canvas shrink-0 text-2xl font-light lg:w-84"
+            class="shrink-0 text-2xl font-light text-primary-comfy-canvas lg:w-84"
           >
             {{ step.title }}
           </h3>
           <p
             v-if="step.description"
-            class="text-primary-comfy-canvas flex-1 text-sm"
+            class="flex-1 text-sm text-primary-comfy-canvas"
           >
             {{ step.description }}
           </p>
           <p
             v-else-if="step.number === '2'"
-            class="text-primary-comfy-canvas flex-1 text-sm"
+            class="flex-1 text-sm text-primary-comfy-canvas"
           >
             {{ t('getStarted.step2.descriptionPrefix', locale)
             }}<a

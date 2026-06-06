@@ -15,6 +15,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { useUserStore } from '@/stores/userStore'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
 
+import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 
@@ -110,8 +111,17 @@ installPreservedQueryTracker(router, [
   {
     namespace: PRESERVED_QUERY_NAMESPACES.CREATE_WORKSPACE,
     keys: ['create_workspace']
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.OAUTH,
+    keys: ['oauth_request_id']
   }
 ])
+
+router.beforeEach((to, _from, next) => {
+  captureOAuthRequestId(to.query)
+  next()
+})
 
 router.afterEach(() => {
   trackPageView()
@@ -123,12 +133,14 @@ if (isCloud) {
     'cloud-login',
     'cloud-signup',
     'cloud-forgot-password',
+    'cloud-oauth-consent',
     'cloud-sorry-contact-support'
   ])
   const PUBLIC_ROUTE_PATHS = new Set([
     '/cloud/login',
     '/cloud/signup',
     '/cloud/forgot-password',
+    '/cloud/oauth/consent',
     '/cloud/sorry-contact-support'
   ])
 

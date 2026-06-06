@@ -3,7 +3,6 @@ const logos = [
   'Amazon Studios',
   'Apple',
   'Autodesk',
-  'EA',
   'Harman',
   'Hp',
   'Lucid',

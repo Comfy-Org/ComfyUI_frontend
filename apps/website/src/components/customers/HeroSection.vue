@@ -58,13 +58,13 @@ function handleLogoLoad() {
         </SectionLabel>
         <h1
           ref="headingRef"
-          class="text-primary-comfy-canvas mt-4 text-4xl/tight font-light lg:text-6xl"
+          class="mt-4 text-4xl/tight font-light text-primary-comfy-canvas lg:text-6xl"
         >
           {{ t('customers.hero.heading', locale) }}
         </h1>
         <p
           ref="bodyRef"
-          class="text-primary-comfy-canvas mt-6 max-w-lg text-base"
+          class="mt-6 max-w-lg text-base text-primary-comfy-canvas"
         >
           {{ t('customers.hero.body', locale) }}
         </p>
@@ -72,7 +72,7 @@ function handleLogoLoad() {
     </div>
 
     <!-- Video -->
-    <div ref="videoRef" class="px-4 pb-20 lg:px-20 lg:pb-40">
+    <div ref="videoRef" class="max-w-9xl mx-auto px-4 pb-20 lg:px-20 lg:pb-40">
       <VideoPlayer
         src="https://media.comfy.org/website/customers/blackmath/video.webm"
         poster="https://media.comfy.org/website/customers/blackmath/poster.webp"

@@ -77,7 +77,9 @@ function getCardClass(layoutClass: string): string {
 </script>
 
 <template>
-  <section class="bg-primary-comfy-ink px-4 py-24 lg:px-20 lg:py-40">
+  <section
+    class="max-w-9xl mx-auto bg-primary-comfy-ink px-4 py-24 lg:px-20 lg:py-40"
+  >
     <div class="mx-auto flex w-full max-w-7xl flex-col items-center">
       <p
         class="text-primary-comfy-yellow text-center text-sm font-bold tracking-widest uppercase"
@@ -86,13 +88,13 @@ function getCardClass(layoutClass: string): string {
       </p>
 
       <h2
-        class="text-primary-comfy-canvas text-3.5xl/tight mt-8 max-w-4xl text-center font-light lg:text-5xl"
+        class="text-3.5xl/tight mt-8 max-w-4xl text-center font-light text-primary-comfy-canvas lg:text-5xl"
       >
         {{ t('cloud.aiModels.heading', locale) }}
       </h2>
 
       <p
-        class="text-primary-comfy-canvas mt-8 max-w-xl text-center text-sm font-light lg:text-base/snug"
+        class="mt-8 max-w-xl text-center text-sm font-light text-primary-comfy-canvas lg:text-base/snug"
       >
         {{ t('cloud.aiModels.subtitle', locale) }}
       </p>

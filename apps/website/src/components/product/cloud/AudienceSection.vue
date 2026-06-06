@@ -25,9 +25,9 @@ const cards = [
 </script>
 
 <template>
-  <section class="px-4 pt-24 lg:px-20 lg:pt-40">
+  <section class="max-w-9xl mx-auto px-4 pt-24 lg:px-20 lg:pt-40">
     <h2
-      class="text-primary-comfy-canvas text-3.5xl/tight mx-auto max-w-3xl text-center font-light lg:text-5xl/tight"
+      class="text-3.5xl/tight mx-auto max-w-3xl text-center font-light text-primary-comfy-canvas lg:text-5xl/tight"
     >
       {{ headingParts[0]
       }}<span class="text-white">{{
@@ -40,7 +40,7 @@ const cards = [
       <div
         v-for="card in cards"
         :key="card.labelKey"
-        class="bg-primary-comfy-ink rounded-4.5xl overflow-hidden"
+        class="rounded-4.5xl overflow-hidden bg-primary-comfy-ink"
       >
         <img
           :src="card.image"
@@ -58,12 +58,12 @@ const cards = [
           </p>
 
           <h3
-            class="text-primary-comfy-canvas mt-8 text-3xl/tight font-light whitespace-pre-line"
+            class="mt-8 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas"
           >
             {{ t(card.titleKey, locale) }}
           </h3>
 
-          <p class="text-primary-comfy-canvas mt-8 text-base/normal">
+          <p class="mt-8 text-base/normal text-primary-comfy-canvas">
             {{ t(card.descriptionKey, locale) }}
           </p>
         </div>

@@ -7,7 +7,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="flex flex-col items-center px-4 pt-16 pb-24 text-center lg:px-20 lg:pt-20 lg:pb-40"
+    class="max-w-9xl mx-auto flex flex-col items-center px-4 pt-16 pb-24 text-center lg:px-20 lg:pt-20 lg:pb-40"
   >
     <span
       class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
@@ -15,7 +15,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       {{ t('gallery.contact.label', locale) }}
     </span>
     <h2
-      class="text-primary-comfy-canvas mt-4 max-w-2xl text-2xl font-light whitespace-pre-line"
+      class="mt-4 max-w-2xl text-2xl font-light whitespace-pre-line text-primary-comfy-canvas"
       v-html="t('gallery.contact.heading', locale)"
     />
   </section>

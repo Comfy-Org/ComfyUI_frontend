@@ -87,7 +87,8 @@ const MOCK_NODE_NAMES = [
   'IPAdapterModelLoader',
   'LS_LoadSegformerModel',
   'LoadNLFModel',
-  'FlashVSRNode'
+  'FlashVSRNode',
+  'LTXICLoRALoaderModelOnly'
 ] as const
 
 const mockNodeDefsByName = Object.fromEntries(
@@ -307,7 +308,22 @@ describe('useModelToNodeStore', () => {
       )
 
       const loraProviders = modelToNodeStore.getAllNodeProviders('loras')
-      expect(loraProviders).toHaveLength(2)
+      expect(loraProviders).toHaveLength(3)
+      expect(loraProviders).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            nodeDef: expect.objectContaining({ name: 'LoraLoader' })
+          }),
+          expect.objectContaining({
+            nodeDef: expect.objectContaining({ name: 'LoraLoaderModelOnly' })
+          }),
+          expect.objectContaining({
+            nodeDef: expect.objectContaining({
+              name: 'LTXICLoRALoaderModelOnly'
+            })
+          })
+        ])
+      )
     })
 
     it('should return single provider for model type with one node', () => {
@@ -559,6 +575,18 @@ describe('useModelToNodeStore', () => {
         modelToNodeStore.getCategoryForNodeType('NonExistentNode')
       ).toBeUndefined()
       expect(modelToNodeStore.getCategoryForNodeType('')).toBeUndefined()
+    })
+
+    it('maps the IC-LoRA Loader Model Only node to loras so its lora_name dropdown uses the cloud asset browser (FE-838)', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      expect(
+        modelToNodeStore.getCategoryForNodeType('LTXICLoRALoaderModelOnly')
+      ).toBe('loras')
+      expect(
+        modelToNodeStore.getRegisteredNodeTypes()['LTXICLoRALoaderModelOnly']
+      ).toBe('lora_name')
     })
 
     it('should return first category when node type exists in multiple categories', () => {

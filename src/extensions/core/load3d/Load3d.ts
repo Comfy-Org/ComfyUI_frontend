@@ -1,4 +1,5 @@
 import * as THREE from 'three'
+import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
 
 import type { AnimationManager } from './AnimationManager'
 import type { CameraManager } from './CameraManager'
@@ -24,6 +25,7 @@ import type {
   Load3DOptions,
   LoadModelOptions,
   MaterialMode,
+  Model3DTransform,
   UpDirection
 } from './interfaces'
 import { attachContextMenuGuard } from './load3dContextMenuGuard'
@@ -103,6 +105,7 @@ class Load3d {
   private disposeContextMenuGuard: (() => void) | null = null
   private resizeObserver: ResizeObserver | null = null
   private getZoomScaleCallback: (() => number) | undefined
+  private hasLoadedModel: boolean = false
 
   constructor(
     container: Element | HTMLElement,
@@ -157,9 +160,21 @@ class Load3d {
     this.handleResize()
     this.startAnimation()
 
+    this.eventManager.addEventListener('modelReady', () => {
+      if (this.adapterRef.current?.kind !== 'splat') return
+      void this.repaintWhenSparkPaintable()
+    })
+
     setTimeout(() => {
       this.forceRender()
     }, 100)
+  }
+
+  private async repaintWhenSparkPaintable(): Promise<void> {
+    const sortComplete = this.sceneManager.awaitNextSparkDirty()
+    this.forceRender()
+    await sortComplete
+    this.forceRender()
   }
 
   private initResizeObserver(container: Element | HTMLElement): void {
@@ -344,8 +359,30 @@ class Load3d {
     const exportMessage = `Exporting as ${format.toUpperCase()}...`
     this.eventManager.emitEvent('exportLoadingStart', exportMessage)
 
+    const source = this.modelManager.currentModel
+    const savedPos = source.position.clone()
+    const savedRot = source.rotation.clone()
+    const savedScale = source.scale.clone()
+    source.position.set(0, 0, 0)
+    source.rotation.set(0, 0, 0)
+    source.scale.set(1, 1, 1)
+    source.updateMatrixWorld(true)
+
     try {
-      const model = this.modelManager.currentModel.clone()
+      const original = this.modelManager.originalModel
+      const clipsFromOriginal =
+        original &&
+        'animations' in original &&
+        Array.isArray(original.animations)
+          ? original.animations
+          : []
+      const clips = source.animations?.length
+        ? source.animations
+        : clipsFromOriginal
+      const model =
+        format === 'fbx'
+          ? Object.assign(cloneSkinned(source), { animations: clips })
+          : source.clone()
 
       const originalFileName = this.modelManager.originalFileName || 'model'
       const filename = `${originalFileName}.${format}`
@@ -364,6 +401,9 @@ class Load3d {
         case 'stl':
           ;(await ModelExporter.exportSTL(model, filename), originalURL)
           break
+        case 'fbx':
+          await ModelExporter.exportFBX(model, filename, originalURL)
+          break
         default:
           throw new Error(`Unsupported export format: ${format}`)
       }
@@ -373,6 +413,10 @@ class Load3d {
       console.error(`Error exporting model as ${format}:`, error)
       throw error
     } finally {
+      source.position.copy(savedPos)
+      source.rotation.copy(savedRot)
+      source.scale.copy(savedScale)
+      source.updateMatrixWorld(true)
       this.eventManager.emitEvent('exportLoadingEnd', null)
     }
   }
@@ -539,8 +583,17 @@ class Load3d {
     originalFileName?: string,
     options?: LoadModelOptions
   ): Promise<void> {
-    this.cameraManager.reset()
-    this.controlsManager.reset()
+    // First load always uses default framing; subsequent reloads preserve
+    // the user's framing.
+    const shouldRetainView = this.hasLoadedModel
+    const savedCameraState = shouldRetainView
+      ? this.cameraManager.getCameraState()
+      : null
+
+    if (!shouldRetainView) {
+      this.cameraManager.reset()
+      this.controlsManager.reset()
+    }
     this.gizmoManager.detach()
     this.modelManager.clearModel()
     this.animationManager.dispose()
@@ -553,6 +606,18 @@ class Load3d {
         this.modelManager.currentModel,
         this.modelManager.originalModel
       )
+      this.hasLoadedModel = true
+    }
+
+    if (savedCameraState) {
+      // setupForModel runs during loadModel and clobbers the camera; restore on top.
+      if (
+        savedCameraState.cameraType !==
+        this.cameraManager.getCurrentCameraType()
+      ) {
+        this.toggleCamera(savedCameraState.cameraType)
+      }
+      this.cameraManager.setCameraState(savedCameraState)
     }
 
     this.handleResize()
@@ -569,7 +634,7 @@ class Load3d {
   }
 
   getCurrentModelCapabilities(): ModelAdapterCapabilities {
-    return this.adapterRef.current?.capabilities ?? DEFAULT_MODEL_CAPABILITIES
+    return this.adapterRef.capabilities ?? DEFAULT_MODEL_CAPABILITIES
   }
 
   clearModel(): void {
@@ -577,6 +642,7 @@ class Load3d {
     this.gizmoManager.detach()
     this.modelManager.clearModel()
     this.adapterRef.current = null
+    this.hasLoadedModel = false
     this.forceRender()
   }
 
@@ -849,6 +915,12 @@ class Load3d {
     this.forceRender()
   }
 
+  public applyModelTransform(transform: Model3DTransform): void {
+    if (!this.getCurrentModelCapabilities().gizmoTransform) return
+    this.gizmoManager.applyModelTransform(transform)
+    this.forceRender()
+  }
+
   public getGizmoTransform(): {
     position: { x: number; y: number; z: number }
     rotation: { x: number; y: number; z: number }
@@ -857,8 +929,28 @@ class Load3d {
     return this.gizmoManager.getTransform()
   }
 
+  public getModelInfo(): Model3DTransform | null {
+    return this.gizmoManager.getModelInfo()
+  }
+
   public fitToViewer(): void {
     this.modelManager.fitToViewer()
+    this.forceRender()
+  }
+
+  public centerCameraOnModel(): void {
+    const bounds = this.modelManager.getCurrentBounds()
+    if (!bounds || bounds.isEmpty()) return
+
+    const center = bounds.getCenter(new THREE.Vector3())
+    const camera = this.cameraManager.activeCamera
+    const controls = this.controlsManager.controls
+    const offset = center.clone().sub(camera.position)
+
+    camera.position.add(offset)
+    controls.target.add(offset)
+    camera.updateMatrixWorld(true)
+    controls.update()
     this.forceRender()
   }
 

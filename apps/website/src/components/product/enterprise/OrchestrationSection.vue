@@ -442,7 +442,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <section class="px-4 py-24 lg:px-20">
+  <section class="max-w-9xl mx-auto px-4 py-24 lg:px-20">
     <GlassCard
       class="flex flex-col gap-8 lg:flex-row lg:items-stretch lg:gap-16"
     >
@@ -489,7 +489,7 @@ onBeforeUnmount(() => {
       <div class="flex flex-col justify-between p-6 lg:w-1/2">
         <div>
           <h2
-            class="text-primary-comfy-canvas text-3xl font-light lg:text-5xl/tight"
+            class="text-3xl font-light text-primary-comfy-canvas lg:text-5xl/tight"
           >
             {{ t('enterprise.orchestration.heading', locale) }}
           </h2>
@@ -500,11 +500,11 @@ onBeforeUnmount(() => {
             {{ t('enterprise.orchestration.highlight', locale) }}
           </p>
 
-          <p class="text-primary-comfy-canvas mt-6 text-sm">
+          <p class="mt-6 text-sm text-primary-comfy-canvas">
             {{ t('enterprise.orchestration.description', locale) }}
           </p>
 
-          <p class="text-primary-comfy-canvas mt-4 text-sm italic">
+          <p class="mt-4 text-sm text-primary-comfy-canvas italic">
             {{ t('enterprise.orchestration.quote', locale) }}
           </p>
         </div>

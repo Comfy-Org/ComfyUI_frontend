@@ -15,7 +15,7 @@ const { loaded: logoLoaded } = useHeroLogo(logoContainer)
 
 <template>
   <section
-    class="relative flex min-h-auto flex-col lg:flex-row lg:items-center"
+    class="max-w-9xl relative mx-auto flex min-h-auto flex-col lg:flex-row lg:items-center"
   >
     <div
       ref="logoContainer"
@@ -31,13 +31,13 @@ const { loaded: logoLoaded } = useHeroLogo(logoContainer)
 
     <div class="flex-1 px-6 py-12 lg:px-16">
       <h1
-        class="text-primary-comfy-canvas text-4xl font-light whitespace-pre-line lg:text-6xl"
+        class="text-4xl font-light whitespace-pre-line text-primary-comfy-canvas lg:text-6xl"
       >
         {{ t('hero.title', locale) }}
       </h1>
 
       <p
-        class="text-primary-comfy-canvas mt-8 max-w-lg text-sm/relaxed lg:text-base"
+        class="mt-8 max-w-lg text-sm/relaxed text-primary-comfy-canvas lg:text-base"
       >
         {{ t('hero.subtitle', locale) }}
       </p>

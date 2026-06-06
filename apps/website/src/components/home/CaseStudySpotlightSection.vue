@@ -12,7 +12,9 @@ const routes = getRoutes(locale)
 </script>
 
 <template>
-  <section class="bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24">
+  <section
+    class="max-w-9xl mx-auto bg-primary-comfy-ink px-4 py-20 lg:px-20 lg:py-24"
+  >
     <GlassCard
       class="flex flex-col gap-12 lg:flex-row lg:items-stretch lg:gap-8"
     >
@@ -46,7 +48,7 @@ const routes = getRoutes(locale)
             {{ t('caseStudy.label', locale) }}
           </p>
           <h2
-            class="text-primary-comfy-canvas text-5xl font-light whitespace-pre-line"
+            class="text-5xl font-light whitespace-pre-line text-primary-comfy-canvas"
           >
             {{ t('caseStudy.heading', locale) }}
           </h2>

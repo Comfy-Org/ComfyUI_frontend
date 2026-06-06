@@ -233,7 +233,8 @@
       "auth/user-disabled": "Эта учетная запись отключена. Пожалуйста, обратитесь в службу поддержки.",
       "auth/user-not-found": "Учетная запись с этим email не найдена. Хотите создать новую учетную запись?",
       "auth/weak-password": "Пароль слишком слабый. Пожалуйста, используйте более надежный пароль длиной не менее 6 символов.",
-      "auth/wrong-password": "Введенный пароль неверен. Пожалуйста, попробуйте еще раз."
+      "auth/wrong-password": "Введенный пароль неверен. Пожалуйста, попробуйте еще раз.",
+      "generic": "Произошла ошибка при входе в систему. Пожалуйста, попробуйте еще раз."
     },
     "login": {
       "andText": "и",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "Запрос на сброс пароля отправлен",
   "cloudForgotPassword_sendResetLink": "Отправить ссылку для сброса",
   "cloudForgotPassword_title": "Забыли пароль",
+  "cloudHero": {
+    "nextSlide": "Следующий слайд",
+    "previousSlide": "Предыдущий слайд",
+    "slidePagerLabel": "Перейти к слайду {index}",
+    "slides": {
+      "cloud": {
+        "description": "Лучший выбор для большинства пользователей, которые хотят работать из любой точки мира с моделями, проверенными на коммерческую лицензию.",
+        "title": "Облако"
+      },
+      "models": {
+        "description": "Отобранные, коммерчески лицензированные модели, готовые к запуску без дополнительной настройки.",
+        "title": "Модели"
+      },
+      "team": {
+        "description": "Подключите свою команду уже сегодня. Делитесь рабочими процессами и ресурсами внутри вашей организации.",
+        "title": "Команда"
+      },
+      "workflows": {
+        "description": "От идеи до результата за считанные минуты. Генерируйте несколько вариантов одновременно.",
+        "title": "Рабочие процессы"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "Продолжить локально",
     "exploreCloud": "Попробовать облако бесплатно",
@@ -663,7 +687,6 @@
     "Collapse": "Свернуть",
     "Color": "Цвет",
     "Colors": "Цвета",
-    "Convert to Group Node": "Преобразовать в групповой узел",
     "Convert to Subgraph": "Преобразовать в подграф",
     "Copy": "Копировать",
     "Copy (Clipspace)": "Копировать (Clipspace)",
@@ -800,11 +823,17 @@
     "CONTROL_NET": "CONTROL_NET",
     "CURVE": "КРИВАЯ",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "МОДЕЛЬ_ОПРЕДЕЛЕНИЯ_ЛИЦА",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
     "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "ПЛАВАЮЩИЙ",
@@ -815,14 +844,17 @@
     "HISTOGRAM": "ГИСТОГРАММА",
     "HOOKS": "ХУКИ",
     "HOOK_KEYFRAMES": "КЛЮЧЕВЫЕ_КАДРЫ_ХУКА",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "ИЗОБРАЖЕНИЕ",
     "IMAGECOMPARE": "СРАВНЕНИЕ_ИЗОБРАЖЕНИЙ",
     "INT": "ЦЕЛОЕ",
     "INTERP_MODEL": "ИНТЕРП_МОДЕЛЬ",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "ЛАТЕНТНЫЙ",
     "LATENT_OPERATION": "ЛАТЕНТНАЯ_ОПЕРАЦИЯ",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "ЗАГРУЗИТЬ3D_КАМЕРУ",
+    "LOAD3D_MODEL_INFO": "ЗАГРУЗИТЬ_ИНФОРМАЦИЮ_3D_МОДЕЛИ",
     "LOAD_3D": "ЗАГРУЗИТЬ_3D",
     "LORA_MODEL": "МОДЕЛЬ_LORA",
     "LOSS_MAP": "КАРТА_ПОТЕРЬ",
@@ -835,6 +867,8 @@
     "MODEL": "МОДЕЛЬ",
     "MODEL_PATCH": "ПАТЧ_МОДЕЛИ",
     "MODEL_TASK_ID": "ID_ЗАДАЧИ_МОДЕЛИ",
+    "MOGE_GEOMETRY": "MOGE_ГЕОМЕТРИЯ",
+    "MOGE_MODEL": "MOGE_МОДЕЛЬ",
     "NOISE": "ШУМ",
     "OPENAI_CHAT_CONFIG": "КОНФИГУРАЦИЯ_ЧАТА_OPENAI",
     "OPENAI_INPUT_FILES": "ВХОДНЫЕ_ФАЙЛЫ_OPENAI",
@@ -850,6 +884,7 @@
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "СЭМПЛЕР",
     "SIGMAS": "СИГМЫ",
+    "SPLAT": "SPLAT",
     "STRING": "СТРОКА",
     "STYLE_MODEL": "МОДЕЛЬ_СТИЛЯ",
     "SVG": "SVG",
@@ -906,6 +941,337 @@
     "paused": "Приостановлено",
     "resume": "Возобновить загрузку"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "неизвестный вход",
+      "nodeName": "Этот узел"
+    },
+    "promptErrors": {
+      "missing_node_type": {
+        "desc": "Тип узла отсутствует или недоступен. Рабочий процесс может быть повреждён или требует пользовательский узел.",
+        "title": "Отсутствует тип узла"
+      },
+      "no_prompt": {
+        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой.",
+        "title": "Данные рабочего процесса отсутствуют"
+      },
+      "prompt_no_outputs": {
+        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Просмотр изображения) для получения результата.",
+        "title": "В запросе нет выходных данных"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "В рабочем процессе недопустимые входные данные узлов. Исправьте выделенные узлы перед повторным запуском.",
+        "title": "Ошибка проверки запроса"
+      },
+      "server_error_cloud": {
+        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, попробуйте позже.",
+        "title": "Ошибка сервера"
+      },
+      "server_error_local": {
+        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, проверьте журналы сервера.",
+        "title": "Ошибка сервера"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Для этого запуска требуется доступ, который недоступен для текущего аккаунта.",
+        "title": "Требуется доступ",
+        "toastMessage": "Для этого запуска требуется доступ, который недоступен для текущего аккаунта.",
+        "toastTitle": "Требуется доступ"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "Этот запрос был заблокирован системой модерации контента. Попробуйте изменить промпт или входные данные.",
+        "title": "Контент заблокирован",
+        "toastMessage": "Этот запрос был заблокирован системой модерации контента. Попробуйте изменить промпт или входные данные.",
+        "toastTitle": "Контент заблокирован"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Узел вызвал ошибку во время выполнения.",
+        "title": "Ошибка выполнения",
+        "toastMessage": "Этот узел вызвал ошибку во время выполнения. Проверьте его входные данные или попробуйте другую конфигурацию.",
+        "toastTitle": "{nodeName} завершился с ошибкой"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "Этот workflow перестал продвигаться. Попробуйте запустить его снова.",
+        "title": "Генерация остановилась",
+        "toastMessage": "Этот workflow перестал продвигаться. Попробуйте запустить его снова.",
+        "toastTitle": "Генерация остановилась"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "Системе не удалось загрузить это изображение.",
+        "title": "Изображение не загружено",
+        "toastMessage": "Изображение для {nodeName} не удалось загрузить. Попробуйте добавить его снова.",
+        "toastTitle": "Не удалось загрузить входное изображение"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Пополните баланс аккаунта, чтобы использовать этот узел.",
+        "title": "Недостаточно кредитов",
+        "toastMessage": "Пополните баланс аккаунта, чтобы использовать этот узел.",
+        "toastTitle": "Недостаточно кредитов"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "Ввод CLIP отсутствует или недействителен. Проверьте подключённый checkpoint или загрузчик CLIP.",
+        "title": "Недопустимый ввод CLIP",
+        "toastMessage": "У {nodeName} отсутствует или недействительный ввод CLIP.",
+        "toastTitle": "Недопустимый ввод CLIP"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "Введите промпт перед запуском этого workflow.",
+        "title": "Пустой промпт",
+        "toastMessage": "Введите промпт перед запуском этого workflow.",
+        "toastTitle": "Пустой промпт"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "Запрос workflow недействителен. Проверьте workflow и попробуйте снова.",
+        "title": "Недопустимый запрос workflow",
+        "toastMessage": "Запрос workflow недействителен. Проверьте workflow и попробуйте снова.",
+        "toastTitle": "Недопустимый запрос workflow"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "Одна или несколько необходимых моделей недоступны.",
+        "title": "Требуется доступ к модели",
+        "toastMessage": "Одна или несколько необходимых моделей недоступны.",
+        "toastTitle": "Требуется доступ к модели"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Не удалось загрузить модель. Попробуйте снова.",
+        "title": "Ошибка загрузки модели",
+        "toastMessage": "Не удалось загрузить модель. Попробуйте снова.",
+        "toastTitle": "Ошибка загрузки модели"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "Недостаточно памяти GPU. Попробуйте уменьшить разрешение изображения или размер пакета и запустите снова.",
+        "title": "Ошибка генерации",
+        "toastMessage": "Недостаточно памяти GPU. Попробуйте уменьшить разрешение изображения или размер пакета и запустите снова.",
+        "toastTitle": "Ошибка генерации"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Не удалось подготовить workflow. Попробуйте запустить его снова.",
+        "title": "Ошибка подготовки",
+        "toastMessage": "Не удалось подготовить workflow. Попробуйте запустить его снова.",
+        "toastTitle": "Ошибка подготовки"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "Подготовка workflow заняла слишком много времени. Попробуйте запустить его снова.",
+        "title": "Время подготовки истекло",
+        "toastMessage": "Подготовка workflow заняла слишком много времени. Попробуйте запустить его снова.",
+        "toastTitle": "Время подготовки истекло"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "Сейчас высокий спрос. Попробуйте снова через минуту.",
+        "title": "Серверы заняты",
+        "toastMessage": "Сейчас высокий спрос. Попробуйте снова через минуту.",
+        "toastTitle": "Серверы заняты"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Запрос завершился с ошибкой до завершения выполнения. Попробуйте снова.",
+        "title": "Ошибка запроса",
+        "toastMessage": "Запрос завершился с ошибкой до завершения выполнения. Попробуйте снова.",
+        "toastTitle": "Ошибка запроса"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "Выполнение завершилось неожиданно. Попробуйте снова.",
+        "title": "Выполнение завершилось неожиданно",
+        "toastMessage": "Выполнение завершилось неожиданно. Попробуйте снова.",
+        "toastTitle": "Выполнение завершилось неожиданно"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Не удалось запустить выполнение. Попробуйте снова.",
+        "title": "Не удалось запустить выполнение",
+        "toastMessage": "Не удалось запустить выполнение. Попробуйте снова.",
+        "toastTitle": "Не удалось запустить выполнение"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "Серверы сейчас заняты. Попробуйте снова через минуту.",
+        "title": "Серверы заняты",
+        "toastMessage": "Серверы сейчас заняты. Попробуйте снова через минуту.",
+        "toastTitle": "Серверы заняты"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "Сервер остановился во время выполнения этого workflow. Попробуйте снова.",
+        "title": "Сервер аварийно завершил работу",
+        "toastMessage": "Сервер остановился во время выполнения этого workflow. Попробуйте снова.",
+        "toastTitle": "Сервер аварийно завершил работу"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Партнёрские узлы требуют аккаунта Comfy. Войдите, чтобы продолжить.",
+        "title": "Требуется вход",
+        "toastMessage": "Партнёрские узлы требуют аккаунта Comfy. Войдите, чтобы продолжить.",
+        "toastTitle": "Войдите, чтобы использовать этот узел"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Оформите подписку, чтобы продолжить выполнение этого workflow.",
+        "title": "Требуется подписка",
+        "toastMessage": "Оформите подписку, чтобы продолжить выполнение этого workflow.",
+        "toastTitle": "Требуется подписка"
+      },
+      "subscription_upgrade_required": {
+        "details": "Для приватных моделей требуется обновление подписки: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "Обновите подписку, чтобы использовать приватные модели в этом workflow.",
+        "title": "Требуется обновление подписки",
+        "toastMessage": "Обновите подписку, чтобы использовать эти приватные модели: {modelNames}.",
+        "toastTitle": "Требуется обновление подписки"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "Этот workflow достиг максимального времени выполнения. Попробуйте уменьшить разрешение изображения, размер пакета или длину workflow и запустите снова.",
+        "title": "Время генерации истекло",
+        "toastMessage": "Этот workflow достиг максимального времени выполнения. Попробуйте уменьшить разрешение изображения, размер пакета или длину workflow и запустите снова.",
+        "toastTitle": "Время генерации истекло"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "В сервисе произошла непредвиденная ошибка. Попробуйте снова.",
+        "title": "Ошибка сервиса",
+        "toastMessage": "В сервисе произошла непредвиденная ошибка. Попробуйте снова.",
+        "toastTitle": "Ошибка сервиса"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Пополните баланс рабочего пространства для продолжения.",
+        "title": "Недостаточно кредитов",
+        "toastMessage": "Пополните баланс рабочего пространства для продолжения.",
+        "toastTitle": "Недостаточно кредитов"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} имеет недопустимое соединение для {inputName}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Соединение между узлами не удалось корректно прочитать.",
+        "title": "Недопустимое соединение",
+        "toastMessage": "{nodeName} имеет недопустимое соединение для {inputName}.",
+        "toastTitle": "Недопустимое соединение"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} отклонил значение для {inputName}.",
+        "detailsWithRawDetails": "{nodeName} не прошёл пользовательскую проверку: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Узел отклонил одно или несколько входных значений.",
+        "title": "Недопустимый ввод",
+        "toastMessage": "{nodeName} отклонил значение для {inputName}.",
+        "toastTitle": "Недопустимый ввод"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} является частью циклического соединения.",
+        "detailsWithRawDetails": "{nodeName} является частью циклического соединения: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "В рабочем процессе обнаружено циклическое соединение узлов.",
+        "title": "Недопустимый рабочий процесс",
+        "toastMessage": "{nodeName} является частью циклического соединения.",
+        "toastTitle": "Недопустимый рабочий процесс"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} не удалось проверить {inputName}.",
+        "detailsWithRawDetails": "{nodeName} не удалось проверить {inputName}: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Не удалось проверить подключённый узел в рабочем процессе.",
+        "title": "Ошибка проверки",
+        "toastMessage": "{nodeName} не удалось проверить {inputName}.",
+        "toastMessageWithRawDetails": "{nodeName} не удалось проверить {inputName}: {rawDetails}",
+        "toastTitle": "Ошибка проверки"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} завершился с ошибкой во время проверки.",
+        "detailsWithRawDetails": "{nodeName} завершился с ошибкой во время проверки: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Не удалось проверить рабочий процесс, так как проверка узла завершилась с ошибкой.",
+        "title": "Ошибка проверки",
+        "toastMessage": "{nodeName} завершился с ошибкой во время проверки.",
+        "toastMessageWithRawDetails": "{nodeName} завершился с ошибкой во время проверки: {rawDetails}",
+        "toastTitle": "Ошибка проверки"
+      },
+      "image_not_loaded": {
+        "details": "Изображение для {nodeName} не удалось загрузить. Попробуйте добавить его снова.",
+        "itemLabel": "{nodeName}",
+        "message": "Системе не удалось загрузить это изображение.",
+        "title": "Изображение не загружено",
+        "toastMessage": "Изображение для {nodeName} не удалось загрузить. Попробуйте добавить его снова.",
+        "toastTitle": "Не удалось загрузить входное изображение"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} не удалось преобразовать {inputName} к ожидаемому типу.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} не удалось преобразовать в {expectedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Введено значение неверного типа.",
+        "title": "Недопустимый ввод",
+        "toastMessage": "{nodeName} не удалось преобразовать {inputName} к ожидаемому типу.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} не удалось преобразовать в {expectedType}.",
+        "toastTitle": "Недопустимый ввод"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} отсутствует обязательный вход: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Требуемые входные слоты не имеют подключений.",
+        "title": "Отсутствует соединение",
+        "toastMessage": "{nodeName} отсутствует обязательный вход: {inputName}",
+        "toastTitle": "Отсутствует обязательный вход"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} имеет несовместимое соединение для {inputName}.",
+        "detailsWithTypes": "Вход {inputName} узла {nodeName} ожидает {expectedType}, но подключённый выход — {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Подключённые узлы используют несовместимые типы входа и выхода.",
+        "title": "Недопустимое соединение",
+        "toastMessage": "{nodeName} имеет несовместимое соединение для {inputName}.",
+        "toastMessageWithTypes": "Вход {inputName} узла {nodeName} ожидает {expectedType}, но подключённый выход — {receivedType}.",
+        "toastTitle": "Недопустимое соединение"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} имеет значение выше максимального для {inputName}.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} выше максимального {maxValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Некоторые значения вне допустимого диапазона.",
+        "title": "Ввод вне диапазона",
+        "toastMessage": "{nodeName} имеет значение выше максимального для {inputName}.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} выше максимального {maxValue}.",
+        "toastTitle": "Ввод вне диапазона"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} имеет неподдерживаемое значение для {inputName}.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} недоступно.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Некоторые значения недоступны для этого узла.",
+        "title": "Недопустимый ввод",
+        "toastMessage": "{nodeName} имеет неподдерживаемое значение для {inputName}.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} недоступно.",
+        "toastTitle": "Недопустимый ввод"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} имеет значение ниже минимального для {inputName}.",
+        "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} ниже минимального {minValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Некоторые значения вне допустимого диапазона.",
+        "title": "Ввод вне диапазона",
+        "toastMessage": "{nodeName} имеет значение ниже минимального для {inputName}.",
+        "toastMessageWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} ниже минимального {minValue}.",
+        "toastTitle": "Ввод вне диапазона"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -913,7 +1279,8 @@
     "extensionFileHint": "Это может быть связано со следующим скриптом",
     "loadWorkflowTitle": "Загрузка прервана из-за ошибки при перезагрузке данных рабочего процесса",
     "noStackTrace": "Стек вызовов недоступен",
-    "promptExecutionError": "Ошибка выполнения запроса"
+    "promptExecutionError": "Ошибка выполнения запроса",
+    "queueOpenWorkflowFailedTitle": "Не удалось открыть рабочий процесс"
   },
   "errorOverlay": {
     "errorCount": "{count} ОШИБОК | {count} ОШИБКА | {count} ОШИБКИ",
@@ -1041,6 +1408,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Логотип ComfyOrg",
+    "comfyPackageOutdated": "Установленная версия {name} ({installedVersion}) ниже требуемой версии ({requiredVersion}).",
     "comingSoon": "Скоро будет",
     "command": "Команда",
     "commandProhibited": "Команда {command} запрещена. Свяжитесь с администратором для получения дополнительной информации.",
@@ -1201,6 +1569,7 @@
     "logs": "Логи",
     "manageExtensions": "Управление расширениями",
     "markdown": "markdown",
+    "maximizeDialog": "Развернуть диалоговое окно",
     "micPermissionDenied": "Доступ к микрофону запрещён",
     "migrate": "Мигрировать",
     "missing": "Отсутствует",
@@ -1301,6 +1670,7 @@
     "resizeFromTopLeft": "Изменять размер из левого верхнего угла",
     "resizeFromTopRight": "Изменять размер из правого верхнего угла",
     "restart": "Перезапустить",
+    "restoreDialog": "Восстановить диалоговое окно",
     "resultsCount": "Найдено {count} результатов",
     "running": "Выполняется",
     "save": "Сохранить",
@@ -1660,6 +2030,7 @@
       "orthographic": "Ортографическая",
       "perspective": "Перспектива"
     },
+    "centerCameraOnModel": "Центрировать камеру на модели",
     "clearRecording": "Очистить запись",
     "dropToLoad": "Перетащите 3D-модель для загрузки",
     "edgeThreshold": "Порог края",
@@ -1739,6 +2110,10 @@
     "outdatedVersion": "Этот рабочий процесс был создан в более новой версии ComfyUI ({version}). Некоторые узлы могут работать некорректно.",
     "outdatedVersionGeneric": "Этот рабочий процесс был создан в более новой версии ComfyUI. Некоторые узлы могут работать некорректно.",
     "unknownVersion": "неизвестно"
+  },
+  "logsTerminal": {
+    "loadError": "Не удалось загрузить логи, пожалуйста, убедитесь, что вы обновили ваш ComfyUI backend.",
+    "resyncError": "Не удалось повторно синхронизировать логи после переподключения backend. Откройте консоль заново, чтобы повторить попытку."
   },
   "maintenance": {
     "None": "Нет",
@@ -2092,7 +2467,6 @@
     "ComfyUI Issues": "Проблемы ComfyUI",
     "Contact Support": "Связаться с поддержкой",
     "Convert Selection to Subgraph": "Преобразовать выделенное в подграф",
-    "Convert selected nodes to group node": "Преобразовать выбранные ноды в групповую ноду",
     "Copy": "Копировать",
     "Custom Nodes (Legacy)": "Пользовательские узлы (устаревшие)",
     "Custom Nodes Manager": "Менеджер Пользовательских Узлов",
@@ -2255,6 +2629,7 @@
     "3d_models": "3d_модели",
     "Anthropic": "Anthropic",
     "BFL": "BFL",
+    "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
@@ -2263,12 +2638,14 @@
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2285,9 +2662,8 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
+    "adjustments": "корректировки",
     "advanced": "расширенный",
-    "animation": "анимация",
-    "api node": "api-узел",
     "attention_experiments": "эксперименты_внимания",
     "audio": "аудио",
     "background removal": "удаление фона",
@@ -2303,13 +2679,14 @@
     "controlnet": "controlnet",
     "create": "создать",
     "custom_sampling": "пользовательский_семплинг",
-    "dataset": "dataset",
     "debug": "отладка",
     "deprecated": "устаревший",
     "detection": "детекция",
     "edit_models": "редактировать_модели",
     "experimental": "экспериментальное",
+    "filters": "фильтры",
     "flux": "flux",
+    "geometry estimation": "оценка геометрии",
     "gligen": "gligen",
     "guidance": "направление",
     "guiders": "направляющие",
@@ -2326,23 +2703,24 @@
     "mask": "маска",
     "model": "модель",
     "model_merging": "слияние_моделей",
-    "model_patches": "патчи_моделей",
     "model_specific": "специфичная_модель",
+    "multigpu": "multigpu",
     "noise": "шум",
     "operations": "операции",
+    "partner": "партнёр",
+    "patch": "патч",
     "photomaker": "photomaker",
-    "postprocessing": "постобработка",
     "preprocessors": "предобработчики",
     "primitive": "примитив",
     "qwen": "qwen",
     "samplers": "семплеры",
     "sampling": "выборка",
-    "save": "сохранить",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
     "sd3": "sd3",
     "shader": "шейдер",
     "sigmas": "сигмы",
+    "splat": "splat",
     "stable_cascade": "стабильная_каскадная",
     "style_model": "модель_стиля",
     "supir": "supir",
@@ -2352,7 +2730,7 @@
     "unet": "unet",
     "upscale_diffusion": "диффузии_апскейла",
     "upscaling": "апскейл",
-    "utils": "утилиты",
+    "utilities": "утилиты",
     "video": "видео",
     "video_models": "видеомодели",
     "zimage": "zimage"
@@ -2425,6 +2803,43 @@
     },
     "title": "Ваше устройство не поддерживается"
   },
+  "oauth": {
+    "consent": {
+      "allow": "Продолжить",
+      "appTypeNative": "Нативное приложение",
+      "appTypeWeb": "Веб-приложение",
+      "deny": "Отмена",
+      "errorExpired": "Этот запрос на согласие истёк или уже был использован. Пожалуйста, перезапустите из клиентского приложения.",
+      "errorScopeBroadening": "Ранее одобренные разрешения не покрывают этот запрос. Необходимо повторно авторизоваться с новыми разрешениями.",
+      "errorUnavailable": "Эта функция сейчас недоступна. Если проблема сохраняется, обратитесь в поддержку.",
+      "genericError": "Ошибка OAuth-запроса. Пожалуйста, перезапустите из клиентского приложения.",
+      "loading": "Загрузка запроса авторизации…",
+      "missingRequest": "Этот запрос авторизации отсутствует. Пожалуйста, перезапустите из клиентского приложения.",
+      "noWorkspaces": "Нет доступных рабочих пространств для этого запроса.",
+      "permissionsHeader": "Разрешения",
+      "redirectNotice": "Вы будете перенаправлены на",
+      "resourceFallback": "это приложение",
+      "sessionError": "Не удалось установить сессию. Пожалуйста, попробуйте ещё раз.",
+      "sessionErrorToastSummary": "Не удалось продолжить вход через OAuth",
+      "subtitle": "Войдите в {resource}, чтобы продолжить",
+      "title": "{client} запрашивает доступ",
+      "workspaceHelp": "Разрешения применяются только к этому рабочему пространству.",
+      "workspaceLabel": "Рабочее пространство"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Запуск workflow от вашего имени"
+      },
+      "mcp:tools:read": {
+        "label": "Просмотр доступных инструментов workflow"
+      }
+    },
+    "workspace": {
+      "member": "Участник",
+      "owner": "Владелец",
+      "personal": "Личное"
+    }
+  },
   "openSharedWorkflow": {
     "author": "Автор:",
     "copyAssetsAndOpen": "Импортировать ресурсы и открыть рабочий процесс",
@@ -2435,7 +2850,8 @@
     "nonPublicAssetsWarningLine1": "Этот рабочий процесс содержит непубличные ресурсы.",
     "nonPublicAssetsWarningLine2": "Они будут импортированы в вашу библиотеку при открытии рабочего процесса",
     "openWithoutImporting": "Открыть без импорта",
-    "openWorkflow": "Открыть рабочий процесс"
+    "openWorkflow": "Открыть рабочий процесс",
+    "opening": "Открытие общего рабочего процесса..."
   },
   "painter": {
     "background": "Фон",
@@ -2651,20 +3067,6 @@
     "normal": "Обычный",
     "parameters": "Параметры",
     "pinned": "Закреплено",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Данные рабочего процесса, отправленные на сервер, пусты. Это может быть неожиданной системной ошибкой."
-      },
-      "prompt_no_outputs": {
-        "desc": "В рабочем процессе отсутствуют выходные узлы (например, Сохранить изображение, Предпросмотр изображения) для получения результата."
-      },
-      "server_error_cloud": {
-        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, попробуйте позже."
-      },
-      "server_error_local": {
-        "desc": "На сервере произошла непредвиденная ошибка. Пожалуйста, проверьте логи сервера."
-      }
-    },
     "properties": "Свойства",
     "removeFavorite": "Убрать из избранного",
     "resetAllParameters": "Сбросить все параметры",
@@ -2921,6 +3323,7 @@
     "Other": "Другое",
     "PLY": "PLY",
     "PlanCredits": "План и кредиты",
+    "PointCloud": "Облако точек",
     "Pointer": "Указатель",
     "Queue": "Очередь",
     "QueueButton": "Кнопка очереди",
@@ -3062,6 +3465,7 @@
         "sourceDesc": "Группировать по типу источника (Core, Custom, API)"
       },
       "noBookmarkedNodes": "Избранных пока нет",
+      "noMatchingNodes": "Нет узлов, соответствующих «{query}»",
       "resetView": "Сбросить вид по умолчанию",
       "sections": {
         "bookmarked": "Избранное",
@@ -3447,8 +3851,7 @@
       "newest": "Новейшие",
       "popular": "Популярные",
       "recommended": "Рекомендуемые",
-      "searchPlaceholder": "Поиск...",
-      "vramLowToHigh": "Использование VRAM (от низкого к высокому)"
+      "searchPlaceholder": "Поиск..."
     },
     "sorting": "Сортировать по",
     "title": "Начните с шаблона",
@@ -3612,7 +4015,8 @@
       "placeholderMesh": "Выберите mesh...",
       "placeholderModel": "Выбрать модель...",
       "placeholderUnknown": "Выбрать медиа...",
-      "placeholderVideo": "Выбрать видео..."
+      "placeholderVideo": "Выбрать видео...",
+      "topResult": "Лучший результат: {result}"
     },
     "valueControl": {
       "decrement": "Уменьшить значение",

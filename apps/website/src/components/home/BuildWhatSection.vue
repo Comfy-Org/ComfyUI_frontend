@@ -15,7 +15,7 @@ const row2 = [
 
 <template>
   <section
-    class="bg-primary-comfy-ink flex flex-col items-center px-4 py-24 lg:px-6 lg:py-32"
+    class="max-w-9xl mx-auto flex flex-col items-center bg-primary-comfy-ink px-4 py-24 lg:px-6 lg:py-32"
   >
     <!-- Node rows -->
     <div
@@ -36,7 +36,7 @@ const row2 = [
 
     <!-- Subtitle -->
     <p
-      class="text-primary-comfy-canvas mt-24 max-w-2xl text-center text-xl lg:text-sm"
+      class="mt-24 max-w-2xl text-center text-xl text-primary-comfy-canvas lg:text-sm"
     >
       {{ t('buildWhat.subtitle', locale) }}
     </p>
