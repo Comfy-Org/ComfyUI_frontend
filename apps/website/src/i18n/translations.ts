@@ -124,7 +124,7 @@ const translations = {
     'zh-CN': '下载或注册'
   },
   'getStarted.step1.downloadLocal': {
-    en: 'Download Local',
+    en: 'Download Desktop',
     'zh-CN': '下载本地版'
   },
   'getStarted.step1.launchCloud': {
@@ -715,7 +715,7 @@ const translations = {
     'zh-CN': '完整的 ComfyUI 引擎——开源、快速、可扩展，随你运行。'
   },
   'download.hero.downloadLocal': {
-    en: 'DOWNLOAD LOCAL',
+    en: 'DOWNLOAD DESKTOP',
     'zh-CN': '下载本地版'
   },
   'download.hero.installGithub': {
@@ -1828,7 +1828,7 @@ const translations = {
   'nav.aboutUs': { en: 'About Us', 'zh-CN': '关于我们' },
   'nav.careers': { en: 'Careers', 'zh-CN': '招聘' },
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
-  'nav.downloadLocal': { en: 'DOWNLOAD LOCAL', 'zh-CN': '下载本地版' },
+  'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载本地版' },
   'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },

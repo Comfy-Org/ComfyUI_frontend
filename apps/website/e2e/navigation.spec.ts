@@ -32,7 +32,7 @@ test.describe('Desktop navigation @smoke', () => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopCTA = nav.getByTestId('desktop-nav-cta')
     await expect(
-      desktopCTA.getByRole('link', { name: 'DOWNLOAD LOCAL' })
+      desktopCTA.getByRole('link', { name: 'DOWNLOAD DESKTOP' })
     ).toBeVisible()
     await expect(
       desktopCTA.getByRole('link', { name: 'LAUNCH CLOUD' })
@@ -133,7 +133,7 @@ test.describe('Mobile menu @mobile', () => {
 
     const menu = page.locator('#site-mobile-menu')
     await expect(
-      menu.getByRole('link', { name: 'DOWNLOAD LOCAL' })
+      menu.getByRole('link', { name: 'DOWNLOAD DESKTOP' })
     ).toBeVisible()
     await expect(menu.getByRole('link', { name: 'LAUNCH CLOUD' })).toBeVisible()
   })

@@ -213,7 +213,7 @@ test.describe('Get started section links @smoke', () => {
       has: page.getByRole('heading', { name: 'Get started in minutes' })
     })
 
-    const downloadLink = section.getByRole('link', { name: 'Download Local' })
+    const downloadLink = section.getByRole('link', { name: 'Download Desktop' })
     await expect(downloadLink).toBeVisible()
     await expect(downloadLink).toHaveAttribute('href', '/download')
 
