@@ -125,7 +125,7 @@ const translations = {
   },
   'getStarted.step1.downloadLocal': {
     en: 'Download Desktop',
-    'zh-CN': '下载本地版'
+    'zh-CN': '下载桌面版'
   },
   'getStarted.step1.launchCloud': {
     en: 'Launch Cloud',
@@ -716,7 +716,7 @@ const translations = {
   },
   'download.hero.downloadLocal': {
     en: 'DOWNLOAD DESKTOP',
-    'zh-CN': '下载本地版'
+    'zh-CN': '下载桌面版'
   },
   'download.hero.installGithub': {
     en: 'INSTALL FROM GITHUB',
@@ -1828,7 +1828,7 @@ const translations = {
   'nav.aboutUs': { en: 'About Us', 'zh-CN': '关于我们' },
   'nav.careers': { en: 'Careers', 'zh-CN': '招聘' },
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
-  'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载本地版' },
+  'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
   'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
