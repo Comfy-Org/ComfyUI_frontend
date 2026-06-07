@@ -33,7 +33,11 @@ describe('SubgraphSlot visual feedback', () => {
     // Create a mock canvas context that tracks all globalAlpha values
 
     mockCtx = createMockCanvasRenderingContext2D()
-
+    Object.defineProperty(mockCtx, 'globalAlpha', {
+      get: () => globalAlphaValues.at(-1) ?? 1,
+      set: (value: number) => globalAlphaValues.push(value),
+      configurable: true
+    })
     // Create a mock color context
     mockColorContext = {
       defaultInputColor: '#FF0000',

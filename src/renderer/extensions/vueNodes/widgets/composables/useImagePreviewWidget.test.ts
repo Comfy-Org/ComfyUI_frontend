@@ -11,6 +11,12 @@ const mockSettingStore = vi.hoisted(() => ({
   get: vi.fn(() => false)
 }))
 
+function createImagePreviewCtx(): CanvasRenderingContext2D {
+  return createMockCanvasRenderingContext2D({
+    drawImage: vi.fn()
+  })
+}
+
 const mockCanvas = vi.hoisted(() => ({
   graph_mouse: [0, 0] as [number, number],
   pointer_is_down: false,
@@ -190,7 +196,7 @@ describe('useImagePreviewWidget', () => {
       constructor(node, defaultInputSpec)
 
       const widget = getWidget(node)
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -211,7 +217,7 @@ describe('useImagePreviewWidget', () => {
       constructor(node, defaultInputSpec)
 
       const widget = getWidget(node)
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -231,7 +237,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -252,7 +258,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -277,7 +283,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -291,7 +297,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -308,7 +314,7 @@ describe('useImagePreviewWidget', () => {
       constructor(node, defaultInputSpec)
 
       const widget = getWidget(node)
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -330,7 +336,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 235
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -354,7 +360,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -373,7 +379,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -391,7 +397,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -409,7 +415,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -433,7 +439,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -458,7 +464,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -480,7 +486,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCanvasRenderingContext2D()
+      const ctx = createImagePreviewCtx()
 
       widget.drawWidget(ctx, {
         width: 300,
