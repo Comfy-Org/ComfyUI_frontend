@@ -296,7 +296,7 @@ export function createMockMinimapCanvas(
 ): HTMLCanvasElement {
   const mockGetContext = vi.fn()
   mockGetContext.mockImplementation((contextId: string) =>
-    contextId === '2d' ? createMockCanvas2DContext() : null
+    contextId === '2d' ? createMockCanvasRenderingContext2D() : null
   )
 
   const partial: Partial<HTMLCanvasElement> = {
@@ -308,32 +308,6 @@ export function createMockMinimapCanvas(
     ...overrides
   }
   return partial as HTMLCanvasElement
-}
-
-/**
- * Creates a mock CanvasRenderingContext2D for canvas testing
- */
-export function createMockCanvas2DContext(
-  overrides: Partial<CanvasRenderingContext2D> = {}
-): CanvasRenderingContext2D {
-  const partial: Partial<CanvasRenderingContext2D> = {
-    clearRect: vi.fn(),
-    fillRect: vi.fn(),
-    strokeRect: vi.fn(),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    arc: vi.fn(),
-    fill: vi.fn(),
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 1,
-    save: vi.fn(),
-    restore: vi.fn(),
-    ...overrides
-  }
-  return partial as CanvasRenderingContext2D
 }
 
 export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
