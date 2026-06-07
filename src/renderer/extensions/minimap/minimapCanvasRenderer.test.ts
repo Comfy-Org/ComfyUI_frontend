@@ -6,6 +6,7 @@ import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanv
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
 import { adjustColor } from '@/utils/colorUtil'
 import {
+  createMockCanvasRenderingContext2D,
   createMockLGraph,
   createMockLGraphNode,
   createMockLinks,
@@ -36,22 +37,7 @@ describe('minimapCanvasRenderer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    mockContext = {
-      clearRect: vi.fn(),
-      fillRect: vi.fn(),
-      strokeRect: vi.fn(),
-      beginPath: vi.fn(),
-      moveTo: vi.fn(),
-      lineTo: vi.fn(),
-      stroke: vi.fn(),
-      arc: vi.fn(),
-      fill: vi.fn(),
-      fillStyle: '',
-      strokeStyle: '',
-      lineWidth: 1,
-      save: vi.fn(),
-      restore: vi.fn()
-    } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
+    mockContext = createMockCanvasRenderingContext2D()
 
     mockCanvas = {
       getContext: vi.fn().mockReturnValue(mockContext)

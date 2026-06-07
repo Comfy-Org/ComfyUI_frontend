@@ -6,6 +6,7 @@ import type {
   RenderContext
 } from '@/renderer/core/canvas/pathRenderer'
 import { CanvasPathRenderer } from '@/renderer/core/canvas/pathRenderer'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 class StubPath2D {
   calls: Array<{ method: string; args: unknown[] }> = []
@@ -27,28 +28,6 @@ class StubPath2D {
 }
 
 vi.stubGlobal('Path2D', StubPath2D)
-
-function createMockCtx(): CanvasRenderingContext2D {
-  return {
-    save: vi.fn(),
-    restore: vi.fn(),
-    stroke: vi.fn(),
-    fill: vi.fn(),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    arc: vi.fn(),
-    translate: vi.fn(),
-    rotate: vi.fn(),
-    getTransform: vi.fn(() => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })),
-    setTransform: vi.fn(),
-    strokeStyle: '',
-    fillStyle: '',
-    lineWidth: 0,
-    lineJoin: 'round',
-    globalAlpha: 1
-  } as unknown as CanvasRenderingContext2D
-}
 
 function makeLink(overrides: Partial<LinkRenderData> = {}): LinkRenderData {
   return {
@@ -87,7 +66,7 @@ describe('CanvasPathRenderer', () => {
 
   describe('link color determination', () => {
     it('uses highlighted color when link is highlighted', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink()
       const context = makeContext({
         highlightedIds: new Set(['link-1'])
@@ -99,7 +78,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('uses link-specific color over type and default', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({ color: '#ff0000' })
       const context = makeContext()
 
@@ -109,7 +88,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('uses type color when no explicit link color', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({ type: 'IMAGE' })
       const context = makeContext({
         colors: {
@@ -125,7 +104,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('falls back to default color', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink()
       const context = makeContext()
 
@@ -137,7 +116,7 @@ describe('CanvasPathRenderer', () => {
 
   describe('drawLink border', () => {
     it('draws border when borderWidth is set and not lowQuality', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink()
       const context = makeContext({
         style: { mode: 'spline', connectionWidth: 3, borderWidth: 2 }
@@ -150,7 +129,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('skips border in lowQuality mode', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink()
       const context = makeContext({
         style: {
@@ -170,7 +149,7 @@ describe('CanvasPathRenderer', () => {
 
   describe('disabled links', () => {
     it('applies disabled pattern when link is disabled', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const disabledPattern = {} as CanvasPattern
       const link = makeLink({ disabled: true })
       const context = makeContext({
@@ -192,7 +171,7 @@ describe('CanvasPathRenderer', () => {
 
   describe('linear path mode', () => {
     it('builds a 4-point path with directional offsets', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         startDirection: 'right',
         endDirection: 'left'
@@ -222,7 +201,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('handles up/down directions', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         startPoint: { x: 50, y: 50 },
         endPoint: { x: 50, y: 200 },
@@ -246,7 +225,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('handles none direction (no offset)', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         startDirection: 'none',
         endDirection: 'none'
@@ -270,7 +249,7 @@ describe('CanvasPathRenderer', () => {
 
   describe('straight path mode', () => {
     it('builds a 6-point path with mid-X routing', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         startPoint: { x: 0, y: 0 },
         endPoint: { x: 200, y: 100 },
@@ -300,7 +279,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('handles up direction offset (l=10)', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         startPoint: { x: 100, y: 100 },
         endPoint: { x: 100, y: 300 },
@@ -326,7 +305,7 @@ describe('CanvasPathRenderer', () => {
 
   describe('spline path mode', () => {
     it('uses provided control points for cubic bezier', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const cp: Point[] = [
         { x: 50, y: 10 },
         { x: 150, y: 90 }
@@ -346,7 +325,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('auto-calculates control points when none provided', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink()
       const context = makeContext()
 
@@ -361,7 +340,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('uses quadratic curve for single control point', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({ controlPoints: [{ x: 100, y: 50 }] })
       const context = makeContext()
 
@@ -377,7 +356,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('falls back to lineTo when no control points', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({ controlPoints: [] })
       const context = makeContext()
 
@@ -395,7 +374,7 @@ describe('CanvasPathRenderer', () => {
 
   describe('auto-calculated control points', () => {
     it('produces control points offset in the start/end directions', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         startPoint: { x: 0, y: 0 },
         endPoint: { x: 400, y: 0 },
@@ -421,7 +400,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('uses minimum controlDist of 30 for short links', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         startPoint: { x: 0, y: 0 },
         endPoint: { x: 10, y: 0 },
@@ -479,7 +458,7 @@ describe('CanvasPathRenderer', () => {
 
   describe('center point calculation', () => {
     it('calculates spline center using bezier at t=0.5', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const cp: Point[] = [
         { x: 50, y: 0 },
         { x: 150, y: 100 }
@@ -495,7 +474,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('calculates spline center angle for arrow marker', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const cp: Point[] = [
         { x: 50, y: 0 },
         { x: 150, y: 100 }
@@ -516,7 +495,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('calculates linear center as midpoint of inner control points', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         startPoint: { x: 0, y: 0 },
         endPoint: { x: 200, y: 100 },
@@ -534,7 +513,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('calculates straight center with l=10 offsets', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         startPoint: { x: 0, y: 0 },
         endPoint: { x: 200, y: 100 },
@@ -552,7 +531,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('calculates straight center angle = 0 when y diff < 4', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         startPoint: { x: 0, y: 50 },
         endPoint: { x: 200, y: 52 },
@@ -573,7 +552,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('calculates straight center angle = PI/2 when end is below', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         startPoint: { x: 0, y: 0 },
         endPoint: { x: 200, y: 100 },
@@ -594,7 +573,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('calculates straight center angle = -PI/2 when end is above', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         startPoint: { x: 0, y: 100 },
         endPoint: { x: 200, y: 0 },
@@ -615,7 +594,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('calculates linear center angle for arrow marker', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         startDirection: 'right',
         endDirection: 'left'
@@ -636,7 +615,7 @@ describe('CanvasPathRenderer', () => {
 
   describe('arrows', () => {
     it('draws arrows at 0.25 and 0.75 positions when showArrows=true', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink()
       const context = makeContext({
         style: { mode: 'spline', connectionWidth: 3, showArrows: true }
@@ -652,7 +631,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('does not draw arrows when showArrows=false', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink()
       const context = makeContext()
 
@@ -664,7 +643,7 @@ describe('CanvasPathRenderer', () => {
 
   describe('center marker', () => {
     it('draws circle marker when conditions are met', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         controlPoints: [
           { x: 50, y: 0 },
@@ -688,7 +667,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('draws arrow-shaped marker when centerMarkerShape is arrow', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         controlPoints: [
           { x: 50, y: 0 },
@@ -714,7 +693,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('skips marker when scale is below 0.6', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         controlPoints: [
           { x: 50, y: 0 },
@@ -737,7 +716,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('skips marker when highQuality is false', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         controlPoints: [
           { x: 50, y: 0 },
@@ -760,7 +739,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('applies disabled pattern for center marker', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const disabledPattern = {} as CanvasPattern
       const link = makeLink({
         disabled: true,
@@ -789,7 +768,7 @@ describe('CanvasPathRenderer', () => {
 
   describe('flow animation', () => {
     it('draws 5 circles when flow is enabled', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({ flow: true })
       const context = makeContext({
         animation: { time: 0.5 }
@@ -804,7 +783,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('does not animate when flow is false', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({ flow: false })
       const context = makeContext({ animation: { time: 0.5 } })
 
@@ -814,7 +793,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('does not animate when no animation context', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({ flow: true })
       const context = makeContext()
 
@@ -826,7 +805,7 @@ describe('CanvasPathRenderer', () => {
 
   describe('drawDraggingLink', () => {
     it('draws a link from fixed to drag point', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const context = makeContext()
 
       const path = renderer.drawDraggingLink(
@@ -844,7 +823,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('swaps points when dragging from input', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const context = makeContext({
         style: { mode: 'linear', connectionWidth: 3 }
       })
@@ -866,7 +845,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('uses custom dragDirection when provided', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const context = makeContext()
 
       renderer.drawDraggingLink(
@@ -884,7 +863,7 @@ describe('CanvasPathRenderer', () => {
     })
 
     it('passes color and type through to link rendering', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const context = makeContext({
         colors: {
           default: '#ffffff',
@@ -910,7 +889,7 @@ describe('CanvasPathRenderer', () => {
 
   describe('computeConnectionPoint', () => {
     it('computes arrow positions along the path', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink({
         startPoint: { x: 0, y: 0 },
         endPoint: { x: 100, y: 0 },
@@ -929,7 +908,7 @@ describe('CanvasPathRenderer', () => {
 
   describe('drawLink return value', () => {
     it('returns a Path2D for hit detection', () => {
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
       const link = makeLink()
       const context = makeContext()
 
@@ -949,7 +928,7 @@ describe('CanvasPathRenderer', () => {
     ] as const)(
       'linear mode applies correct offset for $dir direction',
       ({ dir, expectedInnerA }) => {
-        const ctx = createMockCtx()
+        const ctx = createMockCanvasRenderingContext2D()
         const link = makeLink({
           startPoint: { x: 0, y: 0 },
           endPoint: { x: 200, y: 100 },

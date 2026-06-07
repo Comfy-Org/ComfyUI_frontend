@@ -5,6 +5,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointer, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 const mockSettingStore = vi.hoisted(() => ({
   get: vi.fn(() => false)
@@ -67,30 +68,6 @@ import { useImagePreviewWidget } from './useImagePreviewWidget'
 // large to migrate to shoehorn fromPartial here without dragging in mountains
 // of unused properties. Leave the `as unknown as` casts in these factories;
 // migrate when the SUT is refactored to depend on a smaller render port.
-function createMockCtx(): CanvasRenderingContext2D {
-  const transform = new DOMMatrix()
-  return {
-    save: vi.fn(),
-    restore: vi.fn(),
-    beginPath: vi.fn(),
-    arc: vi.fn(),
-    stroke: vi.fn(),
-    fill: vi.fn(),
-    fillText: vi.fn(),
-    strokeRect: vi.fn(),
-    roundRect: vi.fn(),
-    drawImage: vi.fn(),
-    getTransform: vi.fn(() => transform),
-    setTransform: vi.fn(),
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 1,
-    lineCap: 'butt',
-    textAlign: 'left',
-    font: '',
-    filter: 'none'
-  } as unknown as CanvasRenderingContext2D
-}
 
 function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
   return {
@@ -213,7 +190,7 @@ describe('useImagePreviewWidget', () => {
       constructor(node, defaultInputSpec)
 
       const widget = getWidget(node)
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -234,7 +211,7 @@ describe('useImagePreviewWidget', () => {
       constructor(node, defaultInputSpec)
 
       const widget = getWidget(node)
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -254,7 +231,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -275,7 +252,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -300,7 +277,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -314,7 +291,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -331,7 +308,7 @@ describe('useImagePreviewWidget', () => {
       constructor(node, defaultInputSpec)
 
       const widget = getWidget(node)
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -353,7 +330,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 235
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -377,7 +354,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -396,7 +373,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -414,7 +391,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -432,7 +409,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -456,7 +433,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -481,7 +458,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, { width: 300 })
 
@@ -503,7 +480,7 @@ describe('useImagePreviewWidget', () => {
 
       const widget = getWidget(node)
       widget.computedHeight = 220
-      const ctx = createMockCtx()
+      const ctx = createMockCanvasRenderingContext2D()
 
       widget.drawWidget(ctx, {
         width: 300,

@@ -9,6 +9,7 @@ import {
   createTestSubgraph,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 interface MockColorContext {
   defaultInputColor: string
@@ -30,27 +31,8 @@ describe('SubgraphSlot visual feedback', () => {
     globalAlphaValues = []
 
     // Create a mock canvas context that tracks all globalAlpha values
-    const mockContext = {
-      _globalAlpha: 1,
-      get globalAlpha() {
-        return this._globalAlpha
-      },
-      set globalAlpha(value: number) {
-        this._globalAlpha = value
-        globalAlphaValues.push(value)
-      },
-      fillStyle: '',
-      strokeStyle: '',
-      lineWidth: 1,
-      beginPath: vi.fn(),
-      arc: vi.fn(),
-      fill: vi.fn(),
-      stroke: vi.fn(),
-      rect: vi.fn(),
-      fillText: vi.fn()
-    }
-    mockCtx =
-      mockContext as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
+
+    mockCtx = createMockCanvasRenderingContext2D()
 
     // Create a mock color context
     mockColorContext = {

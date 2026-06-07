@@ -6,6 +6,7 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useMinimapRenderer } from '@/renderer/extensions/minimap/composables/useMinimapRenderer'
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { UpdateFlags } from '@/renderer/extensions/minimap/types'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/extensions/minimap/minimapCanvasRenderer', () => ({
   renderMinimapToCanvas: vi.fn()
@@ -19,11 +20,7 @@ describe('useMinimapRenderer', () => {
   beforeEach(() => {
     vi.clearAllMocks()
 
-    mockContext = {
-      clearRect: vi.fn(),
-      save: vi.fn(),
-      restore: vi.fn()
-    } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
+    mockContext = createMockCanvasRenderingContext2D()
 
     mockCanvas = {
       getContext: vi.fn().mockReturnValue(mockContext)

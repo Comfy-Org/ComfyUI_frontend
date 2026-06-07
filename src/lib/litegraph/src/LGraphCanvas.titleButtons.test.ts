@@ -6,6 +6,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 describe('LGraphCanvas Title Button Rendering', () => {
   let canvas: LGraphCanvas
@@ -15,36 +16,7 @@ describe('LGraphCanvas Title Button Rendering', () => {
   beforeEach(() => {
     // Create a mock canvas element
     const canvasElement = document.createElement('canvas')
-    ctx = {
-      save: vi.fn(),
-      restore: vi.fn(),
-      translate: vi.fn(),
-      scale: vi.fn(),
-      fillRect: vi.fn(),
-      strokeRect: vi.fn(),
-      fillText: vi.fn(),
-      measureText: vi.fn().mockReturnValue({ width: 50 }),
-      beginPath: vi.fn(),
-      moveTo: vi.fn(),
-      lineTo: vi.fn(),
-      stroke: vi.fn(),
-      fill: vi.fn(),
-      closePath: vi.fn(),
-      arc: vi.fn(),
-      rect: vi.fn(),
-      clip: vi.fn(),
-      clearRect: vi.fn(),
-      setTransform: vi.fn(),
-      roundRect: vi.fn(),
-      font: '',
-      fillStyle: '',
-      strokeStyle: '',
-      lineWidth: 1,
-      globalAlpha: 1,
-      textAlign: 'left' as CanvasTextAlign,
-      textBaseline: 'alphabetic' as CanvasTextBaseline
-    } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
-
+    ctx = createMockCanvasRenderingContext2D()
     canvasElement.getContext = vi.fn().mockReturnValue(ctx)
 
     const graph = new LGraph()

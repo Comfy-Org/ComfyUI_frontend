@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
 
 import {
-  createMockCanvas2DContext,
+  createMockCanvasRenderingContext2D,
   createMockMinimapCanvas
 } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -233,7 +233,7 @@ describe('useMinimap', () => {
     mockPause.mockClear()
     mockResume.mockClear()
 
-    mockContext2D = createMockCanvas2DContext()
+    mockContext2D = createMockCanvasRenderingContext2D()
 
     moduleMockCanvasElement = createMockMinimapCanvas({
       getContext: vi
