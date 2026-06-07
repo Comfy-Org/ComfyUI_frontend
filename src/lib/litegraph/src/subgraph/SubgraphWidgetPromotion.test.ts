@@ -130,7 +130,9 @@ describe('SubgraphWidgetPromotion', () => {
       const { node } = createNodeWithWidget('Test Node')
       const subgraphNode = setupPromotedWidget(subgraph, node)
 
-      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(
+        promotedInputs(subgraphNode).length
+      )
       expect(promotedWidgetStateByName(subgraphNode, 'value')).toMatchObject({
         type: 'number',
         value: 42
@@ -176,7 +178,9 @@ describe('SubgraphWidgetPromotion', () => {
 
       const subgraphNode = createTestSubgraphNode(subgraph)
 
-      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(
+        promotedInputs(subgraphNode).length
+      )
       expect(
         promotedWidgetStates(subgraphNode).map((state) => state.value)
       ).toEqual([100, 'test', true])
@@ -255,7 +259,9 @@ describe('SubgraphWidgetPromotion', () => {
       // Create SubgraphNode
       const subgraphNode = createTestSubgraphNode(subgraph)
 
-      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(
+        promotedInputs(subgraphNode).length
+      )
       expect(promotedWidgetStateByName(subgraphNode, 'input1').value).toBe(10)
       expect(promotedWidgetStateByName(subgraphNode, 'input2').value).toBe(
         'hello'
@@ -270,7 +276,9 @@ describe('SubgraphWidgetPromotion', () => {
       const { node } = createNodeWithWidget('Test Node')
       const subgraphNode = setupPromotedWidget(subgraph, node)
 
-      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(
+        promotedInputs(subgraphNode).length
+      )
       expect(promotedInputs(subgraphNode)).toHaveLength(1)
 
       const eventCapture = createEventCapture(subgraph.events, [
@@ -299,7 +307,9 @@ describe('SubgraphWidgetPromotion', () => {
       const subgraphNode = createTestSubgraphNode(subgraph)
 
       // No widgets should be promoted
-      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(
+        promotedInputs(subgraphNode).length
+      )
     })
 
     it('should handle disconnection of promoted widget', () => {
@@ -309,12 +319,16 @@ describe('SubgraphWidgetPromotion', () => {
 
       const { node } = createNodeWithWidget('Test Node')
       const subgraphNode = setupPromotedWidget(subgraph, node)
-      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(
+        promotedInputs(subgraphNode).length
+      )
       expect(promotedInputs(subgraphNode)).toHaveLength(1)
 
       subgraph.inputNode.slots[0].disconnect()
 
-      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(
+        promotedInputs(subgraphNode).length
+      )
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
     })
   })
@@ -345,7 +359,7 @@ describe('SubgraphWidgetPromotion', () => {
 
       hostNode.configure(serializedHostNode)
 
-      expect(hostNode.widgets).toHaveLength(0)
+      expect(hostNode.widgets).toHaveLength(promotedInputs(hostNode).length)
       expect(promotedWidgetStateByName(hostNode, 'batch_size')).toMatchObject({
         name: 'batch_size',
         value: 1,
@@ -391,7 +405,7 @@ describe('SubgraphWidgetPromotion', () => {
 
       outerNode.configure(outerNode.serialize())
 
-      expect(outerNode.widgets).toHaveLength(0)
+      expect(outerNode.widgets).toHaveLength(promotedInputs(outerNode).length)
       expect(promotedWidgetStateByName(outerNode, 'model').value).toBe(42)
       expect(outerNode.properties.proxyWidgets).toEqual([
         ['999', 'text'],
@@ -443,7 +457,7 @@ describe('SubgraphWidgetPromotion', () => {
       hostNode.configure(serializedHostNode)
       flushProxyWidgetMigration({ hostNode })
 
-      expect(hostNode.widgets).toHaveLength(0)
+      expect(hostNode.widgets).toHaveLength(promotedInputs(hostNode).length)
       expect(hostNode.properties.proxyWidgets).toBeUndefined()
       expect(hostNode.properties.proxyWidgetErrorQuarantine).toBeUndefined()
     })
@@ -467,7 +481,7 @@ describe('SubgraphWidgetPromotion', () => {
       const cloneNode = createTestSubgraphNode(subgraph)
       cloneNode.configure(serialized)
 
-      expect(cloneNode.widgets).toHaveLength(0)
+      expect(cloneNode.widgets).toHaveLength(promotedInputs(cloneNode).length)
       expect(promotedWidgetStateByName(cloneNode, 'text').value).toBe('')
     })
   })
@@ -491,7 +505,9 @@ describe('SubgraphWidgetPromotion', () => {
       )
       const subgraphNode = setupPromotedWidget(subgraph, node)
 
-      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(
+        promotedInputs(subgraphNode).length
+      )
       expect(
         eventCapture.getEventsByType('widget-promoted')[0].detail.widget.tooltip
       ).toBe(originalTooltip)
@@ -509,7 +525,9 @@ describe('SubgraphWidgetPromotion', () => {
       const { node } = createNodeWithWidget('Test Node', 'number', 42, 'number')
       const subgraphNode = setupPromotedWidget(subgraph, node)
 
-      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(
+        promotedInputs(subgraphNode).length
+      )
       expect(
         eventCapture.getEventsByType('widget-promoted')[0].detail.widget.tooltip
       ).toBeUndefined()
@@ -571,7 +589,9 @@ describe('SubgraphWidgetPromotion', () => {
       ])
       const subgraphNode = createTestSubgraphNode(subgraph)
 
-      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(
+        promotedInputs(subgraphNode).length
+      )
       expect(
         eventCapture
           .getEventsByType('widget-promoted')
@@ -599,7 +619,9 @@ describe('SubgraphWidgetPromotion', () => {
       const subgraphNode = setupPromotedWidget(subgraph, node)
       const state = promotedWidgetStateByName(subgraphNode, 'value')
 
-      expect(subgraphNode.widgets).toHaveLength(0)
+      expect(subgraphNode.widgets).toHaveLength(
+        promotedInputs(subgraphNode).length
+      )
       expect(
         eventCapture.getEventsByType('widget-promoted')[0].detail.widget.tooltip
       ).toBe(originalTooltip)
@@ -1000,7 +1022,7 @@ describe('SubgraphWidgetPromotion', () => {
         const reloaded = createTestSubgraphNode(subgraph, { id: 101 })
         reloaded.configure(serialized)
 
-        expect(reloaded.widgets).toHaveLength(0)
+        expect(reloaded.widgets).toHaveLength(promotedInputs(reloaded).length)
         expect(
           widgetStore.getWidget(
             widgetId(reloaded.rootGraph.id, reloaded.id, 'first')

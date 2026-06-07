@@ -95,7 +95,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this.graph = graph
 
     Object.defineProperty(this, 'widgets', {
-      get: () => [],
+      get: () =>
+        this.inputs.flatMap((input) => this._projectPromotedWidget(input)),
       set: () => {
         if (import.meta.env.DEV)
           console.warn(
@@ -239,6 +240,34 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     } else {
       super.onTitleButtonClick(button, canvas)
     }
+  }
+
+  private _projectPromotedWidget(input: INodeInputSlot): IBaseWidget[] {
+    const id = input.widgetId
+    if (!id) return []
+
+    const store = useWidgetValueStore()
+    return [
+      {
+        name: input.name,
+        label: input.label ?? input.name,
+        y: 0,
+        widgetId: id,
+        get type() {
+          return store.getWidget(id)?.type ?? 'text'
+        },
+        get options() {
+          return store.getWidget(id)?.options ?? {}
+        },
+        get value() {
+          const value = store.getWidget(id)?.value
+          return isWidgetValue(value) ? value : undefined
+        },
+        set value(next) {
+          store.setValue(id, next)
+        }
+      }
+    ]
   }
 
   private _addSubgraphInputListeners(

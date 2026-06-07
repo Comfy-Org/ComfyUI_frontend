@@ -4,6 +4,7 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
 import type { WidgetId } from '@/world/entityIds'
@@ -27,10 +28,21 @@ const entitySeed = `${rootGraphId}:1:seed` as WidgetId
 function makeNode(id: number, widgetNames: string[]): LGraphNode {
   return fromAny<LGraphNode, unknown>({
     id,
+    inputs: [],
+    isSubgraphNode: () => false,
     widgets: widgetNames.map((name) => ({
       name,
       widgetId: `${rootGraphId}:${id}:${name}` as WidgetId
     }))
+  })
+}
+
+function makeSubgraphNode(id: number, inputs: INodeInputSlot[]): LGraphNode {
+  return fromAny<LGraphNode, unknown>({
+    id,
+    inputs,
+    isSubgraphNode: () => true,
+    widgets: []
   })
 }
 
@@ -87,5 +99,28 @@ describe('useResolvedSelectedInputs', () => {
     dispatchRootGraphEvent('subgraph-created')
 
     expect(resolved.value[0]?.status).toBe('unknown')
+  })
+
+  it('resolves promoted subgraph inputs from their host input widgetId', () => {
+    const node = makeSubgraphNode(1, [
+      fromAny<INodeInputSlot, unknown>({
+        name: 'seed',
+        label: 'renamed_seed',
+        widgetId: entitySeed
+      })
+    ])
+    setRootGraphNodes([node])
+
+    const appModeStore = useAppModeStore()
+    appModeStore.selectedInputs = [[entitySeed, 'seed']]
+
+    const resolved = useResolvedSelectedInputs()
+
+    expect(resolved.value[0]).toMatchObject({
+      status: 'resolved',
+      node,
+      displayName: 'seed',
+      widget: { name: 'seed', label: 'renamed_seed', widgetId: entitySeed }
+    })
   })
 })

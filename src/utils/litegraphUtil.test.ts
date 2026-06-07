@@ -171,6 +171,13 @@ describe('getWidgetIdForNode', () => {
     )
   })
 
+  it('can distinguish duplicate widget names on one node without changing the displayed name', () => {
+    const node = fakeNode(42)
+    expect(getWidgetIdForNode(node, { name: 'UNKNOWN' }, 1)).toBe(
+      widgetId(graphId, 42, 'UNKNOWN#1')
+    )
+  })
+
   it('returns undefined when the node has no graph', () => {
     const node = fakeNode(1, { detached: true })
     expect(getWidgetIdForNode(node, { name: 'x' })).toBeUndefined()

@@ -216,7 +216,9 @@ describe('SubgraphNode Synchronization', () => {
     const promotedInput = subgraphNode.inputs[0]
     const inputWidgetId = promotedInput.widgetId
 
-    expect(subgraphNode.widgets).toHaveLength(0)
+    expect(subgraphNode.widgets).toMatchObject([
+      { name: 'text', widgetId: inputWidgetId }
+    ])
     expect(promotedInput._widget).toBeUndefined()
     expect(inputWidgetId).toBeDefined()
     expect('sourceNodeId' in promotedInput).toBe(false)
@@ -257,7 +259,9 @@ describe('SubgraphNode Synchronization', () => {
 
     expect(promotedInput.widget!.name).toBe(originalWidgetName)
     expect(promotedInput.label).toBe('my_custom_prompt')
-    expect(subgraphNode.widgets).toHaveLength(0)
+    expect(subgraphNode.widgets).toMatchObject([
+      { name: 'text', label: 'my_custom_prompt' }
+    ])
     expect(promotedInput.widgetId).toBeDefined()
     if (!promotedInput.widgetId) throw new Error('Missing widgetId')
     expect(useWidgetValueStore().getWidget(promotedInput.widgetId)?.label).toBe(
@@ -299,7 +303,9 @@ describe('SubgraphNode Synchronization', () => {
     const serialized = subgraphNode.serialize()
     subgraphNode.configure(serialized)
 
-    expect(subgraphNode.widgets).toHaveLength(0)
+    expect(subgraphNode.widgets).toMatchObject([
+      { name: 'seed', label: 'My Seed' }
+    ])
     expect(inputSlot.label).toBe('My Seed')
     expect(useWidgetValueStore().getWidget(inputSlot.widgetId)?.label).toBe(
       'My Seed'
@@ -462,7 +468,7 @@ describe('SubgraphNode widget name collision on rename', () => {
       expect(useWidgetValueStore().getWidget(input.widgetId)).toBeDefined()
     }
 
-    expect(subgraphNode.widgets).toHaveLength(0)
+    expect(subgraphNode.widgets).toHaveLength(2)
     expect(subgraphNode.inputs).toHaveLength(2)
   })
 })
@@ -1000,7 +1006,9 @@ describe('SubgraphNode label propagation', () => {
     expect(useWidgetValueStore().getWidget(promotedInput.widgetId)?.label).toBe(
       'Steps Count'
     )
-    expect(subgraphNode.widgets).toHaveLength(0)
+    expect(subgraphNode.widgets).toMatchObject([
+      { name: 'steps', label: 'Steps Count', widgetId: promotedInput.widgetId }
+    ])
     expect(labelChangedSpy).toHaveBeenCalledWith('node:slot-label:changed', {
       nodeId: subgraphNode.id,
       slotType: NodeSlotType.INPUT

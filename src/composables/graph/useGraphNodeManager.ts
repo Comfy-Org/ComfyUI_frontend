@@ -271,8 +271,13 @@ function safeWidgetMapper(
   node: LGraphNode,
   slotMetadata: Map<string, WidgetSlotMetadata>
 ): (widget: IBaseWidget) => SafeWidgetData {
+  const duplicateIndexByKey = new Map<string, number>()
+
   return function (widget) {
     try {
+      const duplicateKey = `${widget.name}:${widget.type}`
+      const duplicateIndex = duplicateIndexByKey.get(duplicateKey) ?? 0
+      duplicateIndexByKey.set(duplicateKey, duplicateIndex + 1)
       const slotInfo = slotMetadata.get(widget.name)
 
       // Wrapper callback specific to Nodes 2.0 rendering
@@ -292,7 +297,7 @@ function safeWidgetMapper(
         : undefined
 
       return {
-        widgetId: getWidgetIdForNode(node, widget),
+        widgetId: getWidgetIdForNode(node, widget, duplicateIndex),
         name: widget.name,
         type: widget.type,
         ...getSharedWidgetEnhancements(node, widget),

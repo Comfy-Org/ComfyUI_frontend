@@ -362,12 +362,15 @@ export function resolveNodeWidget(
 
 export function getWidgetIdForNode(
   node: LGraphNode,
-  widget: Pick<IBaseWidget, 'name' | 'widgetId'>
+  widget: Pick<IBaseWidget, 'name' | 'widgetId'>,
+  duplicateIndex = 0
 ): WidgetId | undefined {
   if (widget.widgetId) return widget.widgetId
   const graphId = node.graph?.rootGraph.id
   if (!graphId || node.id === -1) return undefined
-  return widgetId(graphId, node.id, widget.name)
+  const name =
+    duplicateIndex > 0 ? `${widget.name}#${duplicateIndex}` : widget.name
+  return widgetId(graphId, node.id, name)
 }
 
 export function isLoad3dNode(node: LGraphNode) {
