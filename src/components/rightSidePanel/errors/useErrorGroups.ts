@@ -151,6 +151,18 @@ function compareNodeId(a: ErrorCardData, b: ErrorCardData): number {
   return compareExecutionId(a.nodeId, b.nodeId)
 }
 
+function countMissingMediaRows(groups: MissingMediaGroup[]): number {
+  return groups.reduce(
+    (groupTotal, group) =>
+      groupTotal +
+      group.items.reduce(
+        (itemTotal, item) => itemTotal + item.referencingNodes.length,
+        0
+      ),
+    0
+  )
+}
+
 function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
   return Array.from(groupsMap.entries())
     .map(([rawGroupKey, groupData]) => ({
@@ -690,10 +702,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   function buildMissingMediaGroups(): ErrorGroup[] {
     if (!missingMediaGroups.value.length) return []
-    const totalItems = missingMediaGroups.value.reduce(
-      (count, group) => count + group.items.length,
-      0
-    )
+    const totalItems = countMissingMediaRows(missingMediaGroups.value)
     return [
       {
         type: 'missing_media' as const,
@@ -806,10 +815,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   function buildMissingMediaGroupsFiltered(): ErrorGroup[] {
     if (!filteredMissingMediaGroups.value.length) return []
-    const totalItems = filteredMissingMediaGroups.value.reduce(
-      (count, group) => count + group.items.length,
-      0
-    )
+    const totalItems = countMissingMediaRows(filteredMissingMediaGroups.value)
     return [
       {
         type: 'missing_media' as const,

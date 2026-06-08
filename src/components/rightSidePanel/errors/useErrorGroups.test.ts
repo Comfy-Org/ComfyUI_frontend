@@ -131,6 +131,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useErrorGroups } from './useErrorGroups'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 
 function makeMissingNodeType(
   type: string,
@@ -175,6 +176,24 @@ function makeModel(
     isAssetSupported: opts.isAssetSupported ?? false,
     isMissing: true as const,
     directory: opts.directory
+  }
+}
+
+function makeMedia(
+  name: string,
+  opts: {
+    nodeId?: string | number
+    nodeType?: string
+    widgetName?: string
+  } = {}
+): MissingMediaCandidate {
+  return {
+    name,
+    nodeId: opts.nodeId ?? '1',
+    nodeType: opts.nodeType ?? 'LoadImage',
+    widgetName: opts.widgetName ?? 'image',
+    mediaType: 'image',
+    isMissing: true
   }
 }
 
@@ -1059,6 +1078,27 @@ describe('useErrorGroups', () => {
       expect(groups.filteredMissingModelGroups.value).not.toBe(
         groups.missingModelGroups.value
       )
+    })
+
+    it('counts missing media by affected node rows, not grouped filenames', async () => {
+      const { store, groups } = createErrorGroups()
+      store.surfaceMissingMedia([
+        makeMedia('shared.png', { nodeId: '1', nodeType: 'LoadImage' }),
+        makeMedia('shared.png', { nodeId: '2', nodeType: 'PreviewImage' })
+      ])
+      await nextTick()
+
+      expect(store.totalErrorCount).toBe(2)
+      expect(groups.missingMediaGroups.value).toHaveLength(1)
+      expect(groups.missingMediaGroups.value[0].items).toHaveLength(1)
+      expect(
+        groups.missingMediaGroups.value[0].items[0].referencingNodes
+      ).toHaveLength(2)
+
+      const missingMediaGroup = groups.allErrorGroups.value.find(
+        (group) => group.type === 'missing_media'
+      )
+      expect(missingMediaGroup?.displayTitle).toBe('Missing Inputs (2)')
     })
   })
 
