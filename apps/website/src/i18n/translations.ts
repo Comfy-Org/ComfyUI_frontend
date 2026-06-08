@@ -4535,12 +4535,12 @@ const translations = {
 
   // AffiliateAudienceSection
   'affiliate.audience.heading': {
-    en: "Who We're Looking For",
+    en: "Who we're looking for",
     'zh-CN': '我们在寻找谁'
   },
   'affiliate.audience.subheading': {
-    en: 'The voices in AI creative tools',
-    'zh-CN': 'AI 创作工具领域的声音'
+    en: 'If you are...',
+    'zh-CN': '如果您是……'
   },
 
   // AffiliateHowItWorksSection
@@ -4551,7 +4551,7 @@ const translations = {
 
   // AffiliateBenefitsSection
   'affiliate.benefits.heading': {
-    en: 'Why ComfyUI for Affiliate Creators',
+    en: 'Why ComfyUI for affiliate creators',
     'zh-CN': '为什么联盟创作者选择 ComfyUI'
   },
 
