@@ -188,17 +188,25 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Retrieves the appropriate authentication header for API requests.
-   * Checks for authentication in the following order:
+   *
+   * When unified_cloud_auth is enabled, returns the single Cloud JWT for every
+   * cloud request (no Firebase/API-key fallback) so one token is used end to end.
+   * Otherwise checks for authentication in the following order:
    * 1. Workspace token (if team_workspaces_enabled and user has active workspace context)
    * 2. Firebase authentication token (if user is logged in)
    * 3. API key (if stored in the browser's credential manager)
    *
    * @returns {Promise<AuthHeader | null>}
-   *   - A LoggedInAuthHeader with Bearer token (workspace or Firebase)
+   *   - A LoggedInAuthHeader with Bearer token (unified Cloud JWT, workspace, or Firebase)
    *   - An ApiKeyAuthHeader with X-API-KEY if API key exists
    *   - null if no authentication method is available
    */
   const getAuthHeader = async (): Promise<AuthHeader | null> => {
+    if (flags.unifiedCloudAuthEnabled) {
+      const token = useWorkspaceAuthStore().unifiedToken
+      return token ? { Authorization: `Bearer ${token}` } : null
+    }
+
     if (flags.teamWorkspacesEnabled) {
       const wsHeader = useWorkspaceAuthStore().getWorkspaceAuthHeader()
       if (wsHeader) return wsHeader
@@ -225,10 +233,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   /**
    * Returns the raw auth token (not wrapped in a header object).
-   * Priority: workspace token > Firebase token.
+   * When unified_cloud_auth is enabled, returns the single Cloud JWT; otherwise
+   * priority is workspace token > Firebase token.
    * Use this for WebSocket connections and backend node auth.
    */
   const getAuthToken = async (): Promise<string | undefined> => {
+    if (flags.unifiedCloudAuthEnabled) {
+      return useWorkspaceAuthStore().unifiedToken ?? undefined
+    }
+
     if (flags.teamWorkspacesEnabled) {
       const wsToken = useWorkspaceAuthStore().getWorkspaceToken()
       if (wsToken) return wsToken
