@@ -2134,217 +2134,181 @@ const translations = {
   // ── Desktop Privacy Policy ────────────────────────────────────────
   // Mirrors the policy bundled in Comfy Desktop (Settings → About →
   // Privacy Policy). Keep in sync with src/renderer/src/lib/legalDocs.ts
-  // in the Comfy-Desktop repo. zh-CN translations follow the same
-  // placeholder pattern used elsewhere in this file: English content
-  // is used until a translated version lands in a follow-up PR.
-  'desktop_privacy.intro.label': { en: 'INTRO', 'zh-CN': 'INTRO' },
+  // in the Comfy-Desktop repo. zh-CN values follow the existing
+  // placeholder pattern in this file (English text until translation
+  // lands in a follow-up PR).
+  'desktop_privacy.intro.label': { en: 'OVERVIEW', 'zh-CN': 'OVERVIEW' },
   'desktop_privacy.intro.block.0': {
-    en: 'Effective May 19, 2026. Applies to Comfy Desktop.',
-    'zh-CN': 'Effective May 19, 2026. Applies to Comfy Desktop.'
+    en: 'Effective 8 June 2026. Applies to the Comfy Desktop application.',
+    'zh-CN': 'Effective 8 June 2026. Applies to the Comfy Desktop application.'
   },
   'desktop_privacy.intro.block.1': {
-    en: 'This Privacy Policy describes what data Comfy Org collects from your use of the Comfy Desktop application, how it is used, who processes it, and the choices and rights you have. This policy is also shown in the app on the first-run consent screen and is accessible at any time from Settings → About → Privacy Policy.',
+    en: 'This Privacy Policy describes the personal data we process when you use Comfy Desktop, the purposes and lawful bases for that processing, the recipients of the data, and the rights available to you. The same policy is shown in the application on first run and is available at any time from Settings → About → Privacy Policy.',
     'zh-CN':
-      'This Privacy Policy describes what data Comfy Org collects from your use of the Comfy Desktop application, how it is used, who processes it, and the choices and rights you have. This policy is also shown in the app on the first-run consent screen and is accessible at any time from Settings → About → Privacy Policy.'
+      'This Privacy Policy describes the personal data we process when you use Comfy Desktop, the purposes and lawful bases for that processing, the recipients of the data, and the rights available to you. The same policy is shown in the application on first run and is available at any time from Settings → About → Privacy Policy.'
   },
 
-  'desktop_privacy.analytics.label': { en: 'ANALYTICS', 'zh-CN': 'ANALYTICS' },
-  'desktop_privacy.analytics.title': {
-    en: 'Usage analytics (via PostHog)',
-    'zh-CN': 'Usage analytics (via PostHog)'
+  'desktop_privacy.controller.label': {
+    en: 'CONTROLLER',
+    'zh-CN': 'CONTROLLER'
   },
-  'desktop_privacy.analytics.block.0': {
-    en: 'Sent only if you have analytics enabled (toggle on the consent screen and in Settings → Telemetry).',
+  'desktop_privacy.controller.title': {
+    en: 'Controller',
+    'zh-CN': 'Controller'
+  },
+  'desktop_privacy.controller.block.0': {
+    en: 'Comfy Organization Inc ("Comfy Org", "we", "us") is the data controller for personal data processed in connection with your use of Comfy Desktop. We are established in San Francisco, USA. For privacy enquiries: <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
     'zh-CN':
-      'Sent only if you have analytics enabled (toggle on the consent screen and in Settings → Telemetry).'
-  },
-  'desktop_privacy.analytics.block.1': {
-    en: 'App version and platform (e.g. "Comfy Desktop 1.0.0, macOS 14.4 ARM")\nA local device ID generated locally. Before you sign in to Comfy Cloud, this ID is not tied to your name, email, or any hardware identifier we can reverse. Once you sign in, the device ID is linked to your Comfy account.\nFeature events ("install completed", "workflow opened", "settings panel opened") with non-identifying metadata\nIdentifiers of custom nodes you install through Manager (the public package name only, e.g. "comfyui-impact-pack" — never your local install path)\nApproximate timing of those events',
-    'zh-CN':
-      'App version and platform (e.g. "Comfy Desktop 1.0.0, macOS 14.4 ARM")\nA local device ID generated locally. Before you sign in to Comfy Cloud, this ID is not tied to your name, email, or any hardware identifier we can reverse. Once you sign in, the device ID is linked to your Comfy account.\nFeature events ("install completed", "workflow opened", "settings panel opened") with non-identifying metadata\nIdentifiers of custom nodes you install through Manager (the public package name only, e.g. "comfyui-impact-pack" — never your local install path)\nApproximate timing of those events'
-  },
-  'desktop_privacy.analytics.block.2': {
-    en: 'We do <strong>not</strong> send:',
-    'zh-CN': 'We do <strong>not</strong> send:'
-  },
-  'desktop_privacy.analytics.block.3': {
-    en: 'Workflow content (the graph, the nodes you connect, their parameters)\nPrompts you write\nGenerated images, videos, or audio\nYour username or home-directory paths (automatically redacted before sending)\nModel weights, or the local filenames you save them as\nNetwork activity outside the app',
-    'zh-CN':
-      'Workflow content (the graph, the nodes you connect, their parameters)\nPrompts you write\nGenerated images, videos, or audio\nYour username or home-directory paths (automatically redacted before sending)\nModel weights, or the local filenames you save them as\nNetwork activity outside the app'
+      'Comfy Organization Inc ("Comfy Org", "we", "us") is the data controller for personal data processed in connection with your use of Comfy Desktop. We are established in San Francisco, USA. For privacy enquiries: <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.'
   },
 
-  'desktop_privacy.crash.label': {
-    en: 'CRASH REPORTS',
-    'zh-CN': 'CRASH REPORTS'
+  'desktop_privacy.data.label': {
+    en: 'DATA WE PROCESS',
+    'zh-CN': 'DATA WE PROCESS'
   },
-  'desktop_privacy.crash.title': {
-    en: 'Crash reports (via Datadog)',
-    'zh-CN': 'Crash reports (via Datadog)'
+  'desktop_privacy.data.title': {
+    en: 'Personal data we process',
+    'zh-CN': 'Personal data we process'
   },
-  'desktop_privacy.crash.block.0': {
-    en: 'Sent only if you have analytics enabled.',
-    'zh-CN': 'Sent only if you have analytics enabled.'
-  },
-  'desktop_privacy.crash.block.1': {
-    en: 'Stack traces, error messages, and short stdout/stderr fragments captured around a ComfyUI crash\nApp version, platform\nLocal device ID (or Comfy account ID if you have signed in)',
+  'desktop_privacy.data.block.0': {
+    en: 'When telemetry is enabled (opt-in on the first-run consent screen; toggle at Settings → Telemetry), we process the following categories of data:',
     'zh-CN':
-      'Stack traces, error messages, and short stdout/stderr fragments captured around a ComfyUI crash\nApp version, platform\nLocal device ID (or Comfy account ID if you have signed in)'
+      'When telemetry is enabled (opt-in on the first-run consent screen; toggle at Settings → Telemetry), we process the following categories of data:'
   },
-  'desktop_privacy.crash.block.2': {
-    en: "Before sending, we automatically redact home-directory paths (so your username isn't shipped) and well-known credential patterns (Bearer tokens, OpenAI <strong>sk-*</strong> keys, Hugging Face <strong>hf_*</strong> keys, basic-auth URLs, and <strong>KEY=</strong> / <strong>SECRET=</strong> assignments). We do <strong>not</strong> include your prompts, workflow JSON, or generated outputs in crash reports.",
+  'desktop_privacy.data.block.1': {
+    en: 'Device identifier — a pseudonymous identifier generated locally on first run. Before you sign in to Comfy Cloud, it is not linked to your name, email, or hardware. On sign-in, it is associated with your Comfy account.\nTechnical metadata — application version, operating system, processor architecture.\nProduct usage events — feature interactions, navigation between views, installation and update milestones, approximate timing.\nCustom node identifiers — public package names of custom nodes you install through Manager (e.g. "comfyui-impact-pack"). The local installation path is not transmitted.\nCrash and error diagnostics — stack traces, error messages, and short stdout/stderr fragments captured at the moment of failure.',
     'zh-CN':
-      "Before sending, we automatically redact home-directory paths (so your username isn't shipped) and well-known credential patterns (Bearer tokens, OpenAI <strong>sk-*</strong> keys, Hugging Face <strong>hf_*</strong> keys, basic-auth URLs, and <strong>KEY=</strong> / <strong>SECRET=</strong> assignments). We do <strong>not</strong> include your prompts, workflow JSON, or generated outputs in crash reports."
+      'Device identifier — a pseudonymous identifier generated locally on first run. Before you sign in to Comfy Cloud, it is not linked to your name, email, or hardware. On sign-in, it is associated with your Comfy account.\nTechnical metadata — application version, operating system, processor architecture.\nProduct usage events — feature interactions, navigation between views, installation and update milestones, approximate timing.\nCustom node identifiers — public package names of custom nodes you install through Manager (e.g. "comfyui-impact-pack"). The local installation path is not transmitted.\nCrash and error diagnostics — stack traces, error messages, and short stdout/stderr fragments captured at the moment of failure.'
   },
-  'desktop_privacy.crash.block.3': {
-    en: 'Caveat for third-party custom nodes: a node you install may emit its own log output around a crash (progress bars, debug status messages, function names it ran) that our automatic scrubbers cannot anticipate. We never bundle your prompts or generated content, but if you see sensitive text in your own ComfyUI logs, disable telemetry from Settings → Telemetry.',
+  'desktop_privacy.data.block.2': {
+    en: 'Before crash or error diagnostic data is transmitted, we apply automated redaction to home-directory paths and to well-known credential patterns (Bearer tokens, OpenAI <code>sk-*</code> and Hugging Face <code>hf_*</code> keys, basic-auth URLs, and <code>KEY=</code> / <code>SECRET=</code> environment assignments).',
     'zh-CN':
-      'Caveat for third-party custom nodes: a node you install may emit its own log output around a crash (progress bars, debug status messages, function names it ran) that our automatic scrubbers cannot anticipate. We never bundle your prompts or generated content, but if you see sensitive text in your own ComfyUI logs, disable telemetry from Settings → Telemetry.'
+      'Before crash or error diagnostic data is transmitted, we apply automated redaction to home-directory paths and to well-known credential patterns (Bearer tokens, OpenAI <code>sk-*</code> and Hugging Face <code>hf_*</code> keys, basic-auth URLs, and <code>KEY=</code> / <code>SECRET=</code> environment assignments).'
+  },
+  'desktop_privacy.data.block.3': {
+    en: 'We do not process:',
+    'zh-CN': 'We do not process:'
+  },
+  'desktop_privacy.data.block.4': {
+    en: 'Workflow content (the graph, the nodes you connect, their parameters)\nPrompts you write\nGenerated images, video, or audio\nModel weights, or the local filenames under which you save them\nNetwork activity outside the application',
+    'zh-CN':
+      'Workflow content (the graph, the nodes you connect, their parameters)\nPrompts you write\nGenerated images, video, or audio\nModel weights, or the local filenames under which you save them\nNetwork activity outside the application'
+  },
+  'desktop_privacy.data.block.5': {
+    en: 'Workflow files, models, generated outputs, the list of installations you create, and your local settings remain on your device and are not transmitted to, or accessible by, Comfy Org.',
+    'zh-CN':
+      'Workflow files, models, generated outputs, the list of installations you create, and your local settings remain on your device and are not transmitted to, or accessible by, Comfy Org.'
   },
 
-  'desktop_privacy.local.label': { en: 'STAYS LOCAL', 'zh-CN': 'STAYS LOCAL' },
-  'desktop_privacy.local.title': {
-    en: 'What stays on your machine, always',
-    'zh-CN': 'What stays on your machine, always'
+  'desktop_privacy.purposes.label': { en: 'PURPOSES', 'zh-CN': 'PURPOSES' },
+  'desktop_privacy.purposes.title': {
+    en: 'Purposes and lawful bases',
+    'zh-CN': 'Purposes and lawful bases'
   },
-  'desktop_privacy.local.block.0': {
-    en: "Your workflow files\nYour installed models\nYour generated outputs (images, videos, audio)\nThe list of installations you've created in Desktop\nYour local settings",
+  'desktop_privacy.purposes.block.0': {
+    en: 'We process personal data on the following lawful bases under GDPR and UK GDPR:',
     'zh-CN':
-      "Your workflow files\nYour installed models\nYour generated outputs (images, videos, audio)\nThe list of installations you've created in Desktop\nYour local settings"
+      'We process personal data on the following lawful bases under GDPR and UK GDPR:'
   },
-  'desktop_privacy.local.block.1': {
-    en: 'None of these are uploaded, indexed, or accessible to Comfy Org.',
-    'zh-CN': 'None of these are uploaded, indexed, or accessible to Comfy Org.'
-  },
-
-  'desktop_privacy.purpose.label': { en: 'PURPOSE', 'zh-CN': 'PURPOSE' },
-  'desktop_privacy.purpose.title': {
-    en: 'Why we collect what we do',
-    'zh-CN': 'Why we collect what we do'
-  },
-  'desktop_privacy.purpose.block.0': {
-    en: 'Usage analytics — to understand which features people use, where they get stuck, and what to improve.\nCrash reports — to find and fix bugs faster.',
+  'desktop_privacy.purposes.block.1': {
+    en: 'Product usage analytics — Consent (Article 6(1)(a))\nCrash and error diagnostics — Consent (Article 6(1)(a))\nDelivery of software updates and integrity verification — Legitimate interests (Article 6(1)(f))\nAuthentication when signing in to Comfy Cloud — Performance of a contract (Article 6(1)(b))',
     'zh-CN':
-      'Usage analytics — to understand which features people use, where they get stuck, and what to improve.\nCrash reports — to find and fix bugs faster.'
+      'Product usage analytics — Consent (Article 6(1)(a))\nCrash and error diagnostics — Consent (Article 6(1)(a))\nDelivery of software updates and integrity verification — Legitimate interests (Article 6(1)(f))\nAuthentication when signing in to Comfy Cloud — Performance of a contract (Article 6(1)(b))'
   },
-  'desktop_privacy.purpose.block.1': {
-    en: "That's the entire purpose. We don't sell, share, or use this data for advertising.",
+  'desktop_privacy.purposes.block.2': {
+    en: 'Consent for analytics and crash diagnostics is opt-in and may be withdrawn at any time at Settings → Telemetry. Withdrawal does not affect the lawfulness of processing carried out before withdrawal. You may object to legitimate-interest processing by contacting <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
     'zh-CN':
-      "That's the entire purpose. We don't sell, share, or use this data for advertising."
+      'Consent for analytics and crash diagnostics is opt-in and may be withdrawn at any time at Settings → Telemetry. Withdrawal does not affect the lawfulness of processing carried out before withdrawal. You may object to legitimate-interest processing by contacting <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.'
   },
-
-  'desktop_privacy.lawful-basis.label': {
-    en: 'LAWFUL BASIS',
-    'zh-CN': 'LAWFUL BASIS'
-  },
-  'desktop_privacy.lawful-basis.title': {
-    en: 'Lawful basis (GDPR / UK GDPR)',
-    'zh-CN': 'Lawful basis (GDPR / UK GDPR)'
-  },
-  'desktop_privacy.lawful-basis.block.0': {
-    en: 'Consent (Article 6(1)(a)) — for analytics and crash reports. Both are opt-in on the consent screen and revocable in Settings.\nLegitimate interests (Article 6(1)(f)) — for update-server requests necessary to deliver software updates and security fixes. You can object via support@comfy.org.',
+  'desktop_privacy.purposes.block.3': {
+    en: 'We do not carry out automated decision-making, including profiling, that produces legal or similarly significant effects. We do not sell personal data and do not share personal data for cross-context behavioural advertising.',
     'zh-CN':
-      'Consent (Article 6(1)(a)) — for analytics and crash reports. Both are opt-in on the consent screen and revocable in Settings.\nLegitimate interests (Article 6(1)(f)) — for update-server requests necessary to deliver software updates and security fixes. You can object via support@comfy.org.'
+      'We do not carry out automated decision-making, including profiling, that produces legal or similarly significant effects. We do not sell personal data and do not share personal data for cross-context behavioural advertising.'
   },
 
   'desktop_privacy.processors.label': {
-    en: 'PROCESSORS',
-    'zh-CN': 'PROCESSORS'
+    en: 'RECIPIENTS',
+    'zh-CN': 'RECIPIENTS'
   },
   'desktop_privacy.processors.title': {
-    en: 'Third-party processors',
-    'zh-CN': 'Third-party processors'
+    en: 'Recipients',
+    'zh-CN': 'Recipients'
   },
   'desktop_privacy.processors.block.0': {
-    en: 'Data is processed by:',
-    'zh-CN': 'Data is processed by:'
+    en: 'We engage the following processors under Data Processing Agreements:',
+    'zh-CN':
+      'We engage the following processors under Data Processing Agreements:'
   },
   'desktop_privacy.processors.block.1': {
-    en: 'PostHog — product analytics\nDatadog — crash reports and application logs\nComfy Org analytics warehouse — long-term aggregate analytics storage, operated by Comfy Org\nToDesktop — application distribution and auto-update servers',
+    en: 'PostHog — product usage analytics\nDatadog — crash and error diagnostics\nToDesktop — application distribution and software updates\nComfy Org analytics warehouse — long-term aggregate analytics, operated by Comfy Org',
     'zh-CN':
-      'PostHog — product analytics\nDatadog — crash reports and application logs\nComfy Org analytics warehouse — long-term aggregate analytics storage, operated by Comfy Org\nToDesktop — application distribution and auto-update servers'
+      'PostHog — product usage analytics\nDatadog — crash and error diagnostics\nToDesktop — application distribution and software updates\nComfy Org analytics warehouse — long-term aggregate analytics, operated by Comfy Org'
   },
-  'desktop_privacy.processors.block.2': {
-    en: 'External vendors process data on our behalf under standard data-processing agreements. EU/UK transfers rely on Standard Contractual Clauses where required.',
+
+  'desktop_privacy.transfers.label': { en: 'TRANSFERS', 'zh-CN': 'TRANSFERS' },
+  'desktop_privacy.transfers.title': {
+    en: 'International transfers',
+    'zh-CN': 'International transfers'
+  },
+  'desktop_privacy.transfers.block.0': {
+    en: 'Comfy Organization Inc is established in the United States. Personal data of users in the EU, UK, EEA, or other jurisdictions outside the United States may be transferred to the United States and to other locations where our processors operate. Where required, we rely on the European Commission Standard Contractual Clauses (and the UK International Data Transfer Addendum where applicable) as the transfer mechanism under Chapter V GDPR.',
     'zh-CN':
-      'External vendors process data on our behalf under standard data-processing agreements. EU/UK transfers rely on Standard Contractual Clauses where required.'
+      'Comfy Organization Inc is established in the United States. Personal data of users in the EU, UK, EEA, or other jurisdictions outside the United States may be transferred to the United States and to other locations where our processors operate. Where required, we rely on the European Commission Standard Contractual Clauses (and the UK International Data Transfer Addendum where applicable) as the transfer mechanism under Chapter V GDPR.'
   },
 
   'desktop_privacy.retention.label': { en: 'RETENTION', 'zh-CN': 'RETENTION' },
   'desktop_privacy.retention.title': { en: 'Retention', 'zh-CN': 'Retention' },
   'desktop_privacy.retention.block.0': {
-    en: 'Usage analytics — up to 24 months rolling, then aggregated further or deleted.\nCrash reports — up to 15 days at full fidelity, then sampled or aggregated.\nLong-term aggregate analytics — up to 36 months in aggregated form.\nUpdate-server logs — up to 90 days.\nLocal device ID — stored on your machine only, removed on uninstall.',
+    en: 'Product usage analytics — up to 24 months from event, then aggregated or deleted\nCrash and error diagnostics — 15 days at full fidelity, sampled or aggregated thereafter\nAggregate analytics — up to 36 months in aggregated form\nUpdate-server logs — 90 days\nLocal device identifier — stored on your device; removed on uninstall',
     'zh-CN':
-      'Usage analytics — up to 24 months rolling, then aggregated further or deleted.\nCrash reports — up to 15 days at full fidelity, then sampled or aggregated.\nLong-term aggregate analytics — up to 36 months in aggregated form.\nUpdate-server logs — up to 90 days.\nLocal device ID — stored on your machine only, removed on uninstall.'
-  },
-
-  'desktop_privacy.choices.label': {
-    en: 'YOUR CHOICES',
-    'zh-CN': 'YOUR CHOICES'
-  },
-  'desktop_privacy.choices.title': {
-    en: 'Your choices',
-    'zh-CN': 'Your choices'
-  },
-  'desktop_privacy.choices.block.0': {
-    en: "Turn off analytics — Settings → Telemetry → toggle off. Future events stop immediately; any in-flight requests already on the wire may complete.\nDelete past data — email support@comfy.org with your approximate install date, platform, and version. We'll do a best-effort match and remove associated records within 30 days.\nStop using the app — uninstalling Desktop ends data collection. We don't keep tracking IDs after uninstall.",
-    'zh-CN':
-      "Turn off analytics — Settings → Telemetry → toggle off. Future events stop immediately; any in-flight requests already on the wire may complete.\nDelete past data — email support@comfy.org with your approximate install date, platform, and version. We'll do a best-effort match and remove associated records within 30 days.\nStop using the app — uninstalling Desktop ends data collection. We don't keep tracking IDs after uninstall."
+      'Product usage analytics — up to 24 months from event, then aggregated or deleted\nCrash and error diagnostics — 15 days at full fidelity, sampled or aggregated thereafter\nAggregate analytics — up to 36 months in aggregated form\nUpdate-server logs — 90 days\nLocal device identifier — stored on your device; removed on uninstall'
   },
 
   'desktop_privacy.rights.label': { en: 'YOUR RIGHTS', 'zh-CN': 'YOUR RIGHTS' },
   'desktop_privacy.rights.title': { en: 'Your rights', 'zh-CN': 'Your rights' },
   'desktop_privacy.rights.block.0': {
-    en: 'If you are in the EU, UK, or EEA, you have rights under GDPR / UK GDPR — access, rectification, erasure, restriction, objection, portability. Email <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> to exercise them.',
+    en: 'If you are in the EU, UK, or EEA, you have the following rights under GDPR and UK GDPR: access, rectification, erasure, restriction of processing, objection, portability, and withdrawal of consent.',
     'zh-CN':
-      'If you are in the EU, UK, or EEA, you have rights under GDPR / UK GDPR — access, rectification, erasure, restriction, objection, portability. Email <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> to exercise them.'
+      'If you are in the EU, UK, or EEA, you have the following rights under GDPR and UK GDPR: access, rectification, erasure, restriction of processing, objection, portability, and withdrawal of consent.'
   },
   'desktop_privacy.rights.block.1': {
-    en: "If you are in California, you have rights under CCPA / CPRA — know, delete, correct, opt out of sale/sharing (note: we don't sell or share data for cross-context behavioral advertising), and limit use of sensitive personal information.",
+    en: 'If you are a California resident, you have rights under CCPA and CPRA: to know what we collect, to delete, to correct, and to limit use of sensitive personal information. We do not sell personal information or share it for cross-context behavioural advertising.',
     'zh-CN':
-      "If you are in California, you have rights under CCPA / CPRA — know, delete, correct, opt out of sale/sharing (note: we don't sell or share data for cross-context behavioral advertising), and limit use of sensitive personal information."
+      'If you are a California resident, you have rights under CCPA and CPRA: to know what we collect, to delete, to correct, and to limit use of sensitive personal information. We do not sell personal information or share it for cross-context behavioural advertising.'
   },
   'desktop_privacy.rights.block.2': {
-    en: "You also have the right to lodge a complaint with your local data protection authority (e.g. your EU country's supervisory authority, the UK ICO, or the California Privacy Protection Agency).",
+    en: "You have the right to lodge a complaint with your supervisory authority — for example, the UK Information Commissioner's Office, your EU member-state data protection authority, or the California Privacy Protection Agency.",
     'zh-CN':
-      "You also have the right to lodge a complaint with your local data protection authority (e.g. your EU country's supervisory authority, the UK ICO, or the California Privacy Protection Agency)."
+      "You have the right to lodge a complaint with your supervisory authority — for example, the UK Information Commissioner's Office, your EU member-state data protection authority, or the California Privacy Protection Agency."
   },
-
-  'desktop_privacy.identity.label': { en: 'IDENTITY', 'zh-CN': 'IDENTITY' },
-  'desktop_privacy.identity.title': {
-    en: 'Identity verification',
-    'zh-CN': 'Identity verification'
-  },
-  'desktop_privacy.identity.block.0': {
-    en: "The Desktop App doesn't require an account, so before you sign in to Comfy Cloud you are not directly identified to us — the only identifier we hold is a local device ID. If you sign in to Comfy Cloud, your telemetry is linked to your account from that point forward. For deletion or access requests, sign in and use your account to identify yourself; or, if you have never signed in, tell us your approximate install date, platform, and version and we'll do a best-effort match against our records.",
+  'desktop_privacy.rights.block.3': {
+    en: 'To exercise any of these rights, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>. If you have signed in to Comfy Cloud, your account verifies your identity. If you have not signed in, please provide your approximate install date, platform, and application version, and we will conduct a best-effort match against our records and respond within 30 days.',
     'zh-CN':
-      "The Desktop App doesn't require an account, so before you sign in to Comfy Cloud you are not directly identified to us — the only identifier we hold is a local device ID. If you sign in to Comfy Cloud, your telemetry is linked to your account from that point forward. For deletion or access requests, sign in and use your account to identify yourself; or, if you have never signed in, tell us your approximate install date, platform, and version and we'll do a best-effort match against our records."
+      'To exercise any of these rights, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>. If you have signed in to Comfy Cloud, your account verifies your identity. If you have not signed in, please provide your approximate install date, platform, and application version, and we will conduct a best-effort match against our records and respond within 30 days.'
   },
 
   'desktop_privacy.children.label': { en: 'CHILDREN', 'zh-CN': 'CHILDREN' },
   'desktop_privacy.children.title': { en: 'Children', 'zh-CN': 'Children' },
   'desktop_privacy.children.block.0': {
-    en: 'Comfy Desktop is not intended for users under 13. If you believe a child has used the app, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> and we will remove related records.',
+    en: 'Comfy Desktop is not intended for, and we do not knowingly collect personal data from, individuals under 13 years of age.',
     'zh-CN':
-      'Comfy Desktop is not intended for users under 13. If you believe a child has used the app, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> and we will remove related records.'
+      'Comfy Desktop is not intended for, and we do not knowingly collect personal data from, individuals under 13 years of age.'
   },
 
   'desktop_privacy.changes.label': { en: 'CHANGES', 'zh-CN': 'CHANGES' },
-  'desktop_privacy.changes.title': {
-    en: 'Changes to this policy',
-    'zh-CN': 'Changes to this policy'
-  },
+  'desktop_privacy.changes.title': { en: 'Changes', 'zh-CN': 'Changes' },
   'desktop_privacy.changes.block.0': {
-    en: 'We will update this document as the product evolves. The Effective date at the top changes when we revise. During the beta, we may iterate without re-prompting you to re-accept; at GA, we will prompt for a fresh acceptance of the final policy.',
+    en: 'We will revise this Privacy Policy when our processing changes materially. The Effective date at the top of this policy reflects the date of the most recent revision.',
     'zh-CN':
-      'We will update this document as the product evolves. The Effective date at the top changes when we revise. During the beta, we may iterate without re-prompting you to re-accept; at GA, we will prompt for a fresh acceptance of the final policy.'
+      'We will revise this Privacy Policy when our processing changes materially. The Effective date at the top of this policy reflects the date of the most recent revision.'
   },
 
   'desktop_privacy.contact.label': { en: 'CONTACT', 'zh-CN': 'CONTACT' },
   'desktop_privacy.contact.title': { en: 'Contact', 'zh-CN': 'Contact' },
   'desktop_privacy.contact.block.0': {
-    en: '<a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> for any privacy-related question or request.',
+    en: 'For any privacy enquiry, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
     'zh-CN':
-      '<a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> for any privacy-related question or request.'
+      'For any privacy enquiry, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.'
   },
 
   // ── Terms of Service ──────────────────────────────────────────────
