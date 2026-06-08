@@ -24,7 +24,13 @@ const {
     <h1
       class="max-w-4xl text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
     >
-      {{ modelName }} in <span class="text-primary-comfy-yellow">ComfyUI</span>
+      {{
+        t('models.list.heroTitle.before', locale).replace('{name}', modelName)
+      }}
+      <span class="text-primary-comfy-yellow">ComfyUI</span>
+      {{
+        t('models.list.heroTitle.after', locale).replace('{name}', modelName)
+      }}
     </h1>
     <p
       class="mt-6 max-w-2xl text-sm text-pretty text-primary-comfy-canvas lg:text-base"

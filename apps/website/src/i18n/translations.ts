@@ -4473,8 +4473,12 @@ const translations = {
     'zh-CN': '探索工作流'
   },
   'models.list.heroTitle.before': {
-    en: 'Run the world’s leading AI models in',
-    'zh-CN': '在以下平台运行世界领先的 AI 模型'
+    en: '{name} in',
+    'zh-CN': ''
+  },
+  'models.list.heroTitle.after': {
+    en: '',
+    'zh-CN': ' 中的 {name}'
   },
   'models.list.heroSubtitle': {
     en: 'From open-source diffusion checkpoints to partner APIs — every major model, with community workflow templates ready to run.',
