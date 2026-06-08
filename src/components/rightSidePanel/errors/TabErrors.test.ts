@@ -93,16 +93,7 @@ describe('TabErrors.vue', () => {
               refreshing: 'Refreshing missing models.'
             },
             missingMedia: {
-              missingMediaTitle: 'Missing Inputs',
-              image: 'Images',
-              uploadFile: 'Upload {type}',
-              useFromLibrary: 'Use from Library',
-              confirmSelection: 'Confirm selection',
-              locateNode: 'Locate node',
-              expandNodes: 'Show referencing nodes',
-              collapseNodes: 'Hide referencing nodes',
-              cancelSelection: 'Cancel selection',
-              or: 'OR'
+              missingMediaTitle: 'Missing Inputs'
             }
           }
         }
