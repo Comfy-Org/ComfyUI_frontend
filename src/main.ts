@@ -149,8 +149,9 @@ LGraph.autoExposePreviewNodes = (hostNode) =>
 const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()
 
-if (import.meta.env.DEV) {
-  window.__deprecationWarningsStore = useDeprecationWarningsStore(pinia)
-}
+// Internal seam for e2e to inject a synthetic deprecation warning, kept
+// independent of which real deprecations currently exist.
+window.__reportDeprecation = (message) =>
+  void useDeprecationWarningsStore(pinia).report({ message })
 
 app.mount('#vue-app')
