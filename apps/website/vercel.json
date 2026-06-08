@@ -14,6 +14,14 @@
         { "type": "host", "value": "website-frontend-comfyui.vercel.app" }
       ],
       "headers": [{ "key": "X-Robots-Tag", "value": "index, follow" }]
+    },
+    {
+      "source": "/payment(.*)",
+      "headers": [{ "key": "x-robots-tag", "value": "noindex" }]
+    },
+    {
+      "source": "/zh-CN/payment(.*)",
+      "headers": [{ "key": "x-robots-tag", "value": "noindex" }]
     }
   ],
   "redirects": [
