@@ -18,6 +18,13 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
   }
 }))
 
+const { mockFeatureFlags } = vi.hoisted(() => ({
+  mockFeatureFlags: {
+    teamWorkspacesEnabled: false,
+    unifiedCloudAuthEnabled: false
+  }
+}))
+
 type MockUser = Omit<User, 'getIdToken'> & {
   getIdToken: Mock
 }
@@ -108,6 +115,11 @@ vi.mock('@/stores/toastStore', () => ({
 // Mock useDialogService
 vi.mock('@/services/dialogService')
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: mockFeatureFlags
+  })
+}))
 
 // Mock apiKeyAuthStore
 const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
@@ -139,6 +151,9 @@ describe('useAuthStore', () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
+
+    mockFeatureFlags.teamWorkspacesEnabled = false
+    mockFeatureFlags.unifiedCloudAuthEnabled = false
 
     // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
@@ -237,6 +252,18 @@ describe('useAuthStore', () => {
       idTokenCallback?.(mockUser)
       idTokenCallback?.(otherUser)
       idTokenCallback?.(otherUser)
+      expect(store.tokenRefreshTrigger).toBe(1)
+    })
+
+    it('does not increment on a Firebase token refresh when unified_cloud_auth is ON', () => {
+      mockFeatureFlags.unifiedCloudAuthEnabled = true
+      idTokenCallback?.(mockUser) // initial event (always skipped)
+      idTokenCallback?.(mockUser) // refresh — gated off; the unified lifecycle drives rotation
+      expect(store.tokenRefreshTrigger).toBe(0)
+    })
+
+    it('notifyTokenRefreshed increments the rotation trigger (unified rotation driver)', () => {
+      store.notifyTokenRefreshed()
       expect(store.tokenRefreshTrigger).toBe(1)
     })
   })

@@ -10,7 +10,8 @@ import { createTestingPinia } from '@pinia/testing'
 
 const { mockFeatureFlags } = vi.hoisted(() => ({
   mockFeatureFlags: {
-    teamWorkspacesEnabled: false
+    teamWorkspacesEnabled: false,
+    unifiedCloudAuthEnabled: false
   }
 }))
 
@@ -24,12 +25,14 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 const mockWorkspaceAuthHeader = vi.fn().mockReturnValue(null)
 const mockGetWorkspaceToken = vi.fn().mockReturnValue(undefined)
 const mockClearWorkspaceContext = vi.fn()
+const mockMintAtLogin = vi.fn().mockResolvedValue(false)
 
 vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
   useWorkspaceAuthStore: () => ({
     getWorkspaceAuthHeader: mockWorkspaceAuthHeader,
     getWorkspaceToken: mockGetWorkspaceToken,
-    clearWorkspaceContext: mockClearWorkspaceContext
+    clearWorkspaceContext: mockClearWorkspaceContext,
+    mintAtLogin: mockMintAtLogin
   })
 }))
 
@@ -112,8 +115,10 @@ describe('auth token priority chain', () => {
     vi.resetAllMocks()
 
     mockFeatureFlags.teamWorkspacesEnabled = false
+    mockFeatureFlags.unifiedCloudAuthEnabled = false
     mockWorkspaceAuthHeader.mockReturnValue(null)
     mockGetWorkspaceToken.mockReturnValue(undefined)
+    mockMintAtLogin.mockResolvedValue(false)
     mockApiKeyGetAuthHeader.mockReturnValue(null)
     mockUser.getIdToken.mockResolvedValue('firebase-token')
 
@@ -206,6 +211,20 @@ describe('auth token priority chain', () => {
       const token = await store.getAuthToken()
 
       expect(token).toBe('firebase-token')
+    })
+  })
+
+  describe('unified login mint wiring', () => {
+    it('mints the unified Cloud JWT when a cloud user signs in', () => {
+      // beforeEach signs in mockUser via the onAuthStateChanged callback.
+      expect(mockMintAtLogin).toHaveBeenCalled()
+    })
+
+    it('does not mint on sign-out', () => {
+      mockMintAtLogin.mockClear()
+      authStateCallback(null)
+      expect(mockMintAtLogin).not.toHaveBeenCalled()
+      expect(mockClearWorkspaceContext).toHaveBeenCalled()
     })
   })
 })
