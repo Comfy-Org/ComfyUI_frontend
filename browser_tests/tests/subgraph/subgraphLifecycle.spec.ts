@@ -129,6 +129,33 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       })
     }
 
+    type DeferredHandlers = Awaited<ReturnType<typeof deferLegacyHandlers>>
+
+    // Defers only the legacy selection-change callback, so the detached host
+    // node lingers in the reactive selection while onNodeRemoved still runs
+    // normally and clears it from the canvas. This isolates the panel render
+    // path: a panel mounted during this window reads the stale selection.
+    async function deferSelectionChange(
+      comfyPage: ComfyPage
+    ): Promise<DeferredHandlers> {
+      return await comfyPage.page.evaluateHandle(() => {
+        const canvas = window.app!.canvas!
+        const queue: Array<() => void> = []
+        const original = canvas.onSelectionChange
+        canvas.onSelectionChange = function (selected) {
+          queue.push(() => original?.call(this, selected))
+        }
+        return {
+          drain: () => {
+            for (const fn of queue.splice(0)) fn()
+          },
+          restore: () => {
+            canvas.onSelectionChange = original
+          }
+        }
+      })
+    }
+
     function isNullGraphErrorText(text: string): boolean {
       return text.includes('NullGraphError') || text.endsWith('has no graph')
     }
@@ -169,16 +196,32 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       await comfyPage.contextMenu.clickMenuItemExact('Unpack Subgraph')
     }
 
-    async function unpackAndCaptureErrors(
-      comfyPage: ComfyPage
+    async function reopenRightSidePanel(comfyPage: ComfyPage) {
+      const { propertiesPanel } = comfyPage.menu
+      await propertiesPanel.toggleButton.click()
+      await expect(propertiesPanel.root).toBeHidden()
+      await propertiesPanel.toggleButton.click()
+      await comfyPage.nextFrame()
+    }
+
+    // Unpacks the subgraph behind deferred teardown, runs an optional
+    // interaction while the node is detached but not yet cleaned up, then
+    // drains the deferred handlers and reports any NullGraphErrors seen.
+    async function unpackAndCaptureNullGraphErrors(
+      comfyPage: ComfyPage,
+      options: {
+        defer: (comfyPage: ComfyPage) => Promise<DeferredHandlers>
+        duringWindow?: (comfyPage: ComfyPage) => Promise<void>
+      }
     ): Promise<string[]> {
       const subgraphNode =
         comfyPage.vueNodes.getNodeByTitle(SUBGRAPH_NODE_TITLE)
       const errors = captureNullGraphErrors(comfyPage)
-      const deferred = await deferLegacyHandlers(comfyPage)
+      const deferred = await options.defer(comfyPage)
       try {
         await unpackViaContextMenu(comfyPage, SUBGRAPH_NODE_TITLE)
         await expect(subgraphNode).toHaveCount(0)
+        await options.duringWindow?.(comfyPage)
         await deferred.evaluate((handlers) => handlers.drain())
         // Let drained-handler reactive flushes settle before stop().
         await comfyPage.nextFrame()
@@ -211,7 +254,9 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
     test('unpack does not surface NullGraphError on the LGraphNode render path', async ({
       comfyPage
     }) => {
-      const nullGraphErrors = await unpackAndCaptureErrors(comfyPage)
+      const nullGraphErrors = await unpackAndCaptureNullGraphErrors(comfyPage, {
+        defer: deferLegacyHandlers
+      })
       expect(
         nullGraphErrors,
         'LGraphNode render path: detach race must not surface NullGraphError'
@@ -221,7 +266,9 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
     test('unpack does not surface NullGraphError from the TabSubgraphInputs panel', async ({
       comfyPage
     }) => {
-      const nullGraphErrors = await unpackAndCaptureErrors(comfyPage)
+      const nullGraphErrors = await unpackAndCaptureNullGraphErrors(comfyPage, {
+        defer: deferLegacyHandlers
+      })
       expect(
         nullGraphErrors,
         'TabSubgraphInputs panel: detach race must not surface NullGraphError'
@@ -234,10 +281,41 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       await comfyPage.page.getByTestId(TestIds.subgraphEditor.toggle).click()
       await comfyPage.nextFrame()
 
-      const nullGraphErrors = await unpackAndCaptureErrors(comfyPage)
+      const nullGraphErrors = await unpackAndCaptureNullGraphErrors(comfyPage, {
+        defer: deferLegacyHandlers
+      })
       expect(
         nullGraphErrors,
         'SubgraphEditor panel: detach race must not surface NullGraphError'
+      ).toEqual([])
+    })
+
+    test('reopening the right side panel after unpack does not surface NullGraphError', async ({
+      comfyPage
+    }) => {
+      const nullGraphErrors = await unpackAndCaptureNullGraphErrors(comfyPage, {
+        defer: deferSelectionChange,
+        duringWindow: reopenRightSidePanel
+      })
+      expect(
+        nullGraphErrors,
+        'TabSubgraphInputs remount: stale selection must not surface NullGraphError'
+      ).toEqual([])
+    })
+
+    test('reopening the right side panel with the subgraph editor open does not surface NullGraphError', async ({
+      comfyPage
+    }) => {
+      await comfyPage.page.getByTestId(TestIds.subgraphEditor.toggle).click()
+      await comfyPage.nextFrame()
+
+      const nullGraphErrors = await unpackAndCaptureNullGraphErrors(comfyPage, {
+        defer: deferSelectionChange,
+        duringWindow: reopenRightSidePanel
+      })
+      expect(
+        nullGraphErrors,
+        'SubgraphEditor remount: stale selection must not surface NullGraphError'
       ).toEqual([])
     })
   })
