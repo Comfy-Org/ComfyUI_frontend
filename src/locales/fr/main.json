@@ -832,7 +832,9 @@
     "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FICHIER_3D_OBJ",
     "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
     "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FICHIER_3D_STL",
     "FILE_3D_USDZ": "FICHIER_3D_USDZ",
@@ -945,6 +947,46 @@
     "fallbacks": {
       "inputName": "entrée inconnue",
       "nodeName": "Ce nœud"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "Une entrée média requise n’a pas de fichier sélectionné.",
+        "toastMessageMany": "Veuillez sélectionner les entrées média manquantes avant d’exécuter ce workflow.",
+        "toastMessageWithNode": "{nodeName} nécessite un fichier média requis.",
+        "toastTitleMany": "Entrées média manquantes",
+        "toastTitleOne": "Entrée média manquante"
+      },
+      "missing_model": {
+        "displayMessageCloud": "Importez un modèle ou ouvrez le nœud pour le remplacer.",
+        "displayMessageOss": "Téléchargez un modèle ou ouvrez le nœud pour le remplacer.",
+        "toastMessageManyCloud": "Certains modèles ne sont pas pris en charge. Veuillez en choisir d’autres.",
+        "toastMessageManyOss": "{count} fichiers de modèles sont manquants.",
+        "toastMessageOneCloud": "Ce modèle n’est pas pris en charge. Choisissez-en un autre.",
+        "toastMessageOneOss": "{nodeName} nécessite un fichier modèle manquant.",
+        "toastTitleMany": "Modèles manquants",
+        "toastTitleManyCloud": "Des modèles ne sont pas disponibles sur le Cloud",
+        "toastTitleOneCloud": "{modelName} n’est pas disponible sur le Cloud",
+        "toastTitleOneOss": "{modelName} est manquant"
+      },
+      "missing_node": {
+        "displayMessageCloud": "Les nœuds personnalisés requis ne sont pas pris en charge sur le Cloud. Remplacez-les par des nœuds compatibles.",
+        "displayMessageOss": "Installez les packs manquants pour utiliser ce workflow.",
+        "toastMessageManyCloud": "Ce workflow utilise des nœuds qui ne sont pas pris en charge sur le Cloud.",
+        "toastMessageManyOss": "{count} nœuds nécessitent des packs de nœuds manquants.",
+        "toastMessageOneCloud": "Ce nœud n’est pas pris en charge sur le Cloud.",
+        "toastMessageOneOss": "Ce workflow utilise un nœud personnalisé qui n’est pas installé. Installez-le depuis le registre ou remplacez le nœud.",
+        "toastTitleManyCloud": "Des nœuds ne sont pas disponibles sur le Cloud",
+        "toastTitleManyOss": "Nœuds manquants",
+        "toastTitleOneCloud": "{nodeType} n’est pas disponible sur le Cloud",
+        "toastTitleOneOss": "Nœud manquant : {nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "Certains nœuds peuvent être remplacés par des alternatives",
+        "toastMessageMany": "{count} types de nœuds peuvent être remplacés par des alternatives compatibles.",
+        "toastMessageOne": "Remplacez-le par {replacementNodeType} depuis le panneau d’erreur.",
+        "toastTitleMany": "Des nœuds peuvent être remplacés",
+        "toastTitleOne": "{nodeType} peut être remplacé"
+      }
     },
     "promptErrors": {
       "missing_node_type": {
@@ -1287,12 +1329,9 @@
     "missingMedia": "Certains nœuds n'ont pas les entrées requises",
     "missingModels": "{count} modèle requis est manquant | {count} modèles requis sont manquants",
     "missingNodes": "Certains nœuds sont manquants et doivent être installés",
-    "seeErrors": "Voir les erreurs",
-    "showMissingMedia": "Afficher les entrées manquantes",
-    "showMissingModels": "Afficher les modèles manquants",
-    "showMissingNodes": "Afficher les nœuds manquants",
-    "showSwapNodes": "Afficher les nœuds de remplacement",
-    "swapNodes": "Certains nœuds peuvent être remplacés par des alternatives"
+    "multipleErrorCount": "{count} erreur trouvée | {count} erreurs trouvées",
+    "multipleErrorsMessage": "Veuillez les résoudre avant d’exécuter le workflow.",
+    "viewDetails": "Voir les détails"
   },
   "errorPanelSurvey": {
     "ctaButton": "Donner votre avis",
@@ -1376,6 +1415,11 @@
     "amount": "Quantité",
     "apply": "Appliquer",
     "architecture": "Architecture",
+    "arrange": "Organiser",
+    "arrangeAsGrid": "Organiser en grille",
+    "arrangeHorizontally": "Organiser horizontalement",
+    "arrangeSpacing": "Espacement de l’organisation",
+    "arrangeVertically": "Organiser verticalement",
     "asset": "{count} ressource | {count} ressources",
     "audioFailedToLoad": "Échec du chargement de l'audio",
     "audioProgress": "Progression audio",
@@ -2781,7 +2825,6 @@
     "replacedNode": "Nœud remplacé : {nodeType}",
     "selectAll": "Tout sélectionner",
     "skipForNow": "Ignorer pour l’instant",
-    "swapNodesGuide": "Les nœuds suivants peuvent être automatiquement remplacés par des alternatives compatibles.",
     "swapNodesTitle": "Échanger les nœuds",
     "unknownNode": "Inconnu",
     "willBeReplacedBy": "Ce nœud sera remplacé par :"
@@ -3042,7 +3085,6 @@
     },
     "missingNodePacks": {
       "applyChanges": "Appliquer les modifications",
-      "cloudMessage": "Ce workflow nécessite des nœuds personnalisés qui ne sont pas encore disponibles sur Comfy Cloud.",
       "collapse": "Réduire",
       "expand": "Développer",
       "installAll": "Tout installer",
@@ -3050,7 +3092,6 @@
       "installed": "Installé",
       "installing": "Installation en cours...",
       "ossManagerDisabledHint": "Pour installer les nodes manquants, exécutez d'abord {pipCmd} dans votre environnement Python pour installer le Node Manager, puis redémarrez ComfyUI avec le paramètre {flag}.",
-      "ossMessage": "Ce workflow utilise des nœuds personnalisés que vous n'avez pas encore installés.",
       "searchInManager": "Rechercher dans le gestionnaire de nœuds",
       "title": "Packs de nœuds manquants",
       "unknownPack": "Pack inconnu",

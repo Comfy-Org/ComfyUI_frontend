@@ -36,6 +36,10 @@ function getDropzone(comfyPage: ComfyPage) {
   return comfyPage.page.getByTestId(TestIds.dialogs.missingMediaUploadDropzone)
 }
 
+function getErrorOverlay(comfyPage: ComfyPage) {
+  return comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+}
+
 test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting(
@@ -46,14 +50,24 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
 
   test.describe('Detection', () => {
     test('Shows missing media group in errors tab', async ({ comfyPage }) => {
-      await loadWorkflowAndOpenErrorsTab(
-        comfyPage,
-        'missing/missing_media_single'
-      )
+      await comfyPage.workflow.loadWorkflow('missing/missing_media_single')
 
+      const overlay = getErrorOverlay(comfyPage)
+      await expect(overlay).toBeVisible()
       await expect(
-        comfyPage.page.getByTestId(TestIds.dialogs.missingMediaGroup)
-      ).toBeVisible()
+        overlay.getByTestId(TestIds.dialogs.errorOverlayMessages)
+      ).toContainText(/Load Image/)
+
+      await overlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
+      await expect(overlay).toBeHidden()
+
+      const missingMediaGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingMediaGroup
+      )
+      await expect(missingMediaGroup).toBeVisible()
+      await expect(
+        missingMediaGroup.getByTestId(TestIds.dialogs.errorGroupDisplayMessage)
+      ).toHaveText(/\S/)
     })
 
     test('Shows correct number of missing media rows', async ({

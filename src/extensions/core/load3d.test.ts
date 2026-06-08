@@ -38,13 +38,27 @@ vi.mock('@/services/load3dService', () => ({
   })
 }))
 
-vi.mock('@/composables/useLoad3d', () => ({
-  useLoad3d: () => ({
-    waitForLoad3d: waitForLoad3dMock,
-    onLoad3dReady: onLoad3dReadyMock
-  }),
-  nodeToLoad3dMap
-}))
+vi.mock('@/composables/useLoad3d', () => {
+  const sceneDirty = new WeakMap<LGraphNode, boolean>()
+  const outputCache = new WeakMap<LGraphNode, unknown>()
+  return {
+    useLoad3d: () => ({
+      waitForLoad3d: waitForLoad3dMock,
+      onLoad3dReady: onLoad3dReadyMock
+    }),
+    nodeToLoad3dMap,
+    markLoad3dSceneDirty: (node: LGraphNode | null) => {
+      if (!node) return
+      sceneDirty.set(node, true)
+    },
+    isLoad3dSceneDirty: (node: LGraphNode) => sceneDirty.get(node) !== false,
+    getLoad3dOutputCache: (node: LGraphNode) => outputCache.get(node),
+    setLoad3dOutputCache: (node: LGraphNode, value: unknown) => {
+      outputCache.set(node, value)
+      sceneDirty.set(node, false)
+    }
+  }
+})
 
 vi.mock('@/extensions/core/load3d/Load3DConfiguration', () => ({
   default: class {
@@ -173,7 +187,7 @@ function makePreview3DAdvancedNode(
     constructor: { comfyClass: overrides.comfyClass ?? 'Preview3DAdvanced' },
     size: [400, 550],
     setSize: vi.fn(),
-    widgets: overrides.widgets ?? [{ name: 'image', value: '' }],
+    widgets: overrides.widgets ?? [{ name: 'viewport_state', value: '' }],
     properties: overrides.properties ?? {}
   } as unknown as LGraphNode
 }
@@ -482,13 +496,16 @@ describe('Comfy.Load3D.nodeCreated', () => {
 
     await load3DExt.nodeCreated(node)
 
-    expect(configureMock).toHaveBeenCalledWith({
-      loadFolder: 'input',
-      modelWidget: widgets[0],
-      cameraState: undefined,
-      width: widgets[1],
-      height: widgets[2]
-    })
+    expect(configureMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        loadFolder: 'input',
+        modelWidget: widgets[0],
+        cameraState: undefined,
+        width: widgets[1],
+        height: widgets[2],
+        onSceneInvalidated: expect.any(Function)
+      })
+    )
   })
 
   it('attaches a serializeValue function to the scene widget', async () => {
@@ -725,7 +742,7 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     await preview3DAdvancedExt.nodeCreated(node)
 
     expect(configureForSaveMeshMock).toHaveBeenCalledWith(
-      'output',
+      'temp',
       'prev/model.glb',
       { silentOnNotFound: true }
     )
@@ -783,9 +800,9 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
     expect(load3dInstance.setCameraState).not.toHaveBeenCalled()
   })
 
-  it('attaches a camera-only serializeValue to the image widget', async () => {
+  it('attaches a camera-only serializeValue to the viewport_state widget', async () => {
     const { preview3DAdvancedExt } = await loadExtensionsFresh()
-    const widgets: FakeWidget[] = [{ name: 'image', value: '' }]
+    const widgets: FakeWidget[] = [{ name: 'viewport_state', value: '' }]
     const node = makePreview3DAdvancedNode({ widgets })
 
     await preview3DAdvancedExt.nodeCreated(node)
@@ -795,7 +812,7 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
 
   it('serializeValue returns live camera_info plus empty media fields, omitting model_3d_info when none', async () => {
     const { preview3DAdvancedExt } = await loadExtensionsFresh()
-    const widgets: FakeWidget[] = [{ name: 'image', value: '' }]
+    const widgets: FakeWidget[] = [{ name: 'viewport_state', value: '' }]
     const node = makePreview3DAdvancedNode({ widgets })
 
     const load3d = makeLoad3dMock()
@@ -819,7 +836,7 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
 
   it('serializeValue wraps a present getModelInfo result in a single-element list', async () => {
     const { preview3DAdvancedExt } = await loadExtensionsFresh()
-    const widgets: FakeWidget[] = [{ name: 'image', value: '' }]
+    const widgets: FakeWidget[] = [{ name: 'viewport_state', value: '' }]
     const node = makePreview3DAdvancedNode({ widgets })
 
     const load3d = makeLoad3dMock()
@@ -851,7 +868,7 @@ describe('Comfy.Preview3DAdvanced.nodeCreated', () => {
 
     expect(node.properties['Last Time Model File']).toBe('sub/nested/mesh.glb')
     expect(configureForSaveMeshMock).toHaveBeenCalledWith(
-      'output',
+      'temp',
       'sub/nested/mesh.glb',
       { silentOnNotFound: true }
     )
@@ -1012,5 +1029,97 @@ describe('Comfy.Preview3DAdvanced.getNodeMenuItems', () => {
     expect(preview3DAdvancedExt.getNodeMenuItems(node)).toEqual([
       { content: 'Export' }
     ])
+  })
+})
+
+describe('Comfy.Load3D scene widget serializeValue caching', () => {
+  beforeEach(setupBaseMocks)
+
+  function makeFullFakeLoad3d() {
+    return {
+      getCurrentCameraType: vi.fn(() => 'perspective'),
+      cameraManager: { perspectiveCamera: { fov: 35 } },
+      getCameraState: vi.fn(() => ({ position: { x: 0, y: 0, z: 0 } })),
+      stopRecording: vi.fn(),
+      captureScene: vi.fn(async () => ({
+        scene: 'scene-data',
+        mask: 'mask-data',
+        normal: 'normal-data'
+      })),
+      handleResize: vi.fn(),
+      getModelInfo: vi.fn(() => null),
+      getRecordingData: vi.fn(() => null)
+    }
+  }
+
+  async function setup() {
+    const { load3DExt } = await loadExtensionsFresh()
+    const useLoad3dModule = await import('@/composables/useLoad3d')
+    const utilsModule = await import('@/extensions/core/load3d/Load3dUtils')
+    const uploadTempImage = utilsModule.default.uploadTempImage as ReturnType<
+      typeof vi.fn
+    >
+    let counter = 0
+    uploadTempImage.mockImplementation(
+      async (_data: unknown, kind: string) => ({
+        name: `${kind}-${++counter}.png`
+      })
+    )
+
+    const widgets: FakeWidget[] = [
+      { name: 'model_file', value: 'm.glb' },
+      { name: 'width', value: 256 },
+      { name: 'height', value: 256 },
+      { name: 'image', value: '' }
+    ]
+    const node = makeLoad3DNode({ widgets, properties: {} })
+    useLoad3dModule.nodeToLoad3dMap.set(node, makeFullFakeLoad3d() as never)
+
+    await load3DExt.nodeCreated(node)
+    const serialize = widgets[3].serializeValue! as () => Promise<{
+      image: string
+    } | null>
+
+    return { node, serialize, uploadTempImage, useLoad3dModule }
+  }
+
+  it('reuses the cached output when the scene has not been dirtied', async () => {
+    const { node, serialize, uploadTempImage, useLoad3dModule } = await setup()
+
+    const first = await serialize()
+    expect(uploadTempImage).toHaveBeenCalledTimes(3)
+    expect(first?.image).toBe('threed/scene-1.png [temp]')
+    expect(useLoad3dModule.isLoad3dSceneDirty(node)).toBe(false)
+    expect(useLoad3dModule.getLoad3dOutputCache(node)).toBe(first)
+
+    const second = await serialize()
+    expect(uploadTempImage).toHaveBeenCalledTimes(3)
+    expect(second).toBe(first)
+  })
+
+  it('re-captures after the scene is marked dirty', async () => {
+    const { node, serialize, uploadTempImage, useLoad3dModule } = await setup()
+
+    await serialize()
+    expect(uploadTempImage).toHaveBeenCalledTimes(3)
+
+    useLoad3dModule.markLoad3dSceneDirty(node)
+
+    const refreshed = await serialize()
+    expect(uploadTempImage).toHaveBeenCalledTimes(6)
+    expect(refreshed?.image).toBe('threed/scene-4.png [temp]')
+  })
+
+  it('returns null when no load3d instance is registered for the node', async () => {
+    const { load3DExt } = await loadExtensionsFresh()
+    const widgets: FakeWidget[] = [
+      { name: 'model_file', value: 'm.glb' },
+      { name: 'width', value: 256 },
+      { name: 'height', value: 256 },
+      { name: 'image', value: '' }
+    ]
+    const node = makeLoad3DNode({ widgets })
+    await load3DExt.nodeCreated(node)
+    expect(await widgets[3].serializeValue!()).toBeNull()
   })
 })

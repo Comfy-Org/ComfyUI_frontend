@@ -54,6 +54,7 @@ export const TestIds = {
     errorDialogFindIssues: 'error-dialog-find-issues',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
+    errorGroupDisplayMessage: 'error-group-display-message',
     missingNodePacksGroup: 'error-group-missing-node',
     missingModelsGroup: 'error-group-missing-model',
     missingModelExpand: 'missing-model-expand',

@@ -619,6 +619,31 @@
       }
     }
   },
+  "BriaVideoGreenScreen": {
+    "description": "جایگزینی پس‌زمینه ویدیو با یک صفحه کروماکی یکدست با استفاده از Bria.",
+    "display_name": "Bria Video Green Screen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "green_shade": {
+        "name": "سایه سبز",
+        "tooltip": "سایه کروماکی یکدست که پشت سوژه قرار می‌گیرد: broadcast_green (#۰۰B۱۴۰)، chroma_green (#۰۰FF۰۰)، یا blue_screen (#۰۰۰۰FF)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "تولید ویدیو با استفاده از Seedance 2.0 از تصویر اولین فریم و در صورت نیاز تصویر آخرین فریم.",
     "display_name": "ByteDance Seedance 2.0 تبدیل اولین-آخرین فریم به ویدیو",
@@ -3997,6 +4022,9 @@
     "description": "شیء ماسک‌شده را از تصویر حذف کرده و پس‌زمینه را بازسازی می‌کند. ماسک را روی بخشی که می‌خواهید حذف شود بکشید.",
     "display_name": "حذف تصویر Flux",
     "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
       "dilate_pixels": {
         "name": "dilate_pixels",
         "tooltip": "مرزهای ماسک را گسترش می‌دهد تا پوشش تمیز لبه‌های شیء تضمین شود."
@@ -4007,6 +4035,10 @@
       "mask": {
         "name": "mask",
         "tooltip": "ناحیه‌های سفید حذف می‌شوند؛ ناحیه‌های سیاه حفظ می‌شوند."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تصادفی مورد استفاده برای ایجاد نویز."
       }
     },
     "outputs": {
@@ -4750,6 +4782,14 @@
       "system_prompt": {
         "name": "پرامپت سیستمی",
         "tooltip": "دستورالعمل‌های پایه‌ای که رفتار هوش مصنوعی را تعیین می‌کند."
+      },
+      "temperature": {
+        "name": "temperature",
+        "tooltip": "میزان تصادفی بودن در تولید را کنترل می‌کند. مقدار کمتر، خروجی متمرکزتر و قطعی‌تر است."
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "آستانه نمونه‌گیری nucleus. مقدار کمتر متمرکزتر، مقدار بیشتر متنوع‌تر."
       }
     },
     "outputs": {
@@ -4803,6 +4843,48 @@
       "video": {
         "name": "ویدئو",
         "tooltip": "ویدئوی اختیاری برای استفاده به عنوان زمینه مدل."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "تولید پاسخ متنی با مدل‌های Gemini گوگل. یک متن راهنما و در صورت نیاز یک یا چند تصویر، کلیپ صوتی، ویدیو یا فایل به عنوان زمینه چندرسانه‌ای ارائه دهید.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل Gemini مورد استفاده برای تولید پاسخ."
+      },
+      "model_max_output_tokens": {
+        "name": "حداکثر توکن خروجی"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "متن ورودی برای مدل. شامل دستورالعمل‌های دقیق، پرسش‌ها یا زمینه باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed برای نمونه‌گیری. مقدار ۰ برای seed تصادفی. خروجی قطعی تضمین نمی‌شود."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "دستورالعمل‌های پایه که رفتار مدل را تعیین می‌کند."
       }
     },
     "outputs": {
@@ -13725,15 +13807,15 @@
       "height": {
         "name": "ارتفاع"
       },
-      "image": {
-        "name": "تصویر"
+      "model_3d": {
+        "name": "مدل ۳بعدی",
+        "tooltip": "فایل مدل ۳بعدی از node سه‌بعدی بالادستی."
       },
       "model_3d_info": {
         "name": "اطلاعات مدل سه‌بعدی"
       },
-      "model_file": {
-        "name": "فایل مدل",
-        "tooltip": "فایل مدل سه‌بعدی از یک node سه‌بعدی بالادستی."
+      "viewport_state": {
+        "name": "وضعیت نمای دید"
       },
       "width": {
         "name": "عرض"
@@ -13788,12 +13870,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "پیش‌نمایش Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "یک فایل سه‌بعدی gaussian splat."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "description": "تصاویر ورودی را در پوشه خروجی ComfyUI شما ذخیره می‌کند.",
     "display_name": "پیش‌نمایش تصویر",
     "inputs": {
       "images": {
         "name": "تصاویر"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "پیش‌نمایش Point Cloud",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "فایل point cloud (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -16446,6 +16620,27 @@
       },
       "filename_prefix": {
         "name": "filename_prefix"
+      }
+    }
+  },
+  "SaveAudioAdvanced": {
+    "description": "صدای ورودی را در پوشه خروجی ComfyUI شما ذخیره می‌کند.",
+    "display_name": "ذخیره صدا (پیشرفته)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "صدایی که باید ذخیره شود."
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "پیشوند فایل برای ذخیره. می‌تواند شامل توکن‌های قالب‌بندی مانند ‎%date:yyyy-MM-dd%‎ باشد."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "فرمت فایلی که صدا در آن ذخیره می‌شود."
       }
     }
   },

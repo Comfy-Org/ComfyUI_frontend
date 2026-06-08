@@ -1,4 +1,7 @@
-import type { ResolvedErrorMessage, RunErrorMessageSource } from './types'
+import type {
+  ResolvedCatalogErrorMessage,
+  RunErrorMessageSource
+} from './types'
 
 import { EXECUTION_FAILED_CATALOG_ID } from './catalogIds'
 import type { ErrorResolveContext } from './catalogI18n'
@@ -11,7 +14,7 @@ type ExecutionErrorResolveContext = Pick<ErrorResolveContext, 'nodeDisplayName'>
 export function resolveExecutionErrorMessage(
   error: Extract<RunErrorMessageSource, { kind: 'execution' }>['error'],
   context: ExecutionErrorResolveContext
-): ResolvedErrorMessage {
+): ResolvedCatalogErrorMessage {
   const exceptionMessage = error.exception_message.trim()
   const match = resolveRuntimeCatalogMatch({
     exceptionType: error.exception_type,

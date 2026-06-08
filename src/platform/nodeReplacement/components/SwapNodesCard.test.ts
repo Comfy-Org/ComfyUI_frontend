@@ -3,7 +3,6 @@ import userEvent from '@testing-library/user-event'
 import { createTestingPinia } from '@pinia/testing'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
@@ -18,14 +17,6 @@ vi.mock('./SwapNodeGroupRow.vue', () => ({
 }))
 
 import SwapNodesCard from './SwapNodesCard.vue'
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: { en: {} },
-  missingWarn: false,
-  fallbackWarn: false
-})
 
 function makeGroups(count = 2): SwapNodeGroup[] {
   return Array.from({ length: count }, (_, i) => ({
@@ -56,19 +47,13 @@ function mountCard(
       ...(callbacks?.onReplace ? { onReplace: callbacks.onReplace } : {})
     },
     global: {
-      plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue, i18n]
+      plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue]
     }
   })
 }
 
 describe('SwapNodesCard', () => {
   describe('Rendering', () => {
-    it('renders guidance message', () => {
-      const { container } = mountCard()
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelector('p')).not.toBeNull()
-    })
-
     it('renders correct number of SwapNodeGroupRow components', () => {
       const { container } = mountCard({ swapNodeGroups: makeGroups(3) })
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access

@@ -422,6 +422,7 @@ describe('groupCandidatesByName', () => {
     const photoGroup = result.find((g) => g.name === 'photo.png')
     expect(photoGroup?.referencingNodes).toHaveLength(2)
     expect(photoGroup?.mediaType).toBe('image')
+    expect(photoGroup?.representative.nodeType).toBe('LoadImage')
 
     const otherGroup = result.find((g) => g.name === 'other.png')
     expect(otherGroup?.referencingNodes).toHaveLength(1)
