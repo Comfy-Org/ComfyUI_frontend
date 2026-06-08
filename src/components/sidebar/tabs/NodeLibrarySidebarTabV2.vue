@@ -166,7 +166,6 @@
               value="essentials"
             >
               <EssentialNodesPlaceholderPanel
-                v-model:expanded-keys="expandedKeys"
                 v-model:media-filters="effectiveMediaFilters"
                 :search-query="searchQuery"
               />
@@ -260,7 +259,6 @@ const scrollContainerRef = useTemplateRef('scrollContainerRef')
 const titleTabsRef = useTemplateRef('titleTabsRef')
 const headerTop = ref(0)
 const lastScrollY = ref(0)
-const SCROLL_THRESHOLD = 4
 
 useEventListener(scrollContainerRef, 'scroll', () => {
   const el = scrollContainerRef.value
@@ -270,10 +268,10 @@ useEventListener(scrollContainerRef, 'scroll', () => {
   const delta = y - lastScrollY.value
   if (y <= 0) {
     headerTop.value = 0
-  } else if (delta > SCROLL_THRESHOLD && y > h) {
-    headerTop.value = -h
-  } else if (delta < -SCROLL_THRESHOLD) {
-    headerTop.value = 0
+  } else if (delta > 0) {
+    headerTop.value = Math.max(-h, headerTop.value - delta)
+  } else if (delta < 0) {
+    headerTop.value = Math.min(0, headerTop.value - delta)
   }
   lastScrollY.value = y
 })
@@ -284,10 +282,7 @@ const selectedTab = useLocalStorage<TabId>(
 )
 
 watchEffect(() => {
-  if (selectedTab.value === 'blueprints') {
-    selectedTab.value = DEFAULT_TAB_ID
-    return
-  }
+  if (selectedTab.value === 'blueprints') selectedTab.value = DEFAULT_TAB_ID
   if (
     !flags.nodeLibraryEssentialsEnabled &&
     selectedTab.value === 'essentials'
@@ -522,22 +517,6 @@ async function handleSearch() {
   expandedKeys.value = allKeys
 }
 
-function findScrollableAncestor(el: HTMLElement): HTMLElement {
-  let node: HTMLElement | null = el.parentElement
-  while (node) {
-    const style = getComputedStyle(node)
-    const overflowY = style.overflowY
-    if (
-      (overflowY === 'auto' || overflowY === 'scroll') &&
-      node.scrollHeight > node.clientHeight
-    ) {
-      return node
-    }
-    node = node.parentElement
-  }
-  return document.scrollingElement as HTMLElement
-}
-
 function smoothScrollTo(
   container: HTMLElement,
   target: number,
@@ -559,9 +538,9 @@ function smoothScrollTo(
 
 async function scrollToId(id: string, marginTop: number) {
   await nextTick()
+  const container = scrollContainerRef.value
   const el = document.getElementById(id)
-  if (!el) return
-  const container = findScrollableAncestor(el)
+  if (!container || !el) return
   const top =
     el.getBoundingClientRect().top -
     container.getBoundingClientRect().top +
@@ -570,14 +549,18 @@ async function scrollToId(id: string, marginTop: number) {
   smoothScrollTo(container, top)
 }
 
-function ensureExpanded(sectionKey: string) {
-  if (!expandedKeys.value.includes(sectionKey)) {
-    expandedKeys.value = [...expandedKeys.value, sectionKey]
-  }
-}
-
 const STICKY_SEARCH_HEIGHT = 65
 const STICKY_SECTION_HEADER_HEIGHT = 56
+async function jumpToSection(sectionKey: string) {
+  await scrollToId(`essentials-section-${sectionKey}`, STICKY_SEARCH_HEIGHT)
+}
+
+async function jumpToSubgroup(subgroupKey: string) {
+  await scrollToId(
+    `essentials-subgroup-${subgroupKey}`,
+    STICKY_SEARCH_HEIGHT + STICKY_SECTION_HEADER_HEIGHT
+  )
+}
 
 const jumpMenuEntries = computed<MenuItem[]>(() => {
   const entries = ESSENTIAL_PLACEHOLDER_SECTIONS.map((section) => {
@@ -590,7 +573,7 @@ const jumpMenuEntries = computed<MenuItem[]>(() => {
 
     const items = section.subgroups.map((subgroup) => ({
       label: subgroup.label,
-      command: () => jumpToSubgroup(section.key, subgroup.key),
+      command: () => jumpToSubgroup(subgroup.key),
       noIcon: true
     }))
     return { label: section.label, items }
@@ -598,19 +581,6 @@ const jumpMenuEntries = computed<MenuItem[]>(() => {
   const label = t('essentials.jumpTo').toUpperCase()
   return [{ label, noIcon: true }, ...entries]
 })
-
-async function jumpToSection(sectionKey: string) {
-  ensureExpanded(sectionKey)
-  await scrollToId(`essentials-section-${sectionKey}`, STICKY_SEARCH_HEIGHT)
-}
-
-async function jumpToSubgroup(sectionKey: string, subgroupKey: string) {
-  ensureExpanded(sectionKey)
-  await scrollToId(
-    `essentials-subgroup-${subgroupKey}`,
-    STICKY_SEARCH_HEIGHT + STICKY_SECTION_HEADER_HEIGHT
-  )
-}
 
 const tabs = computed<Array<{ value: TabId; label: string }>>(() => {
   const allNodesTab = {

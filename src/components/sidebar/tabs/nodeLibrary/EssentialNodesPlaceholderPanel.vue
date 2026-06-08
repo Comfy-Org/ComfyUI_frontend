@@ -55,7 +55,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from 'vue'
+import { computed } from 'vue'
 
 import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
 import type { EssentialPlaceholderSection } from '@/constants/essentialsPlaceholders'
@@ -73,8 +73,6 @@ const mediaFilters = defineModel<Record<EssentialsMediaType, boolean>>(
     required: true
   }
 )
-
-const expandedKeys = defineModel<string[]>('expandedKeys', { required: true })
 
 const normalizedQuery = computed(() => searchQuery.trim().toLowerCase())
 
@@ -97,11 +95,5 @@ const filteredSections = computed<EssentialPlaceholderSection[]>(() => {
       return subgroups?.length ? [{ ...section, subgroups }] : []
     }
   )
-})
-
-watch(normalizedQuery, (q) => {
-  if (q) {
-    expandedKeys.value = filteredSections.value.map((s) => s.key)
-  }
 })
 </script>
