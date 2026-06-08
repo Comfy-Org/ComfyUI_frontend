@@ -56,14 +56,7 @@ export class ComfySettingsDialog extends ComfyDialog<HTMLDialogElement> {
     defaultValue?: Settings[K]
   ): Settings[K] {
     if (defaultValue !== undefined) {
-      warnDeprecated(
-        'getSettingValue() defaultValue parameter is deprecated.',
-        {
-          suggestion:
-            'Drop the argument — the default value in the setting definition will be used.',
-          source: 'ComfySettingsDialog'
-        }
-      )
+      warnDeprecated('comfySettings.getSettingValueDefault')
     }
     return useSettingStore().get(id)
   }

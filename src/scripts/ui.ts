@@ -246,15 +246,6 @@ class ComfyList {
     this._reverse = reverse || false
     this.element = $el('div.comfy-list') as HTMLDivElement
     this.element.style.display = 'none'
-
-    warnDeprecated(
-      'The legacy queue/history menu is deprecated and unsupported.',
-      {
-        suggestion:
-          'Switch to the new menu: Settings → search "Use new menu" → change from "Disabled" to "Top".',
-        source: 'ComfyUI'
-      }
-    )
   }
 
   get visible() {

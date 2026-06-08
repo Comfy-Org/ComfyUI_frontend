@@ -10,8 +10,6 @@ import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistory
 import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { t, te } from '@/i18n'
-import { installLiteGraphDeprecationBridge } from '@/platform/dev/installLiteGraphDeprecationBridge'
-import { backfillServerDeprecations } from '@/platform/dev/backfillServerDeprecations'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAppsSidebarTab } from '@/platform/workflow/management/composables/useAppsSidebarTab'
 import { useWorkflowsSidebarTab } from '@/platform/workflow/management/composables/useWorkflowsSidebarTab'
@@ -139,11 +137,6 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       () => settingStore.get('Comfy.Queue.QPOV2'),
       (enabled) => syncJobHistoryTab(enabled)
     )
-
-    // Capture warnings regardless of DevMode so a user toggling it on later
-    // sees the full session history. The sidebar tab itself stays gated.
-    installLiteGraphDeprecationBridge()
-    void backfillServerDeprecations()
 
     const syncDeprecationWarningsTab = (enabled: boolean) => {
       const has = sidebarTabs.value.some(

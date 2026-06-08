@@ -48,6 +48,36 @@ describe('useDeprecationWarningsStore', () => {
     expect(store.warnings).toHaveLength(2)
   })
 
+  it('orders warnings with the most recently seen first', () => {
+    const store = useDeprecationWarningsStore()
+    store.report({ message: 'first' })
+    store.report({ message: 'second' })
+    store.report({ message: 'third' })
+
+    vi.advanceTimersByTime(1_000)
+    store.report({ message: 'first' })
+
+    expect(store.warnings.map((w) => w.message)).toEqual([
+      'first',
+      'third',
+      'second'
+    ])
+  })
+
+  it('stops tracking new keys once the cap is reached but keeps counting known ones', () => {
+    const store = useDeprecationWarningsStore()
+    for (let i = 0; i < 10_001; i++) {
+      store.report({ message: `dep-${i}` })
+    }
+
+    expect(store.warnings).toHaveLength(10_000)
+
+    const beforeRepeat = store.warnings.length
+    store.report({ message: 'dep-0' })
+    expect(store.warnings).toHaveLength(beforeRepeat)
+    expect(store.warnings.find((w) => w.message === 'dep-0')?.count).toBe(2)
+  })
+
   it('exposes unseenCount that resets after markAllSeen', () => {
     const store = useDeprecationWarningsStore()
     expect(store.unseenCount).toBe(0)

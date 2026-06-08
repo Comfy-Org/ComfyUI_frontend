@@ -15,6 +15,7 @@ import { getFirebaseConfig } from '@/config/firebase'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useDeprecationWarningsStore } from '@/platform/dev/deprecationWarningsStore'
 import {
   configValueOrDefault,
   remoteConfig
@@ -152,5 +153,9 @@ LGraph.autoExposePreviewNodes = (hostNode) =>
 
 const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()
+
+if (import.meta.env.DEV) {
+  window.__deprecationWarningsStore = useDeprecationWarningsStore(pinia)
+}
 
 app.mount('#vue-app')

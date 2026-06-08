@@ -42,6 +42,11 @@ declare global {
     __capturedMessages?: CapturedMessages
     __appReadiness?: AppReadiness
 
+    /** Dev-only handle to the deprecation warnings store, for e2e injection. */
+    __deprecationWarningsStore?: {
+      report: (input: { message: string }) => boolean
+    }
+
     /**
      * WebSocket store used by test fixtures for mocking WebSocket connections.
      * @see browser_tests/fixtures/ws.ts

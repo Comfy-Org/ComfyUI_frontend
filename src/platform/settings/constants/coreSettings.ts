@@ -3,6 +3,7 @@ import {
   getDefaultLocale,
   SUPPORTED_LOCALE_OPTIONS
 } from '@/locales/localeConfig'
+import { warnDeprecated } from '@/platform/dev/warnDeprecated'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
@@ -614,6 +615,9 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'combo',
     options: ['Disabled', 'Top'],
     tooltip: 'Enable the redesigned top menu bar.',
+    onChange: (value) => {
+      if (value === 'Disabled') warnDeprecated('comfyUI.legacyQueueMenu')
+    },
     migrateDeprecatedValue: (val: unknown) => {
       const value = val as string
       // Floating is now supported by dragging the docked actionbar off.

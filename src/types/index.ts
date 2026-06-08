@@ -100,5 +100,10 @@ declare global {
     __appReadiness?: AppReadiness
 
     __comfyDesktop2?: ComfyDesktop2Bridge
+
+    /** For use in tests to report deprecation warnings. */
+    __deprecationWarningsStore?: {
+      report: (input: { message: string }) => boolean
+    }
   }
 }

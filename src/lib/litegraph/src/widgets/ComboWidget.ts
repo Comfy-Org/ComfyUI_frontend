@@ -6,7 +6,7 @@ import type {
   IComboWidget,
   IStringComboWidget
 } from '@/lib/litegraph/src/types/widgets'
-import { dispatchLitegraphDeprecation } from '@/lib/litegraph/src/utils/feedback'
+import { warnDeprecated } from '@/platform/dev/warnDeprecated'
 
 import { BaseSteppedWidget } from './BaseSteppedWidget'
 import type { WidgetEventOptions } from './BaseWidget'
@@ -129,9 +129,7 @@ export class ComboWidget
 
     // Deprecated functionality (warning as of v0.14.5)
     if (typeof this.options.values === 'function') {
-      dispatchLitegraphDeprecation(
-        'Using a function for values is deprecated. Use an array of unique values instead.'
-      )
+      warnDeprecated('litegraph.comboValuesFunction')
     }
 
     // Determine if clicked on left/right arrows
