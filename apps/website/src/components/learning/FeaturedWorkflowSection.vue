@@ -18,10 +18,10 @@ const demoVideoPoster =
 <template>
   <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
     <div class="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
-      <div class="flex flex-col gap-8">
+      <div class="order-last flex flex-col gap-8 lg:order-0">
         <div>
           <h2
-            class="text-primary-comfy-canvas text-4xl font-light tracking-tight lg:text-6xl"
+            class="text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
           >
             {{ t('learning.featured.title', locale) }}
           </h2>
@@ -31,7 +31,7 @@ const demoVideoPoster =
         </div>
 
         <p
-          class="text-primary-comfy-canvas max-w-md text-sm/relaxed lg:text-base"
+          class="max-w-md text-sm/relaxed text-primary-comfy-canvas lg:text-base"
         >
           {{ t('learning.featured.description', locale) }}
         </p>
@@ -54,7 +54,9 @@ const demoVideoPoster =
         </ul>
       </div>
 
-      <div class="border-primary-warm-gray rounded-4.5xl border p-4">
+      <div
+        class="border-primary-warm-gray rounded-4.5xl order-first border p-4 lg:order-0"
+      >
         <VideoPlayer
           :locale
           :src="demoVideoSrc"
