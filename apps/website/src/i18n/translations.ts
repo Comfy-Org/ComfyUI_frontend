@@ -2171,14 +2171,14 @@ const translations = {
     'zh-CN': 'Personal data we process'
   },
   'desktop_privacy.data.block.0': {
-    en: 'When telemetry is enabled (opt-in on the first-run consent screen; toggle at Settings → Telemetry), we process the following categories of data:',
+    en: 'If you have enabled telemetry, either on the first-run consent screen or at Settings → Telemetry, we process the following categories of data:',
     'zh-CN':
-      'When telemetry is enabled (opt-in on the first-run consent screen; toggle at Settings → Telemetry), we process the following categories of data:'
+      'If you have enabled telemetry, either on the first-run consent screen or at Settings → Telemetry, we process the following categories of data:'
   },
   'desktop_privacy.data.block.1': {
-    en: 'Device identifier — a pseudonymous identifier generated locally on first run. Before you sign in to Comfy Cloud, it is not linked to your name, email, or hardware. On sign-in, it is associated with your Comfy account.\nTechnical metadata — application version, operating system, processor architecture.\nProduct usage events — feature interactions, navigation between views, installation and update milestones, approximate timing.\nCustom node identifiers — public package names of custom nodes you install through Manager (e.g. "comfyui-impact-pack"). The local installation path is not transmitted.\nCrash and error diagnostics — stack traces, error messages, and short stdout/stderr fragments captured at the moment of failure.',
+    en: 'Device identifier. A pseudonymous identifier generated locally on first run. Before you sign in to Comfy Cloud it is not linked to your name, email address, or hardware. When you sign in, it is associated with your Comfy account.\nTechnical metadata. Application version, operating system, and processor architecture.\nProduct usage events. Feature interactions, navigation between views, installation and update milestones, and approximate timing.\nCustom node identifiers. Public package names of custom nodes you install through Manager (for example, "comfyui-impact-pack"). The local installation path is not transmitted.\nCrash and error diagnostics. Stack traces, error messages, and short stdout/stderr fragments captured at the moment of failure.',
     'zh-CN':
-      'Device identifier — a pseudonymous identifier generated locally on first run. Before you sign in to Comfy Cloud, it is not linked to your name, email, or hardware. On sign-in, it is associated with your Comfy account.\nTechnical metadata — application version, operating system, processor architecture.\nProduct usage events — feature interactions, navigation between views, installation and update milestones, approximate timing.\nCustom node identifiers — public package names of custom nodes you install through Manager (e.g. "comfyui-impact-pack"). The local installation path is not transmitted.\nCrash and error diagnostics — stack traces, error messages, and short stdout/stderr fragments captured at the moment of failure.'
+      'Device identifier. A pseudonymous identifier generated locally on first run. Before you sign in to Comfy Cloud it is not linked to your name, email address, or hardware. When you sign in, it is associated with your Comfy account.\nTechnical metadata. Application version, operating system, and processor architecture.\nProduct usage events. Feature interactions, navigation between views, installation and update milestones, and approximate timing.\nCustom node identifiers. Public package names of custom nodes you install through Manager (for example, "comfyui-impact-pack"). The local installation path is not transmitted.\nCrash and error diagnostics. Stack traces, error messages, and short stdout/stderr fragments captured at the moment of failure.'
   },
   'desktop_privacy.data.block.2': {
     en: 'Before crash or error diagnostic data is transmitted, we apply automated redaction to home-directory paths and to well-known credential patterns (Bearer tokens, OpenAI <code>sk-*</code> and Hugging Face <code>hf_*</code> keys, basic-auth URLs, and <code>KEY=</code> / <code>SECRET=</code> environment assignments).',
@@ -2195,9 +2195,9 @@ const translations = {
       'Workflow content (the graph, the nodes you connect, their parameters)\nPrompts you write\nGenerated images, video, or audio\nModel weights, or the local filenames under which you save them\nNetwork activity outside the application'
   },
   'desktop_privacy.data.block.5': {
-    en: 'Workflow files, models, generated outputs, the list of installations you create, and your local settings remain on your device and are not transmitted to, or accessible by, Comfy Org.',
+    en: 'Your workflow files, your models, the outputs you generate, the list of installations you create, and your local settings remain on your device. They are not transmitted to Comfy Org, and they are not accessible to us.',
     'zh-CN':
-      'Workflow files, models, generated outputs, the list of installations you create, and your local settings remain on your device and are not transmitted to, or accessible by, Comfy Org.'
+      'Your workflow files, your models, the outputs you generate, the list of installations you create, and your local settings remain on your device. They are not transmitted to Comfy Org, and they are not accessible to us.'
   },
 
   'desktop_privacy.purposes.label': { en: 'PURPOSES', 'zh-CN': 'PURPOSES' },
@@ -2211,19 +2211,19 @@ const translations = {
       'We process personal data on the following lawful bases under GDPR and UK GDPR:'
   },
   'desktop_privacy.purposes.block.1': {
-    en: 'Product usage analytics — Consent (Article 6(1)(a))\nCrash and error diagnostics — Consent (Article 6(1)(a))\nDelivery of software updates and integrity verification — Legitimate interests (Article 6(1)(f))\nAuthentication when signing in to Comfy Cloud — Performance of a contract (Article 6(1)(b))',
+    en: 'Product usage analytics: consent under Article 6(1)(a).\nCrash and error diagnostics: consent under Article 6(1)(a).\nDelivery of software updates and integrity verification: legitimate interests under Article 6(1)(f).\nAuthentication when you sign in to Comfy Cloud: performance of a contract under Article 6(1)(b).',
     'zh-CN':
-      'Product usage analytics — Consent (Article 6(1)(a))\nCrash and error diagnostics — Consent (Article 6(1)(a))\nDelivery of software updates and integrity verification — Legitimate interests (Article 6(1)(f))\nAuthentication when signing in to Comfy Cloud — Performance of a contract (Article 6(1)(b))'
+      'Product usage analytics: consent under Article 6(1)(a).\nCrash and error diagnostics: consent under Article 6(1)(a).\nDelivery of software updates and integrity verification: legitimate interests under Article 6(1)(f).\nAuthentication when you sign in to Comfy Cloud: performance of a contract under Article 6(1)(b).'
   },
   'desktop_privacy.purposes.block.2': {
-    en: 'Consent for analytics and crash diagnostics is opt-in and may be withdrawn at any time at Settings → Telemetry. Withdrawal does not affect the lawfulness of processing carried out before withdrawal. You may object to legitimate-interest processing by contacting <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
+    en: 'Consent for analytics and crash diagnostics is opt-in, and you may withdraw it at any time at Settings → Telemetry. Withdrawal does not affect the lawfulness of processing carried out before withdrawal. To object to processing on the basis of legitimate interests, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
     'zh-CN':
-      'Consent for analytics and crash diagnostics is opt-in and may be withdrawn at any time at Settings → Telemetry. Withdrawal does not affect the lawfulness of processing carried out before withdrawal. You may object to legitimate-interest processing by contacting <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.'
+      'Consent for analytics and crash diagnostics is opt-in, and you may withdraw it at any time at Settings → Telemetry. Withdrawal does not affect the lawfulness of processing carried out before withdrawal. To object to processing on the basis of legitimate interests, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.'
   },
   'desktop_privacy.purposes.block.3': {
-    en: 'We do not carry out automated decision-making, including profiling, that produces legal or similarly significant effects. We do not sell personal data and do not share personal data for cross-context behavioural advertising.',
+    en: 'We do not carry out automated decision-making, including profiling, that produces legal or similarly significant effects. We do not sell personal data, and we do not share personal data for cross-context behavioural advertising.',
     'zh-CN':
-      'We do not carry out automated decision-making, including profiling, that produces legal or similarly significant effects. We do not sell personal data and do not share personal data for cross-context behavioural advertising.'
+      'We do not carry out automated decision-making, including profiling, that produces legal or similarly significant effects. We do not sell personal data, and we do not share personal data for cross-context behavioural advertising.'
   },
 
   'desktop_privacy.processors.label': {
@@ -2240,9 +2240,9 @@ const translations = {
       'We engage the following processors under Data Processing Agreements:'
   },
   'desktop_privacy.processors.block.1': {
-    en: 'PostHog — product usage analytics\nDatadog — crash and error diagnostics\nToDesktop — application distribution and software updates\nComfy Org analytics warehouse — long-term aggregate analytics, operated by Comfy Org',
+    en: 'PostHog (product usage analytics)\nDatadog (crash and error diagnostics)\nToDesktop (application distribution and software updates)\nComfy Org analytics warehouse (long-term aggregate analytics, operated by Comfy Org)',
     'zh-CN':
-      'PostHog — product usage analytics\nDatadog — crash and error diagnostics\nToDesktop — application distribution and software updates\nComfy Org analytics warehouse — long-term aggregate analytics, operated by Comfy Org'
+      'PostHog (product usage analytics)\nDatadog (crash and error diagnostics)\nToDesktop (application distribution and software updates)\nComfy Org analytics warehouse (long-term aggregate analytics, operated by Comfy Org)'
   },
 
   'desktop_privacy.transfers.label': { en: 'TRANSFERS', 'zh-CN': 'TRANSFERS' },
@@ -2259,9 +2259,9 @@ const translations = {
   'desktop_privacy.retention.label': { en: 'RETENTION', 'zh-CN': 'RETENTION' },
   'desktop_privacy.retention.title': { en: 'Retention', 'zh-CN': 'Retention' },
   'desktop_privacy.retention.block.0': {
-    en: 'Product usage analytics — up to 24 months from event, then aggregated or deleted\nCrash and error diagnostics — 15 days at full fidelity, sampled or aggregated thereafter\nAggregate analytics — up to 36 months in aggregated form\nUpdate-server logs — 90 days\nLocal device identifier — stored on your device; removed on uninstall',
+    en: 'Product usage analytics: up to 24 months from the event, then aggregated or deleted.\nCrash and error diagnostics: 15 days at full fidelity, then sampled or aggregated.\nAggregate analytics: up to 36 months in aggregated form.\nUpdate-server logs: 90 days.\nLocal device identifier: stored on your device only, and removed when you uninstall the application.',
     'zh-CN':
-      'Product usage analytics — up to 24 months from event, then aggregated or deleted\nCrash and error diagnostics — 15 days at full fidelity, sampled or aggregated thereafter\nAggregate analytics — up to 36 months in aggregated form\nUpdate-server logs — 90 days\nLocal device identifier — stored on your device; removed on uninstall'
+      'Product usage analytics: up to 24 months from the event, then aggregated or deleted.\nCrash and error diagnostics: 15 days at full fidelity, then sampled or aggregated.\nAggregate analytics: up to 36 months in aggregated form.\nUpdate-server logs: 90 days.\nLocal device identifier: stored on your device only, and removed when you uninstall the application.'
   },
 
   'desktop_privacy.rights.label': { en: 'YOUR RIGHTS', 'zh-CN': 'YOUR RIGHTS' },
@@ -2272,19 +2272,19 @@ const translations = {
       'If you are in the EU, UK, or EEA, you have the following rights under GDPR and UK GDPR: access, rectification, erasure, restriction of processing, objection, portability, and withdrawal of consent.'
   },
   'desktop_privacy.rights.block.1': {
-    en: 'If you are a California resident, you have rights under CCPA and CPRA: to know what we collect, to delete, to correct, and to limit use of sensitive personal information. We do not sell personal information or share it for cross-context behavioural advertising.',
+    en: 'If you are a California resident, you have rights under CCPA and CPRA: to know what we collect, to delete, to correct, and to limit use of sensitive personal information. We do not sell personal information, and we do not share it for cross-context behavioural advertising.',
     'zh-CN':
-      'If you are a California resident, you have rights under CCPA and CPRA: to know what we collect, to delete, to correct, and to limit use of sensitive personal information. We do not sell personal information or share it for cross-context behavioural advertising.'
+      'If you are a California resident, you have rights under CCPA and CPRA: to know what we collect, to delete, to correct, and to limit use of sensitive personal information. We do not sell personal information, and we do not share it for cross-context behavioural advertising.'
   },
   'desktop_privacy.rights.block.2': {
-    en: "You have the right to lodge a complaint with your supervisory authority — for example, the UK Information Commissioner's Office, your EU member-state data protection authority, or the California Privacy Protection Agency.",
+    en: "You also have the right to lodge a complaint with your supervisory authority, such as the UK Information Commissioner's Office, your EU member-state data protection authority, or the California Privacy Protection Agency.",
     'zh-CN':
-      "You have the right to lodge a complaint with your supervisory authority — for example, the UK Information Commissioner's Office, your EU member-state data protection authority, or the California Privacy Protection Agency."
+      "You also have the right to lodge a complaint with your supervisory authority, such as the UK Information Commissioner's Office, your EU member-state data protection authority, or the California Privacy Protection Agency."
   },
   'desktop_privacy.rights.block.3': {
-    en: 'To exercise any of these rights, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>. If you have signed in to Comfy Cloud, your account verifies your identity. If you have not signed in, please provide your approximate install date, platform, and application version, and we will conduct a best-effort match against our records and respond within 30 days.',
+    en: 'To exercise any of these rights, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>. If you have signed in to Comfy Cloud, your account verifies your identity. If you have not signed in, please tell us your approximate install date, platform, and application version, and we will attempt to match these against our records. We aim to respond within 30 days.',
     'zh-CN':
-      'To exercise any of these rights, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>. If you have signed in to Comfy Cloud, your account verifies your identity. If you have not signed in, please provide your approximate install date, platform, and application version, and we will conduct a best-effort match against our records and respond within 30 days.'
+      'To exercise any of these rights, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>. If you have signed in to Comfy Cloud, your account verifies your identity. If you have not signed in, please tell us your approximate install date, platform, and application version, and we will attempt to match these against our records. We aim to respond within 30 days.'
   },
 
   'desktop_privacy.children.label': { en: 'CHILDREN', 'zh-CN': 'CHILDREN' },
