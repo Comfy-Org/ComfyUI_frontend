@@ -832,7 +832,9 @@
     "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "ARQUIVO_3D_OBJ",
     "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
     "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "ARQUIVO_3D_STL",
     "FILE_3D_USDZ": "ARQUIVO_3D_USDZ",
@@ -945,6 +947,46 @@
     "fallbacks": {
       "inputName": "entrada desconhecida",
       "nodeName": "Este nó"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "Uma entrada de mídia obrigatória não possui arquivo selecionado.",
+        "toastMessageMany": "Selecione as entradas de mídia ausentes antes de executar este fluxo de trabalho.",
+        "toastMessageWithNode": "{nodeName} está sem o arquivo de mídia obrigatório.",
+        "toastTitleMany": "Entradas de mídia ausentes",
+        "toastTitleOne": "Entrada de mídia ausente"
+      },
+      "missing_model": {
+        "displayMessageCloud": "Importe um modelo ou abra o nó para substituí-lo.",
+        "displayMessageOss": "Baixe um modelo ou abra o nó para substituí-lo.",
+        "toastMessageManyCloud": "Alguns modelos não são suportados. Escolha outros.",
+        "toastMessageManyOss": "{count} arquivos de modelo estão ausentes.",
+        "toastMessageOneCloud": "Este modelo não é suportado. Escolha outro.",
+        "toastMessageOneOss": "{nodeName} está sem o arquivo de modelo necessário.",
+        "toastTitleMany": "Modelos ausentes",
+        "toastTitleManyCloud": "Modelos não estão disponíveis na Cloud",
+        "toastTitleOneCloud": "{modelName} não está disponível na Cloud",
+        "toastTitleOneOss": "{modelName} está ausente"
+      },
+      "missing_node": {
+        "displayMessageCloud": "Nós personalizados necessários não são suportados na Cloud. Substitua-os por nós suportados.",
+        "displayMessageOss": "Instale os pacotes ausentes para usar este fluxo de trabalho.",
+        "toastMessageManyCloud": "Este fluxo de trabalho usa nós que não são suportados na Cloud.",
+        "toastMessageManyOss": "{count} nós requerem pacotes de nós ausentes.",
+        "toastMessageOneCloud": "Este nó não é suportado na Cloud.",
+        "toastMessageOneOss": "Este fluxo de trabalho usa um nó personalizado que não está instalado. Instale-o pelo registro ou substitua o nó.",
+        "toastTitleManyCloud": "Nós não estão disponíveis na Cloud",
+        "toastTitleManyOss": "Nós ausentes",
+        "toastTitleOneCloud": "{nodeType} não está disponível na Cloud",
+        "toastTitleOneOss": "Nó ausente: {nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "Alguns nós podem ser substituídos por alternativas",
+        "toastMessageMany": "{count} tipos de nós podem ser substituídos por alternativas compatíveis.",
+        "toastMessageOne": "Substitua por {replacementNodeType} no painel de erros.",
+        "toastTitleMany": "Nós podem ser substituídos",
+        "toastTitleOne": "{nodeType} pode ser substituído"
+      }
     },
     "promptErrors": {
       "missing_node_type": {
@@ -1287,12 +1329,9 @@
     "missingMedia": "Alguns nós estão sem as entradas necessárias",
     "missingModels": "{count} modelo necessário está ausente | {count} modelos necessários estão ausentes",
     "missingNodes": "Alguns nós estão ausentes e precisam ser instalados",
-    "seeErrors": "Ver erros",
-    "showMissingMedia": "Mostrar entradas ausentes",
-    "showMissingModels": "Mostrar modelos ausentes",
-    "showMissingNodes": "Mostrar nós ausentes",
-    "showSwapNodes": "Mostrar nós alternativos",
-    "swapNodes": "Alguns nós podem ser substituídos por alternativas"
+    "multipleErrorCount": "{count} erro encontrado | {count} erros encontrados",
+    "multipleErrorsMessage": "Resolva-os antes de executar o fluxo de trabalho.",
+    "viewDetails": "Ver detalhes"
   },
   "errorPanelSurvey": {
     "ctaButton": "Enviar feedback",
@@ -1376,6 +1415,11 @@
     "amount": "Quantidade",
     "apply": "Aplicar",
     "architecture": "Arquitetura",
+    "arrange": "Organizar",
+    "arrangeAsGrid": "Organizar como grade",
+    "arrangeHorizontally": "Organizar horizontalmente",
+    "arrangeSpacing": "Espaçamento da organização",
+    "arrangeVertically": "Organizar verticalmente",
     "asset": "{count} ativo | {count} ativos",
     "audioFailedToLoad": "Falha ao carregar áudio",
     "audioProgress": "Progresso do áudio",
@@ -2781,7 +2825,6 @@
     "replacedNode": "Nó substituído: {nodeType}",
     "selectAll": "Selecionar Tudo",
     "skipForNow": "Pular por enquanto",
-    "swapNodesGuide": "Os seguintes nós podem ser automaticamente substituídos por alternativas compatíveis.",
     "swapNodesTitle": "Trocar Nós",
     "unknownNode": "Desconhecido",
     "willBeReplacedBy": "Este nó será substituído por:"
@@ -3042,7 +3085,6 @@
     },
     "missingNodePacks": {
       "applyChanges": "Aplicar alterações",
-      "cloudMessage": "Este fluxo de trabalho requer nós personalizados que ainda não estão disponíveis no Comfy Cloud.",
       "collapse": "Recolher",
       "expand": "Expandir",
       "installAll": "Instalar todos",
@@ -3050,7 +3092,6 @@
       "installed": "Instalado",
       "installing": "Instalando...",
       "ossManagerDisabledHint": "Para instalar nós ausentes, primeiro execute {pipCmd} no seu ambiente Python para instalar o Node Manager e depois reinicie o ComfyUI com a flag {flag}.",
-      "ossMessage": "Este fluxo de trabalho usa nós personalizados que você ainda não instalou.",
       "searchInManager": "Buscar no Gerenciador de Nós",
       "title": "Pacotes de nós ausentes",
       "unknownPack": "Pacote desconhecido",

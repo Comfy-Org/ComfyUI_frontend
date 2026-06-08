@@ -832,7 +832,9 @@
     "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
     "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
     "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
@@ -945,6 +947,46 @@
     "fallbacks": {
       "inputName": "неизвестный вход",
       "nodeName": "Этот узел"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "Для обязательного медиа-входа не выбран файл.",
+        "toastMessageMany": "Пожалуйста, выберите отсутствующие медиа-входы перед запуском этого рабочего процесса.",
+        "toastMessageWithNode": "В узле {nodeName} отсутствует необходимый медиа-файл.",
+        "toastTitleMany": "Отсутствуют медиа-входы",
+        "toastTitleOne": "Отсутствует медиа-вход"
+      },
+      "missing_model": {
+        "displayMessageCloud": "Импортируйте модель или откройте узел для замены.",
+        "displayMessageOss": "Скачайте модель или откройте узел для замены.",
+        "toastMessageManyCloud": "Некоторые модели не поддерживаются. Выберите другие.",
+        "toastMessageManyOss": "Отсутствует {count} файлов моделей.",
+        "toastMessageOneCloud": "Эта модель не поддерживается. Выберите другую.",
+        "toastMessageOneOss": "В узле {nodeName} отсутствует необходимый файл модели.",
+        "toastTitleMany": "Отсутствуют модели",
+        "toastTitleManyCloud": "Модели недоступны в облаке",
+        "toastTitleOneCloud": "{modelName} недоступна в облаке",
+        "toastTitleOneOss": "{modelName} отсутствует"
+      },
+      "missing_node": {
+        "displayMessageCloud": "Требуемые пользовательские узлы не поддерживаются в облаке. Замените их на поддерживаемые.",
+        "displayMessageOss": "Установите отсутствующие пакеты для использования этого рабочего процесса.",
+        "toastMessageManyCloud": "В этом рабочем процессе используются узлы, которые не поддерживаются в облаке.",
+        "toastMessageManyOss": "{count} узлов требуют отсутствующих пакетов узлов.",
+        "toastMessageOneCloud": "Этот узел не поддерживается в облаке.",
+        "toastMessageOneOss": "В этом рабочем процессе используется пользовательский узел, который не установлен. Установите его из реестра или замените узел.",
+        "toastTitleManyCloud": "Узлы недоступны в облаке",
+        "toastTitleManyOss": "Отсутствуют узлы",
+        "toastTitleOneCloud": "{nodeType} недоступен в облаке",
+        "toastTitleOneOss": "Отсутствует узел: {nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "Некоторые узлы можно заменить альтернативами",
+        "toastMessageMany": "{count} типов узлов можно заменить совместимыми альтернативами.",
+        "toastMessageOne": "Замените на {replacementNodeType} из панели ошибок.",
+        "toastTitleMany": "Узлы можно заменить",
+        "toastTitleOne": "{nodeType} можно заменить"
+      }
     },
     "promptErrors": {
       "missing_node_type": {
@@ -1287,12 +1329,9 @@
     "missingMedia": "Некоторым узлам не хватает необходимых входных данных",
     "missingModels": "{count} необходимая модель отсутствует | {count} необходимых моделей отсутствуют",
     "missingNodes": "Некоторые узлы отсутствуют и требуют установки",
-    "seeErrors": "Посмотреть ошибки",
-    "showMissingMedia": "Показать отсутствующие входные данные",
-    "showMissingModels": "Показать отсутствующие модели",
-    "showMissingNodes": "Показать отсутствующие узлы",
-    "showSwapNodes": "Показать заменяемые узлы",
-    "swapNodes": "Некоторые узлы можно заменить альтернативами"
+    "multipleErrorCount": "Обнаружена {count} ошибка | Обнаружено {count} ошибок",
+    "multipleErrorsMessage": "Устраните их перед запуском рабочего процесса.",
+    "viewDetails": "Просмотреть детали"
   },
   "errorPanelSurvey": {
     "ctaButton": "Оставить отзыв",
@@ -1376,6 +1415,11 @@
     "amount": "Количество",
     "apply": "Применить",
     "architecture": "Архитектура",
+    "arrange": "Упорядочить",
+    "arrangeAsGrid": "Упорядочить в виде сетки",
+    "arrangeHorizontally": "Упорядочить горизонтально",
+    "arrangeSpacing": "Интервал между элементами",
+    "arrangeVertically": "Упорядочить вертикально",
     "asset": "{count} ресурсов | {count} ресурс | {count} ресурса",
     "audioFailedToLoad": "Не удалось загрузить аудио",
     "audioProgress": "Прогресс аудио",
@@ -2781,7 +2825,6 @@
     "replacedNode": "Заменённый узел: {nodeType}",
     "selectAll": "Выбрать все",
     "skipForNow": "Пропустить сейчас",
-    "swapNodesGuide": "Следующие узлы могут быть автоматически заменены совместимыми альтернативами.",
     "swapNodesTitle": "Заменить узлы",
     "unknownNode": "Неизвестно",
     "willBeReplacedBy": "Этот узел будет заменён на:"
@@ -3042,7 +3085,6 @@
     },
     "missingNodePacks": {
       "applyChanges": "Применить изменения",
-      "cloudMessage": "Для этого рабочего процесса требуются пользовательские узлы, которые ещё недоступны в Comfy Cloud.",
       "collapse": "Свернуть",
       "expand": "Развернуть",
       "installAll": "Установить все",
@@ -3050,7 +3092,6 @@
       "installed": "Установлено",
       "installing": "Установка...",
       "ossManagerDisabledHint": "Чтобы установить отсутствующие узлы, сначала выполните {pipCmd} в вашей среде Python для установки Node Manager, затем перезапустите ComfyUI с флагом {flag}.",
-      "ossMessage": "В этом рабочем процессе используются пользовательские узлы, которые вы ещё не установили.",
       "searchInManager": "Поиск в менеджере узлов",
       "title": "Отсутствующие пакеты узлов",
       "unknownPack": "Неизвестный пакет",

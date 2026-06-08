@@ -832,7 +832,9 @@
     "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
     "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
     "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
@@ -945,6 +947,46 @@
     "fallbacks": {
       "inputName": "未知輸入",
       "nodeName": "此節點"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "必要的媒體輸入未選擇檔案。",
+        "toastMessageMany": "請在執行此工作流程前選擇缺少的媒體輸入。",
+        "toastMessageWithNode": "{nodeName} 缺少必要的媒體檔案。",
+        "toastTitleMany": "缺少媒體輸入",
+        "toastTitleOne": "缺少媒體輸入"
+      },
+      "missing_model": {
+        "displayMessageCloud": "請匯入模型，或開啟節點進行替換。",
+        "displayMessageOss": "請下載模型，或開啟節點進行替換。",
+        "toastMessageManyCloud": "部分模型不支援，請選擇其他模型。",
+        "toastMessageManyOss": "缺少 {count} 個模型檔案。",
+        "toastMessageOneCloud": "此模型不支援，請選擇其他模型。",
+        "toastMessageOneOss": "{nodeName} 缺少必要的模型檔案。",
+        "toastTitleMany": "缺少模型",
+        "toastTitleManyCloud": "模型在雲端不可用",
+        "toastTitleOneCloud": "{modelName} 在雲端不可用",
+        "toastTitleOneOss": "{modelName} 缺失"
+      },
+      "missing_node": {
+        "displayMessageCloud": "雲端不支援所需的自訂節點。請以支援的節點取代。",
+        "displayMessageOss": "請安裝缺少的套件以使用此工作流程。",
+        "toastMessageManyCloud": "此工作流程使用雲端不支援的節點。",
+        "toastMessageManyOss": "{count} 個節點需要缺少的節點套件。",
+        "toastMessageOneCloud": "此節點不支援雲端。",
+        "toastMessageOneOss": "此工作流程使用尚未安裝的自訂節點。請從註冊表安裝或取代該節點。",
+        "toastTitleManyCloud": "節點在雲端不可用",
+        "toastTitleManyOss": "缺少節點",
+        "toastTitleOneCloud": "{nodeType} 在雲端不可用",
+        "toastTitleOneOss": "缺少節點：{nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "部分節點可替換為其他選項",
+        "toastMessageMany": "{count} 種節點類型可替換為相容選項。",
+        "toastMessageOne": "請在錯誤面板中以 {replacementNodeType} 取代。",
+        "toastTitleMany": "節點可被替換",
+        "toastTitleOne": "{nodeType} 可被替換"
+      }
     },
     "promptErrors": {
       "missing_node_type": {
@@ -1287,12 +1329,9 @@
     "missingMedia": "有些節點缺少必要的輸入",
     "missingModels": "缺少 {count} 個必要模型",
     "missingNodes": "有些節點缺失，需要安裝",
-    "seeErrors": "查看錯誤",
-    "showMissingMedia": "顯示缺少的輸入",
-    "showMissingModels": "顯示缺少的模型",
-    "showMissingNodes": "顯示缺少的節點",
-    "showSwapNodes": "顯示可替換的節點",
-    "swapNodes": "有些節點可以用其他選項替換"
+    "multipleErrorCount": "發現 {count} 個錯誤",
+    "multipleErrorsMessage": "請在執行工作流程前解決這些錯誤。",
+    "viewDetails": "檢視詳情"
   },
   "errorPanelSurvey": {
     "ctaButton": "提供回饋",
@@ -1376,6 +1415,11 @@
     "amount": "數量",
     "apply": "套用",
     "architecture": "架構",
+    "arrange": "排列",
+    "arrangeAsGrid": "網格排列",
+    "arrangeHorizontally": "水平排列",
+    "arrangeSpacing": "排列間距",
+    "arrangeVertically": "垂直排列",
     "asset": "{count} 筆資產",
     "audioFailedToLoad": "無法載入音訊",
     "audioProgress": "音訊進度",
@@ -2781,7 +2825,6 @@
     "replacedNode": "已替換節點：{nodeType}",
     "selectAll": "全選",
     "skipForNow": "暫時略過",
-    "swapNodesGuide": "以下節點可以自動替換為相容的替代品。",
     "swapNodesTitle": "交換節點",
     "unknownNode": "未知",
     "willBeReplacedBy": "此節點將被替換為："
@@ -3042,7 +3085,6 @@
     },
     "missingNodePacks": {
       "applyChanges": "套用變更",
-      "cloudMessage": "此工作流程需要 Comfy Cloud 尚未提供的自訂節點。",
       "collapse": "收合",
       "expand": "展開",
       "installAll": "全部安裝",
@@ -3050,7 +3092,6 @@
       "installed": "已安裝",
       "installing": "安裝中⋯⋯",
       "ossManagerDisabledHint": "若要安裝缺少的節點，請先在您的 Python 環境中執行 {pipCmd} 以安裝 Node Manager，然後使用 {flag} 旗標重新啟動 ComfyUI。",
-      "ossMessage": "此工作流程使用了你尚未安裝的自訂節點。",
       "searchInManager": "在節點管理器中搜尋",
       "title": "缺少節點包",
       "unknownPack": "未知的節點包",
