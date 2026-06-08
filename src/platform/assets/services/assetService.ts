@@ -546,7 +546,10 @@ function createAssetService() {
   async function getAllAssetsByTag(
     tag: string,
     includePublic: boolean = true,
-    { limit = DEFAULT_LIMIT, signal }: AssetPaginationOptions = {}
+    {
+      limit = DEFAULT_LIMIT,
+      signal
+    }: Pick<AssetPaginationOptions, 'limit' | 'signal'> = {}
   ): Promise<AssetItem[]> {
     const assets: AssetItem[] = []
     const pageSize = limit > 0 ? limit : DEFAULT_LIMIT
@@ -567,7 +570,8 @@ function createAssetService() {
 
       assets.push(...batch)
 
-      if (!data.has_more || !data.next_cursor) {
+      // A server that returns a non-advancing cursor would loop forever.
+      if (!data.has_more || !data.next_cursor || data.next_cursor === after) {
         return assets
       }
 

@@ -609,6 +609,29 @@ describe(assetService.getAllAssetsByTag, () => {
     expect(fetchApiMock).toHaveBeenCalledOnce()
   })
 
+  it('stops walking when the server returns a non-advancing cursor', async () => {
+    fetchApiMock
+      .mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'a', tags: ['input'] })], {
+          hasMore: true,
+          nextCursor: 'stuck'
+        })
+      )
+      .mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'b', tags: ['input'] })], {
+          hasMore: true,
+          nextCursor: 'stuck'
+        })
+      )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 1
+    })
+
+    expect(assets.map((a) => a.id)).toEqual(['a', 'b'])
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+  })
+
   it.for([
     {
       name: 'missing has_more',
