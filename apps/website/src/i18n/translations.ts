@@ -605,8 +605,8 @@ const translations = {
       '是的。基于 GPL-3.0 免费开源。没有功能限制、没有试用期、没有附加条件。'
   },
   'download.faq.4.q': {
-    en: 'Why would I pay for Comfy Cloud if Local is free?',
-    'zh-CN': '既然本地版免费，为什么还要付费使用 Comfy Cloud？'
+    en: 'Why would I pay for Comfy Cloud if Desktop is free?',
+    'zh-CN': '既然桌面版免费，为什么还要付费使用 Comfy Cloud？'
   },
   'download.faq.4.a': {
     en: 'Your machine or ours. Cloud gives you powerful GPUs on demand, pre-loaded models, end-to-end security and infrastructure out of the box and partner models cleared for commercial use.',
@@ -623,8 +623,8 @@ const translations = {
       'Desktop：一键安装，自动更新。Portable：独立构建，可从任意文件夹运行。CLI：从 GitHub 克隆，完全开发者控制，适合想自定义环境或参与上游贡献的开发者。'
   },
   'download.faq.6.q': {
-    en: 'Can I use my local workflows in Comfy Cloud?',
-    'zh-CN': '我可以在 Comfy Cloud 中使用本地工作流吗？'
+    en: 'Can I use my Desktop workflows in Comfy Cloud?',
+    'zh-CN': '我可以在 Comfy Cloud 中使用桌面工作流吗？'
   },
   'download.faq.6.a': {
     en: 'Yes — same file, same results. No conversion, no rework.',
@@ -665,8 +665,8 @@ const translations = {
     'zh-CN': '专业人士为何\n选择'
   },
   'download.reason.headingHighlight': {
-    en: 'Local',
-    'zh-CN': '本地版'
+    en: 'Desktop',
+    'zh-CN': '桌面版'
   },
   'download.reason.1.title': {
     en: 'Unlimited\nCustomization',
