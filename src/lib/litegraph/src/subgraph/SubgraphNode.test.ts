@@ -8,7 +8,13 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  BaseWidget,
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -219,7 +225,7 @@ describe('SubgraphNode Synchronization', () => {
     expect(subgraphNode.widgets).toMatchObject([
       { name: 'text', widgetId: inputWidgetId }
     ])
-    expect(promotedInput._widget).toBeUndefined()
+    expect(promotedInput._widget).toBe(subgraphNode.widgets[0])
     expect(inputWidgetId).toBeDefined()
     expect('sourceNodeId' in promotedInput).toBe(false)
     expect('sourceWidgetName' in promotedInput).toBe(false)
@@ -228,6 +234,58 @@ describe('SubgraphNode Synchronization', () => {
     expect(useWidgetValueStore().getWidget(inputWidgetId)?.value).toBe(
       'initial'
     )
+  })
+
+  it('binds promoted host widgets as stable LiteGraph widgets', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addOutput('out', 'STRING')
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    const widget = subgraphNode.widgets[0]
+
+    expect(widget).toBeDefined()
+    expect(subgraphNode.widgets[0]).toBe(widget)
+    expect(promotedInput._widget).toBe(widget)
+    expect(subgraphNode.getWidgetFromSlot(promotedInput)).toBe(widget)
+
+    subgraphNode.arrange()
+
+    expect(promotedInput.pos?.[1]).toBeGreaterThan(
+      LiteGraph.NODE_SLOT_HEIGHT * 0.5
+    )
+  })
+
+  it('does not expose promoted widgetId to BaseWidget assignment', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addOutput('out', 'STRING')
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const widget = subgraphNode.widgets[0]
+    expect(widget?.widgetId).toBeDefined()
+
+    expect(() => {
+      // @ts-expect-error Abstract class instantiation
+      new BaseWidget({ ...widget, node: subgraphNode })
+    }).not.toThrow()
   })
 
   it('should keep input.widget.name stable after rename (onGraphConfigured safety)', () => {
@@ -994,7 +1052,7 @@ describe('SubgraphNode label propagation', () => {
     const labelChangedSpy = vi.spyOn(subgraphNode.graph!, 'trigger')
 
     expect(promotedInput.label).toBeUndefined()
-    expect(promotedInput._widget).toBeUndefined()
+    expect(promotedInput._widget).toBe(subgraphNode.widgets[0])
     expect(promotedInput.widgetId).toBeDefined()
     if (!promotedInput.widgetId) throw new Error('Missing widgetId')
 

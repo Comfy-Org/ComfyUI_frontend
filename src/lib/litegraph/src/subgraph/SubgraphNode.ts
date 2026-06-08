@@ -96,7 +96,10 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
     Object.defineProperty(this, 'widgets', {
       get: () =>
-        this.inputs.flatMap((input) => this._projectPromotedWidget(input)),
+        this.inputs.flatMap((input) => {
+          const widget = this._projectPromotedWidget(input)
+          return widget ? [widget] : []
+        }),
       set: () => {
         if (import.meta.env.DEV)
           console.warn(
@@ -242,32 +245,40 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     }
   }
 
-  private _projectPromotedWidget(input: INodeInputSlot): IBaseWidget[] {
+  private _projectPromotedWidget(
+    input: INodeInputSlot
+  ): IBaseWidget | undefined {
+    if (input._widget) return input._widget
+
     const id = input.widgetId
-    if (!id) return []
+    if (!id) return
 
     const store = useWidgetValueStore()
-    return [
-      {
-        name: input.name,
-        label: input.label ?? input.name,
-        y: 0,
-        widgetId: id,
-        get type() {
-          return store.getWidget(id)?.type ?? 'text'
-        },
-        get options() {
-          return store.getWidget(id)?.options ?? {}
-        },
-        get value() {
-          const value = store.getWidget(id)?.value
-          return isWidgetValue(value) ? value : undefined
-        },
-        set value(next) {
-          store.setValue(id, next)
-        }
+    const widget: IBaseWidget = {
+      name: input.name,
+      label: input.label ?? input.name,
+      y: 0,
+      get type() {
+        return store.getWidget(id)?.type ?? 'text'
+      },
+      get options() {
+        return store.getWidget(id)?.options ?? {}
+      },
+      get value() {
+        const value = store.getWidget(id)?.value
+        return isWidgetValue(value) ? value : undefined
+      },
+      set value(next) {
+        store.setValue(id, next)
       }
-    ]
+    }
+    Object.defineProperty(widget, 'widgetId', {
+      value: id,
+      enumerable: false,
+      configurable: true
+    })
+    input._widget = widget
+    return input._widget
   }
 
   private _addSubgraphInputListeners(
@@ -622,6 +633,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           ? interiorWidget.isDOMWidget
           : undefined
     })
+    input._widget = this._projectPromotedWidget(input)
+    this._setConcreteSlots()
 
     this.subgraph.events.dispatch('widget-promoted', {
       widget: interiorWidget,
