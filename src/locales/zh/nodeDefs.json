@@ -619,6 +619,31 @@
       }
     }
   },
+  "BriaVideoGreenScreen": {
+    "description": "使用 Bria 将视频背景替换为纯色抠像屏幕。",
+    "display_name": "Bria 视频绿幕",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "green_shade": {
+        "name": "green_shade",
+        "tooltip": "应用在前景后方的纯色抠像色：broadcast_green（#00B140）、chroma_green（#00FF00）或 blue_screen（#0000FF）。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0 从首帧图像和可选的末帧图像生成视频。",
     "display_name": "ByteDance Seedance 2.0 首帧-末帧生成视频",
@@ -3997,6 +4022,9 @@
     "description": "从图像中移除被遮罩的对象并重建背景。用遮罩涂抹你想要擦除的部分。",
     "display_name": "Flux 擦除图像",
     "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
       "dilate_pixels": {
         "name": "膨胀像素",
         "tooltip": "扩展遮罩边界，以确保对象边缘被干净覆盖。"
@@ -4007,6 +4035,10 @@
       "mask": {
         "name": "遮罩",
         "tooltip": "白色区域将被移除；黑色区域将被保留。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用于生成噪声的随机种子。"
       }
     },
     "outputs": {
@@ -4750,6 +4782,14 @@
       "system_prompt": {
         "name": "system_prompt",
         "tooltip": "决定 AI 行为的基础性指令。"
+      },
+      "temperature": {
+        "name": "temperature",
+        "tooltip": "控制生成的随机性。数值越低越集中/确定。"
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "Nucleus 采样阈值。数值越低越集中，越高越多样。"
       }
     },
     "outputs": {
@@ -4803,6 +4843,48 @@
       "video": {
         "name": "视频",
         "tooltip": "用作模型上下文的可选视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "使用 Google 的 Gemini 模型生成文本回复。可提供文本提示，并可选提供一张或多张图片、音频片段、视频或文件作为多模态上下文。",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用于生成回复的 Gemini 模型。"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "模型的文本输入。可包含详细指令、问题或上下文。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "采样用的种子。设为 0 表示随机种子。无法保证输出确定性。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "决定模型行为的基础指令。"
       }
     },
     "outputs": {
@@ -13725,15 +13807,15 @@
       "height": {
         "name": "高度"
       },
-      "image": {
-        "name": "图像"
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "来自上游 3D 节点的 3D 模型文件。"
       },
       "model_3d_info": {
         "name": "3D 模型信息"
       },
-      "model_file": {
-        "name": "模型文件",
-        "tooltip": "来自上游 3D 节点的 3D 模型文件。"
+      "viewport_state": {
+        "name": "viewport_state"
       },
       "width": {
         "name": "宽度"
@@ -13788,12 +13870,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "预览 Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "一个高斯 Splat 3D 文件。"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "description": "将输入图像保存到您的ComfyUI临时目录。",
     "display_name": "预览图像",
     "inputs": {
       "images": {
         "name": "图像"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "预览点云",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "点云文件（.ply）"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -16446,6 +16620,27 @@
       },
       "filename_prefix": {
         "name": "文件名前缀"
+      }
+    }
+  },
+  "SaveAudioAdvanced": {
+    "description": "将输入音频保存到你的 ComfyUI 输出目录。",
+    "display_name": "保存音频（高级）",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "要保存的音频。"
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "要保存文件的前缀。可包含格式化标记，如 %date:yyyy-MM-dd%。"
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "保存音频的文件格式。"
       }
     }
   },
