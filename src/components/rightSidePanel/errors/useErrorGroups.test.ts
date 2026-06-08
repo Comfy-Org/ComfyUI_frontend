@@ -182,14 +182,14 @@ function makeModel(
 function makeMedia(
   name: string,
   opts: {
-    nodeId?: string | number
+    nodeId: string | number
     nodeType?: string
     widgetName?: string
-  } = {}
+  }
 ): MissingMediaCandidate {
   return {
     name,
-    nodeId: opts.nodeId ?? '1',
+    nodeId: opts.nodeId,
     nodeType: opts.nodeType ?? 'LoadImage',
     widgetName: opts.widgetName ?? 'image',
     mediaType: 'image',

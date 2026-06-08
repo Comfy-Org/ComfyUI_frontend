@@ -85,7 +85,9 @@ test.describe('Errors tab - Missing media', { tag: '@ui' }, () => {
           : null
       })
 
-      await getMediaRow(comfyPage).getByRole('button').first().click()
+      await getMediaRow(comfyPage)
+        .getByRole('button', { name: 'Load Image - image', exact: true })
+        .click()
 
       await expect
         .poll(async () => {

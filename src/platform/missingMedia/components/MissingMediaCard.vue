@@ -47,6 +47,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { resolveMissingMediaItemLabel } from '@/platform/errorCatalog/errorMessageResolver'
+import { getMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import { app } from '@/scripts/app'
 import { st } from '@/i18n'
@@ -70,24 +71,20 @@ interface MissingMediaItemEntry {
 }
 
 const missingMediaItems = computed(() => {
-  const items: MissingMediaItemEntry[] = []
-  for (const group of missingMediaGroups) {
-    for (const mediaItem of group.items) {
-      for (const nodeRef of mediaItem.referencingNodes) {
-        const nodeId = String(nodeRef.nodeId)
-        items.push({
-          key: `${nodeId}:${nodeRef.widgetName}:${mediaItem.name}`,
+  return getMissingMediaReferences(missingMediaGroups)
+    .map(({ mediaItem, nodeRef }) => {
+      const nodeId = String(nodeRef.nodeId)
+      return {
+        key: `${nodeId}:${nodeRef.widgetName}:${mediaItem.name}`,
+        nodeId,
+        displayItemLabel: getDisplayItemLabel(
           nodeId,
-          displayItemLabel: getDisplayItemLabel(
-            nodeId,
-            nodeRef.nodeType ?? mediaItem.representative.nodeType,
-            nodeRef.widgetName
-          )
-        })
+          nodeRef.nodeType ?? mediaItem.representative.nodeType,
+          nodeRef.widgetName
+        )
       }
-    }
-  }
-  return items.sort(compareMissingMediaItems)
+    })
+    .sort(compareMissingMediaItems)
 })
 
 function getDisplayItemLabel(

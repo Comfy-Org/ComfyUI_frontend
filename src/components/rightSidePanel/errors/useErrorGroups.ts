@@ -34,6 +34,7 @@ import type { ResolvedCatalogErrorMessage } from '@/platform/errorCatalog/types'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import { groupCandidatesByName } from '@/platform/missingModel/missingModelScan'
 import { groupCandidatesByMediaType } from '@/platform/missingMedia/missingMediaScan'
+import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import {
   resolveMissingErrorMessage,
   resolveRunErrorMessage
@@ -149,18 +150,6 @@ function createErrorCard(
 
 function compareNodeId(a: ErrorCardData, b: ErrorCardData): number {
   return compareExecutionId(a.nodeId, b.nodeId)
-}
-
-function countMissingMediaRows(groups: MissingMediaGroup[]): number {
-  return groups.reduce(
-    (groupTotal, group) =>
-      groupTotal +
-      group.items.reduce(
-        (itemTotal, item) => itemTotal + item.referencingNodes.length,
-        0
-      ),
-    0
-  )
 }
 
 function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
@@ -702,7 +691,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   function buildMissingMediaGroups(): ErrorGroup[] {
     if (!missingMediaGroups.value.length) return []
-    const totalItems = countMissingMediaRows(missingMediaGroups.value)
+    const totalRows = countMissingMediaReferences(missingMediaGroups.value)
     return [
       {
         type: 'missing_media' as const,
@@ -711,7 +700,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         ...resolveMissingErrorMessage({
           kind: 'missing_media',
           groups: missingMediaGroups.value,
-          count: totalItems,
+          count: totalRows,
           isCloud
         })
       }
@@ -815,7 +804,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   function buildMissingMediaGroupsFiltered(): ErrorGroup[] {
     if (!filteredMissingMediaGroups.value.length) return []
-    const totalItems = countMissingMediaRows(filteredMissingMediaGroups.value)
+    const totalRows = countMissingMediaReferences(
+      filteredMissingMediaGroups.value
+    )
     return [
       {
         type: 'missing_media' as const,
@@ -824,7 +815,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         ...resolveMissingErrorMessage({
           kind: 'missing_media',
           groups: filteredMissingMediaGroups.value,
-          count: totalItems,
+          count: totalRows,
           isCloud
         })
       }
