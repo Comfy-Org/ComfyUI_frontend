@@ -8,7 +8,7 @@
         v-if="store.warnings.length > 0"
         variant="textonly"
         size="sm"
-        @click="store.clear()"
+        @click="clearWarnings"
       >
         <i class="icon-[lucide--trash-2] size-4" />
         <span>{{ t('deprecationWarnings.clearAll') }}</span>
@@ -188,6 +188,11 @@ function metaParts(warning: {
   return [warning.extension, warning.source, warning.detail].filter(
     (part): part is string => !!part
   )
+}
+
+function clearWarnings() {
+  store.clear()
+  selectedExtensions.value = []
 }
 
 onMounted(() => {
