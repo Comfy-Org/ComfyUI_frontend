@@ -2132,11 +2132,6 @@ const translations = {
   },
 
   // ── Desktop Privacy Policy ────────────────────────────────────────
-  // Mirrors the policy bundled in Comfy Desktop (Settings → About →
-  // Privacy Policy). Keep in sync with src/renderer/src/lib/legalDocs.ts
-  // in the Comfy-Desktop repo. zh-CN values follow the existing
-  // placeholder pattern in this file (English text until translation
-  // lands in a follow-up PR).
   'desktop_privacy.intro.label': { en: 'OVERVIEW', 'zh-CN': 'OVERVIEW' },
   'desktop_privacy.intro.block.0': {
     en: 'Effective 3 June 2026. Applies to the Comfy Desktop application.',
