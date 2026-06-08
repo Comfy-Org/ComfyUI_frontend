@@ -121,6 +121,7 @@ import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
 import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
@@ -343,6 +344,8 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
 const hoveredNodeDef = computed(
   () => displayedResults.value[selectedIndex.value] ?? null
 )
+
+useSearchQueryTracking('node_modal', searchQuery, displayedResults)
 
 watch(
   hoveredNodeDef,

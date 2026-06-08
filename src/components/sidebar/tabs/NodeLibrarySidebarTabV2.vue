@@ -190,6 +190,7 @@ import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import {
   DEFAULT_SORTING_ID,
   DEFAULT_TAB_ID,
@@ -288,6 +289,8 @@ const activeNodes = computed(() =>
     ? nodeDefStore.visibleNodeDefs
     : filteredNodeDefs.value
 )
+
+useSearchQueryTracking('node_sidebar', searchQuery, filteredNodeDefs)
 
 const hasNoMatches = computed(
   () => searchQuery.value.length > 0 && filteredNodeDefs.value.length === 0

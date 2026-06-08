@@ -247,6 +247,25 @@ export interface NodeSearchMetadata {
 }
 
 /**
+ * Search query metadata. One event per debounced query change across
+ * each search surface.
+ */
+export type SearchSurface =
+  | 'node_modal'
+  | 'node_sidebar'
+  | 'apps'
+  | 'templates'
+  | 'settings'
+
+export interface SearchQueryMetadata {
+  surface: SearchSurface
+  query: string
+  query_length: number
+  result_count: number
+  has_results: boolean
+}
+
+/**
  * Node added metadata. `source` indicates how the user initiated the add.
  * Bulk additions during workflow load are excluded — workflow_imported
  * already covers that.
@@ -469,6 +488,9 @@ export interface TelemetryProvider {
   trackNodeSearch?(metadata: NodeSearchMetadata): void
   trackNodeSearchResultSelected?(metadata: NodeSearchResultMetadata): void
 
+  // Search query analytics
+  trackSearchQuery?(metadata: SearchQueryMetadata): void
+
   // Node-added-to-canvas analytics
   trackNodeAdded?(metadata: NodeAddedMetadata): void
 
@@ -558,6 +580,7 @@ export const TelemetryEvents = {
   // Node Search Analytics
   NODE_SEARCH: 'app:node_search',
   NODE_SEARCH_RESULT_SELECTED: 'app:node_search_result_selected',
+  SEARCH_QUERY: 'app:search_query',
   NODE_ADDED: 'app:node_added_to_workflow',
 
   // Template Filter Analytics
@@ -616,6 +639,7 @@ export type TelemetryEventProperties =
   | TabCountMetadata
   | NodeSearchMetadata
   | NodeSearchResultMetadata
+  | SearchQueryMetadata
   | TemplateFilterMetadata
   | SettingChangedMetadata
   | UiButtonClickMetadata
