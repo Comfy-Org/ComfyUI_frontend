@@ -619,6 +619,31 @@
       }
     }
   },
+  "BriaVideoGreenScreen": {
+    "description": "Замените фон видео на однотонный хромакей с помощью Bria.",
+    "display_name": "Bria Video Green Screen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "green_shade": {
+        "name": "оттенок зелёного",
+        "tooltip": "Однородный оттенок хромакея, применяемый за передним планом: broadcast_green (#00B140), chroma_green (#00FF00) или blue_screen (#0000FF)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed управляет тем, должен ли узел выполняться повторно; результаты всегда недетерминированы, независимо от seed."
+      },
+      "video": {
+        "name": "видео"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Генерируйте видео с помощью Seedance 2.0, используя изображение первого кадра и, при необходимости, последнего кадра.",
     "display_name": "ByteDance Seedance 2.0: от первого и последнего кадра к видео",
@@ -3997,6 +4022,9 @@
     "description": "Удаляет замаскированный объект с изображения и восстанавливает фон. Нарисуйте маску поверх того, что хотите удалить.",
     "display_name": "Flux Удалить объект с изображения",
     "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
       "dilate_pixels": {
         "name": "dilate_pixels",
         "tooltip": "Расширяет границы маски для чистого покрытия краёв объекта."
@@ -4007,6 +4035,10 @@
       "mask": {
         "name": "mask",
         "tooltip": "Белые области будут удалены; чёрные области сохраняются."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Случайный seed, используемый для создания шума."
       }
     },
     "outputs": {
@@ -4750,6 +4782,14 @@
       "system_prompt": {
         "name": "system_prompt",
         "tooltip": "Базовые инструкции, определяющие поведение ИИ."
+      },
+      "temperature": {
+        "name": "temperature",
+        "tooltip": "Управляет случайностью генерации. Меньшее значение — более сфокусировано/детерминировано."
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "Порог ядерной выборки. Меньше — более сфокусировано, больше — более разнообразно."
       }
     },
     "outputs": {
@@ -4803,6 +4843,48 @@
       "video": {
         "name": "видео",
         "tooltip": "Необязательное видео для использования в качестве контекста для модели."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "Генерируйте текстовые ответы с помощью моделей Gemini от Google. Введите текстовый запрос и, при необходимости, одно или несколько изображений, аудиоклипов, видео или файлов в качестве мультимодального контекста.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "контроль после генерации"
+      },
+      "model": {
+        "name": "модель",
+        "tooltip": "Модель Gemini, используемая для генерации ответа."
+      },
+      "model_max_output_tokens": {
+        "name": "максимум токенов вывода"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_thinking_level": {
+        "name": "уровень мышления"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "запрос",
+        "tooltip": "Текстовый ввод для модели. Включите подробные инструкции, вопросы или контекст."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed для сэмплирования. Установите 0 для случайного seed. Детерминированный вывод не гарантируется."
+      },
+      "system_prompt": {
+        "name": "системный запрос",
+        "tooltip": "Базовые инструкции, определяющие поведение модели."
       }
     },
     "outputs": {
@@ -13725,15 +13807,15 @@
       "height": {
         "name": "height"
       },
-      "image": {
-        "name": "image"
+      "model_3d": {
+        "name": "3D-модель",
+        "tooltip": "Файл 3D-модели из предыдущего 3D-узла."
       },
       "model_3d_info": {
         "name": "model_3d_info"
       },
-      "model_file": {
-        "name": "model_file",
-        "tooltip": "Файл 3D-модели из предыдущего 3D-узла."
+      "viewport_state": {
+        "name": "состояние области просмотра"
       },
       "width": {
         "name": "width"
@@ -13788,12 +13870,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "Предпросмотр Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл 3D gaussian splat."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "description": "Сохраняет входные изображения в вашу директорию вывода ComfyUI.",
     "display_name": "Предварительный просмотр изображения",
     "inputs": {
       "images": {
         "name": "изображения"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "Предпросмотр облака точек",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Файл облака точек (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -16446,6 +16620,27 @@
       },
       "filename_prefix": {
         "name": "префикс_названия_файла"
+      }
+    }
+  },
+  "SaveAudioAdvanced": {
+    "description": "Сохраняет входное аудио в выходной каталог ComfyUI.",
+    "display_name": "Сохранить аудио (расширенно)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Аудио для сохранения."
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "Префикс для сохраняемого файла. Может включать токены форматирования, например %date:yyyy-MM-dd%."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "Формат файла для сохранения аудио."
       }
     }
   },

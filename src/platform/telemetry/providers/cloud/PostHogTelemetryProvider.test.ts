@@ -270,6 +270,30 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures search queries with surface, query, length, and result count', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackSearchQuery({
+        surface: 'node_sidebar',
+        query: 'sampler',
+        query_length: 7,
+        result_count: 3,
+        has_results: true
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SEARCH_QUERY,
+        {
+          surface: 'node_sidebar',
+          query: 'sampler',
+          query_length: 7,
+          result_count: 3,
+          has_results: true
+        }
+      )
+    })
+
     it('sets first_auth_at on new-user auth', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

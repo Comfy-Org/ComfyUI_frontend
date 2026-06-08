@@ -619,6 +619,31 @@
       }
     }
   },
+  "BriaVideoGreenScreen": {
+    "description": "Bria를 사용하여 비디오의 배경을 단색 크로마키 스크린으로 교체합니다.",
+    "display_name": "Bria 비디오 그린 스크린",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "green_shade": {
+        "name": "green_shade",
+        "tooltip": "전경 뒤에 적용되는 단색 크로마키 색상: broadcast_green (#00B140), chroma_green (#00FF00), 또는 blue_screen (#0000FF)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0을 사용하여 첫 프레임 이미지와 선택적인 마지막 프레임 이미지로 비디오를 생성합니다.",
     "display_name": "ByteDance Seedance 2.0 첫-마지막 프레임에서 비디오 생성",
@@ -3997,6 +4022,9 @@
     "description": "이미지에서 마스킹된 객체를 제거하고 배경을 복원합니다. 지우고 싶은 부분에 마스크를 칠하세요.",
     "display_name": "Flux 이미지 지우기",
     "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
       "dilate_pixels": {
         "name": "dilate_pixels",
         "tooltip": "객체의 가장자리를 깨끗하게 덮기 위해 마스크 경계를 확장합니다."
@@ -4007,6 +4035,10 @@
       "mask": {
         "name": "mask",
         "tooltip": "흰색 영역은 제거되고, 검은색 영역은 보존됩니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
       }
     },
     "outputs": {
@@ -4750,6 +4782,14 @@
       "system_prompt": {
         "name": "시스템 프롬프트",
         "tooltip": "AI의 동작을 지시하는 기본 지침입니다."
+      },
+      "temperature": {
+        "name": "temperature",
+        "tooltip": "생성의 무작위성을 제어합니다. 낮을수록 더 집중되고 결정적입니다."
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "누클리어스 샘플링 임계값입니다. 낮을수록 집중되고, 높을수록 다양성이 증가합니다."
       }
     },
     "outputs": {
@@ -4803,6 +4843,48 @@
       "video": {
         "name": "비디오",
         "tooltip": "모델의 컨텍스트로 사용할 선택적 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "Google의 Gemini 모델로 텍스트 응답을 생성합니다. 텍스트 프롬프트와 선택적으로 하나 이상의 이미지, 오디오 클립, 비디오 또는 파일을 멀티모달 컨텍스트로 제공합니다.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "응답 생성을 위해 사용되는 Gemini 모델입니다."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "모델에 입력할 텍스트입니다. 자세한 지침, 질문 또는 컨텍스트를 포함하세요."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "샘플링을 위한 시드입니다. 0으로 설정하면 랜덤 시드가 사용됩니다. 결정적 출력은 보장되지 않습니다."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 동작을 지시하는 기본 지침입니다."
       }
     },
     "outputs": {
@@ -13725,15 +13807,15 @@
       "height": {
         "name": "height"
       },
-      "image": {
-        "name": "image"
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "업스트림 3D 노드에서 가져온 3D 모델 파일입니다."
       },
       "model_3d_info": {
         "name": "model_3d_info"
       },
-      "model_file": {
-        "name": "model_file",
-        "tooltip": "업스트림 3D 노드에서 가져온 3D 모델 파일입니다."
+      "viewport_state": {
+        "name": "viewport_state"
       },
       "width": {
         "name": "width"
@@ -13788,12 +13870,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "스플랫 미리보기",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "가우시안 스플랫 3D 파일입니다."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "description": "입력 이미지를 ComfyUI 의 임시(temp) 폴더에 저장합니다.",
     "display_name": "이미지 미리보기",
     "inputs": {
       "images": {
         "name": "이미지"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "포인트 클라우드 미리보기",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "포인트 클라우드 파일 (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -16446,6 +16620,27 @@
       },
       "filename_prefix": {
         "name": "파일명 접두사"
+      }
+    }
+  },
+  "SaveAudioAdvanced": {
+    "description": "입력된 오디오를 ComfyUI 출력 디렉터리에 저장합니다.",
+    "display_name": "오디오 저장 (고급)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "저장할 오디오입니다."
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "저장할 파일의 접두사입니다. %date:yyyy-MM-dd%와 같은 포맷 토큰을 포함할 수 있습니다."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "오디오를 저장할 파일 형식입니다."
       }
     }
   },

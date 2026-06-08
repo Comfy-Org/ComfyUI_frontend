@@ -832,7 +832,9 @@
     "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "ARCHIVO_3D_OBJ",
     "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
     "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "ARCHIVO_3D_STL",
     "FILE_3D_USDZ": "ARCHIVO_3D_USDZ",
@@ -945,6 +947,46 @@
     "fallbacks": {
       "inputName": "entrada desconocida",
       "nodeName": "Este nodo"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "Una entrada de medio requerida no tiene archivo seleccionado.",
+        "toastMessageMany": "Selecciona las entradas de medio faltantes antes de ejecutar este flujo de trabajo.",
+        "toastMessageWithNode": "{nodeName} no tiene el archivo de medio requerido.",
+        "toastTitleMany": "Faltan entradas de medio",
+        "toastTitleOne": "Falta entrada de medio"
+      },
+      "missing_model": {
+        "displayMessageCloud": "Importa un modelo o abre el nodo para reemplazarlo.",
+        "displayMessageOss": "Descarga un modelo o abre el nodo para reemplazarlo.",
+        "toastMessageManyCloud": "Algunos modelos no son compatibles. Elige otros.",
+        "toastMessageManyOss": "Faltan {count} archivos de modelo.",
+        "toastMessageOneCloud": "Este modelo no es compatible. Elige otro.",
+        "toastMessageOneOss": "{nodeName} no tiene el archivo de modelo requerido.",
+        "toastTitleMany": "Modelos faltantes",
+        "toastTitleManyCloud": "Modelos no disponibles en la nube",
+        "toastTitleOneCloud": "{modelName} no está disponible en la nube",
+        "toastTitleOneOss": "{modelName} falta"
+      },
+      "missing_node": {
+        "displayMessageCloud": "Los nodos personalizados requeridos no son compatibles en la nube. Reemplázalos por nodos compatibles.",
+        "displayMessageOss": "Instala los paquetes faltantes para usar este flujo de trabajo.",
+        "toastMessageManyCloud": "Este flujo de trabajo utiliza nodos que no son compatibles en la nube.",
+        "toastMessageManyOss": "{count} nodos requieren paquetes de nodos faltantes.",
+        "toastMessageOneCloud": "Este nodo no es compatible en la nube.",
+        "toastMessageOneOss": "Este flujo de trabajo utiliza un nodo personalizado que no está instalado. Instálalo desde el registro o reemplaza el nodo.",
+        "toastTitleManyCloud": "Nodos no disponibles en la nube",
+        "toastTitleManyOss": "Nodos faltantes",
+        "toastTitleOneCloud": "{nodeType} no está disponible en la nube",
+        "toastTitleOneOss": "Nodo faltante: {nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "Algunos nodos pueden ser reemplazados por alternativas",
+        "toastMessageMany": "{count} tipos de nodos pueden ser reemplazados por alternativas compatibles.",
+        "toastMessageOne": "Reemplázalo por {replacementNodeType} desde el panel de errores.",
+        "toastTitleMany": "Nodos pueden ser reemplazados",
+        "toastTitleOne": "{nodeType} puede ser reemplazado"
+      }
     },
     "promptErrors": {
       "missing_node_type": {
@@ -1287,12 +1329,9 @@
     "missingMedia": "A algunos nodos les faltan entradas requeridas",
     "missingModels": "Falta {count} modelo requerido | Faltan {count} modelos requeridos",
     "missingNodes": "Faltan algunos nodos y necesitan ser instalados",
-    "seeErrors": "Ver errores",
-    "showMissingMedia": "Mostrar entradas faltantes",
-    "showMissingModels": "Mostrar modelos faltantes",
-    "showMissingNodes": "Mostrar nodos faltantes",
-    "showSwapNodes": "Mostrar nodos intercambiables",
-    "swapNodes": "Algunos nodos pueden ser reemplazados por alternativas"
+    "multipleErrorCount": "{count} error encontrado | {count} errores encontrados",
+    "multipleErrorsMessage": "Resuélvelos antes de ejecutar el flujo de trabajo.",
+    "viewDetails": "Ver detalles"
   },
   "errorPanelSurvey": {
     "ctaButton": "Dar opinión",
@@ -1376,6 +1415,11 @@
     "amount": "Cantidad",
     "apply": "Aplicar",
     "architecture": "Arquitectura",
+    "arrange": "Organizar",
+    "arrangeAsGrid": "Organizar como cuadrícula",
+    "arrangeHorizontally": "Organizar horizontalmente",
+    "arrangeSpacing": "Espaciado de organización",
+    "arrangeVertically": "Organizar verticalmente",
     "asset": "{count} recurso | {count} recursos",
     "audioFailedToLoad": "No se pudo cargar el audio",
     "audioProgress": "Progreso de audio",
@@ -2781,7 +2825,6 @@
     "replacedNode": "Nodo reemplazado: {nodeType}",
     "selectAll": "Seleccionar todo",
     "skipForNow": "Omitir por ahora",
-    "swapNodesGuide": "Los siguientes nodos pueden ser reemplazados automáticamente por alternativas compatibles.",
     "swapNodesTitle": "Intercambiar nodos",
     "unknownNode": "Desconocido",
     "willBeReplacedBy": "Este nodo será reemplazado por:"
@@ -3042,7 +3085,6 @@
     },
     "missingNodePacks": {
       "applyChanges": "Aplicar cambios",
-      "cloudMessage": "Este flujo de trabajo requiere nodos personalizados que aún no están disponibles en Comfy Cloud.",
       "collapse": "Colapsar",
       "expand": "Expandir",
       "installAll": "Instalar todo",
@@ -3050,7 +3092,6 @@
       "installed": "Instalado",
       "installing": "Instalando...",
       "ossManagerDisabledHint": "Para instalar los nodos que faltan, primero ejecuta {pipCmd} en tu entorno de Python para instalar Node Manager, luego reinicia ComfyUI con la bandera {flag}.",
-      "ossMessage": "Este flujo de trabajo utiliza nodos personalizados que aún no has instalado.",
       "searchInManager": "Buscar en el Gestor de Nodos",
       "title": "Paquetes de nodos faltantes",
       "unknownPack": "Paquete desconocido",

@@ -619,6 +619,31 @@
       }
     }
   },
+  "BriaVideoGreenScreen": {
+    "display_name": "Bria Video Green Screen",
+    "description": "Replace a video's background with a solid chroma-key screen using Bria.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "green_shade": {
+        "name": "green_shade",
+        "tooltip": "Solid chroma-key shade applied behind the foreground: broadcast_green (#00B140), chroma_green (#00FF00), or blue_screen (#0000FF)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "display_name": "ByteDance Seedance 2.0 First-Last-Frame to Video",
     "description": "Generate video using Seedance 2.0 from a first frame image and optional last frame image.",
@@ -1299,7 +1324,7 @@
   },
   "CFGOverride": {
     "display_name": "CFG Override",
-    "description": "Override cfg to a fixed value over a [start, end] percent slice of the steps. With multiple overrides, the one nearest the sampler wins on overlap.",
+    "description": "Override cfg to a fixed value over a [start, end] percent (sigma) range. With multiple overrides, the one nearest the sampler wins on overlap.",
     "inputs": {
       "model": {
         "name": "model"
@@ -4007,6 +4032,13 @@
       "dilate_pixels": {
         "name": "dilate_pixels",
         "tooltip": "Expands the mask boundaries to ensure clean coverage of the object's edges."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -4631,6 +4663,14 @@
         "name": "system_prompt",
         "tooltip": "Foundational instructions that dictate an AI's behavior."
       },
+      "temperature": {
+        "name": "temperature",
+        "tooltip": "Controls randomness in generation. Lower is more focused/deterministic."
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "Nucleus sampling threshold. Lower is more focused, higher more diverse."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -4695,6 +4735,48 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "display_name": "Google Gemini",
+    "description": "Generate text responses with Google's Gemini models. Provide a text prompt and, optionally, one or more images, audio clips, videos, or files as multimodal context.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text input to the model. Include detailed instructions, questions, or context."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The Gemini model used to generate the response."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for sampling. Set to 0 for a random seed. Deterministic output isn't guaranteed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate the model's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -13719,12 +13801,12 @@
   "Preview3DAdvanced": {
     "display_name": "Preview 3D (Advanced)",
     "inputs": {
-      "model_file": {
-        "name": "model_file",
+      "model_3d": {
+        "name": "model_3d",
         "tooltip": "3D model file from an upstream 3D node."
       },
-      "image": {
-        "name": "image"
+      "viewport_state": {
+        "name": "viewport_state"
       },
       "width": {
         "name": "width"
@@ -13732,24 +13814,24 @@
       "height": {
         "name": "height"
       },
-      "camera_info": {
-        "name": "camera_info"
-      },
       "model_3d_info": {
         "name": "model_3d_info"
+      },
+      "camera_info": {
+        "name": "camera_info"
       }
     },
     "outputs": {
       "0": {
-        "name": "model_file",
+        "name": "model_3d",
         "tooltip": null
       },
       "1": {
-        "name": "camera_info",
+        "name": "model_3d_info",
         "tooltip": null
       },
       "2": {
-        "name": "model_3d_info",
+        "name": "camera_info",
         "tooltip": null
       },
       "3": {
@@ -13788,12 +13870,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "Preview Splat",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "A gaussian splat 3D file."
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "camera_info": {
+        "name": "camera_info"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "display_name": "Preview Image",
     "description": "Saves the input images to your ComfyUI output directory.",
     "inputs": {
       "images": {
         "name": "images"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "Preview Point Cloud",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Point cloud file (.ply)"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "camera_info": {
+        "name": "camera_info"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -16178,7 +16352,7 @@
     }
   },
   "SaveAudio": {
-    "display_name": "Save Audio (FLAC)",
+    "display_name": "Save Audio (FLAC) (Deprecated)",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -16191,8 +16365,29 @@
       }
     }
   },
+  "SaveAudioAdvanced": {
+    "display_name": "Save Audio (Advanced)",
+    "description": "Saves the input audio to your ComfyUI output directory.",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "The audio to save."
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "The prefix for the file to save. May include formatting tokens such as %date:yyyy-MM-dd%."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "The file format in which to save the audio."
+      },
+      "audioUI": {
+        "name": "audioUI"
+      }
+    }
+  },
   "SaveAudioMP3": {
-    "display_name": "Save Audio (MP3)",
+    "display_name": "Save Audio (MP3) (Deprecated)",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -16209,7 +16404,7 @@
     }
   },
   "SaveAudioOpus": {
-    "display_name": "Save Audio (Opus)",
+    "display_name": "Save Audio (Opus) (Deprecated)",
     "inputs": {
       "audio": {
         "name": "audio"

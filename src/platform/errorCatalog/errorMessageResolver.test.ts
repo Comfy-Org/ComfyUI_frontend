@@ -144,6 +144,26 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  it('resolves unknown validation errors to fallback catalog copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError('value_not_valid', undefined, 'some detail'),
+        nodeDisplayName: 'KSampler'
+      })
+    ).toEqual({
+      catalogId: 'unknown_validation_error',
+      displayTitle: 'Validation failed',
+      displayMessage:
+        'A node returned a validation error ComfyUI does not recognize.',
+      displayDetails:
+        'KSampler returned an unrecognized validation error (value_not_valid): some detail',
+      displayItemLabel: 'KSampler',
+      toastTitle: 'Validation failed',
+      toastMessage: 'KSampler returned an unrecognized validation error.'
+    })
+  })
+
   it('falls back to raw API copy when catalog keys are missing in the active locale', () => {
     const originalLocale = i18n.global.locale.value
     const originalKoMessages = i18n.global.getLocaleMessage('ko')
