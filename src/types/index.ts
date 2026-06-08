@@ -101,9 +101,7 @@ declare global {
 
     __comfyDesktop2?: ComfyDesktop2Bridge
 
-    /** For use in tests to report deprecation warnings. */
-    __deprecationWarningsStore?: {
-      report: (input: { message: string }) => boolean
-    }
+    /** For use in tests to inject a synthetic deprecation warning. */
+    __reportDeprecation?: (message: string) => void
   }
 }
