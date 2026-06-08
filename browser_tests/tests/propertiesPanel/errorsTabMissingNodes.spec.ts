@@ -23,9 +23,13 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
   test('Should show missing node packs group', async ({ comfyPage }) => {
     await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
 
+    const missingNodeGroup = comfyPage.page.getByTestId(
+      TestIds.dialogs.missingNodePacksGroup
+    )
+    await expect(missingNodeGroup).toBeVisible()
     await expect(
-      comfyPage.page.getByTestId(TestIds.dialogs.missingNodePacksGroup)
-    ).toBeVisible()
+      missingNodeGroup.getByTestId(TestIds.dialogs.errorGroupDisplayMessage)
+    ).toHaveText(/\S/)
   })
 
   test('Should expand pack group to reveal node type names', async ({

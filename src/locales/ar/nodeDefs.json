@@ -593,6 +593,57 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "description": "إزالة الخلفية من الفيديو باستخدام Bria وإرجاع الإطارات المقطوعة بالإضافة إلى قناع ألفا. قم بتوصيلهما مع عقدة تركيب، أو مررهما إلى حفظ WEBM لكتابة فيديو شفاف.",
+    "display_name": "Bria إزالة خلفية الفيديو (شفافة)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "video": {
+        "name": "فيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صور",
+        "tooltip": null
+      },
+      "1": {
+        "name": "قناع",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoGreenScreen": {
+    "description": "استبدل خلفية الفيديو بشاشة كروما صلبة باستخدام Bria.",
+    "display_name": "Bria فيديو الشاشة الخضراء",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "green_shade": {
+        "name": "درجة اللون الأخضر",
+        "tooltip": "درجة كروما صلبة توضع خلف المقدمة: broadcast_green (#00B140)، chroma_green (#00FF00)، أو blue_screen (#0000FF)."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "video": {
+        "name": "فيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "إنشاء فيديو باستخدام Seedance 2.0 من صورة الإطار الأول وصورة الإطار الأخير (اختياري).",
     "display_name": "ByteDance Seedance 2.0 من الإطار الأول/الأخير إلى فيديو",
@@ -1212,6 +1263,29 @@
       }
     }
   },
+  "CFGOverride": {
+    "description": "تجاوز قيمة cfg إلى قيمة ثابتة خلال شريحة [بداية، نهاية] مئوية من الخطوات. مع وجود عدة تجاوزات، يتم اختيار الأقرب إلى العينة في حالة التداخل.",
+    "display_name": "تجاوز cfg",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "النسبة المئوية للنهاية"
+      },
+      "model": {
+        "name": "نموذج"
+      },
+      "start_percent": {
+        "name": "النسبة المئوية للبداية"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CFGZeroStar": {
     "display_name": "CFGZeroStar",
     "inputs": {
@@ -1720,6 +1794,10 @@
       "end_sigma": {
         "name": "end_sigma",
         "tooltip": "آخر قيمة سيجما التي ستكون هذه الخيارات سارية المفعول عندها."
+      },
+      "force_sequential_txt_ids": {
+        "name": "فرض استخدام معرفات نصية متسلسلة",
+        "tooltip": "فرض استخدام معرفات رموز نصية متسلسلة بدلاً من الأصفار. يجب استخدام هذا الخيار لنقاط التحقق من ٢٠٢٦-٠٥-٢٢ إلى ٢٠٢٦-٠٦-٠١ التي تم تدريبها بهذه الطريقة ولكن لا تحتوي على المفتاح __sequential__ في قاموس الحالة."
       },
       "model": {
         "name": "النموذج"
@@ -2953,6 +3031,34 @@
       }
     }
   },
+  "DualModelGuider": {
+    "display_name": "موجه نموذج مزدوج CFG",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "نموذج",
+        "tooltip": "النموذج المستخدم للتمرير الإيجابي (الشرطي)."
+      },
+      "model_negative": {
+        "name": "نموذج سلبي",
+        "tooltip": "النموذج المستخدم للتمرير السلبي (غير الشرطي). استخدم نفس النموذج لـ CFG العادي."
+      },
+      "negative": {
+        "name": "سلبي",
+        "tooltip": "تشغيل التكييف السلبي على النموذج السلبي. اتركه غير متصل للحصول على تمرير غير شرطي بدون نص (صور فقط)."
+      },
+      "positive": {
+        "name": "إيجابي"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EasyCache": {
     "description": "تنفيذ أصلي لذاكرة التخزين المؤقت السهلة.",
     "display_name": "ذاكرة التخزين المؤقت السهلة",
@@ -3916,6 +4022,9 @@
     "description": "إزالة الكائن المحدد بالقناع من الصورة وإعادة بناء الخلفية. قم برسم القناع فوق ما تريد مسحه.",
     "display_name": "Flux مسح الصورة",
     "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
       "dilate_pixels": {
         "name": "توسيع_البكسلات",
         "tooltip": "يوسع حدود القناع لضمان تغطية حواف الكائن بشكل نظيف."
@@ -3926,6 +4035,10 @@
       "mask": {
         "name": "mask",
         "tooltip": "المناطق البيضاء تُزال؛ المناطق السوداء تُحفظ."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة العشوائية المستخدمة لإنشاء الضوضاء."
       }
     },
     "outputs": {
@@ -4669,6 +4782,14 @@
       "system_prompt": {
         "name": "موجه النظام",
         "tooltip": "تعليمات أساسية تحدد سلوك الذكاء الاصطناعي."
+      },
+      "temperature": {
+        "name": "درجة العشوائية",
+        "tooltip": "تتحكم في العشوائية أثناء التوليد. قيمة أقل تعني تركيز/حتمية أكبر."
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "عتبة أخذ العينات النواة. قيمة أقل تعني تركيز أكبر، وقيمة أعلى تعني تنوع أكبر."
       }
     },
     "outputs": {
@@ -4722,6 +4843,48 @@
       "video": {
         "name": "فيديو",
         "tooltip": "فيديو اختياري لاستخدامه كسياق للنموذج."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "توليد ردود نصية باستخدام نماذج Gemini من Google. قدم مطالبة نصية، ويمكنك أيضًا إضافة صورة أو مقطع صوتي أو فيديو أو ملف كمدخل متعدد الوسائط.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "نموذج Gemini المستخدم لتوليد الرد."
+      },
+      "model_max_output_tokens": {
+        "name": "الحد الأقصى للرموز الناتجة"
+      },
+      "model_temperature": {
+        "name": "درجة العشوائية"
+      },
+      "model_thinking_level": {
+        "name": "مستوى التفكير"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "المطالبة",
+        "tooltip": "إدخال نصي للنموذج. أضف تعليمات مفصلة أو أسئلة أو سياق."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة أخذ العينات. ضعها على 0 لبذرة عشوائية. لا يمكن ضمان إخراج حتمي."
+      },
+      "system_prompt": {
+        "name": "تعليمات النظام",
+        "tooltip": "تعليمات أساسية تحدد سلوك النموذج."
       }
     },
     "outputs": {
@@ -5675,6 +5838,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "مجدول Ideogram 4",
+    "inputs": {
+      "height": {
+        "name": "الارتفاع"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "std"
+      },
+      "steps": {
+        "name": "خطوات"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "ينشئ صورًا تزامنيًا باستخدام نموذج Ideogram V1.\n\nروابط الصور متاحة لفترة محدودة؛ إذا أردت الاحتفاظ بالصورة، يجب تنزيلها.",
     "display_name": "Ideogram V1",
@@ -5808,6 +5996,34 @@
       "resolution": {
         "name": "الدقة",
         "tooltip": "دقة توليد الصورة. إذا لم يتم تعيينها إلى تلقائي، فإنها تتجاوز إعداد نسبة العرض إلى الارتفاع."
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "ينتج صورًا باستخدام نموذج Ideogram 4.0 من خلال موجه نصي.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "prompt": {
+        "name": "موجه",
+        "tooltip": "موجه نصي لتوليد الصورة."
+      },
+      "rendering_speed": {
+        "name": "سرعة العرض",
+        "tooltip": "يتحكم في التوازن بين سرعة التوليد والجودة."
+      },
+      "resolution": {
+        "name": "الدقة"
       },
       "seed": {
         "name": "البذرة"
@@ -13591,15 +13807,15 @@
       "height": {
         "name": "height"
       },
-      "image": {
-        "name": "image"
+      "model_3d": {
+        "name": "نموذج ثلاثي الأبعاد",
+        "tooltip": "ملف نموذج ثلاثي الأبعاد من عقدة ثلاثية الأبعاد سابقة."
       },
       "model_3d_info": {
         "name": "model_3d_info"
       },
-      "model_file": {
-        "name": "model_file",
-        "tooltip": "ملف نموذج ثلاثي الأبعاد من عقدة ثلاثية الأبعاد سابقة."
+      "viewport_state": {
+        "name": "حالة نافذة العرض"
       },
       "width": {
         "name": "width"
@@ -13654,12 +13870,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "معاينة Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "معلومات_الكاميرا"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "model_3d": {
+        "name": "نموذج_ثلاثي_الأبعاد",
+        "tooltip": "ملف Gaussian Splat ثلاثي الأبعاد."
+      },
+      "model_3d_info": {
+        "name": "معلومات_النموذج_ثلاثي_الأبعاد"
+      },
+      "viewport_state": {
+        "name": "حالة_منفذ_العرض"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "نموذج_ثلاثي_الأبعاد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "معلومات_النموذج_ثلاثي_الأبعاد",
+        "tooltip": null
+      },
+      "2": {
+        "name": "معلومات_الكاميرا",
+        "tooltip": null
+      },
+      "3": {
+        "name": "العرض",
+        "tooltip": null
+      },
+      "4": {
+        "name": "الارتفاع",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "description": "يحفظ الصور المدخلة في دليل مخرجات ComfyUI الخاص بك.",
     "display_name": "معاينة الصورة",
     "inputs": {
       "images": {
         "name": "الصور"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "معاينة سحابة النقاط",
+    "inputs": {
+      "camera_info": {
+        "name": "معلومات_الكاميرا"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "model_3d": {
+        "name": "نموذج_ثلاثي_الأبعاد",
+        "tooltip": "ملف سحابة النقاط (.ply)"
+      },
+      "model_3d_info": {
+        "name": "معلومات_النموذج_ثلاثي_الأبعاد"
+      },
+      "viewport_state": {
+        "name": "حالة_منفذ_العرض"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "نموذج_ثلاثي_الأبعاد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "معلومات_النموذج_ثلاثي_الأبعاد",
+        "tooltip": null
+      },
+      "2": {
+        "name": "معلومات_الكاميرا",
+        "tooltip": null
+      },
+      "3": {
+        "name": "العرض",
+        "tooltip": null
+      },
+      "4": {
+        "name": "الارتفاع",
+        "tooltip": null
       }
     }
   },
@@ -16315,6 +16623,27 @@
       }
     }
   },
+  "SaveAudioAdvanced": {
+    "description": "يحفظ الصوت المُدخل في مجلد إخراج ComfyUI الخاص بك.",
+    "display_name": "حفظ الصوت (متقدم)",
+    "inputs": {
+      "audio": {
+        "name": "الصوت",
+        "tooltip": "الصوت المراد حفظه."
+      },
+      "audioUI": {
+        "name": "واجهة_الصوت"
+      },
+      "filename_prefix": {
+        "name": "بادئة_اسم_الملف",
+        "tooltip": "بادئة اسم الملف للحفظ. يمكن أن تتضمن رموز تنسيق مثل ‎%date:yyyy-MM-dd%‎."
+      },
+      "format": {
+        "name": "الصيغة",
+        "tooltip": "صيغة الملف التي سيتم حفظ الصوت بها."
+      }
+    }
+  },
   "SaveAudioMP3": {
     "display_name": "حفظ الصوت (MP3)",
     "inputs": {
@@ -16560,7 +16889,8 @@
         "name": "معدل الإطارات في الثانية"
       },
       "images": {
-        "name": "الصور"
+        "name": "الصور",
+        "tooltip": "يتم حفظ صور RGBA مع قناة ألفا الخاصة بها كشفافية (ترميز vp9 فقط)."
       }
     }
   },

@@ -75,8 +75,6 @@ function installNodeHooks(node: LGraphNode): void {
 
   node.onWidgetChanged = useChainCallback(
     node.onWidgetChanged,
-    // _name is the LiteGraph callback arg; re-derive from the widget
-    // object to handle promoted widgets where sourceWidgetName differs.
     function (_name, newValue, _oldValue, widget) {
       if (!app.rootGraph) return
       const hostExecId = getExecutionIdByNode(app.rootGraph, node)

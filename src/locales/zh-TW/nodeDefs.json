@@ -593,6 +593,57 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "description": "使用 Bria 移除影片背景，並返回去背後的影格及 alpha 遮罩。可將兩者連接到合成節點，或傳送到『儲存 WEBM』以輸出透明影片。",
+    "display_name": "Bria 移除影片背景（透明）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非確定性。"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "遮罩",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoGreenScreen": {
+    "description": "使用 Bria 將影片背景替換為純色色鍵（chroma-key）幕。",
+    "display_name": "Bria Video 綠幕",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "green_shade": {
+        "name": "green_shade",
+        "tooltip": "套用於前景後方的純色色鍵色調：broadcast_green (#00B140)、chroma_green (#00FF00) 或 blue_screen (#0000FF)。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非確定性。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0，從首幀圖像與可選的末幀圖像產生影片。",
     "display_name": "ByteDance Seedance 2.0 首末幀轉影片",
@@ -1212,6 +1263,29 @@
       }
     }
   },
+  "CFGOverride": {
+    "description": "將 cfg 覆蓋為固定值，於步驟的 [起始, 結束] 百分比區間內生效。若有多個覆蓋，重疊時以最接近取樣器者為準。",
+    "display_name": "CFG 覆蓋",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "結束百分比"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "start_percent": {
+        "name": "起始百分比"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CFGZeroStar": {
     "display_name": "CFGZeroStar",
     "inputs": {
@@ -1720,6 +1794,10 @@
       "end_sigma": {
         "name": "結束 sigma",
         "tooltip": "這些選項將生效的最後一個 sigma 值。"
+      },
+      "force_sequential_txt_ids": {
+        "name": "強制使用連續文本標記ID",
+        "tooltip": "強制使用連續文本標記ID，而非全為零。此選項適用於2026-05-22至2026-06-01期間訓練、但狀態字典中未包含 __sequential__ 鍵的checkpoint。"
       },
       "model": {
         "name": "模型"
@@ -2953,6 +3031,34 @@
       }
     }
   },
+  "DualModelGuider": {
+    "display_name": "雙模型 CFG 引導器",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於正向（條件）階段的模型。"
+      },
+      "model_negative": {
+        "name": "負向模型",
+        "tooltip": "用於負向（無條件）階段的模型。一般 CFG 請使用相同模型。"
+      },
+      "negative": {
+        "name": "負向",
+        "tooltip": "在負向模型上執行的負向條件。若不連接則為無文字（僅圖像）無條件階段。"
+      },
+      "positive": {
+        "name": "正向"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EasyCache": {
     "description": "原生 EasyCache 實現。",
     "display_name": "EasyCache",
@@ -3916,6 +4022,9 @@
     "description": "從影像中移除被遮罩的物件並重建背景。請將 mask 塗在你想要擦除的區域。",
     "display_name": "Flux 擦除影像",
     "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
       "dilate_pixels": {
         "name": "膨脹像素",
         "tooltip": "擴展 mask 邊界，以確保物件邊緣被完整覆蓋。"
@@ -3926,6 +4035,10 @@
       "mask": {
         "name": "mask",
         "tooltip": "白色區域會被移除；黑色區域會被保留。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於產生雜訊的隨機種子。"
       }
     },
     "outputs": {
@@ -4669,6 +4782,14 @@
       "system_prompt": {
         "name": "系統提示",
         "tooltip": "決定 AI 行為的基礎指令。"
+      },
+      "temperature": {
+        "name": "temperature",
+        "tooltip": "控制生成內容的隨機性。數值越低越集中／確定。"
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "Nucleus 抽樣閾值。數值越低越集中，越高則越多樣。"
       }
     },
     "outputs": {
@@ -4722,6 +4843,48 @@
       "video": {
         "name": "影片",
         "tooltip": "可選的影片，用作模型的上下文。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "使用 Google 的 Gemini 模型生成文字回應。請提供文字提示，並可選擇加入一個或多個圖片、音訊片段、影片或檔案作為多模態上下文。",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於生成回應的 Gemini 模型。"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "輸入給模型的文字。請包含詳細指示、問題或上下文。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "取樣用的種子。設為 0 則隨機。無法保證輸出為確定性。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "決定模型行為的基礎指令。"
       }
     },
     "outputs": {
@@ -5675,6 +5838,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Ideogram 4 排程器",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "mu": {
+        "name": "μ"
+      },
+      "std": {
+        "name": "標準差"
+      },
+      "steps": {
+        "name": "步驟數"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "使用 Ideogram V1 模型同步產生影像。\n\n影像連結僅限時有效；如需保留影像，請務必下載。",
     "display_name": "Ideogram V1",
@@ -5811,6 +5999,34 @@
       },
       "seed": {
         "name": "種子值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "使用 Ideogram 4.0 模型，根據文字提示生成影像。",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於影像生成的文字提示。"
+      },
+      "rendering_speed": {
+        "name": "渲染速度",
+        "tooltip": "控制生成速度與品質的取捨。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子"
       }
     },
     "outputs": {
@@ -13591,15 +13807,15 @@
       "height": {
         "name": "高度"
       },
-      "image": {
-        "name": "image"
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "來自上游 3D 節點的 3D 模型檔案。"
       },
       "model_3d_info": {
         "name": "model_3d_info"
       },
-      "model_file": {
-        "name": "model_file",
-        "tooltip": "來自上游 3D 節點的 3D 模型檔案。"
+      "viewport_state": {
+        "name": "viewport_state"
       },
       "width": {
         "name": "寬度"
@@ -13654,12 +13870,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "預覽 Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "一個 gaussian splat 3D 檔案。"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "description": "將輸入圖片儲存到您的 ComfyUI 輸出目錄。",
     "display_name": "預覽圖片",
     "inputs": {
       "images": {
         "name": "圖片"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "預覽點雲",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "點雲檔案（.ply）"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -16315,6 +16623,27 @@
       }
     }
   },
+  "SaveAudioAdvanced": {
+    "description": "將輸入的音訊儲存到你的 ComfyUI 輸出目錄。",
+    "display_name": "儲存音訊（進階）",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "要儲存的音訊。"
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "要儲存檔案的前綴。可包含格式化標記，例如 %date:yyyy-MM-dd%。"
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "儲存音訊的檔案格式。"
+      }
+    }
+  },
   "SaveAudioMP3": {
     "display_name": "儲存音訊 (MP3)",
     "inputs": {
@@ -16560,7 +16889,8 @@
         "name": "每秒影格數"
       },
       "images": {
-        "name": "images"
+        "name": "images",
+        "tooltip": "RGBA 影像將以 alpha 通道作為透明度儲存（僅限 vp9 編解碼器）。"
       }
     }
   },

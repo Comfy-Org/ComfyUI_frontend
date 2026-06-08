@@ -11,6 +11,18 @@ interface ImpactQueueFunction {
   a?: unknown[][]
 }
 
+interface RewardfulGlobal {
+  referral?: string
+  affiliate?: { id?: string; token?: string; name?: string }
+  campaign?: { id?: string; name?: string }
+}
+
+interface RewardfulQueueFunction {
+  (method: 'ready', callback: () => void): void
+  (...args: unknown[]): void
+  q?: unknown[][]
+}
+
 type GtagGetFieldName = 'client_id' | 'session_id' | 'session_number'
 
 interface GtagGetFieldValueMap {
@@ -63,6 +75,8 @@ interface Window {
   gtag?: GtagFunction
   ire_o?: string
   ire?: ImpactQueueFunction
+  rewardful?: RewardfulQueueFunction
+  Rewardful?: RewardfulGlobal
 }
 
 interface Navigator {

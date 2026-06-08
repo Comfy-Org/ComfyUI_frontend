@@ -593,6 +593,57 @@
       }
     }
   },
+  "BriaTransparentVideoBackground": {
+    "display_name": "Bria Remove Video Background (Transparent)",
+    "description": "Remove the background from a video using Bria and return the cut-out frames plus an alpha mask. Connect both to a compositing node, or feed them to Save WEBM to write a transparent video.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoGreenScreen": {
+    "display_name": "Bria Video Green Screen",
+    "description": "Replace a video's background with a solid chroma-key screen using Bria.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "green_shade": {
+        "name": "green_shade",
+        "tooltip": "Solid chroma-key shade applied behind the foreground: broadcast_green (#00B140), chroma_green (#00FF00), or blue_screen (#0000FF)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "display_name": "ByteDance Seedance 2.0 First-Last-Frame to Video",
     "description": "Generate video using Seedance 2.0 from a first frame image and optional last frame image.",
@@ -1271,6 +1322,29 @@
       }
     }
   },
+  "CFGOverride": {
+    "display_name": "CFG Override",
+    "description": "Override cfg to a fixed value over a [start, end] percent (sigma) range. With multiple overrides, the one nearest the sampler wins on overlap.",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "start_percent": {
+        "name": "start_percent"
+      },
+      "end_percent": {
+        "name": "end_percent"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CFGZeroStar": {
     "display_name": "CFGZeroStar",
     "inputs": {
@@ -1356,6 +1430,10 @@
       "nerf_tile_size": {
         "name": "nerf_tile_size",
         "tooltip": "Allows overriding the default NeRF tile size. -1 means use the default (32). 0 means use non-tiling mode (may require a lot of VRAM)."
+      },
+      "force_sequential_txt_ids": {
+        "name": "force_sequential_txt_ids",
+        "tooltip": "Force usage of sequential text token IDs instead of zeroes. Should be used for checkpoints from 2026-05-22 to 2026-06-01 that are trained in this way but do not contain the __sequential__ key in the state dict."
       }
     },
     "outputs": {
@@ -2953,6 +3031,34 @@
       }
     }
   },
+  "DualModelGuider": {
+    "display_name": "Dual Model CFG Guider",
+    "inputs": {
+      "model": {
+        "name": "model",
+        "tooltip": "Model used for the positive (conditional) pass."
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "cfg": {
+        "name": "cfg"
+      },
+      "model_negative": {
+        "name": "model_negative",
+        "tooltip": "Model used for the negative (unconditional) pass. Use the same model for ordinary CFG."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "Negative conditioning run on the negative model. Leave unconnected for a text-free (image-only) unconditional pass."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "EasyCache": {
     "display_name": "EasyCache",
     "description": "Native EasyCache implementation.",
@@ -3926,6 +4032,13 @@
       "dilate_pixels": {
         "name": "dilate_pixels",
         "tooltip": "Expands the mask boundaries to ensure clean coverage of the object's edges."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -4550,6 +4663,14 @@
         "name": "system_prompt",
         "tooltip": "Foundational instructions that dictate an AI's behavior."
       },
+      "temperature": {
+        "name": "temperature",
+        "tooltip": "Controls randomness in generation. Lower is more focused/deterministic."
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "Nucleus sampling threshold. Lower is more focused, higher more diverse."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -4614,6 +4735,48 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "display_name": "Google Gemini",
+    "description": "Generate text responses with Google's Gemini models. Provide a text prompt and, optionally, one or more images, audio clips, videos, or files as multimodal context.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text input to the model. Include detailed instructions, questions, or context."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The Gemini model used to generate the response."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for sampling. Set to 0 for a random seed. Deterministic output isn't guaranteed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate the model's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -5675,6 +5838,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Ideogram 4 Scheduler",
+    "inputs": {
+      "steps": {
+        "name": "steps"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "std"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "display_name": "Ideogram V1",
     "description": "Generates images using the Ideogram V1 model.",
@@ -5808,6 +5996,34 @@
       "character_mask": {
         "name": "character_mask",
         "tooltip": "Optional mask for character reference image."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "display_name": "Ideogram V4",
+    "description": "Generates images using the Ideogram 4.0 model from a text prompt.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text prompt for the image generation."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "rendering_speed": {
+        "name": "rendering_speed",
+        "tooltip": "Controls the trade-off between generation speed and quality."
+      },
+      "seed": {
+        "name": "seed"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -13362,7 +13578,7 @@
       },
       "latent_format": {
         "name": "latent_format",
-        "tooltip": "Flux1 and Flux2 latents auto-detected from channel dim, sd3 has to be selected manually."
+        "tooltip": "Flux1 (16-ch) and Flux2 (128-ch) latents are auto-detected from channel dim under 'flux'. For SD3 (16-ch), SDXL (4-ch), or QwenImage (16-ch), select manually."
       },
       "degrade_sigma": {
         "name": "degrade_sigma",
@@ -13585,12 +13801,12 @@
   "Preview3DAdvanced": {
     "display_name": "Preview 3D (Advanced)",
     "inputs": {
-      "model_file": {
-        "name": "model_file",
+      "model_3d": {
+        "name": "model_3d",
         "tooltip": "3D model file from an upstream 3D node."
       },
-      "image": {
-        "name": "image"
+      "viewport_state": {
+        "name": "viewport_state"
       },
       "width": {
         "name": "width"
@@ -13598,24 +13814,24 @@
       "height": {
         "name": "height"
       },
-      "camera_info": {
-        "name": "camera_info"
-      },
       "model_3d_info": {
         "name": "model_3d_info"
+      },
+      "camera_info": {
+        "name": "camera_info"
       }
     },
     "outputs": {
       "0": {
-        "name": "model_file",
+        "name": "model_3d",
         "tooltip": null
       },
       "1": {
-        "name": "camera_info",
+        "name": "model_3d_info",
         "tooltip": null
       },
       "2": {
-        "name": "model_3d_info",
+        "name": "camera_info",
         "tooltip": null
       },
       "3": {
@@ -13654,12 +13870,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "Preview Splat",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "A gaussian splat 3D file."
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "camera_info": {
+        "name": "camera_info"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "display_name": "Preview Image",
     "description": "Saves the input images to your ComfyUI output directory.",
     "inputs": {
       "images": {
         "name": "images"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "Preview Point Cloud",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Point cloud file (.ply)"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "camera_info": {
+        "name": "camera_info"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -16044,7 +16352,7 @@
     }
   },
   "SaveAudio": {
-    "display_name": "Save Audio (FLAC)",
+    "display_name": "Save Audio (FLAC) (Deprecated)",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -16057,8 +16365,29 @@
       }
     }
   },
+  "SaveAudioAdvanced": {
+    "display_name": "Save Audio (Advanced)",
+    "description": "Saves the input audio to your ComfyUI output directory.",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "The audio to save."
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "The prefix for the file to save. May include formatting tokens such as %date:yyyy-MM-dd%."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "The file format in which to save the audio."
+      },
+      "audioUI": {
+        "name": "audioUI"
+      }
+    }
+  },
   "SaveAudioMP3": {
-    "display_name": "Save Audio (MP3)",
+    "display_name": "Save Audio (MP3) (Deprecated)",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -16075,7 +16404,7 @@
     }
   },
   "SaveAudioOpus": {
-    "display_name": "Save Audio (Opus)",
+    "display_name": "Save Audio (Opus) (Deprecated)",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -16289,7 +16618,8 @@
     "display_name": "Save WEBM",
     "inputs": {
       "images": {
-        "name": "images"
+        "name": "images",
+        "tooltip": "RGBA images are saved with their alpha channel as transparency (vp9 codec only)."
       },
       "filename_prefix": {
         "name": "filename_prefix"
