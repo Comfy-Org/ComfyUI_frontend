@@ -128,9 +128,9 @@ watch(
   (newTheme) => {
     const DARK_THEME_CLASS = 'dark-theme'
     if (newTheme.light_theme) {
-      document.body.classList.remove(DARK_THEME_CLASS)
+      document.documentElement.classList.remove(DARK_THEME_CLASS)
     } else {
-      document.body.classList.add(DARK_THEME_CLASS)
+      document.documentElement.classList.add(DARK_THEME_CLASS)
     }
     if (isDesktop) {
       electronAPI().changeTheme({
