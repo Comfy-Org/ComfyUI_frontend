@@ -62,31 +62,41 @@ onUnmounted(() => {
     >
       <button
         :aria-label="t('gallery.detail.close', locale)"
-        class="border-primary-comfy-yellow bg-primary-comfy-ink hover:bg-primary-comfy-yellow group absolute top-8 right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 transition-colors lg:right-26"
+        class="border-primary-comfy-yellow hover:bg-primary-comfy-yellow group absolute top-8 right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 bg-primary-comfy-ink transition-colors lg:right-26"
         @click="emit('close')"
       >
         <span
-          class="bg-primary-comfy-yellow group-hover:bg-primary-comfy-ink size-5 transition-colors"
+          class="bg-primary-comfy-yellow size-5 transition-colors group-hover:bg-primary-comfy-ink"
           style="mask: url('/icons/close.svg') center / contain no-repeat"
         />
       </button>
 
       <div
-        class="border-primary-comfy-yellow bg-primary-comfy-ink rounded-5xl flex w-full max-w-7xl items-center justify-center overflow-hidden border-2 p-3 lg:p-4"
+        class="border-primary-comfy-yellow rounded-5xl flex w-full max-w-7xl items-center justify-center overflow-hidden border-2 bg-primary-comfy-ink p-3 lg:p-4"
       >
         <video
           ref="videoRef"
           :src="tutorial.videoSrc"
           :poster="tutorial.poster"
           class="aspect-video w-full rounded-3xl object-contain lg:rounded-4xl"
+          crossorigin="anonymous"
           controls
           autoplay
           playsinline
-        ></video>
+        >
+          <track
+            v-for="track in tutorial.tracks ?? []"
+            :key="track.src"
+            :src="track.src"
+            :kind="track.kind"
+            :srclang="track.srclang"
+            :label="track.label"
+          />
+        </video>
       </div>
 
       <h2
-        class="text-primary-comfy-canvas mt-6 text-center text-lg font-medium lg:text-xl"
+        class="mt-6 text-center text-lg font-medium text-primary-comfy-canvas lg:text-xl"
       >
         {{ t('learning.tutorials.titlePrefix', locale) }}
         {{ tutorial.title[locale] }}

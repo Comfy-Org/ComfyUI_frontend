@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
+import type { VideoTrack } from '../../types/video'
 
 import { t } from '../../i18n/translations'
 import Badge from '../common/Badge.vue'
@@ -13,6 +14,14 @@ const demoVideoSrc =
   'https://media.comfy.org/website/learning/skyreplacement_smaller_v06.mp4'
 const demoVideoPoster =
   'https://media.comfy.org/website/learning/skyreplacement_smaller_v06_thumbnail.jpg'
+const demoVideoTracks: VideoTrack[] = [
+  {
+    src: 'https://media.comfy.org/website/learning/skyreplacement_smaller_v06_vtt.en.vtt',
+    kind: 'subtitles',
+    srclang: 'en',
+    label: 'English'
+  }
+]
 </script>
 
 <template>
@@ -61,6 +70,7 @@ const demoVideoPoster =
           :locale
           :src="demoVideoSrc"
           :poster="demoVideoPoster"
+          :tracks="demoVideoTracks"
           minimal
         />
       </div>

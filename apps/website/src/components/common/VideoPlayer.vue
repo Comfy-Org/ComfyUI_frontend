@@ -13,14 +13,8 @@ import { computed, shallowRef, useTemplateRef, watch } from 'vue'
 
 import { t } from '../../i18n/translations'
 import type { Locale } from '../../i18n/translations'
+import type { VideoTrack } from '../../types/video'
 import PlayPauseButton from './PlayPauseButton.vue'
-
-type VideoTrack = {
-  src: string
-  kind: 'subtitles' | 'captions' | 'descriptions'
-  srclang: string
-  label: string
-}
 
 const {
   locale = 'en',
@@ -285,7 +279,7 @@ function toggleFullscreen() {
         @click="toggleFullscreen"
       >
         <svg
-          class="text-primary-comfy-ink size-3.5 lg:size-4"
+          class="size-3.5 text-primary-comfy-ink lg:size-4"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
@@ -331,7 +325,7 @@ function toggleFullscreen() {
         <!-- Muted icon -->
         <svg
           v-if="muted"
-          class="text-primary-comfy-ink size-3.5 lg:size-4"
+          class="size-3.5 text-primary-comfy-ink lg:size-4"
           viewBox="0 0 24 24"
           fill="currentColor"
           stroke="currentColor"
@@ -349,7 +343,7 @@ function toggleFullscreen() {
         <!-- Unmuted icon -->
         <svg
           v-else
-          class="text-primary-comfy-ink size-3.5 lg:size-4"
+          class="size-3.5 text-primary-comfy-ink lg:size-4"
           viewBox="0 0 24 24"
           fill="currentColor"
           stroke="currentColor"
