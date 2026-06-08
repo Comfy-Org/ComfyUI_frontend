@@ -2159,18 +2159,18 @@ const translations = {
       'Sent only if you have analytics enabled (toggle on the consent screen and in Settings → Telemetry).'
   },
   'desktop_privacy.analytics.block.1': {
-    en: 'App version and platform (e.g. "Comfy Desktop 1.0.0, macOS 14.4 ARM")\nA local device ID generated locally. Before you sign in to Comfy Cloud, this ID is not tied to your name, email, or any hardware identifier we can reverse. Once you sign in, the device ID is linked to your Comfy account.\nFeature events ("install completed," "workflow opened," "settings panel opened") with non-identifying metadata\nApproximate timing of those events',
+    en: 'App version and platform (e.g. "Comfy Desktop 1.0.0, macOS 14.4 ARM")\nA local device ID generated locally. Before you sign in to Comfy Cloud, this ID is not tied to your name, email, or any hardware identifier we can reverse. Once you sign in, the device ID is linked to your Comfy account.\nFeature events ("install completed", "workflow opened", "settings panel opened") with non-identifying metadata\nIdentifiers of custom nodes you install through Manager (the public package name only, e.g. "comfyui-impact-pack" — never your local install path)\nApproximate timing of those events',
     'zh-CN':
-      'App version and platform (e.g. "Comfy Desktop 1.0.0, macOS 14.4 ARM")\nA local device ID generated locally. Before you sign in to Comfy Cloud, this ID is not tied to your name, email, or any hardware identifier we can reverse. Once you sign in, the device ID is linked to your Comfy account.\nFeature events ("install completed," "workflow opened," "settings panel opened") with non-identifying metadata\nApproximate timing of those events'
+      'App version and platform (e.g. "Comfy Desktop 1.0.0, macOS 14.4 ARM")\nA local device ID generated locally. Before you sign in to Comfy Cloud, this ID is not tied to your name, email, or any hardware identifier we can reverse. Once you sign in, the device ID is linked to your Comfy account.\nFeature events ("install completed", "workflow opened", "settings panel opened") with non-identifying metadata\nIdentifiers of custom nodes you install through Manager (the public package name only, e.g. "comfyui-impact-pack" — never your local install path)\nApproximate timing of those events'
   },
   'desktop_privacy.analytics.block.2': {
     en: 'We do <strong>not</strong> send:',
     'zh-CN': 'We do <strong>not</strong> send:'
   },
   'desktop_privacy.analytics.block.3': {
-    en: 'Workflow content\nPrompts you write\nGenerated images, videos, or audio\nFile paths or filenames\nModel names or weights\nNetwork activity outside the app',
+    en: 'Workflow content (the graph, the nodes you connect, their parameters)\nPrompts you write\nGenerated images, videos, or audio\nYour username or home-directory paths (automatically redacted before sending)\nModel weights, or the local filenames you save them as\nNetwork activity outside the app',
     'zh-CN':
-      'Workflow content\nPrompts you write\nGenerated images, videos, or audio\nFile paths or filenames\nModel names or weights\nNetwork activity outside the app'
+      'Workflow content (the graph, the nodes you connect, their parameters)\nPrompts you write\nGenerated images, videos, or audio\nYour username or home-directory paths (automatically redacted before sending)\nModel weights, or the local filenames you save them as\nNetwork activity outside the app'
   },
 
   'desktop_privacy.crash.label': {
@@ -2186,14 +2186,19 @@ const translations = {
     'zh-CN': 'Sent only if you have analytics enabled.'
   },
   'desktop_privacy.crash.block.1': {
-    en: 'Stack traces and error messages from crashes\nApp version, platform\nLocal device ID (or Comfy account ID if you have signed in)',
+    en: 'Stack traces, error messages, and short stdout/stderr fragments captured around a ComfyUI crash\nApp version, platform\nLocal device ID (or Comfy account ID if you have signed in)',
     'zh-CN':
-      'Stack traces and error messages from crashes\nApp version, platform\nLocal device ID (or Comfy account ID if you have signed in)'
+      'Stack traces, error messages, and short stdout/stderr fragments captured around a ComfyUI crash\nApp version, platform\nLocal device ID (or Comfy account ID if you have signed in)'
   },
   'desktop_privacy.crash.block.2': {
-    en: 'We do <strong>not</strong> include user content, file paths, or prompts in crash reports. We strip those before sending.',
+    en: "Before sending, we automatically redact home-directory paths (so your username isn't shipped) and well-known credential patterns (Bearer tokens, OpenAI <strong>sk-*</strong> keys, Hugging Face <strong>hf_*</strong> keys, basic-auth URLs, and <strong>KEY=</strong> / <strong>SECRET=</strong> assignments). We do <strong>not</strong> include your prompts, workflow JSON, or generated outputs in crash reports.",
     'zh-CN':
-      'We do <strong>not</strong> include user content, file paths, or prompts in crash reports. We strip those before sending.'
+      "Before sending, we automatically redact home-directory paths (so your username isn't shipped) and well-known credential patterns (Bearer tokens, OpenAI <strong>sk-*</strong> keys, Hugging Face <strong>hf_*</strong> keys, basic-auth URLs, and <strong>KEY=</strong> / <strong>SECRET=</strong> assignments). We do <strong>not</strong> include your prompts, workflow JSON, or generated outputs in crash reports."
+  },
+  'desktop_privacy.crash.block.3': {
+    en: 'Caveat for third-party custom nodes: a node you install may emit its own log output around a crash (progress bars, debug status messages, function names it ran) that our automatic scrubbers cannot anticipate. We never bundle your prompts or generated content, but if you see sensitive text in your own ComfyUI logs, disable telemetry from Settings → Telemetry.',
+    'zh-CN':
+      'Caveat for third-party custom nodes: a node you install may emit its own log output around a crash (progress bars, debug status messages, function names it ran) that our automatic scrubbers cannot anticipate. We never bundle your prompts or generated content, but if you see sensitive text in your own ComfyUI logs, disable telemetry from Settings → Telemetry.'
   },
 
   'desktop_privacy.local.label': { en: 'STAYS LOCAL', 'zh-CN': 'STAYS LOCAL' },
