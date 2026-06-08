@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from 'vue'
+import { useId } from 'vue'
 
 defineProps<{ class?: HTMLAttributes['class'] }>()
+
+const clipId = `node-union-icon-clip-${useId()}`
 </script>
 
 <template>
@@ -12,7 +15,7 @@ defineProps<{ class?: HTMLAttributes['class'] }>()
     aria-hidden="true"
     :class="$props.class"
   >
-    <g clip-path="url(#node-union-icon-clip)">
+    <g :clip-path="`url(#${clipId})`">
       <path
         fill="currentColor"
         fill-rule="evenodd"
@@ -21,7 +24,7 @@ defineProps<{ class?: HTMLAttributes['class'] }>()
       />
     </g>
     <defs>
-      <clipPath id="node-union-icon-clip">
+      <clipPath :id="clipId">
         <rect width="100" height="100" fill="white" />
       </clipPath>
     </defs>
