@@ -2,6 +2,7 @@
 import type { Locale } from '../../i18n/translations'
 
 import BenefitsGrid01 from '../../components/blocks/BenefitsGrid01.vue'
+import { externalLinks } from '../../config/routes'
 import { affiliateBenefits } from '../../data/affiliateBenefits'
 import { t } from '../../i18n/translations'
 
@@ -19,7 +20,8 @@ const benefits = affiliateBenefits.map((benefit) => ({
     :benefits="benefits"
     :primary-cta="{
       label: t('affiliate.hero.apply', locale),
-      href: '#apply'
+      href: externalLinks.affiliateApplicationForm,
+      target: '_blank'
     }"
   />
 </template>
