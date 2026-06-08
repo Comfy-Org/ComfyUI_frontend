@@ -15,13 +15,13 @@ const {
   mockOpenWorkflows,
   mockShowTextPreview
 } = await vi.hoisted(async () => {
-  const { ref } = await import('vue')
+  const { shallowRef } = await import('vue')
   return {
     mockNodeExecutionIdToNodeLocatorId: vi.fn(),
     mockNodeIdToNodeLocatorId: vi.fn(),
     mockNodeLocatorIdToNodeExecutionId: vi.fn(),
-    mockActiveWorkflow: ref<{ path?: string } | null>(null),
-    mockOpenWorkflows: ref<{ path: string }[]>([]),
+    mockActiveWorkflow: shallowRef<{ path?: string } | null>(null),
+    mockOpenWorkflows: shallowRef<{ path: string }[]>([]),
     mockShowTextPreview: vi.fn()
   }
 })
@@ -48,7 +48,9 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
       },
       get openWorkflows() {
         return mockOpenWorkflows.value
-      }
+      },
+      isOpen: (workflow: { path?: string }) =>
+        mockOpenWorkflows.value.some((w) => w.path === workflow.path)
     }))
   }
 })
@@ -106,6 +108,11 @@ vi.mock('@/scripts/app', () => ({
     nodePreviewImages: {}
   }
 }))
+
+beforeEach(() => {
+  mockActiveWorkflow.value = null
+  mockOpenWorkflows.value = []
+})
 
 describe('useExecutionStore - NodeLocatorId conversions', () => {
   let store: ReturnType<typeof useExecutionStore>
@@ -455,6 +462,16 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
 
 describe('useExecutionStore - workflowStatus', () => {
   let store: ReturnType<typeof useExecutionStore>
+  type Workflow = Parameters<typeof store.storeJob>[0]['workflow']
+  const makeWorkflow = (path: string): Workflow => {
+    const workflow: Partial<Workflow> = {
+      path,
+      filename: path.split('/').pop()
+    }
+    return workflow as Workflow
+  }
+  const workflowA = makeWorkflow('/workflows/a.json')
+  const workflowB = makeWorkflow('/workflows/b.json')
 
   function fireExecutionStart(jobId: string) {
     const handler = apiEventHandlers.get('execution_start')
@@ -499,116 +516,255 @@ describe('useExecutionStore - workflowStatus', () => {
     )
   }
 
-  function callStoreJob(jobId: string, workflowPath: string) {
-    store.storeJob({
-      nodes: ['1'],
-      id: jobId,
-      workflow: { path: workflowPath } as Parameters<
-        typeof store.storeJob
-      >[0]['workflow']
-    })
+  function callStoreJob(jobId: string, workflow: Workflow) {
+    store.storeJob({ nodes: ['1'], id: jobId, workflow })
   }
 
   beforeEach(() => {
     vi.clearAllMocks()
     apiEventHandlers.clear()
-    mockActiveWorkflow.value = null
-    mockOpenWorkflows.value = []
+    mockOpenWorkflows.value = [workflowA, workflowB]
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
     store.bindExecutionEvents()
   })
 
-  it('sets running on execution_start when path mapping exists', () => {
-    callStoreJob('job-1', '/workflows/a.json')
+  it('sets running on execution_start when storeJob already ran', () => {
+    callStoreJob('job-1', workflowA)
     fireExecutionStart('job-1')
 
-    expect(store.workflowStatus.get('/workflows/a.json')).toBe('running')
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
   })
 
-  it('sets running via ensureSessionWorkflowPath when WS fires before HTTP', () => {
-    // WS fires first — no path mapping yet, setWorkflowStatus no-ops
+  it('flushes running status when storeJob arrives after WS', () => {
     fireExecutionStart('job-1')
-    expect(store.workflowStatus.get('/workflows/a.json')).toBeUndefined()
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
 
-    // HTTP response arrives — ensureSessionWorkflowPath sees activeJobId match
-    callStoreJob('job-1', '/workflows/a.json')
-    expect(store.workflowStatus.get('/workflows/a.json')).toBe('running')
+    callStoreJob('job-1', workflowA)
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
   })
 
-  it('does not set running when job already completed before HTTP arrives', () => {
-    // WS: start and success both fire before HTTP response
+  it('flushes terminal completed when WS finishes before storeJob', () => {
+    // Instant-finish race: WS fires start+success before HTTP response.
     fireExecutionStart('job-1')
     fireExecutionSuccess('job-1')
 
-    // HTTP arrives late — job is no longer active
-    callStoreJob('job-1', '/workflows/a.json')
-    expect(store.workflowStatus.get('/workflows/a.json')).toBeUndefined()
+    callStoreJob('job-1', workflowA)
+    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
   })
 
-  it('does not set running when job was interrupted before HTTP arrives', () => {
+  it('flushes terminal failed when WS errors before storeJob', () => {
+    // Invalid-workflow path: execution_error fires before HTTP response.
+    fireExecutionError('job-1')
+
+    callStoreJob('job-1', workflowA)
+    expect(store.getWorkflowStatus(workflowA)).toBe('failed')
+  })
+
+  it('drops pending status on interrupt before storeJob', () => {
     fireExecutionStart('job-1')
     fireExecutionInterrupted('job-1')
 
-    callStoreJob('job-1', '/workflows/a.json')
-    expect(store.workflowStatus.get('/workflows/a.json')).toBeUndefined()
+    callStoreJob('job-1', workflowA)
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
 
   it('sets completed on execution_success', () => {
-    callStoreJob('job-1', '/workflows/a.json')
+    callStoreJob('job-1', workflowA)
     fireExecutionStart('job-1')
     fireExecutionSuccess('job-1')
 
-    expect(store.workflowStatus.get('/workflows/a.json')).toBe('completed')
+    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
   })
 
   it('sets failed on execution_error', () => {
-    callStoreJob('job-1', '/workflows/a.json')
+    callStoreJob('job-1', workflowA)
     fireExecutionStart('job-1')
     fireExecutionError('job-1')
 
-    expect(store.workflowStatus.get('/workflows/a.json')).toBe('failed')
+    expect(store.getWorkflowStatus(workflowA)).toBe('failed')
   })
 
-  it('sets failed on execution_interrupted', () => {
-    callStoreJob('job-1', '/workflows/a.json')
+  it('skips status badge on user-initiated interrupt', () => {
+    callStoreJob('job-1', workflowA)
     fireExecutionStart('job-1')
     fireExecutionInterrupted('job-1')
 
-    expect(store.workflowStatus.get('/workflows/a.json')).toBe('failed')
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+  })
+
+  it('evicts the oldest pending status once the buffer cap is exceeded', () => {
+    // Each start with no matching storeJob buffers a 'running' status. One
+    // past the cap evicts the oldest so the buffer can't grow unbounded.
+    for (let i = 0; i <= MAX_PROGRESS_JOBS; i++) fireExecutionStart(`job-${i}`)
+
+    callStoreJob('job-0', workflowA)
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+
+    callStoreJob(`job-${MAX_PROGRESS_JOBS}`, workflowB)
+    expect(store.getWorkflowStatus(workflowB)).toBe('running')
+  })
+
+  it('does not report status for the active workflow', () => {
+    mockActiveWorkflow.value = workflowA
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+  })
+
+  it('keeps running visible after the active tab is viewed then left', async () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+
+    mockActiveWorkflow.value = workflowA
+    await nextTick()
+    mockActiveWorkflow.value = workflowB
+    await nextTick()
+
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+  })
+
+  it('overwrites stale terminal with running on re-queue', () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+    fireExecutionSuccess('job-1')
+    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+
+    // Re-queue the same workflow under a fresh jobId.
+    callStoreJob('job-2', workflowA)
+    fireExecutionStart('job-2')
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
   })
 
   it('ignores status events for unknown prompt ids', () => {
     fireExecutionSuccess('unknown-job')
-    expect(store.workflowStatus.size).toBe(0)
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+    expect(store.getWorkflowStatus(workflowB)).toBeUndefined()
   })
 
-  it('clears only the active workflow status, leaving others intact', async () => {
-    callStoreJob('job-a', '/workflows/a.json')
-    callStoreJob('job-b', '/workflows/b.json')
-    fireExecutionStart('job-a')
-    fireExecutionSuccess('job-a')
-    fireExecutionStart('job-b')
-    fireExecutionSuccess('job-b')
+  it.for(['running', 'completed', 'failed'] as const)(
+    'hides %s status while the workflow is the active tab',
+    async (status) => {
+      callStoreJob('job-a', workflowA)
+      fireExecutionStart('job-a')
+      if (status === 'completed') fireExecutionSuccess('job-a')
+      else if (status === 'failed') fireExecutionError('job-a')
+      callStoreJob('job-b', workflowB)
+      fireExecutionStart('job-b')
+      fireExecutionSuccess('job-b')
 
-    mockActiveWorkflow.value = { path: '/workflows/a.json' }
+      expect(store.getWorkflowStatus(workflowA)).toBe(status)
+
+      mockActiveWorkflow.value = workflowA
+      await nextTick()
+
+      expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+      expect(store.getWorkflowStatus(workflowB)).toBe('completed')
+    }
+  )
+
+  it('does not badge a workflow that completes while it is active', async () => {
+    mockActiveWorkflow.value = workflowA
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+    fireExecutionSuccess('job-1')
+
+    mockActiveWorkflow.value = workflowB
     await nextTick()
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+  })
 
-    expect(store.workflowStatus.has('/workflows/a.json')).toBe(false)
-    expect(store.workflowStatus.get('/workflows/b.json')).toBe('completed')
+  it('clears a terminal badge once its tab has been viewed', async () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+    fireExecutionSuccess('job-1')
+    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+
+    mockActiveWorkflow.value = workflowA
+    await nextTick()
+    mockActiveWorkflow.value = workflowB
+    await nextTick()
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
 
   it('prunes only closed workflows, leaving open ones intact', async () => {
-    callStoreJob('job-a', '/workflows/a.json')
-    callStoreJob('job-b', '/workflows/b.json')
+    callStoreJob('job-a', workflowA)
+    callStoreJob('job-b', workflowB)
     fireExecutionSuccess('job-a')
     fireExecutionSuccess('job-b')
 
-    mockOpenWorkflows.value = [{ path: '/workflows/b.json' }]
+    mockOpenWorkflows.value = [workflowB]
     await nextTick()
 
-    expect(store.workflowStatus.has('/workflows/a.json')).toBe(false)
-    expect(store.workflowStatus.get('/workflows/b.json')).toBe('completed')
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+    expect(store.getWorkflowStatus(workflowB)).toBe('completed')
+  })
+
+  it('ignores terminal events for a workflow closed mid-run', async () => {
+    callStoreJob('job-a', workflowA)
+    fireExecutionStart('job-a')
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+
+    // Close the tab while the job is still running.
+    mockOpenWorkflows.value = [workflowB]
+    await nextTick()
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+
+    // A late success must not resurrect an entry for the closed workflow.
+    fireExecutionSuccess('job-a')
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+  })
+
+  it('drops service-level errors without writing failed', () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+
+    // Service-level error: empty node_id triggers the short-circuit branch.
+    const handler = apiEventHandlers.get('execution_error')
+    handler!(
+      new CustomEvent('execution_error', {
+        detail: {
+          prompt_id: 'job-1',
+          node_id: '',
+          node_type: '',
+          exception_message: 'Job has stagnated',
+          exception_type: 'StagnationError',
+          traceback: []
+        }
+      })
+    )
+
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+  })
+
+  it('drops pending failed when service-level error fires before storeJob', () => {
+    apiEventHandlers.get('execution_error')!(
+      new CustomEvent('execution_error', {
+        detail: {
+          prompt_id: 'job-1',
+          node_id: '',
+          node_type: '',
+          exception_message: 'Job has stagnated',
+          exception_type: 'StagnationError',
+          traceback: []
+        }
+      })
+    )
+
+    callStoreJob('job-1', workflowA)
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+  })
+
+  it('clears workflowStatus on unbindExecutionEvents', () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+    fireExecutionSuccess('job-1')
+    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+
+    store.unbindExecutionEvents()
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
 })
 

@@ -2,16 +2,20 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { markRaw } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import type { WorkflowStatus } from '@/stores/executionStore'
+import type * as ExecutionStoreModule from '@/stores/executionStore'
+import type { WorkflowExecutionStatus } from '@/stores/executionStore'
 
 const { mockWorkflowStatus, mockCloseWorkflow } = await vi.hoisted(async () => {
   const { shallowRef } = await import('vue')
   return {
-    mockWorkflowStatus: shallowRef<Map<string, WorkflowStatus>>(new Map()),
+    mockWorkflowStatus: shallowRef<Map<object, WorkflowExecutionStatus>>(
+      new Map()
+    ),
     mockCloseWorkflow: vi.fn().mockResolvedValue(true)
   }
 })
@@ -32,13 +36,18 @@ vi.mock('@/stores/authStore', () => ({
   })
 }))
 
-vi.mock('@/stores/executionStore', () => ({
-  useExecutionStore: () => ({
-    get workflowStatus() {
-      return mockWorkflowStatus.value
-    }
-  })
-}))
+vi.mock('@/stores/executionStore', async (importOriginal) => {
+  const actual = await importOriginal<typeof ExecutionStoreModule>()
+  return {
+    WORKFLOW_STATUS_I18N_KEYS: actual.WORKFLOW_STATUS_I18N_KEYS,
+    useExecutionStore: () => ({
+      getWorkflowStatus(workflow: object | undefined | null) {
+        if (!workflow) return undefined
+        return mockWorkflowStatus.value.get(workflow)
+      }
+    })
+  }
+})
 
 vi.mock('@/composables/usePragmaticDragAndDrop', () => ({
   usePragmaticDraggable: vi.fn(),
@@ -78,7 +87,7 @@ import WorkflowTab from './WorkflowTab.vue'
 
 type WorkflowTabProps = ComponentProps<typeof WorkflowTab>
 
-const statusAriaLabels: Record<WorkflowStatus, string> = {
+const statusAriaLabels: Record<WorkflowExecutionStatus, string> = {
   running: 'Running',
   completed: 'Completed',
   failed: 'Failed'
@@ -94,26 +103,36 @@ const i18n = createI18n({
   }
 })
 
-function makeWorkflowOption(overrides: Record<string, unknown> = {}) {
-  return {
-    value: 'test-key',
-    workflow: {
-      key: 'test-key',
-      path: '/workflows/test.json',
-      filename: 'test.json',
-      isPersisted: true,
-      isModified: false,
-      initialMode: 'default',
-      activeMode: 'default',
-      changeTracker: null,
-      ...overrides
-    }
-  } as unknown as WorkflowTabProps['workflowOption']
+type WorkflowOption = WorkflowTabProps['workflowOption']
+type Workflow = WorkflowOption['workflow']
+type WorkflowOverrides = Partial<Workflow>
+
+// ComfyWorkflow has many required fields the component never reads (file
+// IO, change tracking). Validate the fields we *do* set against the real
+// type via Partial<Workflow>, then cast — adding/renaming a read field in
+// the component will fail typecheck on the override map.
+function makeWorkflowOption(overrides: WorkflowOverrides = {}): WorkflowOption {
+  const workflow = {
+    key: 'test-key',
+    path: '/workflows/test.json',
+    filename: 'test.json',
+    isPersisted: true,
+    isModified: false,
+    activeMode: 'graph',
+    changeTracker: null,
+    ...overrides
+  } satisfies WorkflowOverrides
+  // markRaw keeps a stable identity through prop reactivity so the store's
+  // identity-based status lookup resolves against the same object.
+  return { value: 'test-key', workflow: markRaw(workflow) as Workflow }
 }
 
 function renderTab({
-  workflowOverrides = {},
+  workflowOption = makeWorkflowOption(),
   activeWorkflowKey = 'other-key'
+}: {
+  workflowOption?: WorkflowOption
+  activeWorkflowKey?: string
 } = {}) {
   return render(WorkflowTab, {
     global: {
@@ -125,7 +144,7 @@ function renderTab({
             workflow: {
               activeWorkflow: { key: activeWorkflowKey }
             },
-            setting: {}
+            setting: { settingValues: { 'Comfy.Workflow.AutoSave': 'off' } }
           }
         }),
         i18n
@@ -138,55 +157,59 @@ function renderTab({
       }
     },
     props: {
-      workflowOption: makeWorkflowOption(workflowOverrides),
+      workflowOption,
       isFirst: false,
       isLast: false
     }
   })
 }
 
-describe('WorkflowTab - job state indicator', () => {
+describe('WorkflowTab - workflow status indicator', () => {
   beforeEach(() => {
     mockWorkflowStatus.value = new Map()
-    mockCloseWorkflow.mockClear()
   })
 
   it.for(['running', 'completed', 'failed'] as const)(
-    'shows %s indicator from store with translated aria-label',
+    'labels the %s indicator with a translated status name',
     (status) => {
-      mockWorkflowStatus.value = new Map([['/workflows/test.json', status]])
+      const workflowOption = makeWorkflowOption()
+      mockWorkflowStatus.value = new Map([[workflowOption.workflow, status]])
 
-      renderTab()
-      const indicator = screen.getByTestId('job-state-indicator')
-      expect(indicator.getAttribute('data-state')).toBe(status)
-      expect(indicator.getAttribute('role')).toBe('status')
-      expect(indicator.getAttribute('aria-label')).toBe(
-        statusAriaLabels[status]
-      )
+      renderTab({ workflowOption })
+      expect(
+        screen.getByRole('img', { name: statusAriaLabels[status] })
+      ).toBeTruthy()
     }
   )
 
-  it('shows unsaved dot when no job state and workflow is unsaved', () => {
-    renderTab({ workflowOverrides: { isPersisted: false } })
+  it('shows unsaved dot when no workflow status and workflow is unsaved', () => {
+    renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
 
-    expect(screen.queryByTestId('job-state-indicator')).toBeNull()
-    const dot = screen.getByTestId('unsaved-indicator')
-    expect(dot.textContent).toBe('•')
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(screen.getByTestId('unsaved-indicator').textContent).toBe('•')
   })
 
-  it('does not show job indicator on active tab', () => {
-    mockWorkflowStatus.value = new Map([['/workflows/test.json', 'completed']])
+  it('shows the unsaved dot when modified and autosave is off', () => {
+    renderTab({ workflowOption: makeWorkflowOption({ isModified: true }) })
 
-    renderTab({ activeWorkflowKey: 'test-key' })
-    expect(screen.queryByTestId('job-state-indicator')).toBeNull()
+    expect(screen.getByTestId('unsaved-indicator').textContent).toBe('•')
   })
 
-  it('job state replaces unsaved dot', () => {
-    mockWorkflowStatus.value = new Map([['/workflows/test.json', 'running']])
+  it('workflow status replaces the unsaved dot', () => {
+    const workflowOption = makeWorkflowOption({ isPersisted: false })
+    mockWorkflowStatus.value = new Map([[workflowOption.workflow, 'running']])
 
-    renderTab({ workflowOverrides: { isPersisted: false } })
-    const indicator = screen.getByTestId('job-state-indicator')
-    expect(indicator.getAttribute('data-state')).toBe('running')
+    renderTab({ workflowOption })
+    expect(
+      screen.getByRole('img', { name: statusAriaLabels.running })
+    ).toBeTruthy()
+    expect(screen.queryByTestId('unsaved-indicator')).toBeNull()
+  })
+})
+
+describe('WorkflowTab - close button', () => {
+  beforeEach(() => {
+    mockCloseWorkflow.mockClear()
   })
 
   it('delegates close to workflow service with the tab workflow', async () => {

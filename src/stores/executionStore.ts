@@ -53,7 +53,16 @@ interface QueuedJob {
  */
 export const MAX_PROGRESS_JOBS = 1000
 
-export type WorkflowStatus = 'running' | 'completed' | 'failed'
+export type WorkflowExecutionStatus = 'running' | 'completed' | 'failed'
+
+export const WORKFLOW_STATUS_I18N_KEYS: Record<
+  WorkflowExecutionStatus,
+  string
+> = {
+  running: 'g.running',
+  completed: 'g.completed',
+  failed: 'g.failed'
+}
 
 export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
@@ -82,35 +91,82 @@ export const useExecutionStore = defineStore('execution', () => {
 
   const initializingJobIds = ref<Set<string>>(new Set())
 
-  /**
-   * Per-workflow-path execution status for the current session.
-   * Updated by WebSocket event handlers; cleared automatically when the
-   * workflow becomes active or is closed.
-   */
-  const workflowStatus = shallowRef<Map<string, WorkflowStatus>>(new Map())
+  const workflowStatus = shallowRef<
+    Map<ComfyWorkflow, WorkflowExecutionStatus>
+  >(new Map())
 
-  function mutateStatus(mutator: (map: Map<string, WorkflowStatus>) => void) {
+  const jobIdToWorkflow = new Map<string, ComfyWorkflow>()
+
+  // Buffers statuses arriving before storeJob attaches the workflow.
+  // FIFO-capped to bound growth if a matching storeJob never fires.
+  const pendingWorkflowStatusByJobId = new Map<
+    string,
+    WorkflowExecutionStatus
+  >()
+
+  function bufferPendingWorkflowStatus(
+    jobId: string,
+    status: WorkflowExecutionStatus
+  ) {
+    pendingWorkflowStatusByJobId.delete(jobId)
+    pendingWorkflowStatusByJobId.set(jobId, status)
+    while (pendingWorkflowStatusByJobId.size > MAX_PROGRESS_JOBS) {
+      const oldest = pendingWorkflowStatusByJobId.keys().next().value
+      if (oldest === undefined) break
+      pendingWorkflowStatusByJobId.delete(oldest)
+    }
+  }
+
+  function mutateStatus(
+    mutator: (map: Map<ComfyWorkflow, WorkflowExecutionStatus>) => void
+  ) {
     const next = new Map(workflowStatus.value)
     mutator(next)
     workflowStatus.value = next
   }
 
-  function setWorkflowStatus(jobId: string, status: WorkflowStatus) {
-    const path = jobIdToSessionWorkflowPath.value.get(jobId)
-    if (!path) return
-    mutateStatus((m) => m.set(path, status))
+  function applyWorkflowStatus(
+    workflow: ComfyWorkflow,
+    status: WorkflowExecutionStatus
+  ) {
+    // A late terminal event can arrive after the tab closed; don't resurrect
+    // an entry (which also pins the workflow ref) for a closed workflow.
+    if (!workflowStore.isOpen(workflow)) return
+    if (status !== 'running' && workflow === workflowStore.activeWorkflow) {
+      clearWorkflowStatus(workflow)
+      return
+    }
+    mutateStatus((m) => m.set(workflow, status))
   }
 
-  function clearWorkflowStatus(path: string) {
-    if (!workflowStatus.value.has(path)) return
-    mutateStatus((m) => m.delete(path))
+  function setWorkflowStatus(jobId: string, status: WorkflowExecutionStatus) {
+    const workflow = jobIdToWorkflow.get(jobId)
+    if (!workflow) {
+      bufferPendingWorkflowStatus(jobId, status)
+      return
+    }
+    applyWorkflowStatus(workflow, status)
   }
 
-  // Clear status when a workflow becomes active — the user has seen it.
+  function clearWorkflowStatus(workflow: ComfyWorkflow) {
+    if (!workflowStatus.value.has(workflow)) return
+    mutateStatus((m) => m.delete(workflow))
+  }
+
+  function getWorkflowStatus(
+    workflow: ComfyWorkflow | undefined | null
+  ): WorkflowExecutionStatus | undefined {
+    if (!workflow) return undefined
+    if (workflow === workflowStore.activeWorkflow) return undefined
+    return workflowStatus.value.get(workflow)
+  }
+
   watch(
-    () => workflowStore.activeWorkflow?.path,
-    (path) => {
-      if (path) clearWorkflowStatus(path)
+    () => workflowStore.activeWorkflow,
+    (workflow) => {
+      if (workflow && workflowStatus.value.get(workflow) !== 'running') {
+        clearWorkflowStatus(workflow)
+      }
     }
   )
 
@@ -119,9 +175,9 @@ export const useExecutionStore = defineStore('execution', () => {
     () => workflowStore.openWorkflows,
     (openWorkflows) => {
       if (workflowStatus.value.size === 0) return
-      const openPaths = new Set(openWorkflows.map((w) => w.path))
+      const openSet = new Set(openWorkflows)
       const filtered = new Map(
-        [...workflowStatus.value].filter(([path]) => openPaths.has(path))
+        [...workflowStatus.value].filter(([w]) => openSet.has(w))
       )
       if (filtered.size !== workflowStatus.value.size) {
         workflowStatus.value = filtered
@@ -291,6 +347,10 @@ export const useExecutionStore = defineStore('execution', () => {
     api.removeEventListener('status', handleStatus)
     api.removeEventListener('execution_error', handleExecutionError)
     api.removeEventListener('progress_text', handleProgressText)
+
+    if (workflowStatus.value.size > 0) workflowStatus.value = new Map()
+    pendingWorkflowStatusByJobId.clear()
+    jobIdToWorkflow.clear()
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -320,7 +380,10 @@ export const useExecutionStore = defineStore('execution', () => {
     e: CustomEvent<ExecutionInterruptedWsMessage>
   ) {
     const jobId = e.detail.prompt_id
-    setWorkflowStatus(jobId, 'failed')
+    // User-initiated stop is not a failure — drop the badge entirely.
+    pendingWorkflowStatusByJobId.delete(jobId)
+    const workflow = jobIdToWorkflow.get(jobId)
+    if (workflow) clearWorkflowStatus(workflow)
     if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
     resetExecutionState(jobId)
   }
@@ -435,8 +498,6 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
-    setWorkflowStatus(e.detail.prompt_id, 'failed')
-
     if (isCloud) {
       useTelemetry()?.trackExecutionError({
         jobId: e.detail.prompt_id,
@@ -446,14 +507,20 @@ export const useExecutionStore = defineStore('execution', () => {
       })
 
       // Cloud wraps validation errors (400) in exception_message as embedded JSON.
-      if (handleCloudValidationError(e.detail)) return
+      // Pre-flight validation isn't a runtime failure — no badge.
+      if (handleCloudValidationError(e.detail)) {
+        pendingWorkflowStatusByJobId.delete(e.detail.prompt_id)
+        return
+      }
     }
 
     // Service-level errors (e.g. "Job has stagnated") have no associated node.
-    // Route them as job errors
-    if (handleServiceLevelError(e.detail)) return
+    if (handleServiceLevelError(e.detail)) {
+      pendingWorkflowStatusByJobId.delete(e.detail.prompt_id)
+      return
+    }
 
-    // OSS path / Cloud fallback (real runtime errors)
+    setWorkflowStatus(e.detail.prompt_id, 'failed')
     executionErrorStore.lastExecutionError = e.detail
     clearInitializationByJobId(e.detail.prompt_id)
     resetExecutionState(e.detail.prompt_id)
@@ -554,6 +621,7 @@ export const useExecutionStore = defineStore('execution', () => {
       delete map[jobId]
       nodeProgressStatesByJob.value = map
       useJobPreviewStore().clearPreview(jobId)
+      jobIdToWorkflow.delete(jobId)
     }
     if (activeJobId.value) {
       delete queuedJobs.value[activeJobId.value]
@@ -606,6 +674,7 @@ export const useExecutionStore = defineStore('execution', () => {
       ...queuedJob.nodes
     }
     queuedJob.workflow = workflow
+    if (workflow) jobIdToWorkflow.set(String(id), workflow)
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(String(id), String(wid))
@@ -613,6 +682,19 @@ export const useExecutionStore = defineStore('execution', () => {
     if (workflow?.path) {
       ensureSessionWorkflowPath(String(id), workflow.path)
     }
+    flushPendingWorkflowStatus(String(id), workflow)
+  }
+
+  function flushPendingWorkflowStatus(
+    jobId: string,
+    workflow: ComfyWorkflow | undefined
+  ) {
+    const pending = pendingWorkflowStatusByJobId.get(jobId)
+    if (pending === undefined || !workflow) return
+    pendingWorkflowStatusByJobId.delete(jobId)
+    // Don't let a stale 'running' overwrite a terminal status already set.
+    if (pending === 'running' && workflowStatus.value.has(workflow)) return
+    applyWorkflowStatus(workflow, pending)
   }
 
   // ~0.65 MB at capacity (32 char GUID key + 50 char path value)
@@ -628,15 +710,6 @@ export const useExecutionStore = defineStore('execution', () => {
       else break
     }
     jobIdToSessionWorkflowPath.value = next
-
-    // If this job is still executing, mark the workflow as running.
-    // Handles the race where handleExecutionStart fired before the path
-    // mapping existed (WebSocket arrived before the HTTP response).
-    // The `has(path)` guard prevents overwriting a terminal status written
-    // by a late-arriving WS event for a job that already completed.
-    if (activeJobId.value === jobId && !workflowStatus.value.has(path)) {
-      mutateStatus((m) => m.set(path, 'running'))
-    }
   }
 
   /**
@@ -716,6 +789,6 @@ export const useExecutionStore = defineStore('execution', () => {
     jobIdToWorkflowId,
     jobIdToSessionWorkflowPath,
     ensureSessionWorkflowPath,
-    workflowStatus
+    getWorkflowStatus
   }
 })

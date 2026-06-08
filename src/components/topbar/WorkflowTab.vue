@@ -22,25 +22,18 @@
         </span>
         <div class="relative">
           <i
-            v-if="jobState"
-            data-testid="job-state-indicator"
-            role="status"
-            :data-state="jobState"
-            :aria-label="jobStateLabel"
+            v-if="workflowStatus"
+            role="img"
+            :aria-label="workflowStatusLabel"
             :class="
               cn(
                 'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover:hidden',
-                jobState === 'running' &&
-                  'icon-[lucide--loader-circle] animate-spin text-muted-foreground',
-                jobState === 'completed' &&
-                  'icon-[lucide--circle-check] text-success-background',
-                jobState === 'failed' &&
-                  'icon-[lucide--octagon-alert] text-destructive-background'
+                workflowStatusIconClasses[workflowStatus]
               )
             "
           />
           <span
-            v-else-if="shouldShowStatusIndicator"
+            v-else-if="shouldShowUnsavedIndicator"
             data-testid="unsaved-indicator"
             class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
             >•</span
@@ -104,8 +97,11 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useCommandStore } from '@/stores/commandStore'
-import type { WorkflowStatus } from '@/stores/executionStore'
-import { useExecutionStore } from '@/stores/executionStore'
+import type { WorkflowExecutionStatus } from '@/stores/executionStore'
+import {
+  useExecutionStore,
+  WORKFLOW_STATUS_I18N_KEYS
+} from '@/stores/executionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import { cn } from '@/utils/tailwindUtil'
@@ -148,7 +144,7 @@ const autoSaveDelay = computed(() =>
   settingStore.get('Comfy.Workflow.AutoSaveDelay')
 )
 
-const shouldShowStatusIndicator = computed(() => {
+const shouldShowUnsavedIndicator = computed(() => {
   if (workspaceStore.shiftDown) {
     // Branch 1: Shift key is held down, do not show the status indicator.
     return false
@@ -183,20 +179,21 @@ const isActiveTab = computed(() => {
   return workflowStore.activeWorkflow?.key === props.workflowOption.workflow.key
 })
 
-const jobState = computed(() => {
-  const path = props.workflowOption.workflow.path
-  if (!path || isActiveTab.value) return null
-  return executionStore.workflowStatus.get(path) ?? null
-})
-
-const jobStateI18nKeys: Record<WorkflowStatus, string> = {
-  running: 'g.running',
-  completed: 'g.completed',
-  failed: 'g.failed'
+const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
+  running:
+    'text-base-foreground icon-[lucide--loader-circle] motion-safe:animate-spin',
+  completed: 'icon-[lucide--circle-check] text-success-background',
+  failed: 'icon-[lucide--octagon-alert] text-destructive-background'
 }
 
-const jobStateLabel = computed(() =>
-  jobState.value ? t(jobStateI18nKeys[jobState.value]) : undefined
+const workflowStatus = computed(() =>
+  executionStore.getWorkflowStatus(props.workflowOption.workflow)
+)
+
+const workflowStatusLabel = computed(() =>
+  workflowStatus.value
+    ? t(WORKFLOW_STATUS_I18N_KEYS[workflowStatus.value])
+    : undefined
 )
 
 const thumbnailUrl = computed(() => {
