@@ -4557,8 +4557,8 @@ const translations = {
 
   // AffiliateBrandAssetsSection
   'affiliate.assets.heading': {
-    en: 'Brand assets',
-    'zh-CN': '品牌素材'
+    en: 'Brand logos for your content',
+    'zh-CN': '可用于您内容的品牌 Logo'
   },
   'affiliate.assets.subheading': {
     en: 'Approved Comfy logos for your content. Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
