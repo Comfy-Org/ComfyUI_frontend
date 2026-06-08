@@ -2236,9 +2236,9 @@ const translations = {
     'zh-CN': 'Lawful basis (GDPR / UK GDPR)'
   },
   'desktop_privacy.lawful-basis.block.0': {
-    en: '<strong>Consent</strong> (Article 6(1)(a)) for analytics and crash reports — both are opt-in on the consent screen and revocable in Settings.\n<strong>Legitimate interests</strong> (Article 6(1)(f)) for update-server requests necessary to deliver software updates and security fixes. You can object via <a href="mailto:privacy@comfy.org" class="text-white underline">privacy@comfy.org</a>.',
+    en: '<strong>Consent</strong> (Article 6(1)(a)) for analytics and crash reports — both are opt-in on the consent screen and revocable in Settings.\n<strong>Legitimate interests</strong> (Article 6(1)(f)) for update-server requests necessary to deliver software updates and security fixes. You can object via <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
     'zh-CN':
-      '<strong>Consent</strong> (Article 6(1)(a)) for analytics and crash reports — both are opt-in on the consent screen and revocable in Settings.\n<strong>Legitimate interests</strong> (Article 6(1)(f)) for update-server requests necessary to deliver software updates and security fixes. You can object via <a href="mailto:privacy@comfy.org" class="text-white underline">privacy@comfy.org</a>.'
+      '<strong>Consent</strong> (Article 6(1)(a)) for analytics and crash reports — both are opt-in on the consent screen and revocable in Settings.\n<strong>Legitimate interests</strong> (Article 6(1)(f)) for update-server requests necessary to deliver software updates and security fixes. You can object via <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.'
   },
 
   'desktop_privacy.processors.label': {
@@ -2281,17 +2281,17 @@ const translations = {
     'zh-CN': 'Your choices'
   },
   'desktop_privacy.choices.block.0': {
-    en: '<strong>Turn off analytics</strong>: Settings → Telemetry → toggle off. Future events stop immediately; any in-flight requests already on the wire may complete.\n<strong>Delete past data</strong>: email <a href="mailto:privacy@comfy.org" class="text-white underline">privacy@comfy.org</a> with your approximate install date, platform, and version. We\'ll do a best-effort match and remove associated records within 30 days.\n<strong>Stop using the app</strong>: uninstalling Desktop ends data collection. We don\'t keep tracking IDs after uninstall.',
+    en: '<strong>Turn off analytics</strong>: Settings → Telemetry → toggle off. Future events stop immediately; any in-flight requests already on the wire may complete.\n<strong>Delete past data</strong>: email <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> with your approximate install date, platform, and version. We\'ll do a best-effort match and remove associated records within 30 days.\n<strong>Stop using the app</strong>: uninstalling Desktop ends data collection. We don\'t keep tracking IDs after uninstall.',
     'zh-CN':
-      '<strong>Turn off analytics</strong>: Settings → Telemetry → toggle off. Future events stop immediately; any in-flight requests already on the wire may complete.\n<strong>Delete past data</strong>: email <a href="mailto:privacy@comfy.org" class="text-white underline">privacy@comfy.org</a> with your approximate install date, platform, and version. We\'ll do a best-effort match and remove associated records within 30 days.\n<strong>Stop using the app</strong>: uninstalling Desktop ends data collection. We don\'t keep tracking IDs after uninstall.'
+      '<strong>Turn off analytics</strong>: Settings → Telemetry → toggle off. Future events stop immediately; any in-flight requests already on the wire may complete.\n<strong>Delete past data</strong>: email <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> with your approximate install date, platform, and version. We\'ll do a best-effort match and remove associated records within 30 days.\n<strong>Stop using the app</strong>: uninstalling Desktop ends data collection. We don\'t keep tracking IDs after uninstall.'
   },
 
   'desktop_privacy.rights.label': { en: 'YOUR RIGHTS', 'zh-CN': 'YOUR RIGHTS' },
   'desktop_privacy.rights.title': { en: 'Your rights', 'zh-CN': 'Your rights' },
   'desktop_privacy.rights.block.0': {
-    en: 'If you are in the EU, UK, or EEA, you have rights under GDPR / UK GDPR — access, rectification, erasure, restriction, objection, portability. Email <a href="mailto:privacy@comfy.org" class="text-white underline">privacy@comfy.org</a> to exercise them.',
+    en: 'If you are in the EU, UK, or EEA, you have rights under GDPR / UK GDPR — access, rectification, erasure, restriction, objection, portability. Email <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> to exercise them.',
     'zh-CN':
-      'If you are in the EU, UK, or EEA, you have rights under GDPR / UK GDPR — access, rectification, erasure, restriction, objection, portability. Email <a href="mailto:privacy@comfy.org" class="text-white underline">privacy@comfy.org</a> to exercise them.'
+      'If you are in the EU, UK, or EEA, you have rights under GDPR / UK GDPR — access, rectification, erasure, restriction, objection, portability. Email <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> to exercise them.'
   },
   'desktop_privacy.rights.block.1': {
     en: "If you are in California, you have rights under CCPA / CPRA — know, delete, correct, opt out of sale/sharing (note: we don't sell or share data for cross-context behavioral advertising), and limit use of sensitive personal information.",
@@ -2318,9 +2318,9 @@ const translations = {
   'desktop_privacy.children.label': { en: 'CHILDREN', 'zh-CN': 'CHILDREN' },
   'desktop_privacy.children.title': { en: 'Children', 'zh-CN': 'Children' },
   'desktop_privacy.children.block.0': {
-    en: 'Comfy Desktop is not intended for users under 13. If you believe a child has used the app, contact <a href="mailto:privacy@comfy.org" class="text-white underline">privacy@comfy.org</a> and we will remove related records.',
+    en: 'Comfy Desktop is not intended for users under 13. If you believe a child has used the app, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> and we will remove related records.',
     'zh-CN':
-      'Comfy Desktop is not intended for users under 13. If you believe a child has used the app, contact <a href="mailto:privacy@comfy.org" class="text-white underline">privacy@comfy.org</a> and we will remove related records.'
+      'Comfy Desktop is not intended for users under 13. If you believe a child has used the app, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> and we will remove related records.'
   },
 
   'desktop_privacy.changes.label': { en: 'CHANGES', 'zh-CN': 'CHANGES' },
@@ -2337,9 +2337,9 @@ const translations = {
   'desktop_privacy.contact.label': { en: 'CONTACT', 'zh-CN': 'CONTACT' },
   'desktop_privacy.contact.title': { en: 'Contact', 'zh-CN': 'Contact' },
   'desktop_privacy.contact.block.0': {
-    en: '<a href="mailto:privacy@comfy.org" class="text-white underline">privacy@comfy.org</a> for any privacy-related question or request.',
+    en: '<a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> for any privacy-related question or request.',
     'zh-CN':
-      '<a href="mailto:privacy@comfy.org" class="text-white underline">privacy@comfy.org</a> for any privacy-related question or request.'
+      '<a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> for any privacy-related question or request.'
   },
 
   // ── Terms of Service ──────────────────────────────────────────────
