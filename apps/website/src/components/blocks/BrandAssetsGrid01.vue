@@ -16,7 +16,7 @@ defineProps<{
 
 <template>
   <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
-    <div class="mx-auto max-w-3xl text-center">
+    <div class="mx-auto max-w-6xl text-center">
       <h2
         class="text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
       >
