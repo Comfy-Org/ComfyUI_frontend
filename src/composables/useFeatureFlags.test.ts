@@ -220,4 +220,30 @@ describe('useFeatureFlags', () => {
       expect(flags.teamWorkspacesEnabled).toBe(true)
     })
   })
+
+  describe('unifiedCloudAuthEnabled', () => {
+    afterEach(() => {
+      localStorage.clear()
+    })
+
+    it('reads the unified_cloud_auth server feature when set', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) => {
+          if (path === ServerFeatureFlag.UNIFIED_CLOUD_AUTH) return true
+          return defaultValue
+        }
+      )
+
+      const { flags } = useFeatureFlags()
+      expect(flags.unifiedCloudAuthEnabled).toBe(true)
+    })
+
+    it('lets a dev override beat the server value', () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+      localStorage.setItem('ff:unified_cloud_auth', 'true')
+
+      const { flags } = useFeatureFlags()
+      expect(flags.unifiedCloudAuthEnabled).toBe(true)
+    })
+  })
 })
