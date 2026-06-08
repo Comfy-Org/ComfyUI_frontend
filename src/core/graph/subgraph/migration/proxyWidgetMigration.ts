@@ -92,12 +92,19 @@ export function normalizeLegacyProxyWidgetEntry(
 
 function resolveSourceWidget(
   sourceNode: LGraphNode,
-  sourceWidgetName: string
+  sourceWidgetName: string,
+  disambiguatingSourceNodeId?: string
 ): IBaseWidget | undefined {
   if (sourceNode.isSubgraphNode()) {
     const input = sourceNode.inputs.find((input) => {
-      if (input.name === sourceWidgetName) return true
       const target = resolveSubgraphInputTarget(sourceNode, input.name)
+      if (disambiguatingSourceNodeId) {
+        return (
+          target?.widgetName === sourceWidgetName &&
+          target.nodeId === disambiguatingSourceNodeId
+        )
+      }
+      if (input.name === sourceWidgetName) return true
       return target?.widgetName === sourceWidgetName
     })
     // Store-backed projection for a promoted input on a nested subgraph node:
@@ -333,7 +340,8 @@ function classify(
 
   const sourceWidget = resolveSourceWidget(
     sourceNode,
-    normalized.sourceWidgetName
+    normalized.sourceWidgetName,
+    normalized.disambiguatingSourceNodeId
   )
   if (!sourceWidget) {
     return { kind: 'quarantine', reason: 'missingSourceWidget' }
@@ -416,7 +424,11 @@ function repairCreateSubgraphInput(
     return { ok: false, reason: 'missingSourceNode' }
   }
 
-  const sourceWidget = resolveSourceWidget(sourceNode, sourceWidgetName)
+  const sourceWidget = resolveSourceWidget(
+    sourceNode,
+    sourceWidgetName,
+    entry.normalized.disambiguatingSourceNodeId
+  )
   if (!sourceWidget) {
     return { ok: false, reason: 'missingSourceWidget' }
   }

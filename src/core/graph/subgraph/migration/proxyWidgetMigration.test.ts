@@ -140,6 +140,44 @@ describe('flushProxyWidgetMigration', () => {
       expect(innerWidget.value).toBe(0)
     })
 
+    it('createSubgraphInput: uses disambiguator for duplicate nested widget names', () => {
+      const rootGraph = new LGraph()
+      const innerSubgraph = createTestSubgraph({ rootGraph })
+      const firstText = new LGraphNode('CLIPTextEncode')
+      const firstSlot = firstText.addInput('text', 'STRING')
+      firstSlot.widget = { name: 'text' }
+      firstText.addWidget('text', 'text', '11111111111', () => {})
+      innerSubgraph.add(firstText)
+
+      const secondText = new LGraphNode('CLIPTextEncode')
+      const secondSlot = secondText.addInput('text', 'STRING')
+      secondSlot.widget = { name: 'text' }
+      secondText.addWidget('text', 'text', '22222222222', () => {})
+      innerSubgraph.add(secondText)
+
+      const nestedHost = createTestSubgraphNode(innerSubgraph, {
+        parentGraph: rootGraph
+      })
+      nestedHost.properties.proxyWidgets = [
+        [String(firstText.id), 'text'],
+        [String(secondText.id), 'text']
+      ]
+      flushProxyWidgetMigration({ hostNode: nestedHost })
+
+      const outerSubgraph = createTestSubgraph({ rootGraph })
+      outerSubgraph.add(nestedHost)
+      const outerHost = createTestSubgraphNode(outerSubgraph, {
+        parentGraph: rootGraph
+      })
+      outerHost.properties.proxyWidgets = [
+        [String(nestedHost.id), 'text', String(secondText.id)]
+      ]
+
+      flushProxyWidgetMigration({ hostNode: outerHost })
+
+      expect(getPromotedInputValue(outerHost, 'text')).toBe('22222222222')
+    })
+
     it('alreadyLinked: leaves widget value unchanged when host value is a sparse hole', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'seed', type: 'INT' }]
