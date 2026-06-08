@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   resolveMissingErrorMessage,
+  resolveMissingMediaItemLabel,
   resolveRunErrorMessage
 } from './errorMessageResolver'
 import type { NodeValidationError } from './types'
@@ -1576,6 +1577,17 @@ describe('errorMessageResolver', () => {
       displayMessage: 'A required media input has no file selected.',
       toastTitle: 'Media input missing',
       toastMessage: 'Load Image is missing a required media file.'
+    })
+  })
+
+  it('resolves missing media item labels from node and widget names', () => {
+    expect(
+      resolveMissingMediaItemLabel({
+        nodeType: 'LoadImage',
+        widgetName: 'image'
+      })
+    ).toEqual({
+      displayItemLabel: 'Load Image - image'
     })
   })
 

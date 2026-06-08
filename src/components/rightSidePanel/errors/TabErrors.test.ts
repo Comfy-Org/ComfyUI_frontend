@@ -468,6 +468,32 @@ describe('TabErrors.vue', () => {
     ).toBeInTheDocument()
   })
 
+  it('renders missing media item labels that locate the node', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue({
+      title: 'Load Image'
+    } as ReturnType<typeof getNodeByExecutionId>)
+
+    const { user } = renderComponent({
+      missingMedia: {
+        missingMediaCandidates: [
+          {
+            nodeId: '3',
+            nodeType: 'LoadImage',
+            widgetName: 'image',
+            mediaType: 'image',
+            name: 'portrait.png',
+            isMissing: true
+          } satisfies MissingMediaCandidate
+        ]
+      }
+    })
+
+    await user.click(screen.getByRole('button', { name: 'Load Image - image' }))
+
+    expect(mockFocusNode.mock.calls.at(-1)?.[0]).toBe('3')
+  })
+
   it('renders swap node rows below the section display message', () => {
     const swapNode = {
       type: 'OldSampler',

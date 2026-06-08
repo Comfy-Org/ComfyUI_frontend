@@ -2,7 +2,7 @@ import type {
   MissingErrorMessageSource,
   ResolvedMissingErrorMessage
 } from './types'
-import { translateCatalogMessage } from './catalogI18n'
+import { normalizeNodeName, translateCatalogMessage } from './catalogI18n'
 import { st } from '@/i18n'
 
 function formatCountTitle(title: string, count: number): string {
@@ -255,6 +255,12 @@ type MissingMediaSource = Extract<
   { kind: 'missing_media' }
 >
 
+interface MissingMediaItemLabelSource {
+  nodeDisplayName?: string
+  nodeType?: string
+  widgetName?: string
+}
+
 function getMissingMediaItems(source: MissingMediaSource) {
   return source.groups.flatMap((group) => group.items)
 }
@@ -270,6 +276,27 @@ function resolveMissingMediaDisplayMessage(): string {
     'errorCatalog.missingErrors.missing_media.displayMessage',
     'A required media input has no file selected.'
   )
+}
+
+export function resolveMissingMediaItemLabel(
+  source: MissingMediaItemLabelSource
+): { displayItemLabel: string } {
+  const nodeName = normalizeNodeName(
+    source.nodeDisplayName ||
+      formatNodeTypeName(source.nodeType ?? '') ||
+      undefined
+  )
+  const inputName =
+    source.widgetName?.trim() ||
+    translateCatalogMessage('errorCatalog.fallbacks.inputName', 'unknown input')
+
+  return {
+    displayItemLabel: translateCatalogMessage(
+      'errorCatalog.missingErrors.missing_media.itemLabel',
+      '{nodeName} - {inputName}',
+      { nodeName, inputName }
+    )
+  }
 }
 
 function resolveMissingMediaToastTitle(source: MissingMediaSource): string {

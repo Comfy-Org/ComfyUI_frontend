@@ -3732,6 +3732,7 @@
       },
       "missing_media": {
         "displayMessage": "A required media input has no file selected.",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastTitleOne": "Media input missing",
         "toastTitleMany": "Missing media inputs",
         "toastMessageWithNode": "{nodeName} is missing a required media file.",

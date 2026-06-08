@@ -256,7 +256,6 @@
           <MissingMediaCard
             v-if="group.type === 'missing_media'"
             :missing-media-groups="missingMediaGroups"
-            :show-node-id-badge="showNodeIdBadge"
             @locate-node="handleLocateAssetNode"
           />
         </PropertiesAccordionItem>

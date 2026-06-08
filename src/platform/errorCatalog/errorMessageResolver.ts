@@ -5,13 +5,15 @@ import type {
 } from './types'
 
 import { resolveExecutionErrorMessage } from './executionErrorResolver'
-import { resolveMissingErrorMessage } from './missingErrorResolver'
 import { resolvePromptErrorMessage } from './promptErrorResolver'
 import { resolveNodeValidationErrorMessage } from './validationErrorResolver'
 
 // Public facade for error catalog resolution. Source-specific resolver modules
 // own the actual matching/copy rules so this file stays as the routing boundary.
-export { resolveMissingErrorMessage }
+export {
+  resolveMissingErrorMessage,
+  resolveMissingMediaItemLabel
+} from './missingErrorResolver'
 
 export function resolveRunErrorMessage(
   source: Extract<RunErrorMessageSource, { kind: 'node_validation' }>
