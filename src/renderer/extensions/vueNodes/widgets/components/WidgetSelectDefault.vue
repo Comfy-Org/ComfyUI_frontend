@@ -34,7 +34,7 @@
             <span
               :class="
                 cn(
-                  'min-w-[4ch] flex-1 truncate pr-1 pl-7 text-left text-xs',
+                  'min-w-[4ch] flex-1 truncate pr-1 pl-2 text-left text-xs',
                   $slots.default && 'mr-5'
                 )
               "
