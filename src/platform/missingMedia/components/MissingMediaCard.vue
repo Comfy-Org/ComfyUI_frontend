@@ -1,6 +1,10 @@
 <template>
   <div class="px-4 pb-2">
-    <ul class="m-0 list-none space-y-1 p-0">
+    <TransitionGroup
+      tag="ul"
+      name="list-scale"
+      class="relative m-0 list-none space-y-1 p-0"
+    >
       <li
         v-for="item in missingMediaItems"
         :key="item.key"
@@ -29,7 +33,7 @@
           </Button>
         </div>
       </li>
-    </ul>
+    </TransitionGroup>
   </div>
 </template>
 
