@@ -2,6 +2,7 @@
 // 1:1 to an API error type. Simple validation mappings stay with the validation
 // resolver.
 export const MISSING_CONNECTION_CATALOG_ID = 'missing_connection'
+export const UNKNOWN_VALIDATION_ERROR_CATALOG_ID = 'unknown_validation_error'
 export const EXECUTION_FAILED_CATALOG_ID = 'execution_failed'
 export const IMAGE_NOT_LOADED_CATALOG_ID = 'image_not_loaded'
 export const OUT_OF_MEMORY_CATALOG_ID = 'out_of_memory'

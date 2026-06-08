@@ -25,6 +25,10 @@ export interface ResolvedErrorMessage {
   toastMessage?: string
 }
 
+export type ResolvedCatalogErrorMessage = ResolvedErrorMessage & {
+  catalogId: string
+}
+
 export type ResolvedMissingErrorMessage = ResolvedErrorMessage & {
   displayTitle: string
   displayMessage: string

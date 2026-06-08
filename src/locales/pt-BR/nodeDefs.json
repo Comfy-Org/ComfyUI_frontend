@@ -619,6 +619,31 @@
       }
     }
   },
+  "BriaVideoGreenScreen": {
+    "description": "Substitua o fundo de um vídeo por uma tela sólida de chroma key usando Bria.",
+    "display_name": "Bria Video Green Screen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "green_shade": {
+        "name": "tom_de_verde",
+        "tooltip": "Tom sólido de chroma key aplicado atrás do primeiro plano: broadcast_green (#00B140), chroma_green (#00FF00) ou blue_screen (#0000FF)."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Gere vídeo usando Seedance 2.0 a partir de uma imagem do primeiro frame e, opcionalmente, uma imagem do último frame.",
     "display_name": "ByteDance Seedance 2.0 Primeiro-Último-Frame para Vídeo",
@@ -3997,6 +4022,9 @@
     "description": "Remove o objeto mascarado de uma imagem e reconstrói o fundo. Pinte a máscara sobre o que deseja apagar.",
     "display_name": "Flux Apagar Imagem",
     "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
       "dilate_pixels": {
         "name": "dilatar_pixels",
         "tooltip": "Expande os limites da máscara para garantir cobertura limpa das bordas do objeto."
@@ -4007,6 +4035,10 @@
       "mask": {
         "name": "máscara",
         "tooltip": "Áreas brancas são removidas; áreas pretas são preservadas."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente aleatória usada para criar o ruído."
       }
     },
     "outputs": {
@@ -4750,6 +4782,14 @@
       "system_prompt": {
         "name": "system_prompt",
         "tooltip": "Instruções fundamentais que ditam o comportamento da IA."
+      },
+      "temperature": {
+        "name": "temperatura",
+        "tooltip": "Controla a aleatoriedade na geração. Valores menores são mais focados/determinísticos."
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "Limite de amostragem por núcleo. Valores menores são mais focados, maiores são mais diversos."
       }
     },
     "outputs": {
@@ -4803,6 +4843,48 @@
       "video": {
         "name": "vídeo",
         "tooltip": "Vídeo opcional para usar como contexto para o modelo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "Gere respostas de texto com os modelos Gemini do Google. Forneça um prompt de texto e, opcionalmente, uma ou mais imagens, clipes de áudio, vídeos ou arquivos como contexto multimodal.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo Gemini utilizado para gerar a resposta."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_temperature": {
+        "name": "temperatura"
+      },
+      "model_thinking_level": {
+        "name": "nível_de_raciocínio"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Entrada de texto para o modelo. Inclua instruções detalhadas, perguntas ou contexto."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para amostragem. Defina como 0 para uma semente aleatória. A saída determinística não é garantida."
+      },
+      "system_prompt": {
+        "name": "prompt_do_sistema",
+        "tooltip": "Instruções fundamentais que determinam o comportamento do modelo."
       }
     },
     "outputs": {
@@ -13725,15 +13807,15 @@
       "height": {
         "name": "altura"
       },
-      "image": {
-        "name": "imagem"
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Arquivo de modelo 3D de um nó 3D anterior."
       },
       "model_3d_info": {
         "name": "info_modelo_3d"
       },
-      "model_file": {
-        "name": "arquivo_modelo",
-        "tooltip": "Arquivo de modelo 3D de um nó 3D anterior."
+      "viewport_state": {
+        "name": "estado_da_janela_de_visualização"
       },
       "width": {
         "name": "largura"
@@ -13788,12 +13870,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "Pré-visualizar Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Um arquivo 3D de gaussian splat."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "description": "Salva as imagens de entrada no seu diretório de saída do ComfyUI.",
     "display_name": "Imagem de Pré-visualização",
     "inputs": {
       "images": {
         "name": "imagens"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "Pré-visualizar Nuvem de Pontos",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Arquivo de nuvem de pontos (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -16446,6 +16620,27 @@
       },
       "filename_prefix": {
         "name": "prefixo_do_arquivo"
+      }
+    }
+  },
+  "SaveAudioAdvanced": {
+    "description": "Salva o áudio de entrada no diretório de saída do ComfyUI.",
+    "display_name": "Salvar Áudio (Avançado)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "O áudio a ser salvo."
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "O prefixo para o arquivo a ser salvo. Pode incluir tokens de formatação como %date:yyyy-MM-dd%."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "O formato de arquivo no qual salvar o áudio."
       }
     }
   },

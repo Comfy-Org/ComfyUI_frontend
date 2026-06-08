@@ -7,6 +7,7 @@
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -45,22 +46,128 @@ import {
   isAncestorPathActive
 } from '@/utils/graphTraversalUtil'
 
-function resolvePromotedExecId(
-  rootGraph: LGraph,
-  node: LGraphNode,
+interface WidgetErrorClearingTarget {
+  executionId: string
+  validationInputName: string
+  assetWidgetName: string
+  currentValue: unknown
+  options?: { min?: number; max?: number }
+}
+
+function getWidgetRangeOptions(widget: IBaseWidget): {
+  min?: number
+  max?: number
+} {
+  return {
+    min: widget.options?.min,
+    max: widget.options?.max
+  }
+}
+
+function plainWidgetToErrorTarget(
   widget: IBaseWidget,
   hostExecId: string
-): string {
-  if (!isPromotedWidgetView(widget)) return hostExecId
+): WidgetErrorClearingTarget {
+  return {
+    executionId: hostExecId,
+    validationInputName: widget.name,
+    assetWidgetName: widget.name,
+    currentValue: widget.value,
+    options: getWidgetRangeOptions(widget)
+  }
+}
+
+function promotedWidgetToErrorTarget(
+  rootGraph: LGraph,
+  hostNode: LGraphNode,
+  widget: PromotedWidgetView,
+  hostExecId: string
+): WidgetErrorClearingTarget {
   const result = resolveConcretePromotedWidget(
-    node,
+    hostNode,
     widget.sourceNodeId,
     widget.sourceWidgetName
   )
-  if (result.status === 'resolved' && result.resolved.node) {
-    return getExecutionIdByNode(rootGraph, result.resolved.node) ?? hostExecId
+  const execId =
+    result.status === 'resolved' && result.resolved.node
+      ? (getExecutionIdByNode(rootGraph, result.resolved.node) ?? hostExecId)
+      : hostExecId
+  const resolvedWidget =
+    result.status === 'resolved' ? result.resolved.widget : widget
+
+  return {
+    executionId: execId,
+    validationInputName: resolvedWidget.name,
+    assetWidgetName: widget.sourceWidgetName,
+    currentValue: resolvedWidget.value,
+    options: getWidgetRangeOptions(resolvedWidget)
   }
-  return hostExecId
+}
+
+function resolveCanvasPathPromotedWidgetTargets(
+  rootGraph: LGraph,
+  hostNode: LGraphNode,
+  widget: IBaseWidget,
+  hostExecId: string,
+  newValue: unknown
+): WidgetErrorClearingTarget[] {
+  if (!hostNode.isSubgraphNode?.() || isPromotedWidgetView(widget)) return []
+
+  // Canvas-path events lose promoted identity, so the post-write value
+  // disambiguates same-named promoted widgets.
+  return (hostNode.widgets ?? [])
+    .filter(isPromotedWidgetView)
+    .filter((promotedWidget) => promotedWidget.sourceWidgetName === widget.name)
+    .map((promotedWidget) =>
+      promotedWidgetToErrorTarget(
+        rootGraph,
+        hostNode,
+        promotedWidget,
+        hostExecId
+      )
+    )
+    .filter((target) => Object.is(target.currentValue, newValue))
+}
+
+function resolveWidgetErrorTargets(
+  rootGraph: LGraph,
+  hostNode: LGraphNode,
+  widget: IBaseWidget,
+  hostExecId: string,
+  newValue: unknown
+): WidgetErrorClearingTarget[] {
+  if (isPromotedWidgetView(widget)) {
+    return [
+      promotedWidgetToErrorTarget(rootGraph, hostNode, widget, hostExecId)
+    ]
+  }
+
+  const canvasPathTargets = resolveCanvasPathPromotedWidgetTargets(
+    rootGraph,
+    hostNode,
+    widget,
+    hostExecId,
+    newValue
+  )
+  return canvasPathTargets.length
+    ? canvasPathTargets
+    : [plainWidgetToErrorTarget(widget, hostExecId)]
+}
+
+function clearWidgetErrorTargets(
+  targets: WidgetErrorClearingTarget[],
+  newValue: unknown
+): void {
+  const store = useExecutionErrorStore()
+  for (const target of targets) {
+    store.clearWidgetRelatedErrors(
+      target.executionId,
+      target.validationInputName,
+      target.assetWidgetName,
+      newValue,
+      target.options
+    )
+  }
 }
 
 const hookedNodes = new WeakSet<LGraphNode>()
@@ -103,23 +210,14 @@ function installNodeHooks(node: LGraphNode): void {
       const hostExecId = getExecutionIdByNode(app.rootGraph, node)
       if (!hostExecId) return
 
-      const execId = resolvePromotedExecId(
+      const targets = resolveWidgetErrorTargets(
         app.rootGraph,
         node,
         widget,
-        hostExecId
+        hostExecId,
+        newValue
       )
-      const widgetName = isPromotedWidgetView(widget)
-        ? widget.sourceWidgetName
-        : widget.name
-
-      useExecutionErrorStore().clearWidgetRelatedErrors(
-        execId,
-        widget.name,
-        widgetName,
-        newValue,
-        { min: widget.options?.min, max: widget.options?.max }
-      )
+      clearWidgetErrorTargets(targets, newValue)
     }
   )
 }

@@ -8,6 +8,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { getMiddlePoint } from '@e2e/fixtures/utils/litegraphUtils'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 async function getCenter(locator: Locator): Promise<{ x: number; y: number }> {
   const box = await locator.boundingBox()
@@ -1231,3 +1232,41 @@ test.describe('Vue Node Widget Link Position', { tag: '@vue-nodes' }, () => {
     }).toPass({ timeout: 5000 })
   })
 })
+
+test(
+  'Fast disconnection support',
+  { tag: '@vue-nodes' },
+  async ({ comfyMouse, comfyPage }) => {
+    async function performDisconnect(slot: Locator, isFast: boolean) {
+      await comfyMouse.dragElementBy(slot, { x: isFast ? -25 : -80 })
+
+      if (!isFast) {
+        await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
+        await comfyMouse.click(100, 100)
+      }
+      const isConnected = () => comfyPage.vueNodes.isSlotConnected(slot)
+      await expect.poll(isConnected).toBe(false)
+      await expect(comfyPage.contextMenu.litegraphContextMenu).toBeHidden()
+    }
+
+    const ksamplerLocator = comfyPage.vueNodes.getNodeByTitle('KSampler')
+    const ksampler = new VueNodeFixture(ksamplerLocator)
+    await comfyMouse.dragElementBy(ksamplerLocator, { x: 100 })
+
+    await test.step('Disconnection with normal links', async () => {
+      await performDisconnect(ksampler.getSlot('model'), true)
+      await performDisconnect(ksampler.getSlot('positive'), false)
+    })
+
+    await test.step('Create subgraph', async () => {
+      await ksampler.title.click()
+      await comfyPage.page.keyboard.press('Control+Shift+e')
+      await comfyPage.vueNodes.enterSubgraph()
+    })
+
+    await test.step('Disconnection with subgraph IO', async () => {
+      await performDisconnect(ksampler.getSlot('negative'), true)
+      await performDisconnect(ksampler.getSlot('latent_image'), false)
+    })
+  }
+)

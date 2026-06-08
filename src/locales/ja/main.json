@@ -832,7 +832,9 @@
     "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
     "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
     "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
@@ -945,6 +947,46 @@
     "fallbacks": {
       "inputName": "不明な入力",
       "nodeName": "このノード"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "必要なメディア入力にファイルが選択されていません。",
+        "toastMessageMany": "このワークフローを実行する前に不足しているメディア入力を選択してください。",
+        "toastMessageWithNode": "{nodeName}に必要なメディアファイルが不足しています。",
+        "toastTitleMany": "メディア入力が不足しています",
+        "toastTitleOne": "メディア入力が不足しています"
+      },
+      "missing_model": {
+        "displayMessageCloud": "モデルをインポートするか、ノードを開いて置き換えてください。",
+        "displayMessageOss": "モデルをダウンロードするか、ノードを開いて置き換えてください。",
+        "toastMessageManyCloud": "一部のモデルはサポートされていません。別のモデルを選択してください。",
+        "toastMessageManyOss": "{count}個のモデルファイルが不足しています。",
+        "toastMessageOneCloud": "このモデルはサポートされていません。別のモデルを選択してください。",
+        "toastMessageOneOss": "{nodeName}に必要なモデルファイルが不足しています。",
+        "toastTitleMany": "モデルが不足しています",
+        "toastTitleManyCloud": "モデルはCloudで利用できません",
+        "toastTitleOneCloud": "{modelName}はCloudで利用できません",
+        "toastTitleOneOss": "{modelName}が不足しています"
+      },
+      "missing_node": {
+        "displayMessageCloud": "必要なカスタムノードはCloudではサポートされていません。サポートされているノードに置き換えてください。",
+        "displayMessageOss": "このワークフローを使用するには不足しているパックをインストールしてください。",
+        "toastMessageManyCloud": "このワークフローはCloudでサポートされていないノードを使用しています。",
+        "toastMessageManyOss": "{count}個のノードパックが不足しています。",
+        "toastMessageOneCloud": "このノードはCloudでサポートされていません。",
+        "toastMessageOneOss": "このワークフローはインストールされていないカスタムノードを使用しています。レジストリからインストールするか、ノードを置き換えてください。",
+        "toastTitleManyCloud": "ノードはCloudで利用できません",
+        "toastTitleManyOss": "ノードが不足しています",
+        "toastTitleOneCloud": "{nodeType}はCloudで利用できません",
+        "toastTitleOneOss": "ノードが不足しています: {nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "一部のノードは代替ノードに置き換えることができます",
+        "toastMessageMany": "{count}種類のノードは互換性のある代替ノードに置き換え可能です。",
+        "toastMessageOne": "エラーパネルから{replacementNodeType}に置き換えてください。",
+        "toastTitleMany": "ノードは置き換え可能です",
+        "toastTitleOne": "{nodeType}は置き換え可能です"
+      }
     },
     "promptErrors": {
       "missing_node_type": {
@@ -1287,12 +1329,9 @@
     "missingMedia": "いくつかのノードに必要な入力が不足しています",
     "missingModels": "{count} 個の必要なモデルが不足しています",
     "missingNodes": "いくつかのノードが不足しており、インストールが必要です",
-    "seeErrors": "エラーを表示",
-    "showMissingMedia": "不足している入力を表示",
-    "showMissingModels": "不足しているモデルを表示",
-    "showMissingNodes": "不足しているノードを表示",
-    "showSwapNodes": "代替可能なノードを表示",
-    "swapNodes": "いくつかのノードは代替可能です"
+    "multipleErrorCount": "{count}件のエラーが見つかりました",
+    "multipleErrorsMessage": "ワークフローを実行する前に解決してください。",
+    "viewDetails": "詳細を表示"
   },
   "errorPanelSurvey": {
     "ctaButton": "フィードバックを送る",
@@ -1376,6 +1415,11 @@
     "amount": "量",
     "apply": "適用する",
     "architecture": "アーキテクチャ",
+    "arrange": "配置",
+    "arrangeAsGrid": "グリッドとして配置",
+    "arrangeHorizontally": "横に配置",
+    "arrangeSpacing": "配置間隔",
+    "arrangeVertically": "縦に配置",
     "asset": "{count} 個のアセット | {count} 個のアセット",
     "audioFailedToLoad": "オーディオの読み込みに失敗しました",
     "audioProgress": "オーディオの進捗",
@@ -2781,7 +2825,6 @@
     "replacedNode": "置き換えたノード: {nodeType}",
     "selectAll": "すべて選択",
     "skipForNow": "今はスキップ",
-    "swapNodesGuide": "以下のノードは互換性のある代替品に自動的に置き換えることができます。",
     "swapNodesTitle": "ノードの入れ替え",
     "unknownNode": "不明",
     "willBeReplacedBy": "このノードは次で置き換えられます："
@@ -3042,7 +3085,6 @@
     },
     "missingNodePacks": {
       "applyChanges": "変更を適用",
-      "cloudMessage": "このワークフローにはComfy Cloudでまだ利用できないカスタムノードが必要です。",
       "collapse": "折りたたむ",
       "expand": "展開",
       "installAll": "すべてインストール",
@@ -3050,7 +3092,6 @@
       "installed": "インストール済み",
       "installing": "インストール中...",
       "ossManagerDisabledHint": "不足しているノードをインストールするには、まずPython環境で {pipCmd} を実行してNode Managerをインストールし、{flag} フラグを付けてComfyUIを再起動してください。",
-      "ossMessage": "このワークフローにはまだインストールしていないカスタムノードが使われています。",
       "searchInManager": "ノードマネージャーで検索",
       "title": "不足しているノードパック",
       "unknownPack": "不明なパック",

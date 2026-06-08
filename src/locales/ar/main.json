@@ -832,7 +832,9 @@
     "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "ملف OBJ ثلاثي الأبعاد",
     "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
     "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "ملف STL ثلاثي الأبعاد",
     "FILE_3D_USDZ": "ملف USDZ ثلاثي الأبعاد",
@@ -945,6 +947,46 @@
     "fallbacks": {
       "inputName": "مدخل غير معروف",
       "nodeName": "هذه العقدة"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "مدخل وسائط مطلوب لم يتم تحديد ملف له.",
+        "toastMessageMany": "يرجى تحديد مدخلات الوسائط المفقودة قبل تشغيل سير العمل هذا.",
+        "toastMessageWithNode": "{nodeName} يفتقد ملف وسائط مطلوب.",
+        "toastTitleMany": "مدخلات الوسائط المفقودة",
+        "toastTitleOne": "مدخل الوسائط مفقود"
+      },
+      "missing_model": {
+        "displayMessageCloud": "استورد نموذجًا أو افتح العقدة لاستبداله.",
+        "displayMessageOss": "قم بتنزيل نموذج أو افتح العقدة لاستبداله.",
+        "toastMessageManyCloud": "بعض النماذج غير مدعومة. يرجى اختيار نماذج أخرى.",
+        "toastMessageManyOss": "{count} من ملفات النماذج مفقودة.",
+        "toastMessageOneCloud": "هذا النموذج غير مدعوم. اختر نموذجًا آخر.",
+        "toastMessageOneOss": "{nodeName} يفتقد ملف النموذج المطلوب.",
+        "toastTitleMany": "النماذج المفقودة",
+        "toastTitleManyCloud": "النماذج غير متوفرة على السحابة",
+        "toastTitleOneCloud": "{modelName} غير متوفر على السحابة",
+        "toastTitleOneOss": "{modelName} مفقود"
+      },
+      "missing_node": {
+        "displayMessageCloud": "العُقد المخصصة المطلوبة غير مدعومة على السحابة. استبدلها بعُقد مدعومة.",
+        "displayMessageOss": "قم بتثبيت الحزم المفقودة لاستخدام سير العمل هذا.",
+        "toastMessageManyCloud": "يستخدم سير العمل هذا عُقدًا غير مدعومة على السحابة.",
+        "toastMessageManyOss": "{count} من العُقد تتطلب حزم عُقد مفقودة.",
+        "toastMessageOneCloud": "هذه العقدة غير مدعومة على السحابة.",
+        "toastMessageOneOss": "يستخدم سير العمل هذا عقدة مخصصة غير مثبتة. قم بتثبيتها من السجل أو استبدل العقدة.",
+        "toastTitleManyCloud": "العُقد غير متوفرة على السحابة",
+        "toastTitleManyOss": "العُقد المفقودة",
+        "toastTitleOneCloud": "{nodeType} غير متوفر على السحابة",
+        "toastTitleOneOss": "العقدة المفقودة: {nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "يمكن استبدال بعض العُقد ببدائل",
+        "toastMessageMany": "يمكن استبدال {count} نوع من العُقد ببدائل متوافقة.",
+        "toastMessageOne": "استبدلها بـ {replacementNodeType} من لوحة الأخطاء.",
+        "toastTitleMany": "يمكن استبدال العُقد",
+        "toastTitleOne": "يمكن استبدال {nodeType}"
+      }
     },
     "promptErrors": {
       "missing_node_type": {
@@ -1287,12 +1329,9 @@
     "missingMedia": "بعض العقد تفتقد إلى مدخلات مطلوبة",
     "missingModels": "{count} نموذج مطلوب مفقود | {count} نماذج مطلوبة مفقودة",
     "missingNodes": "بعض العقد مفقودة وتحتاج إلى التثبيت",
-    "seeErrors": "عرض الأخطاء",
-    "showMissingMedia": "عرض المدخلات المفقودة",
-    "showMissingModels": "عرض النماذج المفقودة",
-    "showMissingNodes": "عرض العقد المفقودة",
-    "showSwapNodes": "عرض العقد البديلة",
-    "swapNodes": "يمكن استبدال بعض العقد ببدائل"
+    "multipleErrorCount": "تم العثور على {count} خطأ | تم العثور على {count} أخطاء",
+    "multipleErrorsMessage": "يرجى حلها قبل تشغيل سير العمل.",
+    "viewDetails": "عرض التفاصيل"
   },
   "errorPanelSurvey": {
     "ctaButton": "أعطِ ملاحظاتك",
@@ -1376,6 +1415,11 @@
     "amount": "الكمية",
     "apply": "تطبيق",
     "architecture": "الهندسة المعمارية",
+    "arrange": "ترتيب",
+    "arrangeAsGrid": "ترتيب كشبكة",
+    "arrangeHorizontally": "ترتيب أفقيًا",
+    "arrangeSpacing": "تباعد الترتيب",
+    "arrangeVertically": "ترتيب عموديًا",
     "asset": "{count} أصل | {count} أصول",
     "audioFailedToLoad": "فشل تحميل الصوت",
     "audioProgress": "تقدم الصوت",
@@ -2781,7 +2825,6 @@
     "replacedNode": "تم استبدال العقدة: {nodeType}",
     "selectAll": "تحديد الكل",
     "skipForNow": "تخطي الآن",
-    "swapNodesGuide": "يمكن استبدال العقد التالية تلقائيًا ببدائل متوافقة.",
     "swapNodesTitle": "تبديل العقد",
     "unknownNode": "غير معروف",
     "willBeReplacedBy": "سيتم استبدال هذه العقدة بـ:"
@@ -3042,7 +3085,6 @@
     },
     "missingNodePacks": {
       "applyChanges": "تطبيق التغييرات",
-      "cloudMessage": "يتطلب سير العمل هذا عقدًا مخصصة غير متوفرة بعد على Comfy Cloud.",
       "collapse": "طي",
       "expand": "توسيع",
       "installAll": "تثبيت الكل",
@@ -3050,7 +3092,6 @@
       "installed": "تم التثبيت",
       "installing": "جارٍ التثبيت...",
       "ossManagerDisabledHint": "لتثبيت العقد المفقودة، قم أولاً بتشغيل {pipCmd} في بيئة بايثون الخاصة بك لتثبيت مدير العقد، ثم أعد تشغيل ComfyUI مع العلم {flag}.",
-      "ossMessage": "يستخدم سير العمل هذا عقدًا مخصصة لم تقم بتثبيتها بعد.",
       "searchInManager": "البحث في مدير العقد",
       "title": "حزم العقد المفقودة",
       "unknownPack": "حزمة غير معروفة",

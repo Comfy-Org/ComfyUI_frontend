@@ -6155,10 +6155,25 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (!this.pointer.isDown) reroute.drawSlots(ctx)
     }
 
-    const highlightPos = this._getHighlightPosition()
-    this.linkConnector.renderLinks
-      .filter((rl) => rl instanceof MovingInputLink)
-      .forEach((rl) => rl.drawConnectionCircle(ctx, highlightPos))
+    this.linkConnector.renderLinks.forEach((link: RenderLink) => {
+      if (!link.disconnectOnDrop || !link.disconnectOrigin) return
+
+      const [originX, originY] = link.disconnectOrigin
+      const radius = 35
+      const to = this._getHighlightPosition()
+      const distSquared = (originX - to[0]) ** 2 + (originY - to[1]) ** 2
+
+      ctx.save()
+      ctx.strokeStyle = LiteGraph.WIDGET_OUTLINE_COLOR
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(originX + radius, originY)
+      ctx.arc(originX, originY, radius, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.restore()
+
+      link.disconnectOnDrop = distSquared < radius ** 2
+    })
 
     ctx.globalAlpha = 1
   }
