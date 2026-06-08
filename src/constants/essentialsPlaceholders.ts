@@ -45,8 +45,6 @@ export interface EssentialPlaceholderSection {
   tiles?: EssentialPlaceholderTile[]
 }
 
-const comfyIcon = (name: string) => `icon-[comfy--${name}]`
-const lucideIcon = (name: string) => `icon-s1.5-[lucide--${name}]`
 const blueprint = (name: string) => `SubgraphBlueprint.${name}`
 
 export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
@@ -56,67 +54,67 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
     tiles: [
       {
         label: 'Load Image',
-        icon: lucideIcon('image-up'),
+        icon: 'icon-s1.5-[lucide--image-up]',
         media: 'image',
         nodeName: 'LoadImage'
       },
       {
         label: 'Save Image',
-        icon: lucideIcon('image-down'),
+        icon: 'icon-s1.5-[lucide--image-down]',
         media: 'image',
         nodeName: 'SaveImage'
       },
       {
         label: 'Load Video',
-        icon: comfyIcon('load-video'),
+        icon: 'icon-[comfy--load-video]',
         media: 'video',
         nodeName: 'LoadVideo'
       },
       {
         label: 'Save Video',
-        icon: comfyIcon('save-video'),
+        icon: 'icon-[comfy--save-video]',
         media: 'video',
         nodeName: 'SaveVideo'
       },
       {
         label: 'Load 3D Model',
-        icon: comfyIcon('load-3d'),
+        icon: 'icon-[comfy--load-3d]',
         media: '3d',
         nodeName: 'Load3D'
       },
       {
         label: 'Save 3D Model',
-        icon: comfyIcon('save-3d'),
+        icon: 'icon-[comfy--save-3d]',
         media: '3d',
         nodeName: 'SaveGLB'
       },
       {
         label: 'Load Audio',
-        icon: comfyIcon('load-audio'),
+        icon: 'icon-[comfy--load-audio]',
         media: 'audio',
         nodeName: 'LoadAudio'
       },
       {
         label: 'Save Audio',
-        icon: comfyIcon('save-audio'),
+        icon: 'icon-[comfy--save-audio]',
         media: 'audio',
         nodeName: 'SaveAudio'
       },
       {
         label: 'Load LoRA',
-        icon: comfyIcon('lora-loader'),
+        icon: 'icon-[comfy--lora-loader]',
         media: 'image',
         nodeName: 'LoraLoader'
       },
       {
         label: 'Input Text',
-        icon: lucideIcon('text'),
+        icon: 'icon-s1.5-[lucide--text]',
         media: 'text',
         nodeName: 'PrimitiveStringMultiline'
       },
       {
         label: 'Preview Text',
-        icon: lucideIcon('text'),
+        icon: 'icon-s1.5-[lucide--text]',
         media: 'text',
         nodeName: 'Preview as Text'
       }
@@ -149,47 +147,47 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
           },
           {
             label: 'Text to Image',
-            icon: comfyIcon('text-to-image'),
+            icon: 'icon-[comfy--text-to-image]',
             nodeName: blueprint('Text to Image (Z-Image-Turbo)')
           },
           {
             label: 'Edit Image',
-            icon: comfyIcon('image-edit'),
+            icon: 'icon-[comfy--image-edit]',
             nodeName: blueprint('Image Edit (Qwen 2511)')
           },
           {
             label: 'Inpaint Image',
-            icon: comfyIcon('image-inpaint'),
+            icon: 'icon-[comfy--image-inpaint]',
             nodeName: blueprint('Image Inpainting (Qwen-image)')
           },
           {
             label: 'Outpaint Image',
-            icon: comfyIcon('image-outpaint'),
+            icon: 'icon-[comfy--image-outpaint]',
             nodeName: blueprint('Image Outpainting (Qwen-Image)')
           },
           {
             label: 'Image to Layers',
-            icon: comfyIcon('image-to-layers'),
+            icon: 'icon-[comfy--image-to-layers]',
             nodeName: blueprint('Image to Layers(Qwen-Image-Layered)')
           },
           {
             label: 'Vectorize',
-            icon: comfyIcon('image-vectorize'),
+            icon: 'icon-[comfy--image-vectorize]',
             nodeName: 'Recraft Vectorize Image'
           },
           {
             label: 'Pose to Image',
-            icon: comfyIcon('pose-to-image'),
+            icon: 'icon-[comfy--pose-to-image]',
             nodeName: blueprint('Pose to Image (Z-Image-Turbo)')
           },
           {
             label: 'Canny to Image',
-            icon: comfyIcon('canny-to-image'),
+            icon: 'icon-[comfy--canny-to-image]',
             nodeName: blueprint('Canny to Image (Z-Image-Turbo)')
           },
           {
             label: 'Depth to Image',
-            icon: comfyIcon('depth-to-image'),
+            icon: 'icon-[comfy--depth-to-image]',
             nodeName: blueprint('Depth to Image (Z-Image-Turbo)')
           }
         ]
@@ -217,47 +215,47 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
           },
           {
             label: 'Text to Video',
-            icon: comfyIcon('text-to-video'),
+            icon: 'icon-[comfy--text-to-video]',
             nodeName: blueprint('Text to Video (Wan 2.2)')
           },
           {
             label: 'Image to Video',
-            icon: comfyIcon('image-to-video'),
+            icon: 'icon-[comfy--image-to-video]',
             nodeName: blueprint('Image to Video (Wan 2.2)')
           },
           {
             label: 'First-Last Frame Video',
-            icon: comfyIcon('image-to-video'),
+            icon: 'icon-[comfy--image-to-video]',
             nodeName: blueprint('First-Last-Frame to Video')
           },
           {
             label: 'Edit Video',
-            icon: comfyIcon('video-edit'),
+            icon: 'icon-[comfy--video-edit]',
             nodeName: 'Kling 3.0 Omni Edit Video'
           },
           {
             label: 'Lipsync Video',
-            icon: lucideIcon('mic-vocal'),
+            icon: 'icon-s1.5-[lucide--mic-vocal]',
             nodeName: 'Kling Lip Sync Video with Audio'
           },
           {
             label: 'Inpaint Video',
-            icon: comfyIcon('video-inpaint'),
+            icon: 'icon-[comfy--video-inpaint]',
             nodeName: blueprint('Video Inpaint(Wan2.1 VACE)')
           },
           {
             label: 'Pose to Video',
-            icon: comfyIcon('pose-to-video'),
+            icon: 'icon-[comfy--pose-to-video]',
             nodeName: blueprint('Pose to Video (LTX 2.0)')
           },
           {
             label: 'Canny to Video',
-            icon: comfyIcon('canny-to-video'),
+            icon: 'icon-[comfy--canny-to-video]',
             nodeName: blueprint('Canny to Video (LTX 2.0)')
           },
           {
             label: 'Depth to Video',
-            icon: comfyIcon('depth-to-video'),
+            icon: 'icon-[comfy--depth-to-video]',
             nodeName: blueprint('Depth to Video (ltx 2.0)')
           }
         ]
@@ -279,17 +277,17 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
           },
           {
             label: 'Text Enhancer',
-            icon: comfyIcon('text-prompt-enhance'),
+            icon: 'icon-[comfy--text-prompt-enhance]',
             nodeName: blueprint('Prompt Enhance')
           },
           {
             label: 'Image Captioner',
-            icon: comfyIcon('image-captioning'),
+            icon: 'icon-[comfy--image-captioning]',
             nodeName: blueprint('Image Captioning (gemini)')
           },
           {
             label: 'Video Captioner',
-            icon: comfyIcon('video-captioning'),
+            icon: 'icon-[comfy--video-captioning]',
             nodeName: blueprint('Video Captioning (Gemini)')
           }
         ]
@@ -301,17 +299,17 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'Text to Audio',
-            icon: comfyIcon('text-to-audio'),
+            icon: 'icon-[comfy--text-to-audio]',
             nodeName: blueprint('Text to Audio (ACE-Step 1.5)')
           },
           {
             label: 'Text to Speech',
-            icon: lucideIcon('speech'),
+            icon: 'icon-s1.5-[lucide--speech]',
             nodeName: 'ElevenLabs Text to Speech'
           },
           {
             label: 'Voice Clone',
-            icon: comfyIcon('voice-clone'),
+            icon: 'icon-[comfy--voice-clone]',
             nodeName: 'ElevenLabs Instant Voice Clone'
           }
         ]
@@ -323,12 +321,12 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'Text to Model',
-            icon: comfyIcon('text-to-3d'),
+            icon: 'icon-[comfy--text-to-3d]',
             nodeName: 'Hunyuan3D: Text to Model'
           },
           {
             label: 'Image to Model',
-            icon: comfyIcon('image-to-3d'),
+            icon: 'icon-[comfy--image-to-3d]',
             nodeName: blueprint('Image to Model (Hunyuan3d 2.1)')
           }
         ]
@@ -346,7 +344,7 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'Extract Canny Edge',
-            icon: comfyIcon('image-canny'),
+            icon: 'icon-[comfy--image-canny]',
             nodeName: 'Canny'
           }
         ]
@@ -364,37 +362,37 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'Crop Image',
-            icon: lucideIcon('crop'),
+            icon: 'icon-s1.5-[lucide--crop]',
             nodeName: 'ImageCropV2'
           },
           {
             label: 'Crop Image 2x2',
-            icon: lucideIcon('crop'),
+            icon: 'icon-s1.5-[lucide--crop]',
             nodeName: blueprint('Crop Images 2x2')
           },
           {
             label: 'Crop Image 3x3',
-            icon: lucideIcon('crop'),
+            icon: 'icon-s1.5-[lucide--crop]',
             nodeName: blueprint('Crop Images 3x3')
           },
           {
             label: 'Resize Image',
-            icon: comfyIcon('image-upscale'),
+            icon: 'icon-[comfy--image-upscale]',
             nodeName: 'ImageScale'
           },
           {
             label: 'Upscale Image',
-            icon: comfyIcon('image-upscale'),
+            icon: 'icon-[comfy--image-upscale]',
             nodeName: blueprint('Image Upscale(Z-image-Turbo)')
           },
           {
             label: 'Rotate Image',
-            icon: comfyIcon('image-rotate'),
+            icon: 'icon-[comfy--image-rotate]',
             nodeName: 'ImageRotate'
           },
           {
             label: 'Image Collage',
-            icon: comfyIcon('image-collage'),
+            icon: 'icon-[comfy--image-collage]',
             nodeName: 'ImageStitch'
           }
         ]
@@ -406,17 +404,17 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'Batch Image',
-            icon: comfyIcon('image-batch'),
+            icon: 'icon-[comfy--image-batch]',
             nodeName: 'BatchImagesNode'
           },
           {
             label: 'Compare Image',
-            icon: comfyIcon('image-compare'),
+            icon: 'icon-[comfy--image-compare]',
             nodeName: 'ImageCompare'
           },
           {
             label: 'Image Frames to Video',
-            icon: comfyIcon('frames-to-video'),
+            icon: 'icon-[comfy--frames-to-video]',
             nodeName: 'Create Video'
           }
         ]
@@ -428,37 +426,37 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'Invert Image',
-            icon: comfyIcon('image-invert'),
+            icon: 'icon-[comfy--image-invert]',
             nodeName: 'ImageInvert'
           },
           {
             label: 'Chromatic Aberration',
-            icon: comfyIcon('chromatic-aberration'),
+            icon: 'icon-[comfy--chromatic-aberration]',
             nodeName: blueprint('Chromatic Aberration')
           },
           {
             label: 'Film Grain',
-            icon: comfyIcon('grain'),
+            icon: 'icon-[comfy--grain]',
             nodeName: blueprint('Film Grain')
           },
           {
             label: 'Glow',
-            icon: comfyIcon('glow'),
+            icon: 'icon-[comfy--glow]',
             nodeName: blueprint('Glow')
           },
           {
             label: 'Sharpen Image',
-            icon: comfyIcon('image-sharpen'),
+            icon: 'icon-[comfy--image-sharpen]',
             nodeName: blueprint('Sharpen')
           },
           {
             label: 'Blur Image',
-            icon: comfyIcon('image-blur'),
+            icon: 'icon-[comfy--image-blur]',
             nodeName: blueprint('Image Blur')
           },
           {
             label: 'Shader',
-            icon: comfyIcon('image-shader'),
+            icon: 'icon-[comfy--image-shader]',
             nodeName: 'GLSL Shader'
           }
         ]
@@ -470,37 +468,37 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'Brightness & Contrast',
-            icon: comfyIcon('brightness-contrast'),
+            icon: 'icon-[comfy--brightness-contrast]',
             nodeName: blueprint('Brightness and Contrast')
           },
           {
             label: 'Hue & Saturation',
-            icon: comfyIcon('dial'),
+            icon: 'icon-[comfy--dial]',
             nodeName: blueprint('Hue and Saturation')
           },
           {
             label: 'Color Balance',
-            icon: lucideIcon('sliders-horizontal'),
+            icon: 'icon-s1.5-[lucide--sliders-horizontal]',
             nodeName: blueprint('Color Balance')
           },
           {
             label: 'Color Curves',
-            icon: lucideIcon('chart-spline'),
+            icon: 'icon-s1.5-[lucide--chart-spline]',
             nodeName: blueprint('Color Curves')
           },
           {
             label: 'Levels',
-            icon: lucideIcon('sliders-horizontal'),
+            icon: 'icon-s1.5-[lucide--sliders-horizontal]',
             nodeName: blueprint('Image Levels')
           },
           {
             label: 'Channels',
-            icon: comfyIcon('channels'),
+            icon: 'icon-[comfy--channels]',
             nodeName: blueprint('Image Channels')
           },
           {
             label: 'Color Adjust',
-            icon: lucideIcon('sliders-horizontal'),
+            icon: 'icon-s1.5-[lucide--sliders-horizontal]',
             nodeName: blueprint('Color Adjustment')
           }
         ]
@@ -512,12 +510,12 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'Select Image Object',
-            icon: comfyIcon('image-select-object-segmentation'),
+            icon: 'icon-[comfy--image-select-object-segmentation]',
             nodeName: blueprint('Image Segmentation (SAM3)')
           },
           {
             label: 'Remove Background',
-            icon: comfyIcon('image-remove-background'),
+            icon: 'icon-[comfy--image-remove-background]',
             nodeName: 'Recraft Remove Background'
           }
         ]
@@ -529,12 +527,12 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'Trim Video',
-            icon: comfyIcon('video-trim'),
+            icon: 'icon-[comfy--video-trim]',
             nodeName: 'Video Slice'
           },
           {
             label: 'Upscale Video',
-            icon: comfyIcon('video-upscale'),
+            icon: 'icon-[comfy--video-upscale]',
             nodeName: 'Topaz Video Enhance'
           }
         ]
@@ -546,17 +544,17 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'Split-Screen',
-            icon: comfyIcon('video-split-screen'),
+            icon: 'icon-[comfy--video-split-screen]',
             nodeName: blueprint('Video Stitch')
           },
           {
             label: 'Extract Frame',
-            icon: comfyIcon('video-extract-frame'),
+            icon: 'icon-[comfy--video-extract-frame]',
             nodeName: blueprint('Get Any Video Frame')
           },
           {
             label: 'Frame Interpolation',
-            icon: comfyIcon('video-interpolation'),
+            icon: 'icon-[comfy--video-interpolation]',
             nodeName: blueprint('Frame Interpolation')
           }
         ]
@@ -568,7 +566,7 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'Select Video Object',
-            icon: comfyIcon('video-select-object-segmentation'),
+            icon: 'icon-[comfy--video-select-object-segmentation]',
             nodeName: blueprint('Video Segmentation (SAM3)')
           }
         ]
@@ -580,12 +578,12 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'UV Unwrapping',
-            icon: lucideIcon('package-open'),
+            icon: 'icon-s1.5-[lucide--package-open]',
             nodeName: 'Hunyuan3D: Model to UV'
           },
           {
             label: 'Decompose 3D Model',
-            icon: comfyIcon('3d-decomp'),
+            icon: 'icon-[comfy--3d-decomp]',
             nodeName: 'Hunyuan3D: 3D Part'
           }
         ]
