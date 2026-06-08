@@ -192,6 +192,42 @@ describe('SubgraphEditor', () => {
     ).toEqual(['second', 'first'])
   })
 
+  it('moves a widget to shown when promoted from the hidden section', async () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const sourceNode = new LGraphNode('SourceNode')
+    subgraph.add(sourceNode)
+
+    const sourceInput = sourceNode.addInput('first', 'STRING')
+    const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
+    sourceInput.widget = { name: sourceWidget.name }
+    useCanvasStore().selectedItems = [host]
+
+    render(SubgraphEditor, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: {
+        plugins: [i18n],
+        stubs: {
+          DraggableList: {
+            template:
+              '<div data-testid="draggable-list"><slot drag-class="draggable-item" /></div>'
+          }
+        }
+      }
+    })
+
+    const hidden = screen.getByTestId('subgraph-editor-hidden-section')
+    await userEvent.click(within(hidden).getByTestId('subgraph-widget-toggle'))
+    await nextTick()
+
+    const shown = screen.getByTestId('subgraph-editor-shown-section')
+    expect(
+      within(shown)
+        .getAllByTestId('subgraph-widget-label')
+        .map((el) => el.textContent?.trim())
+    ).toEqual(['first'])
+  })
+
   it('demotes linked promoted widgets when "Hide all" is clicked', async () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)

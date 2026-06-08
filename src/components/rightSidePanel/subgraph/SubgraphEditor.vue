@@ -305,6 +305,7 @@ function promoteCandidate([node, widget]: WidgetItem) {
   const subgraphNode = activeNode.value
   if (!subgraphNode) return
   promoteWidget(node, widget, [subgraphNode])
+  refreshPromotedRows()
 }
 
 function showAll() {
