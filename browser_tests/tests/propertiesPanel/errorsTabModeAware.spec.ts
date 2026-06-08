@@ -6,7 +6,7 @@ import {
   cleanupFakeModel,
   openErrorsTab,
   loadWorkflowAndOpenErrorsTab
-} from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
+} from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -368,6 +368,62 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     test.afterEach(async ({ comfyPage }) => {
       await cleanupFakeModel(comfyPage)
     })
+
+    test(
+      'Resolving a promoted missing model widget through the legacy canvas path clears its error',
+      { tag: ['@canvas', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        const resolvedModelName = 'v1-5-pruned-emaonly-fp16.safetensors'
+
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_model_promoted_widget'
+        )
+
+        const missingModelGroup = comfyPage.page.getByTestId(
+          TestIds.dialogs.missingModelsGroup
+        )
+        await expect(missingModelGroup).toContainText(
+          /fake_model\.safetensors\s*\(1\)/
+        )
+
+        await comfyPage.page.evaluate((value) => {
+          const hostNode = window.app!.graph!.getNodeById(2)
+          if (!hostNode?.isSubgraphNode()) {
+            throw new Error('Expected subgraph host node')
+          }
+
+          const interiorNode = hostNode.subgraph.getNodeById(1)
+          const widget = interiorNode?.widgets?.find(
+            (entry) => entry.name === 'ckpt_name'
+          )
+          type SettableWidget = typeof widget & {
+            setValue?: (
+              value: string,
+              options: {
+                e: PointerEvent
+                node: unknown
+                canvas: unknown
+              }
+            ) => void
+          }
+          const settableWidget = widget as SettableWidget | undefined
+
+          if (!settableWidget?.setValue) {
+            throw new Error('Expected concrete ckpt_name widget')
+          }
+
+          settableWidget.setValue(value, {
+            e: new PointerEvent('pointerup'),
+            node: hostNode,
+            canvas: window.app!.canvas
+          })
+        }, resolvedModelName)
+
+        await expect(missingModelGroup).toBeHidden()
+      }
+    )
 
     test('Bypassing a subgraph hides interior errors, un-bypassing restores them', async ({
       comfyPage

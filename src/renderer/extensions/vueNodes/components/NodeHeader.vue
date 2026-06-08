@@ -55,25 +55,12 @@
         </div>
       </div>
 
-      <template v-for="badge in priceBadges ?? []" :key="badge.required">
-        <span
-          :class="
-            cn(
-              'flex h-5 shrink-0 items-center bg-component-node-widget-background p-1 text-xs',
-              badge.rest ? 'rounded-l-full pr-1' : 'rounded-full'
-            )
-          "
-        >
-          <i class="icon-[lucide--component] h-full bg-amber-400" />
-          <span class="truncate" v-text="badge.required" />
-        </span>
-        <span
-          v-if="badge.rest"
-          class="-ml-2.5 max-w-max min-w-0 grow basis-0 truncate rounded-r-full bg-component-node-widget-background"
-        >
-          <span class="pr-2" v-text="badge.rest" />
-        </span>
-      </template>
+      <CreditBadge
+        v-for="badge in priceBadges ?? []"
+        :key="badge.required"
+        :text="badge.required"
+        :rest="badge.rest"
+      />
       <NodeBadge v-if="statusBadge" v-bind="statusBadge" />
       <i
         v-if="isPinned"
@@ -88,6 +75,7 @@
 import { computed, onErrorCaptured, ref, watch } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
+import CreditBadge from '@/components/node/CreditBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -96,7 +84,7 @@ import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type { NodeBadgeProps } from './NodeBadge.vue'
 

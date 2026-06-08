@@ -99,6 +99,7 @@
     "findInLibrary": "可在模型庫的 {type} 區段找到。",
     "finish": "完成",
     "genericLinkPlaceholder": "請在此貼上連結",
+    "gridView": "網格檢視",
     "importAnother": "匯入其他",
     "imported": "已匯入",
     "invalidAsset": "無效的資產",
@@ -106,6 +107,7 @@
     "invalidFilename": "無效的檔案名稱",
     "invalidFilenameDetail": "無法判斷資產檔案名稱。請再試一次。",
     "jobId": "工作 ID",
+    "listView": "清單檢視",
     "loadingModels": "正在載入 {type}...",
     "maxFileSize": "最大檔案大小：{size}",
     "maxFileSizeValue": "1 GB",
@@ -168,6 +170,7 @@
     "sortDefault": "預設",
     "sortPopular": "熱門",
     "sortRecent": "最近",
+    "sortUnsorted": "未排序",
     "sortZA": "Z-A",
     "sortingType": "排序方式",
     "tags": "標籤",
@@ -230,10 +233,12 @@
       "auth/user-disabled": "此帳戶已被停用。請聯絡支援團隊。",
       "auth/user-not-found": "找不到使用此電子郵件的帳戶。您要建立新帳戶嗎？",
       "auth/weak-password": "密碼強度不足。請使用至少 6 個字元的更強密碼。",
-      "auth/wrong-password": "您輸入的密碼不正確。請再試一次。"
+      "auth/wrong-password": "您輸入的密碼不正確。請再試一次。",
+      "generic": "登入時發生錯誤，請再試一次。"
     },
     "login": {
       "andText": "以及",
+      "backToGithubLogin": "改用 Github 註冊",
       "backToLogin": "返回登入",
       "backToSocialLogin": "改用 Google 或 Github 註冊",
       "confirmPasswordLabel": "確認密碼",
@@ -289,7 +294,9 @@
       "title": "需要重新驗證"
     },
     "signOut": {
+      "saveFailed": "由於儲存「{workflow}」失敗，已取消登出。",
       "signOut": "登出",
+      "signOutAnyway": "仍要登出",
       "success": "成功登出",
       "successDetail": "您已成功登出您的帳戶。",
       "unsavedChangesMessage": "您有尚未儲存的變更，登出後這些變更將會遺失。您確定要繼續嗎？",
@@ -332,6 +339,7 @@
   },
   "breadcrumbsMenu": {
     "app": "應用程式",
+    "blueprint": "藍圖",
     "clearWorkflow": "清除工作流程",
     "deleteBlueprint": "刪除藍圖",
     "deleteWorkflow": "刪除工作流程",
@@ -400,10 +408,32 @@
   "cloudForgotPassword_passwordResetSent": "密碼重設已發送",
   "cloudForgotPassword_sendResetLink": "寄送重設連結",
   "cloudForgotPassword_title": "忘記密碼",
+  "cloudHero": {
+    "nextSlide": "下一張幻燈片",
+    "previousSlide": "上一張幻燈片",
+    "slidePagerLabel": "前往第 {index} 張幻燈片",
+    "slides": {
+      "cloud": {
+        "description": "最適合希望隨時隨地工作，並使用經商業授權驗證模型的大多數用戶。",
+        "title": "雲端"
+      },
+      "models": {
+        "description": "精選、具商業授權的模型，零設定即可運行。",
+        "title": "模型"
+      },
+      "team": {
+        "description": "立即邀請您的團隊加入。於組織內共享工作流程與資產。",
+        "title": "團隊"
+      },
+      "workflows": {
+        "description": "從想法到成果只需幾分鐘。可同時產生多種變化。",
+        "title": "工作流程"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "在本地繼續",
     "exploreCloud": "免費試用雲端",
-    "feature1Title": "每月 400 點免費額度",
     "feature2Title": "隨處可用，立即啟動",
     "feature3Title": "模型即刻可用",
     "feature4Title": "頂級自訂節點包預先安裝",
@@ -457,6 +487,12 @@
       "wantToRun": "想要在本機運行 ComfyUI？"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "請選擇一個選項。",
+        "describeAnswer": "請描述您的答案。",
+        "selectAtLeastOne": "請至少選擇一個選項。"
+      },
+      "intro": "協助我們為您量身打造 ComfyUI 體驗。",
       "options": {
         "familiarity": {
           "advanced": "進階使用者（自訂工作流程）",
@@ -465,45 +501,43 @@
           "new": "ComfyUI 新手（從未使用過）",
           "starting": "剛開始（正在跟隨教學）"
         },
-        "industry": {
-          "architecture": "建築",
-          "education": "教育",
-          "film_tv_animation": "電影、電視與動畫",
-          "fine_art": "美術與插畫",
-          "gaming": "遊戲",
-          "marketing": "行銷與廣告",
+        "intent": {
+          "3d_game": "3D 素材／遊戲素材",
+          "api": "執行工作流程的 API 端點",
+          "apps": "由工作流程簡化的應用程式",
+          "audio": "音訊／音樂",
+          "custom_nodes": "自訂節點",
+          "images": "圖像",
+          "not_sure": "尚未確定",
+          "videos": "影片",
+          "workflows": "自訂工作流程或管線"
+        },
+        "source": {
+          "conference": "研討會或活動",
+          "discord": "Discord／社群",
+          "friend": "朋友或同事",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "電子報或部落格",
           "other": "其他",
-          "otherPlaceholder": "請具體說明",
-          "product_design": "產品與平面設計",
-          "software": "軟體與科技"
+          "reddit": "Reddit",
+          "search": "Google／搜尋引擎",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
         },
-        "making": {
-          "3d": "3D 資產",
-          "audio": "音訊 / 音樂",
-          "custom_nodes": "自訂節點與工作流程",
-          "images": "圖片",
-          "video": "影片與動畫"
-        },
-        "purpose": {
-          "client": "客戶工作（自由接案）",
-          "community": "社群貢獻（節點、工作流程等）",
-          "inhouse": "我的工作場所（公司內部）",
-          "personal": "個人專案／興趣",
-          "research": "學術研究"
+        "usage": {
+          "education": "教育用途（學生或教育者）",
+          "personal": "個人用途",
+          "work": "工作用途"
         }
       },
       "placeholder": "問卷問題佔位符",
-      "questions": {
-        "familiarity": "您對 ComfyUI 的熟悉程度如何？",
-        "industry": "您的主要行業是什麼？",
-        "making": "您計劃製作什麼？",
-        "purpose": "您主要會使用 ComfyUI 來做什麼？"
-      },
       "steps": {
         "familiarity": "您對 ComfyUI 的熟悉程度如何？",
-        "industry": "您的主要行業是什麼？",
-        "making": "您計劃製作什麼內容？",
-        "purpose": "您主要會使用 ComfyUI 來做什麼？"
+        "intent": "您想用 ComfyUI 創作什麼？",
+        "source": "您是從哪裡得知 ComfyUI 的？",
+        "usage": "您打算如何使用 ComfyUI？"
       },
       "title": "雲端問卷"
     }
@@ -518,9 +552,9 @@
   "cloudStart_title": "數秒內開始創作",
   "cloudStart_wantToRun": "想要在本機運行 ComfyUI？",
   "cloudSurvey_steps_familiarity": "您對 ComfyUI 的熟悉程度如何？",
-  "cloudSurvey_steps_industry": "您的主要行業是什麼？",
-  "cloudSurvey_steps_making": "您計劃製作什麼？",
-  "cloudSurvey_steps_purpose": "您主要會使用 ComfyUI 做什麼？",
+  "cloudSurvey_steps_intent": "您想用 ComfyUI 創作什麼？",
+  "cloudSurvey_steps_source": "您是從哪裡得知 ComfyUI 的？",
+  "cloudSurvey_steps_usage": "您打算如何使用 ComfyUI？",
   "cloudWaitlist_contactLink": "此處",
   "cloudWaitlist_questionsText": "有問題？聯絡我們",
   "color": {
@@ -653,7 +687,6 @@
     "Collapse": "收合",
     "Color": "顏色",
     "Colors": "顏色",
-    "Convert to Group Node": "轉換為群組節點",
     "Convert to Subgraph": "轉換為子圖",
     "Copy": "複製",
     "Copy (Clipspace)": "複製（剪貼空間）",
@@ -774,6 +807,7 @@
     "AUDIO_ENCODER": "音訊編碼器",
     "AUDIO_ENCODER_OUTPUT": "音訊編碼器輸出",
     "AUDIO_RECORD": "音訊錄製",
+    "BACKGROUND_REMOVAL": "去背",
     "BOOLEAN": "布林值",
     "BOUNDING_BOX": "邊界框",
     "CAMERA_CONTROL": "攝影機控制",
@@ -789,11 +823,17 @@
     "CONTROL_NET": "ControlNet",
     "CURVE": "曲線",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "人臉偵測模型",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
     "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "浮點數",
@@ -804,13 +844,17 @@
     "HISTOGRAM": "直方圖",
     "HOOKS": "掛鉤",
     "HOOK_KEYFRAMES": "關鍵影格掛鉤",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "影像",
     "IMAGECOMPARE": "圖像比較",
     "INT": "整數",
+    "INTERP_MODEL": "INTERP_MODEL",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "latent (潛空間)",
     "LATENT_OPERATION": "latent 操作",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "載入 3D 攝影機",
+    "LOAD3D_MODEL_INFO": "載入3D模型資訊",
     "LOAD_3D": "載入 3D",
     "LORA_MODEL": "LoRA模型",
     "LOSS_MAP": "損失圖",
@@ -823,9 +867,12 @@
     "MODEL": "模型",
     "MODEL_PATCH": "模型修補",
     "MODEL_TASK_ID": "模型任務ID",
+    "MOGE_GEOMETRY": "MOGE_幾何",
+    "MOGE_MODEL": "MOGE_模型",
     "NOISE": "雜訊",
     "OPENAI_CHAT_CONFIG": "OpenAI聊天配置",
     "OPENAI_INPUT_FILES": "OpenAI輸入檔案",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PhotoMaker",
     "PIXVERSE_TEMPLATE": "PIXVERSE 範本",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -834,8 +881,10 @@
     "RECRAFT_V3_STYLE": "RECRAFT V3 風格",
     "RETARGET_TASK_ID": "重定向任務ID",
     "RIG_TASK_ID": "綁定任務ID",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "取樣器",
     "SIGMAS": "Sigma 值",
+    "SPLAT": "SPLAT",
     "STRING": "字串",
     "STYLE_MODEL": "風格模型",
     "SVG": "SVG",
@@ -892,14 +941,346 @@
     "paused": "已暫停",
     "resume": "繼續下載"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "未知輸入",
+      "nodeName": "此節點"
+    },
+    "promptErrors": {
+      "missing_node_type": {
+        "desc": "缺少或無法取得某個節點類型。工作流程可能已損壞或需要自訂節點。",
+        "title": "缺少節點類型"
+      },
+      "no_prompt": {
+        "desc": "傳送到伺服器的工作流程資料為空。這可能是系統的非預期錯誤。",
+        "title": "工作流程資料為空"
+      },
+      "prompt_no_outputs": {
+        "desc": "工作流程中沒有包含任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。",
+        "title": "提示沒有輸出"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "工作流程有無效的節點輸入。請修正標示的節點後再執行。",
+        "title": "提示驗證失敗"
+      },
+      "server_error_cloud": {
+        "desc": "伺服器發生非預期錯誤。請稍後再試。",
+        "title": "伺服器錯誤"
+      },
+      "server_error_local": {
+        "desc": "伺服器發生非預期錯誤。請檢查伺服器日誌。",
+        "title": "伺服器錯誤"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "此執行需要目前帳戶無法取得的存取權限。",
+        "title": "需要存取權限",
+        "toastMessage": "此執行需要目前帳戶無法取得的存取權限。",
+        "toastTitle": "需要存取權限"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "此請求已被內容審查系統封鎖。請嘗試更改提示詞或輸入內容。",
+        "title": "內容已封鎖",
+        "toastMessage": "此請求已被內容審查系統封鎖。請嘗試更改提示詞或輸入內容。",
+        "toastTitle": "內容已封鎖"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "節點在執行時發生錯誤。",
+        "title": "執行失敗",
+        "toastMessage": "此節點在執行時發生錯誤。請檢查其輸入或嘗試不同的設定。",
+        "toastTitle": "{nodeName} 執行失敗"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "此工作流程已停止進行。請重新執行。",
+        "title": "生成停滯",
+        "toastMessage": "此工作流程已停止進行。請重新執行。",
+        "toastTitle": "生成停滯"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "系統無法載入這張圖片。",
+        "title": "圖片未載入",
+        "toastMessage": "{nodeName} 的圖片無法載入。請重新加入圖片。",
+        "toastTitle": "輸入圖片無法載入"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "請為您的帳戶儲值以使用此節點。",
+        "title": "點數不足",
+        "toastMessage": "請為您的帳戶儲值以使用此節點。",
+        "toastTitle": "點數不足"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "CLIP 輸入遺失或無效。請檢查連接的 checkpoint 或 CLIP 載入器。",
+        "title": "CLIP 輸入無效",
+        "toastMessage": "{nodeName} 缺少或有無效的 CLIP 輸入。",
+        "toastTitle": "CLIP 輸入無效"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "請在執行此工作流程前輸入提示詞。",
+        "title": "提示詞為空",
+        "toastMessage": "請在執行此工作流程前輸入提示詞。",
+        "toastTitle": "提示詞為空"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "工作流程請求無效。請檢查工作流程後再試一次。",
+        "title": "工作流程請求無效",
+        "toastMessage": "工作流程請求無效。請檢查工作流程後再試一次。",
+        "toastTitle": "工作流程請求無效"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "一個或多個必要模型無法存取。",
+        "title": "需要模型存取權限",
+        "toastMessage": "一個或多個必要模型無法存取。",
+        "toastTitle": "需要模型存取權限"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "模型無法下載。請再試一次。",
+        "title": "模型下載失敗",
+        "toastMessage": "模型無法下載。請再試一次。",
+        "toastTitle": "模型下載失敗"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "GPU 記憶體不足。請嘗試降低圖片解析度或批次大小後再執行。",
+        "title": "生成失敗",
+        "toastMessage": "GPU 記憶體不足。請嘗試降低圖片解析度或批次大小後再執行。",
+        "toastTitle": "生成失敗"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "無法準備此工作流程。請重新執行。",
+        "title": "準備失敗",
+        "toastMessage": "無法準備此工作流程。請重新執行。",
+        "toastTitle": "準備失敗"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "工作流程準備時間過長。請重新執行。",
+        "title": "準備逾時",
+        "toastMessage": "工作流程準備時間過長。請重新執行。",
+        "toastTitle": "準備逾時"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "目前需求量大。請稍後再試。",
+        "title": "伺服器忙碌中",
+        "toastMessage": "目前需求量大。請稍後再試。",
+        "toastTitle": "伺服器忙碌中"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "請求在執行前失敗。請再試一次。",
+        "title": "請求失敗",
+        "toastMessage": "請求在執行前失敗。請再試一次。",
+        "toastTitle": "請求失敗"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "執行意外結束。請再試一次。",
+        "title": "執行意外結束",
+        "toastMessage": "執行意外結束。請再試一次。",
+        "toastTitle": "執行意外結束"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "無法開始執行。請再試一次。",
+        "title": "無法開始執行",
+        "toastMessage": "無法開始執行。請再試一次。",
+        "toastTitle": "無法開始執行"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "伺服器目前忙碌。請稍後再試。",
+        "title": "伺服器忙碌中",
+        "toastMessage": "伺服器目前忙碌。請稍後再試。",
+        "toastTitle": "伺服器忙碌中"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "伺服器在執行此工作流程時停止運作。請再試一次。",
+        "title": "伺服器當機",
+        "toastMessage": "伺服器在執行此工作流程時停止運作。請再試一次。",
+        "toastTitle": "伺服器當機"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "合作夥伴節點需要 Comfy 帳戶。請登入以繼續。",
+        "title": "需要登入",
+        "toastMessage": "合作夥伴節點需要 Comfy 帳戶。請登入以繼續。",
+        "toastTitle": "登入以使用此節點"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "請訂閱方案以繼續執行此工作流程。",
+        "title": "需要訂閱",
+        "toastMessage": "請訂閱方案以繼續執行此工作流程。",
+        "toastTitle": "需要訂閱"
+      },
+      "subscription_upgrade_required": {
+        "details": "私人模型需要升級訂閱：{modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "請升級您的訂閱以使用此工作流程中的私人模型。",
+        "title": "需要升級訂閱",
+        "toastMessage": "請升級您的訂閱以使用這些私人模型：{modelNames}。",
+        "toastTitle": "需要升級訂閱"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "此工作流程已達最大執行時間。請嘗試降低圖片解析度、批次大小或縮短流程後再執行。",
+        "title": "生成逾時",
+        "toastMessage": "此工作流程已達最大執行時間。請嘗試降低圖片解析度、批次大小或縮短流程後再執行。",
+        "toastTitle": "生成逾時"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "服務發生非預期錯誤。請再試一次。",
+        "title": "服務錯誤",
+        "toastMessage": "服務發生非預期錯誤。請再試一次。",
+        "toastTitle": "服務錯誤"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "請為您的工作區儲值以繼續使用。",
+        "title": "點數不足",
+        "toastMessage": "請為您的工作區儲值以繼續使用。",
+        "toastTitle": "點數不足"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} 的 {inputName} 連接無效。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "節點連接無法正確讀取。",
+        "title": "無效的連接",
+        "toastMessage": "{nodeName} 的 {inputName} 連接無效。",
+        "toastTitle": "無效的連接"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} 拒絕了 {inputName} 的值。",
+        "detailsWithRawDetails": "{nodeName} 自訂驗證失敗：{rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "節點拒絕了一個或多個輸入值。",
+        "title": "無效的輸入",
+        "toastMessage": "{nodeName} 拒絕了 {inputName} 的值。",
+        "toastTitle": "無效的輸入"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} 是循環連接的一部分。",
+        "detailsWithRawDetails": "{nodeName} 是循環連接的一部分：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "工作流程存在循環節點連接。",
+        "title": "無效的工作流程",
+        "toastMessage": "{nodeName} 是循環連接的一部分。",
+        "toastTitle": "無效的工作流程"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} 無法驗證 {inputName}。",
+        "detailsWithRawDetails": "{nodeName} 無法驗證 {inputName}：{rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "工作流程無法驗證已連接的節點。",
+        "title": "驗證失敗",
+        "toastMessage": "{nodeName} 無法驗證 {inputName}。",
+        "toastMessageWithRawDetails": "{nodeName} 無法驗證 {inputName}：{rawDetails}",
+        "toastTitle": "驗證失敗"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} 驗證時失敗。",
+        "detailsWithRawDetails": "{nodeName} 驗證時失敗：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "由於節點驗證檢查意外失敗，工作流程無法驗證。",
+        "title": "驗證失敗",
+        "toastMessage": "{nodeName} 驗證時失敗。",
+        "toastMessageWithRawDetails": "{nodeName} 驗證時失敗：{rawDetails}",
+        "toastTitle": "驗證失敗"
+      },
+      "image_not_loaded": {
+        "details": "{nodeName} 的圖片無法載入。請重新加入。",
+        "itemLabel": "{nodeName}",
+        "message": "系統無法載入此圖片。",
+        "title": "圖片未載入",
+        "toastMessage": "{nodeName} 的圖片無法載入。請重新加入。",
+        "toastTitle": "輸入圖片無法載入"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} 無法將 {inputName} 轉換為預期的類型。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 無法轉換為 {expectedType}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "輸入值的類型錯誤。",
+        "title": "無效的輸入",
+        "toastMessage": "{nodeName} 無法將 {inputName} 轉換為預期的類型。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 無法轉換為 {expectedType}。",
+        "toastTitle": "無效的輸入"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} 缺少必要的輸入：{inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "必要的輸入插槽沒有連接來源。",
+        "title": "缺少連接",
+        "toastMessage": "{nodeName} 缺少必要的輸入：{inputName}",
+        "toastTitle": "缺少必要輸入"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} 的 {inputName} 連接類型不相容。",
+        "detailsWithTypes": "{nodeName} 的 {inputName} 輸入預期為 {expectedType}，但連接的輸出為 {receivedType}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "已連接的節點使用了不相容的輸入與輸出類型。",
+        "title": "無效的連接",
+        "toastMessage": "{nodeName} 的 {inputName} 連接類型不相容。",
+        "toastMessageWithTypes": "{nodeName} 的 {inputName} 輸入預期為 {expectedType}，但連接的輸出為 {receivedType}。",
+        "toastTitle": "無效的連接"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} 的 {inputName} 值高於最大值。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 高於最大值 {maxValue}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分輸入值超出允許範圍。",
+        "title": "輸入超出範圍",
+        "toastMessage": "{nodeName} 的 {inputName} 值高於最大值。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 高於最大值 {maxValue}。",
+        "toastTitle": "輸入超出範圍"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} 的 {inputName} 值不支援。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 不可用。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分輸入值不適用於此節點。",
+        "title": "無效的輸入",
+        "toastMessage": "{nodeName} 的 {inputName} 值不支援。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 不可用。",
+        "toastTitle": "無效的輸入"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} 的 {inputName} 值低於最小值。",
+        "detailsWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 低於最小值 {minValue}。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "部分輸入值超出允許範圍。",
+        "title": "輸入超出範圍",
+        "toastMessage": "{nodeName} 的 {inputName} 值低於最小值。",
+        "toastMessageWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 低於最小值 {minValue}。",
+        "toastTitle": "輸入超出範圍"
+      }
+    }
+  },
   "errorDialog": {
-    "accessRestrictedMessage": "Your account is not authorized for this feature.",
-    "accessRestrictedTitle": "Access Restricted",
+    "accessRestrictedMessage": "您的帳戶無權使用此功能。",
+    "accessRestrictedTitle": "存取受限",
     "defaultTitle": "發生錯誤",
     "extensionFileHint": "這可能是由於以下指令碼所致",
     "loadWorkflowTitle": "由於重新載入工作流程資料時發生錯誤，已中止載入",
     "noStackTrace": "沒有可用的堆疊追蹤",
-    "promptExecutionError": "提示執行失敗"
+    "promptExecutionError": "提示執行失敗",
+    "queueOpenWorkflowFailedTitle": "開啟工作流程失敗"
   },
   "errorOverlay": {
     "errorCount": "{count} 個錯誤",
@@ -912,6 +1293,10 @@
     "showMissingNodes": "顯示缺少的節點",
     "showSwapNodes": "顯示可替換的節點",
     "swapNodes": "有些節點可以用其他選項替換"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "提供回饋",
+    "ctaText": "新的錯誤面板感覺如何？"
   },
   "essentials": {
     "batchImage": "批次圖片",
@@ -998,13 +1383,16 @@
     "back": "返回",
     "batchRename": "批次重新命名",
     "beta": "測試版",
+    "blueprints": "藍圖",
     "bookmark": "儲存至程式庫",
+    "bookmarked": "已加入書籤",
     "browserReservedKeybinding": "此快捷鍵已被部分瀏覽器保留，可能會產生非預期結果。",
     "browserReservedKeybindingTooltip": "此快捷鍵與瀏覽器保留的快捷鍵衝突",
     "calculatingDimensions": "計算尺寸中",
     "cancel": "取消",
     "cancelled": "已取消",
     "capture": "擷取",
+    "categories": "分類",
     "category": "分類",
     "changeKeybinding": "變更快捷鍵",
     "chart": "圖表",
@@ -1020,6 +1408,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg 標誌",
+    "comfyPackageOutdated": "已安裝的 {name} 版本 {installedVersion} 低於所需版本 {requiredVersion}。",
     "comingSoon": "即將推出",
     "command": "指令",
     "commandProhibited": "指令 {command} 已被禁止。如需更多資訊，請聯絡管理員。",
@@ -1180,6 +1569,7 @@
     "logs": "日誌",
     "manageExtensions": "管理擴充功能",
     "markdown": "標記語言",
+    "maximizeDialog": "最大化對話框",
     "micPermissionDenied": "麥克風權限被拒絕",
     "migrate": "遷移",
     "missing": "缺少",
@@ -1225,6 +1615,7 @@
     "output": "輸出",
     "overwrite": "覆蓋",
     "partner": "合作夥伴",
+    "partnerNodes": "合作夥伴節點",
     "pause": "暫停",
     "play": "播放",
     "playPause": "播放/暫停",
@@ -1279,6 +1670,7 @@
     "resizeFromTopLeft": "從左上角調整大小",
     "resizeFromTopRight": "從右上角調整大小",
     "restart": "重新啟動",
+    "restoreDialog": "還原對話框",
     "resultsCount": "找到 {count} 筆結果",
     "running": "執行中",
     "save": "儲存",
@@ -1638,6 +2030,7 @@
       "orthographic": "正交",
       "perspective": "透視"
     },
+    "centerCameraOnModel": "將相機置中於模型",
     "clearRecording": "清除錄影",
     "dropToLoad": "拖放3D模型以載入",
     "edgeThreshold": "邊緣閾值",
@@ -1717,6 +2110,10 @@
     "outdatedVersion": "此工作流程是以較新版本的 ComfyUI（{version}）建立的。部分節點可能無法正確運作。",
     "outdatedVersionGeneric": "此工作流程是以較新版本的 ComfyUI 建立的。部分節點可能無法正確運作。",
     "unknownVersion": "未知"
+  },
+  "logsTerminal": {
+    "loadError": "無法載入日誌，請確認您已更新 ComfyUI 後端。",
+    "resyncError": "後端重新連線後無法重新同步日誌。請重新開啟主控台以重試。"
   },
   "maintenance": {
     "None": "無",
@@ -1821,6 +2218,10 @@
     "gettingInfo": "正在取得資訊...",
     "importFailedGenericError": "套件匯入失敗。請查看主控台以取得更多詳細資訊。",
     "inWorkflow": "於工作流程中",
+    "incompatibleVersion": {
+      "message": "請將 ComfyUI-Manager 升級至 4.2.1 或更高版本。\n• 桌面版：請更新 ComfyUI 桌面應用程式\n• 獨立版：執行 pip install -U comfyui-manager 並重新啟動\n了解更多：https://github.com/Comfy-Org/ComfyUI-Manager",
+      "title": "需要升級 ComfyUI-Manager"
+    },
     "infoPanelEmpty": "點擊項目以查看資訊",
     "installAllMissingNodes": "安裝所有缺少的節點",
     "installError": "安裝錯誤",
@@ -2066,7 +2467,6 @@
     "ComfyUI Issues": "ComfyUI 問題回報",
     "Contact Support": "聯絡支援",
     "Convert Selection to Subgraph": "將選取內容轉為子圖",
-    "Convert selected nodes to group node": "將選取節點轉為群組節點",
     "Copy": "複製",
     "Custom Nodes (Legacy)": "自訂節點（舊版）",
     "Custom Nodes Manager": "自訂節點管理員",
@@ -2227,7 +2627,9 @@
     "": "",
     "3d": "3D",
     "3d_models": "3D 模型",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
+    "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "字節跳動",
     "ElevenLabs": "ElevenLabs",
@@ -2236,13 +2638,14 @@
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "月谷馬雷",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2259,32 +2662,31 @@
     "Vidu": "維度",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_for_testing",
+    "adjustments": "調整",
     "advanced": "進階",
-    "animation": "動畫",
-    "api": "API",
-    "api node": "API 節點",
     "attention_experiments": "注意力實驗",
     "audio": "音訊",
+    "background removal": "去背",
     "batch": "批次",
-    "camera": "相機",
     "chroma_radiance": "色度光輝",
     "clip": "CLIP",
+    "color": "顏色",
     "combine": "合併",
     "compositing": "合成",
     "cond pair": "條件配對",
     "cond single": "單一條件",
     "conditioning": "條件設定",
-    "context": "上下文",
     "controlnet": "ControlNet",
     "create": "建立",
     "custom_sampling": "自訂取樣",
-    "dataset": "資料集",
     "debug": "除錯",
     "deprecated": "已棄用",
     "detection": "偵測",
     "edit_models": "編輯模型",
+    "experimental": "實驗性",
+    "filters": "濾鏡",
     "flux": "Flux",
+    "geometry estimation": "幾何估算",
     "gligen": "GLIGEN",
     "guidance": "引導",
     "guiders": "引導器",
@@ -2299,39 +2701,36 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "遮罩",
-    "math": "數學",
     "model": "模型",
     "model_merging": "模型合併",
-    "model_patches": "模型修補",
     "model_specific": "特定模型",
+    "multigpu": "多GPU",
     "noise": "雜訊",
     "operations": "操作",
+    "partner": "合作夥伴",
+    "patch": "修補",
     "photomaker": "photomaker",
-    "postprocessing": "後處理",
     "preprocessors": "前處理器",
     "primitive": "基礎元件",
     "qwen": "千問",
     "samplers": "取樣器",
     "sampling": "取樣",
-    "save": "儲存",
     "schedulers": "排程器",
     "scheduling": "排程",
-    "sd": "SD",
     "sd3": "sd3",
     "shader": "著色器",
     "sigmas": "西格瑪值",
+    "splat": "splat",
     "stable_cascade": "stable_cascade",
-    "string": "字串",
     "style_model": "風格模型",
     "supir": "supir",
     "text": "文字",
-    "textgen": "文字生成",
     "training": "訓練",
     "transform": "轉換",
     "unet": "UNet",
     "upscale_diffusion": "擴散放大",
     "upscaling": "放大",
-    "utils": "工具",
+    "utilities": "工具",
     "video": "影片",
     "video_models": "影片模型",
     "zimage": "zimage"
@@ -2404,6 +2803,43 @@
     },
     "title": "您的裝置不受支援"
   },
+  "oauth": {
+    "consent": {
+      "allow": "繼續",
+      "appTypeNative": "原生應用程式",
+      "appTypeWeb": "網頁應用程式",
+      "deny": "取消",
+      "errorExpired": "此授權請求已過期或已被使用。請從用戶端應用程式重新啟動。",
+      "errorScopeBroadening": "先前核准的權限不涵蓋此請求。您需要以新權限重新授權。",
+      "errorUnavailable": "此功能目前無法使用。如問題持續，請聯絡客服。",
+      "genericError": "OAuth 請求失敗。請從用戶端應用程式重新啟動。",
+      "loading": "正在載入授權請求…",
+      "missingRequest": "找不到此授權請求。請從用戶端應用程式重新啟動。",
+      "noWorkspaces": "此請求沒有可用的合格工作區。",
+      "permissionsHeader": "權限",
+      "redirectNotice": "您將被重新導向至",
+      "resourceFallback": "此應用程式",
+      "sessionError": "建立工作階段失敗。請再試一次。",
+      "sessionErrorToastSummary": "無法繼續 OAuth 登入",
+      "subtitle": "登入 {resource} 以繼續",
+      "title": "{client} 想要存取",
+      "workspaceHelp": "權限僅適用於此工作區。",
+      "workspaceLabel": "工作區"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "代表您執行工作流程"
+      },
+      "mcp:tools:read": {
+        "label": "檢視可用的工作流程工具"
+      }
+    },
+    "workspace": {
+      "member": "成員",
+      "owner": "擁有者",
+      "personal": "個人"
+    }
+  },
   "openSharedWorkflow": {
     "author": "作者：",
     "copyAssetsAndOpen": "匯入資產並開啟工作流程",
@@ -2414,7 +2850,8 @@
     "nonPublicAssetsWarningLine1": "此工作流程包含非公開資產。",
     "nonPublicAssetsWarningLine2": "開啟工作流程時，這些資產將匯入你的媒體庫",
     "openWithoutImporting": "不匯入直接開啟",
-    "openWorkflow": "開啟工作流程"
+    "openWorkflow": "開啟工作流程",
+    "opening": "正在開啟共享工作流程..."
   },
   "painter": {
     "background": "背景",
@@ -2593,6 +3030,9 @@
       "metadataFetchFailed": "取得中繼資料失敗。請檢查連結並重試。",
       "missingModelsTitle": "缺少的模型",
       "or": "或",
+      "refresh": "重新整理",
+      "refreshFailed": "重新整理缺少的模型失敗。請再試一次。",
+      "refreshing": "正在重新整理缺少的模型。",
       "typeMismatch": "此模型似乎是「{detectedType}」。您確定嗎？",
       "unknownCategory": "未知",
       "unsupportedUrl": "僅支援 Civitai 與 Hugging Face 網址。",
@@ -2627,20 +3067,6 @@
     "normal": "一般",
     "parameters": "參數",
     "pinned": "已釘選",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "傳送到伺服器的工作流程資料為空。這可能是系統發生了非預期的錯誤。"
-      },
-      "prompt_no_outputs": {
-        "desc": "工作流程中沒有任何輸出節點（例如：儲存圖像、預覽圖像），無法產生結果。"
-      },
-      "server_error_cloud": {
-        "desc": "伺服器發生非預期錯誤。請稍後再試。"
-      },
-      "server_error_local": {
-        "desc": "伺服器發生非預期錯誤。請檢查伺服器日誌。"
-      }
-    },
     "properties": "屬性",
     "removeFavorite": "取消收藏",
     "resetAllParameters": "重設所有參數",
@@ -2897,6 +3323,7 @@
     "Other": "其他",
     "PLY": "PLY",
     "PlanCredits": "方案與點數",
+    "PointCloud": "點雲",
     "Pointer": "指標",
     "Queue": "佇列",
     "QueueButton": "佇列按鈕",
@@ -3038,6 +3465,7 @@
         "sourceDesc": "依來源類型分組（核心、自訂、API）"
       },
       "noBookmarkedNodes": "尚未有收藏",
+      "noMatchingNodes": "沒有符合「{query}」的節點",
       "resetView": "重設檢視為預設值",
       "sections": {
         "bookmarked": "已收藏",
@@ -3126,6 +3554,7 @@
       "deleteFailedTitle": "刪除失敗",
       "deleted": "工作流程已刪除",
       "dirtyClose": "下列檔案已被修改。您要在關閉前儲存它們嗎？",
+      "dirtyCloseAnyway": "仍要關閉",
       "dirtyCloseHint": "按住 Shift 可直接關閉不提示",
       "dirtyCloseTitle": "儲存變更？",
       "workflowTreeType": {
@@ -3422,8 +3851,7 @@
       "newest": "最新",
       "popular": "熱門",
       "recommended": "推薦",
-      "searchPlaceholder": "搜尋...",
-      "vramLowToHigh": "VRAM 使用量 (低到高)"
+      "searchPlaceholder": "搜尋..."
     },
     "sorting": "排序依據",
     "title": "從範本開始",
@@ -3486,6 +3914,7 @@
     "no3dScene": "沒有 3D 場景可套用材質",
     "no3dSceneToExport": "沒有 3D 場景可匯出",
     "noTemplatesToExport": "沒有可匯出的範本",
+    "nodeDefinitionsUpdateFailed": "節點定義更新失敗",
     "nodeDefinitionsUpdated": "節點定義已更新",
     "nothingSelected": "未選取任何項目",
     "nothingToGroup": "沒有項目可分組",
@@ -3586,7 +4015,8 @@
       "placeholderMesh": "選擇網格...",
       "placeholderModel": "選擇模型...",
       "placeholderUnknown": "選擇媒體...",
-      "placeholderVideo": "選擇影片..."
+      "placeholderVideo": "選擇影片...",
+      "topResult": "最佳結果：{result}"
     },
     "valueControl": {
       "decrement": "減少數值",

@@ -199,7 +199,6 @@
     "name": "Moteur PLY",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "Sélectionnez le moteur pour charger les fichiers PLY. « threejs » utilise le PLYLoader natif de Three.js (idéal pour les fichiers PLY de maillage). « fastply » utilise un chargeur optimisé pour les fichiers PLY de nuages de points ASCII. « sparkjs » utilise Spark.js pour les fichiers PLY de Gaussian Splatting 3D."
@@ -271,6 +270,10 @@
       "litegraph (legacy)": "litegraph (héritage)",
       "v1 (legacy)": "v1 (héritage)"
     }
+  },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "Les nœuds ajoutés suivent le curseur",
+    "tooltip": "Lorsque cette option est activée, les nœuds ajoutés depuis la boîte de recherche suivent le curseur jusqu'à ce qu'ils soient placés par un clic. S'applique uniquement à l'implémentation par défaut."
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "Aperçu du nœud",

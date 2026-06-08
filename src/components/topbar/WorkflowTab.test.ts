@@ -186,13 +186,13 @@ describe('WorkflowTab - workflow status indicator', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
 
     expect(screen.queryByRole('img')).toBeNull()
-    expect(screen.getByTestId('unsaved-indicator').textContent).toBe('•')
+    expect(screen.getByTestId('workflow-dirty-indicator').textContent).toBe('•')
   })
 
   it('shows the unsaved dot when modified and autosave is off', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isModified: true }) })
 
-    expect(screen.getByTestId('unsaved-indicator').textContent).toBe('•')
+    expect(screen.getByTestId('workflow-dirty-indicator').textContent).toBe('•')
   })
 
   it('workflow status replaces the unsaved dot', () => {
@@ -203,7 +203,7 @@ describe('WorkflowTab - workflow status indicator', () => {
     expect(
       screen.getByRole('img', { name: statusAriaLabels.running })
     ).toBeTruthy()
-    expect(screen.queryByTestId('unsaved-indicator')).toBeNull()
+    expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
   })
 })
 

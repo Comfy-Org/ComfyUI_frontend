@@ -8,6 +8,7 @@
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
+    :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
         'group/node lg-node absolute isolate text-sm',
@@ -18,7 +19,9 @@
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
-        shouldHandleNodePointerEvents && !nodeData.flags?.ghost
+        shouldHandleNodePointerEvents &&
+          !nodeData.flags?.ghost &&
+          !isGhostPlacing
           ? 'pointer-events-auto'
           : 'pointer-events-none'
       )
@@ -29,6 +32,7 @@
       zIndex: zIndex,
       opacity: nodeOpacity
     }"
+    :inert="isGhostPlacing"
     v-bind="remainingPointerHandlers"
     @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
@@ -37,7 +41,6 @@
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
-    <!-- Selection/Execution Outline Overlay -->
     <AppOutput
       v-if="
         lgraphNode?.constructor?.nodeData?.output_node &&
@@ -54,14 +57,13 @@
         cn(
           'pointer-events-none absolute z-0 border-3 outline-none',
           selectionShapeClass,
-          hasAnyError ? '-inset-[7px]' : '-inset-[3px]',
+          hasAnyError ? 'inset-[-7px]' : 'inset-[-3px]',
           isSelected
             ? 'border-node-component-outline'
             : 'border-node-stroke-executing'
         )
       "
     />
-    <!-- Root Border Overlay -->
     <div
       :class="
         cn(
@@ -133,7 +135,6 @@
 
       <template v-else-if="!isCollapsed">
         <div class="relative">
-          <!-- Progress bar for executing state -->
           <div
             v-if="executing && progress !== undefined"
             :class="
@@ -173,9 +174,8 @@
               :media="preview"
             />
           </div>
-          <!-- Live mid-execution preview images -->
           <LivePreview
-            v-if="shouldShowPreviewImg"
+            v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
             :image-url="latestPreviewUrl"
           />
           <NodeBadges
@@ -212,6 +212,7 @@
         v-for="handle in RESIZE_HANDLES"
         :key="handle.corner"
         role="button"
+        :data-corner="handle.corner"
         :aria-label="t(handle.i18nKey)"
         :class="
           cn(
@@ -307,7 +308,7 @@ import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { isTransparent } from '@/utils/colorUtil'
 
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -341,7 +342,7 @@ const { bringNodeToFront } = useNodeZIndex()
 
 useVueElementTracking(String(nodeData.id), 'node')
 
-const { selectedNodeIds } = storeToRefs(useCanvasStore())
+const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
   return selectedNodeIds.value.has(nodeData.id)
 })
@@ -386,7 +387,7 @@ const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
 
-  if (nodeData.flags?.ghost) return globalOpacity * 0.3
+  if (nodeData.flags?.ghost) return globalOpacity * 0.6
 
   // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
   if (bypassed.value || muted.value) {
@@ -719,6 +720,7 @@ useGLSLPreview(lgraphNode)
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
+  if (isCollapsed.value) return false
 
   // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {
@@ -779,6 +781,8 @@ const nodeMedia = computed(() => {
   if (!node || !newOutputs?.images?.length || node.hideOutputImages)
     return undefined
 
+  if (node instanceof SubgraphNode) return undefined
+
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined
 
@@ -813,16 +817,8 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-function handleDrop(event: DragEvent) {
+function handleDrop() {
   isDraggingOver.value = false
-
-  const node = lgraphNode.value
-  if (!node?.onDragDrop) return
-
-  const handled = node.onDragDrop(event)
-  if (handled === true) {
-    event.preventDefault()
-    event.stopPropagation()
-  }
+  app.dragOverNode = lgraphNode.value
 }
 </script>

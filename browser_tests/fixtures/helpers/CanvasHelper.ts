@@ -74,7 +74,7 @@ export class CanvasHelper {
    * Use with `page.mouse` APIs when Vue DOM overlays above the canvas would
    * cause Playwright's actionability check to fail on the canvas locator.
    */
-  private async toAbsolute(position: Position): Promise<Position> {
+  async toAbsolute(position: Position): Promise<Position> {
     const box = await this.canvas.boundingBox()
     if (!box) throw new Error('Canvas bounding box not available')
     return { x: box.x + position.x, y: box.y + position.y }
@@ -148,6 +148,28 @@ export class CanvasHelper {
       window.app!.canvas.ds.scale = s
     }, scale)
     await nextFrame(this.page)
+  }
+
+  async getOffset(): Promise<[number, number]> {
+    return this.page.evaluate(
+      () => [...window.app!.canvas.ds.offset] as [number, number]
+    )
+  }
+
+  async getNodeTitleHeight(): Promise<number> {
+    return this.page.evaluate(() => window.LiteGraph!.NODE_TITLE_HEIGHT)
+  }
+
+  /**
+   * Hold `Control+Shift` and drag from `from` to `to` using page-absolute
+   * coordinates.
+   */
+  async ctrlShiftDrag(from: Position, to: Position): Promise<void> {
+    await this.page.keyboard.down('Control')
+    await this.page.keyboard.down('Shift')
+    await this.dragAndDrop(from, to)
+    await this.page.keyboard.up('Shift')
+    await this.page.keyboard.up('Control')
   }
 
   async convertOffsetToCanvas(
@@ -242,11 +264,39 @@ export class CanvasHelper {
     await this.page.mouse.up({ button: 'middle' })
   }
 
-  async disconnectEdge(): Promise<void> {
-    await this.dragAndDrop(
-      DefaultGraphPositions.clipTextEncodeNode1InputSlot,
-      DefaultGraphPositions.emptySpace
-    )
+  async disconnectEdge(
+    options: { modifiers?: ('Shift' | 'Control' | 'Alt' | 'Meta')[] } = {}
+  ): Promise<void> {
+    const { modifiers = [] } = options
+    for (const mod of modifiers) await this.page.keyboard.down(mod)
+    try {
+      await this.dragAndDrop(
+        DefaultGraphPositions.clipTextEncodeNode1InputSlot,
+        DefaultGraphPositions.emptySpace
+      )
+    } finally {
+      for (const mod of modifiers) await this.page.keyboard.up(mod)
+    }
+  }
+
+  async middleClick(position: Position): Promise<void> {
+    await this.mouseClickAt(position, { button: 'middle' })
+  }
+
+  async dblclickGroupTitle(title: string): Promise<void> {
+    const clientPos = await this.page.evaluate((targetTitle) => {
+      const groups = window.app!.canvas.graph?.groups ?? []
+      const group = groups.find(
+        (g: { title: string }) => g.title === targetTitle
+      )
+      if (!group) return null
+      const cx = group.pos[0] + group.size[0] / 2
+      const cy = group.pos[1] + group.titleHeight / 2
+      return window.app!.canvasPosToClientPos([cx, cy])
+    }, title)
+    if (!clientPos) throw new Error(`Group "${title}" not found`)
+    await this.page.mouse.dblclick(clientPos[0], clientPos[1], { delay: 5 })
+    await nextFrame(this.page)
   }
 
   async connectEdge(options: { reverse?: boolean } = {}): Promise<void> {

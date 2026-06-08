@@ -60,14 +60,50 @@ export class WorkflowHelper {
     await this.comfyPage.nextFrame()
   }
 
-  async waitForDraftPersisted({ timeout = 5000 } = {}) {
-    await this.comfyPage.page.waitForFunction(
-      () =>
-        Object.keys(localStorage).some((k) =>
-          k.startsWith('Comfy.Workflow.Draft.v2:')
-        ),
-      { timeout }
+  async waitForDraftPersisted() {
+    await this.comfyPage.page.waitForFunction(() =>
+      Object.keys(localStorage).some((key) =>
+        key.startsWith('Comfy.Workflow.Draft.v2:')
+      )
     )
+  }
+
+  /** Waits for V2 draft index recency, not payload content freshness. */
+  async waitForDraftIndexUpdatedSince(updatedSince: number) {
+    await this.comfyPage.page.waitForFunction((indexUpdatedSince) => {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i)
+        if (!key?.startsWith('Comfy.Workflow.DraftIndex.v2:')) continue
+
+        const json = window.localStorage.getItem(key)
+        if (!json) continue
+
+        try {
+          const index = JSON.parse(json)
+          if (
+            typeof index.updatedAt === 'number' &&
+            index.updatedAt >= indexUpdatedSince
+          ) {
+            return true
+          }
+        } catch {
+          // Ignore malformed storage while waiting for persistence.
+        }
+      }
+
+      return false
+    }, updatedSince)
+  }
+
+  /**
+   * Reloads the current page and waits for the app to initialize.
+   * Unlike ComfyPage.setup(), this preserves localStorage (drafts) and
+   * the URL hash (subgraph navigation state), so the app restores
+   * exactly where the user left off.
+   */
+  async reloadAndWaitForApp() {
+    await this.comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
+    await this.comfyPage.waitForAppReady()
   }
 
   async loadGraphData(workflow: ComfyWorkflowJSON): Promise<void> {

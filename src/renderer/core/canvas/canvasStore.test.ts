@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 vi.mock('@/composables/useAppMode', () => ({
@@ -83,5 +84,10 @@ describe('useCanvasStore', () => {
 
       expect(originalHandler).toHaveBeenCalledWith(2.0, app.canvas.ds.offset)
     })
+  })
+  it('Does not include groups in selected nodeIds', async () => {
+    store.selectedItems = [new LGraphGroup()]
+
+    expect(store.selectedNodeIds).toHaveLength(0)
   })
 })

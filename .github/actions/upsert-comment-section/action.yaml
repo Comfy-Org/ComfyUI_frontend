@@ -1,0 +1,79 @@
+name: Upsert Comment Section
+description: >
+  Manage a consolidated PR comment with independently-updatable sections.
+  All website CI workflows share the marker <!-- WEBSITE_CI_REPORT -->.
+  Valid section names: "e2e", "preview", "screenshot-update".
+
+inputs:
+  pr-number:
+    description: PR number to comment on
+    required: true
+  section-name:
+    description: 'Section identifier: "e2e", "preview", or "screenshot-update"'
+    required: true
+  section-content:
+    description: Markdown content for this section
+    required: true
+  comment-marker:
+    description: Top-level HTML comment marker (must be <!-- WEBSITE_CI_REPORT --> for all callers)
+    required: true
+  token:
+    description: GitHub token with pull-requests write permission
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/github-script@v8
+      env:
+        INPUT_PR_NUMBER: ${{ inputs.pr-number }}
+        INPUT_SECTION_NAME: ${{ inputs.section-name }}
+        INPUT_SECTION_CONTENT: ${{ inputs.section-content }}
+        INPUT_COMMENT_MARKER: ${{ inputs.comment-marker }}
+      with:
+        github-token: ${{ inputs.token }}
+        script: |
+          const prNumber = Number(process.env.INPUT_PR_NUMBER)
+          const sectionName = process.env.INPUT_SECTION_NAME
+          const sectionContent = process.env.INPUT_SECTION_CONTENT
+          const commentMarker = process.env.INPUT_COMMENT_MARKER
+
+          const sectionStart = `<!-- section:${sectionName}:start -->`
+          const sectionEnd = `<!-- section:${sectionName}:end -->`
+          const sectionBlock = `${sectionStart}\n${sectionContent}\n${sectionEnd}`
+
+          // Escape special regex characters in delimiter strings
+          const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+          const comments = await github.paginate(
+            github.rest.issues.listComments,
+            { ...context.repo, issue_number: prNumber }
+          )
+
+          const existing = comments.find(
+            (c) =>
+              c.user?.login === 'github-actions[bot]' &&
+              c.body?.includes(commentMarker)
+          )
+
+          if (!existing) {
+            return github.rest.issues.createComment({
+              ...context.repo,
+              issue_number: prNumber,
+              body: `${commentMarker}\n${sectionBlock}`
+            })
+          }
+
+          const body = existing.body ?? ''
+          const sectionRegex = new RegExp(
+            `${escapeRegex(sectionStart)}[\\s\\S]*?${escapeRegex(sectionEnd)}`
+          )
+          const updated = sectionRegex.test(body)
+            ? body.replace(sectionRegex, sectionBlock)
+            : body.trimEnd() + '\n\n' + sectionBlock
+
+          return github.rest.issues.updateComment({
+            ...context.repo,
+            comment_id: existing.id,
+            body: updated
+          })

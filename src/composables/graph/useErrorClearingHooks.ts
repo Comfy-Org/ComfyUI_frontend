@@ -7,6 +7,7 @@
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { PromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -28,7 +29,7 @@ import {
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import {
   scanNodeMediaCandidates,
-  verifyCloudMediaCandidates
+  verifyMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -45,22 +46,128 @@ import {
   isAncestorPathActive
 } from '@/utils/graphTraversalUtil'
 
-function resolvePromotedExecId(
-  rootGraph: LGraph,
-  node: LGraphNode,
+interface WidgetErrorClearingTarget {
+  executionId: string
+  validationInputName: string
+  assetWidgetName: string
+  currentValue: unknown
+  options?: { min?: number; max?: number }
+}
+
+function getWidgetRangeOptions(widget: IBaseWidget): {
+  min?: number
+  max?: number
+} {
+  return {
+    min: widget.options?.min,
+    max: widget.options?.max
+  }
+}
+
+function plainWidgetToErrorTarget(
   widget: IBaseWidget,
   hostExecId: string
-): string {
-  if (!isPromotedWidgetView(widget)) return hostExecId
+): WidgetErrorClearingTarget {
+  return {
+    executionId: hostExecId,
+    validationInputName: widget.name,
+    assetWidgetName: widget.name,
+    currentValue: widget.value,
+    options: getWidgetRangeOptions(widget)
+  }
+}
+
+function promotedWidgetToErrorTarget(
+  rootGraph: LGraph,
+  hostNode: LGraphNode,
+  widget: PromotedWidgetView,
+  hostExecId: string
+): WidgetErrorClearingTarget {
   const result = resolveConcretePromotedWidget(
-    node,
+    hostNode,
     widget.sourceNodeId,
     widget.sourceWidgetName
   )
-  if (result.status === 'resolved' && result.resolved.node) {
-    return getExecutionIdByNode(rootGraph, result.resolved.node) ?? hostExecId
+  const execId =
+    result.status === 'resolved' && result.resolved.node
+      ? (getExecutionIdByNode(rootGraph, result.resolved.node) ?? hostExecId)
+      : hostExecId
+  const resolvedWidget =
+    result.status === 'resolved' ? result.resolved.widget : widget
+
+  return {
+    executionId: execId,
+    validationInputName: resolvedWidget.name,
+    assetWidgetName: widget.sourceWidgetName,
+    currentValue: resolvedWidget.value,
+    options: getWidgetRangeOptions(resolvedWidget)
   }
-  return hostExecId
+}
+
+function resolveCanvasPathPromotedWidgetTargets(
+  rootGraph: LGraph,
+  hostNode: LGraphNode,
+  widget: IBaseWidget,
+  hostExecId: string,
+  newValue: unknown
+): WidgetErrorClearingTarget[] {
+  if (!hostNode.isSubgraphNode?.() || isPromotedWidgetView(widget)) return []
+
+  // Canvas-path events lose promoted identity, so the post-write value
+  // disambiguates same-named promoted widgets.
+  return (hostNode.widgets ?? [])
+    .filter(isPromotedWidgetView)
+    .filter((promotedWidget) => promotedWidget.sourceWidgetName === widget.name)
+    .map((promotedWidget) =>
+      promotedWidgetToErrorTarget(
+        rootGraph,
+        hostNode,
+        promotedWidget,
+        hostExecId
+      )
+    )
+    .filter((target) => Object.is(target.currentValue, newValue))
+}
+
+function resolveWidgetErrorTargets(
+  rootGraph: LGraph,
+  hostNode: LGraphNode,
+  widget: IBaseWidget,
+  hostExecId: string,
+  newValue: unknown
+): WidgetErrorClearingTarget[] {
+  if (isPromotedWidgetView(widget)) {
+    return [
+      promotedWidgetToErrorTarget(rootGraph, hostNode, widget, hostExecId)
+    ]
+  }
+
+  const canvasPathTargets = resolveCanvasPathPromotedWidgetTargets(
+    rootGraph,
+    hostNode,
+    widget,
+    hostExecId,
+    newValue
+  )
+  return canvasPathTargets.length
+    ? canvasPathTargets
+    : [plainWidgetToErrorTarget(widget, hostExecId)]
+}
+
+function clearWidgetErrorTargets(
+  targets: WidgetErrorClearingTarget[],
+  newValue: unknown
+): void {
+  const store = useExecutionErrorStore()
+  for (const target of targets) {
+    store.clearWidgetRelatedErrors(
+      target.executionId,
+      target.validationInputName,
+      target.assetWidgetName,
+      newValue,
+      target.options
+    )
+  }
 }
 
 const hookedNodes = new WeakSet<LGraphNode>()
@@ -103,23 +210,14 @@ function installNodeHooks(node: LGraphNode): void {
       const hostExecId = getExecutionIdByNode(app.rootGraph, node)
       if (!hostExecId) return
 
-      const execId = resolvePromotedExecId(
+      const targets = resolveWidgetErrorTargets(
         app.rootGraph,
         node,
         widget,
-        hostExecId
+        hostExecId,
+        newValue
       )
-      const widgetName = isPromotedWidgetView(widget)
-        ? widget.sourceWidgetName
-        : widget.name
-
-      useExecutionErrorStore().clearWidgetRelatedErrors(
-        execId,
-        widget.name,
-        widgetName,
-        newValue,
-        { min: widget.options?.min, max: widget.options?.max }
-      )
+      clearWidgetErrorTargets(targets, newValue)
     }
   )
 }
@@ -155,24 +253,26 @@ function isNodeInactive(mode: number): boolean {
   return mode === LGraphEventMode.NEVER || mode === LGraphEventMode.BYPASS
 }
 
-/** Scan a single node and add confirmed missing model/media to stores.
- *  For subgraph containers, also scans all active interior nodes. */
-function scanAndAddNodeErrors(node: LGraphNode): void {
+function scanNodeErrorTargets(
+  node: LGraphNode,
+  scanNode: (node: LGraphNode) => void
+): void {
   if (!app.rootGraph) return
 
   if (node.isSubgraphNode?.() && node.subgraph) {
     for (const innerNode of collectAllNodes(node.subgraph)) {
+      if (innerNode.isSubgraphNode?.()) continue
       if (isNodeInactive(innerNode.mode)) continue
-      scanSingleNodeErrors(innerNode)
+      scanNode(innerNode)
     }
     return
   }
 
-  scanSingleNodeErrors(node)
+  scanNode(node)
 }
 
-function scanSingleNodeErrors(node: LGraphNode): void {
-  if (!app.rootGraph) return
+function getActiveExecutionId(node: LGraphNode): string | null {
+  if (!app.rootGraph) return null
   // Skip when any enclosing subgraph is muted/bypassed. Callers only
   // verify each node's own mode; entering a bypassed subgraph (via
   // useGraphNodeManager replaying onNodeAdded for existing interior
@@ -180,7 +280,25 @@ function scanSingleNodeErrors(node: LGraphNode): void {
   // execId means the node has no current graph (e.g. detached mid
   // lifecycle) — also skip, since we cannot verify its scope.
   const execId = getExecutionIdByNode(app.rootGraph, node)
-  if (!execId || !isAncestorPathActive(app.rootGraph, execId)) return
+  if (!execId || !isAncestorPathActive(app.rootGraph, execId)) return null
+  return execId
+}
+
+/** Scan a single node and add confirmed missing model/media to stores.
+ *  For subgraph containers, also scans all active interior nodes. */
+function scanAndAddNodeErrors(node: LGraphNode): void {
+  scanNodeErrorTargets(node, scanSingleNodeErrors)
+}
+
+function scanSingleNodeErrors(node: LGraphNode): void {
+  scanSingleNodeModelsAndTypes(node)
+  scanSingleNodeMedia(node)
+}
+
+function scanSingleNodeModelsAndTypes(node: LGraphNode): void {
+  if (!app.rootGraph) return
+  const execId = getActiveExecutionId(node)
+  if (!execId) return
 
   const modelCandidates = scanNodeModelCandidates(
     app.rootGraph,
@@ -203,38 +321,39 @@ function scanSingleNodeErrors(node: LGraphNode): void {
     void verifyAndAddPendingModels(pendingModels)
   }
 
+  const originalType = node.last_serialization?.type ?? node.type ?? 'Unknown'
+  if (!(originalType in LiteGraph.registered_node_types)) {
+    const nodeReplacementStore = useNodeReplacementStore()
+    const replacement = nodeReplacementStore.getReplacementFor(originalType)
+    const store = useMissingNodesErrorStore()
+    const existing = store.missingNodesError?.nodeTypes ?? []
+    store.surfaceMissingNodes([
+      ...existing,
+      {
+        type: originalType,
+        nodeId: execId,
+        cnrId: getCnrIdFromNode(node),
+        isReplaceable: replacement !== null,
+        replacement: replacement ?? undefined
+      }
+    ])
+  }
+}
+
+function scanSingleNodeMedia(node: LGraphNode): void {
+  if (!app.rootGraph) return
+  if (!getActiveExecutionId(node)) return
+
   const mediaCandidates = scanNodeMediaCandidates(app.rootGraph, node, isCloud)
   const confirmedMedia = mediaCandidates.filter((c) => c.isMissing === true)
   if (confirmedMedia.length) {
     useMissingMediaStore().addMissingMedia(confirmedMedia)
   }
-  // Cloud media scans always return isMissing: undefined pending
-  // verification against the input-assets list.
+  // Cloud media scans return pending for asset verification. OSS scans only
+  // return pending for generated output media.
   const pendingMedia = mediaCandidates.filter((c) => c.isMissing === undefined)
   if (pendingMedia.length) {
     void verifyAndAddPendingMedia(pendingMedia)
-  }
-
-  // Check for missing node type
-  const originalType = node.last_serialization?.type ?? node.type ?? 'Unknown'
-  if (!(originalType in LiteGraph.registered_node_types)) {
-    const execId = getExecutionIdByNode(app.rootGraph, node)
-    if (execId) {
-      const nodeReplacementStore = useNodeReplacementStore()
-      const replacement = nodeReplacementStore.getReplacementFor(originalType)
-      const store = useMissingNodesErrorStore()
-      const existing = store.missingNodesError?.nodeTypes ?? []
-      store.surfaceMissingNodes([
-        ...existing,
-        {
-          type: originalType,
-          nodeId: execId,
-          cnrId: getCnrIdFromNode(node),
-          isReplaceable: replacement !== null,
-          replacement: replacement ?? undefined
-        }
-      ])
-    }
   }
 }
 
@@ -281,7 +400,7 @@ async function verifyAndAddPendingMedia(
 ): Promise<void> {
   const rootGraphAtScan = app.rootGraph
   try {
-    await verifyCloudMediaCandidates(pending)
+    await verifyMediaCandidates(pending, { isCloud })
     if (app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
       (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)
@@ -292,10 +411,23 @@ async function verifyAndAddPendingMedia(
   }
 }
 
-function scanAddedNode(node: LGraphNode): void {
+function scanAddedNode(
+  node: LGraphNode,
+  scanNode: (node: LGraphNode) => void
+): void {
   if (!app.rootGraph || ChangeTracker.isLoadingGraph) return
   if (isNodeInactive(node.mode)) return
-  scanAndAddNodeErrors(node)
+  scanNodeErrorTargets(node, scanNode)
+}
+
+function scheduleAddedNodeScan(node: LGraphNode): void {
+  queueMicrotask(() => {
+    scanAddedNode(node, scanSingleNodeModelsAndTypes)
+    // Paste/drop upload handlers run immediately after graph.add and must set
+    // node.isUploading synchronously before their first await. This second
+    // microtask lets that upload state settle before media widgets are scanned.
+    queueMicrotask(() => scanAddedNode(node, scanSingleNodeMedia))
+  })
 }
 
 function handleNodeModeChange(
@@ -367,10 +499,12 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     // Scan pasted/duplicated nodes for missing models/media.
     // Skip during loadGraphData (undo/redo/tab switch) — those are
     // handled by the full pipeline or cache restore.
-    // Deferred to microtask because onNodeAdded fires before
-    // node.configure() restores widget values.
+    // Model and node scans use the original one-microtask deferral so pasted
+    // missing-model errors appear before selection-scoped tabs recalculate.
+    // Media gets one extra microtask so drag/drop upload handlers can mark
+    // transient upload state before media detection reads the widget value.
     if (!ChangeTracker.isLoadingGraph) {
-      queueMicrotask(() => scanAddedNode(node))
+      scheduleAddedNodeScan(node)
     }
 
     originalOnNodeAdded?.call(this, node)

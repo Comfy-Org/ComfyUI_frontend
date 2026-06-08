@@ -105,9 +105,7 @@ export function hsbToRgb({ h, s, b }: HSB): RGB {
   const x = c * (1 - Math.abs(((hh / 60) % 2) - 1))
   const m = vv - c
 
-  let rp = 0,
-    gp = 0,
-    bp = 0
+  let rp: number, gp: number, bp: number
 
   if (hh < 60) {
     rp = c
@@ -162,9 +160,7 @@ export function parseToRgb(color: string): RGB {
   const x = c * (1 - Math.abs(((h * 6) % 2) - 1))
   const m = l - c / 2
 
-  let r = 0,
-    g = 0,
-    b = 0
+  let r: number, g: number, b: number
 
   if (h < 1 / 6) {
     r = c

@@ -8,7 +8,9 @@ import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
+import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
+import type { WidgetEntityId } from '@/world/entityIds'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -28,8 +30,7 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
 import { nodeTypeValidForApp, useAppModeStore } from '@/stores/appModeStore'
-import { resolveNodeWidget } from '@/utils/litegraphUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 type BoundStyle = { top: string; left: string; width: string; height: string }
 
@@ -47,42 +48,14 @@ const hoveringSelectable = ref(false)
 
 workflowStore.activeWorkflow?.changeTracker?.reset()
 
-const inputsWithState = computed(() =>
-  appModeStore.selectedInputs.map(([nodeId, widgetName]) => {
-    const [node, widget] = resolveNodeWidget(nodeId, widgetName)
-    if (!node || !widget) {
-      return {
-        nodeId,
-        widgetName,
-        subLabel: t('linearMode.builder.unknownWidget')
-      }
-    }
+const resolvedInputs = useResolvedSelectedInputs()
 
-    return {
-      nodeId,
-      widgetName,
-      label: widget.label,
-      subLabel: node.title,
-      canRename: true
-    }
-  })
-)
 const outputsWithState = computed<[NodeId, string][]>(() =>
   appModeStore.selectedOutputs.map((nodeId) => [
     nodeId,
     app.rootGraph.getNodeById(nodeId)?.title ?? String(nodeId)
   ])
 )
-
-function inlineRenameInput(
-  nodeId: NodeId,
-  widgetName: string,
-  newLabel: string
-) {
-  const [node, widget] = resolveNodeWidget(nodeId, widgetName)
-  if (!node || !widget) return
-  renameWidget(widget, node, newLabel)
-}
 
 function getHovered(
   e: MouseEvent
@@ -102,22 +75,26 @@ function getHovered(
   if (widget || node.constructor.nodeData?.output_node) return [node, widget]
 }
 
-function getBounding(nodeId: NodeId, widgetName?: string) {
+function getNodeBounding(nodeId: NodeId) {
   if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
-  const [node, widget] = resolveNodeWidget(nodeId, widgetName)
+  const node = app.rootGraph.getNodeById(nodeId)
   if (!node) return
 
   const titleOffset =
     node.title_mode === TitleMode.NORMAL_TITLE ? LiteGraph.NODE_TITLE_HEIGHT : 0
 
-  if (!widgetName)
-    return {
-      width: `${node.size[0]}px`,
-      height: `${node.size[1] + titleOffset}px`,
-      left: `${node.pos[0]}px`,
-      top: `${node.pos[1] - titleOffset}px`
-    }
-  if (!widget) return
+  return {
+    width: `${node.size[0]}px`,
+    height: `${node.size[1] + titleOffset}px`,
+    left: `${node.pos[0]}px`,
+    top: `${node.pos[1] - titleOffset}px`
+  }
+}
+
+function getWidgetBounding(entry: ResolvedSelection): BoundStyle | undefined {
+  if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
+  if (entry.status !== 'resolved') return undefined
+  const { node, widget } = entry
 
   const margin = widget instanceof DOMWidgetImpl ? widget.margin : undefined
   const marginX = margin ?? BaseWidget.margin
@@ -131,6 +108,11 @@ function getBounding(nodeId: NodeId, widgetName?: string) {
     left: `${node.pos[0] + marginX}px`,
     top: `${node.pos[1] + widget.y + (margin ?? 0)}px`
   }
+}
+
+function removeSelectedEntityId(entityId: WidgetEntityId): void {
+  const index = appModeStore.selectedInputs.findIndex(([id]) => id === entityId)
+  if (index !== -1) appModeStore.selectedInputs.splice(index, 1)
 }
 
 function handleDown(e: MouseEvent) {
@@ -157,14 +139,11 @@ function handleClick(e: MouseEvent) {
   }
   if (!isSelectInputsMode.value || widget.options.canvasOnly) return
 
-  const storeId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
-  const storeName = isPromotedWidgetView(widget)
-    ? widget.sourceWidgetName
-    : widget.name
-  const index = appModeStore.selectedInputs.findIndex(
-    ([nodeId, widgetName]) => storeId == nodeId && storeName === widgetName
-  )
-  if (index === -1) appModeStore.selectedInputs.push([storeId, storeName])
+  const entityId = widget.entityId
+  if (!entityId) return
+  const index = appModeStore.selectedInputs.findIndex(([id]) => id === entityId)
+  if (index === -1)
+    appModeStore.selectedInputs.push([entityId, widget.name, undefined])
   else appModeStore.selectedInputs.splice(index, 1)
 }
 
@@ -173,7 +152,7 @@ function nodeToDisplayTuple(
 ): [NodeId, MaybeRef<BoundStyle> | undefined, boolean] {
   return [
     n.id,
-    getBounding(n.id),
+    getNodeBounding(n.id),
     appModeStore.selectedOutputs.some((id) => n.id === id)
   ]
 }
@@ -191,10 +170,13 @@ const renderedOutputs = computed(() => {
 })
 const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
   () =>
-    appModeStore.selectedInputs.map(([nodeId, widgetName]) => [
-      `${nodeId}: ${widgetName}`,
-      getBounding(nodeId, widgetName)
-    ])
+    resolvedInputs.value.map(
+      (entry) =>
+        [entry.entityId, getWidgetBounding(entry)] as [
+          string,
+          MaybeRef<BoundStyle> | undefined
+        ]
+    )
 )
 </script>
 <template>
@@ -238,30 +220,28 @@ const renderedInputs = computed<[string, MaybeRef<BoundStyle> | undefined][]>(
           v-slot="{ dragClass }"
           v-model="appModeStore.selectedInputs"
         >
-          <IoItem
-            v-for="{
-              nodeId,
-              widgetName,
-              label,
-              subLabel,
-              canRename
-            } in inputsWithState"
-            :key="`${nodeId}: ${widgetName}`"
-            :class="
-              cn(dragClass, 'my-2 rounded-lg bg-primary-background/30 p-2')
-            "
-            :title="label ?? widgetName"
-            :sub-title="subLabel"
-            :can-rename="canRename"
-            :remove="
-              () =>
-                remove(
-                  appModeStore.selectedInputs,
-                  ([id, name]) => nodeId == id && widgetName === name
-                )
-            "
-            @rename="inlineRenameInput(nodeId, widgetName, $event)"
-          />
+          <template v-for="entry in resolvedInputs" :key="entry.entityId">
+            <IoItem
+              v-if="entry.status === 'resolved'"
+              :class="
+                cn(dragClass, 'my-2 rounded-lg bg-primary-background/30 p-2')
+              "
+              :title="entry.widget.label ?? entry.displayName"
+              :sub-title="entry.node.title"
+              can-rename
+              :remove="() => appModeStore.removeSelectedInput(entry.widget)"
+              @rename="renameWidget(entry.widget, entry.node, $event)"
+            />
+            <IoItem
+              v-else
+              :class="
+                cn(dragClass, 'my-2 rounded-lg bg-primary-background/30 p-2')
+              "
+              :title="entry.displayName"
+              :sub-title="t('linearMode.builder.unknownWidget')"
+              :remove="() => removeSelectedEntityId(entry.entityId)"
+            />
+          </template>
         </DraggableList>
       </PropertiesAccordionItem>
       <div

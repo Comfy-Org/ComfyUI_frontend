@@ -1,16 +1,15 @@
-import { isEqual } from 'es-toolkit'
-
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import { t } from '@/i18n'
+import { nextValueForLinkedTarget } from '@/scripts/valueControl'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import {
   stripGraphPrefix,
@@ -23,6 +22,9 @@ import {
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
 import { hasWidgetNode } from '@/core/graph/subgraph/widgetNodeTypeGuard'
+import type { WidgetEntityId } from '@/world/entityIds'
+import { widgetEntityId } from '@/world/entityIds'
+import { ensureWidgetState, getWidgetState } from '@/world/widgetValueIO'
 
 import { isPromotedWidgetView } from './promotedWidgetTypes'
 import type { PromotedWidgetView as IPromotedWidgetView } from './promotedWidgetTypes'
@@ -36,14 +38,6 @@ interface SubgraphSlotRef {
   displayName?: string
 }
 
-function isWidgetValue(value: unknown): value is IBaseWidget['value'] {
-  if (value === undefined) return true
-  if (typeof value === 'string') return true
-  if (typeof value === 'number') return true
-  if (typeof value === 'boolean') return true
-  return value !== null && typeof value === 'object'
-}
-
 type LegacyMouseWidget = IBaseWidget & {
   mouse: (e: CanvasPointerEvent, pos: Point, node: LGraphNode) => unknown
 }
@@ -53,50 +47,12 @@ function hasLegacyMouse(widget: IBaseWidget): widget is LegacyMouseWidget {
 }
 
 const designTokenCache = new Map<string, string>()
-const promotedSourceWriteMetaByGraph = new WeakMap<
-  LGraph,
-  Map<string, PromotedSourceWriteMeta>
->()
-
-interface PromotedSourceWriteMeta {
-  value: IBaseWidget['value']
-  writerInstanceId: string
-}
-
-function cloneWidgetValue<TValue extends IBaseWidget['value']>(
-  value: TValue
-): TValue {
-  return value != null && typeof value === 'object'
-    ? (JSON.parse(JSON.stringify(value)) as TValue)
-    : value
-}
-
-function getPromotedSourceWriteMeta(
-  graph: LGraph,
-  sourceKey: string
-): PromotedSourceWriteMeta | undefined {
-  return promotedSourceWriteMetaByGraph.get(graph)?.get(sourceKey)
-}
-
-function setPromotedSourceWriteMeta(
-  graph: LGraph,
-  sourceKey: string,
-  meta: PromotedSourceWriteMeta
-): void {
-  let metaBySource = promotedSourceWriteMetaByGraph.get(graph)
-  if (!metaBySource) {
-    metaBySource = new Map<string, PromotedSourceWriteMeta>()
-    promotedSourceWriteMetaByGraph.set(graph, metaBySource)
-  }
-  metaBySource.set(sourceKey, meta)
-}
 
 export function createPromotedWidgetView(
   subgraphNode: SubgraphNode,
   nodeId: string,
   widgetName: string,
   displayName?: string,
-  disambiguatingSourceNodeId?: string,
   identityName?: string
 ): IPromotedWidgetView {
   return new PromotedWidgetView(
@@ -104,7 +60,6 @@ export function createPromotedWidgetView(
     nodeId,
     widgetName,
     displayName,
-    disambiguatingSourceNodeId,
     identityName
   )
 }
@@ -116,15 +71,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
   readonly sourceWidgetName: string
 
   readonly serialize = false
-
-  /**
-   * Whether the resolved source widget is workflow-persistent.
-   * Used by SubgraphNode.serialize to skip preview/audio/video widgets
-   * whose source sets serialize = false.
-   */
-  get sourceSerialize(): boolean {
-    return this.resolveDeepest()?.widget.serialize !== false
-  }
 
   last_y?: number
   computedHeight?: number
@@ -140,16 +86,16 @@ class PromotedWidgetView implements IPromotedWidgetView {
   private cachedDeepestByFrame?: { node: LGraphNode; widget: IBaseWidget }
   private cachedDeepestFrame = -1
 
-  /** Cached reference to the bound subgraph slot, set at construction. */
   private _boundSlot?: SubgraphSlotRef
   private _boundSlotVersion = -1
+
+  private _lastAutoSeededValue?: IBaseWidget['value']
 
   constructor(
     private readonly subgraphNode: SubgraphNode,
     nodeId: string,
     widgetName: string,
     private readonly displayName?: string,
-    readonly disambiguatingSourceNodeId?: string,
     private readonly identityName?: string
   ) {
     this.sourceNodeId = nodeId
@@ -163,6 +109,10 @@ class PromotedWidgetView implements IPromotedWidgetView {
 
   get name(): string {
     return this.identityName ?? this.sourceWidgetName
+  }
+
+  get entityId(): WidgetEntityId {
+    return widgetEntityId(this.graphId, this.subgraphNode.id, this.name)
   }
 
   get y(): number {
@@ -198,101 +148,79 @@ class PromotedWidgetView implements IPromotedWidgetView {
     return this.resolveDeepest()?.widget.linkedWidgets
   }
 
-  private get _instanceKey(): string {
-    return this.disambiguatingSourceNodeId
-      ? `${this.sourceNodeId}:${this.sourceWidgetName}:${this.disambiguatingSourceNodeId}`
-      : `${this.sourceNodeId}:${this.sourceWidgetName}`
-  }
-
-  private get _sharedSourceKey(): string {
-    return this.disambiguatingSourceNodeId
-      ? `${this.subgraphNode.subgraph.id}:${this.sourceNodeId}:${this.sourceWidgetName}:${this.disambiguatingSourceNodeId}`
-      : `${this.subgraphNode.subgraph.id}:${this.sourceNodeId}:${this.sourceWidgetName}`
-  }
-
   get value(): IBaseWidget['value'] {
-    return this.getTrackedValue()
-  }
+    const hostState = this.getHostWidgetState()
+    if (hostState && isWidgetValue(hostState.value)) return hostState.value
 
-  /**
-   * Execution-time serialization — returns the per-instance value stored
-   * during configure, falling back to the regular value getter.
-   *
-   * The widget state store is shared across instances (keyed by inner node
-   * ID), so the regular getter returns the last-configured value for all
-   * instances.  graphToPrompt already prefers serializeValue over .value,
-   * so this is the hook that makes multi-instance execution correct.
-   */
-  serializeValue(): IBaseWidget['value'] {
-    return this.getTrackedValue()
+    const state = this.getWidgetState()
+    if (state && isWidgetValue(state.value)) return state.value
+    return this.resolveAtHost()?.widget.value
   }
 
   set value(value: IBaseWidget['value']) {
-    this.captureSiblingFallbackValues()
+    this.setHostWidgetState(value)
+  }
 
-    // Keep per-instance map in sync for execution (graphToPrompt)
-    this.subgraphNode._instanceWidgetValues.set(
-      this._instanceKey,
-      cloneWidgetValue(value)
-    )
-    setPromotedSourceWriteMeta(
-      this.subgraphNode.rootGraph,
-      this._sharedSourceKey,
-      {
-        value: cloneWidgetValue(value),
-        writerInstanceId: String(this.subgraphNode.id)
-      }
-    )
+  private getHostWidgetState(): WidgetState | undefined {
+    return getWidgetState(this.entityId)
+  }
 
-    const linkedWidgets = this.getLinkedInputWidgets()
-    if (linkedWidgets.length > 0) {
-      const widgetStore = useWidgetValueStore()
-      let didUpdateState = false
-      for (const linkedWidget of linkedWidgets) {
-        const state = widgetStore.getWidget(
-          this.graphId,
-          linkedWidget.nodeId,
-          linkedWidget.widgetName
-        )
-        if (state) {
-          state.value = value
-          didUpdateState = true
-        }
-      }
+  private setHostWidgetState(value: IBaseWidget['value']): void {
+    if (!isWidgetValue(value)) return
 
-      const resolved = this.resolveDeepest()
-      if (resolved) {
-        const resolvedState = widgetStore.getWidget(
-          this.graphId,
-          stripGraphPrefix(String(resolved.node.id)),
-          resolved.widget.name
-        )
-        if (resolvedState) {
-          resolvedState.value = value
-          didUpdateState = true
-        }
-      }
-
-      if (didUpdateState) return
-    }
-
-    const state = this.getWidgetState()
+    const state = this.getHostWidgetState()
     if (state) {
       state.value = value
+      this._lastAutoSeededValue = undefined
       return
     }
 
-    const resolved = this.resolveAtHost()
-    if (resolved && isWidgetValue(value)) {
-      resolved.widget.value = value
+    this.registerHostWidgetState(value)
+    this._lastAutoSeededValue = undefined
+  }
+
+  ensureHostWidgetState(): void {
+    const fallback = this.fallbackEffectiveValue()
+    const existing = this.getHostWidgetState()
+
+    if (existing) {
+      if (
+        this._lastAutoSeededValue !== undefined &&
+        existing.value === this._lastAutoSeededValue &&
+        isWidgetValue(fallback) &&
+        fallback !== existing.value
+      ) {
+        existing.value = fallback
+        this._lastAutoSeededValue = fallback
+      }
+      return
     }
+
+    this.registerHostWidgetState(fallback)
+    this._lastAutoSeededValue = fallback
+  }
+
+  private fallbackEffectiveValue(): IBaseWidget['value'] {
+    const state = this.getWidgetState()
+    if (state && isWidgetValue(state.value)) return state.value
+    return this.resolveAtHost()?.widget.value
+  }
+
+  private registerHostWidgetState(value: IBaseWidget['value']): void {
+    const resolved = this.resolveDeepest()
+    ensureWidgetState(this.entityId, {
+      type: resolved?.widget.type ?? 'button',
+      value,
+      options: { ...(resolved?.widget.options ?? {}) },
+      label: this.displayName,
+      serialize: this.serialize,
+      disabled: this.computedDisabled
+    })
   }
 
   get label(): string | undefined {
     const slot = this.getBoundSubgraphSlot()
     if (slot) return slot.label ?? slot.displayName ?? slot.name
-    // Fall back to persisted widget state (survives save/reload before
-    // the slot binding is established) then to construction displayName.
     const state = this.getWidgetState()
     return state?.label ?? this.displayName
   }
@@ -300,20 +228,14 @@ class PromotedWidgetView implements IPromotedWidgetView {
   set label(value: string | undefined) {
     const slot = this.getBoundSubgraphSlot()
     if (slot) slot.label = value || undefined
-    // Also persist to widget state store for save/reload resilience
     const state = this.getWidgetState()
     if (state) state.label = value
   }
 
-  /**
-   * Returns the cached bound subgraph slot reference, refreshing only when
-   * the subgraph node's input list has changed (length mismatch).
-   *
-   * Note: Using length as the cache key works because the returned reference
-   * is the same mutable slot object. When slot properties (label, name) change,
-   * the caller reads fresh values from that reference.  The cache only needs
-   * to invalidate when slots are added or removed, which changes length.
-   */
+  hydrateHostValue(value: IBaseWidget['value']): void {
+    this.setHostWidgetState(value)
+  }
+
   private getBoundSubgraphSlot(): SubgraphSlotRef | undefined {
     const version = this.subgraphNode.inputs?.length ?? 0
     if (this._boundSlotVersion === version) return this._boundSlot
@@ -394,7 +316,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
       projected.drawWidget(ctx, {
         width: widgetWidth,
         showText: !lowQuality,
-        suppressPromotedOutline: true,
         previewImages: resolved.node.imgs
       })
     } finally {
@@ -439,14 +360,34 @@ class PromotedWidgetView implements IPromotedWidgetView {
     this.resolveAtHost()?.widget.callback?.(value, canvas, node, pos, e)
   }
 
+  afterQueued({
+    isPartialExecution
+  }: { isPartialExecution?: boolean } = {}): void {
+    this.applyValueControlToHost(isPartialExecution)
+  }
+
+  private applyValueControlToHost(isPartialExecution?: boolean): void {
+    if (this.subgraphNode.getSlotFromWidget(this)?.link != null) return
+
+    const resolved = this.resolveAtHost()
+    const next = nextValueForLinkedTarget({
+      target: this,
+      linkedWidgets: resolved?.widget.linkedWidgets,
+      nodeId: this.subgraphNode.id,
+      isPartialExecution
+    })
+    if (next === undefined) return
+
+    this.hydrateHostValue(next)
+  }
+
   private resolveAtHost():
     | { node: LGraphNode; widget: IBaseWidget }
     | undefined {
     return resolvePromotedWidgetAtHost(
       this.subgraphNode,
       this.sourceNodeId,
-      this.sourceWidgetName,
-      this.disambiguatingSourceNodeId
+      this.sourceWidgetName
     )
   }
 
@@ -460,8 +401,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
     const result = resolveConcretePromotedWidget(
       this.subgraphNode,
       this.sourceNodeId,
-      this.sourceWidgetName,
-      this.disambiguatingSourceNodeId
+      this.sourceWidgetName
     )
     const resolved = result.status === 'resolved' ? result.resolved : undefined
 
@@ -471,39 +411,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
     }
 
     return resolved
-  }
-
-  private getTrackedValue(): IBaseWidget['value'] {
-    const instanceValue = this.subgraphNode._instanceWidgetValues.get(
-      this._instanceKey
-    )
-    const sharedValue = this.getSharedValue()
-
-    if (instanceValue === undefined) return sharedValue
-
-    const sourceWriteMeta = getPromotedSourceWriteMeta(
-      this.subgraphNode.rootGraph,
-      this._sharedSourceKey
-    )
-    if (
-      sharedValue !== undefined &&
-      sourceWriteMeta &&
-      !isEqual(sharedValue, sourceWriteMeta.value)
-    ) {
-      this.subgraphNode._instanceWidgetValues.set(
-        this._instanceKey,
-        cloneWidgetValue(sharedValue)
-      )
-      return sharedValue
-    }
-
-    return instanceValue as IBaseWidget['value']
-  }
-
-  private getSharedValue(): IBaseWidget['value'] {
-    const state = this.getWidgetState()
-    if (state && isWidgetValue(state.value)) return state.value
-    return this.resolveAtHost()?.widget.value
   }
 
   private getWidgetState() {
@@ -534,9 +441,7 @@ class PromotedWidgetView implements IPromotedWidgetView {
       if (boundWidget && isPromotedWidgetView(boundWidget)) {
         return (
           boundWidget.sourceNodeId === this.sourceNodeId &&
-          boundWidget.sourceWidgetName === this.sourceWidgetName &&
-          boundWidget.disambiguatingSourceNodeId ===
-            this.disambiguatingSourceNodeId
+          boundWidget.sourceWidgetName === this.sourceWidgetName
         )
       }
 
@@ -570,30 +475,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
         widgetStore.getWidget(this.graphId, nodeId, widgetName)
       )
       .filter((state): state is WidgetState => state !== undefined)
-  }
-
-  private captureSiblingFallbackValues(): void {
-    const { rootGraph } = this.subgraphNode
-
-    for (const node of rootGraph.nodes) {
-      if (node === this.subgraphNode || !node.isSubgraphNode()) continue
-      if (node.subgraph.id !== this.subgraphNode.subgraph.id) continue
-      if (node._instanceWidgetValues.has(this._instanceKey)) continue
-
-      const siblingView = node.widgets.find(
-        (widget): widget is IPromotedWidgetView =>
-          isPromotedWidgetView(widget) &&
-          widget.sourceNodeId === this.sourceNodeId &&
-          widget.sourceWidgetName === this.sourceWidgetName &&
-          widget.disambiguatingSourceNodeId === this.disambiguatingSourceNodeId
-      )
-      if (!siblingView) continue
-
-      node._instanceWidgetValues.set(
-        this._instanceKey,
-        cloneWidgetValue(siblingView.value)
-      )
-    }
   }
 
   private getProjectedWidget(resolved: {
@@ -687,7 +568,6 @@ class PromotedWidgetView implements IPromotedWidgetView {
   }
 }
 
-/** Checks if a widget is a BaseDOMWidget (DOMWidget or ComponentWidget). */
 function isBaseDOMWidget(
   widget: IBaseWidget
 ): widget is IBaseWidget & { id: string } {

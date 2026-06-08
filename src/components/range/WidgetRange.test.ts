@@ -1,4 +1,3 @@
-/* eslint-disable vue/one-component-per-file */
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -43,7 +42,7 @@ const RangeEditorStub = defineComponent({
     histogram: { type: Object, default: null },
     display: { type: String, default: '' }
   },
-  // eslint-disable-next-line vue/no-unused-emit-declarations
+
   emits: ['update:modelValue'],
   template: `
     <div data-testid="range-editor"

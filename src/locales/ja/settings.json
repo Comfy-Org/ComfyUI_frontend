@@ -199,7 +199,6 @@
     "name": "PLYエンジン",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "PLYファイルを読み込むエンジンを選択します。「threejs」はネイティブのThree.js PLYLoaderを使用（メッシュPLYファイルに最適）。「fastply」はASCIIポイントクラウドPLYファイル用の最適化ローダーを使用。「sparkjs」は3DガウシアンスプラッティングPLYファイル用にSpark.jsを使用します。"
@@ -271,6 +270,10 @@
       "litegraph (legacy)": "litegraph (レガシー)",
       "v1 (legacy)": "v1（レガシー）"
     }
+  },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "追加されたノードがカーソルに追従",
+    "tooltip": "有効にすると、検索ボックスから追加されたノードがクリックして配置するまでカーソルに追従します。デフォルトの実装にのみ適用されます。"
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "ノードプレビュー",

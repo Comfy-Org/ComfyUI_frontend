@@ -18,6 +18,6 @@ export function createAnnotatedPath(
   if (typeof item === 'string')
     return `${createPath(item, subfolder)}${createAnnotation(item, rootFolder)}`
   return `${createPath(item.filename ?? '', item.subfolder)}${
-    item.type ? createAnnotation(item.type, rootFolder) : ''
+    item.type && item.type !== rootFolder ? ` [${item.type}]` : ''
   }`
 }

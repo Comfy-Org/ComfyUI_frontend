@@ -8,7 +8,9 @@ export const TestIds = {
     toolbar: 'side-toolbar',
     nodeLibrary: 'node-library-tree',
     nodeLibrarySearch: 'node-library-search',
+    nodePreviewCard: 'node-preview-card',
     workflows: 'workflows-sidebar',
+    workflowsRefreshButton: 'workflows-refresh-button',
     modeToggle: 'mode-toggle'
   },
   tree: {
@@ -52,6 +54,7 @@ export const TestIds = {
     errorDialogFindIssues: 'error-dialog-find-issues',
     about: 'about-panel',
     whatsNewSection: 'whats-new-section',
+    errorGroupDisplayMessage: 'error-group-display-message',
     missingNodePacksGroup: 'error-group-missing-node',
     missingModelsGroup: 'error-group-missing-model',
     missingModelExpand: 'missing-model-expand',
@@ -59,8 +62,12 @@ export const TestIds = {
     missingModelCopyName: 'missing-model-copy-name',
     missingModelCopyUrl: 'missing-model-copy-url',
     missingModelDownload: 'missing-model-download',
+    missingModelActions: 'missing-model-actions',
+    missingModelDownloadAll: 'missing-model-download-all',
+    missingModelRefresh: 'missing-model-refresh',
     missingModelImportUnsupported: 'missing-model-import-unsupported',
     missingMediaGroup: 'error-group-missing-media',
+    swapNodesGroup: 'error-group-swap-nodes',
     missingMediaRow: 'missing-media-row',
     missingMediaUploadDropzone: 'missing-media-upload-dropzone',
     missingMediaLibrarySelect: 'missing-media-library-select',
@@ -71,16 +78,33 @@ export const TestIds = {
     publishTabPanel: 'publish-tab-panel',
     apiSignin: 'api-signin-dialog',
     updatePassword: 'update-password-dialog',
-    cloudNotification: 'cloud-notification-dialog'
+    cloudNotification: 'cloud-notification-dialog',
+    openSharedWorkflow: 'open-shared-workflow-dialog',
+    openSharedWorkflowTitle: 'open-shared-workflow-title',
+    openSharedWorkflowClose: 'open-shared-workflow-close',
+    openSharedWorkflowErrorClose: 'open-shared-workflow-error-close',
+    openSharedWorkflowCancel: 'open-shared-workflow-cancel',
+    openSharedWorkflowOpenWithoutImporting:
+      'open-shared-workflow-open-without-importing',
+    openSharedWorkflowConfirm: 'open-shared-workflow-confirm'
   },
   keybindings: {
     presetMenu: 'keybinding-preset-menu'
+  },
+  nodeTemplates: {
+    manageDialog: 'manage-node-templates-dialog'
   },
   topbar: {
     queueButton: 'queue-button',
     queueModeMenuTrigger: 'queue-mode-menu-trigger',
     saveButton: 'save-workflow-button',
-    subscribeButton: 'topbar-subscribe-button'
+    subscribeButton: 'topbar-subscribe-button',
+    loginButton: 'login-button',
+    loginButtonPopover: 'login-button-popover',
+    loginButtonPopoverLearnMore: 'login-button-popover-learn-more',
+    workflowTabs: 'topbar-workflow-tabs',
+    integratedTabBarActions: 'integrated-tab-bar-actions',
+    actionBarButtons: 'action-bar-buttons'
   },
   nodeLibrary: {
     bookmarksSection: 'node-library-bookmarks-section'
@@ -90,27 +114,32 @@ export const TestIds = {
     errorsTab: 'panel-tab-errors'
   },
   subgraphEditor: {
-    toggle: 'subgraph-editor-toggle',
-    shownSection: 'subgraph-editor-shown-section',
     hiddenSection: 'subgraph-editor-hidden-section',
-    widgetToggle: 'subgraph-widget-toggle',
-    widgetLabel: 'subgraph-widget-label',
-    iconLink: 'icon-link',
     iconEye: 'icon-eye',
-    widgetActionsMenuButton: 'widget-actions-menu-button'
+    iconLink: 'icon-link',
+    nodeName: 'subgraph-widget-node-name',
+    shownSection: 'subgraph-editor-shown-section',
+    toggle: 'subgraph-editor-toggle',
+    widgetActionsMenuButton: 'widget-actions-menu-button',
+    widgetItem: 'subgraph-widget-item',
+    widgetLabel: 'subgraph-widget-label',
+    widgetToggle: 'subgraph-widget-toggle'
   },
   node: {
     titleInput: 'node-title-input',
     pinIndicator: 'node-pin-indicator',
     innerWrapper: 'node-inner-wrapper',
-    mainImage: 'main-image'
+    mainImage: 'main-image',
+    slotConnectionDot: 'slot-connection-dot',
+    imageGrid: 'image-grid'
   },
   selectionToolbox: {
     root: 'selection-toolbox',
     colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
-    colorRed: 'red'
+    colorRed: 'red',
+    convertSubgraph: 'convert-to-subgraph-button'
   },
   menu: {
     moreMenuContent: 'more-menu-content'
@@ -127,8 +156,19 @@ export const TestIds = {
     widget: 'node-widget',
     decrement: 'decrement',
     increment: 'increment',
+    valueControl: 'value-control',
     domWidgetTextarea: 'dom-widget-textarea',
-    subgraphEnterButton: 'subgraph-enter-button'
+    subgraphEnterButton: 'subgraph-enter-button',
+    selectDefaultSearchInput: 'widget-select-default-search-input',
+    selectDefaultViewport: 'widget-select-default-viewport'
+  },
+  linear: {
+    centerPanel: 'linear-center-panel',
+    mobile: 'linear-mobile',
+    mobileNavigation: 'linear-mobile-navigation',
+    mobileWorkflows: 'linear-mobile-workflows',
+    outputInfo: 'linear-output-info',
+    widgetContainer: 'linear-widgets'
   },
   builder: {
     footerNav: 'builder-footer-nav',
@@ -183,7 +223,13 @@ export const TestIds = {
     vueNodeSwitchDontShowAgain: 'linear-vue-node-switch-dont-show-again'
   },
   breadcrumb: {
-    subgraph: 'subgraph-breadcrumb'
+    subgraph: 'subgraph-breadcrumb',
+    back: 'subgraph-breadcrumb-back',
+    item: (key: string) => `subgraph-breadcrumb-item-${key}`,
+    blueprintTag: 'subgraph-breadcrumb-blueprint-tag',
+    missingNodesIcon: 'subgraph-breadcrumb-missing-nodes-icon',
+    renameInput: 'subgraph-breadcrumb-rename-input',
+    menu: (key: string) => `subgraph-breadcrumb-menu-${key}`
   },
   templates: {
     content: 'template-workflows-content',
@@ -193,15 +239,36 @@ export const TestIds = {
     currentUserIndicator: 'current-user-indicator'
   },
   queue: {
+    jobHistorySidebar: 'job-history-sidebar',
+    progressOverlay: 'queue-progress-overlay',
     overlayToggle: 'queue-overlay-toggle',
-    clearHistoryAction: 'clear-history-action'
+    dockedJobHistoryAction: 'docked-job-history-action',
+    jobDetailsPopover: 'queue-job-details-popover',
+    clearHistoryAction: 'clear-history-action',
+    jobAssetsList: 'job-assets-list',
+    notificationBanner: 'queue-notification-banner'
   },
   errors: {
     imageLoadError: 'error-loading-image',
     videoLoadError: 'error-loading-video'
   },
+  publish: {
+    dialog: 'publish-dialog',
+    savePrompt: 'publish-save-prompt',
+    describeStep: 'publish-describe-step',
+    finishStep: 'publish-finish-step',
+    footer: 'publish-footer',
+    profilePrompt: 'publish-profile-prompt',
+    nav: 'publish-nav',
+    gateFlow: 'publish-gate-flow',
+    nameInput: 'publish-name-input',
+    tagsInput: 'publish-tags-input'
+  },
   loading: {
     overlay: 'loading-overlay'
+  },
+  load3d: {
+    recordingDuration: 'load3d-recording-duration'
   },
   load3dViewer: {
     sidebar: 'load3d-viewer-sidebar'
@@ -222,14 +289,19 @@ export const TestIds = {
     batchCounter: 'batch-counter',
     batchNext: 'batch-next',
     batchPrev: 'batch-prev'
+  },
+  searchBoxV2: {
+    resultItem: 'result-item',
+    filterOption: 'filter-option',
+    filterChip: 'filter-chip',
+    chipDelete: 'chip-delete',
+    noResults: 'no-results',
+    nodeIdBadge: 'node-id-badge',
+    sidebarToggle: 'toggle-category-sidebar',
+    sidebarBackdrop: 'sidebar-backdrop',
+    filterChipsScroll: 'filter-chips-scroll',
+    category: (id: string) => `category-${id}`,
+    rootCategory: (id: string) => `search-category-${id}`,
+    typeFilter: (key: 'input' | 'output') => `search-filter-${key}`
   }
 } as const
-
-export type TestId<K extends keyof typeof TestIds> = Exclude<
-  (typeof TestIds)[K][keyof (typeof TestIds)[K]],
-  (...args: never[]) => string
->
-
-export type TestIdValue = {
-  [K in keyof typeof TestIds]: TestId<K>
-}[keyof typeof TestIds]

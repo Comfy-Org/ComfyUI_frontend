@@ -199,7 +199,6 @@
     "name": "PLY Motoru",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "PLY dosyalarını yüklemek için motoru seçin. \"threejs\" yerel Three.js PLYLoader'ı kullanır (ağ PLY dosyaları için en iyisi). \"fastply\" ASCII nokta bulutu PLY dosyaları için optimize edilmiş bir yükleyici kullanır. \"sparkjs\" ise 3D Gaussian Splatting PLY dosyaları için Spark.js kullanır."
@@ -271,6 +270,10 @@
       "litegraph (legacy)": "litegraph (eski)",
       "v1 (legacy)": "v1 (eski)"
     }
+  },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "Eklenen düğümler imleci takip eder",
+    "tooltip": "Etkinleştirildiğinde, arama kutusundan eklenen düğümler tıklanıp yerleştirilene kadar imleci takip eder. Yalnızca varsayılan uygulama için geçerlidir."
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "Düğüm önizlemesi",

@@ -55,7 +55,7 @@ import type { Component } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { st } from '@/i18n'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 const {
   icon = '',
   selected = false,

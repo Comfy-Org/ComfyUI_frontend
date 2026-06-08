@@ -138,7 +138,7 @@ import {
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { widget, nodeId } = defineProps<{
   widget: SimplifiedWidget

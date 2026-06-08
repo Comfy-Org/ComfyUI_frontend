@@ -99,6 +99,7 @@
     "findInLibrary": "در بخش {type} کتابخانه مدل‌ها پیدا کنید.",
     "finish": "پایان",
     "genericLinkPlaceholder": "لینک را اینجا وارد کنید",
+    "gridView": "نمای شبکه‌ای",
     "importAnother": "وارد کردن مورد دیگر",
     "imported": "وارد شده",
     "invalidAsset": "دارایی نامعتبر",
@@ -106,6 +107,7 @@
     "invalidFilename": "نام فایل نامعتبر",
     "invalidFilenameDetail": "نام فایل دارایی قابل شناسایی نیست. لطفاً دوباره تلاش کنید.",
     "jobId": "شناسه کار: {jobId}",
+    "listView": "نمای فهرست",
     "loadingModels": "در حال بارگذاری {type}...",
     "maxFileSize": "حداکثر اندازه فایل: {size}",
     "maxFileSizeValue": "۱ گیگابایت",
@@ -168,6 +170,7 @@
     "sortDefault": "پیش‌فرض",
     "sortPopular": "محبوب",
     "sortRecent": "جدیدترین",
+    "sortUnsorted": "بدون مرتب‌سازی",
     "sortZA": "ی-الف",
     "sortingType": "نوع مرتب‌سازی",
     "tags": "برچسب‌ها",
@@ -230,10 +233,12 @@
       "auth/user-disabled": "این حساب غیرفعال شده است. لطفاً با پشتیبانی تماس بگیرید.",
       "auth/user-not-found": "حسابی با این ایمیل یافت نشد. مایل به ایجاد حساب جدید هستید؟",
       "auth/weak-password": "رمز عبور خیلی ضعیف است. لطفاً از رمز عبور قوی‌تر با حداقل ۶ کاراکتر استفاده کنید.",
-      "auth/wrong-password": "رمز عبور وارد شده نادرست است. لطفاً دوباره تلاش کنید."
+      "auth/wrong-password": "رمز عبور وارد شده نادرست است. لطفاً دوباره تلاش کنید.",
+      "generic": "در ورود شما مشکلی پیش آمد. لطفاً دوباره تلاش کنید."
     },
     "login": {
       "andText": "و",
+      "backToGithubLogin": "ثبت‌نام با گیت‌هاب",
       "backToLogin": "بازگشت به ورود",
       "backToSocialLogin": "ثبت‌نام با Google یا Github",
       "confirmPasswordLabel": "تأیید رمز عبور",
@@ -289,7 +294,9 @@
       "title": "احراز هویت مجدد لازم است"
     },
     "signOut": {
+      "saveFailed": "خروج لغو شد زیرا ذخیره «{workflow}» با شکست مواجه شد.",
       "signOut": "خروج",
+      "signOutAnyway": "خروج به هر حال",
       "success": "خروج با موفقیت انجام شد",
       "successDetail": "شما با موفقیت از حساب کاربری خود خارج شدید.",
       "unsavedChangesMessage": "شما تغییرات ذخیره‌نشده‌ای دارید که با خروج از حساب از بین خواهند رفت. آیا مایل به ادامه هستید؟",
@@ -332,6 +339,7 @@
   },
   "breadcrumbsMenu": {
     "app": "برنامه",
+    "blueprint": "نقشه راه",
     "clearWorkflow": "پاک‌سازی workflow",
     "deleteBlueprint": "حذف blueprint",
     "deleteWorkflow": "حذف workflow",
@@ -400,10 +408,32 @@
   "cloudForgotPassword_passwordResetSent": "لینک بازنشانی رمز عبور ارسال شد",
   "cloudForgotPassword_sendResetLink": "ارسال لینک بازنشانی",
   "cloudForgotPassword_title": "فراموشی رمز عبور",
+  "cloudHero": {
+    "nextSlide": "اسلاید بعدی",
+    "previousSlide": "اسلاید قبلی",
+    "slidePagerLabel": "رفتن به اسلاید {index}",
+    "slides": {
+      "cloud": {
+        "description": "مناسب برای اکثر کاربران که می‌خواهند از هر مکانی با مدل‌های دارای مجوز تجاری کار کنند.",
+        "title": "ابر"
+      },
+      "models": {
+        "description": "مدل‌های منتخب با مجوز تجاری آماده اجرا بدون نیاز به تنظیمات اولیه.",
+        "title": "مدل‌ها"
+      },
+      "team": {
+        "description": "تیم خود را امروز اضافه کنید. به اشتراک‌گذاری workflowها و دارایی‌ها در سراسر سازمان شما.",
+        "title": "تیم"
+      },
+      "workflows": {
+        "description": "از ایده تا خروجی در چند دقیقه. تولید چندین واریاسیون به صورت همزمان.",
+        "title": "Workflowها"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "ادامه به صورت محلی",
     "exploreCloud": "امتحان رایگان فضای ابری",
-    "feature1Title": "۴۰۰ اعتبار رایگان ماهانه",
     "feature2Title": "قابل استفاده در هر مکان، بلافاصله",
     "feature3Title": "مدل‌ها آماده استفاده",
     "feature4Title": "برترین بسته‌های Node سفارشی از پیش نصب‌شده",
@@ -457,6 +487,12 @@
       "wantToRun": "می‌خواهید ComfyUI را به صورت محلی اجرا کنید؟"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "لطفاً یک گزینه را انتخاب کنید.",
+        "describeAnswer": "لطفاً پاسخ خود را توضیح دهید.",
+        "selectAtLeastOne": "لطفاً حداقل یک گزینه را انتخاب کنید."
+      },
+      "intro": "به ما کمک کنید تا تجربه شما از ComfyUI را متناسب‌سازی کنیم.",
       "options": {
         "familiarity": {
           "advanced": "کاربر پیشرفته (جریان‌کارهای سفارشی)",
@@ -465,45 +501,43 @@
           "new": "جدید در ComfyUI (تا کنون استفاده نکرده‌ام)",
           "starting": "تازه شروع کرده‌ام (در حال دنبال کردن آموزش‌ها)"
         },
-        "industry": {
-          "architecture": "معماری",
-          "education": "آموزش",
-          "film_tv_animation": "فیلم، تلویزیون و انیمیشن",
-          "fine_art": "هنرهای زیبا و تصویرسازی",
-          "gaming": "بازی‌سازی",
-          "marketing": "بازاریابی و تبلیغات",
-          "other": "سایر",
-          "otherPlaceholder": "لطفاً مشخص کنید",
-          "product_design": "طراحی محصول و گرافیک",
-          "software": "نرم‌افزار و فناوری"
-        },
-        "making": {
-          "3d": "دارایی‌های سه‌بعدی",
+        "intent": {
+          "3d_game": "دارایی سه‌بعدی / دارایی بازی",
+          "api": "API endpoint برای اجرای workflow",
+          "apps": "اپلیکیشن ساده‌شده از workflow",
           "audio": "صدا / موسیقی",
-          "custom_nodes": "nodeها و workflowهای سفارشی",
-          "images": "تصاویر",
-          "video": "ویدیو و انیمیشن"
+          "custom_nodes": "node سفارشی",
+          "images": "تصویر",
+          "not_sure": "مطمئن نیستم",
+          "videos": "ویدیو",
+          "workflows": "workflow یا pipeline سفارشی"
         },
-        "purpose": {
-          "client": "کار برای مشتری (فریلنس)",
-          "community": "مشارکت در جامعه (nodeها، workflowها و غیره)",
-          "inhouse": "محل کار خودم (درون‌سازمانی)",
-          "personal": "پروژه‌های شخصی / سرگرمی",
-          "research": "پژوهش دانشگاهی"
+        "source": {
+          "conference": "کنفرانس یا رویداد",
+          "discord": "Discord / انجمن",
+          "friend": "دوست یا همکار",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "خبرنامه یا وبلاگ",
+          "other": "سایر",
+          "reddit": "Reddit",
+          "search": "Google / جستجو",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "آموزشی (دانشجو یا مدرس)",
+          "personal": "استفاده شخصی",
+          "work": "کاری"
         }
       },
       "placeholder": "جای‌نگهدار سوالات نظرسنجی",
-      "questions": {
-        "familiarity": "تا چه حد با ComfyUI آشنایی دارید؟",
-        "industry": "صنعت اصلی شما چیست؟",
-        "making": "قصد دارید چه چیزی بسازید؟",
-        "purpose": "هدف اصلی شما از استفاده از ComfyUI چیست؟"
-      },
       "steps": {
         "familiarity": "تا چه حد با ComfyUI آشنایی دارید؟",
-        "industry": "صنعت اصلی شما چیست؟",
-        "making": "قصد دارید چه چیزی بسازید؟",
-        "purpose": "هدف اصلی شما از استفاده از ComfyUI چیست؟"
+        "intent": "مایل هستید با ComfyUI چه چیزی ایجاد کنید؟",
+        "source": "از کجا با ComfyUI آشنا شدید؟",
+        "usage": "برنامه شما برای استفاده از ComfyUI چیست؟"
       },
       "title": "نظرسنجی ابری"
     }
@@ -518,9 +552,9 @@
   "cloudStart_title": "در چند ثانیه شروع به خلق کنید",
   "cloudStart_wantToRun": "مایلید ComfyUI را به صورت محلی اجرا کنید؟",
   "cloudSurvey_steps_familiarity": "تا چه اندازه با ComfyUI آشنایی دارید؟",
-  "cloudSurvey_steps_industry": "صنعت اصلی شما چیست؟",
-  "cloudSurvey_steps_making": "برنامه دارید چه چیزی بسازید؟",
-  "cloudSurvey_steps_purpose": "عمدتاً قصد دارید از ComfyUI برای چه کاری استفاده کنید؟",
+  "cloudSurvey_steps_intent": "مایل هستید با ComfyUI چه چیزی ایجاد کنید؟",
+  "cloudSurvey_steps_source": "از کجا با ComfyUI آشنا شدید؟",
+  "cloudSurvey_steps_usage": "برنامه شما برای استفاده از ComfyUI چیست؟",
   "cloudWaitlist_contactLink": "اینجا",
   "cloudWaitlist_questionsText": "سؤالی دارید؟ با ما تماس بگیرید",
   "color": {
@@ -653,7 +687,6 @@
     "Collapse": "جمع کردن",
     "Color": "رنگ",
     "Colors": "رنگ‌ها",
-    "Convert to Group Node": "تبدیل به Group Node",
     "Convert to Subgraph": "تبدیل به Subgraph",
     "Copy": "کپی",
     "Copy (Clipspace)": "کپی (Clipspace)",
@@ -774,6 +807,7 @@
     "AUDIO_ENCODER": "رمزگذار صوت",
     "AUDIO_ENCODER_OUTPUT": "خروجی رمزگذار صوت",
     "AUDIO_RECORD": "ضبط صوت",
+    "BACKGROUND_REMOVAL": "حذف پس‌زمینه",
     "BOOLEAN": "بولی",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "کنترل دوربین",
@@ -789,11 +823,17 @@
     "CONTROL_NET": "controlnet",
     "CURVE": "CURVE",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "مدل تشخیص چهره",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
     "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "عدد اعشاری",
@@ -804,13 +844,17 @@
     "HISTOGRAM": "HISTOGRAM",
     "HOOKS": "hookها",
     "HOOK_KEYFRAMES": "کلیدفریم‌های hook",
+    "IC_LORA_PARAMETERS": "پارامترهای IC_LORA",
     "IMAGE": "تصویر",
     "IMAGECOMPARE": "مقایسه تصویر",
     "INT": "عدد صحیح",
+    "INTERP_MODEL": "مدل INTERP",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "latent",
     "LATENT_OPERATION": "عملیات latent",
     "LATENT_UPSCALE_MODEL": "مدل بزرگ‌نمایی latent",
     "LOAD3D_CAMERA": "دوربین بارگذاری سه‌بعدی",
+    "LOAD3D_MODEL_INFO": "بارگذاری اطلاعات مدل سه‌بعدی",
     "LOAD_3D": "بارگذاری سه‌بعدی",
     "LORA_MODEL": "مدل lora",
     "LOSS_MAP": "نقشه خطا",
@@ -823,9 +867,12 @@
     "MODEL": "مدل",
     "MODEL_PATCH": "وصله مدل",
     "MODEL_TASK_ID": "شناسه وظیفه مدل",
+    "MOGE_GEOMETRY": "هندسه MOGE",
+    "MOGE_MODEL": "مدل MOGE",
     "NOISE": "نویز",
     "OPENAI_CHAT_CONFIG": "پیکربندی گفتگوی OpenAI",
     "OPENAI_INPUT_FILES": "فایل‌های ورودی OpenAI",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "photomaker",
     "PIXVERSE_TEMPLATE": "قالب Pixverse",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -834,8 +881,10 @@
     "RECRAFT_V3_STYLE": "سبک Recraft V3",
     "RETARGET_TASK_ID": "شناسه وظیفه Retarget",
     "RIG_TASK_ID": "شناسه وظیفه Rig",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "نمونه‌گیر",
     "SIGMAS": "سیگماها",
+    "SPLAT": "SPLAT",
     "STRING": "رشته",
     "STYLE_MODEL": "مدل سبک",
     "SVG": "SVG",
@@ -892,6 +941,337 @@
     "paused": "متوقف شده",
     "resume": "ادامه دانلود"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "ورودی نامشخص",
+      "nodeName": "این نود"
+    },
+    "promptErrors": {
+      "missing_node_type": {
+        "desc": "یک نوع node وجود ندارد یا در دسترس نیست. ممکن است workflow خراب شده باشد یا به node سفارشی نیاز داشته باشد.",
+        "title": "نوع node وجود ندارد"
+      },
+      "no_prompt": {
+        "desc": "داده‌های ورک‌فلو ارسال‌شده به سرور خالی است. این ممکن است یک خطای غیرمنتظره سیستمی باشد.",
+        "title": "داده‌های workflow خالی است"
+      },
+      "prompt_no_outputs": {
+        "desc": "در این ورک‌فلو هیچ نود خروجی (مانند Save Image یا Preview Image) برای تولید نتیجه وجود ندارد.",
+        "title": "پرومپت خروجی ندارد"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "workflow دارای ورودی‌های نامعتبر node است. قبل از اجرای مجدد، nodeهای مشخص‌شده را اصلاح کنید.",
+        "title": "اعتبارسنجی پرومپت ناموفق بود"
+      },
+      "server_error_cloud": {
+        "desc": "سرور با یک خطای غیرمنتظره مواجه شد. لطفاً بعداً دوباره تلاش کنید.",
+        "title": "خطای سرور"
+      },
+      "server_error_local": {
+        "desc": "سرور با یک خطای غیرمنتظره مواجه شد. لطفاً لاگ‌های سرور را بررسی کنید.",
+        "title": "خطای سرور"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "این اجرا به دسترسی نیاز دارد که برای حساب فعلی در دسترس نیست.",
+        "title": "دسترسی لازم است",
+        "toastMessage": "این اجرا به دسترسی نیاز دارد که برای حساب فعلی در دسترس نیست.",
+        "toastTitle": "دسترسی لازم است"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "این درخواست توسط سیستم مدیریت محتوا مسدود شد. متن یا ورودی‌ها را تغییر دهید.",
+        "title": "محتوا مسدود شد",
+        "toastMessage": "این درخواست توسط سیستم مدیریت محتوا مسدود شد. متن یا ورودی‌ها را تغییر دهید.",
+        "toastTitle": "محتوا مسدود شد"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "گره در هنگام اجرا با خطا مواجه شد.",
+        "title": "اجرا ناموفق بود",
+        "toastMessage": "این گره در هنگام اجرا با خطا مواجه شد. ورودی‌ها را بررسی کنید یا پیکربندی دیگری را امتحان نمایید.",
+        "toastTitle": "{nodeName} ناموفق بود"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "این workflow پیشرفتی نداشت. دوباره اجرا کنید.",
+        "title": "تولید متوقف شد",
+        "toastMessage": "این workflow پیشرفتی نداشت. دوباره اجرا کنید.",
+        "toastTitle": "تولید متوقف شد"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "سیستم نتوانست این تصویر را بارگذاری کند.",
+        "title": "تصویر بارگذاری نشد",
+        "toastMessage": "تصویر مربوط به {nodeName} بارگذاری نشد. دوباره آن را اضافه کنید.",
+        "toastTitle": "تصویر ورودی بارگذاری نشد"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "برای استفاده از این گره به حساب خود اعتبار اضافه کنید.",
+        "title": "اعتبار کافی نیست",
+        "toastMessage": "برای استفاده از این گره به حساب خود اعتبار اضافه کنید.",
+        "toastTitle": "اعتبار کافی نیست"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "ورودی CLIP وجود ندارد یا نامعتبر است. نقطه بازیابی یا بارگذار CLIP متصل را بررسی کنید.",
+        "title": "ورودی CLIP نامعتبر است",
+        "toastMessage": "{nodeName} ورودی CLIP نامعتبر یا مفقود دارد.",
+        "toastTitle": "ورودی CLIP نامعتبر است"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "قبل از اجرای این workflow یک متن وارد کنید.",
+        "title": "متن خالی است",
+        "toastMessage": "قبل از اجرای این workflow یک متن وارد کنید.",
+        "toastTitle": "متن خالی است"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "درخواست workflow نامعتبر است. workflow را بررسی و دوباره امتحان کنید.",
+        "title": "درخواست workflow نامعتبر است",
+        "toastMessage": "درخواست workflow نامعتبر است. workflow را بررسی و دوباره امتحان کنید.",
+        "toastTitle": "درخواست workflow نامعتبر است"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "یک یا چند مدل مورد نیاز قابل دسترسی نیست.",
+        "title": "دسترسی به مدل لازم است",
+        "toastMessage": "یک یا چند مدل مورد نیاز قابل دسترسی نیست.",
+        "toastTitle": "دسترسی به مدل لازم است"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "یک مدل دانلود نشد. دوباره امتحان کنید.",
+        "title": "دانلود مدل ناموفق بود",
+        "toastMessage": "یک مدل دانلود نشد. دوباره امتحان کنید.",
+        "toastTitle": "دانلود مدل ناموفق بود"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "حافظه GPU کافی نیست. وضوح تصویر یا اندازه دسته را کاهش دهید و دوباره اجرا کنید.",
+        "title": "تولید ناموفق بود",
+        "toastMessage": "حافظه GPU کافی نیست. وضوح تصویر یا اندازه دسته را کاهش دهید و دوباره اجرا کنید.",
+        "toastTitle": "تولید ناموفق بود"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "workflow آماده نشد. دوباره اجرا کنید.",
+        "title": "آماده‌سازی ناموفق بود",
+        "toastMessage": "workflow آماده نشد. دوباره اجرا کنید.",
+        "toastTitle": "آماده‌سازی ناموفق بود"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "آماده‌سازی workflow بیش از حد طول کشید. دوباره اجرا کنید.",
+        "title": "زمان آماده‌سازی به پایان رسید",
+        "toastMessage": "آماده‌سازی workflow بیش از حد طول کشید. دوباره اجرا کنید.",
+        "toastTitle": "زمان آماده‌سازی به پایان رسید"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "در حال حاضر تقاضا زیاد است. لحظاتی بعد دوباره امتحان کنید.",
+        "title": "سرورها شلوغ هستند",
+        "toastMessage": "در حال حاضر تقاضا زیاد است. لحظاتی بعد دوباره امتحان کنید.",
+        "toastTitle": "سرورها شلوغ هستند"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "درخواست قبل از اتمام اجرا ناموفق بود. دوباره امتحان کنید.",
+        "title": "درخواست ناموفق بود",
+        "toastMessage": "درخواست قبل از اتمام اجرا ناموفق بود. دوباره امتحان کنید.",
+        "toastTitle": "درخواست ناموفق بود"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "اجرا به طور غیرمنتظره پایان یافت. دوباره امتحان کنید.",
+        "title": "اجرا به طور غیرمنتظره پایان یافت",
+        "toastMessage": "اجرا به طور غیرمنتظره پایان یافت. دوباره امتحان کنید.",
+        "toastTitle": "اجرا به طور غیرمنتظره پایان یافت"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "اجرا شروع نشد. دوباره امتحان کنید.",
+        "title": "اجرا شروع نشد",
+        "toastMessage": "اجرا شروع نشد. دوباره امتحان کنید.",
+        "toastTitle": "اجرا شروع نشد"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "در حال حاضر سرورها شلوغ هستند. لحظاتی بعد دوباره امتحان کنید.",
+        "title": "سرورها شلوغ هستند",
+        "toastMessage": "در حال حاضر سرورها شلوغ هستند. لحظاتی بعد دوباره امتحان کنید.",
+        "toastTitle": "سرورها شلوغ هستند"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "سرور هنگام اجرای این workflow متوقف شد. دوباره امتحان کنید.",
+        "title": "سرور متوقف شد",
+        "toastMessage": "سرور هنگام اجرای این workflow متوقف شد. دوباره امتحان کنید.",
+        "toastTitle": "سرور متوقف شد"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "گره‌های شریک نیاز به حساب Comfy دارند. برای ادامه وارد شوید.",
+        "title": "ورود لازم است",
+        "toastMessage": "گره‌های شریک نیاز به حساب Comfy دارند. برای ادامه وارد شوید.",
+        "toastTitle": "برای استفاده از این گره وارد شوید"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "برای ادامه اجرای این workflow اشتراک تهیه کنید.",
+        "title": "اشتراک لازم است",
+        "toastMessage": "برای ادامه اجرای این workflow اشتراک تهیه کنید.",
+        "toastTitle": "اشتراک لازم است"
+      },
+      "subscription_upgrade_required": {
+        "details": "مدل‌های خصوصی نیاز به ارتقای اشتراک دارند: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "برای استفاده از مدل‌های خصوصی در این workflow اشتراک خود را ارتقا دهید.",
+        "title": "ارتقای اشتراک لازم است",
+        "toastMessage": "برای استفاده از این مدل‌های خصوصی اشتراک خود را ارتقا دهید: {modelNames}.",
+        "toastTitle": "ارتقای اشتراک لازم است"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "این workflow به حداکثر زمان اجرا رسید. وضوح تصویر، اندازه دسته یا طول workflow را کاهش دهید و دوباره اجرا کنید.",
+        "title": "زمان تولید به پایان رسید",
+        "toastMessage": "این workflow به حداکثر زمان اجرا رسید. وضوح تصویر، اندازه دسته یا طول workflow را کاهش دهید و دوباره اجرا کنید.",
+        "toastTitle": "زمان تولید به پایان رسید"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "سرویس با خطای غیرمنتظره مواجه شد. دوباره امتحان کنید.",
+        "title": "خطای سرویس",
+        "toastMessage": "سرویس با خطای غیرمنتظره مواجه شد. دوباره امتحان کنید.",
+        "toastTitle": "خطای سرویس"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "برای ادامه به workspace خود اعتبار اضافه کنید.",
+        "title": "اعتبار کافی نیست",
+        "toastMessage": "برای ادامه به workspace خود اعتبار اضافه کنید.",
+        "toastTitle": "اعتبار کافی نیست"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} دارای اتصال نامعتبر برای {inputName} است.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "اتصال یک node به درستی خوانده نشد.",
+        "title": "اتصال نامعتبر",
+        "toastMessage": "{nodeName} دارای اتصال نامعتبر برای {inputName} است.",
+        "toastTitle": "اتصال نامعتبر"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} مقدار {inputName} را رد کرد.",
+        "detailsWithRawDetails": "{nodeName} در اعتبارسنجی سفارشی شکست خورد: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "یک node یک یا چند مقدار ورودی را رد کرد.",
+        "title": "ورودی نامعتبر",
+        "toastMessage": "{nodeName} مقدار {inputName} را رد کرد.",
+        "toastTitle": "ورودی نامعتبر"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} بخشی از یک اتصال حلقه‌ای است.",
+        "detailsWithRawDetails": "{nodeName} بخشی از یک اتصال حلقه‌ای است: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "workflow دارای اتصال حلقه‌ای node است.",
+        "title": "workflow نامعتبر",
+        "toastMessage": "{nodeName} بخشی از یک اتصال حلقه‌ای است.",
+        "toastTitle": "workflow نامعتبر"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} نتوانست {inputName} را اعتبارسنجی کند.",
+        "detailsWithRawDetails": "{nodeName} نتوانست {inputName} را اعتبارسنجی کند: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "workflow نتوانست یک node متصل را اعتبارسنجی کند.",
+        "title": "اعتبارسنجی ناموفق",
+        "toastMessage": "{nodeName} نتوانست {inputName} را اعتبارسنجی کند.",
+        "toastMessageWithRawDetails": "{nodeName} نتوانست {inputName} را اعتبارسنجی کند: {rawDetails}",
+        "toastTitle": "اعتبارسنجی ناموفق"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} در طول اعتبارسنجی شکست خورد.",
+        "detailsWithRawDetails": "{nodeName} در طول اعتبارسنجی شکست خورد: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "workflow قابل اعتبارسنجی نیست زیرا بررسی اعتبار یک node به طور غیرمنتظره‌ای شکست خورد.",
+        "title": "اعتبارسنجی ناموفق",
+        "toastMessage": "{nodeName} در طول اعتبارسنجی شکست خورد.",
+        "toastMessageWithRawDetails": "{nodeName} در طول اعتبارسنجی شکست خورد: {rawDetails}",
+        "toastTitle": "اعتبارسنجی ناموفق"
+      },
+      "image_not_loaded": {
+        "details": "تصویر مربوط به {nodeName} بارگذاری نشد. لطفاً دوباره آن را اضافه کنید.",
+        "itemLabel": "{nodeName}",
+        "message": "سیستم نتوانست این تصویر را بارگذاری کند.",
+        "title": "تصویر بارگذاری نشد",
+        "toastMessage": "تصویر مربوط به {nodeName} بارگذاری نشد. لطفاً دوباره آن را اضافه کنید.",
+        "toastTitle": "تصویر ورودی بارگذاری نشد"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} نتوانست {inputName} را به نوع مورد انتظار تبدیل کند.",
+        "detailsWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} قابل تبدیل به {expectedType} نیست.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "مقدار ورودی از نوع نادرست است.",
+        "title": "ورودی نامعتبر",
+        "toastMessage": "{nodeName} نتوانست {inputName} را به نوع مورد انتظار تبدیل کند.",
+        "toastMessageWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} قابل تبدیل به {expectedType} نیست.",
+        "toastTitle": "ورودی نامعتبر"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} یک ورودی ضروری را ندارد: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "ورودی‌های ضروری بدون اتصال هستند.",
+        "title": "اتصال وجود ندارد",
+        "toastMessage": "{nodeName} یک ورودی ضروری را ندارد: {inputName}",
+        "toastTitle": "ورودی ضروری وجود ندارد"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} دارای اتصال ناسازگار برای {inputName} است.",
+        "detailsWithTypes": "ورودی {inputName} در {nodeName} انتظار {expectedType} را دارد، اما خروجی متصل {receivedType} است.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "nodeهای متصل از نوع ورودی و خروجی ناسازگار استفاده می‌کنند.",
+        "title": "اتصال نامعتبر",
+        "toastMessage": "{nodeName} دارای اتصال ناسازگار برای {inputName} است.",
+        "toastMessageWithTypes": "ورودی {inputName} در {nodeName} انتظار {expectedType} را دارد، اما خروجی متصل {receivedType} است.",
+        "toastTitle": "اتصال نامعتبر"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} دارای مقداری بیشتر از حداکثر برای {inputName} است.",
+        "detailsWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} بیشتر از حداکثر {maxValue} است.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "برخی مقادیر ورودی خارج از محدوده مجاز هستند.",
+        "title": "ورودی خارج از محدوده",
+        "toastMessage": "{nodeName} دارای مقداری بیشتر از حداکثر برای {inputName} است.",
+        "toastMessageWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} بیشتر از حداکثر {maxValue} است.",
+        "toastTitle": "ورودی خارج از محدوده"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} دارای مقدار پشتیبانی‌نشده برای {inputName} است.",
+        "detailsWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} در دسترس نیست.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "برخی مقادیر ورودی برای این node در دسترس نیستند.",
+        "title": "ورودی نامعتبر",
+        "toastMessage": "{nodeName} دارای مقدار پشتیبانی‌نشده برای {inputName} است.",
+        "toastMessageWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} در دسترس نیست.",
+        "toastTitle": "ورودی نامعتبر"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} دارای مقداری کمتر از حداقل برای {inputName} است.",
+        "detailsWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} کمتر از حداقل {minValue} است.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "برخی مقادیر ورودی خارج از محدوده مجاز هستند.",
+        "title": "ورودی خارج از محدوده",
+        "toastMessage": "{nodeName} دارای مقداری کمتر از حداقل برای {inputName} است.",
+        "toastMessageWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} کمتر از حداقل {minValue} است.",
+        "toastTitle": "ورودی خارج از محدوده"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -899,7 +1279,8 @@
     "extensionFileHint": "این ممکن است به دلیل اسکریپت زیر باشد",
     "loadWorkflowTitle": "بارگذاری به دلیل خطا در بارگذاری مجدد داده‌های workflow متوقف شد",
     "noStackTrace": "هیچ stacktraceی موجود نیست",
-    "promptExecutionError": "اجرای prompt با شکست مواجه شد"
+    "promptExecutionError": "اجرای prompt با شکست مواجه شد",
+    "queueOpenWorkflowFailedTitle": "باز کردن workflow با خطا مواجه شد"
   },
   "errorOverlay": {
     "errorCount": "{count} خطا",
@@ -912,6 +1293,10 @@
     "showMissingNodes": "نمایش نودهای مفقود",
     "showSwapNodes": "نمایش نودهای قابل جایگزینی",
     "swapNodes": "برخی از نودها را می‌توان با گزینه‌های جایگزین تعویض کرد"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "ارسال بازخورد",
+    "ctaText": "نظر شما درباره پنل خطا جدید چیست؟"
   },
   "essentials": {
     "batchImage": "پردازش دسته‌ای تصویر",
@@ -998,13 +1383,16 @@
     "back": "بازگشت",
     "batchRename": "تغییر نام گروهی",
     "beta": "آزمایشی",
+    "blueprints": "نقشه‌ها",
     "bookmark": "ذخیره در کتابخانه",
+    "bookmarked": "نشان‌شده",
     "browserReservedKeybinding": "این میانبر توسط برخی مرورگرها رزرو شده و ممکن است نتایج غیرمنتظره‌ای داشته باشد.",
     "browserReservedKeybindingTooltip": "این میانبر با میانبرهای رزرو شده مرورگر تداخل دارد",
     "calculatingDimensions": "در حال محاسبه ابعاد",
     "cancel": "لغو",
     "cancelled": "لغو شده",
     "capture": "گرفتن",
+    "categories": "دسته‌بندی‌ها",
     "category": "دسته‌بندی",
     "changeKeybinding": "تغییر کلید میانبر",
     "chart": "نمودار",
@@ -1020,6 +1408,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "لوگوی ComfyOrg",
+    "comfyPackageOutdated": "نسخه نصب‌شده {name} با شماره {installedVersion} پایین‌تر از نسخه مورد نیاز {requiredVersion} است.",
     "comingSoon": "به‌زودی",
     "command": "دستور",
     "commandProhibited": "دستور {command} مجاز نیست. برای اطلاعات بیشتر با مدیر تماس بگیرید.",
@@ -1180,6 +1569,7 @@
     "logs": "گزارش‌ها",
     "manageExtensions": "مدیریت افزونه‌ها",
     "markdown": "markdown",
+    "maximizeDialog": "بزرگ‌نمایی پنجره گفتگو",
     "micPermissionDenied": "دسترسی میکروفون رد شد",
     "migrate": "مهاجرت",
     "missing": "ناقص",
@@ -1225,6 +1615,7 @@
     "output": "خروجی",
     "overwrite": "جایگزینی",
     "partner": "همکار",
+    "partnerNodes": "گره‌های شریک",
     "pause": "توقف",
     "play": "پخش",
     "playPause": "پخش/توقف",
@@ -1279,6 +1670,7 @@
     "resizeFromTopLeft": "تغییر اندازه از گوشه بالا-چپ",
     "resizeFromTopRight": "تغییر اندازه از گوشه بالا-راست",
     "restart": "راه‌اندازی مجدد",
+    "restoreDialog": "بازگرداندن پنجره گفتگو",
     "resultsCount": "{count} نتیجه یافت شد",
     "running": "در حال اجرا",
     "save": "ذخیره",
@@ -1638,6 +2030,7 @@
       "orthographic": "اورتوگرافیک",
       "perspective": "پرسپکتیو"
     },
+    "centerCameraOnModel": "مرکز دوربین روی مدل",
     "clearRecording": "پاک کردن ضبط",
     "dropToLoad": "مدل سه‌بعدی را برای بارگذاری رها کنید",
     "edgeThreshold": "آستانه لبه",
@@ -1717,6 +2110,10 @@
     "outdatedVersion": "این workflow با نسخه جدیدتری از ComfyUI ({version}) ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
     "outdatedVersionGeneric": "این workflow با نسخه جدیدتری از ComfyUI ایجاد شده است. برخی nodeها ممکن است به درستی کار نکنند.",
     "unknownVersion": "نامشخص"
+  },
+  "logsTerminal": {
+    "loadError": "امکان بارگذاری لاگ‌ها وجود ندارد، لطفاً اطمینان حاصل کنید که ComfyUI backend خود را به‌روزرسانی کرده‌اید.",
+    "resyncError": "امکان همگام‌سازی مجدد لاگ‌ها پس از اتصال مجدد backend وجود ندارد. برای تلاش مجدد، کنسول را دوباره باز کنید."
   },
   "maintenance": {
     "None": "هیچ‌کدام",
@@ -1821,6 +2218,10 @@
     "gettingInfo": "در حال دریافت اطلاعات...",
     "importFailedGenericError": "وارد کردن بسته ناموفق بود. برای جزئیات بیشتر کنسول را بررسی کنید.",
     "inWorkflow": "در workflow",
+    "incompatibleVersion": {
+      "message": "لطفاً ComfyUI-Manager را به نسخه ۴.۲.۱ یا بالاتر ارتقاء دهید.\n• دسکتاپ: برنامه ComfyUI Desktop را به‌روزرسانی کنید\n• مستقل: دستور pip install -U comfyui-manager را اجرا کرده و مجدداً راه‌اندازی کنید\nاطلاعات بیشتر: https://github.com/Comfy-Org/ComfyUI-Manager",
+      "title": "ارتقاء ComfyUI-Manager مورد نیاز است"
+    },
     "infoPanelEmpty": "برای مشاهده اطلاعات، یک مورد را انتخاب کنید",
     "installAllMissingNodes": "نصب همه",
     "installError": "خطا در نصب",
@@ -2066,7 +2467,6 @@
     "ComfyUI Issues": "مشکلات ComfyUI",
     "Contact Support": "تماس با پشتیبانی",
     "Convert Selection to Subgraph": "تبدیل انتخاب به Subgraph",
-    "Convert selected nodes to group node": "تبدیل Nodeهای انتخاب‌شده به group node",
     "Copy": "کپی",
     "Custom Nodes (Legacy)": "Custom Nodes (قدیمی)",
     "Custom Nodes Manager": "مدیر Custom Nodes",
@@ -2227,7 +2627,9 @@
     "": "",
     "3d": "سه‌بعدی",
     "3d_models": "مدل‌های سه‌بعدی",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
+    "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
@@ -2236,13 +2638,14 @@
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2259,32 +2662,31 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_for_testing",
+    "adjustments": "تنظیمات",
     "advanced": "پیشرفته",
-    "animation": "انیمیشن",
-    "api": "API",
-    "api node": "گره API",
     "attention_experiments": "آزمایش‌های توجه",
     "audio": "صدا",
+    "background removal": "حذف پس‌زمینه",
     "batch": "دسته‌ای",
-    "camera": "دوربین",
     "chroma_radiance": "درخشندگی رنگی",
     "clip": "clip",
+    "color": "رنگ",
     "combine": "ترکیب",
     "compositing": "ترکیب‌بندی",
     "cond pair": "جفت شرط",
     "cond single": "شرط تکی",
     "conditioning": "شرط‌گذاری",
-    "context": "زمینه",
     "controlnet": "controlnet",
     "create": "ایجاد",
     "custom_sampling": "نمونه‌گیری سفارشی",
-    "dataset": "داده‌نما",
     "debug": "اشکال‌زدایی",
     "deprecated": "منسوخ",
     "detection": "شناسایی",
     "edit_models": "ویرایش مدل‌ها",
+    "experimental": "آزمایشی",
+    "filters": "فیلترها",
     "flux": "flux",
+    "geometry estimation": "برآورد هندسی",
     "gligen": "gligen",
     "guidance": "راهنمایی",
     "guiders": "راهنماها",
@@ -2299,39 +2701,36 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "ماسک",
-    "math": "ریاضی",
     "model": "مدل",
     "model_merging": "ادغام مدل",
-    "model_patches": "وصله‌های مدل",
     "model_specific": "ویژه مدل",
+    "multigpu": "چند GPU",
     "noise": "نویز",
     "operations": "عملیات",
+    "partner": "شریک",
+    "patch": "پچ",
     "photomaker": "photomaker",
-    "postprocessing": "پس‌پردازش",
     "preprocessors": "پیش‌پردازنده‌ها",
     "primitive": "ابتدایی",
     "qwen": "qwen",
     "samplers": "نمونه‌گیرها",
     "sampling": "نمونه‌گیری",
-    "save": "ذخیره",
     "schedulers": "زمان‌بندی‌ها",
     "scheduling": "زمان‌بندی",
-    "sd": "sd",
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "سیگماها",
+    "splat": "splat",
     "stable_cascade": "stable cascade",
-    "string": "رشته",
     "style_model": "مدل سبک",
     "supir": "supir",
     "text": "متن",
-    "textgen": "textgen",
     "training": "آموزش",
     "transform": "تبدیل",
     "unet": "unet",
     "upscale_diffusion": "پراکندگی افزایش وضوح",
     "upscaling": "افزایش وضوح",
-    "utils": "ابزارها",
+    "utilities": "ابزارها",
     "video": "ویدیو",
     "video_models": "مدل‌های ویدیو",
     "zimage": "zimage"
@@ -2404,6 +2803,43 @@
     },
     "title": "دستگاه شما پشتیبانی نمی‌شود"
   },
+  "oauth": {
+    "consent": {
+      "allow": "ادامه",
+      "appTypeNative": "برنامه بومی",
+      "appTypeWeb": "برنامه وب",
+      "deny": "لغو",
+      "errorExpired": "این درخواست تأیید منقضی شده یا قبلاً استفاده شده است. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
+      "errorScopeBroadening": "دسترسی‌های قبلاً تأییدشده این درخواست را پوشش نمی‌دهند. لازم است با دسترسی‌های جدید مجدداً تأیید کنید.",
+      "errorUnavailable": "این قابلیت در حال حاضر در دسترس نیست. در صورت تداوم مشکل با پشتیبانی تماس بگیرید.",
+      "genericError": "درخواست OAuth با خطا مواجه شد. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
+      "loading": "در حال بارگذاری درخواست احراز هویت…",
+      "missingRequest": "این درخواست احراز هویت وجود ندارد. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
+      "noWorkspaces": "هیچ ورک‌اسپیس واجدی برای این درخواست موجود نیست.",
+      "permissionsHeader": "دسترسی‌ها",
+      "redirectNotice": "شما به این آدرس هدایت خواهید شد",
+      "resourceFallback": "این برنامه",
+      "sessionError": "برقراری نشست با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
+      "sessionErrorToastSummary": "ورود با OAuth ادامه نیافت",
+      "subtitle": "برای ادامه وارد {resource} شوید",
+      "title": "{client} درخواست دسترسی دارد",
+      "workspaceHelp": "دسترسی‌ها فقط برای این ورک‌اسپیس اعمال می‌شوند.",
+      "workspaceLabel": "ورک‌اسپیس"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "اجرای workflowها به نمایندگی از شما"
+      },
+      "mcp:tools:read": {
+        "label": "مشاهده ابزارهای workflow موجود"
+      }
+    },
+    "workspace": {
+      "member": "عضو",
+      "owner": "مالک",
+      "personal": "شخصی"
+    }
+  },
   "openSharedWorkflow": {
     "author": "نویسنده:",
     "copyAssetsAndOpen": "وارد کردن دارایی‌ها و باز کردن گردش‌کار",
@@ -2414,7 +2850,8 @@
     "nonPublicAssetsWarningLine1": "این گردش‌کار دارای دارایی‌های غیرعمومی است.",
     "nonPublicAssetsWarningLine2": "این موارد هنگام باز کردن گردش‌کار به کتابخانه شما وارد می‌شوند",
     "openWithoutImporting": "باز کردن بدون وارد کردن",
-    "openWorkflow": "باز کردن گردش‌کار"
+    "openWorkflow": "باز کردن گردش‌کار",
+    "opening": "در حال باز کردن گردش‌کار مشترک..."
   },
   "painter": {
     "background": "پس‌زمینه",
@@ -2593,6 +3030,9 @@
       "metadataFetchFailed": "دریافت اطلاعات مدل انجام نشد. لطفاً لینک را بررسی و دوباره تلاش کنید.",
       "missingModelsTitle": "مدل‌های مفقود شده",
       "or": "یا",
+      "refresh": "بازآوری",
+      "refreshFailed": "بازآوری مدل‌های مفقود انجام نشد. لطفاً دوباره تلاش کنید.",
+      "refreshing": "در حال بازآوری مدل‌های مفقود.",
       "typeMismatch": "به نظر می‌رسد این مدل از نوع \"{detectedType}\" باشد. مطمئن هستید؟",
       "unknownCategory": "نامشخص",
       "unsupportedUrl": "فقط آدرس‌های Civitai و Hugging Face پشتیبانی می‌شوند.",
@@ -2627,20 +3067,6 @@
     "normal": "عادی",
     "parameters": "پارامترها",
     "pinned": "سنجاق شده",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "داده‌های گردش‌کار ارسال‌شده به سرور خالی است. این ممکن است یک خطای غیرمنتظره سیستمی باشد."
-      },
-      "prompt_no_outputs": {
-        "desc": "گردش‌کار هیچ نود خروجی (مانند Save Image یا Preview Image) برای تولید نتیجه ندارد."
-      },
-      "server_error_cloud": {
-        "desc": "سرور با خطای غیرمنتظره‌ای مواجه شد. لطفاً بعداً دوباره تلاش کنید."
-      },
-      "server_error_local": {
-        "desc": "سرور با خطای غیرمنتظره‌ای مواجه شد. لطفاً لاگ‌های سرور را بررسی کنید."
-      }
-    },
     "properties": "ویژگی‌ها",
     "removeFavorite": "حذف از علاقه‌مندی‌ها",
     "resetAllParameters": "بازنشانی همه پارامترها",
@@ -2897,6 +3323,7 @@
     "Other": "سایر",
     "PLY": "PLY",
     "PlanCredits": "طرح و اعتبارات",
+    "PointCloud": "ابر نقاط",
     "Pointer": "اشاره‌گر",
     "Queue": "صف",
     "QueueButton": "دکمه صف",
@@ -3050,6 +3477,7 @@
         "sourceDesc": "گروه‌بندی بر اساس نوع منبع (Core، Custom، API)"
       },
       "noBookmarkedNodes": "هنوز مورد علاقه‌ای وجود ندارد",
+      "noMatchingNodes": "هیچ نودی با «{query}» مطابقت ندارد",
       "resetView": "بازنشانی نمای پیش‌فرض",
       "sections": {
         "bookmarked": "نشان‌شده‌ها",
@@ -3138,6 +3566,7 @@
       "deleteFailedTitle": "حذف ناموفق بود",
       "deleted": "Workflow حذف شد",
       "dirtyClose": "فایل‌های زیر تغییر کرده‌اند. آیا مایل به ذخیره آن‌ها قبل از بستن هستید؟",
+      "dirtyCloseAnyway": "بستن به هر حال",
       "dirtyCloseHint": "برای بستن بدون پیام، Shift را نگه دارید",
       "dirtyCloseTitle": "ذخیره تغییرات؟",
       "workflowTreeType": {
@@ -3434,8 +3863,7 @@
       "newest": "جدیدترین",
       "popular": "محبوب",
       "recommended": "پیشنهادی",
-      "searchPlaceholder": "جستجو...",
-      "vramLowToHigh": "مصرف VRAM (کم به زیاد)"
+      "searchPlaceholder": "جستجو..."
     },
     "sorting": "مرتب‌سازی بر اساس",
     "title": "شروع با یک قالب",
@@ -3498,6 +3926,7 @@
     "no3dScene": "صحنه سه‌بعدی برای اعمال بافت وجود ندارد",
     "no3dSceneToExport": "صحنه سه‌بعدی برای صادرات وجود ندارد",
     "noTemplatesToExport": "قالبی برای صادرات وجود ندارد",
+    "nodeDefinitionsUpdateFailed": "به‌روزرسانی تعاریف node انجام نشد",
     "nodeDefinitionsUpdated": "تعاریف node به‌روزرسانی شد",
     "nothingSelected": "موردی انتخاب نشده است",
     "nothingToGroup": "موردی برای گروه‌بندی وجود ندارد",
@@ -3598,7 +4027,8 @@
       "placeholderMesh": "مش را انتخاب کنید...",
       "placeholderModel": "انتخاب مدل...",
       "placeholderUnknown": "انتخاب رسانه...",
-      "placeholderVideo": "انتخاب ویدیو..."
+      "placeholderVideo": "انتخاب ویدیو...",
+      "topResult": "نتیجه برتر: {result}"
     },
     "valueControl": {
       "decrement": "کاهش مقدار",

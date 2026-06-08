@@ -24,7 +24,7 @@
   >
     <template v-for="widget in processedWidgets" :key="widget.renderKey">
       <div
-        v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
+        v-if="widget.visible"
         data-testid="node-widget"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
       >
@@ -39,6 +39,7 @@
         >
           <InputSlot
             v-if="widget.slotMetadata"
+            :key="`widget-slot-${widget.name}-${widget.slotMetadata.index}`"
             :slot-data="{
               name: widget.name,
               type: widget.slotMetadata.type,
@@ -53,7 +54,7 @@
         </div>
         <!-- Widget Component -->
         <AppInput
-          :id="widget.id"
+          :entity-id="widget.entityId"
           :name="widget.name"
           :enable="canSelectInputs && !widget.simplified.options?.disabled"
         >
@@ -89,7 +90,8 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
-import { cn } from '@/utils/tailwindUtil'
+import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 
@@ -126,11 +128,11 @@ onErrorCaptured((error) => {
   return false
 })
 
-const {
-  canSelectInputs,
-  gridTemplateRows,
-  nodeType,
-  processedWidgets,
-  showAdvanced
-} = useProcessedWidgets(() => nodeData)
+const { canSelectInputs, gridTemplateRows, nodeType, processedWidgets } =
+  useProcessedWidgets(() => nodeData)
+
+// Tracks widget-row growth that the node-level RO can't see
+if (nodeData?.id != null) {
+  useVueElementTracking(String(nodeData.id), 'widgets-grid')
+}
 </script>

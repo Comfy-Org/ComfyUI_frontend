@@ -1,6 +1,7 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { WidgetEntityId } from '@/world/entityIds'
 
 export interface ResolvedPromotedWidget {
   node: LGraphNode
@@ -10,22 +11,17 @@ export interface ResolvedPromotedWidget {
 export interface PromotedWidgetSource {
   sourceNodeId: string
   sourceWidgetName: string
-  disambiguatingSourceNodeId?: string
 }
 
 export interface PromotedWidgetView extends IBaseWidget {
   readonly node: SubgraphNode
+  readonly entityId: WidgetEntityId
   readonly sourceNodeId: string
   readonly sourceWidgetName: string
-  /**
-   * The original leaf-level source node ID, used to distinguish promoted
-   * widgets with the same name on the same intermediate node. Unlike
-   * `sourceNodeId` (the direct interior node), this traces to the deepest
-   * origin.
-   */
-  readonly disambiguatingSourceNodeId?: string
-  /** Whether the resolved source widget is workflow-persistent. */
-  readonly sourceSerialize: boolean
+
+  hydrateHostValue(value: IBaseWidget['value']): void
+
+  ensureHostWidgetState(): void
 }
 
 export function isPromotedWidgetView(

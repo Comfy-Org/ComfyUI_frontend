@@ -1,4 +1,4 @@
-import type { Mouse } from '@playwright/test'
+import type { Locator, Mouse } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position } from '@e2e/fixtures/types'
@@ -66,10 +66,54 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
     await this.drop(options)
   }
 
+  async middleDrag(
+    from: Position,
+    to: Position,
+    options: Omit<DragOptions, 'button'> = {}
+  ) {
+    await this.dragAndDrop(from, to, { ...options, button: 'middle' })
+  }
+
+  async middleDragFromCenter(
+    locator: Locator,
+    delta: { x: number; y: number },
+    options: Omit<DragOptions, 'button'> = {}
+  ) {
+    await locator.waitFor({ state: 'visible' })
+    const box = await locator.boundingBox()
+    if (!box) throw new Error('middleDragFromCenter: bounding box not found')
+
+    const start = {
+      x: box.x + box.width / 2,
+      y: box.y + box.height / 2
+    }
+    await this.middleDrag(
+      start,
+      { x: start.x + delta.x, y: start.y + delta.y },
+      options
+    )
+  }
+
   /** @see {@link Mouse.move} */
   async move(to: Position, options = ComfyMouse.defaultOptions) {
     await this.mouse.move(to.x, to.y, options)
     await this.nextFrame()
+  }
+
+  async resizeByDragging(
+    element: Locator,
+    { x, y }: { x?: number; y?: number }
+  ) {
+    const elementBox = await element.boundingBox()
+    if (!elementBox) throw new Error('element should have layout')
+
+    const cx = elementBox.x + elementBox.width / 2
+    const cy = elementBox.y + elementBox.height / 2
+
+    await this.dragAndDrop(
+      { x: cx, y: cy },
+      { x: cx + (x ?? 0), y: cy + (y ?? 0) }
+    )
   }
 
   //#region Pass-through

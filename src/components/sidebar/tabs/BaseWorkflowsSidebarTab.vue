@@ -11,12 +11,24 @@
     <template #tool-buttons>
       <Button
         v-tooltip.bottom="$t('g.refresh')"
+        data-testid="workflows-refresh-button"
         variant="muted-textonly"
         size="icon"
         :aria-label="$t('g.refresh')"
+        :aria-busy="workflowStore.isSyncLoading"
+        :disabled="workflowStore.isSyncLoading"
         @click="workflowStore.syncWorkflows()"
       >
-        <i class="icon-[lucide--refresh-cw] size-4" />
+        <i
+          aria-hidden="true"
+          data-testid="workflows-refresh-icon"
+          :class="
+            cn(
+              'icon-[lucide--refresh-cw] size-4',
+              workflowStore.isSyncLoading && 'animate-spin'
+            )
+          "
+        />
       </Button>
     </template>
     <template #header>
@@ -136,11 +148,9 @@
       </div>
     </template>
   </SidebarTabTemplate>
-  <ConfirmDialog />
 </template>
 
 <script setup lang="ts">
-import ConfirmDialog from 'primevue/confirmdialog'
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -170,6 +180,7 @@ import {
   getWorkflowSuffix
 } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { title, filter, searchSubject, dataTestid, hideLeafIcon } = defineProps<{
   title: string
@@ -194,22 +205,21 @@ const searchBoxRef = ref()
 
 const searchQuery = ref('')
 const isSearching = computed(() => searchQuery.value.length > 0)
-const filteredWorkflows = ref<ComfyWorkflow[]>([])
+const filteredWorkflows = computed(() => {
+  if (searchQuery.value.length === 0) return []
+  const lowerQuery = searchQuery.value.toLocaleLowerCase()
+  return applyFilter(workflowStore.workflows).filter((workflow) =>
+    workflow.path.toLocaleLowerCase().includes(lowerQuery)
+  )
+})
 const filteredRoot = computed<TreeNode>(() => {
   return buildWorkflowTree(filteredWorkflows.value as ComfyWorkflow[])
 })
 const handleSearch = async (query: string) => {
   if (query.length === 0) {
-    filteredWorkflows.value = []
     expandedKeys.value = {}
     return
   }
-  const lowerQuery = query.toLocaleLowerCase()
-  filteredWorkflows.value = applyFilter(workflowStore.workflows).filter(
-    (workflow) => {
-      return workflow.path.toLocaleLowerCase().includes(lowerQuery)
-    }
-  )
   await nextTick()
   expandNode(filteredRoot.value)
 }

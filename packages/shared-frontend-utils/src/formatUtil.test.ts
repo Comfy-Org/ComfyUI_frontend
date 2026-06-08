@@ -3,12 +3,17 @@ import { describe, expect, it } from 'vitest'
 import {
   appendWorkflowJsonExt,
   ensureWorkflowSuffix,
+  formatLocalizedMediumDate,
+  formatLocalizedNumber,
+  getFilePathSeparatorVariants,
   getFilenameDetails,
   getMediaTypeFromFilename,
   getPathDetails,
   highlightQuery,
   isCivitaiModelUrl,
+  isCivitaiUrl,
   isPreviewableMediaType,
+  joinFilePath,
   truncateFilename
 } from './formatUtil'
 
@@ -83,9 +88,11 @@ describe('formatUtil', () => {
     describe('video files', () => {
       it('should identify video extensions correctly', () => {
         expect(getMediaTypeFromFilename('video.mp4')).toBe('video')
+        expect(getMediaTypeFromFilename('apple.m4v')).toBe('video')
         expect(getMediaTypeFromFilename('clip.webm')).toBe('video')
         expect(getMediaTypeFromFilename('movie.mov')).toBe('video')
         expect(getMediaTypeFromFilename('film.avi')).toBe('video')
+        expect(getMediaTypeFromFilename('episode.mkv')).toBe('video')
       })
     })
 
@@ -105,6 +112,7 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('asset.gltf')).toBe('3D')
         expect(getMediaTypeFromFilename('binary.glb')).toBe('3D')
         expect(getMediaTypeFromFilename('apple.usdz')).toBe('3D')
+        expect(getMediaTypeFromFilename('scan.ply')).toBe('3D')
       })
     })
 
@@ -202,6 +210,28 @@ describe('formatUtil', () => {
         '<span class="highlight">foo</span> bar <span class="highlight">foo</span>'
       )
     })
+
+    it('should highlight cross-word matches', () => {
+      const result = highlightQuery('convert image to mask', 'geto', false)
+      expect(result).toBe(
+        'convert ima<span class="highlight">ge to</span> mask'
+      )
+    })
+
+    it('should not match across line breaks', () => {
+      const result = highlightQuery('ge\nto', 'geto', false)
+      expect(result).toBe('ge\nto')
+    })
+
+    it('should not match across tabs', () => {
+      const result = highlightQuery('ge\tto', 'geto', false)
+      expect(result).toBe('ge\tto')
+    })
+
+    it('should not match across multiple spaces', () => {
+      const result = highlightQuery('ge  to', 'geto', false)
+      expect(result).toBe('ge  to')
+    })
   })
 
   describe('getFilenameDetails', () => {
@@ -274,6 +304,42 @@ describe('formatUtil', () => {
         filename: 'test',
         suffix: 'json'
       })
+    })
+  })
+
+  describe('joinFilePath', () => {
+    it('joins subfolder and filename with normalized slash separators', () => {
+      expect(joinFilePath('nested\\folder', 'child\\file.png')).toBe(
+        'nested/folder/child/file.png'
+      )
+    })
+
+    it('trims boundary separators without changing the filename body', () => {
+      expect(joinFilePath('/nested/folder/', '/file.png')).toBe(
+        'nested/folder/file.png'
+      )
+    })
+
+    it('returns the normalized filename when no subfolder is provided', () => {
+      expect(joinFilePath('', 'nested\\file.png')).toBe('nested/file.png')
+    })
+
+    it('returns the normalized subfolder without a trailing slash when no filename is provided', () => {
+      expect(joinFilePath('nested\\folder', '')).toBe('nested/folder')
+      expect(joinFilePath('nested\\folder', null)).toBe('nested/folder')
+    })
+  })
+
+  describe('getFilePathSeparatorVariants', () => {
+    it('returns slash and backslash variants for nested paths', () => {
+      expect(getFilePathSeparatorVariants('nested\\folder/file.png')).toEqual([
+        'nested/folder/file.png',
+        'nested\\folder\\file.png'
+      ])
+    })
+
+    it('returns a single value when no separator is present', () => {
+      expect(getFilePathSeparatorVariants('file.png')).toEqual(['file.png'])
     })
   })
 
@@ -359,11 +425,54 @@ describe('formatUtil', () => {
     })
   })
 
+  describe('isCivitaiUrl', () => {
+    it.for([
+      { url: 'https://civitai.com/models/123', expected: true },
+      { url: 'https://civitai.red/models/123', expected: true },
+      { url: 'https://sub.civitai.com/models/123', expected: true },
+      { url: 'https://sub.civitai.red/models/123', expected: true },
+      { url: 'https://example.com/model', expected: false },
+      { url: 'not-a-url', expected: false }
+    ])('$url → $expected', ({ url, expected }) => {
+      expect(isCivitaiUrl(url)).toBe(expected)
+    })
+  })
+
   describe('isCivitaiModelUrl', () => {
     it('recognizes civitai.red model URLs', () => {
       expect(
         isCivitaiModelUrl('https://civitai.red/api/download/models/123456')
       ).toBe(true)
+    })
+  })
+
+  describe('formatLocalizedNumber', () => {
+    it('formats numbers using the given locale', () => {
+      expect(formatLocalizedNumber(2618646, 'en')).toBe('2,618,646')
+      expect(formatLocalizedNumber(2618646, 'de')).toBe('2.618.646')
+    })
+
+    it('returns an em-dash for undefined / NaN / Infinity', () => {
+      expect(formatLocalizedNumber(undefined, 'en')).toBe('—')
+      expect(formatLocalizedNumber(Number.NaN, 'en')).toBe('—')
+      expect(formatLocalizedNumber(Number.POSITIVE_INFINITY, 'en')).toBe('—')
+    })
+
+    it('formats zero as "0"', () => {
+      expect(formatLocalizedNumber(0, 'en')).toBe('0')
+    })
+  })
+
+  describe('formatLocalizedMediumDate', () => {
+    it('formats an ISO date with the medium style', () => {
+      expect(formatLocalizedMediumDate('2026-04-19T00:00:00Z', 'en')).toMatch(
+        /Apr \d{1,2}, 2026/
+      )
+    })
+
+    it('returns an em-dash for undefined or unparseable input', () => {
+      expect(formatLocalizedMediumDate(undefined, 'en')).toBe('—')
+      expect(formatLocalizedMediumDate('not a date', 'en')).toBe('—')
     })
   })
 })

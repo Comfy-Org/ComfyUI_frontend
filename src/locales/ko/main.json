@@ -99,6 +99,7 @@
     "findInLibrary": "모델 라이브러리의 {type} 섹션에서 찾을 수 있습니다.",
     "finish": "완료",
     "genericLinkPlaceholder": "여기에 링크를 붙여넣으세요",
+    "gridView": "그리드 보기",
     "importAnother": "다른 항목 가져오기",
     "imported": "가져온 항목",
     "invalidAsset": "잘못된 에셋",
@@ -106,6 +107,7 @@
     "invalidFilename": "잘못된 파일명",
     "invalidFilenameDetail": "에셋의 파일명을 확인할 수 없습니다. 다시 시도해 주세요.",
     "jobId": "작업 ID",
+    "listView": "목록 보기",
     "loadingModels": "{type} 불러오는 중...",
     "maxFileSize": "최대 파일 크기: {size}",
     "maxFileSizeValue": "1 GB",
@@ -168,6 +170,7 @@
     "sortDefault": "기본값",
     "sortPopular": "인기순",
     "sortRecent": "최근",
+    "sortUnsorted": "정렬 안 함",
     "sortZA": "가나다 역순",
     "sortingType": "정렬 방식",
     "tags": "태그",
@@ -230,10 +233,12 @@
       "auth/user-disabled": "이 계정이 비활성화되었습니다. 지원팀에 문의해 주세요.",
       "auth/user-not-found": "이 이메일로 등록된 계정이 없습니다. 새 계정을 생성하시겠습니까?",
       "auth/weak-password": "비밀번호가 너무 약합니다. 최소 6자 이상의 강력한 비밀번호를 사용해 주세요.",
-      "auth/wrong-password": "입력하신 비밀번호가 올바르지 않습니다. 다시 시도해 주세요."
+      "auth/wrong-password": "입력하신 비밀번호가 올바르지 않습니다. 다시 시도해 주세요.",
+      "generic": "로그인 중 문제가 발생했습니다. 다시 시도해 주세요."
     },
     "login": {
       "andText": "및",
+      "backToGithubLogin": "대신 Github로 가입하기",
       "backToLogin": "로그인으로 돌아가기",
       "backToSocialLogin": "Google 또는 Github로 가입하기",
       "confirmPasswordLabel": "비밀번호 확인",
@@ -289,7 +294,9 @@
       "title": "재인증 필요"
     },
     "signOut": {
+      "saveFailed": "\"{workflow}\" 저장에 실패하여 로그아웃이 취소되었습니다.",
       "signOut": "로그아웃",
+      "signOutAnyway": "그래도 로그아웃하기",
       "success": "성공적으로 로그아웃되었습니다",
       "successDetail": "계정에서 로그아웃되었습니다.",
       "unsavedChangesMessage": "저장되지 않은 변경 사항이 있습니다. 로그아웃하면 변경 사항이 사라집니다. 계속하시겠습니까?",
@@ -332,6 +339,7 @@
   },
   "breadcrumbsMenu": {
     "app": "앱",
+    "blueprint": "블루프린트",
     "clearWorkflow": "워크플로 내용 지우기",
     "deleteBlueprint": "블루프린트 삭제",
     "deleteWorkflow": "워크플로 삭제",
@@ -400,10 +408,32 @@
   "cloudForgotPassword_passwordResetSent": "비밀번호 재설정 전송됨",
   "cloudForgotPassword_sendResetLink": "재설정 링크 보내기",
   "cloudForgotPassword_title": "비밀번호 찾기",
+  "cloudHero": {
+    "nextSlide": "다음 슬라이드",
+    "previousSlide": "이전 슬라이드",
+    "slidePagerLabel": "{index}번 슬라이드로 이동",
+    "slides": {
+      "cloud": {
+        "description": "상업적 라이선스가 검증된 모델을 어디서나 사용하고 싶은 대부분의 사용자에게 최적입니다.",
+        "title": "클라우드"
+      },
+      "models": {
+        "description": "엄선된 상업적 라이선스 모델을 별도의 설정 없이 바로 실행할 수 있습니다.",
+        "title": "모델"
+      },
+      "team": {
+        "description": "오늘 바로 팀을 온보딩하세요. 조직 내에서 워크플로우와 에셋을 공유할 수 있습니다.",
+        "title": "팀"
+      },
+      "workflows": {
+        "description": "아이디어에서 결과까지 몇 분 만에. 여러 변형을 나란히 생성하세요.",
+        "title": "워크플로우"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "로컬에서 계속하기",
     "exploreCloud": "클라우드 무료 체험",
-    "feature1Title": "매월 400 크레딧 무료 제공",
     "feature2Title": "어디서나 즉시 사용 가능",
     "feature3Title": "즉시 사용 가능한 모델",
     "feature4Title": "최고의 커스텀 노드 팩 사전 설치",
@@ -457,6 +487,12 @@
       "wantToRun": "로컬에서 ComfyUI를 실행하고 싶으신가요?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "옵션을 선택해 주세요.",
+        "describeAnswer": "답변을 설명해 주세요.",
+        "selectAtLeastOne": "최소 한 가지 옵션을 선택해 주세요."
+      },
+      "intro": "ComfyUI 경험을 맞춤화할 수 있도록 도와주세요.",
       "options": {
         "familiarity": {
           "advanced": "고급 사용자 (커스텀 워크플로우 사용)",
@@ -465,45 +501,43 @@
           "new": "ComfyUI 처음 사용 (이전에 사용한 적 없음)",
           "starting": "막 시작한 단계 (튜토리얼 따라하는 중)"
         },
-        "industry": {
-          "architecture": "건축",
-          "education": "교육",
-          "film_tv_animation": "영화, TV 및 애니메이션",
-          "fine_art": "순수 미술 및 일러스트레이션",
-          "gaming": "게임",
-          "marketing": "마케팅 및 광고",
-          "other": "기타",
-          "otherPlaceholder": "구체적으로 입력",
-          "product_design": "제품 및 그래픽 디자인",
-          "software": "소프트웨어 및 기술"
-        },
-        "making": {
-          "3d": "3D 에셋",
+        "intent": {
+          "3d_game": "3D 에셋 / 게임 에셋",
+          "api": "워크플로우 실행용 API 엔드포인트",
+          "apps": "워크플로우 기반 간소화 앱",
           "audio": "오디오 / 음악",
-          "custom_nodes": "사용자 정의 노드 및 워크플로우",
+          "custom_nodes": "커스텀 노드",
           "images": "이미지",
-          "video": "비디오 및 애니메이션"
+          "not_sure": "잘 모르겠음",
+          "videos": "비디오",
+          "workflows": "맞춤형 워크플로우 또는 파이프라인"
         },
-        "purpose": {
-          "client": "클라이언트 작업 (프리랜서)",
-          "community": "커뮤니티 기여 (노드, 워크플로우 등)",
-          "inhouse": "자사 업무 (내부 사용)",
-          "personal": "개인 프로젝트 / 취미",
-          "research": "학술 연구"
+        "source": {
+          "conference": "컨퍼런스 또는 이벤트",
+          "discord": "Discord / 커뮤니티",
+          "friend": "친구 또는 동료",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "뉴스레터 또는 블로그",
+          "other": "기타",
+          "reddit": "Reddit",
+          "search": "Google / 검색",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "교육용(학생 또는 교육자)",
+          "personal": "개인용",
+          "work": "업무용"
         }
       },
       "placeholder": "설문 질문 자리표시자",
-      "questions": {
-        "familiarity": "ComfyUI에 얼마나 익숙하신가요?",
-        "industry": "주로 어떤 업계에서 일하시나요?",
-        "making": "무엇을 만들 계획이신가요?",
-        "purpose": "주로 ComfyUI를 어떤 용도로 사용하실 계획이신가요?"
-      },
       "steps": {
         "familiarity": "ComfyUI에 얼마나 익숙하신가요?",
-        "industry": "주로 어떤 업계에서 일하시나요?",
-        "making": "무엇을 만들 계획이신가요?",
-        "purpose": "주로 ComfyUI를 어떤 용도로 사용하실 계획이신가요?"
+        "intent": "ComfyUI로 무엇을 만들고 싶으신가요?",
+        "source": "ComfyUI를 어디에서 알게 되셨나요?",
+        "usage": "ComfyUI를 어떻게 사용하실 계획인가요?"
       },
       "title": "클라우드 설문"
     }
@@ -518,9 +552,9 @@
   "cloudStart_title": "몇 초 만에 제작 시작",
   "cloudStart_wantToRun": "로컬에서 ComfyUI를 실행하고 싶으신가요?",
   "cloudSurvey_steps_familiarity": "ComfyUI에 얼마나 익숙하신가요?",
-  "cloudSurvey_steps_industry": "주요 업계는 무엇인가요?",
-  "cloudSurvey_steps_making": "무엇을 만들 계획인가요?",
-  "cloudSurvey_steps_purpose": "주로 ComfyUI를 어떤 용도로 사용하실 계획인가요?",
+  "cloudSurvey_steps_intent": "ComfyUI로 무엇을 만들고 싶으신가요?",
+  "cloudSurvey_steps_source": "ComfyUI를 어디에서 알게 되셨나요?",
+  "cloudSurvey_steps_usage": "ComfyUI를 어떻게 사용하실 계획인가요?",
   "cloudWaitlist_contactLink": "여기",
   "cloudWaitlist_questionsText": "질문이 있으신가요? 문의하기",
   "color": {
@@ -653,7 +687,6 @@
     "Collapse": "접기",
     "Color": "색상",
     "Colors": "색상",
-    "Convert to Group Node": "그룹 노드로 변환",
     "Convert to Subgraph": "서브그래프로 변환",
     "Copy": "복사",
     "Copy (Clipspace)": "복사 (Clipspace)",
@@ -774,6 +807,7 @@
     "AUDIO_ENCODER": "AUDIO_ENCODER",
     "AUDIO_ENCODER_OUTPUT": "AUDIO_ENCODER_OUTPUT",
     "AUDIO_RECORD": "AUDIO_RECORD",
+    "BACKGROUND_REMOVAL": "배경 제거",
     "BOOLEAN": "논리값",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "카메라 제어",
@@ -789,11 +823,17 @@
     "CONTROL_NET": "컨트롤넷",
     "CURVE": "곡선",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "얼굴 감지 모델",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "FILE_3D",
     "FILE_3D_FBX": "FILE_3D_FBX",
     "FILE_3D_GLB": "FILE_3D_GLB",
     "FILE_3D_GLTF": "FILE_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
     "FLOAT": "실수",
@@ -804,13 +844,17 @@
     "HISTOGRAM": "히스토그램",
     "HOOKS": "후크",
     "HOOK_KEYFRAMES": "후크 키프레임",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "이미지",
     "IMAGECOMPARE": "이미지 비교",
     "INT": "정수",
+    "INTERP_MODEL": "INTERP_MODEL",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "잠재 데이터",
     "LATENT_OPERATION": "잠재 연산",
     "LATENT_UPSCALE_MODEL": "LATENT_UPSCALE_MODEL",
     "LOAD3D_CAMERA": "3D 카메라 불러오기",
+    "LOAD3D_MODEL_INFO": "3D 모델 정보 불러오기",
     "LOAD_3D": "3D 로드",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
@@ -823,9 +867,12 @@
     "MODEL": "모델",
     "MODEL_PATCH": "모델 패치",
     "MODEL_TASK_ID": "모델 작업 ID",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "노이즈",
     "OPENAI_CHAT_CONFIG": "OpenAI 채팅 설정",
     "OPENAI_INPUT_FILES": "OpenAI 입력 파일",
+    "OPTICAL_FLOW": "OPTICAL_FLOW",
     "PHOTOMAKER": "PHOTOMAKER",
     "PIXVERSE_TEMPLATE": "Pixverse 템플릿",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -834,8 +881,10 @@
     "RECRAFT_V3_STYLE": "Recraft V3 스타일",
     "RETARGET_TASK_ID": "재타겟팅 작업 ID",
     "RIG_TASK_ID": "리깅 작업 ID",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "샘플러",
     "SIGMAS": "시그마",
+    "SPLAT": "SPLAT",
     "STRING": "문자열",
     "STYLE_MODEL": "스타일 모델",
     "SVG": "SVG",
@@ -892,6 +941,337 @@
     "paused": "일시 중지됨",
     "resume": "다운로드 재개"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "알 수 없는 입력",
+      "nodeName": "이 노드"
+    },
+    "promptErrors": {
+      "missing_node_type": {
+        "desc": "노드 타입이 없거나 사용할 수 없습니다. 워크플로우가 손상되었거나 사용자 지정 노드가 필요할 수 있습니다.",
+        "title": "노드 타입 없음"
+      },
+      "no_prompt": {
+        "desc": "서버로 전송된 워크플로우 데이터가 비어 있습니다. 시스템 오류일 수 있습니다.",
+        "title": "워크플로우 데이터가 비어 있습니다"
+      },
+      "prompt_no_outputs": {
+        "desc": "워크플로우에 결과를 생성할 출력 노드(예: 이미지 저장, 이미지 미리보기)가 없습니다.",
+        "title": "프롬프트에 출력이 없습니다"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "워크플로우에 잘못된 노드 입력이 있습니다. 다시 실행하기 전에 강조된 노드를 수정하세요.",
+        "title": "프롬프트 검증 실패"
+      },
+      "server_error_cloud": {
+        "desc": "서버에서 예기치 않은 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.",
+        "title": "서버 오류"
+      },
+      "server_error_local": {
+        "desc": "서버에서 예기치 않은 오류가 발생했습니다. 서버 로그를 확인해 주세요.",
+        "title": "서버 오류"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "이 실행에는 현재 계정에 없는 접근 권한이 필요합니다.",
+        "title": "접근 권한 필요",
+        "toastMessage": "이 실행에는 현재 계정에 없는 접근 권한이 필요합니다.",
+        "toastTitle": "접근 권한 필요"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "이 요청은 콘텐츠 검열 시스템에 의해 차단되었습니다. 프롬프트나 입력값을 변경해보세요.",
+        "title": "콘텐츠 차단됨",
+        "toastMessage": "이 요청은 콘텐츠 검열 시스템에 의해 차단되었습니다. 프롬프트나 입력값을 변경해보세요.",
+        "toastTitle": "콘텐츠 차단됨"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "노드가 실행 중 오류를 발생시켰습니다.",
+        "title": "실행 실패",
+        "toastMessage": "이 노드는 실행 중 오류를 발생시켰습니다. 입력값을 확인하거나 다른 설정으로 시도해보세요.",
+        "toastTitle": "{nodeName} 실패"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "이 워크플로우가 더 이상 진행되지 않습니다. 다시 실행해보세요.",
+        "title": "생성 중단됨",
+        "toastMessage": "이 워크플로우가 더 이상 진행되지 않습니다. 다시 실행해보세요.",
+        "toastTitle": "생성 중단됨"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "시스템에서 이 이미지를 불러올 수 없습니다.",
+        "title": "이미지 불러오기 실패",
+        "toastMessage": "{nodeName}의 이미지를 불러올 수 없습니다. 다시 추가해보세요.",
+        "toastTitle": "입력 이미지 불러오기 실패"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "이 노드를 사용하려면 계정에 크레딧을 추가하세요.",
+        "title": "크레딧 부족",
+        "toastMessage": "이 노드를 사용하려면 계정에 크레딧을 추가하세요.",
+        "toastTitle": "크레딧 부족"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "CLIP 입력이 없거나 잘못되었습니다. 연결된 체크포인트 또는 CLIP 로더를 확인하세요.",
+        "title": "잘못된 CLIP 입력",
+        "toastMessage": "{nodeName}에 CLIP 입력이 없거나 잘못되었습니다.",
+        "toastTitle": "잘못된 CLIP 입력"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "워크플로우 실행 전에 프롬프트를 입력하세요.",
+        "title": "프롬프트가 비어 있음",
+        "toastMessage": "워크플로우 실행 전에 프롬프트를 입력하세요.",
+        "toastTitle": "프롬프트가 비어 있음"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "워크플로우 요청이 잘못되었습니다. 워크플로우를 확인하고 다시 시도하세요.",
+        "title": "잘못된 워크플로우 요청",
+        "toastMessage": "워크플로우 요청이 잘못되었습니다. 워크플로우를 확인하고 다시 시도하세요.",
+        "toastTitle": "잘못된 워크플로우 요청"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "하나 이상의 필수 모델에 접근할 수 없습니다.",
+        "title": "모델 접근 필요",
+        "toastMessage": "하나 이상의 필수 모델에 접근할 수 없습니다.",
+        "toastTitle": "모델 접근 필요"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "모델을 다운로드할 수 없습니다. 다시 시도하세요.",
+        "title": "모델 다운로드 실패",
+        "toastMessage": "모델을 다운로드할 수 없습니다. 다시 시도하세요.",
+        "toastTitle": "모델 다운로드 실패"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "GPU 메모리가 부족합니다. 이미지 해상도나 배치 크기를 줄이고 다시 시도하세요.",
+        "title": "생성 실패",
+        "toastMessage": "GPU 메모리가 부족합니다. 이미지 해상도나 배치 크기를 줄이고 다시 시도하세요.",
+        "toastTitle": "생성 실패"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "워크플로우를 준비할 수 없습니다. 다시 실행해보세요.",
+        "title": "준비 실패",
+        "toastMessage": "워크플로우를 준비할 수 없습니다. 다시 실행해보세요.",
+        "toastTitle": "준비 실패"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "워크플로우 준비에 시간이 너무 오래 걸렸습니다. 다시 실행해보세요.",
+        "title": "준비 시간 초과",
+        "toastMessage": "워크플로우 준비에 시간이 너무 오래 걸렸습니다. 다시 실행해보세요.",
+        "toastTitle": "준비 시간 초과"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "현재 이용자가 많습니다. 잠시 후 다시 시도하세요.",
+        "title": "서버가 혼잡합니다",
+        "toastMessage": "현재 이용자가 많습니다. 잠시 후 다시 시도하세요.",
+        "toastTitle": "서버가 혼잡합니다"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "실행이 완료되기 전에 요청이 실패했습니다. 다시 시도하세요.",
+        "title": "요청 실패",
+        "toastMessage": "실행이 완료되기 전에 요청이 실패했습니다. 다시 시도하세요.",
+        "toastTitle": "요청 실패"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "실행이 예기치 않게 종료되었습니다. 다시 시도하세요.",
+        "title": "실행이 예기치 않게 종료됨",
+        "toastMessage": "실행이 예기치 않게 종료되었습니다. 다시 시도하세요.",
+        "toastTitle": "실행이 예기치 않게 종료됨"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "실행을 시작할 수 없습니다. 다시 시도하세요.",
+        "title": "실행 시작 실패",
+        "toastMessage": "실행을 시작할 수 없습니다. 다시 시도하세요.",
+        "toastTitle": "실행 시작 실패"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "현재 서버가 혼잡합니다. 잠시 후 다시 시도하세요.",
+        "title": "서버가 혼잡합니다",
+        "toastMessage": "현재 서버가 혼잡합니다. 잠시 후 다시 시도하세요.",
+        "toastTitle": "서버가 혼잡합니다"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "이 워크플로우 실행 중 서버가 중단되었습니다. 다시 시도하세요.",
+        "title": "서버 중단",
+        "toastMessage": "이 워크플로우 실행 중 서버가 중단되었습니다. 다시 시도하세요.",
+        "toastTitle": "서버 중단"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "파트너 노드는 Comfy 계정이 필요합니다. 계속하려면 로그인하세요.",
+        "title": "로그인 필요",
+        "toastMessage": "파트너 노드는 Comfy 계정이 필요합니다. 계속하려면 로그인하세요.",
+        "toastTitle": "이 노드 사용을 위해 로그인 필요"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "이 워크플로우를 계속 실행하려면 요금제에 가입하세요.",
+        "title": "구독 필요",
+        "toastMessage": "이 워크플로우를 계속 실행하려면 요금제에 가입하세요.",
+        "toastTitle": "구독 필요"
+      },
+      "subscription_upgrade_required": {
+        "details": "프라이빗 모델은 구독 업그레이드가 필요합니다: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "이 워크플로우의 프라이빗 모델을 사용하려면 구독을 업그레이드하세요.",
+        "title": "구독 업그레이드 필요",
+        "toastMessage": "이 프라이빗 모델을 사용하려면 구독을 업그레이드하세요: {modelNames}.",
+        "toastTitle": "구독 업그레이드 필요"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "이 워크플로우가 최대 실행 시간을 초과했습니다. 이미지 해상도, 배치 크기 또는 워크플로우 길이를 줄이고 다시 시도하세요.",
+        "title": "생성 시간 초과",
+        "toastMessage": "이 워크플로우가 최대 실행 시간을 초과했습니다. 이미지 해상도, 배치 크기 또는 워크플로우 길이를 줄이고 다시 시도하세요.",
+        "toastTitle": "생성 시간 초과"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "서비스에서 예기치 않은 오류가 발생했습니다. 다시 시도하세요.",
+        "title": "서비스 오류",
+        "toastMessage": "서비스에서 예기치 않은 오류가 발생했습니다. 다시 시도하세요.",
+        "toastTitle": "서비스 오류"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "작업 공간에 크레딧을 추가해야 계속할 수 있습니다.",
+        "title": "크레딧 부족",
+        "toastMessage": "작업 공간에 크레딧을 추가해야 계속할 수 있습니다.",
+        "toastTitle": "크레딧 부족"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName}의 {inputName} 연결이 잘못되었습니다.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "노드 연결을 올바르게 읽을 수 없습니다.",
+        "title": "잘못된 연결",
+        "toastMessage": "{nodeName}의 {inputName} 연결이 잘못되었습니다.",
+        "toastTitle": "잘못된 연결"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName}이(가) {inputName}의 값을 거부했습니다.",
+        "detailsWithRawDetails": "{nodeName}에서 사용자 지정 검증 실패: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "노드가 하나 이상의 입력 값을 거부했습니다.",
+        "title": "잘못된 입력",
+        "toastMessage": "{nodeName}이(가) {inputName}의 값을 거부했습니다.",
+        "toastTitle": "잘못된 입력"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName}이(가) 순환 연결의 일부입니다.",
+        "detailsWithRawDetails": "{nodeName}이(가) 순환 연결의 일부입니다: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "워크플로우에 순환 노드 연결이 있습니다.",
+        "title": "잘못된 워크플로우",
+        "toastMessage": "{nodeName}이(가) 순환 연결의 일부입니다.",
+        "toastTitle": "잘못된 워크플로우"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName}에서 {inputName}을(를) 검증할 수 없습니다.",
+        "detailsWithRawDetails": "{nodeName}에서 {inputName}을(를) 검증할 수 없습니다: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "워크플로우가 연결된 노드를 검증할 수 없습니다.",
+        "title": "검증 실패",
+        "toastMessage": "{nodeName}에서 {inputName}을(를) 검증할 수 없습니다.",
+        "toastMessageWithRawDetails": "{nodeName}에서 {inputName}을(를) 검증할 수 없습니다: {rawDetails}",
+        "toastTitle": "검증 실패"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName}이(가) 검증 중에 실패했습니다.",
+        "detailsWithRawDetails": "{nodeName}이(가) 검증 중에 실패했습니다: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "노드 검증 체크가 예기치 않게 실패하여 워크플로우를 검증할 수 없습니다.",
+        "title": "검증 실패",
+        "toastMessage": "{nodeName}이(가) 검증 중에 실패했습니다.",
+        "toastMessageWithRawDetails": "{nodeName}이(가) 검증 중에 실패했습니다: {rawDetails}",
+        "toastTitle": "검증 실패"
+      },
+      "image_not_loaded": {
+        "details": "{nodeName}의 이미지를 불러올 수 없습니다. 다시 추가해 보세요.",
+        "itemLabel": "{nodeName}",
+        "message": "시스템에서 이 이미지를 불러올 수 없습니다.",
+        "title": "이미지 불러오기 실패",
+        "toastMessage": "{nodeName}의 이미지를 불러올 수 없습니다. 다시 추가해 보세요.",
+        "toastTitle": "입력 이미지 불러오기 실패"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName}에서 {inputName}을(를) 기대한 타입으로 변환할 수 없습니다.",
+        "detailsWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}을(를) {expectedType}으로 변환할 수 없습니다.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "입력 값의 타입이 올바르지 않습니다.",
+        "title": "잘못된 입력",
+        "toastMessage": "{nodeName}에서 {inputName}을(를) 기대한 타입으로 변환할 수 없습니다.",
+        "toastMessageWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}을(를) {expectedType}으로 변환할 수 없습니다.",
+        "toastTitle": "잘못된 입력"
+      },
+      "required_input_missing": {
+        "details": "{nodeName}에 필수 입력이 누락되었습니다: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "필수 입력 슬롯에 연결이 없습니다.",
+        "title": "연결 누락",
+        "toastMessage": "{nodeName}에 필수 입력이 누락되었습니다: {inputName}",
+        "toastTitle": "필수 입력 누락"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName}의 {inputName} 연결이 호환되지 않습니다.",
+        "detailsWithTypes": "{nodeName}의 {inputName} 입력은 {expectedType}을(를) 기대하지만, 연결된 출력은 {receivedType}입니다.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "연결된 노드의 입력 및 출력 타입이 호환되지 않습니다.",
+        "title": "잘못된 연결",
+        "toastMessage": "{nodeName}의 {inputName} 연결이 호환되지 않습니다.",
+        "toastMessageWithTypes": "{nodeName}의 {inputName} 입력은 {expectedType}을(를) 기대하지만, 연결된 출력은 {receivedType}입니다.",
+        "toastTitle": "잘못된 연결"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName}의 {inputName} 값이 최대값을 초과합니다.",
+        "detailsWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}이(가) 최대값 {maxValue}를 초과합니다.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "일부 입력 값이 허용된 범위를 벗어났습니다.",
+        "title": "입력값 범위 초과",
+        "toastMessage": "{nodeName}의 {inputName} 값이 최대값을 초과합니다.",
+        "toastMessageWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}이(가) 최대값 {maxValue}를 초과합니다.",
+        "toastTitle": "입력값 범위 초과"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName}의 {inputName}에 지원되지 않는 값이 있습니다.",
+        "detailsWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}은(는) 사용할 수 없습니다.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "일부 입력 값이 이 노드에서 사용할 수 없습니다.",
+        "title": "잘못된 입력",
+        "toastMessage": "{nodeName}의 {inputName}에 지원되지 않는 값이 있습니다.",
+        "toastMessageWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}은(는) 사용할 수 없습니다.",
+        "toastTitle": "잘못된 입력"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName}의 {inputName} 값이 최소값보다 작습니다.",
+        "detailsWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}이(가) 최소값 {minValue}보다 작습니다.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "일부 입력 값이 허용된 범위를 벗어났습니다.",
+        "title": "입력값 범위 초과",
+        "toastMessage": "{nodeName}의 {inputName} 값이 최소값보다 작습니다.",
+        "toastMessageWithValue": "{nodeName}의 {inputName}에 대한 값 {receivedValue}이(가) 최소값 {minValue}보다 작습니다.",
+        "toastTitle": "입력값 범위 초과"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -899,7 +1279,8 @@
     "extensionFileHint": "다음 스크립트 때문일 수 있습니다",
     "loadWorkflowTitle": "워크플로 데이터를 다시 로드하는 중 오류로 인해 로드가 중단되었습니다",
     "noStackTrace": "스택 추적을 사용할 수 없습니다",
-    "promptExecutionError": "프롬프트 실행 실패"
+    "promptExecutionError": "프롬프트 실행 실패",
+    "queueOpenWorkflowFailedTitle": "워크플로우 열기에 실패했습니다"
   },
   "errorOverlay": {
     "errorCount": "{count}개 오류",
@@ -912,6 +1293,10 @@
     "showMissingNodes": "누락된 노드 표시",
     "showSwapNodes": "교체 가능한 노드 표시",
     "swapNodes": "일부 노드는 대체 가능한 노드로 교체할 수 있습니다"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "피드백 남기기",
+    "ctaText": "새로운 오류 패널은 어떠신가요?"
   },
   "essentials": {
     "batchImage": "이미지 일괄 처리",
@@ -998,13 +1383,16 @@
     "back": "뒤로",
     "batchRename": "일괄 이름 변경",
     "beta": "베타",
+    "blueprints": "블루프린트",
     "bookmark": "라이브러리에 저장",
+    "bookmarked": "북마크됨",
     "browserReservedKeybinding": "이 단축키는 일부 브라우저에서 예약되어 있어 예기치 않은 결과가 발생할 수 있습니다.",
     "browserReservedKeybindingTooltip": "이 단축키는 브라우저 예약 단축키와 충돌합니다",
     "calculatingDimensions": "크기 계산 중",
     "cancel": "취소",
     "cancelled": "취소됨",
     "capture": "캡처",
+    "categories": "카테고리",
     "category": "카테고리",
     "changeKeybinding": "키 바인딩 변경",
     "chart": "차트",
@@ -1020,6 +1408,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "ComfyOrg 로고",
+    "comfyPackageOutdated": "설치된 {name} 버전 {installedVersion}이(가) 필요한 버전 {requiredVersion}보다 낮습니다.",
     "comingSoon": "곧 출시 예정",
     "command": "명령",
     "commandProhibited": "{command}는 금지된 명령입니다. 자세한 정보는 관리자에게 문의하십시오.",
@@ -1180,6 +1569,7 @@
     "logs": "로그",
     "manageExtensions": "확장 프로그램 관리",
     "markdown": "마크다운",
+    "maximizeDialog": "대화 상자 최대화",
     "micPermissionDenied": "마이크 권한이 거부되었습니다",
     "migrate": "이전(migrate)",
     "missing": "누락됨",
@@ -1225,6 +1615,7 @@
     "output": "출력",
     "overwrite": "덮어쓰기",
     "partner": "파트너",
+    "partnerNodes": "파트너 노드",
     "pause": "일시정지",
     "play": "재생",
     "playPause": "재생/일시정지",
@@ -1279,6 +1670,7 @@
     "resizeFromTopLeft": "왼쪽 위 모서리에서 크기 조정",
     "resizeFromTopRight": "오른쪽 위 모서리에서 크기 조정",
     "restart": "재시작",
+    "restoreDialog": "대화 상자 복원",
     "resultsCount": "{count} 개의 결과를 찾았습니다",
     "running": "실행 중",
     "save": "저장",
@@ -1638,6 +2030,7 @@
       "orthographic": "직교법",
       "perspective": "원근법"
     },
+    "centerCameraOnModel": "모델에 카메라 중앙 맞추기",
     "clearRecording": "녹화 지우기",
     "dropToLoad": "3D 모델을 드롭하여 로드",
     "edgeThreshold": "에지 임계값",
@@ -1717,6 +2110,10 @@
     "outdatedVersion": "이 워크플로우는 더 최신 버전의 ComfyUI({version})에서 생성되었습니다. 일부 노드는 제대로 작동하지 않을 수 있습니다.",
     "outdatedVersionGeneric": "이 워크플로우는 더 최신 버전의 ComfyUI에서 생성되었습니다. 일부 노드는 제대로 작동하지 않을 수 있습니다.",
     "unknownVersion": "알 수 없음"
+  },
+  "logsTerminal": {
+    "loadError": "로그를 불러올 수 없습니다. ComfyUI 백엔드가 최신인지 확인해 주세요.",
+    "resyncError": "백엔드 재연결 후 로그를 다시 동기화할 수 없습니다. 다시 시도하려면 콘솔을 다시 여세요."
   },
   "maintenance": {
     "None": "없음",
@@ -1821,6 +2218,10 @@
     "gettingInfo": "정보 가져오는 중...",
     "importFailedGenericError": "패키지 가져오기에 실패했습니다. 자세한 내용은 콘솔을 확인하세요.",
     "inWorkflow": "워크플로 내",
+    "incompatibleVersion": {
+      "message": "ComfyUI-Manager를 4.2.1 이상 버전으로 업그레이드해주세요.\n• 데스크톱: ComfyUI Desktop 앱을 업데이트하세요\n• 독립 실행형: pip install -U comfyui-manager 명령 실행 후 재시작하세요\n자세히 보기: https://github.com/Comfy-Org/ComfyUI-Manager",
+      "title": "ComfyUI-Manager 업그레이드 필요"
+    },
     "infoPanelEmpty": "정보를 보려면 항목을 클릭하세요",
     "installAllMissingNodes": "모든 누락된 노드 설치",
     "installError": "설치 오류",
@@ -2066,7 +2467,6 @@
     "ComfyUI Issues": "ComfyUI 이슈 페이지",
     "Contact Support": "고객 지원 문의",
     "Convert Selection to Subgraph": "선택 영역을 서브그래프로 변환",
-    "Convert selected nodes to group node": "선택한 노드를 그룹 노드로 변환",
     "Copy": "복사",
     "Custom Nodes (Legacy)": "커스텀 노드(구버전)",
     "Custom Nodes Manager": "커스텀 노드 관리자",
@@ -2227,7 +2627,9 @@
     "": "",
     "3d": "3d",
     "3d_models": "3D 모델",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
+    "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
@@ -2236,13 +2638,14 @@
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2259,32 +2662,31 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_테스트용",
+    "adjustments": "조정",
     "advanced": "고급",
-    "animation": "애니메이션",
-    "api": "API",
-    "api node": "api 노드",
     "attention_experiments": "어텐션 실험",
     "audio": "오디오",
+    "background removal": "배경 제거",
     "batch": "배치",
-    "camera": "카메라",
     "chroma_radiance": "chroma_radiance",
     "clip": "클립",
+    "color": "색상",
     "combine": "결합",
     "compositing": "합성",
     "cond pair": "조건 쌍",
     "cond single": "단일 조건",
     "conditioning": "조건화",
-    "context": "컨텍스트",
     "controlnet": "컨트롤넷",
     "create": "생성",
     "custom_sampling": "사용자 정의 샘플링",
-    "dataset": "데이터셋",
     "debug": "디버그",
     "deprecated": "지원 중단",
     "detection": "감지",
     "edit_models": "edit_models",
+    "experimental": "실험적",
+    "filters": "필터",
     "flux": "flux",
+    "geometry estimation": "기하 추정",
     "gligen": "글리젠",
     "guidance": "가이드",
     "guiders": "가이드",
@@ -2299,39 +2701,36 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "마스크",
-    "math": "수학",
     "model": "모델",
     "model_merging": "모델 병합",
-    "model_patches": "모델 패치",
     "model_specific": "모델 특정",
+    "multigpu": "멀티GPU",
     "noise": "노이즈",
     "operations": "연산",
+    "partner": "partner",
+    "patch": "patch",
     "photomaker": "포토메이커",
-    "postprocessing": "후처리",
     "preprocessors": "전처리기",
     "primitive": "기본 입력",
     "qwen": "qwen",
     "samplers": "샘플러",
     "sampling": "샘플링",
-    "save": "저장",
     "schedulers": "스케줄러",
     "scheduling": "스케줄링",
-    "sd": "sd",
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "시그마",
+    "splat": "splat",
     "stable_cascade": "Stable Cascade",
-    "string": "문자열",
     "style_model": "스타일 모델",
     "supir": "supir",
     "text": "텍스트",
-    "textgen": "textgen",
     "training": "학습",
     "transform": "변환",
     "unet": "UNet",
     "upscale_diffusion": "업스케일 확산",
     "upscaling": "업스케일링",
-    "utils": "유틸리티",
+    "utilities": "유틸리티",
     "video": "비디오",
     "video_models": "비디오 모델",
     "zimage": "zimage"
@@ -2404,6 +2803,43 @@
     },
     "title": "이 장치는 지원되지 않습니다."
   },
+  "oauth": {
+    "consent": {
+      "allow": "계속",
+      "appTypeNative": "네이티브 앱",
+      "appTypeWeb": "웹 앱",
+      "deny": "취소",
+      "errorExpired": "이 동의 요청이 만료되었거나 이미 사용되었습니다. 클라이언트 앱에서 다시 시작해 주세요.",
+      "errorScopeBroadening": "이전에 승인된 권한이 이 요청을 포함하지 않습니다. 새로운 권한으로 다시 인증해야 합니다.",
+      "errorUnavailable": "이 기능은 현재 사용할 수 없습니다. 문제가 계속되면 지원팀에 문의해 주세요.",
+      "genericError": "OAuth 요청에 실패했습니다. 클라이언트 앱에서 다시 시작해 주세요.",
+      "loading": "인증 요청을 불러오는 중…",
+      "missingRequest": "이 인증 요청이 누락되었습니다. 클라이언트 앱에서 다시 시작해 주세요.",
+      "noWorkspaces": "이 요청에 사용할 수 있는 워크스페이스가 없습니다.",
+      "permissionsHeader": "권한",
+      "redirectNotice": "다음으로 리디렉션됩니다",
+      "resourceFallback": "이 앱",
+      "sessionError": "세션을 설정하지 못했습니다. 다시 시도해 주세요.",
+      "sessionErrorToastSummary": "OAuth 로그인 진행을 계속할 수 없습니다",
+      "subtitle": "계속하려면 {resource}에 로그인하세요",
+      "title": "{client}에서 접근을 요청합니다",
+      "workspaceHelp": "권한은 이 워크스페이스에만 적용됩니다.",
+      "workspaceLabel": "워크스페이스"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "워크플로를 대신 실행"
+      },
+      "mcp:tools:read": {
+        "label": "사용 가능한 워크플로 도구 보기"
+      }
+    },
+    "workspace": {
+      "member": "멤버",
+      "owner": "소유자",
+      "personal": "개인"
+    }
+  },
   "openSharedWorkflow": {
     "author": "작성자:",
     "copyAssetsAndOpen": "에셋 가져오기 및 워크플로우 열기",
@@ -2414,7 +2850,8 @@
     "nonPublicAssetsWarningLine1": "이 워크플로우에는 비공개 에셋이 포함되어 있습니다.",
     "nonPublicAssetsWarningLine2": "워크플로우를 열면 이 에셋들이 라이브러리에 가져와집니다",
     "openWithoutImporting": "가져오지 않고 열기",
-    "openWorkflow": "워크플로우 열기"
+    "openWorkflow": "워크플로우 열기",
+    "opening": "공유 워크플로우 열기 중..."
   },
   "painter": {
     "background": "배경",
@@ -2593,6 +3030,9 @@
       "metadataFetchFailed": "메타데이터를 가져오지 못했습니다. 링크를 확인하고 다시 시도하세요.",
       "missingModelsTitle": "누락된 모델",
       "or": "또는",
+      "refresh": "새로고침",
+      "refreshFailed": "누락된 모델을 새로고침하지 못했습니다. 다시 시도해 주세요.",
+      "refreshing": "누락된 모델을 새로고침하는 중입니다.",
       "typeMismatch": "이 모델은 \"{detectedType}\"로 보입니다. 계속하시겠습니까?",
       "unknownCategory": "알 수 없음",
       "unsupportedUrl": "Civitai와 Hugging Face URL만 지원됩니다.",
@@ -2627,20 +3067,6 @@
     "normal": "일반",
     "parameters": "파라미터",
     "pinned": "고정됨",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "서버로 전송된 워크플로우 데이터가 비어 있습니다. 이는 예기치 않은 시스템 오류일 수 있습니다."
-      },
-      "prompt_no_outputs": {
-        "desc": "워크플로우에 결과를 생성할 출력 노드(예: 이미지 저장, 이미지 미리보기)가 포함되어 있지 않습니다."
-      },
-      "server_error_cloud": {
-        "desc": "서버에서 예기치 않은 오류가 발생했습니다. 나중에 다시 시도해 주세요."
-      },
-      "server_error_local": {
-        "desc": "서버에서 예기치 않은 오류가 발생했습니다. 서버 로그를 확인해 주세요."
-      }
-    },
     "properties": "속성",
     "removeFavorite": "즐겨찾기 해제",
     "resetAllParameters": "모든 매개변수 재설정",
@@ -2897,6 +3323,7 @@
     "Other": "기타",
     "PLY": "PLY",
     "PlanCredits": "플랜 및 크레딧",
+    "PointCloud": "포인트 클라우드",
     "Pointer": "포인터",
     "Queue": "실행 대기열",
     "QueueButton": "실행 대기열 버튼",
@@ -3038,6 +3465,7 @@
         "sourceDesc": "소스 유형(Core, Custom, API)별로 그룹화"
       },
       "noBookmarkedNodes": "아직 즐겨찾기가 없습니다",
+      "noMatchingNodes": "\"{query}\"에 일치하는 노드가 없습니다",
       "resetView": "기본 보기로 재설정",
       "sections": {
         "bookmarked": "즐겨찾기",
@@ -3126,6 +3554,7 @@
       "deleteFailedTitle": "삭제 실패",
       "deleted": "워크플로가 삭제되었습니다.",
       "dirtyClose": "아래 파일들이 변경되었습니다. 닫기 전에 저장하시겠습니까?",
+      "dirtyCloseAnyway": "그래도 닫기",
       "dirtyCloseHint": "프롬프트 없이 닫으려면 Shift를 누르세요",
       "dirtyCloseTitle": "변경 사항 저장",
       "workflowTreeType": {
@@ -3422,8 +3851,7 @@
       "newest": "최신순",
       "popular": "인기",
       "recommended": "권장",
-      "searchPlaceholder": "검색...",
-      "vramLowToHigh": "VRAM 사용량 (낮음에서 높음 순)"
+      "searchPlaceholder": "검색..."
     },
     "sorting": "정렬 기준",
     "title": "템플릿으로 시작하기",
@@ -3486,6 +3914,7 @@
     "no3dScene": "텍스처를 적용할 3D 장면이 없습니다",
     "no3dSceneToExport": "내보낼 3D 장면이 없습니다",
     "noTemplatesToExport": "내보낼 템플릿이 없습니다",
+    "nodeDefinitionsUpdateFailed": "노드 정의 업데이트에 실패했습니다",
     "nodeDefinitionsUpdated": "노드 정의가 업데이트되었습니다",
     "nothingSelected": "선택된 항목이 없습니다",
     "nothingToGroup": "그룹화할 항목이 없습니다",
@@ -3586,7 +4015,8 @@
       "placeholderMesh": "메시 선택...",
       "placeholderModel": "모델 선택...",
       "placeholderUnknown": "미디어 선택...",
-      "placeholderVideo": "비디오 선택..."
+      "placeholderVideo": "비디오 선택...",
+      "topResult": "최상위 결과: {result}"
     },
     "valueControl": {
       "decrement": "값 감소",

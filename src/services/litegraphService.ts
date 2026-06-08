@@ -57,7 +57,7 @@ import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { usePromotionStore } from '@/stores/promotionStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
@@ -187,10 +187,10 @@ export const useLitegraphService = () => {
   }
 
   function getPseudoWidgetPreviewTargets(node: SubgraphNode): LGraphNode[] {
-    const promotionStore = usePromotionStore()
-    const promotions = promotionStore.getPromotionsRef(
+    const hostLocator = String(node.id)
+    const promotions = usePreviewExposureStore().getExposuresAsPromotionShape(
       node.rootGraph.id,
-      node.id
+      hostLocator
     )
     const resolved = resolveSubgraphPseudoWidgetCache({
       cache: subgraphPseudoWidgetCache.get(node) ?? null,
@@ -921,6 +921,16 @@ export const useLitegraphService = () => {
         throw new Error(
           'Subgraph blueprint was added, but failed to resolve a subgraph Node'
         )
+      if (addOptions?.ghost) {
+        node.flags.ghost = true
+        canvas.graph?.trigger('node:property:changed', {
+          nodeId: node.id,
+          property: 'flags.ghost',
+          oldValue: false,
+          newValue: true
+        })
+        canvas.startGhostPlacement(node, addOptions.dragEvent)
+      }
       return node
     }
 

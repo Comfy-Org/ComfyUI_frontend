@@ -1,8 +1,43 @@
 import type { WebSocketRoute } from '@playwright/test'
 
+import type {
+  NodeError,
+  NodeProgressState,
+  PromptResponse
+} from '@/schemas/apiSchema'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+
+const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
+
+type RunOptions = {
+  nodeErrors?: Record<string, NodeError>
+  onPromptRequest?: (requestBody: unknown) => void | Promise<void>
+}
+
+/**
+ * Build a `NodeError` describing a single failed input on a KSampler node.
+ * Shared between specs that surface validation rings via 400 responses.
+ */
+export function buildKSamplerError(
+  type: NodeError['errors'][number]['type'],
+  inputName: string,
+  message: string
+): NodeError {
+  return {
+    class_type: 'KSampler',
+    dependent_outputs: [],
+    errors: [
+      {
+        type,
+        message,
+        details: '',
+        extra_info: { input_name: inputName }
+      }
+    ]
+  }
+}
 
 /**
  * Helper for simulating prompt execution in e2e tests.
@@ -16,11 +51,21 @@ export class ExecutionHelper {
 
   constructor(
     comfyPage: ComfyPage,
-    private readonly ws: WebSocketRoute
+    private readonly ws?: WebSocketRoute
   ) {
     this.page = comfyPage.page
     this.command = comfyPage.command
     this.assets = comfyPage.assets
+  }
+
+  private requireWs(): WebSocketRoute {
+    if (!this.ws) {
+      throw new Error(
+        'ExecutionHelper was constructed without a WebSocketRoute; ' +
+          'pass `ws` to use methods that send WS frames.'
+      )
+    }
+    return this.ws
   }
 
   /**
@@ -30,8 +75,9 @@ export class ExecutionHelper {
    * The app receives a valid PromptResponse so storeJob() fires
    * and registers the job against the active workflow path.
    */
-  async run(): Promise<string> {
+  async run(options: RunOptions = {}): Promise<string> {
     const jobId = `test-job-${++this.jobCounter}`
+    const { nodeErrors = {}, onPromptRequest } = options
 
     let fulfilled!: () => void
     const prompted = new Promise<void>((r) => {
@@ -39,14 +85,15 @@ export class ExecutionHelper {
     })
 
     await this.page.route(
-      '**/api/prompt',
+      PROMPT_ROUTE_PATTERN,
       async (route) => {
+        await onPromptRequest?.(route.request().postDataJSON())
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
             prompt_id: jobId,
-            node_errors: {}
+            node_errors: nodeErrors
           })
         })
         fulfilled()
@@ -58,6 +105,31 @@ export class ExecutionHelper {
     await prompted
 
     return jobId
+  }
+
+  async mockValidationFailure(
+    nodeErrors: Record<string, NodeError>
+  ): Promise<void> {
+    const response: PromptResponse = {
+      node_errors: nodeErrors,
+      error: {
+        type: 'prompt_outputs_failed_validation',
+        message: 'Prompt outputs failed validation',
+        details: ''
+      }
+    }
+
+    await this.page.route(
+      PROMPT_ROUTE_PATTERN,
+      async (route) => {
+        await route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify(response)
+        })
+      },
+      { times: 1 }
+    )
   }
 
   /**
@@ -89,12 +161,12 @@ export class ExecutionHelper {
     new Uint8Array(buf, 8, metadataBytes.length).set(metadataBytes)
     new Uint8Array(buf, 8 + metadataBytes.length).set(png)
 
-    this.ws.send(Buffer.from(buf))
+    this.requireWs().send(Buffer.from(buf))
   }
 
   /** Send `execution_start` WS event. */
   executionStart(jobId: string): void {
-    this.ws.send(
+    this.requireWs().send(
       JSON.stringify({
         type: 'execution_start',
         data: { prompt_id: jobId, timestamp: Date.now() }
@@ -104,7 +176,7 @@ export class ExecutionHelper {
 
   /** Send `executing` WS event to signal which node is currently running. */
   executing(jobId: string, nodeId: string | null): void {
-    this.ws.send(
+    this.requireWs().send(
       JSON.stringify({
         type: 'executing',
         data: { prompt_id: jobId, node: nodeId }
@@ -118,7 +190,7 @@ export class ExecutionHelper {
     nodeId: string,
     output: Record<string, unknown>
   ): void {
-    this.ws.send(
+    this.requireWs().send(
       JSON.stringify({
         type: 'executed',
         data: {
@@ -133,7 +205,7 @@ export class ExecutionHelper {
 
   /** Send `execution_success` WS event. */
   executionSuccess(jobId: string): void {
-    this.ws.send(
+    this.requireWs().send(
       JSON.stringify({
         type: 'execution_success',
         data: { prompt_id: jobId, timestamp: Date.now() }
@@ -143,7 +215,7 @@ export class ExecutionHelper {
 
   /** Send `execution_error` WS event. */
   executionError(jobId: string, nodeId: string, message: string): void {
-    this.ws.send(
+    this.requireWs().send(
       JSON.stringify({
         type: 'execution_error',
         data: {
@@ -161,7 +233,7 @@ export class ExecutionHelper {
 
   /** Send `execution_interrupted` WS event (user-initiated stop). */
   executionInterrupted(jobId: string, nodeId: string): void {
-    this.ws.send(
+    this.requireWs().send(
       JSON.stringify({
         type: 'execution_interrupted',
         data: {
@@ -177,10 +249,20 @@ export class ExecutionHelper {
 
   /** Send `progress` WS event. */
   progress(jobId: string, nodeId: string, value: number, max: number): void {
-    this.ws.send(
+    this.requireWs().send(
       JSON.stringify({
         type: 'progress',
         data: { prompt_id: jobId, node: nodeId, value, max }
+      })
+    )
+  }
+
+  /** Send `progress_state` WS event with per-node execution state. */
+  progressState(jobId: string, nodes: Record<string, NodeProgressState>): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'progress_state',
+        data: { prompt_id: jobId, nodes }
       })
     )
   }
@@ -217,7 +299,7 @@ export class ExecutionHelper {
 
   /** Send `status` WS event to update queue count. */
   status(queueRemaining: number): void {
-    this.ws.send(
+    this.requireWs().send(
       JSON.stringify({
         type: 'status',
         data: { status: { exec_info: { queue_remaining: queueRemaining } } }

@@ -2,6 +2,7 @@
  * PLY (Polygon File Format) decoder
  * Parses ASCII PLY files and extracts vertex positions and colors
  */
+import { PlyReader } from '@sparkjsdev/spark'
 
 interface PLYHeader {
   vertexCount: number
@@ -150,4 +151,28 @@ export function parseASCIIPLY(arrayBuffer: ArrayBuffer): PLYData | null {
 export function isPLYAsciiFormat(arrayBuffer: ArrayBuffer): boolean {
   const header = new TextDecoder().decode(arrayBuffer.slice(0, 500))
   return header.includes('format ascii')
+}
+
+/**
+ * Mirrors sparkjs's own check (PlyReader.parseSplats:
+ * `hasScales && hasRots`), we delegate header parsing to sparkjs's
+ * PlyReader so the property dictionary we inspect is exactly the one
+ * sparkjs would see if asked to render the file. parseHeader rejects
+ * ASCII PLYs by design; we catch and treat them as not-3DGS (no real
+ * 3DGS export uses ASCII PLY).
+ */
+export async function isGaussianSplatPLY(
+  arrayBuffer: ArrayBuffer
+): Promise<boolean> {
+  try {
+    const reader = new PlyReader({ fileBytes: arrayBuffer })
+    await reader.parseHeader()
+    const props = reader.elements.vertex?.properties
+    if (!props) return false
+    const hasScales = !!(props.scale_0 && props.scale_1 && props.scale_2)
+    const hasRots = !!(props.rot_0 && props.rot_1 && props.rot_2 && props.rot_3)
+    return hasScales && hasRots
+  } catch {
+    return false
+  }
 }

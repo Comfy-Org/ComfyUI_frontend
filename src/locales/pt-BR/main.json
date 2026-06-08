@@ -99,6 +99,7 @@
     "findInLibrary": "Encontre na seção {type} da biblioteca de modelos.",
     "finish": "Concluir",
     "genericLinkPlaceholder": "Cole o link aqui",
+    "gridView": "Visualização em grade",
     "importAnother": "Importar outro",
     "imported": "Importado",
     "invalidAsset": "Ativo inválido",
@@ -106,6 +107,7 @@
     "invalidFilename": "Nome de arquivo inválido",
     "invalidFilenameDetail": "Não foi possível determinar o nome do arquivo do ativo. Por favor, tente novamente.",
     "jobId": "ID do trabalho",
+    "listView": "Visualização em lista",
     "loadingModels": "Carregando {type}...",
     "maxFileSize": "Tamanho máximo do arquivo: {size}",
     "maxFileSizeValue": "1 GB",
@@ -168,6 +170,7 @@
     "sortDefault": "Padrão",
     "sortPopular": "Popular",
     "sortRecent": "Recentes",
+    "sortUnsorted": "Sem ordenação",
     "sortZA": "Z-A",
     "sortingType": "Tipo de ordenação",
     "tags": "Tags",
@@ -230,10 +233,12 @@
       "auth/user-disabled": "Esta conta foi desativada. Por favor, entre em contato com o suporte.",
       "auth/user-not-found": "Nenhuma conta encontrada com este e-mail. Gostaria de criar uma nova conta?",
       "auth/weak-password": "A senha é muito fraca. Use uma senha mais forte com pelo menos 6 caracteres.",
-      "auth/wrong-password": "A senha que você digitou está incorreta. Por favor, tente novamente."
+      "auth/wrong-password": "A senha que você digitou está incorreta. Por favor, tente novamente.",
+      "generic": "Algo deu errado ao fazer login. Por favor, tente novamente."
     },
     "login": {
       "andText": "e",
+      "backToGithubLogin": "Cadastre-se com o Github",
       "backToLogin": "Voltar para login",
       "backToSocialLogin": "Cadastre-se com Google ou Github em vez disso",
       "confirmPasswordLabel": "Confirmar senha",
@@ -289,7 +294,9 @@
       "title": "Reautenticação necessária"
     },
     "signOut": {
+      "saveFailed": "Saída cancelada porque salvar \"{workflow}\" falhou.",
       "signOut": "Sair",
+      "signOutAnyway": "Sair mesmo assim",
       "success": "Logout realizado com sucesso",
       "successDetail": "Você saiu da sua conta.",
       "unsavedChangesMessage": "Você tem alterações não salvas que serão perdidas ao sair. Deseja continuar?",
@@ -332,6 +339,7 @@
   },
   "breadcrumbsMenu": {
     "app": "App",
+    "blueprint": "Blueprint",
     "clearWorkflow": "Limpar Fluxo de Trabalho",
     "deleteBlueprint": "Excluir Blueprint",
     "deleteWorkflow": "Excluir Fluxo de Trabalho",
@@ -400,10 +408,32 @@
   "cloudForgotPassword_passwordResetSent": "Redefinição de senha enviada",
   "cloudForgotPassword_sendResetLink": "Enviar link de redefinição",
   "cloudForgotPassword_title": "Esqueceu a senha",
+  "cloudHero": {
+    "nextSlide": "Próximo slide",
+    "previousSlide": "Slide anterior",
+    "slidePagerLabel": "Ir para o slide {index}",
+    "slides": {
+      "cloud": {
+        "description": "Melhor opção para a maioria dos usuários que desejam trabalhar de qualquer lugar com modelos verificados para uso comercial.",
+        "title": "Nuvem"
+      },
+      "models": {
+        "description": "Modelos selecionados e licenciados comercialmente, prontos para uso sem configuração.",
+        "title": "Modelos"
+      },
+      "team": {
+        "description": "Adicione sua equipe hoje mesmo. Compartilhe workflows e ativos em toda a sua organização.",
+        "title": "Equipe"
+      },
+      "workflows": {
+        "description": "Da ideia ao resultado em minutos. Gere múltiplas variações lado a lado.",
+        "title": "Workflows"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
     "exploreCloud": "Experimente a Nuvem Gratuitamente",
-    "feature1Title": "400 Créditos Grátis por Mês",
     "feature2Title": "Funciona em Qualquer Lugar, Instantaneamente",
     "feature3Title": "Modelos Prontos para Usar",
     "feature4Title": "Principais Pacotes de Nodes Personalizados Pré-instalados",
@@ -457,6 +487,12 @@
       "wantToRun": "Prefere rodar o ComfyUI localmente?"
     },
     "survey": {
+      "errors": {
+        "chooseAnOption": "Por favor, escolha uma opção.",
+        "describeAnswer": "Por favor, descreva sua resposta.",
+        "selectAtLeastOne": "Por favor, selecione pelo menos uma opção."
+      },
+      "intro": "Ajude-nos a personalizar sua experiência no ComfyUI.",
       "options": {
         "familiarity": {
           "advanced": "Usuário avançado (fluxos de trabalho personalizados)",
@@ -465,45 +501,43 @@
           "new": "Novo no ComfyUI (nunca usei antes)",
           "starting": "Começando agora (seguindo tutoriais)"
         },
-        "industry": {
-          "architecture": "Arquitetura",
-          "education": "Educação",
-          "film_tv_animation": "Filmes, TV e animação",
-          "fine_art": "Belas artes e ilustração",
-          "gaming": "Jogos",
-          "marketing": "Marketing e publicidade",
-          "other": "Outro",
-          "otherPlaceholder": "Por favor, especifique",
-          "product_design": "Design de produto e gráfico",
-          "software": "Software e tecnologia"
-        },
-        "making": {
-          "3d": "Assets 3D",
+        "intent": {
+          "3d_game": "Assets 3D / assets para jogos",
+          "api": "Endpoints de API para executar workflows",
+          "apps": "Apps simplificados a partir de workflows",
           "audio": "Áudio / música",
-          "custom_nodes": "Nós e fluxos de trabalho personalizados",
+          "custom_nodes": "Nodes personalizados",
           "images": "Imagens",
-          "video": "Vídeo e animação"
+          "not_sure": "Não tenho certeza",
+          "videos": "Vídeos",
+          "workflows": "Workflows ou pipelines personalizados"
         },
-        "purpose": {
-          "client": "Trabalho para clientes (freelancer)",
-          "community": "Contribuições para a comunidade (nós, fluxos de trabalho, etc.)",
-          "inhouse": "No meu próprio local de trabalho (interno)",
-          "personal": "Projetos pessoais / hobby",
-          "research": "Pesquisa acadêmica"
+        "source": {
+          "conference": "Conferência ou evento",
+          "discord": "Discord / comunidade",
+          "friend": "Amigo ou colega",
+          "github": "GitHub",
+          "instagram": "Instagram",
+          "linkedin": "LinkedIn",
+          "newsletter": "Newsletter ou blog",
+          "other": "Outro",
+          "reddit": "Reddit",
+          "search": "Google / busca",
+          "twitter": "Twitter / X",
+          "youtube": "YouTube"
+        },
+        "usage": {
+          "education": "Educação (estudante ou educador)",
+          "personal": "Uso pessoal",
+          "work": "Trabalho"
         }
       },
       "placeholder": "Espaço reservado para perguntas da pesquisa",
-      "questions": {
-        "familiarity": "Qual o seu nível de familiaridade com o ComfyUI?",
-        "industry": "Qual é o seu setor principal?",
-        "making": "O que você planeja criar?",
-        "purpose": "Para que você pretende usar principalmente o ComfyUI?"
-      },
       "steps": {
         "familiarity": "Qual o seu nível de familiaridade com o ComfyUI?",
-        "industry": "Qual é o seu setor principal?",
-        "making": "O que você planeja criar?",
-        "purpose": "Para que você pretende usar principalmente o ComfyUI?"
+        "intent": "O que você deseja criar com o ComfyUI?",
+        "source": "Onde você ouviu falar do ComfyUI?",
+        "usage": "Como você pretende usar o ComfyUI?"
       },
       "title": "Pesquisa da Nuvem"
     }
@@ -518,9 +552,9 @@
   "cloudStart_title": "comece a criar em segundos",
   "cloudStart_wantToRun": "Prefere rodar o ComfyUI localmente?",
   "cloudSurvey_steps_familiarity": "Qual o seu nível de familiaridade com o ComfyUI?",
-  "cloudSurvey_steps_industry": "Qual é o seu setor principal?",
-  "cloudSurvey_steps_making": "O que você planeja criar?",
-  "cloudSurvey_steps_purpose": "Para que você pretende usar principalmente o ComfyUI?",
+  "cloudSurvey_steps_intent": "O que você deseja criar com o ComfyUI?",
+  "cloudSurvey_steps_source": "Onde você ouviu falar do ComfyUI?",
+  "cloudSurvey_steps_usage": "Como você pretende usar o ComfyUI?",
   "cloudWaitlist_contactLink": "aqui",
   "cloudWaitlist_questionsText": "Dúvidas? Entre em contato conosco",
   "color": {
@@ -653,7 +687,6 @@
     "Collapse": "Recolher",
     "Color": "Cor",
     "Colors": "Cores",
-    "Convert to Group Node": "Converter para Nó de Grupo",
     "Convert to Subgraph": "Converter para Subgrafo",
     "Copy": "Copiar",
     "Copy (Clipspace)": "Copiar (Clipspace)",
@@ -774,6 +807,7 @@
     "AUDIO_ENCODER": "CODIFICADOR DE ÁUDIO",
     "AUDIO_ENCODER_OUTPUT": "SAÍDA DO CODIFICADOR DE ÁUDIO",
     "AUDIO_RECORD": "GRAVAÇÃO DE ÁUDIO",
+    "BACKGROUND_REMOVAL": "REMOÇÃO_DE_FUNDO",
     "BOOLEAN": "BOOLEANO",
     "BOUNDING_BOX": "BOUNDING_BOX",
     "CAMERA_CONTROL": "CONTROLE DE CÂMERA",
@@ -789,11 +823,17 @@
     "CONTROL_NET": "controlnet",
     "CURVE": "CURVA",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
+    "FACE_DETECTION_MODEL": "MODELO_DE_DETECÇÃO_DE_FACE",
+    "FACE_LANDMARKS": "FACE_LANDMARKS",
     "FILE_3D": "ARQUIVO_3D",
     "FILE_3D_FBX": "ARQUIVO_3D_FBX",
     "FILE_3D_GLB": "ARQUIVO_3D_GLB",
     "FILE_3D_GLTF": "ARQUIVO_3D_GLTF",
+    "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "ARQUIVO_3D_OBJ",
+    "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "ARQUIVO_3D_STL",
     "FILE_3D_USDZ": "ARQUIVO_3D_USDZ",
     "FLOAT": "PONTO FLUTUANTE",
@@ -804,13 +844,17 @@
     "HISTOGRAM": "HISTOGRAMA",
     "HOOKS": "GANCHOS",
     "HOOK_KEYFRAMES": "QUADROS-CHAVE DE GANCHO",
+    "IC_LORA_PARAMETERS": "IC_LORA_PARAMETERS",
     "IMAGE": "IMAGEM",
     "IMAGECOMPARE": "COMPARAR_IMAGEM",
     "INT": "INTEIRO",
+    "INTERP_MODEL": "MODELO_INTERP",
+    "KREA_STYLE_REF": "KREA_STYLE_REF",
     "LATENT": "LATENT",
     "LATENT_OPERATION": "OPERAÇÃO LATENT",
     "LATENT_UPSCALE_MODEL": "MODELO DE AUMENTO DE LATENT",
     "LOAD3D_CAMERA": "CÂMERA LOAD3D",
+    "LOAD3D_MODEL_INFO": "CARREGAR_INFO_DO_MODELO_3D",
     "LOAD_3D": "CARREGAR 3D",
     "LORA_MODEL": "lora MODEL",
     "LOSS_MAP": "MAPA DE PERDA",
@@ -823,9 +867,12 @@
     "MODEL": "MODELO",
     "MODEL_PATCH": "PATCH DE MODELO",
     "MODEL_TASK_ID": "ID DA TAREFA DO MODELO",
+    "MOGE_GEOMETRY": "MOGE_GEOMETRY",
+    "MOGE_MODEL": "MOGE_MODEL",
     "NOISE": "RUÍDO",
     "OPENAI_CHAT_CONFIG": "CONFIGURAÇÃO DE CHAT OPENAI",
     "OPENAI_INPUT_FILES": "ARQUIVOS DE ENTRADA OPENAI",
+    "OPTICAL_FLOW": "FLUX ÓPTICO",
     "PHOTOMAKER": "photomaker",
     "PIXVERSE_TEMPLATE": "MODELO PIXVERSE",
     "POSE_KEYPOINT": "POSE_KEYPOINT",
@@ -834,8 +881,10 @@
     "RECRAFT_V3_STYLE": "ESTILO RECRAFT V3",
     "RETARGET_TASK_ID": "ID DA TAREFA DE REDIRECIONAMENTO",
     "RIG_TASK_ID": "ID DA TAREFA DE RIG",
+    "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "AMOSTRADOR",
     "SIGMAS": "SIGMAS",
+    "SPLAT": "SPLAT",
     "STRING": "TEXTO",
     "STYLE_MODEL": "MODELO DE ESTILO",
     "SVG": "SVG",
@@ -892,6 +941,337 @@
     "paused": "Pausado",
     "resume": "Retomar download"
   },
+  "errorCatalog": {
+    "fallbacks": {
+      "inputName": "entrada desconhecida",
+      "nodeName": "Este nó"
+    },
+    "promptErrors": {
+      "missing_node_type": {
+        "desc": "Um tipo de nó está ausente ou indisponível. O fluxo de trabalho pode estar corrompido ou requerer um nó personalizado.",
+        "title": "Tipo de nó ausente"
+      },
+      "no_prompt": {
+        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro inesperado do sistema.",
+        "title": "Dados do fluxo de trabalho estão vazios"
+      },
+      "prompt_no_outputs": {
+        "desc": "O fluxo de trabalho não contém nenhum nó de saída (ex: Salvar Imagem, Visualizar Imagem) para produzir um resultado.",
+        "title": "Prompt sem saídas"
+      },
+      "prompt_outputs_failed_validation": {
+        "desc": "O fluxo de trabalho possui entradas de nó inválidas. Corrija os nós destacados antes de executá-lo novamente.",
+        "title": "Falha na validação do prompt"
+      },
+      "server_error_cloud": {
+        "desc": "O servidor encontrou um erro inesperado. Por favor, tente novamente mais tarde.",
+        "title": "Erro no servidor"
+      },
+      "server_error_local": {
+        "desc": "O servidor encontrou um erro inesperado. Por favor, verifique os logs do servidor.",
+        "title": "Erro no servidor"
+      }
+    },
+    "runtimeErrors": {
+      "access_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Esta execução requer um acesso que não está disponível para a conta atual.",
+        "title": "Acesso necessário",
+        "toastMessage": "Esta execução requer um acesso que não está disponível para a conta atual.",
+        "toastTitle": "Acesso necessário"
+      },
+      "content_blocked": {
+        "itemLabel": "{nodeName}",
+        "message": "Esta solicitação foi bloqueada pelo sistema de moderação de conteúdo. Tente alterar o prompt ou as entradas.",
+        "title": "Conteúdo bloqueado",
+        "toastMessage": "Esta solicitação foi bloqueada pelo sistema de moderação de conteúdo. Tente alterar o prompt ou as entradas.",
+        "toastTitle": "Conteúdo bloqueado"
+      },
+      "execution_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "O nó gerou um erro durante a execução.",
+        "title": "Execução falhou",
+        "toastMessage": "Este nó gerou um erro durante a execução. Verifique suas entradas ou tente uma configuração diferente.",
+        "toastTitle": "{nodeName} falhou"
+      },
+      "generation_stalled": {
+        "itemLabel": "{nodeName}",
+        "message": "Este fluxo de trabalho parou de progredir. Tente executá-lo novamente.",
+        "title": "Geração paralisada",
+        "toastMessage": "Este fluxo de trabalho parou de progredir. Tente executá-lo novamente.",
+        "toastTitle": "Geração paralisada"
+      },
+      "image_not_loaded": {
+        "itemLabel": "{nodeName}",
+        "message": "O sistema não conseguiu carregar esta imagem.",
+        "title": "Imagem não carregada",
+        "toastMessage": "A imagem para {nodeName} não pôde ser carregada. Tente adicioná-la novamente.",
+        "toastTitle": "Imagem de entrada não pôde ser carregada"
+      },
+      "insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Adicione créditos à sua conta para usar este nó.",
+        "title": "Créditos insuficientes",
+        "toastMessage": "Adicione créditos à sua conta para usar este nó.",
+        "toastTitle": "Créditos insuficientes"
+      },
+      "invalid_clip_input": {
+        "itemLabel": "{nodeName}",
+        "message": "A entrada CLIP está ausente ou inválida. Verifique o checkpoint conectado ou o carregador CLIP.",
+        "title": "Entrada CLIP inválida",
+        "toastMessage": "{nodeName} está com a entrada CLIP ausente ou inválida.",
+        "toastTitle": "Entrada CLIP inválida"
+      },
+      "invalid_prompt": {
+        "itemLabel": "{nodeName}",
+        "message": "Digite um prompt antes de executar este fluxo de trabalho.",
+        "title": "Prompt vazio",
+        "toastMessage": "Digite um prompt antes de executar este fluxo de trabalho.",
+        "toastTitle": "Prompt vazio"
+      },
+      "invalid_workflow_request": {
+        "itemLabel": "{nodeName}",
+        "message": "A solicitação do fluxo de trabalho é inválida. Verifique o fluxo de trabalho e tente novamente.",
+        "title": "Solicitação de fluxo de trabalho inválida",
+        "toastMessage": "A solicitação do fluxo de trabalho é inválida. Verifique o fluxo de trabalho e tente novamente.",
+        "toastTitle": "Solicitação de fluxo de trabalho inválida"
+      },
+      "model_access_error": {
+        "itemLabel": "{nodeName}",
+        "message": "Um ou mais modelos necessários não puderam ser acessados.",
+        "title": "Acesso ao modelo necessário",
+        "toastMessage": "Um ou mais modelos necessários não puderam ser acessados.",
+        "toastTitle": "Acesso ao modelo necessário"
+      },
+      "model_download_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "Não foi possível baixar um modelo. Tente novamente.",
+        "title": "Falha ao baixar modelo",
+        "toastMessage": "Não foi possível baixar um modelo. Tente novamente.",
+        "toastTitle": "Falha ao baixar modelo"
+      },
+      "out_of_memory": {
+        "itemLabel": "{nodeName}",
+        "message": "Memória de GPU insuficiente. Tente reduzir a resolução da imagem ou o tamanho do lote e execute novamente.",
+        "title": "Geração falhou",
+        "toastMessage": "Memória de GPU insuficiente. Tente reduzir a resolução da imagem ou o tamanho do lote e execute novamente.",
+        "toastTitle": "Geração falhou"
+      },
+      "preprocessing_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "O fluxo de trabalho não pôde ser preparado. Tente executá-lo novamente.",
+        "title": "Preparação falhou",
+        "toastMessage": "O fluxo de trabalho não pôde ser preparado. Tente executá-lo novamente.",
+        "toastTitle": "Preparação falhou"
+      },
+      "preprocessing_timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "O fluxo de trabalho demorou demais para ser preparado. Tente executá-lo novamente.",
+        "title": "Tempo de preparação esgotado",
+        "toastMessage": "O fluxo de trabalho demorou demais para ser preparado. Tente executá-lo novamente.",
+        "toastTitle": "Tempo de preparação esgotado"
+      },
+      "rate_limited": {
+        "itemLabel": "{nodeName}",
+        "message": "Alta demanda no momento. Tente novamente em instantes.",
+        "title": "Servidores ocupados",
+        "toastMessage": "Alta demanda no momento. Tente novamente em instantes.",
+        "toastTitle": "Servidores ocupados"
+      },
+      "request_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "A solicitação falhou antes da execução ser concluída. Tente novamente.",
+        "title": "Solicitação falhou",
+        "toastMessage": "A solicitação falhou antes da execução ser concluída. Tente novamente.",
+        "toastTitle": "Solicitação falhou"
+      },
+      "run_ended_unexpectedly": {
+        "itemLabel": "{nodeName}",
+        "message": "A execução terminou inesperadamente. Tente novamente.",
+        "title": "Execução terminou inesperadamente",
+        "toastMessage": "A execução terminou inesperadamente. Tente novamente.",
+        "toastTitle": "Execução terminou inesperadamente"
+      },
+      "run_start_failed": {
+        "itemLabel": "{nodeName}",
+        "message": "A execução não pôde ser iniciada. Tente novamente.",
+        "title": "Execução não pôde ser iniciada",
+        "toastMessage": "A execução não pôde ser iniciada. Tente novamente.",
+        "toastTitle": "Execução não pôde ser iniciada"
+      },
+      "server_busy": {
+        "itemLabel": "{nodeName}",
+        "message": "Os servidores estão ocupados no momento. Tente novamente em instantes.",
+        "title": "Servidores ocupados",
+        "toastMessage": "Os servidores estão ocupados no momento. Tente novamente em instantes.",
+        "toastTitle": "Servidores ocupados"
+      },
+      "server_crashed": {
+        "itemLabel": "{nodeName}",
+        "message": "O servidor parou durante a execução deste fluxo de trabalho. Tente novamente.",
+        "title": "Servidor caiu",
+        "toastMessage": "O servidor parou durante a execução deste fluxo de trabalho. Tente novamente.",
+        "toastTitle": "Servidor caiu"
+      },
+      "sign_in_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Nós parceiros requerem uma conta Comfy. Faça login para continuar.",
+        "title": "Login necessário",
+        "toastMessage": "Nós parceiros requerem uma conta Comfy. Faça login para continuar.",
+        "toastTitle": "Faça login para usar este nó"
+      },
+      "subscription_required": {
+        "itemLabel": "{nodeName}",
+        "message": "Assine um plano para continuar executando este fluxo de trabalho.",
+        "title": "Assinatura necessária",
+        "toastMessage": "Assine um plano para continuar executando este fluxo de trabalho.",
+        "toastTitle": "Assinatura necessária"
+      },
+      "subscription_upgrade_required": {
+        "details": "Modelos privados requerem upgrade de assinatura: {modelNames}",
+        "itemLabel": "{nodeName}",
+        "message": "Faça upgrade da sua assinatura para usar os modelos privados neste fluxo de trabalho.",
+        "title": "Upgrade de assinatura necessário",
+        "toastMessage": "Faça upgrade da sua assinatura para usar estes modelos privados: {modelNames}.",
+        "toastTitle": "Upgrade de assinatura necessário"
+      },
+      "timeout": {
+        "itemLabel": "{nodeName}",
+        "message": "Este fluxo de trabalho atingiu o tempo máximo de execução. Tente reduzir a resolução da imagem, o tamanho do lote ou o comprimento do fluxo de trabalho e execute novamente.",
+        "title": "Tempo de geração esgotado",
+        "toastMessage": "Este fluxo de trabalho atingiu o tempo máximo de execução. Tente reduzir a resolução da imagem, o tamanho do lote ou o comprimento do fluxo de trabalho e execute novamente.",
+        "toastTitle": "Tempo de geração esgotado"
+      },
+      "unexpected_service_error": {
+        "itemLabel": "{nodeName}",
+        "message": "O serviço encontrou um erro inesperado. Tente novamente.",
+        "title": "Erro no serviço",
+        "toastMessage": "O serviço encontrou um erro inesperado. Tente novamente.",
+        "toastTitle": "Erro no serviço"
+      },
+      "workspace_insufficient_credits": {
+        "itemLabel": "{nodeName}",
+        "message": "Adicione créditos ao seu workspace para continuar.",
+        "title": "Créditos insuficientes",
+        "toastMessage": "Adicione créditos ao seu workspace para continuar.",
+        "toastTitle": "Créditos insuficientes"
+      }
+    },
+    "validationErrors": {
+      "bad_linked_input": {
+        "details": "{nodeName} possui uma conexão inválida para {inputName}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Uma conexão de nó não pôde ser lida corretamente.",
+        "title": "Conexão inválida",
+        "toastMessage": "{nodeName} possui uma conexão inválida para {inputName}.",
+        "toastTitle": "Conexão inválida"
+      },
+      "custom_validation_failed": {
+        "details": "{nodeName} rejeitou o valor para {inputName}.",
+        "detailsWithRawDetails": "{nodeName} falhou na validação personalizada: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Um nó rejeitou um ou mais valores de entrada.",
+        "title": "Entrada inválida",
+        "toastMessage": "{nodeName} rejeitou o valor para {inputName}.",
+        "toastTitle": "Entrada inválida"
+      },
+      "dependency_cycle": {
+        "details": "{nodeName} faz parte de uma conexão circular.",
+        "detailsWithRawDetails": "{nodeName} faz parte de uma conexão circular: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "O fluxo de trabalho possui uma conexão circular de nós.",
+        "title": "Fluxo de trabalho inválido",
+        "toastMessage": "{nodeName} faz parte de uma conexão circular.",
+        "toastTitle": "Fluxo de trabalho inválido"
+      },
+      "exception_during_inner_validation": {
+        "details": "{nodeName} não conseguiu validar {inputName}.",
+        "detailsWithRawDetails": "{nodeName} não conseguiu validar {inputName}: {rawDetails}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "O fluxo de trabalho não pôde validar um nó conectado.",
+        "title": "Falha na validação",
+        "toastMessage": "{nodeName} não conseguiu validar {inputName}.",
+        "toastMessageWithRawDetails": "{nodeName} não conseguiu validar {inputName}: {rawDetails}",
+        "toastTitle": "Falha na validação"
+      },
+      "exception_during_validation": {
+        "details": "{nodeName} falhou durante a validação.",
+        "detailsWithRawDetails": "{nodeName} falhou durante a validação: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "O fluxo de trabalho não pôde ser validado porque uma verificação de validação de nó falhou inesperadamente.",
+        "title": "Falha na validação",
+        "toastMessage": "{nodeName} falhou durante a validação.",
+        "toastMessageWithRawDetails": "{nodeName} falhou durante a validação: {rawDetails}",
+        "toastTitle": "Falha na validação"
+      },
+      "image_not_loaded": {
+        "details": "A imagem de {nodeName} não pôde ser carregada. Tente adicioná-la novamente.",
+        "itemLabel": "{nodeName}",
+        "message": "O sistema não conseguiu carregar esta imagem.",
+        "title": "Imagem não carregada",
+        "toastMessage": "A imagem de {nodeName} não pôde ser carregada. Tente adicioná-la novamente.",
+        "toastTitle": "Imagem de entrada não pôde ser carregada"
+      },
+      "invalid_input_type": {
+        "details": "{nodeName} não conseguiu converter {inputName} para o tipo esperado.",
+        "detailsWithValue": "O valor {receivedValue} para {inputName} de {nodeName} não pôde ser convertido para {expectedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Um valor de entrada está com o tipo incorreto.",
+        "title": "Entrada inválida",
+        "toastMessage": "{nodeName} não conseguiu converter {inputName} para o tipo esperado.",
+        "toastMessageWithValue": "O valor {receivedValue} para {inputName} de {nodeName} não pôde ser convertido para {expectedType}.",
+        "toastTitle": "Entrada inválida"
+      },
+      "required_input_missing": {
+        "details": "{nodeName} está sem uma entrada obrigatória: {inputName}",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Entradas obrigatórias não possuem conexão.",
+        "title": "Conexão ausente",
+        "toastMessage": "{nodeName} está sem uma entrada obrigatória: {inputName}",
+        "toastTitle": "Entrada obrigatória ausente"
+      },
+      "return_type_mismatch": {
+        "details": "{nodeName} possui uma conexão incompatível para {inputName}.",
+        "detailsWithTypes": "A entrada {inputName} de {nodeName} espera {expectedType}, mas a saída conectada é {receivedType}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Os nós conectados estão usando tipos de entrada e saída incompatíveis.",
+        "title": "Conexão inválida",
+        "toastMessage": "{nodeName} possui uma conexão incompatível para {inputName}.",
+        "toastMessageWithTypes": "A entrada {inputName} de {nodeName} espera {expectedType}, mas a saída conectada é {receivedType}.",
+        "toastTitle": "Conexão inválida"
+      },
+      "value_bigger_than_max": {
+        "details": "{nodeName} possui um valor acima do máximo para {inputName}.",
+        "detailsWithValue": "O valor {receivedValue} para {inputName} de {nodeName} está acima do máximo {maxValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Alguns valores de entrada estão fora do intervalo permitido.",
+        "title": "Entrada fora do intervalo",
+        "toastMessage": "{nodeName} possui um valor acima do máximo para {inputName}.",
+        "toastMessageWithValue": "O valor {receivedValue} para {inputName} de {nodeName} está acima do máximo {maxValue}.",
+        "toastTitle": "Entrada fora do intervalo"
+      },
+      "value_not_in_list": {
+        "details": "{nodeName} possui um valor não suportado para {inputName}.",
+        "detailsWithValue": "O valor {receivedValue} para {inputName} de {nodeName} não está disponível.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Alguns valores de entrada não estão disponíveis para este nó.",
+        "title": "Entrada inválida",
+        "toastMessage": "{nodeName} possui um valor não suportado para {inputName}.",
+        "toastMessageWithValue": "O valor {receivedValue} para {inputName} de {nodeName} não está disponível.",
+        "toastTitle": "Entrada inválida"
+      },
+      "value_smaller_than_min": {
+        "details": "{nodeName} possui um valor abaixo do mínimo para {inputName}.",
+        "detailsWithValue": "O valor {receivedValue} para {inputName} de {nodeName} está abaixo do mínimo {minValue}.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "message": "Alguns valores de entrada estão fora do intervalo permitido.",
+        "title": "Entrada fora do intervalo",
+        "toastMessage": "{nodeName} possui um valor abaixo do mínimo para {inputName}.",
+        "toastMessageWithValue": "O valor {receivedValue} para {inputName} de {nodeName} está abaixo do mínimo {minValue}.",
+        "toastTitle": "Entrada fora do intervalo"
+      }
+    }
+  },
   "errorDialog": {
     "accessRestrictedMessage": "Your account is not authorized for this feature.",
     "accessRestrictedTitle": "Access Restricted",
@@ -899,7 +1279,8 @@
     "extensionFileHint": "Isso pode ser devido ao seguinte script",
     "loadWorkflowTitle": "Carregamento abortado devido a erro ao recarregar os dados do fluxo de trabalho",
     "noStackTrace": "Nenhum stacktrace disponível",
-    "promptExecutionError": "Falha na execução do prompt"
+    "promptExecutionError": "Falha na execução do prompt",
+    "queueOpenWorkflowFailedTitle": "Falha ao abrir o workflow"
   },
   "errorOverlay": {
     "errorCount": "{count} ERRO | {count} ERROS",
@@ -912,6 +1293,10 @@
     "showMissingNodes": "Mostrar nós ausentes",
     "showSwapNodes": "Mostrar nós alternativos",
     "swapNodes": "Alguns nós podem ser substituídos por alternativas"
+  },
+  "errorPanelSurvey": {
+    "ctaButton": "Enviar feedback",
+    "ctaText": "O que achou do novo painel de erros?"
   },
   "essentials": {
     "batchImage": "Imagem em lote",
@@ -998,13 +1383,16 @@
     "back": "Voltar",
     "batchRename": "Renomear em lote",
     "beta": "BETA",
+    "blueprints": "Modelos",
     "bookmark": "Salvar na biblioteca",
+    "bookmarked": "Favoritos",
     "browserReservedKeybinding": "Este atalho é reservado por alguns navegadores e pode ter resultados inesperados.",
     "browserReservedKeybindingTooltip": "Este atalho entra em conflito com atalhos reservados do navegador",
     "calculatingDimensions": "Calculando dimensões",
     "cancel": "Cancelar",
     "cancelled": "Cancelado",
     "capture": "capturar",
+    "categories": "Categorias",
     "category": "Categoria",
     "changeKeybinding": "Alterar atalho",
     "chart": "Gráfico",
@@ -1020,6 +1408,7 @@
     "comfy": "Comfy",
     "comfyCloud": "Comfy Cloud",
     "comfyOrgLogoAlt": "Logo do ComfyOrg",
+    "comfyPackageOutdated": "A versão instalada de {name} ({installedVersion}) é inferior à versão necessária ({requiredVersion}).",
     "comingSoon": "Em breve",
     "command": "Comando",
     "commandProhibited": "O comando {command} é proibido. Entre em contato com um administrador para mais informações.",
@@ -1180,6 +1569,7 @@
     "logs": "Logs",
     "manageExtensions": "Gerenciar extensões",
     "markdown": "markdown",
+    "maximizeDialog": "Maximizar diálogo",
     "micPermissionDenied": "Permissão do microfone negada",
     "migrate": "Migrar",
     "missing": "Faltando",
@@ -1225,6 +1615,7 @@
     "output": "Saída",
     "overwrite": "Sobrescrever",
     "partner": "Parceiro",
+    "partnerNodes": "Nós Parceiros",
     "pause": "Pausar",
     "play": "Reproduzir",
     "playPause": "Reproduzir/Pausar",
@@ -1279,6 +1670,7 @@
     "resizeFromTopLeft": "Redimensionar pelo canto superior esquerdo",
     "resizeFromTopRight": "Redimensionar pelo canto superior direito",
     "restart": "Reiniciar",
+    "restoreDialog": "Restaurar diálogo",
     "resultsCount": "{count} resultados encontrados",
     "running": "Executando",
     "save": "Salvar",
@@ -1638,6 +2030,7 @@
       "orthographic": "Ortográfica",
       "perspective": "Perspectiva"
     },
+    "centerCameraOnModel": "Centralizar câmera no modelo",
     "clearRecording": "Limpar Gravação",
     "dropToLoad": "Arraste o modelo 3D para carregar",
     "edgeThreshold": "Limite de Borda",
@@ -1717,6 +2110,10 @@
     "outdatedVersion": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI ({version}). Alguns nós podem não funcionar corretamente.",
     "outdatedVersionGeneric": "Este fluxo de trabalho foi criado com uma versão mais recente do ComfyUI. Alguns nós podem não funcionar corretamente.",
     "unknownVersion": "desconhecida"
+  },
+  "logsTerminal": {
+    "loadError": "Não foi possível carregar os logs. Certifique-se de que você atualizou o backend do ComfyUI.",
+    "resyncError": "Não foi possível ressincronizar os logs após a reconexão do backend. Reabra o console para tentar novamente."
   },
   "maintenance": {
     "None": "Nenhum",
@@ -1821,6 +2218,10 @@
     "gettingInfo": "Obtendo informações...",
     "importFailedGenericError": "Falha ao importar o pacote. Verifique o console para mais detalhes.",
     "inWorkflow": "No Workflow",
+    "incompatibleVersion": {
+      "message": "Por favor, atualize o ComfyUI-Manager para a versão 4.2.1 ou superior.\n• Desktop: Atualize o aplicativo ComfyUI Desktop\n• Standalone: Execute pip install -U comfyui-manager e reinicie\nSaiba mais: https://github.com/Comfy-Org/ComfyUI-Manager",
+      "title": "Atualização do ComfyUI-Manager necessária"
+    },
     "infoPanelEmpty": "Clique em um item para ver as informações",
     "installAllMissingNodes": "Instalar Todos",
     "installError": "Erro de Instalação",
@@ -2066,7 +2467,6 @@
     "ComfyUI Issues": "Problemas do ComfyUI",
     "Contact Support": "Contatar suporte",
     "Convert Selection to Subgraph": "Converter seleção em subgrafo",
-    "Convert selected nodes to group node": "Converter nós selecionados em nó de grupo",
     "Copy": "Copiar",
     "Custom Nodes (Legacy)": "Nós personalizados (Legado)",
     "Custom Nodes Manager": "Gerenciador de nós personalizados",
@@ -2227,7 +2627,9 @@
     "": "",
     "3d": "3d",
     "3d_models": "modelos_3d",
+    "Anthropic": "Anthropic",
     "BFL": "BFL",
+    "Beeble": "Beeble",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "ElevenLabs": "ElevenLabs",
@@ -2236,13 +2638,14 @@
     "HitPaw": "HitPaw",
     "Ideogram": "Ideogram",
     "Kling": "Kling",
+    "Krea": "Krea",
     "LTXV": "LTXV",
     "Luma": "Luma",
     "Magnific": "Magnific",
     "Meshy": "Meshy",
     "MiniMax": "MiniMax",
-    "Moonvalley Marey": "Moonvalley Marey",
     "OpenAI": "OpenAI",
+    "OpenRouter": "OpenRouter",
     "PixVerse": "PixVerse",
     "Quiver": "Quiver",
     "Recraft": "Recraft",
@@ -2259,32 +2662,31 @@
     "Vidu": "Vidu",
     "Wan": "Wan",
     "WaveSpeed": "WaveSpeed",
-    "_for_testing": "_for_testing",
+    "adjustments": "ajustes",
     "advanced": "avançado",
-    "animation": "animação",
-    "api": "api",
-    "api node": "nó da API",
     "attention_experiments": "experimentos_de_atenção",
     "audio": "áudio",
+    "background removal": "remoção de fundo",
     "batch": "lote",
-    "camera": "câmera",
     "chroma_radiance": "radiância_de_croma",
     "clip": "clip",
+    "color": "cor",
     "combine": "combinar",
     "compositing": "composição",
     "cond pair": "par_de_condições",
     "cond single": "condição_simples",
     "conditioning": "condicionamento",
-    "context": "contexto",
     "controlnet": "controlnet",
     "create": "criar",
     "custom_sampling": "amostragem_personalizada",
-    "dataset": "conjunto_de_dados",
     "debug": "depuração",
     "deprecated": "obsoleto",
     "detection": "detecção",
     "edit_models": "editar_modelos",
+    "experimental": "experimental",
+    "filters": "filtros",
     "flux": "flux",
+    "geometry estimation": "estimativa de geometria",
     "gligen": "gligen",
     "guidance": "orientação",
     "guiders": "guias",
@@ -2299,39 +2701,36 @@
     "lotus": "lotus",
     "ltxv": "ltxv",
     "mask": "máscara",
-    "math": "matemática",
     "model": "modelo",
     "model_merging": "mesclagem_de_modelos",
-    "model_patches": "correções_de_modelo",
     "model_specific": "específico_do_modelo",
+    "multigpu": "multigpu",
     "noise": "ruído",
     "operations": "operações",
+    "partner": "parceiro",
+    "patch": "patch",
     "photomaker": "photomaker",
-    "postprocessing": "pós-processamento",
     "preprocessors": "pré-processadores",
     "primitive": "primitivo",
     "qwen": "qwen",
     "samplers": "amostradores",
     "sampling": "amostragem",
-    "save": "salvar",
     "schedulers": "agendadores",
     "scheduling": "agendamento",
-    "sd": "sd",
     "sd3": "sd3",
     "shader": "shader",
     "sigmas": "sigmas",
+    "splat": "splat",
     "stable_cascade": "stable_cascade",
-    "string": "string",
     "style_model": "modelo_de_estilo",
     "supir": "supir",
     "text": "texto",
-    "textgen": "textgen",
     "training": "treinamento",
     "transform": "transformar",
     "unet": "unet",
     "upscale_diffusion": "difusão_de_aumento",
     "upscaling": "aumento_de_resolução",
-    "utils": "utilitários",
+    "utilities": "utilitários",
     "video": "vídeo",
     "video_models": "modelos_de_vídeo",
     "zimage": "zimage"
@@ -2404,6 +2803,43 @@
     },
     "title": "Seu dispositivo não é suportado"
   },
+  "oauth": {
+    "consent": {
+      "allow": "Continuar",
+      "appTypeNative": "Aplicativo nativo",
+      "appTypeWeb": "Aplicativo web",
+      "deny": "Cancelar",
+      "errorExpired": "Esta solicitação de consentimento expirou ou já foi utilizada. Por favor, reinicie a partir do aplicativo cliente.",
+      "errorScopeBroadening": "As permissões previamente aprovadas não cobrem esta solicitação. Você precisará autorizar novamente com as novas permissões.",
+      "errorUnavailable": "Este recurso não está disponível no momento. Por favor, entre em contato com o suporte se o problema persistir.",
+      "genericError": "A solicitação OAuth falhou. Por favor, reinicie a partir do aplicativo cliente.",
+      "loading": "Carregando solicitação de autorização…",
+      "missingRequest": "Esta solicitação de autorização está ausente. Por favor, reinicie a partir do aplicativo cliente.",
+      "noWorkspaces": "Nenhum workspace elegível está disponível para esta solicitação.",
+      "permissionsHeader": "Permissões",
+      "redirectNotice": "Você será redirecionado para",
+      "resourceFallback": "este aplicativo",
+      "sessionError": "Falha ao estabelecer sessão. Por favor, tente novamente.",
+      "sessionErrorToastSummary": "Não foi possível continuar o login OAuth",
+      "subtitle": "Faça login em {resource} para continuar",
+      "title": "{client} deseja acesso",
+      "workspaceHelp": "As permissões se aplicam somente a este workspace.",
+      "workspaceLabel": "Workspace"
+    },
+    "scopes": {
+      "mcp:tools:call": {
+        "label": "Executar workflows em seu nome"
+      },
+      "mcp:tools:read": {
+        "label": "Visualizar ferramentas de workflow disponíveis"
+      }
+    },
+    "workspace": {
+      "member": "Membro",
+      "owner": "Proprietário",
+      "personal": "Pessoal"
+    }
+  },
   "openSharedWorkflow": {
     "author": "Autor:",
     "copyAssetsAndOpen": "Importar ativos e abrir fluxo de trabalho",
@@ -2414,7 +2850,8 @@
     "nonPublicAssetsWarningLine1": "Este fluxo de trabalho possui ativos não públicos.",
     "nonPublicAssetsWarningLine2": "Eles serão importados para sua biblioteca ao abrir o fluxo de trabalho",
     "openWithoutImporting": "Abrir sem importar",
-    "openWorkflow": "Abrir fluxo de trabalho"
+    "openWorkflow": "Abrir fluxo de trabalho",
+    "opening": "Abrindo fluxo de trabalho compartilhado..."
   },
   "painter": {
     "background": "Fundo",
@@ -2593,6 +3030,9 @@
       "metadataFetchFailed": "Falha ao obter metadados. Verifique o link e tente novamente.",
       "missingModelsTitle": "Modelos Ausentes",
       "or": "OU",
+      "refresh": "Atualizar",
+      "refreshFailed": "Falha ao atualizar modelos ausentes. Por favor, tente novamente.",
+      "refreshing": "Atualizando modelos ausentes.",
       "typeMismatch": "Este modelo parece ser um \"{detectedType}\". Tem certeza?",
       "unknownCategory": "Desconhecido",
       "unsupportedUrl": "Apenas URLs do Civitai e Hugging Face são suportadas.",
@@ -2627,20 +3067,6 @@
     "normal": "Normal",
     "parameters": "Parâmetros",
     "pinned": "Fixado",
-    "promptErrors": {
-      "no_prompt": {
-        "desc": "Os dados do fluxo de trabalho enviados ao servidor estão vazios. Isso pode ser um erro de sistema inesperado."
-      },
-      "prompt_no_outputs": {
-        "desc": "O fluxo de trabalho não contém nenhum nó de saída (por exemplo, Salvar Imagem, Visualizar Imagem) para produzir um resultado."
-      },
-      "server_error_cloud": {
-        "desc": "O servidor encontrou um erro inesperado. Por favor, tente novamente mais tarde."
-      },
-      "server_error_local": {
-        "desc": "O servidor encontrou um erro inesperado. Por favor, verifique os logs do servidor."
-      }
-    },
     "properties": "Propriedades",
     "removeFavorite": "Desfavoritar",
     "resetAllParameters": "Redefinir todos os parâmetros",
@@ -2897,6 +3323,7 @@
     "Other": "Outros",
     "PLY": "PLY",
     "PlanCredits": "Plano & Créditos",
+    "PointCloud": "Nuvem de Pontos",
     "Pointer": "Ponteiro",
     "Queue": "Fila",
     "QueueButton": "Botão de Fila",
@@ -3050,6 +3477,7 @@
         "sourceDesc": "Agrupar por tipo de fonte (Core, Custom, API)"
       },
       "noBookmarkedNodes": "Nenhum favorito ainda",
+      "noMatchingNodes": "Nenhum nó corresponde a \"{query}\"",
       "resetView": "Restaurar visualização padrão",
       "sections": {
         "bookmarked": "Favoritos",
@@ -3138,6 +3566,7 @@
       "deleteFailedTitle": "Falha ao excluir",
       "deleted": "Workflow excluído",
       "dirtyClose": "Os arquivos abaixo foram alterados. Deseja salvá-los antes de fechar?",
+      "dirtyCloseAnyway": "Fechar mesmo assim",
       "dirtyCloseHint": "Segure Shift para fechar sem perguntar",
       "dirtyCloseTitle": "Salvar alterações?",
       "workflowTreeType": {
@@ -3434,8 +3863,7 @@
       "newest": "Mais Recentes",
       "popular": "Popular",
       "recommended": "Recomendado",
-      "searchPlaceholder": "Buscar...",
-      "vramLowToHigh": "Uso de VRAM (Menor para Maior)"
+      "searchPlaceholder": "Buscar..."
     },
     "sorting": "Ordenar por",
     "title": "Comece com um Modelo",
@@ -3498,6 +3926,7 @@
     "no3dScene": "Nenhuma cena 3D para aplicar textura",
     "no3dSceneToExport": "Nenhuma cena 3D para exportar",
     "noTemplatesToExport": "Nenhum template para exportar",
+    "nodeDefinitionsUpdateFailed": "Falha ao atualizar definições de nós",
     "nodeDefinitionsUpdated": "Definições de nós atualizadas",
     "nothingSelected": "Nada selecionado",
     "nothingToGroup": "Nada para agrupar",
@@ -3598,7 +4027,8 @@
       "placeholderMesh": "Selecionar malha...",
       "placeholderModel": "Selecionar modelo...",
       "placeholderUnknown": "Selecionar mídia...",
-      "placeholderVideo": "Selecionar vídeo..."
+      "placeholderVideo": "Selecionar vídeo...",
+      "topResult": "Melhor resultado: {result}"
     },
     "valueControl": {
       "decrement": "Decrementar Valor",

@@ -11,6 +11,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import { commonType } from '@/lib/litegraph/src/utils/type'
+import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
@@ -22,6 +23,7 @@ import {
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const INLINE_INPUTS = false
 
@@ -185,11 +187,18 @@ function dynamicComboWidget(
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
   let widgetValue = widget.value
+  const getState = () => {
+    const graphId = resolveNodeRootGraphId(node)
+    if (!graphId) return undefined
+    return useWidgetValueStore().getWidget(graphId, node.id, widget.name)
+  }
   Object.defineProperty(widget, 'value', {
     get() {
-      return widgetValue
+      return getState()?.value ?? widgetValue
     },
     set(value) {
+      const state = getState()
+      if (state) state.value = value
       widgetValue = value
       updateWidgets(value)
     }
@@ -321,12 +330,9 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       if (!outputType) throw new Error('invalid connection')
       this.outputs.forEach((output, idx) => {
         if (!(outputGroups?.[idx] == matchKey)) return
+        this.outputs[idx] = shallowReactive(this.outputs[idx])
         changeOutputType(this, output, outputType)
       })
-      // Force Vue reactivity update for output slot types.
-      // Outputs are wrapped in shallowReactive by useGraphNodeManager,
-      // so mutating output.type alone doesn't trigger re-render.
-      this.outputs = [...this.outputs]
       app.canvas?.setDirty(true, true)
     }
   )
@@ -464,7 +470,10 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   const input = node.inputs[index]
   if (!input) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
-  const { min = 1, inputSpecs } = node.comfyDynamic.autogrow[groupName]
+  const autogrowGroup = node.comfyDynamic.autogrow[groupName]
+  if (!autogrowGroup) return
+
+  const { min = 1, inputSpecs } = autogrowGroup
   const ordinal = resolveAutogrowOrdinal(input.name, groupName, node)
   if (ordinal == undefined || ordinal + 1 < min) return
 

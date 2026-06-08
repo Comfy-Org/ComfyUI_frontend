@@ -1,4 +1,8 @@
 import { LinkMarkerShape, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  getDefaultLocale,
+  SUPPORTED_LOCALE_OPTIONS
+} from '@/locales/localeConfig'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@/platform/settings/types'
@@ -67,6 +71,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip: 'Only applies to the default implementation',
     type: 'boolean',
     defaultValue: true
+  },
+  {
+    id: 'Comfy.NodeSearchBoxImpl.FollowCursor',
+    category: ['Comfy', 'Node Search Box', 'FollowCursor'],
+    name: 'Added nodes follow the cursor',
+    tooltip:
+      'When enabled, nodes added from the search box follow the cursor until clicked to place. Only applies to the default implementation.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.44.4'
   },
   {
     id: 'Comfy.NodeSearchBoxImpl.ShowCategory',
@@ -429,21 +443,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Locale',
     name: 'Language',
     type: 'combo',
-    options: [
-      { value: 'en', text: 'English' },
-      { value: 'zh', text: '中文' },
-      { value: 'zh-TW', text: '繁體中文' },
-      { value: 'ru', text: 'Русский' },
-      { value: 'ja', text: '日本語' },
-      { value: 'ko', text: '한국어' },
-      { value: 'fr', text: 'Français' },
-      { value: 'es', text: 'Español' },
-      { value: 'ar', text: 'عربي' },
-      { value: 'tr', text: 'Türkçe' },
-      { value: 'pt-BR', text: 'Português (BR)' },
-      { value: 'fa', text: 'فارسی' }
-    ],
-    defaultValue: () => navigator.language.split('-')[0] || 'en'
+    options: SUPPORTED_LOCALE_OPTIONS,
+    defaultValue: getDefaultLocale
   },
   {
     id: 'Comfy.NodeBadge.NodeSourceBadgeMode',
@@ -649,7 +650,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     tooltip:
       'The maximum number of tasks added to the queue at one button click',
     type: 'number',
-    defaultValue: isCloud ? 32 : 100,
+    defaultValue: 100,
     versionAdded: '1.3.5'
   },
   {
@@ -802,16 +803,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     category: ['LiteGraph', 'Pointer', 'ClickBufferTime'],
     name: 'Pointer click drift delay',
     tooltip:
-      'After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking.',
+      'After pressing a pointer button down, this is the maximum time (in milliseconds) that pointer movement can be ignored for.\n\nHelps prevent objects from being unintentionally nudged if the pointer is moved whilst clicking.\n\nThe distance threshold (Pointer click drift) already disambiguates clicks from drags; this time threshold only matters when the pointer is held still then released. A long delay here forces every pointerdown to wait before drag begins, which feels laggy when click+dragging an unselected node. ~2 frames at 60fps is plenty.',
     experimental: true,
     type: 'slider',
     attrs: {
       min: 0,
       max: 1000,
-      step: 25
+      step: 1
     },
-    defaultValue: 150,
-    versionAdded: '1.4.3'
+    defaultValue: 32,
+    versionAdded: '1.4.3',
+    versionModified: '1.44.19'
   },
   {
     id: 'Comfy.Pointer.DoubleClickTime',

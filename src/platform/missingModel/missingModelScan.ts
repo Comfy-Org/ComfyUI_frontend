@@ -1,9 +1,6 @@
-import type {
-  ComfyWorkflowJSON,
-  ModelFile,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import { flattenWorkflowNodes } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
+import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
 import type {
   MissingModelCandidate,
   MissingModelViewModel,
@@ -27,6 +24,10 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
+
+export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
+  models?: ModelFile[]
+}
 
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
@@ -176,11 +177,11 @@ function scanAssetWidget(
   getDirectory: ((nodeType: string) => string | undefined) | undefined
 ): MissingModelCandidate | null {
   const value = widget.value
-  if (!value.trim()) return null
+  if (typeof value !== 'string' || !value.trim()) return null
   if (!isModelFileName(value)) return null
 
   return {
-    nodeId: executionId as NodeId,
+    nodeId: executionId,
     nodeType: node.type,
     widgetName: widget.name,
     isAssetSupported: true,
@@ -206,7 +207,7 @@ function scanComboWidget(
   const inOptions = options.includes(value)
 
   return {
-    nodeId: executionId as NodeId,
+    nodeId: executionId,
     nodeType: node.type,
     widgetName: widget.name,
     isAssetSupported: nodeIsAssetSupported,
@@ -218,7 +219,7 @@ function scanComboWidget(
 
 export async function enrichWithEmbeddedMetadata(
   candidates: readonly MissingModelCandidate[],
-  graphData: ComfyWorkflowJSON,
+  graphData: MissingModelWorkflowData,
   checkModelInstalled: (name: string, directory: string) => Promise<boolean>,
   isAssetSupported?: (nodeType: string, widgetName: string) => boolean
 ): Promise<MissingModelCandidate[]> {
@@ -388,7 +389,7 @@ function isAncestorPathActiveInFlattened(
 
 function collectEmbeddedModelsWithSource(
   allNodes: ReturnType<typeof flattenWorkflowNodes>,
-  graphData: ComfyWorkflowJSON
+  graphData: MissingModelWorkflowData
 ): EmbeddedModelWithSource[] {
   const result: EmbeddedModelWithSource[] = []
 
@@ -399,9 +400,7 @@ function collectEmbeddedModelsWithSource(
     )
       continue
 
-    const selected = getSelectedModelsMetadata(
-      node as Parameters<typeof getSelectedModelsMetadata>[0]
-    )
+    const selected = getSelectedModelsMetadata(node)
     if (!selected?.length) continue
 
     for (const model of selected) {
@@ -435,8 +434,7 @@ function findWidgetNameForModel(
   modelName: string
 ): string {
   if (Array.isArray(node.widgets_values) || !node.widgets_values) return ''
-  const wv = node.widgets_values as Record<string, unknown>
-  for (const [key, val] of Object.entries(wv)) {
+  for (const [key, val] of Object.entries(node.widgets_values)) {
     if (val === modelName) return key
   }
   return ''
@@ -454,14 +452,14 @@ export async function verifyAssetSupportedCandidates(
 ): Promise<void> {
   if (signal?.aborted) return
 
-  const pendingNodeTypes = new Set<string>()
-  for (const c of candidates) {
-    if (c.isAssetSupported && c.isMissing === undefined) {
-      pendingNodeTypes.add(c.nodeType)
-    }
-  }
+  const pendingCandidates = candidates.filter(
+    (c) => c.isAssetSupported && c.isMissing === undefined
+  )
+  if (pendingCandidates.length === 0) return
 
-  if (pendingNodeTypes.size === 0) return
+  const pendingNodeTypes = new Set(
+    pendingCandidates.map((candidate) => candidate.nodeType)
+  )
 
   const store =
     assetsStore ?? (await import('@/stores/assetsStore')).useAssetsStore()
@@ -503,7 +501,7 @@ function isAssetInstalled(
 ): boolean {
   if (candidate.hash && candidate.hashType) {
     const candidateHash = `${candidate.hashType}:${candidate.hash}`
-    if (assets.some((a) => a.asset_hash === candidateHash)) return true
+    if (assets.some((a) => a.hash === candidateHash)) return true
   }
 
   const normalizedName = normalizePath(candidate.name)

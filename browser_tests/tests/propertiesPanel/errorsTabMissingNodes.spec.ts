@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { loadWorkflowAndOpenErrorsTab } from '@e2e/tests/propertiesPanel/ErrorsTabHelper'
+import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
 test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -23,9 +23,13 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
   test('Should show missing node packs group', async ({ comfyPage }) => {
     await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
 
+    const missingNodeGroup = comfyPage.page.getByTestId(
+      TestIds.dialogs.missingNodePacksGroup
+    )
+    await expect(missingNodeGroup).toBeVisible()
     await expect(
-      comfyPage.page.getByTestId(TestIds.dialogs.missingNodePacksGroup)
-    ).toBeVisible()
+      missingNodeGroup.getByTestId(TestIds.dialogs.errorGroupDisplayMessage)
+    ).toHaveText(/\S/)
   })
 
   test('Should expand pack group to reveal node type names', async ({

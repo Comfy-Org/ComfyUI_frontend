@@ -303,22 +303,29 @@ must choose before Phase 3 of the migration.
 
 ### Current mechanism
 
-The current system has three layers:
+> **Historical note:** the legacy three-layer mechanism described below
+> (PromotionStore, PromotedWidgetViewManager, PromotedWidgetView) has been
+> removed by [ADR 0009](../adr/0009-subgraph-promoted-widgets-use-linked-inputs.md).
+> Promoted value widgets are now standard linked `SubgraphInput` widgets.
+> This section is retained for archival context.
 
-1. **PromotionStore** (`src/stores/promotionStore.ts`): A ref-counted Pinia
-   store mapping `graphId → subgraphNodeId → PromotedWidgetSource[]`. Tracks
-   which interior widgets are promoted and provides O(1) `isPromotedByAny()`
-   queries.
+The legacy system had three layers:
 
-2. **PromotedWidgetViewManager**: A reconciliation layer that maintains stable
-   `PromotedWidgetView` proxy widget objects, diffing against the store on each
-   update — a pattern analogous to virtual DOM reconciliation.
+1. **PromotionStore** (removed; formerly `src/stores/promotionStore.ts`): A
+   ref-counted Pinia store mapping
+   `graphId → subgraphNodeId → PromotedWidgetSource[]`. Tracked which interior
+   widgets were promoted and provided O(1) `isPromotedByAny()` queries.
 
-3. **PromotedWidgetView**: A proxy widget on the SubgraphNode that mirrors the
-   interior widget's type, value, and options. Reads and writes delegate to the
-   original widget's entry in `WidgetValueStore`.
+2. **PromotedWidgetViewManager** (removed): A reconciliation layer that
+   maintained stable `PromotedWidgetView` proxy widget objects, diffing against
+   the store on each update — a pattern analogous to virtual DOM reconciliation.
 
-Serialized as `properties.proxyWidgets` on the SubgraphNode.
+3. **PromotedWidgetView** (removed): A proxy widget on the SubgraphNode that
+   mirrored the interior widget's type, value, and options. Reads and writes
+   delegated to the original widget's entry in `WidgetValueStore`.
+
+Serialized as `properties.proxyWidgets` on the SubgraphNode (now consumed only
+during legacy load repair).
 
 ### Candidate A: Connections-only
 
@@ -404,26 +411,21 @@ Whichever candidate is chosen:
   instance-specific state beyond inputs — must remain reachable. This is a
   constraint, not a current requirement.
 
-### Recommendation and decision criteria
+### Decision
 
-**Lean toward A.** It eliminates an entire subsystem by recognizing a structural
-truth: promotion is adding a typed input to a function signature. The type
-system already handles widget creation for typed inputs. Building a parallel
-mechanism for "promoted widgets" is building a second, narrower version of
-something the system already does.
+[ADR 0009](../adr/0009-subgraph-promoted-widgets-use-linked-inputs.md)
+chooses Candidate A for promoted value widgets. It eliminates an entire
+subsystem by recognizing a structural truth: promotion is adding a typed input
+to a function signature. The type system already handles widget creation for
+typed inputs. Building a parallel mechanism for "promoted widgets" is building
+a second, narrower version of something the system already does.
 
 The cost of A is a migration path for existing `proxyWidgets` serialization. On
-load, the `SerializationSystem` converts `proxyWidgets` entries into interface
-inputs and boundary links. This is a one-time ratchet conversion — once
-loaded and re-saved, the workflow uses the new format.
-
-**Choose B if** the team determines that promoted widgets must remain
-visually or behaviorally distinct from normal input widgets in ways the type →
-widget mapping cannot express, or if the `proxyWidgets` migration burden exceeds
-the current release cycle's capacity.
-
-**Decision needed before** Phase 3 of the ECS migration, when systems are
-introduced and the widget/connectivity architecture solidifies.
+load, the `SerializationSystem` converts value-widget `proxyWidgets` entries
+into interface inputs and boundary links. Once loaded and re-saved, the workflow
+uses the new format. ADR 0009 separates display-only preview exposures from
+promoted value widgets; those previews use their own host-scoped serialized
+representation instead of linked `SubgraphInput` widgets.
 
 ---
 
@@ -471,14 +473,14 @@ and produces the recursive `ExportedSubgraph` structure, matching the current
 format exactly. Existing workflows, the ComfyUI backend, and third-party tools
 see no change.
 
-| Direction       | Format                          | Notes                                    |
-| --------------- | ------------------------------- | ---------------------------------------- |
-| **Save/export** | Nested (current shape)          | SerializationSystem walks scope tree     |
-| **Load/import** | Nested (current) or future flat | Ratchet: normalize to flat World on load |
+| Direction       | Format                          | Notes                                      |
+| --------------- | ------------------------------- | ------------------------------------------ |
+| **Save/export** | Nested (current shape)          | SerializationSystem walks scope tree       |
+| **Load/import** | Nested (current) or future flat | Migration: normalize to flat World on load |
 
-The "ratchet conversion" pattern: load any supported format, normalize to the
-internal model. The system accepts old formats indefinitely but produces the
-current format on save.
+The migration pattern: load any supported format and normalize to the internal
+model. The system accepts old formats indefinitely but produces the current
+format on save.
 
 ### Widget identity at the boundary
 
@@ -511,13 +513,12 @@ SubgraphIO {
 }
 ```
 
-If Candidate A (connections-only promotion) is chosen: promoted widgets become
-interface inputs, serialized as additional `SubgraphIO` entries. On load, legacy
-`proxyWidgets` data is converted to interface inputs and boundary links (ratchet
-migration). On save, `proxyWidgets` is no longer written.
-
-If Candidate B (simplified promotion) is chosen: `proxyWidgets` continues to be
-serialized in its current format.
+ADR 0009 chooses Candidate A (connections-only promotion) for promoted value
+widgets: they become interface inputs, serialized as additional `SubgraphIO`
+entries. On load, legacy value-widget `proxyWidgets` data is converted to
+interface inputs and boundary links. On save, repaired `proxyWidgets` entries
+are no longer written. Display-only preview exposures use separate
+host-scoped `previewExposures` serialization.
 
 ### Backward-compatible loading contract
 
@@ -555,7 +556,7 @@ This document proposes or surfaces the following changes to
 | World structure     | Implied per-graph containment                                            | Flat World with `graphScope` tags; one World per workflow                       |
 | Acyclicity          | Not addressed                                                            | DAG invariant on `SubgraphStructure.graphId` references, enforced on mutation   |
 | Boundary model      | Deferred                                                                 | Typed interface contracts on `SubgraphStructure`; no virtual nodes or magic IDs |
-| Widget promotion    | Treated as a given feature to migrate                                    | Open decision: Candidate A (connections-only) vs B (simplified component)       |
+| Widget promotion    | Treated as a given feature to migrate                                    | ADR 0009 chooses Candidate A: promoted value widgets are linked inputs          |
 | Serialization       | Not explicitly separated from internal model                             | Internal model ≠ wire format; `SerializationSystem` is the membrane             |
 | Backward compat     | Implicit                                                                 | Explicit contract: load any prior format, indefinitely                          |
 

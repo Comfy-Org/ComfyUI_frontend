@@ -1,6 +1,7 @@
 import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 import { isDesktop } from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
@@ -26,7 +27,9 @@ const WHITE_LISTED_URLS: ReadonlySet<string> = new Set([
   'https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth'
 ])
 
-interface ModelWithUrl {
+const MODEL_LIBRARY_TAB_ID = 'model-library'
+
+export interface ModelWithUrl {
   name: string
   url: string
   directory: string
@@ -72,6 +75,7 @@ export function downloadModel(
 
   const modelPaths = paths[model.directory]
   if (modelPaths?.[0]) {
+    useSidebarTabStore().activeSidebarTabId = MODEL_LIBRARY_TAB_ID
     void useElectronDownloadStore().start({
       url: model.url,
       savePath: modelPaths[0],

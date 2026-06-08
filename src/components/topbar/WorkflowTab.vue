@@ -34,7 +34,7 @@
           />
           <span
             v-else-if="shouldShowUnsavedIndicator"
-            data-testid="unsaved-indicator"
+            data-testid="workflow-dirty-indicator"
             class="absolute top-1/2 left-1/2 z-10 w-4 -translate-1/2 bg-(--comfy-menu-bg) text-2xl font-bold group-hover:hidden"
             >•</span
           >
@@ -104,7 +104,7 @@ import {
 } from '@/stores/executionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
 

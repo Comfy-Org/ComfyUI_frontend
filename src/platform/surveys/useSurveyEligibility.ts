@@ -13,6 +13,13 @@ export interface FeatureSurveyConfig {
   triggerThreshold?: number
   delayMs?: number
   enabled?: boolean
+  /**
+   * How the survey is presented.
+   * - `floating` (default): auto-popup in the lower-right once eligible.
+   * - `inline-cta`: a feature-site component renders its own CTA and decides
+   *   when to open the survey — the global controller ignores it.
+   */
+  presentation?: 'floating' | 'inline-cta'
 }
 
 interface SurveyState {

@@ -199,7 +199,6 @@
     "name": "موتور PLY",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "موتور بارگذاری فایل‌های PLY را انتخاب کنید. «threejs» از PLYLoader بومی Three.js استفاده می‌کند (مناسب برای فایل‌های مش PLY). «fastply» از یک بارگذار بهینه‌شده برای فایل‌های point cloud PLY به صورت ASCII استفاده می‌کند. «sparkjs» از Spark.js برای فایل‌های 3D Gaussian Splatting PLY استفاده می‌کند."
@@ -271,6 +270,10 @@
       "litegraph (legacy)": "litegraph (قدیمی)",
       "v1 (legacy)": "v۱ (قدیمی)"
     }
+  },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "افزودن نودها دنبال‌رو نشانگر ماوس",
+    "tooltip": "در صورت فعال بودن، نودهایی که از جعبه جستجو اضافه می‌شوند تا زمان کلیک برای قرار دادن، نشانگر ماوس را دنبال می‌کنند. این گزینه فقط برای پیاده‌سازی پیش‌فرض اعمال می‌شود."
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "پیش‌نمایش نود",
