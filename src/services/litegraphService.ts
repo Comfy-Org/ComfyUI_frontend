@@ -836,10 +836,7 @@ export const useLitegraphService = () => {
      * @deprecated No longer needed as we use {@link useImagePreviewWidget}
      */
     node.prototype.setSizeForImage = function (this: LGraphNode) {
-      warnDeprecated('node.setSizeForImage is deprecated and has no effect.', {
-        suggestion: 'Remove the call.',
-        source: 'litegraphService'
-      })
+      warnDeprecated('litegraphService.setSizeForImage')
     }
     node.prototype.onDrawBackground = function () {
       updatePreviews(this)

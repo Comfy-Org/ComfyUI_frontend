@@ -497,8 +497,9 @@ export class DeprecationWarningsSidebarTab extends SidebarTab {
   }
 
   async emitDeprecation(message: string): Promise<void> {
+    await this.page.waitForFunction(() => !!window.__deprecationWarningsStore)
     await this.page.evaluate((m: string) => {
-      window.LiteGraph!.onDeprecationWarning.forEach((cb) => cb(m))
+      window.__deprecationWarningsStore!.report({ message: m })
     }, message)
   }
 }

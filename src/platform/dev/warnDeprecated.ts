@@ -1,33 +1,56 @@
 import { getActivePinia } from 'pinia'
 
+import type {
+  DeprecationEntry,
+  DeprecationId
+} from '@/platform/dev/deprecations'
+import {
+  DEPRECATIONS,
+  formatDeprecationConsole
+} from '@/platform/dev/deprecations'
 import type { ReportDeprecationInput } from '@/platform/dev/deprecationWarningsStore'
 import {
   bufferDeprecation,
   useDeprecationWarningsStore
 } from '@/platform/dev/deprecationWarningsStore'
 
-type WarnDeprecatedOptions = Omit<ReportDeprecationInput, 'message'>
+interface WarnDeprecatedOptions {
+  /** Extension or node pack that triggered the deprecation, surfaced as a tag. */
+  extension?: string
+  /** Specific locator within the source, e.g. an affected node/input or method. */
+  detail?: string
+}
 
-function formatConsoleMessage(input: ReportDeprecationInput): string {
-  const tag = input.source ? `[DEPRECATED:${input.source}]` : '[DEPRECATED]'
-  const suggestionSuffix = input.suggestion ? ` ${input.suggestion}` : ''
-  return `${tag} ${input.message}${suggestionSuffix}`
+function resolveDeprecation(
+  id: DeprecationId,
+  options: WarnDeprecatedOptions
+): ReportDeprecationInput {
+  const entry: DeprecationEntry = DEPRECATIONS[id]
+  return {
+    message: entry.message,
+    suggestion: entry.suggestion,
+    source: entry.source,
+    docsUrl: entry.docsUrl,
+    extension: options.extension,
+    detail: options.detail
+  }
 }
 
 export function warnDeprecated(
-  message: string,
+  id: DeprecationId,
   options: WarnDeprecatedOptions = {}
 ): void {
-  const input: ReportDeprecationInput = { message, ...options }
+  const input = resolveDeprecation(id, options)
 
   if (!getActivePinia()) {
-    bufferDeprecation(input)
-    console.warn(formatConsoleMessage(input))
+    if (bufferDeprecation(input)) {
+      console.warn(...formatDeprecationConsole(input))
+    }
     return
   }
 
   if (useDeprecationWarningsStore().report(input)) {
-    console.warn(formatConsoleMessage(input))
+    console.warn(...formatDeprecationConsole(input))
   }
 }
 
@@ -39,16 +62,15 @@ export function defineDeprecatedProperty<T>(
   target: T,
   deprecatedKey: string,
   currentKey: keyof T & string,
-  message: string,
-  options: WarnDeprecatedOptions = {}
+  id: DeprecationId
 ): void {
   Object.defineProperty(target, deprecatedKey, {
     get() {
-      warnDeprecated(message, options)
+      warnDeprecated(id)
       return this[currentKey]
     },
     set(value: unknown) {
-      warnDeprecated(message, options)
+      warnDeprecated(id)
       this[currentKey] = value
     },
     configurable: true,

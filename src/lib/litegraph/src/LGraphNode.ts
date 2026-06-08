@@ -8,6 +8,7 @@ import {
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { warnDeprecated } from '@/platform/dev/warnDeprecated'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import {
@@ -89,7 +90,6 @@ import type {
   TWidgetValue
 } from './types/widgets'
 import { findFreeSlotOfType } from './utils/collections'
-import { dispatchLitegraphDeprecation } from './utils/feedback'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
@@ -3511,9 +3511,7 @@ export class LGraphNode
    * @deprecated Use {@link LGraphCanvas.pointer} instead.
    */
   captureInput(v: boolean): void {
-    dispatchLitegraphDeprecation(
-      '[DEPRECATED] captureInput will be removed in a future version. Please use LGraphCanvas.pointer (CanvasPointer) instead.'
-    )
+    warnDeprecated('litegraph.captureInput')
     if (!this.graph || !this.graph.list_of_graphcanvas) return
 
     const list = this.graph.list_of_graphcanvas

@@ -152,11 +152,7 @@ app.registerExtension({
   init() {
     // Set up ComfyApp static methods for plugin compatibility (deprecated)
     ComfyApp.open_maskeditor = function open_maskeditor() {
-      warnDeprecated('ComfyApp.open_maskeditor is deprecated.', {
-        suggestion:
-          'Migrate to the command system or direct node context menu integration.',
-        source: 'MaskEditor'
-      })
+      warnDeprecated('maskEditor.openMaskEditor')
       openMaskEditorFromClipspace()
     }
   }

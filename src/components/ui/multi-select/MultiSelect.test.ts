@@ -93,6 +93,30 @@ describe('MultiSelect', () => {
     unmount()
   })
 
+  it('closes when an outside pointerdown is stopped from propagating (e.g. canvas)', async () => {
+    const user = userEvent.setup()
+
+    // Mimics the litegraph canvas, which stops pointerdown from bubbling to the
+    // document — reka's bubble-phase outside-dismiss would never fire.
+    const canvasLike = document.body.appendChild(document.createElement('div'))
+    canvasLike.addEventListener('pointerdown', (e) => e.stopPropagation())
+
+    const { unmount } = renderInParent()
+
+    const trigger = screen.getByRole('button')
+    await user.click(trigger)
+    await nextTick()
+    expect(trigger).toHaveAttribute('data-state', 'open')
+
+    canvasLike.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    await nextTick()
+
+    expect(trigger).toHaveAttribute('data-state', 'closed')
+
+    canvasLike.remove()
+    unmount()
+  })
+
   describe('Escape key propagation', () => {
     it('stops Escape from propagating to parent when popover is open', async () => {
       const user = userEvent.setup()

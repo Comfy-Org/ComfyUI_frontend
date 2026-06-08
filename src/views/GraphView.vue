@@ -65,6 +65,7 @@ import { setActiveLocale } from '@/i18n'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
+import { backfillServerDeprecations } from '@/platform/dev/backfillServerDeprecations'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -228,6 +229,11 @@ useSidebarTabStore().registerCoreSidebarTabs()
 void useBottomPanelStore().registerCoreBottomPanelTabs()
 
 useQueuePolling()
+
+// Seed the deprecation-warnings store from the backend log buffer at boot,
+// independent of DevMode, so toggling the dev panel on later shows history.
+void backfillServerDeprecations()
+
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 const sidebarTabStore = useSidebarTabStore()
 

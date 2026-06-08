@@ -999,6 +999,11 @@
     "empty": "No deprecation warnings reported in this session.",
     "clearAll": "Clear all",
     "suggestionLabel": "Fix:",
+    "learnMore": "Migration guide",
+    "filterByExtension": "Extension",
+    "unknownExtension": "Unknown",
+    "noMatchesTitle": "No matches",
+    "noMatches": "No warnings match the selected filters.",
     "occurrenceCount": "Reported {count} time | Reported {count} times"
   },
   "helpCenter": {

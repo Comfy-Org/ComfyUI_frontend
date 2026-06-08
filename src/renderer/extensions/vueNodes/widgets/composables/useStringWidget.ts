@@ -45,12 +45,7 @@ function addMultilineWidget(
   widget.element = inputEl
 
   /** @deprecated Use {@link widget.element} instead (renamed in PR #8594). */
-  defineDeprecatedProperty(
-    widget,
-    'inputEl',
-    'element',
-    'widget.inputEl is deprecated. Use widget.element instead.'
-  )
+  defineDeprecatedProperty(widget, 'inputEl', 'element', 'widget.inputEl')
   widget.options.minNodeSize = [400, 200]
 
   const controller = new AbortController()

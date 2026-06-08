@@ -88,5 +88,10 @@ declare global {
 
     /** For use in tests to track app initialization state */
     __appReadiness?: AppReadiness
+
+    /** For use in tests to report deprecation warnings. */
+    __deprecationWarningsStore?: {
+      report: (input: { message: string }) => boolean
+    }
   }
 }

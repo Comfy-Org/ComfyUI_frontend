@@ -394,8 +394,9 @@ describe('ComfyNodeDefImpl defaultInput deprecation', () => {
     const store = useDeprecationWarningsStore()
     expect(store.warnings).toHaveLength(1)
     expect(store.warnings[0]).toMatchObject({
-      message: 'Use of defaultInput on required input m:N:x.',
-      source: 'nodeDef'
+      source: 'nodeDef',
+      extension: 'm',
+      detail: 'N.x'
     })
   })
 
@@ -417,8 +418,9 @@ describe('ComfyNodeDefImpl defaultInput deprecation', () => {
 
     const store = useDeprecationWarningsStore()
     expect(store.warnings[0]).toMatchObject({
-      message: 'Use of defaultInput on optional input m:N:y.',
-      source: 'nodeDef'
+      source: 'nodeDef',
+      extension: 'm',
+      detail: 'N.y'
     })
     expect(def.inputs.y).toMatchObject({ forceInput: true })
   })

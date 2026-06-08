@@ -64,12 +64,12 @@ describe('contextMenuCompat', () => {
 
       // Should have logged a warning with extension name
       expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('[DEPRECATED]'),
+        expect.stringContaining('[DEPRECATED'),
         expect.any(String),
         expect.any(String)
       )
       expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('"Test Extension"'),
+        expect.stringContaining('extension: Test Extension'),
         expect.any(String),
         expect.any(String)
       )

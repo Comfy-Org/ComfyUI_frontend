@@ -9,16 +9,12 @@ const {
   mockGetSetting,
   mockRegisterCommand,
   mockRegisterCommands,
-  mockUnregisterCommand,
-  mockInstallLiteGraphBridge,
-  mockBackfillServerDeprecations
+  mockUnregisterCommand
 } = vi.hoisted(() => ({
   mockGetSetting: vi.fn(),
   mockRegisterCommand: vi.fn(),
   mockRegisterCommands: vi.fn(),
-  mockUnregisterCommand: vi.fn(),
-  mockInstallLiteGraphBridge: vi.fn(),
-  mockBackfillServerDeprecations: vi.fn().mockResolvedValue(undefined)
+  mockUnregisterCommand: vi.fn()
 }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -111,14 +107,6 @@ vi.mock('@/platform/workflow/management/composables/useAppsSidebarTab', () => ({
     type: 'vue',
     component: {}
   })
-}))
-
-vi.mock('@/platform/dev/installLiteGraphDeprecationBridge', () => ({
-  installLiteGraphDeprecationBridge: mockInstallLiteGraphBridge
-}))
-
-vi.mock('@/platform/dev/backfillServerDeprecations', () => ({
-  backfillServerDeprecations: mockBackfillServerDeprecations
 }))
 
 describe('useSidebarTabStore', () => {
@@ -263,28 +251,5 @@ describe('useSidebarTabStore', () => {
       ([cmd]) => cmd.id === 'Workspace.ToggleSidebarTab.deprecation-warnings'
     )
     expect(deprecationRegistrations).toHaveLength(2)
-  })
-
-  it('installs the LiteGraph bridge and backfills server logs at boot regardless of DevMode', () => {
-    mockGetSetting.mockImplementation(() => false)
-
-    useSidebarTabStore().registerCoreSidebarTabs()
-
-    expect(mockInstallLiteGraphBridge).toHaveBeenCalledTimes(1)
-    expect(mockBackfillServerDeprecations).toHaveBeenCalledTimes(1)
-  })
-
-  it('does not re-install the bridge or re-backfill when DevMode flips on later', async () => {
-    const devMode = ref(false)
-    mockGetSetting.mockImplementation((key: string) =>
-      key === 'Comfy.DevMode' ? devMode.value : undefined
-    )
-
-    useSidebarTabStore().registerCoreSidebarTabs()
-    devMode.value = true
-    await nextTick()
-
-    expect(mockInstallLiteGraphBridge).toHaveBeenCalledTimes(1)
-    expect(mockBackfillServerDeprecations).toHaveBeenCalledTimes(1)
   })
 })

@@ -27,6 +27,7 @@
     "devtools:pycheck": "python3 -m compileall -q tools/devtools",
     "format:check": "oxfmt --check",
     "format": "oxfmt --write",
+    "gen:deprecations": "tsx scripts/generate-deprecations-doc.ts",
     "json-schema": "tsx scripts/generate-json-schema.ts",
     "knip:no-cache": "knip",
     "knip": "knip --cache",

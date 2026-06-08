@@ -216,10 +216,7 @@ export class ChangeTracker {
 
   /** @deprecated Use {@link captureCanvasState} instead. */
   checkState() {
-    warnDeprecated('ChangeTracker.checkState() is deprecated.', {
-      suggestion: 'Call captureCanvasState() instead.',
-      source: 'ChangeTracker'
-    })
+    warnDeprecated('changeTracker.checkState')
     this.captureCanvasState()
   }
 

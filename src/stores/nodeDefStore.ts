@@ -114,14 +114,10 @@ export class ComfyNodeDefImpl
     for (const [name, spec] of Object.entries(def.input.required ?? {})) {
       const inputOptions = spec[1]
       if (inputOptions && inputOptions.defaultInput) {
-        warnDeprecated(
-          `Use of defaultInput on required input ${nodeDef.python_module}:${nodeDef.name}:${name}.`,
-          {
-            suggestion:
-              'Drop the defaultInput option — required sockets are always present.',
-            source: 'nodeDef'
-          }
-        )
+        warnDeprecated('nodeDef.defaultInputRequired', {
+          extension: nodeDef.python_module,
+          detail: `${nodeDef.name}.${name}`
+        })
       }
     }
     // For optional inputs, defaultInput is used to distinguish the null state.
@@ -130,13 +126,10 @@ export class ComfyNodeDefImpl
     for (const [name, spec] of Object.entries(def.input.optional ?? {})) {
       const inputOptions = spec[1]
       if (inputOptions && inputOptions.defaultInput) {
-        warnDeprecated(
-          `Use of defaultInput on optional input ${nodeDef.python_module}:${nodeDef.name}:${name}.`,
-          {
-            suggestion: 'Replace with forceInput.',
-            source: 'nodeDef'
-          }
-        )
+        warnDeprecated('nodeDef.defaultInputOptional', {
+          extension: nodeDef.python_module,
+          detail: `${nodeDef.name}.${name}`
+        })
         inputOptions.forceInput = true
       }
     }

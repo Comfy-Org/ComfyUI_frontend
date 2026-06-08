@@ -5,6 +5,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 import { ComboWidget } from '@/lib/litegraph/src/widgets/ComboWidget'
+import { DEPRECATIONS } from '@/platform/dev/deprecations'
 
 const { LGraphCanvas } = await vi.importActual<typeof LGraphCanvasModule>(
   '@/lib/litegraph/src/LGraphCanvas'
@@ -557,9 +558,7 @@ describe('ComboWidget', () => {
     })
 
     it('should warn when using deprecated function values', () => {
-      const deprecationCallback = vi.fn()
-      const originalCallbacks = LiteGraph.onDeprecationWarning
-      LiteGraph.onDeprecationWarning = [deprecationCallback]
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
       const valuesFn = vi.fn().mockReturnValue(['a', 'b', 'c'])
       widget = new ComboWidget(
@@ -583,12 +582,15 @@ describe('ComboWidget', () => {
 
       widget.onClick({ e: mockEvent, node, canvas: mockCanvas })
 
-      expect(deprecationCallback).toHaveBeenCalledWith(
-        'Using a function for values is deprecated. Use an array of unique values instead.',
-        undefined
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining(
+          DEPRECATIONS['litegraph.comboValuesFunction'].message
+        ),
+        expect.any(String),
+        expect.any(String)
       )
 
-      LiteGraph.onDeprecationWarning = originalCallbacks
+      warnSpy.mockRestore()
     })
   })
 

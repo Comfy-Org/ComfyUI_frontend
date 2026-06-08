@@ -120,6 +120,32 @@ describe('commandStore', () => {
     })
   })
 
+  describe('unregisterCommand', () => {
+    it('removes a registered command', () => {
+      const store = useCommandStore()
+      store.registerCommand({ id: 'temp.cmd', function: vi.fn() })
+      expect(store.isRegistered('temp.cmd')).toBe(true)
+
+      store.unregisterCommand('temp.cmd')
+
+      expect(store.isRegistered('temp.cmd')).toBe(false)
+      expect(store.getCommand('temp.cmd')).toBeUndefined()
+    })
+
+    it('allows re-registering after unregister without a duplicate warning', () => {
+      const store = useCommandStore()
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      store.registerCommand({ id: 'temp.cmd', function: vi.fn() })
+      store.unregisterCommand('temp.cmd')
+
+      store.registerCommand({ id: 'temp.cmd', function: vi.fn() })
+
+      expect(store.isRegistered('temp.cmd')).toBe(true)
+      expect(warn).not.toHaveBeenCalled()
+      warn.mockRestore()
+    })
+  })
+
   describe('loadExtensionCommands', () => {
     it('registers commands from an extension', () => {
       const store = useCommandStore()

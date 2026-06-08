@@ -444,11 +444,7 @@ export function convertToInput(
   node: LGraphNode,
   widget: IBaseWidget
 ): INodeInputSlot | undefined {
-  warnDeprecated('convertToInput is no longer necessary.', {
-    suggestion:
-      'Remove the call — widgets and sockets now co-exist on each input.',
-    source: 'widgetInputs'
-  })
+  warnDeprecated('widgetInputs.convertToInput')
   return node.inputs.find((slot) => slot.widget?.name === widget.name)
 }
 
@@ -531,11 +527,7 @@ app.registerExtension({
   ) {
     // @ts-expect-error adding extra property
     nodeType.prototype.convertWidgetToInput = function (this: LGraphNode) {
-      warnDeprecated('convertWidgetToInput is no longer necessary.', {
-        suggestion:
-          'Remove the call — widgets and sockets now co-exist on each input.',
-        source: 'widgetInputs'
-      })
+      warnDeprecated('widgetInputs.convertWidgetToInput')
       return false
     }
 
