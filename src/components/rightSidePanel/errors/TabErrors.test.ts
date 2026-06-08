@@ -468,11 +468,17 @@ describe('TabErrors.vue', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders missing media item labels that locate the node', async () => {
+  it('renders one missing media item per referencing node and locates the selected node', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
-    vi.mocked(getNodeByExecutionId).mockReturnValue({
-      title: 'Load Image'
-    } as ReturnType<typeof getNodeByExecutionId>)
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
+      const titles: Record<string, string> = {
+        '3': 'First Loader',
+        '4': 'Second Loader'
+      }
+      return {
+        title: titles[String(nodeId)] ?? ''
+      } as ReturnType<typeof getNodeByExecutionId>
+    })
 
     const { user } = renderComponent({
       missingMedia: {
@@ -482,16 +488,28 @@ describe('TabErrors.vue', () => {
             nodeType: 'LoadImage',
             widgetName: 'image',
             mediaType: 'image',
-            name: 'portrait.png',
+            name: 'shared.png',
             isMissing: true
-          } satisfies MissingMediaCandidate
-        ]
+          },
+          {
+            nodeId: '4',
+            nodeType: 'PreviewImage',
+            widgetName: 'image',
+            mediaType: 'image',
+            name: 'shared.png',
+            isMissing: true
+          }
+        ] satisfies MissingMediaCandidate[]
       }
     })
 
-    await user.click(screen.getByRole('button', { name: 'Load Image - image' }))
+    expect(screen.getAllByTestId('missing-media-row')).toHaveLength(2)
 
-    expect(mockFocusNode.mock.calls.at(-1)?.[0]).toBe('3')
+    await user.click(
+      screen.getByRole('button', { name: 'Second Loader - image' })
+    )
+
+    expect(mockFocusNode.mock.calls.at(-1)?.[0]).toBe('4')
   })
 
   it('renders swap node rows below the section display message', () => {

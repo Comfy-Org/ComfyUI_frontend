@@ -15,7 +15,7 @@
           <span class="flex min-w-0 flex-1">
             <button
               type="button"
-              class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
+              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-1 focus-visible:outline-none"
               @click="emit('locateNode', item.nodeId)"
             >
               {{ item.displayItemLabel }}
@@ -26,7 +26,11 @@
             variant="textonly"
             size="icon-sm"
             class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
-            :aria-label="t('rightSidePanel.missingMedia.locateNode')"
+            :aria-label="
+              t('rightSidePanel.locateNodeFor', {
+                item: item.displayItemLabel
+              })
+            "
             @click.stop="emit('locateNode', item.nodeId)"
           >
             <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
@@ -76,7 +80,7 @@ const missingMediaItems = computed(() => {
           nodeId,
           displayItemLabel: getDisplayItemLabel(
             nodeId,
-            mediaItem.representative.nodeType,
+            nodeRef.nodeType ?? mediaItem.representative.nodeType,
             nodeRef.widgetName
           )
         })

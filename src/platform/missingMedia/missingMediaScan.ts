@@ -256,6 +256,7 @@ export function groupCandidatesByName(
     if (existing) {
       existing.referencingNodes.push({
         nodeId: c.nodeId,
+        nodeType: c.nodeType,
         widgetName: c.widgetName
       })
     } else {
@@ -263,7 +264,9 @@ export function groupCandidatesByName(
         name: c.name,
         mediaType: c.mediaType,
         representative: c,
-        referencingNodes: [{ nodeId: c.nodeId, widgetName: c.widgetName }]
+        referencingNodes: [
+          { nodeId: c.nodeId, nodeType: c.nodeType, widgetName: c.widgetName }
+        ]
       })
     }
   }

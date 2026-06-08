@@ -1580,16 +1580,31 @@ describe('errorMessageResolver', () => {
     })
   })
 
-  it('resolves missing media item labels from node and widget names', () => {
-    expect(
-      resolveMissingMediaItemLabel({
+  it.for([
+    {
+      source: { nodeType: 'LoadImage', widgetName: 'image' },
+      displayItemLabel: 'Load Image - image'
+    },
+    {
+      source: {
+        nodeDisplayName: 'Custom Loader',
         nodeType: 'LoadImage',
         widgetName: 'image'
+      },
+      displayItemLabel: 'Custom Loader - image'
+    },
+    {
+      source: { nodeType: '', widgetName: '' },
+      displayItemLabel: 'This node - unknown input'
+    }
+  ] as const)(
+    'resolves missing media item labels from $source',
+    ({ source, displayItemLabel }) => {
+      expect(resolveMissingMediaItemLabel(source)).toEqual({
+        displayItemLabel
       })
-    ).toEqual({
-      displayItemLabel: 'Load Image - image'
-    })
-  })
+    }
+  )
 
   it.for([
     [

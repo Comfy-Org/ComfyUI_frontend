@@ -421,6 +421,11 @@ describe('groupCandidatesByName', () => {
 
     const photoGroup = result.find((g) => g.name === 'photo.png')
     expect(photoGroup?.referencingNodes).toHaveLength(2)
+    expect(photoGroup?.referencingNodes[0]).toMatchObject({
+      nodeId: '1',
+      nodeType: 'LoadImage',
+      widgetName: 'image'
+    })
     expect(photoGroup?.mediaType).toBe('image')
     expect(photoGroup?.representative.nodeType).toBe('LoadImage')
 
