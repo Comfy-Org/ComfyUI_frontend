@@ -12,7 +12,7 @@ function state<T>(
   type: string,
   value: T,
   extra: Partial<Omit<WidgetState<T>, 'type' | 'value'>> = {}
-): Omit<WidgetState<T>, 'nodeId' | 'name'> {
+): Omit<WidgetState<T>, 'nodeId' | 'name' | 'y'> & { y?: number } {
   return { type, value, options: {}, ...extra }
 }
 
@@ -87,6 +87,17 @@ describe('useWidgetValueStore', () => {
       expect(registered.disabled).toBeUndefined()
       expect(registered.serialize).toBeUndefined()
       expect(registered.options).toEqual({})
+      expect(registered.y).toBe(0)
+    })
+
+    it('registers explicit widget layout y', () => {
+      const store = useWidgetValueStore()
+      const registered = store.registerWidget(
+        seedA,
+        state('number', 12345, { y: 42 })
+      )
+
+      expect(registered.y).toBe(42)
     })
 
     it('registerWidget is idempotent and does not overwrite existing state', () => {

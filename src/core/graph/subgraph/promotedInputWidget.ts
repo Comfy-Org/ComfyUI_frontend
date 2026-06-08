@@ -68,9 +68,23 @@ export function promotedInputWidget(input: INodeInputSlot): IBaseWidget | null {
   if (!id) return null
   const store = useWidgetValueStore()
   return {
-    name: input.name,
-    label: input.label ?? input.name,
-    y: 0,
+    get name() {
+      return store.getWidget(id)?.name ?? input.name
+    },
+    get label() {
+      return store.getWidget(id)?.label ?? input.label ?? input.name
+    },
+    set label(next) {
+      const state = store.getWidget(id)
+      if (state) state.label = next
+    },
+    get y() {
+      return store.getWidget(id)?.y ?? 0
+    },
+    set y(next) {
+      const state = store.getWidget(id)
+      if (state) state.y = next
+    },
     widgetId: id,
     get type() {
       return store.getWidget(id)?.type ?? 'text'

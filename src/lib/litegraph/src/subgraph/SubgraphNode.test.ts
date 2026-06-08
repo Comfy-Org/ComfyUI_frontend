@@ -288,6 +288,65 @@ describe('SubgraphNode Synchronization', () => {
     }).not.toThrow()
   })
 
+  it('reads promoted widget label and y from WidgetState', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addOutput('out', 'STRING')
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    const widget = subgraphNode.widgets[0]
+    const id = promotedInput.widgetId
+    if (!id) throw new Error('Missing widgetId')
+    const state = useWidgetValueStore().getWidget(id)
+    if (!state) throw new Error('Missing widget state')
+
+    state.label = 'Stored Label'
+    state.y = 27
+
+    expect(widget?.name).toBe('text')
+    expect(widget?.label).toBe('Stored Label')
+    expect(widget?.y).toBe(27)
+  })
+
+  it('writes promoted widget label and y to WidgetState', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'text', type: 'STRING' }]
+    })
+
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('value', 'STRING')
+    input.widget = { name: 'value' }
+    interiorNode.addOutput('out', 'STRING')
+    interiorNode.addWidget('text', 'value', 'initial', () => {})
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const promotedInput = subgraphNode.inputs[0]
+    const widget = subgraphNode.widgets[0]
+    const id = promotedInput.widgetId
+    if (!id) throw new Error('Missing widgetId')
+
+    if (!widget) throw new Error('Missing projected widget')
+    widget.label = 'Projected Label'
+    widget.y = 31
+
+    expect(useWidgetValueStore().getWidget(id)).toMatchObject({
+      name: 'text',
+      label: 'Projected Label',
+      y: 31
+    })
+  })
+
   it('should keep input.widget.name stable after rename (onGraphConfigured safety)', () => {
     const subgraph = createTestSubgraph({
       inputs: [{ name: 'text', type: 'STRING' }]

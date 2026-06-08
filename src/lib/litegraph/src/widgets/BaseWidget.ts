@@ -207,7 +207,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       label,
       disabled: disabled ?? false,
       serialize: this.serialize,
-      options: this.options
+      options: this.options,
+      y: this.y
     }
   }
 

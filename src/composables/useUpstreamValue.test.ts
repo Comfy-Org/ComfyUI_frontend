@@ -6,7 +6,14 @@ import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSche
 import { boundsExtractor, singleValueExtractor } from './useUpstreamValue'
 
 function widget(name: string, value: unknown): WidgetState {
-  return { name, type: 'INPUT', value, nodeId: '1' as NodeId, options: {} }
+  return {
+    name,
+    type: 'INPUT',
+    value,
+    nodeId: '1' as NodeId,
+    options: {},
+    y: 0
+  }
 }
 
 const isNumber = (v: unknown): v is number => typeof v === 'number'

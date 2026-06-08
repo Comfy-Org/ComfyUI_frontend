@@ -36,7 +36,8 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const state: WidgetState<TValue> = {
       ...init,
       nodeId,
-      name
+      name,
+      y: init.y ?? 0
     }
     const widgetStates = getGraphWidgetStates(graphId)
     widgetStates.set(widgetId, state)

@@ -10,7 +10,14 @@ export interface WidgetState<
   TOptions extends IWidgetOptions = IWidgetOptions
 > extends Pick<
   IBaseWidget<TValue, TType, TOptions>,
-  'name' | 'type' | 'value' | 'options' | 'label' | 'serialize' | 'disabled'
+  | 'name'
+  | 'type'
+  | 'value'
+  | 'options'
+  | 'label'
+  | 'serialize'
+  | 'disabled'
+  | 'y'
 > {
   isDOMWidget?: boolean
   nodeId: NodeId
@@ -18,5 +25,5 @@ export interface WidgetState<
 
 export type WidgetStateInit<TValue = unknown> = Omit<
   WidgetState<TValue>,
-  'nodeId' | 'name'
->
+  'nodeId' | 'name' | 'y'
+> & { y?: number }
