@@ -827,6 +827,17 @@ describe('useMediaAssetActions', () => {
 
       await expectExportToast('mediaAsset.selection.exportStarted', 6)
     })
+
+    it('reports the file count for a jobless (input) export without previews', async () => {
+      mockGetAssetType.mockReturnValue('input')
+      const a1 = createMockAsset({ id: 'a1', name: 'in1.png', tags: ['input'] })
+      const a2 = createMockAsset({ id: 'a2', name: 'in2.png', tags: ['input'] })
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([a1, a2])
+
+      await expectExportToast('mediaAsset.selection.exportStarted', 2)
+    })
   })
 
   describe('deleteAssets - model cache invalidation', () => {
