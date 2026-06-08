@@ -2217,9 +2217,9 @@ const translations = {
     'zh-CN': 'Why we collect what we do'
   },
   'desktop_privacy.purpose.block.0': {
-    en: '<strong>Usage analytics</strong>: to understand which features people use, where they get stuck, and what to improve.\n<strong>Crash reports</strong>: to find and fix bugs faster.',
+    en: 'Usage analytics — to understand which features people use, where they get stuck, and what to improve.\nCrash reports — to find and fix bugs faster.',
     'zh-CN':
-      '<strong>Usage analytics</strong>: to understand which features people use, where they get stuck, and what to improve.\n<strong>Crash reports</strong>: to find and fix bugs faster.'
+      'Usage analytics — to understand which features people use, where they get stuck, and what to improve.\nCrash reports — to find and fix bugs faster.'
   },
   'desktop_privacy.purpose.block.1': {
     en: "That's the entire purpose. We don't sell, share, or use this data for advertising.",
@@ -2236,9 +2236,9 @@ const translations = {
     'zh-CN': 'Lawful basis (GDPR / UK GDPR)'
   },
   'desktop_privacy.lawful-basis.block.0': {
-    en: '<strong>Consent</strong> (Article 6(1)(a)) for analytics and crash reports — both are opt-in on the consent screen and revocable in Settings.\n<strong>Legitimate interests</strong> (Article 6(1)(f)) for update-server requests necessary to deliver software updates and security fixes. You can object via <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
+    en: 'Consent (Article 6(1)(a)) — for analytics and crash reports. Both are opt-in on the consent screen and revocable in Settings.\nLegitimate interests (Article 6(1)(f)) — for update-server requests necessary to deliver software updates and security fixes. You can object via support@comfy.org.',
     'zh-CN':
-      '<strong>Consent</strong> (Article 6(1)(a)) for analytics and crash reports — both are opt-in on the consent screen and revocable in Settings.\n<strong>Legitimate interests</strong> (Article 6(1)(f)) for update-server requests necessary to deliver software updates and security fixes. You can object via <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.'
+      'Consent (Article 6(1)(a)) — for analytics and crash reports. Both are opt-in on the consent screen and revocable in Settings.\nLegitimate interests (Article 6(1)(f)) — for update-server requests necessary to deliver software updates and security fixes. You can object via support@comfy.org.'
   },
 
   'desktop_privacy.processors.label': {
@@ -2254,9 +2254,9 @@ const translations = {
     'zh-CN': 'Data is processed by:'
   },
   'desktop_privacy.processors.block.1': {
-    en: '<strong>PostHog</strong> — product analytics\n<strong>Datadog</strong> — crash reports and application logs\n<strong>Comfy Org analytics warehouse</strong> — long-term aggregate analytics storage, operated by Comfy Org\n<strong>ToDesktop</strong> — application distribution and auto-update servers',
+    en: 'PostHog — product analytics\nDatadog — crash reports and application logs\nComfy Org analytics warehouse — long-term aggregate analytics storage, operated by Comfy Org\nToDesktop — application distribution and auto-update servers',
     'zh-CN':
-      '<strong>PostHog</strong> — product analytics\n<strong>Datadog</strong> — crash reports and application logs\n<strong>Comfy Org analytics warehouse</strong> — long-term aggregate analytics storage, operated by Comfy Org\n<strong>ToDesktop</strong> — application distribution and auto-update servers'
+      'PostHog — product analytics\nDatadog — crash reports and application logs\nComfy Org analytics warehouse — long-term aggregate analytics storage, operated by Comfy Org\nToDesktop — application distribution and auto-update servers'
   },
   'desktop_privacy.processors.block.2': {
     en: 'External vendors process data on our behalf under standard data-processing agreements. EU/UK transfers rely on Standard Contractual Clauses where required.',
@@ -2267,9 +2267,9 @@ const translations = {
   'desktop_privacy.retention.label': { en: 'RETENTION', 'zh-CN': 'RETENTION' },
   'desktop_privacy.retention.title': { en: 'Retention', 'zh-CN': 'Retention' },
   'desktop_privacy.retention.block.0': {
-    en: 'Usage analytics: up to <strong>24 months</strong> rolling, then aggregated further or deleted.\nCrash reports: up to <strong>15 days</strong> at full fidelity, then sampled or aggregated.\nLong-term aggregate analytics: up to <strong>36 months</strong> in aggregated form.\nUpdate-server logs: up to <strong>90 days</strong>.\nLocal device ID: stored on your machine only, removed on uninstall.',
+    en: 'Usage analytics — up to 24 months rolling, then aggregated further or deleted.\nCrash reports — up to 15 days at full fidelity, then sampled or aggregated.\nLong-term aggregate analytics — up to 36 months in aggregated form.\nUpdate-server logs — up to 90 days.\nLocal device ID — stored on your machine only, removed on uninstall.',
     'zh-CN':
-      'Usage analytics: up to <strong>24 months</strong> rolling, then aggregated further or deleted.\nCrash reports: up to <strong>15 days</strong> at full fidelity, then sampled or aggregated.\nLong-term aggregate analytics: up to <strong>36 months</strong> in aggregated form.\nUpdate-server logs: up to <strong>90 days</strong>.\nLocal device ID: stored on your machine only, removed on uninstall.'
+      'Usage analytics — up to 24 months rolling, then aggregated further or deleted.\nCrash reports — up to 15 days at full fidelity, then sampled or aggregated.\nLong-term aggregate analytics — up to 36 months in aggregated form.\nUpdate-server logs — up to 90 days.\nLocal device ID — stored on your machine only, removed on uninstall.'
   },
 
   'desktop_privacy.choices.label': {
@@ -2281,9 +2281,9 @@ const translations = {
     'zh-CN': 'Your choices'
   },
   'desktop_privacy.choices.block.0': {
-    en: '<strong>Turn off analytics</strong>: Settings → Telemetry → toggle off. Future events stop immediately; any in-flight requests already on the wire may complete.\n<strong>Delete past data</strong>: email <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> with your approximate install date, platform, and version. We\'ll do a best-effort match and remove associated records within 30 days.\n<strong>Stop using the app</strong>: uninstalling Desktop ends data collection. We don\'t keep tracking IDs after uninstall.',
+    en: "Turn off analytics — Settings → Telemetry → toggle off. Future events stop immediately; any in-flight requests already on the wire may complete.\nDelete past data — email support@comfy.org with your approximate install date, platform, and version. We'll do a best-effort match and remove associated records within 30 days.\nStop using the app — uninstalling Desktop ends data collection. We don't keep tracking IDs after uninstall.",
     'zh-CN':
-      '<strong>Turn off analytics</strong>: Settings → Telemetry → toggle off. Future events stop immediately; any in-flight requests already on the wire may complete.\n<strong>Delete past data</strong>: email <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a> with your approximate install date, platform, and version. We\'ll do a best-effort match and remove associated records within 30 days.\n<strong>Stop using the app</strong>: uninstalling Desktop ends data collection. We don\'t keep tracking IDs after uninstall.'
+      "Turn off analytics — Settings → Telemetry → toggle off. Future events stop immediately; any in-flight requests already on the wire may complete.\nDelete past data — email support@comfy.org with your approximate install date, platform, and version. We'll do a best-effort match and remove associated records within 30 days.\nStop using the app — uninstalling Desktop ends data collection. We don't keep tracking IDs after uninstall."
   },
 
   'desktop_privacy.rights.label': { en: 'YOUR RIGHTS', 'zh-CN': 'YOUR RIGHTS' },
