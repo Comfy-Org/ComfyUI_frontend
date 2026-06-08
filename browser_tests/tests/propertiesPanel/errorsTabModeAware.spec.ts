@@ -426,7 +426,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
     )
 
     test(
-      'Refreshing a resolved promoted missing model clears the combo invalid border',
+      'Refreshing a resolved promoted missing model clears the combo invalid state',
       { tag: ['@widget', '@subgraph'] },
       async ({ comfyPage }) => {
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
@@ -447,44 +447,31 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
           .getNodeByTitle('Subgraph with Promoted Missing Model')
           .getByRole('combobox', { name: 'ckpt_name', exact: true })
         await expect(promotedModelCombo).toHaveAttribute('aria-invalid', 'true')
-        await expect(promotedModelCombo).toHaveClass(
-          /ring-destructive-background/
-        )
 
-        await comfyPage.page.route(/\/object_info$/, async (route) => {
-          const response = await route.fetch()
-          const objectInfo = await response.json()
-          const ckptName =
-            objectInfo.CheckpointLoaderSimple.input.required.ckpt_name
-          ckptName[0] = [...ckptName[0], 'fake_model.safetensors']
-          await route.fulfill({ response, json: objectInfo })
-        })
+        const objectInfoRoute = /\/object_info$/
+        try {
+          await comfyPage.page.route(objectInfoRoute, async (route) => {
+            const response = await route.fetch()
+            const objectInfo = await response.json()
+            const ckptName =
+              objectInfo.CheckpointLoaderSimple.input.required.ckpt_name
+            ckptName[0] = [...ckptName[0], 'fake_model.safetensors']
+            await route.fulfill({ response, json: objectInfo })
+          })
 
-        const objectInfoResponse = comfyPage.page.waitForResponse(
-          (response) => {
-            const url = new URL(response.url())
-            return url.pathname.endsWith('/object_info') && response.ok()
-          }
-        )
-        const modelFoldersResponse = comfyPage.page.waitForResponse(
-          (response) => {
-            const url = new URL(response.url())
-            return url.pathname.endsWith('/experiment/models') && response.ok()
-          }
-        )
-
-        await Promise.all([
-          objectInfoResponse,
-          modelFoldersResponse,
-          comfyPage.page
+          await comfyPage.page
             .getByTestId(TestIds.dialogs.missingModelRefresh)
             .click()
-        ])
 
-        await expect(missingModelGroup).toBeHidden()
-        await expect(promotedModelCombo).not.toHaveClass(
-          /ring-destructive-background/
-        )
+          await expect(missingModelGroup).toBeHidden()
+          await expect(promotedModelCombo).toBeVisible()
+          await expect(promotedModelCombo).not.toHaveAttribute(
+            'aria-invalid',
+            'true'
+          )
+        } finally {
+          await comfyPage.page.unroute(objectInfoRoute)
+        }
       }
     )
 

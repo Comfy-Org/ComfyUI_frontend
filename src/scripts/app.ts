@@ -9,9 +9,9 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { st, t } from '@/i18n'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
   LGraph,
@@ -2152,6 +2152,7 @@ export class ComfyApp {
       defs
     )
 
+    // Promoted widgets keep hosted option snapshots; sync them after source refresh hooks run.
     syncPromotedComboHostOptions(this.rootGraph)
 
     if (this.vueAppReady) {
