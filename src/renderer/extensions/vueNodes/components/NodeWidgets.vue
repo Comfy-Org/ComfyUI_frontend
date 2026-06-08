@@ -24,7 +24,7 @@
   >
     <template v-for="widget in processedWidgets" :key="widget.renderKey">
       <div
-        v-if="!widget.hidden && (!widget.advanced || showAdvanced)"
+        v-if="widget.visible"
         data-testid="node-widget"
         class="lg-node-widget group col-span-full grid grid-cols-subgrid items-stretch"
       >
@@ -128,13 +128,8 @@ onErrorCaptured((error) => {
   return false
 })
 
-const {
-  canSelectInputs,
-  gridTemplateRows,
-  nodeType,
-  processedWidgets,
-  showAdvanced
-} = useProcessedWidgets(() => nodeData)
+const { canSelectInputs, gridTemplateRows, nodeType, processedWidgets } =
+  useProcessedWidgets(() => nodeData)
 
 // Tracks widget-row growth that the node-level RO can't see
 if (nodeData?.id != null) {
