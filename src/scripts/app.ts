@@ -11,6 +11,7 @@ import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/com
 
 import { st, t } from '@/i18n'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
   LGraph,
@@ -127,6 +128,7 @@ import {
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
+import { getWidgetState } from '@/world/widgetValueIO'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
@@ -167,6 +169,19 @@ export function sanitizeNodeName(string: string) {
   }
   return String(string).replace(/[&<>"'`=]/g, function fromEntityMap(s) {
     return entityMap[s as keyof typeof entityMap]
+  })
+}
+
+function syncPromotedComboHostOptions(rootGraph: LGraph): void {
+  forEachNode(rootGraph, (node) => {
+    for (const widget of node.widgets ?? []) {
+      if (!isPromotedWidgetView(widget) || widget.type !== 'combo') continue
+
+      const state = getWidgetState(widget.entityId)
+      if (!state) continue
+
+      state.options = { ...(widget.options ?? {}) }
+    }
   })
 }
 
@@ -2136,6 +2151,8 @@ export class ComfyApp {
       'refreshComboInNodes',
       defs
     )
+
+    syncPromotedComboHostOptions(this.rootGraph)
 
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)
