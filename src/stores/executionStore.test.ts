@@ -630,26 +630,6 @@ describe('useExecutionStore - workflowStatus', () => {
     expect(store.getWorkflowStatus(workflowB)).toBe('running')
   })
 
-  it('does not report status for the active workflow', () => {
-    mockActiveWorkflow.value = workflowA
-    callStoreJob('job-1', workflowA)
-    fireExecutionStart('job-1')
-
-    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
-  })
-
-  it('keeps running visible after the active tab is viewed then left', async () => {
-    callStoreJob('job-1', workflowA)
-    fireExecutionStart('job-1')
-
-    mockActiveWorkflow.value = workflowA
-    await nextTick()
-    mockActiveWorkflow.value = workflowB
-    await nextTick()
-
-    expect(store.getWorkflowStatus(workflowA)).toBe('running')
-  })
-
   it('overwrites stale terminal with running on re-queue', () => {
     callStoreJob('job-1', workflowA)
     fireExecutionStart('job-1')
@@ -666,51 +646,6 @@ describe('useExecutionStore - workflowStatus', () => {
     fireExecutionSuccess('unknown-job')
     expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
     expect(store.getWorkflowStatus(workflowB)).toBeUndefined()
-  })
-
-  it.for(['running', 'completed', 'failed'] as const)(
-    'hides %s status while the workflow is the active tab',
-    async (status) => {
-      callStoreJob('job-a', workflowA)
-      fireExecutionStart('job-a')
-      if (status === 'completed') fireExecutionSuccess('job-a')
-      else if (status === 'failed') fireExecutionError('job-a')
-      callStoreJob('job-b', workflowB)
-      fireExecutionStart('job-b')
-      fireExecutionSuccess('job-b')
-
-      expect(store.getWorkflowStatus(workflowA)).toBe(status)
-
-      mockActiveWorkflow.value = workflowA
-      await nextTick()
-
-      expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
-      expect(store.getWorkflowStatus(workflowB)).toBe('completed')
-    }
-  )
-
-  it('does not badge a workflow that completes while it is active', async () => {
-    mockActiveWorkflow.value = workflowA
-    callStoreJob('job-1', workflowA)
-    fireExecutionStart('job-1')
-    fireExecutionSuccess('job-1')
-
-    mockActiveWorkflow.value = workflowB
-    await nextTick()
-    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
-  })
-
-  it('clears a terminal badge once its tab has been viewed', async () => {
-    callStoreJob('job-1', workflowA)
-    fireExecutionStart('job-1')
-    fireExecutionSuccess('job-1')
-    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
-
-    mockActiveWorkflow.value = workflowA
-    await nextTick()
-    mockActiveWorkflow.value = workflowB
-    await nextTick()
-    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
 
   it('prunes only closed workflows, leaving open ones intact', async () => {

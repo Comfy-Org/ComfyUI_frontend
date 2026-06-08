@@ -186,8 +186,12 @@ const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
   failed: 'icon-[lucide--octagon-alert] text-destructive-background'
 }
 
+// The active tab doesn't badge its own status - the user is already looking
+// at it. Background tabs surface the recorded execution status.
 const workflowStatus = computed(() =>
-  executionStore.getWorkflowStatus(props.workflowOption.workflow)
+  isActiveTab.value
+    ? undefined
+    : executionStore.getWorkflowStatus(props.workflowOption.workflow)
 )
 
 const workflowStatusLabel = computed(() =>

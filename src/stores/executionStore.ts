@@ -157,10 +157,6 @@ export const useExecutionStore = defineStore('execution', () => {
     // A late terminal event can arrive after the tab closed; don't resurrect
     // an entry (which also pins the workflow ref) for a closed workflow.
     if (!workflowStore.isOpen(workflow)) return
-    if (status !== 'running' && workflow === workflowStore.activeWorkflow) {
-      clearWorkflowStatus(workflow)
-      return
-    }
     mutateStatus((m) => m.set(workflow, status))
   }
 
@@ -182,18 +178,8 @@ export const useExecutionStore = defineStore('execution', () => {
     workflow: ComfyWorkflow | undefined | null
   ): WorkflowExecutionStatus | undefined {
     if (!workflow) return undefined
-    if (workflow === workflowStore.activeWorkflow) return undefined
     return workflowStatus.value.get(workflow)
   }
-
-  watch(
-    () => workflowStore.activeWorkflow,
-    (workflow) => {
-      if (workflow && workflowStatus.value.get(workflow) !== 'running') {
-        clearWorkflowStatus(workflow)
-      }
-    }
-  )
 
   // Prune statuses for workflows that have been closed.
   watch(
@@ -818,6 +804,7 @@ export const useExecutionStore = defineStore('execution', () => {
     jobIdToWorkflowId,
     jobIdToSessionWorkflowPath,
     ensureSessionWorkflowPath,
-    getWorkflowStatus
+    getWorkflowStatus,
+    clearWorkflowStatus
   }
 })

@@ -182,6 +182,14 @@ describe('WorkflowTab - workflow status indicator', () => {
     }
   )
 
+  it('does not badge the active tab with its own status', () => {
+    const workflowOption = makeWorkflowOption()
+    mockWorkflowStatus.value = new Map([[workflowOption.workflow, 'running']])
+
+    renderTab({ workflowOption, activeWorkflowKey: 'test-key' })
+    expect(screen.queryByRole('img')).toBeNull()
+  })
+
   it('shows unsaved dot when no workflow status and workflow is unsaved', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
 

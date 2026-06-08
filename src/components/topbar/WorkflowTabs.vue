@@ -117,6 +117,7 @@ import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useWorkflowStatusDismissal } from '@/composables/useWorkflowStatusDismissal'
 import { useOverflowObserver } from '@/composables/element/useOverflowObserver'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildFeedbackTypeformUrl } from '@/platform/support/config'
@@ -145,6 +146,9 @@ const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
 const commandStore = useCommandStore()
 const { isLoggedIn } = useCurrentUser()
+
+// Dismiss a tab's terminal status badge once it has been viewed
+useWorkflowStatusDismissal()
 const { flags } = useFeatureFlags()
 
 const isIntegratedTabBar = computed(
