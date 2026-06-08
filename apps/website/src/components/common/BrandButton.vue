@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { computed } from 'vue';
-import type { HTMLAttributes } from 'vue';
+import { computed } from 'vue'
+import type { HTMLAttributes } from 'vue'
 
 import type { BrandButtonVariants } from './brandButton.variants'
 import { brandButtonVariants } from './brandButton.variants'
