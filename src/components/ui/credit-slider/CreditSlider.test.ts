@@ -86,6 +86,26 @@ describe('CreditSlider', () => {
     })
   })
 
+  it('emits nothing when disabled (keyboard interaction suppressed)', async () => {
+    const user = userEvent.setup()
+    const onUpdate = vi.fn<(usd: number) => void>()
+    const onChange = vi.fn()
+
+    renderSlider({
+      modelValue: 700,
+      disabled: true,
+      'onUpdate:modelValue': onUpdate,
+      onChange
+    })
+    await flush()
+
+    screen.getByRole('slider').focus()
+    await user.keyboard('{ArrowRight}')
+
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('shows the discounted price, struck original, save badge and yearly total (DES-197)', async () => {
     renderSlider() // default $700 stop → 10% yearly discount
     await flush()

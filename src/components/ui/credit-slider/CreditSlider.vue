@@ -26,10 +26,10 @@ const {
   disabled?: boolean
   class?: HTMLAttributes['class']
   /**
-   * The fixed credit stops the slider snaps to. Defaults to the hardcoded
-   * DES-197 set; pass the backend-sourced stops once the contract lands —
-   * map `GET /api/billing/plans → team_credit_stops.stops` to `CreditStop[]`
-   * (credits, the pre-discount `usd`, and `discountPercentYearly`).
+   * The fixed credit stops the slider snaps to. Must be non-empty. Defaults to
+   * the hardcoded DES-197 set; pass the backend-sourced stops once the contract
+   * lands — map `GET /api/billing/plans → team_credit_stops.stops` to
+   * `CreditStop[]` (credits, the pre-discount `usd`, and `discountPercentYearly`).
    */
   stops?: readonly CreditStop[]
   /**
@@ -56,7 +56,12 @@ const usd = defineModel<number>({
 
 const selectedIndex = computed(() => {
   const i = stops.findIndex((stop) => stop.usd === usd.value)
-  return i === -1 ? defaultStopIndex : i
+  if (i !== -1) return i
+  // Fall back to the default stop, clamped into range: a backend-driven `stops`
+  // array can be shorter than expected (or `defaultStopIndex` out of bounds), so
+  // clamping keeps `current` defined and the price computeds below from reading
+  // `undefined.usd` at runtime. (`stops` is required to be non-empty.)
+  return Math.min(Math.max(defaultStopIndex, 0), Math.max(stops.length - 1, 0))
 })
 
 const current = computed<CreditStop>(() => stops[selectedIndex.value])
@@ -109,7 +114,7 @@ const sliderModel = computed<number[]>({
   }
 })
 
-const lastIndex = computed(() => stops.length - 1)
+const lastIndex = computed(() => Math.max(stops.length - 1, 0))
 
 const formatUsd = (value: number) => `$${value.toLocaleString('en-US')}`
 const formatCreditsCompact = (value: number) =>
