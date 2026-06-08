@@ -29,6 +29,5 @@ Allow: /
 Disallow: /_astro/
 Disallow: /_website/
 Disallow: /_vercel/
-Disallow: /payment/
 
 Sitemap: https://comfy.org/sitemap-index.xml
