@@ -15,6 +15,7 @@ import type {
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
   SettingChangedMetadata,
@@ -197,6 +198,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) =>
       provider.trackNodeSearchResultSelected?.(metadata)
     )
+  }
+
+  trackSearchQuery(metadata: SearchQueryMetadata): void {
+    this.dispatch((provider) => provider.trackSearchQuery?.(metadata))
   }
 
   trackNodeAdded(metadata: NodeAddedMetadata): void {

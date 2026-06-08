@@ -95,6 +95,7 @@ import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMess
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type {
   ISettingGroup,
@@ -204,6 +205,8 @@ function onNavItemClick(id: string) {
 }
 
 const searchResults = computed<ISettingGroup[]>(() => getSearchResults(null))
+
+useSearchQueryTracking('settings', searchQuery, searchResults)
 
 // Scroll to and highlight the target setting once the correct category renders.
 if (scrollToSettingId) {
