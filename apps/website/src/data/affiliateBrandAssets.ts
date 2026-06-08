@@ -29,7 +29,7 @@ export const affiliateBrandAssets: readonly AffiliateBrandAsset[] = [
     id: 'icon',
     title: { en: 'Icon', 'zh-CN': '图标' },
     download: BRAND_ASSETS_ZIP,
-    preview: '/affiliates/brand/comfy-full-logo-yellow.svg'
+    preview: '/affiliates/brand/comfy-color-combo-yellow.svg'
   },
   {
     id: 'amplified-logomark',
