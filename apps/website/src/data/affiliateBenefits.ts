@@ -1,6 +1,4 @@
-import type { Locale } from '../i18n/translations'
-
-type LocalizedText = Record<Locale, string>
+import type { LocalizedText } from '../i18n/translations'
 
 interface AffiliateBenefit {
   id: string
