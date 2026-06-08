@@ -2,19 +2,11 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
 
-/**
- * ErrorNodeCard displays a single error card inside the error tab.
- * It shows the node header (ID badge, title, action buttons)
- * and the list of error items (message, traceback, copy button).
- */
 const meta: Meta<typeof ErrorNodeCard> = {
   title: 'RightSidePanel/Errors/ErrorNodeCard',
   component: ErrorNodeCard,
   parameters: {
     layout: 'centered'
-  },
-  argTypes: {
-    showNodeIdBadge: { control: 'boolean' }
   },
   decorators: [
     (story) => ({
@@ -105,58 +97,36 @@ const promptOnlyCard: ErrorCardData = {
   ]
 }
 
-/** Single validation error with node ID badge visible */
-export const WithNodeIdBadge: Story = {
+export const SingleValidationError: Story = {
   args: {
-    card: singleErrorCard,
-    showNodeIdBadge: true
-  }
-}
-
-/** Single validation error without node ID badge */
-export const WithoutNodeIdBadge: Story = {
-  args: {
-    card: singleErrorCard,
-    showNodeIdBadge: false
+    card: singleErrorCard
   }
 }
 
 /** Subgraph node error — shows "Enter subgraph" button */
 export const WithEnterSubgraphButton: Story = {
   args: {
-    card: subgraphErrorCard,
-    showNodeIdBadge: true
-  }
-}
-
-/** Regular node error — no "Enter subgraph" button */
-export const WithoutEnterSubgraphButton: Story = {
-  args: {
-    card: singleErrorCard,
-    showNodeIdBadge: true
+    card: subgraphErrorCard
   }
 }
 
 /** Multiple validation errors on one node */
 export const MultipleErrors: Story = {
   args: {
-    card: multipleErrorsCard,
-    showNodeIdBadge: true
+    card: multipleErrorsCard
   }
 }
 
 /** Runtime execution error with full traceback */
 export const RuntimeError: Story = {
   args: {
-    card: runtimeErrorCard,
-    showNodeIdBadge: true
+    card: runtimeErrorCard
   }
 }
 
 /** Prompt-level error (no node header) */
 export const PromptError: Story = {
   args: {
-    card: promptOnlyCard,
-    showNodeIdBadge: false
+    card: promptOnlyCard
   }
 }

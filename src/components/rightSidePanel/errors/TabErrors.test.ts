@@ -1,14 +1,17 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import TabErrors from './TabErrors.vue'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
+
+const mockFocusNode = vi.hoisted(() => vi.fn())
+const mockEnterSubgraph = vi.hoisted(() => vi.fn())
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -38,6 +41,13 @@ vi.mock('@/services/litegraphService', () => ({
   }))
 }))
 
+vi.mock('@/composables/canvas/useFocusNode', () => ({
+  useFocusNode: vi.fn(() => ({
+    focusNode: mockFocusNode,
+    enterSubgraph: mockEnterSubgraph
+  }))
+}))
+
 vi.mock('@/platform/missingModel/missingModelDownload', () => ({
   downloadModel: vi.fn(),
   fetchModelMetadata: vi.fn().mockResolvedValue({
@@ -52,6 +62,7 @@ describe('TabErrors.vue', () => {
   let i18n: ReturnType<typeof createI18n>
 
   beforeEach(() => {
+    vi.clearAllMocks()
     i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -59,11 +70,22 @@ describe('TabErrors.vue', () => {
         en: {
           g: {
             workflow: 'Workflow',
-            copy: 'Copy'
+            copy: 'Copy',
+            details: 'Details',
+            findOnGithub: 'Find on GitHub',
+            getHelpAction: 'Get Help'
           },
           rightSidePanel: {
             noErrors: 'No errors',
             noneSearchDesc: 'No results found',
+            errorHelp: 'Error help',
+            errorLog: 'Error log',
+            findOnGithubTooltip: 'Search GitHub issues',
+            getHelpTooltip: 'Get help',
+            info: 'Info',
+            infoFor: 'Info for {item}',
+            locateNode: 'Locate node',
+            locateNodeFor: 'Locate {item}',
             missingModels: {
               missingModelsTitle: 'Missing Models',
               downloadAll: 'Download all',
@@ -144,29 +166,111 @@ describe('TabErrors.vue', () => {
     expect(screen.queryByText('Error details')).not.toBeInTheDocument()
   })
 
-  it('renders node validation errors grouped by class_type', async () => {
+  it('renders node validation errors grouped by catalog copy', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
-    vi.mocked(getNodeByExecutionId).mockReturnValue({
-      title: 'CLIP Text Encode'
-    } as ReturnType<typeof getNodeByExecutionId>)
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
+      const titles: Record<string, string> = {
+        '1': 'KSampler',
+        '2': 'CLIP Text Encode'
+      }
+      return {
+        title: titles[String(nodeId)] ?? ''
+      } as ReturnType<typeof getNodeByExecutionId>
+    })
 
-    renderComponent({
+    const { user } = renderComponent({
       executionError: {
         lastNodeErrors: {
-          '6': {
+          '2': {
             class_type: 'CLIPTextEncode',
             errors: [
-              { message: 'Required input is missing', details: 'Input: text' }
+              {
+                type: 'required_input_missing',
+                message: 'Required input is missing',
+                details: 'Input: clip',
+                extra_info: {
+                  input_name: 'clip'
+                }
+              }
+            ]
+          },
+          '1': {
+            class_type: 'KSampler',
+            errors: [
+              {
+                type: 'required_input_missing',
+                message: 'Required input is missing',
+                details: 'Input: positive',
+                extra_info: {
+                  input_name: 'positive'
+                }
+              },
+              {
+                type: 'required_input_missing',
+                message: 'Required input is missing',
+                details: 'Input: model',
+                extra_info: {
+                  input_name: 'model'
+                }
+              }
             ]
           }
         }
       }
     })
 
-    expect(screen.getByText('CLIPTextEncode')).toBeInTheDocument()
-    expect(screen.getByText('#6')).toBeInTheDocument()
-    expect(screen.getByText('CLIP Text Encode')).toBeInTheDocument()
-    expect(screen.getByText('Required input is missing')).toBeInTheDocument()
+    expect(screen.getByText('Missing connection')).toBeInTheDocument()
+    expect(screen.getByText('(3)')).toBeInTheDocument()
+    expect(
+      screen.getAllByText(
+        'Required input slots have no connection feeding them.'
+      )
+    ).toHaveLength(1)
+    expect(screen.queryByText('#1')).not.toBeInTheDocument()
+    expect(screen.queryByText('#2')).not.toBeInTheDocument()
+    expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
+    expect(screen.queryByText('CLIP Text Encode')).not.toBeInTheDocument()
+
+    const itemRows = screen.getAllByRole('listitem')
+    expect(itemRows).toHaveLength(3)
+    expect(itemRows[0]).toHaveTextContent('KSampler - model')
+    expect(itemRows[1]).toHaveTextContent('KSampler - positive')
+    expect(itemRows[2]).toHaveTextContent('CLIP Text Encode - clip')
+
+    const infoButton = within(itemRows[1]).getByRole('button', {
+      name: 'Info for KSampler - positive'
+    })
+
+    await user.click(infoButton)
+
+    const itemDetail = screen.getByText(
+      'KSampler is missing a required input: positive'
+    )
+    expect(infoButton).toHaveAttribute(
+      'aria-controls',
+      itemDetail.getAttribute('id')
+    )
+
+    const labelLocateButton = within(itemRows[1]).getByRole('button', {
+      name: 'KSampler - positive'
+    })
+
+    await user.click(labelLocateButton)
+    expect(mockFocusNode.mock.calls.at(-1)?.[0]).toBe('1')
+
+    const iconLocateButton = within(itemRows[2]).getByRole('button', {
+      name: 'Locate CLIP Text Encode - clip'
+    })
+
+    await user.click(iconLocateButton)
+    expect(mockFocusNode.mock.calls.at(-1)?.[0]).toBe('2')
+
+    expect(
+      screen.queryByText('Required input is missing')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('Input: model')).not.toBeInTheDocument()
+    expect(screen.queryByText('Input: positive')).not.toBeInTheDocument()
+    expect(screen.queryByText('Input: clip')).not.toBeInTheDocument()
   })
 
   it('renders runtime execution errors from WebSocket', async () => {
@@ -175,7 +279,7 @@ describe('TabErrors.vue', () => {
       title: 'KSampler'
     } as ReturnType<typeof getNodeByExecutionId>)
 
-    renderComponent({
+    const { user } = renderComponent({
       executionError: {
         lastExecutionError: {
           prompt_id: 'abc',
@@ -190,12 +294,16 @@ describe('TabErrors.vue', () => {
     })
 
     expect(screen.getAllByText('KSampler').length).toBeGreaterThanOrEqual(1)
-    expect(screen.getByText('#10')).toBeInTheDocument()
     expect(screen.getByText('Execution failed')).toBeInTheDocument()
     expect(
       screen.getByText('Node threw an error during execution.')
     ).toBeInTheDocument()
+    expect(screen.getByText('Error log')).toBeInTheDocument()
     expect(screen.getByText(/Line 1/)).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Details' }))
+
+    expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
   })
 
   it('filters errors based on search query', async () => {
@@ -230,7 +338,7 @@ describe('TabErrors.vue', () => {
     expect(screen.queryByText('KSampler')).not.toBeInTheDocument()
   })
 
-  it('calls copyToClipboard when copy button is clicked', async () => {
+  it('calls copyToClipboard when a runtime error copy button is clicked', async () => {
     const { useCopyToClipboard } =
       await import('@/composables/useCopyToClipboard')
     const mockCopy = vi.fn()
@@ -238,21 +346,26 @@ describe('TabErrors.vue', () => {
 
     const { user } = renderComponent({
       executionError: {
-        lastNodeErrors: {
-          '1': {
-            class_type: 'TestNode',
-            errors: [{ message: 'Test message', details: 'Test details' }]
-          }
+        lastExecutionError: {
+          prompt_id: 'abc',
+          node_id: '1',
+          node_type: 'TestNode',
+          exception_message: 'Test message',
+          exception_type: 'RuntimeError',
+          traceback: ['Test details'],
+          timestamp: Date.now()
         }
       }
     })
 
     await user.click(screen.getByTestId('error-card-copy'))
 
-    expect(mockCopy).toHaveBeenCalledWith('Test message\n\nTest details')
+    expect(mockCopy).toHaveBeenCalledWith(
+      'Node threw an error during execution.\n\nTest details'
+    )
   })
 
-  it('renders single runtime error outside accordion in full-height panel', async () => {
+  it('renders a single runtime error in the normal execution group', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue({
       title: 'KSampler'
@@ -274,7 +387,11 @@ describe('TabErrors.vue', () => {
 
     expect(screen.getAllByText('KSampler').length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText('Execution failed')).toBeInTheDocument()
-    expect(screen.getByTestId('runtime-error-panel')).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('error-group-execution')).getByTestId(
+        'runtime-error-panel'
+      )
+    ).toBeInTheDocument()
     expect(screen.getAllByText('Execution failed')).toHaveLength(1)
   })
 
