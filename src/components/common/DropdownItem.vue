@@ -54,7 +54,7 @@ defineProps<{ itemClass: string; contentClass: string; item: MenuItem }>()
     :disabled="toValue(item.disabled) ?? !item.command"
     @select="item.command?.({ originalEvent: $event, item })"
   >
-    <i class="size-5 shrink-0" :class="item.icon" />
+    <i v-if="!item.noIcon" class="size-5 shrink-0" :class="item.icon" />
     <div class="mr-auto truncate" v-text="item.label" />
     <i v-if="item.checked" class="icon-[lucide--check] shrink-0" />
     <div

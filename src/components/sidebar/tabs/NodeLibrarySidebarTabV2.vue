@@ -121,54 +121,14 @@
                       </template>
                     </template>
                   </DropdownMenu>
-
-                  <DropdownMenu v-if="selectedTab === 'essentials'">
+                  <DropdownMenu
+                    v-if="selectedTab === 'essentials'"
+                    :entries="jumpMenuEntries"
+                  >
                     <template #button>
                       <Button size="icon" :aria-label="$t('essentials.jumpTo')">
                         <i class="icon-[lucide--list-tree] size-4" />
                       </Button>
-                    </template>
-                    <template #default="{ itemClass }">
-                      <DropdownMenuLabel
-                        class="px-2 py-1.5 text-xs font-bold tracking-wide text-muted-foreground uppercase"
-                      >
-                        {{ $t('essentials.jumpTo') }}
-                      </DropdownMenuLabel>
-                      <template
-                        v-for="section in ESSENTIAL_PLACEHOLDER_SECTIONS"
-                        :key="section.key"
-                      >
-                        <DropdownMenuSub v-if="section.subgroups">
-                          <DropdownMenuSubTrigger :class="itemClass">
-                            <span class="flex-1">{{ section.label }}</span>
-                            <i class="icon-[lucide--chevron-right] size-4" />
-                          </DropdownMenuSubTrigger>
-                          <DropdownMenuPortal>
-                            <DropdownMenuSubContent
-                              class="z-9999 flex min-w-44 flex-col gap-1 rounded-lg border border-border-default bg-comfy-menu-bg p-1 shadow-lg"
-                              :side-offset="8"
-                            >
-                              <DropdownMenuItem
-                                v-for="subgroup in section.subgroups"
-                                :key="subgroup.key"
-                                class="cursor-pointer rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                                @select="
-                                  jumpToSubgroup(section.key, subgroup.key)
-                                "
-                              >
-                                {{ subgroup.label }}
-                              </DropdownMenuItem>
-                            </DropdownMenuSubContent>
-                          </DropdownMenuPortal>
-                        </DropdownMenuSub>
-                        <DropdownMenuItem
-                          v-else
-                          class="cursor-pointer rounded-md px-2 py-1.5 text-sm outline-none hover:bg-comfy-input"
-                          @select="jumpToSection(section.key)"
-                        >
-                          {{ section.label }}
-                        </DropdownMenuItem>
-                      </template>
                     </template>
                   </DropdownMenu>
                   <DropdownMenu v-else>
@@ -229,17 +189,12 @@
 
 <script setup lang="ts">
 import { useEventListener, useLocalStorage } from '@vueuse/core'
+import type { MenuItem } from 'primevue/menuitem'
 import {
   DropdownMenuCheckboxItem,
-  DropdownMenuItem,
   DropdownMenuItemIndicator,
-  DropdownMenuLabel,
-  DropdownMenuPortal,
   DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger
+  DropdownMenuRadioItem
 } from 'reka-ui'
 import {
   computed,
@@ -623,6 +578,26 @@ function ensureExpanded(sectionKey: string) {
 
 const STICKY_SEARCH_HEIGHT = 65
 const STICKY_SECTION_HEADER_HEIGHT = 56
+
+const jumpMenuEntries = computed<MenuItem[]>(() => {
+  const entries = ESSENTIAL_PLACEHOLDER_SECTIONS.map((section) => {
+    if (!section.subgroups)
+      return {
+        label: section.label,
+        command: () => jumpToSection(section.key),
+        noIcon: true
+      }
+
+    const items = section.subgroups.map((subgroup) => ({
+      label: subgroup.label,
+      command: () => jumpToSubgroup(section.key, subgroup.key),
+      noIcon: true
+    }))
+    return { label: section.label, items }
+  })
+  const label = t('essentials.jumpTo').toUpperCase()
+  return [{ label, noIcon: true }, ...entries]
+})
 
 async function jumpToSection(sectionKey: string) {
   ensureExpanded(sectionKey)
