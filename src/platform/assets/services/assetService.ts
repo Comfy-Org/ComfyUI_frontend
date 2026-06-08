@@ -491,7 +491,12 @@ function createAssetService() {
   async function getAssetsByTag(
     tag: string,
     includePublic: boolean = true,
-    { limit = DEFAULT_LIMIT, offset = 0, after, signal }: AssetPaginationOptions = {}
+    {
+      limit = DEFAULT_LIMIT,
+      offset = 0,
+      after,
+      signal
+    }: AssetPaginationOptions = {}
   ): Promise<AssetItem[]> {
     const data = await getAssetsPageByTag(tag, includePublic, {
       limit,

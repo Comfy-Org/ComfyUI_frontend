@@ -596,10 +596,9 @@ describe(assetService.getAllAssetsByTag, () => {
 
   it('stops walking when next_cursor is absent even if has_more is true', async () => {
     fetchApiMock.mockResolvedValueOnce(
-      buildAssetListResponse(
-        [validAsset({ id: 'only', tags: ['input'] })],
-        { hasMore: true }
-      )
+      buildAssetListResponse([validAsset({ id: 'only', tags: ['input'] })], {
+        hasMore: true
+      })
     )
 
     const assets = await assetService.getAllAssetsByTag('input', true, {
