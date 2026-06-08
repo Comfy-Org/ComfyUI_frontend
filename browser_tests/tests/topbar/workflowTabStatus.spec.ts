@@ -8,6 +8,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
@@ -79,6 +80,14 @@ test.describe('Workflow tab status indicator', () => {
     )
 
     exec.executionError(jobId, KSAMPLER_NODE, 'boom')
+
+    // The error opens a modal dialog that aria-hides the rest of the app
+    // (focus trap), taking the tab out of the accessibility tree. Dismiss it
+    // so the badge is reachable by role.
+    const errorDialog = comfyPage.page.getByTestId(TestIds.dialogs.errorDialog)
+    await expect(errorDialog).toBeVisible()
+    await comfyPage.page.keyboard.press('Escape')
+    await expect(errorDialog).toBeHidden()
 
     await expect(
       backgroundTab.getByRole('img', { name: 'Failed' })
