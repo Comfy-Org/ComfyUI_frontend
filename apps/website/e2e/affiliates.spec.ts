@@ -28,14 +28,17 @@ test.describe('Affiliates landing — desktop @smoke', () => {
   })
 
   test('renders the closing CTA heading and apply button', async ({ page }) => {
-    const ctaHeading = page.getByRole('heading', {
+    const ctaSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 2, name: CTA_HEADING_TEXT })
+    })
+    const ctaHeading = ctaSection.getByRole('heading', {
       level: 2,
       name: CTA_HEADING_TEXT
     })
     await ctaHeading.scrollIntoViewIfNeeded()
     await expect(ctaHeading).toBeVisible()
 
-    const applyButton = page.getByRole('link', { name: CTA_APPLY_LABEL })
+    const applyButton = ctaSection.getByRole('link', { name: CTA_APPLY_LABEL })
     await expect(applyButton).toBeVisible()
     await expect(applyButton).toHaveAttribute('href', APPLY_URL)
     await expect(applyButton).toHaveAttribute('target', '_blank')
@@ -83,7 +86,10 @@ test.describe('Affiliates landing — desktop interactions', () => {
     page,
     context
   }) => {
-    const applyButton = page.getByRole('link', { name: CTA_APPLY_LABEL })
+    const ctaSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 2, name: CTA_HEADING_TEXT })
+    })
+    const applyButton = ctaSection.getByRole('link', { name: CTA_APPLY_LABEL })
     await applyButton.scrollIntoViewIfNeeded()
 
     const popupPromise = context.waitForEvent('page')
