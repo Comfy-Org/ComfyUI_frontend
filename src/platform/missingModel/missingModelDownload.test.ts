@@ -310,6 +310,40 @@ describe('downloadModel', () => {
     expect(mockStartDownload).not.toHaveBeenCalled()
   })
 
+  it('logs synchronous Desktop2 bridge failures without crashing', async () => {
+    const anchorClick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => {})
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const bridgeError = new Error('bridge failed before returning a promise')
+    const desktopDownloadModel = vi
+      .fn<
+        (url: string, filename: string, directory: string) => Promise<boolean>
+      >()
+      .mockImplementation(() => {
+        throw bridgeError
+      })
+    window.__comfyDesktop2 = { downloadModel: desktopDownloadModel }
+
+    downloadModel(
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints'
+      },
+      { checkpoints: ['/models/checkpoints'] }
+    )
+
+    await vi.waitFor(() => {
+      expect(consoleError).toHaveBeenCalledWith(
+        'Failed to start Desktop2 model download:',
+        bridgeError
+      )
+    })
+    expect(anchorClick).not.toHaveBeenCalled()
+    expect(mockStartDownload).not.toHaveBeenCalled()
+  })
+
   it('keeps remote Desktop2 sessions on the browser fallback', () => {
     const anchorClick = vi
       .spyOn(HTMLAnchorElement.prototype, 'click')
