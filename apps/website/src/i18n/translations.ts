@@ -4578,12 +4578,12 @@ const translations = {
   // Affiliate page (/affiliates) — head metadata
   'affiliate.page.title': {
     en: 'Comfy.org Affiliate Program — Become a Partner',
-    'zh-CN': 'Comfy.org Affiliate Program — Become a Partner'
+    'zh-CN': 'Comfy.org 联盟计划 — 成为合作伙伴'
   },
   'affiliate.page.description': {
     en: 'Earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer. Apply to become a Comfy Partner.',
     'zh-CN':
-      'Earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer. Apply to become a Comfy Partner.'
+      '为您推荐的每个 Comfy Cloud 订阅赚取 30% 持续佣金，连续 3 个月。立即申请成为 Comfy 合作伙伴。'
   },
 
   // AffiliateCtaSection
@@ -4597,7 +4597,7 @@ const translations = {
   },
   'affiliate.cta.termsLabel': {
     en: 'Read the affiliate program terms',
-    'zh-CN': 'Read the affiliate program terms'
+    'zh-CN': '阅读联盟计划条款'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
