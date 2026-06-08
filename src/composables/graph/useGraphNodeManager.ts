@@ -218,16 +218,24 @@ function safeWidgetMapper(
   node: LGraphNode,
   slotMetadata: Map<string, WidgetSlotMetadata>
 ): (widget: IBaseWidget) => SafeWidgetData {
+  /**
+   * Mirrors litegraph's visibility check (LGraphNode.isWidgetVisible): both
+   * `hidden` and `advanced` may live on the widget itself, not just its
+   * `options`. Custom nodes (e.g. SAM3 collectors) commonly hide widgets via
+   * the top-level `widget.hidden`, so fall back to it when reading options.
+   */
   function extractWidgetDisplayOptions(
     widget: IBaseWidget
   ): SafeWidgetData['options'] {
-    if (!widget.options) return undefined
+    const advanced = widget.options?.advanced ?? widget.advanced
+    const hidden = widget.options?.hidden ?? widget.hidden
+    if (!widget.options && !advanced && !hidden) return undefined
 
     return {
-      canvasOnly: widget.options.canvasOnly,
-      advanced: widget.options?.advanced ?? widget.advanced,
-      hidden: widget.options.hidden,
-      read_only: widget.options.read_only
+      canvasOnly: widget.options?.canvasOnly,
+      advanced,
+      hidden,
+      read_only: widget.options?.read_only
     }
   }
 

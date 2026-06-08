@@ -776,3 +776,49 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     expect(subgraphNode.has_errors).toBe(true)
   })
 })
+
+describe('Widget display options reflect litegraph visibility flags', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+  })
+
+  function createNodeWithWidget() {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    node.addWidget('number', 'secret', 1, () => undefined, {})
+    graph.add(node)
+    return { graph, node }
+  }
+
+  function getWidgetData(graph: LGraph, node: LGraphNode) {
+    const { vueNodeData } = useGraphNodeManager(graph)
+    return vueNodeData
+      .get(String(node.id))
+      ?.widgets?.find((w) => w.name === 'secret')
+  }
+
+  // FE-630: SAM3 collector nodes hide widgets via the top-level
+  // `widget.hidden`, matching litegraph's isWidgetVisible. Vue Nodes 2.0 must
+  // honor it, not only `widget.options.hidden`.
+  it('marks a widget hidden when only the top-level hidden flag is set', () => {
+    const { graph, node } = createNodeWithWidget()
+    node.widgets![0].hidden = true
+
+    expect(getWidgetData(graph, node)?.options?.hidden).toBe(true)
+  })
+
+  it('marks a widget advanced when only the top-level advanced flag is set', () => {
+    const { graph, node } = createNodeWithWidget()
+    node.widgets![0].advanced = true
+
+    expect(getWidgetData(graph, node)?.options?.advanced).toBe(true)
+  })
+
+  it('keeps a plain widget visible', () => {
+    const { graph, node } = createNodeWithWidget()
+
+    const data = getWidgetData(graph, node)
+    expect(data?.options?.hidden).toBeFalsy()
+    expect(data?.options?.advanced).toBeFalsy()
+  })
+})
