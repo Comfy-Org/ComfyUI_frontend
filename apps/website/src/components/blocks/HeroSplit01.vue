@@ -126,7 +126,7 @@ const {
       </div>
     </div>
 
-    <div class="w-full lg:flex-1">
+    <div class="order-first w-full lg:order-last lg:flex-1">
       <VideoPlayer
         v-if="videoSrc"
         :locale
