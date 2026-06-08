@@ -23,6 +23,7 @@ function isExcludedFromSitemap(page: string): boolean {
 export default defineConfig({
   site: 'https://comfy.org',
   output: 'static',
+  trailingSlash: 'never',
   prefetch: { prefetchAll: true },
   redirects: {
     '/cloud/enterprise-case-studies/comfyui-at-architectural-scale-how-moment-factory-reimagined-3d-projection-mapping':
@@ -32,7 +33,8 @@ export default defineConfig({
     '/zh-CN/terms-of-service': '/terms-of-service'
   },
   build: {
-    assets: '_website'
+    assets: '_website',
+    format: 'file'
   },
   devToolbar: { enabled: !process.env.NO_TOOLBAR },
   integrations: [
