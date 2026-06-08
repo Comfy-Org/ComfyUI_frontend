@@ -223,4 +223,23 @@ test.describe('Bottom Panel Shortcuts', { tag: '@ui' }, () => {
     await expect(comfyPage.settingDialog.root).toBeVisible()
     await expect(comfyPage.settingDialog.category('Keybinding')).toBeVisible()
   })
+
+  test('should focus keybindings search when opening manage shortcuts', async ({
+    comfyPage
+  }) => {
+    const { bottomPanel } = comfyPage
+
+    await bottomPanel.keyboardShortcutsButton.click()
+    await bottomPanel.shortcuts.manageButton.click()
+
+    await expect(comfyPage.settingDialog.root).toBeVisible()
+    await expect(comfyPage.settingDialog.category('Keybinding')).toBeVisible()
+
+    await expect(
+      comfyPage.page.getByPlaceholder('Search Keybindings...')
+    ).toBeFocused()
+    await expect(
+      comfyPage.page.getByPlaceholder('Search Settings...')
+    ).not.toBeFocused()
+  })
 })

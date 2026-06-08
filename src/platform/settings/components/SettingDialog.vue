@@ -12,7 +12,7 @@
           size="md"
           :placeholder="$t('g.searchSettings') + '...'"
           :debounce-time="128"
-          autofocus
+          :autofocus="activeCategoryKey !== 'keybinding'"
           @search="handleSearch"
         />
       </div>
