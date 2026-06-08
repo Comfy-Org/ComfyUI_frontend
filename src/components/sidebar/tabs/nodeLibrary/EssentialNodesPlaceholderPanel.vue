@@ -57,7 +57,6 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 
-import { useEssentialsFilters } from '@/composables/useEssentialsFilters'
 import type { EssentialPlaceholderSection } from '@/constants/essentialsPlaceholders'
 import { ESSENTIAL_PLACEHOLDER_SECTIONS } from '@/constants/essentialsPlaceholders'
 
@@ -67,7 +66,9 @@ const { searchQuery = '' } = defineProps<{
   searchQuery?: string
 }>()
 
-const { effectiveMediaFilters: mediaFilters } = useEssentialsFilters()
+const mediaFilters = defineModel<Record<string, boolean>>('mediaFilters', {
+  required: true
+})
 
 const expandedKeys = defineModel<string[]>('expandedKeys', { required: true })
 
