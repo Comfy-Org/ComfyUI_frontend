@@ -2139,8 +2139,8 @@ const translations = {
   // lands in a follow-up PR).
   'desktop_privacy.intro.label': { en: 'OVERVIEW', 'zh-CN': 'OVERVIEW' },
   'desktop_privacy.intro.block.0': {
-    en: 'Effective 8 June 2026. Applies to the Comfy Desktop application.',
-    'zh-CN': 'Effective 8 June 2026. Applies to the Comfy Desktop application.'
+    en: 'Effective 3 June 2026. Applies to the Comfy Desktop application.',
+    'zh-CN': 'Effective 3 June 2026. Applies to the Comfy Desktop application.'
   },
   'desktop_privacy.intro.block.1': {
     en: 'This Privacy Policy describes the personal data we process when you use Comfy Desktop, the purposes and lawful bases for that processing, the recipients of the data, and the rights available to you. The same policy is shown in the application on first run and is available at any time from Settings → About → Privacy Policy.',
