@@ -10,6 +10,7 @@ import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
 } from '@/platform/missingModel/missingModelPipeline'
+import type { scanAllModelCandidates } from '@/platform/missingModel/missingModelScan'
 
 const { mockHandles } = vi.hoisted(() => {
   const state = {
@@ -114,11 +115,8 @@ vi.mock('@/stores/modelToNodeStore', () => ({
 
 vi.mock('@/platform/missingModel/missingModelScan', () => ({
   scanAllModelCandidates: (
-    graph: LGraph,
-    isAssetSupported: (nodeType: string, widgetName: string) => boolean,
-    getDirectory?: (nodeType: string) => string | undefined
-  ) =>
-    mockHandles.scanAllModelCandidates(graph, isAssetSupported, getDirectory),
+    ...args: Parameters<typeof scanAllModelCandidates>
+  ) => mockHandles.scanAllModelCandidates(...args),
   enrichWithEmbeddedMetadata: (
     candidates: readonly MissingModelCandidate[],
     graphData: ComfyWorkflowJSON,
