@@ -4566,8 +4566,8 @@ const translations = {
       '可用于您内容的 Comfy 官方授权 Logo。横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。'
   },
   'affiliate.assets.downloadLabel': {
-    en: 'Download',
-    'zh-CN': '下载'
+    en: 'Download zip',
+    'zh-CN': '下载压缩包'
   },
 
   // AffiliateFAQSection
