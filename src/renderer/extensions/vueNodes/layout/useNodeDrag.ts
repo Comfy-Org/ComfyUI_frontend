@@ -97,36 +97,41 @@ function useNodeDragIndividual() {
     }
 
     mutations.setSource(LayoutSource.Vue)
+  }
 
-    // Start auto-pan
-    const lgCanvas = canvasStore.canvas
-    if (lgCanvas?.ds) {
-      autoPan = new AutoPanController({
-        canvas: lgCanvas.canvas,
-        ds: lgCanvas.ds,
-        maxPanSpeed: lgCanvas.auto_pan_speed,
-        onPan: (panX, panY) => {
-          if (dragStartPos) {
-            dragStartPos.x += panX
-            dragStartPos.y += panY
-          }
-          if (otherSelectedNodesStartPositions) {
-            for (const pos of otherSelectedNodesStartPositions.values()) {
-              pos.x += panX
-              pos.y += panY
-            }
-          }
-          if (selectedGroups) {
-            for (const group of selectedGroups) {
-              group.move(panX, panY, true)
-            }
-          }
-          updateNodePositions(nodeId)
-        }
-      })
+  function startAutoPan(event: PointerEvent, nodeId: NodeId) {
+    if (autoPan) {
       autoPan.updatePointer(event.clientX, event.clientY)
-      autoPan.start()
+      return
     }
+    const lgCanvas = canvasStore.canvas
+    if (!lgCanvas?.ds) return
+
+    autoPan = new AutoPanController({
+      canvas: lgCanvas.canvas,
+      ds: lgCanvas.ds,
+      maxPanSpeed: lgCanvas.auto_pan_speed,
+      onPan: (panX, panY) => {
+        if (dragStartPos) {
+          dragStartPos.x += panX
+          dragStartPos.y += panY
+        }
+        if (otherSelectedNodesStartPositions) {
+          for (const pos of otherSelectedNodesStartPositions.values()) {
+            pos.x += panX
+            pos.y += panY
+          }
+        }
+        if (selectedGroups) {
+          for (const group of selectedGroups) {
+            group.move(panX, panY, true)
+          }
+        }
+        updateNodePositions(nodeId)
+      }
+    })
+    autoPan.updatePointer(event.clientX, event.clientY)
+    autoPan.start()
   }
 
   /**
@@ -206,7 +211,7 @@ function useNodeDragIndividual() {
 
     lastPointerX = event.clientX
     lastPointerY = event.clientY
-    autoPan?.updatePointer(event.clientX, event.clientY)
+    startAutoPan(event, nodeId)
 
     rafId = requestAnimationFrame(() => {
       rafId = null
