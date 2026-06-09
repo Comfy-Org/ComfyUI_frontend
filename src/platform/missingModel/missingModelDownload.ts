@@ -3,6 +3,21 @@ import { isDesktop } from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
+interface ComfyDesktop2Bridge {
+  downloadModel: (
+    url: string,
+    filename: string,
+    directory: string
+  ) => Promise<boolean>
+}
+
+declare global {
+  interface Window {
+    __comfyDesktop2?: ComfyDesktop2Bridge
+    __comfyDesktop2Remote?: boolean
+  }
+}
+
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
   'https://civitai.red/',
@@ -35,6 +50,17 @@ export interface ModelWithUrl {
   directory: string
 }
 
+async function startDesktop2ModelDownload(
+  bridge: ComfyDesktop2Bridge,
+  model: ModelWithUrl
+): Promise<void> {
+  try {
+    await bridge.downloadModel(model.url, model.name, model.directory)
+  } catch (error: unknown) {
+    console.error('Failed to start Desktop2 model download:', error)
+  }
+}
+
 /**
  * Converts a model download URL to a browsable page URL.
  * - HuggingFace: `/resolve/` → `/blob/` (file page with model info)
@@ -63,6 +89,12 @@ export function downloadModel(
   model: ModelWithUrl,
   paths: Record<string, string[]>
 ): void {
+  const desktop2Bridge = window.__comfyDesktop2
+  if (desktop2Bridge?.downloadModel && !window.__comfyDesktop2Remote) {
+    void startDesktop2ModelDownload(desktop2Bridge, model)
+    return
+  }
+
   if (!isDesktop) {
     const link = document.createElement('a')
     link.href = model.url

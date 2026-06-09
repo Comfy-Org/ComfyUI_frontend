@@ -1,44 +1,34 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
-import AudienceSection from '../../components/affiliates/AudienceSection.vue'
-import BrandAssetsSection from '../../components/affiliates/BrandAssetsSection.vue'
-import FooterCtaSection from '../../components/affiliates/FooterCtaSection.vue'
-import HeroSection from '../../components/affiliates/HeroSection.vue'
-import HowItWorksSection from '../../components/affiliates/HowItWorksSection.vue'
-import ProgramDetailsSection from '../../components/affiliates/ProgramDetailsSection.vue'
-import TrustBandSection from '../../components/affiliates/TrustBandSection.vue'
-import FAQSection from '../../components/common/FAQSection.vue'
-import {
-  AFFILIATE_FAQ_COUNT,
-  AFFILIATE_FAQ_HEADING_KEY,
-  AFFILIATE_FAQ_PREFIX
-} from '../../components/affiliates/affiliateFaqs'
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import AudienceSection from '../../templates/affiliate/AudienceSection.vue'
+import BenefitsSection from '../../templates/affiliate/BenefitsSection.vue'
+import BrandAssetsSection from '../../templates/affiliate/BrandAssetsSection.vue'
+import CtaSection from '../../templates/affiliate/CtaSection.vue'
+import FAQSection from '../../templates/affiliate/FAQSection.vue'
+import HeroSection from '../../templates/affiliate/HeroSection.vue'
+import HowItWorksSection from '../../templates/affiliate/HowItWorksSection.vue'
+import { affiliateFaqs } from '../../data/affiliateFaq'
 import { t } from '../../i18n/translations'
 
-const locale: Locale =
-  Astro.currentLocale === 'zh-CN' ? 'zh-CN' : 'en'
+const locale = 'en' as const
 
 const faqJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'FAQPage',
-  mainEntity: Array.from({ length: AFFILIATE_FAQ_COUNT }, (_, i) => {
-    const n = i + 1
-    return {
-      '@type': 'Question',
-      name: t(`${AFFILIATE_FAQ_PREFIX}.${n}.q` as TranslationKey, locale),
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: t(`${AFFILIATE_FAQ_PREFIX}.${n}.a` as TranslationKey, locale)
-      }
+  mainEntity: affiliateFaqs.map((faq) => ({
+    '@type': 'Question',
+    name: faq.question[locale],
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: faq.answer[locale]
     }
-  })
+  }))
 }
 ---
 
 <BaseLayout
-  title={t('affiliate-landing.page.title', locale)}
-  description={t('affiliate-landing.page.description', locale)}
+  title={t('affiliate.page.title', locale)}
+  description={t('affiliate.page.description', locale)}
 >
   <Fragment slot="head">
     <script
@@ -48,18 +38,11 @@ const faqJsonLd = {
     />
   </Fragment>
 
-  <HeroSection locale={locale} client:load />
-  <TrustBandSection locale={locale} />
-  <HowItWorksSection locale={locale} />
-  <AudienceSection locale={locale} />
-  <ProgramDetailsSection locale={locale} />
-  <BrandAssetsSection locale={locale} />
-  <FAQSection
-    locale={locale}
-    headingKey={AFFILIATE_FAQ_HEADING_KEY}
-    faqPrefix={AFFILIATE_FAQ_PREFIX}
-    faqCount={AFFILIATE_FAQ_COUNT}
-    client:load
-  />
-  <FooterCtaSection locale={locale} client:load />
+  <HeroSection />
+  <HowItWorksSection />
+  <AudienceSection />
+  <BenefitsSection />
+  <BrandAssetsSection />
+  <FAQSection client:visible />
+  <CtaSection />
 </BaseLayout>

@@ -59,8 +59,6 @@ import type {
   AuthMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
-  ExecutionErrorMetadata,
-  ExecutionSuccessMetadata,
   ShareFlowMetadata,
   SurveyResponses,
   TemplateLibraryClosedMetadata,
@@ -288,8 +286,6 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
   }
   const enterLinearMetadata: EnterLinearMetadata = {}
   const shareFlowMetadata: ShareFlowMetadata = { step: 'dialog_opened' }
-  const executionErrorMetadata: ExecutionErrorMetadata = { jobId: 'job-1' }
-  const executionSuccessMetadata: ExecutionSuccessMetadata = { jobId: 'job-1' }
   const authMetadata: AuthMetadata = {}
 
   it.for<
@@ -356,16 +352,6 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       TelemetryEvents.SHARE_FLOW
     ],
     [
-      'trackExecutionError',
-      (p) => p.trackExecutionError(executionErrorMetadata),
-      TelemetryEvents.EXECUTION_ERROR
-    ],
-    [
-      'trackExecutionSuccess',
-      (p) => p.trackExecutionSuccess(executionSuccessMetadata),
-      TelemetryEvents.EXECUTION_SUCCESS
-    ],
-    [
       'trackAuth',
       (p) => p.trackAuth(authMetadata),
       TelemetryEvents.USER_AUTH_COMPLETED
@@ -420,27 +406,6 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
         view_mode: 'workflow',
         is_app_mode: false
       })
-    )
-  })
-
-  it('trackWorkflowExecution forwards the latest trigger_source from trackRunButton', async () => {
-    const provider = new MixpanelTelemetryProvider()
-    await waitForMixpanelInit()
-    mockMixpanel.track.mockClear()
-
-    provider.trackRunButton({ trigger_source: 'keybinding' })
-    provider.trackWorkflowExecution()
-
-    expect(mockMixpanel.track).toHaveBeenCalledWith(
-      TelemetryEvents.EXECUTION_START,
-      expect.objectContaining({ trigger_source: 'keybinding' })
-    )
-
-    mockMixpanel.track.mockClear()
-    provider.trackWorkflowExecution()
-    expect(mockMixpanel.track).toHaveBeenCalledWith(
-      TelemetryEvents.EXECUTION_START,
-      expect.objectContaining({ trigger_source: 'unknown' })
     )
   })
 })
