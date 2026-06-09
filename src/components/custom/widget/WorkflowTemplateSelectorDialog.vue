@@ -286,27 +286,26 @@
             <template #bottom>
               <CardBottom>
                 <div class="flex flex-col gap-2 pt-3">
-                  <h3
-                    class="m-0 line-clamp-1 text-sm"
-                    :title="
-                      getTemplateTitle(
-                        template,
-                        getEffectiveSourceModule(template)
-                      )
-                    "
-                  >
-                    {{
-                      getTemplateTitle(
-                        template,
-                        getEffectiveSourceModule(template)
-                      )
-                    }}
+                  <h3 class="m-0 text-sm">
+                    <TextTicker>
+                      {{
+                        getTemplateTitle(
+                          template,
+                          getEffectiveSourceModule(template)
+                        )
+                      }}
+                    </TextTicker>
                   </h3>
                   <div class="flex justify-between gap-2">
                     <div class="flex-1">
                       <p
+                        v-tooltip.bottom="
+                          buildTooltipConfig(
+                            getTemplateDescription(template),
+                            true
+                          )
+                        "
                         class="m-0 line-clamp-2 text-sm text-muted"
-                        :title="getTemplateDescription(template)"
                       >
                         {{ getTemplateDescription(template) }}
                       </p>
@@ -412,6 +411,7 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'
+import TextTicker from '@/components/common/TextTicker.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
@@ -427,6 +427,7 @@ import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'

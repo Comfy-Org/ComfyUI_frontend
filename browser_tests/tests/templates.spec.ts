@@ -452,6 +452,76 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     }
   )
 
+  test('long title scrolls and description shows a hover tooltip', async ({
+    comfyPage
+  }) => {
+    const longTitle =
+      'An Extremely Long Template Title That Overflows The Card And Must Scroll On Hover'
+    const longDescription =
+      'A deliberately long template description that is clamped to two lines on the card so the full text is only visible through the hover tooltip.'
+
+    await comfyPage.page.route('**/templates/index.json', async (route) => {
+      const response: WorkflowTemplates[] = [
+        {
+          moduleName: 'default',
+          title: 'Test Templates',
+          type: 'image',
+          templates: [
+            {
+              name: 'long-content',
+              title: longTitle,
+              mediaType: 'image',
+              mediaSubtype: 'webp',
+              description: longDescription
+            }
+          ]
+        }
+      ]
+      await route.fulfill({
+        status: 200,
+        body: JSON.stringify(response),
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      })
+    })
+
+    await comfyPage.page.route('**/templates/**.webp', async (route) => {
+      await route.fulfill({
+        status: 200,
+        path: 'browser_tests/assets/example.webp',
+        headers: {
+          'Content-Type': 'image/webp',
+          'Cache-Control': 'no-store'
+        }
+      })
+    })
+
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+    const card = comfyPage.page.getByTestId('template-workflow-long-content')
+    await expect(card).toBeVisible()
+
+    // Title is rendered inside a TextTicker that scrolls the overflowing text
+    // on hover instead of clamping it.
+    const titleTicker = card
+      .getByRole('heading', { name: longTitle })
+      .locator('div')
+    await titleTicker.hover()
+    await expect
+      .poll(() => titleTicker.evaluate((el) => el.scrollLeft))
+      .toBeGreaterThan(0)
+
+    // Description is clamped on the card; hovering reveals the full text in a
+    // tooltip rather than a native title attribute.
+    const description = card.locator('p.text-muted')
+    await expect(description).not.toHaveAttribute('title')
+    await description.hover()
+    await expect(comfyPage.page.getByRole('tooltip')).toContainText(
+      longDescription
+    )
+  })
+
   test('Can open associated tutorial', async ({ comfyPage }) => {
     const tutorialUrl = 'https://comfyanonymous.github.io/ComfyUI_examples/'
     await comfyPage.page.route('**/templates/index.json', async (route) => {
