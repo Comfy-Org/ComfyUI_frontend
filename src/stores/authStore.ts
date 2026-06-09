@@ -24,6 +24,7 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { getActiveShareId } from '@/platform/workflow/sharing/shareAttribution'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -96,6 +97,11 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!currentUser.value)
   const userEmail = computed(() => currentUser.value?.email)
   const userId = computed(() => currentUser.value?.uid)
+
+  function getShareAuthMetadata() {
+    const shareId = getActiveShareId()
+    return shareId ? { share_id: shareId } : {}
+  }
 
   // Get auth from VueFire and listen for auth state changes
   // From useFirebaseAuth docs:
@@ -333,7 +339,8 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'email',
         is_new_user: false,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        ...getShareAuthMetadata()
       })
     }
 
@@ -355,7 +362,8 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'email',
         is_new_user: true,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        ...getShareAuthMetadata()
       })
     }
 
@@ -377,7 +385,8 @@ export const useAuthStore = defineStore('auth', () => {
         is_new_user:
           options?.isNewUser || additionalUserInfo?.isNewUser || false,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        ...getShareAuthMetadata()
       })
     }
 
@@ -399,7 +408,8 @@ export const useAuthStore = defineStore('auth', () => {
         is_new_user:
           options?.isNewUser || additionalUserInfo?.isNewUser || false,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        ...getShareAuthMetadata()
       })
     }
 

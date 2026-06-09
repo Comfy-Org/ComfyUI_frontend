@@ -23,6 +23,14 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
   useWorkflowStore: () => mockWorkflowStore
 }))
 
+const mockTrackShareFlow = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackShareFlow: mockTrackShareFlow
+  })
+}))
+
 const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
 
 vi.mock('primevue/usetoast', () => ({
@@ -373,6 +381,11 @@ describe('ShareWorkflowDialogContent', () => {
       'workflows/test.json',
       initialShareableAssets
     )
+    expect(mockTrackShareFlow).toHaveBeenCalledWith({
+      step: 'link_created',
+      source: 'graph_mode',
+      share_id: 'test-123'
+    })
   })
 
   it('shows update button when workflow was saved after last publish', async () => {

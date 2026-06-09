@@ -25,6 +25,7 @@ export interface AuthMetadata {
   is_new_user?: boolean
   user_id?: string
   email?: string
+  share_id?: string
   referrer_url?: string
   utm_source?: string
   utm_medium?: string
@@ -116,6 +117,11 @@ export interface ExecutionSuccessMetadata {
   jobId: string
 }
 
+export interface SharedWorkflowRunMetadata {
+  job_id: string
+  share_id: string
+}
+
 /**
  * Template metadata for workflow tracking
  */
@@ -165,6 +171,7 @@ export interface WorkflowImportMetadata {
     | 'template'
     | 'shared_url'
     | 'unknown'
+  share_id?: string
 }
 
 export interface EnterLinearMetadata {
@@ -189,6 +196,13 @@ type ShareFlowStep =
 export interface ShareFlowMetadata {
   step: ShareFlowStep
   source?: 'app_mode' | 'graph_mode'
+  share_id?: string
+}
+
+export interface ShareLinkOpenedMetadata {
+  share_id: string
+  is_authenticated: boolean
+  is_new_user?: boolean
 }
 
 /**
@@ -477,6 +491,7 @@ export interface TelemetryProvider {
   trackDefaultViewSet?(metadata: DefaultViewSetMetadata): void
   trackEnterLinear?(metadata: EnterLinearMetadata): void
   trackShareFlow?(metadata: ShareFlowMetadata): void
+  trackShareLinkOpened?(metadata: ShareLinkOpenedMetadata): void
 
   // Page visibility events
   trackPageVisibilityChanged?(metadata: PageVisibilityMetadata): void
@@ -509,6 +524,7 @@ export interface TelemetryProvider {
   trackWorkflowExecution?(): void
   trackExecutionError?(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess?(metadata: ExecutionSuccessMetadata): void
+  trackSharedWorkflowRun?(metadata: SharedWorkflowRunMetadata): void
 
   // Settings events
   trackSettingChanged?(metadata: SettingChangedMetadata): void
@@ -570,6 +586,7 @@ export const TelemetryEvents = {
   WORKFLOW_OPENED: 'app:workflow_opened',
   ENTER_LINEAR_MODE: 'app:app_mode_opened',
   SHARE_FLOW: 'app:share_flow',
+  SHARE_LINK_OPENED: 'app:share_link_opened',
 
   // Page Visibility
   PAGE_VISIBILITY_CHANGED: 'app:page_visibility_changed',
@@ -603,6 +620,7 @@ export const TelemetryEvents = {
   EXECUTION_START: 'execution_start',
   EXECUTION_ERROR: 'execution_error',
   EXECUTION_SUCCESS: 'execution_success',
+  SHARED_WORKFLOW_RUN: 'app:shared_workflow_run',
   // Generic UI Button Click
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
@@ -631,6 +649,7 @@ export type TelemetryEventProperties =
   | RunButtonProperties
   | ExecutionErrorMetadata
   | ExecutionSuccessMetadata
+  | SharedWorkflowRunMetadata
   | CreditTopupMetadata
   | WorkflowImportMetadata
   | TemplateLibraryMetadata
@@ -649,6 +668,7 @@ export type TelemetryEventProperties =
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
   | ShareFlowMetadata
+  | ShareLinkOpenedMetadata
   | WorkflowSavedMetadata
   | DefaultViewSetMetadata
   | SubscriptionMetadata

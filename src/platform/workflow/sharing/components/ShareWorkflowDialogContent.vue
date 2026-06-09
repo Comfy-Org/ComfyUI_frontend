@@ -437,7 +437,8 @@ const {
     acknowledged.value = false
     useTelemetry()?.trackShareFlow({
       step: 'link_created',
-      source: getShareSource()
+      source: getShareSource(),
+      share_id: result.shareId
     })
 
     return result

@@ -2,7 +2,9 @@ import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useTelemetry } from '@/platform/telemetry'
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 import {
@@ -11,6 +13,7 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { setActiveShareAttribution } from '@/platform/workflow/sharing/shareAttribution'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -41,6 +44,7 @@ export function useSharedWorkflowUrlLoader() {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
+  const { isLoggedIn } = useCurrentUser()
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
 
   function isValidParameter(param: string): boolean {
@@ -140,9 +144,16 @@ export function useSharedWorkflowUrlLoader() {
       return 'failed'
     }
 
+    setActiveShareAttribution({ shareId: shareParam })
+    useTelemetry()?.trackShareLinkOpened({
+      share_id: shareParam,
+      is_authenticated: isLoggedIn.value
+    })
+
     const result = await showOpenSharedWorkflowDialog(shareParam)
 
     if (result.action === 'cancel') {
+      setActiveShareAttribution(undefined)
       clearShareIntent()
       return 'cancelled'
     }
@@ -182,10 +193,12 @@ export function useSharedWorkflowUrlLoader() {
           true,
           workflowName,
           {
-            openSource: 'shared_url'
+            openSource: 'shared_url',
+            shareId: payload.shareId
           }
         )
       } catch (error) {
+        setActiveShareAttribution(undefined)
         console.error(
           '[useSharedWorkflowUrlLoader] Failed to load workflow graph:',
           error

@@ -6,6 +6,7 @@ import type { AppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ShareAttribution } from '@/platform/workflow/sharing/types/shareTypes'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingNodeType } from '@/types/comfy'
@@ -55,6 +56,7 @@ export class ComfyWorkflow extends UserFile {
    * Takes precedence over initialMode when present.
    */
   activeMode: AppMode | null = null
+  shareAttribution: ShareAttribution | undefined
   /**
    * @param options The path, modified, and size of the workflow.
    * Note: path is the full path, including the 'workflows/' prefix.

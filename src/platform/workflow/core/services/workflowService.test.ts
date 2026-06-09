@@ -636,6 +636,23 @@ describe('useWorkflowService', () => {
 
       expect(workflowStore.createNewTemporary).toHaveBeenCalled()
     })
+
+    it('stores share attribution on shared temporary workflows', async () => {
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+      const tempWorkflow = createModeTestWorkflow({
+        path: 'workflows/shared.json'
+      })
+      vi.mocked(workflowStore.createNewTemporary).mockReturnValue(tempWorkflow)
+      vi.mocked(workflowStore.openWorkflow).mockResolvedValue(tempWorkflow)
+
+      await useWorkflowService().afterLoadNewGraph(
+        'shared',
+        { nodes: [] } as never,
+        { shareId: 'share-1' }
+      )
+
+      expect(tempWorkflow.shareAttribution).toEqual({ shareId: 'share-1' })
+    })
   })
 
   describe('per-workflow mode switching', () => {

@@ -28,6 +28,25 @@ vi.mock('vue-router', () => ({
 }))
 
 const mockImportPublishedAssets = vi.fn()
+const mockIsLoggedIn = vi.hoisted(() => ({ value: false }))
+const mockTrackShareLinkOpened = vi.hoisted(() => vi.fn())
+const mockSetActiveShareAttribution = vi.hoisted(() => vi.fn())
+
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    isLoggedIn: mockIsLoggedIn
+  })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackShareLinkOpened: mockTrackShareLinkOpened
+  })
+}))
+
+vi.mock('@/platform/workflow/sharing/shareAttribution', () => ({
+  setActiveShareAttribution: mockSetActiveShareAttribution
+}))
 
 vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
   SharedWorkflowLoadError: class extends Error {
@@ -174,6 +193,7 @@ describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockQueryParams = {}
+    mockIsLoggedIn.value = false
     mockDialogStack.length = 0
     mockShowLayoutDialog.mockImplementation(createDialogInstance)
     mockUpdateDialog.mockImplementation(
@@ -213,6 +233,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     expect(loaded).toBe('not-present')
     expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     expect(mockLoadGraphData).not.toHaveBeenCalled()
+    expect(mockTrackShareLinkOpened).not.toHaveBeenCalled()
   })
 
   it('opens dialog immediately with shareId and loads graph on confirm', async () => {
@@ -234,8 +255,15 @@ describe('useSharedWorkflowUrlLoader', () => {
       true,
       true,
       'Test Workflow',
-      { openSource: 'shared_url' }
+      { openSource: 'shared_url', shareId: 'share-id-1' }
     )
+    expect(mockSetActiveShareAttribution).toHaveBeenCalledWith({
+      shareId: 'share-id-1'
+    })
+    expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
+      share_id: 'share-id-1',
+      is_authenticated: false
+    })
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'share'
@@ -411,7 +439,7 @@ describe('useSharedWorkflowUrlLoader', () => {
       true,
       true,
       'Test Workflow',
-      { openSource: 'shared_url' }
+      { openSource: 'shared_url', shareId: 'share-id-1' }
     )
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -541,7 +569,7 @@ describe('useSharedWorkflowUrlLoader', () => {
       true,
       true,
       'Open shared workflow',
-      { openSource: 'shared_url' }
+      { openSource: 'shared_url', shareId: 'share-id-1' }
     )
   })
 })

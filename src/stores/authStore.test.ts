@@ -11,7 +11,10 @@ import { useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
 
 // Hoisted mocks for dynamic imports
-const { mockDistributionTypes } = vi.hoisted(() => ({
+const { mockActiveShareId, mockDistributionTypes } = vi.hoisted(() => ({
+  mockActiveShareId: {
+    value: undefined as string | undefined
+  },
   mockDistributionTypes: {
     isCloud: true,
     isDesktop: true
@@ -108,6 +111,9 @@ vi.mock('@/stores/toastStore', () => ({
 // Mock useDialogService
 vi.mock('@/services/dialogService')
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
+vi.mock('@/platform/workflow/sharing/shareAttribution', () => ({
+  getActiveShareId: () => mockActiveShareId.value
+}))
 
 // Mock apiKeyAuthStore
 const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
@@ -139,6 +145,7 @@ describe('useAuthStore', () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
+    mockActiveShareId.value = undefined
 
     // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
@@ -656,6 +663,24 @@ describe('useAuthStore', () => {
           )
         }
       )
+
+      it('includes active share id on new-user social auth', async () => {
+        mockActiveShareId.value = 'share-1'
+        vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
+          isNewUser: true,
+          providerId: 'google.com',
+          profile: null
+        })
+
+        await store.loginWithGoogle()
+
+        expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect.objectContaining({
+            is_new_user: true,
+            share_id: 'share-1'
+          })
+        )
+      })
     })
   })
 

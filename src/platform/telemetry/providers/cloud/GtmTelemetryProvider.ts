@@ -15,6 +15,8 @@ import type {
   PageVisibilityMetadata,
   SettingChangedMetadata,
   ShareFlowMetadata,
+  ShareLinkOpenedMetadata,
+  SharedWorkflowRunMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -139,6 +141,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     const payload = {
       method: metadata.method,
       ...(metadata.user_id ? { user_id: metadata.user_id } : {}),
+      ...(metadata.share_id ? { share_id: metadata.share_id } : {}),
       ...(metadata.email
         ? {
             user_data: {
@@ -208,6 +211,10 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     })
   }
 
+  trackSharedWorkflowRun(metadata: SharedWorkflowRunMetadata): void {
+    this.pushEvent('shared_workflow_run', { ...metadata })
+  }
+
   trackTemplate(metadata: TemplateMetadata): void {
     this.pushEvent('select_content', {
       content_type: 'template',
@@ -232,7 +239,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   trackWorkflowImported(metadata: WorkflowImportMetadata): void {
     this.pushEvent('workflow_import', {
       missing_node_count: metadata.missing_node_count,
-      open_source: metadata.open_source
+      open_source: metadata.open_source,
+      ...(metadata.share_id ? { share_id: metadata.share_id } : {})
     })
   }
 
@@ -261,7 +269,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
     this.pushEvent('workflow_opened', {
       missing_node_count: metadata.missing_node_count,
-      open_source: metadata.open_source
+      open_source: metadata.open_source,
+      ...(metadata.share_id ? { share_id: metadata.share_id } : {})
     })
   }
 
@@ -287,8 +296,13 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   trackShareFlow(metadata: ShareFlowMetadata): void {
     this.pushEvent('share_flow', {
       step: metadata.step,
-      source: metadata.source
+      source: metadata.source,
+      ...(metadata.share_id ? { share_id: metadata.share_id } : {})
     })
+  }
+
+  trackShareLinkOpened(metadata: ShareLinkOpenedMetadata): void {
+    this.pushEvent('share_link_opened', { ...metadata })
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {

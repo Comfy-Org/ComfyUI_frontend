@@ -43,3 +43,7 @@ export interface SharedWorkflowPayload {
   workflowId: WorkflowId
   workflowJson: ComfyWorkflowJSON
 }
+
+export interface ShareAttribution {
+  shareId: string
+}
