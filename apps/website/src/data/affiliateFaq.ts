@@ -25,8 +25,9 @@ export const affiliateFaqs: readonly AffiliateFaq[] = [
       'zh-CN': '哪些订阅方案符合条件？'
     },
     answer: {
-      en: 'All Comfy Cloud paid subscription plans (Creator, Pro, Teams).',
-      'zh-CN': '所有 Comfy Cloud 付费订阅方案（Creator、Pro、Teams）。'
+      en: 'All Comfy Cloud paid subscription plans (Standard, Creator, Pro, Teams).',
+      'zh-CN':
+        '所有 Comfy Cloud 付费订阅方案（Standard、Creator、Pro、Teams）。'
     }
   },
   {
