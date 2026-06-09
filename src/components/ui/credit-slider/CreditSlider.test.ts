@@ -86,6 +86,26 @@ describe('CreditSlider', () => {
     })
   })
 
+  it('emits nothing when disabled (keyboard interaction suppressed)', async () => {
+    const user = userEvent.setup()
+    const onUpdate = vi.fn<(usd: number) => void>()
+    const onChange = vi.fn()
+
+    renderSlider({
+      modelValue: 700,
+      disabled: true,
+      'onUpdate:modelValue': onUpdate,
+      onChange
+    })
+    await flush()
+
+    screen.getByRole('slider').focus()
+    await user.keyboard('{ArrowRight}')
+
+    expect(onUpdate).not.toHaveBeenCalled()
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('shows the discounted price, struck original, save badge and yearly total (DES-197)', async () => {
     renderSlider() // default $700 stop → 10% yearly discount
     await flush()
@@ -121,6 +141,36 @@ describe('CreditSlider', () => {
     for (const label of ['42.2K', '84.4K', '147.7K', '295.4K', '527.5K']) {
       expect(stops.getByText(label)).toBeInTheDocument()
     }
+  })
+
+  it('renders stops + default index supplied via props (BE-sourced override)', async () => {
+    const stops = [
+      { usd: 50, credits: 10_550, discountPercentYearly: 0 },
+      { usd: 100, credits: 21_100, discountPercentYearly: 25 }
+    ]
+    // No modelValue → the model default ($700) matches no stop, so selectedIndex
+    // falls back to defaultStopIndex (here index 1 → $100).
+    renderSlider({ stops, defaultStopIndex: 1 })
+    await flush()
+
+    const thumb = screen.getByRole('slider')
+    expect(thumb).toHaveAttribute('aria-valuemax', '1') // 2 stops → max index 1
+    expect(thumb).toHaveAttribute('aria-valuenow', '1') // default index honored
+
+    // index 1 → $100 at 25% yearly → $75 discounted, struck $100, save $25
+    expect(screen.getByTestId('credit-slider-price')).toHaveTextContent('$75')
+    expect(
+      screen.getByTestId('credit-slider-original-price')
+    ).toHaveTextContent('$100')
+    expect(screen.getByTestId('credit-slider-save')).toHaveTextContent(
+      'Save 25% ($25)'
+    )
+
+    // Only the prop's labels render — none of the DES-197 defaults.
+    const labels = within(screen.getByTestId('credit-slider-stops'))
+    expect(labels.getByText('10.6K')).toBeInTheDocument()
+    expect(labels.getByText('21.1K')).toBeInTheDocument()
+    expect(labels.queryByText('147.7K')).not.toBeInTheDocument()
   })
 
   it('keeps every credit amount equal to usdToCredits(usd) (guards rate drift)', () => {

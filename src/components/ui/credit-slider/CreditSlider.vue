@@ -1,11 +1,15 @@
 <script setup lang="ts">
+import {
+  TransitionPresets,
+  usePreferredReducedMotion,
+  useTransition
+} from '@vueuse/core'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import BadgePill from '@/components/common/BadgePill.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
@@ -13,9 +17,26 @@ import {
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { CreditStop } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 
-const { disabled = false, class: rootClass } = defineProps<{
+const {
+  disabled = false,
+  class: rootClass,
+  stops = TEAM_PLAN_CREDIT_STOPS,
+  defaultStopIndex = DEFAULT_TEAM_PLAN_STOP_INDEX
+} = defineProps<{
   disabled?: boolean
   class?: HTMLAttributes['class']
+  /**
+   * The fixed credit stops the slider snaps to. Must be non-empty. Defaults to
+   * the hardcoded DES-197 set; pass the backend-sourced stops once the contract
+   * lands — map `GET /api/billing/plans → team_credit_stops.stops` to
+   * `CreditStop[]` (credits, the pre-discount `usd`, and `discountPercentYearly`).
+   */
+  stops?: readonly CreditStop[]
+  /**
+   * Stop selected when the bound value matches none (e.g. first render).
+   * Maps to `team_credit_stops.default_stop_index`. Defaults to DES-197 ($700).
+   */
+  defaultStopIndex?: number
 }>()
 
 const emit = defineEmits<{
@@ -23,19 +44,27 @@ const emit = defineEmits<{
   change: [stop: { index: number; usd: number; credits: number }]
 }>()
 
-/** v-model carries the selected USD value (one of the TEAM_PLAN_CREDIT_STOPS). */
+/**
+ * v-model carries the selected USD value (one of the `stops`). The literal
+ * default keeps `defineModel` statically analyzable; when custom `stops` are
+ * passed without a matching v-model, `selectedIndex` falls back to
+ * `defaultStopIndex`, so the displayed stop is still correct.
+ */
 const usd = defineModel<number>({
   default: TEAM_PLAN_CREDIT_STOPS[DEFAULT_TEAM_PLAN_STOP_INDEX].usd
 })
 
 const selectedIndex = computed(() => {
-  const i = TEAM_PLAN_CREDIT_STOPS.findIndex((stop) => stop.usd === usd.value)
-  return i === -1 ? DEFAULT_TEAM_PLAN_STOP_INDEX : i
+  const i = stops.findIndex((stop) => stop.usd === usd.value)
+  if (i !== -1) return i
+  // Fall back to the default stop, clamped into range: a backend-driven `stops`
+  // array can be shorter than expected (or `defaultStopIndex` out of bounds), so
+  // clamping keeps `current` defined and the price computeds below from reading
+  // `undefined.usd` at runtime. (`stops` is required to be non-empty.)
+  return Math.min(Math.max(defaultStopIndex, 0), Math.max(stops.length - 1, 0))
 })
 
-const current = computed<CreditStop>(
-  () => TEAM_PLAN_CREDIT_STOPS[selectedIndex.value]
-)
+const current = computed<CreditStop>(() => stops[selectedIndex.value])
 
 // Yearly commitment (per DES-197): the discount applies to the monthly figure.
 // The card shows the discounted monthly price, the struck pre-discount price,
@@ -46,8 +75,29 @@ const discountedMonthly = computed(() =>
   )
 )
 const saveAmount = computed(() => current.value.usd - discountedMonthly.value)
-const billedYearly = computed(() => discountedMonthly.value * 12)
 const hasDiscount = computed(() => current.value.discountPercentYearly > 0)
+
+/**
+ * Smoothly count the price figures up/down as the slider moves between stops
+ * instead of snapping. Honors the user's reduced-motion preference. The save
+ * badge ("X% ($Y)") is intentionally left snapping — its percent is a discrete
+ * tier, so animating the bracketed amount alone would read inconsistently.
+ */
+const prefersReducedMotion = usePreferredReducedMotion()
+const priceTween = {
+  duration: 350,
+  easing: TransitionPresets.easeOutCubic,
+  disabled: computed(() => prefersReducedMotion.value === 'reduce')
+}
+const animatedMonthly = useTransition(discountedMonthly, priceTween)
+const animatedOriginal = useTransition(() => current.value.usd, priceTween)
+
+const displayMonthly = computed(() => Math.round(animatedMonthly.value))
+const displayOriginal = computed(() => Math.round(animatedOriginal.value))
+// Derive the yearly total from the displayed monthly so it always reads as
+// exactly 12× the price shown — even mid-count — rather than drifting as a
+// second, independently-phased tween would.
+const displayBilledYearly = computed(() => displayMonthly.value * 12)
 
 /**
  * Bridge the discrete stop index (0..n-1) to the reka-ui slider's `number[]`
@@ -57,14 +107,14 @@ const hasDiscount = computed(() => current.value.discountPercentYearly > 0)
 const sliderModel = computed<number[]>({
   get: () => [selectedIndex.value],
   set: ([index]) => {
-    const stop = TEAM_PLAN_CREDIT_STOPS[index]
+    const stop = stops[index]
     if (!stop) return
     usd.value = stop.usd
     emit('change', { index, usd: stop.usd, credits: stop.credits })
   }
 })
 
-const lastIndex = TEAM_PLAN_CREDIT_STOPS.length - 1
+const lastIndex = computed(() => Math.max(stops.length - 1, 0))
 
 const formatUsd = (value: number) => `$${value.toLocaleString('en-US')}`
 const formatCreditsCompact = (value: number) =>
@@ -80,41 +130,48 @@ const { t } = useI18n()
   <div :class="cn('flex w-full flex-col gap-3', rootClass)">
     <!-- Price: discounted monthly + struck pre-discount + save badge -->
     <div class="flex flex-col gap-1">
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="flex items-baseline gap-1.5">
+      <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span class="flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
           <span
-            class="text-2xl font-semibold text-base-foreground"
+            class="text-[2rem] leading-none font-semibold text-base-foreground"
             data-testid="credit-slider-price"
           >
-            {{ formatUsd(discountedMonthly) }}
+            {{ formatUsd(displayMonthly) }}
           </span>
           <span
             v-if="hasDiscount"
             class="text-base text-muted-foreground line-through"
             data-testid="credit-slider-original-price"
           >
-            {{ formatUsd(current.usd) }}
+            {{ formatUsd(displayOriginal) }}
           </span>
-          <span class="text-sm text-muted-foreground">
+          <span class="text-base text-muted-foreground">
             {{ t('subscription.usdPerMonth') }}
           </span>
         </span>
-        <BadgePill
+        <!-- Save badge: outlined primary pill, pushed to the right (DES-197) -->
+        <span
           v-if="hasDiscount"
           data-testid="credit-slider-save"
-          :text="
+          class="ms-auto shrink-0 rounded-full border-2 border-primary-background px-2 py-1 text-sm font-bold whitespace-nowrap text-primary-background"
+        >
+          {{
             t('subscription.creditSliderSave', {
               percent: current.discountPercentYearly,
               amount: formatUsd(saveAmount)
             })
-          "
-        />
+          }}
+        </span>
       </div>
       <p
         class="m-0 text-sm text-muted-foreground"
         data-testid="credit-slider-billed-yearly"
       >
-        {{ t('subscription.billedYearly', { total: formatUsd(billedYearly) }) }}
+        {{
+          t('subscription.billedYearly', {
+            total: formatUsd(displayBilledYearly)
+          })
+        }}
       </p>
     </div>
 
@@ -133,7 +190,7 @@ const { t } = useI18n()
       class="m-0 flex list-none justify-between p-0"
     >
       <li
-        v-for="(stop, i) in TEAM_PLAN_CREDIT_STOPS"
+        v-for="(stop, i) in stops"
         :key="stop.usd"
         :data-selected="i === selectedIndex ? '' : undefined"
         :class="
