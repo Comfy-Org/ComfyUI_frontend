@@ -19,8 +19,8 @@ import type {
 } from '@/lib/litegraph/src/types/widgets'
 import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetId } from '@/lib/litegraph/src/types/widgetId'
-import { widgetId } from '@/lib/litegraph/src/types/widgetId'
+import type { WidgetId } from '@/types/widgetId'
+import { widgetId } from '@/types/widgetId'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
