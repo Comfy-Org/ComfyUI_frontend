@@ -832,7 +832,9 @@
     "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
     "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
     "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
@@ -945,6 +947,46 @@
     "fallbacks": {
       "inputName": "ورودی نامشخص",
       "nodeName": "این نود"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "یک ورودی رسانه‌ای مورد نیاز بدون فایل انتخاب شده است.",
+        "toastMessageMany": "لطفاً قبل از اجرای این workflow، ورودی‌های رسانه‌ای مفقود را انتخاب کنید.",
+        "toastMessageWithNode": "{nodeName} به یک فایل رسانه‌ای مورد نیاز دسترسی ندارد.",
+        "toastTitleMany": "ورودی‌های رسانه‌ای مفقود",
+        "toastTitleOne": "ورودی رسانه‌ای مفقود"
+      },
+      "missing_model": {
+        "displayMessageCloud": "یک مدل وارد کنید یا نود را باز کنید تا آن را جایگزین نمایید.",
+        "displayMessageOss": "یک مدل دانلود کنید یا نود را باز کنید تا آن را جایگزین نمایید.",
+        "toastMessageManyCloud": "برخی مدل‌ها پشتیبانی نمی‌شوند. مدل‌های دیگری انتخاب کنید.",
+        "toastMessageManyOss": "{count} فایل مدل مفقود است.",
+        "toastMessageOneCloud": "این مدل پشتیبانی نمی‌شود. مدل دیگری انتخاب کنید.",
+        "toastMessageOneOss": "{nodeName} به یک فایل مدل مورد نیاز دسترسی ندارد.",
+        "toastTitleMany": "مدل‌های مفقود",
+        "toastTitleManyCloud": "مدل‌ها در Cloud در دسترس نیستند",
+        "toastTitleOneCloud": "{modelName} در Cloud در دسترس نیست",
+        "toastTitleOneOss": "{modelName} مفقود است"
+      },
+      "missing_node": {
+        "displayMessageCloud": "نودهای سفارشی مورد نیاز در Cloud پشتیبانی نمی‌شوند. آن‌ها را با نودهای پشتیبانی‌شده جایگزین کنید.",
+        "displayMessageOss": "برای استفاده از این workflow، بسته‌های مورد نیاز را نصب کنید.",
+        "toastMessageManyCloud": "این workflow از نودهایی استفاده می‌کند که در Cloud پشتیبانی نمی‌شوند.",
+        "toastMessageManyOss": "{count} نود به بسته‌های نود مفقود نیاز دارند.",
+        "toastMessageOneCloud": "این نود در Cloud پشتیبانی نمی‌شود.",
+        "toastMessageOneOss": "این workflow از یک نود سفارشی استفاده می‌کند که نصب نشده است. آن را از رجیستری نصب یا نود را جایگزین کنید.",
+        "toastTitleManyCloud": "نودها در Cloud در دسترس نیستند",
+        "toastTitleManyOss": "نودهای مفقود",
+        "toastTitleOneCloud": "{nodeType} در Cloud در دسترس نیست",
+        "toastTitleOneOss": "نود مفقود: {nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "برخی نودها را می‌توان با گزینه‌های جایگزین تعویض کرد",
+        "toastMessageMany": "{count} نوع نود را می‌توان با گزینه‌های سازگار جایگزین کرد.",
+        "toastMessageOne": "آن را با {replacementNodeType} از پنل خطا جایگزین کنید.",
+        "toastTitleMany": "نودها قابل جایگزینی هستند",
+        "toastTitleOne": "{nodeType} قابل جایگزینی است"
+      }
     },
     "promptErrors": {
       "missing_node_type": {
@@ -1287,12 +1329,9 @@
     "missingMedia": "برخی از نودها ورودی‌های مورد نیاز را ندارند",
     "missingModels": "{count} مدل مورد نیاز مفقود است | {count} مدل مورد نیاز مفقود هستند",
     "missingNodes": "برخی از نودها مفقود هستند و باید نصب شوند",
-    "seeErrors": "مشاهده خطاها",
-    "showMissingMedia": "نمایش ورودی‌های مفقود",
-    "showMissingModels": "نمایش مدل‌های مفقود",
-    "showMissingNodes": "نمایش نودهای مفقود",
-    "showSwapNodes": "نمایش نودهای قابل جایگزینی",
-    "swapNodes": "برخی از نودها را می‌توان با گزینه‌های جایگزین تعویض کرد"
+    "multipleErrorCount": "{count} خطا یافت شد | {count} خطا یافت شدند",
+    "multipleErrorsMessage": "لطفاً قبل از اجرای workflow، خطاها را برطرف کنید.",
+    "viewDetails": "مشاهده جزئیات"
   },
   "errorPanelSurvey": {
     "ctaButton": "ارسال بازخورد",
@@ -1376,6 +1415,11 @@
     "amount": "مقدار",
     "apply": "اعمال",
     "architecture": "معماری",
+    "arrange": "چیدمان",
+    "arrangeAsGrid": "چیدمان به صورت شبکه‌ای",
+    "arrangeHorizontally": "چیدمان افقی",
+    "arrangeSpacing": "فاصله چیدمان",
+    "arrangeVertically": "چیدمان عمودی",
     "asset": "{count} دارایی | {count} دارایی",
     "audioFailedToLoad": "بارگذاری صوت ناموفق بود",
     "audioProgress": "پیشرفت صوت",
@@ -2781,7 +2825,6 @@
     "replacedNode": "نود جایگزین شد: {nodeType}",
     "selectAll": "انتخاب همه",
     "skipForNow": "فعلاً رد شود",
-    "swapNodesGuide": "گره‌های زیر می‌توانند به‌صورت خودکار با گزینه‌های سازگار جایگزین شوند.",
     "swapNodesTitle": "جایگزینی گره‌ها",
     "unknownNode": "ناشناخته",
     "willBeReplacedBy": "این گره جایگزین خواهد شد با:"
@@ -3042,7 +3085,6 @@
     },
     "missingNodePacks": {
       "applyChanges": "اعمال تغییرات",
-      "cloudMessage": "این workflow به nodeهای سفارشی نیاز دارد که هنوز در Comfy Cloud موجود نیستند.",
       "collapse": "جمع کردن",
       "expand": "باز کردن",
       "installAll": "نصب همه",
@@ -3050,7 +3092,6 @@
       "installed": "نصب شد",
       "installing": "در حال نصب...",
       "ossManagerDisabledHint": "برای نصب nodeهای مورد نیاز، ابتدا دستور {pipCmd} را در محیط پایتون خود اجرا کنید تا Node Manager نصب شود، سپس ComfyUI را با پرچم {flag} مجدداً راه‌اندازی کنید.",
-      "ossMessage": "این workflow از nodeهای سفارشی استفاده می‌کند که هنوز نصب نکرده‌اید.",
       "searchInManager": "جستجو در Node Manager",
       "title": "پک‌های node مفقود",
       "unknownPack": "پک ناشناخته",
