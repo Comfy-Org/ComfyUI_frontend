@@ -327,6 +327,9 @@ describe('useSharedWorkflowUrlLoader', () => {
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'share'
     )
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'share_auth'
+    )
   })
 
   it('does not hide template selector when user cancels shared workflow dialog', async () => {

@@ -157,6 +157,7 @@ export function useSharedWorkflowUrlLoader() {
     const result = await showOpenSharedWorkflowDialog(shareParam)
 
     if (result.action === 'cancel') {
+      clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
       clearShareIntent()
       return 'cancelled'
     }

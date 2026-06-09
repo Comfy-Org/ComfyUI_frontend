@@ -1,5 +1,5 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
-import { omit } from 'es-toolkit/compat'
+import { omit } from 'es-toolkit'
 import { watch } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'

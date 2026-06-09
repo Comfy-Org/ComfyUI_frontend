@@ -589,7 +589,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     queuedJob.nodeLookup = buildExecutionNodeLookup(promptOutput)
     queuedJob.workflow = workflow
-    queuedJob.shareId = workflow.shareId
+    queuedJob.shareId = workflow?.shareId
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)
