@@ -38,6 +38,20 @@ describe('widgetStore', () => {
       store.registerCustomWidgets({ INT: override })
       expect(store.widgets.get('INT')).toBe(ComfyWidgets.INT)
     })
+
+    it('does not throw when an extension returns null/undefined widgets', () => {
+      const store = useWidgetStore()
+      // A misbehaving extension can resolve getCustomWidgets() to nullish even
+      // though the type says it returns a record. This must not break app init.
+      expect(() =>
+        store.registerCustomWidgets(
+          undefined as unknown as Record<string, never>
+        )
+      ).not.toThrow()
+      expect(() =>
+        store.registerCustomWidgets(null as unknown as Record<string, never>)
+      ).not.toThrow()
+    })
   })
 
   describe('inputIsWidget', () => {
