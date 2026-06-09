@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { WidgetState } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { WidgetState } from '@/types/widgetState'
 
 import { boundsExtractor, singleValueExtractor } from './useUpstreamValue'
 

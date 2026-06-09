@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { UUID } from '@/utils/uuid'
 import { widgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
 
-import type { WidgetState } from './widgetValueStore'
 import { useWidgetValueStore } from './widgetValueStore'
 
 function state<T>(

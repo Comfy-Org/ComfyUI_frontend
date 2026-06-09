@@ -17,10 +17,10 @@ import type {
   NodeBindable,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
-import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */

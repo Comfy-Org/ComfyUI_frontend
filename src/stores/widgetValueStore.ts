@@ -7,8 +7,6 @@ import { parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
 
-export type { WidgetState, WidgetStateInit } from '@/types/widgetState'
-
 export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
   return String(scopedId).replace(/^(.*:)+/, '') as NodeId
 }
