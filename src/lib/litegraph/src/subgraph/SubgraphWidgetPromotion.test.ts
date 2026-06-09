@@ -139,6 +139,34 @@ describe('SubgraphWidgetPromotion', () => {
       })
     })
 
+    it('resolves nested promoted widgets before the inner host input is hydrated', () => {
+      const innerSubgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node: leaf } = createNodeWithWidget('Leaf')
+      innerSubgraph.add(leaf)
+      innerSubgraph.inputNode.slots[0].connect(leaf.inputs[0], leaf)
+      const innerNode = createTestSubgraphNode(innerSubgraph)
+      innerNode._internalConfigureAfterSlots()
+      innerNode.inputs[0].widgetId = undefined
+
+      const outerSubgraph = createTestSubgraph({
+        inputs: [{ name: 'outer_value', type: 'number' }]
+      })
+      outerSubgraph.add(innerNode)
+      outerSubgraph.inputNode.slots[0].connect(innerNode.inputs[0], innerNode)
+
+      const outerNode = createTestSubgraphNode(outerSubgraph)
+      outerNode._internalConfigureAfterSlots()
+
+      expect(promotedWidgetStateByName(outerNode, 'outer_value')).toMatchObject(
+        {
+          type: 'number',
+          value: 42
+        }
+      )
+    })
+
     it('should promote all widget types', () => {
       const subgraph = createTestSubgraph({
         inputs: [

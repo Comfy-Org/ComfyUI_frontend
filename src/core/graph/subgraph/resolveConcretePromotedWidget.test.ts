@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
@@ -92,6 +93,55 @@ describe('resolveConcretePromotedWidget', () => {
     expect(result.resolved.node.id).toBe(leaf.id)
     expect(result.resolved.widget.name).toBe('seed')
     expect(result.resolved.widget.type).toBe('combo')
+  })
+
+  test('returns cycle when nested promoted widget traversal revisits the same input', () => {
+    const recursiveInput = { name: 'x', link: 1 }
+    const recursiveNode = fromAny<LGraphNode, unknown>({
+      id: 11,
+      inputs: [recursiveInput],
+      isSubgraphNode: () => true,
+      subgraph: {
+        inputNode: { slots: [{ name: 'x', linkIds: [1] }] },
+        getLink: () => ({
+          resolve: () => ({ inputNode: recursiveNode })
+        }),
+        getNodeById: () => recursiveNode
+      }
+    })
+    const host = fromAny<SubgraphNode, unknown>({
+      isSubgraphNode: () => true,
+      subgraph: {
+        getNodeById: () => recursiveNode
+      }
+    })
+
+    const result = resolveConcretePromotedWidget(host, '11', 'x')
+
+    expect(result).toEqual({ status: 'failure', failure: 'cycle' })
+  })
+
+  test('returns max-depth-exceeded for a chain over the traversal limit', () => {
+    const subgraphs = Array.from({ length: 102 }, () =>
+      createTestSubgraph({ inputs: [{ name: 'x', type: '*' }] })
+    )
+
+    for (let index = 0; index < subgraphs.length - 1; index++) {
+      const current = subgraphs[index]
+      const next = subgraphs[index + 1]
+      const nextNode = createTestSubgraphNode(next, { id: index + 1 })
+      current.add(nextNode)
+      nextNode._internalConfigureAfterSlots()
+      current.inputNode.slots[0].connect(nextNode.inputs[0], nextNode)
+    }
+
+    const host = createTestSubgraphNode(subgraphs[0], { id: 200 })
+
+    const result = resolveConcretePromotedWidget(host, '1', 'x')
+    expect(result).toEqual({
+      status: 'failure',
+      failure: 'max-depth-exceeded'
+    })
   })
 
   test('returns invalid-host for non-subgraph host node', () => {

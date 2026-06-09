@@ -605,7 +605,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     inputNode: LGraphNode,
     targetInput: INodeInputSlot
   ): { node: LGraphNode; widget: IBaseWidget } | undefined {
-    if (!inputNode.isSubgraphNode() || !targetInput.widgetId) return undefined
+    if (!inputNode.isSubgraphNode()) return undefined
 
     const target = resolveSubgraphInputTarget(inputNode, targetInput.name)
     if (!target) return undefined

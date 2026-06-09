@@ -93,6 +93,21 @@ describe('renameWidget', () => {
     expect(input.label).toBe('My Seed')
   })
 
+  it('writes the label to a legacy input matched by widget name', () => {
+    const widget = makeWidget({ name: 'seed' })
+    const input = {
+      name: 'seed',
+      widget: { name: 'seed' }
+    } as INodeInputSlot
+    const node = makeNode({ inputs: [input] })
+
+    const result = renameWidget(widget, node, 'My Seed')
+
+    expect(result).toBe(true)
+    expect(widget.label).toBe('My Seed')
+    expect(input.label).toBe('My Seed')
+  })
+
   it('clears label when given empty string', () => {
     const widget = makeWidget({ name: 'seed', label: 'Old Label' })
     const node = makeNode()
