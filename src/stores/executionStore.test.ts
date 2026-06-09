@@ -790,6 +790,48 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.initializingJobIds.has('job-1')).toBe(false)
       expect(store.initializingJobIds.has('job-2')).toBe(true)
     })
+
+    it('preserves validation node errors and overlay state', () => {
+      const errorStore = useExecutionErrorStore()
+      const nodeErrors = {
+        '123': {
+          errors: [
+            {
+              type: 'validation_error',
+              message: 'Required input is missing',
+              details: '',
+              extra_info: { input_name: 'image' }
+            }
+          ],
+          class_type: 'TestNode',
+          dependent_outputs: []
+        }
+      }
+      errorStore.lastNodeErrors = nodeErrors
+      errorStore.lastExecutionError = {
+        prompt_id: 'job-1',
+        timestamp: 0,
+        node_id: '456',
+        node_type: 'RuntimeNode',
+        exception_message: 'Runtime failed',
+        exception_type: 'RuntimeError',
+        executed: [],
+        traceback: []
+      }
+      errorStore.lastPromptError = {
+        type: 'prompt_error',
+        message: 'Prompt failed',
+        details: ''
+      }
+      errorStore.showErrorOverlay()
+
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
+      expect(errorStore.lastExecutionError).toBeNull()
+      expect(errorStore.lastPromptError).toBeNull()
+      expect(errorStore.isErrorOverlayOpen).toBe(true)
+    })
   })
 
   describe('execution_cached', () => {
