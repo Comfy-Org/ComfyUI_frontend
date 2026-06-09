@@ -44,7 +44,7 @@ fi
 # Configuration
 COMMENT_MARKER="<!-- PLAYWRIGHT_TEST_STATUS -->"
 # Use dot notation for artifact names (as Playwright creates them)
-BROWSERS="chromium chromium-2x chromium-0.5x mobile-chrome"
+BROWSERS="chromium chromium-2x chromium-0.5x mobile-chrome windows-chromium"
 
 # Install wrangler if not available (output to stderr for debugging)
 if ! command -v wrangler > /dev/null 2>&1; then
