@@ -1876,6 +1876,10 @@
       "0": {
         "name": "rgb_tam_sayı",
         "tooltip": null
+      },
+      "1": {
+        "name": "hex",
+        "tooltip": null
       }
     }
   },
@@ -15218,6 +15222,10 @@
       "megapixels": {
         "name": "megapiksel",
         "tooltip": "Hedef toplam megapiksel. 1,0 MP ≈ 1024×1024 (kare için)."
+      },
+      "multiple": {
+        "name": "kat",
+        "tooltip": "Seçilen çözünürlüğü ayarlamak için sonucun en yakın katı."
       }
     },
     "outputs": {

@@ -1876,6 +1876,10 @@
       "0": {
         "name": "rgb整数",
         "tooltip": null
+      },
+      "1": {
+        "name": "hex",
+        "tooltip": null
       }
     }
   },
@@ -15218,6 +15222,10 @@
       "megapixels": {
         "name": "百万像素",
         "tooltip": "目标总百万像素数。1.0 MP ≈ 1024×1024（正方形）。"
+      },
+      "multiple": {
+        "name": "倍数",
+        "tooltip": "将所选分辨率设置为结果的最近倍数。"
       }
     },
     "outputs": {
