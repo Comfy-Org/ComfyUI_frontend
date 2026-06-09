@@ -25,8 +25,7 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import {
   clearPreservedQuery,
-  getPreservedQueryParam,
-  hydratePreservedQuery
+  getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
@@ -104,7 +103,6 @@ export const useAuthStore = defineStore('auth', () => {
   const userId = computed(() => currentUser.value?.uid)
 
   function getShareAuthMetadata() {
-    hydratePreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
     const shareId = getPreservedQueryParam(
       PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
       'share'

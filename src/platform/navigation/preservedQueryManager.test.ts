@@ -37,6 +37,15 @@ describe('preservedQueryManager', () => {
     expect(getPreservedQueryParam(NAMESPACE, 'source')).toBeUndefined()
   })
 
+  it('hydrates from sessionStorage when reading a param', () => {
+    sessionStorage.setItem(
+      'Comfy.PreservedQuery.template',
+      JSON.stringify({ template: 'flux' })
+    )
+
+    expect(getPreservedQueryParam(NAMESPACE, 'template')).toBe('flux')
+  })
+
   it('hydrates cached payload from sessionStorage once', () => {
     sessionStorage.setItem(
       'Comfy.PreservedQuery.template',

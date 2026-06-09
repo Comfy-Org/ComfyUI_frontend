@@ -55,6 +55,10 @@ interface QueuedJob {
    * This stays stable even if the user switches workflows or edits the canvas.
    */
   nodeLookup?: Record<string, ExecutionNodeInfo>
+  /**
+   * Share attribution snapshotted at queue time. Read this instead of
+   * `workflow.shareId`, which can gain attribution after the job was queued.
+   */
   shareId?: string
 }
 

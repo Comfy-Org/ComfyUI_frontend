@@ -91,6 +91,7 @@ export function getPreservedQueryParam(
   namespace: string,
   key: string
 ): string | undefined {
+  hydratePreservedQuery(namespace)
   return preservedQueries.get(namespace)?.[key]
 }
 

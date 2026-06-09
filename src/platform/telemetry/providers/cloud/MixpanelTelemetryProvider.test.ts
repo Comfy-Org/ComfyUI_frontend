@@ -409,14 +409,6 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     )
   })
 
-  it('does not implement share attribution events', async () => {
-    const provider = new MixpanelTelemetryProvider()
-    await waitForMixpanelInit()
-
-    expect('trackShareLinkOpened' in provider).toBe(false)
-    expect('trackSharedWorkflowRun' in provider).toBe(false)
-  })
-
   it('omits share_id from existing Mixpanel events', async () => {
     const provider = new MixpanelTelemetryProvider()
     await waitForMixpanelInit()

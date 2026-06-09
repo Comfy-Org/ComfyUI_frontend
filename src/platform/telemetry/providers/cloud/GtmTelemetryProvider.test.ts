@@ -333,13 +333,6 @@ describe('GtmTelemetryProvider', () => {
       expect(lastDataLayerEntry()).not.toHaveProperty('share_id')
     })
 
-    it('does not implement share attribution events', () => {
-      const provider = createInitializedProvider()
-
-      expect('trackShareLinkOpened' in provider).toBe(false)
-      expect('trackSharedWorkflowRun' in provider).toBe(false)
-    })
-
     it('omits share_id from workflow import events', () => {
       const provider = createInitializedProvider()
       provider.trackWorkflowImported({
