@@ -4634,6 +4634,80 @@ const translations = {
     'zh-CN': '支持的模型'
   },
 
+  // Models list page (/models)
+  'models.list.label': { en: 'MODELS', 'zh-CN': '模型' },
+  'models.list.heroCta': {
+    en: 'Try {name} Now',
+    'zh-CN': '立即试用 {name}'
+  },
+  'models.list.creations.title': {
+    en: '{name} Image and Video Creations',
+    'zh-CN': '{name} 图像与视频创作'
+  },
+  'models.list.creations.cta': {
+    en: 'Explore Workflows',
+    'zh-CN': '探索工作流'
+  },
+  'models.list.heroTitle.before': {
+    en: '{name} in',
+    'zh-CN': ''
+  },
+  'models.list.heroTitle.after': {
+    en: '',
+    'zh-CN': ' 中的 {name}'
+  },
+  'models.list.heroSubtitle': {
+    en: 'From open-source diffusion checkpoints to partner APIs — every major model, with community workflow templates ready to run.',
+    'zh-CN':
+      '从开源扩散模型到合作伙伴 API，涵盖每一个主流模型，并附带可直接运行的社区工作流模板。'
+  },
+  'models.list.card.workflows': {
+    en: '{count} workflows',
+    'zh-CN': '{count} 个工作流'
+  },
+  'models.list.contact.label': {
+    en: 'COMFY HUB',
+    'zh-CN': 'COMFY HUB'
+  },
+  'models.showcase.label': { en: 'AI MODELS', 'zh-CN': 'AI 模型' },
+  'models.showcase.heading': {
+    en: 'Run the world’s\nleading AI models',
+    'zh-CN': '运行全球领先的\nAI 模型'
+  },
+  'models.showcase.subtitle': {
+    en: 'New models are added as they launch.',
+    'zh-CN': '新模型发布后会第一时间上线。'
+  },
+  'models.showcase.cta': {
+    en: 'EXPLORE WORKFLOWS',
+    'zh-CN': '探索工作流'
+  },
+  'models.showcase.card.grokImagine': {
+    en: 'Grok Imagine',
+    'zh-CN': 'Grok Imagine'
+  },
+  'models.showcase.card.nanoBananaPro': {
+    en: 'Nano Banana Pro',
+    'zh-CN': 'Nano Banana Pro'
+  },
+  'models.showcase.card.ltx23': {
+    en: 'LTX 2.3',
+    'zh-CN': 'LTX 2.3'
+  },
+  'models.showcase.card.qwenAdvancedEdit': {
+    en: 'Advanced image\nediting with Qwen',
+    'zh-CN': '使用 Qwen 进行\n高级图像编辑'
+  },
+  'models.showcase.card.wan22TextToVideo': {
+    en: 'Wan 2.2\ntext to video',
+    'zh-CN': 'Wan 2.2\n文字转视频'
+  },
+  'models.list.contact.heading': {
+    en: 'Pick a model and explore what the community has built. <a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Browse Comfy Hub</a> for the newest workflows.',
+    'zh-CN':
+      '选择一个模型，浏览社区的创作成果。<a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">访问 Comfy Hub</a> 查看最新工作流。'
+  },
+
   // Payment status pages
   'payment.success.label': {
     en: 'PAYMENT',
@@ -4677,313 +4751,103 @@ const translations = {
     'zh-CN': '查看订阅文档'
   },
 
-  // Affiliate landing page (/affiliates)
-  // English-only copy; zh-CN values mirror en until a localized version lands.
-  'affiliate-landing.page.title': {
-    en: 'Comfy.org Affiliate Program — Become a Partner',
-    'zh-CN': 'Comfy.org Affiliate Program — Become a Partner'
+  // AffiliateHeroSection
+  'affiliate.hero.label': { en: 'AFFILIATE', 'zh-CN': '联盟' },
+  'affiliate.hero.headingHighlight': {
+    en: 'Earn 30%',
+    'zh-CN': '赚取 30%'
   },
-  'affiliate-landing.page.description': {
+  'affiliate.hero.headingMuted': {
+    en: 'recurring commission for 3 months.',
+    'zh-CN': '持续返佣 3 个月。'
+  },
+  'affiliate.hero.feature1': {
+    en: '30% recurring commission for 3 months',
+    'zh-CN': '30% 持续佣金，连续 3 个月'
+  },
+  'affiliate.hero.feature2': {
+    en: '60-day cookie window',
+    'zh-CN': '60 天 Cookie 窗口'
+  },
+  'affiliate.hero.feature3': {
+    en: '$100 minimum payout',
+    'zh-CN': '$100 起付'
+  },
+  'affiliate.hero.feature4': {
+    en: 'Monthly payouts',
+    'zh-CN': '每月结算'
+  },
+  'affiliate.hero.apply': { en: 'APPLY NOW', 'zh-CN': '立即申请' },
+  'affiliate.hero.imageAlt': {
+    en: 'Comfy affiliate program',
+    'zh-CN': 'Comfy 联盟计划'
+  },
+
+  // AffiliateAudienceSection
+  'affiliate.audience.heading': {
+    en: "Who we're looking for",
+    'zh-CN': '我们在寻找谁'
+  },
+  'affiliate.audience.subheading': {
+    en: 'If you are...',
+    'zh-CN': '如果您是……'
+  },
+
+  // AffiliateHowItWorksSection
+  'affiliate.howItWorks.heading': {
+    en: 'How it works',
+    'zh-CN': '运作方式'
+  },
+
+  // AffiliateBenefitsSection
+  'affiliate.benefits.heading': {
+    en: 'Why ComfyUI for affiliate creators',
+    'zh-CN': '为什么联盟创作者选择 ComfyUI'
+  },
+
+  // AffiliateBrandAssetsSection
+  'affiliate.assets.heading': {
+    en: 'Brand logos for your content',
+    'zh-CN': '可用于您内容的品牌 Logo'
+  },
+  'affiliate.assets.subheading': {
+    en: 'Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
+    'zh-CN': '横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。'
+  },
+  'affiliate.assets.downloadLabel': {
+    en: 'Download zip',
+    'zh-CN': '下载压缩包'
+  },
+
+  // AffiliateFAQSection
+  'affiliate.faq.heading': {
+    en: 'Frequently asked questions',
+    'zh-CN': '常见问题'
+  },
+
+  // Affiliate page (/affiliates) — head metadata
+  'affiliate.page.title': {
+    en: 'Comfy.org Affiliate Program — Become a Partner',
+    'zh-CN': 'Comfy.org 联盟计划 — 成为合作伙伴'
+  },
+  'affiliate.page.description': {
     en: 'Earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer. Apply to become a Comfy Partner.',
     'zh-CN':
-      'Earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer. Apply to become a Comfy Partner.'
-  },
-  'affiliate-landing.cta.apply': {
-    en: 'Apply Now',
-    'zh-CN': 'Apply Now'
-  },
-  'affiliate-landing.cta.applyAriaLabel': {
-    en: 'Apply Now (opens in new tab)',
-    'zh-CN': 'Apply Now (opens in new tab)'
+      '为您推荐的每个 Comfy Cloud 订阅赚取 30% 持续佣金，连续 3 个月。立即申请成为 Comfy 合作伙伴。'
   },
 
-  // Hero
-  'affiliate-landing.hero.heading': {
-    en: 'Become a Comfy Partner',
-    'zh-CN': 'Become a Comfy Partner'
-  },
-  'affiliate-landing.hero.subheading': {
-    en: 'Earn 30% Commission for 3 Months.',
-    'zh-CN': 'Earn 30% Commission for 3 Months.'
-  },
-  'affiliate-landing.hero.body': {
-    en: 'Join the Comfy.org Affiliate Program and earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer:',
-    'zh-CN':
-      'Join the Comfy.org Affiliate Program and earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer:'
-  },
-  'affiliate-landing.hero.highlight.0': {
-    en: '30% recurring commission for 3 months',
-    'zh-CN': '30% recurring commission for 3 months'
-  },
-  'affiliate-landing.hero.highlight.1': {
-    en: '60-day cookie window',
-    'zh-CN': '60-day cookie window'
-  },
-  'affiliate-landing.hero.highlight.2': {
-    en: '$100 minimum payout',
-    'zh-CN': '$100 minimum payout'
-  },
-  'affiliate-landing.hero.highlight.3': {
-    en: 'Monthly payouts',
-    'zh-CN': 'Monthly payouts'
-  },
-
-  // Trust band
-  'affiliate-landing.trust.label': {
-    en: 'Trusted by 2M+ creators worldwide',
-    'zh-CN': 'Trusted by 2M+ creators worldwide'
-  },
-
-  // How it works
-  'affiliate-landing.how.heading': {
-    en: 'How it works',
-    'zh-CN': 'How it works'
-  },
-  'affiliate-landing.how.step.0.title': {
-    en: 'Apply.',
-    'zh-CN': 'Apply.'
-  },
-  'affiliate-landing.how.step.0.body': {
-    en: 'Submit a quick form. Most applicants approved same day.',
-    'zh-CN': 'Submit a quick form. Most applicants approved same day.'
-  },
-  'affiliate-landing.how.step.1.title': {
-    en: 'Share.',
-    'zh-CN': 'Share.'
-  },
-  'affiliate-landing.how.step.1.body': {
-    en: 'Get your unique tracking link. Share via content, social, email, however you reach your audience.',
-    'zh-CN':
-      'Get your unique tracking link. Share via content, social, email, however you reach your audience.'
-  },
-  'affiliate-landing.how.step.2.title': {
-    en: 'Earn.',
-    'zh-CN': 'Earn.'
-  },
-  'affiliate-landing.how.step.2.body': {
-    en: '30% recurring commission for 3 months on every Comfy Cloud subscriber you refer. Tracked in real-time. Paid monthly.',
-    'zh-CN':
-      '30% recurring commission for 3 months on every Comfy Cloud subscriber you refer. Tracked in real-time. Paid monthly.'
-  },
-
-  // Who we're looking for
-  'affiliate-landing.audience.heading': {
-    en: "Who we're looking for",
-    'zh-CN': "Who we're looking for"
-  },
-  'affiliate-landing.audience.item.0': {
-    en: 'ComfyUI tutorial creators and workflow builders',
-    'zh-CN': 'ComfyUI tutorial creators and workflow builders'
-  },
-  'affiliate-landing.audience.item.1': {
-    en: 'AI tool reviewers on YouTube, TikTok, blogs',
-    'zh-CN': 'AI tool reviewers on YouTube, TikTok, blogs'
-  },
-  'affiliate-landing.audience.item.2': {
-    en: 'Tech bloggers covering AI creative tools',
-    'zh-CN': 'Tech bloggers covering AI creative tools'
-  },
-  'affiliate-landing.audience.item.3': {
-    en: 'Newsletter operators in the AI/creative space',
-    'zh-CN': 'Newsletter operators in the AI/creative space'
-  },
-  'affiliate-landing.audience.item.4': {
-    en: 'Anyone with an audience interested in AI image, video, or 3D generation',
-    'zh-CN':
-      'Anyone with an audience interested in AI image, video, or 3D generation'
-  },
-
-  // Program details
-  'affiliate-landing.details.heading': {
-    en: 'Program details',
-    'zh-CN': 'Program details'
-  },
-  'affiliate-landing.details.headerLabel': {
-    en: 'Detail',
-    'zh-CN': 'Detail'
-  },
-  'affiliate-landing.details.headerValue': {
-    en: 'Value',
-    'zh-CN': 'Value'
-  },
-  'affiliate-landing.details.row.0.label': {
-    en: 'Commission rate',
-    'zh-CN': 'Commission rate'
-  },
-  'affiliate-landing.details.row.0.value': {
-    en: '30% recurring',
-    'zh-CN': '30% recurring'
-  },
-  'affiliate-landing.details.row.1.label': {
-    en: 'Commission duration',
-    'zh-CN': 'Commission duration'
-  },
-  'affiliate-landing.details.row.1.value': {
-    en: '3 months',
-    'zh-CN': '3 months'
-  },
-  'affiliate-landing.details.row.2.label': {
-    en: 'Cookie window',
-    'zh-CN': 'Cookie window'
-  },
-  'affiliate-landing.details.row.2.value': {
-    en: '60 days',
-    'zh-CN': '60 days'
-  },
-  'affiliate-landing.details.row.3.label': {
-    en: 'Eligible products',
-    'zh-CN': 'Eligible products'
-  },
-  'affiliate-landing.details.row.3.value': {
-    en: 'Comfy Cloud paid subscription plans',
-    'zh-CN': 'Comfy Cloud paid subscription plans'
-  },
-  'affiliate-landing.details.row.4.label': {
-    en: 'Payouts',
-    'zh-CN': 'Payouts'
-  },
-  'affiliate-landing.details.row.4.value': {
-    en: 'Monthly, within first 10 business days',
-    'zh-CN': 'Monthly, within first 10 business days'
-  },
-  'affiliate-landing.details.row.5.label': {
-    en: 'Minimum payout',
-    'zh-CN': 'Minimum payout'
-  },
-  'affiliate-landing.details.row.5.value': {
-    en: '$100',
-    'zh-CN': '$100'
-  },
-
-  // Brand assets
-  'affiliate-landing.assets.heading': {
-    en: 'Brand assets',
-    'zh-CN': 'Brand assets'
-  },
-  'affiliate-landing.assets.subheading': {
-    en: 'Approved Comfy logos for your content. Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
-    'zh-CN':
-      'Approved Comfy logos for your content. Banners, screenshots, and talking points are in your affiliate dashboard after approval.'
-  },
-  'affiliate-landing.assets.downloadLabel': {
-    en: 'Download',
-    'zh-CN': 'Download'
-  },
-  'affiliate-landing.assets.tile.logo-horizontal.title': {
-    en: 'Comfy logo (horizontal)',
-    'zh-CN': 'Comfy logo (horizontal)'
-  },
-  'affiliate-landing.assets.tile.logomark.title': {
-    en: 'Comfy logomark',
-    'zh-CN': 'Comfy logomark'
-  },
-  'affiliate-landing.assets.tile.comfy-full-logo-yellow.title': {
-    en: 'Comfy full logo (yellow)',
-    'zh-CN': 'Comfy full logo (yellow)'
-  },
-  'affiliate-landing.assets.tile.comfy-full-logo-ink.title': {
-    en: 'Comfy full logo (ink)',
-    'zh-CN': 'Comfy full logo (ink)'
-  },
-  'affiliate-landing.assets.tile.amplified-logo-mark.title': {
-    en: 'Amplified logo mark',
-    'zh-CN': 'Amplified logo mark'
-  },
-  'affiliate-landing.assets.tile.dimensional-logo-mark.title': {
-    en: 'Dimensional logo mark',
-    'zh-CN': 'Dimensional logo mark'
-  },
-  'affiliate-landing.assets.tile.color-combo-yellow.title': {
-    en: 'Color combo (yellow)',
-    'zh-CN': 'Color combo (yellow)'
-  },
-  'affiliate-landing.assets.tile.color-combo-ink.title': {
-    en: 'Color combo (ink)',
-    'zh-CN': 'Color combo (ink)'
-  },
-
-  // FAQ — keys follow the FAQSection contract: <prefix>.<n>.q / <prefix>.<n>.a, 1-indexed
-  'affiliate-landing.faq.heading': {
-    en: 'Questions',
-    'zh-CN': 'Questions'
-  },
-  'affiliate-landing.faq.1.q': {
-    en: 'How do I track my referrals?',
-    'zh-CN': 'How do I track my referrals?'
-  },
-  'affiliate-landing.faq.1.a': {
-    en: 'Real-time dashboard via our partner portal.',
-    'zh-CN': 'Real-time dashboard via our partner portal.'
-  },
-  'affiliate-landing.faq.2.q': {
-    en: 'What plans qualify?',
-    'zh-CN': 'What plans qualify?'
-  },
-  'affiliate-landing.faq.2.a': {
-    en: 'All Comfy Cloud paid subscription plans (Creator, Pro, Teams).',
-    'zh-CN': 'All Comfy Cloud paid subscription plans (Creator, Pro, Teams).'
-  },
-  'affiliate-landing.faq.3.q': {
-    en: 'How long does approval take?',
-    'zh-CN': 'How long does approval take?'
-  },
-  'affiliate-landing.faq.3.a': {
-    en: 'Most applications approved within 24 hours.',
-    'zh-CN': 'Most applications approved within 24 hours.'
-  },
-  'affiliate-landing.faq.4.q': {
-    en: 'When do I get paid?',
-    'zh-CN': 'When do I get paid?'
-  },
-  'affiliate-landing.faq.4.a': {
-    en: 'Monthly, within the first 10 business days. Minimum balance $100. Paid via Stripe Express or PayPal.',
-    'zh-CN':
-      'Monthly, within the first 10 business days. Minimum balance $100. Paid via Stripe Express or PayPal.'
-  },
-  'affiliate-landing.faq.5.q': {
-    en: 'What happens if my referral upgrades or downgrades?',
-    'zh-CN': 'What happens if my referral upgrades or downgrades?'
-  },
-  'affiliate-landing.faq.5.a': {
-    en: 'If they upgrade, your commission increases. If they downgrade, it adjusts accordingly. Commission is based on actual amounts received by Comfy.org, net of refunds.',
-    'zh-CN':
-      'If they upgrade, your commission increases. If they downgrade, it adjusts accordingly. Commission is based on actual amounts received by Comfy.org, net of refunds.'
-  },
-  'affiliate-landing.faq.6.q': {
-    en: 'Can I use coupon codes?',
-    'zh-CN': 'Can I use coupon codes?'
-  },
-  'affiliate-landing.faq.6.a': {
-    en: 'Yes. We support both tracking links and unique coupon codes.',
-    'zh-CN': 'Yes. We support both tracking links and unique coupon codes.'
-  },
-  'affiliate-landing.faq.7.q': {
-    en: 'What if my referral uses an ad blocker?',
-    'zh-CN': 'What if my referral uses an ad blocker?'
-  },
-  'affiliate-landing.faq.7.a': {
-    en: 'We use server-side tracking, so conversions are tracked regardless.',
-    'zh-CN':
-      'We use server-side tracking, so conversions are tracked regardless.'
-  },
-  'affiliate-landing.faq.8.q': {
-    en: 'What assets do you provide?',
-    'zh-CN': 'What assets do you provide?'
-  },
-  'affiliate-landing.faq.8.a': {
-    en: 'Logos and banners on this page, plus screenshots and talking points in your affiliate dashboard after approval.',
-    'zh-CN':
-      'Logos and banners on this page, plus screenshots and talking points in your affiliate dashboard after approval.'
-  },
-
-  // Footer CTA
-  'affiliate-landing.footerCta.heading': {
+  // AffiliateCtaSection
+  'affiliate.cta.heading': {
     en: 'Ready to start earning?',
-    'zh-CN': 'Ready to start earning?'
+    'zh-CN': '准备好开始赚取佣金了吗？'
   },
-  'affiliate-landing.footerCta.termsLink': {
+  'affiliate.cta.apply': {
+    en: 'APPLY NOW',
+    'zh-CN': '立即申请'
+  },
+  'affiliate.cta.termsLabel': {
     en: 'Read the affiliate program terms',
-    'zh-CN': 'Read the affiliate program terms'
+    'zh-CN': '阅读联盟计划条款'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
