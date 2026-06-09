@@ -15,7 +15,7 @@ const { locale = 'en', class: customClass = '' } = defineProps<{
   class?: HTMLAttributes['class']
 }>()
 
-const { downloadUrl, platform, detected } = useDownloadUrl()
+const { downloadUrl, platform, showFallback } = useDownloadUrl()
 
 const iconSrc = computed(() => {
   switch (platform.value) {
@@ -30,9 +30,8 @@ const iconSrc = computed(() => {
 </script>
 
 <template>
-  <!-- UA detection found a matching OS — single CTA, current behavior. -->
   <BrandButton
-    v-if="detected && platform"
+    v-if="platform"
     :href="downloadUrl"
     target="_blank"
     size="lg"
@@ -52,12 +51,7 @@ const iconSrc = computed(() => {
     </span>
   </BrandButton>
 
-  <!-- UA detection ran but couldn't pick a platform (mobile, Linux, stripped
-       UA) — fall back to surfacing both Windows and Mac builds so the user
-       isn't stranded with nothing to click. Rendered as a fragment of two
-       siblings so they slot directly into the parent's flex container next
-       to the existing GitHub install button. -->
-  <template v-else-if="detected">
+  <template v-else-if="showFallback">
     <BrandButton
       :href="downloadUrls.windows"
       target="_blank"

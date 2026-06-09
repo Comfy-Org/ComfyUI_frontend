@@ -24,21 +24,10 @@ function detectPlatform(ua: string): DetectedPlatform {
 // When Linux and/or macIntel builds are added, extend detection and URLs here.
 export function useDownloadUrl() {
   const platform = ref<DetectedPlatform>(null)
-  /**
-   * Flips to `true` after the post-mount UA check has run, regardless of
-   * whether the check produced a platform. Lets the button distinguish three
-   * states for layout:
-   *   - `!detected`            → SSR / pre-hydration, render nothing so we
-   *                              don't ship Windows+Mac buttons in the HTML
-   *                              and then flicker them away on hydration.
-   *   - `detected && platform` → single button with the matched OS.
-   *   - `detected && !platform`→ UA check came back empty (mobile, Linux,
-   *                              private-mode or stripped UA); render both
-   *                              Windows AND Mac as a fallback so the user
-   *                              isn't stranded with nothing to click — the
-   *                              field-reported failure mode on this page.
-   */
   const detected = ref(false)
+  // Mobile users can't install a desktop build — keep them on the
+  // GitHub-install path instead of showing dmg/exe buttons that won't run.
+  const isMobileUa = ref(false)
 
   const downloadUrl = computed(() => {
     if (platform.value === 'windows') return downloadUrls.windows
@@ -46,10 +35,19 @@ export function useDownloadUrl() {
     return externalLinks.github
   })
 
+  /** True only when the UA check ran, found no match, AND the user is on a
+   *  desktop UA. Drives the Windows+Mac fallback so users on Linux or with
+   *  privacy-stripped UAs aren't stranded with nothing to click. */
+  const showFallback = computed(
+    () => detected.value && !platform.value && !isMobileUa.value
+  )
+
   onMounted(() => {
-    platform.value = detectPlatform(navigator.userAgent.toLowerCase())
+    const ua = navigator.userAgent.toLowerCase()
+    isMobileUa.value = isMobile(ua)
+    platform.value = detectPlatform(ua)
     detected.value = true
   })
 
-  return { downloadUrl, platform, detected }
+  return { downloadUrl, platform, detected, showFallback }
 }
