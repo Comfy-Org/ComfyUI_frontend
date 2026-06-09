@@ -208,6 +208,23 @@ describe('GtmTelemetryProvider', () => {
       expect(entry!.error as string).toHaveLength(100)
     })
 
+    it('pushes execution_start', () => {
+      const provider = createInitializedProvider()
+      provider.trackWorkflowExecution()
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'execution_start'
+      })
+    })
+
+    it('pushes execution_success with job_id', () => {
+      const provider = createInitializedProvider()
+      provider.trackExecutionSuccess({ jobId: 'job-1' })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'execution_success',
+        job_id: 'job-1'
+      })
+    })
+
     it('pushes select_content for template events', () => {
       const provider = createInitializedProvider()
       provider.trackTemplate({
