@@ -174,9 +174,9 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
 
       const { bottomRight } = node.resize
       await expect.poll(() => countColumns(node.imageGrid)).toBe(10)
-      await comfyMouse.resizeByDragging(bottomRight, { x: 200 })
+      await comfyMouse.dragElementBy(bottomRight, { x: 200 })
       await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
-      await comfyMouse.resizeByDragging(bottomRight, { x: -200, y: 200 })
+      await comfyMouse.dragElementBy(bottomRight, { x: -200, y: 200 })
       await expect.poll(() => countColumns(node.imageGrid)).toBeLessThan(10)
     }
   )

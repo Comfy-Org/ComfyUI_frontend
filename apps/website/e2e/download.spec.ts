@@ -38,7 +38,7 @@ test.describe('Download page @smoke', () => {
         level: 1
       })
     })
-    const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD LOCAL/i })
+    const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
     await expect(downloadBtn).toBeVisible()
     await expect(downloadBtn).toHaveAttribute('target', '_blank')
 
@@ -176,7 +176,7 @@ test.describe('Download page mobile @mobile', () => {
         level: 1
       })
     })
-    const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD LOCAL/i })
+    const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
     const githubBtn = hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
 
     await expect(downloadBtn).toBeVisible()
