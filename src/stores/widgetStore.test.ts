@@ -42,9 +42,10 @@ describe('widgetStore', () => {
     it('does not throw when an extension returns null/undefined widgets', () => {
       const store = useWidgetStore()
       // Regression: a misbehaving extension can resolve getCustomWidgets() to
-      // nullish, which must not break app init.
-      expect(() => store.registerCustomWidgets(undefined)).not.toThrow()
-      expect(() => store.registerCustomWidgets(null)).not.toThrow()
+      // nullish, which must not break app init. The `!` casts deliberately
+      // violate the non-null parameter type to simulate that untrusted input.
+      expect(() => store.registerCustomWidgets(undefined!)).not.toThrow()
+      expect(() => store.registerCustomWidgets(null!)).not.toThrow()
     })
   })
 
