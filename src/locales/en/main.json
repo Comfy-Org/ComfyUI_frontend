@@ -83,6 +83,8 @@
     "resetToDefault": "Reset to default",
     "removeKeybinding": "Remove keybinding",
     "nMoreKeybindings": "+ {count} more",
+    "nMoreKeybindingsCompact": "+ {count}",
+    "keybindingListAriaLabel": "Keybindings: {combos}",
     "customizeFolder": "Customize Folder",
     "icon": "Icon",
     "color": "Color",
@@ -268,6 +270,7 @@
     "title": "Title",
     "edit": "Edit",
     "copy": "Copy",
+    "details": "Details",
     "copyJobId": "Copy Job ID",
     "copied": "Copied",
     "relativeTime": {
@@ -350,6 +353,11 @@
     "nodeSlotsError": "Node Slots Error",
     "nodeWidgetsError": "Node Widgets Error",
     "frameNodes": "Frame Nodes",
+    "arrange": "Arrange",
+    "arrangeVertically": "Arrange vertically",
+    "arrangeHorizontally": "Arrange horizontally",
+    "arrangeAsGrid": "Arrange as grid",
+    "arrangeSpacing": "Arrangement spacing",
     "listening": "Listening...",
     "ready": "Ready",
     "play": "Play",
@@ -1798,7 +1806,9 @@
     "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
     "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
     "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
@@ -3549,6 +3559,7 @@
     "parameters": "Parameters",
     "nodes": "Nodes",
     "info": "Info",
+    "infoFor": "Info for {item}",
     "color": "Node color",
     "pinned": "Pinned",
     "bypass": "Bypass",
@@ -3568,6 +3579,7 @@
     "hideInput": "Hide input",
     "showInput": "Show input",
     "locateNode": "Locate node on canvas",
+    "locateNodeFor": "Locate {item}",
     "favorites": "FAVORITED INPUTS",
     "favoritesNone": "NO FAVORITED INPUTS",
     "favoritesNoneTooltip": "Star widgets to quickly access them without selecting nodes",
@@ -3601,6 +3613,7 @@
     "errors": "Errors",
     "noErrors": "No errors",
     "executionErrorOccurred": "An error occurred during execution. Check the Errors tab for details.",
+    "errorLog": "Error log",
     "findOnGithubTooltip": "Search GitHub issues for related problems",
     "getHelpTooltip": "Report this error and we'll help you resolve it",
     "enterSubgraph": "Enter subgraph",
@@ -3658,21 +3671,7 @@
       "refreshFailed": "Failed to refresh missing models. Please try again."
     },
     "missingMedia": {
-      "missingMediaTitle": "Missing Inputs",
-      "image": "Images",
-      "video": "Videos",
-      "audio": "Audio",
-      "locateNode": "Locate node",
-      "expandNodes": "Show referencing nodes",
-      "collapseNodes": "Hide referencing nodes",
-      "uploadFile": "Upload {type}",
-      "uploading": "Uploading...",
-      "uploaded": "Uploaded",
-      "selectedFromLibrary": "Selected from library",
-      "useFromLibrary": "Use from Library",
-      "confirmSelection": "Confirm selection",
-      "cancelSelection": "Cancel selection",
-      "or": "OR"
+      "missingMediaTitle": "Missing Inputs"
     }
   },
   "errorOverlay": {
@@ -3723,6 +3722,7 @@
       },
       "missing_media": {
         "displayMessage": "A required media input has no file selected.",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastTitleOne": "Media input missing",
         "toastTitleMany": "Missing media inputs",
         "toastMessageWithNode": "{nodeName} is missing a required media file.",
@@ -3804,6 +3804,15 @@
         "itemLabel": "{nodeName} - {inputName}",
         "toastTitle": "Invalid input",
         "toastMessage": "{nodeName} rejected the value for {inputName}."
+      },
+      "unknown_validation_error": {
+        "title": "Validation failed",
+        "message": "A node returned a validation error ComfyUI does not recognize.",
+        "details": "{nodeName} returned an unrecognized validation error: {errorType}",
+        "detailsWithRawDetails": "{nodeName} returned an unrecognized validation error ({errorType}): {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "toastTitle": "Validation failed",
+        "toastMessage": "{nodeName} returned an unrecognized validation error."
       },
       "exception_during_inner_validation": {
         "title": "Validation failed",

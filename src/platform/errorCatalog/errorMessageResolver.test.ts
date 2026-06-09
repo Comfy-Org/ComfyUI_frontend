@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   resolveMissingErrorMessage,
+  resolveMissingMediaItemLabel,
   resolveRunErrorMessage
 } from './errorMessageResolver'
 import type { NodeValidationError } from './types'
@@ -141,6 +142,26 @@ describe('errorMessageResolver', () => {
       displayDetails: 'This node is missing a required input: unknown input',
       displayItemLabel: 'This node - unknown input',
       toastMessage: 'This node is missing a required input: unknown input'
+    })
+  })
+
+  it('resolves unknown validation errors to fallback catalog copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError('value_not_valid', undefined, 'some detail'),
+        nodeDisplayName: 'KSampler'
+      })
+    ).toEqual({
+      catalogId: 'unknown_validation_error',
+      displayTitle: 'Validation failed',
+      displayMessage:
+        'A node returned a validation error ComfyUI does not recognize.',
+      displayDetails:
+        'KSampler returned an unrecognized validation error (value_not_valid): some detail',
+      displayItemLabel: 'KSampler',
+      toastTitle: 'Validation failed',
+      toastMessage: 'KSampler returned an unrecognized validation error.'
     })
   })
 
@@ -1560,6 +1581,32 @@ describe('errorMessageResolver', () => {
   })
 
   it.for([
+    {
+      source: { nodeType: 'LoadImage', widgetName: 'image' },
+      displayItemLabel: 'Load Image - image'
+    },
+    {
+      source: {
+        nodeDisplayName: 'Custom Loader',
+        nodeType: 'LoadImage',
+        widgetName: 'image'
+      },
+      displayItemLabel: 'Custom Loader - image'
+    },
+    {
+      source: { nodeType: '', widgetName: '' },
+      displayItemLabel: 'This node - unknown input'
+    }
+  ] as const)(
+    'resolves missing media item labels from $source',
+    ({ source, displayItemLabel }) => {
+      expect(resolveMissingMediaItemLabel(source)).toEqual({
+        displayItemLabel
+      })
+    }
+  )
+
+  it.for([
     [
       'image',
       'LoadImage',
@@ -1628,6 +1675,44 @@ describe('errorMessageResolver', () => {
       })
     }
   )
+
+  it('summarizes a shared missing media file by affected node references', () => {
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_media',
+        groups: [
+          {
+            mediaType: 'image',
+            items: [
+              {
+                name: 'shared.png',
+                mediaType: 'image',
+                representative: {
+                  nodeId: '1',
+                  nodeType: 'LoadImage',
+                  widgetName: 'image',
+                  mediaType: 'image',
+                  name: 'shared.png',
+                  isMissing: true
+                },
+                referencingNodes: [
+                  { nodeId: '1', widgetName: 'image' },
+                  { nodeId: '2', widgetName: 'image' }
+                ]
+              }
+            ]
+          }
+        ],
+        count: 2,
+        isCloud: false
+      })
+    ).toMatchObject({
+      displayTitle: 'Missing Inputs (2)',
+      toastTitle: 'Missing media inputs',
+      toastMessage:
+        'Please select the missing media inputs before running this workflow.'
+    })
+  })
 
   it('summarizes multiple missing model and media items', () => {
     const modelGroups = missingModelGroups('a.safetensors', 'b.safetensors')

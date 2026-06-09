@@ -832,7 +832,9 @@
     "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
     "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
     "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
@@ -945,6 +947,46 @@
     "fallbacks": {
       "inputName": "bilinmeyen giriş",
       "nodeName": "Bu düğüm"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "Gerekli bir medya girdisi için dosya seçilmedi.",
+        "toastMessageMany": "Çalışma akışını çalıştırmadan önce eksik medya girişlerini seçin.",
+        "toastMessageWithNode": "{nodeName} gerekli bir medya dosyasını bulamıyor.",
+        "toastTitleMany": "Eksik medya girişleri",
+        "toastTitleOne": "Medya girişi eksik"
+      },
+      "missing_model": {
+        "displayMessageCloud": "Bir model içe aktarın veya değiştirmek için düğümü açın.",
+        "displayMessageOss": "Bir model indirin veya değiştirmek için düğümü açın.",
+        "toastMessageManyCloud": "Bazı modeller desteklenmiyor. Farklı modeller seçin.",
+        "toastMessageManyOss": "{count} model dosyası eksik.",
+        "toastMessageOneCloud": "Bu model desteklenmiyor. Farklı bir model seçin.",
+        "toastMessageOneOss": "{nodeName} gerekli bir model dosyasını bulamıyor.",
+        "toastTitleMany": "Eksik modeller",
+        "toastTitleManyCloud": "Modeller Bulut'ta mevcut değil",
+        "toastTitleOneCloud": "{modelName} Bulut'ta mevcut değil",
+        "toastTitleOneOss": "{modelName} eksik"
+      },
+      "missing_node": {
+        "displayMessageCloud": "Gerekli özel düğümler Bulut'ta desteklenmiyor. Desteklenen düğümlerle değiştirin.",
+        "displayMessageOss": "Bu çalışma akışını kullanmak için eksik paketleri yükleyin.",
+        "toastMessageManyCloud": "Bu çalışma akışı, Bulut'ta desteklenmeyen düğümler kullanıyor.",
+        "toastMessageManyOss": "{count} düğüm eksik düğüm paketleri gerektiriyor.",
+        "toastMessageOneCloud": "Bu düğüm Bulut'ta desteklenmiyor.",
+        "toastMessageOneOss": "Bu çalışma akışı, yüklü olmayan özel bir düğüm kullanıyor. Kayıttan yükleyin veya düğümü değiştirin.",
+        "toastTitleManyCloud": "Düğümler Bulut'ta mevcut değil",
+        "toastTitleManyOss": "Eksik düğümler",
+        "toastTitleOneCloud": "{nodeType} Bulut'ta mevcut değil",
+        "toastTitleOneOss": "Eksik düğüm: {nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "Bazı düğümler alternatiflerle değiştirilebilir",
+        "toastMessageMany": "{count} düğüm türü uyumlu alternatiflerle değiştirilebilir.",
+        "toastMessageOne": "Hata panelinden {replacementNodeType} ile değiştirin.",
+        "toastTitleMany": "Düğümler değiştirilebilir",
+        "toastTitleOne": "{nodeType} değiştirilebilir"
+      }
     },
     "promptErrors": {
       "missing_node_type": {
@@ -1240,6 +1282,15 @@
         "toastMessageWithTypes": "{nodeName} adlı düğümün {inputName} girişi {expectedType} bekliyor, ancak bağlı çıkış {receivedType}.",
         "toastTitle": "Geçersiz bağlantı"
       },
+      "unknown_validation_error": {
+        "details": "{nodeName} tanınmayan bir doğrulama hatası döndürdü: {errorType}",
+        "detailsWithRawDetails": "{nodeName} tanınmayan bir doğrulama hatası döndürdü ({errorType}): {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Bir düğüm, ComfyUI'nin tanımadığı bir doğrulama hatası döndürdü.",
+        "title": "Doğrulama başarısız",
+        "toastMessage": "{nodeName} tanınmayan bir doğrulama hatası döndürdü.",
+        "toastTitle": "Doğrulama başarısız"
+      },
       "value_bigger_than_max": {
         "details": "{nodeName} için {inputName} değeri maksimumun üstünde.",
         "detailsWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri maksimum {maxValue} değerinin üstünde.",
@@ -1287,12 +1338,9 @@
     "missingMedia": "Bazı düğümler gerekli girdilerden yoksun",
     "missingModels": "{count} gerekli model eksik | {count} gerekli model eksik",
     "missingNodes": "Bazı düğümler eksik ve yüklenmesi gerekiyor",
-    "seeErrors": "Hataları Gör",
-    "showMissingMedia": "Eksik girdileri göster",
-    "showMissingModels": "Eksik modelleri göster",
-    "showMissingNodes": "Eksik düğümleri göster",
-    "showSwapNodes": "Değiştirilebilir düğümleri göster",
-    "swapNodes": "Bazı düğümler alternatiflerle değiştirilebilir"
+    "multipleErrorCount": "{count} hata bulundu",
+    "multipleErrorsMessage": "Çalışma akışını çalıştırmadan önce bunları çözün.",
+    "viewDetails": "Detayları görüntüle"
   },
   "errorPanelSurvey": {
     "ctaButton": "Geri bildirim ver",
@@ -1376,6 +1424,11 @@
     "amount": "Miktar",
     "apply": "Uygula",
     "architecture": "Mimari",
+    "arrange": "Düzenle",
+    "arrangeAsGrid": "Izgara olarak düzenle",
+    "arrangeHorizontally": "Yatay olarak düzenle",
+    "arrangeSpacing": "Düzenleme aralığı",
+    "arrangeVertically": "Dikey olarak düzenle",
     "asset": "{count} varlık | {count} varlık",
     "audioFailedToLoad": "Ses yüklenemedi",
     "audioProgress": "Ses ilerlemesi",
@@ -1441,6 +1494,7 @@
     "deleteImage": "Görseli sil",
     "deprecated": "ESKİ",
     "description": "Açıklama",
+    "details": "Detaylar",
     "devOnly": "YALNIZCA GELİŞTİRİCİ",
     "devices": "Cihazlar",
     "disableAll": "Tümünü Devre Dışı Bırak",
@@ -1530,6 +1584,7 @@
     "jobIdCopied": "İş kimliği panoya kopyalandı",
     "keybinding": "Tuş Ataması",
     "keybindingAlreadyExists": "Tuş ataması zaten mevcut:",
+    "keybindingListAriaLabel": "Kısayol Tuşları: {combos}",
     "keybindingPresets": {
       "default": "Varsayılan Ön Ayar",
       "deletePreset": "Ön ayarı sil",
@@ -1580,6 +1635,7 @@
     "mostRelevant": "En alakalı",
     "multiSelectDropdown": "Çoklu seçim açılır menüsü",
     "nMoreKeybindings": "+ {count} tane daha",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "Ad",
     "newFolder": "Yeni Klasör",
     "next": "İleri",
@@ -2781,7 +2837,6 @@
     "replacedNode": "Değiştirilen düğüm: {nodeType}",
     "selectAll": "Tümünü Seç",
     "skipForNow": "Şimdilik Atla",
-    "swapNodesGuide": "Aşağıdaki düğümler, uyumlu alternatiflerle otomatik olarak değiştirilebilir.",
     "swapNodesTitle": "Düğümleri Değiştir",
     "unknownNode": "Bilinmeyen",
     "willBeReplacedBy": "Bu düğüm şununla değiştirilecek:"
@@ -2953,6 +3008,7 @@
     "errorHelp": "Daha fazla yardım için {github} veya {support}",
     "errorHelpGithub": "bir GitHub sorunu gönderin",
     "errorHelpSupport": "destek ekibimizle iletişime geçin",
+    "errorLog": "Hata günlüğü",
     "errors": "Hatalar",
     "executionErrorOccurred": "Çalıştırma sırasında bir hata oluştu. Detaylar için Hatalar sekmesini kontrol edin.",
     "fallbackGroupTitle": "Grup",
@@ -2987,10 +3043,12 @@
     "hideAdvancedShort": "Gelişmişi gizle",
     "hideInput": "Girdiyi gizle",
     "info": "Bilgi",
+    "infoFor": "{item} için Bilgi",
     "inputs": "GİRİŞLER",
     "inputsNone": "GİRİŞ YOK",
     "inputsNoneTooltip": "Düğümün girişi yok",
     "locateNode": "Düğümü tuvalde bul",
+    "locateNodeFor": "{item} için Düğümü Bul",
     "missingMedia": {
       "audio": "Ses",
       "cancelSelection": "Seçimi iptal et",
@@ -3042,7 +3100,6 @@
     },
     "missingNodePacks": {
       "applyChanges": "Değişiklikleri Uygula",
-      "cloudMessage": "Bu iş akışı, Comfy Cloud'da henüz mevcut olmayan özel düğümler gerektiriyor.",
       "collapse": "Daralt",
       "expand": "Genişlet",
       "installAll": "Tümünü Yükle",
@@ -3050,7 +3107,6 @@
       "installed": "Yüklendi",
       "installing": "Yükleniyor...",
       "ossManagerDisabledHint": "Eksik düğümleri yüklemek için önce Python ortamınızda {pipCmd} komutunu çalıştırarak Node Manager'ı yükleyin, ardından ComfyUI'yi {flag} bayrağı ile yeniden başlatın.",
-      "ossMessage": "Bu iş akışı, henüz yüklemediğiniz özel düğümler kullanıyor.",
       "searchInManager": "Düğüm Yöneticisinde Ara",
       "title": "Eksik Düğüm Paketleri",
       "unknownPack": "Bilinmeyen paket",

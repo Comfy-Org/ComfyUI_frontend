@@ -2,7 +2,8 @@ import type {
   MissingErrorMessageSource,
   ResolvedMissingErrorMessage
 } from './types'
-import { translateCatalogMessage } from './catalogI18n'
+import { normalizeNodeName, translateCatalogMessage } from './catalogI18n'
+import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import { st } from '@/i18n'
 
 function formatCountTitle(title: string, count: number): string {
@@ -255,6 +256,12 @@ type MissingMediaSource = Extract<
   { kind: 'missing_media' }
 >
 
+interface MissingMediaItemLabelSource {
+  nodeDisplayName?: string
+  nodeType?: string
+  widgetName?: string
+}
+
 function getMissingMediaItems(source: MissingMediaSource) {
   return source.groups.flatMap((group) => group.items)
 }
@@ -272,9 +279,29 @@ function resolveMissingMediaDisplayMessage(): string {
   )
 }
 
+export function resolveMissingMediaItemLabel(
+  source: MissingMediaItemLabelSource
+): { displayItemLabel: string } {
+  const nodeName = normalizeNodeName(
+    source.nodeDisplayName ||
+      formatNodeTypeName(source.nodeType ?? '') ||
+      undefined
+  )
+  const inputName =
+    source.widgetName?.trim() ||
+    translateCatalogMessage('errorCatalog.fallbacks.inputName', 'unknown input')
+
+  return {
+    displayItemLabel: translateCatalogMessage(
+      'errorCatalog.missingErrors.missing_media.itemLabel',
+      '{nodeName} - {inputName}',
+      { nodeName, inputName }
+    )
+  }
+}
+
 function resolveMissingMediaToastTitle(source: MissingMediaSource): string {
-  const items = getMissingMediaItems(source)
-  if (items.length !== 1) {
+  if (countMissingMediaReferences(source.groups) !== 1) {
     return translateCatalogMessage(
       'errorCatalog.missingErrors.missing_media.toastTitleMany',
       'Missing media inputs'
@@ -290,7 +317,7 @@ function resolveMissingMediaToastTitle(source: MissingMediaSource): string {
 function resolveMissingMediaToastMessage(source: MissingMediaSource): string {
   const items = getMissingMediaItems(source)
   const [firstItem] = items
-  if (!firstItem || items.length !== 1) {
+  if (!firstItem || countMissingMediaReferences(source.groups) !== 1) {
     return translateCatalogMessage(
       'errorCatalog.missingErrors.missing_media.toastMessageMany',
       'Please select the missing media inputs before running this workflow.'
