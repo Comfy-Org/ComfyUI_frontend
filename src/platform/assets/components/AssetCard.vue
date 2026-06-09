@@ -128,10 +128,10 @@
 </template>
 
 <script setup lang="ts">
-import { useImage } from '@vueuse/core'
 import { computed, ref, toValue, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useImageQuiet } from '@/composables/useImageQuiet'
 import IconGroup from '@/components/button/IconGroup.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
@@ -190,19 +190,10 @@ const tooltipDelay = computed<number>(() =>
   settingStore.get('LiteGraph.Node.TooltipDelay')
 )
 
-const { isLoading, error } = useImage(
-  {
-    src: asset.preview_url ?? '',
-    alt: displayName.value
-  },
-  {
-    onError: () => {
-      // Load failures are surfaced via `error` (fallback UI). Swallow here so
-      // vueuse does not re-report them to the global handler (Datadog RUM) as
-      // unhandled errors — broken images are expected, not bugs.
-    }
-  }
-)
+const { isLoading, error } = useImageQuiet({
+  src: asset.preview_url ?? '',
+  alt: displayName.value
+})
 
 function handleSelect() {
   acknowledgeAsset(asset.id)

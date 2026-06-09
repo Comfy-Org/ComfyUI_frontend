@@ -31,9 +31,9 @@
 </template>
 
 <script setup lang="ts">
-import { useImage } from '@vueuse/core'
 import { computed } from 'vue'
 
+import { useImageQuiet } from '@/composables/useImageQuiet'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -51,14 +51,5 @@ const {
   alt?: string
 }>()
 
-const { error } = useImage(
-  computed(() => ({ src, alt })),
-  {
-    onError: () => {
-      // Load failures are surfaced via `error` (fallback UI). Swallow here so
-      // vueuse does not re-report them to the global handler (Datadog RUM) as
-      // unhandled errors — broken images are expected, not bugs.
-    }
-  }
-)
+const { error } = useImageQuiet(computed(() => ({ src, alt })))
 </script>
