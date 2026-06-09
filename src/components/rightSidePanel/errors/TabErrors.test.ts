@@ -93,16 +93,7 @@ describe('TabErrors.vue', () => {
               refreshing: 'Refreshing missing models.'
             },
             missingMedia: {
-              missingMediaTitle: 'Missing Inputs',
-              image: 'Images',
-              uploadFile: 'Upload {type}',
-              useFromLibrary: 'Use from Library',
-              confirmSelection: 'Confirm selection',
-              locateNode: 'Locate node',
-              expandNodes: 'Show referencing nodes',
-              collapseNodes: 'Hide referencing nodes',
-              cancelSelection: 'Cancel selection',
-              or: 'OR'
+              missingMediaTitle: 'Missing Inputs'
             }
           }
         }
@@ -466,6 +457,50 @@ describe('TabErrors.vue', () => {
     expect(
       screen.getByText('A required media input has no file selected.')
     ).toBeInTheDocument()
+  })
+
+  it('renders one missing media item per referencing node and locates the selected node', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockImplementation((_, nodeId) => {
+      const titles: Record<string, string> = {
+        '3': 'First Loader',
+        '4': 'Second Loader'
+      }
+      return {
+        title: titles[String(nodeId)] ?? ''
+      } as ReturnType<typeof getNodeByExecutionId>
+    })
+
+    const { user } = renderComponent({
+      missingMedia: {
+        missingMediaCandidates: [
+          {
+            nodeId: '3',
+            nodeType: 'LoadImage',
+            widgetName: 'image',
+            mediaType: 'image',
+            name: 'shared.png',
+            isMissing: true
+          },
+          {
+            nodeId: '4',
+            nodeType: 'PreviewImage',
+            widgetName: 'image',
+            mediaType: 'image',
+            name: 'shared.png',
+            isMissing: true
+          }
+        ] satisfies MissingMediaCandidate[]
+      }
+    })
+
+    expect(screen.getAllByTestId('missing-media-row')).toHaveLength(2)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Second Loader - image' })
+    )
+
+    expect(mockFocusNode.mock.calls.at(-1)?.[0]).toBe('4')
   })
 
   it('renders swap node rows below the section display message', () => {
