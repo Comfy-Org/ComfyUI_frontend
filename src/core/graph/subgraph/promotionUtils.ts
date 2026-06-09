@@ -250,11 +250,17 @@ export function promoteValueWidgetViaSubgraphInput(
     inputName,
     String(sourceSlot.type ?? sourceWidget.type ?? '*')
   )
+  subgraphInput.label = sourceSlot.label
   const link = subgraphInput.connect(sourceSlot, sourceNode)
   if (!link) {
     subgraphNode.subgraph.removeInput(subgraphInput)
     return { ok: false, reason: 'connectFailed' }
   }
+
+  const hostInput = subgraphNode.inputs.find(
+    (input) => input._subgraphSlot === subgraphInput
+  )
+  if (hostInput) hostInput.label = sourceSlot.label
 
   seedNestedPromotedInputState(subgraphNode, subgraphInput.name, sourceSlot)
 
@@ -264,7 +270,7 @@ export function promoteValueWidgetViaSubgraphInput(
 function seedNestedPromotedInputState(
   subgraphNode: SubgraphNode,
   inputName: string,
-  sourceSlot: { widgetId?: WidgetId }
+  sourceSlot: { widgetId?: WidgetId; label?: string }
 ): void {
   if (!sourceSlot.widgetId) return
 
@@ -284,7 +290,7 @@ function seedNestedPromotedInputState(
     type: sourceState.type,
     value: sourceState.value,
     options: cloneDeep(sourceState.options ?? {}),
-    label: hostInput.label ?? inputName,
+    label: hostInput.label ?? sourceSlot.label ?? inputName,
     serialize: sourceState.serialize,
     disabled: sourceState.disabled,
     isDOMWidget: sourceState.isDOMWidget

@@ -371,6 +371,17 @@ function applyHostValueToInput(
   return useWidgetValueStore().setValue(input.widgetId, entry.hostValue)
 }
 
+function applyHostLabelToInput(
+  input: INodeInputSlot,
+  label: string | undefined
+): void {
+  if (label === undefined) return
+  input.label = label
+  if (!input.widgetId) return
+  const state = useWidgetValueStore().getWidget(input.widgetId)
+  if (state) state.label = label
+}
+
 function addUniqueSubgraphInput(
   subgraph: Subgraph,
   baseName: string,
@@ -462,7 +473,10 @@ function repairCreateSubgraphInput(
   const hostInput = hostNode.inputs.find(
     (input) => input.name === newSubgraphInput.name
   )
-  if (hostInput) applyHostValueToInput(hostInput, entry)
+  if (hostInput) {
+    applyHostLabelToInput(hostInput, slot.label)
+    applyHostValueToInput(hostInput, entry)
+  }
   return { ok: true, subgraphInputName: newSubgraphInput.name }
 }
 

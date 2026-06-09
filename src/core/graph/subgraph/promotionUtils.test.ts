@@ -322,6 +322,25 @@ describe('promoteRecommendedWidgets', () => {
     expect(subgraphNode.serialize().properties?.proxyWidgets).toBeUndefined()
   })
 
+  it('preserves the source slot label when promoting a value widget', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Prompt')
+    const input = interiorNode.addInput('text', 'STRING')
+    input.label = 'renamed_from_sidepanel'
+    const textWidget = interiorNode.addWidget('text', 'text', '', () => {})
+    input.widget = { name: textWidget.name }
+    subgraph.add(interiorNode)
+
+    promoteValueWidgetViaSubgraphInput(subgraphNode, interiorNode, textWidget)
+
+    const hostInput = subgraphNode.inputs.find((input) => input.name === 'text')
+    expect(hostInput?.label).toBe('renamed_from_sidepanel')
+    expect(promotedWidgetRef(subgraphNode, 'text').label).toBe(
+      'renamed_from_sidepanel'
+    )
+  })
+
   it('promotes virtual previews through preview exposures', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)

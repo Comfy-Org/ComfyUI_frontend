@@ -218,6 +218,27 @@ describe('flushProxyWidgetMigration', () => {
       expect(created?._widget).toBeDefined()
     })
 
+    it('createSubgraphInput: preserves the source slot label', () => {
+      const host = buildHost()
+      const inner = addInnerNode(host, 'Inner', (n) => {
+        const slot = n.addInput('text', 'STRING')
+        slot.label = 'renamed_from_sidepanel'
+        slot.widget = { name: 'text' }
+        n.addWidget('text', 'text', '', () => {})
+      })
+
+      host.properties.proxyWidgets = [[String(inner.id), 'text']]
+      flushProxyWidgetMigration({ hostNode: host })
+
+      const promotedInput = host.inputs.find((input) => input.name === 'text')
+      expect(promotedInput?.label).toBe('renamed_from_sidepanel')
+      expect(
+        promotedInput?.widgetId
+          ? useWidgetValueStore().getWidget(promotedInput.widgetId)?.label
+          : undefined
+      ).toBe('renamed_from_sidepanel')
+    })
+
     it('createSubgraphInput: quarantines missingSubgraphInput when source widget has no backing input slot', () => {
       const host = buildHost()
       const inner = addInnerNode(host, 'Inner', (n) => {
