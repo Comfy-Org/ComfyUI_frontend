@@ -10,14 +10,6 @@ import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
 export interface EssentialPlaceholderTile {
   label: string
   icon?: string
-  iconUrl?: string
-  /**
-   * When true, render `iconUrl` as a CSS mask tinted with the foreground
-   * semantic token instead of an `<img>`. Use for monochrome brand marks
-   * (e.g. Grok) that ship with `fill="currentColor"` and need to follow
-   * the active theme.
-   */
-  tintable?: boolean
   media?: EssentialsMediaType
   /**
    * Backing ComfyUI node identifier resolved by the hover popover.
@@ -131,18 +123,17 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'Nano Banana',
-            iconUrl: '/assets/images/brand-logos/gemini-color.svg',
+            icon: 'icon-[comfy--gemini]',
             nodeName: 'Nano Banana (Google Gemini Image)'
           },
           {
             label: 'Grok Image Edit',
-            iconUrl: '/assets/images/brand-logos/grok.svg',
-            tintable: true,
+            icon: 'icon-[comfy--grok] text-[#B6B6B6]',
             nodeName: 'Grok Image Edit'
           },
           {
             label: 'Bytedance Seedream',
-            iconUrl: '/assets/images/brand-logos/bytedance-color.svg',
+            icon: 'icon-[comfy--bytedance]',
             nodeName: 'ByteDance Seedream 4.5 & 5.0'
           },
           {
@@ -199,18 +190,17 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'Grok Video',
-            iconUrl: '/assets/images/brand-logos/grok.svg',
-            tintable: true,
+            icon: 'icon-[comfy--grok] text-[#B6B6B6]',
             nodeName: 'Grok Video'
           },
           {
             label: 'Kling Video',
-            iconUrl: '/assets/images/brand-logos/kling-color.svg',
+            icon: 'icon-[comfy--kling]',
             nodeName: 'Kling Image(First Frame) to Video'
           },
           {
             label: 'Bytedance Seedance',
-            iconUrl: '/assets/images/brand-logos/bytedance-color.svg',
+            icon: 'icon-[comfy--bytedance]',
             nodeName: 'ByteDance Seedance 2.0 Reference to Video'
           },
           {
@@ -267,12 +257,13 @@ export const ESSENTIAL_PLACEHOLDER_SECTIONS: EssentialPlaceholderSection[] = [
         tiles: [
           {
             label: 'Google Gemini',
-            iconUrl: '/assets/images/brand-logos/gemini-color.svg',
+            icon: 'icon-[comfy--gemini]',
             nodeName: 'Google Gemini'
           },
           {
             label: 'Anthropic Claude',
-            iconUrl: '/assets/images/brand-logos/claude-color.svg',
+            // FIXME: Don't hard code color here
+            icon: 'icon-[comfy--claude] text-[#D97757]',
             nodeName: 'Anthropic Claude'
           },
           {

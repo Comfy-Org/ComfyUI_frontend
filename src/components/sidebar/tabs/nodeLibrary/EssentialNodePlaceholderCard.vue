@@ -13,28 +13,7 @@
     @dragstart="handleDragStart"
     @dragend="handleDragEnd"
   >
-    <div
-      v-if="tile.iconUrl && tile.tintable"
-      :class="cn(iconSizeClass, 'bg-base-foreground')"
-      :style="{
-        maskImage: `url(${tile.iconUrl})`,
-        WebkitMaskImage: `url(${tile.iconUrl})`,
-        maskSize: 'contain',
-        WebkitMaskSize: 'contain',
-        maskRepeat: 'no-repeat',
-        WebkitMaskRepeat: 'no-repeat',
-        maskPosition: 'center',
-        WebkitMaskPosition: 'center'
-      }"
-    />
-    <img
-      v-else-if="tile.iconUrl"
-      :src="tile.iconUrl"
-      :alt="tile.label"
-      :class="cn(iconSizeClass, 'object-contain')"
-      draggable="false"
-    />
-    <i v-else :class="cn(tile.icon, iconSizeClass, 'text-muted-foreground')" />
+    <i :class="cn('text-muted-foreground', iconSizeClass, tile.icon)" />
     <TextTickerMultiLine
       :class="
         cn(
