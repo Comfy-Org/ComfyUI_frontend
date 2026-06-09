@@ -4,6 +4,7 @@ type UUID = string
 export type WidgetId = string & { readonly __brand: 'WidgetId' }
 
 const SEPARATOR = ':'
+const WIDGET_ID_PATTERN = /^(?<graphId>[^:]+):(?<nodeId>[^:]+):(?<name>[^:]+)$/u
 
 export function widgetId(
   graphId: UUID,
@@ -31,21 +32,17 @@ export function parseWidgetId(id: WidgetId): {
   nodeId: NodeId
   name: string
 } {
-  const firstColon = id.indexOf(SEPARATOR)
-  const secondColon = id.indexOf(SEPARATOR, firstColon + 1)
-  const nodeId = id.slice(firstColon + 1, secondColon)
-  const name = id.slice(secondColon + 1)
+  const groups = WIDGET_ID_PATTERN.exec(id)?.groups
+  if (!groups) throw new Error('Invalid widget id')
+
   return {
-    graphId: id.slice(0, firstColon),
-    nodeId: decodeWidgetIdSegment(nodeId),
-    name: decodeWidgetIdSegment(name)
+    graphId: groups.graphId,
+    nodeId: decodeWidgetIdSegment(groups.nodeId),
+    name: decodeWidgetIdSegment(groups.name)
   }
 }
 
 export function isWidgetId(value: unknown): value is WidgetId {
   if (typeof value !== 'string') return false
-  const firstColon = value.indexOf(SEPARATOR)
-  if (firstColon <= 0) return false
-  const secondColon = value.indexOf(SEPARATOR, firstColon + 1)
-  return secondColon > firstColon + 1
+  return WIDGET_ID_PATTERN.test(value)
 }

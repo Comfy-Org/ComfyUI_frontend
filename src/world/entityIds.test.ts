@@ -41,14 +41,19 @@ describe('parseWidgetId', () => {
     })
   })
 
-  it('preserves colons inside the name segment', () => {
+  it('round-trips colons inside the name segment', () => {
     const rawName = 'nested:label:with:colons'
-    const rawId = `${graphId}:42:${rawName}` as WidgetId
-    expect(parseWidgetId(rawId)).toEqual({
+    expect(parseWidgetId(widgetId(graphId, 42, rawName))).toEqual({
       graphId,
       nodeId: '42',
       name: rawName
     })
+  })
+
+  it('rejects ids that do not match the widget id format', () => {
+    expect(() => parseWidgetId(`${graphId}:42:name:extra` as WidgetId)).toThrow(
+      'Invalid widget id'
+    )
   })
 })
 
@@ -57,6 +62,14 @@ describe('isWidgetId', () => {
 
   it('accepts ids built by the constructor', () => {
     expect(isWidgetId(widgetId(graphId, 1, 'x'))).toBe(true)
+  })
+
+  it('accepts unicode widget names', () => {
+    expect(isWidgetId(`${graphId}:1:プロンプト`)).toBe(true)
+  })
+
+  it('rejects strings with extra colon-separated segments', () => {
+    expect(isWidgetId(`${graphId}:1:name:extra`)).toBe(false)
   })
 
   it('rejects strings without two colon-separated segments', () => {
