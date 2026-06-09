@@ -24,7 +24,7 @@
           :tile="tile"
         />
       </div>
-      <div v-else class="flex flex-col gap-10">
+      <div v-else class="flex flex-col gap-10 px-4">
         <div
           v-for="subgroup in section.subgroups?.filter(
             (s) => mediaFilters[s.media]

@@ -13,9 +13,8 @@
 
     <TextTickerMultiLine
       class="text-foreground mt-2 h-7 w-full shrink-0 text-xs/normal font-normal"
-    >
-      {{ node.label }}
-    </TextTickerMultiLine>
+      :text="node.label"
+    />
   </div>
 
   <Teleport v-if="showPreview" to="body">

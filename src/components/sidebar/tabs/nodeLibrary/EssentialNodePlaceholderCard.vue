@@ -16,9 +16,8 @@
     <i :class="cn('size-7 text-muted-foreground', tile.icon)" />
     <TextTickerMultiLine
       class="text-foreground flex h-[30px] w-full shrink-0 flex-col justify-center px-2 text-center text-xs/[15px] font-normal @[112px]:h-[36px] @[112px]:text-sm/[18px]"
-    >
-      {{ tile.label }}
-    </TextTickerMultiLine>
+      :text="tile.label"
+    />
   </div>
 
   <Teleport v-if="showPreview && nodeDef" to="body">
