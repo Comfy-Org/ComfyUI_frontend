@@ -142,7 +142,7 @@ describe('useAuthStore', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     sessionStorage.clear()
-    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE)
+    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
     // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
@@ -663,7 +663,7 @@ describe('useAuthStore', () => {
 
       it('includes preserved share id on new-user social auth', async () => {
         sessionStorage.setItem(
-          'Comfy.PreservedQuery.share',
+          'Comfy.PreservedQuery.share_auth',
           JSON.stringify({ share: 'share-1' })
         )
         vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
@@ -680,6 +680,9 @@ describe('useAuthStore', () => {
             share_id: 'share-1'
           })
         )
+        expect(
+          sessionStorage.getItem('Comfy.PreservedQuery.share_auth')
+        ).toBeNull()
       })
     })
   })

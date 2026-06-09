@@ -87,10 +87,10 @@ export const capturePreservedQuery = (
   writeToStorage(namespace, payload)
 }
 
-export const getPreservedQueryParam = (
+export function getPreservedQueryParam(
   namespace: string,
   key: string
-): string | undefined => {
+): string | undefined {
   return preservedQueries.get(namespace)?.[key]
 }
 

@@ -5,6 +5,7 @@ import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composab
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 
 const preservedQueryMocks = vi.hoisted(() => ({
+  capturePreservedQuery: vi.fn(),
   clearPreservedQuery: vi.fn(),
   hydratePreservedQuery: vi.fn(),
   mergePreservedQueryIntoQuery: vi.fn()
@@ -256,6 +257,11 @@ describe('useSharedWorkflowUrlLoader', () => {
       share_id: 'share-id-1',
       is_authenticated: false
     })
+    expect(preservedQueryMocks.capturePreservedQuery).toHaveBeenCalledWith(
+      'share_auth',
+      { share: 'share-id-1' },
+      ['share']
+    )
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'share'

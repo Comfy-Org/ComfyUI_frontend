@@ -17,7 +17,6 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ShareAttribution } from '@/platform/workflow/sharing/types/shareTypes'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
@@ -447,7 +446,7 @@ export const useWorkflowService = () => {
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
-    shareAttribution?: ShareAttribution
+    shareId?: string
   ) => {
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
@@ -501,8 +500,8 @@ export const useWorkflowService = () => {
               ) ?? freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
-          if (shareAttribution) {
-            loadedWorkflow.shareAttribution = shareAttribution
+          if (shareId) {
+            loadedWorkflow.shareId = shareId
           }
           loadedWorkflow.changeTracker.reset(workflowData)
           loadedWorkflow.changeTracker.restore()
@@ -515,8 +514,8 @@ export const useWorkflowService = () => {
         workflowData
       )
       tempWorkflow.initialMode = freshLoadMode
-      if (shareAttribution) {
-        tempWorkflow.shareAttribution = shareAttribution
+      if (shareId) {
+        tempWorkflow.shareId = shareId
       }
       trackIfEnteringApp(tempWorkflow)
       await workflowStore.openWorkflow(tempWorkflow)
@@ -524,8 +523,8 @@ export const useWorkflowService = () => {
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
-    if (shareAttribution) {
-      loadedWorkflow.shareAttribution = shareAttribution
+    if (shareId) {
+      loadedWorkflow.shareId = shareId
     }
     if (loadedWorkflow.initialMode === undefined) {
       loadedWorkflow.initialMode = freshLoadMode

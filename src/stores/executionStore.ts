@@ -4,7 +4,6 @@ import { computed, ref, shallowRef } from 'vue'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import type { ShareAttribution } from '@/platform/workflow/sharing/types/shareTypes'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
@@ -56,7 +55,7 @@ interface QueuedJob {
    * This stays stable even if the user switches workflows or edits the canvas.
    */
   nodeLookup?: Record<string, ExecutionNodeInfo>
-  shareAttribution?: ShareAttribution
+  shareId?: string
 }
 
 function buildExecutionNodeLookup(
@@ -298,16 +297,16 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     const jobId = e.detail.prompt_id
-    if (isCloud && activeJobId.value) {
+    const queuedJob = queuedJobs.value[jobId]
+    if (isCloud && queuedJob) {
       const telemetry = useTelemetry()
-      const shareAttribution = queuedJobs.value[jobId]?.shareAttribution
       telemetry?.trackExecutionSuccess({
         jobId
       })
-      if (shareAttribution) {
+      if (queuedJob.shareId) {
         telemetry?.trackSharedWorkflowRun({
           job_id: jobId,
-          share_id: shareAttribution.shareId
+          share_id: queuedJob.shareId
         })
       }
     }
@@ -590,7 +589,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     queuedJob.nodeLookup = buildExecutionNodeLookup(promptOutput)
     queuedJob.workflow = workflow
-    queuedJob.shareAttribution = workflow.shareAttribution
+    queuedJob.shareId = workflow.shareId
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)

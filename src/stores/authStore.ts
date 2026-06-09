@@ -24,6 +24,7 @@ import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import {
+  clearPreservedQuery,
   getPreservedQueryParam,
   hydratePreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
@@ -103,11 +104,12 @@ export const useAuthStore = defineStore('auth', () => {
   const userId = computed(() => currentUser.value?.uid)
 
   function getShareAuthMetadata() {
-    hydratePreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE)
+    hydratePreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
     const shareId = getPreservedQueryParam(
-      PRESERVED_QUERY_NAMESPACES.SHARE,
+      PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
       'share'
     )
+    if (shareId) clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
     return shareId ? { share_id: shareId } : {}
   }
 

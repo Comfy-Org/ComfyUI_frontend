@@ -1110,7 +1110,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
     it('tracks shared workflow run when the queued workflow has share attribution', () => {
       const workflow = createQueuedWorkflow()
-      workflow.shareAttribution = { shareId: 'share-1' }
+      workflow.shareId = 'share-1'
       store.storeJob({
         nodes: ['a'],
         id: 'job-1',
@@ -1126,6 +1126,26 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(mockTrackExecutionSuccess).toHaveBeenCalledWith({
         jobId: 'job-1'
       })
+      expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
+        job_id: 'job-1',
+        share_id: 'share-1'
+      })
+    })
+
+    it('tracks shared workflow run from the success event job', () => {
+      const workflow = createQueuedWorkflow()
+      workflow.shareId = 'share-1'
+      store.storeJob({
+        nodes: ['a'],
+        id: 'job-1',
+        promptOutput: {
+          a: createPromptNode('Node A', 'NodeA')
+        },
+        workflow
+      })
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
       expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
         job_id: 'job-1',
         share_id: 'share-1'
@@ -1297,7 +1317,7 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
       b: { title: 'Node B', type: 'NodeB' }
     })
     expect(store.queuedJobs['job-1']?.workflow).toStrictEqual(workflow)
-    expect(store.queuedJobs['job-1']?.shareAttribution).toBeUndefined()
+    expect(store.queuedJobs['job-1']?.shareId).toBeUndefined()
     expect(store.jobIdToWorkflowId.get('job-1')).toBe('wf-1')
     expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
       '/workflows/foo.json'

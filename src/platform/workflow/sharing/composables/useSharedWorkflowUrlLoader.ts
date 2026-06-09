@@ -8,6 +8,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 import {
+  capturePreservedQuery,
   clearPreservedQuery,
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
@@ -147,6 +148,11 @@ export function useSharedWorkflowUrlLoader() {
       share_id: shareParam,
       is_authenticated: isLoggedIn.value
     })
+    capturePreservedQuery(
+      PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
+      { share: shareParam },
+      ['share']
+    )
 
     const result = await showOpenSharedWorkflowDialog(shareParam)
 
