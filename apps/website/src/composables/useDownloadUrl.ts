@@ -2,7 +2,7 @@ import { computed, onMounted, ref } from 'vue'
 
 import { externalLinks } from '@/config/routes'
 
-const downloadUrls = {
+export const downloadUrls = {
   windows: 'https://download.comfy.org/windows/nsis/x64',
   macArm: 'https://download.comfy.org/mac/dmg/arm64'
 } as const
@@ -24,6 +24,21 @@ function detectPlatform(ua: string): DetectedPlatform {
 // When Linux and/or macIntel builds are added, extend detection and URLs here.
 export function useDownloadUrl() {
   const platform = ref<DetectedPlatform>(null)
+  /**
+   * Flips to `true` after the post-mount UA check has run, regardless of
+   * whether the check produced a platform. Lets the button distinguish three
+   * states for layout:
+   *   - `!detected`            → SSR / pre-hydration, render nothing so we
+   *                              don't ship Windows+Mac buttons in the HTML
+   *                              and then flicker them away on hydration.
+   *   - `detected && platform` → single button with the matched OS.
+   *   - `detected && !platform`→ UA check came back empty (mobile, Linux,
+   *                              private-mode or stripped UA); render both
+   *                              Windows AND Mac as a fallback so the user
+   *                              isn't stranded with nothing to click — the
+   *                              field-reported failure mode on this page.
+   */
+  const detected = ref(false)
 
   const downloadUrl = computed(() => {
     if (platform.value === 'windows') return downloadUrls.windows
@@ -33,7 +48,8 @@ export function useDownloadUrl() {
 
   onMounted(() => {
     platform.value = detectPlatform(navigator.userAgent.toLowerCase())
+    detected.value = true
   })
 
-  return { downloadUrl, platform }
+  return { downloadUrl, platform, detected }
 }

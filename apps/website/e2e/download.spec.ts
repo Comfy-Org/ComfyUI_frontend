@@ -5,6 +5,11 @@ import { test } from './fixtures/blockExternalMedia'
 const WINDOWS_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
+/** Desktop UA that doesn't match Windows or Mac — the detection branch users
+ *  on Linux, mobile, or with stripped/privacy-mode UAs land in. */
+const LINUX_UA =
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+
 test.describe('Download page @smoke', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/download')
@@ -48,6 +53,50 @@ test.describe('Download page @smoke', () => {
       'href',
       'https://github.com/Comfy-Org/ComfyUI#installing'
     )
+
+    await context.close()
+  })
+
+  test('HeroSection falls back to both Windows + Mac when UA is unrecognized', async ({
+    browser
+  }) => {
+    // Linux desktop UA — passes the mobile filter but matches neither
+    // `win` nor `macintosh`/`mac os x`, so the detection branch returns
+    // null. Before the fix, the hero rendered no download CTA at all in
+    // this case (#789-ish — verbatim field report). Lock both fallback
+    // buttons here.
+    const context = await browser.newContext({ userAgent: LINUX_UA })
+    const page = await context.newPage()
+    await page.goto('/download')
+
+    const hero = page.locator('section', {
+      has: page.getByRole('heading', {
+        name: /Run on your hardware/i,
+        level: 1
+      })
+    })
+
+    const windowsBtn = hero.getByRole('link', { name: /Windows$/ })
+    await expect(windowsBtn).toBeVisible()
+    await expect(windowsBtn).toHaveAttribute(
+      'href',
+      'https://download.comfy.org/windows/nsis/x64'
+    )
+    await expect(windowsBtn).toHaveAttribute('target', '_blank')
+
+    const macBtn = hero.getByRole('link', { name: /macOS$/ })
+    await expect(macBtn).toBeVisible()
+    await expect(macBtn).toHaveAttribute(
+      'href',
+      'https://download.comfy.org/mac/dmg/arm64'
+    )
+    await expect(macBtn).toHaveAttribute('target', '_blank')
+
+    // The single auto-detected "DOWNLOAD DESKTOP" CTA must NOT appear in
+    // this branch — otherwise users would see three buttons and one of
+    // them would point at a wrong-OS URL.
+    const autoBtn = hero.getByRole('link', { name: /^DOWNLOAD DESKTOP$/i })
+    await expect(autoBtn).toHaveCount(0)
 
     await context.close()
   })
