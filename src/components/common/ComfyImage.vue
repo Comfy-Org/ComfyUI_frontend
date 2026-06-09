@@ -51,11 +51,14 @@ const {
   alt?: string
 }>()
 
-const { error } = useImage(computed(() => ({ src, alt })), {
-  onError: () => {
-    // Load failures are surfaced via `error` (fallback UI). Swallow here so
-    // vueuse does not re-report them to the global handler (Datadog RUM) as
-    // unhandled errors — broken images are expected, not bugs.
+const { error } = useImage(
+  computed(() => ({ src, alt })),
+  {
+    onError: () => {
+      // Load failures are surfaced via `error` (fallback UI). Swallow here so
+      // vueuse does not re-report them to the global handler (Datadog RUM) as
+      // unhandled errors — broken images are expected, not bugs.
+    }
   }
-})
+)
 </script>
