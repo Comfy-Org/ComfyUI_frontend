@@ -19,6 +19,28 @@ export function rawTagTopLevel(tag: string): string {
   return tag.split('/')[0]
 }
 
+// The on-disk folder a model lives in. On cloud the first non-models tag is the
+// model's relative folder path (e.g. `loras/flux1`); locally we fall back to
+// the directory portion of the filepath.
+export function directoryForAsset(asset: AssetItem): string | null {
+  const tag = firstNonModelsTag(asset)
+  if (tag) return tag
+  const filepath =
+    typeof asset.metadata?.filepath === 'string'
+      ? asset.metadata.filepath
+      : null
+  if (!filepath) return null
+  const dir = filepath.split('/').slice(0, -1).join('/')
+  return dir || null
+}
+
+export function directoryLabel(directory: string): string {
+  return directory
+    .split('/')
+    .map((segment) => formatCategoryLabel(segment))
+    .join(' / ')
+}
+
 export function groupLabelForAsset(asset: AssetItem): string {
   const groupId = groupIdForAsset(asset)
   if (groupId) {

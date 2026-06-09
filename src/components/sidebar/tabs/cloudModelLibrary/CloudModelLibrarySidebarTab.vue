@@ -35,21 +35,40 @@
           <Popover :show-arrow="false">
             <template #button>
               <Button
-                v-tooltip.bottom="$t('assets.sort.tooltip')"
+                v-tooltip.bottom="$t('assets.settings.tooltip')"
                 variant="secondary"
                 size="icon"
-                :aria-label="$t('assets.sort.tooltip')"
+                :aria-label="$t('assets.settings.tooltip')"
               >
-                <i class="icon-[lucide--arrow-down-up] size-4" />
+                <i class="icon-[lucide--settings-2]" />
               </Button>
             </template>
             <template #default>
               <div class="flex min-w-44 flex-col">
                 <Button
+                  v-for="option in GROUP_BY_OPTIONS"
+                  :key="option.value"
+                  variant="textonly"
+                  class="w-full"
+                  @click="groupBy = option.value"
+                >
+                  <span class="flex items-center gap-2">
+                    <i :class="cn(option.icon, 'size-4')" />
+                    <span>{{ $t(option.labelKey) }}</span>
+                  </span>
+                  <i
+                    class="ml-auto icon-[lucide--check] size-4"
+                    :class="groupBy !== option.value && 'opacity-0'"
+                  />
+                </Button>
+
+                <div class="my-1 w-full border-b border-border-subtle" />
+
+                <Button
                   v-for="option in SORT_OPTIONS"
                   :key="option.value"
                   variant="textonly"
-                  class="w-full justify-between"
+                  class="w-full"
                   @click="sortMode = option.value"
                 >
                   <span>{{ $t(option.labelKey) }}</span>
@@ -185,6 +204,8 @@ import {
   isPartnerNodeCategory
 } from '@/components/sidebar/tabs/cloudModelLibrary/modelGroups'
 import {
+  directoryForAsset,
+  directoryLabel,
   firstNonModelsTag,
   groupIdForAsset,
   groupLabelForAsset,
@@ -259,6 +280,30 @@ const SORT_OPTIONS = isCloud
       (option) =>
         option.value !== 'baseModelAsc' && option.value !== 'baseModelDesc'
     )
+
+type GroupBy = 'category' | 'directory'
+
+const GROUP_BY_OPTIONS: ReadonlyArray<{
+  value: GroupBy
+  labelKey: string
+  icon: string
+}> = [
+  {
+    value: 'category',
+    labelKey: 'assets.groupBy.category',
+    icon: 'icon-[lucide--layers]'
+  },
+  {
+    value: 'directory',
+    labelKey: 'assets.groupBy.directory',
+    icon: 'icon-[lucide--folder]'
+  }
+] as const
+
+const groupBy = useStorage<GroupBy>(
+  'Comfy.CloudModelLibrary.GroupBy',
+  'category'
+)
 
 const sortMode = useStorage<SortMode>(
   'Comfy.CloudModelLibrary.SortBy',
@@ -408,6 +453,61 @@ const sections = computed<Section[]>(() => {
     ]
   }
 
+  const buildAssetSection = (
+    id: string,
+    label: string,
+    list: AssetItem[]
+  ): Section | null => {
+    if (list.length === 0) return null
+    const items: SidebarItem[] = list.map((asset) => ({ kind: 'asset', asset }))
+    return {
+      id,
+      label,
+      providers: buildProviderGroups(items, mode, isSearching),
+      totalCount: items.length
+    }
+  }
+
+  const buildPartnerSection = (): Section | null => {
+    if (matchedPartners.value.length === 0) return null
+    const items: SidebarItem[] = matchedPartners.value.map((nodeDef) => ({
+      kind: 'partner',
+      nodeDef
+    }))
+    return {
+      id: PARTNER_NODES_GROUP_ID,
+      label: t('sideToolbar.nodeLibraryTab.sections.partnerNodes'),
+      providers: buildProviderGroups(items, mode, isSearching),
+      totalCount: items.length
+    }
+  }
+
+  // Group by on-disk folder instead of model category. Directories sort
+  // alphabetically; partner nodes (which have no directory) trail at the end.
+  if (groupBy.value === 'directory') {
+    const byDirectory = new Map<string, AssetItem[]>()
+    for (const asset of matchedAssets.value) {
+      const directory = directoryForAsset(asset) ?? ''
+      const list = byDirectory.get(directory) ?? []
+      list.push(asset)
+      byDirectory.set(directory, list)
+    }
+    const directorySections = Array.from(byDirectory.entries())
+      .map(([directory, list]) => {
+        const id = directory ? `dir:${directory}` : 'dir:uncategorized'
+        const label = directory
+          ? directoryLabel(directory)
+          : t('assets.groupBy.ungrouped')
+        return buildAssetSection(id, label, list)
+      })
+      .filter((section): section is Section => section !== null)
+      .sort((a, b) =>
+        a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+      )
+    const partners = buildPartnerSection()
+    return partners ? [...directorySections, partners] : directorySections
+  }
+
   const knownGroups = MODEL_GROUPS.filter(
     (g) => g.id !== PARTNER_NODES_GROUP_ID
   )
@@ -434,45 +534,16 @@ const sections = computed<Section[]>(() => {
     }
   }
 
-  const filteredPartners = matchedPartners.value
-
   const result: Section[] = []
 
   // The curated PINNED_GROUP_IDS render first in their declared order
   // (Diffusion → LoRAs → Partner nodes); everything else interleaves
   // alphabetically below.
-  const makeAssetSection = (
-    id: string,
-    label: string,
-    list: AssetItem[]
-  ): Section | null => {
-    if (list.length === 0) return null
-    const items: SidebarItem[] = list.map((asset) => ({ kind: 'asset', asset }))
-    return {
-      id,
-      label,
-      providers: buildProviderGroups(items, mode, isSearching),
-      totalCount: items.length
-    }
-  }
-
   const buildSection = (id: string): Section | null => {
-    if (id === PARTNER_NODES_GROUP_ID) {
-      if (filteredPartners.length === 0) return null
-      const items: SidebarItem[] = filteredPartners.map((nodeDef) => ({
-        kind: 'partner',
-        nodeDef
-      }))
-      return {
-        id: PARTNER_NODES_GROUP_ID,
-        label: t('sideToolbar.nodeLibraryTab.sections.partnerNodes'),
-        providers: buildProviderGroups(items, mode, isSearching),
-        totalCount: items.length
-      }
-    }
+    if (id === PARTNER_NODES_GROUP_ID) return buildPartnerSection()
     const group = MODEL_GROUPS.find((g) => g.id === id)
     if (!group) return null
-    return makeAssetSection(
+    return buildAssetSection(
       group.id,
       group.label,
       assetsByGroup.get(group.id) ?? []
@@ -494,13 +565,17 @@ const sections = computed<Section[]>(() => {
   for (const group of knownGroups) {
     if (PINNED_GROUP_IDS.includes(group.id)) continue
     collect(
-      makeAssetSection(group.id, group.label, assetsByGroup.get(group.id) ?? [])
+      buildAssetSection(
+        group.id,
+        group.label,
+        assetsByGroup.get(group.id) ?? []
+      )
     )
   }
 
   for (const tag of unmappedByTag.keys()) {
     collect(
-      makeAssetSection(
+      buildAssetSection(
         `tag:${tag}`,
         fallbackGroupLabel(tag),
         unmappedByTag.get(tag) ?? []
