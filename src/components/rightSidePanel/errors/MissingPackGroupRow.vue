@@ -34,10 +34,15 @@
           <button
             v-if="hasMultipleNodeTypes && !group.isResolving"
             type="button"
-            class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word outline-none focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
             :class="
-              isUnknownPack ? 'text-warning-background' : 'text-base-foreground'
+              cn(
+                packTextButtonClass,
+                isUnknownPack
+                  ? 'text-warning-background'
+                  : 'text-base-foreground'
+              )
             "
+            :aria-expanded="expanded"
             @click="toggleExpand"
           >
             {{ packDisplayName }}
@@ -45,9 +50,13 @@
           <button
             v-else-if="primaryLocatableNodeType && !group.isResolving"
             type="button"
-            class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word outline-none focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
             :class="
-              isUnknownPack ? 'text-warning-background' : 'text-base-foreground'
+              cn(
+                packTextButtonClass,
+                isUnknownPack
+                  ? 'text-warning-background'
+                  : 'text-base-foreground'
+              )
             "
             @click="handleLocateNode(primaryLocatableNodeType)"
           >
@@ -79,6 +88,7 @@
           </Button>
           <span
             v-if="showNodeCount"
+            data-testid="missing-node-pack-count"
             class="flex size-6 shrink-0 items-center justify-center rounded-md bg-secondary-background-selected text-xs font-bold text-muted-foreground"
           >
             {{ group.nodeTypes.length }}
@@ -168,7 +178,12 @@
               <button
                 v-if="isLocatableNodeType(nodeType)"
                 type="button"
-                class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
+                :class="
+                  cn(
+                    packTextButtonClass,
+                    'text-muted-foreground hover:text-base-foreground'
+                  )
+                "
                 @click="handleLocateNode(nodeType)"
               >
                 {{ getLabel(nodeType) }}
@@ -224,6 +239,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const expandedOverride = ref<boolean | null>(null)
+
+const packTextButtonClass =
+  'm-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word outline-none focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none'
 
 const { missingNodePacks, isLoading } = useMissingNodes()
 const comfyManagerStore = useComfyManagerStore()
