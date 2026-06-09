@@ -22,6 +22,8 @@ export interface FormDropdownItem {
   author?: string
   /** Category key used to render a gradient placeholder when no preview_url exists */
   placeholder_category?: string
+  /** ISO creation timestamp, used to order the media picker's "All" tab by recency */
+  created_at?: string
 }
 
 export interface SortOption<TId extends string = string> {

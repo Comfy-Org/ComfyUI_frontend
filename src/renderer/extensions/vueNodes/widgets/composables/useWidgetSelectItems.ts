@@ -31,6 +31,8 @@ import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { IAssetsProvider } from '@/platform/assets/composables/media/IAssetsProvider'
 import type { AssetKind } from '@/types/widgetTypes'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -84,6 +86,7 @@ interface UseWidgetSelectItemsOptions {
 export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   const { modelValue, outputMediaAssets, assetData } = options
 
+  const assetsStore = useAssetsStore()
   const missingMediaStore = useMissingMediaStore()
   const missingMediaValues = computed<ReadonlySet<string>>(
     () =>
@@ -203,7 +206,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         id: `input-${index}`,
         preview_url: getMediaUrl(String(value), 'input', kind),
         name: String(value),
-        label: getDisplayLabel(String(value), labelFn)
+        label: getDisplayLabel(String(value), labelFn),
+        created_at: assetsStore.inputAssetsByFilename.get(String(value))
+          ?.created_at
       }))
   })
 
@@ -245,7 +250,8 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
             ? ''
             : asset.preview_url || getMediaUrl(filenameForUrl, 'output', kind),
         name: annotatedPath,
-        label: getDisplayLabel(displayLabel, labelFn)
+        label: getDisplayLabel(displayLabel, labelFn),
+        created_at: asset.created_at
       })
     }
 
@@ -331,10 +337,16 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     if (toValue(options.isAssetMode) && assetData) {
       return filteredAssetItems.value
     }
+    // The "All" tab interleaves imported and generated media by recency rather
+    // than grouping by type, so the newest asset shows first regardless of
+    // origin.
+    const byRecency = sortAssets(
+      [...inputItems.value, ...outputItems.value],
+      'recent'
+    )
     return [
       ...(missingValueItem.value ? [missingValueItem.value] : []),
-      ...inputItems.value,
-      ...outputItems.value
+      ...byRecency
     ]
   })
 
