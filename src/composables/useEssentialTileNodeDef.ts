@@ -1,4 +1,5 @@
-import { computed } from 'vue'
+import { computed, toValue } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import type { EssentialPlaceholderTile } from '@/constants/essentialsPlaceholders'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -6,11 +7,11 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 const BLUEPRINT_PREFIX = 'SubgraphBlueprint.'
 
 export function useEssentialTileNodeDef(
-  getTile: () => EssentialPlaceholderTile
+  title: MaybeRefOrGetter<EssentialPlaceholderTile>
 ) {
   const nodeDefStore = useNodeDefStore()
   return computed(() => {
-    const name = getTile().nodeName
+    const name = toValue(title).nodeName
     if (!name) return undefined
     const byName = nodeDefStore.allNodeDefsByName[name]
     if (byName) return byName

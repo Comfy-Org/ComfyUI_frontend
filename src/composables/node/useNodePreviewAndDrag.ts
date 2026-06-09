@@ -1,5 +1,5 @@
-import type { CSSProperties, Ref } from 'vue'
-import { computed, ref } from 'vue'
+import type { CSSProperties, MaybeRefOrGetter, Ref } from 'vue'
+import { computed, ref, toValue } from 'vue'
 
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -10,7 +10,7 @@ const PREVIEW_MARGIN = 16
 
 export function useNodePreviewAndDrag(
   nodeDef: Ref<ComfyNodeDefImpl | undefined>,
-  panelRef?: Ref<HTMLElement | null>
+  panelRef?: MaybeRefOrGetter<HTMLElement | null>
 ) {
   const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
   const settingStore = useSettingStore()
@@ -56,7 +56,7 @@ export function useNodePreviewAndDrag(
 
     const target = e.currentTarget as HTMLElement
     const rect = target.getBoundingClientRect()
-    const horizontalRect = panelRef?.value?.getBoundingClientRect() ?? rect
+    const horizontalRect = toValue(panelRef)?.getBoundingClientRect() ?? rect
     const { left, viewportHeight } = calculatePreviewPosition(horizontalRect)
 
     let top = rect.top

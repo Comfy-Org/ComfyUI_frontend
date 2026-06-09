@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div ref="previewPanel">
     <div
       v-for="section in filteredSections"
       :id="`essentials-section-${section.key}`"
@@ -22,6 +22,7 @@
                 (t) => !t.media || mediaFilters[t.media]
               )"
               :key="index"
+              :preview-panel
               :tile="tile"
             />
           </div>
@@ -43,6 +44,7 @@
                 <EssentialNodePlaceholderCard
                   v-for="(tile, index) in subgroup.tiles"
                   :key="index"
+                  :preview-panel
                   :tile="tile"
                 />
               </div>
@@ -55,7 +57,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
 import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
 import type { EssentialPlaceholderSection } from '@/constants/essentialsPlaceholders'
@@ -66,6 +68,7 @@ import EssentialNodePlaceholderCard from './EssentialNodePlaceholderCard.vue'
 const { searchQuery = '' } = defineProps<{
   searchQuery?: string
 }>()
+const previewPanel = useTemplateRef('previewPanel')
 
 const mediaFilters = defineModel<Record<EssentialsMediaType, boolean>>(
   'mediaFilters',
