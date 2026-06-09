@@ -4,13 +4,8 @@ import { test } from './fixtures/blockExternalMedia'
 
 const WINDOWS_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-
-/** Desktop UA that matches neither Windows nor Mac — triggers the fallback. */
 const LINUX_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
-
-/** Mobile UAs: users can't install a desktop build, so neither the single
- *  CTA nor the fallback should appear — only the GitHub link. */
 const IPHONE_UA =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 
@@ -75,8 +70,6 @@ test.describe('Download page @smoke', () => {
       })
     })
 
-    // Both fallback buttons reuse the standard "DOWNLOAD DESKTOP" template
-    // — they're distinguished by href, not label.
     const windowsBtn = hero.locator(
       'a[href="https://download.comfy.org/windows/nsis/x64"]'
     )
@@ -89,7 +82,6 @@ test.describe('Download page @smoke', () => {
     await expect(macBtn).toBeVisible()
     await expect(macBtn).toHaveText(/DOWNLOAD DESKTOP/i)
 
-    // Exactly the two fallback buttons — no third stray detected CTA.
     await expect(
       hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
     ).toHaveCount(2)
@@ -112,8 +104,6 @@ test.describe('Download page @smoke', () => {
     await expect(
       hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
     ).toHaveCount(0)
-
-    // GitHub install link is the only path that still applies — keep it.
     await expect(
       hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
     ).toBeVisible()

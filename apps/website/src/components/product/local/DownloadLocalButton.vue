@@ -28,9 +28,6 @@ interface ButtonSpec {
   icon: string
 }
 
-/** One spec per button to render. Single entry for the detected case; two
- *  entries (Windows + Mac) for the fallback. Drives a single `v-for` so the
- *  detected and fallback buttons stay visually identical. */
 const buttons = computed<ButtonSpec[]>(() => {
   if (platform.value) {
     return [

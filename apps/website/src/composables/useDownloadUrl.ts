@@ -25,8 +25,6 @@ function detectPlatform(ua: string): DetectedPlatform {
 export function useDownloadUrl() {
   const platform = ref<DetectedPlatform>(null)
   const detected = ref(false)
-  // Mobile users can't install a desktop build — keep them on the
-  // GitHub-install path instead of showing dmg/exe buttons that won't run.
   const isMobileUa = ref(false)
 
   const downloadUrl = computed(() => {
@@ -35,9 +33,6 @@ export function useDownloadUrl() {
     return externalLinks.github
   })
 
-  /** True only when the UA check ran, found no match, AND the user is on a
-   *  desktop UA. Drives the Windows+Mac fallback so users on Linux or with
-   *  privacy-stripped UAs aren't stranded with nothing to click. */
   const showFallback = computed(
     () => detected.value && !platform.value && !isMobileUa.value
   )
