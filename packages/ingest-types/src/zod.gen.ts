@@ -1534,7 +1534,8 @@ export const zAsset = z.object({
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
   last_access_time: z.string().datetime().optional(),
-  is_immutable: z.boolean().optional()
+  is_immutable: z.boolean().optional(),
+  file_path: z.string().nullish()
 })
 
 /**
@@ -1562,7 +1563,8 @@ export const zAssetUpdated = z.object({
   mime_type: z.string().optional(),
   user_metadata: z.record(z.unknown()).optional(),
   job_id: z.string().uuid().nullish(),
-  updated_at: z.string().datetime()
+  updated_at: z.string().datetime(),
+  file_path: z.string().nullish()
 })
 
 /**
@@ -1965,7 +1967,8 @@ export const zAssetWritable = z.object({
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
   last_access_time: z.string().datetime().optional(),
-  is_immutable: z.boolean().optional()
+  is_immutable: z.boolean().optional(),
+  file_path: z.string().nullish()
 })
 
 /**
@@ -2297,13 +2300,15 @@ export const zCreateAssetData = z.object({
 })
 
 /**
- * Asset created successfully
+ * Asset already existed for this user (deduplicated by content hash); the
+ * existing asset is returned with created_new=false.
+ *
  */
 export const zCreateAssetResponse = zAssetCreated
 
 export const zCreateAssetFromHashData = z.object({
   body: z.object({
-    hash: z.string().regex(/^(blake3|sha256):[a-f0-9]{64}$/),
+    hash: z.string().regex(/^blake3:[a-f0-9]{64}$/),
     name: z.string().optional(),
     tags: z.array(z.string()).min(1),
     mime_type: z.string().optional(),
@@ -2314,7 +2319,9 @@ export const zCreateAssetFromHashData = z.object({
 })
 
 /**
- * Asset reference created successfully
+ * Asset reference already existed for this user (deduplicated by content
+ * hash); the existing asset is returned with created_new=false.
+ *
  */
 export const zCreateAssetFromHashResponse = zAssetCreated
 
