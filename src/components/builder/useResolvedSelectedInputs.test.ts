@@ -7,7 +7,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
-import type { WidgetId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
 
 import { useResolvedSelectedInputs } from './useResolvedSelectedInputs'
 

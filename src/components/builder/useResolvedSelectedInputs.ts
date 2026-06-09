@@ -7,8 +7,8 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputWidgetConfig } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
-import type { WidgetId } from '@/world/entityIds'
-import { isWidgetId, parseWidgetId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
+import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 
 export type ResolvedSelection =
   | {

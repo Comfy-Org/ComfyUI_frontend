@@ -31,7 +31,7 @@ import {
 } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import type { WidgetId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {

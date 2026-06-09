@@ -4,7 +4,7 @@ import { computed } from 'vue'
 
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useAppModeStore } from '@/stores/appModeStore'
-import type { WidgetId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { widgetId, name } = defineProps<{

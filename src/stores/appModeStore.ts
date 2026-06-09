@@ -25,8 +25,8 @@ import {
   resolveNode,
   resolveNodeWidget
 } from '@/utils/litegraphUtil'
-import type { WidgetId } from '@/world/entityIds'
-import { isWidgetId, parseWidgetId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
+import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 
 function findWidgetByEntityId(
   rootGraph: LGraph,

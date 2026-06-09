@@ -41,7 +41,7 @@ import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuara
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { widgetId } from '@/world/entityIds'
+import { widgetId } from '@/types/widgetId'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'

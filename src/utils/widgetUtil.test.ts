@@ -8,7 +8,7 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { getWidgetDefaultValue, renameWidget } from '@/utils/widgetUtil'
-import type { WidgetId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 describe('getWidgetDefaultValue', () => {

@@ -14,7 +14,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/world/entityIds'
+import { widgetId } from '@/types/widgetId'
 
 import TabSubgraphInputs from './TabSubgraphInputs.vue'
 

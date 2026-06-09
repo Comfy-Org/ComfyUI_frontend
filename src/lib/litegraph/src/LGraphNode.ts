@@ -96,11 +96,9 @@ import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
 
-import type { NodeId } from '@/world/entityIds'
-
 // #region Types
 
-export type { NodeId }
+export type NodeId = number | string
 
 export type NodeProperty = string | number | boolean | object
 

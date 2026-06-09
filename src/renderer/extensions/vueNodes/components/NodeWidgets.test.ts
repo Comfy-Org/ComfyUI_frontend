@@ -12,7 +12,7 @@ import type {
 } from '@/composables/graph/useGraphNodeManager'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/world/entityIds'
+import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
 

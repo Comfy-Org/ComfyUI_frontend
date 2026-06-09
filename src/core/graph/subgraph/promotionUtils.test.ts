@@ -13,7 +13,7 @@ import {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { WidgetId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
 
 function promotedInputNames(host: {
   inputs: Array<{ widgetId?: unknown; name: string }>

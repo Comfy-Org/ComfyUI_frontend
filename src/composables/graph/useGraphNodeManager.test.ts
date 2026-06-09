@@ -5,7 +5,7 @@ import { computed, nextTick, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { widgetId } from '@/world/entityIds'
+import { widgetId } from '@/types/widgetId'
 import {
   createTestSubgraph,
   createTestSubgraphNode

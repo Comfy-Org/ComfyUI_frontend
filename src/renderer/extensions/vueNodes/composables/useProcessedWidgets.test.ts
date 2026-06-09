@@ -13,7 +13,7 @@ import {
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/world/entityIds'
+import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
 
