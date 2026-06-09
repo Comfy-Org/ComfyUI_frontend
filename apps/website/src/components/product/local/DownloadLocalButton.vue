@@ -26,6 +26,7 @@ interface ButtonSpec {
   key: string
   href: string
   icon: string
+  ariaLabel?: string
 }
 
 const buttons = computed<ButtonSpec[]>(() => {
@@ -39,9 +40,20 @@ const buttons = computed<ButtonSpec[]>(() => {
     ]
   }
   if (showFallback.value) {
+    const label = t('download.hero.downloadLocal', locale)
     return [
-      { key: 'windows', href: downloadUrls.windows, icon: ICONS.windows },
-      { key: 'mac', href: downloadUrls.macArm, icon: ICONS.mac }
+      {
+        key: 'windows',
+        href: downloadUrls.windows,
+        icon: ICONS.windows,
+        ariaLabel: `${label} — Windows`
+      },
+      {
+        key: 'mac',
+        href: downloadUrls.macArm,
+        icon: ICONS.mac,
+        ariaLabel: `${label} — macOS`
+      }
     ]
   }
   return []
@@ -56,6 +68,7 @@ const buttons = computed<ButtonSpec[]>(() => {
     target="_blank"
     size="lg"
     :class="customClass"
+    :aria-label="btn.ariaLabel"
   >
     <span class="inline-flex items-center gap-2">
       <img

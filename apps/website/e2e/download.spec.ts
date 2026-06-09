@@ -103,7 +103,7 @@ test.describe('Download page @smoke', () => {
 
     await expect(
       hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
-    ).toHaveCount(0)
+    ).toBeHidden()
     await expect(
       hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
     ).toBeVisible()

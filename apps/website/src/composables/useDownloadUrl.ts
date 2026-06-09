@@ -44,5 +44,5 @@ export function useDownloadUrl() {
     detected.value = true
   })
 
-  return { downloadUrl, platform, detected, showFallback }
+  return { downloadUrl, platform, showFallback }
 }
