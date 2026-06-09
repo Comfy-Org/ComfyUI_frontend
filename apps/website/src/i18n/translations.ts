@@ -174,8 +174,8 @@ const translations = {
     'zh-CN': '掌控每个模型、每个节点、每个步骤、每个输出。'
   },
   'products.local.title': {
-    en: 'Comfy\nLocal',
-    'zh-CN': 'Comfy\n本地版'
+    en: 'Comfy\nDesktop',
+    'zh-CN': 'Comfy\n桌面版'
   },
   'products.local.description': {
     en: 'Run ComfyUI on your own hardware.',
