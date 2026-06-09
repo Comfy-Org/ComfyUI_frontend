@@ -25,6 +25,43 @@ describe('ComfyApi event listener error isolation', () => {
     expect(calls).toEqual(['a', 'b'])
     expect(warn).toHaveBeenCalledOnce()
     expect(String(warn.mock.calls[0][0])).toContain('reconnected')
+    // The thrown error itself is logged (second arg) for debugging.
+    expect(warn.mock.calls[0][1]).toBeInstanceOf(Error)
+  })
+
+  it('preserves the native `this` binding when invoking listeners', () => {
+    const api = new ComfyApi()
+    let receivedThis: unknown
+    api.addEventListener('reconnected', function (this: unknown) {
+      receivedThis = this
+    })
+    api.dispatchCustomEvent('reconnected')
+    // Native EventTarget binds `this` to the target; the wrapper must too.
+    expect(receivedThis).toBe(api)
+  })
+
+  it('guards async listener rejections and logs the error object', async () => {
+    const api = new ComfyApi()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const err = new Error('async boom')
+
+    api.addEventListener('reconnected', () => Promise.reject(err))
+    api.dispatchCustomEvent('reconnected')
+
+    await vi.waitFor(() => expect(warn).toHaveBeenCalled())
+    expect(warn.mock.calls[0][1]).toBe(err)
+  })
+
+  it('supports EventListenerObject ({ handleEvent }) listeners', () => {
+    const api = new ComfyApi()
+    const handleEvent = vi.fn()
+
+    api.addEventListener('reconnected', {
+      handleEvent
+    } as unknown as () => void)
+    api.dispatchCustomEvent('reconnected')
+
+    expect(handleEvent).toHaveBeenCalledOnce()
   })
 
   it('logs at warn, not error (RUM collects console.error by default)', () => {

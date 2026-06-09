@@ -323,7 +323,10 @@ export class ComfyApi extends EventTarget {
    * {@link removeEventListener} can match the wrapper installed by
    * {@link addEventListener}. Keyed weakly so wrappers are GC'd with listeners.
    */
-  private _listenerWrappers = new WeakMap<EventListener, EventListener>()
+  private _listenerWrappers = new WeakMap<
+    EventListenerOrEventListenerObject,
+    EventListener
+  >()
   api_host: string
   api_base: string
   /**
@@ -487,23 +490,54 @@ export class ComfyApi extends EventTarget {
    * purpose: RUM collects `console.error` by default, which would re-introduce
    * the noise this guard removes.
    */
-  private wrapListener(callback: EventListener | null): EventListener | null {
+  private wrapListener(
+    callback: EventListenerOrEventListenerObject | null
+  ): EventListenerOrEventListenerObject | null {
     if (!callback) return callback
     let wrapped = this._listenerWrappers.get(callback)
     if (!wrapped) {
-      wrapped = (event: Event) => {
+      const logError = (event: Event, error: unknown) =>
+        console.warn(
+          `[ComfyApi] Uncaught error in "${event.type}" event listener:`,
+          error
+        )
+      // Regular function (not arrow) so the listener keeps the native
+      // `this === currentTarget` binding that EventTarget provides.
+      wrapped = function (this: unknown, event: Event) {
         try {
-          callback(event)
+          const result: unknown =
+            typeof callback === 'function'
+              ? callback.call(this, event)
+              : callback.handleEvent(event)
+          // Async listeners: route a rejected promise through the same guard so
+          // it does not escape as an unhandled rejection (which RUM also logs).
+          if (
+            result != null &&
+            typeof (result as PromiseLike<unknown>).then === 'function'
+          ) {
+            void (result as Promise<unknown>).catch((error: unknown) =>
+              logError(event, error)
+            )
+          }
         } catch (error) {
-          console.warn(
-            `[ComfyApi] Uncaught error in "${event.type}" event listener (likely a custom node):`,
-            error
-          )
+          logError(event, error)
         }
       }
       this._listenerWrappers.set(callback, wrapped)
     }
     return wrapped
+  }
+
+  /**
+   * Looks up the guarded wrapper for a listener without creating one — used on
+   * the remove path so a never-registered callback does not leave a stray
+   * WeakMap entry. Falls back to the original callback (a harmless no-op).
+   */
+  private getWrappedListener(
+    callback: EventListenerOrEventListenerObject | null
+  ): EventListenerOrEventListenerObject | null {
+    if (!callback) return callback
+    return this._listenerWrappers.get(callback) ?? callback
   }
 
   override addEventListener<TEvent extends keyof ApiEvents>(
@@ -527,7 +561,7 @@ export class ComfyApi extends EventTarget {
   ): void {
     super.removeEventListener(
       type,
-      this.wrapListener(callback as EventListener),
+      this.getWrappedListener(callback as EventListener),
       options
     )
   }
@@ -552,7 +586,7 @@ export class ComfyApi extends EventTarget {
   ) {
     super.removeEventListener(
       type,
-      this.wrapListener(callback as EventListener),
+      this.getWrappedListener(callback as EventListener),
       options
     )
   }
