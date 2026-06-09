@@ -202,7 +202,6 @@ export interface ShareFlowMetadata {
 export interface ShareLinkOpenedMetadata {
   share_id: string
   is_authenticated: boolean
-  is_new_user?: boolean
 }
 
 /**
