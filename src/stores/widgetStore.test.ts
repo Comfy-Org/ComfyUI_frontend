@@ -41,16 +41,10 @@ describe('widgetStore', () => {
 
     it('does not throw when an extension returns null/undefined widgets', () => {
       const store = useWidgetStore()
-      // A misbehaving extension can resolve getCustomWidgets() to nullish even
-      // though the type says it returns a record. This must not break app init.
-      expect(() =>
-        store.registerCustomWidgets(
-          undefined as unknown as Record<string, never>
-        )
-      ).not.toThrow()
-      expect(() =>
-        store.registerCustomWidgets(null as unknown as Record<string, never>)
-      ).not.toThrow()
+      // Regression: a misbehaving extension can resolve getCustomWidgets() to
+      // nullish, which must not break app init.
+      expect(() => store.registerCustomWidgets(undefined)).not.toThrow()
+      expect(() => store.registerCustomWidgets(null)).not.toThrow()
     })
   })
 
