@@ -56,40 +56,35 @@
 import { computed, useTemplateRef } from 'vue'
 
 import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
-import type { EssentialPlaceholderSection } from '@/constants/essentialsPlaceholders'
+import type {
+  EssentialPlaceholderSection,
+  EssentialPlaceholderTile
+} from '@/constants/essentialsPlaceholders'
 import { ESSENTIAL_PLACEHOLDER_SECTIONS } from '@/constants/essentialsPlaceholders'
 
 import EssentialNodePlaceholderCard from './EssentialNodePlaceholderCard.vue'
 
-const { searchQuery = '' } = defineProps<{
-  searchQuery?: string
-}>()
+const { searchQuery = '' } = defineProps<{ searchQuery?: string }>()
 const previewPanel = useTemplateRef('previewPanel')
 
 const mediaFilters = defineModel<Record<EssentialsMediaType, boolean>>(
   'mediaFilters',
-  {
-    required: true
-  }
+  { required: true }
 )
 
-const normalizedQuery = computed(() => searchQuery.trim().toLowerCase())
-
 const filteredSections = computed<EssentialPlaceholderSection[]>(() => {
-  const q = normalizedQuery.value
-  if (!q) return ESSENTIAL_PLACEHOLDER_SECTIONS
-  const matches = (label: string) => label.toLowerCase().includes(q)
+  const query = searchQuery.trim().toLowerCase()
+  if (!query) return ESSENTIAL_PLACEHOLDER_SECTIONS
+  const matchesQuery = (tile: EssentialPlaceholderTile) =>
+    tile.label.toLowerCase().includes(query)
   return ESSENTIAL_PLACEHOLDER_SECTIONS.flatMap<EssentialPlaceholderSection>(
     (section) => {
       if (section.tiles?.length) {
-        const tiles = section.tiles.filter((t) => matches(t.label))
+        const tiles = section.tiles.filter(matchesQuery)
         return tiles.length ? [{ ...section, tiles }] : []
       }
       const subgroups = section.subgroups
-        ?.map((sg) => ({
-          ...sg,
-          tiles: sg.tiles.filter((t) => matches(t.label))
-        }))
+        ?.map((sg) => ({ ...sg, tiles: sg.tiles.filter(matchesQuery) }))
         .filter((sg) => sg.tiles.length)
       return subgroups?.length ? [{ ...section, subgroups }] : []
     }

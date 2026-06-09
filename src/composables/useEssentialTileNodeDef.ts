@@ -4,6 +4,7 @@ import type { MaybeRefOrGetter } from 'vue'
 import type { EssentialPlaceholderTile } from '@/constants/essentialsPlaceholders'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
+// FIXME: Move all uses of SubgraphBlueprint to a shared source
 const BLUEPRINT_PREFIX = 'SubgraphBlueprint.'
 
 export function useEssentialTileNodeDef(

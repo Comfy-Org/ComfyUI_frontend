@@ -4195,19 +4195,7 @@
     "poseToVideo": "Pose to video",
     "cannyToVideo": "Canny to video",
     "depthToVideo": "Depth to video",
-    "jumpTo": "Jump to",
-    "devPicker": {
-      "subgroupGap": "Subgroup gap",
-      "sectionColor": "Section color",
-      "subsectionColor": "Subsection color",
-      "sectionSize": "Section size",
-      "subsectionSize": "Subsection size",
-      "tileColumns": "Tile columns",
-      "jumpToMenu": "Jump to menu",
-      "collapsible": "Collapsible",
-      "on": "On",
-      "off": "Off"
-    }
+    "jumpTo": "Jump to"
   },
   "homePlaceholder": {
     "teamComfy": "Team Comfy"

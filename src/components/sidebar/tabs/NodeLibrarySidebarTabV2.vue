@@ -112,11 +112,9 @@
                               `sideToolbar.nodeLibraryTab.filterOptions.${category}`
                             )
                           }}</span>
-                          <span class="size-4 shrink-0">
-                            <DropdownMenuItemIndicator>
-                              <i class="icon-[lucide--check] size-4" />
-                            </DropdownMenuItemIndicator>
-                          </span>
+                          <DropdownMenuItemIndicator class="size-4 shrink-0">
+                            <i class="icon-[lucide--check]" />
+                          </DropdownMenuItemIndicator>
                         </DropdownMenuCheckboxItem>
                       </template>
                     </template>
@@ -146,11 +144,9 @@
                           :class="itemClass"
                         >
                           <span class="flex-1">{{ $t(option.label) }}</span>
-                          <span class="size-4 shrink-0">
-                            <DropdownMenuItemIndicator>
-                              <i class="icon-[lucide--check] size-4" />
-                            </DropdownMenuItemIndicator>
-                          </span>
+                          <DropdownMenuItemIndicator class="size-4 shrink-0">
+                            <i class="icon-[lucide--check]" />
+                          </DropdownMenuItemIndicator>
                         </DropdownMenuRadioItem>
                       </DropdownMenuRadioGroup>
                     </template>
@@ -547,6 +543,7 @@ async function scrollToId(id: string, marginTop: number) {
     container.scrollTop -
     marginTop
   smoothScrollTo(container, top)
+  //headerTop.value = Math.min(0, titleTabsRef.value?.offsetHeight - top)
 }
 
 const STICKY_SEARCH_HEIGHT = 65
