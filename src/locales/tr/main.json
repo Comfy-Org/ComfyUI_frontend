@@ -1282,6 +1282,15 @@
         "toastMessageWithTypes": "{nodeName} adlı düğümün {inputName} girişi {expectedType} bekliyor, ancak bağlı çıkış {receivedType}.",
         "toastTitle": "Geçersiz bağlantı"
       },
+      "unknown_validation_error": {
+        "details": "{nodeName} tanınmayan bir doğrulama hatası döndürdü: {errorType}",
+        "detailsWithRawDetails": "{nodeName} tanınmayan bir doğrulama hatası döndürdü ({errorType}): {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Bir düğüm, ComfyUI'nin tanımadığı bir doğrulama hatası döndürdü.",
+        "title": "Doğrulama başarısız",
+        "toastMessage": "{nodeName} tanınmayan bir doğrulama hatası döndürdü.",
+        "toastTitle": "Doğrulama başarısız"
+      },
       "value_bigger_than_max": {
         "details": "{nodeName} için {inputName} değeri maksimumun üstünde.",
         "detailsWithValue": "{nodeName} adlı düğümün {inputName} girişi için {receivedValue} değeri maksimum {maxValue} değerinin üstünde.",
@@ -1485,6 +1494,7 @@
     "deleteImage": "Görseli sil",
     "deprecated": "ESKİ",
     "description": "Açıklama",
+    "details": "Detaylar",
     "devOnly": "YALNIZCA GELİŞTİRİCİ",
     "devices": "Cihazlar",
     "disableAll": "Tümünü Devre Dışı Bırak",
@@ -1574,6 +1584,7 @@
     "jobIdCopied": "İş kimliği panoya kopyalandı",
     "keybinding": "Tuş Ataması",
     "keybindingAlreadyExists": "Tuş ataması zaten mevcut:",
+    "keybindingListAriaLabel": "Kısayol Tuşları: {combos}",
     "keybindingPresets": {
       "default": "Varsayılan Ön Ayar",
       "deletePreset": "Ön ayarı sil",
@@ -1624,6 +1635,7 @@
     "mostRelevant": "En alakalı",
     "multiSelectDropdown": "Çoklu seçim açılır menüsü",
     "nMoreKeybindings": "+ {count} tane daha",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "Ad",
     "newFolder": "Yeni Klasör",
     "next": "İleri",
@@ -2996,6 +3008,7 @@
     "errorHelp": "Daha fazla yardım için {github} veya {support}",
     "errorHelpGithub": "bir GitHub sorunu gönderin",
     "errorHelpSupport": "destek ekibimizle iletişime geçin",
+    "errorLog": "Hata günlüğü",
     "errors": "Hatalar",
     "executionErrorOccurred": "Çalıştırma sırasında bir hata oluştu. Detaylar için Hatalar sekmesini kontrol edin.",
     "fallbackGroupTitle": "Grup",
@@ -3030,10 +3043,12 @@
     "hideAdvancedShort": "Gelişmişi gizle",
     "hideInput": "Girdiyi gizle",
     "info": "Bilgi",
+    "infoFor": "{item} için Bilgi",
     "inputs": "GİRİŞLER",
     "inputsNone": "GİRİŞ YOK",
     "inputsNoneTooltip": "Düğümün girişi yok",
     "locateNode": "Düğümü tuvalde bul",
+    "locateNodeFor": "{item} için Düğümü Bul",
     "missingMedia": {
       "audio": "Ses",
       "cancelSelection": "Seçimi iptal et",

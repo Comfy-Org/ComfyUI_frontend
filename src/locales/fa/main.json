@@ -1282,6 +1282,15 @@
         "toastMessageWithTypes": "ورودی {inputName} در {nodeName} انتظار {expectedType} را دارد، اما خروجی متصل {receivedType} است.",
         "toastTitle": "اتصال نامعتبر"
       },
+      "unknown_validation_error": {
+        "details": "{nodeName} یک خطای اعتبارسنجی ناشناخته بازگرداند: {errorType}",
+        "detailsWithRawDetails": "{nodeName} یک خطای اعتبارسنجی ناشناخته بازگرداند ({errorType}): {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "یک node خطای اعتبارسنجی بازگرداند که توسط ComfyUI شناسایی نشد.",
+        "title": "اعتبارسنجی ناموفق بود",
+        "toastMessage": "{nodeName} یک خطای اعتبارسنجی ناشناخته بازگرداند.",
+        "toastTitle": "اعتبارسنجی ناموفق بود"
+      },
       "value_bigger_than_max": {
         "details": "{nodeName} دارای مقداری بیشتر از حداکثر برای {inputName} است.",
         "detailsWithValue": "مقدار {receivedValue} برای {inputName} در {nodeName} بیشتر از حداکثر {maxValue} است.",
@@ -1485,6 +1494,7 @@
     "deleteImage": "حذف تصویر",
     "deprecated": "منسوخ",
     "description": "توضیحات",
+    "details": "جزئیات",
     "devOnly": "فقط برای توسعه‌دهندگان",
     "devices": "دستگاه‌ها",
     "disableAll": "غیرفعال‌سازی همه",
@@ -1574,6 +1584,7 @@
     "jobIdCopied": "شناسه وظیفه در کلیپ‌بورد کپی شد",
     "keybinding": "کلید میانبر",
     "keybindingAlreadyExists": "کلید میانبر قبلاً وجود دارد در",
+    "keybindingListAriaLabel": "کلیدهای میانبر: {combos}",
     "keybindingPresets": {
       "default": "پیش‌تنظیم پیش‌فرض",
       "deletePreset": "حذف پیش‌تنظیم",
@@ -1624,6 +1635,7 @@
     "mostRelevant": "مرتبط‌ترین",
     "multiSelectDropdown": "لیست کشویی چندانتخابی",
     "nMoreKeybindings": "+ {count} بیشتر",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "نام",
     "newFolder": "پوشه جدید",
     "next": "بعدی",
@@ -2996,6 +3008,7 @@
     "errorHelp": "برای دریافت کمک بیشتر، {github} یا {support}",
     "errorHelpGithub": "ثبت یک issue در GitHub",
     "errorHelpSupport": "تماس با پشتیبانی ما",
+    "errorLog": "گزارش خطا",
     "errors": "خطاها",
     "executionErrorOccurred": "خطایی در حین اجرا رخ داد. برای جزئیات به تب خطاها مراجعه کنید.",
     "fallbackGroupTitle": "گروه",
@@ -3030,10 +3043,12 @@
     "hideAdvancedShort": "مخفی کردن پیشرفته",
     "hideInput": "مخفی کردن ورودی",
     "info": "اطلاعات",
+    "infoFor": "اطلاعات برای {item}",
     "inputs": "ورودی‌ها",
     "inputsNone": "بدون ورودی",
     "inputsNoneTooltip": "این نود ورودی ندارد",
     "locateNode": "یافتن node در canvas",
+    "locateNodeFor": "یافتن {item}",
     "missingMedia": {
       "audio": "صدا",
       "cancelSelection": "لغو انتخاب",

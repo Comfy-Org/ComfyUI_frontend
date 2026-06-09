@@ -1876,6 +1876,10 @@
       "0": {
         "name": "rgb_정수",
         "tooltip": null
+      },
+      "1": {
+        "name": "hex",
+        "tooltip": null
       }
     }
   },
@@ -15218,6 +15222,10 @@
       "megapixels": {
         "name": "메가픽셀",
         "tooltip": "목표 총 메가픽셀. 1.0 MP ≈ 1024×1024 (정사각형 기준)."
+      },
+      "multiple": {
+        "name": "배수",
+        "tooltip": "선택한 해상도를 설정할 때 결과의 가장 가까운 배수입니다."
       }
     },
     "outputs": {
