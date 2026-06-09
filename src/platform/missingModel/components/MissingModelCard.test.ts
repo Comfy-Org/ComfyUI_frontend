@@ -23,10 +23,16 @@ vi.mock('./MissingModelRow.vue', () => ({
   }
 }))
 
-const mockIsCloud = vi.hoisted(() => ({ value: true }))
+const mockDistribution = vi.hoisted(() => ({
+  isCloud: true,
+  isDesktop: false
+}))
 vi.mock('@/platform/distribution/types', () => ({
   get isCloud() {
-    return mockIsCloud.value
+    return mockDistribution.isCloud
+  },
+  get isDesktop() {
+    return mockDistribution.isDesktop
   }
 }))
 
@@ -44,6 +50,10 @@ const i18n = createI18n({
             'Cloud environment does not support model imports for custom nodes.',
           unknownCategory: 'Unknown Category',
           downloadAll: 'Download all',
+          downloadAllToBrowser: 'Download all to browser',
+          browserDownloadHint:
+            'Browser downloads are saved on this device, not on a remote ComfyUI server.',
+          savePathHint: 'Expected server folder: {path}',
           refresh: 'Refresh',
           refreshing: 'Refreshing missing models.'
         }
@@ -126,7 +136,8 @@ function mountCard(
 
 describe('MissingModelCard', () => {
   beforeEach(() => {
-    mockIsCloud.value = true
+    mockDistribution.isCloud = true
+    mockDistribution.isDesktop = false
   })
 
   describe('Rendering & Props', () => {
@@ -243,11 +254,13 @@ describe('MissingModelCard', () => {
 
 describe('MissingModelCard (OSS)', () => {
   beforeEach(() => {
-    mockIsCloud.value = false
+    mockDistribution.isCloud = false
+    mockDistribution.isDesktop = false
   })
 
   afterEach(() => {
-    mockIsCloud.value = true
+    mockDistribution.isCloud = true
+    mockDistribution.isDesktop = false
   })
 
   it('shows directory name instead of "Import Not Supported" for unsupported groups', () => {
@@ -284,8 +297,35 @@ describe('MissingModelCard (OSS)', () => {
       missingModelGroups: [makeGroup({ withDownloadUrls: true })]
     })
 
-    expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
+    expect(
+      screen.getByRole('button', { name: /Download all to browser/ })
+    ).toBeVisible()
     expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible()
+  })
+
+  it('explains browser downloads and shows the expected server folder', () => {
+    mountCard({
+      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+    })
+
+    expect(
+      screen.getByTestId('missing-model-browser-download-hint')
+    ).toHaveTextContent('not on a remote ComfyUI server')
+    expect(screen.getByTestId('missing-model-path-hint')).toHaveTextContent(
+      'Expected server folder: ComfyUI/models/checkpoints/'
+    )
+  })
+
+  it('keeps the original bulk label in desktop builds', () => {
+    mockDistribution.isDesktop = true
+    mountCard({
+      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
+    })
+
+    expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
+    expect(
+      screen.queryByTestId('missing-model-browser-download-hint')
+    ).not.toBeInTheDocument()
   })
 
   it('hides bulk actions when no model is downloadable', () => {
