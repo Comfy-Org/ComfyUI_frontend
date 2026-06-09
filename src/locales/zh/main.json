@@ -1282,6 +1282,15 @@
         "toastMessageWithTypes": "{nodeName} 的 {inputName} 输入需要 {expectedType}，但连接的输出为 {receivedType}。",
         "toastTitle": "无效连接"
       },
+      "unknown_validation_error": {
+        "details": "{nodeName} 返回了无法识别的验证错误：{errorType}",
+        "detailsWithRawDetails": "{nodeName} 返回了无法识别的验证错误（{errorType}）：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "某个节点返回了 ComfyUI 无法识别的验证错误。",
+        "title": "验证失败",
+        "toastMessage": "{nodeName} 返回了无法识别的验证错误。",
+        "toastTitle": "验证失败"
+      },
       "value_bigger_than_max": {
         "details": "{nodeName} 的 {inputName} 值高于最大值。",
         "detailsWithValue": "{nodeName} 的 {inputName} 输入值 {receivedValue} 高于最大值 {maxValue}。",
@@ -1485,6 +1494,7 @@
     "deleteImage": "删除图片",
     "deprecated": "已弃用",
     "description": "描述",
+    "details": "详情",
     "devOnly": "开发专用",
     "devices": "设备",
     "disableAll": "禁用全部",
@@ -1574,6 +1584,7 @@
     "jobIdCopied": "队列 ID 已复制到剪贴板",
     "keybinding": "按键绑定",
     "keybindingAlreadyExists": "快捷键已存在",
+    "keybindingListAriaLabel": "快捷键：{combos}",
     "keybindingPresets": {
       "default": "默认预设",
       "deletePreset": "删除预设",
@@ -1624,6 +1635,7 @@
     "mostRelevant": "最相关",
     "multiSelectDropdown": "多选下拉框",
     "nMoreKeybindings": "还有 + {count} 个",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "名称",
     "newFolder": "新文件夹",
     "next": "下一个",
@@ -2996,6 +3008,7 @@
     "errorHelp": "如需更多帮助，请{github}或{support}",
     "errorHelpGithub": "提交 GitHub 问题",
     "errorHelpSupport": "联系我们的支持团队",
+    "errorLog": "错误日志",
     "errors": "错误",
     "executionErrorOccurred": "执行过程中发生错误。请查看“错误”标签获取详情。",
     "fallbackGroupTitle": "分组",
@@ -3030,10 +3043,12 @@
     "hideAdvancedShort": "隐藏高级选项",
     "hideInput": "隐藏输入",
     "info": "信息",
+    "infoFor": "{item} 信息",
     "inputs": "输入",
     "inputsNone": "无输入",
     "inputsNoneTooltip": "节点没有输入",
     "locateNode": "在画布上定位节点",
+    "locateNodeFor": "定位 {item}",
     "missingMedia": {
       "audio": "音频",
       "cancelSelection": "取消选择",

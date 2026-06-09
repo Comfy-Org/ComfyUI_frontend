@@ -34,6 +34,7 @@ import type { ResolvedCatalogErrorMessage } from '@/platform/errorCatalog/types'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import { groupCandidatesByName } from '@/platform/missingModel/missingModelScan'
 import { groupCandidatesByMediaType } from '@/platform/missingMedia/missingMediaScan'
+import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import {
   resolveMissingErrorMessage,
   resolveRunErrorMessage
@@ -690,10 +691,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   function buildMissingMediaGroups(): ErrorGroup[] {
     if (!missingMediaGroups.value.length) return []
-    const totalItems = missingMediaGroups.value.reduce(
-      (count, group) => count + group.items.length,
-      0
-    )
+    const totalRows = countMissingMediaReferences(missingMediaGroups.value)
     return [
       {
         type: 'missing_media' as const,
@@ -702,7 +700,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         ...resolveMissingErrorMessage({
           kind: 'missing_media',
           groups: missingMediaGroups.value,
-          count: totalItems,
+          count: totalRows,
           isCloud
         })
       }
@@ -806,9 +804,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   function buildMissingMediaGroupsFiltered(): ErrorGroup[] {
     if (!filteredMissingMediaGroups.value.length) return []
-    const totalItems = filteredMissingMediaGroups.value.reduce(
-      (count, group) => count + group.items.length,
-      0
+    const totalRows = countMissingMediaReferences(
+      filteredMissingMediaGroups.value
     )
     return [
       {
@@ -818,7 +815,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         ...resolveMissingErrorMessage({
           kind: 'missing_media',
           groups: filteredMissingMediaGroups.value,
-          count: totalItems,
+          count: totalRows,
           isCloud
         })
       }

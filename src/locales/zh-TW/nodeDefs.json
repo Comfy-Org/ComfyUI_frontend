@@ -1876,6 +1876,10 @@
       "0": {
         "name": "rgb 整數值",
         "tooltip": null
+      },
+      "1": {
+        "name": "hex",
+        "tooltip": null
       }
     }
   },
@@ -15218,6 +15222,10 @@
       "megapixels": {
         "name": "百萬像素",
         "tooltip": "目標總百萬像素。1.0 MP ≈ 1024×1024（正方形）。"
+      },
+      "multiple": {
+        "name": "倍數",
+        "tooltip": "將所選解析度設為結果的最接近倍數。"
       }
     },
     "outputs": {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   resolveMissingErrorMessage,
+  resolveMissingMediaItemLabel,
   resolveRunErrorMessage
 } from './errorMessageResolver'
 import type { NodeValidationError } from './types'
@@ -1580,6 +1581,32 @@ describe('errorMessageResolver', () => {
   })
 
   it.for([
+    {
+      source: { nodeType: 'LoadImage', widgetName: 'image' },
+      displayItemLabel: 'Load Image - image'
+    },
+    {
+      source: {
+        nodeDisplayName: 'Custom Loader',
+        nodeType: 'LoadImage',
+        widgetName: 'image'
+      },
+      displayItemLabel: 'Custom Loader - image'
+    },
+    {
+      source: { nodeType: '', widgetName: '' },
+      displayItemLabel: 'This node - unknown input'
+    }
+  ] as const)(
+    'resolves missing media item labels from $source',
+    ({ source, displayItemLabel }) => {
+      expect(resolveMissingMediaItemLabel(source)).toEqual({
+        displayItemLabel
+      })
+    }
+  )
+
+  it.for([
     [
       'image',
       'LoadImage',
@@ -1648,6 +1675,44 @@ describe('errorMessageResolver', () => {
       })
     }
   )
+
+  it('summarizes a shared missing media file by affected node references', () => {
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_media',
+        groups: [
+          {
+            mediaType: 'image',
+            items: [
+              {
+                name: 'shared.png',
+                mediaType: 'image',
+                representative: {
+                  nodeId: '1',
+                  nodeType: 'LoadImage',
+                  widgetName: 'image',
+                  mediaType: 'image',
+                  name: 'shared.png',
+                  isMissing: true
+                },
+                referencingNodes: [
+                  { nodeId: '1', widgetName: 'image' },
+                  { nodeId: '2', widgetName: 'image' }
+                ]
+              }
+            ]
+          }
+        ],
+        count: 2,
+        isCloud: false
+      })
+    ).toMatchObject({
+      displayTitle: 'Missing Inputs (2)',
+      toastTitle: 'Missing media inputs',
+      toastMessage:
+        'Please select the missing media inputs before running this workflow.'
+    })
+  })
 
   it('summarizes multiple missing model and media items', () => {
     const modelGroups = missingModelGroups('a.safetensors', 'b.safetensors')
