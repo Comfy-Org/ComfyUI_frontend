@@ -1425,6 +1425,11 @@ export class ComfyApp {
         missingNodeTypes
       )
 
+      const effectiveShareId =
+        shareId ??
+        (workflow instanceof ComfyWorkflow
+          ? workflow.shareAttribution?.shareId
+          : undefined)
       const telemetryPayload = {
         missing_node_count: missingNodeTypes.length,
         missing_node_types: missingNodeTypes.map((node) =>
@@ -1432,14 +1437,14 @@ export class ComfyApp {
         ),
         missing_node_packs: groupMissingNodesByPack(missingNodeTypes),
         open_source: openSource ?? 'unknown',
-        ...(shareId ? { share_id: shareId } : {})
+        ...(effectiveShareId ? { share_id: effectiveShareId } : {})
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
       await useWorkflowService().afterLoadNewGraph(
         workflow,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
-        shareId ? { shareId } : undefined
+        effectiveShareId ? { shareId: effectiveShareId } : undefined
       )
 
       // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
