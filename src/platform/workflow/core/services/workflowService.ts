@@ -501,7 +501,9 @@ export const useWorkflowService = () => {
               ) ?? freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
-          loadedWorkflow.shareAttribution = shareAttribution
+          if (shareAttribution) {
+            loadedWorkflow.shareAttribution = shareAttribution
+          }
           loadedWorkflow.changeTracker.reset(workflowData)
           loadedWorkflow.changeTracker.restore()
           return
@@ -513,14 +515,18 @@ export const useWorkflowService = () => {
         workflowData
       )
       tempWorkflow.initialMode = freshLoadMode
-      tempWorkflow.shareAttribution = shareAttribution
+      if (shareAttribution) {
+        tempWorkflow.shareAttribution = shareAttribution
+      }
       trackIfEnteringApp(tempWorkflow)
       await workflowStore.openWorkflow(tempWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
-    loadedWorkflow.shareAttribution = shareAttribution
+    if (shareAttribution) {
+      loadedWorkflow.shareAttribution = shareAttribution
+    }
     if (loadedWorkflow.initialMode === undefined) {
       loadedWorkflow.initialMode = freshLoadMode
       trackIfEnteringApp(loadedWorkflow)

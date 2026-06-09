@@ -653,6 +653,26 @@ describe('useWorkflowService', () => {
 
       expect(tempWorkflow.shareAttribution).toEqual({ shareId: 'share-1' })
     })
+
+    it('preserves share attribution on repeated same-path loads', async () => {
+      existingWorkflow.shareAttribution = { shareId: 'share-1' }
+
+      await useWorkflowService().afterLoadNewGraph('repeat', {
+        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+      } as never)
+
+      expect(existingWorkflow.shareAttribution).toEqual({ shareId: 'share-1' })
+    })
+
+    it('preserves share attribution on workflow object reloads', async () => {
+      existingWorkflow.shareAttribution = { shareId: 'share-1' }
+
+      await useWorkflowService().afterLoadNewGraph(existingWorkflow, {
+        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+      } as never)
+
+      expect(existingWorkflow.shareAttribution).toEqual({ shareId: 'share-1' })
+    })
   })
 
   describe('per-workflow mode switching', () => {
