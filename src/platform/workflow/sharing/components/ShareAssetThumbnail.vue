@@ -28,10 +28,10 @@
 </template>
 
 <script setup lang="ts">
-import { useImage } from '@vueuse/core'
 import { computed } from 'vue'
 
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import { useImageQuiet } from '@/composables/useImageQuiet'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { name, previewUrl } = defineProps<{
@@ -63,5 +63,5 @@ const imageOptions = computed(() => ({
   src: normalizedPreviewUrl.value ?? ''
 }))
 
-const { isReady, isLoading, error } = useImage(imageOptions)
+const { isReady, isLoading, error } = useImageQuiet(imageOptions)
 </script>
