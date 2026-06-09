@@ -399,13 +399,18 @@ export const zCreateWorkflowVersionRequest = z.object({
 })
 
 /**
- * Offset/limit-based pagination metadata included in list responses.
+ * Pagination metadata included in list responses. Supports both legacy
+ * offset/limit pagination and cursor-based pagination. When cursor-based
+ * pagination is used, `next_cursor` is the primary pagination token and
+ * `offset`/`total` may be zero.
+ *
  */
 export const zPaginationInfo = z.object({
   offset: z.number().int().gte(0),
   limit: z.number().int().gte(1),
   total: z.number().int().gte(0),
-  has_more: z.boolean()
+  has_more: z.boolean(),
+  next_cursor: z.string().optional()
 })
 
 /**
@@ -2155,6 +2160,7 @@ export const zListJobsData = z.object({
       output_type: z.enum(['image', 'video', 'audio', '3d']).optional(),
       sort_by: z.enum(['create_time', 'execution_time']).optional(),
       sort_order: z.enum(['asc', 'desc']).optional(),
+      after: z.string().optional(),
       offset: z.number().int().gte(0).optional().default(0),
       limit: z.number().int().gte(1).lte(1000).optional().default(100)
     })

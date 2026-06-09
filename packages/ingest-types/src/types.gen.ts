@@ -666,11 +666,17 @@ export type WorkflowListResponse = {
 }
 
 /**
- * Offset/limit-based pagination metadata included in list responses.
+ * Pagination metadata included in list responses. Supports both legacy
+ * offset/limit pagination and cursor-based pagination. When cursor-based
+ * pagination is used, `next_cursor` is the primary pagination token and
+ * `offset`/`total` may be zero.
+ *
  */
 export type PaginationInfo = {
   /**
-   * Current offset (0-based)
+   * Current offset (0-based). Deprecated: use cursor-based pagination.
+   *
+   * @deprecated
    */
   offset: number
   /**
@@ -678,13 +684,20 @@ export type PaginationInfo = {
    */
   limit: number
   /**
-   * Total number of items matching filters
+   * Total number of items matching filters (may be 0 when using cursor pagination)
    */
   total: number
   /**
    * Whether more items are available beyond this page
    */
   has_more: boolean
+  /**
+   * Opaque cursor for the next page. Pass this value as the `after`
+   * query parameter on the next request. Empty or absent when there
+   * are no more results.
+   *
+   */
+  next_cursor?: string
 }
 
 /**
@@ -3917,7 +3930,20 @@ export type ListJobsData = {
      */
     sort_order?: 'asc' | 'desc'
     /**
-     * Pagination offset (0-based)
+     * Opaque cursor for keyset pagination. Pass the `next_cursor` value
+     * from a previous response to fetch the next page.
+     * Cursor pagination is supported only when `sort_by=create_time`
+     * (default). If `sort_by=execution_time`, `after` is ignored and
+     * offset/limit pagination is used.
+     * Cursors are opaque base64url payloads — clients should treat them
+     * as strings and not parse the contents.
+     *
+     */
+    after?: string
+    /**
+     * Pagination offset (0-based). Deprecated: prefer cursor-based pagination via `after`.
+     *
+     * @deprecated
      */
     offset?: number
     /**
@@ -3929,6 +3955,10 @@ export type ListJobsData = {
 }
 
 export type ListJobsErrors = {
+  /**
+   * Bad request (e.g. malformed pagination cursor).
+   */
+  400: ErrorResponse
   /**
    * Unauthorized - Authentication required
    */

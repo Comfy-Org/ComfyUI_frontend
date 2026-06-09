@@ -83,6 +83,8 @@
     "resetToDefault": "Reset to default",
     "removeKeybinding": "Remove keybinding",
     "nMoreKeybindings": "+ {count} more",
+    "nMoreKeybindingsCompact": "+ {count}",
+    "keybindingListAriaLabel": "Keybindings: {combos}",
     "customizeFolder": "Customize Folder",
     "icon": "Icon",
     "color": "Color",
