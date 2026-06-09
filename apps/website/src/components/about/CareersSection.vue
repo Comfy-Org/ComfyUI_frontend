@@ -32,7 +32,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
             {{ t('about.careers.label', locale) }}
           </SectionLabel>
           <h2
-            class="mt-4 text-3xl font-light text-primary-comfy-canvas lg:text-5xl"
+            class="text-primary-comfy-canvas mt-4 text-3xl font-light lg:text-5xl"
           >
             {{ t('about.careers.heading', locale) }}
           </h2>

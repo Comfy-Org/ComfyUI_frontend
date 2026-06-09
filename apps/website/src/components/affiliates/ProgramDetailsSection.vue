@@ -23,7 +23,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           data-testid="affiliate-program-details-table"
         >
           <thead>
-            <tr class="border-b border-primary-comfy-canvas/20">
+            <tr class="border-primary-comfy-canvas/20 border-b">
               <th
                 scope="col"
                 class="text-primary-comfy-yellow py-4 pr-6 text-xs font-bold tracking-widest uppercase"
@@ -42,15 +42,15 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
             <tr
               v-for="row in programDetailRows"
               :key="row.labelKey"
-              class="border-b border-primary-comfy-canvas/10"
+              class="border-primary-comfy-canvas/10 border-b"
             >
               <th
                 scope="row"
-                class="py-5 pr-6 text-base font-light text-primary-comfy-canvas"
+                class="text-primary-comfy-canvas py-5 pr-6 text-base font-light"
               >
                 {{ t(row.labelKey, locale) }}
               </th>
-              <td class="py-5 text-base text-primary-comfy-canvas/80">
+              <td class="text-primary-comfy-canvas/80 py-5 text-base">
                 {{ t(row.valueKey, locale) }}
               </td>
             </tr>
@@ -62,14 +62,14 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
         <div
           v-for="row in programDetailRows"
           :key="row.labelKey"
-          class="flex flex-col gap-1 border-b border-primary-comfy-canvas/10 pb-4"
+          class="border-primary-comfy-canvas/10 flex flex-col gap-1 border-b pb-4"
         >
           <dt
             class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
           >
             {{ t(row.labelKey, locale) }}
           </dt>
-          <dd class="text-base text-primary-comfy-canvas">
+          <dd class="text-primary-comfy-canvas text-base">
             {{ t(row.valueKey, locale) }}
           </dd>
         </div>

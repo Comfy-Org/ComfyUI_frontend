@@ -27,10 +27,10 @@ const audienceKeys: TranslationKey[] = [
       <li
         v-for="key in audienceKeys"
         :key="key"
-        class="flex items-start gap-4 text-base text-primary-comfy-canvas md:text-lg"
+        class="text-primary-comfy-canvas flex items-start gap-4 text-base md:text-lg"
       >
         <span
-          class="bg-primary-comfy-yellow mt-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-primary-comfy-ink"
+          class="bg-primary-comfy-yellow text-primary-comfy-ink mt-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold"
           aria-hidden="true"
         >
           ✓

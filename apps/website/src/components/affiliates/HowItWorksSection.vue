@@ -36,17 +36,17 @@ const steps: { titleKey: TranslationKey; bodyKey: TranslationKey }[] = [
       <li
         v-for="(step, index) in steps"
         :key="step.titleKey"
-        class="bg-transparency-white-t4 flex flex-col gap-4 rounded-4xl border border-primary-comfy-canvas/10 p-8"
+        class="bg-transparency-white-t4 border-primary-comfy-canvas/10 flex flex-col gap-4 rounded-4xl border p-8"
       >
         <span
           class="text-primary-comfy-yellow text-sm font-bold tracking-widest uppercase"
         >
           {{ index + 1 }}
         </span>
-        <h3 class="text-2xl font-light text-primary-comfy-canvas">
+        <h3 class="text-primary-comfy-canvas text-2xl font-light">
           {{ t(step.titleKey, locale) }}
         </h3>
-        <p class="text-sm text-primary-comfy-canvas/70">
+        <p class="text-primary-comfy-canvas/70 text-sm">
           {{ t(step.bodyKey, locale) }}
         </p>
       </li>

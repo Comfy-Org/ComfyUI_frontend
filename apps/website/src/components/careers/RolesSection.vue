@@ -90,10 +90,10 @@ function scrollToDepartment(deptKey: string) {
       <div class="flex flex-col gap-12 lg:flex-row lg:gap-20">
         <div class="shrink-0 lg:min-w-48">
           <div
-            class="sticky top-20 z-10 bg-primary-comfy-ink py-4 md:top-28 md:py-0"
+            class="bg-primary-comfy-ink sticky top-20 z-10 py-4 md:top-28 md:py-0"
           >
             <h2
-              class="text-3xl font-light text-primary-comfy-canvas md:text-4xl"
+              class="text-primary-comfy-canvas text-3xl font-light md:text-4xl"
             >
               {{ t('careers.roles.heading', locale) }}
             </h2>
@@ -133,14 +133,14 @@ function scrollToDepartment(deptKey: string) {
               :href="role.jobUrl"
               target="_blank"
               rel="noopener noreferrer"
-              class="border-primary-warm-gray/20 group flex items-center gap-4 border-b py-5 transition-colors duration-200 hover:border-primary-comfy-canvas"
+              class="border-primary-warm-gray/20 hover:border-primary-comfy-canvas group flex items-center gap-4 border-b py-5 transition-colors duration-200"
               data-testid="careers-role-link"
             >
               <div
                 class="flex min-w-0 flex-1 flex-col md:flex-row md:items-baseline md:gap-x-4"
               >
                 <span
-                  class="text-base font-medium text-primary-comfy-canvas md:text-lg"
+                  class="text-primary-comfy-canvas text-base font-medium md:text-lg"
                 >
                   {{ role.title }}
                 </span>
@@ -160,7 +160,7 @@ function scrollToDepartment(deptKey: string) {
                 class="bg-primary-comfy-yellow/0 group-hover:bg-primary-comfy-yellow relative grid size-7 shrink-0 place-items-center rounded-sm transition-colors duration-300 ease-out"
               >
                 <span
-                  class="bg-primary-comfy-yellow size-5 transition-colors duration-300 ease-out group-hover:bg-primary-comfy-ink"
+                  class="bg-primary-comfy-yellow group-hover:bg-primary-comfy-ink size-5 transition-colors duration-300 ease-out"
                   style="
                     mask: url('/icons/arrow-up-right.svg') center / contain
                       no-repeat;

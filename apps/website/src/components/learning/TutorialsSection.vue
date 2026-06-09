@@ -22,7 +22,7 @@ const activeTutorial = () =>
 <template>
   <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
     <h2
-      class="mb-12 text-4xl font-light tracking-tight text-primary-comfy-canvas lg:mb-16 lg:text-6xl"
+      class="text-primary-comfy-canvas mb-12 text-4xl font-light tracking-tight lg:mb-16 lg:text-6xl"
     >
       {{ t('learning.tutorials.heading', locale) }}
     </h2>
@@ -71,7 +71,7 @@ const activeTutorial = () =>
         <div class="flex flex-col space-y-3 p-4">
           <div class="flex items-center justify-between gap-4">
             <h3
-              class="text-sm/snug text-primary-comfy-canvas lg:text-base/snug"
+              class="text-primary-comfy-canvas text-sm/snug lg:text-base/snug"
             >
               {{ t('learning.tutorials.titlePrefix', locale) }}<wbr />
               {{ tutorial.title[locale] }}

@@ -22,7 +22,7 @@ const highlightKeys: TranslationKey[] = [
   >
     <div class="flex-1">
       <h1
-        class="text-4xl/tight font-light text-primary-comfy-canvas md:text-5xl/tight lg:text-6xl/tight"
+        class="text-primary-comfy-canvas text-4xl/tight font-light md:text-5xl/tight lg:text-6xl/tight"
       >
         {{ t('affiliate-landing.hero.heading', locale) }}
       </h1>
@@ -31,17 +31,17 @@ const highlightKeys: TranslationKey[] = [
       >
         {{ t('affiliate-landing.hero.subheading', locale) }}
       </p>
-      <p class="mt-6 max-w-xl text-base text-primary-comfy-canvas/80">
+      <p class="text-primary-comfy-canvas/80 mt-6 max-w-xl text-base">
         {{ t('affiliate-landing.hero.body', locale) }}
       </p>
       <ul class="mt-6 flex flex-col gap-3">
         <li
           v-for="key in highlightKeys"
           :key="key"
-          class="flex items-start gap-3 text-base text-primary-comfy-canvas"
+          class="text-primary-comfy-canvas flex items-start gap-3 text-base"
         >
           <span
-            class="bg-primary-comfy-yellow mt-1 inline-flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-bold text-primary-comfy-ink"
+            class="bg-primary-comfy-yellow text-primary-comfy-ink mt-1 inline-flex size-5 shrink-0 items-center justify-center rounded-full text-xs font-bold"
             aria-hidden="true"
           >
             ✓

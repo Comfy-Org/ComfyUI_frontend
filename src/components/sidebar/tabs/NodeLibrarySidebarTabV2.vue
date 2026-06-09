@@ -216,13 +216,12 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
 import { ESSENTIAL_PLACEHOLDER_SECTIONS } from '@/constants/essentialsPlaceholders'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import {
   DEFAULT_SORTING_ID,
   DEFAULT_TAB_ID,
   nodeOrganizationService
 } from '@/services/nodeOrganizationService'
-import { getProviderIcon } from '@/utils/categoryUtil'
-import { flattenTree, sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { buildNodeDefTree, useNodeDefStore } from '@/stores/nodeDefStore'
 import type {
@@ -236,6 +235,8 @@ import type {
   RenderedTreeExplorerNode,
   TreeNode
 } from '@/types/treeExplorerTypes'
+import { getProviderIcon } from '@/utils/categoryUtil'
+import { flattenTree, sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 
 import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
 import EssentialNodesPlaceholderPanel from './nodeLibrary/EssentialNodesPlaceholderPanel.vue'
@@ -387,6 +388,8 @@ const activeNodes = computed(() =>
     ? nodeDefStore.visibleNodeDefs
     : filteredNodeDefs.value
 )
+
+useSearchQueryTracking('node_sidebar', searchQuery, filteredNodeDefs)
 
 const hasNoMatches = computed(
   () => searchQuery.value.length > 0 && filteredNodeDefs.value.length === 0

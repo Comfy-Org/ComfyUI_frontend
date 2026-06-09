@@ -47,7 +47,7 @@ const cards = excludeProduct
 
 <template>
   <section
-    class="max-w-9xl mx-auto bg-primary-comfy-ink px-0 py-20 lg:px-20 lg:py-24"
+    class="bg-primary-comfy-ink max-w-9xl mx-auto px-0 py-20 lg:px-20 lg:py-24"
   >
     <!-- Header -->
     <div class="flex flex-col items-center px-4 text-center">
@@ -55,11 +55,11 @@ const cards = excludeProduct
         {{ t(labelKey, locale) }}
       </SectionLabel>
       <h2
-        class="mt-4 text-4xl font-light whitespace-pre-line text-primary-comfy-canvas lg:text-5xl"
+        class="text-primary-comfy-canvas mt-4 text-4xl font-light whitespace-pre-line lg:text-5xl"
       >
         {{ t('products.heading', locale) }}
       </h2>
-      <p class="mt-4 text-sm text-primary-comfy-canvas/70">
+      <p class="text-primary-comfy-canvas/70 mt-4 text-sm">
         {{ t('products.subheading', locale) }}
       </p>
     </div>

@@ -56,7 +56,7 @@ const progressPercent = computed(() => `${progress.value * 100}%`)
         :key="i"
         class="bg-transparency-white-t4 flex w-full shrink-0 snap-start flex-col justify-between rounded-3xl p-8 lg:w-3/4 lg:p-12"
       >
-        <p class="text-2xl/relaxed font-light text-primary-comfy-canvas">
+        <p class="text-primary-comfy-canvas text-2xl/relaxed font-light">
           "{{ t(fb.quote, locale) }}"
         </p>
         <div class="mt-12">

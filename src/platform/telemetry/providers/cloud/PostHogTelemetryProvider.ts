@@ -14,9 +14,6 @@ import type {
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
-  ExecutionContext,
-  ExecutionErrorMetadata,
-  ExecutionSuccessMetadata,
   ExecutionTriggerSource,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
@@ -24,6 +21,7 @@ import type {
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
@@ -101,7 +99,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private eventQueue: QueuedEvent[] = []
   private pendingFirstAuthAt = new Map<string, string>()
   private isInitialized = false
-  private lastTriggerSource: ExecutionTriggerSource | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
   private desktopEntryProps: DesktopEntryProps | null = null
 
@@ -399,7 +396,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       is_app_mode: isAppMode.value
     }
 
-    this.lastTriggerSource = options?.trigger_source
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
   }
 
@@ -503,6 +499,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.NODE_SEARCH_RESULT_SELECTED, metadata)
   }
 
+  trackSearchQuery(metadata: SearchQueryMetadata): void {
+    this.trackEvent(TelemetryEvents.SEARCH_QUERY, metadata)
+  }
+
   trackNodeAdded(metadata: NodeAddedMetadata): void {
     this.trackEvent(TelemetryEvents.NODE_ADDED, metadata)
   }
@@ -525,24 +525,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
-  }
-
-  trackWorkflowExecution(): void {
-    const context = getExecutionContext()
-    const eventContext: ExecutionContext = {
-      ...context,
-      trigger_source: this.lastTriggerSource ?? 'unknown'
-    }
-    this.trackEvent(TelemetryEvents.EXECUTION_START, eventContext)
-    this.lastTriggerSource = undefined
-  }
-
-  trackExecutionError(metadata: ExecutionErrorMetadata): void {
-    this.trackEvent(TelemetryEvents.EXECUTION_ERROR, metadata)
-  }
-
-  trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
-    this.trackEvent(TelemetryEvents.EXECUTION_SUCCESS, metadata)
   }
 
   trackSettingChanged(metadata: SettingChangedMetadata): void {

@@ -17,7 +17,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       {{ t('affiliate-landing.assets.heading', locale) }}
       <template #subtitle>
         <p
-          class="mx-auto mt-4 max-w-2xl text-base text-primary-comfy-canvas/70"
+          class="text-primary-comfy-canvas/70 mx-auto mt-4 max-w-2xl text-base"
         >
           {{ t('affiliate-landing.assets.subheading', locale) }}
         </p>
@@ -29,11 +29,11 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <li
         v-for="asset in brandAssets"
         :key="asset.id"
-        class="bg-transparency-white-t4 flex flex-col overflow-hidden rounded-4xl border border-primary-comfy-canvas/10"
+        class="bg-transparency-white-t4 border-primary-comfy-canvas/10 flex flex-col overflow-hidden rounded-4xl border"
         :data-testid="`affiliate-asset-${asset.id}`"
       >
         <div
-          class="flex aspect-video items-center justify-center overflow-hidden bg-primary-comfy-ink/40 p-6"
+          class="bg-primary-comfy-ink/40 flex aspect-video items-center justify-center overflow-hidden p-6"
         >
           <img
             :src="asset.preview"
@@ -44,7 +44,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
           />
         </div>
         <div class="flex flex-1 flex-col gap-2 p-5">
-          <h3 class="text-base font-light text-primary-comfy-canvas">
+          <h3 class="text-primary-comfy-canvas text-base font-light">
             {{ t(asset.titleKey, locale) }}
           </h3>
           <a

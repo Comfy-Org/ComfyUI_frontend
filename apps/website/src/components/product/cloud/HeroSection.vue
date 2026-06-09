@@ -380,13 +380,13 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <ProductHeroBadge text="CLOUD" />
 
       <h1
-        class="mt-6 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
+        class="text-primary-comfy-canvas mt-6 text-3xl/tight font-light whitespace-pre-line md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"
       >
         {{ t('cloud.hero.heading', locale) }}
       </h1>
 
       <p
-        class="mt-6 max-w-lg text-sm text-primary-comfy-canvas lg:mt-6 lg:text-base"
+        class="text-primary-comfy-canvas mt-6 max-w-lg text-sm lg:mt-6 lg:text-base"
       >
         {{ t('cloud.hero.subtitle', locale) }}
       </p>

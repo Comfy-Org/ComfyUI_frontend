@@ -283,7 +283,7 @@ onUnmounted(() => {
     <div
       class="relative z-10 mt-17 w-full px-4 pb-16 lg:mt-0 lg:min-w-160 lg:flex-1 lg:translate-x-[10%] lg:px-20 lg:py-14"
     >
-      <ProductHeroBadge />
+      <ProductHeroBadge text="DESKTOP" />
 
       <h1
         class="mt-6 text-3xl/tight font-light whitespace-pre-line text-primary-comfy-canvas md:text-4xl/tight lg:max-w-2xl lg:text-5xl/tight"

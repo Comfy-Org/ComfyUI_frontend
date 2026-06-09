@@ -8,11 +8,11 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="border-y border-primary-comfy-canvas/10 px-6 py-10 text-center md:py-12"
+    class="border-primary-comfy-canvas/10 border-y px-6 py-10 text-center md:py-12"
     data-testid="affiliate-trust-band"
   >
     <p
-      class="text-sm tracking-wider text-primary-comfy-canvas uppercase md:text-base"
+      class="text-primary-comfy-canvas text-sm tracking-wider uppercase md:text-base"
     >
       {{ t('affiliate-landing.trust.label', locale) }}
     </p>

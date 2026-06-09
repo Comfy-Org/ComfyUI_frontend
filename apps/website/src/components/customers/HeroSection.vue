@@ -58,13 +58,13 @@ function handleLogoLoad() {
         </SectionLabel>
         <h1
           ref="headingRef"
-          class="mt-4 text-4xl/tight font-light text-primary-comfy-canvas lg:text-6xl"
+          class="text-primary-comfy-canvas mt-4 text-4xl/tight font-light lg:text-6xl"
         >
           {{ t('customers.hero.heading', locale) }}
         </h1>
         <p
           ref="bodyRef"
-          class="mt-6 max-w-lg text-base text-primary-comfy-canvas"
+          class="text-primary-comfy-canvas mt-6 max-w-lg text-base"
         >
           {{ t('customers.hero.body', locale) }}
         </p>

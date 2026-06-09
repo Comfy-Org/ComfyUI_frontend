@@ -21,7 +21,7 @@ const demoVideoPoster =
       <div class="flex flex-col gap-8">
         <div>
           <h2
-            class="text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
+            class="text-primary-comfy-canvas text-4xl font-light tracking-tight lg:text-6xl"
           >
             {{ t('learning.featured.title', locale) }}
           </h2>
@@ -31,7 +31,7 @@ const demoVideoPoster =
         </div>
 
         <p
-          class="max-w-md text-sm/relaxed text-primary-comfy-canvas lg:text-base"
+          class="text-primary-comfy-canvas max-w-md text-sm/relaxed lg:text-base"
         >
           {{ t('learning.featured.description', locale) }}
         </p>

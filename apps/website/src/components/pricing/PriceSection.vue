@@ -122,11 +122,11 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
     <!-- Header -->
     <div class="mx-auto mb-8 max-w-3xl text-center lg:mb-10">
       <h1
-        class="font-formula text-4xl font-light text-primary-comfy-canvas lg:text-5xl"
+        class="text-primary-comfy-canvas font-formula text-4xl font-light lg:text-5xl"
       >
         {{ t('pricing.title', locale) }}
       </h1>
-      <p class="mt-3 text-base text-primary-comfy-canvas">
+      <p class="text-primary-comfy-canvas mt-3 text-base">
         {{ t('pricing.subtitle', locale) }}
       </p>
     </div>
@@ -156,7 +156,7 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
               aria-hidden="true"
             />
             <span
-              class="bg-primary-comfy-yellow font-formula-narrow flex items-center px-2 text-sm font-bold tracking-wider text-primary-comfy-ink"
+              class="bg-primary-comfy-yellow font-formula-narrow text-primary-comfy-ink flex items-center px-2 text-sm font-bold tracking-wider"
             >
               <span class="ppformula-text-center">
                 {{ t('pricing.badge.popular', locale) }}
@@ -172,18 +172,18 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
         </div>
 
         <!-- Summary -->
-        <p class="px-6 text-sm text-primary-comfy-canvas">
+        <p class="text-primary-comfy-canvas px-6 text-sm">
           {{ t(plan.summaryKey, locale) }}
         </p>
 
         <!-- Price -->
         <div v-if="plan.priceKey" class="flex items-baseline gap-1 px-6 pt-2">
           <span
-            class="font-formula text-5xl font-light text-primary-comfy-canvas"
+            class="text-primary-comfy-canvas font-formula text-5xl font-light"
           >
             {{ t(plan.priceKey, locale) }}
           </span>
-          <span class="text-sm text-primary-comfy-canvas">
+          <span class="text-primary-comfy-canvas text-sm">
             {{ t('pricing.plan.period', locale) }}
           </span>
         </div>
@@ -192,7 +192,7 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
         <!-- Credits -->
         <p
           v-if="plan.creditsKey"
-          class="px-6 text-sm text-primary-comfy-canvas"
+          class="text-primary-comfy-canvas px-6 text-sm"
         >
           {{ t(plan.creditsKey, locale) }}
         </p>
@@ -201,7 +201,7 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
         <!-- Estimate -->
         <p
           v-if="plan.estimateKey"
-          class="px-6 text-xs text-primary-comfy-canvas/80"
+          class="text-primary-comfy-canvas/80 px-6 text-xs"
         >
           {{ t(plan.estimateKey, locale) }}
         </p>
@@ -211,13 +211,13 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
         <div v-if="plan.features.length" class="px-6 py-3">
           <p
             v-if="plan.featureIntroKey"
-            class="mb-2 text-sm font-semibold text-primary-comfy-canvas"
+            class="text-primary-comfy-canvas mb-2 text-sm font-semibold"
           >
             {{ t(plan.featureIntroKey, locale) }}
           </p>
           <p
             v-else
-            class="mb-2 text-sm font-semibold text-primary-comfy-canvas"
+            class="text-primary-comfy-canvas mb-2 text-sm font-semibold"
             aria-hidden="true"
           >
             &nbsp;
@@ -229,7 +229,7 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
               class="flex items-start gap-2"
             >
               <span class="text-primary-comfy-yellow mt-0.5 text-sm">✓</span>
-              <span class="text-sm text-primary-comfy-canvas">
+              <span class="text-primary-comfy-canvas text-sm">
                 {{ t(feature.text, locale) }}
               </span>
             </li>
@@ -269,7 +269,7 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
                 aria-hidden="true"
               />
               <span
-                class="bg-primary-comfy-yellow flex items-center px-2 text-[10px] font-bold tracking-wider text-primary-comfy-ink"
+                class="bg-primary-comfy-yellow text-primary-comfy-ink flex items-center px-2 text-[10px] font-bold tracking-wider"
               >
                 <span class="ppformula-text-center">
                   {{ t('pricing.badge.popular', locale) }}
@@ -287,13 +287,13 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
           <!-- Enterprise heading -->
           <h2
             v-if="plan.isEnterprise"
-            class="mt-3 text-2xl font-light text-primary-comfy-canvas"
+            class="text-primary-comfy-canvas mt-3 text-2xl font-light"
           >
             {{ t('pricing.enterprise.heading', locale) }}
           </h2>
 
           <!-- Summary -->
-          <p class="mt-2 text-sm text-primary-comfy-canvas">
+          <p class="text-primary-comfy-canvas mt-2 text-sm">
             {{ t(plan.summaryKey, locale) }}
           </p>
 
@@ -301,25 +301,25 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
           <template v-if="plan.priceKey">
             <div class="mt-6 flex items-baseline gap-1">
               <span
-                class="font-formula text-5xl font-light text-primary-comfy-canvas"
+                class="text-primary-comfy-canvas font-formula text-5xl font-light"
               >
                 {{ t(plan.priceKey, locale) }}
               </span>
-              <span class="text-sm text-primary-comfy-canvas/55">
+              <span class="text-primary-comfy-canvas/55 text-sm">
                 {{ t('pricing.plan.period', locale) }}
               </span>
             </div>
 
             <p
               v-if="plan.creditsKey"
-              class="mt-4 text-xs font-medium text-primary-comfy-canvas"
+              class="text-primary-comfy-canvas mt-4 text-xs font-medium"
             >
               {{ t(plan.creditsKey, locale) }}
             </p>
 
             <p
               v-if="plan.estimateKey"
-              class="mt-2 text-xs text-primary-comfy-canvas"
+              class="text-primary-comfy-canvas mt-2 text-xs"
             >
               {{ t(plan.estimateKey, locale) }}
             </p>
@@ -368,7 +368,7 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
     >
       <!-- Left side -->
       <div
-        class="rounded-4.5xl flex w-full flex-col items-start justify-between gap-8 bg-primary-comfy-ink p-8"
+        class="bg-primary-comfy-ink rounded-4.5xl flex w-full flex-col items-start justify-between gap-8 p-8"
       >
         <div>
           <span
@@ -377,11 +377,11 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
             {{ t(enterprisePlan.labelKey, locale) }}
           </span>
           <h2
-            class="mt-3 text-2xl font-light text-primary-comfy-canvas lg:text-3xl"
+            class="text-primary-comfy-canvas mt-3 text-2xl font-light lg:text-3xl"
           >
             {{ t('pricing.enterprise.heading', locale) }}
           </h2>
-          <p class="mt-3 text-sm text-primary-comfy-canvas">
+          <p class="text-primary-comfy-canvas mt-3 text-sm">
             {{ t(enterprisePlan.summaryKey, locale) }}
           </p>
         </div>
@@ -392,7 +392,7 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
     </div>
 
     <!-- Footnote -->
-    <p class="mt-12 text-xs text-primary-comfy-canvas/70">
+    <p class="text-primary-comfy-canvas/70 mt-12 text-xs">
       {{ t('pricing.footnote', locale) }}
     </p>
   </section>

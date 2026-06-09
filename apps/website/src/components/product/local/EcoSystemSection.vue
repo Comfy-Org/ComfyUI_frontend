@@ -17,10 +17,10 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       <!-- Text content -->
       <div class="flex flex-1 flex-col justify-between p-6">
         <div>
-          <h2 class="text-3xl font-light text-primary-comfy-canvas lg:text-4xl">
+          <h2 class="text-primary-comfy-canvas text-3xl font-light lg:text-4xl">
             {{ t('download.ecosystem.heading', locale) }}
           </h2>
-          <p class="mt-6 text-sm text-primary-comfy-canvas/70">
+          <p class="text-primary-comfy-canvas/70 mt-6 text-sm">
             {{ t('download.ecosystem.description', locale) }}
           </p>
         </div>

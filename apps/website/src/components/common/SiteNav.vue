@@ -94,7 +94,7 @@ const ctaButtons = [
   {
     label: t('nav.downloadLocal', locale),
     prefix: 'DOWNLOAD',
-    core: 'LOCAL',
+    core: 'DESKTOP',
     href: routes.download,
     primary: false
   },

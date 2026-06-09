@@ -12,11 +12,11 @@ const routes = getRoutes(locale)
 
 <template>
   <section
-    class="bg-secondary-mauve/30 mt-12 border-t border-primary-comfy-canvas/10 px-6 py-20 text-center md:py-28"
+    class="bg-secondary-mauve/30 border-primary-comfy-canvas/10 mt-12 border-t px-6 py-20 text-center md:py-28"
     data-testid="affiliate-footer-cta"
   >
     <h2
-      class="text-3xl font-light text-primary-comfy-canvas md:text-4xl lg:text-5xl"
+      class="text-primary-comfy-canvas text-3xl font-light md:text-4xl lg:text-5xl"
     >
       {{ t('affiliate-landing.footerCta.heading', locale) }}
     </h2>
@@ -34,7 +34,7 @@ const routes = getRoutes(locale)
       </BrandButton>
       <a
         :href="routes.affiliateTerms"
-        class="text-sm text-primary-comfy-canvas/70 underline-offset-4 hover:underline"
+        class="text-primary-comfy-canvas/70 text-sm underline-offset-4 hover:underline"
       >
         {{ t('affiliate-landing.footerCta.termsLink', locale) }}
       </a>
