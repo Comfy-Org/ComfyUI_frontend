@@ -6,6 +6,7 @@
  * works in legacy canvas mode as well.
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -80,10 +81,16 @@ function installNodeHooks(node: LGraphNode): void {
       const hostExecId = getExecutionIdByNode(app.rootGraph, node)
       if (!hostExecId) return
 
+      const promotedSource = widgetPromotedSource(node, widget)
+      const executionId = promotedSource
+        ? `${hostExecId}:${promotedSource.nodeId}`
+        : hostExecId
+      const widgetName = promotedSource?.widgetName ?? widget.name
+
       useExecutionErrorStore().clearWidgetRelatedErrors(
-        hostExecId,
-        widget.name,
-        widget.name,
+        executionId,
+        widgetName,
+        widgetName,
         newValue,
         { min: widget.options?.min, max: widget.options?.max }
       )

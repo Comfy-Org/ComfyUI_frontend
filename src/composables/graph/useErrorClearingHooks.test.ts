@@ -4,6 +4,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
@@ -976,5 +977,55 @@ describe('clearWidgetRelatedErrors parameter routing', () => {
     )
 
     clearSpy.mockRestore()
+  })
+
+  it('clears promoted widget errors by interior execution id', () => {
+    const subgraph = createTestSubgraph()
+    const graph = subgraph.rootGraph
+    const host = createTestSubgraphNode(subgraph, { id: 2 })
+    graph.add(host)
+
+    const interiorNode = new LGraphNode('CheckpointLoaderSimple')
+    interiorNode.id = 1
+    subgraph.add(interiorNode)
+    const input = interiorNode.addInput('ckpt_name', 'COMBO')
+    const widget = interiorNode.addWidget(
+      'combo',
+      'ckpt_name',
+      'fake_model.safetensors',
+      () => undefined,
+      { values: ['fake_model.safetensors', 'real_model.safetensors'] }
+    )
+    input.widget = { name: widget.name }
+
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, interiorNode, widget).ok
+    ).toBe(true)
+    installErrorClearingHooks(graph)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const missingModelStore = useMissingModelStore()
+    missingModelStore.setMissingModels([
+      {
+        nodeId: '2:1',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'fake_model.safetensors',
+        directory: 'checkpoints',
+        isMissing: true
+      }
+    ])
+
+    const promotedWidget = host.widgets[0]
+    host.onWidgetChanged!.call(
+      host,
+      promotedWidget.name,
+      'real_model.safetensors',
+      'fake_model.safetensors',
+      promotedWidget
+    )
+
+    expect(missingModelStore.hasMissingModels).toBe(false)
   })
 })
