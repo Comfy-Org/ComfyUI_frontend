@@ -30,7 +30,6 @@ vi.mock('vue-router', () => ({
 const mockImportPublishedAssets = vi.fn()
 const mockIsLoggedIn = vi.hoisted(() => ({ value: false }))
 const mockTrackShareLinkOpened = vi.hoisted(() => vi.fn())
-const mockSetActiveShareAttribution = vi.hoisted(() => vi.fn())
 
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
@@ -42,10 +41,6 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackShareLinkOpened: mockTrackShareLinkOpened
   })
-}))
-
-vi.mock('@/platform/workflow/sharing/shareAttribution', () => ({
-  setActiveShareAttribution: mockSetActiveShareAttribution
 }))
 
 vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
@@ -257,9 +252,6 @@ describe('useSharedWorkflowUrlLoader', () => {
       'Test Workflow',
       { openSource: 'shared_url', shareId: 'share-id-1' }
     )
-    expect(mockSetActiveShareAttribution).toHaveBeenCalledWith({
-      shareId: 'share-id-1'
-    })
     expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
       share_id: 'share-id-1',
       is_authenticated: false

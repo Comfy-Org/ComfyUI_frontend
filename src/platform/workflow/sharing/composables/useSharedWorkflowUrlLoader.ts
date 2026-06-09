@@ -13,7 +13,6 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { setActiveShareAttribution } from '@/platform/workflow/sharing/shareAttribution'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
@@ -144,7 +143,6 @@ export function useSharedWorkflowUrlLoader() {
       return 'failed'
     }
 
-    setActiveShareAttribution({ shareId: shareParam })
     useTelemetry()?.trackShareLinkOpened({
       share_id: shareParam,
       is_authenticated: isLoggedIn.value
@@ -153,7 +151,6 @@ export function useSharedWorkflowUrlLoader() {
     const result = await showOpenSharedWorkflowDialog(shareParam)
 
     if (result.action === 'cancel') {
-      setActiveShareAttribution(undefined)
       clearShareIntent()
       return 'cancelled'
     }
@@ -198,7 +195,6 @@ export function useSharedWorkflowUrlLoader() {
           }
         )
       } catch (error) {
-        setActiveShareAttribution(undefined)
         console.error(
           '[useSharedWorkflowUrlLoader] Failed to load workflow graph:',
           error
