@@ -1,5 +1,6 @@
 import axios from 'axios'
 
+import { addAccountBannedInterceptor } from '@/platform/auth/accountBannedInterceptors'
 import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
   WorkspaceId,
@@ -286,6 +287,8 @@ const workspaceApiClient = axios.create({
     'Content-Type': 'application/json'
   }
 })
+
+addAccountBannedInterceptor(workspaceApiClient)
 
 async function getAuthHeaderOrThrow() {
   return useAuthStore().getAuthHeaderOrThrow()

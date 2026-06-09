@@ -2963,7 +2963,17 @@
       "technicalDetails": "Technical Details",
       "helpText": "Need help? Contact",
       "supportLink": "support"
+    },
+    "banned": {
+      "title": "Your account has been banned",
+      "message": "Your account has been banned for misuse. If you believe this is a mistake, please contact support.",
+      "contactSupport": "Contact support",
+      "signOut": "Sign out"
     }
+  },
+  "accountBanned": {
+    "toastSummary": "Account banned",
+    "toastDetail": "Your account has been banned for misuse. Please contact support@comfy.org if you believe this is a mistake."
   },
   "cloudFooter_needHelp": "Need Help?",
   "cloudStart_title": "start creating in seconds",

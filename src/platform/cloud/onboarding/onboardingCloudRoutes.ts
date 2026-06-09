@@ -115,6 +115,12 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
           import('@/platform/cloud/onboarding/CloudSorryContactSupportView.vue')
       },
       {
+        path: 'banned',
+        name: 'cloud-banned',
+        component: () =>
+          import('@/platform/cloud/onboarding/CloudBannedView.vue')
+      },
+      {
         path: 'auth-timeout',
         name: 'cloud-auth-timeout',
         component: () =>

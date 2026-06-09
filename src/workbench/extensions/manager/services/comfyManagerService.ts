@@ -3,6 +3,7 @@ import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 import { ref } from 'vue'
 
+import { addAccountBannedInterceptor } from '@/platform/auth/accountBannedInterceptors'
 import { api } from '@/scripts/api'
 import { isAbortError } from '@/utils/typeGuardUtil'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
@@ -44,6 +45,8 @@ const managerApiClient = axios.create({
     'Content-Type': 'application/json'
   }
 })
+
+addAccountBannedInterceptor(managerApiClient)
 
 /**
  * Service for interacting with the ComfyUI Manager API

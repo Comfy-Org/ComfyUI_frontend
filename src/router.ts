@@ -134,14 +134,16 @@ if (isCloud) {
     'cloud-signup',
     'cloud-forgot-password',
     'cloud-oauth-consent',
-    'cloud-sorry-contact-support'
+    'cloud-sorry-contact-support',
+    'cloud-banned'
   ])
   const PUBLIC_ROUTE_PATHS = new Set([
     '/cloud/login',
     '/cloud/signup',
     '/cloud/forgot-password',
     '/cloud/oauth/consent',
-    '/cloud/sorry-contact-support'
+    '/cloud/sorry-contact-support',
+    '/cloud/banned'
   ])
 
   function isPublicRoute(to: RouteLocationNormalized) {

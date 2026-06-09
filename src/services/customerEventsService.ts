@@ -4,6 +4,7 @@ import { ref, watch } from 'vue'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { d } from '@/i18n'
+import { addAccountBannedInterceptor } from '@/platform/auth/accountBannedInterceptors'
 import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
@@ -29,6 +30,8 @@ const customerApiClient = axios.create({
     'Content-Type': 'application/json'
   }
 })
+
+addAccountBannedInterceptor(customerApiClient)
 
 export const useCustomerEventsService = () => {
   const isLoading = ref(false)

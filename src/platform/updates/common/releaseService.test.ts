@@ -5,7 +5,8 @@ import { useReleaseService } from '@/platform/updates/common/releaseService'
 
 // Hoist the mock to avoid hoisting issues
 const mockAxiosInstance = vi.hoisted(() => ({
-  get: vi.fn()
+  get: vi.fn(),
+  interceptors: { response: { use: vi.fn() } }
 }))
 
 vi.mock('axios', () => ({

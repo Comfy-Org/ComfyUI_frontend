@@ -9,7 +9,8 @@ const {
     get: vi.fn(),
     post: vi.fn(),
     patch: vi.fn(),
-    delete: vi.fn()
+    delete: vi.fn(),
+    interceptors: { response: { use: vi.fn() } }
   },
   mockGetAuthHeaderOrThrow: vi.fn(),
   mockGetFirebaseAuthHeaderOrThrow: vi.fn()

@@ -3,6 +3,7 @@ import axios from 'axios'
 import { ref, watch } from 'vue'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
+import { addAccountBannedInterceptor } from '@/platform/auth/accountBannedInterceptors'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
@@ -19,6 +20,8 @@ const releaseApiClient = axios.create({
     'Content-Type': 'application/json'
   }
 })
+
+addAccountBannedInterceptor(releaseApiClient)
 
 // Release service for fetching release notes
 export const useReleaseService = () => {

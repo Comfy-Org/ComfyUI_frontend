@@ -2,6 +2,7 @@ import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
 import { ref } from 'vue'
 
+import { addAccountBannedInterceptor } from '@/platform/auth/accountBannedInterceptors'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
@@ -17,6 +18,8 @@ const registryApiClient = axios.create({
     indexes: null
   }
 })
+
+addAccountBannedInterceptor(registryApiClient)
 
 /**
  * Service for interacting with the Comfy Registry API

@@ -12,6 +12,8 @@ import { createApp } from 'vue'
 import { VueFire, VueFireAuth } from 'vuefire'
 
 import { setAssertReporter } from '@/base/assert'
+import { onAccountBanned } from '@/platform/auth/accountBanned'
+import { installAccountBannedFetchInterceptor } from '@/platform/auth/accountBannedInterceptors'
 import { getFirebaseConfig } from '@/config/firebase'
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
@@ -29,7 +31,7 @@ import { useBootstrapStore } from '@/stores/bootstrapStore'
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
 import './assets/css/style.css'
-import { i18n } from './i18n'
+import { i18n, t } from './i18n'
 
 /**
  * CRITICAL: Load remote config FIRST for cloud builds to ensure
@@ -144,6 +146,27 @@ LGraph.proxyWidgetMigrationFlush = (hostNode, nodeData) =>
 
 LGraph.autoExposePreviewNodes = (hostNode) =>
   autoExposeKnownPreviewNodes(hostNode)
+
+installAccountBannedFetchInterceptor()
+
+let accountBannedHandled = false
+onAccountBanned(() => {
+  if (accountBannedHandled) return
+  accountBannedHandled = true
+
+  if (isCloud) {
+    if (router.currentRoute.value.name !== 'cloud-banned') {
+      void router.replace({ name: 'cloud-banned' })
+    }
+    return
+  }
+
+  useToastStore(pinia).add({
+    severity: 'error',
+    summary: t('accountBanned.toastSummary'),
+    detail: t('accountBanned.toastDetail')
+  })
+})
 
 const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()
