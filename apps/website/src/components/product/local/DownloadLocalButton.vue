@@ -17,30 +17,52 @@ const { locale = 'en', class: customClass = '' } = defineProps<{
 
 const { downloadUrl, platform, showFallback } = useDownloadUrl()
 
-const iconSrc = computed(() => {
-  switch (platform.value) {
-    case 'mac':
-      return '/icons/os/apple.svg'
-    case 'windows':
-      return '/icons/os/windows.svg'
-    default:
-      return undefined
+const ICONS = {
+  windows: '/icons/os/windows.svg',
+  mac: '/icons/os/apple.svg'
+} as const
+
+interface ButtonSpec {
+  key: string
+  href: string
+  icon: string
+}
+
+/** One spec per button to render. Single entry for the detected case; two
+ *  entries (Windows + Mac) for the fallback. Drives a single `v-for` so the
+ *  detected and fallback buttons stay visually identical. */
+const buttons = computed<ButtonSpec[]>(() => {
+  if (platform.value) {
+    return [
+      {
+        key: platform.value,
+        href: downloadUrl.value,
+        icon: ICONS[platform.value]
+      }
+    ]
   }
+  if (showFallback.value) {
+    return [
+      { key: 'windows', href: downloadUrls.windows, icon: ICONS.windows },
+      { key: 'mac', href: downloadUrls.macArm, icon: ICONS.mac }
+    ]
+  }
+  return []
 })
 </script>
 
 <template>
   <BrandButton
-    v-if="platform"
-    :href="downloadUrl"
+    v-for="btn in buttons"
+    :key="btn.key"
+    :href="btn.href"
     target="_blank"
     size="lg"
     :class="customClass"
   >
     <span class="inline-flex items-center gap-2">
       <img
-        v-if="iconSrc"
-        :src="iconSrc"
+        :src="btn.icon"
         alt=""
         class="ppformula-text-center size-5 -translate-y-0.75"
         aria-hidden="true"
@@ -50,41 +72,4 @@ const iconSrc = computed(() => {
       }}</span>
     </span>
   </BrandButton>
-
-  <template v-else-if="showFallback">
-    <BrandButton
-      :href="downloadUrls.windows"
-      target="_blank"
-      size="lg"
-      :class="customClass"
-      :aria-label="`${t('download.hero.downloadLocal', locale)} — Windows`"
-    >
-      <span class="inline-flex items-center gap-2">
-        <img
-          src="/icons/os/windows.svg"
-          alt=""
-          class="ppformula-text-center size-5 -translate-y-0.75"
-          aria-hidden="true"
-        />
-        <span class="ppformula-text-center">Windows</span>
-      </span>
-    </BrandButton>
-    <BrandButton
-      :href="downloadUrls.macArm"
-      target="_blank"
-      size="lg"
-      :class="customClass"
-      :aria-label="`${t('download.hero.downloadLocal', locale)} — macOS`"
-    >
-      <span class="inline-flex items-center gap-2">
-        <img
-          src="/icons/os/apple.svg"
-          alt=""
-          class="ppformula-text-center size-5 -translate-y-0.75"
-          aria-hidden="true"
-        />
-        <span class="ppformula-text-center">macOS</span>
-      </span>
-    </BrandButton>
-  </template>
 </template>

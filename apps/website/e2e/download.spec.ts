@@ -75,23 +75,24 @@ test.describe('Download page @smoke', () => {
       })
     })
 
-    const windowsBtn = hero.getByRole('link', { name: /Windows$/ })
+    // Both fallback buttons reuse the standard "DOWNLOAD DESKTOP" template
+    // — they're distinguished by href, not label.
+    const windowsBtn = hero.locator(
+      'a[href="https://download.comfy.org/windows/nsis/x64"]'
+    )
     await expect(windowsBtn).toBeVisible()
-    await expect(windowsBtn).toHaveAttribute(
-      'href',
-      'https://download.comfy.org/windows/nsis/x64'
-    )
+    await expect(windowsBtn).toHaveText(/DOWNLOAD DESKTOP/i)
 
-    const macBtn = hero.getByRole('link', { name: /macOS$/ })
+    const macBtn = hero.locator(
+      'a[href="https://download.comfy.org/mac/dmg/arm64"]'
+    )
     await expect(macBtn).toBeVisible()
-    await expect(macBtn).toHaveAttribute(
-      'href',
-      'https://download.comfy.org/mac/dmg/arm64'
-    )
+    await expect(macBtn).toHaveText(/DOWNLOAD DESKTOP/i)
 
-    // Single auto-detected CTA must NOT also be present, else three buttons.
-    const autoBtn = hero.getByRole('link', { name: /^DOWNLOAD DESKTOP$/i })
-    await expect(autoBtn).toHaveCount(0)
+    // Exactly the two fallback buttons — no third stray detected CTA.
+    await expect(
+      hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+    ).toHaveCount(2)
 
     await context.close()
   })
@@ -109,10 +110,8 @@ test.describe('Download page @smoke', () => {
     })
 
     await expect(
-      hero.getByRole('link', { name: /^DOWNLOAD DESKTOP$/i })
+      hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
     ).toHaveCount(0)
-    await expect(hero.getByRole('link', { name: /Windows$/ })).toHaveCount(0)
-    await expect(hero.getByRole('link', { name: /macOS$/ })).toHaveCount(0)
 
     // GitHub install link is the only path that still applies — keep it.
     await expect(
