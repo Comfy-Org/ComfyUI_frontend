@@ -10,9 +10,16 @@ import { useImage } from '@vueuse/core'
  * links, in-app browsers that re-fetch in a loop. Broken images are expected,
  * not bugs, so handle the failure here instead of letting it surface globally.
  * The returned `error` ref behaviour is unchanged.
+ *
+ * `asyncStateOptions` is forwarded to `useImage`, so callers can still tune the
+ * other `useAsyncState` fields; only `onError` is fixed to the quiet default.
  */
-export function useImageQuiet(options: Parameters<typeof useImage>[0]) {
+export function useImageQuiet(
+  options: Parameters<typeof useImage>[0],
+  asyncStateOptions?: Parameters<typeof useImage>[1]
+) {
   return useImage(options, {
+    ...asyncStateOptions,
     onError: () => {
       // Surfaced via the returned `error` ref; see the doc comment above.
     }
