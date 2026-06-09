@@ -57,6 +57,10 @@ const outputMediaAssets = isCloud
   ? useFlatOutputAssets()
   : useAssetsApi('output')
 
+// Imported media, loaded so the "All" tab can order items by recency (imported
+// assets carry their creation timestamp; the widget's plain value list doesn't).
+const inputMediaAssets = useAssetsApi('input')
+
 const combinedProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
 )
@@ -166,7 +170,7 @@ const sortOptions = computed(() => {
 })
 // Cloud models default to base-model grouping; local defaults to A-Z.
 const sortSelected = ref(
-  isModel.value ? (isCloud ? 'base-model-asc' : 'name-asc') : 'default'
+  isModel.value ? (isCloud ? 'base-model-asc' : 'name-asc') : 'recent'
 )
 
 // Surface recently-picked models at the top of the grouped model picker.
@@ -177,8 +181,12 @@ watch(modelValue, (value) => {
 })
 
 function handleIsOpenUpdate(isOpen: boolean) {
-  if (isOpen && !outputMediaAssets.loading.value) {
+  if (!isOpen) return
+  if (!outputMediaAssets.loading.value) {
     void outputMediaAssets.refresh()
+  }
+  if (!props.isAssetMode && !inputMediaAssets.loading.value) {
+    void inputMediaAssets.refresh()
   }
 }
 </script>

@@ -1102,6 +1102,46 @@ describe('useWidgetSelectItems', () => {
     })
   })
 
+  describe('All tab recency ordering', () => {
+    it('interleaves imported and generated media by recency, newest first', async () => {
+      const { useAssetsStore } = await import('@/stores/assetsStore')
+      const store = useAssetsStore()
+      store.inputAssets = [
+        {
+          id: 'in-1',
+          name: 'old_import.png',
+          asset_hash: 'old_import.png',
+          tags: ['input'],
+          created_at: '2025-01-01T00:00:00Z'
+        } as AssetItem
+      ]
+
+      mockMediaAssets = createMockMediaAssets()
+      mockMediaAssets.media.value = [
+        {
+          id: 'out-1',
+          name: 'new_output.png',
+          tags: ['output'],
+          created_at: '2025-06-01T00:00:00Z'
+        } as AssetItem
+      ]
+
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => ['old_import.png'],
+          modelValue: ref(undefined),
+          outputMediaAssets: mockMediaAssets
+        })
+      )
+      await nextTick()
+
+      expect(dropdownItems.value.map((i) => i.name)).toEqual([
+        'new_output.png [output]',
+        'old_import.png'
+      ])
+    })
+  })
+
   describe('FE-230 missing-media filtering', () => {
     it('drops input items whose name is in the missing-media store', async () => {
       const { useMissingMediaStore } =
