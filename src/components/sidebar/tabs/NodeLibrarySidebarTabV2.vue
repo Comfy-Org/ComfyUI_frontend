@@ -527,7 +527,10 @@ function smoothScrollTo(
     const progress = Math.min(elapsed / duration, 1)
     const eased = 1 - Math.pow(1 - progress, 3)
     container.scrollTop = start + distance * eased
-    if (progress < 1) requestAnimationFrame(step)
+    if (progress < 1) return requestAnimationFrame(step)
+
+    const headerHeight = titleTabsRef.value?.offsetHeight ?? 0
+    headerTop.value = Math.min(0, Math.max(-target, -headerHeight))
   }
   requestAnimationFrame(step)
 }
@@ -543,7 +546,6 @@ async function scrollToId(id: string, marginTop: number) {
     container.scrollTop -
     marginTop
   smoothScrollTo(container, top)
-  //headerTop.value = Math.min(0, titleTabsRef.value?.offsetHeight - top)
 }
 
 const STICKY_SEARCH_HEIGHT = 65
