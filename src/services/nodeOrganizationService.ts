@@ -212,27 +212,20 @@ class NodeOrganizationService {
       if (!sectionNode.children) continue
       const subgroupRank = ESSENTIALS_SUBGROUP_RANK.get(sectionNode.label ?? '')
 
-      // Sort subgroup folders (leaf node entries get a fallback rank so they
-      // still come after named subgroups).
       sortByKnownOrder(
         sectionNode.children,
         (node) => (node.children ? node.label : undefined),
         subgroupRank ?? new Map()
       )
 
-      for (const child of sectionNode.children) {
-        // Folder = subgroup; sort its leaves by node rank.
-        if (child.children) {
+      for (const child of sectionNode.children)
+        if (child.children)
           sortByKnownOrder(
             child.children,
             (node) => node.data?.name ?? node.label,
             ESSENTIALS_NODE_RANK
           )
-        }
-      }
 
-      // Leaves at the section level (flat sections like Inputs & Outputs)
-      // are sorted in-place by node rank below.
       sortByKnownOrder(
         sectionNode.children,
         (node) => (node.children ? undefined : (node.data?.name ?? node.label)),

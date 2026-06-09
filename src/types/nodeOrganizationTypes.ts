@@ -49,15 +49,15 @@ export type NodeCategoryId =
   | 'blueprints'
   | 'comfyNodes'
   | 'essentialNodes'
-  | 'partnerNodes'
   | 'extensions'
+  | 'partnerNodes'
 
 export const NODE_CATEGORY_LABELS: Record<NodeCategoryId, string> = {
   blueprints: 'sideToolbar.nodeLibraryTab.sections.subgraphBlueprints',
   comfyNodes: 'sideToolbar.nodeLibraryTab.sections.comfyNodes',
   essentialNodes: 'sideToolbar.nodeLibraryTab.sections.essentialNodes',
-  partnerNodes: 'sideToolbar.nodeLibraryTab.sections.partnerNodes',
-  extensions: 'sideToolbar.nodeLibraryTab.sections.extensions'
+  extensions: 'sideToolbar.nodeLibraryTab.sections.extensions',
+  partnerNodes: 'sideToolbar.nodeLibraryTab.sections.partnerNodes'
 }
 
 export interface NodeSection {

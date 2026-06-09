@@ -27,8 +27,6 @@ describe('splitTextAtWordBoundary', () => {
   })
 
   it('splits longer text proportionally', () => {
-    // ratio 0.7 → estimate at char 15
-    // lastIndexOf(' ', 15) → 15 (the space between "Checkpoint" and "Loader")
     expect(splitTextAtWordBoundary('Load Checkpoint Loader', 0.7)).toEqual([
       'Load Checkpoint',
       'Loader'

@@ -23,7 +23,7 @@ export interface EssentialPlaceholderTile {
   nodeName?: string
 }
 
-export interface EssentialPlaceholderSubgroup {
+interface EssentialPlaceholderSubgroup {
   key: string
   label: string
   media: EssentialsMediaType
