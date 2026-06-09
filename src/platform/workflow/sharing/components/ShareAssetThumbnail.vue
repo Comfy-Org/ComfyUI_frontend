@@ -63,5 +63,11 @@ const imageOptions = computed(() => ({
   src: normalizedPreviewUrl.value ?? ''
 }))
 
-const { isReady, isLoading, error } = useImage(imageOptions)
+const { isReady, isLoading, error } = useImage(imageOptions, {
+  onError: () => {
+    // Load failures are surfaced via `error` (fallback UI). Swallow here so
+    // vueuse does not re-report them to the global handler (Datadog RUM) as
+    // unhandled errors — broken images are expected, not bugs.
+  }
+})
 </script>

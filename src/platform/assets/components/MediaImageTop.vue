@@ -34,10 +34,19 @@ const emit = defineEmits<{
   view: []
 }>()
 
-const { state, error, isReady } = useImage({
-  src: asset.src ?? '',
-  alt: getAssetDisplayName(asset)
-})
+const { state, error, isReady } = useImage(
+  {
+    src: asset.src ?? '',
+    alt: getAssetDisplayName(asset)
+  },
+  {
+    onError: () => {
+      // Load failures are surfaced via `error` (fallback UI). Swallow here so
+      // vueuse does not re-report them to the global handler (Datadog RUM) as
+      // unhandled errors — broken images are expected, not bugs.
+    }
+  }
+)
 
 whenever(
   () =>
