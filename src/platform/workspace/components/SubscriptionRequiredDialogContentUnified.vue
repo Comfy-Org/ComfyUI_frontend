@@ -128,7 +128,7 @@ function handleSubscribeTeam() {
   toast.add({
     severity: 'info',
     summary: t('subscription.teamPlan.name'),
-    detail: t('subscription.teamPlan.comingSoon'),
+    detail: t('subscription.teamPlan.checkoutComingSoon'),
     life: 4000
   })
 }
