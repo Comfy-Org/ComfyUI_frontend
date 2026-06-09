@@ -8,6 +8,7 @@ const hoisted = vi.hoisted(() => ({
   mockActiveWorkflow: null as null | {
     filename: string
     fullFilename: string
+    path?: string
   },
   mockKnownTemplateNames: new Set<string>(),
   mockTemplateByName: null as null | { sourceModule?: string }
@@ -63,6 +64,8 @@ vi.mock('@/utils/graphTraversalUtil', () => ({
 vi.mock('@/scripts/app', () => ({
   app: { rootGraph: {} }
 }))
+
+import { recordShareProvenance } from '@/platform/workflow/sharing/utils/shareProvenance'
 
 import { getExecutionContext } from './getExecutionContext'
 
@@ -165,6 +168,33 @@ describe('getExecutionContext', () => {
 
     expect(context.has_toolkit_nodes).toBe(true)
     expect(context.toolkit_node_names).toEqual(['ImageCrop'])
+  })
+
+  describe('share attribution', () => {
+    it('includes share_id when the active workflow was imported from a share link', () => {
+      hoisted.mockActiveWorkflow = {
+        filename: 'shared-workflow',
+        fullFilename: 'shared-workflow.json',
+        path: 'workflows/shared-workflow.json'
+      }
+      recordShareProvenance('workflows/shared-workflow.json', 'abc123def456')
+
+      const context = getExecutionContext()
+
+      expect(context.share_id).toBe('abc123def456')
+    })
+
+    it('omits share_id for workflows without share provenance', () => {
+      hoisted.mockActiveWorkflow = {
+        filename: 'my-own-workflow',
+        fullFilename: 'my-own-workflow.json',
+        path: 'workflows/my-own-workflow.json'
+      }
+
+      const context = getExecutionContext()
+
+      expect(context.share_id).toBeUndefined()
+    })
   })
 
   describe('template detection', () => {

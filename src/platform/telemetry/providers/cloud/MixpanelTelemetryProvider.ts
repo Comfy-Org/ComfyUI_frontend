@@ -18,6 +18,7 @@ import type {
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
+  ShareLinkOpenedMetadata,
   ExecutionContext,
   ExecutionTriggerSource,
   ExecutionErrorMetadata,
@@ -382,6 +383,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackShareFlow(metadata: ShareFlowMetadata): void {
     this.trackEvent(TelemetryEvents.SHARE_FLOW, metadata)
+  }
+
+  trackShareLinkOpened(metadata: ShareLinkOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.SHARE_LINK_OPENED, metadata)
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {

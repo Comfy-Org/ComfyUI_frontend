@@ -1,3 +1,4 @@
+import type { User } from 'firebase/auth'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -11,9 +12,13 @@ import {
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { useTelemetry } from '@/platform/telemetry'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
+import { recordShareProvenance } from '@/platform/workflow/sharing/utils/shareProvenance'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
+import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
 type SharedWorkflowUrlLoadStatus =
@@ -45,6 +50,22 @@ export function useSharedWorkflowUrlLoader() {
 
   function isValidParameter(param: string): boolean {
     return /^[a-zA-Z0-9_.-]+$/.test(param)
+  }
+
+  function isNewlyCreatedUser(user: User | null): boolean | undefined {
+    const creationTime = user?.metadata.creationTime
+    const lastSignInTime = user?.metadata.lastSignInTime
+    if (!creationTime || !lastSignInTime) return undefined
+    return Date.parse(lastSignInTime) - Date.parse(creationTime) < 60_000
+  }
+
+  function trackShareLinkOpened(shareId: string) {
+    const authStore = useAuthStore()
+    useTelemetry()?.trackShareLinkOpened({
+      share_id: shareId,
+      is_authenticated: authStore.isAuthenticated,
+      is_new_user: isNewlyCreatedUser(authStore.currentUser)
+    })
   }
 
   async function ensureShareQueryFromIntent() {
@@ -140,6 +161,8 @@ export function useSharedWorkflowUrlLoader() {
       return 'failed'
     }
 
+    trackShareLinkOpened(shareParam)
+
     const result = await showOpenSharedWorkflowDialog(shareParam)
 
     if (result.action === 'cancel') {
@@ -182,9 +205,14 @@ export function useSharedWorkflowUrlLoader() {
           true,
           workflowName,
           {
-            openSource: 'shared_url'
+            openSource: 'shared_url',
+            shareId: payload.shareId
           }
         )
+        const workflowKey = useWorkflowStore().activeWorkflow?.path
+        if (workflowKey) {
+          recordShareProvenance(workflowKey, payload.shareId)
+        }
       } catch (error) {
         console.error(
           '[useSharedWorkflowUrlLoader] Failed to load workflow graph:',

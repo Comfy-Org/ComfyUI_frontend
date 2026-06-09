@@ -1138,6 +1138,7 @@ export class ComfyApp {
     options: {
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
+      shareId?: string
       deferWarnings?: boolean
       skipAssetScans?: boolean
       silentAssetErrors?: boolean
@@ -1146,6 +1147,7 @@ export class ComfyApp {
     const {
       checkForRerouteMigration = false,
       openSource,
+      shareId,
       deferWarnings = false,
       skipAssetScans = false,
       silentAssetErrors = false
@@ -1429,7 +1431,8 @@ export class ComfyApp {
           typeof node === 'string' ? node : node.type
         ),
         missing_node_packs: groupMissingNodesByPack(missingNodeTypes),
-        open_source: openSource ?? 'unknown'
+        open_source: openSource ?? 'unknown',
+        share_id: shareId
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)

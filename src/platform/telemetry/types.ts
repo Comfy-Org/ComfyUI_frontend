@@ -29,6 +29,11 @@ export interface AuthMetadata {
   utm_source?: string
   utm_medium?: string
   utm_campaign?: string
+  /**
+   * Share link id when the user authenticated while opening a shared
+   * workflow URL. Powers the "new users via shares" acquisition metric.
+   */
+  share_id?: string
 }
 
 /**
@@ -97,6 +102,11 @@ export interface ExecutionContext {
   toolkit_node_names: string[]
   toolkit_node_count: number
   trigger_source?: ExecutionTriggerSource
+  /**
+   * Share link id when the active workflow was imported from a shared URL
+   * this session. Makes shared workflow runs attributable to their share.
+   */
+  share_id?: string
 }
 
 /**
@@ -165,6 +175,12 @@ export interface WorkflowImportMetadata {
     | 'template'
     | 'shared_url'
     | 'unknown'
+  /**
+   * Share link id when the workflow was opened from a shared URL
+   * (open_source = 'shared_url'). Joins recipient-side events to the
+   * sharer-side share_flow link_created event.
+   */
+  share_id?: string
 }
 
 export interface EnterLinearMetadata {
@@ -189,6 +205,16 @@ type ShareFlowStep =
 export interface ShareFlowMetadata {
   step: ShareFlowStep
   source?: 'app_mode' | 'graph_mode'
+  share_id?: string
+}
+
+/**
+ * Recipient-side share link open metadata
+ */
+export interface ShareLinkOpenedMetadata {
+  share_id: string
+  is_authenticated: boolean
+  is_new_user?: boolean
 }
 
 /**
@@ -477,6 +503,7 @@ export interface TelemetryProvider {
   trackDefaultViewSet?(metadata: DefaultViewSetMetadata): void
   trackEnterLinear?(metadata: EnterLinearMetadata): void
   trackShareFlow?(metadata: ShareFlowMetadata): void
+  trackShareLinkOpened?(metadata: ShareLinkOpenedMetadata): void
 
   // Page visibility events
   trackPageVisibilityChanged?(metadata: PageVisibilityMetadata): void
@@ -570,6 +597,7 @@ export const TelemetryEvents = {
   WORKFLOW_OPENED: 'app:workflow_opened',
   ENTER_LINEAR_MODE: 'app:app_mode_opened',
   SHARE_FLOW: 'app:share_flow',
+  SHARE_LINK_OPENED: 'app:share_link_opened',
 
   // Page Visibility
   PAGE_VISIBILITY_CHANGED: 'app:page_visibility_changed',
@@ -649,6 +677,7 @@ export type TelemetryEventProperties =
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
   | ShareFlowMetadata
+  | ShareLinkOpenedMetadata
   | WorkflowSavedMetadata
   | DefaultViewSetMetadata
   | SubscriptionMetadata

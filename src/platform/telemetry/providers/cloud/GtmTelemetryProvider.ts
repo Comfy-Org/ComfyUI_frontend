@@ -15,6 +15,7 @@ import type {
   PageVisibilityMetadata,
   SettingChangedMetadata,
   ShareFlowMetadata,
+  ShareLinkOpenedMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -139,6 +140,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     const payload = {
       method: metadata.method,
       ...(metadata.user_id ? { user_id: metadata.user_id } : {}),
+      ...(metadata.share_id ? { share_id: metadata.share_id } : {}),
       ...(metadata.email
         ? {
             user_data: {
@@ -287,7 +289,16 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   trackShareFlow(metadata: ShareFlowMetadata): void {
     this.pushEvent('share_flow', {
       step: metadata.step,
-      source: metadata.source
+      source: metadata.source,
+      share_id: metadata.share_id
+    })
+  }
+
+  trackShareLinkOpened(metadata: ShareLinkOpenedMetadata): void {
+    this.pushEvent('share_link_opened', {
+      share_id: metadata.share_id,
+      is_authenticated: metadata.is_authenticated,
+      is_new_user: metadata.is_new_user
     })
   }
 

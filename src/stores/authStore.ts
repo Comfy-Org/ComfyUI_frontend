@@ -23,6 +23,11 @@ import { useFirebaseAuth } from 'vuefire'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  getPreservedQueryParam,
+  hydratePreservedQuery
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -318,6 +323,11 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const getShareIntentId = (): string | undefined => {
+    hydratePreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE)
+    return getPreservedQueryParam(PRESERVED_QUERY_NAMESPACES.SHARE, 'share')
+  }
+
   const login = async (
     email: string,
     password: string
@@ -333,7 +343,8 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'email',
         is_new_user: false,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        share_id: getShareIntentId()
       })
     }
 
@@ -355,7 +366,8 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'email',
         is_new_user: true,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        share_id: getShareIntentId()
       })
     }
 
@@ -377,7 +389,8 @@ export const useAuthStore = defineStore('auth', () => {
         is_new_user:
           options?.isNewUser || additionalUserInfo?.isNewUser || false,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        share_id: getShareIntentId()
       })
     }
 
@@ -399,7 +412,8 @@ export const useAuthStore = defineStore('auth', () => {
         is_new_user:
           options?.isNewUser || additionalUserInfo?.isNewUser || false,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        share_id: getShareIntentId()
       })
     }
 

@@ -3,6 +3,7 @@ import {
   TOOLKIT_NODE_NAMES
 } from '@/constants/toolkitNodes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { getShareProvenance } from '@/platform/workflow/sharing/utils/shareProvenance'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -28,6 +29,9 @@ export function getExecutionContext(): ExecutionContext {
   const templatesStore = useWorkflowTemplatesStore()
   const nodeDefStore = useNodeDefStore()
   const activeWorkflow = workflowStore.activeWorkflow
+  const shareId = activeWorkflow
+    ? getShareProvenance(activeWorkflow.path)
+    : undefined
 
   const nodeCounts = reduceAllNodes<NodeMetrics>(
     app.rootGraph,
@@ -101,6 +105,7 @@ export function getExecutionContext(): ExecutionContext {
         template_models: englishMetadata?.models ?? template?.models,
         template_use_case: englishMetadata?.useCase ?? template?.useCase,
         template_license: englishMetadata?.license ?? template?.license,
+        share_id: shareId,
         ...nodeCounts
       }
     }
@@ -108,6 +113,7 @@ export function getExecutionContext(): ExecutionContext {
     return {
       is_template: false,
       workflow_name: activeWorkflow.filename,
+      share_id: shareId,
       ...nodeCounts
     }
   }
@@ -115,6 +121,7 @@ export function getExecutionContext(): ExecutionContext {
   return {
     is_template: false,
     workflow_name: undefined,
+    share_id: shareId,
     ...nodeCounts
   }
 }

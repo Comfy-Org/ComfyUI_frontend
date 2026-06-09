@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
+import { getShareProvenance } from '@/platform/workflow/sharing/utils/shareProvenance'
 
 const preservedQueryMocks = vi.hoisted(() => ({
   clearPreservedQuery: vi.fn(),
@@ -50,6 +51,37 @@ vi.mock('@/scripts/app', () => ({
   app: {
     loadGraphData: mockLoadGraphData
   }
+}))
+
+const mockTrackShareLinkOpened = vi.hoisted(() => vi.fn())
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackShareLinkOpened: mockTrackShareLinkOpened
+  })
+}))
+
+const mockAuthState = vi.hoisted(() => ({
+  isAuthenticated: false,
+  currentUser: null as {
+    metadata: { creationTime?: string; lastSignInTime?: string }
+  } | null
+}))
+
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: () => mockAuthState
+}))
+
+const mockActiveWorkflow = vi.hoisted(() => ({
+  current: null as { path: string } | null
+}))
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({
+    get activeWorkflow() {
+      return mockActiveWorkflow.current
+    }
+  })
 }))
 
 const mockToastAdd = vi.fn()
@@ -174,6 +206,9 @@ describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockQueryParams = {}
+    mockAuthState.isAuthenticated = false
+    mockAuthState.currentUser = null
+    mockActiveWorkflow.current = null
     mockDialogStack.length = 0
     mockShowLayoutDialog.mockImplementation(createDialogInstance)
     mockUpdateDialog.mockImplementation(
@@ -234,7 +269,7 @@ describe('useSharedWorkflowUrlLoader', () => {
       true,
       true,
       'Test Workflow',
-      { openSource: 'shared_url' }
+      { openSource: 'shared_url', shareId: 'share-id-1' }
     )
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
@@ -411,7 +446,7 @@ describe('useSharedWorkflowUrlLoader', () => {
       true,
       true,
       'Test Workflow',
-      { openSource: 'shared_url' }
+      { openSource: 'shared_url', shareId: 'share-id-1' }
     )
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -541,7 +576,93 @@ describe('useSharedWorkflowUrlLoader', () => {
       true,
       true,
       'Open shared workflow',
-      { openSource: 'shared_url' }
+      { openSource: 'shared_url', shareId: 'share-id-1' }
     )
+  })
+
+  it('tracks share_link_opened with auth state when share param is valid', async () => {
+    mockQueryParams = { share: 'share-id-1' }
+    mockAuthState.isAuthenticated = true
+    mockAuthState.currentUser = {
+      metadata: {
+        creationTime: 'Mon, 01 Jun 2026 12:00:00 GMT',
+        lastSignInTime: 'Mon, 08 Jun 2026 12:00:00 GMT'
+      }
+    }
+    mockShowLayoutDialog.mockImplementation(() => {
+      resolveDialogWithCancel()
+    })
+
+    const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
+    await loadSharedWorkflowFromUrl()
+
+    expect(mockTrackShareLinkOpened).toHaveBeenCalledTimes(1)
+    expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
+      share_id: 'share-id-1',
+      is_authenticated: true,
+      is_new_user: false
+    })
+  })
+
+  it('tracks share_link_opened with is_new_user=true for a just-created account', async () => {
+    mockQueryParams = { share: 'share-id-1' }
+    mockAuthState.isAuthenticated = true
+    mockAuthState.currentUser = {
+      metadata: {
+        creationTime: 'Mon, 08 Jun 2026 12:00:00 GMT',
+        lastSignInTime: 'Mon, 08 Jun 2026 12:00:05 GMT'
+      }
+    }
+    mockShowLayoutDialog.mockImplementation(() => {
+      resolveDialogWithCancel()
+    })
+
+    const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
+    await loadSharedWorkflowFromUrl()
+
+    expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
+      share_id: 'share-id-1',
+      is_authenticated: true,
+      is_new_user: true
+    })
+  })
+
+  it('omits is_new_user when unauthenticated', async () => {
+    mockQueryParams = { share: 'share-id-1' }
+    mockShowLayoutDialog.mockImplementation(() => {
+      resolveDialogWithCancel()
+    })
+
+    const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
+    await loadSharedWorkflowFromUrl()
+
+    expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
+      share_id: 'share-id-1',
+      is_authenticated: false,
+      is_new_user: undefined
+    })
+  })
+
+  it('does not track share_link_opened for absent or invalid share params', async () => {
+    const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
+    await loadSharedWorkflowFromUrl()
+
+    mockQueryParams = { share: '../../../etc/passwd' }
+    await loadSharedWorkflowFromUrl()
+
+    expect(mockTrackShareLinkOpened).not.toHaveBeenCalled()
+  })
+
+  it('records share provenance for the imported workflow', async () => {
+    mockQueryParams = { share: 'share-id-1' }
+    mockActiveWorkflow.current = { path: 'workflows/shared-test.json' }
+    mockShowLayoutDialog.mockImplementation(() => {
+      resolveDialogWithConfirm(makePayload())
+    })
+
+    const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
+    await loadSharedWorkflowFromUrl()
+
+    expect(getShareProvenance('workflows/shared-test.json')).toBe('share-id-1')
   })
 })

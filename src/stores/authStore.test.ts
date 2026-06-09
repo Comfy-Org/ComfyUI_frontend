@@ -3,9 +3,10 @@ import type { User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import { setActivePinia } from 'pinia'
 import type { Mock } from 'vitest'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
+import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
@@ -580,6 +581,45 @@ describe('useAuthStore', () => {
       await Promise.all([googleLoginPromise, githubLoginPromise])
 
       expect(store.loading).toBe(false)
+    })
+
+    describe('share intent attribution', () => {
+      afterEach(() => {
+        sessionStorage.removeItem('Comfy.PreservedQuery.share')
+        clearPreservedQuery('share')
+      })
+
+      it('attaches preserved share_id to sign-up telemetry', async () => {
+        sessionStorage.setItem(
+          'Comfy.PreservedQuery.share',
+          JSON.stringify({ share: 'abc123def456' })
+        )
+        const mockUserCredential = { user: mockUser }
+        vi.mocked(
+          firebaseAuth.createUserWithEmailAndPassword
+        ).mockResolvedValue(
+          mockUserCredential as Partial<UserCredential> as UserCredential
+        )
+
+        await store.register('new@example.com', 'password')
+
+        expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect.objectContaining({ share_id: 'abc123def456' })
+        )
+      })
+
+      it('tracks no share_id when no share intent is preserved', async () => {
+        const mockUserCredential = { user: mockUser }
+        vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
+          mockUserCredential as Partial<UserCredential> as UserCredential
+        )
+
+        await store.login('user@example.com', 'password')
+
+        expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect.objectContaining({ share_id: undefined })
+        )
+      })
     })
 
     describe('sign-up telemetry OR logic', () => {

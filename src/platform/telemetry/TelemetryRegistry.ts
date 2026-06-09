@@ -6,6 +6,7 @@ import type {
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
+  ShareLinkOpenedMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   ExecutionTriggerSource,
@@ -180,6 +181,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackShareFlow(metadata: ShareFlowMetadata): void {
     this.dispatch((provider) => provider.trackShareFlow?.(metadata))
+  }
+
+  trackShareLinkOpened(metadata: ShareLinkOpenedMetadata): void {
+    this.dispatch((provider) => provider.trackShareLinkOpened?.(metadata))
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
