@@ -4634,6 +4634,80 @@ const translations = {
     'zh-CN': '支持的模型'
   },
 
+  // Models list page (/models)
+  'models.list.label': { en: 'MODELS', 'zh-CN': '模型' },
+  'models.list.heroCta': {
+    en: 'Try {name} Now',
+    'zh-CN': '立即试用 {name}'
+  },
+  'models.list.creations.title': {
+    en: '{name} Image and Video Creations',
+    'zh-CN': '{name} 图像与视频创作'
+  },
+  'models.list.creations.cta': {
+    en: 'Explore Workflows',
+    'zh-CN': '探索工作流'
+  },
+  'models.list.heroTitle.before': {
+    en: '{name} in',
+    'zh-CN': ''
+  },
+  'models.list.heroTitle.after': {
+    en: '',
+    'zh-CN': ' 中的 {name}'
+  },
+  'models.list.heroSubtitle': {
+    en: 'From open-source diffusion checkpoints to partner APIs — every major model, with community workflow templates ready to run.',
+    'zh-CN':
+      '从开源扩散模型到合作伙伴 API，涵盖每一个主流模型，并附带可直接运行的社区工作流模板。'
+  },
+  'models.list.card.workflows': {
+    en: '{count} workflows',
+    'zh-CN': '{count} 个工作流'
+  },
+  'models.list.contact.label': {
+    en: 'COMFY HUB',
+    'zh-CN': 'COMFY HUB'
+  },
+  'models.showcase.label': { en: 'AI MODELS', 'zh-CN': 'AI 模型' },
+  'models.showcase.heading': {
+    en: 'Run the world’s\nleading AI models',
+    'zh-CN': '运行全球领先的\nAI 模型'
+  },
+  'models.showcase.subtitle': {
+    en: 'New models are added as they launch.',
+    'zh-CN': '新模型发布后会第一时间上线。'
+  },
+  'models.showcase.cta': {
+    en: 'EXPLORE WORKFLOWS',
+    'zh-CN': '探索工作流'
+  },
+  'models.showcase.card.grokImagine': {
+    en: 'Grok Imagine',
+    'zh-CN': 'Grok Imagine'
+  },
+  'models.showcase.card.nanoBananaPro': {
+    en: 'Nano Banana Pro',
+    'zh-CN': 'Nano Banana Pro'
+  },
+  'models.showcase.card.ltx23': {
+    en: 'LTX 2.3',
+    'zh-CN': 'LTX 2.3'
+  },
+  'models.showcase.card.qwenAdvancedEdit': {
+    en: 'Advanced image\nediting with Qwen',
+    'zh-CN': '使用 Qwen 进行\n高级图像编辑'
+  },
+  'models.showcase.card.wan22TextToVideo': {
+    en: 'Wan 2.2\ntext to video',
+    'zh-CN': 'Wan 2.2\n文字转视频'
+  },
+  'models.list.contact.heading': {
+    en: 'Pick a model and explore what the community has built. <a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Browse Comfy Hub</a> for the newest workflows.',
+    'zh-CN':
+      '选择一个模型，浏览社区的创作成果。<a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">访问 Comfy Hub</a> 查看最新工作流。'
+  },
+
   // Payment status pages
   'payment.success.label': {
     en: 'PAYMENT',
