@@ -112,7 +112,10 @@
         </template>
 
         <template v-if="dialogState === 'shared' && publishResult">
-          <ShareUrlCopyField :url="publishResult.shareUrl" />
+          <ShareUrlCopyField
+            :url="publishResult.shareUrl"
+            :share-id="publishResult.shareId"
+          />
           <div class="flex flex-col gap-1">
             <p
               v-if="publishResult.publishedAt"

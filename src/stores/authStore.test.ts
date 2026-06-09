@@ -6,15 +6,14 @@ import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
+import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
 
 // Hoisted mocks for dynamic imports
-const { mockActiveShareId, mockDistributionTypes } = vi.hoisted(() => ({
-  mockActiveShareId: {
-    value: undefined as string | undefined
-  },
+const { mockDistributionTypes } = vi.hoisted(() => ({
   mockDistributionTypes: {
     isCloud: true,
     isDesktop: true
@@ -111,9 +110,6 @@ vi.mock('@/stores/toastStore', () => ({
 // Mock useDialogService
 vi.mock('@/services/dialogService')
 vi.mock('@/platform/distribution/types', () => mockDistributionTypes)
-vi.mock('@/platform/workflow/sharing/shareAttribution', () => ({
-  getActiveShareId: () => mockActiveShareId.value
-}))
 
 // Mock apiKeyAuthStore
 const mockApiKeyGetAuthHeader = vi.fn().mockReturnValue(null)
@@ -145,7 +141,8 @@ describe('useAuthStore', () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
-    mockActiveShareId.value = undefined
+    sessionStorage.clear()
+    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE)
 
     // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
@@ -664,8 +661,11 @@ describe('useAuthStore', () => {
         }
       )
 
-      it('includes active share id on new-user social auth', async () => {
-        mockActiveShareId.value = 'share-1'
+      it('includes preserved share id on new-user social auth', async () => {
+        sessionStorage.setItem(
+          'Comfy.PreservedQuery.share',
+          JSON.stringify({ share: 'share-1' })
+        )
         vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
           isNewUser: true,
           providerId: 'google.com',

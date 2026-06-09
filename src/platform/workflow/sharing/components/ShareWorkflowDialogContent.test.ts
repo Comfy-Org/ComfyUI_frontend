@@ -120,7 +120,10 @@ const i18n = createI18n({
         saveButton: 'Save workflow',
         createLinkButton: 'Create link',
         creatingLink: 'Creating link...',
+        copyLink: 'Copy link',
+        linkCopied: 'Copied',
         checkingAssets: 'Checking assets...',
+        shareUrlLabel: 'Share URL',
         successDescription: 'Anyone with this link...',
         hasChangesDescription: 'You have made changes...',
         updateLinkButton: 'Update link',
@@ -385,6 +388,26 @@ describe('ShareWorkflowDialogContent', () => {
       step: 'link_created',
       source: 'graph_mode',
       share_id: 'test-123'
+    })
+  })
+
+  it('tracks copied share link with share id', async () => {
+    mockGetPublishStatus.mockResolvedValue({
+      isPublished: true,
+      shareId: 'copy-123',
+      shareUrl: 'https://comfy.org/shared/copy-123',
+      publishedAt: new Date('2026-01-15')
+    })
+
+    renderComponent()
+    await flushPromises()
+
+    await userEvent.click(screen.getByRole('button', { name: /Copy link/i }))
+
+    expect(mockTrackShareFlow).toHaveBeenCalledWith({
+      step: 'link_copied',
+      source: 'graph_mode',
+      share_id: 'copy-123'
     })
   })
 

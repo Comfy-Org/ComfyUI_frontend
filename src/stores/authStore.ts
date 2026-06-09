@@ -23,8 +23,12 @@ import { useFirebaseAuth } from 'vuefire'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  getPreservedQueryParam,
+  hydratePreservedQuery
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
-import { getActiveShareId } from '@/platform/workflow/sharing/shareAttribution'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -99,7 +103,11 @@ export const useAuthStore = defineStore('auth', () => {
   const userId = computed(() => currentUser.value?.uid)
 
   function getShareAuthMetadata() {
-    const shareId = getActiveShareId()
+    hydratePreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE)
+    const shareId = getPreservedQueryParam(
+      PRESERVED_QUERY_NAMESPACES.SHARE,
+      'share'
+    )
     return shareId ? { share_id: shareId } : {}
   }
 
