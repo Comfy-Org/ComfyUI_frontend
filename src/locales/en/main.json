@@ -642,7 +642,8 @@
   },
   "terminal": {
     "sessionEnded": "This terminal session ended. Restart it to keep using the console.",
-    "restart": "Restart"
+    "restart": "Restart",
+    "openInNewWindow": "Open in a new window"
   },
   "welcome": {
     "title": "Welcome to ComfyUI",

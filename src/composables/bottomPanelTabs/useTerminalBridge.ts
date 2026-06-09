@@ -24,6 +24,8 @@ export interface TerminalBridge {
   onOutput(callback: (data: string) => void): () => void
   /** Notified when the shell exits. `null` when the host doesn't report it. */
   onExited: ((callback: () => void) => () => void) | null
+  /** Open the shell in a separate host window. `null` when unsupported. */
+  openPopout: (() => Promise<void>) | null
 }
 
 interface Desktop2Terminal {
@@ -34,11 +36,16 @@ interface Desktop2Terminal {
   restart(): Promise<TerminalRestore>
   onOutput(callback: (data: string) => void): () => void
   onExited(callback: () => void): () => void
+  openPopout(): Promise<void>
+}
+
+interface Desktop2Logs {
+  openPopout(): Promise<void>
 }
 
 declare global {
   interface Window {
-    __comfyDesktop2?: { Terminal?: Desktop2Terminal }
+    __comfyDesktop2?: { Terminal?: Desktop2Terminal; Logs?: Desktop2Logs }
   }
 }
 
@@ -52,7 +59,8 @@ export function getTerminalBridge(): TerminalBridge | null {
       resize: (cols, rows) => launcher.resize(cols, rows),
       restart: () => launcher.restart(),
       onOutput: (callback) => launcher.onOutput(callback),
-      onExited: (callback) => launcher.onExited(callback)
+      onExited: (callback) => launcher.onExited(callback),
+      openPopout: () => launcher.openPopout()
     }
   }
 
@@ -64,7 +72,8 @@ export function getTerminalBridge(): TerminalBridge | null {
       resize: (cols, rows) => legacy.resize(cols, rows),
       restart: null,
       onOutput: (callback) => legacy.onOutput(callback),
-      onExited: null
+      onExited: null,
+      openPopout: null
     }
   }
 
@@ -74,4 +83,13 @@ export function getTerminalBridge(): TerminalBridge | null {
 /** Whether any interactive terminal host is reachable from this surface. */
 export function isTerminalHostAvailable(): boolean {
   return getTerminalBridge() !== null
+}
+
+/**
+ * Resolve the read-only logs popout, or `null`. Only ComfyUI Desktop 2.0
+ * provides a separate logs window; legacy desktop and browser tabs don't.
+ */
+export function getLogsPopout(): (() => Promise<void>) | null {
+  const logs = window.__comfyDesktop2?.Logs
+  return logs ? () => logs.openPopout() : null
 }

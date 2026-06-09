@@ -43,6 +43,15 @@
           </div>
           <div class="flex items-center gap-2">
             <Button
+              v-if="popoutAction"
+              variant="muted-textonly"
+              size="sm"
+              :aria-label="t('terminal.openInNewWindow')"
+              @click="openInNewWindow"
+            >
+              <i class="pi pi-external-link" />
+            </Button>
+            <Button
               v-if="isShortcutsTabActive"
               variant="muted-textonly"
               size="sm"
@@ -87,6 +96,10 @@ import { useI18n } from 'vue-i18n'
 
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import Button from '@/components/ui/button/Button.vue'
+import {
+  getLogsPopout,
+  getTerminalBridge
+} from '@/composables/bottomPanelTabs/useTerminalBridge'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
@@ -102,6 +115,21 @@ const isShortcutsTabActive = computed(() => {
     activeTabId === 'shortcuts-view-controls'
   )
 })
+
+// The host (ComfyUI Desktop 2.0) can open the live Terminal/Logs in a separate
+// window. Surface the action only on those tabs and only when the host offers it.
+const popoutAction = computed<(() => Promise<void>) | null>(() => {
+  const activeTabId = bottomPanelStore.activeBottomPanelTabId
+  if (activeTabId === 'command-terminal') {
+    return getTerminalBridge()?.openPopout ?? null
+  }
+  if (activeTabId === 'logs-terminal') return getLogsPopout()
+  return null
+})
+
+const openInNewWindow = async () => {
+  await popoutAction.value?.()
+}
 
 const shouldCapitalizeTab = (tabId: string): boolean => {
   return tabId !== 'shortcuts-essentials' && tabId !== 'shortcuts-view-controls'

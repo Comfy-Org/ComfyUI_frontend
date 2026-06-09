@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { getTerminalBridge, isTerminalHostAvailable } from './useTerminalBridge'
+import {
+  getLogsPopout,
+  getTerminalBridge,
+  isTerminalHostAvailable
+} from './useTerminalBridge'
 
 const electronAPIMock = vi.hoisted(() => vi.fn())
 vi.mock('@/utils/envUtil', () => ({ electronAPI: electronAPIMock }))
@@ -21,7 +25,7 @@ describe('useTerminalBridge', () => {
     expect(isTerminalHostAvailable()).toBe(false)
   })
 
-  it('prefers the Desktop 2.0 host and exposes restart + exit notifications', () => {
+  it('prefers the Desktop 2.0 host and exposes restart + exit + popout', () => {
     const launcher = {
       subscribe: vi.fn(),
       unsubscribe: vi.fn(),
@@ -29,7 +33,8 @@ describe('useTerminalBridge', () => {
       resize: vi.fn(),
       restart: vi.fn(),
       onOutput: vi.fn(),
-      onExited: vi.fn()
+      onExited: vi.fn(),
+      openPopout: vi.fn()
     }
     window.__comfyDesktop2 = { Terminal: launcher }
 
@@ -37,10 +42,25 @@ describe('useTerminalBridge', () => {
     expect(bridge).not.toBeNull()
     expect(bridge?.restart).not.toBeNull()
     expect(bridge?.onExited).not.toBeNull()
+    expect(bridge?.openPopout).not.toBeNull()
 
     void bridge?.write('ls\r')
     expect(launcher.write).toHaveBeenCalledWith('ls\r')
+    void bridge?.openPopout?.()
+    expect(launcher.openPopout).toHaveBeenCalled()
     expect(isTerminalHostAvailable()).toBe(true)
+  })
+
+  it('exposes the logs popout only under the Desktop 2.0 host', () => {
+    expect(getLogsPopout()).toBeNull()
+
+    const openPopout = vi.fn()
+    window.__comfyDesktop2 = { Logs: { openPopout } }
+
+    const logsPopout = getLogsPopout()
+    expect(logsPopout).not.toBeNull()
+    void logsPopout?.()
+    expect(openPopout).toHaveBeenCalled()
   })
 
   it('falls back to the legacy desktop host without restart/exit support', () => {
@@ -73,7 +93,8 @@ describe('useTerminalBridge', () => {
       resize: vi.fn(),
       restart: vi.fn(),
       onOutput: vi.fn(),
-      onExited: vi.fn()
+      onExited: vi.fn(),
+      openPopout: vi.fn()
     }
     const legacy = {
       write: vi.fn(),
