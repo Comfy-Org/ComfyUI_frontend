@@ -1282,6 +1282,15 @@
         "toastMessageWithTypes": "A entrada {inputName} de {nodeName} espera {expectedType}, mas a saída conectada é {receivedType}.",
         "toastTitle": "Conexão inválida"
       },
+      "unknown_validation_error": {
+        "details": "{nodeName} retornou um erro de validação não reconhecido: {errorType}",
+        "detailsWithRawDetails": "{nodeName} retornou um erro de validação não reconhecido ({errorType}): {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Um nó retornou um erro de validação que o ComfyUI não reconhece.",
+        "title": "Falha na validação",
+        "toastMessage": "{nodeName} retornou um erro de validação não reconhecido.",
+        "toastTitle": "Falha na validação"
+      },
       "value_bigger_than_max": {
         "details": "{nodeName} possui um valor acima do máximo para {inputName}.",
         "detailsWithValue": "O valor {receivedValue} para {inputName} de {nodeName} está acima do máximo {maxValue}.",
@@ -1485,6 +1494,7 @@
     "deleteImage": "Excluir imagem",
     "deprecated": "OBSOLETO",
     "description": "Descrição",
+    "details": "Detalhes",
     "devOnly": "DEV",
     "devices": "Dispositivos",
     "disableAll": "Desativar tudo",
@@ -1574,6 +1584,7 @@
     "jobIdCopied": "ID da tarefa copiado para a área de transferência",
     "keybinding": "Atalho",
     "keybindingAlreadyExists": "Atalho já existe em",
+    "keybindingListAriaLabel": "Atalhos de teclado: {combos}",
     "keybindingPresets": {
       "default": "Predefinição padrão",
       "deletePreset": "Excluir predefinição",
@@ -1624,6 +1635,7 @@
     "mostRelevant": "Mais relevante",
     "multiSelectDropdown": "Menu suspenso de seleção múltipla",
     "nMoreKeybindings": "+ {count} mais",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "Nome",
     "newFolder": "Nova pasta",
     "next": "Próximo",
@@ -2996,6 +3008,7 @@
     "errorHelp": "Para mais ajuda, {github} ou {support}",
     "errorHelpGithub": "enviar um issue no GitHub",
     "errorHelpSupport": "contatar nosso suporte",
+    "errorLog": "Log de erros",
     "errors": "Erros",
     "executionErrorOccurred": "Ocorreu um erro durante a execução. Verifique a aba de Erros para mais detalhes.",
     "fallbackGroupTitle": "Grupo",
@@ -3030,10 +3043,12 @@
     "hideAdvancedShort": "Ocultar avançado",
     "hideInput": "Ocultar entrada",
     "info": "Informações",
+    "infoFor": "Informações para {item}",
     "inputs": "ENTRADAS",
     "inputsNone": "SEM ENTRADAS",
     "inputsNoneTooltip": "O nó não possui entradas",
     "locateNode": "Localizar nó no canvas",
+    "locateNodeFor": "Localizar {item}",
     "missingMedia": {
       "audio": "Áudio",
       "cancelSelection": "Cancelar seleção",
