@@ -23,6 +23,10 @@ function promotedInputNames(host: {
     .map((input) => input.name)
 }
 
+function promotedHostWidgetNames(host: { widgets?: IBaseWidget[] }) {
+  return host.widgets?.map((widget) => widget.name) ?? []
+}
+
 function writePromotedInputValue(
   host: { inputs: Array<{ widgetId?: WidgetId; name: string }> },
   name: string,
@@ -613,13 +617,13 @@ describe('reorderSubgraphInputsByName', () => {
     promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
     promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
 
-    expect(host.widgets).toHaveLength(0)
     expect(promotedInputNames(host)).toEqual(['first', 'second'])
+    expect(promotedHostWidgetNames(host)).toEqual(['first', 'second'])
 
     reorderSubgraphInputsByName(host, ['second', 'first'])
 
-    expect(host.widgets).toHaveLength(0)
     expect(promotedInputNames(host)).toEqual(['second', 'first'])
+    expect(promotedHostWidgetNames(host)).toEqual(['second', 'first'])
   })
 
   it('keeps promoted widget values aligned when a plain input is reordered before them', () => {
@@ -644,8 +648,8 @@ describe('reorderSubgraphInputsByName', () => {
 
     reorderSubgraphInputsByName(host, ['plain', 'second', 'first'])
 
-    expect(host.widgets).toHaveLength(0)
     expect(promotedInputNames(host)).toEqual(['second', 'first'])
+    expect(promotedHostWidgetNames(host)).toEqual(['second', 'first'])
     expect(host.serialize().widgets_values).toEqual([
       'second value',
       'first value'
@@ -737,11 +741,11 @@ describe('reorderSubgraphInputsByWidgetOrder', () => {
       firstPromotedWidget
     ])
 
-    expect(host.widgets).toHaveLength(0)
     expect(host.subgraph.inputs.map((input) => input.name)).toEqual([
       'text_1',
       'text'
     ])
+    expect(promotedHostWidgetNames(host)).toEqual(['text_1', 'text'])
     expect(host.serialize().widgets_values).toEqual([
       'second value',
       'first value'
