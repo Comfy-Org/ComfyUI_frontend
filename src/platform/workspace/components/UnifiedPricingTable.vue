@@ -18,7 +18,7 @@
          and the plan cards. Grows to fill the dialog so the footnote pins to the
          bottom, and the cards sit toward the top (DES-197 2951:592109). -->
     <div
-      class="flex flex-col gap-6 rounded-2xl border border-border-default p-6"
+      class="flex flex-col gap-6 rounded-2xl border border-border-default bg-base-background p-6"
     >
       <!-- Billing-cycle toggle (personal tiers only; the team plan is a yearly
            commitment expressed through the slider). -->
@@ -90,7 +90,7 @@
                   ${{ getPrice(tier) }}
                 </span>
                 <span class="font-inter text-sm/normal text-base-foreground">
-                  {{ t('subscription.usdPerMonthPerMember') }}
+                  {{ t('subscription.usdPerMonth') }}
                 </span>
               </div>
               <span class="text-sm text-muted-foreground">

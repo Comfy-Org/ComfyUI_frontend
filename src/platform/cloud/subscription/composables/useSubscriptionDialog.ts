@@ -39,7 +39,7 @@ export const useSubscriptionDialog = () => {
         },
         content: {
           class:
-            '!p-0 rounded-2xl border border-border-default bg-base-background/60 backdrop-blur-md shadow-[0_25px_80px_rgba(5,6,12,0.45)] h-full'
+            '!p-0 rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)] h-full'
         }
       }
     }
