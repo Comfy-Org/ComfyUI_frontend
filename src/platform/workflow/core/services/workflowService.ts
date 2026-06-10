@@ -445,7 +445,8 @@ export const useWorkflowService = () => {
    */
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
-    workflowData: ComfyWorkflowJSON
+    workflowData: ComfyWorkflowJSON,
+    shareId?: string
   ) => {
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
@@ -499,6 +500,9 @@ export const useWorkflowService = () => {
               ) ?? freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
+          if (shareId) {
+            loadedWorkflow.shareId = shareId
+          }
           loadedWorkflow.changeTracker.reset(workflowData)
           loadedWorkflow.changeTracker.restore()
           return
@@ -510,12 +514,18 @@ export const useWorkflowService = () => {
         workflowData
       )
       tempWorkflow.initialMode = freshLoadMode
+      if (shareId) {
+        tempWorkflow.shareId = shareId
+      }
       trackIfEnteringApp(tempWorkflow)
       await workflowStore.openWorkflow(tempWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    if (shareId) {
+      loadedWorkflow.shareId = shareId
+    }
     if (loadedWorkflow.initialMode === undefined) {
       loadedWorkflow.initialMode = freshLoadMode
       trackIfEnteringApp(loadedWorkflow)
