@@ -51,6 +51,13 @@
         />
       </template>
     </Dialog>
+    <LinkReleaseContextMenu
+      ref="linkReleaseMenu"
+      :context="linkReleaseContext"
+      @select-node="connectNodeFromMenu"
+      @add-reroute="addRerouteFromMenu"
+      @dismiss="reset"
+    />
   </div>
 </template>
 
@@ -62,7 +69,11 @@ import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphNode,
+  LiteGraph,
+  isNodeSlot
+} from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
@@ -78,11 +89,12 @@ import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 
+import LinkReleaseContextMenu from './LinkReleaseContextMenu.vue'
+import type { LinkReleaseContext } from './linkReleaseMenuModel'
 import NodeSearchContent from './v2/NodeSearchContent.vue'
 import NodeSearchBox from './NodeSearchBox.vue'
 
 let triggerEvent: CanvasPointerEvent | null = null
-let listenerController: AbortController | null = null
 let disconnectOnReset = false
 
 const settingStore = useSettingStore()
@@ -103,6 +115,8 @@ const enableNodePreview = computed(
     settingStore.get('Comfy.NodeSearchBoxImpl.NodePreview') &&
     windowWidth.value >= MIN_WIDTH_FOR_PREVIEW
 )
+const linkReleaseMenu = ref<InstanceType<typeof LinkReleaseContextMenu>>()
+const linkReleaseContext = ref<LinkReleaseContext | null>(null)
 function getNewNodeLocation(): Point {
   return triggerEvent
     ? [triggerEvent.canvasX, triggerEvent.canvasY]
@@ -129,13 +143,16 @@ function closeDialog() {
 }
 const canvasStore = useCanvasStore()
 
-function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
-  const followCursor = settingStore.get('Comfy.NodeSearchBoxImpl.FollowCursor')
+function connectNewNode(
+  nodeDef: ComfyNodeDefImpl,
+  options: { ghost?: boolean; dragEvent?: MouseEvent } = {}
+) {
+  const { ghost = false, dragEvent } = options
   const node = withNodeAddSource('search_modal', () =>
     litegraphService.addNodeOnGraph(
       nodeDef,
       { pos: getNewNodeLocation() },
-      { ghost: useSearchBoxV2.value && followCursor, dragEvent }
+      { ghost, dragEvent }
     )
   )
   if (!node) return
@@ -150,6 +167,14 @@ function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
 
   // Notify changeTracker - new step should be added
   useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+}
+
+function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
+  const followCursor = settingStore.get('Comfy.NodeSearchBoxImpl.FollowCursor')
+  connectNewNode(nodeDef, {
+    ghost: useSearchBoxV2.value && followCursor,
+    dragEvent
+  })
   window.requestAnimationFrame(closeDialog)
 }
 
@@ -202,62 +227,38 @@ function showContextMenu(e: CanvasPointerEvent) {
   const firstLink = getFirstLink()
   if (!firstLink) return
 
-  const { node, fromSlot, toType } = firstLink
-  const commonOptions = {
-    e,
-    allow_searchbox: true,
-    showSearchBox: () => {
-      cancelResetOnContextClose()
-      showSearchBox(e)
-    }
+  const { fromSlot, toType } = firstLink
+  linkReleaseContext.value = {
+    dataType: fromSlot.type?.toString() ?? '',
+    slotName: fromSlot.name ?? '',
+    isFromOutput: toType === 'input'
   }
-  const afterRerouteId = firstLink.fromReroute?.id
-  const connectionOptions =
-    toType === 'input'
-      ? { nodeFrom: node, slotFrom: fromSlot, afterRerouteId }
-      : { nodeTo: node, slotTo: fromSlot, afterRerouteId }
-
-  const canvas = canvasStore.getCanvas()
-  const menu = canvas.showConnectionMenu({
-    ...connectionOptions,
-    ...commonOptions
-  })
-
-  if (!menu) {
-    console.warn('No menu was returned from showConnectionMenu')
-    return
-  }
-
   triggerEvent = e
-  listenerController = new AbortController()
-  const { signal } = listenerController
-  const options = { once: true, signal }
+  linkReleaseMenu.value?.show(e)
+}
 
-  // Connect the node after it is created via context menu
-  useEventListener(
-    canvas.canvas,
-    'connect-new-default-node',
-    (createEvent) => {
-      if (!(createEvent instanceof CustomEvent))
-        throw new Error('Invalid event')
+function connectNodeFromMenu(nodeDef: ComfyNodeDefImpl) {
+  connectNewNode(nodeDef)
+  reset()
+}
 
-      const node: unknown = createEvent.detail?.node
-      if (!(node instanceof LGraphNode)) throw new Error('Invalid node')
-
-      disconnectOnReset = false
-      createEvent.preventDefault()
-      canvas.linkConnector.connectToNode(node, e)
-    },
-    options
-  )
-
-  // Reset when the context menu is closed
-  const cancelResetOnContextClose = useEventListener(
-    menu.controller.signal,
-    'abort',
-    reset,
-    options
-  )
+function addRerouteFromMenu() {
+  const firstLink = getFirstLink()
+  const node = firstLink?.node
+  if (
+    firstLink &&
+    triggerEvent &&
+    node instanceof LGraphNode &&
+    isNodeSlot(firstLink.fromSlot)
+  ) {
+    node.connectFloatingReroute(
+      [triggerEvent.canvasX, triggerEvent.canvasY],
+      firstLink.fromSlot,
+      firstLink.fromReroute?.id
+    )
+    useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+  }
+  reset()
 }
 
 // Disable litegraph's default behavior of release link and search box.
@@ -333,8 +334,6 @@ function handleDroppedOnCanvas(e: CustomEvent<CanvasPointerEvent>) {
 
 // Resets litegraph state
 function reset() {
-  listenerController?.abort()
-  listenerController = null
   triggerEvent = null
 
   const canvas = canvasStore.getCanvas()
