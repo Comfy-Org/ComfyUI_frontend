@@ -19,7 +19,9 @@ export interface SubscriptionInfo {
   tier: SubscriptionTier | null
   duration: SubscriptionDuration | null
   planSlug: string | null
+  /** ISO 8601; format at the display site. */
   renewalDate: string | null
+  /** ISO 8601; format at the display site. */
   endDate: string | null
   isCancelled: boolean
   hasFunds: boolean
@@ -50,11 +52,15 @@ export interface BillingActions {
   /**
    * Reactivates a cancelled-but-still-active subscription. Legacy has no
    * dedicated endpoint, so the legacy adapter re-runs the checkout flow.
+   * The workspace adapter refreshes status and balance internally on success.
    */
   resubscribe: () => Promise<void>
   /**
-   * Purchases additional credits. Standardized on **cents**; the legacy
-   * adapter converts to dollars for the /customers/credit endpoint.
+   * Purchases additional credits. Standardized on **whole-dollar cents**
+   * (multiples of 100); the legacy adapter divides by 100 for the
+   * dollar-based /customers/credit endpoint.
+   * Pass-through by design: the caller owns the completed/pending follow-up
+   * (balance refresh or billing-op polling), so this does not refresh.
    */
   topup: (amountCents: number) => Promise<CreateTopupResponse | void>
   fetchPlans: () => Promise<void>
@@ -78,29 +84,14 @@ export interface BillingState {
   currentPlanSlug: ComputedRef<string | null>
   isLoading: Ref<boolean>
   error: Ref<string | null>
-  /**
-   * Convenience computed for checking if subscription is active.
-   * Equivalent to `subscription.value?.isActive ?? false`
-   */
   isActiveSubscription: ComputedRef<boolean>
-  /**
-   * Whether the current billing context has a FREE tier subscription.
-   * Workspace-aware: reflects the active workspace's tier, not the user's personal tier.
-   */
+  /** Reflects the active workspace's tier, not the user's personal tier. */
   isFreeTier: ComputedRef<boolean>
-  /**
-   * Coarse billing/funding state (workspace `billing_status`). Drives the
-   * orientation banners (B6). Legacy has no equivalent and reports null.
-   */
+  /** Coarse funding state (`billing_status`); legacy reports null. */
   billingStatus: ComputedRef<BillingStatus | null>
-  /**
-   * Subscription lifecycle state (`subscription_status`). Legacy synthesizes
-   * it from active/cancelled flags.
-   */
+  /** Lifecycle state; legacy synthesizes it from active/cancelled flags. */
   subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
-  /** Convenience accessor for the active subscription tier. */
   tier: ComputedRef<SubscriptionTier | null>
-  /** Convenience accessor for the next renewal date (ISO string). */
   renewalDate: ComputedRef<string | null>
 }
 

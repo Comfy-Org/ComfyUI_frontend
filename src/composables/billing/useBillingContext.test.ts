@@ -5,13 +5,17 @@ import type { Plan } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingContext } from './useBillingContext'
 
-const { mockTeamWorkspacesEnabled, mockIsPersonal, mockPlans } = vi.hoisted(
-  () => ({
-    mockTeamWorkspacesEnabled: { value: false },
-    mockIsPersonal: { value: true },
-    mockPlans: { value: [] as Plan[] }
-  })
-)
+const {
+  mockTeamWorkspacesEnabled,
+  mockIsPersonal,
+  mockPlans,
+  mockPurchaseCredits
+} = vi.hoisted(() => ({
+  mockTeamWorkspacesEnabled: { value: false },
+  mockIsPersonal: { value: true },
+  mockPlans: { value: [] as Plan[] },
+  mockPurchaseCredits: vi.fn()
+}))
 
 vi.mock('@vueuse/core', async (importOriginal) => {
   const original = await importOriginal()
@@ -70,6 +74,12 @@ vi.mock(
     })
   })
 )
+
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: () => ({
+    purchaseCredits: mockPurchaseCredits
+  })
+}))
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
@@ -172,6 +182,13 @@ describe('useBillingContext', () => {
   it('exposes manageSubscription action', async () => {
     const { manageSubscription } = useBillingContext()
     await expect(manageSubscription()).resolves.toBeUndefined()
+  })
+
+  it('converts topup cents to whole dollars for the legacy credit endpoint', async () => {
+    const { topup } = useBillingContext()
+    await topup(500)
+
+    expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
   })
 
   it('provides isActiveSubscription convenience computed', () => {
