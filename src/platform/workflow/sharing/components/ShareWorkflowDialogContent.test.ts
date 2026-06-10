@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
@@ -335,7 +335,8 @@ describe('ShareWorkflowDialogContent', () => {
     renderComponent()
     await flushPromises()
 
-    const closeButton = screen.getByRole('button', { name: 'Close' })
+    const header = screen.getByRole('banner')
+    const closeButton = within(header).getByRole('button', { name: 'Close' })
     await userEvent.click(closeButton)
 
     expect(onClose).toHaveBeenCalled()
