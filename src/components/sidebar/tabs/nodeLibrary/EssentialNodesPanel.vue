@@ -14,10 +14,10 @@
       v-for="section in filteredSections"
       :id="`essentials-section-${section.key}`"
       :key="section.key"
-      class="scroll-mt-[65px] border-b border-border-default last:border-b-0"
+      class="border-b border-border-default last:border-b-0"
     >
       <div
-        class="sticky top-16 z-10 flex h-14 w-full items-center justify-between border-0 bg-comfy-menu-bg px-4 text-sm font-bold tracking-wide text-muted-foreground"
+        class="sticky top-0 z-10 flex h-14 w-full items-center justify-between border-0 bg-comfy-menu-bg px-4 text-sm font-bold tracking-wide text-muted-foreground"
       >
         <span class="uppercase">{{ section.label }}</span>
       </div>
@@ -41,7 +41,7 @@
           )"
           :id="`essentials-subgroup-${subgroup.key}`"
           :key="subgroup.key"
-          class="scroll-mt-[121px] last:pb-4"
+          class="scroll-mt-14 last:pb-4"
         >
           <div class="text-foreground text-sm leading-[15px] font-normal">
             {{ subgroup.label }}

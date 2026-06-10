@@ -2,15 +2,13 @@
   <SidebarTabTemplate hide-toolbar :title="$t('sideToolbar.nodes')">
     <template #body>
       <NodeDragPreview />
-      <div
-        ref="scrollContainerRef"
-        class="h-full min-h-0 scrollbar-gutter-stable overflow-y-auto overscroll-none"
-      >
-        <div
-          class="sticky z-20 bg-comfy-menu-bg transition-[top] duration-200 ease-out"
-          :style="{ top: `${headerTop}px` }"
-        >
-          <div ref="titleTabsRef">
+      <div class="flex h-full flex-col">
+        <div class="shrink-0 overflow-hidden bg-comfy-menu-bg">
+          <div
+            ref="titleTabsRef"
+            class="transition-[margin-top] duration-200 ease-out"
+            :style="{ marginTop: `${headerTop}px` }"
+          >
             <div class="px-4 pt-4 pb-2 font-bold">
               {{ $t('sideToolbar.nodes') }}
             </div>
@@ -143,7 +141,10 @@
             </div>
           </div>
         </div>
-        <div class="pb-2">
+        <div
+          ref="scrollContainerRef"
+          class="min-h-0 flex-1 scrollbar-gutter-stable overflow-y-auto overscroll-none pb-2"
+        >
           <TabPanel
             v-if="flags.nodeLibraryEssentialsEnabled"
             :model-value="selectedTab"
@@ -528,15 +529,12 @@ function smoothScrollTo(
     const progress = Math.min(elapsed / duration, 1)
     const eased = 1 - Math.pow(1 - progress, 3)
     container.scrollTop = start + distance * eased
-    if (progress < 1) return requestAnimationFrame(step)
-
-    const headerHeight = titleTabsRef.value?.offsetHeight ?? 0
-    headerTop.value = Math.min(0, Math.max(-target, -headerHeight))
+    if (progress < 1) requestAnimationFrame(step)
   }
   requestAnimationFrame(step)
 }
 
-async function scrollToId(id: string, marginTop: number) {
+async function scrollToId(id: string, marginTop = 0) {
   await nextTick()
   const container = scrollContainerRef.value
   const el = document.getElementById(id)
@@ -549,16 +547,15 @@ async function scrollToId(id: string, marginTop: number) {
   smoothScrollTo(container, top)
 }
 
-const STICKY_SEARCH_HEIGHT = 65
 const STICKY_SECTION_HEADER_HEIGHT = 56
 async function jumpToSection(sectionKey: string) {
-  await scrollToId(`essentials-section-${sectionKey}`, STICKY_SEARCH_HEIGHT)
+  await scrollToId(`essentials-section-${sectionKey}`)
 }
 
 async function jumpToSubgroup(subgroupKey: string) {
   await scrollToId(
     `essentials-subgroup-${subgroupKey}`,
-    STICKY_SEARCH_HEIGHT + STICKY_SECTION_HEADER_HEIGHT
+    STICKY_SECTION_HEADER_HEIGHT
   )
 }
 
