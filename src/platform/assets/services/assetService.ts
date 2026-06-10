@@ -34,11 +34,27 @@ interface AssetPaginationOptions extends PaginationOptions {
   signal?: AbortSignal
 }
 
-interface AssetRequestOptions extends PaginationOptions {
+export type AssetSortField = 'name' | 'created_at' | 'updated_at' | 'size'
+export type AssetSortOrder = 'asc' | 'desc'
+
+export interface AssetListOptions extends PaginationOptions {
   includeTags: string[]
   excludeTags?: string[]
   includePublic?: boolean
+  sort?: AssetSortField
+  order?: AssetSortOrder
   signal?: AbortSignal
+}
+
+/** Error from the assets API carrying the HTTP status for fallback decisions. */
+export class AssetRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number
+  ) {
+    super(message)
+    this.name = 'AssetRequestError'
+  }
 }
 
 interface AssetExportOptions {
@@ -183,6 +199,8 @@ const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 export const MODELS_TAG = 'models'
 export const INPUT_TAG = 'input'
 export const OUTPUT_TAG = 'output'
+/** Asset tag used by the backend for temporary (preview) workflow outputs. */
+export const TEMP_TAG = 'temp'
 /** Asset tag used by the backend for placeholder records that are not installed. */
 export const MISSING_TAG = 'missing'
 const DEFAULT_EXCLUDED_ASSET_TAGS = [MISSING_TAG]
@@ -278,7 +296,7 @@ function createAssetService() {
    * Handles API response with consistent error handling and Zod validation
    */
   async function handleAssetRequest(
-    options: AssetRequestOptions,
+    options: AssetListOptions,
     context: string
   ): Promise<AssetResponse> {
     const {
@@ -287,6 +305,8 @@ function createAssetService() {
       limit = DEFAULT_LIMIT,
       offset,
       includePublic,
+      sort,
+      order,
       signal
     } = options
     const normalizedIncludeTags = normalizeAssetTags(includeTags)
@@ -305,18 +325,38 @@ function createAssetService() {
     if (includePublic !== undefined) {
       queryParams.set('include_public', includePublic ? 'true' : 'false')
     }
+    if (sort !== undefined) {
+      queryParams.set('sort', sort)
+    }
+    if (order !== undefined) {
+      queryParams.set('order', order)
+    }
 
     const url = `${ASSETS_ENDPOINT}?${queryParams.toString()}`
     const res = signal
       ? await api.fetchApi(url, { signal })
       : await api.fetchApi(url)
     if (!res.ok) {
-      throw new Error(
-        `${EXPERIMENTAL_WARNING}Unable to load ${context}: Server returned ${res.status}. Please try again.`
+      throw new AssetRequestError(
+        `${EXPERIMENTAL_WARNING}Unable to load ${context}: Server returned ${res.status}. Please try again.`,
+        res.status
       )
     }
     const data = await res.json()
     return validateAssetResponse(data)
+  }
+
+  /**
+   * Gets one paginated asset response for arbitrary tag/sort options.
+   * Used by the media sidebar's assets-API path.
+   */
+  async function getAssetsPage(
+    options: AssetListOptions
+  ): Promise<AssetResponse> {
+    return await handleAssetRequest(
+      options,
+      `assets for tags ${options.includeTags.join(',')}`
+    )
   }
   /**
    * Gets a list of model folder keys from the asset API
@@ -948,6 +988,7 @@ function createAssetService() {
     getAssetsForNodeType,
     getAssetDetails,
     getAssetsByTag,
+    getAssetsPage,
     getAssetsPageByTag,
     getAllAssetsByTag,
     getInputAssetsIncludingPublic,

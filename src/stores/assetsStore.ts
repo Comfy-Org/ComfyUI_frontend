@@ -11,11 +11,24 @@ import type {
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import {
+  AssetRequestError,
   INPUT_TAG,
   OUTPUT_TAG,
   assetService
 } from '@/platform/assets/services/assetService'
-import type { PaginationOptions } from '@/platform/assets/services/assetService'
+import type {
+  AssetSortField,
+  AssetSortOrder,
+  PaginationOptions
+} from '@/platform/assets/services/assetService'
+import {
+  mergeAssetStreams,
+  pickNextStream
+} from '@/platform/assets/utils/assetStreamMerge'
+import type {
+  AssetSortSpec,
+  AssetStreamState
+} from '@/platform/assets/utils/assetStreamMerge'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
@@ -317,6 +330,120 @@ export const useAssetsStore = defineStore('assets', () => {
   const loadMoreFlatOutputs = async () => {
     if (flatOutputIsLoadingMore.value) return
     await fetchFlatOutputs(true)
+  }
+
+  // Assets-API path for the media sidebar: one paginated stream per tag
+  // (include_tags is AND semantics, so output+temp / All need a client-side
+  // union), merged by the active sort key and deduped by asset id.
+  const UNION_PAGE_SIZE = 100
+
+  const apiAssets = ref<AssetItem[]>([])
+  const apiLoading = ref(false)
+  const apiError = ref<unknown>(null)
+  const apiHasMore = ref(false)
+  const apiIsLoadingMore = ref(false)
+  /**
+   * Session-scoped flag set when the assets API is unreachable (503 from OSS
+   * servers without --enable-assets, 404 from older servers). The sidebar
+   * falls back to the history path for the rest of the session.
+   */
+  const assetApiUnavailable = ref(false)
+
+  let apiStreams: AssetStreamState[] = []
+  let apiSortSpec: AssetSortSpec = { sort: 'created_at', order: 'desc' }
+  let apiRequestId = 0
+
+  async function fetchStreamPage(
+    stream: AssetStreamState,
+    spec: AssetSortSpec
+  ): Promise<void> {
+    const page = await assetService.getAssetsPage({
+      includeTags: [stream.tag],
+      limit: UNION_PAGE_SIZE,
+      offset: stream.offset,
+      sort: spec.sort,
+      order: spec.order
+    })
+    stream.items.push(...page.assets)
+    stream.offset += page.assets.length
+    stream.hasMore = page.has_more && page.assets.length > 0
+  }
+
+  function syncApiAssets() {
+    apiAssets.value = mergeAssetStreams(apiStreams, apiSortSpec)
+    apiHasMore.value = apiStreams.some((stream) => stream.hasMore)
+  }
+
+  /**
+   * (Re)load the union streams for the given tags and sort. Replaces any
+   * in-flight or previous result.
+   */
+  async function fetchApiAssets(params: {
+    tags: string[]
+    sort: AssetSortField
+    order: AssetSortOrder
+  }): Promise<void> {
+    const requestId = ++apiRequestId
+    const spec: AssetSortSpec = { sort: params.sort, order: params.order }
+    const streams: AssetStreamState[] = params.tags.map((tag) => ({
+      tag,
+      items: [],
+      offset: 0,
+      hasMore: true
+    }))
+
+    apiLoading.value = true
+    apiError.value = null
+    try {
+      await Promise.all(streams.map((stream) => fetchStreamPage(stream, spec)))
+      if (requestId !== apiRequestId) return
+      apiStreams = streams
+      apiSortSpec = spec
+      syncApiAssets()
+    } catch (err) {
+      if (requestId !== apiRequestId) return
+      apiError.value = err
+      if (
+        err instanceof AssetRequestError &&
+        (err.status === 503 || err.status === 404)
+      ) {
+        assetApiUnavailable.value = true
+      }
+      console.error('Failed to fetch assets from assets API:', err)
+    } finally {
+      if (requestId === apiRequestId) apiLoading.value = false
+    }
+  }
+
+  /** Advance the stream whose frontier is least far along in sort order. */
+  async function loadMoreApiAssets(): Promise<void> {
+    if (apiLoading.value || apiIsLoadingMore.value) return
+    const index = pickNextStream(apiStreams, apiSortSpec)
+    if (index === -1) return
+
+    const requestId = apiRequestId
+    apiIsLoadingMore.value = true
+    try {
+      await fetchStreamPage(apiStreams[index], apiSortSpec)
+      if (requestId !== apiRequestId) return
+      syncApiAssets()
+    } catch (err) {
+      if (requestId !== apiRequestId) return
+      apiError.value = err
+      console.error('Failed to load more assets from assets API:', err)
+    } finally {
+      apiIsLoadingMore.value = false
+    }
+  }
+
+  /** Optimistically patch an asset across loaded streams (e.g. tag changes). */
+  function patchApiAsset(id: string, updates: Partial<AssetItem>): void {
+    for (const stream of apiStreams) {
+      stream.items = stream.items.map((item) =>
+        item.id === id ? { ...item, ...updates } : item
+      )
+    }
+    syncApiAssets()
   }
 
   /**
@@ -874,6 +1001,17 @@ export const useAssetsStore = defineStore('assets', () => {
     updateHistory,
     loadMoreHistory,
     setAssetPreview,
+
+    // Assets-API union streams (media sidebar)
+    apiAssets,
+    apiLoading,
+    apiError,
+    apiHasMore,
+    apiIsLoadingMore,
+    assetApiUnavailable,
+    fetchApiAssets,
+    loadMoreApiAssets,
+    patchApiAsset,
 
     // Flat output assets (cloud-only, tag-based)
     flatOutputAssets,

@@ -10,6 +10,7 @@ const zAsset = z.object({
   mime_type: z.string().nullish(),
   tags: z.array(z.string()).optional().default([]),
   preview_id: z.string().nullable().optional(),
+  job_id: z.string().nullish(),
   display_name: z.string().optional(),
   preview_url: z.string().optional(),
   thumbnail_url: z.string().optional(),

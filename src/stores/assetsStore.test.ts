@@ -7,7 +7,10 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { assetService } from '@/platform/assets/services/assetService'
+import {
+  AssetRequestError,
+  assetService
+} from '@/platform/assets/services/assetService'
 
 // Mock the api module
 vi.mock('@/scripts/api', () => ({
@@ -27,10 +30,19 @@ vi.mock('@/platform/assets/services/assetService', () => ({
     getAssetsByTag: vi.fn(),
     getAllAssetsByTag: vi.fn(),
     getAssetsForNodeType: vi.fn(),
+    getAssetsPage: vi.fn(),
     invalidateInputAssetsIncludingPublic: vi.fn(),
     updateAsset: vi.fn(),
     addAssetTags: vi.fn(),
     removeAssetTags: vi.fn()
+  },
+  AssetRequestError: class AssetRequestError extends Error {
+    constructor(
+      message: string,
+      readonly status: number
+    ) {
+      super(message)
+    }
   },
   INPUT_TAG: 'input',
   OUTPUT_TAG: 'output'
@@ -1633,5 +1645,188 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
     await Promise.all([p1, p2])
 
     expect(store.flatOutputAssets.map((x) => x.id)).toEqual(['shared-1'])
+  })
+})
+
+describe('assetsStore - Assets API union streams', () => {
+  const makeAsset = (
+    id: string,
+    createdAt: string,
+    tags: string[] = ['output']
+  ): AssetItem => ({
+    id,
+    name: `${id}.png`,
+    size: 0,
+    tags,
+    created_at: createdAt
+  })
+
+  const page = (assets: AssetItem[], hasMore = false) => ({
+    assets,
+    total: assets.length,
+    has_more: hasMore
+  })
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.clearAllMocks()
+  })
+
+  it('fetches one stream per tag and merges by sort key', async () => {
+    vi.mocked(assetService.getAssetsPage).mockImplementation(
+      async ({ includeTags }) => {
+        if (includeTags[0] === 'output') {
+          return page([
+            makeAsset('o1', '2026-03-01T00:00:00Z'),
+            makeAsset('o2', '2026-01-01T00:00:00Z')
+          ])
+        }
+        return page([makeAsset('t1', '2026-02-01T00:00:00Z', ['temp'])])
+      }
+    )
+
+    const store = useAssetsStore()
+    await store.fetchApiAssets({
+      tags: ['output', 'temp'],
+      sort: 'created_at',
+      order: 'desc'
+    })
+
+    expect(assetService.getAssetsPage).toHaveBeenCalledTimes(2)
+    expect(
+      vi
+        .mocked(assetService.getAssetsPage)
+        .mock.calls.map(([opts]) => opts.includeTags)
+    ).toEqual([['output'], ['temp']])
+    expect(store.apiAssets.map((a) => a.id)).toEqual(['o1', 't1', 'o2'])
+    expect(store.apiHasMore).toBe(false)
+    expect(store.apiLoading).toBe(false)
+  })
+
+  it('passes sort and order through to the service', async () => {
+    vi.mocked(assetService.getAssetsPage).mockResolvedValue(page([]))
+
+    const store = useAssetsStore()
+    await store.fetchApiAssets({ tags: ['input'], sort: 'name', order: 'asc' })
+
+    expect(assetService.getAssetsPage).toHaveBeenCalledWith(
+      expect.objectContaining({ sort: 'name', order: 'asc', offset: 0 })
+    )
+  })
+
+  it('loadMore advances the least-advanced stream and dedupes', async () => {
+    vi.mocked(assetService.getAssetsPage).mockImplementation(
+      async ({ includeTags, offset }) => {
+        if (includeTags[0] === 'output') {
+          // First page exhausts the output stream at March.
+          return page([makeAsset('o1', '2026-03-01T00:00:00Z')])
+        }
+        if (offset === undefined || offset === 0) {
+          return page([makeAsset('t1', '2026-04-01T00:00:00Z', ['temp'])], true)
+        }
+        return page([
+          // Duplicate of t1 (offset drift) plus one genuinely new item.
+          makeAsset('t1', '2026-04-01T00:00:00Z', ['temp']),
+          makeAsset('t2', '2026-02-01T00:00:00Z', ['temp'])
+        ])
+      }
+    )
+
+    const store = useAssetsStore()
+    await store.fetchApiAssets({
+      tags: ['output', 'temp'],
+      sort: 'created_at',
+      order: 'desc'
+    })
+    // temp stream has more and its frontier (April) is least advanced:
+    // o1 (March) is held back until temp catches up.
+    expect(store.apiAssets.map((a) => a.id)).toEqual(['t1'])
+    expect(store.apiHasMore).toBe(true)
+
+    await store.loadMoreApiAssets()
+
+    expect(store.apiAssets.map((a) => a.id)).toEqual(['t1', 'o1', 't2'])
+    expect(store.apiHasMore).toBe(false)
+  })
+
+  it('flags the API unavailable on 503', async () => {
+    vi.mocked(assetService.getAssetsPage).mockRejectedValue(
+      new AssetRequestError('unavailable', 503)
+    )
+
+    const store = useAssetsStore()
+    await store.fetchApiAssets({
+      tags: ['output'],
+      sort: 'created_at',
+      order: 'desc'
+    })
+
+    expect(store.assetApiUnavailable).toBe(true)
+    expect(store.apiError).toBeInstanceOf(AssetRequestError)
+  })
+
+  it('does not flag unavailability on transient server errors', async () => {
+    vi.mocked(assetService.getAssetsPage).mockRejectedValue(
+      new AssetRequestError('boom', 500)
+    )
+
+    const store = useAssetsStore()
+    await store.fetchApiAssets({
+      tags: ['output'],
+      sort: 'created_at',
+      order: 'desc'
+    })
+
+    expect(store.assetApiUnavailable).toBe(false)
+    expect(store.apiError).toBeInstanceOf(AssetRequestError)
+  })
+
+  it('patchApiAsset updates loaded assets in place', async () => {
+    vi.mocked(assetService.getAssetsPage).mockResolvedValue(
+      page([makeAsset('t1', '2026-02-01T00:00:00Z', ['temp'])])
+    )
+
+    const store = useAssetsStore()
+    await store.fetchApiAssets({
+      tags: ['temp'],
+      sort: 'created_at',
+      order: 'desc'
+    })
+    store.patchApiAsset('t1', { tags: ['output'] })
+
+    expect(store.apiAssets[0].tags).toEqual(['output'])
+  })
+
+  it('ignores stale responses when a newer fetch supersedes', async () => {
+    let resolveFirst!: (value: {
+      assets: AssetItem[]
+      total: number
+      has_more: boolean
+    }) => void
+    vi.mocked(assetService.getAssetsPage)
+      .mockImplementationOnce(
+        () =>
+          new Promise((res) => {
+            resolveFirst = res
+          })
+      )
+      .mockResolvedValueOnce(page([makeAsset('b1', '2026-01-01T00:00:00Z')]))
+
+    const store = useAssetsStore()
+    const first = store.fetchApiAssets({
+      tags: ['output'],
+      sort: 'created_at',
+      order: 'desc'
+    })
+    const second = store.fetchApiAssets({
+      tags: ['input'],
+      sort: 'created_at',
+      order: 'desc'
+    })
+
+    resolveFirst(page([makeAsset('a1', '2026-02-01T00:00:00Z')]))
+    await Promise.all([first, second])
+
+    expect(store.apiAssets.map((a) => a.id)).toEqual(['b1'])
   })
 })
