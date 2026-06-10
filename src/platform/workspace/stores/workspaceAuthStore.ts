@@ -33,6 +33,10 @@ const WorkspaceTokenResponseSchema = z.object({
   permissions: z.array(z.string())
 })
 
+export type WorkspaceTokenResponse = z.infer<
+  typeof WorkspaceTokenResponseSchema
+>
+
 export class WorkspaceAuthError extends Error {
   constructor(
     message: string,
