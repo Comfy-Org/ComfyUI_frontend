@@ -3630,12 +3630,10 @@
       "unsupportedTitle": "Unsupported Node Packs",
       "ossManagerDisabledHint": "To install missing nodes, first run {pipCmd} in your Python environment to install Node Manager, then restart ComfyUI with the {flag} flag.",
       "installAll": "Install All",
-      "installNodePack": "Install node pack",
       "unknownPack": "Unknown pack",
       "installing": "Installing...",
       "installed": "Installed",
       "applyChanges": "Apply Changes",
-      "searchInManager": "Search in Node Manager",
       "viewInManager": "View in Manager",
       "collapse": "Collapse",
       "expand": "Expand"
