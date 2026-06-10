@@ -177,6 +177,16 @@ vi.mock('@/renderer/core/canvas/links/linkDropOrchestrator', () => ({
   resolveNodeSurfaceSlotCandidate: () => null
 }))
 
+vi.mock('@/renderer/core/canvas/links/multiNodeLinkConnect', () => ({
+  getSelectedNodes: () => [],
+  collectFanOutputs: () => [],
+  collectFanInputs: () => [],
+  toImageBatchSources: () => [],
+  createBatchImagesNode: vi.fn(),
+  connectImagesToDynamicInput: () => false,
+  isImageType: () => false
+}))
+
 vi.mock('@vueuse/core', () => ({
   useEventListener: (event: string, handler: (...args: unknown[]) => void) => {
     capturedHandlers[event] = handler
