@@ -519,7 +519,7 @@ describe('ensureGlobalIdUniqueness', () => {
     rootGraph.ensureGlobalIdUniqueness()
 
     expect(rootGraph.state.lastNodeId).toBeGreaterThanOrEqual(
-      subNode.id as number
+      Number(subNode.id)
     )
   })
 

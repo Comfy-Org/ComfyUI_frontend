@@ -88,6 +88,11 @@ import type {
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
 import {
+  isNumericNodeId,
+  isUnassignedNodeId,
+  nodeIdToNumber
+} from './utils/nodeId'
+import {
   deduplicateSubgraphNodeIds,
   topologicalSortSubgraphs
 } from './subgraph/subgraphDeduplication'
@@ -969,11 +974,13 @@ export class LGraph
     }
 
     // nodes
-    if (node.id != -1 && this._nodes_by_id[node.id] != null) {
+    if (!isUnassignedNodeId(node.id) && this._nodes_by_id[node.id] != null) {
       console.warn(
         'LiteGraph: there is already a node with this ID, changing it'
       )
-      node.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : ++state.lastNodeId
+      node.id = LiteGraph.use_uuids
+        ? LiteGraph.uuidv4()
+        : String(++state.lastNodeId)
     }
 
     if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
@@ -982,12 +989,15 @@ export class LGraph
 
     // give him an id
     if (LiteGraph.use_uuids) {
-      if (node.id == null || node.id == -1) node.id = LiteGraph.uuidv4()
+      if (isUnassignedNodeId(node.id)) node.id = LiteGraph.uuidv4()
     } else {
-      if (node.id == null || node.id == -1) {
-        node.id = ++state.lastNodeId
-      } else if (typeof node.id === 'number' && state.lastNodeId < node.id) {
-        state.lastNodeId = node.id
+      if (isUnassignedNodeId(node.id)) {
+        node.id = String(++state.lastNodeId)
+      } else if (
+        isNumericNodeId(node.id) &&
+        state.lastNodeId < nodeIdToNumber(node.id)
+      ) {
+        state.lastNodeId = nodeIdToNumber(node.id)
       }
     }
 
@@ -1994,9 +2004,10 @@ export class LGraph
         }
       }
 
-      nodeIdMap.set(n_info.id, ++this.last_node_id)
-      node.id = this.last_node_id
-      n_info.id = this.last_node_id
+      const newId = String(++this.last_node_id)
+      nodeIdMap.set(n_info.id, newId)
+      node.id = newId
+      n_info.id = newId
 
       // Strip links from serialized data before configure to prevent
       // onConnectionsChange from resolving subgraph-internal link IDs
@@ -2533,15 +2544,18 @@ export class LGraph
       if (subgraphs) {
         const reservedNodeIds = new Set<number>()
         for (const node of this._nodes) {
-          if (typeof node.id === 'number') reservedNodeIds.add(node.id)
+          if (isNumericNodeId(node.id))
+            reservedNodeIds.add(nodeIdToNumber(node.id))
         }
         for (const sg of this.subgraphs.values()) {
           for (const node of sg.nodes) {
-            if (typeof node.id === 'number') reservedNodeIds.add(node.id)
+            if (isNumericNodeId(node.id))
+              reservedNodeIds.add(nodeIdToNumber(node.id))
           }
         }
         for (const n of nodesData ?? []) {
-          if (typeof n.id === 'number') reservedNodeIds.add(n.id)
+          if (n.id != null && isNumericNodeId(n.id))
+            reservedNodeIds.add(nodeIdToNumber(n.id))
         }
 
         const deduplicated = this.isRootGraph
@@ -2588,7 +2602,7 @@ export class LGraph
           }
 
           // id it or it will create a new id
-          node.id = n_info.id
+          if (n_info.id != null) node.id = String(n_info.id)
           // add before configure, otherwise configure cannot create links
           this.add(node, true)
           nodeDataMap.set(node.id, n_info)
@@ -2710,24 +2724,24 @@ export class LGraph
       const remappedIds = new Map<NodeId, NodeId>()
 
       for (const node of graph._nodes) {
-        if (typeof node.id !== 'number') continue
+        if (!isNumericNodeId(node.id)) continue
 
-        if (usedNodeIds.has(node.id)) {
+        const numericId = nodeIdToNumber(node.id)
+        if (usedNodeIds.has(numericId)) {
           const oldId = node.id
           while (usedNodeIds.has(++state.lastNodeId));
-          const newId = state.lastNodeId
+          const newId = String(state.lastNodeId)
           delete graph._nodes_by_id[oldId]
           node.id = newId
           graph._nodes_by_id[newId] = node
-          usedNodeIds.add(newId)
+          usedNodeIds.add(state.lastNodeId)
           remappedIds.set(oldId, newId)
           console.warn(
             `LiteGraph: duplicate node ID ${oldId} reassigned to ${newId} in graph ${graph.id}`
           )
         } else {
-          usedNodeIds.add(node.id as number)
-          if ((node.id as number) > state.lastNodeId)
-            state.lastNodeId = node.id as number
+          usedNodeIds.add(numericId)
+          if (numericId > state.lastNodeId) state.lastNodeId = numericId
         }
       }
 

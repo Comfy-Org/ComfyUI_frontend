@@ -1,5 +1,6 @@
 import type { LGraphState } from '../LGraph'
 import type { NodeId } from '../LGraphNode'
+import { isNumericNodeId, nodeIdToNumber } from '../utils/nodeId'
 import type {
   ExportedSubgraph,
   ExposedWidget,
@@ -69,19 +70,20 @@ function remapNodeIds(
 
   for (const node of nodes) {
     const id = node.id
-    if (typeof id !== 'number') continue
+    if (!isNumericNodeId(id)) continue
 
-    if (usedNodeIds.has(id)) {
+    const numericId = nodeIdToNumber(id)
+    if (usedNodeIds.has(numericId)) {
       const newId = findNextAvailableId(usedNodeIds, state)
       remappedIds.set(id, newId)
       node.id = newId
-      usedNodeIds.add(newId as number)
+      usedNodeIds.add(nodeIdToNumber(newId))
       console.warn(
         `LiteGraph: duplicate subgraph node ID ${id} remapped to ${newId}`
       )
     } else {
-      usedNodeIds.add(id)
-      if (id > state.lastNodeId) state.lastNodeId = id
+      usedNodeIds.add(numericId)
+      if (numericId > state.lastNodeId) state.lastNodeId = numericId
     }
   }
 
@@ -102,7 +104,7 @@ function findNextAvailableId(
       throw new Error('Node ID space exhausted')
     }
     state.lastNodeId = nextId
-    if (!usedNodeIds.has(nextId)) return nextId as NodeId
+    if (!usedNodeIds.has(nextId)) return String(nextId)
   }
 }
 

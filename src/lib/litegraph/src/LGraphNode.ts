@@ -18,6 +18,10 @@ import {
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
+import {
+  UNASSIGNED_NODE_ID,
+  isUnassignedNodeId
+} from '@/lib/litegraph/src/utils/nodeId'
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { BadgePosition, LGraphBadge } from './LGraphBadge'
@@ -810,7 +814,7 @@ export class LGraphNode
   }
 
   constructor(title: string, type?: string) {
-    this.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : -1
+    this.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : UNASSIGNED_NODE_ID
     this.title = title || 'Unnamed'
     this.type = type ?? ''
     this.size = [LiteGraph.NODE_WIDTH, 60]
@@ -833,7 +837,7 @@ export class LGraphNode
     if (this.graph) {
       this.graph.incrementVersion()
     }
-    if (info.id === -1) info.id = this.id
+    if (isUnassignedNodeId(info.id)) info.id = this.id
     for (const j in info) {
       if (j == 'properties') {
         // i don't want to clone properties, I want to reuse the old container
@@ -2000,9 +2004,9 @@ export class LGraphNode
     this._widgetSlotsDirty = true
 
     // Only register with store if node has a valid ID (is already in a graph).
-    // If the node isn't in a graph yet (id === -1), registration happens
+    // If the node isn't in a graph yet, registration happens
     // when the node is added via LGraph.add() -> node.onAdded.
-    if (this.id !== -1 && isNodeBindable(widget)) {
+    if (!isUnassignedNodeId(this.id) && isNodeBindable(widget)) {
       widget.setNodeId(this.id)
     }
 
