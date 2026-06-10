@@ -2620,6 +2620,8 @@
       "privacyPolicy": "Privacy Policy",
       "addCreditCard": "Add credit card",
       "confirm": "Confirm",
+      "subscribeToPlan": "Subscribe to {plan}",
+      "switchToPlan": "Switch to {plan}",
       "backToAllPlans": "Back to all plans"
     }
   },
