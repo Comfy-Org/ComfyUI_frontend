@@ -182,8 +182,8 @@ const translations = {
     'zh-CN': '在您自己的硬件上运行 ComfyUI。'
   },
   'products.local.cta': {
-    en: 'SEE LOCAL FEATURES',
-    'zh-CN': '查看本地版属性'
+    en: 'SEE DESKTOP FEATURES',
+    'zh-CN': '查看桌面版属性'
   },
   'products.cloud.title': {
     en: 'Comfy\nCloud',
