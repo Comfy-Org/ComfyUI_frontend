@@ -26,10 +26,10 @@
         class="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2 p-4"
       >
         <EssentialNodeCard
-          v-for="(tile, index) in section.tiles.filter(
+          v-for="tile in section.tiles.filter(
             (t) => !t.media || mediaFilters[t.media]
           )"
-          :key="index"
+          :key="tile.nodeName ?? tile.label"
           :preview-panel
           :tile="tile"
         />
@@ -50,8 +50,8 @@
             class="mt-4 grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2"
           >
             <EssentialNodeCard
-              v-for="(tile, index) in subgroup.tiles"
-              :key="index"
+              v-for="tile in subgroup.tiles"
+              :key="tile.nodeName ?? tile.label"
               :preview-panel
               :tile="tile"
             />
