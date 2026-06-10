@@ -44,7 +44,7 @@
            button content box, which is too narrow for one-line labels -->
       <span
         v-if="label && !isSmall"
-        class="side-bar-button-label line-clamp-2 w-max max-w-(--sidebar-width) text-center text-2xs wrap-break-word whitespace-normal"
+        class="side-bar-button-label line-clamp-2 w-max max-w-[calc(var(--sidebar-width)-var(--sidebar-padding))] text-center text-2xs wrap-break-word whitespace-normal"
         >{{ st(label, label) }}</span
       >
     </div>
