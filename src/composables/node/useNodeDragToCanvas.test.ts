@@ -104,10 +104,6 @@ describe('useNodeDragToCanvas', () => {
       startDrag(mockNodeDef)
 
       expect(addEventListenerSpy).toHaveBeenCalledWith(
-        'pointermove',
-        expect.any(Function)
-      )
-      expect(addEventListenerSpy).toHaveBeenCalledWith(
         'pointerdown',
         expect.any(Function),
         true
@@ -146,8 +142,9 @@ describe('useNodeDragToCanvas', () => {
       cancelDrag()
 
       expect(removeEventListenerSpy).toHaveBeenCalledWith(
-        'pointermove',
-        expect.any(Function)
+        'pointerdown',
+        expect.any(Function),
+        true
       )
       expect(removeEventListenerSpy).toHaveBeenCalledWith(
         'pointerup',
@@ -166,54 +163,6 @@ describe('useNodeDragToCanvas', () => {
       startDrag(mockNodeDef)
 
       expect(addEventListenerSpy.mock.calls.length).toBe(callCount)
-    })
-  })
-
-  describe('previewPosition', () => {
-    it('should be unset when no pointer activity preceded the drag', () => {
-      const { previewPosition, startDrag } = useNodeDragToCanvas()
-
-      startDrag(mockNodeDef)
-
-      expect(previewPosition.value).toBeUndefined()
-    })
-
-    it('should start at the position of the click that armed the drag', () => {
-      const { previewPosition, startDrag } = useNodeDragToCanvas()
-
-      document.dispatchEvent(
-        new PointerEvent('pointerdown', { clientX: 50, clientY: 60 })
-      )
-      startDrag(mockNodeDef)
-
-      expect(previewPosition.value).toEqual({ x: 50, y: 60 })
-    })
-
-    it('should follow the pointer while dragging', () => {
-      const { previewPosition, startDrag } = useNodeDragToCanvas()
-
-      startDrag(mockNodeDef)
-      document.dispatchEvent(
-        new PointerEvent('pointermove', { clientX: 100, clientY: 200 })
-      )
-
-      expect(previewPosition.value).toEqual({ x: 100, y: 200 })
-    })
-
-    it('should not carry a stale position into the next drag', () => {
-      const { previewPosition, startDrag, cancelDrag } = useNodeDragToCanvas()
-
-      document.dispatchEvent(
-        new PointerEvent('pointerdown', { clientX: 50, clientY: 60 })
-      )
-      startDrag(mockNodeDef)
-      cancelDrag()
-      document.dispatchEvent(
-        new PointerEvent('pointerdown', { clientX: 70, clientY: 80 })
-      )
-      startDrag(mockNodeDef)
-
-      expect(previewPosition.value).toEqual({ x: 70, y: 80 })
     })
   })
 

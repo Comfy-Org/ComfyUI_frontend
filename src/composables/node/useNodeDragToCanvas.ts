@@ -1,4 +1,4 @@
-import { computed, ref, shallowRef } from 'vue'
+import { ref, shallowRef } from 'vue'
 
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -19,38 +19,10 @@ interface StartDragOptions {
 
 const isDragging = ref(false)
 const draggedNode = shallowRef<ComfyNodeDefImpl | null>(null)
-const cursorPosition = shallowRef<Position>()
 const dragMode = ref<DragMode>('click')
 const lastNativeDragPosition = shallowRef<Position>()
 const pendingWidgetValues = shallowRef<WidgetValues>()
 let listenersSetup = false
-
-let lastPointerPosition: Position | undefined
-let pointerTrackingStarted = false
-
-function trackPointerPosition(e: PointerEvent) {
-  lastPointerPosition = { x: e.clientX, y: e.clientY }
-  if (isDragging.value) cursorPosition.value = lastPointerPosition
-}
-
-function startPointerTracking() {
-  if (pointerTrackingStarted) return
-  pointerTrackingStarted = true
-
-  document.addEventListener('pointermove', trackPointerPosition, {
-    passive: true
-  })
-  document.addEventListener('pointerdown', trackPointerPosition, {
-    passive: true,
-    capture: true
-  })
-}
-
-const previewPosition = computed(() =>
-  dragMode.value === 'native'
-    ? lastNativeDragPosition.value
-    : cursorPosition.value
-)
 
 // Firefox dragend can report stale clientX/Y and `drag` can fire with
 // (0, 0). dragover on the target reliably reports real client coords.
@@ -162,15 +134,12 @@ function cancelDrag() {
   isDragging.value = false
   draggedNode.value = null
   dragMode.value = 'click'
-  cursorPosition.value = undefined
   lastNativeDragPosition.value = undefined
   pendingWidgetValues.value = undefined
   cleanupGlobalListeners()
 }
 
 export function useNodeDragToCanvas() {
-  startPointerTracking()
-
   function startDrag(
     nodeDef: ComfyNodeDefImpl,
     { mode = 'click', widgetValues }: StartDragOptions = {}
@@ -179,7 +148,6 @@ export function useNodeDragToCanvas() {
     draggedNode.value = nodeDef
     dragMode.value = mode
     pendingWidgetValues.value = widgetValues
-    cursorPosition.value = lastPointerPosition
     setupGlobalListeners()
   }
 
@@ -196,7 +164,6 @@ export function useNodeDragToCanvas() {
   return {
     isDragging,
     draggedNode,
-    previewPosition,
     pendingWidgetValues,
     startDrag,
     cancelDrag,
