@@ -74,7 +74,11 @@ const buttons = computed<ButtonSpec[]>(() => {
     @click="captureDownloadClick(btn.key)"
   >
     <span class="inline-flex items-center gap-2">
-      <img :src="btn.icon" alt="" class="size-5 -translate-y-0.75" />
+      <img
+        :src="btn.icon"
+        alt=""
+        class="ppformula-text-center size-5 -translate-y-0.75"
+      />
       <span class="ppformula-text-center">{{ label }}</span>
     </span>
   </BrandButton>
