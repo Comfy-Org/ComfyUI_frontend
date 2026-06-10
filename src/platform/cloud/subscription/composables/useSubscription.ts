@@ -53,7 +53,7 @@ function useSubscriptionInternal() {
   const { showSubscriptionRequiredDialog } = useDialogService()
 
   const authStore = useAuthStore()
-  const { getAuthHeader } = authStore
+  const { getAuthHeader, fetchWithCustomerRecovery } = authStore
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -326,7 +326,7 @@ function useSubscriptionInternal() {
   async function fetchSubscriptionStatus(): Promise<CloudSubscriptionStatusResponse | null> {
     const headers = await buildAuthHeaders()
 
-    const response = await fetch(
+    const response = await fetchWithCustomerRecovery(
       buildApiUrl('/customers/cloud-subscription-status'),
       {
         headers
@@ -416,7 +416,7 @@ function useSubscriptionInternal() {
       const headers = await buildAuthHeaders()
       const checkoutAttribution = await getCheckoutAttributionForCloud()
 
-      const response = await fetch(
+      const response = await fetchWithCustomerRecovery(
         buildApiUrl('/customers/cloud-subscription-checkout'),
         {
           method: 'POST',

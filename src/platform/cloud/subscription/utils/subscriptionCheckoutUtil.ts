@@ -70,7 +70,7 @@ export async function performSubscriptionCheckout(
   }
   const checkoutPayload = { ...checkoutAttribution }
 
-  const response = await fetch(
+  const response = await authStore.fetchWithCustomerRecovery(
     `${getComfyApiBaseUrl()}/customers/cloud-subscription-checkout/${checkoutTier}`,
     {
       method: 'POST',

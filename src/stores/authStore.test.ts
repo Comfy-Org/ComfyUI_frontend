@@ -859,4 +859,124 @@ describe('useAuthStore', () => {
       await expect(store.createCustomer()).rejects.toThrow()
     })
   })
+
+  describe('fetchWithCustomerRecovery', () => {
+    const makeConflictResponse = () => ({
+      ok: false,
+      status: 409,
+      statusText: 'Conflict',
+      json: () => Promise.resolve({ message: 'Failed to find customer' })
+    })
+
+    const countCustomerPosts = () =>
+      mockFetch.mock.calls.filter(
+        ([url, init]) =>
+          typeof url === 'string' &&
+          url.endsWith('/customers') &&
+          (init as RequestInit | undefined)?.method === 'POST'
+      ).length
+
+    it('should provision the customer and retry once when a /customers/* call returns 409', async () => {
+      let balanceCalls = 0
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        if (url.endsWith('/customers/balance')) {
+          balanceCalls++
+          return Promise.resolve(
+            balanceCalls === 1
+              ? makeConflictResponse()
+              : mockFetchBalanceResponse
+          )
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      const result = await store.fetchBalance()
+
+      expect(result).toEqual({ balance: 0 })
+      expect(balanceCalls).toBe(2)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should deduplicate concurrent recovery attempts into a single customer creation', async () => {
+      const seenUrls = new Set<string>()
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        if (!seenUrls.has(url)) {
+          seenUrls.add(url)
+          return Promise.resolve(makeConflictResponse())
+        }
+        return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      })
+
+      const [first, second] = await Promise.all([
+        store.fetchWithCustomerRecovery('https://api.test/customers/balance'),
+        store.fetchWithCustomerRecovery(
+          'https://api.test/customers/cloud-subscription-status'
+        )
+      ])
+
+      expect(first.ok).toBe(true)
+      expect(second.ok).toBe(true)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should not provision the customer again after a successful recovery', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        // Endpoint keeps conflicting even after recovery succeeds
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      const first = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      const second = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+
+      expect(first.status).toBe(409)
+      expect(second.status).toBe(409)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should return the original 409 response when customer provisioning fails', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+            statusText: 'Internal Server Error'
+          })
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should pass through non-409 responses without provisioning', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
+      )
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+
+      expect(response.ok).toBe(true)
+      expect(countCustomerPosts()).toBe(0)
+    })
+  })
 })

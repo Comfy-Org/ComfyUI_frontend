@@ -143,6 +143,8 @@ vi.mock('@/services/dialogService', () => ({
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: vi.fn(() => ({
     getAuthHeader: mockGetAuthHeader,
+    fetchWithCustomerRecovery: (input: string, init?: RequestInit) =>
+      fetch(input, init),
     get isInitialized() {
       return mockAuthStoreInitialized.value
     },

@@ -261,12 +261,15 @@ export const useAuthStore = defineStore('auth', () => {
         throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
       }
 
-      const response = await fetch(buildApiUrl('/customers/balance'), {
-        headers: {
-          ...authHeader,
-          'Content-Type': 'application/json'
+      const response = await fetchWithCustomerRecovery(
+        buildApiUrl('/customers/balance'),
+        {
+          headers: {
+            ...authHeader,
+            'Content-Type': 'application/json'
+          }
         }
-      })
+      )
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -322,7 +325,60 @@ export const useAuthStore = defineStore('auth', () => {
       )
     }
 
+    customerCreated.value = true
     return createCustomerResJson
+  }
+
+  /**
+   * Memoizes the customer provisioning attempt so concurrent or repeated 409
+   * responses from /customers/* endpoints trigger at most one successful
+   * POST /customers per session. A failed attempt is cleared so a later
+   * request can retry, e.g. after a transient network failure.
+   */
+  let customerRecovery: Promise<void> | null = null
+
+  const recoverMissingCustomer = (): Promise<void> => {
+    customerRecovery ??= createCustomer()
+      .then(() => undefined)
+      .catch((error: unknown) => {
+        customerRecovery = null
+        throw error
+      })
+    return customerRecovery
+  }
+
+  /**
+   * Fetch wrapper for /customers/* endpoints that self-heals accounts whose
+   * customer record was never provisioned.
+   *
+   * Customer creation runs after the Firebase session is established during
+   * sign-in/sign-up, so an interruption (navigation, closed window, network
+   * failure) can leave a permanently signed-in user without a customer
+   * record. Sessions restored from persisted credentials never re-run the
+   * sign-in flow, so every /customers/* request fails with 409 and nothing
+   * ever retries the creation.
+   *
+   * On a 409 response this provisions the customer record (deduplicated
+   * across concurrent callers) and retries the original request a single
+   * time. If recovery fails, the original 409 response is returned so
+   * callers surface their normal error handling.
+   */
+  const fetchWithCustomerRecovery = async (
+    input: string,
+    init?: RequestInit
+  ): Promise<Response> => {
+    const response = await fetch(input, init)
+    if (response.status !== 409) {
+      return response
+    }
+
+    try {
+      await recoverMissingCustomer()
+    } catch {
+      return response
+    }
+
+    return fetch(input, init)
   }
 
   const executeAuthAction = async <T>(
@@ -470,17 +526,19 @@ export const useAuthStore = defineStore('auth', () => {
     // Ensure customer was created during login/registration
     if (!customerCreated.value) {
       await createCustomer()
-      customerCreated.value = true
     }
 
-    const response = await fetch(buildApiUrl('/customers/credit'), {
-      method: 'POST',
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBodyContent)
-    })
+    const response = await fetchWithCustomerRecovery(
+      buildApiUrl('/customers/credit'),
+      {
+        method: 'POST',
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBodyContent)
+      }
+    )
 
     if (!response.ok) {
       const errorData = await response.json()
@@ -507,16 +565,19 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    const response = await fetch(buildApiUrl('/customers/billing'), {
-      method: 'POST',
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json'
-      },
-      ...(targetTier && {
-        body: JSON.stringify({ target_tier: targetTier })
-      })
-    })
+    const response = await fetchWithCustomerRecovery(
+      buildApiUrl('/customers/billing'),
+      {
+        method: 'POST',
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/json'
+        },
+        ...(targetTier && {
+          body: JSON.stringify({ target_tier: targetTier })
+        })
+      }
+    )
 
     if (!response.ok) {
       const errorData = await response.json()
@@ -550,6 +611,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     createCustomer,
+    fetchWithCustomerRecovery,
     getIdToken,
     loginWithGoogle,
     loginWithGithub,
