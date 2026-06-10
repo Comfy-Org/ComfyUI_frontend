@@ -13,7 +13,7 @@ export interface LinkReleaseContext {
   isFromOutput: boolean
 }
 
-export type LinkReleaseCategoryKey = 'comfy' | 'extensions' | 'partner'
+type LinkReleaseCategoryKey = 'comfy' | 'extensions' | 'partner'
 
 export interface LinkReleaseNodeCategory {
   key: LinkReleaseCategoryKey
