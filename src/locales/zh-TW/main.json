@@ -951,6 +951,7 @@
     "missingErrors": {
       "missing_media": {
         "displayMessage": "必要的媒體輸入未選擇檔案。",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastMessageMany": "請在執行此工作流程前選擇缺少的媒體輸入。",
         "toastMessageWithNode": "{nodeName} 缺少必要的媒體檔案。",
         "toastTitleMany": "缺少媒體輸入",
@@ -2771,6 +2772,7 @@
     "qwen": "千問",
     "samplers": "取樣器",
     "sampling": "取樣",
+    "scail": "scail",
     "schedulers": "排程器",
     "scheduling": "排程",
     "sd3": "sd3",
@@ -3050,21 +3052,7 @@
     "locateNode": "在畫布上定位節點",
     "locateNodeFor": "定位 {item}",
     "missingMedia": {
-      "audio": "音訊",
-      "cancelSelection": "取消選取",
-      "collapseNodes": "隱藏引用節點",
-      "confirmSelection": "確認選取",
-      "expandNodes": "顯示引用節點",
-      "image": "影像",
-      "locateNode": "定位節點",
-      "missingMediaTitle": "缺少輸入",
-      "or": "或",
-      "selectedFromLibrary": "已從媒體庫選取",
-      "uploadFile": "上傳{type}",
-      "uploaded": "已上傳",
-      "uploading": "正在上傳...",
-      "useFromLibrary": "從媒體庫使用",
-      "video": "影片"
+      "missingMediaTitle": "缺少輸入"
     },
     "missingModels": {
       "alreadyExistsInCategory": "此模型已存在於「{category}」中",

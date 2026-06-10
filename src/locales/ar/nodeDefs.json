@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "عقدة التكييف لـ Bernini لتكييف الفيديو/الصورة في السياق. يمكن استخدامها للمهام التالية: t2v (نص إلى فيديو)، v2v (فيديو إلى فيديو)، rv2v (تحرير فيديو موجه بالمرجع)، r2v (مرجع إلى فيديو)، ads2v (إدراج صورة/فيديو في فيديو). يتم ترميز الصور المرجعية المدرجة كرموز في السياق (r2v، rv2v) بشكل مستقل بنسبة العرض إلى الارتفاع الأصلية الخاصة بها (يتم تحديد الحافة الطويلة عند ref_max_size).",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "حجم الدفعة"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "الحد الأقصى لحجم المرجع",
+        "tooltip": "أقصى حجم للحافة الطويلة لـ reference_video و reference_images. يتم تغيير الحجم مع الحفاظ على نسبة العرض إلى الارتفاع وتثبيته على 16 بكسل."
+      },
+      "reference_images": {
+        "name": "صور مرجعية"
+      },
+      "reference_video": {
+        "name": "فيديو المرجع",
+        "tooltip": "فيديو لإدراجه في فيديو المصدر (ads2v)."
+      },
+      "source_video": {
+        "name": "فيديو المصدر",
+        "tooltip": "فيديو المصدر لتحريره أو إعادة تصميمه (v2v، rv2v). يتم تغيير حجمه إلى العرض/الارتفاع وتقصيره إلى الطول."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "جدولة أخذ عينات بيتا",
     "inputs": {
@@ -15904,6 +15960,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "إنشاء قناع ملون SCAIL-2",
+    "inputs": {
+      "driving_track_data": {
+        "name": "بيانات تتبع القيادة",
+        "tooltip": "مسار SAM3 لفيديو وضعية القيادة. سيتم عرضه في مخرج pose_video_mask."
+      },
+      "object_indices": {
+        "name": "مؤشرات الكائنات",
+        "tooltip": "قائمة مفصولة بفواصل لمؤشرات الأشخاص المطلوب تضمينهم (مثال: '0,2,3'). تطبق على كل من أقنعة الفيديو المرجعي وفيديو الوضعية. فارغ = الكل."
+      },
+      "ref_track_data": {
+        "name": "بيانات تتبع المرجع",
+        "tooltip": "مسار SAM3 للصورة المرجعية."
+      },
+      "replacement_mode": {
+        "name": "وضع الاستبدال",
+        "tooltip": "False = mask_video بخلفية سوداء (وضع التحريك). True = خلفية بيضاء (وضع الاستبدال). قم بتعيين نفس وضع الاستبدال في WanSCAILToVideo. reference_image_mask دائمًا بخلفية سوداء بغض النظر."
+      },
+      "sort_by": {
+        "name": "ترتيب حسب",
+        "tooltip": "ترتيب تخصيص ألوان لوحة الألوان للكائنات المتتبعة (يطبق على كل من الفيديو المرجعي وفيديو الوضعية بحيث يحتفظ كل هوية بنفس اللون). left_to_right = الكائن الأكثر يسارًا (حسب مركز الإطار الأول) يحصل على اللون الأول؛ area = أكبر كائن (حسب مساحة القناع في الإطار الأول) يحصل على اللون الأول؛ none = الاحتفاظ بترتيب SAM3."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -22338,7 +22429,8 @@
         "name": "حجم الدفعة"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "ميزات CLIP للرؤية من أجل التكييف. تم تدريب النموذج مع تغيير الحجم حسب نسبة العرض إلى الارتفاع."
       },
       "height": {
         "name": "الارتفاع"
@@ -22365,14 +22457,39 @@
         "name": "فيديو الوضعية",
         "tooltip": "الفيديو المستخدم لتكييف الوضعية. سيتم تقليل دقته إلى نصف دقة الفيديو الرئيسي."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "خاص بـ SCAIL-2 فقط. فيديو قناع SAM3 ملون لكل هوية بنفس دقة pose_video."
+      },
       "positive": {
         "name": "إيجابي"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "عدد الإطارات النهائية من previous_frames لاستخدامها كمرساة. تم تدريب SCAIL-2 على ٥ (أجزاء من ٨١ إطارًا، خطوة ٧٦ إطارًا)."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "خاص بـ SCAIL-2 فقط. المخرجات الكاملة المفككة للجزء السابق. يتم استخدام فقط آخر previous_frame_count كمرساة للتمديد."
+      },
       "reference_image": {
-        "name": "صورة مرجعية"
+        "name": "صورة مرجعية",
+        "tooltip": "صورة مرجعية، إذا كان هناك عدة مراجع، اجمعها جميعًا في صورة واحدة."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "خاص بـ SCAIL-2 فقط. قناع مرجعي ملون بنفس دقة reference_image."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "خاص بـ SCAIL-2 فقط. خطأ = وضع التحريك (يجب أن يكون pose_video_mask بخلفية سوداء). صحيح = وضع الاستبدال (يجب أن يكون pose_video_mask بخلفية بيضاء)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "إزاحة الإطار التراكمية التي يبدأ منها هذا الجزء من الفيديو. اربطها بمخرج video_frame_offset للجزء السابق."
       },
       "width": {
         "name": "العرض"
@@ -22390,6 +22507,10 @@
       "2": {
         "name": "كامن",
         "tooltip": "فضاء كامن فارغ بحجم التوليد."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "إزاحة معدلة + الطول. اربطها بالجزء التالي."
       }
     }
   },

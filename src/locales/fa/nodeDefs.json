@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "گره Conditioning برای Bernini جهت شرطی‌سازی تصویر/ویدیو در متن. این گره برای وظایف زیر قابل استفاده است: t2v (تبدیل متن به ویدیو)، v2v (تبدیل ویدیو به ویدیو)، rv2v (ویرایش ویدیو با راهنمای مرجع)، r2v (تبدیل مرجع به ویدیو)، ads2v (درج تصویر/ویدیو در ویدیو). تصاویر مرجع که به عنوان توکن‌های in-context (r2v، rv2v) تزریق می‌شوند، به طور مستقل با نسبت تصویر اصلی خود رمزگذاری می‌شوند (لبه بلند با ref_max_size محدود می‌شود).",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "حداکثر اندازه مرجع",
+        "tooltip": "حداکثر اندازه لبه بلند برای reference_video و reference_images. با حفظ نسبت تصویر تغییر اندازه داده می‌شود و به نزدیک‌ترین مضرب ۱۶ پیکسل گرد می‌شود."
+      },
+      "reference_images": {
+        "name": "تصاویر مرجع"
+      },
+      "reference_video": {
+        "name": "ویدیوی مرجع",
+        "tooltip": "ویدیویی که باید در ویدیوی منبع درج شود (ads2v)."
+      },
+      "source_video": {
+        "name": "ویدیوی منبع",
+        "tooltip": "ویدیوی منبع برای ویرایش یا تغییر سبک (v2v، rv2v). به عرض/ارتفاع تغییر اندازه داده می‌شود و به طول مورد نظر برش می‌خورد."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -15904,6 +15960,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "ایجاد ماسک رنگی SCAIL-2",
+    "inputs": {
+      "driving_track_data": {
+        "name": "داده مسیر حرکتی",
+        "tooltip": "مسیر SAM3 از ویدیوی ژست حرکتی. به خروجی pose_video_mask رندر خواهد شد."
+      },
+      "object_indices": {
+        "name": "شاخص‌های اشیاء",
+        "tooltip": "فهرست جداشده با ویرگول از شاخص افراد برای درج (مثلاً '۰,۲,۳'). برای هر دو ماسک ویدیوی مرجع و ژست اعمال می‌شود. خالی = همه."
+      },
+      "ref_track_data": {
+        "name": "داده مسیر مرجع",
+        "tooltip": "مسیر SAM3 از تصویر مرجع."
+      },
+      "replacement_mode": {
+        "name": "حالت جایگزینی",
+        "tooltip": "False = mask_video پس‌زمینه سیاه دارد (حالت انیمیشن). True = پس‌زمینه سفید (حالت جایگزینی). همین حالت را در WanSCAILToVideo تنظیم کنید. reference_image_mask همیشه پس‌زمینه سیاه دارد."
+      },
+      "sort_by": {
+        "name": "مرتب‌سازی بر اساس",
+        "tooltip": "ترتیب اختصاص رنگ‌های پالت به اشیاء دنبال‌شده (برای هر دو ویدیوی مرجع و ژست تا هر هویت رنگ یکسان داشته باشد). left_to_right = چپ‌ترین شیء (بر اساس مرکز فریم اول) اولین رنگ را می‌گیرد؛ area = بزرگ‌ترین شیء (بر اساس مساحت ماسک فریم اول) اولین رنگ را می‌گیرد؛ none = ترتیب SAM3 حفظ می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ماسک ویدیوی ژست",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ماسک تصویر مرجع",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -22338,7 +22429,8 @@
         "name": "اندازه دسته"
       },
       "clip_vision_output": {
-        "name": "خروجی clip vision"
+        "name": "خروجی clip vision",
+        "tooltip": "ویژگی‌های بینایی CLIP برای شرطی‌سازی. مدل با تغییر اندازه کشیده به نسبت تصویر آموزش دیده است."
       },
       "height": {
         "name": "ارتفاع"
@@ -22365,14 +22457,39 @@
         "name": "ویدئوی pose",
         "tooltip": "ویدئو برای pose conditioning استفاده می‌شود. به نصف وضوح ویدئوی اصلی کاهش داده می‌شود."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "فقط در SCAIL-2. ویدیوی ماسک SAM3 رنگی برای هر هویت، با همان وضوح pose_video."
+      },
       "positive": {
         "name": "مثبت"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "تعداد فریم‌های انتهایی previous_frames برای لنگر زدن. SCAIL-2 با مقدار ۵ آموزش دیده است (بخش‌های ۸۱ فریمی، گام ۷۶ فریم)."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "فقط در SCAIL-2. خروجی کامل رمزگشایی‌شده بخش قبلی. فقط آخرین previous_frame_count به عنوان لنگر گسترش استفاده می‌شوند."
+      },
       "reference_image": {
-        "name": "تصویر مرجع"
+        "name": "تصویر مرجع",
+        "tooltip": "تصویر مرجع، برای چند مرجع همه را در یک تصویر ترکیب کنید."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "فقط در SCAIL-2. ماسک مرجع رنگی با همان وضوح reference_image."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "فقط در SCAIL-2. مقدار False = حالت انیمیشن (pose_video_mask باید پس‌زمینه سیاه داشته باشد). مقدار True = حالت جایگزینی (pose_video_mask باید پس‌زمینه سفید داشته باشد)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "فریم تجمعی خروجی که این بخش از آن آغاز می‌شود. از خروجی video_frame_offset بخش قبلی استفاده کنید."
       },
       "width": {
         "name": "عرض"
@@ -22390,6 +22507,10 @@
       "2": {
         "name": "latent",
         "tooltip": "latent خالی با اندازه تولید."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "افست تنظیم‌شده به‌علاوه طول. به بخش بعدی متصل کنید."
       }
     }
   },

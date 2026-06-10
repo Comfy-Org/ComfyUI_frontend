@@ -951,6 +951,7 @@
     "missingErrors": {
       "missing_media": {
         "displayMessage": "필수 미디어 입력에 파일이 선택되지 않았습니다.",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastMessageMany": "워크플로우를 실행하기 전에 누락된 미디어 입력을 선택하세요.",
         "toastMessageWithNode": "{nodeName}에 필요한 미디어 파일이 누락되었습니다.",
         "toastTitleMany": "누락된 미디어 입력",
@@ -2771,6 +2772,7 @@
     "qwen": "qwen",
     "samplers": "샘플러",
     "sampling": "샘플링",
+    "scail": "scail",
     "schedulers": "스케줄러",
     "scheduling": "스케줄링",
     "sd3": "sd3",
@@ -3050,21 +3052,7 @@
     "locateNode": "캔버스에서 노드 찾기",
     "locateNodeFor": "{item} 위치 찾기",
     "missingMedia": {
-      "audio": "오디오",
-      "cancelSelection": "선택 취소",
-      "collapseNodes": "참조 노드 숨기기",
-      "confirmSelection": "선택 확인",
-      "expandNodes": "참조 노드 표시",
-      "image": "이미지",
-      "locateNode": "노드 위치 찾기",
-      "missingMediaTitle": "입력 누락",
-      "or": "또는",
-      "selectedFromLibrary": "라이브러리에서 선택됨",
-      "uploadFile": "{type} 업로드",
-      "uploaded": "업로드 완료",
-      "uploading": "업로드 중...",
-      "useFromLibrary": "라이브러리에서 사용",
-      "video": "비디오"
+      "missingMediaTitle": "입력 누락"
     },
     "missingModels": {
       "alreadyExistsInCategory": "이 모델은 이미 \"{category}\"에 존재합니다",

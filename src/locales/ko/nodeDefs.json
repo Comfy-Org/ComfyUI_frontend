@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "Bernini 인컨텍스트 비디오/이미지 컨디셔닝을 위한 컨디셔닝 노드입니다. 다음 작업에 사용할 수 있습니다: t2v (텍스트-투-비디오), v2v (비디오-투-비디오), rv2v (참조 기반 비디오 편집), r2v (참조-투-비디오), ads2v (이미지/비디오를 비디오에 삽입). 인컨텍스트 토큰(r2v, rv2v)으로 삽입된 참조 이미지는 고유의 원본 종횡비(긴 변이 ref_max_size로 제한됨)로 독립적으로 인코딩됩니다.",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "ref_max_size",
+        "tooltip": "reference_video 및 reference_images의 긴 변의 최대 크기. 종횡비를 유지하며 리사이즈되고 16px 단위로 맞춰집니다."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "reference_video": {
+        "name": "reference_video",
+        "tooltip": "원본 비디오에 삽입할 비디오(ads2v)."
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "편집 또는 스타일 변경할 원본 비디오(v2v, rv2v). width/height로 리사이즈되고 length로 자릅니다."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "베타 샘플링 스케줄러",
     "inputs": {
@@ -15904,6 +15960,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "SCAIL-2 컬러 마스크 생성",
+    "inputs": {
+      "driving_track_data": {
+        "name": "driving_track_data",
+        "tooltip": "드라이빙 포즈 비디오의 SAM3 트랙. pose_video_mask 출력으로 렌더링됩니다."
+      },
+      "object_indices": {
+        "name": "object_indices",
+        "tooltip": "포함할 사람 인덱스의 쉼표로 구분된 목록(예: '0,2,3'). 참조 및 포즈 비디오 마스크 모두에 적용됩니다. 비워두면 전체 선택."
+      },
+      "ref_track_data": {
+        "name": "ref_track_data",
+        "tooltip": "참조 이미지의 SAM3 트랙."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "False = mask_video는 검정 배경(애니메이션 모드). True = 흰색 배경(대체 모드). WanSCAILToVideo에서 일치하는 replacement_mode를 설정하세요. reference_image_mask는 항상 검정 배경입니다."
+      },
+      "sort_by": {
+        "name": "sort_by",
+        "tooltip": "팔레트 색상이 트래킹된 객체에 할당되는 순서(참조 및 포즈 비디오 모두에 적용되어 각 아이덴티티가 동일한 색상을 유지). left_to_right = 첫 프레임 중심 기준 가장 왼쪽 객체가 첫 번째 색상; area = 첫 프레임 마스크 면적 기준 가장 큰 객체가 첫 번째 색상; none = SAM3의 순서 유지."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -22338,7 +22429,8 @@
         "name": "배치 크기"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "조건부를 위한 CLIP 비전 특징입니다. stretch resize로 종횡비에 맞춰 학습되었습니다."
       },
       "height": {
         "name": "높이"
@@ -22365,14 +22457,39 @@
         "name": "포즈 비디오",
         "tooltip": "포즈 컨디셔닝에 사용되는 비디오입니다. 메인 비디오 해상도의 절반으로 다운스케일됩니다."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "SCAIL-2 전용. pose_video와 동일 해상도의 신원별 색상 SAM3 마스크 비디오입니다."
+      },
       "positive": {
         "name": "positive"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "이전 프레임의 마지막 프레임 수를 기준점으로 사용합니다. SCAIL-2는 5(81프레임 청크, 76프레임 스텝)로 학습되었습니다."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "SCAIL-2 전용. 이전 청크의 전체 디코딩 출력입니다. 마지막 previous_frame_count만 확장 기준점으로 사용됩니다."
+      },
       "reference_image": {
-        "name": "참조 이미지"
+        "name": "참조 이미지",
+        "tooltip": "참조 이미지입니다. 여러 참조가 있을 경우 하나의 이미지에 모두 합성하세요."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "SCAIL-2 전용. reference_image와 동일 해상도의 색상 참조 마스크입니다."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "SCAIL-2 전용. 거짓 = 애니메이션 모드(pose_video_mask는 검은색 배경이어야 함). 참 = 교체 모드(pose_video_mask는 흰색 배경이어야 함)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "이 청크가 시작하는 누적 출력 프레임입니다. 이전 청크의 video_frame_offset 출력에서 연결하세요."
       },
       "width": {
         "name": "너비"
@@ -22390,6 +22507,10 @@
       "2": {
         "name": "latent",
         "tooltip": "생성 크기의 빈 latent입니다."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "조정된 오프셋 + 길이. 다음 청크에 연결하세요."
       }
     }
   },

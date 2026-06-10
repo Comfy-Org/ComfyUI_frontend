@@ -148,7 +148,6 @@
           <MissingNodeCard
             v-if="group.type === 'missing_node'"
             :show-info-button="shouldShowManagerButtons"
-            :show-node-id-badge="showNodeIdBadge"
             :missing-pack-groups="missingPackGroups"
             @locate-node="handleLocateMissingNode"
             @open-manager-info="handleOpenManagerInfo"

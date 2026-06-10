@@ -951,6 +951,7 @@
     "missingErrors": {
       "missing_media": {
         "displayMessage": "Uma entrada de mídia obrigatória não possui arquivo selecionado.",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastMessageMany": "Selecione as entradas de mídia ausentes antes de executar este fluxo de trabalho.",
         "toastMessageWithNode": "{nodeName} está sem o arquivo de mídia obrigatório.",
         "toastTitleMany": "Entradas de mídia ausentes",
@@ -2771,6 +2772,7 @@
     "qwen": "qwen",
     "samplers": "amostradores",
     "sampling": "amostragem",
+    "scail": "scail",
     "schedulers": "agendadores",
     "scheduling": "agendamento",
     "sd3": "sd3",
@@ -3050,21 +3052,7 @@
     "locateNode": "Localizar nó no canvas",
     "locateNodeFor": "Localizar {item}",
     "missingMedia": {
-      "audio": "Áudio",
-      "cancelSelection": "Cancelar seleção",
-      "collapseNodes": "Ocultar nós de referência",
-      "confirmSelection": "Confirmar seleção",
-      "expandNodes": "Mostrar nós de referência",
-      "image": "Imagens",
-      "locateNode": "Localizar nó",
-      "missingMediaTitle": "Entradas Ausentes",
-      "or": "OU",
-      "selectedFromLibrary": "Selecionado da biblioteca",
-      "uploadFile": "Enviar {type}",
-      "uploaded": "Enviado",
-      "uploading": "Enviando...",
-      "useFromLibrary": "Usar da Biblioteca",
-      "video": "Vídeos"
+      "missingMediaTitle": "Entradas Ausentes"
     },
     "missingModels": {
       "alreadyExistsInCategory": "Este modelo já existe em \"{category}\"",
