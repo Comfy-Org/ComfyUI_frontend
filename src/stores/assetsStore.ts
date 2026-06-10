@@ -17,6 +17,11 @@ import {
 } from '@/platform/assets/services/assetService'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
+import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type {
+  FetchHistoryPageResult,
+  JobsPageRequest
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 
@@ -114,8 +119,11 @@ export const useAssetsStore = defineStore('assets', () => {
     return deletingAssetIds.has(assetId)
   }
 
-  // Pagination state
+  // Pagination state. The cursor walks the history timeline without the
+  // drift offset paging has when jobs complete mid-scroll; offset remains
+  // as the fallback for backends that don't mint cursors.
   const historyOffset = ref(0)
+  const historyNextCursor = ref<string | null>(null)
   const hasMoreHistory = ref(true)
   const isLoadingMore = ref(false)
 
@@ -147,65 +155,95 @@ export const useAssetsStore = defineStore('assets', () => {
   }
 
   /**
+   * Insert assets in sorted order (newest first), skipping already-loaded ids
+   */
+  const mergeHistoryAssets = (newAssets: AssetItem[]) => {
+    for (const asset of newAssets) {
+      if (loadedIds.has(asset.id)) {
+        continue
+      }
+      loadedIds.add(asset.id)
+
+      const assetTime = new Date(asset.created_at ?? 0).getTime()
+      const insertIndex = allHistoryItems.value.findIndex(
+        (item) => new Date(item.created_at ?? 0).getTime() < assetTime
+      )
+
+      if (insertIndex === -1) {
+        allHistoryItems.value.push(asset)
+      } else {
+        allHistoryItems.value.splice(insertIndex, 0, asset)
+      }
+    }
+  }
+
+  const trimHistoryToLimit = () => {
+    if (allHistoryItems.value.length <= MAX_HISTORY_ITEMS) return
+
+    const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
+    allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
+    removed.forEach((item) => loadedIds.delete(item.id))
+  }
+
+  const fetchHistoryJobsPage = (page: JobsPageRequest) =>
+    fetchHistoryPage(api.fetchApi.bind(api), BATCH_SIZE, page)
+
+  // Invalidates in-flight history fetches whenever the list is replaced, so
+  // a stale continuation can't merge into (or move the cursor of) the new walk.
+  let historyFetchEpoch = 0
+
+  const fetchHistoryPageWithCursorRecovery = async (
+    after: string | null
+  ): Promise<FetchHistoryPageResult> => {
+    if (!after) return fetchHistoryJobsPage({ offset: historyOffset.value })
+    try {
+      return await fetchHistoryJobsPage({ after })
+    } catch (err) {
+      // A cursor can go stale (e.g. server restart rejects it with 400
+      // INVALID_CURSOR); resume from the offset fallback instead.
+      console.warn('Cursor history page failed, retrying via offset:', err)
+      historyNextCursor.value = null
+      return fetchHistoryJobsPage({ offset: historyOffset.value })
+    }
+  }
+
+  /**
    * Fetch history assets with pagination support
    * @param loadMore - true for pagination (append), false for initial load (replace)
    */
   const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
     // Reset state for initial load
     if (!loadMore) {
+      historyFetchEpoch += 1
       historyOffset.value = 0
+      historyNextCursor.value = null
       hasMoreHistory.value = true
       allHistoryItems.value = []
       loadedIds.clear()
     }
 
-    // Fetch from server with offset
-    const history = await api.getHistory(BATCH_SIZE, {
-      offset: historyOffset.value
-    })
+    const epoch = historyFetchEpoch
+    const page = await fetchHistoryPageWithCursorRecovery(
+      loadMore ? historyNextCursor.value : null
+    )
+    if (epoch !== historyFetchEpoch) return allHistoryItems.value
 
-    // Convert JobListItems to AssetItems
-    const newAssets = mapHistoryToAssets(history)
+    const newAssets = mapHistoryToAssets(page.jobs)
 
     if (loadMore) {
-      // Filter out duplicates and insert in sorted order
-      for (const asset of newAssets) {
-        if (loadedIds.has(asset.id)) {
-          continue // Skip duplicates
-        }
-        loadedIds.add(asset.id)
-
-        // Find insertion index to maintain sorted order (newest first)
-        const assetTime = new Date(asset.created_at ?? 0).getTime()
-        const insertIndex = allHistoryItems.value.findIndex(
-          (item) => new Date(item.created_at ?? 0).getTime() < assetTime
-        )
-
-        if (insertIndex === -1) {
-          // Asset is oldest, append to end
-          allHistoryItems.value.push(asset)
-        } else {
-          // Insert at the correct position
-          allHistoryItems.value.splice(insertIndex, 0, asset)
-        }
-      }
+      mergeHistoryAssets(newAssets)
     } else {
-      // Initial load: replace all
       allHistoryItems.value = newAssets
       newAssets.forEach((asset) => loadedIds.add(asset.id))
     }
 
-    // Update pagination state
-    historyOffset.value += BATCH_SIZE
-    hasMoreHistory.value = history.length === BATCH_SIZE
+    // The server mints next_cursor even on offset-mode requests, so the walk
+    // upgrades to keyset paging after the first page that returns one.
+    historyOffset.value += page.jobs.length
+    historyNextCursor.value = page.nextCursor ?? null
+    hasMoreHistory.value = page.hasMore
 
-    if (allHistoryItems.value.length > MAX_HISTORY_ITEMS) {
-      const removed = allHistoryItems.value.slice(MAX_HISTORY_ITEMS)
-      allHistoryItems.value = allHistoryItems.value.slice(0, MAX_HISTORY_ITEMS)
-
-      // Clean up Set
-      removed.forEach((item) => loadedIds.delete(item.id))
-    }
+    trimHistoryToLimit()
 
     return allHistoryItems.value
   }
@@ -257,6 +295,62 @@ export const useAssetsStore = defineStore('assets', () => {
       }
     } finally {
       isLoadingMore.value = false
+    }
+  }
+
+  /**
+   * A head page with no further rows spans the whole timeline, so replacing
+   * local state with it also prunes jobs deleted server-side (e.g. after the
+   * queue history is cleared from another surface).
+   */
+  const replaceHistoryWithHeadPage = (page: FetchHistoryPageResult) => {
+    historyFetchEpoch += 1
+    const newAssets = mapHistoryToAssets(page.jobs)
+    allHistoryItems.value = newAssets
+    loadedIds.clear()
+    newAssets.forEach((asset) => loadedIds.add(asset.id))
+    historyOffset.value = page.jobs.length
+    historyNextCursor.value = page.nextCursor ?? null
+    hasMoreHistory.value = page.hasMore
+  }
+
+  /**
+   * Merge newly completed jobs into the top of the list without resetting
+   * pagination state, so items loaded via infinite scroll survive the
+   * refresh. Cursors only walk toward older items, so new completions are
+   * picked up by re-fetching the head page and deduplicating.
+   */
+  const refreshHistoryHead = async () => {
+    if (!allHistoryItems.value.length) {
+      await updateHistory()
+      return
+    }
+
+    historyError.value = null
+    try {
+      const epoch = historyFetchEpoch
+      const page = await fetchHistoryJobsPage({ offset: 0 })
+      if (epoch !== historyFetchEpoch) return
+
+      const reachesLoadedItems = page.jobs.some((job) => loadedIds.has(job.id))
+      if (page.hasMore && !reachesLoadedItems) {
+        // More than a page of new jobs arrived since the last refresh;
+        // merging would leave a hole the cursor walk can never reach back
+        // to fill, so restart the walk from the top instead.
+        await updateHistory()
+        return
+      }
+
+      if (page.hasMore) {
+        mergeHistoryAssets(mapHistoryToAssets(page.jobs))
+        trimHistoryToLimit()
+      } else {
+        replaceHistoryWithHeadPage(page)
+      }
+      historyAssets.value = allHistoryItems.value
+    } catch (err) {
+      console.error('Error refreshing history:', err)
+      historyError.value = err
     }
   }
 
@@ -873,6 +967,7 @@ export const useAssetsStore = defineStore('assets', () => {
     updateInputs,
     updateHistory,
     loadMoreHistory,
+    refreshHistoryHead,
     setAssetPreview,
 
     // Flat output assets (cloud-only, tag-based)

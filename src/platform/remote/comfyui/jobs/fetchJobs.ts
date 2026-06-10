@@ -18,12 +18,24 @@ import type {
 } from './jobTypes'
 import { zJobDetail, zJobsListResponse, zWorkflowContainer } from './jobTypes'
 
+/**
+ * Position of the page to fetch. `after` is an opaque keyset cursor from a
+ * prior response's `nextCursor` and takes precedence over `offset`; `offset`
+ * remains as the fallback for random access and for backends that don't mint
+ * cursors.
+ */
+export interface JobsPageRequest {
+  offset?: number
+  after?: string
+}
+
 interface FetchJobsRawResult {
   jobs: RawJobListItem[]
   total: number
   offset: number
   limit: number
   hasMore: boolean
+  nextCursor?: string
 }
 
 export interface FetchHistoryPageResult {
@@ -32,43 +44,38 @@ export interface FetchHistoryPageResult {
   offset: number
   limit: number
   hasMore: boolean
+  nextCursor?: string
 }
 
 /**
- * Fetches raw jobs from /jobs endpoint
+ * Fetches raw jobs from /jobs endpoint.
+ * Throws on failure so callers can tell a failed page apart from an empty
+ * last page (e.g. a stale cursor rejected with 400 INVALID_CURSOR).
  * @internal
  */
 async function fetchJobsRaw(
   fetchApi: (url: string) => Promise<Response>,
   statuses: JobStatus[],
   maxItems: number = 200,
-  offset: number = 0
+  page: JobsPageRequest = {}
 ): Promise<FetchJobsRawResult> {
   const statusParam = statuses.join(',')
-  const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
-  try {
-    const res = await fetchApi(url)
-    if (!res.ok) {
-      console.error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
-      return {
-        jobs: [],
-        total: 0,
-        offset,
-        limit: maxItems,
-        hasMore: false
-      }
-    }
-    const data = zJobsListResponse.parse(await res.json())
-    return {
-      jobs: data.jobs,
-      total: data.pagination.total,
-      offset: data.pagination.offset,
-      limit: data.pagination.limit,
-      hasMore: data.pagination.has_more
-    }
-  } catch (error) {
-    console.error('[Jobs API] Error fetching jobs:', error)
-    return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
+  const pageParam = page.after
+    ? `after=${encodeURIComponent(page.after)}`
+    : `offset=${page.offset ?? 0}`
+  const url = `/jobs?status=${statusParam}&limit=${maxItems}&${pageParam}`
+  const res = await fetchApi(url)
+  if (!res.ok) {
+    throw new Error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
+  }
+  const data = zJobsListResponse.parse(await res.json())
+  return {
+    jobs: data.jobs,
+    total: data.pagination.total,
+    offset: data.pagination.offset,
+    limit: data.pagination.limit,
+    hasMore: data.pagination.has_more,
+    nextCursor: data.pagination.next_cursor
   }
 }
 
@@ -98,7 +105,7 @@ export async function fetchHistory(
   maxItems: number = 200,
   offset: number = 0
 ): Promise<JobListItem[]> {
-  const { jobs } = await fetchHistoryPage(fetchApi, maxItems, offset)
+  const { jobs } = await fetchHistoryPage(fetchApi, maxItems, { offset })
   return jobs
 }
 
@@ -108,13 +115,13 @@ export async function fetchHistory(
 export async function fetchHistoryPage(
   fetchApi: (url: string) => Promise<Response>,
   maxItems: number = 200,
-  offset: number = 0
+  page: JobsPageRequest = {}
 ): Promise<FetchHistoryPageResult> {
   const result = await fetchJobsRaw(
     fetchApi,
     ['completed', 'failed', 'cancelled'],
     maxItems,
-    offset
+    page
   )
 
   // History gets priority based on total count (lower than queue)
@@ -123,7 +130,8 @@ export async function fetchHistoryPage(
     total: result.total,
     offset: result.offset,
     limit: result.limit,
-    hasMore: result.hasMore
+    hasMore: result.hasMore,
+    nextCursor: result.nextCursor
   }
 }
 
@@ -134,12 +142,7 @@ export async function fetchHistoryPage(
 export async function fetchQueue(
   fetchApi: (url: string) => Promise<Response>
 ): Promise<{ Running: JobListItem[]; Pending: JobListItem[] }> {
-  const { jobs } = await fetchJobsRaw(
-    fetchApi,
-    ['in_progress', 'pending'],
-    200,
-    0
-  )
+  const { jobs } = await fetchJobsRaw(fetchApi, ['in_progress', 'pending'])
 
   const running = jobs.filter((j) => j.status === 'in_progress')
   const pending = jobs.filter((j) => j.status === 'pending')

@@ -4,15 +4,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
 import { useAssetsStore } from '@/stores/assetsStore'
-import { api } from '@/scripts/api'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type { FetchHistoryPageResult } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { assetService } from '@/platform/assets/services/assetService'
 
 // Mock the api module
 vi.mock('@/scripts/api', () => ({
   api: {
-    getHistory: vi.fn(),
+    fetchApi: vi.fn(),
     internalURL: vi.fn((path) => `http://localhost:3000${path}`),
     apiURL: vi.fn((path) => `http://localhost:3000/api${path}`),
     addEventListener: vi.fn(),
@@ -20,6 +21,30 @@ vi.mock('@/scripts/api', () => ({
     user: 'test-user'
   }
 }))
+
+// Mock the jobs API fetcher used for history pagination
+vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
+  fetchHistoryPage: vi.fn()
+}))
+
+// Helper to build a server pagination page around a set of jobs
+const mockHistoryPage = (
+  jobs: JobListItem[],
+  {
+    hasMore = false,
+    nextCursor,
+    offset = 0,
+    total = jobs.length,
+    limit = 200
+  }: Partial<Omit<FetchHistoryPageResult, 'jobs'>> = {}
+): FetchHistoryPageResult => ({
+  jobs,
+  total,
+  offset,
+  limit,
+  hasMore,
+  nextCursor
+})
 
 // Mock the asset service
 vi.mock('@/platform/assets/services/assetService', () => ({
@@ -208,32 +233,38 @@ describe('assetsStore - Refactored (Option A)', () => {
       const mockHistory = Array.from({ length: 10 }, (_, i) =>
         createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      vi.mocked(fetchHistoryPage).mockResolvedValue(
+        mockHistoryPage(mockHistory)
+      )
 
       await store.updateHistory()
 
-      expect(api.getHistory).toHaveBeenCalledWith(200, { offset: 0 })
+      expect(fetchHistoryPage).toHaveBeenCalledWith(expect.any(Function), 200, {
+        offset: 0
+      })
       expect(store.historyAssets).toHaveLength(10)
-      expect(store.hasMoreHistory).toBe(false) // Less than BATCH_SIZE
+      expect(store.hasMoreHistory).toBe(false) // Server reported no more pages
       expect(store.historyLoading).toBe(false)
       expect(store.historyError).toBe(null)
     })
 
-    it('should set hasMoreHistory to true when batch is full', async () => {
+    it('should set hasMoreHistory to true when server reports more pages', async () => {
       const mockHistory = Array.from({ length: 200 }, (_, i) =>
         createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      vi.mocked(fetchHistoryPage).mockResolvedValue(
+        mockHistoryPage(mockHistory, { hasMore: true })
+      )
 
       await store.updateHistory()
 
       expect(store.historyAssets).toHaveLength(200)
-      expect(store.hasMoreHistory).toBe(true) // Exactly BATCH_SIZE
+      expect(store.hasMoreHistory).toBe(true)
     })
 
     it('should handle errors during initial load', async () => {
       const error = new Error('Failed to fetch')
-      vi.mocked(api.getHistory).mockRejectedValue(error)
+      vi.mocked(fetchHistoryPage).mockRejectedValue(error)
 
       await store.updateHistory()
 
@@ -258,7 +289,9 @@ describe('assetsStore - Refactored (Option A)', () => {
         },
         createMockJobItem(2)
       ]
-      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      vi.mocked(fetchHistoryPage).mockResolvedValue(
+        mockHistoryPage(mockHistory)
+      )
 
       await store.updateHistory()
 
@@ -276,7 +309,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       const firstBatch = Array.from({ length: 200 }, (_, i) =>
         createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(firstBatch, { hasMore: true })
+      )
 
       await store.updateHistory()
       expect(store.historyAssets).toHaveLength(200)
@@ -286,11 +321,16 @@ describe('assetsStore - Refactored (Option A)', () => {
       const secondBatch = Array.from({ length: 200 }, (_, i) =>
         createMockJobItem(200 + i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce(secondBatch)
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(secondBatch, { hasMore: true })
+      )
 
       await store.loadMoreHistory()
 
-      expect(api.getHistory).toHaveBeenCalledWith(200, { offset: 200 })
+      // Offset fallback advances by the number of jobs the page returned
+      expect(fetchHistoryPage).toHaveBeenCalledWith(expect.any(Function), 200, {
+        offset: 200
+      })
       expect(store.historyAssets).toHaveLength(400) // Accumulated
       expect(store.hasMoreHistory).toBe(true)
     })
@@ -300,7 +340,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       const firstBatch = Array.from({ length: 200 }, (_, i) =>
         createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(firstBatch, { hasMore: true })
+      )
 
       await store.updateHistory()
       expect(store.historyAssets).toHaveLength(200)
@@ -311,7 +353,9 @@ describe('assetsStore - Refactored (Option A)', () => {
         createMockJobItem(5), // Duplicate
         ...Array.from({ length: 198 }, (_, i) => createMockJobItem(200 + i)) // New
       ]
-      vi.mocked(api.getHistory).mockResolvedValueOnce(secondBatch)
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(secondBatch)
+      )
 
       await store.loadMoreHistory()
 
@@ -325,11 +369,13 @@ describe('assetsStore - Refactored (Option A)', () => {
     })
 
     it('should stop loading when no more items', async () => {
-      // First batch - less than BATCH_SIZE
+      // Server reports no further pages
       const firstBatch = Array.from({ length: 50 }, (_, i) =>
         createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(firstBatch, { hasMore: false })
+      )
 
       await store.updateHistory()
       expect(store.hasMoreHistory).toBe(false)
@@ -338,7 +384,7 @@ describe('assetsStore - Refactored (Option A)', () => {
       await store.loadMoreHistory()
 
       // Should only have been called once (initial load)
-      expect(api.getHistory).toHaveBeenCalledTimes(1)
+      expect(fetchHistoryPage).toHaveBeenCalledTimes(1)
     })
 
     it('should handle race conditions with concurrent loads', async () => {
@@ -346,19 +392,21 @@ describe('assetsStore - Refactored (Option A)', () => {
       const initialBatch = Array.from({ length: 200 }, (_, i) =>
         createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce(initialBatch)
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(initialBatch, { hasMore: true })
+      )
       await store.updateHistory()
       expect(store.hasMoreHistory).toBe(true)
 
       // Clear mock to count only loadMore calls
-      vi.mocked(api.getHistory).mockClear()
+      vi.mocked(fetchHistoryPage).mockClear()
 
       // Setup slow API response
-      let resolveLoadMore: (value: JobListItem[]) => void
-      const loadMorePromise = new Promise<JobListItem[]>((resolve) => {
+      let resolveLoadMore: (value: FetchHistoryPageResult) => void
+      const loadMorePromise = new Promise<FetchHistoryPageResult>((resolve) => {
         resolveLoadMore = resolve
       })
-      vi.mocked(api.getHistory).mockReturnValueOnce(loadMorePromise)
+      vi.mocked(fetchHistoryPage).mockReturnValueOnce(loadMorePromise)
 
       // Start first loadMore
       const firstLoad = store.loadMoreHistory()
@@ -370,12 +418,12 @@ describe('assetsStore - Refactored (Option A)', () => {
       const secondBatch = Array.from({ length: 200 }, (_, i) =>
         createMockJobItem(200 + i)
       )
-      resolveLoadMore!(secondBatch)
+      resolveLoadMore!(mockHistoryPage(secondBatch, { hasMore: true }))
 
       await Promise.all([firstLoad, secondLoad])
 
       // Only one API call
-      expect(api.getHistory).toHaveBeenCalledTimes(1)
+      expect(fetchHistoryPage).toHaveBeenCalledTimes(1)
     })
 
     it('should respect MAX_HISTORY_ITEMS limit', async () => {
@@ -385,7 +433,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       const firstBatch = Array.from({ length: 200 }, (_, i) =>
         createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(firstBatch, { hasMore: true })
+      )
       await store.updateHistory()
 
       // Load additional batches
@@ -393,12 +443,436 @@ describe('assetsStore - Refactored (Option A)', () => {
         const items = Array.from({ length: 200 }, (_, i) =>
           createMockJobItem(batch * 200 + i)
         )
-        vi.mocked(api.getHistory).mockResolvedValueOnce(items)
+        vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+          mockHistoryPage(items, { hasMore: true })
+        )
         await store.loadMoreHistory()
       }
 
       // Should be capped at MAX_HISTORY_ITEMS (1000)
       expect(store.historyAssets).toHaveLength(1000)
+    })
+  })
+
+  describe('Cursor pagination', () => {
+    it('uses { after } for loadMore when the first page returned a cursor', async () => {
+      const firstBatch = Array.from({ length: 10 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(firstBatch, { hasMore: true, nextCursor: 'cursor-1' })
+      )
+      await store.updateHistory()
+
+      const secondBatch = Array.from({ length: 10 }, (_, i) =>
+        createMockJobItem(10 + i)
+      )
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(secondBatch)
+      )
+      await store.loadMoreHistory()
+
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        2,
+        expect.any(Function),
+        200,
+        { after: 'cursor-1' }
+      )
+    })
+
+    it('bootstraps from offset 0 then walks successive cursors', async () => {
+      const pageJobs = (start: number) =>
+        Array.from({ length: 10 }, (_, i) => createMockJobItem(start + i))
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(
+          mockHistoryPage(pageJobs(0), {
+            hasMore: true,
+            nextCursor: 'cursor-1'
+          })
+        )
+        .mockResolvedValueOnce(
+          mockHistoryPage(pageJobs(10), {
+            hasMore: true,
+            nextCursor: 'cursor-2'
+          })
+        )
+        .mockResolvedValueOnce(mockHistoryPage(pageJobs(20)))
+
+      await store.updateHistory()
+      await store.loadMoreHistory()
+      await store.loadMoreHistory()
+
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        1,
+        expect.any(Function),
+        200,
+        { offset: 0 }
+      )
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        2,
+        expect.any(Function),
+        200,
+        { after: 'cursor-1' }
+      )
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        3,
+        expect.any(Function),
+        200,
+        { after: 'cursor-2' }
+      )
+      expect(store.historyAssets).toHaveLength(30)
+    })
+
+    it('falls back to offset paging advanced by returned job count when no cursor is minted', async () => {
+      const firstBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      const secondBatch = Array.from({ length: 150 }, (_, i) =>
+        createMockJobItem(200 + i)
+      )
+      const thirdBatch = Array.from({ length: 10 }, (_, i) =>
+        createMockJobItem(350 + i)
+      )
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(mockHistoryPage(firstBatch, { hasMore: true }))
+        .mockResolvedValueOnce(mockHistoryPage(secondBatch, { hasMore: true }))
+        .mockResolvedValueOnce(mockHistoryPage(thirdBatch))
+
+      await store.updateHistory()
+      await store.loadMoreHistory()
+      await store.loadMoreHistory()
+
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        2,
+        expect.any(Function),
+        200,
+        { offset: 200 }
+      )
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        3,
+        expect.any(Function),
+        200,
+        { offset: 350 }
+      )
+    })
+
+    it('stops loadMore when the server reports hasMore false despite a full batch', async () => {
+      const fullBatch = Array.from({ length: 200 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(fullBatch, { hasMore: false })
+      )
+
+      await store.updateHistory()
+      expect(store.hasMoreHistory).toBe(false)
+
+      await store.loadMoreHistory()
+
+      expect(fetchHistoryPage).toHaveBeenCalledTimes(1)
+    })
+
+    it('resets to { offset: 0 } on a full reload after a cursor walk', async () => {
+      const pageJobs = (start: number) =>
+        Array.from({ length: 10 }, (_, i) => createMockJobItem(start + i))
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(
+          mockHistoryPage(pageJobs(0), {
+            hasMore: true,
+            nextCursor: 'cursor-1'
+          })
+        )
+        .mockResolvedValueOnce(
+          mockHistoryPage(pageJobs(10), {
+            hasMore: true,
+            nextCursor: 'cursor-2'
+          })
+        )
+        .mockResolvedValueOnce(mockHistoryPage(pageJobs(0)))
+
+      await store.updateHistory()
+      await store.loadMoreHistory()
+      await store.updateHistory()
+
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        3,
+        expect.any(Function),
+        200,
+        { offset: 0 }
+      )
+    })
+
+    it('recovers from a rejected cursor page by retrying via offset', async () => {
+      const firstBatch = Array.from({ length: 10 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(
+          mockHistoryPage(firstBatch, {
+            hasMore: true,
+            nextCursor: 'cursor-stale'
+          })
+        )
+        .mockRejectedValueOnce(new Error('400 INVALID_CURSOR'))
+        .mockResolvedValueOnce(
+          mockHistoryPage(
+            Array.from({ length: 10 }, (_, i) => createMockJobItem(10 + i)),
+            { hasMore: true, nextCursor: 'cursor-fresh' }
+          )
+        )
+
+      await store.updateHistory()
+      await store.loadMoreHistory()
+
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        2,
+        expect.any(Function),
+        200,
+        { after: 'cursor-stale' }
+      )
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        3,
+        expect.any(Function),
+        200,
+        { offset: 10 }
+      )
+      expect(store.historyAssets).toHaveLength(20)
+      expect(store.historyError).toBe(null)
+
+      // The recovered page minted a fresh cursor, so the walk resumes in cursor mode
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(mockHistoryPage([]))
+      await store.loadMoreHistory()
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        4,
+        expect.any(Function),
+        200,
+        { after: 'cursor-fresh' }
+      )
+    })
+
+    it('keeps pagination resumable when the offset retry also fails', async () => {
+      const firstBatch = Array.from({ length: 10 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(
+          mockHistoryPage(firstBatch, {
+            hasMore: true,
+            nextCursor: 'cursor-stale'
+          })
+        )
+        .mockRejectedValueOnce(new Error('400 INVALID_CURSOR'))
+        .mockRejectedValueOnce(new Error('network down'))
+
+      await store.updateHistory()
+      await store.loadMoreHistory()
+
+      expect(store.historyError).toBeInstanceOf(Error)
+      expect(store.hasMoreHistory).toBe(true)
+      expect(store.historyAssets).toHaveLength(10)
+
+      // The dropped cursor means the next attempt resumes via offset
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(
+          Array.from({ length: 5 }, (_, i) => createMockJobItem(10 + i))
+        )
+      )
+      await store.loadMoreHistory()
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        4,
+        expect.any(Function),
+        200,
+        { offset: 10 }
+      )
+      expect(store.historyAssets).toHaveLength(15)
+    })
+
+    it('discards a stale loadMore continuation that resolves after a reset', async () => {
+      const firstBatch = Array.from({ length: 10 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(firstBatch, { hasMore: true, nextCursor: 'cursor-1' })
+      )
+      await store.updateHistory()
+
+      let resolveStale: (page: FetchHistoryPageResult) => void
+      vi.mocked(fetchHistoryPage).mockReturnValueOnce(
+        new Promise<FetchHistoryPageResult>((resolve) => {
+          resolveStale = resolve
+        })
+      )
+      const staleLoad = store.loadMoreHistory()
+
+      const freshBatch = Array.from({ length: 5 }, (_, i) =>
+        createMockJobItem(100 + i)
+      )
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(freshBatch, {
+          hasMore: true,
+          nextCursor: 'cursor-fresh'
+        })
+      )
+      await store.updateHistory()
+
+      resolveStale!(
+        mockHistoryPage(
+          Array.from({ length: 10 }, (_, i) => createMockJobItem(10 + i)),
+          { hasMore: true, nextCursor: 'cursor-stale' }
+        )
+      )
+      await staleLoad
+
+      // The stale page neither merged into the fresh list nor moved its cursor
+      expect(store.historyAssets).toHaveLength(5)
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(mockHistoryPage([]))
+      await store.loadMoreHistory()
+      expect(fetchHistoryPage).toHaveBeenLastCalledWith(
+        expect.any(Function),
+        200,
+        { after: 'cursor-fresh' }
+      )
+    })
+  })
+
+  describe('refreshHistoryHead', () => {
+    it('performs a full initial load when the list is empty', async () => {
+      const jobs = Array.from({ length: 5 }, (_, i) => createMockJobItem(i))
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(mockHistoryPage(jobs))
+
+      await store.refreshHistoryHead()
+
+      expect(fetchHistoryPage).toHaveBeenCalledWith(expect.any(Function), 200, {
+        offset: 0
+      })
+      expect(store.historyAssets).toHaveLength(5)
+      expect(store.historyLoading).toBe(false)
+    })
+
+    it('prepends new completions without resetting the stored cursor', async () => {
+      const initialJobs = [createMockJobItem(1), createMockJobItem(2)]
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(
+          mockHistoryPage(initialJobs, {
+            hasMore: true,
+            nextCursor: 'cursor-1'
+          })
+        )
+        .mockResolvedValueOnce(
+          mockHistoryPage([createMockJobItem(0), createMockJobItem(1)], {
+            hasMore: true,
+            nextCursor: 'cursor-head'
+          })
+        )
+        .mockResolvedValueOnce(mockHistoryPage([createMockJobItem(3)]))
+
+      await store.updateHistory()
+      await store.refreshHistoryHead()
+
+      // Head page re-fetched from the top, new job prepended, existing kept
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        2,
+        expect.any(Function),
+        200,
+        { offset: 0 }
+      )
+      expect(store.historyAssets.map((a) => a.id)).toEqual([
+        'prompt_0',
+        'prompt_1',
+        'prompt_2'
+      ])
+
+      // Subsequent loadMore still resumes from the pre-refresh cursor
+      await store.loadMoreHistory()
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        3,
+        expect.any(Function),
+        200,
+        { after: 'cursor-1' }
+      )
+    })
+
+    it('keeps existing items and records the error when the head fetch fails', async () => {
+      const initialJobs = Array.from({ length: 3 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(initialJobs, { hasMore: true })
+      )
+      await store.updateHistory()
+
+      const error = new Error('refresh failed')
+      vi.mocked(fetchHistoryPage).mockRejectedValueOnce(error)
+
+      await store.refreshHistoryHead()
+
+      expect(store.historyAssets).toHaveLength(3)
+      expect(store.historyError).toBe(error)
+    })
+
+    it('restarts the walk when the head page does not reach the loaded items', async () => {
+      const overflowPage = () =>
+        Array.from({ length: 200 }, (_, i) => createMockJobItem(1000 + i))
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(
+          mockHistoryPage(
+            Array.from({ length: 10 }, (_, i) => createMockJobItem(i)),
+            { hasMore: true, nextCursor: 'cursor-1' }
+          )
+        )
+        .mockResolvedValueOnce(
+          mockHistoryPage(overflowPage(), {
+            hasMore: true,
+            nextCursor: 'cursor-head'
+          })
+        )
+        .mockResolvedValueOnce(
+          mockHistoryPage(overflowPage(), {
+            hasMore: true,
+            nextCursor: 'cursor-head-2'
+          })
+        )
+
+      await store.updateHistory()
+      await store.refreshHistoryHead()
+
+      // No overlap with loaded items while more rows remain means merging
+      // would leave an unfillable hole, so the walk restarts from the top
+      expect(fetchHistoryPage).toHaveBeenCalledTimes(3)
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        3,
+        expect.any(Function),
+        200,
+        { offset: 0 }
+      )
+      expect(store.historyAssets).toHaveLength(200)
+      expect(store.historyAssets.some((asset) => asset.id === 'prompt_0')).toBe(
+        false
+      )
+    })
+
+    it('prunes server-side deletions when the head page spans the whole timeline', async () => {
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(
+          mockHistoryPage([
+            createMockJobItem(0),
+            createMockJobItem(1),
+            createMockJobItem(2)
+          ])
+        )
+        .mockResolvedValueOnce(
+          mockHistoryPage([createMockJobItem(0), createMockJobItem(2)])
+        )
+
+      await store.updateHistory()
+      expect(store.historyAssets).toHaveLength(3)
+
+      await store.refreshHistoryHead()
+
+      expect(store.historyAssets.map((asset) => asset.id)).toEqual([
+        'prompt_0',
+        'prompt_2'
+      ])
     })
   })
 
@@ -408,7 +882,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       const firstBatch = Array.from({ length: 200 }, (_, i) =>
         createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(firstBatch, { hasMore: true })
+      )
 
       await store.updateHistory()
 
@@ -416,7 +892,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       const secondBatch = Array.from({ length: 200 }, (_, i) =>
         createMockJobItem(200 + i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce(secondBatch)
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(secondBatch)
+      )
 
       await store.loadMoreHistory()
 
@@ -435,14 +913,16 @@ describe('assetsStore - Refactored (Option A)', () => {
       const firstBatch = Array.from({ length: 200 }, (_, i) =>
         createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(firstBatch, { hasMore: true })
+      )
 
       await store.updateHistory()
       expect(store.historyAssets).toHaveLength(200)
 
       // Second load fails
       const error = new Error('Network error')
-      vi.mocked(api.getHistory).mockRejectedValueOnce(error)
+      vi.mocked(fetchHistoryPage).mockRejectedValueOnce(error)
 
       await store.loadMoreHistory()
 
@@ -457,13 +937,15 @@ describe('assetsStore - Refactored (Option A)', () => {
       const firstBatch = Array.from({ length: 200 }, (_, i) =>
         createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce(firstBatch)
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(firstBatch, { hasMore: true })
+      )
 
       await store.updateHistory()
 
       // Second load fails
       const error = new Error('Network error')
-      vi.mocked(api.getHistory).mockRejectedValueOnce(error)
+      vi.mocked(fetchHistoryPage).mockRejectedValueOnce(error)
 
       await store.loadMoreHistory()
       expect(store.historyError).toBe(error)
@@ -472,7 +954,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       const thirdBatch = Array.from({ length: 200 }, (_, i) =>
         createMockJobItem(200 + i)
       )
-      vi.mocked(api.getHistory).mockResolvedValueOnce(thirdBatch)
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(thirdBatch)
+      )
 
       await store.loadMoreHistory()
 
@@ -483,7 +967,7 @@ describe('assetsStore - Refactored (Option A)', () => {
 
     it('should handle errors with proper loading state', async () => {
       const error = new Error('API error')
-      vi.mocked(api.getHistory).mockRejectedValue(error)
+      vi.mocked(fetchHistoryPage).mockRejectedValue(error)
 
       await store.updateHistory()
 
@@ -501,7 +985,9 @@ describe('assetsStore - Refactored (Option A)', () => {
         const items = Array.from({ length: 200 }, (_, i) =>
           createMockJobItem(batch * 200 + i)
         )
-        vi.mocked(api.getHistory).mockResolvedValueOnce(items)
+        vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+          mockHistoryPage(items, { hasMore: true })
+        )
 
         if (batch === 0) {
           await store.updateHistory()
@@ -525,7 +1011,9 @@ describe('assetsStore - Refactored (Option A)', () => {
         const items = Array.from({ length: 200 }, (_, i) =>
           createMockJobItem(batch * 200 + i)
         )
-        vi.mocked(api.getHistory).mockResolvedValueOnce(items)
+        vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+          mockHistoryPage(items, { hasMore: true })
+        )
 
         if (batch === 0) {
           await store.updateHistory()
@@ -550,7 +1038,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       const mockHistory = Array.from({ length: 3 }, (_, i) =>
         createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      vi.mocked(fetchHistoryPage).mockResolvedValue(
+        mockHistoryPage(mockHistory)
+      )
       await store.updateHistory()
 
       const target = store.historyAssets[1]
@@ -569,7 +1059,9 @@ describe('assetsStore - Refactored (Option A)', () => {
 
     it('matches by name even when ids differ between APIs', async () => {
       const mockHistory = [createMockJobItem(0)]
-      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      vi.mocked(fetchHistoryPage).mockResolvedValue(
+        mockHistoryPage(mockHistory)
+      )
       await store.updateHistory()
 
       const historyAssetId = store.historyAssets[0].id
@@ -587,7 +1079,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       const mockHistory = Array.from({ length: 2 }, (_, i) =>
         createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      vi.mocked(fetchHistoryPage).mockResolvedValue(
+        mockHistoryPage(mockHistory)
+      )
       await store.updateHistory()
 
       const before = store.historyAssets.map((a) => ({ ...a }))
@@ -600,7 +1094,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       const mockHistory = Array.from({ length: 3 }, (_, i) =>
         createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      vi.mocked(fetchHistoryPage).mockResolvedValue(
+        mockHistoryPage(mockHistory)
+      )
       await store.updateHistory()
 
       // Patch using a non-matching prefix; the other assets must stay untouched
@@ -613,7 +1109,9 @@ describe('assetsStore - Refactored (Option A)', () => {
 
     it('replaces the asset object so reactivity fires for v-for keyed by id', async () => {
       const mockHistory = [createMockJobItem(0)]
-      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      vi.mocked(fetchHistoryPage).mockResolvedValue(
+        mockHistoryPage(mockHistory)
+      )
       await store.updateHistory()
 
       const before = store.historyAssets[0]
@@ -632,7 +1130,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       const mockHistory = Array.from({ length: 5 }, (_, i) =>
         createMockJobItem(i)
       )
-      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      vi.mocked(fetchHistoryPage).mockResolvedValue(
+        mockHistoryPage(mockHistory)
+      )
 
       await store.updateHistory()
 
@@ -676,7 +1176,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       ]
 
       const mockHistory = [createMockJobItem(0)]
-      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      vi.mocked(fetchHistoryPage).mockResolvedValue(
+        mockHistoryPage(mockHistory)
+      )
 
       await store.updateHistory()
 
@@ -711,7 +1213,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       ]
 
       const mockHistory = [createMockJobItem(0)]
-      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      vi.mocked(fetchHistoryPage).mockResolvedValue(
+        mockHistoryPage(mockHistory)
+      )
 
       await store.updateHistory()
 
@@ -739,7 +1243,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       ]
 
       const mockHistory = [createMockJobItem(0)]
-      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      vi.mocked(fetchHistoryPage).mockResolvedValue(
+        mockHistoryPage(mockHistory)
+      )
 
       await store.updateHistory()
 
@@ -760,7 +1266,9 @@ describe('assetsStore - Refactored (Option A)', () => {
       ]
 
       const mockHistory = [createMockJobItem(0)]
-      vi.mocked(api.getHistory).mockResolvedValue(mockHistory)
+      vi.mocked(fetchHistoryPage).mockResolvedValue(
+        mockHistoryPage(mockHistory)
+      )
 
       await store.updateHistory()
 

@@ -255,13 +255,13 @@ describe('resolveMissingMediaAssetSources', () => {
       1,
       expect.any(Function),
       200,
-      0
+      { offset: 0 }
     )
     expect(mockFetchHistoryPage).toHaveBeenNthCalledWith(
       2,
       expect.any(Function),
       200,
-      200
+      { offset: 200 }
     )
   })
 
