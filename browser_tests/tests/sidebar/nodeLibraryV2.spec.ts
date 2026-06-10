@@ -15,13 +15,8 @@ test.describe('Node library sidebar V2', () => {
 
     await expect(tab.allTab).toHaveAttribute('aria-selected', 'true')
 
-    await tab.blueprintsTab.click()
-    await expect(tab.blueprintsTab).toHaveAttribute('aria-selected', 'true')
-    await expect(tab.allTab).toHaveAttribute('aria-selected', 'false')
-
     await tab.allTab.click()
     await expect(tab.allTab).toHaveAttribute('aria-selected', 'true')
-    await expect(tab.blueprintsTab).toHaveAttribute('aria-selected', 'false')
   })
 
   test('All tab displays node tree with folders', async ({ comfyPage }) => {
@@ -123,8 +118,9 @@ test.describe('Node library sidebar V2', () => {
 
   test('Blueprint previews include description', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
-    await tab.blueprintsTab.click()
+    await tab.allTab.click()
 
+    await tab.expandFolder('Comfy Blueprints')
     await tab.getNode('test blueprint').hover()
     await expect(tab.nodePreview, 'Preview displays on hover').toBeVisible()
     await expect(tab.nodePreview).toContainText('Inverts the image')

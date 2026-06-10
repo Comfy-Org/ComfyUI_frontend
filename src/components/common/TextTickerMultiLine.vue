@@ -8,8 +8,9 @@
       v-text="text"
     />
     <div class="flex w-full flex-col">
-      <MarqueeLine>{{ lines[0] }}</MarqueeLine>
-      <MarqueeLine v-if="lines[1]">{{ lines[1] }}</MarqueeLine>
+      <MarqueeLine v-for="(line, index) in lines" :key="index">
+        {{ line }}
+      </MarqueeLine>
     </div>
   </div>
 </template>
