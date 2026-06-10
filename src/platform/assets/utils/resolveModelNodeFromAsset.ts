@@ -44,7 +44,7 @@ export function resolveModelNodeFromAsset(
       error: {
         code: 'INVALID_ASSET',
         message: 'Asset schema validation failed',
-        assetId: asset.id,
+        assetId: typeof asset?.id === 'string' ? asset.id : 'unknown',
         details: { validationErrors: errorMessage }
       }
     }
