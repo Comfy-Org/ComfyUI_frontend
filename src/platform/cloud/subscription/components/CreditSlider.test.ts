@@ -143,6 +143,14 @@ describe('CreditSlider', () => {
     }
   })
 
+  it('renders nothing when stops is empty (defensive for BE-sourced data)', async () => {
+    renderSlider({ stops: [] })
+    await flush()
+
+    expect(screen.queryByRole('slider')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('credit-slider-price')).not.toBeInTheDocument()
+  })
+
   it('renders stops + default index supplied via props (BE-sourced override)', async () => {
     const stops = [
       { usd: 50, credits: 10_550, discountPercentYearly: 0 },

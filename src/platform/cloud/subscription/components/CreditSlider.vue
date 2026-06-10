@@ -26,10 +26,11 @@ const {
   disabled?: boolean
   class?: HTMLAttributes['class']
   /**
-   * The fixed credit stops the slider snaps to. Must be non-empty. Defaults to
-   * the hardcoded DES-197 set; pass the backend-sourced stops once the contract
-   * lands — map `GET /api/billing/plans → team_credit_stops.stops` to
-   * `CreditStop[]` (credits, the pre-discount `usd`, and `discountPercentYearly`).
+   * The fixed credit stops the slider snaps to; when empty, the component
+   * renders nothing. Defaults to the hardcoded DES-197 set; pass the
+   * backend-sourced stops once the contract lands — map
+   * `GET /api/billing/plans → team_credit_stops.stops` to `CreditStop[]`
+   * (credits, the pre-discount `usd`, and `discountPercentYearly`).
    */
   stops?: readonly CreditStop[]
   /**
@@ -58,13 +59,14 @@ const selectedIndex = computed(() => {
   const i = stops.findIndex((stop) => stop.usd === usd.value)
   if (i !== -1) return i
   // Fall back to the default stop, clamped into range: a backend-driven `stops`
-  // array can be shorter than expected (or `defaultStopIndex` out of bounds), so
-  // clamping keeps `current` defined and the price computeds below from reading
-  // `undefined.usd` at runtime. (`stops` is required to be non-empty.)
+  // array can be shorter than expected (or `defaultStopIndex` out of bounds).
   return Math.min(Math.max(defaultStopIndex, 0), Math.max(stops.length - 1, 0))
 })
 
-const current = computed<CreditStop>(() => stops[selectedIndex.value])
+// Zero-stop fallback: `useTransition` reads its source eagerly at setup, so an
+// empty `stops` must not crash even though the template then renders nothing.
+const EMPTY_STOP: CreditStop = { usd: 0, credits: 0, discountPercentYearly: 0 }
+const current = computed(() => stops.at(selectedIndex.value) ?? EMPTY_STOP)
 
 // Yearly commitment (per DES-197): the discount applies to the monthly figure.
 // The card shows the discounted monthly price, the struck pre-discount price,
@@ -89,11 +91,16 @@ const priceTween = {
   easing: TransitionPresets.easeOutCubic,
   disabled: computed(() => prefersReducedMotion.value === 'reduce')
 }
-const animatedMonthly = useTransition(discountedMonthly, priceTween)
-const animatedOriginal = useTransition(() => current.value.usd, priceTween)
+// One vector tween keeps both figures in phase. Deriving the monthly from the
+// animated original instead would jump at the start of each move: the discount
+// tier snaps per stop while the base price is still mid-tween.
+const animatedPrices = useTransition(
+  () => [discountedMonthly.value, current.value.usd],
+  priceTween
+)
 
-const displayMonthly = computed(() => Math.round(animatedMonthly.value))
-const displayOriginal = computed(() => Math.round(animatedOriginal.value))
+const displayMonthly = computed(() => Math.round(animatedPrices.value[0]))
+const displayOriginal = computed(() => Math.round(animatedPrices.value[1]))
 // Derive the yearly total from the displayed monthly so it always reads as
 // exactly 12× the price shown — even mid-count — rather than drifting as a
 // second, independently-phased tween would.
@@ -127,7 +134,10 @@ const { t } = useI18n()
 </script>
 
 <template>
-  <div :class="cn('flex w-full flex-col gap-3', rootClass)">
+  <div
+    v-if="stops.length > 0"
+    :class="cn('flex w-full flex-col gap-3', rootClass)"
+  >
     <!-- Price: discounted monthly + struck pre-discount + save badge -->
     <div class="flex flex-col gap-1">
       <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
