@@ -854,7 +854,11 @@
       "filterAudio": "Audio",
       "filter3D": "3D",
       "filterText": "Text",
-      "viewSettings": "View settings"
+      "viewSettings": "View settings",
+      "sortNameAsc": "Alphabetical (A→Z)",
+      "sortNameDesc": "Alphabetical (Z→A)",
+      "showPreviewAssets": "Show preview assets",
+      "groupByJob": "Group assets by job"
     },
     "backToAssets": "Back to all assets",
     "folderView": {
@@ -872,7 +876,9 @@
       "console": "Console",
       "menu": "Menu",
       "imported": "Imported",
-      "generated": "Generated"
+      "generated": "Generated",
+      "all": "All",
+      "uploaded": "Uploaded"
     },
     "noFilesFound": "No files found",
     "noImportedFiles": "No imported files found",
@@ -3210,7 +3216,8 @@
       "openWorkflow": "Open as workflow in new tab",
       "exportWorkflow": "Export workflow",
       "copyJobId": "Copy job ID",
-      "delete": "Delete"
+      "delete": "Delete",
+      "keepPreview": "Keep preview"
     },
     "jobIdToast": {
       "jobIdCopied": "Job ID copied to clipboard",
@@ -3253,7 +3260,11 @@
     "noWorkflowDataFound": "No workflow data found in this asset",
     "workflowOpenedInNewTab": "Workflow opened in new tab",
     "failedToExportWorkflow": "Failed to export workflow",
-    "workflowExportedSuccessfully": "Workflow exported successfully"
+    "workflowExportedSuccessfully": "Workflow exported successfully",
+    "previewBadge": "PREV.",
+    "previewBadgeTooltip": "Temporary outputs from workflow runs. Right click to save this preview.",
+    "previewKept": "Preview saved to Media Assets",
+    "failedToKeepPreview": "Failed to keep preview"
   },
   "actionbar": {
     "dockToTop": "Dock to top",

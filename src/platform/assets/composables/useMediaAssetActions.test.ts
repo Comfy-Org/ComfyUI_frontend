@@ -58,13 +58,15 @@ const mockSetAssetDeleting = vi.hoisted(() => vi.fn())
 const mockUpdateHistory = vi.hoisted(() => vi.fn())
 const mockUpdateInputs = vi.hoisted(() => vi.fn())
 const mockHasCategory = vi.hoisted(() => vi.fn())
+const mockPatchApiAsset = vi.hoisted(() => vi.fn())
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
     setAssetDeleting: mockSetAssetDeleting,
     updateHistory: mockUpdateHistory,
     updateInputs: mockUpdateInputs,
     invalidateModelsForCategory: mockInvalidateModelsForCategory,
-    hasCategory: mockHasCategory
+    hasCategory: mockHasCategory,
+    patchApiAsset: mockPatchApiAsset
   })
 }))
 
@@ -149,11 +151,17 @@ const mockDeleteAsset = vi.hoisted(() => vi.fn())
 const mockCreateAssetExport = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ task_id: 'test-task-id', status: 'pending' })
 )
+const mockAddAssetTags = vi.hoisted(() => vi.fn())
+const mockRemoveAssetTags = vi.hoisted(() => vi.fn())
 vi.mock('../services/assetService', () => ({
   assetService: {
     deleteAsset: mockDeleteAsset,
-    createAssetExport: mockCreateAssetExport
-  }
+    createAssetExport: mockCreateAssetExport,
+    addAssetTags: mockAddAssetTags,
+    removeAssetTags: mockRemoveAssetTags
+  },
+  OUTPUT_TAG: 'output',
+  TEMP_TAG: 'temp'
 }))
 
 const mockTrackExport = vi.hoisted(() => vi.fn())
@@ -1064,6 +1072,49 @@ describe('useMediaAssetActions', () => {
       expect(mockClearWidgetValues).not.toHaveBeenCalled()
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
       expect(mockCaptureCanvasState).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('keepPreview', () => {
+    it('adds the output tag before removing temp', async () => {
+      mockAddAssetTags.mockResolvedValue({ total_tags: ['temp', 'output'] })
+      mockRemoveAssetTags.mockResolvedValue({ total_tags: ['output'] })
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({ id: 'temp-1', tags: ['temp'] })
+
+      await actions.keepPreview(asset)
+
+      expect(mockAddAssetTags).toHaveBeenCalledWith('temp-1', ['output'])
+      expect(mockRemoveAssetTags).toHaveBeenCalledWith('temp-1', ['temp'])
+      expect(mockAddAssetTags.mock.invocationCallOrder[0]).toBeLessThan(
+        mockRemoveAssetTags.mock.invocationCallOrder[0]
+      )
+    })
+
+    it('optimistically replaces temp with output in the local cache', async () => {
+      mockAddAssetTags.mockResolvedValue({ total_tags: ['temp', 'output'] })
+      mockRemoveAssetTags.mockResolvedValue({ total_tags: ['output'] })
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({ id: 'temp-1', tags: ['temp'] })
+
+      await actions.keepPreview(asset)
+
+      expect(mockPatchApiAsset).toHaveBeenCalledWith('temp-1', {
+        tags: ['output']
+      })
+    })
+
+    it('reverts the optimistic update when the API calls fail', async () => {
+      mockAddAssetTags.mockRejectedValue(new Error('boom'))
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({ id: 'temp-1', tags: ['temp'] })
+
+      await actions.keepPreview(asset)
+
+      expect(mockRemoveAssetTags).not.toHaveBeenCalled()
+      expect(mockPatchApiAsset).toHaveBeenLastCalledWith('temp-1', {
+        tags: ['temp']
+      })
     })
   })
 })

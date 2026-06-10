@@ -116,9 +116,20 @@
           </div>
         </div>
 
-        <!-- Right side: Output count -->
-        <div v-if="showOutputCount" class="shrink-0">
+        <!-- Right side: Preview badge and output count -->
+        <div
+          v-if="isTempAsset || showOutputCount"
+          class="flex shrink-0 items-center gap-1"
+        >
+          <span
+            v-if="isTempAsset"
+            v-tooltip.top="$t('mediaAsset.previewBadgeTooltip')"
+            class="flex h-3.5 items-center rounded-full bg-base-foreground px-1 text-[9px] font-semibold text-base-background uppercase"
+          >
+            {{ $t('mediaAsset.previewBadge') }}
+          </span>
           <Button
+            v-if="showOutputCount"
             v-tooltip.top.pt:pointer-events-none="
               $t('mediaAsset.actions.seeMoreOutputs')
             "
@@ -154,6 +165,7 @@ import {
   isPreviewableMediaType
 } from '@/utils/formatUtil'
 
+import { TEMP_TAG } from '../services/assetService'
 import { getAssetType } from '../composables/media/assetMappers'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
@@ -218,6 +230,8 @@ const actions = useMediaAssetActions()
 const assetType = computed(() => {
   return getAssetType(asset?.tags)
 })
+
+const isTempAsset = computed(() => asset?.tags?.includes(TEMP_TAG) ?? false)
 
 // Determine file type from extension
 const fileKind = computed((): MediaKind => {

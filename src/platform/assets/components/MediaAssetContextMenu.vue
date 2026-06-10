@@ -44,6 +44,7 @@ import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
+import { TEMP_TAG } from '../services/assetService'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { AssetContext, MediaKind } from '../schemas/mediaAssetSchema'
 
@@ -210,6 +211,15 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       label: t('mediaAsset.actions.insertAsNodeInWorkflow'),
       icon: 'icon-[comfy--node]',
       command: () => actions.addWorkflow(asset)
+    })
+  }
+
+  // Keep preview (temp assets only): promote to permanent output asset
+  if (asset.tags?.includes(TEMP_TAG)) {
+    items.push({
+      label: t('mediaAsset.actions.keepPreview'),
+      icon: 'icon-[lucide--bookmark]',
+      command: () => actions.keepPreview(asset)
     })
   }
 

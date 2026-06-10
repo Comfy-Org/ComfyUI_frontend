@@ -33,7 +33,7 @@ import { useAssetExportStore } from '@/stores/assetExportStore'
 
 import type { AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
-import { assetService } from '../services/assetService'
+import { OUTPUT_TAG, TEMP_TAG, assetService } from '../services/assetService'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
@@ -223,6 +223,40 @@ export function useMediaAssetActions() {
         severity: 'error',
         summary: t('g.error'),
         detail: t('exportToast.exportFailedSingle')
+      })
+    }
+  }
+
+  /**
+   * Promote a temp (preview) asset to a permanent output asset.
+   * Adds the output tag before removing temp so the asset is never
+   * orphaned out of every tab query, with an optimistic local update.
+   */
+  const keepPreview = async (asset: AssetItem) => {
+    const assetsStore = useAssetsStore()
+    const originalTags = asset.tags ?? []
+    const keptTags = [
+      ...originalTags.filter((tag) => tag !== TEMP_TAG),
+      ...(originalTags.includes(OUTPUT_TAG) ? [] : [OUTPUT_TAG])
+    ]
+    assetsStore.patchApiAsset(asset.id, { tags: keptTags })
+
+    try {
+      await assetService.addAssetTags(asset.id, [OUTPUT_TAG])
+      await assetService.removeAssetTags(asset.id, [TEMP_TAG])
+      toast.add({
+        severity: 'success',
+        summary: t('g.success'),
+        detail: t('mediaAsset.previewKept'),
+        life: 2000
+      })
+    } catch (error) {
+      console.error('Failed to keep preview asset:', error)
+      assetsStore.patchApiAsset(asset.id, { tags: originalTags })
+      toast.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('mediaAsset.failedToKeepPreview')
       })
     }
   }
@@ -787,6 +821,7 @@ export function useMediaAssetActions() {
   return {
     downloadAssets,
     deleteAssets,
+    keepPreview,
     copyJobId,
     addWorkflow,
     addMultipleToWorkflow,
