@@ -1536,7 +1536,7 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
-    vi.clearAllMocks()
+    vi.resetAllMocks()
   })
 
   it('fetches the first page via getAssetsPageByTag with the output tag and page size', async () => {
@@ -1680,7 +1680,7 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
     expect(store.flatOutputAssets.at(-1)?.id).toBe('newId')
   })
 
-  it('records error and clears media on initial-fetch failure', async () => {
+  it('records error and resolves to an empty list on initial-fetch failure', async () => {
     const err = new Error('network down')
     vi.mocked(assetService.getAssetsPageByTag).mockRejectedValueOnce(err)
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
@@ -1697,7 +1697,69 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
     }
   })
 
-  it('refresh resets pagination and the cursor', async () => {
+  it('preserves the cursor for retry when loadMore fails', async () => {
+    const err = new Error('network down')
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png')], {
+          hasMore: true,
+          nextCursor: 'cursor-1'
+        })
+      )
+      .mockRejectedValueOnce(err)
+      .mockResolvedValueOnce(makePage([makeAsset('a2', 'f2.png')]))
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    try {
+      const store = useAssetsStore()
+      await store.updateFlatOutputs()
+      await store.loadMoreFlatOutputs()
+
+      expect(store.flatOutputError).toBe(err)
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['a1'])
+      expect(store.flatOutputHasMore).toBe(true)
+
+      await store.loadMoreFlatOutputs()
+
+      expect(assetService.getAssetsPageByTag).toHaveBeenLastCalledWith(
+        'output',
+        true,
+        { limit: FLAT_OUTPUT_PAGE_SIZE, after: 'cursor-1' }
+      )
+    } finally {
+      consoleSpy.mockRestore()
+    }
+  })
+
+  it('restarts from the head when loadMore follows a failed refresh', async () => {
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png')], {
+          hasMore: true,
+          nextCursor: 'cursor-1'
+        })
+      )
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce(makePage([makeAsset('a2', 'f2.png')]))
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    try {
+      const store = useAssetsStore()
+      await store.updateFlatOutputs()
+      await store.updateFlatOutputs()
+      await store.loadMoreFlatOutputs()
+
+      expect(assetService.getAssetsPageByTag).toHaveBeenLastCalledWith(
+        'output',
+        true,
+        { limit: FLAT_OUTPUT_PAGE_SIZE, offset: 0 }
+      )
+    } finally {
+      consoleSpy.mockRestore()
+    }
+  })
+
+  it('refresh resets pagination', async () => {
     vi.mocked(assetService.getAssetsPageByTag)
       .mockResolvedValueOnce(
         makePage([makeAsset('a1', 'f1.png')], {
