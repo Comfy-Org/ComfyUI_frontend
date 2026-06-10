@@ -153,7 +153,6 @@ function setupGlobalListeners() {
   document.addEventListener('pointerup', endDrag, true)
   document.addEventListener('keydown', handleKeydown)
   document.addEventListener('dragover', trackNativeDragPosition)
-  document.addEventListener('drag', trackNativeDragPosition)
 }
 
 function cleanupGlobalListeners() {
@@ -165,7 +164,6 @@ function cleanupGlobalListeners() {
   document.removeEventListener('pointerup', endDrag, true)
   document.removeEventListener('keydown', handleKeydown)
   document.removeEventListener('dragover', trackNativeDragPosition)
-  document.removeEventListener('drag', trackNativeDragPosition)
 }
 
 function cancelDrag() {
