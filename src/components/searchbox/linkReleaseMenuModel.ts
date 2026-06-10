@@ -1,5 +1,3 @@
-import type { MenuItem } from 'primevue/menuitem'
-
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 
@@ -15,32 +13,38 @@ export interface LinkReleaseContext {
   isFromOutput: boolean
 }
 
-declare module 'primevue/menuitem' {
-  interface MenuItem {
-    isHeader?: boolean
-    isSearch?: boolean
-    isGroupLabel?: boolean
+export type LinkReleaseCategoryKey = 'comfy' | 'extensions' | 'partner'
+
+export interface LinkReleaseNodeCategory {
+  key: LinkReleaseCategoryKey
+  /** i18n key for the group heading. */
+  labelKey: string
+  /** Iconify class shown beside the group label. */
+  icon: string
+  /** Nodes in the group, sorted alphabetically by display name. */
+  nodes: ComfyNodeDefImpl[]
+}
+
+const CATEGORY_META: Record<
+  LinkReleaseCategoryKey,
+  { labelKey: string; icon: string }
+> = {
+  comfy: { labelKey: 'contextMenu.Comfy Nodes', icon: 'icon-[lucide--box]' },
+  extensions: {
+    labelKey: 'contextMenu.Extensions',
+    icon: 'icon-[lucide--puzzle]'
+  },
+  partner: {
+    labelKey: 'contextMenu.Partner Nodes',
+    icon: 'icon-[lucide--handshake]'
   }
 }
 
-export interface LinkReleaseMenuHandlers {
-  selectNode: (nodeDef: ComfyNodeDefImpl) => void
-  addReroute: () => void
-}
-
-export interface LinkReleaseMenuModelOptions {
-  context: LinkReleaseContext
-  /** All nodes compatible with the slot type, for grouping into source buckets. */
-  compatibleNodes: ComfyNodeDefImpl[]
-  /** Quick-add node suggestions for the released slot type. */
-  defaultNodeDefs: ComfyNodeDefImpl[]
-  /** Current search field value. */
-  query: string
-  /** Slot-type-filtered search results when query is non-empty. */
-  searchResults: ComfyNodeDefImpl[]
-  t: (key: string) => string
-  handlers: LinkReleaseMenuHandlers
-}
+const CATEGORY_ORDER: LinkReleaseCategoryKey[] = [
+  'comfy',
+  'extensions',
+  'partner'
+]
 
 export function getLinkReleaseHeaderLabel(context: LinkReleaseContext): string {
   const { slotName, dataType } = context
@@ -48,161 +52,90 @@ export function getLinkReleaseHeaderLabel(context: LinkReleaseContext): string {
   return slotName || dataType
 }
 
-function classifyNodes(nodes: ComfyNodeDefImpl[]): {
-  comfy: ComfyNodeDefImpl[]
-  extensions: ComfyNodeDefImpl[]
-  partner: ComfyNodeDefImpl[]
-} {
-  const comfy: ComfyNodeDefImpl[] = []
-  const extensions: ComfyNodeDefImpl[] = []
-  const partner: ComfyNodeDefImpl[] = []
-
-  for (const node of nodes) {
-    if (node.api_node || node.category?.startsWith('api node')) {
-      partner.push(node)
-    } else if (
-      node.nodeSource.type === NodeSourceType.Core ||
-      node.nodeSource.type === NodeSourceType.Essentials
-    ) {
-      comfy.push(node)
-    } else {
-      extensions.push(node)
-    }
+function classifyNode(node: ComfyNodeDefImpl): LinkReleaseCategoryKey {
+  if (node.api_node || node.category?.startsWith('api node')) return 'partner'
+  if (
+    node.nodeSource.type === NodeSourceType.Core ||
+    node.nodeSource.type === NodeSourceType.Essentials
+  ) {
+    return 'comfy'
   }
-
-  return { comfy, extensions, partner }
+  return 'extensions'
 }
 
-function toNodeGroupItem(
-  label: string,
-  nodes: ComfyNodeDefImpl[],
-  selectNode: (nodeDef: ComfyNodeDefImpl) => void
-): MenuItem | null {
-  if (!nodes.length) return null
-  const sorted = [...nodes].sort((a, b) =>
-    a.display_name.localeCompare(b.display_name)
-  )
-  return {
-    label,
-    items: sorted.map((nodeDef) => ({
-      label: nodeDef.display_name,
-      command: () => selectNode(nodeDef)
-    }))
-  }
+function byDisplayName(a: ComfyNodeDefImpl, b: ComfyNodeDefImpl): number {
+  return a.display_name.localeCompare(b.display_name)
 }
 
-function buildAddRerouteItem(
-  t: (key: string) => string,
-  handlers: LinkReleaseMenuHandlers
-): MenuItem {
-  return {
-    label: t('contextMenu.Add Reroute'),
-    icon: 'icon-[lucide--git-fork]',
-    command: handlers.addReroute
-  }
-}
-
-function buildDefaultMenuItems(
-  suggestions: ComfyNodeDefImpl[],
-  compatibleNodes: ComfyNodeDefImpl[],
-  t: (key: string) => string,
-  handlers: LinkReleaseMenuHandlers
-): MenuItem[] {
-  const items: MenuItem[] = []
-
-  if (suggestions.length) {
-    items.push({ label: t('contextMenu.Most Relevant'), isGroupLabel: true })
-    for (const nodeDef of suggestions) {
-      items.push({
-        label: nodeDef.display_name,
-        command: () => handlers.selectNode(nodeDef)
-      })
-    }
+/**
+ * Group slot-compatible nodes into source buckets for the cascading menu.
+ * Empty buckets are omitted and each bucket's nodes are sorted by display name.
+ */
+export function buildLinkReleaseNodeCategories(
+  compatibleNodes: ComfyNodeDefImpl[]
+): LinkReleaseNodeCategory[] {
+  const buckets: Record<LinkReleaseCategoryKey, ComfyNodeDefImpl[]> = {
+    comfy: [],
+    extensions: [],
+    partner: []
   }
 
-  const { comfy, extensions, partner } = classifyNodes(compatibleNodes)
-  const groups = [
-    toNodeGroupItem(t('contextMenu.Comfy Nodes'), comfy, handlers.selectNode),
-    toNodeGroupItem(
-      t('contextMenu.Extensions'),
-      extensions,
-      handlers.selectNode
-    ),
-    toNodeGroupItem(
-      t('contextMenu.Partner Nodes'),
-      partner,
-      handlers.selectNode
-    )
-  ].filter((g): g is MenuItem => g !== null)
-
-  if (groups.length) {
-    items.push({ separator: true }, ...groups)
+  for (const node of compatibleNodes) {
+    buckets[classifyNode(node)].push(node)
   }
 
-  return items
-}
-
-function buildSearchResultItems(
-  searchResults: ComfyNodeDefImpl[],
-  noResultsLabel: string,
-  selectNode: (nodeDef: ComfyNodeDefImpl) => void
-): MenuItem[] {
-  if (!searchResults.length) {
-    return [{ label: noResultsLabel, disabled: true }]
-  }
-  return searchResults.map((nodeDef) => ({
-    label: nodeDef.display_name,
-    command: () => selectNode(nodeDef)
+  return CATEGORY_ORDER.filter((key) => buckets[key].length > 0).map((key) => ({
+    key,
+    labelKey: CATEGORY_META[key].labelKey,
+    icon: CATEGORY_META[key].icon,
+    nodes: [...buckets[key]].sort(byDisplayName)
   }))
 }
 
-export function buildLinkReleaseMenuItems({
-  context,
-  compatibleNodes,
-  defaultNodeDefs,
-  query,
-  searchResults,
-  t,
-  handlers
-}: LinkReleaseMenuModelOptions): MenuItem[] {
-  const trimmedQuery = query.trim()
+/** Quick-add suggestions for the released slot, excluding the Reroute node. */
+export function getLinkReleaseSuggestions(
+  defaultNodeDefs: ComfyNodeDefImpl[]
+): ComfyNodeDefImpl[] {
+  return defaultNodeDefs.filter((nodeDef) => nodeDef.name !== 'Reroute')
+}
 
-  const rerouteDef = defaultNodeDefs.find((d) => d.name === 'Reroute')
-  const suggestions = defaultNodeDefs.filter((d) => d.name !== 'Reroute')
+/** Case-insensitive filter of a node list by display name. */
+export function filterNodesByName(
+  nodes: ComfyNodeDefImpl[],
+  query: string
+): ComfyNodeDefImpl[] {
+  const trimmed = query.trim().toLowerCase()
+  if (!trimmed) return nodes
+  return nodes.filter((nodeDef) =>
+    nodeDef.display_name.toLowerCase().includes(trimmed)
+  )
+}
 
-  const items: MenuItem[] = [
-    {
-      label: getLinkReleaseHeaderLabel(context),
-      isHeader: true,
-      disabled: true
-    },
-    { separator: true },
-    { isSearch: true },
-    { separator: true }
-  ]
+/** A node surfaced by the root flat-value search, tagged with its category. */
+export interface LinkReleaseNodeMatch {
+  category: LinkReleaseNodeCategory
+  node: ComfyNodeDefImpl
+}
 
-  if (trimmedQuery) {
-    items.push(
-      ...buildSearchResultItems(
-        searchResults,
-        t('g.noResults'),
-        handlers.selectNode
-      )
-    )
-  } else {
-    items.push(
-      ...buildDefaultMenuItems(suggestions, compatibleNodes, t, handlers)
-    )
+/**
+ * Flat-value search across every category submenu: when the root search has
+ * text we surface matching nodes inline (tagged with their category) so a node
+ * can be picked straight from the root without first drilling into a submenu.
+ * Results preserve category order, then per-category display-name order.
+ */
+export function searchLinkReleaseNodes(
+  categories: LinkReleaseNodeCategory[],
+  query: string
+): LinkReleaseNodeMatch[] {
+  const trimmed = query.trim().toLowerCase()
+  if (!trimmed) return []
+  const matches: LinkReleaseNodeMatch[] = []
+  for (const category of categories) {
+    for (const node of category.nodes) {
+      if (node.display_name.toLowerCase().includes(trimmed)) {
+        matches.push({ category, node })
+      }
+    }
   }
-
-  items.push({ separator: true })
-  if (rerouteDef) {
-    items.push({
-      label: rerouteDef.display_name,
-      command: () => handlers.selectNode(rerouteDef)
-    })
-  }
-  items.push(buildAddRerouteItem(t, handlers))
-
-  return items
+  return matches
 }
