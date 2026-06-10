@@ -284,6 +284,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       },
       set value(next) {
         store.setValue(id, next)
+      },
+      // Canvas edits operate on a transient concrete widget (toConcreteWidget),
+      // so the value setter above is never invoked; BaseWidget.setValue writes
+      // its own local state and then calls this callback, which is the only
+      // bridge back to the store.
+      callback(next) {
+        store.setValue(id, next)
       }
     }
     Object.defineProperty(widget, 'widgetId', {

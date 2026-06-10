@@ -1,13 +1,16 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   ISlotType,
+  LGraphCanvas,
   Subgraph,
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
 import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import {
   appendQuarantine,
   flushProxyWidgetMigration,
@@ -358,6 +361,25 @@ describe('SubgraphWidgetPromotion', () => {
         promotedInputs(subgraphNode).length
       )
       expect(promotedInputs(subgraphNode)).toHaveLength(0)
+    })
+
+    it('writes canvas edits back to the host widget store', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+
+      const { node } = createNodeWithWidget('Test Node')
+      const subgraphNode = setupPromotedWidget(subgraph, node)
+
+      // Canvas interaction wraps the projected widget in a transient concrete
+      // widget (toConcreteWidget), so the edit only reaches the store through
+      // the widget callback, not the projected widget's value setter.
+      const hostWidget = subgraphNode.widgets[0]
+      const concrete = new NumberWidget(fromAny(hostWidget), subgraphNode)
+      const canvas = fromAny<LGraphCanvas, unknown>({ graph_mouse: [0, 0] })
+      concrete.setValue(99, { e: fromAny({}), node: subgraphNode, canvas })
+
+      expect(promotedWidgetStateByName(subgraphNode, 'value').value).toBe(99)
     })
   })
 
