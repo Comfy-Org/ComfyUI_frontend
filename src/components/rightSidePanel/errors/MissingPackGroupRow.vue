@@ -48,7 +48,7 @@
             {{ packDisplayName }}
           </button>
           <button
-            v-else-if="primaryLocatableNodeType && !group.isResolving"
+            v-else-if="primaryLocatableNodeType"
             type="button"
             :class="
               cn(
@@ -307,6 +307,7 @@ const showNodeTypeList = computed(
     (hasMultipleNodeTypes.value && expanded.value)
 )
 const primaryLocatableNodeType = computed(() => {
+  if (group.isResolving) return null
   if (isUnknownPack.value) return null
   if (group.nodeTypes.length !== 1) return null
   const [nodeType] = group.nodeTypes

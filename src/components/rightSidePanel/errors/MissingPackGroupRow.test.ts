@@ -153,6 +153,19 @@ describe('MissingPackGroupRow', () => {
       expect(screen.getByText(/Loading/)).toBeInTheDocument()
     })
 
+    it('does not render header locate while pack metadata is resolving', () => {
+      renderRow({
+        group: makeGroup({
+          isResolving: true,
+          nodeTypes: [{ type: 'OnlyNode', nodeId: '100', isReplaceable: false }]
+        })
+      })
+
+      expect(
+        screen.queryByRole('button', { name: 'Locate node on canvas' })
+      ).not.toBeInTheDocument()
+    })
+
     it('renders node count', () => {
       renderRow()
       expect(screen.getByText('2')).toBeInTheDocument()
@@ -178,6 +191,16 @@ describe('MissingPackGroupRow', () => {
       expect(screen.queryByText('MissingA')).not.toBeInTheDocument()
       expect(screen.queryByText('MissingB')).not.toBeInTheDocument()
       expect(screen.getByRole('button', { name: 'Expand' })).toBeInTheDocument()
+    })
+
+    it('shows unknown pack nodeTypes by default', () => {
+      renderRow({ group: makeGroup({ packId: null }) })
+
+      expect(
+        screen.getByRole('button', { name: 'Collapse' })
+      ).toBeInTheDocument()
+      expect(screen.getByText('MissingA')).toBeInTheDocument()
+      expect(screen.getByText('MissingB')).toBeInTheDocument()
     })
 
     it('renders all nodeTypes after expanding', async () => {

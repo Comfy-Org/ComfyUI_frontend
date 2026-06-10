@@ -44,6 +44,24 @@ test.describe('Errors tab - Missing nodes', { tag: ['@ui', '@canvas'] }, () => {
     ).toBeVisible()
   })
 
+  test('Should show subgraph missing node rows by default', async ({
+    comfyPage
+  }) => {
+    await loadWorkflowAndOpenErrorsTab(
+      comfyPage,
+      'missing/missing_nodes_in_subgraph'
+    )
+
+    const missingNodeCard = comfyPage.page.getByTestId(
+      TestIds.dialogs.missingNodeCard
+    )
+    await expect(
+      missingNodeCard.getByRole('button', {
+        name: 'MISSING_NODE_TYPE_IN_SUBGRAPH'
+      })
+    ).toBeVisible()
+  })
+
   test('Should locate missing node from the row label', async ({
     comfyPage
   }) => {
@@ -76,9 +94,9 @@ test.describe('Errors tab - Missing nodes', { tag: ['@ui', '@canvas'] }, () => {
     const packTitle = missingNodeCard.getByRole('button', {
       name: 'test-missing-node-pack'
     })
-    const expandButton = missingNodeCard
-      .getByTestId(TestIds.dialogs.missingNodePackExpand)
-      .first()
+    const expandButton = missingNodeCard.getByTestId(
+      TestIds.dialogs.missingNodePackExpand
+    )
     const firstNode = missingNodeCard.getByRole('button', {
       name: 'TEST_MISSING_PACK_NODE_A'
     })
