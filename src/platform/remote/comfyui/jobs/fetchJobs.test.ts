@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
+  JobsApiError,
   extractWorkflow,
   fetchHistory,
   fetchHistoryPage,
@@ -142,13 +143,35 @@ describe('fetchJobs', () => {
       await expect(fetchHistory(mockFetch)).rejects.toThrow('Network error')
     })
 
-    it('throws on non-ok response', async () => {
+    it('throws a JobsApiError carrying status and body on non-ok response', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: false,
-        status: 400
+        status: 400,
+        text: () =>
+          Promise.resolve('{"error":"Invalid cursor","code":"INVALID_CURSOR"}')
       })
 
-      await expect(fetchHistory(mockFetch)).rejects.toThrow('400')
+      await expect(fetchHistory(mockFetch)).rejects.toBeInstanceOf(JobsApiError)
+      await expect(fetchHistory(mockFetch)).rejects.toMatchObject({
+        status: 400,
+        message: expect.stringContaining('INVALID_CURSOR')
+      })
+    })
+
+    it('parses a null next_cursor as absent', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve(
+            createMockResponse([createMockJob('job1', 'completed')], 1, {
+              next_cursor: null
+            })
+          )
+      })
+
+      const result = await fetchHistoryPage(mockFetch, 200, { offset: 0 })
+
+      expect(result.nextCursor).toBeUndefined()
     })
 
     it('parses batch containing text-only preview outputs', async () => {

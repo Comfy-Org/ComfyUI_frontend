@@ -29,6 +29,20 @@ export interface JobsPageRequest {
   after?: string
 }
 
+/**
+ * Non-ok response from the jobs API. Carries the HTTP status so callers can
+ * tell a rejected cursor (400 INVALID_CURSOR) apart from transient failures.
+ */
+export class JobsApiError extends Error {
+  constructor(
+    readonly status: number,
+    body: string
+  ) {
+    super(`[Jobs API] Failed to fetch jobs: ${status} ${body}`.trim())
+    this.name = 'JobsApiError'
+  }
+}
+
 interface FetchJobsRawResult {
   jobs: RawJobListItem[]
   total: number
@@ -66,7 +80,7 @@ async function fetchJobsRaw(
   const url = `/jobs?status=${statusParam}&limit=${maxItems}&${pageParam}`
   const res = await fetchApi(url)
   if (!res.ok) {
-    throw new Error(`[Jobs API] Failed to fetch jobs: ${res.status}`)
+    throw new JobsApiError(res.status, await res.text().catch(() => ''))
   }
   const data = zJobsListResponse.parse(await res.json())
   return {
@@ -75,7 +89,7 @@ async function fetchJobsRaw(
     offset: data.pagination.offset,
     limit: data.pagination.limit,
     hasMore: data.pagination.has_more,
-    nextCursor: data.pagination.next_cursor
+    nextCursor: data.pagination.next_cursor ?? undefined
   }
 }
 

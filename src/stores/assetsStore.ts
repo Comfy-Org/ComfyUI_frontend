@@ -17,7 +17,10 @@ import {
 } from '@/platform/assets/services/assetService'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
-import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import {
+  JobsApiError,
+  fetchHistoryPage
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type {
   FetchHistoryPageResult,
   JobsPageRequest
@@ -192,16 +195,24 @@ export const useAssetsStore = defineStore('assets', () => {
   // a stale continuation can't merge into (or move the cursor of) the new walk.
   let historyFetchEpoch = 0
 
+  const isRejectedCursorError = (err: unknown): boolean =>
+    err instanceof JobsApiError && err.status === 400
+
   const fetchHistoryPageWithCursorRecovery = async (
-    after: string | null
+    after: string | null,
+    epoch: number
   ): Promise<FetchHistoryPageResult> => {
     if (!after) return fetchHistoryJobsPage({ offset: historyOffset.value })
     try {
       return await fetchHistoryJobsPage({ after })
     } catch (err) {
-      // A cursor can go stale (e.g. server restart rejects it with 400
-      // INVALID_CURSOR); resume from the offset fallback instead.
-      console.warn('Cursor history page failed, retrying via offset:', err)
+      // Only a rejected cursor (e.g. gone stale across a server restart)
+      // warrants dropping it for the offset fallback; transient failures
+      // propagate so the still-valid cursor is retried on the next attempt.
+      // A continuation from a superseded walk must also propagate — its
+      // recovery would null the cursor the newer walk just minted.
+      if (!isRejectedCursorError(err) || epoch !== historyFetchEpoch) throw err
+      console.warn('Stale history cursor rejected, resuming via offset:', err)
       historyNextCursor.value = null
       return fetchHistoryJobsPage({ offset: historyOffset.value })
     }
@@ -224,7 +235,8 @@ export const useAssetsStore = defineStore('assets', () => {
 
     const epoch = historyFetchEpoch
     const page = await fetchHistoryPageWithCursorRecovery(
-      loadMore ? historyNextCursor.value : null
+      loadMore ? historyNextCursor.value : null,
+      epoch
     )
     if (epoch !== historyFetchEpoch) return allHistoryItems.value
 
@@ -238,10 +250,14 @@ export const useAssetsStore = defineStore('assets', () => {
     }
 
     // The server mints next_cursor even on offset-mode requests, so the walk
-    // upgrades to keyset paging after the first page that returns one.
+    // upgrades to keyset paging after the first page that returns one. An
+    // empty page without a cursor is terminal regardless of has_more —
+    // offset paging advances by jobs.length, so it would refetch the same
+    // page forever; a minted cursor still makes progress.
     historyOffset.value += page.jobs.length
     historyNextCursor.value = page.nextCursor ?? null
-    hasMoreHistory.value = page.hasMore
+    hasMoreHistory.value =
+      page.hasMore && (page.jobs.length > 0 || page.nextCursor != null)
 
     trimHistoryToLimit()
 
@@ -314,13 +330,34 @@ export const useAssetsStore = defineStore('assets', () => {
     hasMoreHistory.value = page.hasMore
   }
 
+  let headRefreshInFlight: Promise<void> | null = null
+  let headRefreshTrailing: Promise<void> | null = null
+
   /**
    * Merge newly completed jobs into the top of the list without resetting
    * pagination state, so items loaded via infinite scroll survive the
    * refresh. Cursors only walk toward older items, so new completions are
-   * picked up by re-fetching the head page and deduplicating.
+   * picked up by re-fetching the head page and deduplicating. Bursts of
+   * status events share the in-flight refresh, and a call arriving
+   * mid-flight schedules exactly one trailing refresh — the shared response
+   * was dispatched before that caller's event, so it could miss the very
+   * completion the caller is reacting to.
    */
-  const refreshHistoryHead = async () => {
+  const refreshHistoryHead = (): Promise<void> => {
+    if (!headRefreshInFlight) {
+      headRefreshInFlight = doRefreshHistoryHead().finally(() => {
+        headRefreshInFlight = null
+      })
+      return headRefreshInFlight
+    }
+    headRefreshTrailing ??= headRefreshInFlight.then(() => {
+      headRefreshTrailing = null
+      return refreshHistoryHead()
+    })
+    return headRefreshTrailing
+  }
+
+  const doRefreshHistoryHead = async () => {
     if (!allHistoryItems.value.length) {
       await updateHistory()
       return

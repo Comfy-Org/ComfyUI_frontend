@@ -5,7 +5,11 @@ import { nextTick, watch } from 'vue'
 
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
+import {
+  JobsApiError,
+  fetchHistoryPage
+} from '@/platform/remote/comfyui/jobs/fetchJobs'
+import type * as fetchJobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { FetchHistoryPageResult } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -22,8 +26,10 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-// Mock the jobs API fetcher used for history pagination
-vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', () => ({
+// Mock the jobs API fetcher used for history pagination, keeping the real
+// JobsApiError class so the store's instanceof narrowing stays meaningful
+vi.mock('@/platform/remote/comfyui/jobs/fetchJobs', async (importOriginal) => ({
+  ...(await importOriginal<typeof fetchJobsModule>()),
   fetchHistoryPage: vi.fn()
 }))
 
@@ -613,7 +619,7 @@ describe('assetsStore - Refactored (Option A)', () => {
             nextCursor: 'cursor-stale'
           })
         )
-        .mockRejectedValueOnce(new Error('400 INVALID_CURSOR'))
+        .mockRejectedValueOnce(new JobsApiError(400, 'INVALID_CURSOR'))
         .mockResolvedValueOnce(
           mockHistoryPage(
             Array.from({ length: 10 }, (_, i) => createMockJobItem(10 + i)),
@@ -661,7 +667,7 @@ describe('assetsStore - Refactored (Option A)', () => {
             nextCursor: 'cursor-stale'
           })
         )
-        .mockRejectedValueOnce(new Error('400 INVALID_CURSOR'))
+        .mockRejectedValueOnce(new JobsApiError(400, 'INVALID_CURSOR'))
         .mockRejectedValueOnce(new Error('network down'))
 
       await store.updateHistory()
@@ -685,6 +691,121 @@ describe('assetsStore - Refactored (Option A)', () => {
         { offset: 10 }
       )
       expect(store.historyAssets).toHaveLength(15)
+    })
+
+    it('preserves the cursor when a transient error rejects the page', async () => {
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(
+          mockHistoryPage(
+            Array.from({ length: 10 }, (_, i) => createMockJobItem(i)),
+            { hasMore: true, nextCursor: 'cursor-1' }
+          )
+        )
+        .mockRejectedValueOnce(new JobsApiError(500, 'server error'))
+
+      await store.updateHistory()
+      await store.loadMoreHistory()
+
+      // No offset fallback for transient failures, just a recorded error
+      expect(fetchHistoryPage).toHaveBeenCalledTimes(2)
+      expect(store.historyError).toBeInstanceOf(Error)
+      expect(store.hasMoreHistory).toBe(true)
+
+      // The still-valid cursor is retried on the next attempt
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(mockHistoryPage([]))
+      await store.loadMoreHistory()
+      expect(fetchHistoryPage).toHaveBeenLastCalledWith(
+        expect.any(Function),
+        200,
+        { after: 'cursor-1' }
+      )
+    })
+
+    it('treats a cursorless empty page as terminal even if the server claims more', async () => {
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage([], { hasMore: true })
+      )
+
+      await store.updateHistory()
+
+      expect(store.hasMoreHistory).toBe(false)
+      await store.loadMoreHistory()
+      expect(fetchHistoryPage).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps paging when an empty page still mints a cursor', async () => {
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(
+          mockHistoryPage([], { hasMore: true, nextCursor: 'cursor-skip' })
+        )
+        .mockResolvedValueOnce(mockHistoryPage([createMockJobItem(0)]))
+
+      await store.updateHistory()
+      expect(store.hasMoreHistory).toBe(true)
+
+      await store.loadMoreHistory()
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        2,
+        expect.any(Function),
+        200,
+        { after: 'cursor-skip' }
+      )
+    })
+
+    it('keeps paging when a page of jobs maps to no displayable assets', async () => {
+      const failedJobs = Array.from({ length: 3 }, (_, i) => ({
+        ...createMockJobItem(i),
+        status: 'failed' as const,
+        preview_output: null
+      }))
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(failedJobs, { hasMore: true })
+      )
+
+      await store.updateHistory()
+
+      expect(store.historyAssets).toHaveLength(0)
+      expect(store.hasMoreHistory).toBe(true)
+    })
+
+    it('does not let a stale rejected continuation drop the new walk cursor', async () => {
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(
+          Array.from({ length: 10 }, (_, i) => createMockJobItem(i)),
+          { hasMore: true, nextCursor: 'cursor-old' }
+        )
+      )
+      await store.updateHistory()
+
+      let rejectStale: (err: Error) => void
+      vi.mocked(fetchHistoryPage).mockReturnValueOnce(
+        new Promise<FetchHistoryPageResult>((_, reject) => {
+          rejectStale = reject
+        })
+      )
+      const staleLoad = store.loadMoreHistory()
+
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage([createMockJobItem(100)], {
+          hasMore: true,
+          nextCursor: 'cursor-fresh'
+        })
+      )
+      await store.updateHistory()
+
+      rejectStale!(new JobsApiError(400, 'INVALID_CURSOR'))
+      await staleLoad
+
+      // The superseded walk neither nulled the fresh cursor nor fired an
+      // offset retry against the new walk
+      expect(fetchHistoryPage).toHaveBeenCalledTimes(3)
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(mockHistoryPage([]))
+      await store.loadMoreHistory()
+      expect(fetchHistoryPage).toHaveBeenLastCalledWith(
+        expect.any(Function),
+        200,
+        { after: 'cursor-fresh' }
+      )
     })
 
     it('discards a stale loadMore continuation that resolves after a reset', async () => {
@@ -849,6 +970,55 @@ describe('assetsStore - Refactored (Option A)', () => {
       expect(store.historyAssets.some((asset) => asset.id === 'prompt_0')).toBe(
         false
       )
+    })
+
+    it('coalesces a burst into a leading fetch plus one trailing refresh', async () => {
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage([createMockJobItem(0)], {
+          hasMore: true,
+          nextCursor: 'cursor-1'
+        })
+      )
+      await store.updateHistory()
+
+      let resolveLeading: (page: FetchHistoryPageResult) => void
+      vi.mocked(fetchHistoryPage).mockReturnValueOnce(
+        new Promise<FetchHistoryPageResult>((resolve) => {
+          resolveLeading = resolve
+        })
+      )
+
+      const first = store.refreshHistoryHead()
+      const second = store.refreshHistoryHead()
+      const third = store.refreshHistoryHead()
+
+      // The trailing refresh re-fetches the head and sees the job the
+      // leading response was dispatched too early to include
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage([createMockJobItem(0), createMockJobItem(1)], {
+          hasMore: true
+        })
+      )
+      resolveLeading!(
+        mockHistoryPage([createMockJobItem(0)], { hasMore: true })
+      )
+      await Promise.all([first, second, third])
+
+      // Initial load + leading head fetch + exactly one trailing head fetch
+      expect(fetchHistoryPage).toHaveBeenCalledTimes(3)
+      expect(store.historyAssets).toHaveLength(2)
+    })
+
+    it('runs a fresh fetch for sequential refreshes', async () => {
+      vi.mocked(fetchHistoryPage).mockResolvedValue(
+        mockHistoryPage([createMockJobItem(0)], { hasMore: true })
+      )
+      await store.updateHistory()
+
+      await store.refreshHistoryHead()
+      await store.refreshHistoryHead()
+
+      expect(fetchHistoryPage).toHaveBeenCalledTimes(3)
     })
 
     it('prunes server-side deletions when the head page spans the whole timeline', async () => {
