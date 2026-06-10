@@ -40,11 +40,11 @@
           </span>
         </div>
       </slot>
-      <!-- max-w allows 4px of bleed past the rail so near-fit labels
-           (e.g. "Workflows") stay on one line instead of breaking mid-word -->
+      <!-- w-max sizes the label to the rail instead of the padding-inset
+           button content box, which is too narrow for one-line labels -->
       <span
         v-if="label && !isSmall"
-        class="side-bar-button-label line-clamp-2 w-max max-w-[calc(var(--sidebar-width)+4px)] text-center text-2xs wrap-break-word whitespace-normal"
+        class="side-bar-button-label line-clamp-2 w-max max-w-(--sidebar-width) text-center text-2xs wrap-break-word whitespace-normal"
         >{{ st(label, label) }}</span
       >
     </div>
