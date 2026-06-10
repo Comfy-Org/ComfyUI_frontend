@@ -263,8 +263,8 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import {
   TIER_PRICING,
   TIER_TO_KEY
@@ -361,9 +361,13 @@ const tiers: PricingTierConfig[] = [
 const {
   isActiveSubscription,
   isFreeTier,
-  subscriptionTier,
-  isYearlySubscription
-} = useSubscription()
+  tier: subscriptionTier,
+  subscription
+} = useBillingContext()
+
+const isYearlySubscription = computed(
+  () => subscription.value?.duration === 'ANNUAL'
+)
 const telemetry = useTelemetry()
 const { userId } = storeToRefs(useAuthStore())
 const { accessBillingPortal, reportError } = useAuthActions()
