@@ -8,6 +8,7 @@ import {
   useDownloadUrl
 } from '../../../composables/useDownloadUrl'
 import { t } from '../../../i18n/translations'
+import { captureDownloadClick } from '../../../scripts/posthog'
 import BrandButton from '../../common/BrandButton.vue'
 
 const { locale = 'en', class: customClass = '' } = defineProps<{
@@ -69,6 +70,7 @@ const buttons = computed<ButtonSpec[]>(() => {
     size="lg"
     :class="customClass"
     :aria-label="btn.ariaLabel"
+    @click="captureDownloadClick(btn.key)"
   >
     <span class="inline-flex items-center gap-2">
       <img
