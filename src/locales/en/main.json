@@ -2697,9 +2697,9 @@
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
-      "message": "Workspaces create a new credit pool that can be shared among members. You'll become the owner after creating this.",
-      "nameLabel": "Workspace name*",
-      "namePlaceholder": "Enter workspace name",
+      "message": "Workspaces keep your projects and files organized. Subscribe to a Team plan to invite members.",
+      "nameLabel": "Workspace name",
+      "namePlaceholder": "Ex: Comfy Org",
       "create": "Create"
     },
     "toast": {
@@ -2745,7 +2745,7 @@
     "personal": "Personal",
     "roleOwner": "Owner",
     "roleMember": "Member",
-    "createWorkspace": "Create new workspace",
+    "createWorkspace": "Create a team workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
     "failedToSwitch": "Failed to switch workspace"
   },
