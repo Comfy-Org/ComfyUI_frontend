@@ -9,7 +9,8 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
+import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { st, t } from '@/i18n'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -82,6 +83,7 @@ import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacem
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
@@ -128,7 +130,6 @@ import {
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
-import { getWidgetState } from '@/world/widgetValueIO'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
@@ -174,14 +175,29 @@ export function sanitizeNodeName(string: string) {
 }
 
 function syncPromotedComboHostOptions(rootGraph: LGraph): void {
+  const widgetValueStore = useWidgetValueStore()
   forEachNode(rootGraph, (node) => {
-    for (const widget of node.widgets ?? []) {
-      if (!isPromotedWidgetView(widget) || widget.type !== 'combo') continue
+    if (!node.isSubgraphNode()) return
+    for (const input of node.inputs) {
+      if (!input.widgetId) continue
 
-      const state = getWidgetState(widget.entityId)
+      const source = promotedInputSource(node, input)
+      if (!source) continue
+
+      const resolution = resolveConcretePromotedWidget(
+        node,
+        source.nodeId,
+        source.widgetName
+      )
+      if (resolution.status !== 'resolved') continue
+
+      const sourceWidget = resolution.resolved.widget
+      if (sourceWidget.type !== 'combo') continue
+
+      const state = widgetValueStore.getWidget(input.widgetId)
       if (!state) continue
 
-      state.options = { ...(widget.options ?? {}) }
+      state.options = { ...(sourceWidget.options ?? {}) }
     }
   })
 }
