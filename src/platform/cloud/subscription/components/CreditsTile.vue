@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5"
+    class="@container relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5"
   >
     <Button
       variant="muted-textonly"
@@ -21,7 +21,7 @@
       <div v-else class="flex items-center gap-1">
         <i class="icon-[lucide--component] size-4" :style="creditIconStyle" />
         <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
-        <span class="text-sm text-muted">{{
+        <span class="text-sm text-muted @max-[300px]:hidden">{{
           $t('subscription.remaining')
         }}</span>
       </div>
@@ -46,8 +46,13 @@
           />
         </div>
         <div class="flex items-center justify-between gap-2 text-sm">
-          <Skeleton v-if="isLoadingBalance" width="5rem" height="1rem" />
-          <span v-else class="text-muted">
+          <Skeleton
+            v-if="isLoadingBalance"
+            class="@max-[300px]:hidden"
+            width="5rem"
+            height="1rem"
+          />
+          <span v-else class="text-muted @max-[300px]:hidden">
             {{ $t('subscription.creditsUsed', { used: usedDisplay }) }}
           </span>
           <Skeleton v-if="isLoadingBalance" width="9rem" height="1rem" />
@@ -59,12 +64,22 @@
               class="icon-[lucide--component] size-4"
               :style="creditIconStyle"
             />
-            {{
-              $t('subscription.creditsLeftOfTotal', {
-                remaining: monthlyBonusCredits,
-                total: monthlyTotalDisplay
-              })
-            }}
+            <span class="@max-[180px]:hidden">
+              {{
+                $t('subscription.creditsLeftOfTotal', {
+                  remaining: monthlyBonusCredits,
+                  total: monthlyTotalDisplay
+                })
+              }}
+            </span>
+            <span class="hidden @max-[180px]:inline">
+              {{
+                $t('subscription.creditsLeftOfTotal', {
+                  remaining: monthlyRemainingCompact,
+                  total: monthlyTotalCompact
+                })
+              }}
+            </span>
           </span>
         </div>
       </div>
@@ -72,7 +87,9 @@
       <div class="h-px w-full bg-interface-stroke" />
 
       <div class="flex flex-col gap-2">
-        <div class="flex items-center justify-between gap-2 text-sm">
+        <div
+          class="flex items-center justify-between gap-2 text-sm @max-[300px]:flex-col @max-[300px]:items-start"
+        >
           <span class="flex items-center gap-1 text-text-primary">
             {{ $t('subscription.additionalCredits') }}
             <i
@@ -95,7 +112,7 @@
             {{ displayPrepaid }}
           </span>
         </div>
-        <span class="text-sm text-muted">
+        <span class="text-sm text-muted @max-[300px]:hidden">
           {{ $t('subscription.usedAfterMonthly') }}
         </span>
       </div>
@@ -152,7 +169,7 @@ const creditIconStyle = { color: CREDIT_COLOR }
 const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
 const TOPUP_EXPIRY_MS = 5 * 60 * 1000
 
-const { n } = useI18n()
+const { locale, n } = useI18n()
 
 const {
   subscription,
@@ -209,6 +226,17 @@ const monthlyTotalDisplay = computed(() => {
 })
 
 const usedDisplay = computed(() => n(usage.value.used))
+
+const compactNumber = computed(
+  () => new Intl.NumberFormat(locale.value, { notation: 'compact' })
+)
+const monthlyRemainingCompact = computed(() =>
+  compactNumber.value.format(monthlyBonusCreditsValue.value)
+)
+const monthlyTotalCompact = computed(() => {
+  const total = monthlyTotalCredits.value
+  return total === null ? '—' : compactNumber.value.format(total)
+})
 
 const displayTotal = computed(() => (zeroState ? '0' : totalCredits.value))
 const displayPrepaid = computed(() => (zeroState ? '0' : prepaidCredits.value))

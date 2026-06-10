@@ -156,5 +156,14 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toBeVisible()
+
+    // Narrow container (DES-247 responsive variants): drop the used/remaining
+    // labels and the breakdown subtitle, compact the monthly summary numbers.
+    await page.setViewportSize({ width: 360, height: 800 })
+    await expect(content.getByText('10,550 used')).toBeHidden()
+    await expect(content.getByText('remaining', { exact: true })).toBeHidden()
+    await expect(content.getByText('Used after monthly runs out')).toBeHidden()
+    await expect(content.getByText('10,550 left of 21,100')).toBeHidden()
+    await expect(content.getByText('11K left of 21K')).toBeVisible()
   })
 })

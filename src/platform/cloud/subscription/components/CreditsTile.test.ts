@@ -83,8 +83,7 @@ const i18n = createI18n({
         creditsLeftOfTotal: '{remaining} left of {total}',
         additionalCredits: 'Additional credits',
         usedAfterMonthly: 'Used after monthly runs out',
-        additionalCreditsTooltip:
-          'Additional top-up credits are used up first.',
+        additionalCreditsTooltip: 'Credits you add on top of your plan.',
         addCredits: 'Add credits',
         upgradeToAddCredits: 'Upgrade to add credits'
       }
@@ -155,6 +154,12 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('Additional credits')
     expect(container.textContent).toContain('633')
     expect(container.textContent).toContain('Used after monthly runs out')
+  })
+
+  it('renders a compact monthly summary for narrow containers', () => {
+    activeProSubscription()
+    const { container } = renderTile()
+    expect(container.textContent).toContain('422 left of 21K')
   })
 
   it('hides the breakdown and forces zeros in the zero state', () => {
