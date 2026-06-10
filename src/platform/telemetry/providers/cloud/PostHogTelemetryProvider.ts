@@ -13,11 +13,12 @@ import type {
   AuthMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
-  ShareFlowMetadata,
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   ExecutionTriggerSource,
+  ShareFlowMetadata,
+  ShareLinkOpenedMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
@@ -29,6 +30,7 @@ import type {
   PageVisibilityMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
+  SharedWorkflowRunMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -488,6 +490,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.SHARE_FLOW, metadata)
   }
 
+  trackShareLinkOpened(metadata: ShareLinkOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.SHARE_LINK_OPENED, metadata)
+  }
+
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
     this.trackEvent(TelemetryEvents.PAGE_VISIBILITY_CHANGED, metadata)
   }
@@ -548,6 +554,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
     this.trackEvent(TelemetryEvents.EXECUTION_SUCCESS, metadata)
+  }
+
+  trackSharedWorkflowRun(metadata: SharedWorkflowRunMetadata): void {
+    this.trackEvent(TelemetryEvents.SHARED_WORKFLOW_RUN, metadata)
   }
 
   trackSettingChanged(metadata: SettingChangedMetadata): void {
