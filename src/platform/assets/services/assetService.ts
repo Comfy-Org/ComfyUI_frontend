@@ -20,6 +20,7 @@ import type {
   ModelFolder,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
+import { MISSING_TAG, MODELS_TAG } from '@/platform/assets/constants/assetTags'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -196,13 +197,13 @@ const EXPERIMENTAL_WARNING = `EXPERIMENTAL: If you are seeing this please make s
 const DEFAULT_LIMIT = 500
 const INPUT_ASSETS_WITH_PUBLIC_LIMIT = 500
 
-export const MODELS_TAG = 'models'
-export const INPUT_TAG = 'input'
-export const OUTPUT_TAG = 'output'
-/** Asset tag used by the backend for temporary (preview) workflow outputs. */
-export const TEMP_TAG = 'temp'
-/** Asset tag used by the backend for placeholder records that are not installed. */
-export const MISSING_TAG = 'missing'
+export {
+  MODELS_TAG,
+  INPUT_TAG,
+  OUTPUT_TAG,
+  TEMP_TAG,
+  MISSING_TAG
+} from '@/platform/assets/constants/assetTags'
 const DEFAULT_EXCLUDED_ASSET_TAGS = [MISSING_TAG]
 
 const uploadedAssetResponseSchema = assetItemSchema.extend({

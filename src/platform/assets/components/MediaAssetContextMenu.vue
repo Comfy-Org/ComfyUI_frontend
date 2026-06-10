@@ -43,8 +43,8 @@ import { isPreviewableMediaType } from '@/utils/formatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { TEMP_TAG } from '../constants/assetTags'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
-import { TEMP_TAG } from '../services/assetService'
 import type { AssetItem } from '../schemas/assetSchema'
 import type { AssetContext, MediaKind } from '../schemas/mediaAssetSchema'
 

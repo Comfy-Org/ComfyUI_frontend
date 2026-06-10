@@ -57,6 +57,32 @@
         />
       </Button>
 
+      <template v-if="showAlphabeticalSort">
+        <Button
+          variant="textonly"
+          class="w-full"
+          @click="handleSortChange('name-asc')"
+        >
+          <span>{{ $t('sideToolbar.mediaAssets.sortNameAsc') }}</span>
+          <i
+            class="ml-auto icon-[lucide--check] size-4"
+            :class="sortBy !== 'name-asc' && 'opacity-0'"
+          />
+        </Button>
+
+        <Button
+          variant="textonly"
+          class="w-full"
+          @click="handleSortChange('name-desc')"
+        >
+          <span>{{ $t('sideToolbar.mediaAssets.sortNameDesc') }}</span>
+          <i
+            class="ml-auto icon-[lucide--check] size-4"
+            :class="sortBy !== 'name-desc' && 'opacity-0'"
+          />
+        </Button>
+      </template>
+
       <template v-if="showGenerationTimeSort">
         <Button
           variant="textonly"
@@ -83,22 +109,70 @@
         </Button>
       </template>
     </template>
+
+    <template v-if="showAssetToggles">
+      <div class="my-1 w-full border-b border-border-subtle" />
+
+      <Button
+        variant="textonly"
+        class="w-full"
+        role="menuitemcheckbox"
+        :aria-checked="groupByJob"
+        @click="groupByJob = !groupByJob"
+      >
+        <span>{{ $t('sideToolbar.mediaAssets.groupByJob') }}</span>
+        <i
+          class="ml-auto icon-[lucide--check] size-4"
+          :class="!groupByJob && 'opacity-0'"
+        />
+      </Button>
+
+      <Button
+        variant="textonly"
+        class="w-full"
+        role="menuitemcheckbox"
+        :aria-checked="showPreviewAssets"
+        @click="showPreviewAssets = !showPreviewAssets"
+      >
+        <span>{{ $t('sideToolbar.mediaAssets.showPreviewAssets') }}</span>
+        <i
+          class="ml-auto icon-[lucide--check] size-4"
+          :class="!showPreviewAssets && 'opacity-0'"
+        />
+      </Button>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
 
-export type SortBy = 'newest' | 'oldest' | 'longest' | 'fastest'
+export type SortBy =
+  | 'newest'
+  | 'oldest'
+  | 'longest'
+  | 'fastest'
+  | 'name-asc'
+  | 'name-desc'
 
-const { showSortOptions = false, showGenerationTimeSort = false } =
-  defineProps<{
-    showSortOptions?: boolean
-    showGenerationTimeSort?: boolean
-  }>()
+const {
+  showSortOptions = false,
+  showGenerationTimeSort = false,
+  showAlphabeticalSort = false,
+  showAssetToggles = false
+} = defineProps<{
+  showSortOptions?: boolean
+  showGenerationTimeSort?: boolean
+  showAlphabeticalSort?: boolean
+  showAssetToggles?: boolean
+}>()
 
 const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
+const showPreviewAssets = defineModel<boolean>('showPreviewAssets', {
+  default: false
+})
+const groupByJob = defineModel<boolean>('groupByJob', { default: false })
 
 function handleViewModeChange(value: 'list' | 'grid') {
   viewMode.value = value

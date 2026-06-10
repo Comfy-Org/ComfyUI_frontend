@@ -165,7 +165,7 @@ import {
   isPreviewableMediaType
 } from '@/utils/formatUtil'
 
-import { TEMP_TAG } from '../services/assetService'
+import { TEMP_TAG } from '../constants/assetTags'
 import { getAssetType } from '../composables/media/assetMappers'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'

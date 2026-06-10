@@ -27,8 +27,12 @@
           <MediaAssetSettingsMenu
             v-model:view-mode="viewMode"
             v-model:sort-by="sortBy"
-            :show-sort-options="isCloud"
+            v-model:show-preview-assets="showPreviewAssets"
+            v-model:group-by-job="groupByJob"
+            :show-sort-options="showSortOptions ?? isCloud"
             :show-generation-time-sort
+            :show-alphabetical-sort="showAlphabeticalSort"
+            :show-asset-toggles="showAssetToggles"
           />
         </template>
       </MediaAssetSettingsButton>
@@ -47,9 +51,18 @@ import MediaAssetSettingsButton from './MediaAssetSettingsButton.vue'
 import MediaAssetSettingsMenu from './MediaAssetSettingsMenu.vue'
 import type { SortBy } from './MediaAssetSettingsMenu.vue'
 
-const { showGenerationTimeSort = false, bottomDivider = false } = defineProps<{
+const {
+  showGenerationTimeSort = false,
+  showAlphabeticalSort = false,
+  showAssetToggles = false,
+  showSortOptions = undefined,
+  bottomDivider = false
+} = defineProps<{
   searchQuery: string
   showGenerationTimeSort?: boolean
+  showAlphabeticalSort?: boolean
+  showAssetToggles?: boolean
+  showSortOptions?: boolean
   mediaTypeFilters: string[]
   bottomDivider?: boolean
 }>()
@@ -61,6 +74,10 @@ const emit = defineEmits<{
 
 const sortBy = defineModel<SortBy>('sortBy', { required: true })
 const viewMode = defineModel<'list' | 'grid'>('viewMode', { required: true })
+const showPreviewAssets = defineModel<boolean>('showPreviewAssets', {
+  default: false
+})
+const groupByJob = defineModel<boolean>('groupByJob', { default: false })
 
 const handleSearchChange = (value: string | undefined) => {
   emit('update:searchQuery', value ?? '')

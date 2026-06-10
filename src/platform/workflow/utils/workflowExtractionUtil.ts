@@ -29,10 +29,13 @@ export async function extractWorkflowFromAsset(asset: AssetItem): Promise<{
 }> {
   const baseFilename = asset.name.replace(/\.[^/.]+$/, '.json')
 
-  // For output assets: use jobs API (with caching and validation)
-  const metadata = getOutputAssetMetadata(asset.user_metadata)
-  if (metadata?.jobId) {
-    const workflow = await getJobWorkflow(metadata.jobId)
+  // For output assets: use jobs API (with caching and validation).
+  // History-mapped assets carry the job id in user_metadata; assets-API
+  // records expose it as job_id.
+  const jobId =
+    getOutputAssetMetadata(asset.user_metadata)?.jobId ?? asset.job_id
+  if (jobId) {
+    const workflow = await getJobWorkflow(jobId)
     return { workflow: workflow ?? null, filename: baseFilename }
   }
 

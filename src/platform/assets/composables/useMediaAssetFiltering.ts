@@ -7,7 +7,13 @@ import type { Ref } from 'vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
-type SortOption = 'newest' | 'oldest' | 'longest' | 'fastest'
+type SortOption =
+  | 'newest'
+  | 'oldest'
+  | 'longest'
+  | 'fastest'
+  | 'name-asc'
+  | 'name-desc'
 
 /**
  * Get timestamp from asset (either create_time or created_at)
@@ -81,6 +87,14 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
       case 'fastest':
         // Ascending order (fastest execution time first)
         return sortByUtil(typeFiltered.value, [getAssetExecutionTime])
+      case 'name-asc':
+        return typeFiltered.value.toSorted((a, b) =>
+          a.name.localeCompare(b.name)
+        )
+      case 'name-desc':
+        return typeFiltered.value.toSorted((a, b) =>
+          b.name.localeCompare(a.name)
+        )
       case 'newest':
       default:
         // Descending order (newest first) - negate for descending

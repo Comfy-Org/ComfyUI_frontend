@@ -39,8 +39,15 @@
         v-model:sort-by="sortBy"
         v-model:view-mode="viewMode"
         v-model:media-type-filters="mediaTypeFilters"
+        v-model:show-preview-assets="showPreviewAssets"
+        v-model:group-by-job="groupByJob"
         bottom-divider
-        :show-generation-time-sort="activeTab === 'output'"
+        :show-generation-time-sort="
+          !useAssetApiSource && activeTab === 'output'
+        "
+        :show-alphabetical-sort="useAssetApiSource"
+        :show-asset-toggles="useAssetApiSource && activeTab !== 'input'"
+        :show-sort-options="useAssetApiSource || undefined"
       />
       <!-- Tab list -->
       <div
@@ -48,8 +55,19 @@
         class="border-b border-comfy-input p-2 2xl:px-4"
       >
         <TabList v-model="activeTab">
+          <Tab v-if="useAssetApiSource" value="all">
+            {{ $t('sideToolbar.labels.all') }}
+          </Tab>
           <Tab value="output">{{ $t('sideToolbar.labels.generated') }}</Tab>
-          <Tab value="input">{{ $t('sideToolbar.labels.imported') }}</Tab>
+          <Tab value="input">
+            {{
+              $t(
+                useAssetApiSource
+                  ? 'sideToolbar.labels.uploaded'
+                  : 'sideToolbar.labels.imported'
+              )
+            }}
+          </Tab>
         </TabList>
       </div>
     </template>
@@ -73,13 +91,7 @@
       <div v-else-if="showEmptyState">
         <NoResultsPlaceholder
           icon="pi pi-info-circle"
-          :title="
-            $t(
-              activeTab === 'input'
-                ? 'sideToolbar.noImportedFiles'
-                : 'sideToolbar.noGeneratedFiles'
-            )
-          "
+          :title="$t(emptyStateTitleKey)"
           :message="$t('sideToolbar.noFilesFoundMessage')"
         />
       </div>
@@ -105,7 +117,7 @@
           :assets="displayAssets"
           :is-selected="isSelected"
           :show-output-count="shouldShowOutputCount"
-          :get-output-count="getOutputCount"
+          :get-output-count="getDisplayOutputCount"
           @select-asset="handleAssetSelect"
           @context-menu="handleAssetContextMenu"
           @approach-end="handleApproachEnd"
@@ -239,9 +251,19 @@ import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBa
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
+import { useJobGrouping } from '@/platform/assets/composables/useJobGrouping'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
+import {
+  INPUT_TAG,
+  OUTPUT_TAG,
+  TEMP_TAG
+} from '@/platform/assets/constants/assetTags'
+import type {
+  AssetSortField,
+  AssetSortOrder
+} from '@/platform/assets/services/assetService'
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -250,6 +272,8 @@ import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
 import {
@@ -267,7 +291,7 @@ const { t } = useI18n()
 
 const emit = defineEmits<{ assetSelected: [asset: AssetItem] }>()
 
-const activeTab = ref<'input' | 'output'>('output')
+const activeTab = ref<'all' | 'input' | 'output'>('output')
 const folderJobId = ref<string | null>(null)
 const folderExecutionTime = ref<number | undefined>(undefined)
 const expectedFolderCount = ref(0)
@@ -277,6 +301,27 @@ const viewMode = useStorage<'list' | 'grid'>(
   'grid'
 )
 const isListView = computed(() => viewMode.value === 'list')
+
+const settingStore = useSettingStore()
+const assetsStore = useAssetsStore()
+
+/**
+ * Data-source switch for the sidebar: the assets API path is used when the
+ * setting is on and the API hasn't been detected as unavailable this session
+ * (503/404 on first fetch falls back to the history path). Reads the setting
+ * directly instead of isAssetAPIEnabled(), which hard-fails outside cloud.
+ */
+const useAssetApiSource = computed(
+  () =>
+    !!settingStore.get('Comfy.Assets.UseAssetAPI') &&
+    !assetsStore.assetApiUnavailable
+)
+
+const showPreviewAssets = useStorage(
+  'Comfy.Assets.Sidebar.ShowPreviewAssets',
+  false
+)
+const groupByJob = useStorage('Comfy.Assets.Sidebar.GroupByJob', false)
 
 const contextMenuRef = ref<InstanceType<typeof MediaAssetContextMenu>>()
 const contextMenuAsset = ref<AssetItem | null>(null)
@@ -288,20 +333,28 @@ const shouldShowDeleteButton = computed(() => {
   return true
 })
 
-const contextMenuAssetType = computed(() =>
-  contextMenuAsset.value ? getAssetType(contextMenuAsset.value.tags) : 'input'
-)
+const contextMenuAssetType = computed(() => {
+  if (!contextMenuAsset.value) return 'input'
+  // Preview (temp) assets behave like outputs everywhere except the badge.
+  if (contextMenuAsset.value.tags?.includes(TEMP_TAG)) return 'output'
+  return getAssetType(contextMenuAsset.value.tags)
+})
 
 const contextMenuFileKind = computed<MediaKind>(() =>
   getMediaTypeFromFilename(contextMenuAsset.value?.name ?? '')
 )
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {
-  if (activeTab.value !== 'output' || isInFolderView.value) {
-    return false
+  if (isInFolderView.value) return false
+  if (useAssetApiSource.value) {
+    return groupingEnabled.value && getGroupCount(item) > 1
   }
+  if (activeTab.value !== 'output') return false
   return getOutputCount(item) > 1
 }
+
+const getDisplayOutputCount = (item: AssetItem): number =>
+  groupingEnabled.value ? getGroupCount(item) : getOutputCount(item)
 
 const formattedExecutionTime = computed(() => {
   if (!folderExecutionTime.value) return ''
@@ -312,6 +365,46 @@ const toast = useToast()
 
 const inputAssets = useAssetsApi('input')
 const outputAssets = useAssetsApi('output')
+
+/** Tag streams backing each tab on the assets-API path. */
+const apiTags = computed(() => {
+  const tags: string[] = []
+  if (activeTab.value !== 'input') {
+    tags.push(OUTPUT_TAG)
+    if (showPreviewAssets.value) tags.push(TEMP_TAG)
+  }
+  if (activeTab.value !== 'output') tags.push(INPUT_TAG)
+  return tags
+})
+
+const apiSort = computed<{ sort: AssetSortField; order: AssetSortOrder }>(
+  () => {
+    switch (sortBy.value) {
+      case 'oldest':
+        return { sort: 'created_at', order: 'asc' }
+      case 'name-asc':
+        return { sort: 'name', order: 'asc' }
+      case 'name-desc':
+        return { sort: 'name', order: 'desc' }
+      default:
+        return { sort: 'created_at', order: 'desc' }
+    }
+  }
+)
+
+const apiAssetsProvider = {
+  media: computed(() => assetsStore.apiAssets),
+  loading: computed(() => assetsStore.apiLoading),
+  error: computed(() => assetsStore.apiError),
+  fetchMediaList: async () => {
+    await assetsStore.fetchApiAssets({ tags: apiTags.value, ...apiSort.value })
+    return assetsStore.apiAssets
+  },
+  refresh: () => apiAssetsProvider.fetchMediaList(),
+  loadMore: () => assetsStore.loadMoreApiAssets(),
+  hasMore: computed(() => assetsStore.apiHasMore),
+  isLoadingMore: computed(() => assetsStore.apiIsLoadingMore)
+}
 
 // Asset selection
 const {
@@ -362,9 +455,16 @@ const totalOutputCount = computed(() => {
   return getTotalOutputCount(selectedAssets.value)
 })
 
-const currentAssets = computed(() =>
-  activeTab.value === 'input' ? inputAssets : outputAssets
-)
+const currentAssets = computed(() => {
+  if (useAssetApiSource.value) return apiAssetsProvider
+  return activeTab.value === 'input' ? inputAssets : outputAssets
+})
+
+const emptyStateTitleKey = computed(() => {
+  if (activeTab.value === 'input') return 'sideToolbar.noImportedFiles'
+  if (activeTab.value === 'all') return 'sideToolbar.noFilesFound'
+  return 'sideToolbar.noGeneratedFiles'
+})
 const loading = computed(() => currentAssets.value.loading.value)
 const error = computed(() => currentAssets.value.error.value)
 const mediaAssets = computed(() => currentAssets.value.media.value)
@@ -403,8 +503,28 @@ const baseAssets = computed(() => {
 const { searchQuery, sortBy, mediaTypeFilters, filteredAssets } =
   useMediaAssetFiltering(baseAssets)
 
+const isTimeSort = computed(
+  () => sortBy.value === 'newest' || sortBy.value === 'oldest'
+)
+
+const groupingEnabled = computed(
+  () =>
+    useAssetApiSource.value &&
+    groupByJob.value &&
+    !isInFolderView.value &&
+    activeTab.value !== 'input'
+)
+
+const { groupedAssets, getGroup, getGroupCount } = useJobGrouping({
+  assets: filteredAssets,
+  enabled: groupingEnabled,
+  holdBackTrailing: computed(
+    () => isTimeSort.value && assetsStore.apiHasMore && !searchQuery.value
+  )
+})
+
 const displayAssets = computed(() => {
-  return filteredAssets.value
+  return groupingEnabled.value ? groupedAssets.value : filteredAssets.value
 })
 
 const {
@@ -495,8 +615,22 @@ const refreshAssets = async () => {
 }
 
 watch(
-  activeTab,
+  [activeTab, useAssetApiSource],
   () => {
+    if (!useAssetApiSource.value) {
+      // Leaving the API path (setting off or runtime fallback): drop
+      // API-only state so the history path behaves exactly as before.
+      if (activeTab.value === 'all') {
+        activeTab.value = 'output'
+        return
+      }
+      if (sortBy.value === 'name-asc' || sortBy.value === 'name-desc') {
+        sortBy.value = 'newest'
+      }
+    } else if (sortBy.value === 'longest' || sortBy.value === 'fastest') {
+      // Generation-time sorts don't exist on asset records.
+      sortBy.value = 'newest'
+    }
     clearSelection()
     // Clear search when switching tabs
     searchQuery.value = ''
@@ -505,6 +639,14 @@ watch(
   },
   { immediate: true }
 )
+
+// Server-side parameters of the API path: refetch when they change.
+// (On the history path sorting stays client-side, as before.)
+watch([showPreviewAssets, apiSort], () => {
+  if (useAssetApiSource.value && !isInFolderView.value) {
+    void refreshAssets()
+  }
+})
 
 function handleAssetSelect(asset: AssetItem, assets?: AssetItem[]) {
   const assetList = assets ?? visibleAssets.value
@@ -603,6 +745,16 @@ const handleZoomClick = (asset: AssetItem) => {
 }
 
 const enterFolderView = async (asset: AssetItem) => {
+  if (groupingEnabled.value) {
+    const group = getGroup(asset)
+    if (!group?.jobId) return
+    folderJobId.value = group.jobId
+    folderExecutionTime.value = undefined
+    expectedFolderCount.value = group.assets.length
+    folderAssets.value = group.assets
+    return
+  }
+
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   if (!metadata) {
     console.warn('Invalid output asset metadata')
@@ -679,9 +831,18 @@ const copyJobId = async () => {
 }
 
 const handleApproachEnd = useDebounceFn(async () => {
+  if (isInFolderView.value) return
+  if (useAssetApiSource.value) {
+    if (
+      apiAssetsProvider.hasMore.value &&
+      !apiAssetsProvider.isLoadingMore.value
+    ) {
+      await apiAssetsProvider.loadMore()
+    }
+    return
+  }
   if (
     activeTab.value === 'output' &&
-    !isInFolderView.value &&
     outputAssets.hasMore.value &&
     !outputAssets.isLoadingMore.value
   ) {

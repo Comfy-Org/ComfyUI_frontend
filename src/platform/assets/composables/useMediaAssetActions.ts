@@ -86,6 +86,12 @@ export function useMediaAssetActions() {
     asset: AssetItem,
     assetType: string
   ): Promise<void> => {
+    // Assets-API records (job_id is only set by /api/assets) are deleted
+    // directly; history-mapped output assets go through the history API.
+    if (asset.job_id != null) {
+      await assetService.deleteAsset(asset.id)
+      return
+    }
     if (assetType === 'output') {
       const jobId =
         getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
@@ -160,7 +166,7 @@ export function useMediaAssetActions() {
       for (const asset of assets) {
         if (getAssetType(asset) === 'output') {
           const metadata = getOutputAssetMetadata(asset.user_metadata)
-          const jobId = metadata?.jobId || asset.id
+          const jobId = metadata?.jobId || asset.job_id || asset.id
           if (!jobIds.includes(jobId)) {
             jobIds.push(jobId)
           }
@@ -176,12 +182,13 @@ export function useMediaAssetActions() {
             fileCount += 1
           }
 
-          if (metadata?.jobId && asset.name && metadata.outputCount == null) {
-            if (!jobAssetNameFilters[metadata.jobId]) {
-              jobAssetNameFilters[metadata.jobId] = []
+          const filterJobId = metadata?.jobId || asset.job_id
+          if (filterJobId && asset.name && metadata?.outputCount == null) {
+            if (!jobAssetNameFilters[filterJobId]) {
+              jobAssetNameFilters[filterJobId] = []
             }
-            if (!jobAssetNameFilters[metadata.jobId].includes(asset.name)) {
-              jobAssetNameFilters[metadata.jobId].push(asset.name)
+            if (!jobAssetNameFilters[filterJobId].includes(asset.name)) {
+              jobAssetNameFilters[filterJobId].push(asset.name)
             }
           }
         } else {
@@ -268,6 +275,7 @@ export function useMediaAssetActions() {
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
     const jobId =
       metadata?.jobId ||
+      targetAsset.job_id ||
       (getAssetType(targetAsset) === 'output' ? targetAsset.id : undefined)
 
     if (!jobId) {
