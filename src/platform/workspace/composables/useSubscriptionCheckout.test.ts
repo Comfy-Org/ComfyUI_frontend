@@ -247,7 +247,7 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleAddCreditCard', () => {
-    it('emits close on subscribed status', async () => {
+    it('transitions to success step on subscribed status', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
@@ -265,7 +265,7 @@ describe('useSubscriptionCheckout', () => {
         'https://platform.comfy.org/payment/success',
         'https://platform.comfy.org/payment/failed'
       )
-      expect(emit).toHaveBeenCalledWith('close', true)
+      expect(checkout.checkoutStep.value).toBe('success')
     })
 
     it('opens payment URL when needs_payment_method', async () => {
@@ -303,7 +303,7 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleConfirmTransition', () => {
-    it('emits close on subscribed status', async () => {
+    it('transitions to success step on subscribed status', async () => {
       const checkout = await setup()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
@@ -316,7 +316,7 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleConfirmTransition()
 
-      expect(emit).toHaveBeenCalledWith('close', true)
+      expect(checkout.checkoutStep.value).toBe('success')
     })
 
     it('shows error toast on failure', async () => {

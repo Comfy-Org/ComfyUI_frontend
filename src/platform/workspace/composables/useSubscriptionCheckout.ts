@@ -14,7 +14,7 @@ import type {
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
-type CheckoutStep = 'pricing' | 'preview'
+type CheckoutStep = 'pricing' | 'preview' | 'success'
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
 export function findPlanSlug(
@@ -112,6 +112,10 @@ export function useSubscriptionCheckout(emit: {
     previewData.value = null
   }
 
+  function handleSuccessClose() {
+    emit('close', true)
+  }
+
   async function handleSubscription() {
     if (!selectedTierKey.value) return
 
@@ -132,13 +136,8 @@ export function useSubscriptionCheckout(emit: {
 
       if (response.status === 'subscribed') {
         telemetry?.trackMonthlySubscriptionSucceeded()
-        toast.add({
-          severity: 'success',
-          summary: t('subscription.required.pollingSuccess'),
-          life: 5000
-        })
         await Promise.all([fetchStatus(), fetchBalance()])
-        emit('close', true)
+        checkoutStep.value = 'success'
       } else if (
         response.status === 'needs_payment_method' &&
         response.payment_method_url
@@ -203,6 +202,7 @@ export function useSubscriptionCheckout(emit: {
     isPolling,
     handleSubscribeClick,
     handleBackToPricing,
+    handleSuccessClose,
     handleAddCreditCard: handleSubscription,
     handleConfirmTransition: handleSubscription,
     handleResubscribe

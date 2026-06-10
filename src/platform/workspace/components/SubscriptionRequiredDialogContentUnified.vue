@@ -76,6 +76,14 @@
       @confirm="handleConfirmTransition"
       @back="handleBackToPricing"
     />
+
+    <!-- Success Step - "You're all set" -->
+    <SubscriptionSuccessWorkspace
+      v-else-if="checkoutStep === 'success' && selectedTierKey"
+      :tier-key="selectedTierKey"
+      :preview-data="previewData"
+      @close="handleSuccessClose"
+    />
   </div>
 </template>
 
@@ -88,6 +96,7 @@ import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/com
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
+import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
 
@@ -115,6 +124,7 @@ const {
   isPolling,
   handleSubscribeClick,
   handleBackToPricing,
+  handleSuccessClose,
   handleAddCreditCard,
   handleConfirmTransition,
   handleResubscribe

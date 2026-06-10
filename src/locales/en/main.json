@@ -2623,6 +2623,11 @@
       "subscribeToPlan": "Subscribe to {plan}",
       "switchToPlan": "Switch to {plan}",
       "backToAllPlans": "Back to all plans"
+    },
+    "success": {
+      "allSet": "You're all set",
+      "planUpdated": "Your plan has been successfully updated.",
+      "receiptEmailed": "A receipt has been emailed to you."
     }
   },
   "userSettings": {
