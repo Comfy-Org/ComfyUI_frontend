@@ -1,5 +1,5 @@
 <template>
-  <div class="grow overflow-auto pt-6">
+  <div class="flex grow flex-col overflow-auto pt-6">
     <!-- Loading state while subscription is being set up -->
     <div
       v-if="isSettingUp"
@@ -41,8 +41,8 @@
           <div
             class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-2"
           >
-            <!-- OWNER Unsubscribed State -->
-            <template v-if="showSubscribePrompt">
+            <!-- OWNER Unsubscribed TEAM workspace -->
+            <template v-if="showTeamSubscribePrompt">
               <div class="flex flex-col gap-2">
                 <div class="text-sm font-bold text-text-primary">
                   {{ $t('subscription.workspaceNotSubscribed') }}
@@ -73,12 +73,37 @@
               </div>
             </template>
 
+            <!-- OWNER personal workspace without subscription (Free plan) -->
+            <template v-else-if="isPersonalFree">
+              <div class="flex flex-col gap-2">
+                <span class="text-base font-bold text-text-primary">
+                  {{ $t('subscription.tiers.free.name') }}
+                </span>
+                <div class="flex items-baseline gap-1 font-inter">
+                  <span class="text-2xl font-semibold">
+                    ${{ freeTierPrice }}
+                  </span>
+                  <span class="text-base">
+                    {{ $t('subscription.usdPerMonth') }}
+                  </span>
+                </div>
+              </div>
+              <Button
+                variant="primary"
+                size="lg"
+                class="rounded-lg px-4 text-sm font-normal md:ml-auto"
+                @click="handleSubscribeWorkspace"
+              >
+                {{ $t('subscription.subscribe') }}
+              </Button>
+            </template>
+
             <!-- Normal Subscribed State (Owner with subscription, or member viewing subscribed workspace) -->
             <template v-else>
               <div class="flex flex-col gap-2">
                 <div class="flex items-center gap-2">
-                  <span class="text-sm font-bold text-text-primary">
-                    {{ subscriptionTierName }}
+                  <span class="text-base font-bold text-text-primary">
+                    {{ planDisplayName }}
                   </span>
                   <StatusBadge
                     v-if="isCancelled"
@@ -86,37 +111,26 @@
                     severity="warn"
                   />
                 </div>
-                <div class="flex items-baseline gap-1 font-inter font-semibold">
-                  <span class="text-2xl">${{ tierPrice }}</span>
-                  <span class="text-base">
-                    {{
-                      isInPersonalWorkspace
-                        ? $t('subscription.usdPerMonth')
-                        : $t('subscription.usdPerMonthPerMember')
-                    }}
-                  </span>
+                <div class="flex items-baseline gap-1 font-inter">
+                  <span class="text-2xl font-semibold"
+                    >${{ displayPrice }}</span
+                  >
+                  <span class="text-base">{{ priceUnitLabel }}</span>
                 </div>
                 <div
                   v-if="isActiveSubscription"
-                  :class="
-                    cn(
-                      'text-sm',
-                      isCancelled
-                        ? 'text-warning-background'
-                        : 'text-text-secondary'
-                    )
-                  "
+                  class="text-sm text-text-secondary"
                 >
                   <template v-if="isCancelled">
                     {{
-                      $t('subscription.expiresDate', {
+                      $t('subscription.endsOnDate', {
                         date: formattedEndDate
                       })
                     }}
                   </template>
                   <template v-else>
                     {{
-                      $t('subscription.renewsDate', {
+                      $t('subscription.renewsOnDate', {
                         date: formattedRenewalDate
                       })
                     }}
@@ -141,7 +155,7 @@
                   </Button>
                 </template>
 
-                <!-- Active state: show Manage Payment, Upgrade, and menu -->
+                <!-- Active state: show Manage billing, Change plan, and menu -->
                 <template v-else>
                   <Button
                     v-if="!isFreeTierPlan"
@@ -150,15 +164,19 @@
                     class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
                     @click="manageSubscription"
                   >
-                    {{ $t('subscription.managePayment') }}
+                    {{ $t('subscription.manageBilling') }}
                   </Button>
                   <Button
                     size="lg"
-                    variant="primary"
-                    class="rounded-lg px-4 text-sm font-normal text-text-primary"
+                    variant="secondary"
+                    class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
                     @click="handleUpgrade"
                   >
-                    {{ $t('subscription.upgradePlan') }}
+                    {{
+                      isInPersonalWorkspace
+                        ? $t('subscription.upgradePlan')
+                        : $t('subscription.changePlan')
+                    }}
                   </Button>
                   <Button
                     v-if="!isFreeTierPlan"
@@ -182,8 +200,26 @@
             <CreditsTile :zero-state="showZeroState" />
           </div>
 
-          <div v-if="isActiveSubscription" class="flex flex-col gap-2">
-            <div class="text-sm text-text-primary">
+          <div
+            v-if="isActiveSubscription || isPersonalFree"
+            class="flex flex-col gap-2"
+          >
+            <i18n-t
+              v-if="isTeamActive"
+              keypath="subscription.teamPlanIncludes"
+              tag="div"
+              class="text-sm text-muted"
+            >
+              <template #plan>
+                <span class="text-text-primary">
+                  {{ $t('subscription.tiers.pro.name') }}
+                </span>
+              </template>
+            </i18n-t>
+            <div v-else-if="isPersonalFree" class="text-sm text-muted">
+              {{ $t('subscription.whatsIncluded') }}
+            </div>
+            <div v-else class="text-sm text-text-primary">
               {{ $t('subscription.yourPlanIncludes') }}
             </div>
 
@@ -196,10 +232,6 @@
                 <i
                   v-if="benefit.type === 'feature'"
                   class="pi pi-check text-xs text-text-primary"
-                />
-                <i
-                  v-else-if="benefit.type === 'icon' && benefit.icon"
-                  :class="[benefit.icon, 'text-xs text-text-primary']"
                 />
                 <span
                   v-else-if="benefit.type === 'metric' && benefit.value"
@@ -259,6 +291,8 @@
           {{ $t('subscription.viewMoreDetailsPlans') }}
         </a>
       </div>
+
+      <SubscriptionFooterLinks class="mt-auto pt-6" />
     </template>
   </div>
 </template>
@@ -275,6 +309,7 @@ import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogService } from '@/services/dialogService'
 import {
@@ -287,13 +322,12 @@ import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefi
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace, members } =
   storeToRefs(workspaceStore)
 const { permissions } = useWorkspaceUI()
-const { t, n } = useI18n()
+const { t, n, locale } = useI18n()
 const toast = useToast()
 
 const billingOperationStore = useBillingOperationStore()
@@ -303,9 +337,10 @@ const {
   isActiveSubscription,
   isFreeTier: isFreeTierPlan,
   subscription,
+  plans,
+  currentPlanSlug,
   showSubscriptionDialog,
   manageSubscription,
-  getMaxSeats,
   resubscribe
 } = useBillingContext()
 
@@ -353,6 +388,19 @@ const showSubscribePrompt = computed(() => {
   return !isWorkspaceSubscribed.value
 })
 
+const showTeamSubscribePrompt = computed(
+  () => showSubscribePrompt.value && !isInPersonalWorkspace.value
+)
+
+// Personal workspace without subscription renders the Free plan header
+const isPersonalFree = computed(
+  () => showSubscribePrompt.value && isInPersonalWorkspace.value
+)
+
+const isTeamActive = computed(
+  () => !isInPersonalWorkspace.value && isActiveSubscription.value
+)
+
 // MEMBER view without subscription - members can't manage subscription
 const isMemberView = computed(
   () =>
@@ -363,7 +411,7 @@ const isMemberView = computed(
 
 // Show zero state for credits (no real billing data yet)
 const showZeroState = computed(
-  () => showSubscribePrompt.value || isMemberView.value
+  () => showTeamSubscribePrompt.value || isMemberView.value
 )
 
 // Subscribe workspace - opens the subscription dialog (personal or workspace variant)
@@ -381,25 +429,22 @@ const isYearlySubscription = computed(
   () => subscription.value?.duration === 'ANNUAL'
 )
 
-const formattedRenewalDate = computed(() => {
-  if (!subscription.value?.renewalDate) return ''
-  const renewalDate = new Date(subscription.value.renewalDate)
-  return renewalDate.toLocaleDateString('en-US', {
+function formatSubtitleDate(isoDate: string | null | undefined) {
+  if (!isoDate) return ''
+  return new Date(isoDate).toLocaleDateString(locale.value, {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
   })
-})
+}
 
-const formattedEndDate = computed(() => {
-  if (!subscription.value?.endDate) return ''
-  const endDate = new Date(subscription.value.endDate)
-  return endDate.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  })
-})
+const formattedRenewalDate = computed(() =>
+  formatSubtitleDate(subscription.value?.renewalDate)
+)
+
+const formattedEndDate = computed(() =>
+  formatSubtitleDate(subscription.value?.endDate)
+)
 
 const subscriptionTierName = computed(() => {
   const tier = subscriptionTier.value
@@ -410,6 +455,12 @@ const subscriptionTierName = computed(() => {
     ? t('subscription.tierNameYearly', { name: baseName })
     : baseName
 })
+
+const planDisplayName = computed(() =>
+  isInPersonalWorkspace.value
+    ? subscriptionTierName.value
+    : t('subscription.teamPlanName')
+)
 
 const planMenu = ref<InstanceType<typeof Menu> | null>(null)
 
@@ -432,24 +483,59 @@ const tierPrice = computed(() =>
   getTierPrice(tierKey.value, isYearlySubscription.value)
 )
 
+const freeTierPrice = getTierPrice('free')
+
+const currentPlan = computed(() =>
+  isInPersonalWorkspace.value
+    ? undefined
+    : plans.value.find((plan) => plan.slug === currentPlanSlug.value)
+)
+// Seat-aware workspace total (design shows the whole-workspace price); the
+// per-member tier price remains the fallback until plans resolve
+const workspacePlanCost = computed(() =>
+  currentPlan.value
+    ? (currentPlan.value.seat_summary.total_cost_cents / 100).toFixed(0)
+    : null
+)
+const displayPrice = computed(() => workspacePlanCost.value ?? tierPrice.value)
+const priceUnitLabel = computed(() =>
+  workspacePlanCost.value !== null || isInPersonalWorkspace.value
+    ? t('subscription.usdPerMonth')
+    : t('subscription.usdPerMonthPerMember')
+)
+
 const memberCount = computed(() => members.value.length)
-const nextMonthInvoice = computed(() => memberCount.value * tierPrice.value)
+const nextMonthInvoice = computed(
+  () => workspacePlanCost.value ?? memberCount.value * tierPrice.value
+)
+
+const TEAM_PERK_KEYS = [
+  'inviteMembers',
+  'concurrentRuns',
+  'sharedCreditPool',
+  'rolePermissions'
+] as const
 
 const tierBenefits = computed((): TierBenefit[] => {
-  const key = tierKey.value
-  const benefits: TierBenefit[] = []
-
-  if (!isInPersonalWorkspace.value) {
-    benefits.push({
-      key: 'members',
-      type: 'icon',
-      label: t('subscription.membersLabel', { count: getMaxSeats(key) }),
-      icon: 'pi pi-user'
-    })
+  if (isTeamActive.value) {
+    return TEAM_PERK_KEYS.map((key) => ({
+      key,
+      type: 'feature',
+      label: t(`subscription.teamPerks.${key}`)
+    }))
   }
-
-  benefits.push(...getCommonTierBenefits(key, t, n))
-  return benefits
+  if (isPersonalFree.value) {
+    return [
+      {
+        key: 'maxRuntime',
+        type: 'feature',
+        label: t('subscription.freePerks.maxRuntime', {
+          duration: t('subscription.maxDuration.free')
+        })
+      }
+    ]
+  }
+  return getCommonTierBenefits(tierKey.value, t, n)
 })
 </script>
 
