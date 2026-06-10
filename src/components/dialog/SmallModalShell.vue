@@ -1,0 +1,41 @@
+<template>
+  <div class="flex max-h-[85vh] flex-col">
+    <div
+      class="flex h-12 shrink-0 items-center justify-between border-b border-border-default px-4"
+    >
+      <h2 class="m-0 text-sm font-normal text-base-foreground">
+        {{ title }}
+      </h2>
+      <button
+        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        :aria-label="$t('g.close')"
+        @click="useDialogStore().closeDialog()"
+      >
+        <i class="pi pi-times size-4" />
+      </button>
+    </div>
+
+    <div class="flex min-h-0 flex-col gap-4 overflow-y-auto p-4">
+      <slot />
+    </div>
+
+    <div class="flex shrink-0 items-center justify-end gap-4 p-4">
+      <slot name="footer" />
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { useDialogStore } from '@/stores/dialogStore'
+
+/**
+ * The design-system "Small Dialog Modal" shell: header (title + close),
+ * scrollable body (default slot) and footer (named slot). Content components
+ * opened with `headless: true` wrap themselves in this shell; the outer box
+ * styling comes from `CONFIRMATION_DIALOG_CONTENT_CLASS`. The close button
+ * closes the active dialog, which triggers the dialog's `onClose` callback.
+ */
+defineProps<{
+  title: string
+}>()
+</script>

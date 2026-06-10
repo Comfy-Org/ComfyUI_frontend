@@ -1,6 +1,6 @@
 <template>
-  <div class="prompt-dialog-content flex flex-col gap-2 pt-8">
-    <label class="flex flex-col gap-1 text-sm text-muted-foreground">
+  <SmallModalShell :title>
+    <label class="flex flex-col gap-2 text-sm text-muted-foreground">
       {{ message }}
       <Input
         ref="inputRef"
@@ -12,20 +12,28 @@
         @focus="inputRef?.selectAll()"
       />
     </label>
-    <Button @click="handleConfirm">
-      {{ $t('g.confirm') }}
-    </Button>
-  </div>
+
+    <template #footer>
+      <Button variant="muted-textonly" @click="onCancel">
+        {{ $t('g.cancel') }}
+      </Button>
+      <Button variant="primary" size="lg" @click="handleConfirm">
+        {{ $t('g.confirm') }}
+      </Button>
+    </template>
+  </SmallModalShell>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 
+import SmallModalShell from '@/components/dialog/SmallModalShell.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const { message, defaultValue, onConfirm, placeholder } = defineProps<{
+  title: string
   message: string
   defaultValue: string
   onConfirm: (value: string) => void
@@ -34,10 +42,12 @@ const { message, defaultValue, onConfirm, placeholder } = defineProps<{
 
 const inputValue = ref<string>(defaultValue)
 
+const inputRef = useTemplateRef('inputRef')
+
+const onCancel = () => useDialogStore().closeDialog()
+
 function handleConfirm() {
   onConfirm(inputValue.value)
   useDialogStore().closeDialog()
 }
-
-const inputRef = ref<InstanceType<typeof Input>>()
 </script>

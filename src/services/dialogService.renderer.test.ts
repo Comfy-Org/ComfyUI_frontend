@@ -38,26 +38,31 @@ describe('dialogService Reka renderer opt-in', () => {
     showDialog.mockReset()
   })
 
-  it("prompt() sets renderer 'reka' and size 'md'", () => {
+  it("prompt() sets renderer 'reka', size 'md', and the standardized modal styling", () => {
     void useDialogService().prompt({ title: 'T', message: 'M' })
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('md')
+    expect(args.dialogComponentProps.headless).toBe(true)
+    expect(args.dialogComponentProps.contentClass).toContain('rounded-2xl')
   })
 
-  it("confirm() sets renderer 'reka' and size 'md'", () => {
+  it("confirm() sets renderer 'reka', size 'md', and the standardized modal styling", () => {
     void useDialogService().confirm({ title: 'T', message: 'M' })
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('md')
+    expect(args.dialogComponentProps.headless).toBe(true)
+    expect(args.dialogComponentProps.contentClass).toContain('rounded-2xl')
   })
 
-  it("showBillingComingSoonDialog() sets renderer 'reka', size 'sm', and 360px contentClass", () => {
+  it("showBillingComingSoonDialog() sets renderer 'reka', size 'sm', and the standardized confirmation modal styling", () => {
     useDialogService().showBillingComingSoonDialog()
     const [args] = showDialog.mock.calls[0]
     expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('sm')
-    expect(args.dialogComponentProps.contentClass).toBe('max-w-[360px]')
+    expect(args.dialogComponentProps.headless).toBe(true)
+    expect(args.dialogComponentProps.contentClass).toContain('rounded-2xl')
   })
 
   it("showExecutionErrorDialog() sets renderer 'reka' and size 'lg'", () => {

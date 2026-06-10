@@ -12,6 +12,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { CONFIRMATION_DIALOG_CONTENT_CLASS } from '@/services/dialogService'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
@@ -626,13 +627,15 @@ export function useMediaAssetActions() {
     const isSingle = assetArray.length === 1
 
     return new Promise((resolve) => {
+      const title = isSingle
+        ? t('mediaAsset.deleteAssetTitle')
+        : t('mediaAsset.deleteSelectedTitle')
       dialogStore.showDialog({
         key: 'delete-assets-confirmation',
-        title: isSingle
-          ? t('mediaAsset.deleteAssetTitle')
-          : t('mediaAsset.deleteSelectedTitle'),
+        title,
         component: ConfirmationDialogContent,
         props: {
+          title,
           message: isSingle
             ? t('mediaAsset.deleteAssetDescription')
             : t('mediaAsset.deleteSelectedDescription', {
@@ -774,10 +777,14 @@ export function useMediaAssetActions() {
             }
 
             resolve(true)
-          },
-          onCancel: () => {
-            resolve(false)
           }
+        },
+        dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md',
+          headless: true,
+          contentClass: CONFIRMATION_DIALOG_CONTENT_CLASS,
+          onClose: () => resolve(false)
         }
       })
     })
