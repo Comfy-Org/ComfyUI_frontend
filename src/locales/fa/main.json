@@ -951,6 +951,7 @@
     "missingErrors": {
       "missing_media": {
         "displayMessage": "یک ورودی رسانه‌ای مورد نیاز بدون فایل انتخاب شده است.",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastMessageMany": "لطفاً قبل از اجرای این workflow، ورودی‌های رسانه‌ای مفقود را انتخاب کنید.",
         "toastMessageWithNode": "{nodeName} به یک فایل رسانه‌ای مورد نیاز دسترسی ندارد.",
         "toastTitleMany": "ورودی‌های رسانه‌ای مفقود",
@@ -2771,6 +2772,7 @@
     "qwen": "qwen",
     "samplers": "نمونه‌گیرها",
     "sampling": "نمونه‌گیری",
+    "scail": "scail",
     "schedulers": "زمان‌بندی‌ها",
     "scheduling": "زمان‌بندی",
     "sd3": "sd3",
@@ -3050,21 +3052,7 @@
     "locateNode": "یافتن node در canvas",
     "locateNodeFor": "یافتن {item}",
     "missingMedia": {
-      "audio": "صدا",
-      "cancelSelection": "لغو انتخاب",
-      "collapseNodes": "پنهان کردن nodeهای ارجاع‌دهنده",
-      "confirmSelection": "تأیید انتخاب",
-      "expandNodes": "نمایش nodeهای ارجاع‌دهنده",
-      "image": "تصاویر",
-      "locateNode": "یافتن node",
-      "missingMediaTitle": "ورودی‌های گمشده",
-      "or": "یا",
-      "selectedFromLibrary": "انتخاب شده از کتابخانه",
-      "uploadFile": "بارگذاری {type}",
-      "uploaded": "بارگذاری شد",
-      "uploading": "در حال بارگذاری...",
-      "useFromLibrary": "استفاده از کتابخانه",
-      "video": "ویدیوها"
+      "missingMediaTitle": "ورودی‌های گمشده"
     },
     "missingModels": {
       "alreadyExistsInCategory": "این مدل قبلاً در «{category}» وجود دارد",

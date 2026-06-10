@@ -951,6 +951,7 @@
     "missingErrors": {
       "missing_media": {
         "displayMessage": "Для обязательного медиа-входа не выбран файл.",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastMessageMany": "Пожалуйста, выберите отсутствующие медиа-входы перед запуском этого рабочего процесса.",
         "toastMessageWithNode": "В узле {nodeName} отсутствует необходимый медиа-файл.",
         "toastTitleMany": "Отсутствуют медиа-входы",
@@ -2771,6 +2772,7 @@
     "qwen": "qwen",
     "samplers": "семплеры",
     "sampling": "выборка",
+    "scail": "scail",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
     "sd3": "sd3",
@@ -3050,21 +3052,7 @@
     "locateNode": "Найти узел на холсте",
     "locateNodeFor": "Найти {item}",
     "missingMedia": {
-      "audio": "Аудио",
-      "cancelSelection": "Отменить выбор",
-      "collapseNodes": "Скрыть ссылающиеся узлы",
-      "confirmSelection": "Подтвердить выбор",
-      "expandNodes": "Показать ссылающиеся узлы",
-      "image": "Изображения",
-      "locateNode": "Найти узел",
-      "missingMediaTitle": "Отсутствующие входные данные",
-      "or": "ИЛИ",
-      "selectedFromLibrary": "Выбрано из библиотеки",
-      "uploadFile": "Загрузить {type}",
-      "uploaded": "Загружено",
-      "uploading": "Загрузка...",
-      "useFromLibrary": "Использовать из библиотеки",
-      "video": "Видео"
+      "missingMediaTitle": "Отсутствующие входные данные"
     },
     "missingModels": {
       "alreadyExistsInCategory": "Эта модель уже существует в «{category}»",

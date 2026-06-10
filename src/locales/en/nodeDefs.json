@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "display_name": "Bernini Conditioning",
+    "description": "Conditioning node for Bernini in-context video/image conditioning. It can be used for the following tasks: t2v (text-to-video), v2v (video-to-video), rv2v (reference-guided video editing), r2v (reference-to-video), ads2v (insert image/video into video).Reference images injected as in-context tokens (r2v, rv2v) are encoded independently at their own native aspect ratio (long edge capped at ref_max_size)",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Source video to edit or restyle (v2v, rv2v). Resized to width/height and trimmed to length."
+      },
+      "reference_video": {
+        "name": "reference_video",
+        "tooltip": "Video to insert into the source video (ads2v)."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "ref_max_size": {
+        "name": "ref_max_size",
+        "tooltip": "Max size for the long edge of reference_video and reference_images. Resized with preserved aspect ratio and snapped to 16px."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -14884,13 +14940,13 @@
     "display_name": "Remove Background",
     "description": "Generates a foreground mask to remove the background from an image using a background removal model.",
     "inputs": {
-      "image": {
-        "name": "image",
-        "tooltip": "Input image to remove the background from"
-      },
       "bg_removal_model": {
         "name": "bg_removal_model",
         "tooltip": "Background removal model used to generate the mask"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Input image to remove the background from"
       }
     },
     "outputs": {
@@ -16641,6 +16697,41 @@
       "crf": {
         "name": "crf",
         "tooltip": "Higher crf means lower quality with a smaller file size, lower crf means higher quality higher filesize."
+      }
+    }
+  },
+  "SCAIL2ColoredMask": {
+    "display_name": "Create SCAIL-2 Colored Mask",
+    "inputs": {
+      "driving_track_data": {
+        "name": "driving_track_data",
+        "tooltip": "SAM3 track of the driving pose video. Will be rendered into the pose_video_mask output."
+      },
+      "object_indices": {
+        "name": "object_indices",
+        "tooltip": "Comma-separated list of person indices to include (e.g. '0,2,3'). Applied to both reference and pose video masks. Empty = all."
+      },
+      "sort_by": {
+        "name": "sort_by",
+        "tooltip": "Order in which palette colors are assigned to the tracked objects (applied to both reference and pose video so each identity keeps the same color). left_to_right = leftmost object (by first-frame centroid) gets the first color; area = biggest object (by first-frame mask area) gets the first color; none = keep SAM3's order."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "False = mask_video has black bg (Animation Mode). True = white bg (Replacement Mode). Set the matching replacement_mode on WanSCAILToVideo. reference_image_mask is always black-bg regardless."
+      },
+      "ref_track_data": {
+        "name": "ref_track_data",
+        "tooltip": "SAM3 track of the reference image."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
+        "tooltip": null
       }
     }
   },
@@ -22400,21 +22491,47 @@
       },
       "pose_start": {
         "name": "pose_start",
-        "tooltip": "Start step to use pose conditioning."
+        "tooltip": "Start step of the pose conditioning."
       },
       "pose_end": {
         "name": "pose_end",
-        "tooltip": "End step to use pose conditioning."
+        "tooltip": "End step of the pose conditioning."
       },
-      "clip_vision_output": {
-        "name": "clip_vision_output"
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "Cumulative output frame this chunk begins at. Wire from the previous chunk's video_frame_offset output."
       },
-      "reference_image": {
-        "name": "reference_image"
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "Tail frames of previous_frames to anchor. SCAIL-2 trained at 5 (81-frame chunks, 76-frame step)."
       },
       "pose_video": {
         "name": "pose_video",
         "tooltip": "Video used for pose conditioning. Will be downscaled to half the resolution of the main video."
+      },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "SCAIL-2 only. Colored per-identity SAM3 mask video at the same resolution as pose_video."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "SCAIL-2 only. False = Animation Mode (pose_video_mask should have black background). True = Replacement Mode (pose_video_mask should have white background)."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Reference image, for multiple references composite all on single image."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "SCAIL-2 only. Colored reference mask at the same resolution as reference_image."
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "CLIP vision features for conditioning. Model is trained with stretch resize to aspect ratio."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "SCAIL-2 only. Full decoded output of the previous chunk. Only the last previous_frame_count are used as the extension anchor."
       }
     },
     "outputs": {
@@ -22429,6 +22546,10 @@
       "2": {
         "name": "latent",
         "tooltip": "Empty latent of the generation size."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "Adjusted offset + length. Wire into the next chunk."
       }
     }
   },
