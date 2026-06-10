@@ -222,7 +222,8 @@ watch(visible, async (newVisible) => {
  */
 useEventListener(dragHandleRef, 'mousedown', () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'actionbar_run_handle_drag_start'
+    button_id: 'actionbar_run_handle_drag_start',
+    element_group: 'actionbar'
   })
 })
 

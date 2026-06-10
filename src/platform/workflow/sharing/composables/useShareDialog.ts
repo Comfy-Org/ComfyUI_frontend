@@ -15,7 +15,7 @@ export function useShareDialog() {
   const dialogStore = useDialogStore()
   const { pruneLinearData } = useAppModeStore()
   const workflowStore = useWorkflowStore()
-  const { isAppMode } = useAppMode()
+  const { mode, isAppMode } = useAppMode()
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -54,14 +54,22 @@ export function useShareDialog() {
     share()
   }
 
-  function getShareSource() {
-    return isAppMode.value ? 'app_mode' : ('graph_mode' as const)
+  function getShareSource(): 'app_mode' | 'graph_mode' {
+    return isAppMode.value ? 'app_mode' : 'graph_mode'
+  }
+
+  function getShareFlowContext() {
+    return {
+      source: getShareSource(),
+      view_mode: mode.value,
+      is_app_mode: isAppMode.value
+    }
   }
 
   function showShareDialog() {
     useTelemetry()?.trackShareFlow({
       step: 'dialog_opened',
-      source: getShareSource()
+      ...getShareFlowContext()
     })
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
+import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -87,6 +88,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
   const executionErrorStore = useExecutionErrorStore()
+  const { mode, isAppMode } = useAppMode()
 
   const clientId = ref<string | null>(null)
   const activeJobId = ref<JobId | null>(null)
@@ -310,7 +312,9 @@ export const useExecutionStore = defineStore('execution', () => {
       if (queuedJob.shareId) {
         telemetry?.trackSharedWorkflowRun({
           job_id: jobId,
-          share_id: queuedJob.shareId
+          share_id: queuedJob.shareId,
+          view_mode: mode.value,
+          is_app_mode: isAppMode.value
         })
       }
     }

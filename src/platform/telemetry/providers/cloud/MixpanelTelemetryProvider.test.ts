@@ -101,6 +101,7 @@ describe('MixpanelTelemetryProvider — without configured token', () => {
 describe('MixpanelTelemetryProvider — with configured token', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
     ;(window as unknown as ConfigWindow).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }
@@ -163,6 +164,30 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     provider.trackWorkflowOpened(metadata)
 
     expect(mockMixpanel.track).not.toHaveBeenCalled()
+  })
+
+  it('tracks enabled funnel events by default', async () => {
+    const provider = new MixpanelTelemetryProvider()
+    await waitForMixpanelInit()
+    mockMixpanel.track.mockClear()
+
+    provider.trackSettingChanged({ setting_id: 'theme' })
+    provider.trackUiButtonClicked({
+      button_id: 'sidebar_settings_button_clicked',
+      element_group: 'sidebar'
+    })
+
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.SETTING_CHANGED,
+      { setting_id: 'theme' }
+    )
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.UI_BUTTON_CLICKED,
+      {
+        button_id: 'sidebar_settings_button_clicked',
+        element_group: 'sidebar'
+      }
+    )
   })
 
   it.for<
@@ -285,7 +310,11 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     default_view: 'graph'
   }
   const enterLinearMetadata: EnterLinearMetadata = {}
-  const shareFlowMetadata: ShareFlowMetadata = { step: 'dialog_opened' }
+  const shareFlowMetadata: ShareFlowMetadata = {
+    step: 'dialog_opened',
+    view_mode: 'graph',
+    is_app_mode: false
+  }
   const authMetadata: AuthMetadata = {}
 
   it.for<
@@ -391,6 +420,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     const provider = new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
+    localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
 
     provider.trackRunButton({
       subscribe_to_run: true,
@@ -404,7 +434,8 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
         workflow_type: 'custom',
         trigger_source: 'button',
         view_mode: 'workflow',
-        is_app_mode: false
+        is_app_mode: false,
+        dock_state: 'floating'
       })
     )
   })
@@ -424,6 +455,8 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     provider.trackShareFlow({
       step: 'link_copied',
       source: 'app_mode',
+      view_mode: 'app',
+      is_app_mode: true,
       share_id: 'share-1'
     })
 
@@ -443,7 +476,9 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       TelemetryEvents.SHARE_FLOW,
       {
         step: 'link_copied',
-        source: 'app_mode'
+        source: 'app_mode',
+        view_mode: 'app',
+        is_app_mode: true
       }
     )
   })

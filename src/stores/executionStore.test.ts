@@ -1128,7 +1128,9 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       })
       expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
         job_id: 'job-1',
-        share_id: 'share-1'
+        share_id: 'share-1',
+        view_mode: 'graph',
+        is_app_mode: false
       })
     })
 
@@ -1148,7 +1150,9 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
         job_id: 'job-1',
-        share_id: 'share-1'
+        share_id: 'share-1',
+        view_mode: 'graph',
+        is_app_mode: false
       })
     })
   })

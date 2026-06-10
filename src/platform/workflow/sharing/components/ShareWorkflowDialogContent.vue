@@ -223,10 +223,18 @@ const publishDialog = useComfyHubPublishDialog()
 const shareService = useWorkflowShareService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
-const { isAppMode } = useAppMode()
+const { mode, isAppMode } = useAppMode()
 
-function getShareSource() {
-  return isAppMode.value ? 'app_mode' : ('graph_mode' as const)
+function getShareSource(): 'app_mode' | 'graph_mode' {
+  return isAppMode.value ? 'app_mode' : 'graph_mode'
+}
+
+function getShareFlowContext() {
+  return {
+    source: getShareSource(),
+    view_mode: mode.value,
+    is_app_mode: isAppMode.value
+  }
 }
 
 type DialogState = 'loading' | 'unsaved' | 'ready' | 'shared' | 'stale'
@@ -355,7 +363,7 @@ async function refreshDialogState() {
     dialogState.value = 'unsaved'
     useTelemetry()?.trackShareFlow({
       step: 'save_prompted',
-      source: getShareSource()
+      ...getShareFlowContext()
     })
     if (workflow) {
       workflowName.value = stripJsonExtension(workflow.filename)
@@ -440,7 +448,7 @@ const {
     acknowledged.value = false
     useTelemetry()?.trackShareFlow({
       step: 'link_created',
-      source: getShareSource(),
+      ...getShareFlowContext(),
       share_id: result.shareId
     })
 

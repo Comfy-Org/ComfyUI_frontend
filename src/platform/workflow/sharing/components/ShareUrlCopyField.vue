@@ -36,7 +36,7 @@ const { url, shareId } = defineProps<{
 }>()
 
 const { copyToClipboard } = useCopyToClipboard()
-const { isAppMode } = useAppMode()
+const { mode, isAppMode } = useAppMode()
 const copied = refAutoReset(false, 2000)
 
 async function handleCopy() {
@@ -45,6 +45,8 @@ async function handleCopy() {
   useTelemetry()?.trackShareFlow({
     step: 'link_copied',
     source: isAppMode.value ? 'app_mode' : 'graph_mode',
+    view_mode: mode.value,
+    is_app_mode: isAppMode.value,
     share_id: shareId
   })
 }

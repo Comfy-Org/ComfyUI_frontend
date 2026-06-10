@@ -70,8 +70,9 @@ export interface RunButtonProperties {
   has_toolkit_nodes: boolean
   toolkit_node_names: string[]
   trigger_source?: ExecutionTriggerSource
-  view_mode?: string
-  is_app_mode?: boolean
+  view_mode: string
+  is_app_mode: boolean
+  dock_state: ActionbarDockState
 }
 
 /**
@@ -120,7 +121,11 @@ export interface ExecutionSuccessMetadata {
 export interface SharedWorkflowRunMetadata {
   job_id: string
   share_id: string
+  view_mode: string
+  is_app_mode: boolean
 }
+
+export type ActionbarDockState = 'docked' | 'floating'
 
 /**
  * Template metadata for workflow tracking
@@ -197,11 +202,15 @@ export interface ShareFlowMetadata {
   step: ShareFlowStep
   source?: 'app_mode' | 'graph_mode'
   share_id?: string
+  view_mode: string
+  is_app_mode: boolean
 }
 
 export interface ShareLinkOpenedMetadata {
   share_id: string
   is_authenticated: boolean
+  view_mode: string
+  is_app_mode: boolean
 }
 
 /**
@@ -327,8 +336,8 @@ export interface TemplateFilterMetadata {
  * UI button click tracking metadata
  */
 export interface UiButtonClickMetadata {
-  /** Canonical identifier for the button (e.g., "comfy_logo") */
   button_id: string
+  element_group: string
 }
 
 /**

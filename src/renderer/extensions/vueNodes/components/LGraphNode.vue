@@ -674,7 +674,8 @@ const handleToggleAdvanced = () => {
 
 const handleEnterSubgraph = () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'graph_node_open_subgraph_clicked'
+    button_id: 'graph_node_open_subgraph_clicked',
+    element_group: 'graph_node'
   })
   const graph = app.rootGraph
   if (!graph) {
