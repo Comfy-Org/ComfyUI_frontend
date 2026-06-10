@@ -76,8 +76,11 @@ function controlValueRunBefore(): boolean {
 /**
  * Host widgets that have run control at least once, so `before` mode can skip
  * the first execution (mirroring the interior control widget's HAS_EXECUTED).
+ *
+ * Keyed by the widget instance so entries are released when the graph is
+ * cleared and its widgets are recreated, avoiding stale state across reloads.
  */
-const executedWidgetIds = new Set<string>()
+const executedWidgets = new WeakSet<IBaseWidget>()
 
 /**
  * Applies `control_after_generate` to a subgraph host node's promoted widgets.
@@ -102,10 +105,9 @@ export function applyPromotedWidgetControl(
       continue
     }
 
-    const id = target.hostWidget.widgetId
-    if (id && executedWidgetIds.has(id)) {
+    if (executedWidgets.has(target.hostWidget)) {
       applyTarget(target, node.id, isPartialExecution)
     }
-    if (id) executedWidgetIds.add(id)
+    executedWidgets.add(target.hostWidget)
   }
 }
