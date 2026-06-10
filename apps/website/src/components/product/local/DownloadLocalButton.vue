@@ -3,6 +3,7 @@ import type { Locale } from '../../../i18n/translations'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
+import type { Platform } from '../../../composables/useDownloadUrl'
 import {
   downloadUrls,
   useDownloadUrl
@@ -20,13 +21,13 @@ const { downloadUrl, platform, showFallback } = useDownloadUrl()
 
 const label = computed(() => t('download.hero.downloadLocal', locale))
 
-const ICONS = {
+const ICONS: Record<Platform, string> = {
   windows: '/icons/os/windows.svg',
   mac: '/icons/os/apple.svg'
-} as const
+}
 
 interface ButtonSpec {
-  key: keyof typeof ICONS
+  key: Platform
   href: string
   icon: string
   ariaLabel?: string
