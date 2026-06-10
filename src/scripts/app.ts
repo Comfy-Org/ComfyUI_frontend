@@ -131,6 +131,7 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
+import { applyPromotedWidgetControl } from './promotedWidgetControl'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
@@ -1610,6 +1611,9 @@ export class ComfyApp {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
+            applyPromotedWidgetControl(node, 'beforeQueued', {
+              isPartialExecution
+            })
           })
 
           // Capture workflow before await — activeWorkflow may change if the
@@ -1744,6 +1748,11 @@ export class ComfyApp {
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
           })
+          for (const node of queuedNodes) {
+            applyPromotedWidgetControl(node, 'afterQueued', {
+              isPartialExecution
+            })
+          }
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }
