@@ -166,7 +166,7 @@ const interiorWidgets = computed<WidgetItem[]>(() => {
 function activeRowSourceKey(row: ActiveRow): string {
   if (row.kind !== 'promoted')
     return `${row.exposure.sourceNodeId}:${row.exposure.sourcePreviewName}`
-    
+
   const source = promotedRowSource(row)
   return `${source?.nodeId ?? row.node.id}:${source?.widgetName ?? ''}`
 }
