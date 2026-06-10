@@ -30,10 +30,16 @@
           @mousedown="() => dialogStore.riseDialog({ key: item.key })"
         >
           <template v-if="item.dialogComponentProps.headless">
+            <!--
+              DialogContent's aria-labelledby points at item.key, so
+              self-rendered content (SmallModalShell) must put that id on
+              its heading for the dialog to keep its accessible name.
+            -->
             <component
               :is="item.component"
               v-bind="item.contentProps"
               :maximized="item.dialogComponentProps.maximized"
+              :title-id="item.key"
             />
           </template>
           <template v-else>

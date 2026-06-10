@@ -61,6 +61,23 @@ describe('ConfirmationDialogContent', () => {
     ).toBeInTheDocument()
   })
 
+  it('puts the title-id passed by GlobalDialog on the heading so the dialog keeps its accessible name', () => {
+    render(ConfirmationDialogContent, {
+      global: { plugins: [i18n] },
+      props: {
+        title: 'Export Workflow',
+        message: 'Enter the filename:',
+        type: 'default',
+        onConfirm: vi.fn()
+      },
+      attrs: { 'title-id': 'global-prompt' }
+    })
+
+    expect(
+      screen.getByRole('heading', { name: 'Export Workflow' })
+    ).toHaveAttribute('id', 'global-prompt')
+  })
+
   it('closes the dialog when the header close button is clicked', async () => {
     const { user, container } = renderComponent()
     const closeSpy = vi.spyOn(useDialogStore(), 'closeDialog')
