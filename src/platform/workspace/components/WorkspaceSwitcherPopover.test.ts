@@ -84,11 +84,11 @@ function renderComponent() {
 }
 
 describe('WorkspaceSwitcherPopover', () => {
-  it('renders a long team workspace name truncated to a single line', () => {
+  it('exposes the full team workspace name as a tooltip on the row', () => {
     renderComponent()
 
     const name = screen.getByText(LONG_WORKSPACE_NAME)
 
-    expect(name).toHaveClass('truncate')
+    expect(name).toHaveAttribute('title', LONG_WORKSPACE_NAME)
   })
 })
