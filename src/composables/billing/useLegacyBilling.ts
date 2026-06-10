@@ -27,8 +27,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
     isActiveSubscription: legacyIsActiveSubscription,
     subscriptionTier,
     subscriptionDuration,
-    formattedRenewalDate,
-    formattedEndDate,
+    subscriptionStatus: legacySubscriptionStatus,
     isCancelled,
     fetchStatus: legacyFetchStatus,
     manageSubscription: legacyManageSubscription,
@@ -56,8 +55,8 @@ export function useLegacyBilling(): BillingState & BillingActions {
       tier: subscriptionTier.value,
       duration: subscriptionDuration.value,
       planSlug: null, // Legacy doesn't use plan slugs
-      renewalDate: formattedRenewalDate.value || null,
-      endDate: formattedEndDate.value || null,
+      renewalDate: legacySubscriptionStatus.value?.renewal_date ?? null,
+      endDate: legacySubscriptionStatus.value?.end_date ?? null,
       isCancelled: isCancelled.value,
       hasFunds: (authStore.balance?.amount_micros ?? 0) > 0
     }
@@ -87,7 +86,9 @@ export function useLegacyBilling(): BillingState & BillingActions {
     return null
   })
   const tier = computed(() => subscriptionTier.value)
-  const renewalDate = computed(() => formattedRenewalDate.value || null)
+  const renewalDate = computed(
+    () => legacySubscriptionStatus.value?.renewal_date ?? null
+  )
 
   // Legacy billing doesn't have workspace-style plans
   const plans = computed(() => [])

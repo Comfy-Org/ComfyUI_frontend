@@ -50,8 +50,9 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
     isActiveSubscription: { value: true },
     subscriptionTier: { value: 'PRO' },
     subscriptionDuration: { value: 'MONTHLY' },
-    formattedRenewalDate: { value: 'Jan 1, 2025' },
-    formattedEndDate: { value: '' },
+    subscriptionStatus: {
+      value: { renewal_date: '2025-01-01T00:00:00Z', end_date: null }
+    },
     isCancelled: { value: false },
     fetchStatus: vi.fn().mockResolvedValue(undefined),
     manageSubscription: vi.fn().mockResolvedValue(undefined),
@@ -129,7 +130,7 @@ describe('useBillingContext', () => {
       tier: 'PRO',
       duration: 'MONTHLY',
       planSlug: null,
-      renewalDate: 'Jan 1, 2025',
+      renewalDate: '2025-01-01T00:00:00Z',
       endDate: null,
       isCancelled: false,
       hasFunds: true
