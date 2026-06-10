@@ -112,7 +112,7 @@ export function useNodePreviewAndDrag(
     isDragging.value = true
     isHovered.value = false
 
-    startDrag(nodeDef.value, 'native')
+    startDrag(nodeDef.value, { mode: 'native' })
 
     if (e.dataTransfer) {
       e.dataTransfer.effectAllowed = 'copy'

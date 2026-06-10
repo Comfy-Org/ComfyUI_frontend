@@ -1,18 +1,58 @@
-import { ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
+import { t } from '@/i18n'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 type DragMode = 'click' | 'native'
+type WidgetValues = Record<string, string>
+type Position = { x: number; y: number }
+
+interface StartDragOptions {
+  mode?: DragMode
+  widgetValues?: WidgetValues
+}
 
 const isDragging = ref(false)
 const draggedNode = shallowRef<ComfyNodeDefImpl | null>(null)
-const cursorPosition = ref({ x: 0, y: 0 })
+const cursorPosition = shallowRef<Position>()
 const dragMode = ref<DragMode>('click')
-const lastNativeDragPosition = shallowRef<{ x: number; y: number }>()
+const lastNativeDragPosition = shallowRef<Position>()
+const pendingWidgetValues = shallowRef<WidgetValues>()
 let listenersSetup = false
+
+// Non-reactive so the always-on tracker costs nothing outside a drag. It
+// seeds the ghost preview with the position of the click that armed the
+// drag, before any pointermove fires.
+let lastPointerPosition: Position | undefined
+let pointerTrackingStarted = false
+
+function trackPointerPosition(e: PointerEvent) {
+  lastPointerPosition = { x: e.clientX, y: e.clientY }
+}
+
+function startPointerTracking() {
+  if (pointerTrackingStarted) return
+  pointerTrackingStarted = true
+
+  document.addEventListener('pointermove', trackPointerPosition, {
+    passive: true
+  })
+  document.addEventListener('pointerdown', trackPointerPosition, {
+    passive: true,
+    capture: true
+  })
+}
+
+const previewPosition = computed(() =>
+  dragMode.value === 'native'
+    ? lastNativeDragPosition.value
+    : cursorPosition.value
+)
 
 function updatePosition(e: PointerEvent) {
   cursorPosition.value = { x: e.clientX, y: e.clientY }
@@ -27,11 +67,15 @@ function trackNativeDragPosition(e: DragEvent) {
   lastNativeDragPosition.value = { x: e.clientX, y: e.clientY }
 }
 
-function cancelDrag() {
-  isDragging.value = false
-  draggedNode.value = null
-  dragMode.value = 'click'
-  lastNativeDragPosition.value = undefined
+function applyWidgetValues(node: LGraphNode, values: WidgetValues) {
+  for (const [name, value] of Object.entries(values)) {
+    const widget = node.widgets?.find((w) => w.name === name)
+    if (!widget) {
+      console.error(`Widget ${name} not found on node ${node.type}`)
+      continue
+    }
+    widget.value = value
+  }
 }
 
 function isOverCanvas(clientX: number, clientY: number): boolean {
@@ -62,7 +106,19 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
   const node = withNodeAddSource('sidebar_drag', () =>
     useLitegraphService().addNodeOnGraph(nodeDef, { pos })
   )
-  if (node) canvas.selectItems([node])
+  if (!node) {
+    console.error(`Failed to add node to graph: ${nodeDef.name}`)
+    useToastStore().add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('assetBrowser.failedToCreateNode')
+    })
+    return true
+  }
+
+  if (pendingWidgetValues.value)
+    applyWidgetValues(node, pendingWidgetValues.value)
+  canvas.selectItems([node])
   return true
 }
 
@@ -97,6 +153,7 @@ function setupGlobalListeners() {
   document.addEventListener('pointerup', endDrag, true)
   document.addEventListener('keydown', handleKeydown)
   document.addEventListener('dragover', trackNativeDragPosition)
+  document.addEventListener('drag', trackNativeDragPosition)
 }
 
 function cleanupGlobalListeners() {
@@ -108,17 +165,32 @@ function cleanupGlobalListeners() {
   document.removeEventListener('pointerup', endDrag, true)
   document.removeEventListener('keydown', handleKeydown)
   document.removeEventListener('dragover', trackNativeDragPosition)
+  document.removeEventListener('drag', trackNativeDragPosition)
+}
 
-  if (isDragging.value && dragMode.value === 'click') {
-    cancelDrag()
-  }
+function cancelDrag() {
+  isDragging.value = false
+  draggedNode.value = null
+  dragMode.value = 'click'
+  cursorPosition.value = undefined
+  lastNativeDragPosition.value = undefined
+  pendingWidgetValues.value = undefined
+  cleanupGlobalListeners()
 }
 
 export function useNodeDragToCanvas() {
-  function startDrag(nodeDef: ComfyNodeDefImpl, mode: DragMode = 'click') {
+  startPointerTracking()
+
+  function startDrag(
+    nodeDef: ComfyNodeDefImpl,
+    { mode = 'click', widgetValues }: StartDragOptions = {}
+  ) {
     isDragging.value = true
     draggedNode.value = nodeDef
     dragMode.value = mode
+    pendingWidgetValues.value = widgetValues
+    cursorPosition.value = lastPointerPosition
+    setupGlobalListeners()
   }
 
   function handleNativeDrop(clientX: number, clientY: number) {
@@ -134,12 +206,10 @@ export function useNodeDragToCanvas() {
   return {
     isDragging,
     draggedNode,
-    cursorPosition,
-    dragMode,
+    previewPosition,
+    pendingWidgetValues,
     startDrag,
     cancelDrag,
-    handleNativeDrop,
-    setupGlobalListeners,
-    cleanupGlobalListeners
+    handleNativeDrop
   }
 }
