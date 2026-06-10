@@ -3,18 +3,12 @@ import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { describe, expect, it } from 'vitest'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import SidebarIcon from './SidebarIcon.vue'
 
-type SidebarIconProps = {
-  icon: string
-  selected: boolean
-  tooltip?: string
-  label?: string
-  class?: string
-  iconBadge?: string | (() => string | null)
-}
+type SidebarIconProps = ComponentProps<typeof SidebarIcon>
 
 const i18n = createI18n({
   legacy: false,
