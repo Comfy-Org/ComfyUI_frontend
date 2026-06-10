@@ -136,18 +136,21 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
 
     const content = dialog.getByRole('main')
 
-    // Total + remaining suffix (Pro monthly allowance = 21,100 credits).
+    // Total + remaining suffix (Pro monthly allowance = 21,100; remaining
+    // 10,550 -> used 10,550).
     await expect(content.getByText('Total credits')).toBeVisible()
     await expect(content.getByText('12,660')).toBeVisible()
 
-    // Stacked progress bar caption + monthly / additional breakdown.
-    await expect(
-      content.getByText('10,550 of 21.1K monthly remaining')
-    ).toBeVisible()
-    await expect(content.getByText(/Monthly \(refills/)).toBeVisible()
-    await expect(content.getByText('10,550 of 21,100')).toBeVisible()
-    await expect(content.getByText('Additional', { exact: true })).toBeVisible()
+    // Monthly usage bar header + used / left-of-total labels.
+    await expect(content.getByText('Monthly', { exact: true })).toBeVisible()
+    await expect(content.getByText(/Refills Feb/)).toBeVisible()
+    await expect(content.getByText('10,550 used')).toBeVisible()
+    await expect(content.getByText('10,550 left of 21,100')).toBeVisible()
+
+    // Additional credits row + subtitle.
+    await expect(content.getByText('Additional credits')).toBeVisible()
     await expect(content.getByText('2,110')).toBeVisible()
+    await expect(content.getByText('Used after monthly runs out')).toBeVisible()
 
     // Permission-gated add-credits action (personal owner can top up).
     await expect(

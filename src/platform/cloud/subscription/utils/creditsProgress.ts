@@ -1,30 +1,25 @@
-export interface CreditsProgress {
-  /** Fraction (0–1) of the monthly allowance still remaining. */
-  monthlyFraction: number
-  /** Fraction (0–1) the additional (prepaid) credits occupy, stacked after monthly. */
-  additionalFraction: number
+export interface MonthlyCreditsUsage {
+  /** Credits consumed from the monthly allowance (never negative). */
+  used: number
+  /** Fraction (0–1) of the monthly allowance consumed — drives the bar fill. */
+  usedFraction: number
 }
 
-const clampFraction = (value: number): number => Math.min(1, Math.max(0, value))
-
 /**
- * Computes the two stacked segments of the credits progress bar. The track is
- * scaled to the monthly allowance; additional (prepaid) credits stack on top of
- * the remaining monthly credits without overflowing the track.
+ * Computes monthly credit usage for the credits bar. The bar fills with the
+ * consumed portion of the monthly allowance; `used` clamps at zero so a balance
+ * that exceeds the nominal allowance (rolled-over credits) reads as nothing used.
  */
-export function computeCreditsProgress(
+export function computeMonthlyUsage(
   monthlyRemaining: number,
-  additional: number,
   monthlyTotal: number
-): CreditsProgress {
+): MonthlyCreditsUsage {
   if (monthlyTotal <= 0) {
-    return { monthlyFraction: 0, additionalFraction: 0 }
+    return { used: 0, usedFraction: 0 }
   }
 
-  const monthlyFraction = clampFraction(monthlyRemaining / monthlyTotal)
-  const additionalFraction = clampFraction(
-    Math.min(additional / monthlyTotal, 1 - monthlyFraction)
-  )
+  const used = Math.max(0, monthlyTotal - monthlyRemaining)
+  const usedFraction = Math.min(1, used / monthlyTotal)
 
-  return { monthlyFraction, additionalFraction }
+  return { used, usedFraction }
 }

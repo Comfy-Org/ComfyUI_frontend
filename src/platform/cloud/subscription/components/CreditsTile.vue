@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative flex flex-col gap-5 rounded-2xl bg-modal-panel-background p-5"
+    class="relative flex flex-col gap-6 rounded-2xl border border-interface-stroke bg-modal-panel-background px-6 py-5"
   >
     <Button
       variant="muted-textonly"
@@ -13,16 +13,13 @@
       <i class="icon-[lucide--refresh-cw] size-4 text-text-secondary" />
     </Button>
 
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-1">
       <div class="text-sm text-muted">
         {{ $t('subscription.totalCredits') }}
       </div>
       <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
-      <div v-else class="flex items-center gap-2">
-        <i
-          class="icon-[lucide--component] size-5"
-          :style="{ color: SEGMENT_MONTHLY }"
-        />
+      <div v-else class="flex items-center gap-1">
+        <i class="icon-[lucide--component] size-4" :style="creditIconStyle" />
         <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
         <span class="text-sm text-muted">{{
           $t('subscription.remaining')
@@ -32,55 +29,52 @@
 
     <template v-if="showBreakdown">
       <div v-if="showBar" class="flex flex-col gap-2">
+        <div class="flex items-center justify-between text-sm">
+          <span class="text-text-primary">{{
+            $t('subscription.monthly')
+          }}</span>
+          <span class="text-muted">
+            {{ $t('subscription.refillsDate', { date: refillsDateShort }) }}
+          </span>
+        </div>
         <div
-          class="flex h-2 w-full overflow-hidden rounded-full bg-secondary-background"
+          class="h-2 w-full overflow-hidden rounded-full bg-secondary-background-hover"
         >
           <div
-            class="h-full"
-            :style="{
-              width: toPercent(progress.monthlyFraction),
-              backgroundColor: SEGMENT_MONTHLY
-            }"
-          />
-          <div
-            class="h-full"
-            :style="{
-              width: toPercent(progress.additionalFraction),
-              backgroundColor: SEGMENT_ADDITIONAL
-            }"
+            class="h-full rounded-full"
+            :style="{ width: usedBarWidth, backgroundColor: CREDIT_COLOR }"
           />
         </div>
-        <div class="text-sm text-muted">
-          {{
-            $t('subscription.monthlyRemainingSummary', {
-              remaining: monthlyBonusCredits,
-              total: monthlyTotalCompact
-            })
-          }}
+        <div class="flex items-center justify-between gap-2 text-sm">
+          <Skeleton v-if="isLoadingBalance" width="5rem" height="1rem" />
+          <span v-else class="text-muted">
+            {{ $t('subscription.creditsUsed', { used: usedDisplay }) }}
+          </span>
+          <Skeleton v-if="isLoadingBalance" width="9rem" height="1rem" />
+          <span
+            v-else
+            class="flex items-center gap-1 font-bold text-text-primary"
+          >
+            <i
+              class="icon-[lucide--component] size-4"
+              :style="creditIconStyle"
+            />
+            {{
+              $t('subscription.creditsLeftOfTotal', {
+                remaining: monthlyBonusCredits,
+                total: monthlyTotalDisplay
+              })
+            }}
+          </span>
         </div>
       </div>
 
-      <div class="flex flex-col gap-2 text-sm">
-        <div class="flex items-center justify-between gap-2">
-          <span class="flex items-center gap-2 text-muted">
-            <span
-              class="size-2 shrink-0 rounded-full"
-              :style="{ backgroundColor: SEGMENT_MONTHLY }"
-            />
-            {{ $t('subscription.monthlyRefills', { date: refillsDateShort }) }}
-          </span>
-          <Skeleton v-if="isLoadingBalance" width="5rem" height="1rem" />
-          <span v-else class="font-bold text-text-primary">
-            {{ includedCreditsDisplay }}
-          </span>
-        </div>
-        <div class="flex items-center justify-between gap-2">
-          <span class="flex items-center gap-2 text-muted">
-            <span
-              class="size-2 shrink-0 rounded-full"
-              :style="{ backgroundColor: SEGMENT_ADDITIONAL }"
-            />
-            {{ $t('subscription.creditsYouveAdded') }}
+      <div class="h-px w-full bg-interface-stroke" />
+
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between gap-2 text-sm">
+          <span class="flex items-center gap-1 text-text-primary">
+            {{ $t('subscription.additionalCredits') }}
             <i
               v-tooltip="{
                 value: $t('subscription.additionalCreditsTooltip'),
@@ -90,10 +84,20 @@
             />
           </span>
           <Skeleton v-if="isLoadingBalance" width="3rem" height="1rem" />
-          <span v-else class="font-bold text-text-primary">
+          <span
+            v-else
+            class="flex items-center gap-1 font-bold text-text-primary"
+          >
+            <i
+              class="icon-[lucide--component] size-4"
+              :style="creditIconStyle"
+            />
             {{ displayPrepaid }}
           </span>
         </div>
+        <span class="text-sm text-muted">
+          {{ $t('subscription.usedAfterMonthly') }}
+        </span>
       </div>
     </template>
 
@@ -132,7 +136,7 @@ import {
   TIER_TO_KEY,
   getTierCredits
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import { computeCreditsProgress } from '@/platform/cloud/subscription/utils/creditsProgress'
+import { computeMonthlyUsage } from '@/platform/cloud/subscription/utils/creditsProgress'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useDialogService } from '@/services/dialogService'
@@ -142,13 +146,13 @@ const { zeroState = false } = defineProps<{
   zeroState?: boolean
 }>()
 
-const SEGMENT_MONTHLY = '#fbbf24'
-const SEGMENT_ADDITIONAL = '#6b5ca8'
+const CREDIT_COLOR = '#fabc25'
+const creditIconStyle = { color: CREDIT_COLOR }
 
 const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
 const TOPUP_EXPIRY_MS = 5 * 60 * 1000
 
-const { t, n, locale } = useI18n()
+const { n } = useI18n()
 
 const {
   subscription,
@@ -162,7 +166,6 @@ const {
   prepaidCredits,
   totalCredits,
   monthlyBonusCreditsValue,
-  prepaidCreditsValue,
   isLoadingBalance
 } = useSubscriptionCredits()
 const { permissions } = useWorkspaceUI()
@@ -184,10 +187,9 @@ const monthlyTotalCredits = computed<number | null>(() => {
   return isYearly.value ? credits * 12 : credits
 })
 
-const progress = computed(() =>
-  computeCreditsProgress(
+const usage = computed(() =>
+  computeMonthlyUsage(
     monthlyBonusCreditsValue.value,
-    prepaidCreditsValue.value,
     monthlyTotalCredits.value ?? 0
   )
 )
@@ -201,25 +203,18 @@ const refillsDateShort = computed(() => {
     : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 })
 
-const monthlyTotalCompact = computed(() => {
+const monthlyTotalDisplay = computed(() => {
   const total = monthlyTotalCredits.value
-  if (total === null) return '—'
-  return new Intl.NumberFormat(locale.value, {
-    notation: 'compact',
-    maximumFractionDigits: 1
-  }).format(total)
+  return total === null ? '—' : n(total)
 })
 
-const includedCreditsDisplay = computed(() => {
-  const total = monthlyTotalCredits.value
-  return t('subscription.creditsOfTotal', {
-    remaining: monthlyBonusCredits.value,
-    total: total === null ? '—' : n(total)
-  })
-})
+const usedDisplay = computed(() => n(usage.value.used))
 
 const displayTotal = computed(() => (zeroState ? '0' : totalCredits.value))
 const displayPrepaid = computed(() => (zeroState ? '0' : prepaidCredits.value))
+const usedBarWidth = computed(
+  () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
+)
 
 const showBreakdown = computed(() => isActiveSubscription.value && !zeroState)
 const showBar = computed(
@@ -231,8 +226,6 @@ const showBar = computed(
 const showActionButton = computed(
   () => isActiveSubscription.value && !zeroState && permissions.value.canTopUp
 )
-
-const toPercent = (fraction: number) => `${(fraction * 100).toFixed(2)}%`
 
 async function handleRefresh() {
   await Promise.all([fetchBalance(), fetchStatus()])

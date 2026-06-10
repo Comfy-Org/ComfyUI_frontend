@@ -77,11 +77,14 @@ const i18n = createI18n({
         totalCredits: 'Total credits',
         remaining: 'remaining',
         refreshCredits: 'Refresh credits',
-        monthlyRefills: 'Monthly (refills {date})',
-        creditsOfTotal: '{remaining} of {total}',
-        monthlyRemainingSummary: '{remaining} of {total} monthly remaining',
-        creditsYouveAdded: 'Additional',
-        additionalCreditsTooltip: 'Credits you have added.',
+        monthly: 'Monthly',
+        refillsDate: 'Refills {date}',
+        creditsUsed: '{used} used',
+        creditsLeftOfTotal: '{remaining} left of {total}',
+        additionalCredits: 'Additional credits',
+        usedAfterMonthly: 'Used after monthly runs out',
+        additionalCreditsTooltip:
+          'Additional top-up credits are used up first.',
         addCredits: 'Add credits',
         upgradeToAddCredits: 'Upgrade to add credits'
       }
@@ -141,22 +144,25 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('remaining')
   })
 
-  it('renders the monthly and additional breakdown against the tier allowance', () => {
+  it('renders the monthly usage bar and additional breakdown', () => {
     activeProSubscription()
     const { container } = renderTile()
-    // PRO monthly allowance = 21,100 credits
-    expect(container.textContent).toContain('422 of 21,100')
-    expect(container.textContent).toMatch(/Monthly \(refills Feb/)
-    expect(container.textContent).toContain('Additional')
+    // PRO monthly allowance = 21,100; remaining 422 -> used 20,678.
+    expect(container.textContent).toContain('Monthly')
+    expect(container.textContent).toMatch(/Refills Feb/)
+    expect(container.textContent).toContain('20,678 used')
+    expect(container.textContent).toContain('422 left of 21,100')
+    expect(container.textContent).toContain('Additional credits')
     expect(container.textContent).toContain('633')
-    expect(container.textContent).toContain('422 of 21.1K monthly remaining')
+    expect(container.textContent).toContain('Used after monthly runs out')
   })
 
   it('hides the breakdown and forces zeros in the zero state', () => {
     activeProSubscription()
     const { container } = renderTile({ zeroState: true })
     expect(container.textContent).toContain('0')
-    expect(container.textContent).not.toContain('422 of 21,100')
+    expect(container.textContent).not.toContain('left of')
+    expect(container.textContent).not.toContain('Additional credits')
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
@@ -165,7 +171,8 @@ describe('CreditsTile', () => {
     state.balance = { amountMicros: 500 }
     const { container } = renderTile()
     expect(container.textContent).toContain('1,055')
-    expect(container.textContent).not.toContain('monthly remaining')
+    expect(container.textContent).not.toContain('left of')
+    expect(container.textContent).not.toContain('Additional credits')
     expect(screen.queryByText('Add credits')).toBeNull()
   })
 
