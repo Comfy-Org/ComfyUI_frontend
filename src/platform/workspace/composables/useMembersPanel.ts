@@ -73,11 +73,18 @@ export function useMembersPanel() {
   const { t } = useI18n()
   const toast = useToast()
   const { userPhotoUrl, userEmail, userDisplayName } = useCurrentUser()
-  const { showRemoveMemberDialog, showRevokeInviteDialog } = useDialogService()
+  const {
+    showRemoveMemberDialog,
+    showRevokeInviteDialog,
+    showInviteMemberDialog,
+    showInviteMemberUpsellDialog
+  } = useDialogService()
   const workspaceStore = useTeamWorkspaceStore()
   const {
     members,
     pendingInvites,
+    totalMemberSlots,
+    isInviteLimitReached,
     isInPersonalWorkspace: isPersonalWorkspace
   } = storeToRefs(workspaceStore)
   const { resendInvite } = workspaceStore
@@ -88,6 +95,51 @@ export function useMembersPanel() {
   const maxSeats = computed(() =>
     isPersonalWorkspace.value ? 1 : planMaxSeats.value
   )
+
+  const hasMultipleMembers = computed(() => members.value.length > 1)
+
+  const showSearch = computed(
+    () =>
+      uiConfig.value.showSearch &&
+      isOnTeamPlan.value &&
+      hasMultipleMembers.value
+  )
+
+  const showViewTabs = computed(
+    () =>
+      isOnTeamPlan.value &&
+      (hasMultipleMembers.value || pendingInvites.value.length > 0)
+  )
+
+  const showInviteButton = computed(
+    () => permissions.value.canInviteMembers || isPersonalWorkspace.value
+  )
+
+  // Plan seat limit, with the flat backend cap (isInviteLimitReached) as backstop
+  const isMemberLimitReached = computed(
+    () => isInviteLimitReached.value || totalMemberSlots.value >= maxSeats.value
+  )
+
+  const isInviteDisabled = computed(
+    () =>
+      isPersonalWorkspace.value ||
+      (isOnTeamPlan.value && isMemberLimitReached.value)
+  )
+
+  const inviteTooltip = computed(() => {
+    if (!isOnTeamPlan.value) return null
+    if (!isMemberLimitReached.value) return null
+    return t('workspacePanel.inviteLimitReached', { count: maxSeats.value })
+  })
+
+  function handleInviteMember() {
+    if (!isOnTeamPlan.value) {
+      void showInviteMemberUpsellDialog()
+      return
+    }
+    if (isMemberLimitReached.value) return
+    void showInviteMemberDialog()
+  }
 
   const personalWorkspaceMember = computed<WorkspaceMember>(() => ({
     id: 'self',
@@ -175,6 +227,13 @@ export function useMembersPanel() {
     selectedMember,
     maxSeats,
     isOnTeamPlan,
+    hasMultipleMembers,
+    showSearch,
+    showViewTabs,
+    showInviteButton,
+    isInviteDisabled,
+    inviteTooltip,
+    handleInviteMember,
     personalWorkspaceMember,
     filteredMembers,
     filteredPendingInvites,

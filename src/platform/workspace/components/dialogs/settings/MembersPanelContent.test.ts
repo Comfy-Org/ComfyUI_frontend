@@ -17,6 +17,7 @@ const mockHandleRevokeInvite = vi.fn()
 const mockShowSubscriptionDialog = vi.fn()
 const mockSelectMember = vi.fn()
 const mockToggleSort = vi.fn()
+const mockHandleInviteMember = vi.fn()
 
 const {
   mockMembers,
@@ -25,6 +26,11 @@ const {
   mockFilteredPendingInvites,
   mockIsPersonalWorkspace,
   mockIsOnTeamPlan,
+  mockHasMultipleMembers,
+  mockShowSearch,
+  mockShowViewTabs,
+  mockShowInviteButton,
+  mockIsInviteDisabled,
   mockActiveView,
   mockSearchQuery,
   mockPermissions,
@@ -36,6 +42,11 @@ const {
   return {
     mockMembers: ref<WorkspaceMember[]>([]),
     mockPendingInvites: ref<PendingInvite[]>([]),
+    mockHasMultipleMembers: ref(true),
+    mockShowSearch: ref(true),
+    mockShowViewTabs: ref(true),
+    mockShowInviteButton: ref(true),
+    mockIsInviteDisabled: ref(false),
     mockFilteredMembers: ref<WorkspaceMember[]>([]),
     mockFilteredPendingInvites: ref<PendingInvite[]>([]),
     mockIsPersonalWorkspace: ref(false),
@@ -74,6 +85,13 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     activeView: mockActiveView,
     maxSeats: computed(() => 20),
     isOnTeamPlan: mockIsOnTeamPlan,
+    hasMultipleMembers: mockHasMultipleMembers,
+    showSearch: mockShowSearch,
+    showViewTabs: mockShowViewTabs,
+    showInviteButton: mockShowInviteButton,
+    isInviteDisabled: mockIsInviteDisabled,
+    inviteTooltip: computed(() => null),
+    handleInviteMember: mockHandleInviteMember,
     personalWorkspaceMember: computed(() => ({
       id: 'self',
       name: 'Owner User',
@@ -137,6 +155,7 @@ function renderComponent() {
         Button: ButtonStub,
         SearchInput: SearchInputStub,
         UserAvatar: true,
+        WorkspaceMenuButton: true,
         Menu: { template: '<div />', props: ['model', 'popup'] }
       },
       directives: { tooltip: () => {} }
@@ -176,6 +195,11 @@ describe('MembersPanelContent', () => {
     mockFilteredPendingInvites.value = []
     mockIsPersonalWorkspace.value = false
     mockIsOnTeamPlan.value = true
+    mockHasMultipleMembers.value = true
+    mockShowSearch.value = true
+    mockShowViewTabs.value = true
+    mockShowInviteButton.value = true
+    mockIsInviteDisabled.value = false
     mockActiveView.value = 'active'
     mockSearchQuery.value = ''
     mockPermissions.value = {
@@ -207,6 +231,10 @@ describe('MembersPanelContent', () => {
     beforeEach(() => {
       mockIsPersonalWorkspace.value = true
       mockIsOnTeamPlan.value = false
+      mockHasMultipleMembers.value = false
+      mockShowSearch.value = false
+      mockShowViewTabs.value = false
+      mockIsInviteDisabled.value = true
       mockUiConfig.value.showMembersList = false
       mockUiConfig.value.showSearch = false
       mockUiConfig.value.showPendingTab = false
@@ -369,6 +397,8 @@ describe('MembersPanelContent', () => {
   describe('not on team plan', () => {
     beforeEach(() => {
       mockIsOnTeamPlan.value = false
+      mockShowSearch.value = false
+      mockShowViewTabs.value = false
     })
 
     it('shows upsell banner', () => {
@@ -442,6 +472,44 @@ describe('MembersPanelContent', () => {
       expect(
         screen.getByText(/workspacePanel\.members\.membersCount/)
       ).toBeTruthy()
+    })
+  })
+
+  describe('card header actions', () => {
+    it('invokes the invite flow from the header invite button', async () => {
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: 'workspacePanel.inviteMember' })
+      )
+      expect(mockHandleInviteMember).toHaveBeenCalled()
+    })
+
+    it('hides the invite button without invite access', () => {
+      mockShowInviteButton.value = false
+      renderComponent()
+      expect(
+        screen.queryByRole('button', { name: 'workspacePanel.inviteMember' })
+      ).toBeNull()
+    })
+
+    it('disables the invite button when gated', () => {
+      mockIsInviteDisabled.value = true
+      renderComponent()
+      const button = screen.getByRole('button', {
+        name: 'workspacePanel.inviteMember'
+      })
+      expect((button as HTMLButtonElement).disabled).toBe(true)
+    })
+
+    it('hides the view tabs for a lone owner', () => {
+      mockShowViewTabs.value = false
+      renderComponent()
+      expect(
+        screen.queryByText('workspacePanel.members.tabs.active')
+      ).toBeNull()
+      expect(
+        screen.queryByText('workspacePanel.members.columns.role')
+      ).toBeNull()
     })
   })
 })

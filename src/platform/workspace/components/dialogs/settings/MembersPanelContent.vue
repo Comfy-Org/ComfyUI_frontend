@@ -30,16 +30,32 @@
             </template>
           </span>
         </div>
-        <div
-          v-if="uiConfig.showSearch && isOnTeamPlan"
-          class="flex items-start gap-2"
-        >
+        <div class="flex items-center gap-2">
           <SearchInput
+            v-if="showSearch"
             v-model="searchQuery"
             :placeholder="$t('workspacePanel.members.searchPlaceholder')"
             size="lg"
             class="w-64"
           />
+          <Button
+            v-if="showInviteButton"
+            v-tooltip="
+              inviteTooltip
+                ? { value: inviteTooltip, showDelay: 0 }
+                : { value: $t('workspacePanel.inviteMember'), showDelay: 300 }
+            "
+            variant="secondary"
+            size="lg"
+            :disabled="isInviteDisabled"
+            :class="isInviteDisabled && 'cursor-not-allowed opacity-50'"
+            :aria-label="$t('workspacePanel.inviteMember')"
+            @click="handleInviteMember"
+          >
+            {{ $t('workspacePanel.invite') }}
+            <i class="pi pi-plus text-sm" />
+          </Button>
+          <WorkspaceMenuButton v-if="permissions.canAccessWorkspaceMenu" />
         </div>
       </div>
 
@@ -47,20 +63,18 @@
       <div class="flex min-h-0 flex-1 flex-col">
         <!-- Table Header with Tab Buttons and Column Headers -->
         <div
-          v-if="uiConfig.showMembersList"
+          v-if="uiConfig.showMembersList && showViewTabs"
           :class="
             cn(
               'grid w-full items-center py-2',
-              !isOnTeamPlan
-                ? 'grid-cols-1 py-0'
-                : activeView === 'pending'
-                  ? uiConfig.pendingGridCols
-                  : uiConfig.headerGridCols
+              activeView === 'pending'
+                ? uiConfig.pendingGridCols
+                : uiConfig.headerGridCols
             )
           "
         >
           <!-- Tab buttons in first column -->
-          <div v-if="isOnTeamPlan" class="flex items-center gap-2">
+          <div class="flex items-center gap-2">
             <Button
               :variant="
                 activeView === 'active' ? 'secondary' : 'muted-textonly'
@@ -109,19 +123,17 @@
             <div />
           </template>
           <template v-else>
-            <template v-if="isOnTeamPlan">
-              <Button
-                variant="muted-textonly"
-                size="sm"
-                class="justify-end"
-                @click="toggleSort('role')"
-              >
-                {{ $t('workspacePanel.members.columns.role') }}
-                <i class="icon-[lucide--chevrons-up-down] size-4" />
-              </Button>
-              <!-- Empty cell for action column header (OWNER only) -->
-              <div v-if="permissions.canRemoveMembers" />
-            </template>
+            <Button
+              variant="muted-textonly"
+              size="sm"
+              class="justify-end"
+              @click="toggleSort('role')"
+            >
+              {{ $t('workspacePanel.members.columns.role') }}
+              <i class="icon-[lucide--chevrons-up-down] size-4" />
+            </Button>
+            <!-- Empty cell for action column header (OWNER only) -->
+            <div v-if="permissions.canRemoveMembers" />
           </template>
         </div>
 
@@ -152,7 +164,9 @@
                     : undefined
                 "
                 :grid-cols="uiConfig.membersGridCols"
-                :show-role-column="uiConfig.showRoleColumn"
+                :show-role-column="
+                  uiConfig.showRoleColumn && hasMultipleMembers
+                "
                 :can-remove-members="permissions.canRemoveMembers"
                 :is-single-seat-plan="!isOnTeamPlan"
                 :striped="index % 2 === 1"
@@ -188,12 +202,14 @@
       <p class="text-sm text-muted-foreground">
         {{ $t('workspacePanel.members.needMoreMembers') }}
       </p>
-      <button
-        class="cursor-pointer border-none bg-transparent px-2 text-sm text-base-foreground"
+      <Button
+        variant="muted-textonly"
+        size="sm"
+        class="text-base-foreground"
         @click="handleContactUs"
       >
         {{ $t('workspacePanel.members.contactUs') }}
-      </button>
+      </Button>
     </div>
   </div>
 </template>
@@ -208,6 +224,7 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
+import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -217,6 +234,13 @@ const {
   activeView,
   maxSeats,
   isOnTeamPlan,
+  hasMultipleMembers,
+  showSearch,
+  showViewTabs,
+  showInviteButton,
+  isInviteDisabled,
+  inviteTooltip,
+  handleInviteMember,
   personalWorkspaceMember,
   filteredMembers,
   filteredPendingInvites,

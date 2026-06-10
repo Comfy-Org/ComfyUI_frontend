@@ -213,11 +213,15 @@ const mockResendInvite = vi.fn()
 const mockShowRemoveMemberDialog = vi.fn()
 const mockShowRevokeInviteDialog = vi.fn()
 const mockShowSubscriptionDialog = vi.fn()
+const mockShowInviteMemberDialog = vi.fn()
+const mockShowInviteMemberUpsellDialog = vi.fn()
 
 const {
   mockMembers,
   mockPendingInvites,
   mockIsInPersonalWorkspace,
+  mockTotalMemberSlots,
+  mockIsInviteLimitReached,
   mockPermissions,
   mockUiConfig,
   mockIsActiveSubscription,
@@ -230,6 +234,8 @@ const {
     mockMembers: ref<WorkspaceMember[]>([]),
     mockPendingInvites: ref<PendingInvite[]>([]),
     mockIsInPersonalWorkspace: ref(false),
+    mockTotalMemberSlots: ref(0),
+    mockIsInviteLimitReached: ref(false),
     mockPermissions: ref({
       canViewOtherMembers: true,
       canViewPendingInvites: true,
@@ -278,6 +284,8 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     members: mockMembers,
     pendingInvites: mockPendingInvites,
+    totalMemberSlots: mockTotalMemberSlots,
+    isInviteLimitReached: mockIsInviteLimitReached,
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
     resendInvite: mockResendInvite
   })
@@ -318,7 +326,9 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
     showRemoveMemberDialog: mockShowRemoveMemberDialog,
-    showRevokeInviteDialog: mockShowRevokeInviteDialog
+    showRevokeInviteDialog: mockShowRevokeInviteDialog,
+    showInviteMemberDialog: mockShowInviteMemberDialog,
+    showInviteMemberUpsellDialog: mockShowInviteMemberUpsellDialog
   })
 }))
 
@@ -328,6 +338,8 @@ describe('useMembersPanel', () => {
     mockMembers.value = []
     mockPendingInvites.value = []
     mockIsInPersonalWorkspace.value = false
+    mockTotalMemberSlots.value = 0
+    mockIsInviteLimitReached.value = false
     mockIsActiveSubscription.value = true
     mockSubscription.value = { tier: 'PRO' }
   })
@@ -462,6 +474,108 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       panel.handleRemoveMember(createMember({ id: 'mem-7' }))
       expect(mockShowRemoveMemberDialog).toHaveBeenCalledWith('mem-7')
+    })
+  })
+
+  describe('single-member visibility gating', () => {
+    it('hides search and view tabs when the owner is alone', async () => {
+      mockMembers.value = [createMember()]
+      const panel = await setup()
+      expect(panel.showSearch.value).toBe(false)
+      expect(panel.showViewTabs.value).toBe(false)
+    })
+
+    it('shows search and view tabs with more than one member', async () => {
+      mockMembers.value = [createMember(), createMember({ id: '2' })]
+      const panel = await setup()
+      expect(panel.showSearch.value).toBe(true)
+      expect(panel.showViewTabs.value).toBe(true)
+    })
+
+    it('shows view tabs for a lone owner with pending invites', async () => {
+      mockMembers.value = [createMember()]
+      mockPendingInvites.value = [createInvite()]
+      const panel = await setup()
+      expect(panel.showViewTabs.value).toBe(true)
+      expect(panel.showSearch.value).toBe(false)
+    })
+
+    it('hides search and view tabs off the team plan', async () => {
+      mockSubscription.value = { tier: 'STANDARD' }
+      mockMembers.value = [createMember(), createMember({ id: '2' })]
+      const panel = await setup()
+      expect(panel.showSearch.value).toBe(false)
+      expect(panel.showViewTabs.value).toBe(false)
+    })
+  })
+
+  describe('invite gating', () => {
+    it('opens the invite dialog on an active team plan', async () => {
+      const panel = await setup()
+      panel.handleInviteMember()
+      expect(mockShowInviteMemberDialog).toHaveBeenCalled()
+      expect(mockShowInviteMemberUpsellDialog).not.toHaveBeenCalled()
+    })
+
+    it('opens the upsell dialog when not on a team plan', async () => {
+      mockSubscription.value = { tier: 'STANDARD' }
+      const panel = await setup()
+      panel.handleInviteMember()
+      expect(mockShowInviteMemberUpsellDialog).toHaveBeenCalled()
+      expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
+    })
+
+    it('disables the invite button when plan seats are filled', async () => {
+      mockTotalMemberSlots.value = 20
+      const panel = await setup()
+      expect(panel.isInviteDisabled.value).toBe(true)
+      expect(panel.inviteTooltip.value).toBe(
+        'workspacePanel.inviteLimitReached'
+      )
+      panel.handleInviteMember()
+      expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
+    })
+
+    it('keeps the invite button enabled below the plan seat count', async () => {
+      mockTotalMemberSlots.value = 19
+      const panel = await setup()
+      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.inviteTooltip.value).toBeNull()
+    })
+
+    it('disables the invite button at the flat backend member cap', async () => {
+      mockIsInviteLimitReached.value = true
+      const panel = await setup()
+      expect(panel.isInviteDisabled.value).toBe(true)
+    })
+
+    it('keeps the invite clickable for upsell when off team plan at the limit', async () => {
+      mockSubscription.value = { tier: 'STANDARD' }
+      mockIsInviteLimitReached.value = true
+      const panel = await setup()
+      expect(panel.isInviteDisabled.value).toBe(false)
+      panel.handleInviteMember()
+      expect(mockShowInviteMemberUpsellDialog).toHaveBeenCalled()
+    })
+
+    it('shows a disabled invite button in a personal workspace', async () => {
+      mockIsInPersonalWorkspace.value = true
+      mockPermissions.value = {
+        ...mockPermissions.value,
+        canInviteMembers: false
+      }
+      const panel = await setup()
+      expect(panel.showInviteButton.value).toBe(true)
+      expect(panel.isInviteDisabled.value).toBe(true)
+    })
+
+    it('hides the invite button for members without invite permission', async () => {
+      mockPermissions.value = {
+        ...mockPermissions.value,
+        canInviteMembers: false
+      }
+      const panel = await setup()
+      expect(panel.showInviteButton.value).toBe(false)
     })
   })
 })
