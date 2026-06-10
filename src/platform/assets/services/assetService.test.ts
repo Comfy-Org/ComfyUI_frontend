@@ -79,7 +79,7 @@ function buildAssetListResponse(
     assets,
     total,
     has_more: hasMore,
-    next_cursor: nextCursor
+    ...(nextCursor === undefined ? {} : { next_cursor: nextCursor })
   })
 }
 
