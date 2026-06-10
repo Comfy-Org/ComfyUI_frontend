@@ -8,6 +8,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useExternalLink } from '@/composables/useExternalLink'
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useAppModeStore } from '@/stores/appModeStore'
@@ -41,7 +42,7 @@ const accessibleNodeErrors = computed(() =>
 )
 const accessibleErrors = computed(() =>
   accessibleNodeErrors.value.flatMap((k) => {
-    const nodeError = executionErrorStore.lastNodeErrors?.[k]
+    const nodeError = executionErrorStore.lastNodeErrors?.[asNodeId(k)]
     if (!nodeError) return []
 
     return nodeError.errors.flatMap((error) => {

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -86,7 +87,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    */
   function clearSimpleNodeErrors(executionId: string, slotName?: string): void {
     if (!lastNodeErrors.value) return
-    const nodeError = lastNodeErrors.value[executionId]
+    const nodeError = lastNodeErrors.value[asNodeId(executionId)]
     if (!nodeError) return
 
     const isSlotScoped = slotName !== undefined
@@ -106,16 +107,16 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         (e) => e.extra_info?.input_name !== slotName
       )
       if (remainingErrors.length === 0) {
-        delete updated[executionId]
+        delete updated[asNodeId(executionId)]
       } else {
-        updated[executionId] = {
+        updated[asNodeId(executionId)] = {
           ...nodeError,
           errors: remainingErrors
         }
       }
     } else {
       // If no slot specified and all errors were simple, clear the whole node
-      delete updated[executionId]
+      delete updated[asNodeId(executionId)]
     }
 
     lastNodeErrors.value = Object.keys(updated).length > 0 ? updated : null
@@ -137,7 +138,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     options?: { min?: number; max?: number }
   ): void {
     if (typeof newValue === 'number' && lastNodeErrors.value) {
-      const nodeErrors = lastNodeErrors.value[executionId]
+      const nodeErrors = lastNodeErrors.value[asNodeId(executionId)]
       if (nodeErrors) {
         const errs = nodeErrors.errors.filter(
           (e) => e.extra_info?.input_name === widgetName

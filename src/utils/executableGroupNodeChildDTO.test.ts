@@ -6,6 +6,7 @@ import type {
   ExecutionId,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import { ExecutableGroupNodeChildDTO } from '@/utils/executableGroupNodeChildDTO'
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 
@@ -186,7 +187,7 @@ describe('ExecutableGroupNodeChildDTO', () => {
       // Create DTO with deeply nested path to simulate group node inside subgraph
       const dto = new ExecutableGroupNodeChildDTO(
         nestedGroupNode,
-        ['1', '2'], // Path indicating it's inside a subgraph then group
+        [asNodeId('1'), asNodeId('2')], // Path indicating it's inside a subgraph then group
         mockNodesByExecutionId,
         undefined,
         mockGroupNodeHandler

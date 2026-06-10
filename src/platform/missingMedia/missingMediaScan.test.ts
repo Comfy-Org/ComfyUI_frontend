@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type * as AssetServiceModule from '@/platform/assets/services/assetService'
 import type * as FetchJobsModule from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -72,7 +73,7 @@ function makeCandidate(
   overrides: Partial<MissingMediaCandidate> = {}
 ): MissingMediaCandidate {
   return {
-    nodeId,
+    nodeId: asNodeId(nodeId),
     nodeType: 'LoadImage',
     widgetName: 'image',
     mediaType: 'image',

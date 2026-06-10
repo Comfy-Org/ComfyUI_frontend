@@ -1,4 +1,6 @@
-type NodeId = number | string
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import type { NodeId } from '@/lib/litegraph/src/utils/nodeId'
+
 type UUID = string
 
 export type WidgetId = string & { readonly __brand: 'WidgetId' }
@@ -37,7 +39,7 @@ export function parseWidgetId(id: WidgetId): {
 
   return {
     graphId: groups.graphId,
-    nodeId: decodeWidgetIdSegment(groups.nodeId),
+    nodeId: asNodeId(decodeWidgetIdSegment(groups.nodeId)),
     name: decodeWidgetIdSegment(groups.name)
   }
 }
@@ -45,4 +47,9 @@ export function parseWidgetId(id: WidgetId): {
 export function isWidgetId(value: unknown): value is WidgetId {
   if (typeof value !== 'string') return false
   return WIDGET_ID_PATTERN.test(value)
+}
+
+/** Normalises a raw persisted value into a {@link WidgetId}. */
+export function asWidgetId(value: string | number): WidgetId {
+  return String(value) as WidgetId
 }

@@ -1,12 +1,12 @@
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
+import type { LinkEndpointNodeId } from '@/lib/litegraph/src/utils/nodeId'
 
 export interface NodeLike {
-  id: NodeId
+  id: LinkEndpointNodeId
 
   canConnectTo(
     node: NodeLike,

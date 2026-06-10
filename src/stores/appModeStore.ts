@@ -90,7 +90,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function upgradeAndValidateInput(
-    input: LinearInput,
+    input: [WidgetId | NodeId, string, InputWidgetConfig?],
     rootGraph: NonNullable<typeof app.rootGraph>
   ): LinearInput | null {
     const [storedId, widgetName, config] = input

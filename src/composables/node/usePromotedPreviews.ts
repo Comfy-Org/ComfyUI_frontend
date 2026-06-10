@@ -1,6 +1,7 @@
 import type { MaybeRefOrGetter } from 'vue'
 import { computed, toValue } from 'vue'
 
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { UUID } from '@/utils/uuid'
@@ -43,7 +44,7 @@ export function usePromotedPreviews(
   ): string[] | undefined {
     const locatorId = createNodeLocatorId(
       leafHost.subgraph.id,
-      leafSourceNodeId
+      asNodeId(leafSourceNodeId)
     )
     const reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
     const reactivePreviews = nodeOutputStore.nodePreviewImages[locatorId]

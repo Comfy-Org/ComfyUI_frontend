@@ -8,6 +8,7 @@ import type {
   ISlotType
 } from '@/lib/litegraph/src/litegraph'
 import {
+  asNodeId,
   LGraph,
   LGraphNode,
   LLink,
@@ -74,7 +75,7 @@ const test = baseTest.extend<TestContext>({
   createTestNode: async ({ network }, use) => {
     await use((id: number): LGraphNode => {
       const node = new LGraphNode('test')
-      node.id = id
+      node.id = asNodeId(id)
       network.add(node)
       return node
     })
@@ -87,7 +88,14 @@ const test = baseTest.extend<TestContext>({
         targetId: number,
         slotType: ISlotType = 'number'
       ): LLink => {
-        const link = new LLink(id, slotType, sourceId, 0, targetId, 0)
+        const link = new LLink(
+          id,
+          slotType,
+          asNodeId(sourceId),
+          0,
+          asNodeId(targetId),
+          0
+        )
         network.links.set(link.id, link)
         return link
       }
@@ -121,7 +129,7 @@ describe('LinkConnector', () => {
       sourceNode.addOutput('out', slotType)
       targetNode.addInput('in', slotType)
 
-      const link = new LLink(1, slotType, 1, 0, 2, 0)
+      const link = new LLink(1, slotType, asNodeId(1), 0, asNodeId(2), 0)
       network.links.set(link.id, link)
       targetNode.inputs[0].link = link.id
 
@@ -158,7 +166,7 @@ describe('LinkConnector', () => {
       sourceNode.addOutput('out', slotType)
       targetNode.addInput('in', slotType)
 
-      const link = new LLink(1, slotType, 1, 0, 2, 0)
+      const link = new LLink(1, slotType, asNodeId(1), 0, asNodeId(2), 0)
       network.links.set(link.id, link)
       sourceNode.outputs[0].links = [link.id]
 
@@ -261,7 +269,7 @@ describe('LinkConnector', () => {
       connector.state.multi = true
       connector.state.draggingExistingLinks = true
 
-      const link = new LLink(1, 'number', 1, 0, 2, 0)
+      const link = new LLink(1, 'number', asNodeId(1), 0, asNodeId(2), 0)
       link._dragging = true
       connector.inputLinks.push(link)
 
@@ -302,7 +310,7 @@ describe('LinkConnector', () => {
         fromPos: [0, 0],
         fromDirection: LinkDirection.RIGHT,
         toType: 'input',
-        link: new LLink(1, 'number', 1, 0, 2, 0)
+        link: new LLink(1, 'number', asNodeId(1), 0, asNodeId(2), 0)
       } as MovingInputLink
 
       connector.events.dispatch('input-moved', mockRenderLink)
@@ -319,7 +327,7 @@ describe('LinkConnector', () => {
       connector.state.connectingTo = 'input'
       connector.state.multi = true
 
-      const link = new LLink(1, 'number', 1, 0, 2, 0)
+      const link = new LLink(1, 'number', asNodeId(1), 0, asNodeId(2), 0)
       connector.inputLinks.push(link)
 
       const exported = connector.export(network)

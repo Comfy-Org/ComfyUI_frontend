@@ -9,6 +9,8 @@ import type {
 } from '@/composables/graph/useGraphNodeManager'
 import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
+import type { LGraph, NodeId } from '@/lib/litegraph/src/litegraph'
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -33,7 +35,6 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LinkedUpstreamInfo,
   SimplifiedWidget,
@@ -66,7 +67,7 @@ interface ProcessedWidget {
 
 interface WidgetUiCallbacks {
   getTooltipConfig: (widget: SafeWidgetData) => TooltipOptions
-  handleNodeRightClick: (e: PointerEvent, nodeId: string) => void
+  handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
 }
 
 interface ComputeProcessedWidgetsOptions {
@@ -109,7 +110,8 @@ export function hasWidgetError(
   missingModelStore: ReturnType<typeof useMissingModelStore>
 ): boolean {
   const errors = widget.sourceExecutionId
-    ? executionErrorStore.lastNodeErrors?.[widget.sourceExecutionId]?.errors
+    ? executionErrorStore.lastNodeErrors?.[asNodeId(widget.sourceExecutionId)]
+        ?.errors
     : nodeErrors?.errors
   return (
     !!errors?.some((e) => e.extra_info?.input_name === widget.name) ||
@@ -122,7 +124,7 @@ export function hasWidgetError(
 
 export function getWidgetIdentity(
   widget: SafeWidgetData,
-  nodeId: string | number | undefined,
+  nodeId: string | undefined,
   index: number
 ): {
   dedupeIdentity?: string
@@ -180,7 +182,7 @@ export function computeProcessedWidgets({
       ? getExecutionIdFromNodeData(rootGraph, nodeData)
       : String(nodeData.id ?? '')
 
-  const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeExecId]
+  const nodeErrors = executionErrorStore.lastNodeErrors?.[asNodeId(nodeExecId)]
 
   const nodeId = nodeData.id
   const { widgets } = nodeData
@@ -204,7 +206,7 @@ export function computeProcessedWidgets({
         ? widgetValueStore.getWidget(
             widgetId(
               graphId,
-              String(stripGraphPrefix(widget.nodeId ?? nodeId ?? '')),
+              stripGraphPrefix(widget.nodeId ?? nodeId ?? ''),
               widget.name
             )
           )
@@ -325,7 +327,7 @@ export function computeProcessedWidgets({
         e,
         widget.name,
         widget.nodeId !== undefined
-          ? String(stripGraphPrefix(widget.nodeId))
+          ? stripGraphPrefix(widget.nodeId)
           : undefined
       )
     }

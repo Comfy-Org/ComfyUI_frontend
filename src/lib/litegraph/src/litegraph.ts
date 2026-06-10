@@ -120,6 +120,14 @@ export { BadgePosition, LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
 export { LGraphGroup, type GroupId } from './LGraphGroup'
 export { LGraphNode, type NodeId } from './LGraphNode'
+export {
+  asNodeId,
+  isNumericNodeId,
+  isUnassignedNodeId,
+  nodeIdToNumber,
+  UNASSIGNED_NODE_ID
+} from './utils/nodeId'
+export type { LinkEndpointNodeId, NodeIdInput } from './utils/nodeId'
 export { LLink } from './LLink'
 export { createBounds } from './measure'
 export { Reroute, type RerouteId } from './Reroute'

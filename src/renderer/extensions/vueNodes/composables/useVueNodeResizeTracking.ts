@@ -14,6 +14,7 @@ import { useDocumentVisibility } from '@vueuse/core'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
@@ -64,7 +65,7 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
       dataAttribute: 'nodeId',
       updateHandler: (updates) => {
         const nodeUpdates = updates.map(({ id, bounds }) => ({
-          nodeId: id as NodeId,
+          nodeId: asNodeId(id),
           bounds
         }))
         layoutStore.batchUpdateNodeBounds(nodeUpdates)
@@ -131,7 +132,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     // slot-layout pipeline and skip bounds processing entirely.
     const widgetsGridParentNodeId = element.dataset.widgetsGridNodeId
     if (widgetsGridParentNodeId) {
-      scheduleSlotLayoutSync(widgetsGridParentNodeId as NodeId)
+      scheduleSlotLayoutSync(widgetsGridParentNodeId)
       continue
     }
 
@@ -150,7 +151,7 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     if (!elementType || !elementId) continue
     const nodeId: NodeId | undefined =
-      elementType === 'node' ? elementId : undefined
+      elementType === 'node' ? asNodeId(elementId) : undefined
 
     // Use borderBoxSize when available; fall back to contentRect for older engines/tests
     // Border box is the border included FULL wxh DOM value.

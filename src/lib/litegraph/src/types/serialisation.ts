@@ -8,6 +8,7 @@ import type {
 } from '../LGraph'
 import type { GroupId, IGraphGroupFlags } from '../LGraphGroup'
 import type { NodeId, NodeProperty } from '../LGraphNode'
+import type { LinkEndpointNodeId } from '../utils/nodeId'
 import type { LinkId, SerialisedLLinkArray } from '../LLink'
 import type { FloatingRerouteSlot, RerouteId } from '../Reroute'
 import type {
@@ -125,7 +126,7 @@ export interface ExportedSubgraphInstance extends NodeSubgraphSharedProps {
  * Maintained for backwards compat
  */
 export interface ISerialisedGraph extends BaseExportedGraph {
-  last_node_id: NodeId
+  last_node_id: number
   last_link_id: LinkId
   nodes: ISerialisedNode[]
   links: SerialisedLLinkArray[]
@@ -211,11 +212,11 @@ export interface SerialisableLLink {
   /** Link ID */
   id: LinkId
   /** Output node ID */
-  origin_id: NodeId
+  origin_id: LinkEndpointNodeId
   /** Output slot index */
   origin_slot: number
   /** Input node ID */
-  target_id: NodeId
+  target_id: LinkEndpointNodeId
   /** Input slot index */
   target_slot: number
   /** Data type of the link */
@@ -225,7 +226,7 @@ export interface SerialisableLLink {
 }
 
 export interface ExportedSubgraphIONode {
-  id: NodeId
+  id: LinkEndpointNodeId
   bounding: [number, number, number, number]
   pinned?: boolean
 }

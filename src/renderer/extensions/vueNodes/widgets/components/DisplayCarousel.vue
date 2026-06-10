@@ -165,6 +165,7 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { resolveNode } from '@/utils/litegraphUtil'
@@ -341,7 +342,7 @@ function selectFromGrid(index: number) {
 
 function handleEditMask() {
   if (!nodeId) return
-  const node = resolveNode(Number(nodeId))
+  const node = resolveNode(asNodeId(nodeId))
   if (!node) return
   maskEditor.openMaskEditor(node)
 }
@@ -362,7 +363,7 @@ function handleDownload() {
 
 function handleRemove() {
   if (!nodeId) return
-  const node = resolveNode(Number(nodeId))
+  const node = resolveNode(asNodeId(nodeId))
   nodeOutputStore.removeNodeOutputs(nodeId)
   if (node) {
     node.imgs = undefined

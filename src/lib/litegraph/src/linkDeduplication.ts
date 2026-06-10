@@ -51,7 +51,7 @@ export function purgeOrphanedLinks(
     const link = links.get(id)
     if (!link) continue
 
-    const originNode = getNodeById(link.origin_id)
+    const originNode = getNodeById(link.origin_id as NodeId)
     const output = originNode?.outputs?.[link.origin_slot]
     if (output?.links) {
       for (let i = output.links.length - 1; i >= 0; i--) {

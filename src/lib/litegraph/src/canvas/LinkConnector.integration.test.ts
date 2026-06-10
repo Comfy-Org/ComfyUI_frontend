@@ -8,7 +8,12 @@ import type {
   CanvasPointerEvent,
   RerouteId
 } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
+import {
+  asNodeId,
+  LGraphNode,
+  LLink,
+  LinkConnector
+} from '@/lib/litegraph/src/litegraph'
 
 import { test as baseTest } from '../__fixtures__/testExtensions'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
@@ -59,7 +64,7 @@ const test = baseTest.extend<TestContext>({
   createTestNode: async ({ graph }, use) => {
     await use((id): LGraphNode => {
       const node = new LGraphNode('test')
-      node.id = id
+      node.id = asNodeId(id)
       graph.add(node)
       return node
     })

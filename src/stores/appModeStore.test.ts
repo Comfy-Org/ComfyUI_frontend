@@ -6,16 +6,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import {
+  asNodeId,
   LGraphNode as LGraphNodeClass,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, NodeIdInput } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { widgetId } from '@/types/widgetId'
+import { asWidgetId, widgetId } from '@/types/widgetId'
 import type {
   InputWidgetConfig,
   LinearInput,
@@ -47,7 +48,7 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 const mockResolveNode = vi.hoisted(() =>
-  vi.fn<(id: NodeId) => LGraphNode | undefined>(() => undefined)
+  vi.fn<(id: NodeIdInput) => LGraphNode | undefined>(() => undefined)
 )
 vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -107,7 +108,7 @@ function createBuilderWorkflowWithOutputs(
   workflow.changeTracker!.activeState!.extra ??= {}
   workflow.changeTracker.activeState.extra.linearData = {
     inputs: [],
-    outputs: [1]
+    outputs: [asNodeId(1)]
   }
   return workflow
 }
@@ -160,7 +161,7 @@ describe('appModeStore', () => {
     ChangeTracker.isLoadingGraph = false
     mockResolveNode.mockReturnValue(undefined)
     mockSettings.reset()
-    vi.mocked(app.rootGraph).nodes = [{ id: 1 } as LGraphNode]
+    vi.mocked(app.rootGraph).nodes = [{ id: asNodeId(1) } as LGraphNode]
     workflowStore = useWorkflowStore()
     store = useAppModeStore()
     vi.clearAllMocks()
@@ -189,7 +190,7 @@ describe('appModeStore', () => {
 
     it('navigates to builder:inputs when in graph mode with outputs', () => {
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
-      store.selectedOutputs.push(1)
+      store.selectedOutputs.push(asNodeId(1))
 
       store.enterBuilder()
 
@@ -230,18 +231,18 @@ describe('appModeStore', () => {
       workflowStore.activeWorkflow = createWorkflowWithLinearData(
         'graph',
         [
-          [1, 'seed'],
-          [99, 'steps']
+          [asWidgetId(1), 'seed'],
+          [asWidgetId(99), 'steps']
         ],
-        [1, 99]
+        [asNodeId(1), asNodeId(99)]
       )
-      store.selectedInputs = [[42, 'prompt']]
-      store.selectedOutputs = [42]
+      store.selectedInputs = [[asWidgetId(42), 'prompt']]
+      store.selectedOutputs = [asNodeId(42)]
 
       store.enterBuilder()
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
-      expect(store.selectedOutputs).toEqual([1])
+      expect(store.selectedOutputs).toEqual([asNodeId(1)])
     })
   })
 
@@ -265,7 +266,7 @@ describe('appModeStore', () => {
     })
 
     it('onEnterBuilder enters builder when nodes exist', () => {
-      const options = getDialogOptions([{ id: 1 } as LGraphNode])
+      const options = getDialogOptions([{ id: asNodeId(1) } as LGraphNode])
 
       options.onEnterBuilder()
 
@@ -294,18 +295,18 @@ describe('appModeStore', () => {
       workflowStore.activeWorkflow = createWorkflowWithLinearData(
         'builder:inputs',
         [
-          [1, 'seed'],
-          [99, 'steps']
+          [asWidgetId(1), 'seed'],
+          [asWidgetId(99), 'steps']
         ],
-        [1, 99]
+        [asNodeId(1), asNodeId(99)]
       )
-      store.selectedInputs = [[42, 'prompt']]
-      store.selectedOutputs = [42]
+      store.selectedInputs = [[asWidgetId(42), 'prompt']]
+      store.selectedOutputs = [asNodeId(42)]
 
       store.exitBuilder()
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
-      expect(store.selectedOutputs).toEqual([1])
+      expect(store.selectedOutputs).toEqual([asNodeId(1)])
       expect(workflowStore.activeWorkflow!.activeMode).toBe('graph')
     })
   })
@@ -324,8 +325,8 @@ describe('appModeStore', () => {
 
       store.loadSelections({
         inputs: [
-          [1, 'prompt'],
-          [99, 'width']
+          [asWidgetId(1), 'prompt'],
+          [asWidgetId(99), 'width']
         ]
       })
 
@@ -340,7 +341,7 @@ describe('appModeStore', () => {
       )
 
       store.loadSelections({
-        inputs: [[1, 'prompt', { height: 150 }]]
+        inputs: [[asWidgetId(1), 'prompt', { height: 150 }]]
       })
 
       expect(store.selectedInputs).toEqual([
@@ -369,8 +370,8 @@ describe('appModeStore', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       store.loadSelections({
         inputs: [
-          [1, 'prompt'],
-          [1, 'deleted_widget']
+          [asWidgetId(1), 'prompt'],
+          [asWidgetId(1), 'deleted_widget']
         ]
       })
 
@@ -388,9 +389,9 @@ describe('appModeStore', () => {
         id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
       )
 
-      store.loadSelections({ outputs: [1, 99] })
+      store.loadSelections({ outputs: [asNodeId(1), asNodeId(99)] })
 
-      expect(store.selectedOutputs).toEqual([1])
+      expect(store.selectedOutputs).toEqual([asNodeId(1)])
     })
 
     it('reloads selections on configured event', async () => {
@@ -400,11 +401,11 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).nodes = []
       vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
       mockResolveNode.mockReturnValue(undefined)
-      const inputs: [number, string][] = [[1, 'seed']]
+      const inputs: LinearInput[] = [[asWidgetId(1), 'seed']]
       workflowStore.activeWorkflow = createWorkflowWithLinearData(
         'app',
         inputs,
-        [1]
+        [asNodeId(1)]
       )
       store.loadSelections({ inputs })
       await nextTick()
@@ -424,13 +425,13 @@ describe('appModeStore', () => {
       await nextTick()
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
-      expect(store.selectedOutputs).toEqual([1])
+      expect(store.selectedOutputs).toEqual([asNodeId(1)])
     })
 
     it('hasOutputs is false when all output nodes are deleted', () => {
       mockResolveNode.mockReturnValue(undefined)
 
-      store.loadSelections({ outputs: [10, 20] })
+      store.loadSelections({ outputs: [asNodeId(10), asNodeId(20)] })
 
       expect(store.selectedOutputs).toEqual([])
       expect(store.hasOutputs).toBe(false)
@@ -439,16 +440,16 @@ describe('appModeStore', () => {
 
   describe('loadSelections edge cases', () => {
     it('clears existing selections on undefined or empty data', () => {
-      store.selectedInputs = [[1, 'seed']]
-      store.selectedOutputs = [1]
+      store.selectedInputs = [[asWidgetId(1), 'seed']]
+      store.selectedOutputs = [asNodeId(1)]
 
       store.loadSelections(undefined)
 
       expect(store.selectedInputs).toEqual([])
       expect(store.selectedOutputs).toEqual([])
 
-      store.selectedInputs = [[1, 'seed']]
-      store.selectedOutputs = [1]
+      store.selectedInputs = [[asWidgetId(1), 'seed']]
+      store.selectedOutputs = [asNodeId(1)]
 
       store.loadSelections({})
 
@@ -472,12 +473,12 @@ describe('appModeStore', () => {
       try {
         expect(
           store.pruneLinearData({
-            inputs: [[1, 'seed']],
-            outputs: [1]
+            inputs: [[asWidgetId(1), 'seed']],
+            outputs: [asNodeId(1)]
           })
         ).toEqual({
-          inputs: [[1, 'seed']],
-          outputs: [1]
+          inputs: [[asWidgetId(1), 'seed']],
+          outputs: [asNodeId(1)]
         })
       } finally {
         Object.defineProperty(app, 'rootGraph', {
@@ -500,14 +501,14 @@ describe('appModeStore', () => {
 
       store.loadSelections({
         inputs: [
-          [1, 'seed'],
-          [999, 'steps']
+          [asWidgetId(1), 'seed'],
+          [asWidgetId(999), 'steps']
         ],
-        outputs: [1, 999]
+        outputs: [asNodeId(1), asNodeId(999)]
       })
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
-      expect(store.selectedOutputs).toEqual([1, 999])
+      expect(store.selectedOutputs).toEqual([asNodeId(1), asNodeId(999)])
     })
 
     it('prunes entries for deleted nodes when not loading', () => {
@@ -521,14 +522,14 @@ describe('appModeStore', () => {
 
       store.loadSelections({
         inputs: [
-          [1, 'seed'],
-          [999, 'steps']
+          [asWidgetId(1), 'seed'],
+          [asWidgetId(999), 'steps']
         ],
-        outputs: [1, 999]
+        outputs: [asNodeId(1), asNodeId(999)]
       })
 
       expect(store.selectedInputs).toEqual([[entitySeed, 'seed']])
-      expect(store.selectedOutputs).toEqual([1])
+      expect(store.selectedOutputs).toEqual([asNodeId(1)])
     })
   })
 
@@ -565,7 +566,10 @@ describe('appModeStore', () => {
       setupNodeWithSeedAndSteps()
       const workflow = createBuilderWorkflow('app')
       workflow.changeTracker.activeState.extra = {
-        linearData: { inputs: [[1, 'steps']], outputs: [1] }
+        linearData: {
+          inputs: [[asWidgetId(1), 'steps']],
+          outputs: [asNodeId(1)]
+        }
       }
       workflow.changeTracker.initialState = fromAny({
         ...workflow.changeTracker.activeState,
@@ -578,7 +582,7 @@ describe('appModeStore', () => {
       store.resetSelectedToWorkflow()
 
       expect(store.selectedInputs).toEqual([[entitySteps, 'steps']])
-      expect(store.selectedOutputs).toEqual([1])
+      expect(store.selectedOutputs).toEqual([asNodeId(1)])
     })
   })
 
@@ -587,12 +591,12 @@ describe('appModeStore', () => {
       workflowStore.activeWorkflow = createBuilderWorkflow()
       await nextTick()
 
-      store.selectedOutputs.push(1)
+      store.selectedOutputs.push(asNodeId(1))
       await nextTick()
 
       expect(app.rootGraph.extra.linearData).toEqual({
         inputs: [],
-        outputs: [1]
+        outputs: [asNodeId(1)]
       })
     })
 
@@ -600,7 +604,7 @@ describe('appModeStore', () => {
       workflowStore.activeWorkflow = createBuilderWorkflow('graph')
       await nextTick()
 
-      store.selectedOutputs.push(1)
+      store.selectedOutputs.push(asNodeId(1))
       await nextTick()
 
       expect(app.rootGraph.extra.linearData).toBeUndefined()
@@ -617,7 +621,7 @@ describe('appModeStore', () => {
       Object.defineProperty(app, 'rootGraph', { value: null, writable: true })
 
       try {
-        store.selectedOutputs.push(1)
+        store.selectedOutputs.push(asNodeId(1))
         await nextTick()
       } finally {
         Object.defineProperty(app, 'rootGraph', {
@@ -635,7 +639,7 @@ describe('appModeStore', () => {
       await nextTick()
       vi.mocked(workflow.changeTracker!.captureCanvasState).mockClear()
 
-      store.selectedInputs.push([42, 'prompt'])
+      store.selectedInputs.push([asWidgetId(42), 'prompt'])
       await nextTick()
 
       expect(workflow.changeTracker!.captureCanvasState).toHaveBeenCalled()
@@ -644,7 +648,7 @@ describe('appModeStore', () => {
     it('calls captureCanvasState when input is deselected', async () => {
       const workflow = createBuilderWorkflow()
       workflowStore.activeWorkflow = workflow
-      store.selectedInputs.push([42, 'prompt'])
+      store.selectedInputs.push([asWidgetId(42), 'prompt'])
       await nextTick()
       vi.mocked(workflow.changeTracker!.captureCanvasState).mockClear()
 
@@ -658,11 +662,11 @@ describe('appModeStore', () => {
       workflowStore.activeWorkflow = createBuilderWorkflow()
       await nextTick()
 
-      store.selectedInputs.push([42, 'prompt'])
+      store.selectedInputs.push([asWidgetId(42), 'prompt'])
       await nextTick()
 
       expect(app.rootGraph.extra.linearData).toEqual({
-        inputs: [[42, 'prompt']],
+        inputs: [[asWidgetId(42), 'prompt']],
         outputs: []
       })
     })
@@ -826,7 +830,7 @@ describe('appModeStore', () => {
       subgraph.add(interior)
       subgraph.inputNode.slots[0].connect(interiorInput, interior)
 
-      const host = createTestSubgraphNode(subgraph, { id: 5 })
+      const host = createTestSubgraphNode(subgraph, { id: asNodeId(5) })
       const rootGraph = host.graph as LGraph
       rootGraph.add(host)
       host._internalConfigureAfterSlots()
@@ -840,13 +844,13 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).id = rootGraph.id
       vi.mocked(app.rootGraph).nodes = rootGraph.nodes
       vi.mocked(app.rootGraph).getNodeById = vi.fn(
-        (id: NodeId | null | undefined) => rootGraph.getNodeById(id as NodeId)
+        (id: NodeIdInput | null | undefined) => rootGraph.getNodeById(id)
       )
 
       expect(rootGraph.getNodeById(interior.id)).toBeUndefined()
 
       const result = store.pruneLinearData({
-        inputs: [[interior.id, sourceWidgetName, { height: 120 }]],
+        inputs: [[asWidgetId(interior.id), sourceWidgetName, { height: 120 }]],
         outputs: []
       })
 
@@ -881,12 +885,12 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [rootNode, hostNode]
       vi.mocked(app.rootGraph).getNodeById = vi.fn(
-        (id: NodeId | null | undefined) =>
+        (id: NodeIdInput | null | undefined) =>
           id == sourceNodeId ? rootNode : id == hostId ? hostNode : null
       )
 
       const result = store.pruneLinearData({
-        inputs: [[sourceNodeId, sourceWidgetName, { height: 120 }]],
+        inputs: [[asWidgetId(sourceNodeId), sourceWidgetName, { height: 120 }]],
         outputs: []
       })
 
@@ -902,7 +906,7 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
 
       const result = store.pruneLinearData({
-        inputs: [[42 as NodeId, 'widget-name', { height: 42 }]],
+        inputs: [[asWidgetId(42), 'widget-name', { height: 42 }]],
         outputs: []
       })
 
@@ -910,7 +914,7 @@ describe('appModeStore', () => {
       expect(warnSpy).toHaveBeenCalledWith(
         expect.stringContaining('legacy selectedInput tuple'),
         expect.objectContaining({
-          storedId: 42,
+          storedId: asWidgetId(42),
           widgetName: 'widget-name'
         })
       )
@@ -932,11 +936,11 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [hostNode]
       vi.mocked(app.rootGraph).getNodeById = vi.fn(
-        (id: NodeId | null | undefined) => (id == hostId ? hostNode : null)
+        (id: NodeIdInput | null | undefined) => (id == hostId ? hostNode : null)
       )
 
       const result = store.pruneLinearData({
-        inputs: [[hostLocator, 'subgraph_input_name']],
+        inputs: [[asWidgetId(hostLocator), 'subgraph_input_name']],
         outputs: []
       })
 

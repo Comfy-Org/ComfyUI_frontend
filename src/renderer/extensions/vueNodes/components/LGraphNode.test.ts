@@ -7,6 +7,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
@@ -152,7 +153,7 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
   })
 }
 const mockNodeData: VueNodeData = {
-  id: 'test-node-123',
+  id: asNodeId('test-node-123'),
   title: 'Test Node',
   type: 'TestNode',
   mode: 0,
@@ -166,7 +167,7 @@ const mockNodeData: VueNodeData = {
 
 const mockRerouteNodeData: VueNodeData = {
   ...mockNodeData,
-  id: 'reroute-node-1',
+  id: asNodeId('reroute-node-1'),
   title: '',
   type: 'Reroute',
   titleMode: TitleMode.NO_TITLE

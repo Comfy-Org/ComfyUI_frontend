@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import {
   buildSubgraphExecutionPaths,
@@ -7,7 +8,7 @@ import {
 } from '@/platform/workflow/core/utils/workflowFlattening'
 
 function node(id: number, type: string): FlattenableWorkflowNode {
-  return { id, type }
+  return { id: asNodeId(id), type }
 }
 
 function subgraphDef(
@@ -101,7 +102,7 @@ describe('flattenWorkflowNodes', () => {
     })
 
     expect(result).toHaveLength(2)
-    expect(result.map((n) => n.id)).toEqual([1, 2])
+    expect(result.map((n) => n.id)).toEqual(['1', '2'])
   })
 
   it('returns empty array when nodes is undefined', () => {
@@ -120,7 +121,7 @@ describe('flattenWorkflowNodes', () => {
     })
 
     expect(result).toHaveLength(3)
-    expect(result.map((n) => n.id)).toEqual([5, '5:10', '5:20'])
+    expect(result.map((n) => n.id)).toEqual(['5', '5:10', '5:20'])
   })
 
   it('skips malformed subgraph definitions', () => {
@@ -139,7 +140,7 @@ describe('flattenWorkflowNodes', () => {
       }
     })
 
-    expect(result.map((n) => n.id)).toEqual([5])
+    expect(result.map((n) => n.id)).toEqual(['5'])
   })
 
   it('skips malformed nested subgraph definitions', () => {
@@ -154,7 +155,7 @@ describe('flattenWorkflowNodes', () => {
       }
     })
 
-    expect(result.map((n) => n.id)).toEqual([5, '5:10'])
+    expect(result.map((n) => n.id)).toEqual(['5', '5:10'])
   })
 
   it('prefixes nested subgraph nodes with full execution path', () => {
@@ -167,7 +168,7 @@ describe('flattenWorkflowNodes', () => {
       }
     })
 
-    expect(result.map((n) => n.id)).toEqual([5, '5:10', '5:10:3'])
+    expect(result.map((n) => n.id)).toEqual(['5', '5:10', '5:10:3'])
   })
 
   it('does not clone phantom nodes from self-referential subgraphs', () => {
@@ -179,7 +180,7 @@ describe('flattenWorkflowNodes', () => {
       }
     })
 
-    expect(result.map((n) => n.id)).toEqual([5, '5:70'])
+    expect(result.map((n) => n.id)).toEqual(['5', '5:70'])
   })
 
   it('does not clone phantom nodes from mutually cyclic subgraphs', () => {
@@ -192,6 +193,6 @@ describe('flattenWorkflowNodes', () => {
       }
     })
 
-    expect(result.map((n) => n.id)).toEqual([5, '5:70', '5:70:80'])
+    expect(result.map((n) => n.id)).toEqual(['5', '5:70', '5:70:80'])
   })
 })

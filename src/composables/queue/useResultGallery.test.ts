@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 
@@ -14,7 +15,7 @@ const createResultItem = (
     filename: url,
     subfolder: '',
     type: 'output',
-    nodeId: 'node-1',
+    nodeId: asNodeId('node-1'),
     mediaType: supportsPreview ? 'images' : 'unknown'
   })
   // Override url getter for test matching

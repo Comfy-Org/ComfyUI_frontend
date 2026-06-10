@@ -1,4 +1,5 @@
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LinkEndpointNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import {
@@ -37,13 +38,13 @@ export class FloatingRenderLink implements RenderLink {
   readonly fromDirection: LinkDirection
   readonly fromSlotIndex: SlotIndex
 
-  readonly outputNodeId: NodeId = -1
+  readonly outputNodeId: LinkEndpointNodeId = -1
   readonly outputNode?: LGraphNode
   readonly outputSlot?: INodeOutputSlot
   readonly outputIndex: number = -1
   readonly outputPos?: Point
 
-  readonly inputNodeId: NodeId = -1
+  readonly inputNodeId: LinkEndpointNodeId = -1
   readonly inputNode?: LGraphNode
   readonly inputSlot?: INodeInputSlot
   readonly inputIndex: number = -1

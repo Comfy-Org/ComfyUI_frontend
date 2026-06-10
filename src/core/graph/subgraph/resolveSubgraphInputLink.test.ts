@@ -4,7 +4,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { resolveSubgraphInputLink } from '@/core/graph/subgraph/resolveSubgraphInputLink'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, asNodeId } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
@@ -30,7 +30,7 @@ function createSubgraphSetup(inputName: string): {
   const subgraph = createTestSubgraph({
     inputs: [{ name: inputName, type: '*' }]
   })
-  const subgraphNode = createTestSubgraphNode(subgraph, { id: 1 })
+  const subgraphNode = createTestSubgraphNode(subgraph, { id: asNodeId(1) })
   return { subgraph, subgraphNode }
 }
 

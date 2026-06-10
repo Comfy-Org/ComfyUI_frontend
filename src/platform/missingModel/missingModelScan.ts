@@ -10,6 +10,7 @@ import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
@@ -181,7 +182,7 @@ function scanAssetWidget(
   if (!isModelFileName(value)) return null
 
   return {
-    nodeId: executionId,
+    nodeId: asNodeId(executionId),
     nodeType: node.type,
     widgetName: widget.name,
     isAssetSupported: true,
@@ -207,7 +208,7 @@ function scanComboWidget(
   const inOptions = options.includes(value)
 
   return {
-    nodeId: executionId,
+    nodeId: asNodeId(executionId),
     nodeType: node.type,
     widgetName: widget.name,
     isAssetSupported: nodeIsAssetSupported,

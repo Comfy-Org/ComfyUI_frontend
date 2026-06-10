@@ -4,7 +4,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import {
   createTestSubgraph,
@@ -23,7 +23,7 @@ vi.mock('@/services/litegraphService', () => ({
 }))
 
 function createHostNode(id: number): SubgraphNode {
-  return createTestSubgraphNode(createTestSubgraph(), { id })
+  return createTestSubgraphNode(createTestSubgraph(), { id: asNodeId(id) })
 }
 
 function addNodeToHost(host: SubgraphNode, title: string): LGraphNode {
@@ -71,7 +71,9 @@ describe('resolveConcretePromotedWidget', () => {
     innerSubgraph.add(leaf)
     innerSubgraph.inputNode.slots[0].connect(leafInput, leaf)
 
-    const innerNode = createTestSubgraphNode(innerSubgraph, { id: 11 })
+    const innerNode = createTestSubgraphNode(innerSubgraph, {
+      id: asNodeId(11)
+    })
 
     const outerSubgraph = createTestSubgraph({
       inputs: [{ name: 'y', type: '*' }]
@@ -80,7 +82,9 @@ describe('resolveConcretePromotedWidget', () => {
     innerNode._internalConfigureAfterSlots()
     outerSubgraph.inputNode.slots[0].connect(innerNode.inputs[0], innerNode)
 
-    const outerNode = createTestSubgraphNode(outerSubgraph, { id: 22 })
+    const outerNode = createTestSubgraphNode(outerSubgraph, {
+      id: asNodeId(22)
+    })
 
     const result = resolveConcretePromotedWidget(
       outerNode,
@@ -129,13 +133,13 @@ describe('resolveConcretePromotedWidget', () => {
     for (let index = 0; index < subgraphs.length - 1; index++) {
       const current = subgraphs[index]
       const next = subgraphs[index + 1]
-      const nextNode = createTestSubgraphNode(next, { id: index + 1 })
+      const nextNode = createTestSubgraphNode(next, { id: asNodeId(index + 1) })
       current.add(nextNode)
       nextNode._internalConfigureAfterSlots()
       current.inputNode.slots[0].connect(nextNode.inputs[0], nextNode)
     }
 
-    const host = createTestSubgraphNode(subgraphs[0], { id: 200 })
+    const host = createTestSubgraphNode(subgraphs[0], { id: asNodeId(200) })
 
     const result = resolveConcretePromotedWidget(host, '1', 'x')
     expect(result).toEqual({

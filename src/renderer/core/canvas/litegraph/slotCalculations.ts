@@ -148,7 +148,7 @@ export function getSlotPosition(
     }
 
     // Fallback: derive position from node layout tree and slot model
-    const nodeLayout = layoutStore.getNodeLayoutRef(String(node.id)).value
+    const nodeLayout = layoutStore.getNodeLayoutRef(node.id).value
 
     if (nodeLayout) {
       // Create context from layout tree data

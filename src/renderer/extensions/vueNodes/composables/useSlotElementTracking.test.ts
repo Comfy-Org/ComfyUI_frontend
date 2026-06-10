@@ -4,7 +4,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph, asNodeId } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -40,7 +40,7 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
   })
 }))
 
-const NODE_ID = 'test-node'
+const NODE_ID = asNodeId('test-node')
 const SLOT_INDEX = 0
 
 function createTestSetup(type: 'input' | 'output') {

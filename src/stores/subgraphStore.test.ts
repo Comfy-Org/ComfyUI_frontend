@@ -7,6 +7,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
@@ -158,7 +159,7 @@ describe('useSubgraphStore', () => {
   it('should return a deep copy from getBlueprint so mutations do not corrupt the cache', async () => {
     await mockFetch({ 'test.json': mockGraph })
     const first = store.getBlueprint(store.typePrefix + 'test')
-    first.nodes[0].id = -1
+    first.nodes[0].id = asNodeId(-1)
     first.definitions!.subgraphs![0].id = 'corrupted'
 
     const second = store.getBlueprint(store.typePrefix + 'test')

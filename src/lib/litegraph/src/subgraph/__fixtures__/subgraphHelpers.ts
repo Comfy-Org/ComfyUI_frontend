@@ -15,6 +15,7 @@ import type {
   UUID
 } from '@/lib/litegraph/src/litegraph'
 import {
+  asNodeId,
   LGraph,
   LGraphNode,
   LiteGraph,
@@ -250,7 +251,7 @@ export function createTestSubgraphNode(
   const parentGraph = options.parentGraph ?? subgraph.rootGraph
 
   const instanceData: ExportedSubgraphInstance = {
-    id: options.id ?? parentGraph.state.lastNodeId + 1,
+    id: options.id ?? asNodeId(parentGraph.state.lastNodeId + 1),
     type: subgraph.id,
     pos: options.pos || [100, 100],
     size: options.size || [200, 100],
@@ -286,7 +287,9 @@ export function setupComplexPromotionFixture(): {
       node.type = FIXTURE_STRING_CONCAT_TYPE
   }
 
-  const hostNodeData = fixture.nodes.find((node) => node.id === 21)
+  const hostNodeData = fixture.nodes.find(
+    (node) => asNodeId(node.id) === asNodeId(21)
+  )
   if (!hostNodeData)
     throw new Error('Expected fixture to contain subgraph instance node id 21')
 

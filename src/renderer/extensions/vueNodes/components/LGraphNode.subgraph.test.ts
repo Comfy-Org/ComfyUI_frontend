@@ -11,6 +11,7 @@ import type {
   LGraphNode as LGLGraphNode,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -76,7 +77,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     id: string,
     subgraphId?: string
   ): VueNodeData => ({
-    id,
+    id: asNodeId(id),
     title: 'Test Node',
     type: 'TestNode',
     mode: 0,

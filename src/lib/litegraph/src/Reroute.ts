@@ -2,7 +2,8 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
-import type { LGraphNode, NodeId } from './LGraphNode'
+import type { LGraphNode } from './LGraphNode'
+import type { LinkEndpointNodeId } from './utils/nodeId'
 import { LLink } from './LLink'
 import type { LinkId } from './LLink'
 import type {
@@ -182,7 +183,7 @@ export class Reroute
   }
 
   /** @inheritdoc */
-  get origin_id(): NodeId | undefined {
+  get origin_id(): LinkEndpointNodeId | undefined {
     return this.firstLink?.origin_id
   }
 

@@ -1,4 +1,5 @@
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 
 /**
  * Workflow with two subgraph definitions whose internal nodes already
@@ -20,7 +21,7 @@ export const uniqueSubgraphNodeIds = {
   },
   nodes: [
     {
-      id: 102,
+      id: asNodeId(102),
       type: '11111111-1111-4111-8111-111111111111',
       pos: [0, 0],
       size: [200, 100],
@@ -30,7 +31,7 @@ export const uniqueSubgraphNodeIds = {
       properties: { proxyWidgets: [['10', 'seed']] }
     },
     {
-      id: 103,
+      id: asNodeId(103),
       type: '22222222-2222-4222-8222-222222222222',
       pos: [300, 0],
       size: [200, 100],
@@ -58,10 +59,10 @@ export const uniqueSubgraphNodeIds = {
         outputNode: { id: -20, bounding: [400, 100, 140, 126] },
         inputs: [],
         outputs: [],
-        widgets: [{ id: 10, name: 'seed' }],
+        widgets: [{ id: asNodeId(10), name: 'seed' }],
         nodes: [
           {
-            id: 10,
+            id: asNodeId(10),
             type: 'dummy',
             pos: [0, 0],
             size: [100, 50],
@@ -70,7 +71,7 @@ export const uniqueSubgraphNodeIds = {
             mode: 0
           },
           {
-            id: 11,
+            id: asNodeId(11),
             type: 'dummy',
             pos: [0, 0],
             size: [100, 50],
@@ -79,7 +80,7 @@ export const uniqueSubgraphNodeIds = {
             mode: 0
           },
           {
-            id: 12,
+            id: asNodeId(12),
             type: 'dummy',
             pos: [0, 0],
             size: [100, 50],
@@ -91,9 +92,9 @@ export const uniqueSubgraphNodeIds = {
         links: [
           {
             id: 1,
-            origin_id: 10,
+            origin_id: asNodeId(10),
             origin_slot: 0,
-            target_id: 11,
+            target_id: asNodeId(11),
             target_slot: 0,
             type: 'number'
           }
@@ -116,10 +117,10 @@ export const uniqueSubgraphNodeIds = {
         outputNode: { id: -20, bounding: [400, 100, 140, 126] },
         inputs: [],
         outputs: [],
-        widgets: [{ id: 21, name: 'prompt' }],
+        widgets: [{ id: asNodeId(21), name: 'prompt' }],
         nodes: [
           {
-            id: 20,
+            id: asNodeId(20),
             type: 'dummy',
             pos: [0, 0],
             size: [100, 50],
@@ -128,7 +129,7 @@ export const uniqueSubgraphNodeIds = {
             mode: 0
           },
           {
-            id: 21,
+            id: asNodeId(21),
             type: 'dummy',
             pos: [0, 0],
             size: [100, 50],
@@ -137,7 +138,7 @@ export const uniqueSubgraphNodeIds = {
             mode: 0
           },
           {
-            id: 22,
+            id: asNodeId(22),
             type: 'dummy',
             pos: [0, 0],
             size: [100, 50],
@@ -149,9 +150,9 @@ export const uniqueSubgraphNodeIds = {
         links: [
           {
             id: 2,
-            origin_id: 20,
+            origin_id: asNodeId(20),
             origin_slot: 0,
-            target_id: 22,
+            target_id: asNodeId(22),
             target_slot: 0,
             type: 'string'
           }

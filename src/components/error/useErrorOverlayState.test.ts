@@ -5,6 +5,7 @@ import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useErrorOverlayState } from './useErrorOverlayState'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { NodeError } from '@/schemas/apiSchema'
@@ -99,7 +100,7 @@ describe('useErrorOverlayState', () => {
 
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.lastNodeErrors = {
-      '1': makeNodeError(['Only error'])
+      [asNodeId('1')]: makeNodeError(['Only error'])
     }
     mockAllErrorGroups.value = [
       {
@@ -129,7 +130,7 @@ describe('useErrorOverlayState', () => {
 
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.lastNodeErrors = {
-      '1': makeNodeError(['Required input is missing'])
+      [asNodeId('1')]: makeNodeError(['Required input is missing'])
     }
     mockAllErrorGroups.value = [
       {
@@ -168,7 +169,7 @@ describe('useErrorOverlayState', () => {
 
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.lastNodeErrors = {
-      '1': makeNodeError(['Raw validation error'])
+      [asNodeId('1')]: makeNodeError(['Raw validation error'])
     }
     mockAllErrorGroups.value = [
       {
@@ -207,7 +208,7 @@ describe('useErrorOverlayState', () => {
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.lastExecutionError = {
       prompt_id: 'prompt',
-      node_id: 1,
+      node_id: asNodeId(1),
       node_type: 'KSampler',
       executed: [],
       exception_message: 'CUDA out of memory',
@@ -253,7 +254,7 @@ describe('useErrorOverlayState', () => {
     const missingMediaStore = useMissingMediaStore()
     missingMediaStore.setMissingMedia([
       {
-        nodeId: '1',
+        nodeId: asNodeId('1'),
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
@@ -286,7 +287,7 @@ describe('useErrorOverlayState', () => {
 
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.lastNodeErrors = {
-      '1': makeNodeError(['Only error'])
+      [asNodeId('1')]: makeNodeError(['Only error'])
     }
     executionErrorStore.showErrorOverlay()
     await nextTick()
@@ -300,7 +301,7 @@ describe('useErrorOverlayState', () => {
 
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.lastNodeErrors = {
-      '1': makeNodeError([
+      [asNodeId('1')]: makeNodeError([
         'First error',
         'Second error',
         'Third error',

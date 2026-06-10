@@ -10,6 +10,7 @@ import type { Ref } from 'vue'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -80,7 +81,7 @@ function createSlotLayout(options: {
   const half = size / 2
 
   return {
-    nodeId,
+    nodeId: asNodeId(nodeId),
     index,
     type,
     position: { x: centerCanvas.x, y: centerCanvas.y },
@@ -122,7 +123,7 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node) return
-  const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
+  const nodeLayout = layoutStore.getNodeLayoutRef(asNodeId(nodeId)).value
   if (!nodeLayout) return
 
   // Find the node's DOM element for relative offset measurement.
@@ -228,7 +229,7 @@ function updateNodeSlotsFromCache(nodeId: string) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node) return
-  const nodeLayout = layoutStore.getNodeLayoutRef(nodeId).value
+  const nodeLayout = layoutStore.getNodeLayoutRef(asNodeId(nodeId)).value
   if (!nodeLayout) return
 
   const batch: Array<{ key: string; layout: SlotLayout }> = []
@@ -278,7 +279,7 @@ export function useSlotElementTracking(options: {
         const node = nodeSlotRegistryStore.ensureNode(nodeId)
 
         if (!node.stopWatch) {
-          const layoutRef = layoutStore.getNodeLayoutRef(nodeId)
+          const layoutRef = layoutStore.getNodeLayoutRef(asNodeId(nodeId))
 
           const stopPositionWatch = watch(
             () => layoutRef.value?.position,

@@ -235,7 +235,7 @@ export const useLitegraphService = () => {
    */
   function setupStrokeStyles(node: LGraphNode) {
     node.strokeStyles['running'] = function (this: LGraphNode) {
-      const nodeId = String(this.id)
+      const nodeId = this.id
       const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
       const state =
         useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state

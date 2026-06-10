@@ -1,4 +1,5 @@
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 
 /**
  * Root graph with two nodes (Source, Target) connected by one valid link
@@ -17,7 +18,7 @@ export const duplicateLinksRoot: SerialisableGraph = {
   },
   nodes: [
     {
-      id: 1,
+      id: asNodeId(1),
       type: 'test/DupTestNode',
       pos: [0, 0],
       size: [200, 100],
@@ -29,7 +30,7 @@ export const duplicateLinksRoot: SerialisableGraph = {
       properties: {}
     },
     {
-      id: 2,
+      id: asNodeId(2),
       type: 'test/DupTestNode',
       pos: [300, 0],
       size: [200, 100],
@@ -44,25 +45,25 @@ export const duplicateLinksRoot: SerialisableGraph = {
   links: [
     {
       id: 1,
-      origin_id: 1,
+      origin_id: asNodeId(1),
       origin_slot: 0,
-      target_id: 2,
+      target_id: asNodeId(2),
       target_slot: 0,
       type: 'number'
     },
     {
       id: 2,
-      origin_id: 1,
+      origin_id: asNodeId(1),
       origin_slot: 0,
-      target_id: 2,
+      target_id: asNodeId(2),
       target_slot: 0,
       type: 'number'
     },
     {
       id: 3,
-      origin_id: 1,
+      origin_id: asNodeId(1),
       origin_slot: 0,
-      target_id: 2,
+      target_id: asNodeId(2),
       target_slot: 0,
       type: 'number'
     }
@@ -87,7 +88,7 @@ export const duplicateLinksSlotShift: SerialisableGraph = {
   },
   nodes: [
     {
-      id: 1,
+      id: asNodeId(1),
       type: 'test/DupTestNode',
       pos: [0, 0],
       size: [200, 100],
@@ -99,7 +100,7 @@ export const duplicateLinksSlotShift: SerialisableGraph = {
       properties: {}
     },
     {
-      id: 2,
+      id: asNodeId(2),
       type: 'test/DupTestNode',
       pos: [300, 0],
       size: [200, 100],
@@ -117,17 +118,17 @@ export const duplicateLinksSlotShift: SerialisableGraph = {
   links: [
     {
       id: 1,
-      origin_id: 1,
+      origin_id: asNodeId(1),
       origin_slot: 0,
-      target_id: 2,
+      target_id: asNodeId(2),
       target_slot: 0,
       type: 'number'
     },
     {
       id: 2,
-      origin_id: 1,
+      origin_id: asNodeId(1),
       origin_slot: 0,
-      target_id: 2,
+      target_id: asNodeId(2),
       target_slot: 0,
       type: 'number'
     }
@@ -151,7 +152,7 @@ export const duplicateLinksSubgraph: SerialisableGraph = {
   },
   nodes: [
     {
-      id: 1,
+      id: asNodeId(1),
       type: 'dd111111-1111-4111-8111-111111111111',
       pos: [0, 0],
       size: [200, 100],
@@ -182,7 +183,7 @@ export const duplicateLinksSubgraph: SerialisableGraph = {
         widgets: [],
         nodes: [
           {
-            id: 1,
+            id: asNodeId(1),
             type: 'test/Source',
             pos: [100, 100],
             size: [200, 100],
@@ -194,7 +195,7 @@ export const duplicateLinksSubgraph: SerialisableGraph = {
             properties: {}
           },
           {
-            id: 2,
+            id: asNodeId(2),
             type: 'test/Target',
             pos: [400, 100],
             size: [200, 100],
@@ -210,25 +211,25 @@ export const duplicateLinksSubgraph: SerialisableGraph = {
         links: [
           {
             id: 1,
-            origin_id: 1,
+            origin_id: asNodeId(1),
             origin_slot: 0,
-            target_id: 2,
+            target_id: asNodeId(2),
             target_slot: 0,
             type: 'number'
           },
           {
             id: 2,
-            origin_id: 1,
+            origin_id: asNodeId(1),
             origin_slot: 0,
-            target_id: 2,
+            target_id: asNodeId(2),
             target_slot: 0,
             type: 'number'
           },
           {
             id: 3,
-            origin_id: 1,
+            origin_id: asNodeId(1),
             origin_slot: 0,
-            target_id: 2,
+            target_id: asNodeId(2),
             target_slot: 0,
             type: 'number'
           }

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type {
   ComfyWorkflowJSON,
@@ -233,7 +234,7 @@ describe('missingModelPipeline', () => {
       }
       mockHandles.missingModelStore.missingModelCandidates = [
         {
-          nodeId: '1',
+          nodeId: asNodeId('1'),
           nodeType: 'CheckpointLoaderSimple',
           widgetName: 'ckpt_name',
           name: 'candidate.safetensors',
@@ -265,7 +266,7 @@ describe('missingModelPipeline', () => {
     it('falls back to current missing model metadata when workflow state has no models', async () => {
       mockHandles.missingModelStore.missingModelCandidates = [
         {
-          nodeId: '1',
+          nodeId: asNodeId('1'),
           nodeType: 'CheckpointLoaderSimple',
           widgetName: 'ckpt_name',
           name: 'candidate.safetensors',
@@ -277,7 +278,7 @@ describe('missingModelPipeline', () => {
           isAssetSupported: true
         },
         {
-          nodeId: '2',
+          nodeId: asNodeId('2'),
           nodeType: 'CheckpointLoaderSimple',
           widgetName: 'ckpt_name',
           name: 'missing-url.safetensors',
@@ -509,7 +510,7 @@ describe('missingModelPipeline', () => {
 
     it('drops candidates whose ancestor path is inactive', async () => {
       const activeCandidate = {
-        nodeId: '1',
+        nodeId: asNodeId('1'),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         name: 'active.safetensors',
@@ -518,7 +519,7 @@ describe('missingModelPipeline', () => {
         isAssetSupported: true
       } satisfies MissingModelCandidate
       const inactiveCandidate = {
-        nodeId: '2',
+        nodeId: asNodeId('2'),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         name: 'inactive.safetensors',
@@ -557,7 +558,7 @@ describe('missingModelPipeline', () => {
     it('skips post-fetch surface when folder path refresh is aborted', async () => {
       const controller = new AbortController()
       const confirmedCandidate = {
-        nodeId: '1',
+        nodeId: asNodeId('1'),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         name: 'missing.safetensors',

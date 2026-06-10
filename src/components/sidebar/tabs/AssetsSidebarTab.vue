@@ -225,6 +225,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
@@ -472,7 +473,7 @@ const galleryItems = computed(() => {
       filename: asset.name,
       subfolder: '',
       type: 'output',
-      nodeId: '0',
+      nodeId: asNodeId('0'),
       mediaType: mediaType === 'image' ? 'images' : mediaType
     })
 

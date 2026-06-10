@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph, asNodeId } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { syncLayoutStoreNodeBoundsFromGraph } from './syncLayoutStoreFromGraph'
@@ -18,7 +18,7 @@ function createNode(
   size: [number, number]
 ): LGraphNode {
   return {
-    id,
+    id: asNodeId(id),
     pos,
     size
   } as LGraphNode

@@ -1,3 +1,4 @@
+import { UNASSIGNED_NODE_ID } from '@/lib/litegraph/src/utils/nodeId'
 import type {
   ExportedSubgraph,
   ExportedSubgraphInstance,
@@ -20,7 +21,7 @@ export const useSubgraphService = () => {
     exportedSubgraph: ExportedSubgraph
   ) {
     const instanceData: ExportedSubgraphInstance = {
-      id: -1,
+      id: UNASSIGNED_NODE_ID,
       type: exportedSubgraph.id,
       pos: [0, 0],
       size: [100, 100],

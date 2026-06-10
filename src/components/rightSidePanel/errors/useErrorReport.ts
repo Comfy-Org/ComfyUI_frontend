@@ -4,6 +4,7 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import { until } from '@vueuse/core'
 
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -81,7 +82,8 @@ export function useErrorReport(cardSource: MaybeRefOrGetter<ErrorCardData>) {
             exceptionType: error.exceptionType ?? FALLBACK_EXCEPTION_TYPE,
             exceptionMessage: error.message,
             traceback: error.details,
-            nodeId: card.nodeId,
+            nodeId:
+              card.nodeId === undefined ? undefined : asNodeId(card.nodeId),
             nodeType: card.title,
             systemStats: systemStatsStore.systemStats,
             serverLogs: logs,

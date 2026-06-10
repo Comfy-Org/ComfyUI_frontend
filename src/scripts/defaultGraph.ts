@@ -1,3 +1,4 @@
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 export const defaultGraph: ComfyWorkflowJSON = {
@@ -5,7 +6,7 @@ export const defaultGraph: ComfyWorkflowJSON = {
   last_link_id: 9,
   nodes: [
     {
-      id: 7,
+      id: asNodeId(7),
       type: 'CLIPTextEncode',
       pos: [413, 389],
       size: [425.27801513671875, 180.6060791015625],
@@ -25,7 +26,7 @@ export const defaultGraph: ComfyWorkflowJSON = {
       widgets_values: ['text, watermark']
     },
     {
-      id: 6,
+      id: asNodeId(6),
       type: 'CLIPTextEncode',
       pos: [415, 186],
       size: [422.84503173828125, 164.31304931640625],
@@ -47,7 +48,7 @@ export const defaultGraph: ComfyWorkflowJSON = {
       ]
     },
     {
-      id: 5,
+      id: asNodeId(5),
       type: 'EmptyLatentImage',
       pos: [473, 609],
       size: [315, 106],
@@ -59,7 +60,7 @@ export const defaultGraph: ComfyWorkflowJSON = {
       widgets_values: [512, 512, 1]
     },
     {
-      id: 3,
+      id: asNodeId(3),
       type: 'KSampler',
       pos: [863, 186],
       size: [315, 262],
@@ -77,7 +78,7 @@ export const defaultGraph: ComfyWorkflowJSON = {
       widgets_values: [156680208700286, true, 20, 8, 'euler', 'normal', 1]
     },
     {
-      id: 8,
+      id: asNodeId(8),
       type: 'VAEDecode',
       pos: [1209, 188],
       size: [210, 46],
@@ -92,7 +93,7 @@ export const defaultGraph: ComfyWorkflowJSON = {
       properties: {}
     },
     {
-      id: 9,
+      id: asNodeId(9),
       type: 'SaveImage',
       pos: [1451, 189],
       size: [210, 26],
@@ -103,7 +104,7 @@ export const defaultGraph: ComfyWorkflowJSON = {
       properties: {}
     },
     {
-      id: 4,
+      id: asNodeId(4),
       type: 'CheckpointLoaderSimple',
       pos: [26, 474],
       size: [315, 98],
@@ -128,15 +129,15 @@ export const defaultGraph: ComfyWorkflowJSON = {
     }
   ],
   links: [
-    [1, 4, 0, 3, 0, 'MODEL'],
-    [2, 5, 0, 3, 3, 'LATENT'],
-    [3, 4, 1, 6, 0, 'CLIP'],
-    [4, 6, 0, 3, 1, 'CONDITIONING'],
-    [5, 4, 1, 7, 0, 'CLIP'],
-    [6, 7, 0, 3, 2, 'CONDITIONING'],
-    [7, 3, 0, 8, 0, 'LATENT'],
-    [8, 4, 2, 8, 1, 'VAE'],
-    [9, 8, 0, 9, 0, 'IMAGE']
+    [1, asNodeId(4), 0, asNodeId(3), 0, 'MODEL'],
+    [2, asNodeId(5), 0, asNodeId(3), 3, 'LATENT'],
+    [3, asNodeId(4), 1, asNodeId(6), 0, 'CLIP'],
+    [4, asNodeId(6), 0, asNodeId(3), 1, 'CONDITIONING'],
+    [5, asNodeId(4), 1, asNodeId(7), 0, 'CLIP'],
+    [6, asNodeId(7), 0, asNodeId(3), 2, 'CONDITIONING'],
+    [7, asNodeId(3), 0, asNodeId(8), 0, 'LATENT'],
+    [8, asNodeId(4), 2, asNodeId(8), 1, 'VAE'],
+    [9, asNodeId(8), 0, asNodeId(9), 0, 'IMAGE']
   ],
   groups: [],
   config: {},

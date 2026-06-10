@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import type { NodeId } from '@/lib/litegraph/src/litegraph'
 import { ASCII, GltfSizeBytes } from '@/types/metadataTypes'
 
 import {
@@ -99,7 +100,7 @@ describe('GLTF binary metadata parser', () => {
     expect(metadata.workflow).toBeDefined()
 
     const workflow = metadata.workflow as {
-      nodes: Array<{ id: number; type: string }>
+      nodes: Array<{ id: NodeId; type: string }>
     }
     expect(workflow.nodes[0].id).toBe(1)
     expect(workflow.nodes[0].type).toBe('TestNode')
@@ -156,7 +157,7 @@ describe('GLTF binary metadata parser', () => {
     expect(metadata.workflow).toBeDefined()
 
     const workflow = metadata.workflow as {
-      nodes: Array<{ id: number; type: string }>
+      nodes: Array<{ id: NodeId; type: string }>
     }
     expect(workflow.nodes[0].type).toBe('StringifiedNode')
   })

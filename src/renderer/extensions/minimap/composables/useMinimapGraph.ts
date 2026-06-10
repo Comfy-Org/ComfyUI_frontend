@@ -90,7 +90,7 @@ export function useMinimapGraph(
           event.property === 'color')
       ) {
         // Invalidate cache for this node to force redraw
-        nodeStatesCache.delete(String(event.nodeId))
+        nodeStatesCache.delete(event.nodeId)
         void handleGraphChangedThrottled()
       }
     }

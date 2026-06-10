@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
@@ -21,7 +21,7 @@ function createNode(
   pos: [number, number]
 ) {
   const node = new LGraphNode(title)
-  node.id = id
+  node.id = asNodeId(id)
   node.pos = [...pos]
   node.size = [240, 120]
   graph.add(node)

@@ -7,7 +7,7 @@ import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, asNodeId } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -24,10 +24,10 @@ import {
 
 import NodeSlots from './NodeSlots.vue'
 
-const toVueNodeId = (id: string | number): VueNodeId => String(id)
+const toVueNodeId = (id: string | number): VueNodeId => asNodeId(id)
 
 const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
-  id: '123',
+  id: asNodeId('123'),
   title: 'Test Node',
   type: 'TestType',
   mode: 0,
@@ -282,12 +282,12 @@ describe('NodeSlots.vue', () => {
   it('maps one-level subgraph execution ids to input slot errors', async () => {
     const subgraph = createTestSubgraph()
     const interiorNode = new LGraphNode('InteriorNode')
-    interiorNode.id = 70
+    interiorNode.id = asNodeId(70)
     interiorNode.addInput('model', 'MODEL')
     interiorNode.addInput('steps', 'INT')
     subgraph.add(interiorNode)
 
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: asNodeId(65) })
     const graph = subgraphNode.rootGraph
     graph.add(subgraphNode)
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
@@ -312,19 +312,21 @@ describe('NodeSlots.vue', () => {
   it('maps nested subgraph execution ids to input slot errors', async () => {
     const innerSubgraph = createTestSubgraph()
     const innerNode = new LGraphNode('InnerNode')
-    innerNode.id = 63
+    innerNode.id = asNodeId(63)
     innerNode.addInput('image', 'IMAGE')
     innerNode.addInput('mask', 'MASK')
     innerSubgraph.add(innerNode)
 
     const outerSubgraph = createTestSubgraph()
     const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
-      id: 70,
+      id: asNodeId(70),
       parentGraph: outerSubgraph
     })
     outerSubgraph.add(innerSubgraphNode)
 
-    const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, { id: 65 })
+    const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, {
+      id: asNodeId(65)
+    })
     const graph = outerSubgraphNode.rootGraph
     graph.add(outerSubgraphNode)
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)

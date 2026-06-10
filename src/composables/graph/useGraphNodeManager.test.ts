@@ -4,7 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
-import { BaseWidget, LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  BaseWidget,
+  LGraph,
+  LGraphNode,
+  asNodeId
+} from '@/lib/litegraph/src/litegraph'
 import { widgetId } from '@/types/widgetId'
 import {
   createTestSubgraph,
@@ -224,7 +229,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     subgraph.add(interiorNode)
     subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
 
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 123 })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: asNodeId(123) })
     subgraphNode._internalConfigureAfterSlots()
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
@@ -355,7 +360,9 @@ describe('Nested promoted widget mapping', () => {
     subgraphA.add(innerNode)
     subgraphA.inputNode.slots[0].connect(innerInput, innerNode)
 
-    const subgraphNodeA = createTestSubgraphNode(subgraphA, { id: 11 })
+    const subgraphNodeA = createTestSubgraphNode(subgraphA, {
+      id: asNodeId(11)
+    })
 
     const subgraphB = createTestSubgraph({
       inputs: [{ name: 'b_input', type: '*' }]
@@ -364,7 +371,9 @@ describe('Nested promoted widget mapping', () => {
     subgraphNodeA._internalConfigureAfterSlots()
     subgraphB.inputNode.slots[0].connect(subgraphNodeA.inputs[0], subgraphNodeA)
 
-    const subgraphNodeB = createTestSubgraphNode(subgraphB, { id: 22 })
+    const subgraphNodeB = createTestSubgraphNode(subgraphB, {
+      id: asNodeId(22)
+    })
     const graph = subgraphNodeB.graph as LGraph
     graph.add(subgraphNodeB)
 
@@ -401,7 +410,7 @@ describe('Nested promoted widget mapping', () => {
     subgraph.add(secondNode)
     subgraph.inputNode.slots[1].connect(secondInput, secondNode)
 
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 100 })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: asNodeId(100) })
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
@@ -444,7 +453,7 @@ describe('Promoted widget sourceExecutionId', () => {
     subgraph.add(interiorNode)
     subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
 
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: asNodeId(65) })
     subgraphNode._internalConfigureAfterSlots()
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
@@ -591,7 +600,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     interiorNode.addInput('value', 'INT')
     subgraph.add(interiorNode)
 
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 50 })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: asNodeId(50) })
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
@@ -632,7 +641,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     missingModelStore.setMissingModels([
       {
-        nodeId: String(nodeA.id),
+        nodeId: nodeA.id,
         nodeType: 'CheckpointLoader',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
@@ -652,7 +661,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     missingModelStore.setMissingModels([
       {
-        nodeId: String(nodeA.id),
+        nodeId: nodeA.id,
         nodeType: 'CheckpointLoader',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
@@ -673,7 +682,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     const interiorNode = new LGraphNode('CheckpointLoader')
     subgraph.add(interiorNode)
 
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 50 })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: asNodeId(50) })
     const graph = subgraphNode.graph as LGraph
     graph.add(subgraphNode)
 
@@ -689,7 +698,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     missingModelStore.setMissingModels([
       {
-        nodeId: `${subgraphNode.id}:${interiorNode.id}`,
+        nodeId: asNodeId(`${subgraphNode.id}:${interiorNode.id}`),
         nodeType: 'CheckpointLoader',
         widgetName: 'ckpt_name',
         isAssetSupported: false,

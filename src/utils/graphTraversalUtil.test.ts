@@ -6,6 +6,7 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import { nodeIdToNumber } from '@/lib/litegraph/src/litegraph'
 import {
   collectAllNodes,
   collectFromNodes,
@@ -147,7 +148,7 @@ describe('graphTraversalUtil', () => {
         const graph = createMockGraph(nodes)
 
         visitGraphNodes(graph, (node) => {
-          visited.push(node.id as number)
+          visited.push(nodeIdToNumber(node.id))
         })
 
         expect(visited).toEqual([1, 2, 3])
@@ -158,7 +159,7 @@ describe('graphTraversalUtil', () => {
         const graph = createMockGraph([])
 
         visitGraphNodes(graph, (node) => {
-          visited.push(node.id as number)
+          visited.push(nodeIdToNumber(node.id))
         })
 
         expect(visited).toEqual([])
@@ -388,7 +389,7 @@ describe('graphTraversalUtil', () => {
 
         const visited: number[] = []
         forEachNode(graph, (node) => {
-          visited.push(node.id as number)
+          visited.push(nodeIdToNumber(node.id))
         })
 
         expect(visited).toHaveLength(3)
@@ -410,7 +411,7 @@ describe('graphTraversalUtil', () => {
 
         const visited: number[] = []
         forEachNode(graph, (node) => {
-          visited.push(node.id as number)
+          visited.push(nodeIdToNumber(node.id))
         })
 
         expect(visited).toHaveLength(3)
@@ -444,7 +445,7 @@ describe('graphTraversalUtil', () => {
         const matchingNodes: number[] = []
         forEachNode(graph, (node) => {
           if (node.type === subgraphId) {
-            matchingNodes.push(node.id as number)
+            matchingNodes.push(nodeIdToNumber(node.id))
           }
         })
 
@@ -990,7 +991,7 @@ describe('graphTraversalUtil', () => {
 
         const matchingIds: number[] = []
         forEachSubgraphNode(graph, subgraphId, (node) => {
-          matchingIds.push(node.id as number)
+          matchingIds.push(nodeIdToNumber(node.id))
         })
 
         expect(matchingIds).toEqual([2, 4])
@@ -1007,7 +1008,7 @@ describe('graphTraversalUtil', () => {
 
         const matchingIds: number[] = []
         forEachSubgraphNode(rootGraph, subgraphId, (node) => {
-          matchingIds.push(node.id as number)
+          matchingIds.push(nodeIdToNumber(node.id))
         })
 
         expect(matchingIds).toEqual([1, 3])

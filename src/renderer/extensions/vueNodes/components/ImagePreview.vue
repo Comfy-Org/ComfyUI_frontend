@@ -177,6 +177,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
@@ -299,7 +300,7 @@ function handleImageError() {
 
 function handleEditMask() {
   if (!nodeId) return
-  const node = resolveNode(Number(nodeId))
+  const node = resolveNode(asNodeId(nodeId))
   if (!node) return
   maskEditor.openMaskEditor(node)
 }

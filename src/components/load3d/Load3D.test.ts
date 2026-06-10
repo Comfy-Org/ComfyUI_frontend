@@ -5,6 +5,7 @@ import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Load3D from '@/components/load3d/Load3D.vue'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { ComponentWidget } from '@/scripts/domWidget'
 
 const { load3dState, resolveNodeMock, settingGetMock } = vi.hoisted(() => ({
@@ -109,7 +110,8 @@ function renderLoad3D(options: RenderOptions = {}) {
         widget: (options.widget ?? {
           node: MOCK_NODE
         }) as unknown as ComponentWidget<string[]>,
-        nodeId: options.nodeId
+        nodeId:
+          options.nodeId === undefined ? undefined : asNodeId(options.nodeId)
       },
       global: {
         plugins: [i18n],
@@ -168,7 +170,7 @@ describe('Load3D', () => {
       resolveNodeMock.mockReturnValue(MOCK_NODE)
       renderLoad3D({ widget: {}, nodeId: 42 })
 
-      expect(resolveNodeMock).toHaveBeenCalledWith(42)
+      expect(resolveNodeMock).toHaveBeenCalledWith('42')
       expect(await screen.findByTestId('load3d-scene')).toBeInTheDocument()
     })
 

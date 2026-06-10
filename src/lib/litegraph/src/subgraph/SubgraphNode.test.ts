@@ -9,6 +9,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  asNodeId,
   BaseWidget,
   LGraph,
   LGraphNode,
@@ -55,12 +56,12 @@ describe('SubgraphNode Construction', () => {
     })
 
     const subgraphNode = createTestSubgraphNode(subgraph, {
-      id: 42,
+      id: asNodeId(42),
       pos: [300, 150],
       size: [180, 80]
     })
 
-    expect(subgraphNode.id).toBe(42)
+    expect(subgraphNode.id).toBe(asNodeId(42))
     expect(Array.from(subgraphNode.pos)).toEqual([300, 150])
     expect(Array.from(subgraphNode.size)).toEqual([180, 80])
   })
@@ -705,13 +706,13 @@ describe('SubgraphNode Execution', () => {
     })
 
     const childSubgraphNode = createTestSubgraphNode(childSubgraph, {
-      id: 42,
+      id: asNodeId(42),
       parentGraph: parentSubgraph
     })
     parentSubgraph.add(childSubgraphNode)
 
     const parentSubgraphNode = createTestSubgraphNode(parentSubgraph, {
-      id: 10,
+      id: asNodeId(10),
       parentGraph: rootGraph
     })
     rootGraph.add(parentSubgraphNode)
@@ -951,7 +952,7 @@ describe('SubgraphNode duplicate input pruning (#9977)', () => {
 
     const parentGraph = new LGraph()
     const instanceData = {
-      id: 1 as const,
+      id: asNodeId(1),
       type: subgraph.id,
       pos: [0, 0] as [number, number],
       size: [200, 100] as [number, number],

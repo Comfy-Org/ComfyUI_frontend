@@ -9,6 +9,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { Rect } from '@/lib/litegraph/src/interfaces'
 import {
+  asNodeId,
   LGraphNode,
   LiteGraph,
   LGraph,
@@ -107,7 +108,7 @@ describe('LGraphNode', () => {
     const node = new LGraphNode('TestNode')
     node.configure(
       getMockISerialisedNode({
-        id: 0,
+        id: asNodeId(0),
         inputs: [{ name: 'TestInput', type: 'number', link: null }]
       })
     )
@@ -117,8 +118,8 @@ describe('LGraphNode', () => {
     expect(node.inputs[0]).instanceOf(NodeInputSlot)
 
     // Should not override existing inputs
-    node.configure(getMockISerialisedNode({ id: 1 }))
-    expect(node.id).toEqual(1)
+    node.configure(getMockISerialisedNode({ id: asNodeId(1) }))
+    expect(node.id).toEqual(asNodeId(1))
     expect(node.inputs.length).toEqual(1)
   })
 
@@ -126,7 +127,7 @@ describe('LGraphNode', () => {
     const node = new LGraphNode('TestNode')
     node.configure(
       getMockISerialisedNode({
-        id: 0,
+        id: asNodeId(0),
         outputs: [{ name: 'TestOutput', type: 'number', links: [] }]
       })
     )
@@ -137,15 +138,15 @@ describe('LGraphNode', () => {
     expect(node.outputs[0]).instanceOf(NodeOutputSlot)
 
     // Should not override existing outputs
-    node.configure(getMockISerialisedNode({ id: 1 }))
-    expect(node.id).toEqual(1)
+    node.configure(getMockISerialisedNode({ id: asNodeId(1) }))
+    expect(node.id).toEqual(asNodeId(1))
     expect(node.outputs.length).toEqual(1)
   })
   test('should not allow configuring id to -1', () => {
     const graph = new LGraph()
     const node = new LGraphNode('TestNode')
     graph.add(node)
-    node.configure(getMockISerialisedNode({ id: -1 }))
+    node.configure(getMockISerialisedNode({ id: asNodeId(-1) }))
     expect(node.id).not.toBe(-1)
   })
 
@@ -157,13 +158,13 @@ describe('LGraphNode', () => {
       // Configure nodes with input/output slots
       node1.configure(
         getMockISerialisedNode({
-          id: 1,
+          id: asNodeId(1),
           outputs: [{ name: 'Output1', type: 'number', links: [] }]
         })
       )
       node2.configure(
         getMockISerialisedNode({
-          id: 2,
+          id: asNodeId(2),
           inputs: [{ name: 'Input1', type: 'number', link: null }]
         })
       )
@@ -209,7 +210,7 @@ describe('LGraphNode', () => {
       // Configure nodes with input/output slots
       sourceNode.configure(
         getMockISerialisedNode({
-          id: 1,
+          id: asNodeId(1),
           outputs: [
             { name: 'Output1', type: 'number', links: [] },
             { name: 'Output2', type: 'number', links: [] }
@@ -218,13 +219,13 @@ describe('LGraphNode', () => {
       )
       targetNode1.configure(
         getMockISerialisedNode({
-          id: 2,
+          id: asNodeId(2),
           inputs: [{ name: 'Input1', type: 'number', link: null }]
         })
       )
       targetNode2.configure(
         getMockISerialisedNode({
-          id: 3,
+          id: asNodeId(3),
           inputs: [{ name: 'Input1', type: 'number', link: null }]
         })
       )
@@ -319,7 +320,7 @@ describe('LGraphNode', () => {
       node.updateArea()
       node.configure(
         getMockISerialisedNode({
-          id: 1,
+          id: asNodeId(1),
           inputs: [{ name: 'Input1', type: 'number', link: null }],
           outputs: [{ name: 'Output1', type: 'number', links: [] }]
         })
@@ -342,7 +343,7 @@ describe('LGraphNode', () => {
       node.size = [100, 100]
       node.configure(
         getMockISerialisedNode({
-          id: 1,
+          id: asNodeId(1),
           inputs: [{ name: 'Input1', type: 'number', link: null }],
           outputs: [{ name: 'Output1', type: 'number', links: [] }]
         })
@@ -363,7 +364,7 @@ describe('LGraphNode', () => {
       node.size = [100, 100]
       node.configure(
         getMockISerialisedNode({
-          id: 1,
+          id: asNodeId(1),
           inputs: [{ name: 'Input1', type: 'number', link: null }],
           outputs: [{ name: 'Output1', type: 'number', links: [] }]
         })
@@ -382,7 +383,7 @@ describe('LGraphNode', () => {
       node.updateArea()
       node.configure(
         getMockISerialisedNode({
-          id: 1,
+          id: asNodeId(1),
           inputs: [
             { name: 'Input1', type: 'number', link: null },
             { name: 'Input2', type: 'string', link: null }
@@ -408,7 +409,7 @@ describe('LGraphNode', () => {
       node.updateArea()
       node.configure(
         getMockISerialisedNode({
-          id: 1,
+          id: asNodeId(1),
           outputs: [
             { name: 'Output1', type: 'number', links: [] },
             { name: 'Output2', type: 'string', links: [] }
@@ -435,7 +436,7 @@ describe('LGraphNode', () => {
       node.updateArea()
       node.configure(
         getMockISerialisedNode({
-          id: 1,
+          id: asNodeId(1),
           inputs: [{ name: 'Input1', type: 'number', link: null }],
           outputs: [{ name: 'Output1', type: 'number', links: [] }]
         })
@@ -575,7 +576,7 @@ describe('LGraphNode', () => {
       node.widgets![0].serialize = false
       node.configure(
         getMockISerialisedNode({
-          id: 1,
+          id: asNodeId(1),
           type: 'TestNode',
           pos: [100, 100],
           size: [100, 100],

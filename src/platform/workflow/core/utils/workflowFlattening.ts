@@ -1,3 +1,4 @@
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import type { NodeId } from '@/lib/litegraph/src/litegraph'
 
 export interface FlattenableWorkflowNode {
@@ -156,7 +157,7 @@ export function flattenWorkflowNodes(
       for (const node of def.nodes) {
         allNodes.push({
           ...node,
-          id: `${prefix}:${node.id}`
+          id: asNodeId(`${prefix}:${node.id}`)
         })
       }
     }

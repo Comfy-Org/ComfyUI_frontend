@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { MissingNodeType } from '@/types/comfy'
 
 vi.mock('@/scripts/app', () => ({
@@ -170,7 +171,7 @@ function makeModel(
 ) {
   return {
     name,
-    nodeId: opts.nodeId ?? '1',
+    nodeId: asNodeId(opts.nodeId ?? '1'),
     nodeType: 'CheckpointLoaderSimple',
     widgetName: opts.widgetName ?? 'ckpt_name',
     isAssetSupported: opts.isAssetSupported ?? false,
@@ -189,7 +190,7 @@ function makeMedia(
 ): MissingMediaCandidate {
   return {
     name,
-    nodeId: opts.nodeId,
+    nodeId: asNodeId(opts.nodeId),
     nodeType: opts.nodeType ?? 'LoadImage',
     widgetName: opts.widgetName ?? 'image',
     mediaType: 'image',
@@ -421,7 +422,7 @@ describe('useErrorGroups', () => {
     it('uses fallback catalog grouping for unknown node validation errors', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        '1': {
+        [asNodeId('1')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [
@@ -446,7 +447,7 @@ describe('useErrorGroups', () => {
     it('resolves required_input_missing item display copy', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        '1': {
+        [asNodeId('1')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [
@@ -492,7 +493,7 @@ describe('useErrorGroups', () => {
     it('groups node validation errors by catalog id across node types', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        '1': {
+        [asNodeId('1')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [
@@ -506,7 +507,7 @@ describe('useErrorGroups', () => {
             }
           ]
         },
-        '2': {
+        [asNodeId('2')]: {
           class_type: 'CLIPLoader',
           dependent_outputs: [],
           errors: [
@@ -544,7 +545,7 @@ describe('useErrorGroups', () => {
       store.lastExecutionError = {
         prompt_id: 'test-prompt',
         timestamp: Date.now(),
-        node_id: 5,
+        node_id: asNodeId(5),
         node_type: 'KSampler',
         executed: [],
         exception_type: 'RuntimeError',
@@ -581,7 +582,7 @@ describe('useErrorGroups', () => {
       store.lastExecutionError = {
         prompt_id: 'test-prompt',
         timestamp: Date.now(),
-        node_id: 5,
+        node_id: asNodeId(5),
         node_type: 'KSampler',
         executed: [],
         exception_type: 'torch.OutOfMemoryError',
@@ -650,17 +651,17 @@ describe('useErrorGroups', () => {
     it('sorts cards within an execution group by nodeId numerically', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        '10': {
+        [asNodeId('10')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         },
-        '2': {
+        [asNodeId('2')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         },
-        '1': {
+        [asNodeId('1')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
@@ -678,17 +679,17 @@ describe('useErrorGroups', () => {
     it('sorts cards with subpath nodeIds before higher root IDs', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        '2': {
+        [asNodeId('2')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         },
-        '1:20': {
+        [asNodeId('1:20')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         },
-        '1': {
+        [asNodeId('1')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
@@ -706,17 +707,17 @@ describe('useErrorGroups', () => {
     it('sorts deeply nested nodeIds by each segment numerically', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        '10:11:99': {
+        [asNodeId('10:11:99')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         },
-        '10:11:12': {
+        [asNodeId('10:11:12')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         },
-        '10:2': {
+        [asNodeId('10:2')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
@@ -736,7 +737,7 @@ describe('useErrorGroups', () => {
     it('returns all groups when search query is empty', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        '1': {
+        [asNodeId('1')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
@@ -750,7 +751,7 @@ describe('useErrorGroups', () => {
     it('filters groups based on search query', async () => {
       const { store, groups, searchQuery } = createErrorGroups()
       store.lastNodeErrors = {
-        '1': {
+        [asNodeId('1')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [
@@ -761,7 +762,7 @@ describe('useErrorGroups', () => {
             }
           ]
         },
-        '2': {
+        [asNodeId('2')]: {
           class_type: 'CLIPLoader',
           dependent_outputs: [],
           errors: [
@@ -802,7 +803,7 @@ describe('useErrorGroups', () => {
     it('collects unique display messages from node errors', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        '1': {
+        [asNodeId('1')]: {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [
@@ -810,7 +811,7 @@ describe('useErrorGroups', () => {
             { type: 'err_b', message: 'Error B', details: '' }
           ]
         },
-        '2': {
+        [asNodeId('2')]: {
           class_type: 'CLIPLoader',
           dependent_outputs: [],
           errors: [{ type: 'err_a', message: 'Error A', details: '' }]

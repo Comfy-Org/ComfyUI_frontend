@@ -23,6 +23,7 @@ import type { PromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import { asNodeId, UNASSIGNED_NODE_ID } from '@/lib/litegraph/src/utils/nodeId'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -67,7 +68,7 @@ function buildPromotedRows(node: SubgraphNode): PromotedRow[] {
     if (!widget) return []
     const source = promotedInputSource(node, input)
     if (!source) return []
-    const sourceNode = node.subgraph._nodes_by_id[source.nodeId]
+    const sourceNode = node.subgraph._nodes_by_id[asNodeId(source.nodeId)]
     if (!sourceNode) return []
     return [{ kind: 'promoted', node: sourceNode, input, widget }]
   })
@@ -114,7 +115,8 @@ function getActivePreviewRows(node: SubgraphNode): PreviewRow[] {
   const rootGraphId = node.rootGraph.id
   const exposures = previewExposureStore.getExposures(rootGraphId, hostLocator)
   return exposures.flatMap((exposure): PreviewRow[] => {
-    const sourceNode = node.subgraph._nodes_by_id[exposure.sourceNodeId]
+    const sourceNode =
+      node.subgraph._nodes_by_id[asNodeId(exposure.sourceNodeId)]
     if (!sourceNode) return []
     const realWidget = getPromotableWidgets(sourceNode).find(
       (candidate) => candidate.name === exposure.sourcePreviewName
@@ -242,7 +244,7 @@ function rowDisplayName(row: ActiveRow): string {
 
 function isRowLinked(row: ActiveRow): boolean {
   if (row.kind !== 'promoted') return false
-  if (row.node.id === -1) return true
+  if (row.node.id === UNASSIGNED_NODE_ID) return true
   const source = promotedRowSource(row)
   return (
     !!activeNode.value &&

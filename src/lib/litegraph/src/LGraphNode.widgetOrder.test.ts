@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { asNodeId, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { sortWidgetValuesByInputOrder } from '@/workbench/utils/nodeDefOrderingUtil'
 
@@ -23,7 +23,7 @@ describe('LGraphNode widget ordering', () => {
 
       // Configure with widget values
       const info: ISerialisedNode = {
-        id: 1,
+        id: asNodeId(1),
         type: 'TestNode',
         pos: [0, 0],
         size: [200, 100],
@@ -50,7 +50,7 @@ describe('LGraphNode widget ordering', () => {
 
       // Widget values are in input_order: [steps, seed, prompt]
       const info: ISerialisedNode = {
-        id: 1,
+        id: asNodeId(1),
         type: 'TestNode',
         pos: [0, 0],
         size: [200, 100],
@@ -81,7 +81,7 @@ describe('LGraphNode widget ordering', () => {
       node.addWidget('number', 'seed', 0, null, {})
 
       const info: ISerialisedNode = {
-        id: 1,
+        id: asNodeId(1),
         type: 'TestNode',
         pos: [0, 0],
         size: [200, 100],

@@ -112,7 +112,13 @@ import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
-import { isNumericNodeId, nodeIdToNumber } from './utils/nodeId'
+import type { LinkEndpointNodeId } from './utils/nodeId'
+import {
+  asNodeId,
+  isNumericNodeId,
+  nodeIdToNumber,
+  UNASSIGNED_NODE_ID
+} from './utils/nodeId'
 import { resolveConnectingLinkColor } from './utils/linkColors'
 import { createUuidv4 } from '@/utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
@@ -224,7 +230,7 @@ interface ClipboardPasteResult {
   /** All successfully created items */
   created: Positionable[]
   /** Map: original node IDs to newly created nodes */
-  nodes: Map<NodeId, LGraphNode>
+  nodes: Map<LinkEndpointNodeId, LGraphNode>
   /** Map: original link IDs to new link IDs */
   links: Map<LinkId, LLink>
   /** Map: original reroute IDs to newly created reroutes */
@@ -4167,7 +4173,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const results: ClipboardPasteResult = {
       created: [],
-      nodes: new Map<NodeId, LGraphNode>(),
+      nodes: new Map<LinkEndpointNodeId, LGraphNode>(),
       links: new Map<LinkId, LLink>(),
       reroutes: new Map<RerouteId, Reroute>(),
       subgraphs: new Map<SubgraphId, Subgraph>()
@@ -4217,7 +4223,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       nodes.set(info.id, node)
-      info.id = -1
+      info.id = UNASSIGNED_NODE_ID
 
       graph.add(node)
       node.configure(info)
@@ -4310,7 +4316,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const newPositions = created
       .filter((item): item is LGraphNode => item instanceof LGraphNode)
       .map((node) => ({
-        nodeId: String(node.id),
+        nodeId: node.id,
         bounds: {
           x: node.pos[0],
           y: node.pos[1],
@@ -8975,16 +8981,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 }
 
 function patchLinkNodeIds(
-  links: { origin_id: NodeId; target_id: NodeId }[] | undefined,
+  links:
+    | { origin_id: LinkEndpointNodeId; target_id: LinkEndpointNodeId }[]
+    | undefined,
   remappedIds: Map<NodeId, NodeId>
 ) {
   if (!links?.length) return
 
   for (const link of links) {
-    const newOriginId = remappedIds.get(link.origin_id)
+    const newOriginId = remappedIds.get(asNodeId(link.origin_id))
     if (newOriginId !== undefined) link.origin_id = newOriginId
 
-    const newTargetId = remappedIds.get(link.target_id)
+    const newTargetId = remappedIds.get(asNodeId(link.target_id))
     if (newTargetId !== undefined) link.target_id = newTargetId
   }
 }
@@ -8993,14 +9001,7 @@ function remapNodeId(
   nodeId: string,
   remappedIds: Map<NodeId, NodeId>
 ): NodeId | undefined {
-  const directMatch = remappedIds.get(nodeId)
-  if (directMatch !== undefined) return directMatch
-  if (!/^-?\d+$/.test(nodeId)) return undefined
-
-  const numericId = Number(nodeId)
-  if (!Number.isSafeInteger(numericId)) return undefined
-
-  return remappedIds.get(numericId)
+  return remappedIds.get(asNodeId(nodeId))
 }
 
 function remapProxyWidgets(
@@ -9069,7 +9070,7 @@ export function remapClipboardSubgraphNodeIds(
     while (usedNodeIds.has(++rootGraph.state.lastNodeId));
     const nextId = rootGraph.state.lastNodeId
     usedNodeIds.add(nextId)
-    return String(nextId)
+    return asNodeId(nextId)
   }
 
   const subgraphNodeIdMap = new Map<SubgraphId, Map<NodeId, NodeId>>()

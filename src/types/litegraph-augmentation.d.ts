@@ -149,7 +149,7 @@ declare module '@/lib/litegraph/src/litegraph' {
     onDragDrop?(e: DragEvent): Promise<boolean> | boolean
 
     index?: number
-    runningInternalNodeId?: NodeId
+    runningInternalNodeId?: number
 
     comfyClass?: string
 

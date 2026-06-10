@@ -1,5 +1,6 @@
 import _ from 'es-toolkit/compat'
 
+import { asNodeId, UNASSIGNED_NODE_ID } from '@/lib/litegraph/src/utils/nodeId'
 import type {
   ComfyLinkObject,
   ComfyNode,
@@ -167,7 +168,7 @@ class ConversionContext {
     }
     return {
       id: this._rerouteIdCounter++,
-      origin_id: -1,
+      origin_id: UNASSIGNED_NODE_ID,
       origin_slot: -1,
       target_id: endingLink.target_id,
       target_slot: endingLink.target_slot,
@@ -193,7 +194,7 @@ class ConversionContext {
       id: this._rerouteIdCounter++,
       origin_id: startingLink.origin_id,
       origin_slot: startingLink.origin_slot,
-      target_id: -1,
+      target_id: UNASSIGNED_NODE_ID,
       target_slot: -1,
       type: startingLink.type,
       parentId: reroutes[0].id
@@ -262,7 +263,7 @@ class ConversionContext {
     }
 
     const floatingEndingRerouteNodes = Object.keys(this.rerouteByNodeId)
-      .map((nodeId) => this.nodeById[nodeId] as RerouteNode)
+      .map((nodeId) => this.nodeById[asNodeId(nodeId)] as RerouteNode)
       .filter((rerouteNode) => {
         const output = rerouteNode.outputs?.[0]
         if (!output) return false

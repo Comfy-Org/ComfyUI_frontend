@@ -159,7 +159,7 @@ export const useCanvasStore = defineStore('canvas', () => {
           isGhostPlacing.value = e.detail.active
           if (e.detail.active) {
             const mutations = useLayoutMutations()
-            mutations.bringNodeToFront(String(e.detail.nodeId))
+            mutations.bringNodeToFront(e.detail.nodeId)
           }
         }
       )

@@ -8,6 +8,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { LGraphNode, NodeId } from './LGraphNode'
+import type { LinkEndpointNodeId } from './utils/nodeId'
 import type { Reroute, RerouteId } from './Reroute'
 import type {
   CanvasColour,
@@ -27,9 +28,9 @@ export type LinkId = number
 
 export type SerialisedLLinkArray = [
   id: LinkId,
-  origin_id: NodeId,
+  origin_id: LinkEndpointNodeId,
   origin_slot: number,
-  target_id: NodeId,
+  target_id: LinkEndpointNodeId,
   target_slot: number,
   type: ISlotType
 ]
@@ -97,11 +98,11 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   parentId?: RerouteId
   type: ISlotType
   /** Output node ID */
-  origin_id: NodeId
+  origin_id: LinkEndpointNodeId
   /** Output slot index */
   origin_slot: number
   /** Input node ID */
-  target_id: NodeId
+  target_id: LinkEndpointNodeId
   /** Input slot index */
   target_slot: number
 
@@ -154,9 +155,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   constructor(
     id: LinkId,
     type: ISlotType,
-    origin_id: NodeId,
+    origin_id: LinkEndpointNodeId,
     origin_slot: number,
-    target_id: NodeId,
+    target_id: LinkEndpointNodeId,
     target_slot: number,
     parentId?: RerouteId
   ) {

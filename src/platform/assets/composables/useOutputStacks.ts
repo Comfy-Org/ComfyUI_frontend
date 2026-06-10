@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
@@ -113,7 +114,7 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
 
     const excludeOutputKey =
       getOutputKey({
-        nodeId: metadata.nodeId,
+        nodeId: asNodeId(metadata.nodeId),
         subfolder: metadata.subfolder,
         filename: asset.name
       }) ?? undefined

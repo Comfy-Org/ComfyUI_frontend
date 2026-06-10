@@ -1,5 +1,5 @@
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
@@ -25,7 +25,7 @@ export class SubgraphOutputNode
   extends SubgraphIONodeBase<SubgraphOutput>
   implements Positionable
 {
-  readonly id: NodeId = SUBGRAPH_OUTPUT_ID
+  readonly id: typeof SUBGRAPH_OUTPUT_ID = SUBGRAPH_OUTPUT_ID
 
   readonly emptySlot: EmptySubgraphOutput = new EmptySubgraphOutput(this)
 

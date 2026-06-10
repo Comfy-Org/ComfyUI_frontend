@@ -25,6 +25,7 @@
  * SOFTWARE.
  */
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
@@ -299,13 +300,13 @@ export function fixBadLinks(
         ? (l as LLink)
         : extendLink(l as SerialisedLLinkArray)
 
-    const originNode = getNodeById(graph, link.origin_id)
+    const originNode = getNodeById(graph, asNodeId(link.origin_id))
     const originHasLink = () =>
       nodeHasLinkId(originNode!, IoDirection.OUTPUT, link.origin_slot, link.id)
     const patchOrigin = (op: 'ADD' | 'REMOVE', id = link.id) =>
       patchNodeSlot(originNode!, IoDirection.OUTPUT, link.origin_slot, id, op)
 
-    const targetNode = getNodeById(graph, link.target_id)
+    const targetNode = getNodeById(graph, asNodeId(link.target_id))
     const targetHasLink = () =>
       nodeHasLinkId(targetNode!, IoDirection.INPUT, link.target_slot, link.id)
     const targetHasAnyLink = () =>
@@ -392,8 +393,8 @@ export function fixBadLinks(
       (l as LLink).origin_slot != null
         ? (l as LLink)
         : extendLink(l as SerialisedLLinkArray)
-    const originNode = getNodeById(graph, link.origin_id)
-    const targetNode = getNodeById(graph, link.target_id)
+    const originNode = getNodeById(graph, asNodeId(link.origin_id))
+    const targetNode = getNodeById(graph, asNodeId(link.target_id))
     // Now that we've manipulated the linking, check again if they both exist.
     if (
       (!originNode ||

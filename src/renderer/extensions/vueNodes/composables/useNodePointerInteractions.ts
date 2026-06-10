@@ -8,6 +8,7 @@ import {
 } from '@/base/pointerUtils'
 import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
+import type { NodeId } from '@/lib/litegraph/src/litegraph'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -15,7 +16,7 @@ import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selection
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 
 export function useNodePointerInteractions(
-  nodeIdRef: MaybeRefOrGetter<string>
+  nodeIdRef: MaybeRefOrGetter<NodeId>
 ) {
   const { startDrag, endDrag, handleDrag } = useNodeDrag()
   // Use canvas interactions for proper wheel event handling and pointer event capture control
@@ -111,7 +112,7 @@ export function useNodePointerInteractions(
     layoutStore.isDraggingVueNodes.value = false
   }
 
-  function safeDragStart(event: PointerEvent, nodeId: string) {
+  function safeDragStart(event: PointerEvent, nodeId: NodeId) {
     try {
       startDrag(event, nodeId)
     } finally {

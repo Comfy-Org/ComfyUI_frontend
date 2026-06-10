@@ -17,6 +17,7 @@ import type {
 } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
@@ -262,7 +263,7 @@ function collectTargetsStrict(
     const link = subgraph.links.get(linkId)
     if (!link) return undefined
     targets.push({
-      targetNodeId: link.target_id,
+      targetNodeId: asNodeId(link.target_id),
       targetSlot: link.target_slot
     })
   }
@@ -278,7 +279,12 @@ function collectTargetsSkippingDangling(
   return linkIds.flatMap((linkId) => {
     const link = subgraph.links.get(linkId)
     return link
-      ? [{ targetNodeId: link.target_id, targetSlot: link.target_slot }]
+      ? [
+          {
+            targetNodeId: asNodeId(link.target_id),
+            targetSlot: link.target_slot
+          }
+        ]
       : []
   })
 }
@@ -603,7 +609,7 @@ function repairPrimitive(
     .filter((l): l is NonNullable<typeof l> => l !== undefined)
     .map((l) => ({
       primitiveSlot: l.origin_slot,
-      targetNodeId: l.target_id,
+      targetNodeId: asNodeId(l.target_id),
       targetSlot: l.target_slot
     }))
 

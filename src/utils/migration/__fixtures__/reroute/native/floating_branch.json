@@ -104,7 +104,7 @@
       "id": 4,
       "origin_id": 4,
       "origin_slot": 2,
-      "target_id": -1,
+      "target_id": "-1",
       "target_slot": -1,
       "type": "*",
       "parentId": 3

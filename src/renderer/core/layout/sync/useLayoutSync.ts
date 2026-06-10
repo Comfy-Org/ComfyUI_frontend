@@ -9,6 +9,7 @@ import { onUnmounted, ref } from 'vue'
 import type { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import type { NodeId } from '@/renderer/core/layout/types'
 
 /**
  * Composable for syncing LiteGraph with the Layout system
@@ -16,7 +17,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
  */
 export function useLayoutSync() {
   const unsubscribe = ref<() => void>()
-  const pendingNodeIds = new Set<string>()
+  const pendingNodeIds = new Set<NodeId>()
   let rafId: number | null = null
   let isMicrotaskQueued = false
   let syncGeneration = 0

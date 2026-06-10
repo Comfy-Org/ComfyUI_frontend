@@ -20,8 +20,10 @@ import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import {
   UNASSIGNED_NODE_ID,
+  asNodeId,
   isUnassignedNodeId
 } from '@/lib/litegraph/src/utils/nodeId'
+import type { NodeId } from '@/lib/litegraph/src/utils/nodeId'
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { BadgePosition, LGraphBadge } from './LGraphBadge'
@@ -102,7 +104,7 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
 
-export type NodeId = number | string
+export type { NodeId } from './utils/nodeId'
 
 export type NodeProperty = string | number | boolean | object
 
@@ -505,7 +507,7 @@ export class LGraphNode
 
     const mutations = useLayoutMutations()
     mutations.setSource(LayoutSource.Canvas)
-    mutations.moveNode(String(this.id), { x: value[0], y: value[1] })
+    mutations.moveNode(this.id, { x: value[0], y: value[1] })
   }
 
   /**
@@ -527,7 +529,7 @@ export class LGraphNode
 
     const mutations = useLayoutMutations()
     mutations.setSource(LayoutSource.Canvas)
-    mutations.resizeNode(String(this.id), {
+    mutations.resizeNode(this.id, {
       width: value[0],
       height: value[1]
     })
@@ -814,7 +816,9 @@ export class LGraphNode
   }
 
   constructor(title: string, type?: string) {
-    this.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : UNASSIGNED_NODE_ID
+    this.id = LiteGraph.use_uuids
+      ? asNodeId(LiteGraph.uuidv4())
+      : UNASSIGNED_NODE_ID
     this.title = title || 'Unnamed'
     this.type = type ?? ''
     this.size = [LiteGraph.NODE_WIDTH, 60]
@@ -1028,7 +1032,7 @@ export class LGraphNode
 
     node.id = this.id
     node.configure(data)
-    if (LiteGraph.use_uuids) node.id = LiteGraph.uuidv4()
+    if (LiteGraph.use_uuids) node.id = asNodeId(LiteGraph.uuidv4())
 
     return node
   }

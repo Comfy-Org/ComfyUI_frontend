@@ -2,6 +2,7 @@ import { storeToRefs } from 'pinia'
 import { toValue } from 'vue'
 
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -38,7 +39,7 @@ function useNodeDragIndividual() {
   // Drag state
   let dragStartPos: Point | null = null
   let dragStartMouse: Point | null = null
-  let otherSelectedNodesStartPositions: Map<string, Point> | null = null
+  let otherSelectedNodesStartPositions: Map<NodeId, Point> | null = null
   let rafId: number | null = null
   let stopShiftSync: (() => void) | null = null
 
@@ -77,9 +78,12 @@ function useNodeDragIndividual() {
         // Skip the current node being dragged
         if (id === nodeId) continue
 
-        const nodeLayout = layoutStore.getNodeLayoutRef(id).value
+        const otherNodeId = asNodeId(id)
+        const nodeLayout = layoutStore.getNodeLayoutRef(otherNodeId).value
         if (nodeLayout) {
-          otherSelectedNodesStartPositions.set(id, { ...nodeLayout.position })
+          otherSelectedNodesStartPositions.set(otherNodeId, {
+            ...nodeLayout.position
+          })
         }
       }
     } else {

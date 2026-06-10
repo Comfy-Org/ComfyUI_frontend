@@ -270,7 +270,8 @@ import {
   LGraphCanvas,
   LGraphEventMode,
   LiteGraph,
-  RenderShape
+  RenderShape,
+  asNodeId
 } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -424,10 +425,10 @@ async function nodeOnPointerdown(event: PointerEvent) {
     const result = LGraphCanvas.cloneNodes([lgraphNode.value])
     if (result?.created?.length) {
       const [newNode] = result.created
-      startDrag(event, `${newNode.id}`)
+      startDrag(event, asNodeId(newNode.id))
       layoutStore.isDraggingVueNodes.value = true
       await nextTick()
-      bringNodeToFront(`${newNode.id}`)
+      bringNodeToFront(asNodeId(newNode.id))
       return
     }
   }

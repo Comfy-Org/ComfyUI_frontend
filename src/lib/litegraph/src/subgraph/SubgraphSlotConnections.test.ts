@@ -3,6 +3,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
 import {
+  asNodeId,
   SUBGRAPH_INPUT_ID,
   LinkConnector,
   ToInputFromIoNodeLink,
@@ -132,7 +133,7 @@ describe('Subgraph slot connections', () => {
 
       // Create a node inside the subgraph
       const internalNode = new LGraphNode('InternalNode')
-      internalNode.id = 100
+      internalNode.id = asNodeId(100)
       internalNode.addInput('in', 'number')
       subgraph.add(internalNode)
 

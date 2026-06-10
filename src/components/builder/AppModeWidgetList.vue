@@ -8,6 +8,7 @@ import { useI18n } from 'vue-i18n'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { UNASSIGNED_NODE_ID } from '@/lib/litegraph/src/utils/nodeId'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -75,7 +76,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
     if (!matchingWidget) return []
 
     matchingWidget.slotMetadata = undefined
-    matchingWidget.nodeId = String(node.id)
+    matchingWidget.nodeId = node.id
 
     return [
       {
@@ -139,7 +140,7 @@ async function handleDragDrop() {
     return false
   }
 
-  app.dragOverNode = { id: -1, onDragDrop }
+  app.dragOverNode = { id: UNASSIGNED_NODE_ID, onDragDrop }
 }
 
 defineExpose({ handleDragDrop })

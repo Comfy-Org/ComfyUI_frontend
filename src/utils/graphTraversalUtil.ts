@@ -1,3 +1,4 @@
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import type {
   LGraph,
   LGraphNode,
@@ -515,7 +516,7 @@ export function executionIdToNodeLocatorId(
   const targetGraph = traverseSubgraphPath(rootGraph, subgraphPath)
   if (!targetGraph) return undefined
 
-  return createNodeLocatorId(targetGraph.id, localNodeId)
+  return createNodeLocatorId(targetGraph.id, asNodeId(localNodeId))
 }
 
 /**

@@ -8,7 +8,8 @@ import {
   LGraphNode,
   LiteGraph,
   Reroute,
-  isColorable
+  isColorable,
+  isUnassignedNodeId
 } from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraph,
@@ -367,7 +368,7 @@ export function getWidgetIdForNode(
 ): WidgetId | undefined {
   if (widget.widgetId) return widget.widgetId
   const graphId = node.graph?.rootGraph.id
-  if (!graphId || node.id === -1) return undefined
+  if (!graphId || isUnassignedNodeId(node.id)) return undefined
   const name =
     duplicateIndex > 0 ? `${widget.name}#${duplicateIndex}` : widget.name
   return widgetId(graphId, node.id, name)

@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import type {
   JobListItem,
   JobStatus
@@ -154,7 +155,7 @@ export const Queued: Story = {
             value: 1,
             max: 1,
             state: 'running',
-            node_id: '1',
+            node_id: asNodeId('1'),
             prompt_id: 'p1'
           }
         }
@@ -204,7 +205,7 @@ export const QueuedParallel: Story = {
             value: 1,
             max: 2,
             state: 'running',
-            node_id: '1',
+            node_id: asNodeId('1'),
             prompt_id: 'p1'
           }
         },
@@ -213,7 +214,7 @@ export const QueuedParallel: Story = {
             value: 1,
             max: 2,
             state: 'running',
-            node_id: '2',
+            node_id: asNodeId('2'),
             prompt_id: 'p2'
           }
         }
@@ -254,7 +255,7 @@ export const Running: Story = {
             value: 5,
             max: 10,
             state: 'running',
-            node_id: '1',
+            node_id: asNodeId('1'),
             prompt_id: 'p1'
           }
         }
@@ -299,7 +300,7 @@ export const QueuedZeroAheadSingleRunning: Story = {
             value: 1,
             max: 3,
             state: 'running',
-            node_id: '1',
+            node_id: asNodeId('1'),
             prompt_id: 'p1'
           }
         }
@@ -347,7 +348,7 @@ export const QueuedZeroAheadMultiRunning: Story = {
             value: 2,
             max: 5,
             state: 'running',
-            node_id: '1',
+            node_id: asNodeId('1'),
             prompt_id: 'p1'
           }
         },
@@ -356,7 +357,7 @@ export const QueuedZeroAheadMultiRunning: Story = {
             value: 3,
             max: 5,
             state: 'running',
-            node_id: '2',
+            node_id: asNodeId('2'),
             prompt_id: 'p2'
           }
         }

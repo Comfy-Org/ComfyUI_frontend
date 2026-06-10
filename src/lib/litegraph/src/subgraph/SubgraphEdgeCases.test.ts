@@ -8,7 +8,12 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
-import { LGraph, LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import {
+  asNodeId,
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 
 import {
   createNestedSubgraphs,
@@ -28,8 +33,8 @@ describe('SubgraphEdgeCases - Recursion Detection', () => {
     const sub2 = createTestSubgraph({ name: 'Sub2' })
 
     // Create circular reference
-    const node1 = createTestSubgraphNode(sub1, { id: 1 })
-    const node2 = createTestSubgraphNode(sub2, { id: 2 })
+    const node1 = createTestSubgraphNode(sub1, { id: asNodeId(1) })
+    const node2 = createTestSubgraphNode(sub2, { id: asNodeId(2) })
 
     // Current limitation: adding a circular reference overflows recursion depth.
     sub1.add(node2)

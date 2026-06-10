@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, toRaw, toValue } from 'vue'
 
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type {
   APITaskType,
@@ -441,10 +442,9 @@ export class TaskItemImpl {
     const nodeOutputsStore = useNodeOutputStore()
     const rawOutputs = toRaw(outputsToLoad)
     for (const nodeExecutionId in rawOutputs) {
-      nodeOutputsStore.setNodeOutputsByExecutionId(
-        nodeExecutionId,
-        rawOutputs[nodeExecutionId]
-      )
+      const output = rawOutputs[asNodeId(nodeExecutionId)]
+      if (!output) continue
+      nodeOutputsStore.setNodeOutputsByExecutionId(nodeExecutionId, output)
     }
     useExtensionService().invokeExtensions(
       'onNodeOutputsUpdated',

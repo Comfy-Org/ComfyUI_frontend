@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import { ResultItemImpl } from '@/stores/queueStore'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
@@ -21,7 +22,7 @@ export const useMediaAssetGalleryStore = defineStore(
         filename: asset.name,
         subfolder: '',
         type: 'output',
-        nodeId: '0',
+        nodeId: asNodeId('0'),
         mediaType: asset.kind === 'image' ? 'images' : asset.kind
       })
 

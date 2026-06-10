@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode, asNodeId } from '@/lib/litegraph/src/litegraph'
 import { renderMinimapToCanvas } from '@/renderer/extensions/minimap/minimapCanvasRenderer'
 import type { MinimapRenderContext } from '@/renderer/extensions/minimap/types'
 import { adjustColor } from '@/utils/colorUtil'
@@ -267,7 +267,12 @@ describe('minimapCanvasRenderer', () => {
     ]
 
     mockGraph.links = createMockLinks([
-      createMockLLink({ id: 1, target_id: 2, origin_slot: 0, target_slot: 0 })
+      createMockLLink({
+        id: 1,
+        target_id: asNodeId(2),
+        origin_slot: 0,
+        target_slot: 0
+      })
     ])
 
     mockGraph.getNodeById = vi.fn().mockReturnValue(targetNode)

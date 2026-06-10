@@ -1,4 +1,5 @@
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 
 /**
  * Workflow where lastNodeId is near the MAX_NODE_ID ceiling (100_000_000)
@@ -20,7 +21,7 @@ export const nodeIdSpaceExhausted = {
   },
   nodes: [
     {
-      id: 102,
+      id: asNodeId(102),
       type: '11111111-1111-4111-8111-111111111111',
       pos: [0, 0],
       size: [200, 100],
@@ -30,7 +31,7 @@ export const nodeIdSpaceExhausted = {
       properties: { proxyWidgets: [['3', 'seed']] }
     },
     {
-      id: 103,
+      id: asNodeId(103),
       type: '22222222-2222-4222-8222-222222222222',
       pos: [300, 0],
       size: [200, 100],
@@ -40,7 +41,7 @@ export const nodeIdSpaceExhausted = {
       properties: { proxyWidgets: [['8', 'prompt']] }
     },
     {
-      id: 100_000_000,
+      id: asNodeId(100_000_000),
       type: 'dummy',
       pos: [600, 0],
       size: [100, 50],
@@ -67,10 +68,10 @@ export const nodeIdSpaceExhausted = {
         outputNode: { id: -20, bounding: [400, 100, 140, 126] },
         inputs: [],
         outputs: [],
-        widgets: [{ id: 3, name: 'seed' }],
+        widgets: [{ id: asNodeId(3), name: 'seed' }],
         nodes: [
           {
-            id: 3,
+            id: asNodeId(3),
             type: 'dummy',
             pos: [0, 0],
             size: [100, 50],
@@ -79,7 +80,7 @@ export const nodeIdSpaceExhausted = {
             mode: 0
           },
           {
-            id: 8,
+            id: asNodeId(8),
             type: 'dummy',
             pos: [0, 0],
             size: [100, 50],
@@ -88,7 +89,7 @@ export const nodeIdSpaceExhausted = {
             mode: 0
           },
           {
-            id: 37,
+            id: asNodeId(37),
             type: 'dummy',
             pos: [0, 0],
             size: [100, 50],
@@ -100,9 +101,9 @@ export const nodeIdSpaceExhausted = {
         links: [
           {
             id: 1,
-            origin_id: 3,
+            origin_id: asNodeId(3),
             origin_slot: 0,
-            target_id: 8,
+            target_id: asNodeId(8),
             target_slot: 0,
             type: 'number'
           }
@@ -125,10 +126,10 @@ export const nodeIdSpaceExhausted = {
         outputNode: { id: -20, bounding: [400, 100, 140, 126] },
         inputs: [],
         outputs: [],
-        widgets: [{ id: 8, name: 'prompt' }],
+        widgets: [{ id: asNodeId(8), name: 'prompt' }],
         nodes: [
           {
-            id: 3,
+            id: asNodeId(3),
             type: 'dummy',
             pos: [0, 0],
             size: [100, 50],
@@ -137,7 +138,7 @@ export const nodeIdSpaceExhausted = {
             mode: 0
           },
           {
-            id: 8,
+            id: asNodeId(8),
             type: 'dummy',
             pos: [0, 0],
             size: [100, 50],
@@ -146,7 +147,7 @@ export const nodeIdSpaceExhausted = {
             mode: 0
           },
           {
-            id: 37,
+            id: asNodeId(37),
             type: 'dummy',
             pos: [0, 0],
             size: [100, 50],
@@ -158,9 +159,9 @@ export const nodeIdSpaceExhausted = {
         links: [
           {
             id: 2,
-            origin_id: 3,
+            origin_id: asNodeId(3),
             origin_slot: 0,
-            target_id: 37,
+            target_id: asNodeId(37),
             target_slot: 0,
             type: 'string'
           }

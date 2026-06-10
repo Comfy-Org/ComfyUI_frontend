@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
+
 import type { ExportedSubgraph } from '../types/serialisation'
 
 import { topologicalSortSubgraphs } from './subgraphDeduplication'
@@ -12,7 +14,7 @@ function makeSubgraph(id: string, nodeTypes: string[] = []): ExportedSubgraph {
     revision: 0,
     state: { lastNodeId: 0, lastLinkId: 0, lastGroupId: 0, lastRerouteId: 0 },
     nodes: nodeTypes.map((type, i) => ({
-      id: i + 1,
+      id: asNodeId(i + 1),
       type,
       pos: [0, 0] as [number, number],
       size: [100, 100] as [number, number],

@@ -9,6 +9,7 @@ import { computed, customRef, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
@@ -184,7 +185,7 @@ class LayoutStoreImpl implements LayoutStore {
 
       // Trigger all affected node refs
       event.changes.keys.forEach((_change: YEventChange, key: string) => {
-        const trigger = this.nodeTriggers.get(key)
+        const trigger = this.nodeTriggers.get(asNodeId(key))
         if (trigger) {
           trigger()
         }
@@ -346,7 +347,7 @@ class LayoutStoreImpl implements LayoutStore {
         if (ynode) {
           const layout = yNodeToLayout(ynode)
           if (layout && boundsIntersect(layout.bounds, bounds)) {
-            result.push(nodeId)
+            result.push(asNodeId(nodeId))
           }
         }
       }
@@ -368,7 +369,7 @@ class LayoutStoreImpl implements LayoutStore {
         if (ynode) {
           const layout = yNodeToLayout(ynode)
           if (layout) {
-            result.set(nodeId, layout)
+            result.set(asNodeId(nodeId), layout)
           }
         }
       }
@@ -394,7 +395,7 @@ class LayoutStoreImpl implements LayoutStore {
       if (ynode) {
         const layout = yNodeToLayout(ynode)
         if (layout) {
-          nodes.push([nodeId, layout])
+          nodes.push([asNodeId(nodeId), layout])
         }
       }
     }
@@ -455,7 +456,7 @@ class LayoutStoreImpl implements LayoutStore {
       }
       for (const key of keysToDelete) {
         this.linkSegmentLayouts.delete(key)
-        this.linkSegmentSpatialIndex.remove(key)
+        this.linkSegmentSpatialIndex.remove(asNodeId(key))
       }
     }
   }
@@ -475,10 +476,10 @@ class LayoutStoreImpl implements LayoutStore {
         return
       }
       // Update spatial index
-      this.slotSpatialIndex.update(key, layout.bounds)
+      this.slotSpatialIndex.update(asNodeId(key), layout.bounds)
     } else {
       // Insert into spatial index
-      this.slotSpatialIndex.insert(key, layout.bounds)
+      this.slotSpatialIndex.insert(asNodeId(key), layout.bounds)
     }
 
     this.slotLayouts.set(key, layout)
@@ -504,9 +505,9 @@ class LayoutStoreImpl implements LayoutStore {
         ) {
           continue
         }
-        this.slotSpatialIndex.update(key, layout.bounds)
+        this.slotSpatialIndex.update(asNodeId(key), layout.bounds)
       } else {
-        this.slotSpatialIndex.insert(key, layout.bounds)
+        this.slotSpatialIndex.insert(asNodeId(key), layout.bounds)
       }
       this.slotLayouts.set(key, layout)
     }
@@ -519,7 +520,7 @@ class LayoutStoreImpl implements LayoutStore {
     const deleted = this.slotLayouts.delete(key)
     if (deleted) {
       // Remove from spatial index
-      this.slotSpatialIndex.remove(key)
+      this.slotSpatialIndex.remove(asNodeId(key))
     }
   }
 
@@ -548,10 +549,10 @@ class LayoutStoreImpl implements LayoutStore {
 
     if (existing) {
       // Update spatial index
-      this.rerouteSpatialIndex.update(String(rerouteId), layout.bounds) // Spatial index uses strings
+      this.rerouteSpatialIndex.update(asNodeId(rerouteId), layout.bounds) // Spatial index uses strings
     } else {
       // Insert into spatial index
-      this.rerouteSpatialIndex.insert(String(rerouteId), layout.bounds) // Spatial index uses strings
+      this.rerouteSpatialIndex.insert(asNodeId(rerouteId), layout.bounds) // Spatial index uses strings
     }
 
     this.rerouteLayouts.set(rerouteId, layout)
@@ -564,7 +565,7 @@ class LayoutStoreImpl implements LayoutStore {
     const deleted = this.rerouteLayouts.delete(rerouteId)
     if (deleted) {
       // Remove from spatial index
-      this.rerouteSpatialIndex.remove(String(rerouteId)) // Spatial index uses strings
+      this.rerouteSpatialIndex.remove(asNodeId(rerouteId)) // Spatial index uses strings
     }
   }
 
@@ -638,10 +639,10 @@ class LayoutStoreImpl implements LayoutStore {
 
     if (existing) {
       // Update spatial index
-      this.linkSegmentSpatialIndex.update(key, layout.bounds)
+      this.linkSegmentSpatialIndex.update(asNodeId(key), layout.bounds)
     } else {
       // Insert into spatial index
-      this.linkSegmentSpatialIndex.insert(key, layout.bounds)
+      this.linkSegmentSpatialIndex.insert(asNodeId(key), layout.bounds)
     }
 
     this.linkSegmentLayouts.set(key, fullLayout)
@@ -655,7 +656,7 @@ class LayoutStoreImpl implements LayoutStore {
     const deleted = this.linkSegmentLayouts.delete(key)
     if (deleted) {
       // Remove from spatial index
-      this.linkSegmentSpatialIndex.remove(key)
+      this.linkSegmentSpatialIndex.remove(asNodeId(key))
     }
   }
 
@@ -1019,7 +1020,7 @@ class LayoutStoreImpl implements LayoutStore {
 
       nodes.forEach((node, index) => {
         const layout: NodeLayout = {
-          id: node.id.toString(),
+          id: asNodeId(node.id),
           position: { x: node.pos[0], y: node.pos[1] },
           size: { width: node.size[0], height: node.size[1] },
           zIndex: index,
@@ -1242,7 +1243,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     this.yreroutes.delete(String(operation.rerouteId)) // Yjs Map keys are strings
     this.rerouteLayouts.delete(operation.rerouteId) // Layout map uses numeric ID
-    this.rerouteSpatialIndex.remove(String(operation.rerouteId)) // Spatial index uses strings
+    this.rerouteSpatialIndex.remove(asNodeId(operation.rerouteId)) // Spatial index uses strings
 
     change.type = 'delete'
   }
@@ -1340,7 +1341,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     for (const key of keysToDelete) {
       this.linkSegmentLayouts.delete(key)
-      this.linkSegmentSpatialIndex.remove(key)
+      this.linkSegmentSpatialIndex.remove(asNodeId(key))
     }
   }
 
@@ -1365,7 +1366,7 @@ class LayoutStoreImpl implements LayoutStore {
    */
   private handleRerouteDelete(rerouteId: RerouteId): void {
     this.rerouteLayouts.delete(rerouteId)
-    this.rerouteSpatialIndex.remove(String(rerouteId))
+    this.rerouteSpatialIndex.remove(asNodeId(rerouteId))
   }
 
   /**

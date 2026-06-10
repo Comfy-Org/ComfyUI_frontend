@@ -7,6 +7,7 @@
 import log from 'loglevel'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type {
   LayoutSource,
@@ -84,7 +85,7 @@ export function useLayoutMutations(): LayoutMutations {
    * Move a node to a new position
    */
   const moveNode = (nodeId: NodeId, position: Point): void => {
-    const normalizedNodeId = String(nodeId)
+    const normalizedNodeId = asNodeId(nodeId)
     const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
     if (!existing) return
 
@@ -106,7 +107,7 @@ export function useLayoutMutations(): LayoutMutations {
     if (updates.length === 0) return
 
     const nodeBoundsUpdates = updates.flatMap(({ nodeId, position }) => {
-      const normalizedNodeId = String(nodeId)
+      const normalizedNodeId = asNodeId(nodeId)
       const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
       if (!existing) return []
 
@@ -131,7 +132,7 @@ export function useLayoutMutations(): LayoutMutations {
    * Resize a node
    */
   const resizeNode = (nodeId: NodeId, size: Size): void => {
-    const normalizedNodeId = String(nodeId)
+    const normalizedNodeId = asNodeId(nodeId)
     const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
     if (!existing) return
 
@@ -151,7 +152,7 @@ export function useLayoutMutations(): LayoutMutations {
    * Set node z-index
    */
   const setNodeZIndex = (nodeId: NodeId, zIndex: number): void => {
-    const normalizedNodeId = String(nodeId)
+    const normalizedNodeId = asNodeId(nodeId)
     const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
     if (!existing) return
 
@@ -171,7 +172,7 @@ export function useLayoutMutations(): LayoutMutations {
    * Create a new node
    */
   const createNode = (nodeId: NodeId, layout: Partial<NodeLayout>): void => {
-    const normalizedNodeId = String(nodeId)
+    const normalizedNodeId = asNodeId(nodeId)
     const fullLayout: NodeLayout = {
       id: normalizedNodeId,
       position: layout.position ?? { x: 0, y: 0 },
@@ -201,7 +202,7 @@ export function useLayoutMutations(): LayoutMutations {
    * Delete a node
    */
   const deleteNode = (nodeId: NodeId): void => {
-    const normalizedNodeId = String(nodeId)
+    const normalizedNodeId = asNodeId(nodeId)
     const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
     if (!existing) return
 
@@ -245,8 +246,8 @@ export function useLayoutMutations(): LayoutMutations {
     targetSlot: number
   ): void => {
     // Normalize node IDs to strings for layout store consistency
-    const normalizedSourceNodeId = String(sourceNodeId)
-    const normalizedTargetNodeId = String(targetNodeId)
+    const normalizedSourceNodeId = asNodeId(sourceNodeId)
+    const normalizedTargetNodeId = asNodeId(targetNodeId)
 
     logger.debug('Creating link:', {
       linkId,

@@ -10,7 +10,8 @@ import {
   LGraphNode,
   type LGraphNodeConstructor,
   LiteGraph,
-  SubgraphNode
+  SubgraphNode,
+  asNodeId
 } from '@/lib/litegraph/src/litegraph'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
@@ -176,7 +177,7 @@ class GroupNodeBuilder {
     const storeLinkTypes = (config: SerializedGroupConfig) => {
       // Store link types for dynamically typed nodes e.g. reroutes
       for (const link of config.links) {
-        const origin = app.rootGraph.getNodeById(link[4] as NodeId)
+        const origin = app.rootGraph.getNodeById(asNodeId(link[4]))
         const type = origin?.outputs?.[Number(link[1])]?.type
         if (type !== undefined) link.push(type)
       }
@@ -1066,7 +1067,7 @@ export class GroupNodeHandler {
             if (!innerNode) return null
             // @ts-expect-error legacy node data format used for configure
             innerNode.configure(n)
-            innerNode.id = `${this.node.id}:${i}`
+            innerNode.id = asNodeId(`${this.node.id}:${i}`)
             innerNode.graph = this.node.graph
             return innerNode
           })
@@ -1087,7 +1088,7 @@ export class GroupNodeHandler {
         node.graph ??= this.node.graph
 
         // Create minimal DTOs rather than cloning the node
-        const currentId = String(node.id)
+        const currentId = node.id
         // @ts-expect-error temporary id reassignment for DTO creation
         node.id = currentId.split(':').at(-1)
         const aVeryRealNode = new ExecutableGroupNodeChildDTO(
@@ -1446,7 +1447,7 @@ export class GroupNodeHandler {
           ).runningInternalNodeId = innerNodeIndex
           api.dispatchCustomEvent(
             type as 'executing',
-            getEvent(detail, `${this.node.id}`, this.node) as string
+            getEvent(detail, `${this.node.id}`, this.node) as unknown as NodeId
           )
         }
       }
@@ -1710,7 +1711,7 @@ export class GroupNodeHandler {
       app.rootGraph.remove(node)
 
       // Set internal ID to what is expected after workflow is reloaded
-      node.id = `${this.node.id}:${i}`
+      node.id = asNodeId(`${this.node.id}:${i}`)
     }
 
     this.linkInputs()

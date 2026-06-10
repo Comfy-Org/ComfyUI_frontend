@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   ComfyWorkflow,
@@ -864,13 +865,13 @@ describe('useWorkflowStore', () => {
 
     describe('nodeIdToNodeLocatorId', () => {
       it('should convert node ID to NodeLocatorId for subgraph nodes', () => {
-        const result = store.nodeIdToNodeLocatorId(456)
+        const result = store.nodeIdToNodeLocatorId(asNodeId(456))
         expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
       })
 
       it('should return simple node ID for root graph nodes', () => {
         store.activeSubgraph = undefined
-        const result = store.nodeIdToNodeLocatorId(123)
+        const result = store.nodeIdToNodeLocatorId(asNodeId(123))
         expect(result).toBe('123')
       })
 
@@ -882,7 +883,10 @@ describe('useWorkflowStore', () => {
           nodes: [],
           clear: vi.fn()
         } as Partial<Subgraph> as Subgraph
-        const result = store.nodeIdToNodeLocatorId(789, customSubgraph)
+        const result = store.nodeIdToNodeLocatorId(
+          asNodeId(789),
+          customSubgraph
+        )
         expect(result).toBe('custom-uuid-1234-5678-90ab-cdef12345678:789')
       })
     })
@@ -909,7 +913,7 @@ describe('useWorkflowStore', () => {
         const result = store.nodeLocatorIdToNodeId(
           'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
         )
-        expect(result).toBe(456)
+        expect(result).toBe('456')
       })
 
       it('should handle string node IDs', () => {
@@ -921,7 +925,7 @@ describe('useWorkflowStore', () => {
 
       it('should handle simple node IDs (root graph)', () => {
         const result = store.nodeLocatorIdToNodeId('123')
-        expect(result).toBe(123)
+        expect(result).toBe('123')
 
         const stringResult = store.nodeLocatorIdToNodeId('node_1')
         expect(stringResult).toBe('node_1')

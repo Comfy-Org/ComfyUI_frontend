@@ -12,7 +12,11 @@ import type {
   LinkNetwork,
   LLink
 } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphEventMode,
+  LGraphNode,
+  asNodeId
+} from '@/lib/litegraph/src/litegraph'
 import { vi } from 'vitest'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ChangeTracker } from '@/scripts/changeTracker'
@@ -24,7 +28,7 @@ export function createMockLGraphNode(
   overrides: Partial<LGraphNode> | Record<string, unknown> = {}
 ): LGraphNode {
   const partial: Partial<LGraphNode> = {
-    id: 1,
+    id: asNodeId(1),
     pos: [0, 0],
     size: [100, 100],
     title: 'Test Node',
@@ -340,9 +344,9 @@ export function createMockLLink(overrides: Partial<LLink> = {}): LLink {
   const partial: Partial<LLink> = {
     id: 1,
     type: '*',
-    origin_id: 1,
+    origin_id: asNodeId(1),
     origin_slot: 0,
-    target_id: 2,
+    target_id: asNodeId(2),
     target_slot: 0,
     _pos: [0, 0],
     ...overrides
