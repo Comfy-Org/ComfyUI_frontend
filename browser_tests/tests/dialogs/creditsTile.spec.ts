@@ -1,6 +1,8 @@
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
@@ -30,7 +32,14 @@ const jsonRoute = (body: unknown) => ({
 
 async function mockCloudBoot(page: Page) {
   // Frontend-origin boot endpoints (proxied to the backend in production).
-  await page.route('**/api/features', (r) => r.fulfill(jsonRoute({})))
+  // `/api/features` is the remote-config source: production builds resolve
+  // `teamWorkspacesEnabled` from it (the `ff:` localStorage override is
+  // dev-only), and the flag gates the Workspace settings panel.
+  await page.route('**/api/features', (r) =>
+    r.fulfill(
+      jsonRoute({ team_workspaces_enabled: true } satisfies RemoteConfig)
+    )
+  )
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
   )
@@ -109,11 +118,8 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     const auth = new CloudAuthHelper(page)
     await auth.mockAuth()
 
-    // Enable team workspaces (the Workspace settings panel hosts the Plan &
-    // Credits tab) and pre-select the mock user to skip the user-select screen.
-    // `ff:` overrides are read by the dev build the e2e runs on.
+    // Pre-select the mock user to skip the user-select screen.
     await page.addInitScript(() => {
-      localStorage.setItem('ff:team_workspaces_enabled', 'true')
       localStorage.setItem('Comfy.userId', 'test-user-e2e')
     })
 
