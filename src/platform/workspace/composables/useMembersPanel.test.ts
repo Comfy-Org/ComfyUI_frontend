@@ -29,7 +29,6 @@ function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
   return {
     id: 'invite-1',
     email: 'invitee@example.com',
-    token: 'token-abc',
     inviteDate: new Date('2025-03-01'),
     expiryDate: new Date('2025-04-01'),
     ...overrides
@@ -37,12 +36,20 @@ function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
 }
 
 describe('sortMembers', () => {
-  it('places owners before members', () => {
+  it('places owners before members when sorting descending', () => {
     const owner = createMember({ id: 'o', role: 'owner', name: 'Owner' })
     const member = createMember({ id: 'm', role: 'member', name: 'Member' })
     const result = sortMembers([member, owner], null, 'desc')
     expect(result[0].id).toBe('o')
     expect(result[1].id).toBe('m')
+  })
+
+  it('places members before owners when sorting ascending', () => {
+    const owner = createMember({ id: 'o', role: 'owner', name: 'Owner' })
+    const member = createMember({ id: 'm', role: 'member', name: 'Member' })
+    const result = sortMembers([member, owner], null, 'asc')
+    expect(result[0].id).toBe('m')
+    expect(result[1].id).toBe('o')
   })
 
   it('places current user after owners but before others', () => {
@@ -171,7 +178,7 @@ describe('sortPendingInvites', () => {
     expect(result[1].id).toBe('l')
   })
 
-  it('falls back to inviteDate when sortField is joinDate', () => {
+  it('falls back to inviteDate when sortField is role', () => {
     const early = createInvite({
       id: 'e',
       inviteDate: new Date('2025-01-01')
@@ -180,7 +187,7 @@ describe('sortPendingInvites', () => {
       id: 'l',
       inviteDate: new Date('2025-06-01')
     })
-    const result = sortPendingInvites([early, late], 'joinDate', 'desc')
+    const result = sortPendingInvites([early, late], 'role', 'desc')
     expect(result[0].id).toBe('l')
   })
 
@@ -202,10 +209,9 @@ describe('sortPendingInvites', () => {
 })
 
 const mockToastAdd = vi.fn()
-const mockCopyInviteLink = vi.fn()
+const mockResendInvite = vi.fn()
 const mockShowRemoveMemberDialog = vi.fn()
 const mockShowRevokeInviteDialog = vi.fn()
-const mockShowCreateWorkspaceDialog = vi.fn()
 const mockShowSubscriptionDialog = vi.fn()
 
 const {
@@ -239,8 +245,7 @@ const {
       showMembersList: true,
       showPendingTab: true,
       showSearch: true,
-      showDateColumn: true,
-      showRoleBadge: true,
+      showRoleColumn: true,
       membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
@@ -274,7 +279,7 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
     members: mockMembers,
     pendingInvites: mockPendingInvites,
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
-    copyInviteLink: mockCopyInviteLink
+    resendInvite: mockResendInvite
   })
 }))
 
@@ -310,21 +315,10 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/cloud/subscription/constants/tierPricing', () => ({
-  TIER_TO_KEY: {
-    FREE: 'free',
-    STANDARD: 'standard',
-    CREATOR: 'creator',
-    PRO: 'pro',
-    FOUNDERS_EDITION: 'founder'
-  }
-}))
-
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
     showRemoveMemberDialog: mockShowRemoveMemberDialog,
-    showRevokeInviteDialog: mockShowRevokeInviteDialog,
-    showCreateWorkspaceDialog: mockShowCreateWorkspaceDialog
+    showRevokeInviteDialog: mockShowRevokeInviteDialog
   })
 }))
 
@@ -344,49 +338,23 @@ describe('useMembersPanel', () => {
     return useMembersPanel()
   }
 
-  describe('isSingleSeatPlan', () => {
-    it('is false for personal workspace', async () => {
+  describe('personal workspace plan overlay', () => {
+    it('keeps isOnTeamPlan true with a multi-seat subscription', async () => {
       mockIsInPersonalWorkspace.value = true
       const panel = await setup()
-      expect(panel.isSingleSeatPlan.value).toBe(false)
+      expect(panel.isOnTeamPlan.value).toBe(true)
     })
 
-    it('is true when no active subscription', async () => {
-      mockIsActiveSubscription.value = false
-      const panel = await setup()
-      expect(panel.isSingleSeatPlan.value).toBe(true)
-    })
-
-    it('is true for standard tier (1 seat)', async () => {
-      mockSubscription.value = { tier: 'STANDARD' }
-      const panel = await setup()
-      expect(panel.isSingleSeatPlan.value).toBe(true)
-    })
-
-    it('is false for pro tier (20 seats)', async () => {
-      mockSubscription.value = { tier: 'PRO' }
-      const panel = await setup()
-      expect(panel.isSingleSeatPlan.value).toBe(false)
-    })
-  })
-
-  describe('maxSeats', () => {
-    it('returns 1 for personal workspace', async () => {
+    it('clamps maxSeats to 1 regardless of plan seats', async () => {
       mockIsInPersonalWorkspace.value = true
       const panel = await setup()
       expect(panel.maxSeats.value).toBe(1)
     })
 
-    it('returns tier-appropriate seats', async () => {
+    it('passes plan seats through for team workspaces', async () => {
       mockSubscription.value = { tier: 'CREATOR' }
       const panel = await setup()
       expect(panel.maxSeats.value).toBe(5)
-    })
-
-    it('returns 1 when no subscription', async () => {
-      mockSubscription.value = null
-      const panel = await setup()
-      expect(panel.maxSeats.value).toBe(1)
     })
   })
 
@@ -454,23 +422,29 @@ describe('useMembersPanel', () => {
     })
   })
 
-  describe('handleCopyInviteLink', () => {
-    it('shows success toast on success', async () => {
-      mockCopyInviteLink.mockResolvedValue(undefined)
+  describe('handleResendInvite', () => {
+    it('resends the invite and shows a success toast', async () => {
+      mockResendInvite.mockResolvedValue(undefined)
       const panel = await setup()
-      await panel.handleCopyInviteLink(createInvite({ id: 'inv-1' }))
-      expect(mockCopyInviteLink).toHaveBeenCalledWith('inv-1')
+      await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
+      expect(mockResendInvite).toHaveBeenCalledWith('inv-1')
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
+        expect.objectContaining({
+          severity: 'success',
+          summary: 'workspacePanel.toast.inviteResent'
+        })
       )
     })
 
     it('shows error toast on failure', async () => {
-      mockCopyInviteLink.mockRejectedValue(new Error('fail'))
+      mockResendInvite.mockRejectedValue(new Error('fail'))
       const panel = await setup()
-      await panel.handleCopyInviteLink(createInvite({ id: 'inv-1' }))
+      await panel.handleResendInvite(createInvite({ id: 'inv-1' }))
       expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+        expect.objectContaining({
+          severity: 'error',
+          summary: 'workspacePanel.toast.inviteResendFailed'
+        })
       )
     })
   })
@@ -480,14 +454,6 @@ describe('useMembersPanel', () => {
       const panel = await setup()
       panel.handleRevokeInvite(createInvite({ id: 'inv-42' }))
       expect(mockShowRevokeInviteDialog).toHaveBeenCalledWith('inv-42')
-    })
-  })
-
-  describe('handleCreateWorkspace', () => {
-    it('calls showCreateWorkspaceDialog', async () => {
-      const panel = await setup()
-      panel.handleCreateWorkspace()
-      expect(mockShowCreateWorkspaceDialog).toHaveBeenCalled()
     })
   })
 

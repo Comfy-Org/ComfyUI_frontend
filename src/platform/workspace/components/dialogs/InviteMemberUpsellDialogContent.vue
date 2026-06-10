@@ -39,11 +39,7 @@
         {{ $t('g.cancel') }}
       </Button>
       <Button variant="primary" size="lg" @click="onUpgrade">
-        {{
-          isActiveSubscription
-            ? $t('workspacePanel.inviteUpsellDialog.upgradeToCreator')
-            : $t('workspacePanel.inviteUpsellDialog.viewPlans')
-        }}
+        {{ $t('workspacePanel.inviteUpsellDialog.upgradeToTeam') }}
       </Button>
     </div>
   </div>

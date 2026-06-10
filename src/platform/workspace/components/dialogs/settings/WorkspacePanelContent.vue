@@ -33,15 +33,17 @@
             "
           >
             {{
-              $t('workspacePanel.tabs.membersCount', {
-                count: members.length
-              })
+              isPersonalWorkspace
+                ? $t('workspacePanel.members.header')
+                : $t('workspacePanel.tabs.membersCount', {
+                    count: members.length
+                  })
             }}
           </TabsTrigger>
         </TabsList>
         <div class="flex items-center gap-1">
           <Button
-            v-if="permissions.canInviteMembers"
+            v-if="permissions.canInviteMembers || isPersonalWorkspace"
             v-tooltip="
               inviteTooltip
                 ? { value: inviteTooltip, showDelay: 0 }
@@ -49,15 +51,12 @@
             "
             variant="secondary"
             size="lg"
-            :disabled="!isSingleSeatPlan && isInviteLimitReached"
-            :class="
-              !isSingleSeatPlan &&
-              isInviteLimitReached &&
-              'cursor-not-allowed opacity-50'
-            "
+            :disabled="isInviteDisabled"
+            :class="isInviteDisabled && 'cursor-not-allowed opacity-50'"
             :aria-label="$t('workspacePanel.inviteMember')"
             @click="handleInviteMember"
           >
+            {{ $t('workspacePanel.invite') }}
             <i class="pi pi-plus text-sm" />
           </Button>
           <template v-if="permissions.canAccessWorkspaceMenu">
@@ -124,9 +123,8 @@ import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import MembersPanelContent from '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
+import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
@@ -151,22 +149,19 @@ const {
   showInviteMemberUpsellDialog,
   showEditWorkspaceDialog
 } = useDialogService()
-const { isActiveSubscription, subscription, getMaxSeats } = useBillingContext()
-
-const isSingleSeatPlan = computed(() => {
-  if (!isActiveSubscription.value) return true
-  const tier = subscription.value?.tier
-  if (!tier) return true
-  const tierKey = TIER_TO_KEY[tier]
-  if (!tierKey) return true
-  return getMaxSeats(tierKey) <= 1
-})
+const { isOnTeamPlan, maxSeats } = useTeamPlan()
 const workspaceStore = useTeamWorkspaceStore()
-const { workspaceName, members, isInviteLimitReached, isWorkspaceSubscribed } =
-  storeToRefs(workspaceStore)
+const {
+  workspaceName,
+  members,
+  totalMemberSlots,
+  isInviteLimitReached,
+  isWorkspaceSubscribed
+} = storeToRefs(workspaceStore)
 const { fetchMembers, fetchPendingInvites } = workspaceStore
 
-const { workspaceRole, permissions, uiConfig } = useWorkspaceUI()
+const { workspaceType, workspaceRole, permissions, uiConfig } = useWorkspaceUI()
+const isPersonalWorkspace = computed(() => workspaceType.value === 'personal')
 const activeTab = ref(defaultTab)
 
 const menu = ref<InstanceType<typeof Menu> | null>(null)
@@ -197,18 +192,29 @@ const deleteTooltip = computed(() => {
   return tooltipKey ? t(tooltipKey) : null
 })
 
+// Plan seat limit, with the flat backend cap (isInviteLimitReached) as backstop
+const isMemberLimitReached = computed(
+  () => isInviteLimitReached.value || totalMemberSlots.value >= maxSeats.value
+)
+
+const isInviteDisabled = computed(
+  () =>
+    isPersonalWorkspace.value ||
+    (isOnTeamPlan.value && isMemberLimitReached.value)
+)
+
 const inviteTooltip = computed(() => {
-  if (isSingleSeatPlan.value) return null
-  if (!isInviteLimitReached.value) return null
-  return t('workspacePanel.inviteLimitReached')
+  if (!isOnTeamPlan.value) return null
+  if (!isMemberLimitReached.value) return null
+  return t('workspacePanel.inviteLimitReached', { count: maxSeats.value })
 })
 
 function handleInviteMember() {
-  if (isSingleSeatPlan.value) {
+  if (!isOnTeamPlan.value) {
     showInviteMemberUpsellDialog()
     return
   }
-  if (isInviteLimitReached.value) return
+  if (isMemberLimitReached.value) return
   showInviteMemberDialog()
 }
 

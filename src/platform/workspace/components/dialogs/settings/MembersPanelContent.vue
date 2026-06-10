@@ -8,15 +8,17 @@
         <div class="flex min-w-0 flex-1 items-baseline gap-2">
           <span class="text-base font-semibold text-base-foreground">
             <template v-if="activeView === 'active'">
-              {{
-                $t('workspacePanel.members.membersCount', {
-                  count:
-                    isSingleSeatPlan || isPersonalWorkspace
-                      ? 1
-                      : members.length,
-                  maxSeats: maxSeats
-                })
-              }}
+              <template v-if="isOnTeamPlan && !isPersonalWorkspace">
+                {{
+                  $t('workspacePanel.members.membersCount', {
+                    count: members.length,
+                    maxSeats: maxSeats
+                  })
+                }}
+              </template>
+              <template v-else>
+                {{ $t('workspacePanel.members.header') }}
+              </template>
             </template>
             <template v-else-if="permissions.canViewPendingInvites">
               {{
@@ -29,12 +31,12 @@
           </span>
         </div>
         <div
-          v-if="uiConfig.showSearch && !isSingleSeatPlan"
+          v-if="uiConfig.showSearch && isOnTeamPlan"
           class="flex items-start gap-2"
         >
           <SearchInput
             v-model="searchQuery"
-            :placeholder="$t('g.search')"
+            :placeholder="$t('workspacePanel.members.searchPlaceholder')"
             size="lg"
             class="w-64"
           />
@@ -49,7 +51,7 @@
           :class="
             cn(
               'grid w-full items-center py-2',
-              isSingleSeatPlan
+              !isOnTeamPlan
                 ? 'grid-cols-1 py-0'
                 : activeView === 'pending'
                   ? uiConfig.pendingGridCols
@@ -58,7 +60,7 @@
           "
         >
           <!-- Tab buttons in first column -->
-          <div v-if="!isSingleSeatPlan" class="flex items-center gap-2">
+          <div v-if="isOnTeamPlan" class="flex items-center gap-2">
             <Button
               :variant="
                 activeView === 'active' ? 'secondary' : 'muted-textonly'
@@ -107,14 +109,14 @@
             <div />
           </template>
           <template v-else>
-            <template v-if="!isSingleSeatPlan">
+            <template v-if="isOnTeamPlan">
               <Button
                 variant="muted-textonly"
                 size="sm"
                 class="justify-end"
-                @click="toggleSort('joinDate')"
+                @click="toggleSort('role')"
               >
-                {{ $t('workspacePanel.members.columns.joinDate') }}
+                {{ $t('workspacePanel.members.columns.role') }}
                 <i class="icon-[lucide--chevrons-up-down] size-4" />
               </Button>
               <!-- Empty cell for action column header (OWNER only) -->
@@ -134,7 +136,6 @@
                 :is-current-user="true"
                 :photo-url="userPhotoUrl ?? undefined"
                 :grid-cols="uiConfig.membersGridCols"
-                :show-role-badge="uiConfig.showRoleBadge"
               />
             </template>
 
@@ -151,10 +152,9 @@
                     : undefined
                 "
                 :grid-cols="uiConfig.membersGridCols"
-                :show-role-badge="uiConfig.showRoleBadge"
-                :show-date-column="uiConfig.showDateColumn"
+                :show-role-column="uiConfig.showRoleColumn"
                 :can-remove-members="permissions.canRemoveMembers"
-                :is-single-seat-plan="isSingleSeatPlan"
+                :is-single-seat-plan="!isOnTeamPlan"
                 :striped="index % 2 === 1"
                 @show-menu="showMemberMenu($event, member)"
               />
@@ -164,34 +164,35 @@
             </template>
           </template>
 
-          <!-- Upsell Banner -->
-          <MemberUpsellBanner
-            v-if="isSingleSeatPlan"
-            :is-active-subscription="isActiveSubscription"
-            @show-plans="showSubscriptionDialog()"
-          />
-
           <!-- Pending Invites -->
           <PendingInvitesList
             v-if="activeView === 'pending'"
             :invites="filteredPendingInvites"
             :grid-cols="uiConfig.pendingGridCols"
-            @copy-link="handleCopyInviteLink"
+            @resend="handleResendInvite"
             @revoke="handleRevokeInvite"
           />
         </div>
       </div>
     </div>
-    <!-- Personal Workspace Message -->
-    <div v-if="isPersonalWorkspace" class="flex items-center">
+    <!-- Upsell Banner -->
+    <MemberUpsellBanner
+      v-if="!isOnTeamPlan"
+      @show-plans="showSubscriptionDialog()"
+    />
+    <!-- Need More Members Footer -->
+    <div
+      v-if="isOnTeamPlan && !isPersonalWorkspace"
+      class="flex items-center pt-2"
+    >
       <p class="text-sm text-muted-foreground">
-        {{ $t('workspacePanel.members.personalWorkspaceMessage') }}
+        {{ $t('workspacePanel.members.needMoreMembers') }}
       </p>
       <button
-        class="cursor-pointer border-none bg-transparent underline"
-        @click="handleCreateWorkspace"
+        class="cursor-pointer border-none bg-transparent px-2 text-sm text-base-foreground"
+        @click="handleContactUs"
       >
-        {{ $t('workspacePanel.members.createNewWorkspace') }}
+        {{ $t('workspacePanel.members.contactUs') }}
       </button>
     </div>
   </div>
@@ -203,6 +204,7 @@ import { ref } from 'vue'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useExternalLink } from '@/composables/useExternalLink'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
@@ -214,7 +216,7 @@ const {
   searchQuery,
   activeView,
   maxSeats,
-  isSingleSeatPlan,
+  isOnTeamPlan,
   personalWorkspaceMember,
   filteredMembers,
   filteredPendingInvites,
@@ -224,21 +226,25 @@ const {
   pendingInvites,
   permissions,
   uiConfig,
-  isActiveSubscription,
   userPhotoUrl,
   isCurrentUser,
   selectMember,
   toggleSort,
   showSubscriptionDialog,
-  handleCopyInviteLink,
-  handleRevokeInvite,
-  handleCreateWorkspace
+  handleResendInvite,
+  handleRevokeInvite
 } = useMembersPanel()
+
+const { staticUrls } = useExternalLink()
 
 const memberMenu = ref<InstanceType<typeof Menu> | null>(null)
 
 function showMemberMenu(event: Event, member: WorkspaceMember) {
   selectMember(member)
   memberMenu.value?.toggle(event)
+}
+
+function handleContactUs() {
+  window.open(staticUrls.discord, '_blank', 'noopener,noreferrer')
 }
 </script>

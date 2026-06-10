@@ -98,8 +98,7 @@ describe('useWorkspaceUI', () => {
         showMembersList: false,
         showPendingTab: false,
         showSearch: false,
-        showDateColumn: false,
-        showRoleBadge: false,
+        showRoleColumn: false,
         showEditWorkspaceMenuItem: false,
         workspaceMenuAction: null,
         workspaceMenuDisabledTooltip: null
