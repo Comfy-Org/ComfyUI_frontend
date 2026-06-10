@@ -522,6 +522,56 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         ).toBe(true)
       }
     })
+
+    test(
+      'Cloning a subgraph node preserves edited promoted widget values on original and clone',
+      { tag: ['@vue-nodes'] },
+      async ({ comfyPage }) => {
+        await comfyPage.workflow.loadWorkflow(
+          'subgraphs/subgraph-with-promoted-text-widget'
+        )
+
+        const editedValue = 'Edited prompt that must survive cloning'
+        const originalTextbox = comfyPage.vueNodes
+          .getNodeLocator('11')
+          .getByRole('textbox', { name: 'text' })
+        await expect(originalTextbox).toBeVisible()
+        await expect(originalTextbox).toHaveValue('')
+        await originalTextbox.fill(editedValue)
+
+        const originalNode = await comfyPage.nodeOps.getNodeRefById('11')
+        await originalNode.click('title')
+        await comfyPage.clipboard.copy()
+        await comfyPage.clipboard.paste()
+
+        async function collectSubgraphNodeIds() {
+          return comfyPage.page.evaluate(() => {
+            const graph = window.app!.canvas.graph!
+            return graph.nodes
+              .filter(
+                (n) =>
+                  typeof n.isSubgraphNode === 'function' && n.isSubgraphNode()
+              )
+              .map((n) => String(n.id))
+          })
+        }
+
+        await expect
+          .poll(async () => (await collectSubgraphNodeIds()).length)
+          .toBeGreaterThan(1)
+
+        const subgraphNodeIds = await collectSubgraphNodeIds()
+        for (const nodeId of subgraphNodeIds) {
+          const textbox = comfyPage.vueNodes
+            .getNodeLocator(nodeId)
+            .getByRole('textbox', { name: 'text' })
+          await expect(
+            textbox,
+            `node ${nodeId} promoted text widget reset to default after clone`
+          ).toHaveValue(editedValue)
+        }
+      }
+    )
   })
 
   test.describe('Duplicate ID Remapping', () => {
