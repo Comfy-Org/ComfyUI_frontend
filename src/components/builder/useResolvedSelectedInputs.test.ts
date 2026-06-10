@@ -103,7 +103,7 @@ describe('useResolvedSelectedInputs', () => {
 
   it('resolves promoted subgraph inputs from their host input widgetId', () => {
     const node = makeSubgraphNode(1, [
-      fromPartial<INodeInputSlot, unknown>({
+      fromPartial<INodeInputSlot>({
         name: 'seed',
         label: 'renamed_seed',
         widgetId: entitySeed
