@@ -1,9 +1,9 @@
 import { createTestingPinia } from '@pinia/testing'
-import { ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
-
+import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import NodeLibrarySidebarTabV2 from './NodeLibrarySidebarTabV2.vue'
 
@@ -53,14 +53,6 @@ vi.mock('./nodeLibrary/AllNodesPanel.vue', () => ({
     name: 'AllNodesPanel',
     template: '<div data-testid="all-panel"><slot /></div>',
     props: ['sections', 'expandedKeys', 'fillNodeInfo']
-  }
-}))
-
-vi.mock('./nodeLibrary/BlueprintsPanel.vue', () => ({
-  default: {
-    name: 'BlueprintsPanel',
-    template: '<div data-testid="blueprints-panel"><slot /></div>',
-    props: ['sections', 'expandedKeys']
   }
 }))
 
@@ -129,7 +121,7 @@ describe('NodeLibrarySidebarTabV2', () => {
     renderComponent()
 
     const triggers = screen.getAllByRole('tab')
-    expect(triggers).toHaveLength(3)
+    expect(triggers).toHaveLength(2)
   })
 
   it('should render search box', () => {
@@ -155,15 +147,16 @@ describe('NodeLibrarySidebarTabV2', () => {
     })
 
     it('renders the empty state with the query when search has no matches', async () => {
+      const user = userEvent.setup()
       hoisted.mockSearchNode.mockReturnValue([])
       renderComponent()
 
+      const [, allTab] = screen.getAllByRole('tab')
+      await user.click(allTab)
       await fireEvent.update(screen.getByTestId('search-box'), 'gibberish')
 
       expect(screen.getByText('No nodes match "gibberish"')).toBeInTheDocument()
-      expect(screen.queryByTestId('essential-panel')).not.toBeInTheDocument()
       expect(screen.queryByTestId('all-panel')).not.toBeInTheDocument()
-      expect(screen.queryByTestId('blueprints-panel')).not.toBeInTheDocument()
     })
 
     it('hides the empty state when the search has matches', async () => {
@@ -177,8 +170,12 @@ describe('NodeLibrarySidebarTabV2', () => {
     })
 
     it('hides the empty state once the query is cleared', async () => {
+      const user = userEvent.setup()
       hoisted.mockSearchNode.mockReturnValue([])
       renderComponent()
+
+      const [, allTab] = screen.getAllByRole('tab')
+      await user.click(allTab)
 
       const input = screen.getByTestId('search-box')
       await fireEvent.update(input, 'gibberish')
@@ -187,7 +184,7 @@ describe('NodeLibrarySidebarTabV2', () => {
       await fireEvent.update(input, '')
 
       expect(screen.queryByText(/No nodes match/)).not.toBeInTheDocument()
-      expect(screen.getByTestId('essential-panel')).toBeInTheDocument()
+      expect(screen.getByTestId('all-panel')).toBeInTheDocument()
     })
   })
 })

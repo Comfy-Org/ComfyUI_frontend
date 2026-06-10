@@ -1,6 +1,16 @@
 <template>
   <div ref="previewPanel">
     <div
+      v-if="filteredSections.length === 0"
+      class="flex min-h-0 flex-1 items-center justify-center px-6 py-8 text-center text-sm text-muted-foreground"
+    >
+      {{
+        t('sideToolbar.nodeLibraryTab.noMatchingNodes', {
+          query: searchQuery
+        })
+      }}
+    </div>
+    <div
       v-for="section in filteredSections"
       :id="`essentials-section-${section.key}`"
       :key="section.key"
@@ -54,6 +64,7 @@
 
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
 import type {
@@ -64,6 +75,7 @@ import { ESSENTIAL_PLACEHOLDER_SECTIONS } from '@/constants/essentialsPlaceholde
 
 import EssentialNodeCard from './EssentialNodeCard.vue'
 
+const { t } = useI18n()
 const { searchQuery = '' } = defineProps<{ searchQuery?: string }>()
 const previewPanel = useTemplateRef('previewPanel')
 

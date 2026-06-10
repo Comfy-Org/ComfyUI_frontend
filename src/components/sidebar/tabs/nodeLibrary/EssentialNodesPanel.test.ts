@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
 
@@ -24,6 +25,19 @@ function createMediaFilters(
     ...overrides
   }
 }
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      sideToolbar: {
+        nodeLibraryTab: {
+          noMatchingNodes: 'No nodes match "{query}"'
+        }
+      }
+    }
+  }
+})
 
 describe('EssentialNodesPanel', () => {
   function renderComponent({
@@ -31,6 +45,7 @@ describe('EssentialNodesPanel', () => {
     mediaFilters = createMediaFilters()
   } = {}) {
     return render(EssentialNodesPanel, {
+      global: { plugins: [i18n] },
       props: {
         searchQuery,
         mediaFilters,

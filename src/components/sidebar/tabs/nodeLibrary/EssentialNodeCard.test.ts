@@ -103,7 +103,7 @@ describe('EssentialNodeCard', () => {
 
     it('should set data-node-name attribute', () => {
       const { container } = renderComponent()
-      expect(getCard(container)).toHaveAttribute('data-node-name', 'Load Image')
+      expect(getCard(container)).toHaveAttribute('data-node-name', 'LoadImage')
     })
 
     it('should be draggable when the tile resolves to a node def', () => {

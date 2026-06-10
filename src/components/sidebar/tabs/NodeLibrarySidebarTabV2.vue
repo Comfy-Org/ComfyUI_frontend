@@ -2,180 +2,178 @@
   <SidebarTabTemplate hide-toolbar :title="$t('sideToolbar.nodes')">
     <template #body>
       <NodeDragPreview />
-      <div class="flex h-full flex-col">
+      <div
+        ref="scrollContainerRef"
+        class="h-full min-h-0 scrollbar-gutter-stable overflow-y-auto overscroll-none"
+      >
         <div
-          v-if="hasNoMatches"
-          class="flex min-h-0 flex-1 items-center justify-center px-6 py-8 text-center text-sm text-muted-foreground"
+          class="sticky z-20 bg-comfy-menu-bg transition-[top] duration-200 ease-out"
+          :style="{ top: `${headerTop}px` }"
         >
-          {{
-            $t('sideToolbar.nodeLibraryTab.noMatchingNodes', {
-              query: searchQuery
-            })
-          }}
-        </div>
-        <div
-          v-else
-          ref="scrollContainerRef"
-          class="min-h-0 flex-1 scrollbar-gutter-stable overflow-y-auto overscroll-none"
-        >
-          <div
-            class="sticky z-20 bg-comfy-menu-bg transition-[top] duration-200 ease-out"
-            :style="{ top: `${headerTop}px` }"
-          >
-            <div ref="titleTabsRef">
-              <div class="px-4 pt-4 pb-2 font-bold">
-                {{ $t('sideToolbar.nodes') }}
-              </div>
-              <div class="px-4 pt-2 pb-0">
-                <TabList v-model="selectedTab">
-                  <Tab v-for="{ value, label } in tabs" :key="value" :value>
-                    {{ label }}
-                  </Tab>
-                </TabList>
-              </div>
+          <div ref="titleTabsRef">
+            <div class="px-4 pt-4 pb-2 font-bold">
+              {{ $t('sideToolbar.nodes') }}
             </div>
-            <div class="border-b border-border-default bg-comfy-menu-bg py-2">
-              <div class="flex items-center gap-2 px-4 py-2">
-                <div class="min-w-0 flex-1">
-                  <SearchInput
-                    ref="searchBoxRef"
-                    v-model="searchQuery"
-                    :placeholder="$t('g.search') + '...'"
-                    @search="handleSearch"
-                  />
-                </div>
-                <div class="flex shrink-0 items-center gap-2">
-                  <DropdownMenu button-class="icon-[lucide--list-filter]">
-                    <template #button>
-                      <Button
-                        size="icon"
-                        :aria-label="$t('sideToolbar.nodeLibraryTab.filter')"
+            <div class="px-4 pt-2 pb-0">
+              <TabList v-model="selectedTab">
+                <Tab v-for="{ value, label } in tabs" :key="value" :value>
+                  {{ label }}
+                </Tab>
+              </TabList>
+            </div>
+          </div>
+          <div class="border-b border-border-default bg-comfy-menu-bg py-2">
+            <div class="flex items-center gap-2 px-4 py-2">
+              <div class="min-w-0 flex-1">
+                <SearchInput
+                  ref="searchBoxRef"
+                  v-model="searchQuery"
+                  :placeholder="$t('g.search') + '...'"
+                  @search="handleSearch"
+                />
+              </div>
+              <div class="flex shrink-0 items-center gap-2">
+                <DropdownMenu button-class="icon-[lucide--list-filter]">
+                  <template #button>
+                    <Button
+                      size="icon"
+                      :aria-label="$t('sideToolbar.nodeLibraryTab.filter')"
+                    >
+                      <i class="icon-[lucide--list-filter] size-4" />
+                    </Button>
+                  </template>
+                  <template #default="{ itemClass }">
+                    <template v-if="selectedTab === 'essentials'">
+                      <DropdownMenuCheckboxItem
+                        :model-value="allMediaSelected"
+                        :class="itemClass"
+                        @select.prevent
+                        @update:model-value="selectAllMedia"
                       >
-                        <i class="icon-[lucide--list-filter] size-4" />
-                      </Button>
-                    </template>
-                    <template #default="{ itemClass }">
-                      <template v-if="selectedTab === 'essentials'">
-                        <DropdownMenuCheckboxItem
-                          :model-value="allMediaSelected"
-                          :class="itemClass"
-                          @select.prevent
-                          @update:model-value="selectAllMedia"
-                        >
-                          <span class="flex-1">{{ $t('g.all') }}</span>
-                          <span class="size-4 shrink-0">
-                            <DropdownMenuItemIndicator>
-                              <i class="icon-[lucide--check] size-4" />
-                            </DropdownMenuItemIndicator>
-                          </span>
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          v-for="media in ESSENTIALS_MEDIA_TYPES"
-                          :key="media"
-                          :model-value="mediaFilters[media]"
-                          :class="itemClass"
-                          @select.prevent
-                          @update:model-value="setMediaFilter(media, $event)"
-                        >
-                          <span class="flex-1">
-                            {{ ESSENTIALS_MEDIA_LABELS[media] }}
-                          </span>
-                          <DropdownMenuItemIndicator class="size-4 shrink-0">
-                            <i class="icon-[lucide--check]" />
+                        <span class="flex-1">{{ $t('g.all') }}</span>
+                        <span class="size-4 shrink-0">
+                          <DropdownMenuItemIndicator>
+                            <i class="icon-[lucide--check] size-4" />
                           </DropdownMenuItemIndicator>
-                        </DropdownMenuCheckboxItem>
-                      </template>
-                      <template v-else>
-                        <DropdownMenuCheckboxItem
-                          :model-value="allCategoriesSelected"
-                          :class="itemClass"
-                          @select.prevent
-                          @update:model-value="selectAllCategories"
-                        >
-                          <span class="flex-1">{{ $t('g.all') }}</span>
-                          <DropdownMenuItemIndicator class="size-4 shrink-0">
-                            <i class="icon-[lucide--check]" />
-                          </DropdownMenuItemIndicator>
-                        </DropdownMenuCheckboxItem>
-                        <DropdownMenuCheckboxItem
-                          v-for="category in filterableCategories"
-                          :key="category"
-                          :model-value="filterOptions[category]"
-                          :class="itemClass"
-                          @select.prevent
-                          @update:model-value="
-                            setCategoryFilter(category, $event)
-                          "
-                        >
-                          <span class="flex-1">{{
-                            $t(
-                              `sideToolbar.nodeLibraryTab.filterOptions.${category}`
-                            )
-                          }}</span>
-                          <DropdownMenuItemIndicator class="size-4 shrink-0">
-                            <i class="icon-[lucide--check]" />
-                          </DropdownMenuItemIndicator>
-                        </DropdownMenuCheckboxItem>
-                      </template>
+                        </span>
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem
+                        v-for="media in ESSENTIALS_MEDIA_TYPES"
+                        :key="media"
+                        :model-value="mediaFilters[media]"
+                        :class="itemClass"
+                        @select.prevent
+                        @update:model-value="setMediaFilter(media, $event)"
+                      >
+                        <span class="flex-1">
+                          {{ ESSENTIALS_MEDIA_LABELS[media] }}
+                        </span>
+                        <DropdownMenuItemIndicator class="size-4 shrink-0">
+                          <i class="icon-[lucide--check]" />
+                        </DropdownMenuItemIndicator>
+                      </DropdownMenuCheckboxItem>
                     </template>
-                  </DropdownMenu>
-                  <DropdownMenu
-                    v-if="selectedTab === 'essentials'"
-                    :entries="jumpMenuEntries"
-                  >
-                    <template #button>
-                      <Button size="icon" :aria-label="$t('essentials.jumpTo')">
-                        <i class="icon-[lucide--list-tree] size-4" />
-                      </Button>
+                    <template v-else>
+                      <DropdownMenuCheckboxItem
+                        :model-value="allCategoriesSelected"
+                        :class="itemClass"
+                        @select.prevent
+                        @update:model-value="selectAllCategories"
+                      >
+                        <span class="flex-1">{{ $t('g.all') }}</span>
+                        <DropdownMenuItemIndicator class="size-4 shrink-0">
+                          <i class="icon-[lucide--check]" />
+                        </DropdownMenuItemIndicator>
+                      </DropdownMenuCheckboxItem>
+                      <DropdownMenuCheckboxItem
+                        v-for="category in filterableCategories"
+                        :key="category"
+                        :model-value="filterOptions[category]"
+                        :class="itemClass"
+                        @select.prevent
+                        @update:model-value="
+                          setCategoryFilter(category, $event)
+                        "
+                      >
+                        <span class="flex-1">{{
+                          $t(
+                            `sideToolbar.nodeLibraryTab.filterOptions.${category}`
+                          )
+                        }}</span>
+                        <DropdownMenuItemIndicator class="size-4 shrink-0">
+                          <i class="icon-[lucide--check]" />
+                        </DropdownMenuItemIndicator>
+                      </DropdownMenuCheckboxItem>
                     </template>
-                  </DropdownMenu>
-                  <DropdownMenu v-else>
-                    <template #button>
-                      <Button size="icon" :aria-label="$t('g.sort')">
-                        <i class="icon-[lucide--settings-2] size-4" />
-                      </Button>
-                    </template>
-                    <template #default="{ itemClass }">
-                      <DropdownMenuRadioGroup v-model="sortOrder">
-                        <DropdownMenuRadioItem
-                          v-for="option in sortingOptions"
-                          :key="option.id"
-                          :value="option.id"
-                          :class="itemClass"
-                        >
-                          <span class="flex-1">{{ $t(option.label) }}</span>
-                          <DropdownMenuItemIndicator class="size-4 shrink-0">
-                            <i class="icon-[lucide--check]" />
-                          </DropdownMenuItemIndicator>
-                        </DropdownMenuRadioItem>
-                      </DropdownMenuRadioGroup>
-                    </template>
-                  </DropdownMenu>
-                </div>
+                  </template>
+                </DropdownMenu>
+                <DropdownMenu
+                  v-if="selectedTab === 'essentials'"
+                  :entries="jumpMenuEntries"
+                >
+                  <template #button>
+                    <Button size="icon" :aria-label="$t('essentials.jumpTo')">
+                      <i class="icon-[lucide--list-tree] size-4" />
+                    </Button>
+                  </template>
+                </DropdownMenu>
+                <DropdownMenu v-else>
+                  <template #button>
+                    <Button size="icon" :aria-label="$t('g.sort')">
+                      <i class="icon-[lucide--settings-2] size-4" />
+                    </Button>
+                  </template>
+                  <template #default="{ itemClass }">
+                    <DropdownMenuRadioGroup v-model="sortOrder">
+                      <DropdownMenuRadioItem
+                        v-for="option in sortingOptions"
+                        :key="option.id"
+                        :value="option.id"
+                        :class="itemClass"
+                      >
+                        <span class="flex-1">{{ $t(option.label) }}</span>
+                        <DropdownMenuItemIndicator class="size-4 shrink-0">
+                          <i class="icon-[lucide--check]" />
+                        </DropdownMenuItemIndicator>
+                      </DropdownMenuRadioItem>
+                    </DropdownMenuRadioGroup>
+                  </template>
+                </DropdownMenu>
               </div>
             </div>
           </div>
-          <div class="pb-2">
-            <TabPanel
-              v-if="flags.nodeLibraryEssentialsEnabled"
-              :model-value="selectedTab"
-              value="essentials"
+        </div>
+        <div class="pb-2">
+          <TabPanel
+            v-if="flags.nodeLibraryEssentialsEnabled"
+            :model-value="selectedTab"
+            value="essentials"
+          >
+            <EssentialNodesPanel
+              v-model:media-filters="effectiveMediaFilters"
+              :search-query="searchQuery"
+            />
+          </TabPanel>
+          <TabPanel :model-value="selectedTab" value="all">
+            <div
+              v-if="hasNoMatches"
+              class="flex min-h-0 flex-1 items-center justify-center px-6 py-8 text-center text-sm text-muted-foreground"
             >
-              <EssentialNodesPanel
-                v-model:media-filters="effectiveMediaFilters"
-                :search-query="searchQuery"
-              />
-            </TabPanel>
-            <TabPanel :model-value="selectedTab" value="all">
-              <AllNodesPanel
-                v-model:expanded-keys="expandedKeys"
-                :sections="renderedSections"
-                :fill-node-info="fillNodeInfo"
-                :sort-order="sortOrder"
-                @node-click="handleNodeClick"
-              />
-            </TabPanel>
-          </div>
+              {{
+                $t('sideToolbar.nodeLibraryTab.noMatchingNodes', {
+                  query: searchQuery
+                })
+              }}
+            </div>
+            <AllNodesPanel
+              v-else
+              v-model:expanded-keys="expandedKeys"
+              :sections="renderedSections"
+              :fill-node-info="fillNodeInfo"
+              :sort-order="sortOrder"
+              @node-click="handleNodeClick"
+            />
+          </TabPanel>
         </div>
       </div>
     </template>
