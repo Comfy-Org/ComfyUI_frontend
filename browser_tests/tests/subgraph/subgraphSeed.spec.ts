@@ -15,18 +15,20 @@ wstest(
   async ({ comfyPage, getWebSocket }) => {
     const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
-    async function verifySeedControl() {
+    async function verifySeedControl(initializeState = true) {
       const seedWidget = comfyPage.vueNodes.getWidgetByName('', 'seed')
       const { input, valueControl } =
         comfyPage.vueNodes.getInputNumberControls(seedWidget)
 
-      await input.fill('1')
-      await valueControl.click()
-      await comfyPage.page.getByRole('radio', { name: 'increment' }).click()
-      await comfyPage.keyboard.press('Escape')
+      if (initializeState) {
+        await input.fill('1')
+        await valueControl.click()
+        await comfyPage.page.getByRole('radio', { name: 'increment' }).click()
+        await comfyPage.keyboard.press('Escape')
+      }
 
       await execution.run()
-      await expect(input).toHaveValue('2')
+      await expect.soft(input).toHaveValue('2')
     }
 
     await test.step('seed updates on generation', async () => {
@@ -37,5 +39,12 @@ wstest(
       await comfyPage.subgraph.convertDefaultKSamplerToSubgraph()
       await verifySeedControl()
     })
+
+    for (const w of ['link-seed', 'proxy-seed', 'zit-seed']) {
+      await test.step(`seed updates for old workflow: ${w}`, async () => {
+        await comfyPage.workflow.loadWorkflow('subgraphs/' + w)
+        await verifySeedControl(false)
+      })
+    }
   }
 )
