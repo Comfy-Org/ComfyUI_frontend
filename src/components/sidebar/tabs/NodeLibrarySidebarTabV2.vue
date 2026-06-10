@@ -161,7 +161,7 @@
               :model-value="selectedTab"
               value="essentials"
             >
-              <EssentialNodesPlaceholderPanel
+              <EssentialNodesPanel
                 v-model:media-filters="effectiveMediaFilters"
                 :search-query="searchQuery"
               />
@@ -239,7 +239,7 @@ import { getProviderIcon } from '@/utils/categoryUtil'
 import { flattenTree, sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 
 import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
-import EssentialNodesPlaceholderPanel from './nodeLibrary/EssentialNodesPlaceholderPanel.vue'
+import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
 import NodeDragPreview from './nodeLibrary/NodeDragPreview.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 

@@ -103,22 +103,6 @@ function resolveBlueprintDisplayName(
 }
 
 /**
- * Resolves the icon class for a blueprint node based on its prefix.
- * E.g. `SubgraphBlueprint.canny_to_image_flux` → `"icon-[comfy--canny-to-image]"`
- */
-export function resolveBlueprintIcon(nodeName: string): string | undefined {
-  if (!nodeName.startsWith(BLUEPRINT_PREFIX)) return undefined
-  const blueprintName = nodeName.slice(BLUEPRINT_PREFIX.length)
-  for (const [prefix] of BLUEPRINT_PREFIX_MAP) {
-    if (blueprintName.startsWith(prefix)) {
-      const iconName = prefix.replace(/_$/, '').replaceAll('_', '-')
-      return `icon-[comfy--${iconName}]`
-    }
-  }
-  return undefined
-}
-
-/**
  * Extracts the provider/model suffix from a blueprint name for disambiguation.
  * E.g. `SubgraphBlueprint.text_to_image_flux_1` → `"Flux 1"`
  * @knipIgnoreUsedByStackedPR

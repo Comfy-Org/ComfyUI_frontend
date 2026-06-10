@@ -1,63 +1,47 @@
 <template>
   <div
-    class="group relative box-content flex cursor-pointer flex-col items-center justify-center rounded-lg bg-component-node-background px-2 py-3 transition-colors duration-150 select-none hover:bg-secondary-background-hover"
-    :data-node-name="node.label"
-    draggable="true"
-    @click="handleClick"
-    @dragstart="handleDragStart"
-    @dragend="handleDragEnd"
+    :class="
+      cn(
+        'group @container relative flex aspect-square w-full flex-col items-center justify-center gap-2 rounded-lg bg-secondary-background pt-3 pb-2 transition-colors duration-150 select-none hover:bg-secondary-background-hover',
+        nodeDef ? 'cursor-grab active:cursor-grabbing' : 'cursor-default'
+      )
+    "
+    :data-node-name="tile.nodeName"
+    :draggable="nodeDef != null"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
+    @click="nodeDef && useNodeDragToCanvas().startDrag(nodeDef)"
+    @dragstart="handleDragStart"
+    @dragend="handleDragEnd"
   >
-    <i :class="cn(nodeIcon, 'size-6 text-muted-foreground')" />
-
+    <i :class="cn('size-7 text-muted-foreground', tile.icon)" />
     <TextTickerMultiLine
-      class="text-foreground mt-2 h-7 w-full shrink-0 text-xs/normal font-normal"
-      :text="node.label"
+      class="text-foreground flex h-[30px] w-full shrink-0 flex-col justify-center px-2 text-center text-xs/[15px] font-normal @[112px]:h-[36px] @[112px]:text-sm/[18px]"
+      :text="tile.label"
     />
   </div>
 
-  <Teleport v-if="showPreview" to="body">
-    <div
-      :ref="(el) => (previewRef = el as HTMLElement)"
-      :style="nodePreviewStyle"
-    >
-      <NodePreviewCard
-        :node-def="node.data!"
-        :show-inputs-and-outputs="false"
-      />
+  <Teleport v-if="showPreview && nodeDef" to="body">
+    <div ref="previewRef" :style="nodePreviewStyle">
+      <NodePreviewCard :node-def :show-inputs-and-outputs="false" />
     </div>
   </Teleport>
 </template>
 
 <script setup lang="ts">
-import { kebabCase } from 'es-toolkit/string'
-import type { Ref } from 'vue'
-import { computed, inject } from 'vue'
-
 import TextTickerMultiLine from '@/components/common/TextTickerMultiLine.vue'
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
-import { resolveBlueprintIcon } from '@/constants/essentialsDisplayNames'
-import { ESSENTIALS_ICON_OVERRIDES } from '@/constants/essentialsNodes'
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
+import { useEssentialTileNodeDef } from '@/composables/useEssentialTileNodeDef'
+import type { EssentialPlaceholderTile } from '@/constants/essentialsPlaceholders'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { node } = defineProps<{
-  node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
+const { previewPanel, tile } = defineProps<{
+  tile: EssentialPlaceholderTile
+  previewPanel?: HTMLElement | null
 }>()
-
-const panelRef = inject<Ref<HTMLElement | null>>(
-  'essentialsPanelRef',
-  undefined!
-)
-
-const emit = defineEmits<{
-  click: [node: RenderedTreeExplorerNode<ComfyNodeDefImpl>]
-}>()
-
-const nodeDef = computed(() => node.data)
+const nodeDef = useEssentialTileNodeDef(() => tile)
 
 const {
   previewRef,
@@ -67,22 +51,6 @@ const {
   handleMouseLeave,
   handleDragStart,
   handleDragEnd
-} = useNodePreviewAndDrag(nodeDef, panelRef)
-
-const nodeIcon = computed(() => {
-  const nodeName = node.data?.name
-  if (nodeName && nodeName in ESSENTIALS_ICON_OVERRIDES)
-    return ESSENTIALS_ICON_OVERRIDES[nodeName]
-  if (nodeName) {
-    const blueprintIcon = resolveBlueprintIcon(nodeName)
-    if (blueprintIcon) return blueprintIcon
-  }
-  const iconName = nodeName ? kebabCase(nodeName) : 'node'
-  return `icon-[comfy--${iconName}]`
-})
-
-function handleClick() {
-  if (!node.data) return
-  emit('click', node)
-}
+} = useNodePreviewAndDrag(nodeDef, () => previewPanel ?? null)
+void previewRef // typechecker is wrong
 </script>

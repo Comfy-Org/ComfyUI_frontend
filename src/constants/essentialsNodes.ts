@@ -10,17 +10,6 @@
  * Source: https://www.notion.so/comfy-org/2fe6d73d365080d0a951d14cdf540778
  */
 
-export const ESSENTIALS_ICON_OVERRIDES: Record<string, string> = {
-  LoadImage: 'icon-s1.3-[lucide--image-up]',
-  LoadImageOutput: 'icon-s1.3-[lucide--image-up]',
-  SaveImage: 'icon-s1.3-[lucide--image-down]',
-  PrimitiveStringMultiline: 'icon-s1.3-[lucide--text]',
-  ImageCrop: 'icon-s1.3-[lucide--crop]',
-  VideoCrop: 'icon-s1.3-[lucide--crop]',
-  KlingLipSyncAudioToVideoNode: 'icon-s1.3-[lucide--mic-vocal]',
-  WebcamCapture: 'icon-s1.3-[lucide--camera]'
-}
-
 /**
  * A node's placement in the Essentials tree.
  * Section and subgroup labels match ESSENTIAL_PLACEHOLDER_SECTIONS.

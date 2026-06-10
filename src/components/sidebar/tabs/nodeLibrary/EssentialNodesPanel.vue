@@ -1,128 +1,93 @@
 <template>
-  <div ref="panelEl" class="h-full flex-1 overflow-y-auto px-3">
-    <div class="flex flex-col gap-2 pb-6">
-      <!-- Flat sorted grid when alphabetical -->
+  <div ref="previewPanel">
+    <div
+      v-for="section in filteredSections"
+      :id="`essentials-section-${section.key}`"
+      :key="section.key"
+      class="scroll-mt-[65px] border-b border-border-default last:border-b-0"
+    >
       <div
-        v-if="flatNodes.length > 0"
-        class="grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-3 pt-3"
+        class="sticky top-16 z-10 flex h-14 w-full items-center justify-between border-0 bg-comfy-menu-bg px-4 text-sm font-bold tracking-wide text-muted-foreground"
+      >
+        <span class="uppercase">{{ section.label }}</span>
+      </div>
+      <div
+        v-if="section.tiles?.length"
+        class="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2 p-4"
       >
         <EssentialNodeCard
-          v-for="node in flatNodes"
-          :key="node.key"
-          :node="node"
-          @click="emit('nodeClick', $event)"
+          v-for="(tile, index) in section.tiles.filter(
+            (t) => !t.media || mediaFilters[t.media]
+          )"
+          :key="index"
+          :preview-panel
+          :tile="tile"
         />
       </div>
-
-      <!-- Grouped collapsible folders when original -->
-      <template v-else>
-        <CollapsibleRoot
-          v-for="folder in folders"
-          :key="folder.key"
-          class="rounded-lg"
-          :open="expandedKeys.includes(folder.key)"
-          @update:open="toggleFolder(folder.key, $event)"
+      <div v-else class="flex flex-col gap-10 px-4">
+        <div
+          v-for="subgroup in section.subgroups?.filter(
+            (s) => mediaFilters[s.media]
+          )"
+          :id="`essentials-subgroup-${subgroup.key}`"
+          :key="subgroup.key"
+          class="scroll-mt-[121px] last:pb-4"
         >
-          <CollapsibleTrigger
-            class="group box-content flex h-8 w-full cursor-pointer items-center justify-between border-0 bg-transparent px-1 py-3 text-xs font-medium tracking-wide text-muted-foreground"
+          <div class="text-foreground text-sm leading-[15px] font-normal">
+            {{ subgroup.label }}
+          </div>
+          <div
+            class="mt-4 grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2"
           >
-            <span class="uppercase">{{ folder.label }}</span>
-            <i
-              :class="
-                cn(
-                  'icon-[lucide--chevron-up] size-4 transition-transform duration-200',
-                  !expandedKeys.includes(folder.key) && '-rotate-180'
-                )
-              "
+            <EssentialNodeCard
+              v-for="(tile, index) in subgroup.tiles"
+              :key="index"
+              :preview-panel
+              :tile="tile"
             />
-          </CollapsibleTrigger>
-          <CollapsibleContent
-            class="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down"
-          >
-            <div
-              class="grid grid-cols-[repeat(auto-fill,minmax(5rem,1fr))] gap-3"
-            >
-              <EssentialNodeCard
-                v-for="node in folder.children"
-                :key="node.key"
-                :node="node"
-                @click="emit('nodeClick', $event)"
-              />
-            </div>
-          </CollapsibleContent>
-        </CollapsibleRoot>
-      </template>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import {
-  CollapsibleContent,
-  CollapsibleRoot,
-  CollapsibleTrigger
-} from 'reka-ui'
-import { computed, provide, ref, watch } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
-import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
-import { cn } from '@comfyorg/tailwind-utils'
+import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
+import type {
+  EssentialPlaceholderSection,
+  EssentialPlaceholderTile
+} from '@/constants/essentialsPlaceholders'
+import { ESSENTIAL_PLACEHOLDER_SECTIONS } from '@/constants/essentialsPlaceholders'
 
 import EssentialNodeCard from './EssentialNodeCard.vue'
 
-const panelEl = ref<HTMLDivElement | null>(null)
-provide('essentialsPanelRef', panelEl)
+const { searchQuery = '' } = defineProps<{ searchQuery?: string }>()
+const previewPanel = useTemplateRef('previewPanel')
 
-const { root, flatNodes = [] } = defineProps<{
-  root: RenderedTreeExplorerNode<ComfyNodeDefImpl>
-  flatNodes?: RenderedTreeExplorerNode<ComfyNodeDefImpl>[]
-}>()
-
-const expandedKeys = defineModel<string[]>('expandedKeys', { required: true })
-
-const emit = defineEmits<{
-  nodeClick: [node: RenderedTreeExplorerNode<ComfyNodeDefImpl>]
-}>()
-
-function flattenLeaves(
-  node: RenderedTreeExplorerNode<ComfyNodeDefImpl>
-): RenderedTreeExplorerNode<ComfyNodeDefImpl>[] {
-  if (node.type === 'node') return [node]
-  return node.children?.flatMap(flattenLeaves) ?? []
-}
-
-const folders = computed(() => {
-  const topFolders =
-    (root.children?.filter(
-      (child) => child.type === 'folder'
-    ) as RenderedTreeExplorerNode<ComfyNodeDefImpl>[]) ?? []
-
-  return topFolders.map((folder) => ({
-    ...folder,
-    children: flattenLeaves(folder)
-  }))
-})
-
-function toggleFolder(key: string, open: boolean) {
-  if (open) {
-    expandedKeys.value = [...expandedKeys.value, key]
-  } else {
-    expandedKeys.value = expandedKeys.value.filter((k) => k !== key)
-  }
-}
-
-const hasAutoExpanded = ref(false)
-
-watch(
-  folders,
-  (value) => {
-    if (!hasAutoExpanded.value && value.length > 0) {
-      hasAutoExpanded.value = true
-      if (expandedKeys.value.length === 0) {
-        expandedKeys.value = value.map((folder) => folder.key)
-      }
-    }
-  },
-  { immediate: true }
+const mediaFilters = defineModel<Record<EssentialsMediaType, boolean>>(
+  'mediaFilters',
+  { required: true }
 )
+
+const filteredSections = computed<EssentialPlaceholderSection[]>(() => {
+  const query = searchQuery.trim().toLowerCase()
+  if (!query) return ESSENTIAL_PLACEHOLDER_SECTIONS
+  const matchesQuery = (tile: EssentialPlaceholderTile) =>
+    tile.label.toLowerCase().includes(query)
+  return ESSENTIAL_PLACEHOLDER_SECTIONS.flatMap<EssentialPlaceholderSection>(
+    (section) => {
+      if (section.tiles?.length) {
+        const tiles = section.tiles.filter(matchesQuery)
+        return tiles.length ? [{ ...section, tiles }] : []
+      }
+      const subgroups = section.subgroups
+        ?.map((sg) => ({ ...sg, tiles: sg.tiles.filter(matchesQuery) }))
+        .filter((sg) => sg.tiles.length)
+      return subgroups?.length ? [{ ...section, subgroups }] : []
+    }
+  )
+})
 </script>
