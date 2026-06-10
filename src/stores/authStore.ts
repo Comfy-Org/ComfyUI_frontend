@@ -69,6 +69,13 @@ export const useAuthStore = defineStore('auth', () => {
   const currentUser = ref<User | null>(null)
   const isInitialized = ref(false)
   const customerCreated = ref(false)
+  /**
+   * Memoizes the in-flight or successful customer provisioning attempt for
+   * the current account (see recoverMissingCustomer). Declared here so the
+   * auth-state listener below can reset it before its initializer would
+   * otherwise run.
+   */
+  let customerRecovery: Promise<void> | null = null
   const isFetchingBalance = ref(false)
 
   // Balance state
@@ -134,6 +141,12 @@ export const useAuthStore = defineStore('auth', () => {
     // Reset balance when auth state changes
     balance.value = null
     lastBalanceUpdateTime.value = null
+
+    // Customer provisioning state is per-account: without this reset, a
+    // second account in the same browser session would be short-circuited by
+    // the previous account's memoized recovery and stay stuck on 409s.
+    customerCreated.value = false
+    customerRecovery = null
   })
 
   // Listen for token refresh events
@@ -332,11 +345,9 @@ export const useAuthStore = defineStore('auth', () => {
   /**
    * Memoizes the customer provisioning attempt so concurrent or repeated 409
    * responses from /customers/* endpoints trigger at most one successful
-   * POST /customers per session. A failed attempt is cleared so a later
+   * POST /customers per account. A failed attempt is cleared so a later
    * request can retry, e.g. after a transient network failure.
    */
-  let customerRecovery: Promise<void> | null = null
-
   const recoverMissingCustomer = (): Promise<void> => {
     customerRecovery ??= createCustomer()
       .then(() => undefined)
@@ -363,22 +374,71 @@ export const useAuthStore = defineStore('auth', () => {
    * time. If recovery fails, the original 409 response is returned so
    * callers surface their normal error handling.
    */
+  /**
+   * The auth middleware rejects requests for accounts without a customer
+   * record using this exact message. Business-level 409s from /customers/*
+   * endpoints (e.g. conflicting subscription state) must NOT trigger
+   * provisioning or a blind retry of a payment request.
+   */
+  const MISSING_CUSTOMER_MESSAGE = 'Failed to find customer'
+
+  const isMissingCustomerResponse = async (
+    response: Response
+  ): Promise<boolean> => {
+    if (response.status !== 409) return false
+    try {
+      const body: unknown = await response.clone().json()
+      return (
+        typeof body === 'object' &&
+        body !== null &&
+        'message' in body &&
+        (body as { message: unknown }).message === MISSING_CUSTOMER_MESSAGE
+      )
+    } catch {
+      return false
+    }
+  }
+
+  const isCustomerEndpoint = (input: string): boolean => {
+    try {
+      const { pathname } = new URL(input, window.location.href)
+      return pathname === '/customers' || pathname.includes('/customers/')
+    } catch {
+      return false
+    }
+  }
+
   const fetchWithCustomerRecovery = async (
     input: string,
     init?: RequestInit
   ): Promise<Response> => {
     const response = await fetch(input, init)
-    if (response.status !== 409) {
+    if (
+      !isCustomerEndpoint(input) ||
+      !(await isMissingCustomerResponse(response))
+    ) {
       return response
     }
 
     try {
       await recoverMissingCustomer()
-    } catch {
+    } catch (error) {
+      console.warn(
+        'Customer provisioning during 409 recovery failed; returning original response',
+        error
+      )
       return response
     }
 
-    return fetch(input, init)
+    try {
+      return await fetch(input, init)
+    } catch (error) {
+      console.warn(
+        'Retry after customer provisioning failed; returning original 409 response',
+        error
+      )
+      return response
+    }
   }
 
   const executeAuthAction = async <T>(
@@ -523,9 +583,11 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    // Ensure customer was created during login/registration
+    // Ensure customer was created during login/registration. Routed through
+    // recoverMissingCustomer so a concurrent 409-triggered recovery and this
+    // pre-flight share one POST /customers instead of racing.
     if (!customerCreated.value) {
-      await createCustomer()
+      await recoverMissingCustomer()
     }
 
     const response = await fetchWithCustomerRecovery(

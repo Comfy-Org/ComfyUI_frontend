@@ -861,12 +861,17 @@ describe('useAuthStore', () => {
   })
 
   describe('fetchWithCustomerRecovery', () => {
-    const makeConflictResponse = () => ({
-      ok: false,
-      status: 409,
-      statusText: 'Conflict',
-      json: () => Promise.resolve({ message: 'Failed to find customer' })
-    })
+    const make409 = (message: string) => {
+      const body = { message }
+      return {
+        ok: false,
+        status: 409,
+        statusText: 'Conflict',
+        json: () => Promise.resolve(body),
+        clone: () => ({ json: () => Promise.resolve(body) })
+      }
+    }
+    const makeConflictResponse = () => make409('Failed to find customer')
 
     const countCustomerPosts = () =>
       mockFetch.mock.calls.filter(
@@ -977,6 +982,106 @@ describe('useAuthStore', () => {
 
       expect(response.ok).toBe(true)
       expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('should not provision for a 409 that is not a missing-customer conflict', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve(make409('Subscription already active'))
+      )
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/cloud-subscription-checkout/standard',
+        { method: 'POST' }
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('should not provision for a 409 from a non-customer endpoint', async () => {
+      mockFetch.mockImplementation(() =>
+        Promise.resolve(makeConflictResponse())
+      )
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/workflows'
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(0)
+    })
+
+    it('should re-provision after the auth state changes to a different session', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      expect(countCustomerPosts()).toBe(1)
+
+      // Sign out, then a different account signs in: the memoized recovery
+      // from the previous account must not short-circuit the new one.
+      authStateCallback(null)
+      authStateCallback(mockUser)
+
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+      expect(countCustomerPosts()).toBe(2)
+    })
+
+    it('should return the original 409 when the retry fails at the network level', async () => {
+      let balanceCalls = 0
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        balanceCalls++
+        return balanceCalls === 1
+          ? Promise.resolve(makeConflictResponse())
+          : Promise.reject(new TypeError('network down'))
+      })
+
+      const response = await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
+
+      expect(response.status).toBe(409)
+      expect(countCustomerPosts()).toBe(1)
+    })
+
+    it('should share one customer creation between concurrent credit pre-flights', async () => {
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          return Promise.resolve(mockCreateCustomerResponse)
+        }
+        if (url.endsWith('/customers/credit')) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({ checkout_url: 'https://stripe.test/checkout' })
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      await Promise.all([
+        store.initiateCreditPurchase({
+          amount_micros: 5_000_000,
+          currency: 'usd'
+        }),
+        store.initiateCreditPurchase({
+          amount_micros: 5_000_000,
+          currency: 'usd'
+        })
+      ])
+
+      expect(countCustomerPosts()).toBe(1)
     })
   })
 })
