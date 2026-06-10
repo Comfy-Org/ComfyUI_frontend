@@ -951,6 +951,7 @@
     "missingErrors": {
       "missing_media": {
         "displayMessage": "Une entrée média requise n’a pas de fichier sélectionné.",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastMessageMany": "Veuillez sélectionner les entrées média manquantes avant d’exécuter ce workflow.",
         "toastMessageWithNode": "{nodeName} nécessite un fichier média requis.",
         "toastTitleMany": "Entrées média manquantes",
@@ -1282,6 +1283,15 @@
         "toastMessageWithTypes": "L'entrée {inputName} de {nodeName} attend {expectedType}, mais la sortie connectée est {receivedType}.",
         "toastTitle": "Connexion invalide"
       },
+      "unknown_validation_error": {
+        "details": "{nodeName} a retourné une erreur de validation non reconnue : {errorType}",
+        "detailsWithRawDetails": "{nodeName} a retourné une erreur de validation non reconnue ({errorType}) : {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Un nœud a retourné une erreur de validation non reconnue par ComfyUI.",
+        "title": "Échec de la validation",
+        "toastMessage": "{nodeName} a retourné une erreur de validation non reconnue.",
+        "toastTitle": "Échec de la validation"
+      },
       "value_bigger_than_max": {
         "details": "{nodeName} a une valeur supérieure au maximum pour {inputName}.",
         "detailsWithValue": "La valeur {receivedValue} pour l'entrée {inputName} de {nodeName} est supérieure au maximum {maxValue}.",
@@ -1485,6 +1495,7 @@
     "deleteImage": "Supprimer l'image",
     "deprecated": "DEPR",
     "description": "Description",
+    "details": "Détails",
     "devOnly": "DEV",
     "devices": "Appareils",
     "disableAll": "Désactiver tout",
@@ -1574,6 +1585,7 @@
     "jobIdCopied": "ID du travail copié dans le presse-papiers",
     "keybinding": "Raccourci clavier",
     "keybindingAlreadyExists": "Le raccourci clavier existe déjà",
+    "keybindingListAriaLabel": "Raccourcis clavier : {combos}",
     "keybindingPresets": {
       "default": "Préréglage par défaut",
       "deletePreset": "Supprimer le préréglage",
@@ -1624,6 +1636,7 @@
     "mostRelevant": "Les plus pertinents",
     "multiSelectDropdown": "Menu déroulant à sélection multiple",
     "nMoreKeybindings": "+ {count} de plus",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "Nom",
     "newFolder": "Nouveau dossier",
     "next": "Suivant",
@@ -2759,6 +2772,7 @@
     "qwen": "qwen",
     "samplers": "échantillonneurs",
     "sampling": "échantillonnage",
+    "scail": "scail",
     "schedulers": "planificateurs",
     "scheduling": "planification",
     "sd3": "sd3",
@@ -2996,6 +3010,7 @@
     "errorHelp": "Pour plus d'aide, {github} ou {support}",
     "errorHelpGithub": "soumettre un ticket GitHub",
     "errorHelpSupport": "contacter notre support",
+    "errorLog": "Journal des erreurs",
     "errors": "Erreurs",
     "executionErrorOccurred": "Une erreur est survenue lors de l’exécution. Consultez l’onglet Erreurs pour plus de détails.",
     "fallbackGroupTitle": "Groupe",
@@ -3030,26 +3045,14 @@
     "hideAdvancedShort": "Masquer les options avancées",
     "hideInput": "Masquer l’entrée",
     "info": "Infos",
+    "infoFor": "Infos pour {item}",
     "inputs": "ENTRÉES",
     "inputsNone": "AUCUNE ENTRÉE",
     "inputsNoneTooltip": "Le nœud n’a pas d’entrées",
     "locateNode": "Localiser le nœud sur le canevas",
+    "locateNodeFor": "Localiser {item}",
     "missingMedia": {
-      "audio": "Audio",
-      "cancelSelection": "Annuler la sélection",
-      "collapseNodes": "Masquer les nœuds de référence",
-      "confirmSelection": "Confirmer la sélection",
-      "expandNodes": "Afficher les nœuds de référence",
-      "image": "Images",
-      "locateNode": "Localiser le nœud",
-      "missingMediaTitle": "Entrées manquantes",
-      "or": "OU",
-      "selectedFromLibrary": "Sélectionné depuis la bibliothèque",
-      "uploadFile": "Téléverser {type}",
-      "uploaded": "Téléversé",
-      "uploading": "Téléversement en cours...",
-      "useFromLibrary": "Utiliser depuis la bibliothèque",
-      "video": "Vidéos"
+      "missingMediaTitle": "Entrées manquantes"
     },
     "missingModels": {
       "alreadyExistsInCategory": "Ce modèle existe déjà dans « {category} »",

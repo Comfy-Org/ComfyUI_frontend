@@ -2,8 +2,12 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import type {
+  IBaseWidget,
+  IStringComboWidget
+} from '@/lib/litegraph/src/types/widgets'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
@@ -25,6 +29,10 @@ import { api } from '@/scripts/api'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeError } from '@/schemas/apiSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { widgetEntityId } from '@/world/entityIds'
+import type { WidgetEntityId } from '@/world/entityIds'
+import { ensureWidgetState, getWidgetState } from '@/world/widgetValueIO'
 
 const {
   mockApiKeyAuthStore,
@@ -161,6 +169,18 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
   }
 }
 
+type PromotedComboWidget = IStringComboWidget & {
+  readonly entityId: WidgetEntityId
+  readonly sourceNodeId: string
+  readonly sourceWidgetName: string
+}
+
+type PromotedNumberWidget = IBaseWidget<number, 'number'> & {
+  readonly entityId: WidgetEntityId
+  readonly sourceNodeId: string
+  readonly sourceWidgetName: string
+}
+
 describe('ComfyApp', () => {
   let app: ComfyApp
   let mockCanvas: LGraphCanvas
@@ -267,6 +287,114 @@ describe('ComfyApp', () => {
       )
       expect(mockToastStore.remove).toHaveBeenCalledWith(
         mockToastStore.add.mock.calls[0][0]
+      )
+    })
+  })
+
+  describe('reloadNodeDefs', () => {
+    it('syncs refreshed combo options into promoted widget host state', async () => {
+      const graph = new LGraph()
+      const node = new LGraphNode(
+        'CheckpointLoaderSimple',
+        'CheckpointLoaderSimple'
+      )
+      graph.add(node)
+
+      const initialOptions = ['missing.safetensors']
+      const refreshedOptions = ['missing.safetensors', 'present.safetensors']
+      const promotedEntityId = widgetEntityId(graph.id, node.id, 'ckpt_name')
+      const missingStateEntityId = widgetEntityId(
+        graph.id,
+        node.id,
+        'missing_state_ckpt'
+      )
+      const promotedNumberEntityId = widgetEntityId(graph.id, node.id, 'steps')
+      const plainComboWidget: IStringComboWidget = {
+        name: 'ckpt_name',
+        type: 'combo',
+        value: 'missing.safetensors',
+        options: { values: initialOptions },
+        y: 0
+      }
+      const promotedNumberWidget: PromotedNumberWidget = {
+        name: 'steps',
+        type: 'number',
+        value: 20,
+        options: { min: 1, max: 100 },
+        y: 0,
+        entityId: promotedNumberEntityId,
+        sourceNodeId: '1',
+        sourceWidgetName: 'steps'
+      }
+      const missingStatePromotedWidget: PromotedComboWidget = {
+        name: 'missing_state_ckpt',
+        type: 'combo',
+        value: 'missing.safetensors',
+        options: { values: initialOptions },
+        y: 0,
+        entityId: missingStateEntityId,
+        sourceNodeId: '1',
+        sourceWidgetName: 'missing_state_ckpt'
+      }
+      const promotedWidget: PromotedComboWidget = {
+        name: 'ckpt_name',
+        type: 'combo',
+        value: 'missing.safetensors',
+        options: { values: initialOptions },
+        y: 0,
+        entityId: promotedEntityId,
+        sourceNodeId: '1',
+        sourceWidgetName: 'ckpt_name'
+      }
+      const defs: Record<string, ComfyNodeDef> = {
+        CheckpointLoaderSimple: {
+          name: 'CheckpointLoaderSimple',
+          display_name: 'CheckpointLoaderSimple',
+          category: 'loaders',
+          python_module: 'nodes',
+          description: '',
+          input: {
+            required: {
+              ckpt_name: [refreshedOptions, {}]
+            },
+            optional: {}
+          },
+          output: [],
+          output_name: [],
+          output_tooltips: [],
+          output_node: false,
+          deprecated: false,
+          experimental: false
+        }
+      }
+      node.widgets = [
+        plainComboWidget,
+        promotedNumberWidget,
+        missingStatePromotedWidget,
+        promotedWidget
+      ]
+      Reflect.set(app, 'rootGraphInternal', graph)
+      ensureWidgetState(promotedEntityId, {
+        type: 'combo',
+        value: 'missing.safetensors',
+        options: { values: initialOptions },
+        serialize: false
+      })
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue(defs)
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
+
+      await app.reloadNodeDefs()
+
+      expect(plainComboWidget.options.values).toEqual(refreshedOptions)
+      expect(promotedWidget.options.values).toEqual(refreshedOptions)
+      expect(getWidgetState(promotedEntityId)?.options.values).toEqual(
+        refreshedOptions
+      )
+      expect(getWidgetState(missingStateEntityId)).toBeUndefined()
+      expect(getWidgetState(promotedNumberEntityId)).toBeUndefined()
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'refreshComboInNodes',
+        defs
       )
     })
   })

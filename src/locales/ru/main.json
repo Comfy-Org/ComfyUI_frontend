@@ -951,6 +951,7 @@
     "missingErrors": {
       "missing_media": {
         "displayMessage": "Для обязательного медиа-входа не выбран файл.",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastMessageMany": "Пожалуйста, выберите отсутствующие медиа-входы перед запуском этого рабочего процесса.",
         "toastMessageWithNode": "В узле {nodeName} отсутствует необходимый медиа-файл.",
         "toastTitleMany": "Отсутствуют медиа-входы",
@@ -1282,6 +1283,15 @@
         "toastMessageWithTypes": "Вход {inputName} узла {nodeName} ожидает {expectedType}, но подключённый выход — {receivedType}.",
         "toastTitle": "Недопустимое соединение"
       },
+      "unknown_validation_error": {
+        "details": "{nodeName} вернул нераспознанную ошибку валидации: {errorType}",
+        "detailsWithRawDetails": "{nodeName} вернул нераспознанную ошибку валидации ({errorType}): {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Узел вернул ошибку валидации, которую ComfyUI не распознаёт.",
+        "title": "Ошибка валидации",
+        "toastMessage": "{nodeName} вернул нераспознанную ошибку валидации.",
+        "toastTitle": "Ошибка валидации"
+      },
       "value_bigger_than_max": {
         "details": "{nodeName} имеет значение выше максимального для {inputName}.",
         "detailsWithValue": "Значение {receivedValue} для {inputName} узла {nodeName} выше максимального {maxValue}.",
@@ -1485,6 +1495,7 @@
     "deleteImage": "Удалить изображение",
     "deprecated": "Устарело",
     "description": "Описание",
+    "details": "Детали",
     "devOnly": "Только для разработчиков",
     "devices": "Устройства",
     "disableAll": "Отключить все",
@@ -1574,6 +1585,7 @@
     "jobIdCopied": "ID задания скопирован в буфер обмена",
     "keybinding": "Привязка клавиш",
     "keybindingAlreadyExists": "Горячая клавиша уже существует",
+    "keybindingListAriaLabel": "Горячие клавиши: {combos}",
     "keybindingPresets": {
       "default": "Стандартный пресет",
       "deletePreset": "Удалить пресет",
@@ -1624,6 +1636,7 @@
     "mostRelevant": "Наиболее релевантные",
     "multiSelectDropdown": "Выпадающий список множественного выбора",
     "nMoreKeybindings": "+ ещё {count}",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "Имя",
     "newFolder": "Новая папка",
     "next": "Далее",
@@ -2759,6 +2772,7 @@
     "qwen": "qwen",
     "samplers": "семплеры",
     "sampling": "выборка",
+    "scail": "scail",
     "schedulers": "schedulers",
     "scheduling": "scheduling",
     "sd3": "sd3",
@@ -2996,6 +3010,7 @@
     "errorHelp": "Для получения дополнительной помощи {github} или {support}",
     "errorHelpGithub": "создайте issue на GitHub",
     "errorHelpSupport": "свяжитесь с нашей поддержкой",
+    "errorLog": "Журнал ошибок",
     "errors": "Ошибки",
     "executionErrorOccurred": "Произошла ошибка во время выполнения. Подробности смотрите на вкладке Ошибки.",
     "fallbackGroupTitle": "Группа",
@@ -3030,26 +3045,14 @@
     "hideAdvancedShort": "Скрыть расширенные",
     "hideInput": "Скрыть вход",
     "info": "Информация",
+    "infoFor": "Информация о {item}",
     "inputs": "ВХОДЫ",
     "inputsNone": "НЕТ ВХОДОВ",
     "inputsNoneTooltip": "Узел не имеет входов",
     "locateNode": "Найти узел на холсте",
+    "locateNodeFor": "Найти {item}",
     "missingMedia": {
-      "audio": "Аудио",
-      "cancelSelection": "Отменить выбор",
-      "collapseNodes": "Скрыть ссылающиеся узлы",
-      "confirmSelection": "Подтвердить выбор",
-      "expandNodes": "Показать ссылающиеся узлы",
-      "image": "Изображения",
-      "locateNode": "Найти узел",
-      "missingMediaTitle": "Отсутствующие входные данные",
-      "or": "ИЛИ",
-      "selectedFromLibrary": "Выбрано из библиотеки",
-      "uploadFile": "Загрузить {type}",
-      "uploaded": "Загружено",
-      "uploading": "Загрузка...",
-      "useFromLibrary": "Использовать из библиотеки",
-      "video": "Видео"
+      "missingMediaTitle": "Отсутствующие входные данные"
     },
     "missingModels": {
       "alreadyExistsInCategory": "Эта модель уже существует в «{category}»",

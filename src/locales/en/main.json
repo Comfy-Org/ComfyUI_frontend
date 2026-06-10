@@ -1759,6 +1759,7 @@
     "Reve": "Reve",
     "Rodin": "Rodin",
     "Runway": "Runway",
+    "scail": "scail",
     "upscale_diffusion": "upscale_diffusion",
     "clip": "clip",
     "Sonilo": "Sonilo",
@@ -2422,6 +2423,7 @@
     "member": "member",
     "usdPerMonth": "USD / mo",
     "usdPerMonthPerMember": "USD / mo / member",
+    "creditSliderSave": "Save {percent}% ({amount})",
     "renewsDate": "Renews {date}",
     "expiresDate": "Expires {date}",
     "manageSubscription": "Manage subscription",
@@ -3628,12 +3630,10 @@
       "unsupportedTitle": "Unsupported Node Packs",
       "ossManagerDisabledHint": "To install missing nodes, first run {pipCmd} in your Python environment to install Node Manager, then restart ComfyUI with the {flag} flag.",
       "installAll": "Install All",
-      "installNodePack": "Install node pack",
       "unknownPack": "Unknown pack",
       "installing": "Installing...",
       "installed": "Installed",
       "applyChanges": "Apply Changes",
-      "searchInManager": "Search in Node Manager",
       "viewInManager": "View in Manager",
       "collapse": "Collapse",
       "expand": "Expand"
@@ -3671,21 +3671,7 @@
       "refreshFailed": "Failed to refresh missing models. Please try again."
     },
     "missingMedia": {
-      "missingMediaTitle": "Missing Inputs",
-      "image": "Images",
-      "video": "Videos",
-      "audio": "Audio",
-      "locateNode": "Locate node",
-      "expandNodes": "Show referencing nodes",
-      "collapseNodes": "Hide referencing nodes",
-      "uploadFile": "Upload {type}",
-      "uploading": "Uploading...",
-      "uploaded": "Uploaded",
-      "selectedFromLibrary": "Selected from library",
-      "useFromLibrary": "Use from Library",
-      "confirmSelection": "Confirm selection",
-      "cancelSelection": "Cancel selection",
-      "or": "OR"
+      "missingMediaTitle": "Missing Inputs"
     }
   },
   "errorOverlay": {
@@ -3736,6 +3722,7 @@
       },
       "missing_media": {
         "displayMessage": "A required media input has no file selected.",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastTitleOne": "Media input missing",
         "toastTitleMany": "Missing media inputs",
         "toastMessageWithNode": "{nodeName} is missing a required media file.",

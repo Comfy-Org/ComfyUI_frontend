@@ -78,7 +78,7 @@ function getCardClass(layoutClass: string): string {
 
 <template>
   <section
-    class="bg-primary-comfy-ink max-w-9xl mx-auto px-4 py-24 lg:px-20 lg:py-40"
+    class="max-w-9xl mx-auto bg-primary-comfy-ink px-4 py-16 lg:px-20 lg:py-40"
   >
     <div class="mx-auto flex w-full max-w-7xl flex-col items-center">
       <p
@@ -88,18 +88,18 @@ function getCardClass(layoutClass: string): string {
       </p>
 
       <h2
-        class="text-primary-comfy-canvas text-3.5xl/tight mt-8 max-w-4xl text-center font-light lg:text-5xl"
+        class="text-3.5xl/tight mt-8 max-w-4xl text-center font-light text-primary-comfy-canvas lg:text-5xl"
       >
         {{ t('cloud.aiModels.heading', locale) }}
       </h2>
 
       <p
-        class="text-primary-comfy-canvas mt-8 max-w-xl text-center text-sm font-light lg:text-base/snug"
+        class="mt-8 max-w-xl text-center text-sm font-light text-primary-comfy-canvas lg:text-base/snug"
       >
         {{ t('cloud.aiModels.subtitle', locale) }}
       </p>
 
-      <div class="mt-24 w-full">
+      <div class="mt-16 w-full lg:mt-24">
         <div class="rounded-4xl border border-white/12 p-2 lg:p-1.5">
           <div class="grid grid-cols-1 gap-2 lg:grid-cols-12">
             <a
@@ -180,14 +180,15 @@ function getCardClass(layoutClass: string): string {
       <BrandButton
         :href="externalLinks.workflows"
         variant="outline"
-        class="mt-4 w-full max-w-md text-center lg:mt-8 lg:w-auto"
+        size="lg"
+        class="mt-4 w-full max-w-md px-8 py-4 text-center lg:mt-8 lg:w-auto"
       >
-        <span class="lg:hidden">{{
-          t('cloud.aiModels.ctaMobile', locale)
-        }}</span>
-        <span class="hidden lg:inline">{{
+        <!-- <span class="lg:hidden"> -->
+        {{ t('cloud.aiModels.ctaMobile', locale) }}
+        <!-- </span> -->
+        <!-- <span class="hidden lg:inline">{{
           t('cloud.aiModels.ctaDesktop', locale)
-        }}</span>
+        }}</span> -->
       </BrandButton>
     </div>
   </section>

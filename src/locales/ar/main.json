@@ -951,6 +951,7 @@
     "missingErrors": {
       "missing_media": {
         "displayMessage": "مدخل وسائط مطلوب لم يتم تحديد ملف له.",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastMessageMany": "يرجى تحديد مدخلات الوسائط المفقودة قبل تشغيل سير العمل هذا.",
         "toastMessageWithNode": "{nodeName} يفتقد ملف وسائط مطلوب.",
         "toastTitleMany": "مدخلات الوسائط المفقودة",
@@ -1282,6 +1283,15 @@
         "toastMessageWithTypes": "مدخل {inputName} في {nodeName} يتطلب {expectedType}، لكن الإخراج المتصل هو {receivedType}.",
         "toastTitle": "اتصال غير صالح"
       },
+      "unknown_validation_error": {
+        "details": "{nodeName} أعاد خطأ تحقق غير معروف: {errorType}",
+        "detailsWithRawDetails": "{nodeName} أعاد خطأ تحقق غير معروف ({errorType}): {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "أعاد أحد العقد خطأ تحقق غير معروف لم يتم التعرف عليه من قبل ComfyUI.",
+        "title": "فشل التحقق",
+        "toastMessage": "{nodeName} أعاد خطأ تحقق غير معروف.",
+        "toastTitle": "فشل التحقق"
+      },
       "value_bigger_than_max": {
         "details": "{nodeName} لديه قيمة أعلى من الحد الأقصى لـ {inputName}.",
         "detailsWithValue": "القيمة {receivedValue} لـ {inputName} في {nodeName} أعلى من الحد الأقصى {maxValue}.",
@@ -1485,6 +1495,7 @@
     "deleteImage": "حذف الصورة",
     "deprecated": "مهمل",
     "description": "الوصف",
+    "details": "تفاصيل",
     "devOnly": "للمطورين فقط",
     "devices": "الأجهزة",
     "disableAll": "تعطيل الكل",
@@ -1574,6 +1585,7 @@
     "jobIdCopied": "تم نسخ معرف المهمة إلى الحافظة",
     "keybinding": "اختصار لوحة المفاتيح",
     "keybindingAlreadyExists": "الاختصار موجود بالفعل في",
+    "keybindingListAriaLabel": "اختصارات لوحة المفاتيح: {combos}",
     "keybindingPresets": {
       "default": "الإعداد المسبق الافتراضي",
       "deletePreset": "حذف الإعداد المسبق",
@@ -1624,6 +1636,7 @@
     "mostRelevant": "الأكثر صلة",
     "multiSelectDropdown": "قائمة منسدلة متعددة الاختيار",
     "nMoreKeybindings": "+ {count} المزيد",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "الاسم",
     "newFolder": "مجلد جديد",
     "next": "التالي",
@@ -2759,6 +2772,7 @@
     "qwen": "تشي وين",
     "samplers": "أجهزة التجميع",
     "sampling": "التجميع",
+    "scail": "scail",
     "schedulers": "الجدولة",
     "scheduling": "الجدولة",
     "sd3": "sd3",
@@ -2996,6 +3010,7 @@
     "errorHelp": "للمزيد من المساعدة، {github} أو {support}",
     "errorHelpGithub": "إرسال مشكلة على GitHub",
     "errorHelpSupport": "تواصل مع الدعم الفني",
+    "errorLog": "سجل الأخطاء",
     "errors": "الأخطاء",
     "executionErrorOccurred": "حدث خطأ أثناء التنفيذ. تحقق من علامة تبويب الأخطاء لمزيد من التفاصيل.",
     "fallbackGroupTitle": "مجموعة",
@@ -3030,26 +3045,14 @@
     "hideAdvancedShort": "إخفاء الخيارات المتقدمة",
     "hideInput": "إخفاء المدخل",
     "info": "معلومات",
+    "infoFor": "معلومات عن {item}",
     "inputs": "المدخلات",
     "inputsNone": "لا توجد مدخلات",
     "inputsNoneTooltip": "العقدة ليس لديها مدخلات",
     "locateNode": "تحديد موقع العقدة على اللوحة",
+    "locateNodeFor": "تحديد موقع {item}",
     "missingMedia": {
-      "audio": "الصوتيات",
-      "cancelSelection": "إلغاء الاختيار",
-      "collapseNodes": "إخفاء العقد المشار إليها",
-      "confirmSelection": "تأكيد الاختيار",
-      "expandNodes": "عرض العقد المشار إليها",
-      "image": "الصور",
-      "locateNode": "تحديد موقع العقدة",
-      "missingMediaTitle": "المدخلات المفقودة",
-      "or": "أو",
-      "selectedFromLibrary": "تم الاختيار من المكتبة",
-      "uploadFile": "رفع {type}",
-      "uploaded": "تم الرفع",
-      "uploading": "جاري الرفع...",
-      "useFromLibrary": "استخدام من المكتبة",
-      "video": "الفيديوهات"
+      "missingMediaTitle": "المدخلات المفقودة"
     },
     "missingModels": {
       "alreadyExistsInCategory": "هذا النموذج موجود بالفعل في \"{category}\"",

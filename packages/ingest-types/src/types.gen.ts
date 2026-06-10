@@ -2624,6 +2624,10 @@ export type Asset = {
    * Whether this asset is immutable (cannot be modified or deleted)
    */
   is_immutable?: boolean
+  /**
+   * Relative path in global-namespace-root form (e.g. "models/checkpoints/flux.safetensors")
+   */
+  file_path?: string | null
 }
 
 /**
@@ -2668,6 +2672,10 @@ export type AssetUpdated = {
    * Timestamp of the update
    */
   updated_at: string
+  /**
+   * Relative path in global-namespace-root form (e.g. "models/checkpoints/flux.safetensors")
+   */
+  file_path?: string | null
 }
 
 /**
@@ -3469,6 +3477,10 @@ export type AssetWritable = {
    * Whether this asset is immutable (cannot be modified or deleted)
    */
   is_immutable?: boolean
+  /**
+   * Relative path in global-namespace-root form (e.g. "models/checkpoints/flux.safetensors")
+   */
+  file_path?: string | null
 }
 
 /**
@@ -4376,7 +4388,13 @@ export type CreateAssetError = CreateAssetErrors[keyof CreateAssetErrors]
 
 export type CreateAssetResponses = {
   /**
-   * Asset created successfully
+   * Asset already existed for this user (deduplicated by content hash); the
+   * existing asset is returned with created_new=false.
+   *
+   */
+  200: AssetCreated
+  /**
+   * Asset created successfully (created_new=true)
    */
   201: AssetCreated
 }
@@ -4387,7 +4405,7 @@ export type CreateAssetResponse =
 export type CreateAssetFromHashData = {
   body: {
     /**
-     * Hash of the existing asset. Supports Blake3 (blake3:) or SHA256 (sha256:) formats
+     * Blake3 content hash of the existing asset (blake3: prefix)
      */
     hash: string
     /**
@@ -4438,7 +4456,13 @@ export type CreateAssetFromHashError =
 
 export type CreateAssetFromHashResponses = {
   /**
-   * Asset reference created successfully
+   * Asset reference already existed for this user (deduplicated by content
+   * hash); the existing asset is returned with created_new=false.
+   *
+   */
+  200: AssetCreated
+  /**
+   * Asset reference created successfully (created_new=true)
    */
   201: AssetCreated
 }
@@ -4688,7 +4712,7 @@ export type DeleteAssetErrors = {
    */
   404: ErrorResponse
   /**
-   * Asset cannot be deleted because it is referenced by another resource (e.g., workflow version)
+   * Asset cannot be deleted because it is referenced by another resource, e.g. a workflow version (error code: ASSET_IN_USE)
    */
   409: ErrorResponse
   /**

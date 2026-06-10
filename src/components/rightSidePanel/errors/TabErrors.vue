@@ -148,7 +148,6 @@
           <MissingNodeCard
             v-if="group.type === 'missing_node'"
             :show-info-button="shouldShowManagerButtons"
-            :show-node-id-badge="showNodeIdBadge"
             :missing-pack-groups="missingPackGroups"
             @locate-node="handleLocateMissingNode"
             @open-manager-info="handleOpenManagerInfo"
@@ -256,7 +255,6 @@
           <MissingMediaCard
             v-if="group.type === 'missing_media'"
             :missing-media-groups="missingMediaGroups"
-            :show-node-id-badge="showNodeIdBadge"
             @locate-node="handleLocateAssetNode"
           />
         </PropertiesAccordionItem>

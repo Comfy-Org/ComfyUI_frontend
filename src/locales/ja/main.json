@@ -951,6 +951,7 @@
     "missingErrors": {
       "missing_media": {
         "displayMessage": "必要なメディア入力にファイルが選択されていません。",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastMessageMany": "このワークフローを実行する前に不足しているメディア入力を選択してください。",
         "toastMessageWithNode": "{nodeName}に必要なメディアファイルが不足しています。",
         "toastTitleMany": "メディア入力が不足しています",
@@ -1282,6 +1283,15 @@
         "toastMessageWithTypes": "{nodeName} の {inputName} 入力は {expectedType} を期待していますが、接続された出力は {receivedType} です。",
         "toastTitle": "無効な接続"
       },
+      "unknown_validation_error": {
+        "details": "{nodeName} が未認識の検証エラーを返しました: {errorType}",
+        "detailsWithRawDetails": "{nodeName} が未認識の検証エラー ({errorType}) を返しました: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "ノードが ComfyUI で認識されない検証エラーを返しました。",
+        "title": "検証に失敗しました",
+        "toastMessage": "{nodeName} が未認識の検証エラーを返しました。",
+        "toastTitle": "検証に失敗しました"
+      },
       "value_bigger_than_max": {
         "details": "{nodeName} の {inputName} が最大値を超えています。",
         "detailsWithValue": "{nodeName} の {inputName} に対する値 {receivedValue} は最大値 {maxValue} を超えています。",
@@ -1485,6 +1495,7 @@
     "deleteImage": "画像を削除",
     "deprecated": "非推奨",
     "description": "説明",
+    "details": "詳細",
     "devOnly": "DEV",
     "devices": "デバイス",
     "disableAll": "すべて無効にする",
@@ -1574,6 +1585,7 @@
     "jobIdCopied": "ジョブIDがクリップボードにコピーされました",
     "keybinding": "キーバインディング",
     "keybindingAlreadyExists": "このキー割り当てはすでに存在します",
+    "keybindingListAriaLabel": "キーバインド: {combos}",
     "keybindingPresets": {
       "default": "デフォルトプリセット",
       "deletePreset": "プリセットを削除",
@@ -1624,6 +1636,7 @@
     "mostRelevant": "最も関連性の高い",
     "multiSelectDropdown": "複数選択ドロップダウン",
     "nMoreKeybindings": "+ {count} 件以上",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "名前",
     "newFolder": "新しいフォルダー",
     "next": "次へ",
@@ -2759,6 +2772,7 @@
     "qwen": "qwen",
     "samplers": "サンプラー",
     "sampling": "サンプリング",
+    "scail": "scail",
     "schedulers": "スケジューラー",
     "scheduling": "スケジューリング",
     "sd3": "SD3",
@@ -2996,6 +3010,7 @@
     "errorHelp": "詳細なヘルプについては、{github} または {support} をご利用ください",
     "errorHelpGithub": "GitHub イシューを提出",
     "errorHelpSupport": "サポートに連絡",
+    "errorLog": "エラーログ",
     "errors": "エラー",
     "executionErrorOccurred": "実行中にエラーが発生しました。詳細はエラータブをご確認ください。",
     "fallbackGroupTitle": "グループ",
@@ -3030,26 +3045,14 @@
     "hideAdvancedShort": "詳細を非表示",
     "hideInput": "入力を非表示",
     "info": "情報",
+    "infoFor": "{item} の情報",
     "inputs": "入力",
     "inputsNone": "入力なし",
     "inputsNoneTooltip": "このノードには入力がありません",
     "locateNode": "キャンバス上でノードを探す",
+    "locateNodeFor": "{item} を探す",
     "missingMedia": {
-      "audio": "音声",
-      "cancelSelection": "選択をキャンセル",
-      "collapseNodes": "参照ノードを非表示",
-      "confirmSelection": "選択を確定",
-      "expandNodes": "参照ノードを表示",
-      "image": "画像",
-      "locateNode": "ノードを特定",
-      "missingMediaTitle": "入力がありません",
-      "or": "または",
-      "selectedFromLibrary": "ライブラリから選択済み",
-      "uploadFile": "{type}をアップロード",
-      "uploaded": "アップロード完了",
-      "uploading": "アップロード中...",
-      "useFromLibrary": "ライブラリから使用",
-      "video": "動画"
+      "missingMediaTitle": "入力がありません"
     },
     "missingModels": {
       "alreadyExistsInCategory": "このモデルはすでに「{category}」に存在します",
