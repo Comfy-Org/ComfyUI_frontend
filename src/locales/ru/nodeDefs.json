@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "Узел кондиционирования для Bernini для контекстного кондиционирования видео/изображений. Может использоваться для следующих задач: t2v (текст-видео), v2v (видео-видео), rv2v (редактирование видео с помощью референса), r2v (референс-видео), ads2v (вставка изображения/видео в видео). Референсные изображения, внедрённые как контекстные токены (r2v, rv2v), кодируются независимо с их собственным исходным соотношением сторон (длинная сторона ограничена ref_max_size).",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "ref_max_size",
+        "tooltip": "Максимальный размер длинной стороны для reference_video и reference_images. Изменяется с сохранением пропорций и округляется до 16 пикселей."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "reference_video": {
+        "name": "reference_video",
+        "tooltip": "Видео для вставки в исходное видео (ads2v)."
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Исходное видео для редактирования или изменения стиля (v2v, rv2v). Изменяется до ширины/высоты и обрезается до длины."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "Scheduler выборки Бета",
     "inputs": {
@@ -15904,6 +15960,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "Создать цветную маску SCAIL-2",
+    "inputs": {
+      "driving_track_data": {
+        "name": "driving_track_data",
+        "tooltip": "Трек SAM3 для видео с движущейся позой. Будет отрисован в выходной pose_video_mask."
+      },
+      "object_indices": {
+        "name": "object_indices",
+        "tooltip": "Список индексов людей через запятую для включения (например, '0,2,3'). Применяется к маскам как референсного, так и позового видео. Пусто = все."
+      },
+      "ref_track_data": {
+        "name": "ref_track_data",
+        "tooltip": "Трек SAM3 для референсного изображения."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "False = mask_video с чёрным фоном (режим анимации). True = белый фон (режим замены). Установите соответствующий replacement_mode на WanSCAILToVideo. reference_image_mask всегда с чёрным фоном."
+      },
+      "sort_by": {
+        "name": "sort_by",
+        "tooltip": "Порядок, в котором палитра цветов назначается отслеживаемым объектам (применяется к обоим видео, чтобы каждая личность сохраняла свой цвет). left_to_right = самый левый объект (по центроиду первого кадра) получает первый цвет; area = самый большой объект (по площади маски первого кадра) получает первый цвет; none = сохранить порядок SAM3."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -22338,7 +22429,8 @@
         "name": "размер_пакета"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "Визуальные признаки CLIP для кондиционирования. Модель обучена с растягиванием до соотношения сторон."
       },
       "height": {
         "name": "высота"
@@ -22365,14 +22457,39 @@
         "name": "видео_позы",
         "tooltip": "Видео, используемое для условия позы. Будет уменьшено до половины разрешения основного видео."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "Только для SCAIL-2. Цветное видео масок SAM3 для каждой идентичности с тем же разрешением, что и pose_video."
+      },
       "positive": {
         "name": "позитивный"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "Хвостовые кадры previous_frames для привязки. SCAIL-2 обучен на 5 (81 кадр в фрагменте, шаг 76 кадров)."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "Только для SCAIL-2. Полный декодированный вывод предыдущего фрагмента. В качестве якоря расширения используются только последние previous_frame_count."
+      },
       "reference_image": {
-        "name": "референсное_изображение"
+        "name": "референсное_изображение",
+        "tooltip": "Референсное изображение. Для нескольких референсов объедините все на одном изображении."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "Только для SCAIL-2. Цветная маска референса с тем же разрешением, что и reference_image."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "Только для SCAIL-2. False = режим анимации (pose_video_mask должен иметь чёрный фон). True = режим замены (pose_video_mask должен иметь белый фон)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "Совокупный выходной кадр, с которого начинается этот фрагмент. Подключите от выхода video_frame_offset предыдущего фрагмента."
       },
       "width": {
         "name": "ширина"
@@ -22390,6 +22507,10 @@
       "2": {
         "name": "латентный",
         "tooltip": "Пустое латентное пространство размера генерации."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "Скорректированное смещение + длина. Подключите к следующему фрагменту."
       }
     }
   },

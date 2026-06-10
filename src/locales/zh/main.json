@@ -951,6 +951,7 @@
     "missingErrors": {
       "missing_media": {
         "displayMessage": "所需的媒体输入未选择文件。",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastMessageMany": "请在运行此工作流前选择缺失的媒体输入。",
         "toastMessageWithNode": "{nodeName} 缺少所需的媒体文件。",
         "toastTitleMany": "缺少媒体输入",
@@ -2771,6 +2772,7 @@
     "qwen": "Qwen千问",
     "samplers": "采样器",
     "sampling": "采样",
+    "scail": "scail",
     "schedulers": "调度器",
     "scheduling": "调度",
     "sd3": "SD3",
@@ -3050,21 +3052,7 @@
     "locateNode": "在画布上定位节点",
     "locateNodeFor": "定位 {item}",
     "missingMedia": {
-      "audio": "音频",
-      "cancelSelection": "取消选择",
-      "collapseNodes": "隐藏引用节点",
-      "confirmSelection": "确认选择",
-      "expandNodes": "显示引用节点",
-      "image": "图像",
-      "locateNode": "定位节点",
-      "missingMediaTitle": "缺少输入",
-      "or": "或",
-      "selectedFromLibrary": "已从素材库选择",
-      "uploadFile": "上传{type}",
-      "uploaded": "已上传",
-      "uploading": "正在上传...",
-      "useFromLibrary": "从素材库选择",
-      "video": "视频"
+      "missingMediaTitle": "缺少输入"
     },
     "missingModels": {
       "alreadyExistsInCategory": "该模型已存在于“{category}”中",

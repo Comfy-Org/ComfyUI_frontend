@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "Nœud de conditioning pour Bernini pour le conditioning vidéo/image in-context. Il peut être utilisé pour les tâches suivantes : t2v (texte vers vidéo), v2v (vidéo vers vidéo), rv2v (édition vidéo guidée par référence), r2v (référence vers vidéo), ads2v (insertion d'image/vidéo dans une vidéo). Les images de référence injectées comme tokens in-context (r2v, rv2v) sont encodées indépendamment à leur propre ratio d’aspect natif (bord long limité à ref_max_size).",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_lot"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "positive": {
+        "name": "positif"
+      },
+      "ref_max_size": {
+        "name": "ref_max_size",
+        "tooltip": "Taille maximale pour le bord long de reference_video et reference_images. Redimensionné en conservant le ratio d’aspect et ajusté à 16px."
+      },
+      "reference_images": {
+        "name": "images_de_référence"
+      },
+      "reference_video": {
+        "name": "vidéo_de_référence",
+        "tooltip": "Vidéo à insérer dans la vidéo source (ads2v)."
+      },
+      "source_video": {
+        "name": "vidéo_source",
+        "tooltip": "Vidéo source à éditer ou restyler (v2v, rv2v). Redimensionnée à la largeur/hauteur et coupée à la longueur."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "négatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "PlanificateurÉchantillonnageBeta",
     "inputs": {
@@ -15904,6 +15960,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "Créer un masque coloré SCAIL-2",
+    "inputs": {
+      "driving_track_data": {
+        "name": "données_de_suivi_conduite",
+        "tooltip": "Piste SAM3 de la vidéo de pose de conduite. Sera rendue dans la sortie pose_video_mask."
+      },
+      "object_indices": {
+        "name": "indices_objets",
+        "tooltip": "Liste séparée par des virgules des indices de personnes à inclure (ex : '0,2,3'). Appliqué aux masques vidéo de référence et de pose. Vide = tous."
+      },
+      "ref_track_data": {
+        "name": "données_de_suivi_référence",
+        "tooltip": "Piste SAM3 de l’image de référence."
+      },
+      "replacement_mode": {
+        "name": "mode_remplacement",
+        "tooltip": "Faux = mask_video a un fond noir (Mode Animation). Vrai = fond blanc (Mode Remplacement). Définir le même mode_remplacement sur WanSCAILToVideo. reference_image_mask est toujours sur fond noir."
+      },
+      "sort_by": {
+        "name": "trier_par",
+        "tooltip": "Ordre dans lequel les couleurs de la palette sont attribuées aux objets suivis (appliqué aux vidéos de référence et de pose pour que chaque identité garde la même couleur). left_to_right = l’objet le plus à gauche (par centroïde de la première image) reçoit la première couleur ; area = le plus grand objet (par aire du masque de la première image) reçoit la première couleur ; none = garder l’ordre de SAM3."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -22338,7 +22429,8 @@
         "name": "taille_du_lot"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "Caractéristiques visuelles CLIP pour le conditionnement. Le modèle est entraîné avec un redimensionnement étiré au ratio d’aspect."
       },
       "height": {
         "name": "hauteur"
@@ -22365,14 +22457,39 @@
         "name": "vidéo_de_pose",
         "tooltip": "Vidéo utilisée pour le conditionnement de pose. Sera réduite à la moitié de la résolution de la vidéo principale."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "SCAIL-2 uniquement. Vidéo de masque SAM3 colorée par identité à la même résolution que pose_video."
+      },
       "positive": {
         "name": "positif"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "Images de fin de previous_frames à utiliser comme ancrage. SCAIL-2 a été entraîné avec 5 (segments de 81 images, pas de 76 images)."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "SCAIL-2 uniquement. Sortie décodée complète du segment précédent. Seuls les derniers previous_frame_count sont utilisés comme ancrage d’extension."
+      },
       "reference_image": {
-        "name": "image_de_référence"
+        "name": "image_de_référence",
+        "tooltip": "Image de référence, pour plusieurs références, composez-les toutes sur une seule image."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "SCAIL-2 uniquement. Masque de référence coloré à la même résolution que reference_image."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "SCAIL-2 uniquement. Faux = Mode Animation (pose_video_mask doit avoir un fond noir). Vrai = Mode Remplacement (pose_video_mask doit avoir un fond blanc)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "Image de sortie cumulative à partir de laquelle commence ce segment. Connectez à la sortie video_frame_offset du segment précédent."
       },
       "width": {
         "name": "largeur"
@@ -22390,6 +22507,10 @@
       "2": {
         "name": "latent",
         "tooltip": "Latent vide de la taille de génération."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "Décalage ajusté + longueur. À connecter au segment suivant."
       }
     }
   },

@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "Bernini bağlam içi video/görüntü koşullandırması için koşullandırma düğümü. Şu görevler için kullanılabilir: t2v (metinden videoya), v2v (videodan videoya), rv2v (referans rehberli video düzenleme), r2v (referanstan videoya), ads2v (görüntü/video ekleme). Bağlam içi token olarak eklenen referans görüntüler (r2v, rv2v) kendi orijinal en-boy oranında bağımsız olarak kodlanır (uzun kenar ref_max_size ile sınırlandırılır).",
+    "display_name": "Bernini Koşullandırma",
+    "inputs": {
+      "batch_size": {
+        "name": "toplu_boyutu"
+      },
+      "height": {
+        "name": "yükseklik"
+      },
+      "length": {
+        "name": "uzunluk"
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "positive": {
+        "name": "pozitif"
+      },
+      "ref_max_size": {
+        "name": "ref_max_size",
+        "tooltip": "reference_video ve reference_images için uzun kenarın maksimum boyutu. En-boy oranı korunarak yeniden boyutlandırılır ve 16px'e yuvarlanır."
+      },
+      "reference_images": {
+        "name": "referans_görüntüler"
+      },
+      "reference_video": {
+        "name": "referans_video",
+        "tooltip": "Kaynak videoya eklenecek video (ads2v)."
+      },
+      "source_video": {
+        "name": "kaynak_video",
+        "tooltip": "Düzenlenecek veya yeniden biçimlendirilecek kaynak video (v2v, rv2v). Genişlik/yüksekliğe yeniden boyutlandırılır ve uzunluğa kırpılır."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "genişlik"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pozitif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaÖrneklemeZamanlayıcısı",
     "inputs": {
@@ -15904,6 +15960,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "SCAIL-2 Renkli Maske Oluştur",
+    "inputs": {
+      "driving_track_data": {
+        "name": "driving_track_data",
+        "tooltip": "Sürüş pozu videosunun SAM3 izi. pose_video_mask çıktısında işlenecek."
+      },
+      "object_indices": {
+        "name": "nesne_indeksleri",
+        "tooltip": "Dahil edilecek kişi indekslerinin virgülle ayrılmış listesi (örn. '0,2,3'). Hem referans hem de poz video maskelerine uygulanır. Boş = tümü."
+      },
+      "ref_track_data": {
+        "name": "ref_track_data",
+        "tooltip": "Referans görüntünün SAM3 izi."
+      },
+      "replacement_mode": {
+        "name": "değiştirme_modu",
+        "tooltip": "False = mask_video siyah arka plan (Animasyon Modu). True = beyaz arka plan (Değiştirme Modu). WanSCAILToVideo'da eşleşen replacement_mode'u ayarlayın. reference_image_mask her zaman siyah arka planlıdır."
+      },
+      "sort_by": {
+        "name": "sırala",
+        "tooltip": "Palet renklerinin izlenen nesnelere atanma sırası (hem referans hem de poz videoya uygulanır, böylece her kimlik aynı rengi korur). left_to_right = ilk kare merkezine göre en soldaki nesne ilk rengi alır; area = ilk kare maske alanına göre en büyük nesne ilk rengi alır; none = SAM3'ün sırasını koru."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -22338,7 +22429,8 @@
         "name": "toplu_boyutu"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "Koşullandırma için CLIP vision özellikleri. Model, en-boy oranına göre esnetilmiş yeniden boyutlandırma ile eğitildi."
       },
       "height": {
         "name": "yükseklik"
@@ -22365,14 +22457,39 @@
         "name": "poz_videosu",
         "tooltip": "Poz koşullandırması için kullanılan video. Ana videonun çözünürlüğünün yarısına düşürülecek."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "Yalnızca SCAIL-2. pose_video ile aynı çözünürlükte, kimliğe göre renklendirilmiş SAM3 mask video."
+      },
       "positive": {
         "name": "pozitif"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "Önceki karelerin sonundaki kareler, sabitleme için kullanılır. SCAIL-2, 5'te eğitildi (81 karelik parçalar, 76 karelik adım)."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "Yalnızca SCAIL-2. Önceki parçanın tam olarak çözülmüş çıktısı. Sadece son previous_frame_count uzatma sabitlemesi olarak kullanılır."
+      },
       "reference_image": {
-        "name": "referans_görsel"
+        "name": "referans_görsel",
+        "tooltip": "Referans görseli, birden fazla referans için tümünü tek bir görselde birleştirin."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "Yalnızca SCAIL-2. reference_image ile aynı çözünürlükte renklendirilmiş referans mask."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "Yalnızca SCAIL-2. False = Animasyon Modu (pose_video_mask siyah arka plana sahip olmalı). True = Değiştirme Modu (pose_video_mask beyaz arka plana sahip olmalı)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "Bu parçanın başladığı kümülatif çıktı kare sayısı. Önceki parçanın video_frame_offset çıkışından bağlayın."
       },
       "width": {
         "name": "genişlik"
@@ -22390,6 +22507,10 @@
       "2": {
         "name": "latent",
         "tooltip": "Üretim boyutunda boş latent."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "Ayarlanmış offset + uzunluk. Sonraki parçaya bağlayın."
       }
     }
   },

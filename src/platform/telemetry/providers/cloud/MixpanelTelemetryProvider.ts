@@ -1,4 +1,5 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
+import { omit } from 'es-toolkit'
 import { watch } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -17,7 +18,6 @@ import type {
   CreditTopupMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
-  ShareFlowMetadata,
   ExecutionTriggerSource,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
@@ -27,6 +27,7 @@ import type {
   PageVisibilityMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
+  ShareFlowMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -209,7 +210,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
-    this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
+    this.trackEvent(
+      TelemetryEvents.USER_AUTH_COMPLETED,
+      omit(metadata, ['share_id'])
+    )
   }
 
   trackUserLoggedIn(): void {
@@ -356,11 +360,17 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   trackWorkflowImported(metadata: WorkflowImportMetadata): void {
-    this.trackEvent(TelemetryEvents.WORKFLOW_IMPORTED, metadata)
+    this.trackEvent(
+      TelemetryEvents.WORKFLOW_IMPORTED,
+      omit(metadata, ['share_id'])
+    )
   }
 
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
-    this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
+    this.trackEvent(
+      TelemetryEvents.WORKFLOW_OPENED,
+      omit(metadata, ['share_id'])
+    )
   }
 
   trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {
@@ -376,7 +386,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   trackShareFlow(metadata: ShareFlowMetadata): void {
-    this.trackEvent(TelemetryEvents.SHARE_FLOW, metadata)
+    this.trackEvent(TelemetryEvents.SHARE_FLOW, omit(metadata, ['share_id']))
   }
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {

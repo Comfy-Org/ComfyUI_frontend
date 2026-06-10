@@ -951,6 +951,7 @@
     "missingErrors": {
       "missing_media": {
         "displayMessage": "Une entrée média requise n’a pas de fichier sélectionné.",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastMessageMany": "Veuillez sélectionner les entrées média manquantes avant d’exécuter ce workflow.",
         "toastMessageWithNode": "{nodeName} nécessite un fichier média requis.",
         "toastTitleMany": "Entrées média manquantes",
@@ -2771,6 +2772,7 @@
     "qwen": "qwen",
     "samplers": "échantillonneurs",
     "sampling": "échantillonnage",
+    "scail": "scail",
     "schedulers": "planificateurs",
     "scheduling": "planification",
     "sd3": "sd3",
@@ -3050,21 +3052,7 @@
     "locateNode": "Localiser le nœud sur le canevas",
     "locateNodeFor": "Localiser {item}",
     "missingMedia": {
-      "audio": "Audio",
-      "cancelSelection": "Annuler la sélection",
-      "collapseNodes": "Masquer les nœuds de référence",
-      "confirmSelection": "Confirmer la sélection",
-      "expandNodes": "Afficher les nœuds de référence",
-      "image": "Images",
-      "locateNode": "Localiser le nœud",
-      "missingMediaTitle": "Entrées manquantes",
-      "or": "OU",
-      "selectedFromLibrary": "Sélectionné depuis la bibliothèque",
-      "uploadFile": "Téléverser {type}",
-      "uploaded": "Téléversé",
-      "uploading": "Téléversement en cours...",
-      "useFromLibrary": "Utiliser depuis la bibliothèque",
-      "video": "Vidéos"
+      "missingMediaTitle": "Entrées manquantes"
     },
     "missingModels": {
       "alreadyExistsInCategory": "Ce modèle existe déjà dans « {category} »",
