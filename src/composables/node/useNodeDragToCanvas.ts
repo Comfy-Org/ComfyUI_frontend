@@ -25,14 +25,12 @@ const lastNativeDragPosition = shallowRef<Position>()
 const pendingWidgetValues = shallowRef<WidgetValues>()
 let listenersSetup = false
 
-// Non-reactive so the always-on tracker costs nothing outside a drag. It
-// seeds the ghost preview with the position of the click that armed the
-// drag, before any pointermove fires.
 let lastPointerPosition: Position | undefined
 let pointerTrackingStarted = false
 
 function trackPointerPosition(e: PointerEvent) {
   lastPointerPosition = { x: e.clientX, y: e.clientY }
+  if (isDragging.value) cursorPosition.value = lastPointerPosition
 }
 
 function startPointerTracking() {
@@ -53,10 +51,6 @@ const previewPosition = computed(() =>
     ? lastNativeDragPosition.value
     : cursorPosition.value
 )
-
-function updatePosition(e: PointerEvent) {
-  cursorPosition.value = { x: e.clientX, y: e.clientY }
-}
 
 // Firefox dragend can report stale clientX/Y and `drag` can fire with
 // (0, 0). dragover on the target reliably reports real client coords.
@@ -148,7 +142,6 @@ function setupGlobalListeners() {
   if (listenersSetup) return
   listenersSetup = true
 
-  document.addEventListener('pointermove', updatePosition)
   document.addEventListener('pointerdown', blockCommitPointerDown, true)
   document.addEventListener('pointerup', endDrag, true)
   document.addEventListener('keydown', handleKeydown)
@@ -159,7 +152,6 @@ function cleanupGlobalListeners() {
   if (!listenersSetup) return
   listenersSetup = false
 
-  document.removeEventListener('pointermove', updatePosition)
   document.removeEventListener('pointerdown', blockCommitPointerDown, true)
   document.removeEventListener('pointerup', endDrag, true)
   document.removeEventListener('keydown', handleKeydown)
