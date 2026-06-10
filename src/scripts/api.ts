@@ -109,6 +109,11 @@ interface QueuePromptRequestBody {
      */
     api_key_comfy_org?: string
     /**
+     * Identifies the client submitting the prompt. Forwarded by the backend
+     * to API nodes' upstream requests via the Comfy-Usage-Source header.
+     */
+    comfy_usage_source?: string
+    /**
      * Override the preview method for this prompt execution.
      * 'default' uses the server's CLI setting.
      */
@@ -867,6 +872,7 @@ export class ComfyApi extends EventTarget {
       extra_data: {
         auth_token_comfy_org: this.authToken,
         api_key_comfy_org: this.apiKey,
+        comfy_usage_source: 'comfyui-frontend',
         extra_pnginfo: { workflow },
         ...(options?.previewMethod &&
           options.previewMethod !== 'default' && {
