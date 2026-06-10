@@ -118,63 +118,68 @@
       <div
         v-if="hasSelection"
         ref="footerRef"
-        class="flex h-18 w-full items-center justify-between gap-1"
+        class="flex w-full flex-col justify-center gap-2 py-2"
       >
-        <div class="flex-1 pl-4">
-          <div ref="selectionCountButtonRef" class="inline-flex w-48">
+        <div class="flex w-full items-center justify-between gap-1">
+          <div class="flex-1 pl-4">
+            <div ref="selectionCountButtonRef" class="inline-flex w-48">
+              <Button
+                variant="secondary"
+                :class="cn(isCompact && 'text-left')"
+                @click="handleDeselectAll"
+              >
+                {{
+                  isHoveringSelectionCount
+                    ? $t('mediaAsset.selection.deselectAll')
+                    : $t('mediaAsset.selection.selectedCount', {
+                        count: totalOutputCount
+                      })
+                }}
+              </Button>
+            </div>
+          </div>
+          <div
+            class="flex shrink items-center-safe justify-end-safe gap-2 pr-4"
+          >
             <Button
-              variant="secondary"
-              :class="cn(isCompact && 'text-left')"
-              @click="handleDeselectAll"
+              v-if="shouldShowDeleteButton"
+              :variant="isCompact ? undefined : 'secondary'"
+              :size="isCompact ? 'icon' : undefined"
+              data-testid="assets-delete-selected"
+              @click="handleDeleteSelected"
             >
-              {{
-                isHoveringSelectionCount
-                  ? $t('mediaAsset.selection.deselectAll')
-                  : $t('mediaAsset.selection.selectedCount', {
-                      count: totalOutputCount
-                    })
-              }}
+              <span v-if="!isCompact">{{
+                $t('mediaAsset.selection.deleteSelected')
+              }}</span>
+              <i class="icon-[lucide--trash-2] size-4" />
+            </Button>
+            <Button
+              :variant="isCompact ? undefined : 'secondary'"
+              :size="isCompact ? 'icon' : undefined"
+              data-testid="assets-download-selected"
+              @click="
+                handleDownloadSelected(canIncludePreviews && includePreviews)
+              "
+            >
+              <span v-if="!isCompact">{{
+                $t('mediaAsset.selection.downloadSelected')
+              }}</span>
+              <i class="icon-[lucide--download] size-4" />
             </Button>
           </div>
         </div>
-        <div class="flex shrink items-center-safe justify-end-safe gap-2 pr-4">
-          <Button
-            v-if="shouldShowDeleteButton"
-            :variant="isCompact ? undefined : 'secondary'"
-            :size="isCompact ? 'icon' : undefined"
-            data-testid="assets-delete-selected"
-            @click="handleDeleteSelected"
-          >
-            <span v-if="!isCompact">{{
-              $t('mediaAsset.selection.deleteSelected')
-            }}</span>
-            <i class="icon-[lucide--trash-2] size-4" />
-          </Button>
-          <Button
-            v-if="canIncludePreviews"
-            v-tooltip.top="$t('mediaAsset.selection.includePreviews')"
-            :variant="includePreviews ? 'primary' : 'secondary'"
-            size="icon"
-            :aria-pressed="includePreviews"
-            :aria-label="$t('mediaAsset.selection.includePreviews')"
+        <div
+          v-if="canIncludePreviews"
+          class="flex items-center justify-end gap-2 pr-4"
+        >
+          <label for="assets-include-previews" class="text-sm">{{
+            $t('mediaAsset.selection.includePreviews')
+          }}</label>
+          <ToggleSwitch
+            v-model="includePreviews"
+            input-id="assets-include-previews"
             data-testid="assets-include-previews"
-            @click="includePreviews = !includePreviews"
-          >
-            <i class="icon-[lucide--images] size-4" />
-          </Button>
-          <Button
-            :variant="isCompact ? undefined : 'secondary'"
-            :size="isCompact ? 'icon' : undefined"
-            data-testid="assets-download-selected"
-            @click="
-              handleDownloadSelected(canIncludePreviews && includePreviews)
-            "
-          >
-            <span v-if="!isCompact">{{
-              $t('mediaAsset.selection.downloadSelected')
-            }}</span>
-            <i class="icon-[lucide--download] size-4" />
-          </Button>
+          />
         </div>
       </div>
     </template>
@@ -212,6 +217,7 @@ import {
   useStorage,
   useTimeoutFn
 } from '@vueuse/core'
+import ToggleSwitch from 'primevue/toggleswitch'
 import { useToast } from 'primevue/usetoast'
 import {
   computed,

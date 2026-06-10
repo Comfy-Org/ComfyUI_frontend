@@ -101,7 +101,7 @@ const i18n = createI18n({
       assetBrowser: { jobId: 'Job ID' },
       mediaAsset: {
         selection: {
-          includePreviews: 'Include previews',
+          includePreviews: 'Download previews',
           downloadSelected: 'Download',
           deleteSelected: 'Delete',
           deselectAll: 'Deselect all',
@@ -128,7 +128,13 @@ function renderTab() {
         MediaAssetContextMenu: true,
         MediaLightbox: true,
         NoResultsPlaceholder: true,
-        Skeleton: true
+        Skeleton: true,
+        ToggleSwitch: {
+          props: { modelValue: { type: Boolean, default: false } },
+          emits: ['update:modelValue'],
+          template:
+            '<button type="button" role="switch" :aria-checked="modelValue" @click="$emit(\'update:modelValue\', !modelValue)" />'
+        }
       }
     }
   })
@@ -170,10 +176,10 @@ describe('AssetsSidebarTab include-previews toggle', () => {
     renderTab()
 
     const toggle = includePreviewsToggle()!
-    expect(toggle).toHaveAttribute('aria-pressed', 'false')
+    expect(toggle).toHaveAttribute('aria-checked', 'false')
 
     await user.click(toggle)
-    expect(toggle).toHaveAttribute('aria-pressed', 'true')
+    expect(toggle).toHaveAttribute('aria-checked', 'true')
 
     await user.click(screen.getByTestId('assets-download-selected'))
 
