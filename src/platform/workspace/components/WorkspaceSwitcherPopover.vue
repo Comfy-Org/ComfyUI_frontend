@@ -34,12 +34,12 @@
                 @click="handleSelectWorkspace(workspace)"
               >
                 <WorkspaceProfilePic
-                  class="size-8 text-sm"
+                  class="size-8 shrink-0 text-sm"
                   :workspace-name="workspace.name"
                 />
                 <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-sm text-base-foreground">
+                  <div class="flex max-w-full items-center gap-1.5">
+                    <span class="truncate text-sm text-base-foreground">
                       {{
                         workspace.type === 'personal'
                           ? $t('workspaceSwitcher.personal')
@@ -48,7 +48,7 @@
                     </span>
                     <span
                       v-if="resolveTierLabel(workspace)"
-                      class="rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
+                      class="shrink-0 rounded-full bg-base-foreground px-1 py-0.5 text-2xs font-bold text-base-background uppercase"
                     >
                       {{ resolveTierLabel(workspace) }}
                     </span>
@@ -59,7 +59,7 @@
                 </div>
                 <i
                   v-if="isCurrentWorkspace(workspace)"
-                  class="pi pi-check text-sm text-base-foreground"
+                  class="pi pi-check shrink-0 text-sm text-base-foreground"
                 />
               </button>
             </div>
