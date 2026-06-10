@@ -148,11 +148,13 @@ export function useSharedWorkflowUrlLoader() {
       share_id: shareParam,
       is_authenticated: isLoggedIn.value
     })
-    capturePreservedQuery(
-      PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
-      { share: shareParam },
-      ['share']
-    )
+    if (!isLoggedIn.value) {
+      capturePreservedQuery(
+        PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
+        { share: shareParam },
+        ['share']
+      )
+    }
 
     const result = await showOpenSharedWorkflowDialog(shareParam)
 

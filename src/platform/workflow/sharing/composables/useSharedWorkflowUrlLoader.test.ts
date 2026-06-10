@@ -268,6 +268,24 @@ describe('useSharedWorkflowUrlLoader', () => {
     )
   })
 
+  it('does not capture share auth attribution for authenticated users', async () => {
+    mockQueryParams = { share: 'share-id-1' }
+    mockIsLoggedIn.value = true
+    mockShowLayoutDialog.mockImplementation(() => {
+      resolveDialogWithConfirm(makePayload())
+    })
+
+    const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
+    const loaded = await loadSharedWorkflowFromUrl()
+
+    expect(loaded).toBe('loaded')
+    expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
+      share_id: 'share-id-1',
+      is_authenticated: true
+    })
+    expect(preservedQueryMocks.capturePreservedQuery).not.toHaveBeenCalled()
+  })
+
   it('hides template selector when user confirms opening shared workflow', async () => {
     mockQueryParams = { share: 'share-id-1' }
     mockShowLayoutDialog.mockImplementation(() => {
