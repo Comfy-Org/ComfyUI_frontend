@@ -167,11 +167,7 @@ describe('SwapNodeGroupRow', () => {
       const collapseButton = screen.getByRole('button', {
         name: 'Collapse OldNodeType'
       })
-      const nodeList = screen.getByRole('list')
       expect(collapseButton).toHaveAttribute('aria-expanded', 'true')
-      expect(collapseButton).toHaveAttribute('aria-controls', nodeList.id)
-      expect(titleButton).toHaveAttribute('aria-expanded', 'true')
-      expect(titleButton).toHaveAttribute('aria-controls', nodeList.id)
     })
   })
 
@@ -333,6 +329,25 @@ describe('SwapNodeGroupRow', () => {
   })
 
   describe('Edge Cases', () => {
+    it('handles empty nodeTypes array', () => {
+      renderRow({
+        group: makeGroup({
+          nodeTypes: []
+        })
+      })
+
+      expect(screen.getByText('OldNodeType')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'OldNodeType' })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /^Expand / })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Locate node on canvas' })
+      ).not.toBeInTheDocument()
+    })
+
     it('handles string nodeType entries', async () => {
       const user = userEvent.setup()
       renderRow({

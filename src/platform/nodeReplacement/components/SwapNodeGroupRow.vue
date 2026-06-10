@@ -31,7 +31,6 @@
               :title="group.type"
               :aria-label="titleToggleAriaLabel"
               :aria-expanded="expanded"
-              :aria-controls="expanded ? nodeListId : undefined"
               @click="toggleExpand"
             >
               {{ group.type }}
@@ -53,7 +52,9 @@
               {{ group.type }}
             </span>
             <span
-              v-if="showNodeCount"
+              v-if="hasMultipleNodeTypes"
+              data-testid="swap-node-group-count"
+              role="img"
               class="flex size-6 shrink-0 items-center justify-center rounded-md bg-secondary-background-selected text-xs font-bold text-muted-foreground"
               :aria-label="t('g.nodesCount', group.nodeTypes.length)"
             >
@@ -104,11 +105,7 @@
     </div>
 
     <TransitionCollapse>
-      <ul
-        v-if="expanded"
-        :id="nodeListId"
-        class="m-0 list-none space-y-1 p-0 pl-5"
-      >
+      <ul v-if="expanded" class="m-0 list-none space-y-1 p-0 pl-5">
         <li
           v-for="(nodeType, index) in group.nodeTypes"
           :key="getKey(nodeType, index)"
@@ -149,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
+import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
@@ -169,9 +166,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const expanded = ref(false)
-const nodeListId = useId()
 const hasMultipleNodeTypes = computed(() => group.nodeTypes.length > 1)
-const showNodeCount = computed(() => group.nodeTypes.length > 1)
 const replacementLabel = computed(
   () => group.newNodeId ?? t('nodeReplacement.unknownNode', 'Unknown')
 )
