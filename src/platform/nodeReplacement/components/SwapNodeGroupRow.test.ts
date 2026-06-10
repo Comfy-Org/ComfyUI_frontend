@@ -294,7 +294,7 @@ describe('SwapNodeGroupRow', () => {
       })
 
       expect(
-        screen.queryByRole('button', { name: 'Expand' })
+        screen.queryByRole('button', { name: /^Expand / })
       ).not.toBeInTheDocument()
       expect(screen.queryByLabelText('1 node')).not.toBeInTheDocument()
 
