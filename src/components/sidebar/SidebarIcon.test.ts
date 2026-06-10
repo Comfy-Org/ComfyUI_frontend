@@ -11,6 +11,7 @@ type SidebarIconProps = {
   icon: string
   selected: boolean
   tooltip?: string
+  label?: string
   class?: string
   iconBadge?: string | (() => string | null)
 }
@@ -82,6 +83,22 @@ describe('SidebarIcon', () => {
     expect(screen.getByRole('button')).toHaveAttribute(
       'aria-label',
       tooltipText
+    )
+  })
+
+  it('falls back to label for tooltip when no tooltip is provided', async () => {
+    const labelText = 'WASNodeSuitePreprocessors'
+    const { user } = renderSidebarIcon({ label: labelText })
+
+    expect(screen.getByRole('button')).toHaveAttribute('aria-label', labelText)
+
+    await user.hover(screen.getByRole('button'))
+
+    await waitFor(
+      () => {
+        expect(screen.getByRole('tooltip')).toHaveTextContent(labelText)
+      },
+      { timeout: 1000 }
     )
   })
 })
