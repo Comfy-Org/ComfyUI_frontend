@@ -951,6 +951,7 @@
     "missingErrors": {
       "missing_media": {
         "displayMessage": "Una entrada de medio requerida no tiene archivo seleccionado.",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastMessageMany": "Selecciona las entradas de medio faltantes antes de ejecutar este flujo de trabajo.",
         "toastMessageWithNode": "{nodeName} no tiene el archivo de medio requerido.",
         "toastTitleMany": "Faltan entradas de medio",
@@ -2771,6 +2772,7 @@
     "qwen": "qwen",
     "samplers": "muestreadores",
     "sampling": "muestreo",
+    "scail": "scail",
     "schedulers": "programadores",
     "scheduling": "programación",
     "sd3": "sd3",
@@ -3050,21 +3052,7 @@
     "locateNode": "Localizar nodo en el lienzo",
     "locateNodeFor": "Localizar {item}",
     "missingMedia": {
-      "audio": "Audio",
-      "cancelSelection": "Cancelar selección",
-      "collapseNodes": "Ocultar nodos de referencia",
-      "confirmSelection": "Confirmar selección",
-      "expandNodes": "Mostrar nodos de referencia",
-      "image": "Imágenes",
-      "locateNode": "Localizar nodo",
-      "missingMediaTitle": "Entradas faltantes",
-      "or": "O",
-      "selectedFromLibrary": "Seleccionado de la biblioteca",
-      "uploadFile": "Subir {type}",
-      "uploaded": "Subido",
-      "uploading": "Subiendo...",
-      "useFromLibrary": "Usar de la biblioteca",
-      "video": "Videos"
+      "missingMediaTitle": "Entradas faltantes"
     },
     "missingModels": {
       "alreadyExistsInCategory": "Este modelo ya existe en \"{category}\"",

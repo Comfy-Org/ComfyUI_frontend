@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "Berniniのインコンテキスト動画/画像コンディショニング用ノードです。以下のタスクに使用できます：t2v（テキストから動画）、v2v（動画から動画）、rv2v（リファレンスガイド付き動画編集）、r2v（リファレンスから動画）、ads2v（画像/動画を動画に挿入）。インコンテキストトークンとして挿入されたリファレンス画像（r2v、rv2v）は、それぞれのネイティブアスペクト比（長辺はref_max_sizeで制限）で個別にエンコードされます。",
+    "display_name": "Berniniコンディショニング",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "ref_max_size",
+        "tooltip": "reference_videoおよびreference_imagesの長辺の最大サイズ。アスペクト比を維持したままリサイズされ、16px単位にスナップされます。"
+      },
+      "reference_images": {
+        "name": "リファレンス画像"
+      },
+      "reference_video": {
+        "name": "リファレンス動画",
+        "tooltip": "ソース動画に挿入する動画（ads2v）。"
+      },
+      "source_video": {
+        "name": "ソース動画",
+        "tooltip": "編集またはリスタイルするソース動画（v2v、rv2v）。幅/高さにリサイズされ、長さにトリミングされます。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "ベータサンプリングスケジューラー",
     "inputs": {
@@ -15904,6 +15960,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "SCAIL-2カラーマスク作成",
+    "inputs": {
+      "driving_track_data": {
+        "name": "ドライビングトラックデータ",
+        "tooltip": "ドライビングポーズ動画のSAM3トラック。pose_video_mask出力としてレンダリングされます。"
+      },
+      "object_indices": {
+        "name": "オブジェクトインデックス",
+        "tooltip": "含める人物インデックスのカンマ区切りリスト（例: '0,2,3'）。リファレンスおよびポーズ動画マスクの両方に適用されます。空欄＝全て。"
+      },
+      "ref_track_data": {
+        "name": "リファレンストラックデータ",
+        "tooltip": "リファレンス画像のSAM3トラック。"
+      },
+      "replacement_mode": {
+        "name": "置換モード",
+        "tooltip": "False＝mask_videoは黒背景（アニメーションモード）。True＝白背景（置換モード）。WanSCAILToVideoで一致するreplacement_modeを設定してください。reference_image_maskは常に黒背景です。"
+      },
+      "sort_by": {
+        "name": "並び順",
+        "tooltip": "パレットカラーがトラッキングされたオブジェクトに割り当てられる順序（リファレンスとポーズ動画の両方に適用され、各IDが同じ色を保持）。left_to_right＝最も左のオブジェクト（最初のフレームの重心）が最初の色を取得；area＝最も大きいオブジェクト（最初のフレームのマスク面積）が最初の色を取得；none＝SAM3の順序を維持。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -22338,7 +22429,8 @@
         "name": "バッチサイズ"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "条件付け用のCLIPビジョン特徴量。モデルはアスペクト比に合わせてストレッチリサイズで学習されています。"
       },
       "height": {
         "name": "高さ"
@@ -22365,14 +22457,39 @@
         "name": "ポーズビデオ",
         "tooltip": "ポーズ条件付けに使用するビデオ。メインビデオの解像度の半分にダウンサンプリングされます。"
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "SCAIL-2専用。同じ解像度のpose_videoに対応する、個別IDごとに色分けされたSAM3マスク動画。"
+      },
       "positive": {
         "name": "positive"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "前のフレームの末尾フレーム数をアンカーとして使用します。SCAIL-2は5（81フレームのチャンク、76フレームのステップ）でトレーニングされています。"
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "SCAIL-2専用。前のチャンクの全デコード出力。最後のprevious_frame_countのみ拡張アンカーとして使用されます。"
+      },
       "reference_image": {
-        "name": "参照画像"
+        "name": "参照画像",
+        "tooltip": "参照画像。複数の参照がある場合は、すべてを1枚の画像に合成してください。"
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "SCAIL-2専用。reference_imageと同じ解像度のカラー参照マスク。"
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "SCAIL-2専用。False＝アニメーションモード（pose_video_maskは黒背景）、True＝置換モード（pose_video_maskは白背景）。"
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "このチャンクが開始する累積出力フレーム。前のチャンクのvideo_frame_offset出力から接続してください。"
       },
       "width": {
         "name": "幅"
@@ -22390,6 +22507,10 @@
       "2": {
         "name": "latent",
         "tooltip": "生成サイズの空のlatent。"
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "調整済みオフセット＋長さ。次のチャンクに接続してください。"
       }
     }
   },

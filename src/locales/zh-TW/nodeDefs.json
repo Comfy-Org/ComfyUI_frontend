@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "Bernini 內文影片/圖像條件設定節點。可用於以下任務：t2v（文字轉影片）、v2v（影片轉影片）、rv2v（參考引導影片編輯）、r2v（參考轉影片）、ads2v（將圖像/影片插入影片）。作為內文 token 注入的參考圖像（r2v、rv2v）會以其原生長寬比獨立編碼（長邊最大值為 ref_max_size）。",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "參考最大尺寸",
+        "tooltip": "reference_video 與 reference_images 長邊的最大尺寸。會保持長寬比縮放並對齊至 16px。"
+      },
+      "reference_images": {
+        "name": "參考圖像"
+      },
+      "reference_video": {
+        "name": "參考影片",
+        "tooltip": "要插入來源影片的影片（ads2v）。"
+      },
+      "source_video": {
+        "name": "來源影片",
+        "tooltip": "要編輯或重製風格的來源影片（v2v、rv2v）。會調整為指定寬高並裁剪至指定長度。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -15904,6 +15960,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "建立 SCAIL-2 彩色遮罩",
+    "inputs": {
+      "driving_track_data": {
+        "name": "驅動追蹤資料",
+        "tooltip": "驅動姿勢影片的 SAM3 追蹤。將會渲染到 pose_video_mask 輸出。"
+      },
+      "object_indices": {
+        "name": "物件索引",
+        "tooltip": "要包含的人員索引，以逗號分隔（例如 '0,2,3'）。會套用於參考與姿勢影片遮罩。留空代表全部。"
+      },
+      "ref_track_data": {
+        "name": "參考追蹤資料",
+        "tooltip": "參考圖像的 SAM3 追蹤。"
+      },
+      "replacement_mode": {
+        "name": "替換模式",
+        "tooltip": "False = mask_video 為黑色背景（動畫模式）。True = 白色背景（替換模式）。請在 WanSCAILToVideo 設定相同的 replacement_mode。reference_image_mask 一律為黑色背景。"
+      },
+      "sort_by": {
+        "name": "排序方式",
+        "tooltip": "調色盤顏色分配給追蹤物件的順序（同時套用於參考與姿勢影片，確保每個身份保持同色）。left_to_right = 最左邊物件（以首幀重心）獲得第一個顏色；area = 最大物件（以首幀遮罩面積）獲得第一個顏色；none = 保持 SAM3 的順序。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "姿勢影片遮罩",
+        "tooltip": null
+      },
+      "1": {
+        "name": "參考圖像遮罩",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -22338,7 +22429,8 @@
         "name": "批次大小"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "用於條件設定的 CLIP 視覺特徵。模型以拉伸調整長寬比進行訓練。"
       },
       "height": {
         "name": "高度"
@@ -22365,14 +22457,39 @@
         "name": "姿勢影片",
         "tooltip": "用於姿勢條件的影片。將會縮小為主影片解析度的一半。"
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "僅限 SCAIL-2。每個身份以顏色區分的 SAM3 mask 影片，解析度需與 pose_video 相同。"
+      },
       "positive": {
         "name": "正向"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "前一區塊尾端的影格數作為錨點。SCAIL-2 以 5 訓練（81 影格區塊，76 影格步進）。"
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "僅限 SCAIL-2。前一區塊完整解碼的輸出。僅使用最後 previous_frame_count 個影格作為延伸錨點。"
+      },
       "reference_image": {
-        "name": "參考圖片"
+        "name": "參考圖片",
+        "tooltip": "參考圖像，若有多個參考請合成於同一張圖像。"
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "僅限 SCAIL-2。彩色參考 mask，解析度需與 reference_image 相同。"
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "僅限 SCAIL-2。False = 動畫模式（pose_video_mask 背景應為黑色）。True = 替換模式（pose_video_mask 背景應為白色）。"
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "本區塊開始的累積輸出影格。請從前一區塊的 video_frame_offset 輸出連接。"
       },
       "width": {
         "name": "寬度"
@@ -22390,6 +22507,10 @@
       "2": {
         "name": "latent",
         "tooltip": "生成尺寸的空 latent。"
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "調整後的偏移與長度。請連接到下一區塊。"
       }
     }
   },

@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "用于Bernini上下文视频/图像条件的条件节点。可用于以下任务：t2v（文本转视频）、v2v（视频转视频）、rv2v（参考引导视频编辑）、r2v（参考转视频）、ads2v（将图像/视频插入视频）。作为上下文token注入的参考图像（r2v、rv2v）会以其原生宽高比独立编码（长边最大为ref_max_size）。",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "参考最大尺寸",
+        "tooltip": "reference_video和reference_images长边的最大尺寸。调整尺寸时保持宽高比，并对齐到16像素。"
+      },
+      "reference_images": {
+        "name": "参考图像"
+      },
+      "reference_video": {
+        "name": "参考视频",
+        "tooltip": "要插入到源视频中的视频（ads2v）。"
+      },
+      "source_video": {
+        "name": "源视频",
+        "tooltip": "要编辑或重绘风格的视频（v2v，rv2v）。会被调整为指定宽高并裁剪到指定长度。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "Beta采样调度器",
     "inputs": {
@@ -15904,6 +15960,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "创建 SCAIL-2 彩色掩码",
+    "inputs": {
+      "driving_track_data": {
+        "name": "驱动轨迹数据",
+        "tooltip": "驱动姿态视频的SAM3轨迹。将渲染到pose_video_mask输出。"
+      },
+      "object_indices": {
+        "name": "对象索引",
+        "tooltip": "要包含的人物索引，逗号分隔（如“0,2,3”）。应用于参考和姿态视频掩码。留空=全部。"
+      },
+      "ref_track_data": {
+        "name": "参考轨迹数据",
+        "tooltip": "参考图像的SAM3轨迹。"
+      },
+      "replacement_mode": {
+        "name": "替换模式",
+        "tooltip": "False=mask_video为黑色背景（动画模式）。True=白色背景（替换模式）。在WanSCAILToVideo上设置匹配的replacement_mode。reference_image_mask始终为黑色背景。"
+      },
+      "sort_by": {
+        "name": "排序方式",
+        "tooltip": "为跟踪对象分配调色板颜色的顺序（应用于参考和姿态视频，每个身份保持相同颜色）。left_to_right=最左侧对象（按首帧质心）获得第一种颜色；area=最大对象（按首帧掩码面积）获得第一种颜色；none=保持SAM3的顺序。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "姿态视频掩码",
+        "tooltip": null
+      },
+      "1": {
+        "name": "参考图像掩码",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -22338,7 +22429,8 @@
         "name": "批量大小"
       },
       "clip_vision_output": {
-        "name": "clip视觉输出"
+        "name": "clip视觉输出",
+        "tooltip": "用于条件控制的 CLIP 视觉特征。模型训练时采用拉伸缩放至宽高比。"
       },
       "height": {
         "name": "高度"
@@ -22365,14 +22457,39 @@
         "name": "姿态视频",
         "tooltip": "用于姿态调控的视频。将被缩小到主视频分辨率的一半。"
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "仅限 SCAIL-2。每个身份的彩色 SAM3 mask 视频，分辨率与 pose_video 相同。"
+      },
       "positive": {
         "name": "正向"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "用于锚定的上一帧尾部帧数。SCAIL-2 在 5（81 帧片段，76 帧步长）下训练。"
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "仅限 SCAIL-2。上一个片段的完整解码输出。仅使用最后的 previous_frame_count 作为扩展锚点。"
+      },
       "reference_image": {
-        "name": "参考图像"
+        "name": "参考图像",
+        "tooltip": "参考图像，如有多个参考请合成到一张图像上。"
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "仅限 SCAIL-2。与 reference_image 分辨率相同的彩色参考 mask。"
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "仅限 SCAIL-2。False = 动画模式（pose_video_mask 应为黑色背景）。True = 替换模式（pose_video_mask 应为白色背景）。"
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "本片段开始的累计输出帧数。请从上一个片段的 video_frame_offset 输出连接。"
       },
       "width": {
         "name": "宽度"
@@ -22390,6 +22507,10 @@
       "2": {
         "name": "latent",
         "tooltip": "生成尺寸的空latent。"
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "调整后的偏移量和长度。连接到下一个片段。"
       }
     }
   },

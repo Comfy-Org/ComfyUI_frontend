@@ -951,6 +951,7 @@
     "missingErrors": {
       "missing_media": {
         "displayMessage": "Gerekli bir medya girdisi için dosya seçilmedi.",
+        "itemLabel": "{nodeName} - {inputName}",
         "toastMessageMany": "Çalışma akışını çalıştırmadan önce eksik medya girişlerini seçin.",
         "toastMessageWithNode": "{nodeName} gerekli bir medya dosyasını bulamıyor.",
         "toastTitleMany": "Eksik medya girişleri",
@@ -2771,6 +2772,7 @@
     "qwen": "qwen",
     "samplers": "örnekleyiciler",
     "sampling": "örnekleme",
+    "scail": "scail",
     "schedulers": "zamanlayıcılar",
     "scheduling": "zamanlama",
     "sd3": "sd3",
@@ -3050,21 +3052,7 @@
     "locateNode": "Düğümü tuvalde bul",
     "locateNodeFor": "{item} için Düğümü Bul",
     "missingMedia": {
-      "audio": "Ses",
-      "cancelSelection": "Seçimi iptal et",
-      "collapseNodes": "Referans veren düğümleri gizle",
-      "confirmSelection": "Seçimi onayla",
-      "expandNodes": "Referans veren düğümleri göster",
-      "image": "Görseller",
-      "locateNode": "Düğümü bul",
-      "missingMediaTitle": "Eksik Girdiler",
-      "or": "VEYA",
-      "selectedFromLibrary": "Kütüphaneden seçildi",
-      "uploadFile": "{type} Yükle",
-      "uploaded": "Yüklendi",
-      "uploading": "Yükleniyor...",
-      "useFromLibrary": "Kütüphaneden Kullan",
-      "video": "Videolar"
+      "missingMediaTitle": "Eksik Girdiler"
     },
     "missingModels": {
       "alreadyExistsInCategory": "Bu model zaten \"{category}\" içinde mevcut",
