@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import CreditSlider from './CreditSlider.vue'
 
 const meta: Meta<typeof CreditSlider> = {
-  title: 'Components/CreditSlider',
+  title: 'Platform/Subscription/CreditSlider',
   component: CreditSlider,
   tags: ['autodocs'],
   parameters: { layout: 'centered' },
