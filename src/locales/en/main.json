@@ -3009,6 +3009,11 @@
     "settings": {
       "tooltip": "Settings"
     },
+    "groupBy": {
+      "category": "Group by category",
+      "directory": "Group by directory",
+      "ungrouped": "Ungrouped"
+    },
     "sort": {
       "tooltip": "Sort",
       "recent": "Most recent first",

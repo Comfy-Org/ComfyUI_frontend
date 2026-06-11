@@ -22,6 +22,25 @@ function categoryTagsForAsset(asset: AssetItem): string[] {
   return asset.tags.filter((tag) => tag && tag !== MODELS_TAG)
 }
 
+// The on-disk location of an asset. Folder tags describe what a model could
+// be (a shared-folder file carries several); the reported file path records
+// where it actually lives, which is what the disk view groups by.
+export function directoryForAsset(asset: AssetItem): string | null {
+  const candidates = [
+    asset.file_path,
+    asset.metadata?.file_path,
+    asset.metadata?.filepath
+  ]
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'string' || !candidate) continue
+    const segments = candidate.split('/').slice(0, -1)
+    if (segments[0] === 'models') segments.shift()
+    const directory = segments.join('/')
+    if (directory) return directory
+  }
+  return firstNonModelsTag(asset)
+}
+
 export interface AssetGrouping {
   /** Curated group ids the asset belongs to (deduplicated). */
   groupIds: string[]

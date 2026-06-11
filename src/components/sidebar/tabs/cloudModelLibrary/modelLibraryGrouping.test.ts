@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import {
+  directoryForAsset,
   firstNonModelsTag,
   groupAsset,
   groupLabelForAsset,
@@ -127,6 +128,39 @@ describe('groupAsset', () => {
       groupIds: [],
       unmappedTags: []
     })
+  })
+})
+
+describe('directoryForAsset', () => {
+  it('derives the directory from the reported file path, dropping the models root', () => {
+    expect(
+      directoryForAsset(
+        makeAsset({ file_path: 'models/checkpoints/sdxl/foo.safetensors' })
+      )
+    ).toBe('checkpoints/sdxl')
+  })
+
+  it('uses the single disk location even when folder tags are plural', () => {
+    const shared = makeAsset({
+      file_path: 'models/extra/foo.safetensors',
+      tags: ['models', 'checkpoints', 'loras']
+    })
+    expect(directoryForAsset(shared)).toBe('extra')
+  })
+
+  it('falls back to metadata paths, then the folder tag', () => {
+    expect(
+      directoryForAsset(
+        makeAsset({ metadata: { filepath: 'loras/flux1/foo.safetensors' } })
+      )
+    ).toBe('loras/flux1')
+    expect(
+      directoryForAsset(makeAsset({ tags: ['models', 'checkpoints'] }))
+    ).toBe('checkpoints')
+  })
+
+  it('returns null when nothing locates the asset', () => {
+    expect(directoryForAsset(makeAsset({ tags: ['models'] }))).toBeNull()
   })
 })
 

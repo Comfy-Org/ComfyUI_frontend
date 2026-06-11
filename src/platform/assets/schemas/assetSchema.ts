@@ -9,6 +9,7 @@ const zAsset = z.object({
   asset_hash: z.string().nullish(),
   size: z.number().optional(), // TBD: Will be provided by history API in the future
   mime_type: z.string().nullish(),
+  file_path: z.string().nullish(),
   tags: z.array(z.string()).optional().default([]),
   preview_id: z.string().nullable().optional(),
   display_name: z.string().optional(),

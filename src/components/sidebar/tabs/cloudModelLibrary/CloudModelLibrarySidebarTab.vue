@@ -46,6 +46,25 @@
             <template #default>
               <div class="flex min-w-44 flex-col">
                 <Button
+                  v-for="option in GROUP_BY_OPTIONS"
+                  :key="option.value"
+                  variant="textonly"
+                  class="w-full"
+                  @click="groupBy = option.value"
+                >
+                  <span class="flex items-center gap-2">
+                    <i :class="cn(option.icon, 'size-4')" />
+                    <span>{{ $t(option.labelKey) }}</span>
+                  </span>
+                  <i
+                    class="ml-auto icon-[lucide--check] size-4"
+                    :class="groupBy !== option.value && 'opacity-0'"
+                  />
+                </Button>
+
+                <div class="my-1 w-full border-b border-border-subtle" />
+
+                <Button
                   v-for="option in sortOptions"
                   :key="option.value"
                   variant="textonly"
@@ -194,6 +213,7 @@ import {
 } from '@/components/sidebar/tabs/cloudModelLibrary/modelGroups'
 import { isLikelyModelFile } from '@/components/sidebar/tabs/cloudModelLibrary/modelFileFilter'
 import {
+  directoryForAsset,
   groupAsset,
   groupLabelForAsset,
   partnerKind
@@ -256,6 +276,30 @@ const ALL_SORT_OPTIONS: ReadonlyArray<{ value: SortMode; labelKey: string }> = [
   { value: 'nameAsc', labelKey: 'assets.sort.nameAsc' },
   { value: 'nameDesc', labelKey: 'assets.sort.nameDesc' }
 ] as const
+
+type GroupBy = 'category' | 'directory'
+
+const GROUP_BY_OPTIONS: ReadonlyArray<{
+  value: GroupBy
+  labelKey: string
+  icon: string
+}> = [
+  {
+    value: 'category',
+    labelKey: 'assets.groupBy.category',
+    icon: 'icon-[lucide--layers]'
+  },
+  {
+    value: 'directory',
+    labelKey: 'assets.groupBy.directory',
+    icon: 'icon-[lucide--folder]'
+  }
+] as const
+
+const groupBy = useStorage<GroupBy>(
+  'Comfy.CloudModelLibrary.GroupBy',
+  'category'
+)
 
 const sortMode = useStorage<SortMode>(
   'Comfy.CloudModelLibrary.SortBy',
@@ -451,6 +495,30 @@ const sections = computed<Section[]>(() => {
       providers: buildProviderGroups(items, mode, isSearching),
       totalCount: items.length
     }
+  }
+
+  // Disk view: group purely by where the file lives, one verbatim section
+  // per directory. Partner nodes have no disk location and trail at the end.
+  if (groupBy.value === 'directory') {
+    const byDirectory = new Map<string, AssetItem[]>()
+    for (const asset of matchedAssets.value) {
+      const directory = directoryForAsset(asset) ?? ''
+      const list = byDirectory.get(directory) ?? []
+      list.push(asset)
+      byDirectory.set(directory, list)
+    }
+    const directorySections = Array.from(byDirectory.entries())
+      .map(([directory, list]) => {
+        const id = directory ? `dir:${directory}` : 'dir:uncategorized'
+        const label = directory || t('assets.groupBy.ungrouped')
+        return buildAssetSection(id, label, list)
+      })
+      .filter((section): section is Section => section !== null)
+      .sort((a, b) =>
+        a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
+      )
+    const partners = buildPartnerSection()
+    return partners ? [...directorySections, partners] : directorySections
   }
 
   const knownGroups = MODEL_GROUPS.filter(
