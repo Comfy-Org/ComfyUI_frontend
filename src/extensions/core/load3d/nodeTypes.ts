@@ -9,7 +9,12 @@ const LOAD3D_PREVIEW_NODES = new Set([
   'PreviewPointCloud'
 ])
 
-const LOAD3D_ALL_NODES = new Set([...LOAD3D_PREVIEW_NODES, 'Load3D', 'SaveGLB'])
+const LOAD3D_ALL_NODES = new Set([
+  ...LOAD3D_PREVIEW_NODES,
+  'Load3D',
+  'Load3DAdvanced',
+  'SaveGLB'
+])
 
 export const isLoad3dPreviewNode = (nodeType: string): boolean =>
   LOAD3D_PREVIEW_NODES.has(nodeType)

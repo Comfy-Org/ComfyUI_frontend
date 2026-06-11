@@ -159,6 +159,27 @@ export class GizmoManager {
     }
   }
 
+  applyModelTransform(transform: Model3DTransform): void {
+    if (!this.targetObject) return
+    this.targetObject.position.set(
+      transform.position.x,
+      transform.position.y,
+      transform.position.z
+    )
+    this.targetObject.quaternion.set(
+      transform.quaternion.x,
+      transform.quaternion.y,
+      transform.quaternion.z,
+      transform.quaternion.w
+    )
+    this.targetObject.scale.set(
+      transform.scale.x,
+      transform.scale.y,
+      transform.scale.z
+    )
+    this.onTransformChange?.()
+  }
+
   getInitialTransform(): {
     position: { x: number; y: number; z: number }
     rotation: { x: number; y: number; z: number }

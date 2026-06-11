@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "گره Conditioning برای Bernini جهت شرطی‌سازی تصویر/ویدیو در متن. این گره برای وظایف زیر قابل استفاده است: t2v (تبدیل متن به ویدیو)، v2v (تبدیل ویدیو به ویدیو)، rv2v (ویرایش ویدیو با راهنمای مرجع)، r2v (تبدیل مرجع به ویدیو)، ads2v (درج تصویر/ویدیو در ویدیو). تصاویر مرجع که به عنوان توکن‌های in-context (r2v، rv2v) تزریق می‌شوند، به طور مستقل با نسبت تصویر اصلی خود رمزگذاری می‌شوند (لبه بلند با ref_max_size محدود می‌شود).",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "حداکثر اندازه مرجع",
+        "tooltip": "حداکثر اندازه لبه بلند برای reference_video و reference_images. با حفظ نسبت تصویر تغییر اندازه داده می‌شود و به نزدیک‌ترین مضرب ۱۶ پیکسل گرد می‌شود."
+      },
+      "reference_images": {
+        "name": "تصاویر مرجع"
+      },
+      "reference_video": {
+        "name": "ویدیوی مرجع",
+        "tooltip": "ویدیویی که باید در ویدیوی منبع درج شود (ads2v)."
+      },
+      "source_video": {
+        "name": "ویدیوی منبع",
+        "tooltip": "ویدیوی منبع برای ویرایش یا تغییر سبک (v2v، rv2v). به عرض/ارتفاع تغییر اندازه داده می‌شود و به طول مورد نظر برش می‌خورد."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -582,6 +638,57 @@
       "seed": {
         "name": "seed",
         "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaTransparentVideoBackground": {
+    "description": "پس‌زمینه یک ویدیو را با استفاده از Bria حذف کنید و فریم‌های برش‌خورده به همراه ماسک آلفا را دریافت نمایید. هر دو را به یک node ترکیب‌کننده متصل کنید یا برای ذخیره ویدیو شفاف به Save WEBM ارسال نمایید.",
+    "display_name": "حذف پس‌زمینه ویدیو با Bria (شفاف)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed کنترل می‌کند که node دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "تصاویر",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ماسک",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoGreenScreen": {
+    "description": "جایگزینی پس‌زمینه ویدیو با یک صفحه کروماکی یکدست با استفاده از Bria.",
+    "display_name": "Bria Video Green Screen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "green_shade": {
+        "name": "سایه سبز",
+        "tooltip": "سایه کروماکی یکدست که پشت سوژه قرار می‌گیرد: broadcast_green (#۰۰B۱۴۰)، chroma_green (#۰۰FF۰۰)، یا blue_screen (#۰۰۰۰FF)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تعیین می‌کند که node دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
       },
       "video": {
         "name": "ویدیو"
@@ -1212,6 +1319,29 @@
       }
     }
   },
+  "CFGOverride": {
+    "description": "cfg را در یک بازه درصدی [شروع، پایان] از مراحل به مقدار ثابت تغییر دهید. در صورت وجود چند جایگزینی، نزدیک‌ترین به نمونه‌گیر در هم‌پوشانی برنده می‌شود.",
+    "display_name": "جایگزینی CFG",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "درصد پایان"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "start_percent": {
+        "name": "درصد شروع"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CFGZeroStar": {
     "display_name": "CFGZeroStar",
     "inputs": {
@@ -1721,6 +1851,10 @@
         "name": "end_sigma",
         "tooltip": "آخرین سیگما که این گزینه‌ها اعمال می‌شوند."
       },
+      "force_sequential_txt_ids": {
+        "name": "استفاده اجباری از شناسه‌های متنی ترتیبی",
+        "tooltip": "استفاده اجباری از شناسه‌های متنی ترتیبی به جای صفرها. این گزینه باید برای مدل‌هایی که بین ۲۰۲۶/۰۳/۰۲ تا ۲۰۲۶/۰۳/۱۲ آموزش دیده‌اند و کلید __sequential__ را در state dict ندارند، فعال شود."
+      },
       "model": {
         "name": "model"
       },
@@ -1797,6 +1931,10 @@
     "outputs": {
       "0": {
         "name": "مقدار صحیح RGB",
+        "tooltip": null
+      },
+      "1": {
+        "name": "هگز",
         "tooltip": null
       }
     }
@@ -2844,6 +2982,98 @@
       }
     }
   },
+  "DA3GeometryToMesh": {
+    "description": "تبدیل نقشه عمق به یک مش سه‌بعدی مثلثی.",
+    "display_name": "تبدیل هندسه DA3 به Mesh",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "کدام تصویر از یک دسته را تبدیل کند. تعداد رأس‌ها در هر تصویر متفاوت است، بنابراین دسته‌ها قابل انباشته شدن نیستند."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "پیکسل‌هایی که مقدار اطمینان نرمال‌شده آن‌ها کمتر از این مقدار باشد را حذف می‌کند (۰ = همه باقی می‌مانند، ۱ = فقط مطمئن‌ترین پیکسل باقی می‌ماند). زمانی استفاده می‌شود که هندسه دارای نقشه اطمینان باشد (مدل‌های Small/Base)."
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "گام رأس‌ها. ۱ = وضوح کامل، ۲ = نصف، و غیره."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "حذف مثلث‌هایی که گستره عمق ۳x۳ آن‌ها از این نسبت بیشتر باشد. ۰ = غیرفعال."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "استفاده از تصویر منبع به عنوان بافت رنگ پایه."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "پیکسل‌هایی با احتمال آسمان (sky ≥ ۰.۵) را از مش حذف می‌کند. زمانی استفاده می‌شود که هندسه دارای نقشه آسمان باشد (مدل‌های Mono/Metric)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "اجرای Depth Anything 3 روی یک تصویر. در حالت چندنما، هر تصویر به عنوان نمای جداگانه‌ای از یک صحنه در نظر گرفته می‌شود.",
+    "display_name": "اجرای Depth Anything 3",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: تصویر تک‌نما (با هر نوع مدل کار می‌کند).\nmultiview: همه تصاویر با هم برای سازگاری هندسی و موقعیت دوربین پردازش می‌شوند (فقط برای مدل‌های Small/Base)."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: مقیاس‌دهی به طوری که بزرگ‌ترین ضلع = وضوح (محدودیت حافظه، پیش‌فرض).\nlower_bound_resize: مقیاس‌دهی به طوری که کوچک‌ترین ضلع = وضوح (جزئیات بیشتر در تصاویر بلند/عریض، مصرف حافظه بیشتر)."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "وضوحی که مدل روی آن اجرا می‌شود (بزرگ‌ترین ضلع، مضربی از ۱۴).\nکمتر = سریع‌تر / مصرف VRAM کمتر.\nبیشتر = جزئیات بیشتر.\nخروجی به اندازه اصلی بازنمونه‌گیری می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "دیکشنری از تنسورهای نرمال‌نشده.\nهمیشه کلیدهای depth، image، mode را دارد.\nکلیدهای اختیاری: sky (برای Mono/Metric)، confidence (برای Small/Base)، extrinsics و intrinsics (برای چندنما)."
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "رندر نقشه عمق، نقشه اطمینان یا ماسک آسمان از داده‌های هندسه Depth Anything 3.",
+    "display_name": "رندر Depth Anything 3",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: تصویر عمق نرمال‌شده به صورت خاکستری.\n- depth_colored: عمق با نگاشت colormap توربو.\n- sky_mask: احتمال آسمان در بازه [۰، ۱] (فقط برای مدل‌های Mono/Metric).\n- confidence: اطمینان عمق نرمال‌شده (فقط برای مدل‌های Small/Base)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "بارگذاری مدل ControlNet (diff)",
     "inputs": {
@@ -2950,6 +3180,34 @@
       },
       "type": {
         "name": "نوع"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "راهنمای CFG دو مدل",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل مورد استفاده برای عبور مثبت (شرطی)."
+      },
+      "model_negative": {
+        "name": "مدل منفی",
+        "tooltip": "مدل مورد استفاده برای عبور منفی (غیرشرطی). برای CFG معمولی از همان مدل استفاده کنید."
+      },
+      "negative": {
+        "name": "منفی",
+        "tooltip": "شرط‌گذاری منفی روی مدل منفی اجرا می‌شود. برای عبور غیرشرطی بدون متن (فقط تصویر) متصل نکنید."
+      },
+      "positive": {
+        "name": "مثبت"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3916,6 +4174,9 @@
     "description": "شیء ماسک‌شده را از تصویر حذف کرده و پس‌زمینه را بازسازی می‌کند. ماسک را روی بخشی که می‌خواهید حذف شود بکشید.",
     "display_name": "حذف تصویر Flux",
     "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
       "dilate_pixels": {
         "name": "dilate_pixels",
         "tooltip": "مرزهای ماسک را گسترش می‌دهد تا پوشش تمیز لبه‌های شیء تضمین شود."
@@ -3926,6 +4187,10 @@
       "mask": {
         "name": "mask",
         "tooltip": "ناحیه‌های سفید حذف می‌شوند؛ ناحیه‌های سیاه حفظ می‌شوند."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تصادفی مورد استفاده برای ایجاد نویز."
       }
     },
     "outputs": {
@@ -4669,6 +4934,14 @@
       "system_prompt": {
         "name": "پرامپت سیستمی",
         "tooltip": "دستورالعمل‌های پایه‌ای که رفتار هوش مصنوعی را تعیین می‌کند."
+      },
+      "temperature": {
+        "name": "temperature",
+        "tooltip": "میزان تصادفی بودن در تولید را کنترل می‌کند. مقدار کمتر، خروجی متمرکزتر و قطعی‌تر است."
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "آستانه نمونه‌گیری nucleus. مقدار کمتر متمرکزتر، مقدار بیشتر متنوع‌تر."
       }
     },
     "outputs": {
@@ -4722,6 +4995,48 @@
       "video": {
         "name": "ویدئو",
         "tooltip": "ویدئوی اختیاری برای استفاده به عنوان زمینه مدل."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "تولید پاسخ متنی با مدل‌های Gemini گوگل. یک متن راهنما و در صورت نیاز یک یا چند تصویر، کلیپ صوتی، ویدیو یا فایل به عنوان زمینه چندرسانه‌ای ارائه دهید.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدل Gemini مورد استفاده برای تولید پاسخ."
+      },
+      "model_max_output_tokens": {
+        "name": "حداکثر توکن خروجی"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "راهنما",
+        "tooltip": "متن ورودی برای مدل. شامل دستورالعمل‌های دقیق، پرسش‌ها یا زمینه باشد."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed برای نمونه‌گیری. مقدار ۰ برای seed تصادفی. خروجی قطعی تضمین نمی‌شود."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "دستورالعمل‌های پایه که رفتار مدل را تعیین می‌کند."
       }
     },
     "outputs": {
@@ -5675,6 +5990,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "زمان‌بندی‌کننده Ideogram 4",
+    "inputs": {
+      "height": {
+        "name": "ارتفاع"
+      },
+      "mu": {
+        "name": "میانگین"
+      },
+      "std": {
+        "name": "انحراف معیار"
+      },
+      "steps": {
+        "name": "گام‌ها"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "تولید تصویر با استفاده از مدل Ideogram V1.",
     "display_name": "Ideogram V1",
@@ -5811,6 +6151,34 @@
       },
       "seed": {
         "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "تولید تصویر با استفاده از مدل Ideogram 4.0 از یک متن راهنما.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "prompt": {
+        "name": "متن راهنما",
+        "tooltip": "متن راهنما برای تولید تصویر."
+      },
+      "rendering_speed": {
+        "name": "سرعت رندر",
+        "tooltip": "تعادل بین سرعت تولید و کیفیت را کنترل می‌کند."
+      },
+      "resolution": {
+        "name": "وضوح"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -8707,6 +9075,22 @@
     "outputs": {
       "0": {
         "name": "مدل حذف پس‌زمینه",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "بارگذاری Depth Anything 3",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13591,15 +13975,15 @@
       "height": {
         "name": "ارتفاع"
       },
-      "image": {
-        "name": "تصویر"
+      "model_3d": {
+        "name": "مدل ۳بعدی",
+        "tooltip": "فایل مدل ۳بعدی از node سه‌بعدی بالادستی."
       },
       "model_3d_info": {
         "name": "اطلاعات مدل سه‌بعدی"
       },
-      "model_file": {
-        "name": "فایل مدل",
-        "tooltip": "فایل مدل سه‌بعدی از یک node سه‌بعدی بالادستی."
+      "viewport_state": {
+        "name": "وضعیت نمای دید"
       },
       "width": {
         "name": "عرض"
@@ -13654,12 +14038,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "پیش‌نمایش Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "یک فایل سه‌بعدی gaussian splat."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "description": "تصاویر ورودی را در پوشه خروجی ComfyUI شما ذخیره می‌کند.",
     "display_name": "پیش‌نمایش تصویر",
     "inputs": {
       "images": {
         "name": "تصاویر"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "پیش‌نمایش Point Cloud",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "فایل point cloud (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -14910,6 +15386,10 @@
       "megapixels": {
         "name": "مگاپیکسل",
         "tooltip": "هدف مجموع مگاپیکسل‌ها. ۱٫۰ مگاپیکسل ≈ ۱۰۲۴×۱۰۲۴ برای تصویر مربع."
+      },
+      "multiple": {
+        "name": "ضرب‌کننده",
+        "tooltip": "نزدیک‌ترین مضرب نتیجه برای تنظیم وضوح انتخاب‌شده."
       }
     },
     "outputs": {
@@ -15584,6 +16064,41 @@
     "outputs": {
       "0": {
         "name": "داده ردیابی",
+        "tooltip": null
+      }
+    }
+  },
+  "SCAIL2ColoredMask": {
+    "display_name": "ایجاد ماسک رنگی SCAIL-2",
+    "inputs": {
+      "driving_track_data": {
+        "name": "داده مسیر حرکتی",
+        "tooltip": "مسیر SAM3 از ویدیوی ژست حرکتی. به خروجی pose_video_mask رندر خواهد شد."
+      },
+      "object_indices": {
+        "name": "شاخص‌های اشیاء",
+        "tooltip": "فهرست جداشده با ویرگول از شاخص افراد برای درج (مثلاً '۰,۲,۳'). برای هر دو ماسک ویدیوی مرجع و ژست اعمال می‌شود. خالی = همه."
+      },
+      "ref_track_data": {
+        "name": "داده مسیر مرجع",
+        "tooltip": "مسیر SAM3 از تصویر مرجع."
+      },
+      "replacement_mode": {
+        "name": "حالت جایگزینی",
+        "tooltip": "False = mask_video پس‌زمینه سیاه دارد (حالت انیمیشن). True = پس‌زمینه سفید (حالت جایگزینی). همین حالت را در WanSCAILToVideo تنظیم کنید. reference_image_mask همیشه پس‌زمینه سیاه دارد."
+      },
+      "sort_by": {
+        "name": "مرتب‌سازی بر اساس",
+        "tooltip": "ترتیب اختصاص رنگ‌های پالت به اشیاء دنبال‌شده (برای هر دو ویدیوی مرجع و ژست تا هر هویت رنگ یکسان داشته باشد). left_to_right = چپ‌ترین شیء (بر اساس مرکز فریم اول) اولین رنگ را می‌گیرد؛ area = بزرگ‌ترین شیء (بر اساس مساحت ماسک فریم اول) اولین رنگ را می‌گیرد؛ none = ترتیب SAM3 حفظ می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ماسک ویدیوی ژست",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ماسک تصویر مرجع",
         "tooltip": null
       }
     }
@@ -16315,6 +16830,27 @@
       }
     }
   },
+  "SaveAudioAdvanced": {
+    "description": "صدای ورودی را در پوشه خروجی ComfyUI شما ذخیره می‌کند.",
+    "display_name": "ذخیره صدا (پیشرفته)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "صدایی که باید ذخیره شود."
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "پیشوند فایل برای ذخیره. می‌تواند شامل توکن‌های قالب‌بندی مانند ‎%date:yyyy-MM-dd%‎ باشد."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "فرمت فایلی که صدا در آن ذخیره می‌شود."
+      }
+    }
+  },
   "SaveAudioMP3": {
     "display_name": "ذخیره صدا (MP3)",
     "inputs": {
@@ -16560,7 +17096,8 @@
         "name": "فریم بر ثانیه"
       },
       "images": {
-        "name": "تصاویر"
+        "name": "تصاویر",
+        "tooltip": "تصاویر RGBA با کانال آلفا به صورت شفاف ذخیره می‌شوند (فقط کدک vp9)."
       }
     }
   },
@@ -22000,7 +22537,8 @@
         "name": "اندازه دسته"
       },
       "clip_vision_output": {
-        "name": "خروجی clip vision"
+        "name": "خروجی clip vision",
+        "tooltip": "ویژگی‌های بینایی CLIP برای شرطی‌سازی. مدل با تغییر اندازه کشیده به نسبت تصویر آموزش دیده است."
       },
       "height": {
         "name": "ارتفاع"
@@ -22027,14 +22565,39 @@
         "name": "ویدئوی pose",
         "tooltip": "ویدئو برای pose conditioning استفاده می‌شود. به نصف وضوح ویدئوی اصلی کاهش داده می‌شود."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "فقط در SCAIL-2. ویدیوی ماسک SAM3 رنگی برای هر هویت، با همان وضوح pose_video."
+      },
       "positive": {
         "name": "مثبت"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "تعداد فریم‌های انتهایی previous_frames برای لنگر زدن. SCAIL-2 با مقدار ۵ آموزش دیده است (بخش‌های ۸۱ فریمی، گام ۷۶ فریم)."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "فقط در SCAIL-2. خروجی کامل رمزگشایی‌شده بخش قبلی. فقط آخرین previous_frame_count به عنوان لنگر گسترش استفاده می‌شوند."
+      },
       "reference_image": {
-        "name": "تصویر مرجع"
+        "name": "تصویر مرجع",
+        "tooltip": "تصویر مرجع، برای چند مرجع همه را در یک تصویر ترکیب کنید."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "فقط در SCAIL-2. ماسک مرجع رنگی با همان وضوح reference_image."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "فقط در SCAIL-2. مقدار False = حالت انیمیشن (pose_video_mask باید پس‌زمینه سیاه داشته باشد). مقدار True = حالت جایگزینی (pose_video_mask باید پس‌زمینه سفید داشته باشد)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "فریم تجمعی خروجی که این بخش از آن آغاز می‌شود. از خروجی video_frame_offset بخش قبلی استفاده کنید."
       },
       "width": {
         "name": "عرض"
@@ -22052,6 +22615,10 @@
       "2": {
         "name": "latent",
         "tooltip": "latent خالی با اندازه تولید."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "افست تنظیم‌شده به‌علاوه طول. به بخش بعدی متصل کنید."
       }
     }
   },

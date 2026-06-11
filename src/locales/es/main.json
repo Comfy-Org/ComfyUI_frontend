@@ -233,7 +233,8 @@
       "auth/user-disabled": "Esta cuenta ha sido deshabilitada. Por favor, contacta al soporte.",
       "auth/user-not-found": "No se encontró ninguna cuenta con este correo electrónico. ¿Te gustaría crear una nueva cuenta?",
       "auth/weak-password": "La contraseña es demasiado débil. Por favor, usa una contraseña más segura con al menos 6 caracteres.",
-      "auth/wrong-password": "La contraseña que ingresaste es incorrecta. Por favor, inténtalo de nuevo."
+      "auth/wrong-password": "La contraseña que ingresaste es incorrecta. Por favor, inténtalo de nuevo.",
+      "generic": "Ocurrió un error al iniciar sesión. Por favor, inténtalo de nuevo."
     },
     "login": {
       "andText": "y",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "Restablecimiento de contraseña enviado",
   "cloudForgotPassword_sendResetLink": "Enviar enlace de restablecimiento",
   "cloudForgotPassword_title": "¿Olvidaste tu contraseña?",
+  "cloudHero": {
+    "nextSlide": "Siguiente diapositiva",
+    "previousSlide": "Diapositiva anterior",
+    "slidePagerLabel": "Ir a la diapositiva {index}",
+    "slides": {
+      "cloud": {
+        "description": "Ideal para la mayoría de los usuarios que desean trabajar desde cualquier lugar con modelos verificados para uso comercial.",
+        "title": "Nube"
+      },
+      "models": {
+        "description": "Modelos seleccionados y con licencia comercial listos para usar sin configuración previa.",
+        "title": "Modelos"
+      },
+      "team": {
+        "description": "Incorpora a tu equipo hoy. Comparte flujos de trabajo y recursos en toda tu organización.",
+        "title": "Equipo"
+      },
+      "workflows": {
+        "description": "De la idea al resultado en minutos. Genera múltiples variaciones en paralelo.",
+        "title": "Flujos de trabajo"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "Continuar Localmente",
     "exploreCloud": "Probar la Nube Gratis",
@@ -798,6 +822,8 @@
     "CONDITIONING": "ACONDICIONAMIENTO",
     "CONTROL_NET": "RED_DE_CONTROL",
     "CURVE": "CURVA",
+    "DA3_GEOMETRY": "DA3_GEOMETRY",
+    "DA3_MODEL": "DA3_MODEL",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FACE_DETECTION_MODEL": "MODELO_DE_DETECCIÓN_DE_CARAS",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
@@ -808,7 +834,9 @@
     "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "ARCHIVO_3D_OBJ",
     "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
     "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "ARCHIVO_3D_STL",
     "FILE_3D_USDZ": "ARCHIVO_3D_USDZ",
@@ -921,6 +949,47 @@
     "fallbacks": {
       "inputName": "entrada desconocida",
       "nodeName": "Este nodo"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "Una entrada de medio requerida no tiene archivo seleccionado.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastMessageMany": "Selecciona las entradas de medio faltantes antes de ejecutar este flujo de trabajo.",
+        "toastMessageWithNode": "{nodeName} no tiene el archivo de medio requerido.",
+        "toastTitleMany": "Faltan entradas de medio",
+        "toastTitleOne": "Falta entrada de medio"
+      },
+      "missing_model": {
+        "displayMessageCloud": "Importa un modelo o abre el nodo para reemplazarlo.",
+        "displayMessageOss": "Descarga un modelo o abre el nodo para reemplazarlo.",
+        "toastMessageManyCloud": "Algunos modelos no son compatibles. Elige otros.",
+        "toastMessageManyOss": "Faltan {count} archivos de modelo.",
+        "toastMessageOneCloud": "Este modelo no es compatible. Elige otro.",
+        "toastMessageOneOss": "{nodeName} no tiene el archivo de modelo requerido.",
+        "toastTitleMany": "Modelos faltantes",
+        "toastTitleManyCloud": "Modelos no disponibles en la nube",
+        "toastTitleOneCloud": "{modelName} no está disponible en la nube",
+        "toastTitleOneOss": "{modelName} falta"
+      },
+      "missing_node": {
+        "displayMessageCloud": "Los nodos personalizados requeridos no son compatibles en la nube. Reemplázalos por nodos compatibles.",
+        "displayMessageOss": "Instala los paquetes faltantes para usar este flujo de trabajo.",
+        "toastMessageManyCloud": "Este flujo de trabajo utiliza nodos que no son compatibles en la nube.",
+        "toastMessageManyOss": "{count} nodos requieren paquetes de nodos faltantes.",
+        "toastMessageOneCloud": "Este nodo no es compatible en la nube.",
+        "toastMessageOneOss": "Este flujo de trabajo utiliza un nodo personalizado que no está instalado. Instálalo desde el registro o reemplaza el nodo.",
+        "toastTitleManyCloud": "Nodos no disponibles en la nube",
+        "toastTitleManyOss": "Nodos faltantes",
+        "toastTitleOneCloud": "{nodeType} no está disponible en la nube",
+        "toastTitleOneOss": "Nodo faltante: {nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "Algunos nodos pueden ser reemplazados por alternativas",
+        "toastMessageMany": "{count} tipos de nodos pueden ser reemplazados por alternativas compatibles.",
+        "toastMessageOne": "Reemplázalo por {replacementNodeType} desde el panel de errores.",
+        "toastTitleMany": "Nodos pueden ser reemplazados",
+        "toastTitleOne": "{nodeType} puede ser reemplazado"
+      }
     },
     "promptErrors": {
       "missing_node_type": {
@@ -1216,6 +1285,15 @@
         "toastMessageWithTypes": "La entrada {inputName} de {nodeName} espera {expectedType}, pero la salida conectada es {receivedType}.",
         "toastTitle": "Conexión inválida"
       },
+      "unknown_validation_error": {
+        "details": "{nodeName} devolvió un error de validación no reconocido: {errorType}",
+        "detailsWithRawDetails": "{nodeName} devolvió un error de validación no reconocido ({errorType}): {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Un nodo devolvió un error de validación que ComfyUI no reconoce.",
+        "title": "La validación falló",
+        "toastMessage": "{nodeName} devolvió un error de validación no reconocido.",
+        "toastTitle": "La validación falló"
+      },
       "value_bigger_than_max": {
         "details": "{nodeName} tiene un valor por encima del máximo para {inputName}.",
         "detailsWithValue": "El valor {receivedValue} para la entrada {inputName} de {nodeName} está por encima del máximo {maxValue}.",
@@ -1263,12 +1341,9 @@
     "missingMedia": "A algunos nodos les faltan entradas requeridas",
     "missingModels": "Falta {count} modelo requerido | Faltan {count} modelos requeridos",
     "missingNodes": "Faltan algunos nodos y necesitan ser instalados",
-    "seeErrors": "Ver errores",
-    "showMissingMedia": "Mostrar entradas faltantes",
-    "showMissingModels": "Mostrar modelos faltantes",
-    "showMissingNodes": "Mostrar nodos faltantes",
-    "showSwapNodes": "Mostrar nodos intercambiables",
-    "swapNodes": "Algunos nodos pueden ser reemplazados por alternativas"
+    "multipleErrorCount": "{count} error encontrado | {count} errores encontrados",
+    "multipleErrorsMessage": "Resuélvelos antes de ejecutar el flujo de trabajo.",
+    "viewDetails": "Ver detalles"
   },
   "errorPanelSurvey": {
     "ctaButton": "Dar opinión",
@@ -1352,6 +1427,11 @@
     "amount": "Cantidad",
     "apply": "Aplicar",
     "architecture": "Arquitectura",
+    "arrange": "Organizar",
+    "arrangeAsGrid": "Organizar como cuadrícula",
+    "arrangeHorizontally": "Organizar horizontalmente",
+    "arrangeSpacing": "Espaciado de organización",
+    "arrangeVertically": "Organizar verticalmente",
     "asset": "{count} recurso | {count} recursos",
     "audioFailedToLoad": "No se pudo cargar el audio",
     "audioProgress": "Progreso de audio",
@@ -1417,6 +1497,7 @@
     "deleteImage": "Eliminar imagen",
     "deprecated": "DEPR",
     "description": "Descripción",
+    "details": "Detalles",
     "devOnly": "DEV",
     "devices": "Dispositivos",
     "disableAll": "Deshabilitar todo",
@@ -1506,6 +1587,7 @@
     "jobIdCopied": "ID de trabajo copiado al portapapeles",
     "keybinding": "Combinación de teclas",
     "keybindingAlreadyExists": "La combinación de teclas ya existe en",
+    "keybindingListAriaLabel": "Combinaciones de teclas: {combos}",
     "keybindingPresets": {
       "default": "Preajuste predeterminado",
       "deletePreset": "Eliminar preajuste",
@@ -1556,6 +1638,7 @@
     "mostRelevant": "Más relevante",
     "multiSelectDropdown": "Menú desplegable de selección múltiple",
     "nMoreKeybindings": "+ {count} más",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "Nombre",
     "newFolder": "Nueva carpeta",
     "next": "Siguiente",
@@ -2053,7 +2136,6 @@
     "reloadingModel": "Recargando modelo...",
     "removeBackgroundImage": "Eliminar imagen de fondo",
     "resizeNodeMatchOutput": "Redimensionar nodo para coincidir con la salida",
-    "retainViewOnReload": "Bloquear la vista de la cámara al recargar el modelo",
     "scene": "Escena",
     "showGrid": "Mostrar cuadrícula",
     "showSkeleton": "Mostrar esqueleto",
@@ -2692,6 +2774,7 @@
     "qwen": "qwen",
     "samplers": "muestreadores",
     "sampling": "muestreo",
+    "scail": "scail",
     "schedulers": "programadores",
     "scheduling": "programación",
     "sd3": "sd3",
@@ -2758,7 +2841,6 @@
     "replacedNode": "Nodo reemplazado: {nodeType}",
     "selectAll": "Seleccionar todo",
     "skipForNow": "Omitir por ahora",
-    "swapNodesGuide": "Los siguientes nodos pueden ser reemplazados automáticamente por alternativas compatibles.",
     "swapNodesTitle": "Intercambiar nodos",
     "unknownNode": "Desconocido",
     "willBeReplacedBy": "Este nodo será reemplazado por:"
@@ -2930,6 +3012,7 @@
     "errorHelp": "Para más ayuda, {github} o {support}",
     "errorHelpGithub": "envía un issue en GitHub",
     "errorHelpSupport": "contacta con nuestro soporte",
+    "errorLog": "Registro de errores",
     "errors": "Errores",
     "executionErrorOccurred": "Ocurrió un error durante la ejecución. Consulta la pestaña de Errores para más detalles.",
     "fallbackGroupTitle": "Grupo",
@@ -2964,26 +3047,14 @@
     "hideAdvancedShort": "Ocultar avanzado",
     "hideInput": "Ocultar entrada",
     "info": "Información",
+    "infoFor": "Información para {item}",
     "inputs": "ENTRADAS",
     "inputsNone": "SIN ENTRADAS",
     "inputsNoneTooltip": "El nodo no tiene entradas",
     "locateNode": "Localizar nodo en el lienzo",
+    "locateNodeFor": "Localizar {item}",
     "missingMedia": {
-      "audio": "Audio",
-      "cancelSelection": "Cancelar selección",
-      "collapseNodes": "Ocultar nodos de referencia",
-      "confirmSelection": "Confirmar selección",
-      "expandNodes": "Mostrar nodos de referencia",
-      "image": "Imágenes",
-      "locateNode": "Localizar nodo",
-      "missingMediaTitle": "Entradas faltantes",
-      "or": "O",
-      "selectedFromLibrary": "Seleccionado de la biblioteca",
-      "uploadFile": "Subir {type}",
-      "uploaded": "Subido",
-      "uploading": "Subiendo...",
-      "useFromLibrary": "Usar de la biblioteca",
-      "video": "Videos"
+      "missingMediaTitle": "Entradas faltantes"
     },
     "missingModels": {
       "alreadyExistsInCategory": "Este modelo ya existe en \"{category}\"",
@@ -3019,16 +3090,12 @@
     },
     "missingNodePacks": {
       "applyChanges": "Aplicar cambios",
-      "cloudMessage": "Este flujo de trabajo requiere nodos personalizados que aún no están disponibles en Comfy Cloud.",
       "collapse": "Colapsar",
       "expand": "Expandir",
       "installAll": "Instalar todo",
-      "installNodePack": "Instalar paquete de nodos",
       "installed": "Instalado",
       "installing": "Instalando...",
       "ossManagerDisabledHint": "Para instalar los nodos que faltan, primero ejecuta {pipCmd} en tu entorno de Python para instalar Node Manager, luego reinicia ComfyUI con la bandera {flag}.",
-      "ossMessage": "Este flujo de trabajo utiliza nodos personalizados que aún no has instalado.",
-      "searchInManager": "Buscar en el Gestor de Nodos",
       "title": "Paquetes de nodos faltantes",
       "unknownPack": "Paquete desconocido",
       "unsupportedTitle": "Paquetes de nodos no compatibles",
@@ -3606,6 +3673,7 @@
     "comfyCloudLogo": "Logo de Comfy Cloud",
     "contactOwnerToSubscribe": "Contacta al propietario del espacio de trabajo para suscribirte",
     "contactUs": "Contáctanos",
+    "creditSliderSave": "Ahorra {percent}% ({amount})",
     "creditsRemainingThisMonth": "Créditos restantes este mes",
     "creditsRemainingThisYear": "Créditos restantes este año",
     "creditsYouveAdded": "Créditos que has agregado",

@@ -233,7 +233,8 @@
       "auth/user-disabled": "このアカウントは無効化されています。サポートまでご連絡ください。",
       "auth/user-not-found": "このメールアドレスに紐づくアカウントが見つかりません。新しいアカウントを作成しますか？",
       "auth/weak-password": "パスワードが弱すぎます。6文字以上のより強力なパスワードを使用してください。",
-      "auth/wrong-password": "入力されたパスワードが正しくありません。もう一度お試しください。"
+      "auth/wrong-password": "入力されたパスワードが正しくありません。もう一度お試しください。",
+      "generic": "サインイン中に問題が発生しました。もう一度お試しください。"
     },
     "login": {
       "andText": "および",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "パスワードリセットを送信しました",
   "cloudForgotPassword_sendResetLink": "リセットリンクを送信",
   "cloudForgotPassword_title": "パスワードを忘れた場合",
+  "cloudHero": {
+    "nextSlide": "次のスライド",
+    "previousSlide": "前のスライド",
+    "slidePagerLabel": "スライド{index}へ移動",
+    "slides": {
+      "cloud": {
+        "description": "商用ライセンスが確認されたモデルを使い、どこからでも作業したいほとんどのユーザーに最適です。",
+        "title": "クラウド"
+      },
+      "models": {
+        "description": "厳選された商用ライセンス付きモデルが、セットアップ不要ですぐに利用可能です。",
+        "title": "モデル"
+      },
+      "team": {
+        "description": "今すぐチームをオンボードしましょう。ワークフローやアセットを組織全体で共有できます。",
+        "title": "チーム"
+      },
+      "workflows": {
+        "description": "アイデアから出力まで数分で。複数のバリエーションを並べて生成できます。",
+        "title": "ワークフロー"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "ローカルで続行",
     "exploreCloud": "クラウドを無料で試す",
@@ -798,6 +822,8 @@
     "CONDITIONING": "条件付け",
     "CONTROL_NET": "コントロールネット",
     "CURVE": "カーブ",
+    "DA3_GEOMETRY": "DA3_GEOMETRY",
+    "DA3_MODEL": "DA3_MODEL",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FACE_DETECTION_MODEL": "顔検出モデル",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
@@ -808,7 +834,9 @@
     "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
     "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
     "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
@@ -921,6 +949,47 @@
     "fallbacks": {
       "inputName": "不明な入力",
       "nodeName": "このノード"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "必要なメディア入力にファイルが選択されていません。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastMessageMany": "このワークフローを実行する前に不足しているメディア入力を選択してください。",
+        "toastMessageWithNode": "{nodeName}に必要なメディアファイルが不足しています。",
+        "toastTitleMany": "メディア入力が不足しています",
+        "toastTitleOne": "メディア入力が不足しています"
+      },
+      "missing_model": {
+        "displayMessageCloud": "モデルをインポートするか、ノードを開いて置き換えてください。",
+        "displayMessageOss": "モデルをダウンロードするか、ノードを開いて置き換えてください。",
+        "toastMessageManyCloud": "一部のモデルはサポートされていません。別のモデルを選択してください。",
+        "toastMessageManyOss": "{count}個のモデルファイルが不足しています。",
+        "toastMessageOneCloud": "このモデルはサポートされていません。別のモデルを選択してください。",
+        "toastMessageOneOss": "{nodeName}に必要なモデルファイルが不足しています。",
+        "toastTitleMany": "モデルが不足しています",
+        "toastTitleManyCloud": "モデルはCloudで利用できません",
+        "toastTitleOneCloud": "{modelName}はCloudで利用できません",
+        "toastTitleOneOss": "{modelName}が不足しています"
+      },
+      "missing_node": {
+        "displayMessageCloud": "必要なカスタムノードはCloudではサポートされていません。サポートされているノードに置き換えてください。",
+        "displayMessageOss": "このワークフローを使用するには不足しているパックをインストールしてください。",
+        "toastMessageManyCloud": "このワークフローはCloudでサポートされていないノードを使用しています。",
+        "toastMessageManyOss": "{count}個のノードパックが不足しています。",
+        "toastMessageOneCloud": "このノードはCloudでサポートされていません。",
+        "toastMessageOneOss": "このワークフローはインストールされていないカスタムノードを使用しています。レジストリからインストールするか、ノードを置き換えてください。",
+        "toastTitleManyCloud": "ノードはCloudで利用できません",
+        "toastTitleManyOss": "ノードが不足しています",
+        "toastTitleOneCloud": "{nodeType}はCloudで利用できません",
+        "toastTitleOneOss": "ノードが不足しています: {nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "一部のノードは代替ノードに置き換えることができます",
+        "toastMessageMany": "{count}種類のノードは互換性のある代替ノードに置き換え可能です。",
+        "toastMessageOne": "エラーパネルから{replacementNodeType}に置き換えてください。",
+        "toastTitleMany": "ノードは置き換え可能です",
+        "toastTitleOne": "{nodeType}は置き換え可能です"
+      }
     },
     "promptErrors": {
       "missing_node_type": {
@@ -1216,6 +1285,15 @@
         "toastMessageWithTypes": "{nodeName} の {inputName} 入力は {expectedType} を期待していますが、接続された出力は {receivedType} です。",
         "toastTitle": "無効な接続"
       },
+      "unknown_validation_error": {
+        "details": "{nodeName} が未認識の検証エラーを返しました: {errorType}",
+        "detailsWithRawDetails": "{nodeName} が未認識の検証エラー ({errorType}) を返しました: {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "ノードが ComfyUI で認識されない検証エラーを返しました。",
+        "title": "検証に失敗しました",
+        "toastMessage": "{nodeName} が未認識の検証エラーを返しました。",
+        "toastTitle": "検証に失敗しました"
+      },
       "value_bigger_than_max": {
         "details": "{nodeName} の {inputName} が最大値を超えています。",
         "detailsWithValue": "{nodeName} の {inputName} に対する値 {receivedValue} は最大値 {maxValue} を超えています。",
@@ -1263,12 +1341,9 @@
     "missingMedia": "いくつかのノードに必要な入力が不足しています",
     "missingModels": "{count} 個の必要なモデルが不足しています",
     "missingNodes": "いくつかのノードが不足しており、インストールが必要です",
-    "seeErrors": "エラーを表示",
-    "showMissingMedia": "不足している入力を表示",
-    "showMissingModels": "不足しているモデルを表示",
-    "showMissingNodes": "不足しているノードを表示",
-    "showSwapNodes": "代替可能なノードを表示",
-    "swapNodes": "いくつかのノードは代替可能です"
+    "multipleErrorCount": "{count}件のエラーが見つかりました",
+    "multipleErrorsMessage": "ワークフローを実行する前に解決してください。",
+    "viewDetails": "詳細を表示"
   },
   "errorPanelSurvey": {
     "ctaButton": "フィードバックを送る",
@@ -1352,6 +1427,11 @@
     "amount": "量",
     "apply": "適用する",
     "architecture": "アーキテクチャ",
+    "arrange": "配置",
+    "arrangeAsGrid": "グリッドとして配置",
+    "arrangeHorizontally": "横に配置",
+    "arrangeSpacing": "配置間隔",
+    "arrangeVertically": "縦に配置",
     "asset": "{count} 個のアセット | {count} 個のアセット",
     "audioFailedToLoad": "オーディオの読み込みに失敗しました",
     "audioProgress": "オーディオの進捗",
@@ -1417,6 +1497,7 @@
     "deleteImage": "画像を削除",
     "deprecated": "非推奨",
     "description": "説明",
+    "details": "詳細",
     "devOnly": "DEV",
     "devices": "デバイス",
     "disableAll": "すべて無効にする",
@@ -1506,6 +1587,7 @@
     "jobIdCopied": "ジョブIDがクリップボードにコピーされました",
     "keybinding": "キーバインディング",
     "keybindingAlreadyExists": "このキー割り当てはすでに存在します",
+    "keybindingListAriaLabel": "キーバインド: {combos}",
     "keybindingPresets": {
       "default": "デフォルトプリセット",
       "deletePreset": "プリセットを削除",
@@ -1556,6 +1638,7 @@
     "mostRelevant": "最も関連性の高い",
     "multiSelectDropdown": "複数選択ドロップダウン",
     "nMoreKeybindings": "+ {count} 件以上",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "名前",
     "newFolder": "新しいフォルダー",
     "next": "次へ",
@@ -2053,7 +2136,6 @@
     "reloadingModel": "モデルを再読み込み中...",
     "removeBackgroundImage": "背景画像を削除",
     "resizeNodeMatchOutput": "ノードを出力に合わせてリサイズ",
-    "retainViewOnReload": "モデルの再読み込み時にカメラビューを固定する",
     "scene": "シーン",
     "showGrid": "グリッドを表示",
     "showSkeleton": "スケルトンを表示",
@@ -2692,6 +2774,7 @@
     "qwen": "qwen",
     "samplers": "サンプラー",
     "sampling": "サンプリング",
+    "scail": "scail",
     "schedulers": "スケジューラー",
     "scheduling": "スケジューリング",
     "sd3": "SD3",
@@ -2758,7 +2841,6 @@
     "replacedNode": "置き換えたノード: {nodeType}",
     "selectAll": "すべて選択",
     "skipForNow": "今はスキップ",
-    "swapNodesGuide": "以下のノードは互換性のある代替品に自動的に置き換えることができます。",
     "swapNodesTitle": "ノードの入れ替え",
     "unknownNode": "不明",
     "willBeReplacedBy": "このノードは次で置き換えられます："
@@ -2930,6 +3012,7 @@
     "errorHelp": "詳細なヘルプについては、{github} または {support} をご利用ください",
     "errorHelpGithub": "GitHub イシューを提出",
     "errorHelpSupport": "サポートに連絡",
+    "errorLog": "エラーログ",
     "errors": "エラー",
     "executionErrorOccurred": "実行中にエラーが発生しました。詳細はエラータブをご確認ください。",
     "fallbackGroupTitle": "グループ",
@@ -2964,26 +3047,14 @@
     "hideAdvancedShort": "詳細を非表示",
     "hideInput": "入力を非表示",
     "info": "情報",
+    "infoFor": "{item} の情報",
     "inputs": "入力",
     "inputsNone": "入力なし",
     "inputsNoneTooltip": "このノードには入力がありません",
     "locateNode": "キャンバス上でノードを探す",
+    "locateNodeFor": "{item} を探す",
     "missingMedia": {
-      "audio": "音声",
-      "cancelSelection": "選択をキャンセル",
-      "collapseNodes": "参照ノードを非表示",
-      "confirmSelection": "選択を確定",
-      "expandNodes": "参照ノードを表示",
-      "image": "画像",
-      "locateNode": "ノードを特定",
-      "missingMediaTitle": "入力がありません",
-      "or": "または",
-      "selectedFromLibrary": "ライブラリから選択済み",
-      "uploadFile": "{type}をアップロード",
-      "uploaded": "アップロード完了",
-      "uploading": "アップロード中...",
-      "useFromLibrary": "ライブラリから使用",
-      "video": "動画"
+      "missingMediaTitle": "入力がありません"
     },
     "missingModels": {
       "alreadyExistsInCategory": "このモデルはすでに「{category}」に存在します",
@@ -3019,16 +3090,12 @@
     },
     "missingNodePacks": {
       "applyChanges": "変更を適用",
-      "cloudMessage": "このワークフローにはComfy Cloudでまだ利用できないカスタムノードが必要です。",
       "collapse": "折りたたむ",
       "expand": "展開",
       "installAll": "すべてインストール",
-      "installNodePack": "ノードパックをインストール",
       "installed": "インストール済み",
       "installing": "インストール中...",
       "ossManagerDisabledHint": "不足しているノードをインストールするには、まずPython環境で {pipCmd} を実行してNode Managerをインストールし、{flag} フラグを付けてComfyUIを再起動してください。",
-      "ossMessage": "このワークフローにはまだインストールしていないカスタムノードが使われています。",
-      "searchInManager": "ノードマネージャーで検索",
       "title": "不足しているノードパック",
       "unknownPack": "不明なパック",
       "unsupportedTitle": "サポートされていないノードパック",
@@ -3606,6 +3673,7 @@
     "comfyCloudLogo": "Comfy Cloud ロゴ",
     "contactOwnerToSubscribe": "サブスクリプションのためにワークスペースのオーナーに連絡してください",
     "contactUs": "お問い合わせ",
+    "creditSliderSave": "{percent}%（{amount}）を節約",
     "creditsRemainingThisMonth": "今月残りのクレジット",
     "creditsRemainingThisYear": "今年残りのクレジット",
     "creditsYouveAdded": "追加したクレジット",

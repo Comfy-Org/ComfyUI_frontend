@@ -101,6 +101,23 @@ describe('useImageMenuOptions', () => {
       expect(copyIdx).toBeLessThan(pasteIdx)
       expect(pasteIdx).toBeLessThan(saveIdx)
     })
+
+    it('gives the Open in Mask Editor option the mask icon', () => {
+      const node = createImageNode()
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const options = getImageMenuOptions(node)
+      const maskOption = options.find((o) => o.label === 'Open in Mask Editor')
+
+      expect(maskOption?.icon).toBe('icon-[comfy--mask]')
+    })
+
+    it('gives every image action option an icon so labels stay aligned', () => {
+      const node = createImageNode()
+      const { getImageMenuOptions } = useImageMenuOptions()
+      const options = getImageMenuOptions(node)
+
+      expect(options.every((o) => !!o.icon)).toBe(true)
+    })
   })
 
   describe('pasteImage action', () => {

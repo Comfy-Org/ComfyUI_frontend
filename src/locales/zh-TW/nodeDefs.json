@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "Bernini 內文影片/圖像條件設定節點。可用於以下任務：t2v（文字轉影片）、v2v（影片轉影片）、rv2v（參考引導影片編輯）、r2v（參考轉影片）、ads2v（將圖像/影片插入影片）。作為內文 token 注入的參考圖像（r2v、rv2v）會以其原生長寬比獨立編碼（長邊最大值為 ref_max_size）。",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "批次大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "長度"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "參考最大尺寸",
+        "tooltip": "reference_video 與 reference_images 長邊的最大尺寸。會保持長寬比縮放並對齊至 16px。"
+      },
+      "reference_images": {
+        "name": "參考圖像"
+      },
+      "reference_video": {
+        "name": "參考影片",
+        "tooltip": "要插入來源影片的影片（ads2v）。"
+      },
+      "source_video": {
+        "name": "來源影片",
+        "tooltip": "要編輯或重製風格的來源影片（v2v、rv2v）。會調整為指定寬高並裁剪至指定長度。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -585,6 +641,57 @@
       },
       "video": {
         "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaTransparentVideoBackground": {
+    "description": "使用 Bria 移除影片背景，並返回去背後的影格及 alpha 遮罩。可將兩者連接到合成節點，或傳送到『儲存 WEBM』以輸出透明影片。",
+    "display_name": "Bria 移除影片背景（透明）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非確定性。"
+      },
+      "video": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "遮罩",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoGreenScreen": {
+    "description": "使用 Bria 將影片背景替換為純色色鍵（chroma-key）幕。",
+    "display_name": "Bria Video 綠幕",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "green_shade": {
+        "name": "green_shade",
+        "tooltip": "套用於前景後方的純色色鍵色調：broadcast_green (#00B140)、chroma_green (#00FF00) 或 blue_screen (#0000FF)。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制此節點是否重新執行；無論 seed 為何，結果皆為非確定性。"
+      },
+      "video": {
+        "name": "video"
       }
     },
     "outputs": {
@@ -1212,6 +1319,29 @@
       }
     }
   },
+  "CFGOverride": {
+    "description": "將 cfg 覆蓋為固定值，於步驟的 [起始, 結束] 百分比區間內生效。若有多個覆蓋，重疊時以最接近取樣器者為準。",
+    "display_name": "CFG 覆蓋",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "結束百分比"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "start_percent": {
+        "name": "起始百分比"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CFGZeroStar": {
     "display_name": "CFGZeroStar",
     "inputs": {
@@ -1721,6 +1851,10 @@
         "name": "結束 sigma",
         "tooltip": "這些選項將生效的最後一個 sigma 值。"
       },
+      "force_sequential_txt_ids": {
+        "name": "強制使用連續文本標記ID",
+        "tooltip": "強制使用連續文本標記ID，而非全為零。此選項適用於2026-05-22至2026-06-01期間訓練、但狀態字典中未包含 __sequential__ 鍵的checkpoint。"
+      },
       "model": {
         "name": "模型"
       },
@@ -1797,6 +1931,10 @@
     "outputs": {
       "0": {
         "name": "rgb 整數值",
+        "tooltip": null
+      },
+      "1": {
+        "name": "hex",
         "tooltip": null
       }
     }
@@ -2844,6 +2982,98 @@
       }
     }
   },
+  "DA3GeometryToMesh": {
+    "description": "將深度圖轉換為三角化的 3D 網格。",
+    "display_name": "將 DA3 幾何轉換為網格",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "要轉換的批次中的哪一張影像。由於每張影像的頂點數不同，批次無法堆疊。"
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "排除每張影像正規化信心值低於此值的像素（0 = 保留全部，1 = 只保留最有信心的像素）。當幾何資料有信心圖時使用（Small/Base 模型）。"
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "頂點間隔。1 = 全解析度，2 = 一半，依此類推。"
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "若三角形的 3x3 深度跨度超過此比例則捨棄。0 = 關閉。"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "使用來源影像作為基礎色彩貼圖。"
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "從網格中排除天空機率像素（sky >= 0.5）。當幾何資料有天空圖時使用（Mono/Metric 模型）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "在影像上執行 Depth Anything 3。多視角模式下，每張影像被視為同一場景的不同視角。",
+    "display_name": "執行 Depth Anything 3",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono：單視角影像（適用於任何模型變體）。\nmultiview：所有影像一起處理以獲得幾何一致性與相機姿態（僅限 Small/Base 模型）。"
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize：縮放至最長邊 = 解析度（限制記憶體，預設）。\nlower_bound_resize：縮放至最短邊 = 解析度（在高/寬影像上保留更多細節，但使用更多記憶體）。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "模型運行的解析度（最長邊，14 的倍數）。\n較低 = 較快 / 較少 VRAM。\n較高 = 更多細節。\n輸出會上採樣回原始大小。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "非正規化 tensor 字典。\n一定包含的鍵：depth、image、mode。\n可選鍵：sky（Mono/Metric）、confidence（Small/Base）、extrinsics + intrinsics（多視角時）。"
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "從 Depth Anything 3 幾何資料渲染深度圖、信心圖或天空 mask。",
+    "display_name": "渲染 Depth Anything 3",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth：正規化灰階深度影像。\n- depth_colored：經 Turbo 色圖映射的深度。\n- sky_mask：天空機率 [0, 1]（僅 Mono/Metric 模型）。\n- confidence：正規化深度信心（僅 Small/Base 模型）。"
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "載入 ControlNet 模型（diff）",
     "inputs": {
@@ -2950,6 +3180,34 @@
       },
       "type": {
         "name": "type"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "雙模型 CFG 引導器",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於正向（條件）階段的模型。"
+      },
+      "model_negative": {
+        "name": "負向模型",
+        "tooltip": "用於負向（無條件）階段的模型。一般 CFG 請使用相同模型。"
+      },
+      "negative": {
+        "name": "負向",
+        "tooltip": "在負向模型上執行的負向條件。若不連接則為無文字（僅圖像）無條件階段。"
+      },
+      "positive": {
+        "name": "正向"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3916,6 +4174,9 @@
     "description": "從影像中移除被遮罩的物件並重建背景。請將 mask 塗在你想要擦除的區域。",
     "display_name": "Flux 擦除影像",
     "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
       "dilate_pixels": {
         "name": "膨脹像素",
         "tooltip": "擴展 mask 邊界，以確保物件邊緣被完整覆蓋。"
@@ -3926,6 +4187,10 @@
       "mask": {
         "name": "mask",
         "tooltip": "白色區域會被移除；黑色區域會被保留。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "用於產生雜訊的隨機種子。"
       }
     },
     "outputs": {
@@ -4669,6 +4934,14 @@
       "system_prompt": {
         "name": "系統提示",
         "tooltip": "決定 AI 行為的基礎指令。"
+      },
+      "temperature": {
+        "name": "temperature",
+        "tooltip": "控制生成內容的隨機性。數值越低越集中／確定。"
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "Nucleus 抽樣閾值。數值越低越集中，越高則越多樣。"
       }
     },
     "outputs": {
@@ -4722,6 +4995,48 @@
       "video": {
         "name": "影片",
         "tooltip": "可選的影片，用作模型的上下文。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "使用 Google 的 Gemini 模型生成文字回應。請提供文字提示，並可選擇加入一個或多個圖片、音訊片段、影片或檔案作為多模態上下文。",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "用於生成回應的 Gemini 模型。"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "輸入給模型的文字。請包含詳細指示、問題或上下文。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "取樣用的種子。設為 0 則隨機。無法保證輸出為確定性。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "決定模型行為的基礎指令。"
       }
     },
     "outputs": {
@@ -5675,6 +5990,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Ideogram 4 排程器",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "mu": {
+        "name": "μ"
+      },
+      "std": {
+        "name": "標準差"
+      },
+      "steps": {
+        "name": "步驟數"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "使用 Ideogram V1 模型同步產生影像。\n\n影像連結僅限時有效；如需保留影像，請務必下載。",
     "display_name": "Ideogram V1",
@@ -5811,6 +6151,34 @@
       },
       "seed": {
         "name": "種子值"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "使用 Ideogram 4.0 模型，根據文字提示生成影像。",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "用於影像生成的文字提示。"
+      },
+      "rendering_speed": {
+        "name": "渲染速度",
+        "tooltip": "控制生成速度與品質的取捨。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子"
       }
     },
     "outputs": {
@@ -8707,6 +9075,22 @@
     "outputs": {
       "0": {
         "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "載入 Depth Anything 3",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13591,15 +13975,15 @@
       "height": {
         "name": "高度"
       },
-      "image": {
-        "name": "image"
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "來自上游 3D 節點的 3D 模型檔案。"
       },
       "model_3d_info": {
         "name": "model_3d_info"
       },
-      "model_file": {
-        "name": "model_file",
-        "tooltip": "來自上游 3D 節點的 3D 模型檔案。"
+      "viewport_state": {
+        "name": "viewport_state"
       },
       "width": {
         "name": "寬度"
@@ -13654,12 +14038,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "預覽 Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "一個 gaussian splat 3D 檔案。"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "description": "將輸入圖片儲存到您的 ComfyUI 輸出目錄。",
     "display_name": "預覽圖片",
     "inputs": {
       "images": {
         "name": "圖片"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "預覽點雲",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "點雲檔案（.ply）"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -14910,6 +15386,10 @@
       "megapixels": {
         "name": "百萬像素",
         "tooltip": "目標總百萬像素。1.0 MP ≈ 1024×1024（正方形）。"
+      },
+      "multiple": {
+        "name": "倍數",
+        "tooltip": "將所選解析度設為結果的最接近倍數。"
       }
     },
     "outputs": {
@@ -15584,6 +16064,41 @@
     "outputs": {
       "0": {
         "name": "追蹤資料",
+        "tooltip": null
+      }
+    }
+  },
+  "SCAIL2ColoredMask": {
+    "display_name": "建立 SCAIL-2 彩色遮罩",
+    "inputs": {
+      "driving_track_data": {
+        "name": "驅動追蹤資料",
+        "tooltip": "驅動姿勢影片的 SAM3 追蹤。將會渲染到 pose_video_mask 輸出。"
+      },
+      "object_indices": {
+        "name": "物件索引",
+        "tooltip": "要包含的人員索引，以逗號分隔（例如 '0,2,3'）。會套用於參考與姿勢影片遮罩。留空代表全部。"
+      },
+      "ref_track_data": {
+        "name": "參考追蹤資料",
+        "tooltip": "參考圖像的 SAM3 追蹤。"
+      },
+      "replacement_mode": {
+        "name": "替換模式",
+        "tooltip": "False = mask_video 為黑色背景（動畫模式）。True = 白色背景（替換模式）。請在 WanSCAILToVideo 設定相同的 replacement_mode。reference_image_mask 一律為黑色背景。"
+      },
+      "sort_by": {
+        "name": "排序方式",
+        "tooltip": "調色盤顏色分配給追蹤物件的順序（同時套用於參考與姿勢影片，確保每個身份保持同色）。left_to_right = 最左邊物件（以首幀重心）獲得第一個顏色；area = 最大物件（以首幀遮罩面積）獲得第一個顏色；none = 保持 SAM3 的順序。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "姿勢影片遮罩",
+        "tooltip": null
+      },
+      "1": {
+        "name": "參考圖像遮罩",
         "tooltip": null
       }
     }
@@ -16315,6 +16830,27 @@
       }
     }
   },
+  "SaveAudioAdvanced": {
+    "description": "將輸入的音訊儲存到你的 ComfyUI 輸出目錄。",
+    "display_name": "儲存音訊（進階）",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "要儲存的音訊。"
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "要儲存檔案的前綴。可包含格式化標記，例如 %date:yyyy-MM-dd%。"
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "儲存音訊的檔案格式。"
+      }
+    }
+  },
   "SaveAudioMP3": {
     "display_name": "儲存音訊 (MP3)",
     "inputs": {
@@ -16560,7 +17096,8 @@
         "name": "每秒影格數"
       },
       "images": {
-        "name": "images"
+        "name": "images",
+        "tooltip": "RGBA 影像將以 alpha 通道作為透明度儲存（僅限 vp9 編解碼器）。"
       }
     }
   },
@@ -22000,7 +22537,8 @@
         "name": "批次大小"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "用於條件設定的 CLIP 視覺特徵。模型以拉伸調整長寬比進行訓練。"
       },
       "height": {
         "name": "高度"
@@ -22027,14 +22565,39 @@
         "name": "姿勢影片",
         "tooltip": "用於姿勢條件的影片。將會縮小為主影片解析度的一半。"
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "僅限 SCAIL-2。每個身份以顏色區分的 SAM3 mask 影片，解析度需與 pose_video 相同。"
+      },
       "positive": {
         "name": "正向"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "前一區塊尾端的影格數作為錨點。SCAIL-2 以 5 訓練（81 影格區塊，76 影格步進）。"
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "僅限 SCAIL-2。前一區塊完整解碼的輸出。僅使用最後 previous_frame_count 個影格作為延伸錨點。"
+      },
       "reference_image": {
-        "name": "參考圖片"
+        "name": "參考圖片",
+        "tooltip": "參考圖像，若有多個參考請合成於同一張圖像。"
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "僅限 SCAIL-2。彩色參考 mask，解析度需與 reference_image 相同。"
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "僅限 SCAIL-2。False = 動畫模式（pose_video_mask 背景應為黑色）。True = 替換模式（pose_video_mask 背景應為白色）。"
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "本區塊開始的累積輸出影格。請從前一區塊的 video_frame_offset 輸出連接。"
       },
       "width": {
         "name": "寬度"
@@ -22052,6 +22615,10 @@
       "2": {
         "name": "latent",
         "tooltip": "生成尺寸的空 latent。"
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "調整後的偏移與長度。請連接到下一區塊。"
       }
     }
   },
