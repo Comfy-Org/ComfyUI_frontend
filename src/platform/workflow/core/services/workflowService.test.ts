@@ -1446,6 +1446,19 @@ describe('useWorkflowService', () => {
       expect(result.failed).toEqual(['image.png'])
     })
 
+    it('reports a file as failed when persistence throws', async () => {
+      vi.mocked(workflowStore.importWorkflowFromJson).mockRejectedValueOnce(
+        new Error('storage offline')
+      )
+
+      const result = await service.importWorkflowFiles([
+        jsonFile('flow.json', JSON.stringify(makeWorkflowData()))
+      ])
+
+      expect(result.imported).toEqual([])
+      expect(result.failed).toEqual(['flow.json'])
+    })
+
     it('imports valid files even when others in the batch fail', async () => {
       const result = await service.importWorkflowFiles([
         jsonFile('good.json', JSON.stringify(makeWorkflowData())),

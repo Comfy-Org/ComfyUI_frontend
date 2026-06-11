@@ -636,6 +636,10 @@ export const useWorkflowService = () => {
     }
   }
 
+  /**
+   * Parse and validate a dropped file as a workflow. Returns `null` for
+   * non-`.json` files or content that fails workflow schema validation.
+   */
   const readWorkflowFile = async (
     file: File
   ): Promise<ComfyWorkflowJSON | null> => {

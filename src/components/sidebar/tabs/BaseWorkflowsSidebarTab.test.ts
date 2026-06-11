@@ -62,7 +62,10 @@ const {
       renameWorkflow: vi.fn().mockResolvedValue(undefined),
       deleteWorkflow: vi.fn().mockResolvedValue(undefined),
       insertWorkflow: vi.fn().mockResolvedValue(undefined),
-      duplicateWorkflow: vi.fn().mockResolvedValue(undefined)
+      duplicateWorkflow: vi.fn().mockResolvedValue(undefined),
+      importWorkflowFiles: vi
+        .fn()
+        .mockResolvedValue({ imported: [], failed: [] })
     },
     mockWorkflowStoreState: workflowStore,
     registerSearchHandlers: (
@@ -182,9 +185,24 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => mockWorkflowService
 }))
 
-vi.mock('@/composables/usePragmaticDragAndDrop', () => ({
-  usePragmaticExternalFileDrop: () => ({ isDraggingOver: ref(false) })
+const dropMock = vi.hoisted(() => ({
+  isDraggingOver: null as { value: boolean } | null,
+  onDrop: null as ((files: File[]) => void | Promise<unknown>) | null
 }))
+
+vi.mock('@/composables/usePragmaticDragAndDrop', async () => {
+  const { ref } = await import('vue')
+  return {
+    usePragmaticExternalFileDrop: (
+      _el: unknown,
+      opts: { onDrop: (files: File[]) => void | Promise<unknown> }
+    ) => {
+      dropMock.onDrop = opts.onDrop
+      dropMock.isDraggingOver ??= ref(false)
+      return { isDraggingOver: dropMock.isDraggingOver }
+    }
+  }
+})
 
 vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({ shiftDown: false })
@@ -334,5 +352,30 @@ describe('BaseWorkflowsSidebarTab', () => {
     await nextTick()
 
     expect(getLeafPaths(getSearchRoot())).toEqual(['workflows/test-alpha.json'])
+  })
+
+  it('shows the drop overlay only while dragging files over the panel', async () => {
+    renderComponent()
+    await nextTick()
+
+    expect(screen.queryByTestId('workflow-drop-overlay')).toBeNull()
+
+    dropMock.isDraggingOver!.value = true
+    await nextTick()
+    expect(screen.getByTestId('workflow-drop-overlay')).toBeInTheDocument()
+
+    dropMock.isDraggingOver!.value = false
+    await nextTick()
+    expect(screen.queryByTestId('workflow-drop-overlay')).toBeNull()
+  })
+
+  it('forwards dropped files to the workflow service', async () => {
+    renderComponent()
+    await nextTick()
+
+    const files = [new File(['{}'], 'flow.json')]
+    await dropMock.onDrop!(files)
+
+    expect(mockWorkflowService.importWorkflowFiles).toHaveBeenCalledWith(files)
   })
 })
