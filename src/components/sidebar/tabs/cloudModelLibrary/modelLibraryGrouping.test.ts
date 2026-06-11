@@ -7,7 +7,6 @@ import {
   firstNonModelsTag,
   groupAsset,
   groupLabelForAsset,
-  looksLikeVae,
   partnerKind,
   rawTagTopLevel
 } from './modelLibraryGrouping'
@@ -51,25 +50,6 @@ describe('partnerKind', () => {
   })
 })
 
-describe('looksLikeVae', () => {
-  it('matches a "vae" path segment in the tag', () => {
-    expect(looksLikeVae(makeAsset(), 'CogVideo/VAE')).toBe(true)
-    expect(looksLikeVae(makeAsset(), 'foo/vae_approx')).toBe(true)
-  })
-
-  it('matches "vae" as a word in the filename', () => {
-    expect(
-      looksLikeVae(makeAsset({ name: 'model_vae_v1.safetensors' }), 'encoders')
-    ).toBe(true)
-  })
-
-  it('does not match "vae" embedded inside another word', () => {
-    expect(
-      looksLikeVae(makeAsset({ name: 'levaeon.safetensors' }), 'encoders')
-    ).toBe(false)
-  })
-})
-
 describe('groupAsset', () => {
   it('keeps cross-base file types (loras, vae, conditioning) in their bucket', () => {
     expect(
@@ -95,10 +75,10 @@ describe('groupAsset', () => {
     expect(groupAsset(asset).groupIds).toEqual(['diffusion'])
   })
 
-  it('routes vae-looking assets to the vae bucket even when tagged otherwise', () => {
+  it('groups by the top-level folder tag, not nested segments', () => {
     expect(
       groupAsset(makeAsset({ tags: ['models', 'CogVideo/VAE'] })).groupIds
-    ).toEqual(['vae'])
+    ).toEqual(['video'])
   })
 
   it('keeps companion file types in their bucket regardless of base model', () => {

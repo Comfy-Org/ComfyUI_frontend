@@ -87,11 +87,6 @@ export function partnerKind(category: string | undefined): string {
 
 function groupIdForTag(asset: AssetItem, tag: string): string | null {
   const tagGroup = groupIdForRawTag(rawTagTopLevel(tag))
-  // Filename-based VAE detection: any file with "vae" in any path segment of
-  // its tag, name, or filepath belongs in the VAE bucket — catches assets
-  // tagged generically (`latentsync/vae`, `CogVideo/VAE`, `SEEDVR2`) or named
-  // `*_vae_*` but tagged as something else.
-  if (looksLikeVae(asset, tag)) return 'vae'
   // Type wins. The base-model override only re-homes MAIN generative models
   // (checkpoints / diffusion_models) into their modality — an LTX transformer
   // belongs in Video & motion, but an SDXL text encoder is still an encoder.
@@ -104,27 +99,4 @@ function groupIdForTag(asset: AssetItem, tag: string): string | null {
     }
   }
   return tagGroup
-}
-
-export function looksLikeVae(asset: AssetItem, tag: string): boolean {
-  // Any path segment of the tag containing "vae" (handles `latentsync/vae`,
-  // `CogVideo/VAE`, etc.)
-  for (const segment of tag.split('/')) {
-    if (/^vae(_approx)?$/i.test(segment)) return true
-  }
-  // "vae" appearing as a word in the filename / display name
-  const sources = [
-    asset.name,
-    typeof asset.metadata?.filename === 'string'
-      ? asset.metadata.filename
-      : undefined,
-    typeof asset.metadata?.filepath === 'string'
-      ? asset.metadata.filepath
-      : undefined
-  ]
-  for (const source of sources) {
-    if (typeof source !== 'string') continue
-    if (/(?:^|[^a-zA-Z0-9])vae(?:[^a-zA-Z0-9]|$)/i.test(source)) return true
-  }
-  return false
 }
