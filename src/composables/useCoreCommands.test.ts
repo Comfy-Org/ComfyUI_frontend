@@ -5,11 +5,13 @@ import { ref } from 'vue'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type * as ModelStoreModule from '@/stores/modelStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 // Mock vue-i18n for useExternalLink
 const mockLocale = ref('en')
@@ -133,6 +135,23 @@ vi.mock('@/stores/executionStore', () => ({
 
 vi.mock('@/stores/toastStore', () => ({
   useToastStore: vi.fn(() => ({}))
+}))
+
+const mockToastAdd = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: vi.fn(() => ({ add: mockToastAdd }))
+}))
+
+const mockAssetBrowse = vi.hoisted(() =>
+  vi.fn<(options: { onAssetSelected?: (asset: AssetItem) => void }) => void>()
+)
+vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => ({
+  useAssetBrowserDialog: vi.fn(() => ({ browse: mockAssetBrowse }))
+}))
+
+const mockStartModelNodeDrag = vi.hoisted(() => vi.fn())
+vi.mock('@/composables/node/startModelNodeDragFromAsset', () => ({
+  startModelNodeDragFromAsset: mockStartModelNodeDrag
 }))
 
 const mockChangeTracker = vi.hoisted(() => ({
@@ -616,6 +635,46 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.Help.AboutComfyUI').function()
 
       expect(mockShowAbout).toHaveBeenCalled()
+    })
+  })
+
+  describe('BrowseModelAssets command', () => {
+    const asset = fromPartial<AssetItem>({ id: 'asset-1' })
+
+    async function selectAssetFromBrowser() {
+      vi.mocked(useSettingStore).mockReturnValue(createMockSettingStore(true))
+
+      const command = useCoreCommands().find(
+        (cmd) => cmd.id === 'Comfy.BrowseModelAssets'
+      )!
+      await command.function()
+
+      const { onAssetSelected } = mockAssetBrowse.mock.calls[0][0]
+      onAssetSelected?.(asset)
+    }
+
+    it('starts a model node drag for the selected asset', async () => {
+      mockStartModelNodeDrag.mockReturnValue(undefined)
+
+      await selectAssetFromBrowser()
+
+      expect(mockStartModelNodeDrag).toHaveBeenCalledWith(asset)
+      expect(mockToastAdd).not.toHaveBeenCalled()
+    })
+
+    it('shows an error toast when the asset cannot start a drag', async () => {
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      mockStartModelNodeDrag.mockReturnValue({
+        code: 'NO_PROVIDER',
+        message: 'No node provider registered',
+        assetId: 'asset-1'
+      })
+
+      await selectAssetFromBrowser()
+
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
     })
   })
 })

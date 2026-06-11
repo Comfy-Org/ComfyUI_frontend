@@ -19,6 +19,7 @@ const NodeWidgetsProbe = {
 
 interface ProbedWidget {
   name: string
+  value?: unknown
   options?: { values?: string[] }
 }
 
@@ -31,11 +32,12 @@ const nodeDef = fromPartial<ComfyNodeDefV2>({
   outputs: []
 })
 
-function renderedComboWidget(
+function renderedWidgets(
+  def: ComfyNodeDefV2,
   props: { widgetValues?: Record<string, string> } = {}
 ) {
   render(LGraphNodePreview, {
-    props: { nodeDef, ...props },
+    props: { nodeDef: def, ...props },
     global: {
       stubs: {
         NodeHeader: true,
@@ -47,7 +49,13 @@ function renderedComboWidget(
   const nodeData: { widgets?: ProbedWidget[] } = JSON.parse(
     screen.getByTestId('node-data').textContent ?? ''
   )
-  return nodeData.widgets?.find((w) => w.name === 'ckpt_name')
+  return nodeData.widgets ?? []
+}
+
+function renderedComboWidget(
+  props: { widgetValues?: Record<string, string> } = {}
+) {
+  return renderedWidgets(nodeDef, props).find((w) => w.name === 'ckpt_name')
 }
 
 describe('LGraphNodePreview', () => {
@@ -67,5 +75,21 @@ describe('LGraphNodePreview', () => {
     const widget = renderedComboWidget()
 
     expect(widget?.options?.values).toEqual(['a.safetensors', 'b.safetensors'])
+  })
+
+  it('uses the input default when defined and empty string otherwise', () => {
+    const widgets = renderedWidgets(
+      fromPartial<ComfyNodeDefV2>({
+        name: 'TestNode',
+        inputs: {
+          steps: { type: 'INT', default: 20 },
+          text: { type: 'STRING' }
+        },
+        outputs: []
+      })
+    )
+
+    expect(widgets.find((w) => w.name === 'steps')?.value).toBe(20)
+    expect(widgets.find((w) => w.name === 'text')?.value).toBe('')
   })
 })
