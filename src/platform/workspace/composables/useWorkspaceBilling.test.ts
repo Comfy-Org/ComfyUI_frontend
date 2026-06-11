@@ -1,8 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createApp, defineComponent, effectScope, h } from 'vue'
+import { effectScope } from 'vue'
 
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
-import type { BillingActions, BillingState } from '@/composables/billing/types'
 
 const mockWorkspaceApi = vi.hoisted(() => ({
   getBillingStatus: vi.fn(),
@@ -22,7 +21,7 @@ const mockBillingPlans = vi.hoisted(() => ({
 }))
 
 const mockShow = vi.hoisted(() => vi.fn())
-const mockUpdateActiveWorkspace = vi.hoisted(() => vi.fn())
+const mockStartOperation = vi.hoisted(() => vi.fn())
 
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: mockWorkspaceApi
@@ -41,9 +40,9 @@ vi.mock(
   })
 )
 
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    updateActiveWorkspace: mockUpdateActiveWorkspace
+vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
+  useBillingOperationStore: () => ({
+    startOperation: mockStartOperation
   })
 }))
 
@@ -398,54 +397,44 @@ describe('useWorkspaceBilling', () => {
     })
   })
 
-  describe('cancelSubscription polling', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
+  describe('cancelSubscription', () => {
+    function operation(
+      overrides: Partial<{
+        status: 'pending' | 'succeeded' | 'failed' | 'timeout'
+        errorMessage: string | null
+      }> = {}
+    ) {
+      return {
+        opId: 'op-cancel',
+        type: 'cancel' as const,
+        status: overrides.status ?? ('succeeded' as const),
+        errorMessage: overrides.errorMessage ?? null,
+        startedAt: 0
+      }
+    }
 
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
-    it('updates workspace store when op succeeds', async () => {
+    it('drives the shared billing operation poller with a cancel op', async () => {
       mockWorkspaceApi.cancelSubscription.mockResolvedValue({
         billing_op_id: 'op-cancel',
         cancel_at: '2026-06-01T00:00:00Z'
       })
-      mockWorkspaceApi.getBillingOpStatus.mockResolvedValue({
-        id: 'op-cancel',
-        status: 'succeeded',
-        started_at: '2026-04-01T00:00:00Z'
-      })
-      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
-        ...activeStatus,
-        is_active: false,
-        subscription_status: 'canceled'
-      })
+      mockStartOperation.mockResolvedValue(operation())
 
       const billing = setupBilling()
       await billing.cancelSubscription()
 
-      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledWith(
-        'op-cancel'
-      )
-      expect(mockUpdateActiveWorkspace).toHaveBeenCalledWith({
-        isSubscribed: false
-      })
-      expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalled()
+      expect(mockStartOperation).toHaveBeenCalledWith('op-cancel', 'cancel')
+      expect(billing.error.value).toBeNull()
     })
 
-    it('rethrows when the op reports failure', async () => {
+    it('throws the op error message when the cancel op fails', async () => {
       mockWorkspaceApi.cancelSubscription.mockResolvedValue({
         billing_op_id: 'op-fail',
         cancel_at: '2026-06-01T00:00:00Z'
       })
-      mockWorkspaceApi.getBillingOpStatus.mockResolvedValue({
-        id: 'op-fail',
-        status: 'failed',
-        started_at: '2026-04-01T00:00:00Z',
-        error_message: 'processor rejected'
-      })
+      mockStartOperation.mockResolvedValue(
+        operation({ status: 'failed', errorMessage: 'processor rejected' })
+      )
 
       const billing = setupBilling()
 
@@ -453,88 +442,44 @@ describe('useWorkspaceBilling', () => {
         'processor rejected'
       )
       expect(billing.error.value).toBe('processor rejected')
-      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
     })
 
-    it('schedules the second poll at the 2000ms backoff boundary', async () => {
+    it('throws when the cancel op times out', async () => {
       mockWorkspaceApi.cancelSubscription.mockResolvedValue({
-        billing_op_id: 'op-slow',
+        billing_op_id: 'op-timeout',
         cancel_at: '2026-06-01T00:00:00Z'
       })
-      const pendingResponse = {
-        id: 'op-slow',
-        status: 'pending' as const,
-        started_at: '2026-04-01T00:00:00Z'
-      }
-      mockWorkspaceApi.getBillingOpStatus
-        .mockResolvedValueOnce(pendingResponse)
-        .mockResolvedValueOnce({
-          id: 'op-slow',
-          status: 'succeeded',
-          started_at: '2026-04-01T00:00:00Z'
+      mockStartOperation.mockResolvedValue(
+        operation({
+          status: 'timeout',
+          errorMessage: 'billingOperation.cancelTimeout'
         })
-      mockWorkspaceApi.getBillingStatus.mockResolvedValue({
-        ...activeStatus,
-        is_active: false
-      })
+      )
 
       const billing = setupBilling()
-      const cancelPromise = billing.cancelSubscription()
 
-      // First poll runs synchronously inside cancelSubscription.
-      await cancelPromise
-      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(1)
-
-      // Boundary check: still only 1 call just before the 2000ms mark.
-      await vi.advanceTimersByTimeAsync(1999)
-      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(1)
-
-      // Crossing 2000ms total fires the scheduled retry.
-      await vi.advanceTimersByTimeAsync(1)
-      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
-      expect(mockUpdateActiveWorkspace).toHaveBeenCalledWith({
-        isSubscribed: false
-      })
+      await expect(billing.cancelSubscription()).rejects.toThrow(
+        'billingOperation.cancelTimeout'
+      )
     })
 
-    it('caps the backoff at 5000ms once 2^attempt exceeds the cap', async () => {
+    it('falls back to a generic message when a non-success op omits errorMessage', async () => {
       mockWorkspaceApi.cancelSubscription.mockResolvedValue({
-        billing_op_id: 'op-cap',
+        billing_op_id: 'op-noerr',
         cancel_at: '2026-06-01T00:00:00Z'
       })
-      const pending = {
-        id: 'op-cap',
-        status: 'pending' as const,
-        started_at: '2026-04-01T00:00:00Z'
-      }
-      mockWorkspaceApi.getBillingOpStatus
-        .mockResolvedValueOnce(pending) // #1, schedules +2000ms
-        .mockResolvedValueOnce(pending) // #2 at t=2000, schedules +4000ms
-        .mockResolvedValueOnce(pending) // #3 at t=6000, schedules capped +5000ms
-        .mockResolvedValueOnce({
-          id: 'op-cap',
-          status: 'succeeded',
-          started_at: '2026-04-01T00:00:00Z'
-        })
-      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
+      mockStartOperation.mockResolvedValue(
+        operation({ status: 'failed', errorMessage: null })
+      )
 
       const billing = setupBilling()
-      await billing.cancelSubscription()
 
-      await vi.advanceTimersByTimeAsync(2000) // fires #2
-      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(2)
-
-      await vi.advanceTimersByTimeAsync(4000) // fires #3 at t=6000
-      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(3)
-
-      // After #3 attempt=3, next delay should be capped at 5000ms (not 8000).
-      await vi.advanceTimersByTimeAsync(4999)
-      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(3)
-      await vi.advanceTimersByTimeAsync(1)
-      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(4)
+      await expect(billing.cancelSubscription()).rejects.toThrow(
+        'Failed to cancel subscription'
+      )
     })
 
-    it('propagates error before polling when the cancel API itself fails', async () => {
+    it('propagates the error and skips polling when the cancel API fails', async () => {
       mockWorkspaceApi.cancelSubscription.mockRejectedValue(
         new Error('API down')
       )
@@ -543,8 +488,7 @@ describe('useWorkspaceBilling', () => {
 
       await expect(billing.cancelSubscription()).rejects.toThrow('API down')
       expect(billing.error.value).toBe('API down')
-      expect(mockWorkspaceApi.getBillingOpStatus).not.toHaveBeenCalled()
-      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
+      expect(mockStartOperation).not.toHaveBeenCalled()
     })
 
     it('falls back to a generic error message when cancel rejects with a non-Error', async () => {
@@ -554,71 +498,6 @@ describe('useWorkspaceBilling', () => {
 
       await expect(billing.cancelSubscription()).rejects.toBe('boom')
       expect(billing.error.value).toBe('Failed to cancel subscription')
-    })
-
-    it('stops polling after 30 attempts and refreshes status without marking unsubscribed', async () => {
-      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
-        billing_op_id: 'op-stuck',
-        cancel_at: '2026-06-01T00:00:00Z'
-      })
-      mockWorkspaceApi.getBillingOpStatus.mockResolvedValue({
-        id: 'op-stuck',
-        status: 'pending',
-        started_at: '2026-04-01T00:00:00Z'
-      })
-      mockWorkspaceApi.getBillingStatus.mockResolvedValue(activeStatus)
-
-      const billing = setupBilling()
-      await billing.cancelSubscription()
-
-      // Advance well past all scheduled polls (worst-case ~146s).
-      await vi.advanceTimersByTimeAsync(200_000)
-
-      expect(mockWorkspaceApi.getBillingOpStatus).toHaveBeenCalledTimes(30)
-      expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
-      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
-    })
-
-    it('stops polling when the host component is unmounted', async () => {
-      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
-        billing_op_id: 'op-dispose',
-        cancel_at: '2026-06-01T00:00:00Z'
-      })
-      mockWorkspaceApi.getBillingOpStatus.mockResolvedValue({
-        id: 'op-dispose',
-        status: 'pending',
-        started_at: '2026-04-01T00:00:00Z'
-      })
-
-      let billing: (BillingState & BillingActions) | undefined
-      const HostComponent = defineComponent({
-        setup() {
-          billing = useWorkspaceBilling()
-          return () => h('div')
-        }
-      })
-      const host = document.createElement('div')
-      const app = createApp(HostComponent)
-      app.mount(host)
-
-      if (!billing) throw new Error('composable not initialized')
-      const cancelPromise = billing.cancelSubscription().catch(() => undefined)
-      await cancelPromise
-
-      // Cross one backoff interval so the second poll is actually scheduled
-      // and then confirm that unmount freezes the counter across subsequent ticks.
-      await vi.advanceTimersByTimeAsync(2000)
-      const callsBeforeUnmount =
-        mockWorkspaceApi.getBillingOpStatus.mock.calls.length
-      expect(callsBeforeUnmount).toBeGreaterThanOrEqual(2)
-
-      app.unmount()
-
-      await vi.advanceTimersByTimeAsync(20_000)
-
-      expect(mockWorkspaceApi.getBillingOpStatus.mock.calls.length).toBe(
-        callsBeforeUnmount
-      )
     })
   })
 
@@ -740,44 +619,5 @@ describe('useWorkspaceBilling', () => {
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
       expect(mockWorkspaceApi.getBillingBalance).not.toHaveBeenCalled()
     })
-  })
-
-  describe('pollCancelStatus error paths', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
-    afterEach(() => {
-      vi.useRealTimers()
-    })
-
-    it('uses a default error message when failed status omits error_message', async () => {
-      mockWorkspaceApi.cancelSubscription.mockResolvedValue({
-        billing_op_id: 'op-noerr',
-        cancel_at: '2026-06-01T00:00:00Z'
-      })
-      mockWorkspaceApi.getBillingOpStatus.mockResolvedValue({
-        id: 'op-noerr',
-        status: 'failed',
-        started_at: '2026-04-01T00:00:00Z'
-        // intentionally no error_message
-      })
-
-      const billing = setupBilling()
-
-      await expect(billing.cancelSubscription()).rejects.toThrow(
-        'Failed to cancel subscription'
-      )
-      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
-    })
-
-    // Intentionally NOT covered: a rejection on a later scheduled poll is
-    // emitted from a void-discarded poll() inside setTimeout, so it surfaces
-    // as an unhandled rejection that cancelSubscription has already returned
-    // from. Codifying that as "polling stops cleanly" requires installing a
-    // process unhandledRejection handler to hide the evidence — which would
-    // bless a real bug: the dialog can already show success while the
-    // backing op silently fails. Fix in the source (retry transient poll
-    // failures or surface a pending/error state) before adding coverage here.
   })
 })
