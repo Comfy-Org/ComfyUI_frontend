@@ -206,7 +206,7 @@ import type {
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useAppMode } from '@/composables/useAppMode'
+import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
 import { appendJsonExt } from '@/utils/formatUtil'
@@ -223,19 +223,7 @@ const publishDialog = useComfyHubPublishDialog()
 const shareService = useWorkflowShareService()
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
-const { mode, isAppMode } = useAppMode()
-
-function getShareSource(): 'app_mode' | 'graph_mode' {
-  return isAppMode.value ? 'app_mode' : 'graph_mode'
-}
-
-function getShareFlowContext() {
-  return {
-    source: getShareSource(),
-    view_mode: mode.value,
-    is_app_mode: isAppMode.value
-  }
-}
+const shareFlowContext = useShareFlowContext()
 
 type DialogState = 'loading' | 'unsaved' | 'ready' | 'shared' | 'stale'
 type DialogMode = 'shareLink' | 'publishToHub'
@@ -363,7 +351,7 @@ async function refreshDialogState() {
     dialogState.value = 'unsaved'
     useTelemetry()?.trackShareFlow({
       step: 'save_prompted',
-      ...getShareFlowContext()
+      ...shareFlowContext.value
     })
     if (workflow) {
       workflowName.value = stripJsonExtension(workflow.filename)
@@ -448,7 +436,7 @@ const {
     acknowledged.value = false
     useTelemetry()?.trackShareFlow({
       step: 'link_created',
-      ...getShareFlowContext(),
+      ...shareFlowContext.value,
       share_id: result.shareId
     })
 

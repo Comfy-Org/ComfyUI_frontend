@@ -19,7 +19,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({
-    mode: { value: 'workflow' },
+    mode: { value: 'graph' },
     isAppMode: { value: false }
   })
 }))
@@ -61,6 +61,7 @@ import type {
   EnterLinearMetadata,
   ShareFlowMetadata,
   SurveyResponses,
+  TemplateFilterMetadata,
   TemplateLibraryClosedMetadata,
   TemplateLibraryMetadata,
   TemplateMetadata,
@@ -73,6 +74,10 @@ const waitForMixpanelInit = () =>
   vi.waitFor(() => expect(mockMixpanel.init).toHaveBeenCalled())
 
 type ConfigWindow = { __CONFIG__?: { mixpanel_token?: string } }
+
+beforeEach(() => {
+  localStorage.clear()
+})
 
 describe('MixpanelTelemetryProvider — without configured token', () => {
   beforeEach(() => {
@@ -101,7 +106,6 @@ describe('MixpanelTelemetryProvider — without configured token', () => {
 describe('MixpanelTelemetryProvider — with configured token', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    localStorage.clear()
     ;(window as unknown as ConfigWindow).__CONFIG__ = {
       mixpanel_token: 'test-token'
     }
@@ -171,7 +175,17 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
 
+    const templateFilterMetadata: TemplateFilterMetadata = {
+      selected_models: [],
+      selected_use_cases: [],
+      selected_runs_on: [],
+      sort_by: 'default',
+      filtered_count: 1,
+      total_count: 2
+    }
+
     provider.trackSettingChanged({ setting_id: 'theme' })
+    provider.trackTemplateFilterChanged(templateFilterMetadata)
     provider.trackUiButtonClicked({
       button_id: 'sidebar_settings_button_clicked',
       element_group: 'sidebar'
@@ -180,6 +194,10 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     expect(mockMixpanel.track).toHaveBeenCalledWith(
       TelemetryEvents.SETTING_CHANGED,
       { setting_id: 'theme' }
+    )
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.TEMPLATE_FILTER_CHANGED,
+      templateFilterMetadata
     )
     expect(mockMixpanel.track).toHaveBeenCalledWith(
       TelemetryEvents.UI_BUTTON_CLICKED,
@@ -433,7 +451,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
         subscribe_to_run: true,
         workflow_type: 'custom',
         trigger_source: 'button',
-        view_mode: 'workflow',
+        view_mode: 'graph',
         is_app_mode: false,
         dock_state: 'floating'
       })

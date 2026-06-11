@@ -108,6 +108,7 @@ import StatusBadge from '@/components/common/StatusBadge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
+import { ACTIONBAR_DOCKED_STORAGE_KEY } from '@/constants/storageKeys'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -149,7 +150,7 @@ const panelElement = computed<HTMLElement | null>(() => {
   return element instanceof HTMLElement ? element : null
 })
 const dragHandleRef = ref<HTMLElement | null>(null)
-const isDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
+const isDocked = useLocalStorage(ACTIONBAR_DOCKED_STORAGE_KEY, true)
 const storedPosition = useLocalStorage('Comfy.MenuPosition.Floating', {
   x: 0,
   y: 0

@@ -12,6 +12,7 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import type { AppMode } from '@/composables/useAppMode'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -70,7 +71,7 @@ export interface RunButtonProperties {
   has_toolkit_nodes: boolean
   toolkit_node_names: string[]
   trigger_source?: ExecutionTriggerSource
-  view_mode: string
+  view_mode: AppMode
   is_app_mode: boolean
   dock_state: ActionbarDockState
 }
@@ -121,7 +122,7 @@ export interface ExecutionSuccessMetadata {
 export interface SharedWorkflowRunMetadata {
   job_id: string
   share_id: string
-  view_mode: string
+  view_mode: AppMode
   is_app_mode: boolean
 }
 
@@ -202,14 +203,14 @@ export interface ShareFlowMetadata {
   step: ShareFlowStep
   source?: 'app_mode' | 'graph_mode'
   share_id?: string
-  view_mode: string
+  view_mode: AppMode
   is_app_mode: boolean
 }
 
 export interface ShareLinkOpenedMetadata {
   share_id: string
   is_authenticated: boolean
-  view_mode: string
+  view_mode: AppMode
   is_app_mode: boolean
 }
 

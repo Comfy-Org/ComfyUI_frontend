@@ -1,5 +1,5 @@
 import ShareWorkflowDialogContent from '@/platform/workflow/sharing/components/ShareWorkflowDialogContent.vue'
-import { useAppMode } from '@/composables/useAppMode'
+import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -15,7 +15,7 @@ export function useShareDialog() {
   const dialogStore = useDialogStore()
   const { pruneLinearData } = useAppModeStore()
   const workflowStore = useWorkflowStore()
-  const { mode, isAppMode } = useAppMode()
+  const shareFlowContext = useShareFlowContext()
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -54,22 +54,10 @@ export function useShareDialog() {
     share()
   }
 
-  function getShareSource(): 'app_mode' | 'graph_mode' {
-    return isAppMode.value ? 'app_mode' : 'graph_mode'
-  }
-
-  function getShareFlowContext() {
-    return {
-      source: getShareSource(),
-      view_mode: mode.value,
-      is_app_mode: isAppMode.value
-    }
-  }
-
   function showShareDialog() {
     useTelemetry()?.trackShareFlow({
       step: 'dialog_opened',
-      ...getShareFlowContext()
+      ...shareFlowContext.value
     })
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
