@@ -236,6 +236,13 @@ function showContextMenu(e: CanvasPointerEvent) {
     isFromOutput: toType === 'input'
   }
   triggerEvent = e
+
+  // Hide the dangling link while the menu holds the connection open; the real
+  // edge reappears once a node is committed (reset clears this flag).
+  const canvas = canvasStore.getCanvas()
+  canvas.linkConnector.renderLinksHidden = true
+  canvas.setDirty(true, true)
+
   linkReleaseMenu.value?.show(e)
 }
 

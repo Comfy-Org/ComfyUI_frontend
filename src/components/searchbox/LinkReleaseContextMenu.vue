@@ -21,9 +21,15 @@
       >
         <DropdownMenuLabel
           v-if="headerLabel"
-          class="block shrink-0 truncate p-2 text-xs font-medium text-muted-foreground uppercase"
+          class="flex shrink-0 items-center gap-2 p-2 text-xs font-medium text-muted-foreground uppercase"
         >
-          {{ headerLabel }}
+          <span class="flex size-4 shrink-0 items-center justify-center">
+            <span
+              class="size-4 rounded-full"
+              :style="{ backgroundColor: slotColor }"
+            />
+          </span>
+          <span class="truncate">{{ headerLabel }}</span>
         </DropdownMenuLabel>
         <div class="p-.5 shrink-0">
           <div
@@ -152,6 +158,7 @@ import {
 import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { getSlotColor } from '@/constants/slotColors'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -199,6 +206,8 @@ const itemClass =
 const headerLabel = computed(() =>
   context ? getLinkReleaseHeaderLabel(context) : ''
 )
+
+const slotColor = computed(() => getSlotColor(context?.dataType?.split(',')[0]))
 
 const trimmedQuery = computed(() => query.value.trim())
 

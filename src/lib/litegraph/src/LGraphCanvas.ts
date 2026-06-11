@@ -5194,7 +5194,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   private _drawConnectingLinks(ctx: CanvasRenderingContext2D): void {
     const { linkConnector } = this
-    if (!linkConnector.isConnecting) return
+    if (!linkConnector.isConnecting || linkConnector.renderLinksHidden) return
 
     const { renderLinks } = linkConnector
     const highlightPos = this._getHighlightPosition()
