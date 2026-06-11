@@ -368,23 +368,26 @@ import { useToast } from 'primevue/usetoast'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { useDialogService } from '@/services/dialogService'
-import {
-  DEFAULT_TIER_KEY,
-  TIER_TO_KEY,
-  getTierCredits,
-  getTierPrice
-} from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { getTierPrice } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
+import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import {
+  formatRefillsDate,
+  formatSubscriptionDate,
+  getNextMonthInvoice,
+  getPlanTotalCreditsValue,
+  getSubscriptionTierKey
+} from './subscriptionPanelWorkspace.logic'
 
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace, members } =
@@ -410,40 +413,16 @@ const {
 const { showCancelSubscriptionDialog } = useDialogService()
 const { showPricingTable } = useSubscriptionDialog()
 
-const isResubscribing = ref(false)
+const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
+  useSubscriptionCredits()
 
-async function handleResubscribe() {
-  isResubscribing.value = true
-  try {
-    await workspaceApi.resubscribe()
-    toast.add({
-      severity: 'success',
-      summary: t('subscription.resubscribeSuccess'),
-      life: 5000
-    })
-    await Promise.all([fetchStatus(), fetchBalance()])
-  } catch (error) {
-    const message =
-      error instanceof Error ? error.message : 'Failed to resubscribe'
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: message
-    })
-  } finally {
-    isResubscribing.value = false
-  }
-}
+const { handleAddApiCredits, handleRefresh } = useSubscriptionActions()
 
-// Only show cancelled state for team workspaces (workspace billing)
-// Personal workspaces use legacy billing which has different cancellation semantics
 const isCancelled = computed(
   () =>
     !isInPersonalWorkspace.value && (subscription.value?.isCancelled ?? false)
 )
 
-// Show subscribe prompt to owners without active subscription
-// Don't show if subscription is cancelled (still active until end date)
 const showSubscribePrompt = computed(() => {
   if (!permissions.value.canManageSubscription) return false
   if (isCancelled.value) return false
@@ -451,7 +430,6 @@ const showSubscribePrompt = computed(() => {
   return !isWorkspaceSubscribed.value
 })
 
-// MEMBER view without subscription - members can't manage subscription
 const isMemberView = computed(
   () =>
     !permissions.value.canManageSubscription &&
@@ -459,12 +437,10 @@ const isMemberView = computed(
     !isWorkspaceSubscribed.value
 )
 
-// Show zero state for credits (no real billing data yet)
 const showZeroState = computed(
   () => showSubscribePrompt.value || isMemberView.value
 )
 
-// Subscribe workspace - opens the subscription dialog (personal or workspace variant)
 function handleSubscribeWorkspace() {
   showSubscriptionDialog()
 }
@@ -477,36 +453,31 @@ function handleUpgrade() {
 function handleUpgradeToAddCredits() {
   showPricingTable()
 }
+
 const subscriptionTier = computed(() => subscription.value?.tier ?? null)
+
 const isYearlySubscription = computed(
   () => subscription.value?.duration === 'ANNUAL'
 )
 
-const formattedRenewalDate = computed(() => {
-  if (!subscription.value?.renewalDate) return ''
-  const renewalDate = new Date(subscription.value.renewalDate)
-  return renewalDate.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  })
-})
+const tierKey = computed(() => getSubscriptionTierKey(subscriptionTier.value))
 
-const formattedEndDate = computed(() => {
-  if (!subscription.value?.endDate) return ''
-  const endDate = new Date(subscription.value.endDate)
-  return endDate.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  })
-})
+const tierPrice = computed(() =>
+  getTierPrice(tierKey.value, isYearlySubscription.value)
+)
+
+const formattedRenewalDate = computed(() =>
+  formatSubscriptionDate(subscription.value?.renewalDate)
+)
+
+const formattedEndDate = computed(() =>
+  formatSubscriptionDate(subscription.value?.endDate)
+)
 
 const subscriptionTierName = computed(() => {
   const tier = subscriptionTier.value
   if (!tier) return ''
-  const key = TIER_TO_KEY[tier] ?? 'standard'
-  const baseName = t(`subscription.tiers.${key}.name`)
+  const baseName = t(`subscription.tiers.${tierKey.value}.name`)
   return isYearlySubscription.value
     ? t('subscription.tierNameYearly', { name: baseName })
     : baseName
@@ -524,54 +495,36 @@ const planMenuItems = computed(() => [
   }
 ])
 
-const tierKey = computed(() => {
-  const tier = subscriptionTier.value
-  if (!tier) return DEFAULT_TIER_KEY
-  return TIER_TO_KEY[tier] ?? DEFAULT_TIER_KEY
-})
-const tierPrice = computed(() =>
-  getTierPrice(tierKey.value, isYearlySubscription.value)
+const memberCount = computed(() => members.value.length)
+
+const nextMonthInvoice = computed(() =>
+  getNextMonthInvoice(memberCount.value, tierPrice.value)
 )
 
-const memberCount = computed(() => members.value.length)
-const nextMonthInvoice = computed(() => memberCount.value * tierPrice.value)
-
-const refillsDate = computed(() => {
-  if (!subscription.value?.renewalDate) return ''
-  const date = new Date(subscription.value.renewalDate)
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = String(date.getFullYear()).slice(-2)
-  return `${month}/${day}/${year}`
-})
+const refillsDate = computed(() =>
+  formatRefillsDate(subscription.value?.renewalDate)
+)
 
 const creditsRemainingLabel = computed(() =>
   isYearlySubscription.value
     ? t(
         'subscription.creditsRemainingThisYear',
-        {
-          date: refillsDate.value
-        },
-        {
-          escapeParameter: false
-        }
+        { date: refillsDate.value },
+        { escapeParameter: false }
       )
     : t(
         'subscription.creditsRemainingThisMonth',
-        {
-          date: refillsDate.value
-        },
-        {
-          escapeParameter: false
-        }
+        { date: refillsDate.value },
+        { escapeParameter: false }
       )
 )
 
 const planTotalCredits = computed(() => {
-  const credits = getTierCredits(tierKey.value)
-  if (credits === null) return '—'
-  const total = isYearlySubscription.value ? credits * 12 : credits
-  return n(total)
+  const total = getPlanTotalCreditsValue(
+    tierKey.value,
+    isYearlySubscription.value
+  )
+  return total === null ? '—' : n(total)
 })
 
 const includedCreditsDisplay = computed(
@@ -579,30 +532,52 @@ const includedCreditsDisplay = computed(
 )
 
 const tierBenefits = computed((): TierBenefit[] => {
-  const key = tierKey.value
   const benefits: TierBenefit[] = []
 
   if (!isInPersonalWorkspace.value) {
     benefits.push({
       key: 'members',
       type: 'icon',
-      label: t('subscription.membersLabel', { count: getMaxSeats(key) }),
+      label: t('subscription.membersLabel', {
+        count: getMaxSeats(tierKey.value)
+      }),
       icon: 'pi pi-user'
     })
   }
 
-  benefits.push(...getCommonTierBenefits(key, t, n))
+  benefits.push(...getCommonTierBenefits(tierKey.value, t, n))
   return benefits
 })
 
-const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
-  useSubscriptionCredits()
+const isResubscribing = ref(false)
 
-const { handleAddApiCredits, handleRefresh } = useSubscriptionActions()
+async function handleResubscribe() {
+  isResubscribing.value = true
+  try {
+    await workspaceApi.resubscribe()
+    toast.add({
+      severity: 'success',
+      summary: t('subscription.resubscribeSuccess'),
+      life: 5000
+    })
+    await Promise.all([fetchStatus(), fetchBalance()])
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : t('subscription.resubscribeFailed')
+    toast.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: message
+    })
+  } finally {
+    isResubscribing.value = false
+  }
+}
 
-// Focus-based polling: refresh balance when user returns from Stripe checkout
 const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
-const TOPUP_EXPIRY_MS = 5 * 60 * 1000 // 5 minutes
+const TOPUP_EXPIRY_MS = 5 * 60 * 1000
 
 function handleWindowFocus() {
   const timestampStr = localStorage.getItem(PENDING_TOPUP_KEY)
@@ -610,13 +585,11 @@ function handleWindowFocus() {
 
   const timestamp = parseInt(timestampStr, 10)
 
-  // Clear expired tracking (older than 5 minutes)
   if (Date.now() - timestamp > TOPUP_EXPIRY_MS) {
     localStorage.removeItem(PENDING_TOPUP_KEY)
     return
   }
 
-  // Refresh and clear tracking to prevent repeated calls
   void handleRefresh()
   localStorage.removeItem(PENDING_TOPUP_KEY)
 }
