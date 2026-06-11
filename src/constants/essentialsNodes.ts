@@ -13,14 +13,13 @@ export interface EssentialTile {
   media?: EssentialsMediaType
   /**
    * Backing ComfyUI node identifier resolved by the hover popover.
-   *   - For NODEs and PARTNER/API nodes: pass either the registered
-   *     `name` (class key) OR the friendly `display_name`. The popover
-   *     looks up `nodeDefsByName` first, then `nodeDefsByDisplayName`.
+   *   - For NODEs and PARTNER/API nodes: pass the registered
+   *     `name` (class key)
    *   - For BLUEPRINTs: pass `SubgraphBlueprint.<filename>` where
    *     `<filename>` is the bare blueprint JSON filename (no extension,
    *     no `local-` prefix), e.g. `Image Inpainting (Qwen-image)`.
    */
-  nodeName?: string
+  nodeName: string
 }
 
 interface EssentialSubgroup {

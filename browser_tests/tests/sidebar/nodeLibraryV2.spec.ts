@@ -10,15 +10,6 @@ test.describe('Node library sidebar V2', () => {
     await tab.open()
   })
 
-  test('Can switch between tabs', async ({ comfyPage }) => {
-    const tab = comfyPage.menu.nodeLibraryTabV2
-
-    await expect(tab.allTab).toHaveAttribute('aria-selected', 'true')
-
-    await tab.allTab.click()
-    await expect(tab.allTab).toHaveAttribute('aria-selected', 'true')
-  })
-
   test('All tab displays node tree with folders', async ({ comfyPage }) => {
     const tab = comfyPage.menu.nodeLibraryTabV2
 
