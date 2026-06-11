@@ -16,6 +16,7 @@
         :class="contentClass"
         @open-auto-focus.prevent="focusSearch"
         @close-auto-focus.prevent
+        @entry-focus="onEntryFocus"
       >
         <DropdownMenuLabel
           v-if="headerLabel"
@@ -55,11 +56,14 @@
               <i
                 :class="cn(match.category.icon, 'size-4 shrink-0 opacity-80')"
               />
-              <span class="min-w-0 flex-1 truncate">
-                <span class="text-muted-foreground">
+              <span class="flex min-w-0 flex-1 items-center gap-1">
+                <span class="shrink-0 text-muted-foreground">
                   {{ t(match.category.labelKey) }}:
                 </span>
-                <span>{{ match.node.display_name }}</span>
+                <MiddleTruncate
+                  :text="match.node.display_name"
+                  class="min-w-0 flex-1"
+                />
               </span>
             </DropdownMenuItem>
             <div
@@ -83,9 +87,10 @@
                 :class="itemClass"
                 @select="selectNode(nodeDef)"
               >
-                <span class="min-w-0 flex-1 truncate">
-                  {{ nodeDef.display_name }}
-                </span>
+                <MiddleTruncate
+                  :text="nodeDef.display_name"
+                  class="min-w-0 flex-1"
+                />
               </DropdownMenuItem>
             </template>
 
@@ -100,8 +105,8 @@
                 :key="category.key"
                 :category
                 :item-class="itemClass"
-                :content-class="contentClass"
-                :scroll-class="scrollClass"
+                :content-class="submenuContentClass"
+                :scroll-class="submenuScrollClass"
                 @select="selectNode"
               />
             </template>
@@ -146,6 +151,7 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import LinkReleaseNodeSubmenu from './LinkReleaseNodeSubmenu.vue'
+import MiddleTruncate from './MiddleTruncate.vue'
 import {
   buildLinkReleaseNodeCategories,
   getLinkReleaseHeaderLabel,
@@ -175,8 +181,12 @@ const query = ref('')
 let actionTaken = false
 
 const contentClass =
-  'z-1700 flex max-h-[80vh] min-w-[260px] max-w-sm flex-col overflow-hidden rounded-lg border border-interface-menu-stroke bg-interface-menu-surface p-1 shadow-interface'
-const scrollClass = 'min-h-0 overflow-y-auto scrollbar-custom'
+  'z-1700 flex max-h-[min(80vh,var(--reka-dropdown-menu-content-available-height))] min-w-[260px] max-w-sm flex-col overflow-hidden rounded-lg border border-interface-menu-stroke bg-interface-menu-surface p-1 shadow-interface'
+const scrollClass = 'overflow-y-auto scrollbar-custom'
+const submenuContentClass =
+  'z-1700 flex w-sm max-h-[min(80vh,var(--reka-dropdown-menu-content-available-height))] flex-col overflow-hidden rounded-lg border border-interface-menu-stroke bg-interface-menu-surface p-1 shadow-interface'
+const submenuScrollClass =
+  'overflow-y-auto scrollbar-custom max-h-[min(calc(var(--reka-dropdown-menu-content-available-height)-3.5rem),80vh)]'
 const itemClass =
   'flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-base-foreground outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-interface-menu-component-surface-hovered'
 
@@ -240,6 +250,12 @@ function addReroute() {
 
 function focusSearch() {
   searchInput.value?.focus()
+}
+
+// Reka refocuses the first item (scrolling the list to the top) whenever the
+// menu regains focus, which fires as the pointer leaves an item while scrolling.
+function onEntryFocus(event: Event) {
+  event.preventDefault()
 }
 
 function focusFirstItem(target: HTMLElement) {

@@ -28,7 +28,9 @@
         :side-offset="-2"
         :align-offset="-5"
         :collision-padding="8"
+        update-position-strategy="optimized"
         @open-auto-focus.prevent="focusSearch"
+        @entry-focus="onEntryFocus"
       >
         <div class="shrink-0 p-2">
           <div
@@ -59,9 +61,10 @@
             :class="itemClass"
             @select="emit('select', nodeDef)"
           >
-            <span class="min-w-0 flex-1 truncate">
-              {{ nodeDef.display_name }}
-            </span>
+            <MiddleTruncate
+              :text="nodeDef.display_name"
+              class="min-w-0 flex-1 self-stretch"
+            />
           </DropdownMenuItem>
           <div
             v-if="filteredNodes.length === 0"
@@ -90,6 +93,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
+import MiddleTruncate from './MiddleTruncate.vue'
 import { filterNodesByName } from './linkReleaseMenuModel'
 import type { LinkReleaseNodeCategory } from './linkReleaseMenuModel'
 
@@ -124,6 +128,12 @@ watch(open, (isOpen) => {
 
 function focusSearch() {
   searchInput.value?.focus()
+}
+
+// Reka refocuses the first item (scrolling the list to the top) whenever the
+// menu regains focus, which fires as the pointer leaves an item while scrolling.
+function onEntryFocus(event: Event) {
+  event.preventDefault()
 }
 
 function focusFirstNode(target: HTMLElement) {
