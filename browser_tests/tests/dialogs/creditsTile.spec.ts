@@ -107,6 +107,51 @@ async function mockCloudBoot(page: Page) {
   )
 }
 
+async function mockBalance(
+  page: Page,
+  balance: { amount: number; monthly: number; prepaid: number }
+) {
+  await page.unroute('**/customers/balance')
+  await page.route('**/customers/balance', (r) =>
+    r.fulfill(
+      jsonRoute({
+        amount_micros: balance.amount,
+        currency: 'usd',
+        effective_balance_micros: balance.amount,
+        cloud_credit_balance_micros: balance.monthly,
+        prepaid_balance_micros: balance.prepaid
+      })
+    )
+  )
+}
+
+/** Boots the mocked cloud app and opens Settings ▸ Workspace ▸ Plan & Credits. */
+async function openPlanAndCredits(page: Page) {
+  const auth = new CloudAuthHelper(page)
+  await auth.mockAuth()
+
+  // Pre-select the mock user to skip the user-select screen.
+  await page.addInitScript(() => {
+    localStorage.setItem('Comfy.userId', 'test-user-e2e')
+  })
+
+  await page.goto(APP_URL)
+  await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+    timeout: 45_000
+  })
+
+  // Open Settings ▸ Workspace.
+  await page
+    .getByRole('button', { name: /^Settings/ })
+    .first()
+    .click()
+  const dialog = page.getByTestId('settings-dialog')
+  await expect(dialog).toBeVisible()
+  await dialog.locator('nav').getByRole('button', { name: 'Workspace' }).click()
+
+  return dialog.getByRole('main')
+}
+
 test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
   test('renders the unified tile with breakdown and add-credits', async ({
     page
@@ -115,32 +160,7 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
 
     await mockCloudBoot(page)
 
-    const auth = new CloudAuthHelper(page)
-    await auth.mockAuth()
-
-    // Pre-select the mock user to skip the user-select screen.
-    await page.addInitScript(() => {
-      localStorage.setItem('Comfy.userId', 'test-user-e2e')
-    })
-
-    await page.goto(APP_URL)
-    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-      timeout: 45_000
-    })
-
-    // Open Settings ▸ Workspace.
-    await page
-      .getByRole('button', { name: /^Settings/ })
-      .first()
-      .click()
-    const dialog = page.getByTestId('settings-dialog')
-    await expect(dialog).toBeVisible()
-    await dialog
-      .locator('nav')
-      .getByRole('button', { name: 'Workspace' })
-      .click()
-
-    const content = dialog.getByRole('main')
+    const content = await openPlanAndCredits(page)
 
     // Total + remaining suffix (Pro monthly allowance = 21,100; remaining
     // 10,550 -> used 10,550).
@@ -171,5 +191,41 @@ test.describe('Credits tile (Plan & Credits)', { tag: '@cloud' }, () => {
     await expect(content.getByText('Used after monthly runs out')).toBeHidden()
     await expect(content.getByText('10,550 left of 21,100')).toBeHidden()
     await expect(content.getByText('11K left of 21K')).toBeVisible()
+  })
+
+  test('renders the depleted-credit empty states', async ({ page }) => {
+    test.setTimeout(60_000)
+
+    await mockCloudBoot(page)
+    // Monthly allowance fully spent; additional credits keep generation going.
+    await mockBalance(page, { amount: 1000, monthly: 0, prepaid: 1000 })
+
+    const content = await openPlanAndCredits(page)
+
+    // 0-monthly state: depletion notice + IN USE badge on additional credits.
+    await expect(
+      content.getByText('Monthly credits are used up. Refills Feb 20')
+    ).toBeVisible()
+    await expect(
+      content.getByText("You're now spending additional credits.")
+    ).toBeVisible()
+    await expect(content.getByText('In use')).toBeVisible()
+    await expect(content.getByText('0 left of 21,100')).toBeVisible()
+
+    // Drain the remaining additional credits and refresh the tile: the
+    // out-of-credits notice takes over and the badge drops.
+    await mockBalance(page, { amount: 0, monthly: 0, prepaid: 0 })
+    await content.getByRole('button', { name: 'Refresh credits' }).click()
+
+    await expect(
+      content.getByText("You're out of credits. Credits refill Feb 20")
+    ).toBeVisible()
+    await expect(
+      content.getByText('Add more credits to continue generating.')
+    ).toBeVisible()
+    await expect(content.getByText('In use')).toBeHidden()
+    await expect(
+      content.getByRole('button', { name: 'Add credits' })
+    ).toBeVisible()
   })
 })

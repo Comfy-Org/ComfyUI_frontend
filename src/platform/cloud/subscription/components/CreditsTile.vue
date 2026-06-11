@@ -28,7 +28,23 @@
     </div>
 
     <template v-if="showBreakdown">
-      <div v-if="showBar" class="flex flex-col gap-2">
+      <div
+        v-if="emptyStateNotice"
+        class="flex items-start gap-2 rounded-lg border border-interface-stroke bg-base-background p-3 text-sm"
+      >
+        <i
+          class="mt-0.5 icon-[lucide--info] size-4 shrink-0 text-base-foreground"
+        />
+        <div class="flex flex-col gap-1">
+          <span class="text-base-foreground">{{ emptyStateNotice.title }}</span>
+          <span class="text-muted">{{ emptyStateNotice.description }}</span>
+        </div>
+      </div>
+
+      <div
+        v-if="showBar"
+        :class="cn('flex flex-col gap-2', isMonthlyDepleted && 'opacity-30')"
+      >
         <div class="flex items-center justify-between text-sm">
           <span class="text-text-primary">{{
             $t('subscription.monthly')
@@ -99,6 +115,12 @@
               }"
               class="icon-[lucide--info] size-4 text-muted"
             />
+            <span
+              v-if="isSpendingAdditional"
+              class="flex h-3.5 items-center rounded-full bg-base-foreground px-1 text-[10px] leading-none font-semibold text-base-background uppercase"
+            >
+              {{ $t('subscription.additionalCreditsInUse') }}
+            </span>
           </span>
           <Skeleton v-if="isLoadingBalance" width="3rem" height="1rem" />
           <span
@@ -129,8 +151,14 @@
       </Button>
       <Button
         v-else
-        variant="secondary"
-        class="min-h-8 w-full rounded-lg bg-interface-menu-component-surface-selected p-2 text-sm font-normal text-text-primary"
+        :variant="isOutOfCredits ? 'inverted' : 'secondary'"
+        :class="
+          cn(
+            'min-h-8 w-full rounded-lg p-2 text-sm font-normal',
+            !isOutOfCredits &&
+              'bg-interface-menu-component-surface-selected text-text-primary'
+          )
+        "
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
@@ -140,8 +168,9 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import Skeleton from 'primevue/skeleton'
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onBeforeUnmount, onMounted, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -169,10 +198,11 @@ const creditIconStyle = { color: CREDIT_COLOR }
 const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
 const TOPUP_EXPIRY_MS = 5 * 60 * 1000
 
-const { locale, n } = useI18n()
+const { locale, n, t } = useI18n()
 
 const {
   subscription,
+  balance,
   isActiveSubscription,
   isFreeTier,
   fetchBalance,
@@ -183,6 +213,7 @@ const {
   prepaidCredits,
   totalCredits,
   monthlyBonusCreditsValue,
+  prepaidCreditsValue,
   isLoadingBalance
 } = useSubscriptionCredits()
 const { permissions } = useWorkspaceUI()
@@ -254,6 +285,40 @@ const showBar = computed(
 const showActionButton = computed(
   () => isActiveSubscription.value && !zeroState && permissions.value.canTopUp
 )
+
+const isMonthlyDepleted = computed(
+  () =>
+    showBar.value &&
+    !isLoadingBalance.value &&
+    toValue(balance) != null &&
+    monthlyBonusCreditsValue.value <= 0
+)
+const isOutOfCredits = computed(
+  () => isMonthlyDepleted.value && prepaidCreditsValue.value <= 0
+)
+const isSpendingAdditional = computed(
+  () => isMonthlyDepleted.value && prepaidCreditsValue.value > 0
+)
+
+const emptyStateNotice = computed(() => {
+  if (isOutOfCredits.value) {
+    return {
+      title: t('subscription.outOfCreditsTitle', {
+        date: refillsDateShort.value
+      }),
+      description: t('subscription.outOfCreditsDescription')
+    }
+  }
+  if (isMonthlyDepleted.value) {
+    return {
+      title: t('subscription.monthlyCreditsUsedUpTitle', {
+        date: refillsDateShort.value
+      }),
+      description: t('subscription.monthlyCreditsUsedUpDescription')
+    }
+  }
+  return null
+})
 
 async function handleRefresh() {
   await Promise.all([fetchBalance(), fetchStatus()])
