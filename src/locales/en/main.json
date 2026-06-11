@@ -3032,6 +3032,7 @@
       "triggerWords": "Trigger words",
       "description": "Description",
       "nodePreview": "Node preview",
+      "noLoader": "No node available to load this model",
       "url": "URL",
       "openUrl": "Open URL"
     },

@@ -114,7 +114,13 @@
     </div>
 
     <!-- Divider: metadata / node preview -->
-    <div v-if="previewNodeDef" class="-mx-4 border-t border-border-default" />
+    <div class="-mx-4 border-t border-border-default" />
+
+    <!-- No registered loader: say so instead of silently omitting the
+         node preview, since drag-out is also unavailable. -->
+    <span v-if="!previewNodeDef" class="mt-2 text-xs text-muted-foreground">
+      {{ $t('cloudModelLibrary.preview.noLoader') }}
+    </span>
 
     <!-- Node preview -->
     <div v-if="previewNodeDef" class="flex w-full flex-col gap-2">

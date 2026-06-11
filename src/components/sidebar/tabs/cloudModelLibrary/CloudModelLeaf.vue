@@ -11,7 +11,12 @@
         @keydown.enter.prevent="handleActivate"
       >
         <i
-          class="icon-[comfy--ai-model] size-4 shrink-0 text-muted-foreground"
+          :class="
+            cn(
+              hasLoader ? 'icon-[comfy--ai-model]' : 'icon-[lucide--file]',
+              'size-4 shrink-0 text-muted-foreground'
+            )
+          "
         />
         <span class="text-foreground min-w-0 flex-1 truncate text-sm">
           {{ displayName }}
@@ -20,7 +25,11 @@
     </ContextMenuTrigger>
     <ContextMenuPortal>
       <ContextMenuContent :class="LEAF_MENU_CONTENT_CLASS">
-        <ContextMenuItem :class="LEAF_MENU_ITEM_CLASS" @select="handleActivate">
+        <ContextMenuItem
+          v-if="hasLoader"
+          :class="LEAF_MENU_ITEM_CLASS"
+          @select="handleActivate"
+        >
           <i class="icon-[comfy--node] size-4" />
           {{ $t('cloudModelLibrary.contextMenu.addToGraph') }}
         </ContextMenuItem>
@@ -71,6 +80,7 @@ import {
   getAssetSourceUrl
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { asset } = defineProps<{
   asset: AssetItem
@@ -106,19 +116,27 @@ const openHuggingFace = () => {
   window.open(huggingFaceUrl.value, '_blank', 'noopener,noreferrer')
 }
 
-const handleActivate = () => {
-  emit('activate', asset)
-}
-
-const onGenerateDragPreview = useNodePreviewDragImage(() => {
+// Whether any registered loader node can open this asset. Without one,
+// drag-out and add-to-graph have nothing to create, so the affordances
+// are withheld instead of failing silently.
+const loaderNodeDef = computed(() => {
   const category = getAssetModelType(asset)
   return category
     ? (useModelToNodeStore().getNodeProvider(category)?.nodeDef ?? null)
     : null
 })
+const hasLoader = computed(() => loaderNodeDef.value !== null)
+
+const handleActivate = () => {
+  if (!hasLoader.value) return
+  emit('activate', asset)
+}
+
+const onGenerateDragPreview = useNodePreviewDragImage(() => loaderNodeDef.value)
 
 usePragmaticDraggable(() => rowRef.value, {
   getInitialData: () => ({ type: 'cloud-model-asset', asset }),
+  canDrag: () => hasLoader.value,
   onGenerateDragPreview,
   onDragStart: hide
 })
