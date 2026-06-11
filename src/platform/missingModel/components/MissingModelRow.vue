@@ -26,8 +26,8 @@
         />
       </Button>
 
-      <span class="min-w-0 flex-1">
-        <span class="block min-w-0 text-sm/relaxed">
+      <span class="flex min-w-0 flex-1 flex-col gap-0">
+        <span class="block min-w-0 text-sm/tight">
           <button
             v-if="hasMultipleReferences"
             ref="modelLabelControl"
@@ -75,7 +75,7 @@
         </span>
         <span
           v-if="modelMetadataLabel"
-          class="text-2xs/none"
+          class="block text-2xs/tight"
           :class="
             isUnknownCategory
               ? 'text-warning-background'
@@ -179,7 +179,7 @@
         v-if="showReferenceList"
         :class="
           cn(
-            'm-0 list-none space-y-1 p-0',
+            'm-0 list-none space-y-0.5 p-0',
             (hasMultipleReferences || isUnknownCategory) && 'pl-5'
           )
         "
@@ -189,10 +189,10 @@
           :key="`${String(ref.nodeId)}::${ref.widgetName}`"
           class="min-w-0"
         >
-          <div class="flex min-w-0 items-center gap-2">
+          <div class="flex min-h-6 min-w-0 items-center gap-2">
             <button
               type="button"
-              class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
+              class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/tight font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
               @click="emit('locateModel', String(ref.nodeId))"
             >
               {{
@@ -204,7 +204,7 @@
               variant="textonly"
               size="icon-sm"
               :aria-label="t('rightSidePanel.missingModels.locateNode')"
-              class="ml-auto size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+              class="ml-auto size-6 shrink-0 text-muted-foreground hover:text-base-foreground"
               @click="emit('locateModel', String(ref.nodeId))"
             >
               <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
