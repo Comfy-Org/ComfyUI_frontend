@@ -1,5 +1,7 @@
 import posthog from 'posthog-js'
 
+import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
+
 const POSTHOG_KEY =
   import.meta.env.PUBLIC_POSTHOG_KEY ??
   'phc_iKfK86id4xVYws9LybMje0h44eGtfwFgRPIBehmy8rO'
@@ -18,7 +20,9 @@ export function initPostHog() {
       ui_host: POSTHOG_UI_HOST,
       capture_pageview: false,
       capture_pageleave: true,
-      person_profiles: 'identified_only'
+      person_profiles: 'identified_only',
+      // cookie_domain omitted — see PostHogTelemetryProvider.ts note + posthog-js#3578
+      before_send: createPostHogBeforeSend()
     })
     initialized = true
   } catch (error) {
@@ -32,5 +36,14 @@ export function capturePageview() {
     posthog.capture('$pageview')
   } catch (error) {
     console.error('PostHog pageview capture failed', error)
+  }
+}
+
+export function captureDownloadClick(platform: string) {
+  if (!initialized) return
+  try {
+    posthog.capture('website:download_button_clicked', { platform })
+  } catch (error) {
+    console.error('PostHog download click capture failed', error)
   }
 }

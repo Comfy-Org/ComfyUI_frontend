@@ -23,6 +23,11 @@ import { useFirebaseAuth } from 'vuefire'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  clearPreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -96,6 +101,15 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!currentUser.value)
   const userEmail = computed(() => currentUser.value?.email)
   const userId = computed(() => currentUser.value?.uid)
+
+  function getShareAuthMetadata() {
+    const shareId = getPreservedQueryParam(
+      PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
+      'share'
+    )
+    if (shareId) clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
+    return shareId ? { share_id: shareId } : {}
+  }
 
   // Get auth from VueFire and listen for auth state changes
   // From useFirebaseAuth docs:
@@ -333,7 +347,8 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'email',
         is_new_user: false,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        ...getShareAuthMetadata()
       })
     }
 
@@ -355,7 +370,8 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'email',
         is_new_user: true,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        ...getShareAuthMetadata()
       })
     }
 
@@ -377,7 +393,8 @@ export const useAuthStore = defineStore('auth', () => {
         is_new_user:
           options?.isNewUser || additionalUserInfo?.isNewUser || false,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        ...getShareAuthMetadata()
       })
     }
 
@@ -399,7 +416,8 @@ export const useAuthStore = defineStore('auth', () => {
         is_new_user:
           options?.isNewUser || additionalUserInfo?.isNewUser || false,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        ...getShareAuthMetadata()
       })
     }
 

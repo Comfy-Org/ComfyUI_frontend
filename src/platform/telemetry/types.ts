@@ -25,6 +25,7 @@ export interface AuthMetadata {
   is_new_user?: boolean
   user_id?: string
   email?: string
+  share_id?: string
   referrer_url?: string
   utm_source?: string
   utm_medium?: string
@@ -116,6 +117,11 @@ export interface ExecutionSuccessMetadata {
   jobId: string
 }
 
+export interface SharedWorkflowRunMetadata {
+  job_id: string
+  share_id: string
+}
+
 /**
  * Template metadata for workflow tracking
  */
@@ -139,9 +145,23 @@ export interface CreditTopupMetadata {
 /**
  * Workflow import metadata
  */
+export interface MissingNodePack {
+  /**
+   * Custom node pack identifier (cnrId / aux_id from node properties).
+   * `'unknown'` when the workflow JSON has no pack hint for the node.
+   */
+  pack_id: string
+  node_types: string[]
+}
+
 export interface WorkflowImportMetadata {
   missing_node_count: number
   missing_node_types: string[]
+  /**
+   * Missing nodes grouped by their custom node pack. Populated from the
+   * `cnr_id` / `aux_id` baked into node properties — no network lookups.
+   */
+  missing_node_packs?: MissingNodePack[]
   /**
    * The source of the workflow open/import action
    */
@@ -151,6 +171,7 @@ export interface WorkflowImportMetadata {
     | 'template'
     | 'shared_url'
     | 'unknown'
+  share_id?: string
 }
 
 export interface EnterLinearMetadata {
@@ -175,6 +196,12 @@ type ShareFlowStep =
 export interface ShareFlowMetadata {
   step: ShareFlowStep
   source?: 'app_mode' | 'graph_mode'
+  share_id?: string
+}
+
+export interface ShareLinkOpenedMetadata {
+  share_id: string
+  is_authenticated: boolean
 }
 
 /**
@@ -230,6 +257,42 @@ export interface SettingChangedMetadata {
  */
 export interface NodeSearchMetadata {
   query: string
+}
+
+/**
+ * Search query metadata. One event per debounced query change across
+ * each search surface.
+ */
+export type SearchSurface =
+  | 'node_modal'
+  | 'node_sidebar'
+  | 'apps'
+  | 'templates'
+  | 'settings'
+
+export interface SearchQueryMetadata {
+  surface: SearchSurface
+  query: string
+  query_length: number
+  result_count: number
+  has_results: boolean
+}
+
+/**
+ * Node added metadata. `source` indicates how the user initiated the add.
+ * Bulk additions during workflow load are excluded — workflow_imported
+ * already covers that.
+ */
+export type NodeAddSource =
+  | 'sidebar_drag'
+  | 'search_modal'
+  | 'paste'
+  | 'programmatic'
+  | 'unknown'
+
+export interface NodeAddedMetadata {
+  node_type: string
+  source: NodeAddSource
 }
 
 /**
@@ -325,6 +388,7 @@ export interface CheckoutAttributionMetadata {
   ga_session_id?: string
   ga_session_number?: string
   im_ref?: string
+  rewardful_referral?: string
   utm_source?: string
   utm_medium?: string
   utm_campaign?: string
@@ -426,6 +490,7 @@ export interface TelemetryProvider {
   trackDefaultViewSet?(metadata: DefaultViewSetMetadata): void
   trackEnterLinear?(metadata: EnterLinearMetadata): void
   trackShareFlow?(metadata: ShareFlowMetadata): void
+  trackShareLinkOpened?(metadata: ShareLinkOpenedMetadata): void
 
   // Page visibility events
   trackPageVisibilityChanged?(metadata: PageVisibilityMetadata): void
@@ -436,6 +501,12 @@ export interface TelemetryProvider {
   // Node search analytics events
   trackNodeSearch?(metadata: NodeSearchMetadata): void
   trackNodeSearchResultSelected?(metadata: NodeSearchResultMetadata): void
+
+  // Search query analytics
+  trackSearchQuery?(metadata: SearchQueryMetadata): void
+
+  // Node-added-to-canvas analytics
+  trackNodeAdded?(metadata: NodeAddedMetadata): void
 
   // Template filter tracking events
   trackTemplateFilterChanged?(metadata: TemplateFilterMetadata): void
@@ -452,6 +523,7 @@ export interface TelemetryProvider {
   trackWorkflowExecution?(): void
   trackExecutionError?(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess?(metadata: ExecutionSuccessMetadata): void
+  trackSharedWorkflowRun?(metadata: SharedWorkflowRunMetadata): void
 
   // Settings events
   trackSettingChanged?(metadata: SettingChangedMetadata): void
@@ -513,6 +585,7 @@ export const TelemetryEvents = {
   WORKFLOW_OPENED: 'app:workflow_opened',
   ENTER_LINEAR_MODE: 'app:app_mode_opened',
   SHARE_FLOW: 'app:share_flow',
+  SHARE_LINK_OPENED: 'app:share_link_opened',
 
   // Page Visibility
   PAGE_VISIBILITY_CHANGED: 'app:page_visibility_changed',
@@ -523,6 +596,8 @@ export const TelemetryEvents = {
   // Node Search Analytics
   NODE_SEARCH: 'app:node_search',
   NODE_SEARCH_RESULT_SELECTED: 'app:node_search_result_selected',
+  SEARCH_QUERY: 'app:search_query',
+  NODE_ADDED: 'app:node_added_to_workflow',
 
   // Template Filter Analytics
   TEMPLATE_FILTER_CHANGED: 'app:template_filter_changed',
@@ -544,6 +619,7 @@ export const TelemetryEvents = {
   EXECUTION_START: 'execution_start',
   EXECUTION_ERROR: 'execution_error',
   EXECUTION_SUCCESS: 'execution_success',
+  SHARED_WORKFLOW_RUN: 'app:shared_workflow_run',
   // Generic UI Button Click
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
 
@@ -572,6 +648,7 @@ export type TelemetryEventProperties =
   | RunButtonProperties
   | ExecutionErrorMetadata
   | ExecutionSuccessMetadata
+  | SharedWorkflowRunMetadata
   | CreditTopupMetadata
   | WorkflowImportMetadata
   | TemplateLibraryMetadata
@@ -580,6 +657,7 @@ export type TelemetryEventProperties =
   | TabCountMetadata
   | NodeSearchMetadata
   | NodeSearchResultMetadata
+  | SearchQueryMetadata
   | TemplateFilterMetadata
   | SettingChangedMetadata
   | UiButtonClickMetadata
@@ -589,6 +667,7 @@ export type TelemetryEventProperties =
   | WorkflowCreatedMetadata
   | EnterLinearMetadata
   | ShareFlowMetadata
+  | ShareLinkOpenedMetadata
   | WorkflowSavedMetadata
   | DefaultViewSetMetadata
   | SubscriptionMetadata

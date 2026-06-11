@@ -176,7 +176,7 @@ describe('AssetBrowserModal', () => {
   ): AssetItem => ({
     id,
     name,
-    asset_hash: `blake3:${id.padEnd(64, '0')}`,
+    hash: `blake3:${id.padEnd(64, '0')}`,
     size: 1024000,
     mime_type: 'application/octet-stream',
     tags: ['models', category, 'test'],

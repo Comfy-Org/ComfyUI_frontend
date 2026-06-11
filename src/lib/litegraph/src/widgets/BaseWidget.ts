@@ -17,17 +17,16 @@ import type {
   NodeBindable,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
-import { usePromotionStore } from '@/stores/promotionStore'
 import type { WidgetState } from '@/stores/widgetValueStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetEntityId } from '@/world/entityIds'
+import { widgetEntityId } from '@/world/entityIds'
 
 export interface DrawWidgetOptions {
   /** The width of the node where this widget will be displayed. */
   width: number
   /** Synonym for "low quality". */
   showText?: boolean
-  /** When true, suppresses the promoted outline color (e.g. for projected copies on SubgraphNode). */
-  suppressPromotedOutline?: boolean
   /** Transient image source for preview widgets rendered on behalf of another node (e.g. subgraph promotion). */
   previewImages?: HTMLImageElement[]
 }
@@ -133,6 +132,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.value = value
   }
 
+  get entityId(): WidgetEntityId | undefined {
+    const graphId = this.node.graph?.rootGraph.id
+    const nodeId = this._state.nodeId
+    if (!graphId || nodeId === undefined) return undefined
+    return widgetEntityId(graphId, nodeId, this.name)
+  }
+
   /**
    * Associates this widget with a node ID and registers it in the WidgetValueStore.
    * Once set, value reads/writes will be delegated to the store.
@@ -206,17 +212,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     }
   }
 
-  getOutlineColor(suppressPromotedOutline = false) {
-    const graphId = this.node.graph?.rootGraph.id
-    if (
-      graphId &&
-      !suppressPromotedOutline &&
-      usePromotionStore().isPromotedByAny(graphId, {
-        sourceNodeId: String(this.node.id),
-        sourceWidgetName: this.name
-      })
-    )
-      return LiteGraph.WIDGET_PROMOTED_OUTLINE_COLOR
+  getOutlineColor() {
     return this.advanced
       ? LiteGraph.WIDGET_ADVANCED_OUTLINE_COLOR
       : LiteGraph.WIDGET_OUTLINE_COLOR
@@ -280,13 +276,13 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   protected drawWidgetShape(
     ctx: CanvasRenderingContext2D,
-    { width, showText, suppressPromotedOutline }: DrawWidgetOptions
+    { width, showText }: DrawWidgetOptions
   ): void {
     const { height, y } = this
     const { margin } = BaseWidget
 
     ctx.textAlign = 'left'
-    ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
+    ctx.strokeStyle = this.getOutlineColor()
     ctx.fillStyle = this.background_color
     ctx.beginPath()
 
@@ -307,7 +303,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    */
   protected drawVueOnlyWarning(
     ctx: CanvasRenderingContext2D,
-    { width, suppressPromotedOutline }: DrawWidgetOptions,
+    { width }: DrawWidgetOptions,
     label: string
   ): void {
     const { y, height } = this
@@ -317,7 +313,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     ctx.fillStyle = this.background_color
     ctx.fillRect(15, y, width - 30, height)
 
-    ctx.strokeStyle = this.getOutlineColor(suppressPromotedOutline)
+    ctx.strokeStyle = this.getOutlineColor()
     ctx.strokeRect(15, y, width - 30, height)
 
     ctx.fillStyle = this.text_color

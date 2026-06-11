@@ -36,19 +36,6 @@
         </div>
       </div>
     </div>
-
-    <!-- Sub-label: cloud or OSS message shown above all pack groups -->
-    <p
-      class="m-0 text-sm/relaxed text-muted-foreground"
-      :class="showManagerHint ? 'pb-3' : 'pb-5'"
-    >
-      {{
-        isCloud
-          ? t('rightSidePanel.missingNodePacks.cloudMessage')
-          : t('rightSidePanel.missingNodePacks.ossMessage')
-      }}
-    </p>
-
     <!-- Manager disabled hint: shown on OSS when manager is not active -->
     <i18n-t
       v-if="showManagerHint"
@@ -69,27 +56,29 @@
         >
       </template>
     </i18n-t>
-    <MissingPackGroupRow
-      v-for="group in missingPackGroups"
-      :key="group.packId ?? '__unknown__'"
-      :group="group"
-      :show-info-button="showInfoButton"
-      :show-node-id-badge="showNodeIdBadge"
-      @locate-node="emit('locateNode', $event)"
-      @open-manager-info="emit('openManagerInfo', $event)"
-    />
+    <div class="flex flex-col gap-1 overflow-hidden py-2">
+      <MissingPackGroupRow
+        v-for="group in missingPackGroups"
+        :key="group.packId ?? '__unknown__'"
+        :group="group"
+        :show-info-button="showInfoButton"
+        @locate-node="emit('locateNode', $event)"
+        @open-manager-info="emit('openManagerInfo', $event)"
+      />
+    </div>
   </div>
 
   <!-- Apply Changes: shown when manager enabled and at least one pack install succeeded -->
   <div v-if="shouldShowManagerButtons" class="px-4">
     <Button
       v-if="hasInstalledPacksPendingRestart"
-      variant="primary"
+      variant="secondary"
+      size="sm"
       :disabled="isRestarting"
-      class="mt-2 h-9 w-full justify-center gap-2 text-sm font-semibold"
+      class="mt-2 h-8 w-full min-w-0 rounded-lg text-sm"
       @click="applyChanges()"
     >
-      <DotSpinner v-if="isRestarting" duration="1s" :size="14" />
+      <DotSpinner v-if="isRestarting" duration="1s" :size="12" />
       <i
         v-else
         aria-hidden="true"
@@ -118,9 +107,8 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import MissingPackGroupRow from '@/components/rightSidePanel/errors/MissingPackGroupRow.vue'
 
-const { showInfoButton, showNodeIdBadge, missingPackGroups } = defineProps<{
+const { showInfoButton, missingPackGroups } = defineProps<{
   showInfoButton: boolean
-  showNodeIdBadge: boolean
   missingPackGroups: MissingPackGroup[]
 }>()
 

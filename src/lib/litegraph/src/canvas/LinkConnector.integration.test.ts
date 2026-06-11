@@ -65,10 +65,7 @@ const test = baseTest.extend<TestContext>({
     })
   },
 
-  validateIntegrityNoChanges: async (
-    { graph, reroutesBeforeTest, expect },
-    use
-  ) => {
+  validateIntegrityNoChanges: async ({ graph, reroutesBeforeTest }, use) => {
     await use(() => {
       expect(graph.floatingLinks.size).toBe(1)
       expect([...graph.reroutes]).toEqual(reroutesBeforeTest)
@@ -84,7 +81,7 @@ const test = baseTest.extend<TestContext>({
   },
 
   validateIntegrityFloatingRemoved: async (
-    { graph, reroutesBeforeTest, expect },
+    { graph, reroutesBeforeTest },
     use
   ) => {
     await use(() => {
@@ -97,7 +94,7 @@ const test = baseTest.extend<TestContext>({
     })
   },
 
-  validateLinkIntegrity: async ({ graph, expect }, use) => {
+  validateLinkIntegrity: async ({ graph }, use) => {
     await use(() => {
       for (const reroute of graph.reroutes.values()) {
         if (reroute.origin_id === undefined) {
@@ -182,7 +179,7 @@ const test = baseTest.extend<TestContext>({
     })
   },
 
-  floatingReroute: async ({ graph, expect }, use) => {
+  floatingReroute: async ({ graph }, use) => {
     const floatingReroute = graph.reroutes.get(1)!
     expect(floatingReroute.floating).toEqual({ slotType: 'output' })
     await use(floatingReroute)

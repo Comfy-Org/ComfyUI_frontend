@@ -11,7 +11,7 @@ import {
   generateOutputAssets
 } from '@e2e/fixtures/data/assetFixtures'
 
-export interface MutationRecord {
+interface MutationRecord {
   endpoint: string
   method: string
   url: string
@@ -23,7 +23,7 @@ interface PaginationOptions {
   total: number
   hasMore: boolean
 }
-export interface AssetConfig {
+interface AssetConfig {
   readonly assets: ReadonlyMap<string, Asset>
   readonly pagination: PaginationOptions | null
   readonly uploadResponse: Record<string, unknown> | null
@@ -33,7 +33,7 @@ function emptyConfig(): AssetConfig {
   return { assets: new Map(), pagination: null, uploadResponse: null }
 }
 
-export type AssetOperator = (config: AssetConfig) => AssetConfig
+type AssetOperator = (config: AssetConfig) => AssetConfig
 
 function addAssets(config: AssetConfig, newAssets: Asset[]): AssetConfig {
   const merged = new Map(config.assets)

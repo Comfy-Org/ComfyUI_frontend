@@ -121,6 +121,7 @@ import NodeSearchInput from '@/components/searchbox/v2/NodeSearchInput.vue'
 import NodeSearchListItem from '@/components/searchbox/v2/NodeSearchListItem.vue'
 import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
@@ -141,8 +142,9 @@ const sourceCategoryFilters: Record<string, (n: ComfyNodeDefImpl) => boolean> =
     [RootCategory.Custom]: isCustomNode
   }
 
-const { filters } = defineProps<{
+const { filters, defaultRootFilter = null } = defineProps<{
   filters: FuseFilterWithValue<ComfyNodeDefImpl, string>[]
+  defaultRootFilter?: RootCategoryId | null
 }>()
 
 const emit = defineEmits<{
@@ -193,8 +195,12 @@ function onSearchFocus() {
   if (isMobile.value) isSidebarOpen.value = false
 }
 
-// Root filter from filter bar category buttons (radio toggle)
-const rootFilter = ref<RootCategoryId | null>(null)
+const rootFilter = ref<RootCategoryId | null>(
+  defaultRootFilter === RootCategory.Essentials &&
+    !nodeAvailability.value.essential
+    ? null
+    : defaultRootFilter
+)
 
 const rootFilterLabel = computed(() => {
   switch (rootFilter.value) {
@@ -338,6 +344,8 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
 const hoveredNodeDef = computed(
   () => displayedResults.value[selectedIndex.value] ?? null
 )
+
+useSearchQueryTracking('node_modal', searchQuery, displayedResults)
 
 watch(
   hoveredNodeDef,
