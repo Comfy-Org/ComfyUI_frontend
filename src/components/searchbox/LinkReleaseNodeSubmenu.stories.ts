@@ -14,7 +14,8 @@ import LinkReleaseNodeSubmenu from './LinkReleaseNodeSubmenu.vue'
 import type { LinkReleaseNodeCategory } from './linkReleaseMenuModel'
 
 const contentClass =
-  'z-1700 flex max-h-[80vh] min-w-[260px] flex-col overflow-y-auto rounded-lg border border-interface-menu-stroke bg-interface-menu-surface p-1 shadow-interface scrollbar-hide'
+  'z-1700 flex max-h-[80vh] min-w-[260px] flex-col overflow-hidden rounded-lg border border-interface-menu-stroke bg-interface-menu-surface p-1 shadow-interface'
+const scrollClass = 'min-h-0 overflow-y-auto scrollbar-custom'
 const itemClass =
   'flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-base-foreground outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-interface-menu-component-surface-hovered'
 
@@ -60,7 +61,14 @@ function renderAnchored(side: 'left' | 'right'): Story['render'] {
         side === 'right'
           ? 'position: fixed; top: 64px; right: 16px;'
           : 'position: fixed; top: 64px; left: 16px;'
-      return { anchorStyle, contentClass, itemClass, category, side }
+      return {
+        anchorStyle,
+        contentClass,
+        scrollClass,
+        itemClass,
+        category,
+        side
+      }
     },
     template: `
       <div style="height: 480px;">
@@ -84,6 +92,7 @@ function renderAnchored(side: 'left' | 'right'): Story['render'] {
                 :category="category"
                 :item-class="itemClass"
                 :content-class="contentClass"
+                :scroll-class="scrollClass"
               />
             </DropdownMenuContent>
           </DropdownMenuPortal>

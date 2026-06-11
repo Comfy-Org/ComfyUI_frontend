@@ -30,7 +30,7 @@
         :collision-padding="8"
         @open-auto-focus.prevent="focusSearch"
       >
-        <div class="px-1 py-1.5">
+        <div class="shrink-0 p-2">
           <div
             class="flex h-9 items-center gap-2 rounded-lg bg-secondary-background px-2"
           >
@@ -44,34 +44,31 @@
               :placeholder="
                 t('g.searchPlaceholder', { subject: t(category.labelKey) })
               "
-              class="size-full min-w-0 bg-transparent text-sm text-base-foreground outline-none placeholder:text-muted-foreground"
+              class="size-full min-w-0 appearance-none border-none bg-transparent text-sm text-base-foreground outline-none placeholder:text-muted-foreground"
               @keydown="onSearchKeydown"
             />
-            <button
-              v-if="query"
-              type="button"
-              :aria-label="t('g.clear')"
-              class="shrink-0 cursor-pointer text-muted-foreground hover:text-base-foreground"
-              @click="clearQuery"
-            >
-              <i class="icon-[lucide--x] size-4" />
-            </button>
           </div>
         </div>
-        <DropdownMenuSeparator class="m-1 h-px bg-border-subtle" />
-        <DropdownMenuItem
-          v-for="nodeDef in filteredNodes"
-          :key="nodeDef.name"
-          :class="itemClass"
-          @select="emit('select', nodeDef)"
-        >
-          <span class="flex-1 truncate">{{ nodeDef.display_name }}</span>
-        </DropdownMenuItem>
-        <div
-          v-if="filteredNodes.length === 0"
-          class="px-3 py-2 text-sm text-muted-foreground"
-        >
-          {{ t('g.noResults') }}
+        <DropdownMenuSeparator
+          class="-mx-1 my-1 h-px shrink-0 bg-border-subtle"
+        />
+        <div :class="scrollClass">
+          <DropdownMenuItem
+            v-for="nodeDef in filteredNodes"
+            :key="nodeDef.name"
+            :class="itemClass"
+            @select="emit('select', nodeDef)"
+          >
+            <span class="min-w-0 flex-1 truncate">
+              {{ nodeDef.display_name }}
+            </span>
+          </DropdownMenuItem>
+          <div
+            v-if="filteredNodes.length === 0"
+            class="px-3 py-2 text-sm text-muted-foreground"
+          >
+            {{ t('g.noResults') }}
+          </div>
         </div>
       </DropdownMenuSubContent>
     </DropdownMenuPortal>
@@ -96,10 +93,11 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { filterNodesByName } from './linkReleaseMenuModel'
 import type { LinkReleaseNodeCategory } from './linkReleaseMenuModel'
 
-const { category, itemClass, contentClass } = defineProps<{
+const { category, itemClass, contentClass, scrollClass } = defineProps<{
   category: LinkReleaseNodeCategory
   itemClass: string
   contentClass: string
+  scrollClass: string
 }>()
 
 const emit = defineEmits<{
@@ -125,11 +123,6 @@ watch(open, (isOpen) => {
 })
 
 function focusSearch() {
-  searchInput.value?.focus()
-}
-
-function clearQuery() {
-  query.value = ''
   searchInput.value?.focus()
 }
 
