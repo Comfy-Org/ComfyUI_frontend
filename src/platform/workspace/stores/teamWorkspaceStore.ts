@@ -26,7 +26,6 @@ export interface WorkspaceMember {
 export interface PendingInvite {
   id: string
   email: string
-  token: string
   inviteDate: Date
   expiryDate: Date
 }
@@ -57,7 +56,6 @@ function mapApiInviteToPendingInvite(invite: ApiPendingInvite): PendingInvite {
   return {
     id: invite.id,
     email: invite.email,
-    token: invite.token,
     inviteDate: new Date(invite.invited_at),
     expiryDate: new Date(invite.expires_at)
   }
@@ -564,6 +562,26 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   /**
+   * Resend a pending invite by issuing a fresh one before revoking the old.
+   * Create-first so a failed resend never destroys the original invite.
+   */
+  async function resendInvite(inviteId: string): Promise<PendingInvite> {
+    const invite = activeWorkspace.value?.pendingInvites.find(
+      (i) => i.id === inviteId
+    )
+    if (!invite) {
+      throw new Error('Invite not found')
+    }
+    const newInvite = await createInvite(invite.email)
+    try {
+      await revokeInvite(inviteId)
+    } catch {
+      await fetchPendingInvites()
+    }
+    return newInvite
+  }
+
+  /**
    * Accept a workspace invite.
    * Returns workspace info so UI can offer "View Workspace" button.
    */
@@ -579,44 +597,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       workspaceId: response.workspace_id,
       workspaceName: response.workspace_name
     }
-  }
-
-  function buildInviteLink(token: string): string {
-    const baseUrl = window.location.origin
-    return `${baseUrl}?invite=${encodeURIComponent(token)}`
-  }
-
-  /**
-   * Get the invite link for a pending invite.
-   */
-  function getInviteLink(inviteId: string): string | null {
-    const invite = activeWorkspace.value?.pendingInvites.find(
-      (i) => i.id === inviteId
-    )
-    return invite ? buildInviteLink(invite.token) : null
-  }
-
-  /**
-   * Create an invite link for a given email.
-   */
-  async function createInviteLink(email: string): Promise<string> {
-    const invite = await createInvite(email)
-    return buildInviteLink(invite.token)
-  }
-
-  /**
-   * Copy an invite link to clipboard.
-   */
-  async function copyInviteLink(inviteId: string): Promise<string> {
-    const invite = activeWorkspace.value?.pendingInvites.find(
-      (i) => i.id === inviteId
-    )
-    if (!invite) {
-      throw new Error('Invite not found')
-    }
-    const inviteLink = buildInviteLink(invite.token)
-    await navigator.clipboard.writeText(inviteLink)
-    return inviteLink
   }
 
   //TODO: when billing lands update this
@@ -681,10 +661,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     fetchPendingInvites,
     createInvite,
     revokeInvite,
+    resendInvite,
     acceptInvite,
-    getInviteLink,
-    createInviteLink,
-    copyInviteLink,
 
     // Subscription
     subscribeWorkspace,
