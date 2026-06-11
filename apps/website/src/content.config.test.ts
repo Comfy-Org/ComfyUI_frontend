@@ -7,7 +7,7 @@ vi.mock('astro/loaders', () => ({
   glob: () => ({})
 }))
 
-import { gallerySchema } from './content.config'
+import { eventsSchema, gallerySchema } from './content.config'
 
 const validEntry = {
   order: 1,
@@ -56,6 +56,41 @@ describe('gallerySchema', () => {
       ...validEntry,
       href: 'not a url'
     })
+    expect(result.success).toBe(false)
+  })
+})
+
+const validEvent = {
+  order: 1,
+  label: 'Live Stream:',
+  title: 'Zero to Node: Building Your First Workflow',
+  cta: 'Link',
+  href: 'https://example.com/event'
+}
+
+describe('eventsSchema', () => {
+  it('accepts a valid entry', () => {
+    const result = eventsSchema.safeParse(validEvent)
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects an entry missing a required field with a Zod error naming the field', () => {
+    const { title: _omit, ...withoutTitle } = validEvent
+    const result = eventsSchema.safeParse(withoutTitle)
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const paths = result.error.issues.map((issue) => issue.path.join('.'))
+      expect(paths).toContain('title')
+    }
+  })
+
+  it('accepts "#" as a placeholder href', () => {
+    const result = eventsSchema.safeParse({ ...validEvent, href: '#' })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects a truly malformed href that is neither a URL nor "#"', () => {
+    const result = eventsSchema.safeParse({ ...validEvent, href: 'not a url' })
     expect(result.success).toBe(false)
   })
 })

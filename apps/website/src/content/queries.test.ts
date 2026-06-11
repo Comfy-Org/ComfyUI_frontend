@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getCollection } from 'astro:content'
 
-import { getGalleryByIds, getVisibleGalleryByLocale, slugOf } from './queries'
+import {
+  getEventsByLocale,
+  getGalleryByIds,
+  getVisibleGalleryByLocale,
+  slugOf
+} from './queries'
 
 vi.mock('astro:content', () => ({
   getCollection: vi.fn()
@@ -127,5 +132,73 @@ describe('getGalleryByIds', () => {
 
     const result = await getGalleryByIds(['alpha', 'missing', 'beta'], 'en')
     expect(result.map((e) => e.id)).toEqual(['en/alpha'])
+  })
+})
+
+interface EventsFixtureEntry {
+  id: string
+  collection: 'events'
+  data: {
+    order: number
+    label: string
+    title: string
+    cta: string
+    href: string
+  }
+}
+
+function eventEntry(
+  id: string,
+  overrides: Partial<EventsFixtureEntry['data']> = {}
+): EventsFixtureEntry {
+  return {
+    id,
+    collection: 'events',
+    data: {
+      order: 0,
+      label: 'Label',
+      title: 'Title',
+      cta: 'CTA',
+      href: '#',
+      ...overrides
+    }
+  }
+}
+
+describe('getEventsByLocale', () => {
+  it('returns only entries whose id starts with the requested locale prefix', async () => {
+    getCollectionMock.mockResolvedValue([
+      eventEntry('en/alpha'),
+      eventEntry('en/beta'),
+      eventEntry('zh-CN/alpha')
+    ] as never)
+
+    const en = await getEventsByLocale('en')
+    expect(en.map((e) => e.id)).toEqual(['en/alpha', 'en/beta'])
+  })
+
+  it('sorts entries by the order field ascending, not by id', async () => {
+    getCollectionMock.mockResolvedValue([
+      eventEntry('en/charlie', { order: 1 }),
+      eventEntry('en/alpha', { order: 3 }),
+      eventEntry('en/bravo', { order: 2 })
+    ] as never)
+
+    const result = await getEventsByLocale('en')
+    expect(result.map((e) => e.id)).toEqual([
+      'en/charlie',
+      'en/bravo',
+      'en/alpha'
+    ])
+  })
+
+  it('returns an empty array for a locale with no entries', async () => {
+    getCollectionMock.mockResolvedValue([
+      eventEntry('en/alpha'),
+      eventEntry('en/beta')
+    ] as never)
+
+    const result = await getEventsByLocale('zh-CN')
+    expect(result).toEqual([])
   })
 })

@@ -6,15 +6,25 @@ import TutorialsSection from '../../components/learning/TutorialsSection.vue'
 import CallToActionSection from '../../components/common/CallToActionSection.vue'
 import EventsSection from '../../components/common/EventsSection.vue'
 import { getRoutes, externalLinks } from '../../config/routes'
-import { learningEvents } from '../../data/events'
+import { getEventsByLocale } from '../../content/queries'
 
 const routes = getRoutes('zh-CN')
+const eventEntries = await getEventsByLocale('zh-CN')
+const events = eventEntries.map((entry) => entry.data)
 ---
 
 <BaseLayout title="学习 — Comfy">
   <HeroSection locale="zh-CN" client:load />
   <FeaturedWorkflowSection locale="zh-CN" client:visible />
   <TutorialsSection locale="zh-CN" client:visible />
+  <EventsSection
+    locale="zh-CN"
+    headingKey="learning.events.heading"
+    descriptionKey="learning.events.description"
+    notifyLabelKey="learning.events.getNotified"
+    events={events}
+    client:visible
+  />
   <CallToActionSection
     locale="zh-CN"
     headingKey="learning.cta.heading"

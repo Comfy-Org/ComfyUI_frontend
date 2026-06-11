@@ -4,6 +4,7 @@ import type { CollectionEntry } from 'astro:content'
 import type { Locale } from '../i18n/translations'
 
 export type GalleryEntry = CollectionEntry<'gallery'>
+export type EventsEntry = CollectionEntry<'events'>
 
 export function slugOf(entry: { id: string }): string {
   const slash = entry.id.indexOf('/')
@@ -36,4 +37,14 @@ export async function getGalleryByIds(
   return slugs
     .map((slug) => bySlug.get(slug))
     .filter((entry): entry is GalleryEntry => entry !== undefined)
+}
+
+export async function getEventsByLocale(
+  locale: Locale
+): Promise<EventsEntry[]> {
+  const prefix = `${locale}/`
+  const entries: EventsEntry[] = await getCollection('events')
+  return entries
+    .filter((entry) => entry.id.startsWith(prefix))
+    .sort((a, b) => a.data.order - b.data.order)
 }
