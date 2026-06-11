@@ -59,6 +59,7 @@
             {{ $t('assetBrowser.modelTypeSelectorLabel') }}
           </label>
           <i
+            aria-hidden="true"
             class="icon-[lucide--circle-question-mark] text-muted-foreground"
           />
           <span v-if="!isMissingModelResolution" class="text-muted-foreground">

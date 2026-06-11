@@ -31,6 +31,7 @@
           <span class="flex min-w-0 items-center gap-2.5">
             <button
               v-if="hasMultipleReferences"
+              ref="modelLabelControl"
               type="button"
               class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
               :title="displayModelName"
@@ -40,6 +41,7 @@
             </button>
             <button
               v-else-if="!isUnknownCategory && primaryReference"
+              ref="modelLabelControl"
               type="button"
               class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
               :title="displayModelName"
@@ -56,13 +58,13 @@
             </span>
             <span
               v-if="hasMultipleReferences"
+              data-testid="missing-model-reference-count"
               class="flex size-6 shrink-0 items-center justify-center rounded-md bg-secondary-background-selected text-xs font-bold text-muted-foreground"
             >
               {{ model.referencingNodes.length }}
             </span>
           </span>
           <Button
-            data-testid="missing-model-copy-name"
             variant="textonly"
             size="icon-sm"
             class="size-7 shrink-0 text-muted-foreground hover:bg-transparent hover:text-base-foreground"
@@ -99,11 +101,13 @@
         </Button>
         <div
           v-else
+          ref="cloudProgress"
           role="progressbar"
           :aria-label="t('rightSidePanel.missingModels.importing')"
           :aria-valuenow="cloudImportProgressPercent"
           aria-valuemin="0"
           aria-valuemax="100"
+          tabindex="-1"
           class="flex h-8 w-16 shrink-0 items-center"
         >
           <span
@@ -115,6 +119,14 @@
             />
           </span>
         </div>
+        <span
+          v-if="isCloudImportDownloadActive"
+          role="status"
+          aria-live="polite"
+          class="sr-only"
+        >
+          {{ t('rightSidePanel.missingModels.importing') }}
+        </span>
       </template>
 
       <template v-else>
@@ -235,7 +247,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, nextTick, onMounted, useTemplateRef, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -305,6 +317,8 @@ const linkLabel = computed(() =>
 
 const store = useMissingModelStore()
 const { selectedLibraryModel, importCategoryMismatch } = storeToRefs(store)
+const cloudProgress = useTemplateRef<HTMLElement>('cloudProgress')
+const modelLabelControl = useTemplateRef<HTMLButtonElement>('modelLabelControl')
 
 const expanded = computed(
   () =>
@@ -452,10 +466,23 @@ watch(
   () => downloadStatus.value?.status,
   (status) => {
     if (!isCloud || status !== 'completed') return
+    const completedAssetName = downloadStatus.value?.assetName
+    if (completedAssetName) {
+      selectedLibraryModel.value[modelKey.value] = completedAssetName
+    }
     handleLibrarySelect()
   },
   { immediate: true }
 )
+
+watch(isCloudImportDownloadActive, async (isActive, wasActive) => {
+  await nextTick()
+  if (isActive) {
+    cloudProgress.value?.focus()
+  } else if (wasActive) {
+    modelLabelControl.value?.focus()
+  }
+})
 
 function handleLibrarySelect() {
   confirmLibrarySelect(

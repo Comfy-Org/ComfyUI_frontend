@@ -225,28 +225,51 @@ describe('MissingModelRow', () => {
     expect(
       screen.getByRole('progressbar', { name: 'Importing...' })
     ).toBeInTheDocument()
+    expect(screen.getByRole('status')).toHaveTextContent('Importing...')
     expect(screen.getByText('downloaded-model.safetensors')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Import' })).toBeNull()
   })
 
-  it('applies the imported model to every referencing node when the tracked import completes', async () => {
+  it('applies the completed imported model to every referencing node', async () => {
     const graph = {}
-    const widget = {
+    const firstWidget = {
       name: 'ckpt_name',
-      value: 'old.safetensors',
+      value: 'old-first.safetensors',
       callback: vi.fn()
     }
-    const setDirtyCanvas = vi.fn()
+    const secondWidget = {
+      name: 'ckpt_name',
+      value: 'old-second.safetensors',
+      callback: vi.fn()
+    }
+    const firstSetDirtyCanvas = vi.fn()
+    const secondSetDirtyCanvas = vi.fn()
     mockRootGraph.value = graph
-    mockGetNodeByExecutionId.mockReturnValue({
-      widgets: [widget],
-      graph: { setDirtyCanvas }
+    mockGetNodeByExecutionId.mockImplementation((_graph, nodeId) => {
+      if (nodeId === '1') {
+        return {
+          widgets: [firstWidget],
+          graph: { setDirtyCanvas: firstSetDirtyCanvas }
+        }
+      }
+      if (nodeId === '2') {
+        return {
+          widgets: [secondWidget],
+          graph: { setDirtyCanvas: secondSetDirtyCanvas }
+        }
+      }
+      return null
     })
 
-    renderRow(makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]))
+    renderRow(
+      makeModel([
+        { nodeId: '1', widgetName: 'ckpt_name' },
+        { nodeId: '2', widgetName: 'ckpt_name' }
+      ])
+    )
 
     await mockUploadCallbacks.onUploadSuccess?.({
-      filename: 'model.safetensors',
+      filename: 'client-name.safetensors',
       modelType: 'checkpoints',
       taskId: 'task-1',
       status: 'processing'
@@ -259,7 +282,7 @@ describe('MissingModelRow', () => {
       new CustomEvent('asset_download', {
         detail: {
           task_id: 'task-1',
-          asset_name: 'model.safetensors',
+          asset_name: 'server-name.safetensors',
           bytes_total: 100,
           bytes_downloaded: 100,
           progress: 1,
@@ -269,10 +292,15 @@ describe('MissingModelRow', () => {
     )
 
     await waitFor(() => {
-      expect(widget.value).toBe('model.safetensors')
+      expect(firstWidget.value).toBe('server-name.safetensors')
+      expect(secondWidget.value).toBe('server-name.safetensors')
     })
-    expect(widget.callback).toHaveBeenCalledWith('model.safetensors')
-    expect(setDirtyCanvas).toHaveBeenCalledWith(true, true)
+    expect(firstWidget.callback).toHaveBeenCalledWith('server-name.safetensors')
+    expect(secondWidget.callback).toHaveBeenCalledWith(
+      'server-name.safetensors'
+    )
+    expect(firstSetDirtyCanvas).toHaveBeenCalledWith(true, true)
+    expect(secondSetDirtyCanvas).toHaveBeenCalledWith(true, true)
   })
 
   it('locates the parent row directly when a cloud model has one reference', async () => {
@@ -330,7 +358,6 @@ describe('MissingModelRow', () => {
     expect(
       screen.getByPlaceholderText('Paste Model URL (Civitai or Hugging Face)')
     ).toBeInTheDocument()
-    expect(screen.queryByText('Use from Library')).not.toBeInTheDocument()
   })
 
   it('shows model type metadata below the model name', () => {

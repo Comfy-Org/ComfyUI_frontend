@@ -75,11 +75,12 @@
       class="flex flex-1 flex-col items-center justify-center gap-6"
     >
       <i
-        class="size-12 text-error"
+        aria-hidden="true"
+        class="text-error"
         :class="
           typeMismatch
-            ? 'icon-[lucide--circle-alert]'
-            : 'icon-[lucide--x-circle]'
+            ? 'icon-[lucide--circle-alert] size-12'
+            : 'icon-[lucide--x-circle] size-16'
         "
       />
       <div
@@ -146,9 +147,7 @@ const { typeMismatch } = defineProps<{
 }>()
 
 const { t } = useI18n()
-const isTypeMismatchError = computed(
-  () => typeMismatch != null && typeMismatch !== undefined
-)
+const isTypeMismatchError = computed(() => typeMismatch != null)
 const actualModelTypeLabel = computed(
   () =>
     typeMismatch?.importedModelTypeLabel ??

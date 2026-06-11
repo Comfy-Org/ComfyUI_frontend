@@ -45,7 +45,7 @@ export interface UploadModelTypeMismatch {
   requiredModelTypeLabel: string
 }
 
-export interface MissingModelUploadContext {
+interface MissingModelUploadContext {
   kind: 'missing-model-resolution'
   missingModelName: string
   requiredModelType: string
@@ -391,6 +391,7 @@ export function useUploadModelWizard(
         }
       } else {
         if (
+          requiredModelType &&
           result.type === 'sync' &&
           modelType &&
           blockMismatchedImportedModel(result.asset, modelType)

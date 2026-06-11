@@ -113,7 +113,14 @@ describe('useUploadModelWizard', () => {
     wizard.wizardData.value.url = 'https://civitai.com/models/12345'
     wizard.selectedModelType.value = 'checkpoints'
 
-    await wizard.uploadModel()
+    const result = await wizard.uploadModel()
+
+    expect(result).toEqual({
+      filename: 'model',
+      modelType: 'checkpoints',
+      taskId: 'task-123',
+      status: 'processing'
+    })
 
     expect(wizard.uploadStatus.value).toBe('processing')
 
@@ -303,5 +310,37 @@ describe('useUploadModelWizard', () => {
       requiredModelType: 'checkpoints',
       requiredModelTypeLabel: 'Checkpoint'
     })
+  })
+
+  it('keeps generic sync imports successful when an existing asset has another model type', async () => {
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
+    vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
+      type: 'sync',
+      asset: {
+        id: 'asset-lora',
+        name: 'model.safetensors',
+        tags: ['models', 'loras']
+      }
+    })
+
+    const wizard = setupUploadModelWizard(
+      ref([
+        { name: 'Checkpoint', value: 'checkpoints' },
+        { name: 'LoRA', value: 'loras' }
+      ])
+    )
+    wizard.wizardData.value.url = 'https://civitai.com/models/12345'
+    wizard.selectedModelType.value = 'checkpoints'
+
+    const result = await wizard.uploadModel()
+
+    expect(result).toEqual({
+      filename: 'model',
+      modelType: 'checkpoints',
+      status: 'success'
+    })
+    expect(wizard.uploadStatus.value).toBe('success')
+    expect(wizard.uploadTypeMismatch.value).toBeNull()
   })
 })

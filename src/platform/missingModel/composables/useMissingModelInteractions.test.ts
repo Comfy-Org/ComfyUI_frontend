@@ -269,12 +269,14 @@ describe('useMissingModelInteractions', () => {
       const store = useMissingModelStore()
       store.selectedLibraryModel['key1'] = 'model.safetensors'
       store.importCategoryMismatch['key1'] = 'loras'
+      store.importTaskIds['key1'] = 'task-123'
 
       const { cancelLibrarySelect } = setupMissingModelInteractions()
       cancelLibrarySelect('key1')
 
       expect(store.selectedLibraryModel['key1']).toBeUndefined()
       expect(store.importCategoryMismatch['key1']).toBeUndefined()
+      expect(store.importTaskIds['key1']).toBeUndefined()
     })
   })
 
@@ -298,6 +300,7 @@ describe('useMissingModelInteractions', () => {
 
       const store = useMissingModelStore()
       store.selectedLibraryModel['key1'] = 'new_model.safetensors'
+      store.importTaskIds['key1'] = 'task-123'
       store.setMissingModels([
         makeCandidate({ name: 'old_model.safetensors', nodeId: '10' }),
         makeCandidate({ name: 'old_model.safetensors', nodeId: '20' })
@@ -323,6 +326,7 @@ describe('useMissingModelInteractions', () => {
         new Set(['10', '20'])
       )
       expect(store.selectedLibraryModel['key1']).toBeUndefined()
+      expect(store.importTaskIds['key1']).toBeUndefined()
     })
 
     it('does nothing when no selection exists', () => {

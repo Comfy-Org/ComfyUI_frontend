@@ -84,6 +84,7 @@ export function useMissingModelInteractions() {
   function cancelLibrarySelect(key: string) {
     delete store.selectedLibraryModel[key]
     delete store.importCategoryMismatch[key]
+    delete store.importTaskIds[key]
   }
 
   /** Apply selected model to referencing nodes, removing only that model from the error list. */
@@ -130,6 +131,7 @@ export function useMissingModelInteractions() {
     }
 
     delete store.selectedLibraryModel[key]
+    delete store.importTaskIds[key]
     const nodeIdSet = new Set(referencingNodes.map((ref) => String(ref.nodeId)))
     store.removeMissingModelByNameOnNodes(modelName, nodeIdSet)
   }
