@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { h } from 'vue'
+import { h, nextTick } from 'vue'
 import type { VNodeChild } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -161,11 +161,17 @@ describe('TabGlobalSettings canvas background', () => {
     expect(store.values['Comfy.Canvas.BackgroundColor']).toBe('aabbcc')
   })
 
-  it('clearing the background image flips the selector back to image mode', () => {
+  it('clearing the background image keeps the selector in image mode', async () => {
     store.values['Comfy.Canvas.BackgroundImage'] = '/api/view?filename=x.png'
     renderTab()
     find('BackgroundImageUpload')!.emit('update:modelValue', '')
+    await nextTick()
+
     expect(store.values['Comfy.Canvas.BackgroundImage']).toBe('')
+    // The selector stays on image mode (upload shown, color picker hidden)
+    expect(backgroundSelect().props.modelValue).toBe('image')
+    expect(find('BackgroundImageUpload')).toBeTruthy()
+    expect(find('ColorPicker')).toBeUndefined()
   })
 
   it('resets the custom color from the reset button', async () => {
