@@ -32,7 +32,7 @@ test.describe('Desktop navigation @smoke', () => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopCTA = nav.getByTestId('desktop-nav-cta')
     await expect(
-      desktopCTA.getByRole('link', { name: 'DOWNLOAD LOCAL' })
+      desktopCTA.getByRole('link', { name: 'DOWNLOAD DESKTOP' })
     ).toBeVisible()
     await expect(
       desktopCTA.getByRole('link', { name: 'LAUNCH CLOUD' })
@@ -55,7 +55,7 @@ test.describe('Desktop dropdown @interaction', () => {
 
     const dropdown = productsButton.locator('..').getByTestId('nav-dropdown')
     for (const item of [
-      'Comfy Local',
+      'Comfy Desktop',
       'Comfy Cloud',
       'Comfy API',
       'Comfy Enterprise'
@@ -69,7 +69,7 @@ test.describe('Desktop dropdown @interaction', () => {
     const desktopLinks = nav.getByTestId('desktop-nav-links')
     await desktopLinks.getByRole('button', { name: /PRODUCTS/i }).hover()
 
-    const comfyLocal = nav.getByRole('link', { name: 'Comfy Local' }).first()
+    const comfyLocal = nav.getByRole('link', { name: 'Comfy Desktop' }).first()
     await expect(comfyLocal).toBeVisible()
 
     await page.locator('main').hover()
@@ -81,7 +81,7 @@ test.describe('Desktop dropdown @interaction', () => {
     const desktopLinks = nav.getByTestId('desktop-nav-links')
     await desktopLinks.getByRole('button', { name: /PRODUCTS/i }).hover()
 
-    const comfyLocal = nav.getByRole('link', { name: 'Comfy Local' }).first()
+    const comfyLocal = nav.getByRole('link', { name: 'Comfy Desktop' }).first()
     await expect(comfyLocal).toBeVisible()
 
     await page.keyboard.press('Escape')
@@ -121,7 +121,7 @@ test.describe('Mobile menu @mobile', () => {
     const menu = page.locator('#site-mobile-menu')
     await menu.getByText('PRODUCTS').first().click()
 
-    await expect(menu.getByText('Comfy Local')).toBeVisible()
+    await expect(menu.getByText('Comfy Desktop')).toBeVisible()
     await expect(menu.getByText('Comfy Cloud')).toBeVisible()
 
     await menu.getByRole('button', { name: /BACK/i }).click()
@@ -133,7 +133,7 @@ test.describe('Mobile menu @mobile', () => {
 
     const menu = page.locator('#site-mobile-menu')
     await expect(
-      menu.getByRole('link', { name: 'DOWNLOAD LOCAL' })
+      menu.getByRole('link', { name: 'DOWNLOAD DESKTOP' })
     ).toBeVisible()
     await expect(menu.getByRole('link', { name: 'LAUNCH CLOUD' })).toBeVisible()
   })

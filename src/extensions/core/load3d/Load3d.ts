@@ -105,7 +105,6 @@ class Load3d {
   private disposeContextMenuGuard: (() => void) | null = null
   private resizeObserver: ResizeObserver | null = null
   private getZoomScaleCallback: (() => number) | undefined
-  private retainViewOnReload: boolean = false
   private hasLoadedModel: boolean = false
 
   constructor(
@@ -579,17 +578,14 @@ class Load3d {
     }
   }
 
-  public setRetainViewOnReload(value: boolean): void {
-    this.retainViewOnReload = value
-  }
-
   private async _loadModelInternal(
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
   ): Promise<void> {
-    // First load always uses default framing; retain only applies on reload.
-    const shouldRetainView = this.retainViewOnReload && this.hasLoadedModel
+    // First load always uses default framing; subsequent reloads preserve
+    // the user's framing.
+    const shouldRetainView = this.hasLoadedModel
     const savedCameraState = shouldRetainView
       ? this.cameraManager.getCameraState()
       : null
@@ -916,6 +912,12 @@ class Load3d {
   ): void {
     if (!this.getCurrentModelCapabilities().gizmoTransform) return
     this.gizmoManager.applyTransform(position, rotation, scale)
+    this.forceRender()
+  }
+
+  public applyModelTransform(transform: Model3DTransform): void {
+    if (!this.getCurrentModelCapabilities().gizmoTransform) return
+    this.gizmoManager.applyModelTransform(transform)
     this.forceRender()
   }
 

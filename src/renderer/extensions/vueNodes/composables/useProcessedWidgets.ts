@@ -59,6 +59,7 @@ interface ProcessedWidget {
   type: string
   updateHandler: (value: WidgetValue) => void
   value: WidgetValue
+  visible: boolean
   vueComponent: Component
   slotMetadata?: WidgetSlotMetadata
 }
@@ -154,11 +155,12 @@ export function getWidgetIdentity(
 
 export function isWidgetVisible(
   options: IWidgetOptions,
-  showAdvanced: boolean
+  showAdvanced: boolean,
+  linked = false
 ): boolean {
   const hidden = options.hidden ?? false
   const advanced = options.advanced ?? false
-  return !hidden && (!advanced || showAdvanced)
+  return !hidden && (!advanced || showAdvanced || linked)
 }
 
 export function computeProcessedWidgets({
@@ -211,7 +213,11 @@ export function computeProcessedWidgets({
       ...(widget.options ?? {}),
       ...(widgetState?.options ?? {})
     }
-    const visible = isWidgetVisible(mergedOptions, showAdvanced)
+    const visible = isWidgetVisible(
+      mergedOptions,
+      showAdvanced,
+      widget.slotMetadata?.linked
+    )
     if (!identity.dedupeIdentity) {
       uniqueWidgets.push({
         widget,
@@ -252,6 +258,7 @@ export function computeProcessedWidgets({
     widget,
     mergedOptions,
     widgetState,
+    isVisible: visible,
     identity: { renderKey }
   } of uniqueWidgets) {
     const bareWidgetId = String(stripGraphPrefix(widget.nodeId ?? nodeId ?? ''))
@@ -343,6 +350,7 @@ export function computeProcessedWidgets({
       vueComponent,
       simplified,
       value,
+      visible,
       updateHandler,
       tooltipConfig,
       slotMetadata
@@ -396,12 +404,7 @@ export function useProcessedWidgets(
   )
 
   const visibleWidgets = computed(() =>
-    processedWidgets.value.filter((w) =>
-      isWidgetVisible(
-        { hidden: w.hidden, advanced: w.advanced },
-        showAdvanced.value
-      )
-    )
+    processedWidgets.value.filter((w) => w.visible)
   )
 
   const gridTemplateRows = computed((): string =>
@@ -417,7 +420,6 @@ export function useProcessedWidgets(
     gridTemplateRows,
     nodeType,
     processedWidgets,
-    showAdvanced,
     visibleWidgets
   }
 }
