@@ -60,6 +60,8 @@ import {
   ComponentWidgetImpl,
   DOMWidgetImpl
 } from '@/scripts/domWidget'
+import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -770,20 +772,13 @@ export class ComfyApp {
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
-      // Check if this is an auth-related error or credits-related error
-      if (
-        detail.exception_message?.includes(
-          'Unauthorized: Please login first to use this node.'
-        )
-      ) {
-        useDialogService().showApiNodesSignInDialog([detail.node_type])
-      } else if (
-        detail.exception_message?.includes(
-          'Payment Required: Please add credits to your account to use this node.'
-        )
-      ) {
-        useDialogService().showTopUpCreditsDialog({
-          isInsufficientCredits: true
+      const precondition = resolveAccountPrecondition({
+        exceptionType: detail.exception_type ?? '',
+        exceptionMessage: detail.exception_message ?? ''
+      })
+      if (precondition) {
+        useAccountPreconditionDialog().open(precondition, {
+          nodeType: detail.node_type
         })
       } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
         useExecutionErrorStore().showErrorOverlay()
