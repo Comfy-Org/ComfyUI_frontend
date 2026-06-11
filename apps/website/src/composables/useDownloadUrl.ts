@@ -7,13 +7,13 @@ export const downloadUrls = {
   macArm: 'https://download.comfy.org/mac/dmg/arm64'
 } as const
 
-type DetectedPlatform = 'windows' | 'mac' | null
+export type Platform = 'windows' | 'mac'
 
 function isMobile(ua: string): boolean {
   return /iphone|ipad|ipod|android/.test(ua)
 }
 
-function detectPlatform(ua: string): DetectedPlatform {
+function detectPlatform(ua: string): Platform | null {
   if (isMobile(ua)) return null
   if (ua.includes('win')) return 'windows'
   if (ua.includes('macintosh') || ua.includes('mac os x')) return 'mac'
@@ -23,7 +23,7 @@ function detectPlatform(ua: string): DetectedPlatform {
 // TODO: Only Windows x64 and macOS arm64 are available today.
 // When Linux and/or macIntel builds are added, extend detection and URLs here.
 export function useDownloadUrl() {
-  const platform = ref<DetectedPlatform>(null)
+  const platform = ref<Platform | null>(null)
   const detected = ref(false)
   const isMobileUa = ref(false)
 

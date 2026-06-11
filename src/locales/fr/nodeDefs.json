@@ -2982,6 +2982,98 @@
       }
     }
   },
+  "DA3GeometryToMesh": {
+    "description": "Convertir une carte de profondeur en un maillage 3D triangulé.",
+    "display_name": "Convertir la géométrie DA3 en maillage",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Quelle image d’un lot convertir. Le nombre de sommets diffère selon l’image, donc les lots ne peuvent pas être empilés."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "Exclure les pixels dont la confiance normalisée par image est inférieure à cette valeur (0 = garder tous, 1 = ne garder que le pixel le plus fiable). Utilisé lorsque la géométrie possède une carte de confiance (modèles Small/Base)."
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Pas de sommets. 1 = pleine résolution, 2 = moitié, etc."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Supprimer les triangles dont l’étendue de profondeur 3x3 dépasse cette fraction. 0 = désactivé."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Utiliser l’image source comme texture de couleur de base."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "Exclure les pixels avec une probabilité de ciel (sky >= 0,5) du maillage. Utilisé lorsque la géométrie possède une carte du ciel (modèles Mono/Metric)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "Exécuter Depth Anything 3 sur une image. En mode multi-vues, chaque image est traitée comme une vue séparée de la même scène.",
+    "display_name": "Exécuter Depth Anything 3",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono : image à vue unique (fonctionne avec toute variante du modèle).\nmultiview : toutes les images sont traitées ensemble pour la cohérence géométrique + pose de la caméra (pour les modèles Small/Base uniquement)."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize : mise à l’échelle pour que le côté le plus long = résolution (limite la mémoire, par défaut).\nlower_bound_resize : mise à l’échelle pour que le côté le plus court = résolution (préserve plus de détails sur les images hautes/longues, utilise plus de mémoire)."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Résolution à laquelle le modèle s’exécute (côté le plus long, multiple de 14).\nPlus bas = plus rapide / moins de VRAM.\nPlus haut = plus de détails.\nLa sortie est rééchantillonnée à la taille d’origine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "Dictionnaire de tenseurs non normalisés.\nContient toujours les clés : depth, image, mode.\nClés optionnelles : sky (pour Mono/Metric), confidence (pour Small/Base), extrinsics + intrinsics (pour multi-vues)."
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "Rendre une carte de profondeur, une carte de confiance ou un masque de ciel à partir des données de géométrie Depth Anything 3.",
+    "display_name": "Rendu Depth Anything 3",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth : image de profondeur normalisée en niveaux de gris.\n- depth_colored : profondeur mappée via la colormap Turbo.\n- sky_mask : probabilité de ciel dans [0, 1] (pour modèles Mono/Metric uniquement).\n- confidence : confiance de profondeur normalisée (pour modèles Small/Base uniquement)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "Charger le modèle ControlNet (diff)",
     "inputs": {
@@ -8983,6 +9075,22 @@
     "outputs": {
       "0": {
         "name": "modèle_bg",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "Charger Depth Anything 3",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
