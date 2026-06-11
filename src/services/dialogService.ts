@@ -600,6 +600,40 @@ export const useDialogService = () => {
     })
   }
 
+  /**
+   * Downgrade a team plan to a personal plan (FE-977).
+   *
+   * Shows a type-"I understand" confirm dialog warning that all other members
+   * will be immediately removed. When the workspace has no other members the
+   * dialog is skipped and the downgrade proceeds directly.
+   */
+  async function showDowngradeToPersonalDialog(options: {
+    planName: string
+    planSlug: string
+  }) {
+    const { useDowngradeToPersonal } =
+      await import('@/platform/workspace/composables/useDowngradeToPersonal')
+    const { hasOtherMembers, downgradeToPersonal } = useDowngradeToPersonal()
+
+    if (!hasOtherMembers.value) {
+      await downgradeToPersonal(options.planSlug)
+      return
+    }
+
+    const { default: component } =
+      await import('@/platform/workspace/components/dialogs/DowngradeRemoveMembersDialogContent.vue')
+    return dialogStore.showDialog({
+      key: 'downgrade-remove-members',
+      component,
+      props: {
+        planName: options.planName,
+        planSlug: options.planSlug,
+        onConfirm: downgradeToPersonal
+      },
+      dialogComponentProps: workspaceDialogPt
+    })
+  }
+
   /** Shows one-time cloud notification modal for macOS desktop users. */
   async function showCloudNotification(): Promise<void> {
     const { default: component } = await lazyCloudNotificationContent()
@@ -661,6 +695,7 @@ export const useDialogService = () => {
     showInviteMemberDialog,
     showInviteMemberUpsellDialog,
     showBillingComingSoonDialog,
-    showCancelSubscriptionDialog
+    showCancelSubscriptionDialog,
+    showDowngradeToPersonalDialog
   }
 }

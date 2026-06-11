@@ -2448,6 +2448,14 @@
       "confirmCancel": "Cancel subscription",
       "failed": "Failed to cancel subscription"
     },
+    "downgrade": {
+      "title": "Change to {plan} plan?",
+      "body": "All other members of this workspace will be immediately removed.",
+      "confirmationPhrase": "I understand",
+      "confirmationPrompt": "Type \"{phrase}\" to confirm.",
+      "confirm": "Change plan",
+      "failed": "Failed to change plan"
+    },
     "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
     "partnerNodesDescription": "For running commercial/proprietary models",
     "totalCredits": "Total credits",
