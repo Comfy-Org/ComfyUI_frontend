@@ -257,7 +257,6 @@ async function handleBuy() {
 
     const amountCents = payAmount.value * 100
     const response = await topup(amountCents)
-    // Workspace topup always returns a response; void only on the legacy path.
     if (!response) return
 
     if (response.status === 'completed') {
