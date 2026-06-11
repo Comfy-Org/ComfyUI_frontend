@@ -3023,7 +3023,8 @@
       "baseModelAsc": "Base model A–Z",
       "baseModelDesc": "Base model Z–A"
     },
-    "searchResults": "Search results"
+    "searchResults": "Search results",
+    "yourFolders": "Your folders"
   },
   "cloudModelLibrary": {
     "preview": {

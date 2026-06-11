@@ -1,5 +1,4 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 
 import { COMFY_ORG_PROVIDER_OVERRIDES } from './comfyOrgProviderOverrides'
 
@@ -162,10 +161,6 @@ export function formatPartnerProvider(category: string | undefined): string {
 export function isPartnerNodeCategory(category: string | undefined): boolean {
   if (!category) return false
   return category.toLowerCase().startsWith('api node')
-}
-
-export function fallbackGroupLabel(rawTag: string): string {
-  return formatCategoryLabel(rawTag)
 }
 
 /**

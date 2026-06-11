@@ -114,9 +114,9 @@ describe('groupLabelForAsset', () => {
     )
   })
 
-  it('falls back to a formatted label for an unmapped tag', () => {
+  it('falls back to the verbatim folder name for an unmapped tag', () => {
     expect(
-      groupLabelForAsset(makeAsset({ tags: ['models', 'totallyunknown'] }))
-    ).toBe('Totallyunknown')
+      groupLabelForAsset(makeAsset({ tags: ['models', 'kjnodes_fonts'] }))
+    ).toBe('kjnodes_fonts')
   })
 })

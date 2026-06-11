@@ -16,6 +16,8 @@ export type Section = {
   label: string
   providers: ProviderGroup[]
   totalCount: number
+  /** Unmapped user folder shown verbatim, rendered after curated groups. */
+  isUserFolder?: boolean
 }
 
 export type SortMode =

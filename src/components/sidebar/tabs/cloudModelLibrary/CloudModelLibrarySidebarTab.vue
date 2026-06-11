@@ -98,6 +98,14 @@
       </div>
       <div v-else class="flex flex-col">
         <template v-for="(section, sectionIndex) in sections" :key="section.id">
+          <template v-if="sectionIndex === firstUserFolderSectionIndex">
+            <div class="mx-6 my-2 border-t border-border-default/40" />
+            <div
+              class="px-2 pt-1 pb-0.5 text-3xs font-medium tracking-wide text-muted-foreground uppercase"
+            >
+              {{ $t('assets.yourFolders') }}
+            </div>
+          </template>
           <button
             type="button"
             class="group/tree-node flex w-full min-w-0 cursor-pointer items-center gap-3 overflow-hidden rounded-sm border-0 bg-transparent py-2 pl-2 text-left outline-none select-none hover:bg-comfy-input"
@@ -155,7 +163,8 @@
           <div
             v-if="
               sectionIndex === lastPinnedSectionIndex &&
-              sectionIndex < sections.length - 1
+              sectionIndex < sections.length - 1 &&
+              !sections[sectionIndex + 1].isUserFolder
             "
             class="mx-6 my-2 border-t border-border-default/40"
           />
@@ -198,14 +207,13 @@ import PartnerNodeHoverPreview from '@/components/sidebar/tabs/cloudModelLibrary
 import {
   MODEL_GROUPS,
   PARTNER_NODES_GROUP_ID,
-  fallbackGroupLabel,
   formatPartnerProvider,
   getAssetProvider,
   isPartnerNodeCategory
 } from '@/components/sidebar/tabs/cloudModelLibrary/modelGroups'
+import { isLikelyModelFile } from '@/components/sidebar/tabs/cloudModelLibrary/modelFileFilter'
 import {
   directoryForAsset,
-  directoryLabel,
   firstNonModelsTag,
   groupIdForAsset,
   groupLabelForAsset,
@@ -322,7 +330,11 @@ if (
 const expanded = ref<Record<string, boolean>>({})
 const expandedBeforeSearch = ref<Record<string, boolean>>({})
 
-const assets = computed<AssetItem[]>(() => source.assets.value)
+// Sidecar files that live next to models on disk (configs, tokenizers,
+// fonts, licenses) aren't models and never belong in the library.
+const assets = computed<AssetItem[]>(() =>
+  source.assets.value.filter(isLikelyModelFile)
+)
 
 const partnerNodes = computed<ComfyNodeDefImpl[]>(() =>
   nodeDefStore.visibleNodeDefs.filter(
@@ -495,9 +507,7 @@ const sections = computed<Section[]>(() => {
     const directorySections = Array.from(byDirectory.entries())
       .map(([directory, list]) => {
         const id = directory ? `dir:${directory}` : 'dir:uncategorized'
-        const label = directory
-          ? directoryLabel(directory)
-          : t('assets.groupBy.ungrouped')
+        const label = directory || t('assets.groupBy.ungrouped')
         return buildAssetSection(id, label, list)
       })
       .filter((section): section is Section => section !== null)
@@ -573,22 +583,32 @@ const sections = computed<Section[]>(() => {
     )
   }
 
+  // Unmapped tags are folders the curated taxonomy doesn't know. They render
+  // verbatim in their own trailing section so the user recognises their own
+  // disk structure instead of mistaking it for our categorisation.
+  const folderSections: PendingSection[] = []
   for (const tag of unmappedByTag.keys()) {
-    collect(
-      buildAssetSection(
-        `tag:${tag}`,
-        fallbackGroupLabel(tag),
-        unmappedByTag.get(tag) ?? []
-      )
+    const section = buildAssetSection(
+      `tag:${tag}`,
+      tag,
+      unmappedByTag.get(tag) ?? []
     )
+    if (section) {
+      folderSections.push({
+        sortKey: tag,
+        section: { ...section, isUserFolder: true }
+      })
+    }
   }
 
-  pending.sort((a, b) =>
+  const bySortKey = (a: PendingSection, b: PendingSection) =>
     a.sortKey.localeCompare(b.sortKey, undefined, { sensitivity: 'base' })
-  )
+  pending.sort(bySortKey)
+  folderSections.sort(bySortKey)
 
   for (const section of pinnedSections) result.push(section)
   for (const { section } of pending) result.push(section)
+  for (const { section } of folderSections) result.push(section)
 
   return result
 })
@@ -602,6 +622,10 @@ const lastPinnedSectionIndex = computed<number>(() => {
   }
   return lastIndex
 })
+
+const firstUserFolderSectionIndex = computed<number>(() =>
+  sections.value.findIndex((section) => section.isUserFolder)
+)
 
 const isExpanded = (id: string) => Boolean(expanded.value[id])
 

@@ -6,7 +6,6 @@ import {
 import { MODELS_TAG } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetBaseModels } from '@/platform/assets/utils/assetMetadataUtils'
-import { formatCategoryLabel } from '@/platform/assets/utils/categoryLabel'
 
 export function firstNonModelsTag(asset: AssetItem): string | null {
   for (const tag of asset.tags) {
@@ -34,21 +33,16 @@ export function directoryForAsset(asset: AssetItem): string | null {
   return dir || null
 }
 
-export function directoryLabel(directory: string): string {
-  return directory
-    .split('/')
-    .map((segment) => formatCategoryLabel(segment))
-    .join(' / ')
-}
-
 export function groupLabelForAsset(asset: AssetItem): string {
   const groupId = groupIdForAsset(asset)
   if (groupId) {
     const group = MODEL_GROUPS.find((g) => g.id === groupId)
     if (group) return group.label
   }
+  // Unmapped tags are the user's own folders — show them verbatim rather
+  // than dressing them up as curated categories.
   const tag = firstNonModelsTag(asset)
-  return tag ? formatCategoryLabel(rawTagTopLevel(tag)) : ''
+  return tag ? rawTagTopLevel(tag) : ''
 }
 
 export function partnerKind(category: string | undefined): string {
