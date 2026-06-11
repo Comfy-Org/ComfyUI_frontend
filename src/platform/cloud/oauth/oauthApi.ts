@@ -46,6 +46,16 @@ export type OAuthConsentDecision = (
   params: OAuthConsentDecisionParams
 ) => Promise<void>
 
+// Exact allowlist of custom-scheme protocols (URL.protocol form, trailing
+// colon) that the post-consent redirect may navigate to. These are the
+// RFC 8252 reverse-DNS callback schemes of first-party native clients,
+// mirroring their backend OAuth client registrations. Keep this exact —
+// an allowlist of one is a smaller attack surface than any heuristic
+// over "safe-looking" schemes.
+const NATIVE_REDIRECT_SCHEMES: ReadonlySet<string> = new Set([
+  'org.comfy.ios:' // comfy-ios (Comfy iOS app)
+])
+
 export class OAuthApiError extends Error {
   constructor(
     message: string,
@@ -144,20 +154,27 @@ export async function submitOAuthConsentDecision({
     throw new Error('OAuth consent response did not include redirect_url')
   }
 
-  // Defense in depth: even though the cloud backend is trusted, never hand
-  // the browser off to a scheme that can execute in our origin
-  // (javascript:/data:/blob:). Allowed: http(s) — the loopback redirects
-  // desktop/CLI register — and RFC 8252 reverse-DNS custom schemes
-  // (e.g. org.comfy.ios:), which native-app clients use to return the
-  // authorization code. The dot requirement mirrors the backend's
-  // redirect policy (redirect_policy.go: native custom schemes must
-  // contain a dot); no executable scheme contains one.
-  const target = new URL(redirectUrl, globalThis.location.origin)
+  // Defense in depth: even though the cloud backend already validates the
+  // redirect byte-identically against the client's registration, never hand
+  // the browser off to an unexpected scheme. Two risks at this sink:
+  // schemes that execute in our origin (javascript:/data:/blob:), and the
+  // OS routing the authorization code + state to whichever installed app
+  // claims an arbitrary custom scheme. Allowed: http(s) — the loopback
+  // redirects desktop/CLI register — plus the exact RFC 8252 reverse-DNS
+  // schemes of known first-party native clients. New native clients must
+  // be added here alongside their backend client registration.
+  let target: URL
+  try {
+    target = new URL(redirectUrl, globalThis.location.origin)
+  } catch {
+    throw new Error('OAuth consent redirect_url is not a valid URL')
+  }
   const isHttp = target.protocol === 'http:' || target.protocol === 'https:'
-  const isReverseDnsScheme = target.protocol.slice(0, -1).includes('.')
-  if (!isHttp && !isReverseDnsScheme) {
+  if (!isHttp && !NATIVE_REDIRECT_SCHEMES.has(target.protocol)) {
     throw new Error('OAuth consent redirect_url has an unsafe scheme')
   }
 
-  globalThis.location.href = redirectUrl
+  // Navigate the parsed URL, not the raw string, so the value validated
+  // above is byte-for-byte the value the browser receives.
+  globalThis.location.href = target.href
 }

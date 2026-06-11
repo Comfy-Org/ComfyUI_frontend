@@ -259,6 +259,7 @@ describe('submitOAuthConsentDecision', () => {
       expect(hrefSetter).toHaveBeenCalledWith(
         'org.comfy.ios://oauth-callback?code=xyz&state=s'
       )
+      expect(hrefSetter).toHaveBeenCalledTimes(1)
     } finally {
       Object.defineProperty(globalThis, 'location', {
         configurable: true,
@@ -267,12 +268,22 @@ describe('submitOAuthConsentDecision', () => {
     }
   })
 
-  it('rejects a dotless custom-scheme redirect_url', async () => {
-    // Dotless schemes are exactly the executable class (javascript:,
-    // data:, blob:) plus denylisted bare schemes (comfy:) — mirrors the
-    // backend's dot-in-scheme rule for native clients.
+  it.for([
+    // Bare custom scheme — rejected because it is not an allowlisted
+    // native scheme (there is no denylist; absence from the allowlist
+    // is the rejection).
+    'comfy://oauth-callback?code=xyz',
+    // Dotted but unknown scheme — must NOT ride in on a "looks like
+    // reverse-DNS" heuristic; only exact allowlist entries pass.
+    'com.evil.app://oauth-callback?code=xyz',
+    // Dotted executable-adjacent scheme (the heuristic bypass class).
+    'ja.vascript://alert(1)',
+    // Executable schemes that must never reach location.href.
+    'data:text/html,<script>alert(1)</script>',
+    'blob:https://cloud.comfy.org/abc'
+  ])('rejects non-allowlisted redirect_url scheme: %s', async (redirectUrl) => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      okResponse({ redirect_url: 'comfy://oauth-callback?code=xyz' })
+      okResponse({ redirect_url: redirectUrl })
     )
 
     await expect(
