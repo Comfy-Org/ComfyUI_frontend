@@ -75,7 +75,7 @@
             </DropdownMenuItem>
             <div
               v-if="searchResults.length === 0"
-              class="p-1 text-sm text-muted-foreground"
+              class="p-2 text-sm text-muted-foreground"
             >
               {{ t('g.noResults') }}
             </div>
