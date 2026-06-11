@@ -16,7 +16,7 @@
             ${{ displayPrice }}
           </span>
           <span class="text-xl text-base-foreground">
-            {{ $t('subscription.usdPerMonthPerMember') }}
+            {{ $t('subscription.usdPerMonth') }}
           </span>
         </div>
         <span class="text-muted-foreground">
@@ -31,12 +31,9 @@
             {{ $t('subscription.preview.eachMonthCreditsRefill') }}
           </span>
           <div class="flex items-center gap-1">
-            <i class="icon-[lucide--component] text-sm text-amber-400" />
+            <i class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400" />
             <span class="font-bold text-base-foreground">
               {{ displayCredits }}
-            </span>
-            <span class="text-base-foreground">
-              {{ $t('subscription.preview.perMember') }}
             </span>
           </div>
         </div>
@@ -151,7 +148,7 @@
         :loading="isLoading"
         @click="$emit('addCreditCard')"
       >
-        {{ $t('subscription.preview.addCreditCard') }}
+        {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}
       </Button>
 
       <!-- Back Link -->

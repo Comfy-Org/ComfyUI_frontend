@@ -94,6 +94,30 @@ describe('useSubscriptionDialog', () => {
 
       expect(mockShowLayoutDialog).toHaveBeenCalled()
     })
+
+    it('uses the unified table (no onChooseTeam) when team workspaces are enabled', () => {
+      mockTeamWorkspacesEnabled.value = true
+      // Unified table is workspace-type-agnostic (Jun-5 model): same path for
+      // a personal-plan or team-plan workspace.
+      mockIsInPersonalWorkspace.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props).not.toHaveProperty('onChooseTeam')
+    })
+
+    it('uses the legacy table (with onChooseTeam) when team workspaces are disabled', () => {
+      mockTeamWorkspacesEnabled.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props).toHaveProperty('onChooseTeam')
+    })
   })
 
   describe('startTeamWorkspaceUpgradeFlow', () => {

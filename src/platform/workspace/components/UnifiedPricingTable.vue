@@ -1,0 +1,716 @@
+<template>
+  <div class="flex h-full flex-col gap-4">
+    <!-- Plan-scope toggle (Gamma-style): personal vs team PLAN on one workspace.
+         Only shown when team plans are available (teamWorkspacesEnabled). -->
+    <div v-if="showTeam" class="flex justify-center">
+      <SelectButton
+        v-model="planMode"
+        :options="planScopeOptions"
+        option-label="label"
+        option-value="value"
+        :allow-empty="false"
+        unstyled
+        :pt="planScopeButtonPt"
+      />
+    </div>
+
+    <!-- Cover panel: bordered container holding the billing toggle / intro line
+         and the plan cards. Grows to fill the dialog so the footnote pins to the
+         bottom, and the cards sit toward the top (DES-197 2951:592109). -->
+    <div
+      class="flex flex-col gap-6 rounded-2xl border border-border-default bg-base-background p-6"
+    >
+      <!-- Billing-cycle toggle (personal tiers only; the team plan is a yearly
+           commitment expressed through the slider). -->
+      <div v-if="planMode === 'personal'" class="flex justify-center">
+        <SelectButton
+          v-model="currentBillingCycle"
+          :options="billingCycleOptions"
+          option-label="label"
+          option-value="value"
+          :allow-empty="false"
+          unstyled
+          :pt="toggleButtonPt"
+        >
+          <template #option="{ option }">
+            <div class="flex items-center gap-2">
+              <span>{{ option.label }}</span>
+              <div
+                v-if="option.value === 'yearly'"
+                class="flex items-center rounded-full bg-primary-background px-2 py-0.5 text-2xs font-bold text-white"
+              >
+                {{ t('subscription.saveYearly') }}
+              </div>
+            </div>
+          </template>
+        </SelectButton>
+      </div>
+
+      <!-- PERSONAL PLANS: tier cards (data-driven via the billing facade,
+         falling back to TIER_PRICING). -->
+      <div
+        v-if="planMode === 'personal'"
+        class="flex flex-col items-stretch gap-4 xl:flex-row"
+      >
+        <div
+          v-for="tier in tiers"
+          :key="tier.id"
+          :class="
+            cn(
+              'flex flex-1 flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)]',
+              tier.isPopular ? 'border-emerald-500' : ''
+            )
+          "
+        >
+          <div class="flex flex-1 flex-col gap-4 p-6 pb-0">
+            <div class="flex flex-row items-center justify-between gap-2">
+              <span
+                class="font-inter text-base/normal font-bold text-base-foreground"
+              >
+                {{ tier.name }}
+              </span>
+              <div
+                v-if="tier.isPopular"
+                class="flex h-5 items-center rounded-full bg-base-foreground px-1.5 text-2xs font-bold tracking-tight text-base-background uppercase"
+              >
+                {{ t('subscription.mostPopular') }}
+              </div>
+            </div>
+            <div class="flex flex-col gap-2">
+              <div class="flex flex-row items-baseline gap-2">
+                <span
+                  class="font-inter text-[28px] leading-normal font-semibold text-base-foreground"
+                >
+                  <span
+                    v-show="currentBillingCycle === 'yearly'"
+                    class="text-2xl text-muted-foreground line-through"
+                  >
+                    ${{ getMonthlyPrice(tier) }}
+                  </span>
+                  ${{ getPrice(tier) }}
+                </span>
+                <span class="font-inter text-sm/normal text-base-foreground">
+                  {{ t('subscription.usdPerMonth') }}
+                </span>
+              </div>
+              <span class="text-sm text-muted-foreground">
+                {{
+                  currentBillingCycle === 'yearly'
+                    ? t('subscription.billedYearly', {
+                        total: `$${getAnnualTotal(tier)}`
+                      })
+                    : t('subscription.billedMonthly')
+                }}
+              </span>
+            </div>
+
+            <div class="h-px w-full bg-border-default" />
+
+            <!-- Progressive feature list: "What's included" then
+                 "Everything in {prev tier}, plus:" (DES-197). -->
+            <div class="flex flex-col gap-3">
+              <span class="text-sm text-muted-foreground">
+                {{ tier.featuresHeader }}
+              </span>
+              <div
+                v-for="feature in tier.features"
+                :key="feature"
+                class="flex flex-row items-start gap-2"
+              >
+                <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
+                <span class="text-foreground text-sm font-normal">
+                  {{ feature }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Credit grant + template-based video estimate, pinned to the
+                 card bottom so the figures align across tiers. -->
+            <div class="mt-auto flex flex-col gap-1">
+              <div class="flex flex-row items-center gap-2">
+                <i
+                  class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400"
+                  aria-hidden="true"
+                />
+                <span
+                  class="font-inter text-sm/normal font-bold text-base-foreground"
+                >
+                  {{ n(tier.pricing.credits) }}
+                </span>
+                <span class="text-sm text-muted-foreground">
+                  {{ t('subscription.monthlyCredits') }}
+                </span>
+              </div>
+              <span class="text-sm text-muted-foreground">
+                {{
+                  t('subscription.videoEstimate', {
+                    count: n(tier.pricing.videoEstimate)
+                  })
+                }}
+              </span>
+            </div>
+          </div>
+          <div class="flex flex-col p-6">
+            <Button
+              :variant="getButtonSeverity(tier)"
+              :disabled="isButtonDisabled(tier)"
+              :loading="loadingTier === tier.key"
+              :class="
+                cn(
+                  'h-10 w-full',
+                  getButtonTextClass(tier),
+                  tier.key === 'creator'
+                    ? 'border-transparent bg-base-foreground hover:bg-inverted-background-hover'
+                    : 'border-transparent bg-secondary-background hover:bg-secondary-background-hover focus:bg-secondary-background-selected'
+                )
+              "
+              @click="() => handleSubscribe(tier.key)"
+            >
+              {{ getButtonLabel(tier) }}
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEAM PLAN: intro line + [Team Plan | Details] card + Enterprise card -->
+      <div v-else class="flex flex-col gap-6">
+        <!-- Intro line; "Learn more" jumps to enterprise. -->
+        <I18nT
+          keypath="subscription.teamHeader"
+          tag="p"
+          class="m-0 text-center text-sm text-muted-foreground"
+        >
+          <template #learnMore>
+            <button
+              type="button"
+              class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground underline hover:text-muted-foreground"
+              @click="handleViewEnterprise"
+            >
+              {{ t('subscription.teamHeaderLearnMore') }}
+            </button>
+          </template>
+        </I18nT>
+
+        <div class="flex flex-col items-stretch gap-4 xl:flex-row">
+          <!-- Team Plan + Details share one card, split by a divider. -->
+          <div
+            class="flex flex-[2.6] flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:flex-row"
+          >
+            <!-- Team Plan column -->
+            <div class="flex flex-[1.6] flex-col gap-4 p-6">
+              <div class="flex flex-col gap-1">
+                <span
+                  class="font-inter text-base/normal font-bold text-base-foreground"
+                >
+                  {{ t('subscription.teamPlan.name') }}
+                </span>
+                <span class="text-sm text-muted-foreground">
+                  {{ t('subscription.teamPlan.tagline') }}
+                </span>
+              </div>
+
+              <!-- Credit slider owns its price/discount/billed-yearly display -->
+              <CreditSlider v-model="teamUsd" @change="onTeamChange" />
+
+              <!-- Selected credit grant + template-based video estimate -->
+              <div class="flex flex-col gap-1">
+                <div class="flex flex-row items-center gap-2">
+                  <i
+                    class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400"
+                    aria-hidden="true"
+                  />
+                  <span
+                    class="font-inter text-sm/normal font-bold text-base-foreground"
+                  >
+                    {{ n(teamCredits) }}
+                  </span>
+                  <span class="text-sm text-muted-foreground">
+                    {{ t('subscription.monthlyCredits') }}
+                  </span>
+                </div>
+                <span class="text-sm text-muted-foreground">
+                  {{
+                    t('subscription.videoEstimate', {
+                      count: n(teamVideoEstimate)
+                    })
+                  }}
+                </span>
+              </div>
+
+              <!-- CTA pinned to the card bottom (aligns with Enterprise CTA) -->
+              <Button
+                variant="inverted"
+                :disabled="isLoading"
+                class="mt-auto h-10 w-full font-bold"
+                @click="handleSubscribeTeam"
+              >
+                {{ t('subscription.teamPlan.cta') }}
+              </Button>
+            </div>
+
+            <!-- Divider: horizontal when stacked, vertical at xl -->
+            <div
+              class="h-px w-full shrink-0 self-stretch bg-border-default xl:h-auto xl:w-px"
+            />
+
+            <!-- Details column -->
+            <div class="flex flex-1 flex-col gap-4 p-6">
+              <span
+                class="font-inter text-base/normal font-bold text-base-foreground"
+              >
+                {{ t('subscription.teamPlan.detailsTitle') }}
+              </span>
+
+              <div class="flex flex-col gap-3">
+                <span class="text-sm text-muted-foreground">
+                  {{
+                    t('subscription.everythingInPlus', {
+                      plan: t('subscription.tiers.pro.name')
+                    })
+                  }}
+                </span>
+                <div
+                  v-for="perk in teamDetailPerks"
+                  :key="perk"
+                  class="flex flex-row items-start gap-2"
+                >
+                  <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
+                  <span class="text-foreground text-sm font-normal">
+                    {{ perk }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-3">
+                <span class="text-sm text-muted-foreground">
+                  {{ t('subscription.teamPlan.comingSoonLabel') }}
+                </span>
+                <div class="flex flex-row items-start gap-2">
+                  <i class="pi pi-clock mt-0.5 text-xs text-muted-foreground" />
+                  <span class="text-foreground text-sm font-normal">
+                    {{ t('subscription.teamPlan.perkProjectAssets') }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Enterprise card -->
+          <div
+            class="flex flex-1 flex-col gap-4 rounded-2xl border border-border-default bg-base-background p-6 shadow-[0_0_12px_rgba(0,0,0,0.1)]"
+          >
+            <span
+              class="font-inter text-base/normal font-bold text-base-foreground"
+            >
+              {{ t('subscription.enterprise.name') }}
+            </span>
+            <div class="flex flex-col gap-3">
+              <span class="text-foreground text-sm/relaxed font-normal">
+                {{
+                  t('subscription.enterprise.needMoreMembers', {
+                    count: TEAM_MAX_MEMBERS
+                  })
+                }}
+              </span>
+              <span class="text-foreground text-sm/relaxed font-normal">
+                {{ t('subscription.enterprise.flexibility') }}
+              </span>
+            </div>
+            <div class="h-px w-full bg-border-default" />
+            <span class="text-foreground text-sm/relaxed font-normal">
+              {{ t('subscription.enterprise.reachOut') }}
+            </span>
+            <Button
+              variant="secondary"
+              class="mt-auto h-10 w-full border-transparent bg-secondary-background font-bold hover:bg-secondary-background-hover"
+              @click="handleViewEnterprise"
+            >
+              {{ t('subscription.enterprise.cta') }}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footnote: template caveat + contact / pricing links -->
+    <I18nT
+      keypath="subscription.pricingBlurb"
+      tag="p"
+      class="m-0 mt-auto text-center text-sm text-text-secondary"
+    >
+      <template #seeDetails>
+        <a
+          :href="VIDEO_TEMPLATE_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="cursor-pointer text-text-secondary underline hover:text-base-foreground"
+        >
+          {{ t('subscription.pricingBlurbSeeDetails') }}
+        </a>
+      </template>
+      <template #questions>
+        <button
+          type="button"
+          class="cursor-pointer border-none bg-transparent p-0 text-sm text-text-secondary underline hover:text-base-foreground"
+          @click="handleContactUs"
+        >
+          {{ t('subscription.pricingBlurbQuestions') }}
+        </button>
+      </template>
+      <template #enterpriseDiscussions>
+        <button
+          type="button"
+          class="cursor-pointer border-none bg-transparent p-0 text-sm text-text-secondary underline hover:text-base-foreground"
+          @click="handleViewEnterprise"
+        >
+          {{ t('subscription.pricingBlurbEnterprise') }}
+        </button>
+      </template>
+      <template #clickHere>
+        <button
+          type="button"
+          class="cursor-pointer border-none bg-transparent p-0 text-sm text-text-secondary underline hover:text-base-foreground"
+          @click="handleViewPricing"
+        >
+          {{ t('subscription.pricingBlurbClickHere') }}
+        </button>
+      </template>
+    </I18nT>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import SelectButton from 'primevue/selectbutton'
+import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
+import { computed, onMounted, ref } from 'vue'
+import { I18nT, useI18n } from 'vue-i18n'
+
+import Button from '@/components/ui/button/Button.vue'
+import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  TIER_PRICING,
+  TIER_TO_KEY
+} from '@/platform/cloud/subscription/constants/tierPricing'
+import type {
+  SubscriptionTier,
+  TierKey,
+  TierPricing
+} from '@/platform/cloud/subscription/constants/tierPricing'
+import {
+  DEFAULT_TEAM_PLAN_STOP_INDEX,
+  TEAM_PLAN_CREDIT_STOPS
+} from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type { Plan } from '@/platform/workspace/api/workspaceApi'
+
+type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+
+interface Props {
+  isLoading?: boolean
+  loadingTier?: CheckoutTierKey | null
+  /** Initial plan scope. The toggle to switch is only shown when team plans
+   *  are available (`teamWorkspacesEnabled`). */
+  initialPlanMode?: 'personal' | 'team'
+}
+
+const {
+  isLoading,
+  loadingTier = null,
+  initialPlanMode = 'personal'
+} = defineProps<Props>()
+
+const emit = defineEmits<{
+  subscribe: [payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }]
+  resubscribe: []
+  // Team-plan checkout. NOTE: the slider stop -> plan-slug mapping is blocked on
+  // the BE discount-breakpoint contract (FE-934 / doc Open Q#2); the host stubs
+  // this until the contract lands.
+  subscribeTeam: [payload: { usd: number; credits: number }]
+}>()
+
+const { t, n } = useI18n()
+const { flags } = useFeatureFlags()
+
+/** Team plans only exist behind the flag (mirrors useBillingContext type). */
+const showTeam = computed(() => flags.teamWorkspacesEnabled)
+
+const planMode = ref<'personal' | 'team'>(initialPlanMode)
+
+const TEAM_MAX_MEMBERS = 30
+
+/** The Wan 2.2 i2v template the video estimates are based on. */
+const VIDEO_TEMPLATE_URL =
+  'https://cloud.comfy.org/?template=video_wan2_2_14B_i2v'
+
+/** Videos-per-credit ratio is constant across tiers; reuse it for the team
+ *  plan's template-based estimate until the BE carries a team figure. */
+const VIDEO_PER_CREDIT =
+  TIER_PRICING.pro.videoEstimate / TIER_PRICING.pro.credits
+
+interface BillingCycleOption {
+  label: string
+  value: BillingCycle
+}
+
+interface PlanScopeOption {
+  label: string
+  value: 'personal' | 'team'
+}
+
+interface PricingTierConfig {
+  id: SubscriptionTier
+  key: CheckoutTierKey
+  name: string
+  pricing: TierPricing
+  /** "What's included:" (Standard) or "Everything in {prev}, plus:". */
+  featuresHeader: string
+  features: string[]
+  isPopular?: boolean
+}
+
+// Billing-cycle toggle: the active option is a solid white pill (DES-197).
+const toggleButtonPt = {
+  root: {
+    class: 'flex gap-1 bg-secondary-background rounded-lg p-1.5'
+  },
+  pcToggleButton: {
+    root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
+      class: [
+        'w-36 h-8 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
+        context.active
+          ? 'bg-base-foreground text-base-background'
+          : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
+      ]
+    }),
+    label: { class: 'flex items-center gap-2 ' }
+  }
+}
+
+// Plan-scope toggle (For Personal / For Teams): active is a subtle raised pill,
+// not the solid white of the billing toggle (DES-197 2951:592113).
+const planScopeButtonPt = {
+  root: {
+    class: 'flex gap-1 bg-secondary-background rounded-lg p-1'
+  },
+  pcToggleButton: {
+    root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
+      class: [
+        'h-8 px-4 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
+        context.active
+          ? 'bg-secondary-background-selected text-base-foreground'
+          : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
+      ]
+    }),
+    label: { class: 'flex items-center gap-2' }
+  }
+}
+
+const planScopeOptions: PlanScopeOption[] = [
+  { label: t('subscription.planScope.personal'), value: 'personal' },
+  { label: t('subscription.planScope.team'), value: 'team' }
+]
+
+const billingCycleOptions: BillingCycleOption[] = [
+  { label: t('subscription.yearly'), value: 'yearly' },
+  { label: t('subscription.monthly'), value: 'monthly' }
+]
+
+/** Team-plan "Details" column perks (DES-197), shown under "Everything in Pro". */
+const teamDetailPerks: string[] = [
+  t('subscription.teamPlan.perkInviteMembers'),
+  t('subscription.teamPlan.perkConcurrentRuns'),
+  t('subscription.teamPlan.perkSharedPool'),
+  t('subscription.teamPlan.perkRolePermissions')
+]
+
+const tiers: PricingTierConfig[] = [
+  {
+    id: 'STANDARD',
+    key: 'standard',
+    name: t('subscription.tiers.standard.name'),
+    pricing: TIER_PRICING.standard,
+    featuresHeader: t('subscription.whatsIncluded'),
+    features: [
+      t('subscription.tiers.standard.feature1'),
+      t('subscription.tiers.standard.feature2')
+    ],
+    isPopular: false
+  },
+  {
+    id: 'CREATOR',
+    key: 'creator',
+    name: t('subscription.tiers.creator.name'),
+    pricing: TIER_PRICING.creator,
+    featuresHeader: t('subscription.everythingInPlus', {
+      plan: t('subscription.tiers.standard.name')
+    }),
+    features: [t('subscription.tiers.creator.feature1')],
+    isPopular: true
+  },
+  {
+    id: 'PRO',
+    key: 'pro',
+    name: t('subscription.tiers.pro.name'),
+    pricing: TIER_PRICING.pro,
+    featuresHeader: t('subscription.everythingInPlus', {
+      plan: t('subscription.tiers.creator.name')
+    }),
+    features: [t('subscription.tiers.pro.feature1')],
+    isPopular: false
+  }
+]
+
+const {
+  plans: apiPlans,
+  currentPlanSlug,
+  fetchPlans,
+  subscription
+} = useBillingContext()
+
+const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+
+const currentBillingCycle = ref<BillingCycle>('yearly')
+
+// Team plan selection (slider). Stop -> slug mapping is BE-blocked (see emit).
+const teamUsd = ref<number>(
+  TEAM_PLAN_CREDIT_STOPS[DEFAULT_TEAM_PLAN_STOP_INDEX].usd
+)
+const teamCredits = ref<number>(
+  TEAM_PLAN_CREDIT_STOPS[DEFAULT_TEAM_PLAN_STOP_INDEX].credits
+)
+const teamVideoEstimate = computed(() =>
+  Math.round(teamCredits.value * VIDEO_PER_CREDIT)
+)
+
+onMounted(() => {
+  void fetchPlans()
+})
+
+function getApiPlanForTier(
+  tierKey: CheckoutTierKey,
+  duration: BillingCycle
+): Plan | undefined {
+  const apiDuration = duration === 'yearly' ? 'ANNUAL' : 'MONTHLY'
+  const apiTier = tierKey.toUpperCase() as Plan['tier']
+  return apiPlans.value.find(
+    (p) => p.tier === apiTier && p.duration === apiDuration
+  )
+}
+
+function getPriceFromApi(tier: PricingTierConfig): number | null {
+  const plan = getApiPlanForTier(tier.key, currentBillingCycle.value)
+  if (!plan) return null
+  const price = plan.price_cents / 100
+  return currentBillingCycle.value === 'yearly' ? price / 12 : price
+}
+
+const currentTierKey = computed<TierKey | null>(() =>
+  subscription.value?.tier ? TIER_TO_KEY[subscription.value.tier] : null
+)
+
+const isYearlySubscription = computed(
+  () => subscription.value?.duration === 'ANNUAL'
+)
+
+const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
+  if (currentPlanSlug.value) {
+    const plan = getApiPlanForTier(tierKey, currentBillingCycle.value)
+    return plan?.slug === currentPlanSlug.value
+  }
+  if (!currentTierKey.value) return false
+  const selectedIsYearly = currentBillingCycle.value === 'yearly'
+  return (
+    currentTierKey.value === tierKey &&
+    isYearlySubscription.value === selectedIsYearly
+  )
+}
+
+const getButtonLabel = (tier: PricingTierConfig): string => {
+  const planName =
+    currentBillingCycle.value === 'yearly'
+      ? t('subscription.tierNameYearly', { name: tier.name })
+      : tier.name
+
+  if (isCurrentPlan(tier.key)) {
+    return isCancelled.value
+      ? t('subscription.resubscribeTo', { plan: planName })
+      : t('subscription.currentPlan')
+  }
+
+  return currentTierKey.value
+    ? t('subscription.changeTo', { plan: planName })
+    : t('subscription.subscribeTo', { plan: planName })
+}
+
+const getButtonSeverity = (
+  tier: PricingTierConfig
+): 'primary' | 'secondary' => {
+  if (isCurrentPlan(tier.key)) {
+    return isCancelled.value ? 'primary' : 'secondary'
+  }
+  if (tier.key === 'creator') return 'primary'
+  return 'secondary'
+}
+
+const isButtonDisabled = (tier: PricingTierConfig): boolean => {
+  if (isLoading) return true
+  if (isCurrentPlan(tier.key)) {
+    return !isCancelled.value
+  }
+  return false
+}
+
+const getButtonTextClass = (tier: PricingTierConfig): string =>
+  tier.key === 'creator'
+    ? 'font-inter text-sm font-bold leading-normal text-base-background'
+    : 'font-inter text-sm font-bold leading-normal text-primary-foreground'
+
+const getPrice = (tier: PricingTierConfig): number =>
+  getPriceFromApi(tier) ?? tier.pricing[currentBillingCycle.value]
+
+const getMonthlyPrice = (tier: PricingTierConfig): number => {
+  const plan = getApiPlanForTier(tier.key, 'monthly')
+  return plan ? plan.price_cents / 100 : tier.pricing.monthly
+}
+
+const getAnnualTotal = (tier: PricingTierConfig): number => {
+  const plan = getApiPlanForTier(tier.key, 'yearly')
+  return plan ? plan.price_cents / 100 : tier.pricing.yearly * 12
+}
+
+function handleSubscribe(tierKey: CheckoutTierKey) {
+  if (isLoading) return
+  if (isCurrentPlan(tierKey)) {
+    if (isCancelled.value) {
+      emit('resubscribe')
+    }
+    return
+  }
+  emit('subscribe', { tierKey, billingCycle: currentBillingCycle.value })
+}
+
+function onTeamChange(stop: { index: number; usd: number; credits: number }) {
+  teamUsd.value = stop.usd
+  teamCredits.value = stop.credits
+}
+
+function handleSubscribeTeam() {
+  if (isLoading) return
+  emit('subscribeTeam', { usd: teamUsd.value, credits: teamCredits.value })
+}
+
+function handleContactUs() {
+  window.open('https://www.comfy.org/discord', '_blank')
+}
+
+function handleViewEnterprise() {
+  window.open('https://www.comfy.org/enterprise', '_blank')
+}
+
+function handleViewPricing() {
+  window.open('https://www.comfy.org/pricing', '_blank')
+}
+</script>

@@ -18,11 +18,11 @@
               ${{ currentDisplayPrice }}
             </span>
             <span class="text-sm text-base-foreground">
-              {{ $t('subscription.usdPerMonthPerMember') }}
+              {{ $t('subscription.usdPerMonth') }}
             </span>
           </div>
           <div class="flex items-center gap-1 text-sm text-muted-foreground">
-            <i class="icon-[lucide--component] text-xs text-amber-400" />
+            <i class="icon-[comfy--credits] size-3.5 shrink-0 bg-amber-400" />
             <span
               >{{ currentDisplayCredits }}
               {{ $t('subscription.perMonth') }}</span
@@ -48,11 +48,11 @@
               ${{ newDisplayPrice }}
             </span>
             <span class="text-sm text-base-foreground">
-              {{ $t('subscription.usdPerMonthPerMember') }}
+              {{ $t('subscription.usdPerMonth') }}
             </span>
           </div>
           <div class="flex items-center gap-1 text-sm text-muted-foreground">
-            <i class="icon-[lucide--component] text-xs text-amber-400" />
+            <i class="icon-[comfy--credits] size-3.5 shrink-0 bg-amber-400" />
             <span
               >{{ newDisplayCredits }} {{ $t('subscription.perMonth') }}</span
             >
@@ -70,7 +70,7 @@
             {{ $t('subscription.preview.eachMonthCreditsRefill') }}
           </span>
           <div class="flex items-center gap-1">
-            <i class="icon-[lucide--component] text-sm text-amber-400" />
+            <i class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400" />
             <span class="font-bold text-base-foreground">
               {{ newDisplayCredits }}
             </span>
@@ -138,7 +138,7 @@
         :loading="isLoading"
         @click="$emit('confirm')"
       >
-        {{ $t('subscription.preview.confirm') }}
+        {{ $t('subscription.preview.switchToPlan', { plan: newTierName }) }}
       </Button>
 
       <Button
