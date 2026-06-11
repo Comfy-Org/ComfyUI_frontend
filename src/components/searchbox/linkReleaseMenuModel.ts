@@ -111,31 +111,50 @@ export function filterNodesByName(
   )
 }
 
-/** A node surfaced by the root flat-value search, tagged with its category. */
-export interface LinkReleaseNodeMatch {
-  category: LinkReleaseNodeCategory
-  node: ComfyNodeDefImpl
+/** A filtered group of nodes shown while searching the root menu. */
+export interface LinkReleaseSearchSection {
+  key: 'suggestions' | LinkReleaseCategoryKey
+  /** i18n key for the section heading. */
+  labelKey: string
+  /** Iconify class shown beside the heading (omitted for Most Relevant). */
+  icon?: string
+  nodes: ComfyNodeDefImpl[]
 }
 
 /**
- * Flat-value search across every category submenu: when the root search has
- * text we surface matching nodes inline (tagged with their category) so a node
- * can be picked straight from the root without first drilling into a submenu.
- * Results preserve category order, then per-category display-name order.
+ * Search that mirrors the no-query layout: a Most Relevant section of matching
+ * suggestions followed by a section per category with matching nodes. A node
+ * present in both Most Relevant and a category appears in each section.
+ * Empty sections are omitted; section order is Most Relevant, then categories.
  */
-export function searchLinkReleaseNodes(
+export function buildLinkReleaseSearchSections(
+  suggestions: ComfyNodeDefImpl[],
   categories: LinkReleaseNodeCategory[],
   query: string
-): LinkReleaseNodeMatch[] {
-  const trimmed = query.trim().toLowerCase()
-  if (!trimmed) return []
-  const matches: LinkReleaseNodeMatch[] = []
+): LinkReleaseSearchSection[] {
+  if (!query.trim()) return []
+
+  const sections: LinkReleaseSearchSection[] = []
+  const relevant = filterNodesByName(suggestions, query)
+  if (relevant.length) {
+    sections.push({
+      key: 'suggestions',
+      labelKey: 'contextMenu.Most Relevant',
+      nodes: relevant
+    })
+  }
+
   for (const category of categories) {
-    for (const node of category.nodes) {
-      if (node.display_name.toLowerCase().includes(trimmed)) {
-        matches.push({ category, node })
-      }
+    const nodes = filterNodesByName(category.nodes, query)
+    if (nodes.length) {
+      sections.push({
+        key: category.key,
+        labelKey: category.labelKey,
+        icon: category.icon,
+        nodes
+      })
     }
   }
-  return matches
+
+  return sections
 }

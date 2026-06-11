@@ -5,10 +5,10 @@ import { NodeSourceType } from '@/types/nodeSource'
 
 import {
   buildLinkReleaseNodeCategories,
+  buildLinkReleaseSearchSections,
   filterNodesByName,
   getLinkReleaseHeaderLabel,
-  getLinkReleaseSuggestions,
-  searchLinkReleaseNodes
+  getLinkReleaseSuggestions
 } from './linkReleaseMenuModel'
 import type { LinkReleaseContext } from './linkReleaseMenuModel'
 
@@ -150,39 +150,57 @@ describe('filterNodesByName', () => {
   })
 })
 
-describe('searchLinkReleaseNodes', () => {
+describe('buildLinkReleaseSearchSections', () => {
+  const loadImage = coreNode('LoadImage', 'Load Image')
+  const suggestions = getLinkReleaseSuggestions([loadImage, ksampler])
   const categories = buildLinkReleaseNodeCategories([
-    coreNode('LoadImage', 'Load Image'),
+    loadImage,
     customNode('ImageBlend', 'Image Blend'),
     partnerNode('ImageGen', 'Image Gen'),
-    coreNode('KSampler')
+    ksampler
   ])
 
-  it('returns no matches for a blank query', () => {
-    expect(searchLinkReleaseNodes(categories, '   ')).toEqual([])
+  it('returns no sections for a blank query', () => {
+    expect(
+      buildLinkReleaseSearchSections(suggestions, categories, '  ')
+    ).toEqual([])
   })
 
-  it('flattens matching nodes across categories, tagged with their category', () => {
-    const matches = searchLinkReleaseNodes(categories, 'image')
-    expect(matches.map((m) => m.node.name)).toEqual([
-      'LoadImage',
-      'ImageBlend',
-      'ImageGen'
-    ])
-    expect(matches.map((m) => m.category.key)).toEqual([
+  it('shows a node in both Most Relevant and its category section', () => {
+    const sections = buildLinkReleaseSearchSections(
+      suggestions,
+      categories,
+      'load image'
+    )
+    expect(sections[0].key).toBe('suggestions')
+    expect(sections[0].nodes.map((n) => n.name)).toContain('LoadImage')
+    const comfy = sections.find((s) => s.key === 'comfy')
+    expect(comfy?.nodes.map((n) => n.name)).toContain('LoadImage')
+  })
+
+  it('orders sections Most Relevant then comfy, extensions, partner', () => {
+    const sections = buildLinkReleaseSearchSections(
+      suggestions,
+      categories,
+      'image'
+    )
+    expect(sections.map((s) => s.key)).toEqual([
+      'suggestions',
       'comfy',
       'extensions',
       'partner'
     ])
   })
 
-  it('matches display name case-insensitively', () => {
-    const matches = searchLinkReleaseNodes(categories, 'ksampler')
-    expect(matches.map((m) => m.node.name)).toEqual(['KSampler'])
-    expect(matches[0].category.key).toBe('comfy')
-  })
-
-  it('returns an empty list when nothing matches', () => {
-    expect(searchLinkReleaseNodes(categories, 'zzz')).toEqual([])
+  it('omits empty sections and returns nothing when no match', () => {
+    const sections = buildLinkReleaseSearchSections(
+      suggestions,
+      categories,
+      'ksampler'
+    )
+    expect(sections.map((s) => s.key)).toEqual(['suggestions', 'comfy'])
+    expect(
+      buildLinkReleaseSearchSections(suggestions, categories, 'zzz')
+    ).toEqual([])
   })
 })

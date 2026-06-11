@@ -19,7 +19,7 @@ vi.mock('./linkReleaseMenuModel', () => ({
   getLinkReleaseHeaderLabel: () => '',
   getLinkReleaseSuggestions: () => groups.suggestions,
   buildLinkReleaseNodeCategories: () => groups.categories,
-  searchLinkReleaseNodes: () => [],
+  buildLinkReleaseSearchSections: () => [],
   filterNodesByName: () => []
 }))
 

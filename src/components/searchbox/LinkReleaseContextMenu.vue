@@ -13,6 +13,7 @@
         align="start"
         :side-offset="4"
         :collision-padding="8"
+        :avoid-collisions="false"
         :class="contentClass"
         @open-auto-focus.prevent="focusSearch"
         @close-auto-focus.prevent
@@ -54,27 +55,30 @@
 
         <div :class="scrollClass">
           <template v-if="trimmedQuery">
-            <DropdownMenuItem
-              v-for="match in searchResults"
-              :key="`${match.category.key}:${match.node.name}`"
-              :class="itemClass"
-              @select="selectNode(match.node)"
-            >
-              <i
-                :class="cn(match.category.icon, 'size-4 shrink-0 opacity-80')"
-              />
-              <span class="flex min-w-0 flex-1 items-center gap-1">
-                <span class="shrink-0 text-muted-foreground">
-                  {{ t(match.category.labelKey) }}:
-                </span>
+            <template v-for="section in searchSections" :key="section.key">
+              <DropdownMenuLabel
+                class="flex items-center gap-2 p-2 text-xs font-medium text-muted-foreground uppercase"
+              >
+                <i
+                  v-if="section.icon"
+                  :class="cn(section.icon, 'size-4 shrink-0 opacity-80')"
+                />
+                <span class="truncate">{{ t(section.labelKey) }}</span>
+              </DropdownMenuLabel>
+              <DropdownMenuItem
+                v-for="nodeDef in section.nodes"
+                :key="`${section.key}:${nodeDef.name}`"
+                :class="itemClass"
+                @select="selectNode(nodeDef)"
+              >
                 <MiddleTruncate
-                  :text="match.node.display_name"
+                  :text="nodeDef.display_name"
                   class="min-w-0 flex-1"
                 />
-              </span>
-            </DropdownMenuItem>
+              </DropdownMenuItem>
+            </template>
             <div
-              v-if="searchResults.length === 0"
+              v-if="searchSections.length === 0"
               class="p-2 text-sm text-muted-foreground"
             >
               {{ t('g.noResults') }}
@@ -167,14 +171,11 @@ import LinkReleaseNodeSubmenu from './LinkReleaseNodeSubmenu.vue'
 import MiddleTruncate from './MiddleTruncate.vue'
 import {
   buildLinkReleaseNodeCategories,
+  buildLinkReleaseSearchSections,
   getLinkReleaseHeaderLabel,
-  getLinkReleaseSuggestions,
-  searchLinkReleaseNodes
+  getLinkReleaseSuggestions
 } from './linkReleaseMenuModel'
-import type {
-  LinkReleaseContext,
-  LinkReleaseNodeMatch
-} from './linkReleaseMenuModel'
+import type { LinkReleaseContext } from './linkReleaseMenuModel'
 
 const { context } = defineProps<{ context: LinkReleaseContext | null }>()
 
@@ -192,6 +193,13 @@ const position = ref({ x: 0, y: 0 })
 const searchInput = ref<HTMLInputElement>()
 const query = ref('')
 let actionTaken = false
+
+const MENU_MARGIN = 8
+// Height reserved when placing the menu so the default (no-query) content opens
+// fully in view; only longer result lists fall back to internal scrolling.
+const DEFAULT_MENU_HEIGHT = 420
+// Matches the content's max-w-sm (24rem).
+const MENU_WIDTH = 384
 
 const contentClass =
   'z-1700 flex max-h-[min(80vh,var(--reka-dropdown-menu-content-available-height))] min-w-[260px] max-w-sm flex-col overflow-hidden rounded-lg border border-interface-menu-stroke bg-interface-menu-surface p-1 shadow-interface'
@@ -247,8 +255,12 @@ const categories = computed(() =>
   buildLinkReleaseNodeCategories(compatibleNodes.value)
 )
 
-const searchResults = computed<LinkReleaseNodeMatch[]>(() =>
-  searchLinkReleaseNodes(categories.value, trimmedQuery.value)
+const searchSections = computed(() =>
+  buildLinkReleaseSearchSections(
+    suggestions.value,
+    categories.value,
+    trimmedQuery.value
+  )
 )
 
 function selectNode(nodeDef: ComfyNodeDefImpl) {
@@ -308,15 +320,24 @@ function onRootSearchKeydown(event: KeyboardEvent) {
     event.preventDefault()
     focusFirstItem(event.currentTarget as HTMLElement)
   } else if (event.key === 'Enter' && trimmedQuery.value) {
-    const first = searchResults.value[0]
-    if (first) selectNode(first.node)
+    const first = searchSections.value[0]?.nodes[0]
+    if (first) selectNode(first)
   }
 }
 
 function show(event: MouseEvent) {
   actionTaken = false
   query.value = ''
-  position.value = { x: event.clientX, y: event.clientY }
+  // Lift the menu up (and nudge it left) only when the cursor is too close to
+  // an edge for the default-height menu to fit. Computed once on open so the
+  // menu never moves while filtering. Node placement is unaffected because it
+  // uses the original canvas coords, not this client position.
+  const maxX = window.innerWidth - MENU_WIDTH - MENU_MARGIN
+  const maxY = window.innerHeight - DEFAULT_MENU_HEIGHT - MENU_MARGIN
+  position.value = {
+    x: Math.min(event.clientX, Math.max(MENU_MARGIN, maxX)),
+    y: Math.min(event.clientY, Math.max(MENU_MARGIN, maxY))
+  }
   void nextTick(() => {
     open.value = true
   })
