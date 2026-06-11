@@ -2982,6 +2982,98 @@
       }
     }
   },
+  "DA3GeometryToMesh": {
+    "description": "Bir derinlik haritasını üçgenleştirilmiş bir 3B mesh'e dönüştür.",
+    "display_name": "DA3 Geometrisini Mesh'e Dönüştür",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Dönüştürülecek batch'teki hangi görsel. Her görselin vertex sayısı farklı olabileceğinden batch'ler üst üste konulamaz."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "Görsel başına normalleştirilmiş güveni bu değerin altında olan pikselleri hariç tut (0 = hepsini tut, 1 = yalnızca en güvenilir pikseli tut). Geometri bir güven haritasına sahip olduğunda kullanılır (Small/Base modelleri)."
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Vertex aralığı. 1 = tam çözünürlük, 2 = yarı, vb."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "3x3 derinlik aralığı bu oranı aşan üçgenleri at. 0 = kapalı."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Kaynak görseli ana renk dokusu olarak kullan."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "Mesh'ten gökyüzü olasılığı yüksek (sky >= 0.5) pikselleri hariç tut. Geometri bir gökyüzü haritasına sahip olduğunda kullanılır (Mono/Metric modelleri)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "Bir görsel üzerinde Depth Anything 3 çalıştır. Çoklu görünüm modunda her görsel aynı sahnenin ayrı bir görünümü olarak değerlendirilir.",
+    "display_name": "Depth Anything 3 Çalıştır",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: Tek görünümlü görsel (her model varyantı ile çalışır).\nmultiview: Tüm görseller geometrik tutarlılık ve kamera pozisyonu için birlikte işlenir (yalnızca Small/Base modelleri için)."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: En uzun kenar = çözünürlük olacak şekilde ölçekle (bellek sınırlandırır, varsayılan).\nlower_bound_resize: En kısa kenar = çözünürlük olacak şekilde ölçekle (uzun/dar görsellerde daha fazla detay korur, daha fazla bellek kullanır)."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Modelin çalışacağı çözünürlük (en uzun kenar, 14'ün katı).\nDüşük = daha hızlı / daha az VRAM.\nYüksek = daha fazla detay.\nÇıktı orijinal boyuta tekrar ölçeklenir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "Normalleştirilmemiş tensörlerin sözlüğü.\nHer zaman şu anahtarlar bulunur: depth, image, mode.\nİsteğe bağlı anahtarlar: sky (Mono/Metric için), confidence (Small/Base için), extrinsics + intrinsics (çoklu görünüm için)."
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "Depth Anything 3 geometri verisinden bir derinlik haritası, güven haritası veya gökyüzü maskesi oluştur.",
+    "display_name": "Depth Anything 3 Render Al",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: normalleştirilmiş gri tonlamalı derinlik görseli.\n- depth_colored: derinlik Turbo renk haritasından geçirilmiş.\n- sky_mask: gökyüzü olasılığı [0, 1] aralığında (yalnızca Mono/Metric modelleri için).\n- confidence: normalleştirilmiş derinlik güveni (yalnızca Small/Base modelleri için)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "ControlNet Modelini Yükle (fark)",
     "inputs": {
@@ -8983,6 +9075,22 @@
     "outputs": {
       "0": {
         "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "Depth Anything 3 Yükle",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
