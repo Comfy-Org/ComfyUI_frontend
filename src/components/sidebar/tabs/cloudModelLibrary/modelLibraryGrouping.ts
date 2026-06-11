@@ -87,27 +87,21 @@ export function partnerKind(category: string | undefined): string {
 
 function groupIdForTag(asset: AssetItem, tag: string): string | null {
   const tagGroup = groupIdForRawTag(rawTagTopLevel(tag))
-  // Cross-base file-types stay in their type bucket. The Base-model sort
-  // axis still keeps each family's items grouped together within that bucket.
-  if (
-    tagGroup === 'loras' ||
-    tagGroup === 'vae' ||
-    tagGroup === 'conditioning'
-  ) {
-    return tagGroup
-  }
   // Filename-based VAE detection: any file with "vae" in any path segment of
   // its tag, name, or filepath belongs in the VAE bucket — catches assets
   // tagged generically (`latentsync/vae`, `CogVideo/VAE`, `SEEDVR2`) or named
   // `*_vae_*` but tagged as something else.
   if (looksLikeVae(asset, tag)) return 'vae'
-  // For everything else, let the resolved base model's primary category
-  // override the file-type-derived bucket — keeps a family's text encoders
-  // and checkpoints visible together rather than scattered.
-  const bases = getAssetBaseModels(asset)
-  for (const base of bases) {
-    const override = getCategoryOverrideForBase(base)
-    if (override) return override
+  // Type wins. The base-model override only re-homes MAIN generative models
+  // (checkpoints / diffusion_models) into their modality — an LTX transformer
+  // belongs in Video & motion, but an SDXL text encoder is still an encoder.
+  // The Base-model sort axis keeps each family together within a bucket.
+  if (tagGroup === 'diffusion') {
+    const bases = getAssetBaseModels(asset)
+    for (const base of bases) {
+      const override = getCategoryOverrideForBase(base)
+      if (override) return override
+    }
   }
   return tagGroup
 }

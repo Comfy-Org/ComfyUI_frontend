@@ -101,18 +101,57 @@ describe('groupAsset', () => {
     ).toEqual(['vae'])
   })
 
-  it('lets a base-model category override the file-type bucket', () => {
-    const asset = makeAsset({
+  it('keeps companion file types in their bucket regardless of base model', () => {
+    const clipEncoder = makeAsset({
       tags: ['models', 'text_encoders'],
       metadata: { base_model: 'SDXL' }
     })
-    expect(groupAsset(asset).groupIds).toEqual(['diffusion'])
+    expect(groupAsset(clipEncoder).groupIds).toEqual(['encoders'])
+    const upscaler = makeAsset({
+      tags: ['models', 'latent_upscale_models'],
+      metadata: { base_model: 'LTX 2.3' }
+    })
+    expect(groupAsset(upscaler).groupIds).toEqual(['upscale'])
+  })
+
+  it('re-homes main generative models into their modality by base model', () => {
+    const videoTransformer = makeAsset({
+      tags: ['models', 'diffusion_models'],
+      metadata: { base_model: 'LTX 2.3' }
+    })
+    expect(groupAsset(videoTransformer).groupIds).toEqual(['video'])
+    const audioCheckpoint = makeAsset({
+      tags: ['models', 'checkpoints'],
+      metadata: { base_model: 'ACE-Step' }
+    })
+    expect(groupAsset(audioCheckpoint).groupIds).toEqual(['audio'])
   })
 
   it('falls back to the tag-derived group when no base override applies', () => {
     expect(
       groupAsset(makeAsset({ tags: ['models', 'text_encoders'] })).groupIds
     ).toEqual(['encoders'])
+  })
+
+  it('does not capture unmapped tags by base model', () => {
+    const result = groupAsset(
+      makeAsset({
+        tags: ['models', 'intrinsic_loras'],
+        metadata: { base_model: 'SD 1.5' }
+      })
+    )
+    expect(result.groupIds).toEqual([])
+    expect(result.unmappedTags).toEqual(['intrinsic_loras'])
+  })
+
+  it('matches folder tags case-insensitively', () => {
+    expect(
+      groupAsset(makeAsset({ tags: ['models', 'cogvideo'] })).groupIds
+    ).toEqual(['video'])
+    expect(
+      groupAsset(makeAsset({ tags: ['models', 'llm/florence-2-base'] }))
+        .groupIds
+    ).toEqual(['language'])
   })
 
   it('surfaces unmapped tags verbatim by top-level folder', () => {

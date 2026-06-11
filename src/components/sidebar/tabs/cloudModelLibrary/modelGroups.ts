@@ -134,18 +134,20 @@ export const MODEL_GROUPS: readonly ModelGroupDef[] = [
 const TAG_TO_GROUP_ID = (() => {
   const map = new Map<string, string>()
   for (const group of MODEL_GROUPS) {
-    for (const tag of group.tags) map.set(tag, group.id)
+    for (const tag of group.tags) map.set(tag.toLowerCase(), group.id)
   }
   return map
 })()
 
 /**
  * Maps a raw asset category tag (e.g. "loras", "sam3d") to a group id.
- * Returns null if the tag is unmapped — caller should render a fallback
- * section keyed on the raw tag so new categories surface immediately.
+ * Matching is case-insensitive — backends disagree on casing (`cogvideo`
+ * vs `CogVideo`, `llm` vs `LLM`). Returns null if the tag is unmapped —
+ * caller should render a fallback section keyed on the raw tag so new
+ * categories surface immediately.
  */
 export function groupIdForRawTag(rawTag: string): string | null {
-  return TAG_TO_GROUP_ID.get(rawTag) ?? null
+  return TAG_TO_GROUP_ID.get(rawTag.toLowerCase()) ?? null
 }
 
 /**

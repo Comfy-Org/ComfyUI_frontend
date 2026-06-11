@@ -1,13 +1,10 @@
 /**
- * Maps a canonical base-model label to the category group its assets should
- * land under, regardless of the asset's file-type tag. Use when a base-model
- * family's companions (text encoders, VAEs, model patches, etc.) should be
- * displayed alongside the base instead of scattered across encoder / vae /
- * conditioning buckets.
- *
- * LoRAs are exempt — they always stay in the dedicated "LoRAs" group, since
- * LoRA is a cross-family file format and the [[Base model]] sort axis already
- * groups them by family.
+ * Maps a canonical base-model label to the modality group its MAIN generative
+ * models belong in. Applied only to assets whose folder tag lands in the
+ * Diffusion bucket (checkpoints / diffusion_models) — an LTX transformer
+ * belongs in Video & motion, an ACE-Step checkpoint in TTS & audio. Companion
+ * file types (encoders, upscalers, detectors, …) keep their type bucket; the
+ * Base-model sort axis keeps each family together within it.
  *
  * Family roots that span multiple modalities (e.g. bare "Qwen" can be either
  * a language model or an image model) are intentionally omitted; their tags
