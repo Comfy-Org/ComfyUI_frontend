@@ -8,6 +8,7 @@ import type { AsyncUploadResponse } from '@/platform/assets/schemas/assetSchema'
 import { useUploadModelWizard } from './useUploadModelWizard'
 
 vi.mock('@/platform/assets/services/assetService', () => ({
+  MODELS_TAG: 'models',
   assetService: {
     uploadAssetAsync: vi.fn(),
     uploadAssetPreviewImage: vi.fn()

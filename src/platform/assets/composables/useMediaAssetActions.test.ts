@@ -150,6 +150,7 @@ const mockCreateAssetExport = vi.hoisted(() =>
   vi.fn().mockResolvedValue({ task_id: 'test-task-id', status: 'pending' })
 )
 vi.mock('../services/assetService', () => ({
+  MODELS_TAG: 'models',
   assetService: {
     deleteAsset: mockDeleteAsset,
     createAssetExport: mockCreateAssetExport

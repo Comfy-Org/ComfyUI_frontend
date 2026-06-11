@@ -46,7 +46,7 @@
             <template #default>
               <div class="flex min-w-44 flex-col">
                 <Button
-                  v-for="option in SORT_OPTIONS"
+                  v-for="option in sortOptions"
                   :key="option.value"
                   variant="textonly"
                   class="w-full"
@@ -55,7 +55,7 @@
                   <span>{{ $t(option.labelKey) }}</span>
                   <i
                     class="ml-auto icon-[lucide--check] size-4"
-                    :class="sortMode !== option.value && 'opacity-0'"
+                    :class="effectiveSortMode !== option.value && 'opacity-0'"
                   />
                 </Button>
               </div>
@@ -216,7 +216,6 @@ import {
   getAssetTriggerPhrases
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
-import { isCloud } from '@/platform/distribution/types'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -258,28 +257,10 @@ const ALL_SORT_OPTIONS: ReadonlyArray<{ value: SortMode; labelKey: string }> = [
   { value: 'nameDesc', labelKey: 'assets.sort.nameDesc' }
 ] as const
 
-// Base-model sort/grouping relies on reliable base-model metadata, which only
-// the cloud assets API provides; local builds list models alphabetically.
-const SORT_OPTIONS = isCloud
-  ? ALL_SORT_OPTIONS
-  : ALL_SORT_OPTIONS.filter(
-      (option) =>
-        option.value !== 'baseModelAsc' && option.value !== 'baseModelDesc'
-    )
-
 const sortMode = useStorage<SortMode>(
   'Comfy.CloudModelLibrary.SortBy',
-  isCloud ? 'baseModelAsc' : 'nameAsc'
+  'baseModelAsc'
 )
-
-// A base-model sort persisted earlier (or shared with the cloud build via the
-// same storage key) must not survive on local, where the option is hidden.
-if (
-  !isCloud &&
-  (sortMode.value === 'baseModelAsc' || sortMode.value === 'baseModelDesc')
-) {
-  sortMode.value = 'nameAsc'
-}
 
 const expanded = ref<Record<string, boolean>>({})
 const expandedBeforeSearch = ref<Record<string, boolean>>({})
@@ -288,6 +269,30 @@ const expandedBeforeSearch = ref<Record<string, boolean>>({})
 // fonts, licenses) aren't models and never belong in the library.
 const assets = computed<AssetItem[]>(() =>
   source.assets.value.filter(isLikelyModelFile)
+)
+
+// Base-model sorting is offered when the backend actually provides
+// base-model metadata — a data capability, not a distribution check.
+const hasBaseModelData = computed(() =>
+  assets.value.some((asset) => getAssetBaseModels(asset).length > 0)
+)
+
+const sortOptions = computed(() =>
+  hasBaseModelData.value
+    ? ALL_SORT_OPTIONS
+    : ALL_SORT_OPTIONS.filter(
+        (option) =>
+          option.value !== 'baseModelAsc' && option.value !== 'baseModelDesc'
+      )
+)
+
+// A persisted base-model sort can't apply when the data has no base models;
+// fall back to name order without overwriting the stored preference.
+const effectiveSortMode = computed<SortMode>(() =>
+  !hasBaseModelData.value &&
+  (sortMode.value === 'baseModelAsc' || sortMode.value === 'baseModelDesc')
+    ? 'nameAsc'
+    : sortMode.value
 )
 
 const partnerNodes = computed<ComfyNodeDefImpl[]>(() =>
@@ -387,7 +392,7 @@ const matchedPartners = computed(() =>
 
 const sections = computed<Section[]>(() => {
   const isSearching = searchQuery.value.trim().length > 0
-  const mode = sortMode.value
+  const mode = effectiveSortMode.value
 
   // With an active search, collapse category sections into a single flat
   // "Search results" list ordered by Fuse relevance across both pools
