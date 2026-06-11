@@ -45,24 +45,26 @@
             </template>
             <template #default>
               <div class="flex min-w-44 flex-col">
-                <Button
-                  v-for="option in GROUP_BY_OPTIONS"
-                  :key="option.value"
-                  variant="textonly"
-                  class="w-full"
-                  @click="groupBy = option.value"
-                >
-                  <span class="flex items-center gap-2">
-                    <i :class="cn(option.icon, 'size-4')" />
-                    <span>{{ $t(option.labelKey) }}</span>
-                  </span>
-                  <i
-                    class="ml-auto icon-[lucide--check] size-4"
-                    :class="groupBy !== option.value && 'opacity-0'"
-                  />
-                </Button>
+                <template v-if="isCloud">
+                  <Button
+                    v-for="option in GROUP_BY_OPTIONS"
+                    :key="option.value"
+                    variant="textonly"
+                    class="w-full"
+                    @click="groupBy = option.value"
+                  >
+                    <span class="flex items-center gap-2">
+                      <i :class="cn(option.icon, 'size-4')" />
+                      <span>{{ $t(option.labelKey) }}</span>
+                    </span>
+                    <i
+                      class="ml-auto icon-[lucide--check] size-4"
+                      :class="groupBy !== option.value && 'opacity-0'"
+                    />
+                  </Button>
 
-                <div class="my-1 w-full border-b border-border-subtle" />
+                  <div class="my-1 w-full border-b border-border-subtle" />
+                </template>
 
                 <Button
                   v-for="option in SORT_OPTIONS"
@@ -495,6 +497,19 @@ const sections = computed<Section[]>(() => {
     }
   }
 
+  // Local items carry no type metadata, so the library mirrors the disk:
+  // Partner Nodes pinned on top, then one verbatim section per folder.
+  // The group-by toggle is cloud-only — locally both modes would render
+  // the same folder list, so the folder view is unconditional.
+  if (!isCloud) {
+    const folderSections = groupAssetsByTopLevelFolder(matchedAssets.value)
+      .map(([folder, list]) => buildAssetSection(`tag:${folder}`, folder, list))
+      .filter((section): section is Section => section !== null)
+      .map((section) => ({ ...section, isUserFolder: true }))
+    const partners = buildPartnerSection()
+    return partners ? [partners, ...folderSections] : folderSections
+  }
+
   // Group by on-disk folder instead of model category. Directories sort
   // alphabetically; partner nodes (which have no directory) trail at the end.
   if (groupBy.value === 'directory') {
@@ -517,17 +532,6 @@ const sections = computed<Section[]>(() => {
       )
     const partners = buildPartnerSection()
     return partners ? [...directorySections, partners] : directorySections
-  }
-
-  // Local items carry no type metadata, so the library mirrors the disk:
-  // Partner Nodes pinned on top, then one verbatim section per folder.
-  if (!isCloud) {
-    const folderSections = groupAssetsByTopLevelFolder(matchedAssets.value)
-      .map(([folder, list]) => buildAssetSection(`tag:${folder}`, folder, list))
-      .filter((section): section is Section => section !== null)
-      .map((section) => ({ ...section, isUserFolder: true }))
-    const partners = buildPartnerSection()
-    return partners ? [partners, ...folderSections] : folderSections
   }
 
   const knownGroups = MODEL_GROUPS.filter(
