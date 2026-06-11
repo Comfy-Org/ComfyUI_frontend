@@ -12,6 +12,12 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => {
   return { layoutStore: { isDraggingVueNodes } }
 })
 
+vi.mock('@/renderer/extensions/vueNodes/composables/useNodeTooltips', () => ({
+  useNodeTooltips: () => ({
+    createTooltipConfig: (value: string) => ({ value })
+  })
+}))
+
 const { layoutStore } = await import('@/renderer/core/layout/store/layoutStore')
 
 const i18n = createI18n({
@@ -27,8 +33,11 @@ const i18n = createI18n({
       rightSidePanel: {
         showAdvancedShort: 'Show Advanced',
         hideAdvancedShort: 'Hide Advanced',
-        showAdvancedInputsButton: 'Show Advanced Inputs',
-        hideAdvancedInputsButton: 'Hide Advanced Inputs'
+        showAdvancedInputsButton: 'Show Advanced Widgets',
+        hideAdvancedInputsButton: 'Hide Advanced Widgets',
+        advancedAffordance: {
+          settingsTooltip: 'Advanced widget settings'
+        }
       }
     }
   }
@@ -40,6 +49,7 @@ type Props = {
   showErrorsTabEnabled: boolean
   showAdvancedInputsButton?: boolean
   showAdvancedState?: boolean
+  globalAlwaysShowAdvanced?: boolean
   headerColor?: string
   shape?: RenderShape
 }
@@ -115,12 +125,12 @@ describe('NodeFooter', () => {
 
     it('renders advanced-only footer for regular node (Case 4, collapsed label)', () => {
       renderFooter({ showAdvancedInputsButton: true })
-      expect(screen.getByText('Show Advanced Inputs')).toBeTruthy()
+      expect(screen.getByText('Show Advanced Widgets')).toBeTruthy()
     })
 
     it('renders advanced-only footer for regular node (Case 4, expanded label)', () => {
       renderFooter({ showAdvancedState: true })
-      expect(screen.getByText('Hide Advanced Inputs')).toBeTruthy()
+      expect(screen.getByText('Hide Advanced Widgets')).toBeTruthy()
     })
   })
 
@@ -146,10 +156,53 @@ describe('NodeFooter', () => {
       expect(emitted()).toHaveProperty('enterSubgraph')
     })
 
-    it('emits toggleAdvanced when the advanced tab is clicked', async () => {
-      const { emitted } = renderFooter({ showAdvancedInputsButton: true })
-      await user.click(screen.getByText('Show Advanced Inputs'))
+    it('emits toggleAdvanced when the advanced tab is clicked (Case 1b)', async () => {
+      const { emitted } = renderFooter({
+        hasAnyError: true,
+        showErrorsTabEnabled: true,
+        showAdvancedInputsButton: true
+      })
+      await user.click(screen.getByText('Show Advanced'))
       expect(emitted()).toHaveProperty('toggleAdvanced')
+    })
+
+    it('emits toggleAdvanced when the Case 4 main button is clicked', async () => {
+      const { emitted } = renderFooter({ showAdvancedInputsButton: true })
+      await user.click(screen.getByText('Show Advanced Widgets'))
+      expect(emitted()).toHaveProperty('toggleAdvanced')
+    })
+
+    it('renders the Case 4 settings affordance only when the node is expanded', () => {
+      renderFooter({ showAdvancedInputsButton: true })
+      expect(screen.queryByTestId('advanced-inputs-settings-button')).toBeNull()
+    })
+
+    it('renders the Case 4 settings affordance when showAdvancedState is true', () => {
+      renderFooter({ showAdvancedState: true })
+      expect(screen.getByTestId('advanced-inputs-settings-button')).toBeTruthy()
+    })
+
+    it('emits advancedHoverChange when hovering the advanced tab', async () => {
+      const { emitted } = renderFooter({ showAdvancedInputsButton: true })
+      const button = screen.getByTestId('advanced-inputs-button')
+      await user.hover(button)
+      await user.unhover(button)
+      expect(emitted().advancedHoverChange).toEqual([[true], [false]])
+    })
+
+    it('emits advancedHoverChange when focusing the advanced tab via keyboard', async () => {
+      const { emitted } = renderFooter({ showAdvancedInputsButton: true })
+      await user.tab()
+      const focusedTrue = emitted().advancedHoverChange?.[0]
+      expect(focusedTrue).toEqual([true])
+    })
+
+    it('hides the Case 4 footer when global always-show is on', () => {
+      renderFooter({
+        showAdvancedInputsButton: true,
+        globalAlwaysShowAdvanced: true
+      })
+      expect(screen.queryByText('Show Advanced Widgets')).toBeNull()
     })
 
     describe('drag-then-click suppression', () => {

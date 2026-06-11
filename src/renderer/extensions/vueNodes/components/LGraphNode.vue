@@ -153,7 +153,11 @@
         >
           <NodeSlots :node-data="nodeData" />
 
-          <NodeWidgets v-if="nodeData.widgets?.length" :node-data="nodeData" />
+          <NodeWidgets
+            v-if="nodeData.widgets?.length"
+            :node-data="nodeData"
+            :is-advanced-hovered="isAdvancedButtonHovered"
+          />
 
           <div v-if="hasCustomContent" class="flex min-h-0 flex-1 flex-col">
             <NodeContent
@@ -188,11 +192,14 @@
       :show-errors-tab-enabled="showErrorsTabEnabled"
       :show-advanced-inputs-button="showAdvancedInputsButton"
       :show-advanced-state="showAdvancedState"
+      :global-always-show-advanced="globalAlwaysShowAdvanced"
       :header-color="applyLightThemeColor(nodeData?.color)"
       :shape="nodeData.shape"
       @enter-subgraph="handleEnterSubgraph"
       @open-errors="handleOpenErrors"
       @toggle-advanced="handleToggleAdvanced"
+      @open-advanced-setting="handleOpenAdvancedSetting"
+      @advanced-hover-change="isAdvancedButtonHovered = $event"
     />
     <template
       v-if="
@@ -655,6 +662,13 @@ const handleToggleAdvanced = () => {
   showAdvancedState.value = !showAdvancedState.value
 }
 
+const handleOpenAdvancedSetting = () => {
+  useCanvasStore().canvas?.deselectAll()
+  rightSidePanelStore.focusGlobalSetting('show-advanced-setting')
+}
+
+const isAdvancedButtonHovered = ref(false)
+
 const handleEnterSubgraph = () => {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'graph_node_open_subgraph_clicked'
@@ -712,11 +726,12 @@ const showAdvancedInputsButton = computed(() => {
 
   // For regular nodes: show button if there are advanced widgets and they're currently hidden
   const hasAdvancedWidgets = nodeData.widgets?.some((w) => w.options?.advanced)
-  const alwaysShowAdvanced = settingStore.get(
-    'Comfy.Node.AlwaysShowAdvancedWidgets'
-  )
-  return hasAdvancedWidgets && !alwaysShowAdvanced
+  return hasAdvancedWidgets && !globalAlwaysShowAdvanced.value
 })
+
+const globalAlwaysShowAdvanced = computed(
+  () => !!settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets')
+)
 
 const showAdvancedState = customRef((track, trigger) => {
   let internalState = false
