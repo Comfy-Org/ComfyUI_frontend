@@ -178,101 +178,8 @@
         </div>
 
         <div class="flex flex-col gap-6 pt-6 lg:flex-row lg:items-stretch">
-          <div class="flex flex-col">
-            <div class="flex h-full flex-col gap-3">
-              <div
-                class="relative flex h-full flex-col justify-between gap-6 rounded-2xl bg-secondary-background p-5"
-              >
-                <Button
-                  variant="muted-textonly"
-                  size="icon-sm"
-                  class="absolute top-4 right-4"
-                  :loading="isLoadingBalance"
-                  @click="handleRefresh"
-                >
-                  <i class="pi pi-sync text-sm text-text-secondary" />
-                </Button>
-
-                <div class="flex flex-col gap-2">
-                  <div class="text-sm text-muted">
-                    {{ $t('subscription.totalCredits') }}
-                  </div>
-                  <Skeleton
-                    v-if="isLoadingBalance"
-                    width="8rem"
-                    height="2rem"
-                  />
-                  <div v-else class="text-2xl font-bold">
-                    {{ showZeroState ? '0' : totalCredits }}
-                  </div>
-                </div>
-
-                <!-- Credit Breakdown -->
-                <table class="text-sm text-muted">
-                  <tbody>
-                    <tr>
-                      <td class="pr-4 text-left align-middle font-bold">
-                        <Skeleton
-                          v-if="isLoadingBalance"
-                          width="5rem"
-                          height="1rem"
-                        />
-                        <span v-else>{{
-                          showZeroState ? '0 / 0' : includedCreditsDisplay
-                        }}</span>
-                      </td>
-                      <td class="align-middle" :title="creditsRemainingLabel">
-                        {{ creditsRemainingLabel }}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td class="pr-4 text-left align-middle font-bold">
-                        <Skeleton
-                          v-if="isLoadingBalance"
-                          width="3rem"
-                          height="1rem"
-                        />
-                        <span v-else>{{
-                          showZeroState ? '0' : prepaidCredits
-                        }}</span>
-                      </td>
-                      <td
-                        class="align-middle"
-                        :title="$t('subscription.creditsYouveAdded')"
-                      >
-                        {{ $t('subscription.creditsYouveAdded') }}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-
-                <div
-                  v-if="
-                    isActiveSubscription &&
-                    !showZeroState &&
-                    permissions.canTopUp
-                  "
-                  class="flex flex-col gap-3"
-                >
-                  <Button
-                    v-if="isFreeTierPlan"
-                    variant="gradient"
-                    class="min-h-8 w-full rounded-lg p-2 text-sm font-normal"
-                    @click="handleUpgradeToAddCredits"
-                  >
-                    {{ $t('subscription.upgradeToAddCredits') }}
-                  </Button>
-                  <Button
-                    v-else
-                    variant="secondary"
-                    class="min-h-8 rounded-lg bg-interface-menu-component-surface-selected p-2 text-sm font-normal text-text-primary"
-                    @click="handleAddApiCredits"
-                  >
-                    {{ $t('subscription.addCredits') }}
-                  </Button>
-                </div>
-              </div>
-            </div>
+          <div class="w-full lg:max-w-md">
+            <CreditsTile :zero-state="showZeroState" />
           </div>
 
           <div v-if="isActiveSubscription" class="flex flex-col gap-2">
@@ -359,8 +266,7 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 import Menu from 'primevue/menu'
-import Skeleton from 'primevue/skeleton'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToast } from 'primevue/usetoast'
@@ -368,14 +274,12 @@ import { useToast } from 'primevue/usetoast'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
-import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
 import { useDialogService } from '@/services/dialogService'
 import {
   DEFAULT_TIER_KEY,
   TIER_TO_KEY,
-  getTierCredits,
   getTierPrice
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -401,8 +305,6 @@ const {
   subscription,
   showSubscriptionDialog,
   manageSubscription,
-  fetchStatus,
-  fetchBalance,
   getMaxSeats,
   resubscribe
 } = useBillingContext()
@@ -473,9 +375,6 @@ function handleUpgrade() {
   else showSubscriptionDialog()
 }
 
-function handleUpgradeToAddCredits() {
-  showPricingTable()
-}
 const subscriptionTier = computed(() => subscription.value?.tier ?? null)
 const isYearlySubscription = computed(
   () => subscription.value?.duration === 'ANNUAL'
@@ -535,48 +434,6 @@ const tierPrice = computed(() =>
 const memberCount = computed(() => members.value.length)
 const nextMonthInvoice = computed(() => memberCount.value * tierPrice.value)
 
-const refillsDate = computed(() => {
-  if (!subscription.value?.renewalDate) return ''
-  const date = new Date(subscription.value.renewalDate)
-  const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const year = String(date.getFullYear()).slice(-2)
-  return `${month}/${day}/${year}`
-})
-
-const creditsRemainingLabel = computed(() =>
-  isYearlySubscription.value
-    ? t(
-        'subscription.creditsRemainingThisYear',
-        {
-          date: refillsDate.value
-        },
-        {
-          escapeParameter: false
-        }
-      )
-    : t(
-        'subscription.creditsRemainingThisMonth',
-        {
-          date: refillsDate.value
-        },
-        {
-          escapeParameter: false
-        }
-      )
-)
-
-const planTotalCredits = computed(() => {
-  const credits = getTierCredits(tierKey.value)
-  if (credits === null) return '—'
-  const total = isYearlySubscription.value ? credits * 12 : credits
-  return n(total)
-})
-
-const includedCreditsDisplay = computed(
-  () => `${monthlyBonusCredits.value} / ${planTotalCredits.value}`
-)
-
 const tierBenefits = computed((): TierBenefit[] => {
   const key = tierKey.value
   const benefits: TierBenefit[] = []
@@ -592,41 +449,6 @@ const tierBenefits = computed((): TierBenefit[] => {
 
   benefits.push(...getCommonTierBenefits(key, t, n))
   return benefits
-})
-
-const { totalCredits, monthlyBonusCredits, prepaidCredits, isLoadingBalance } =
-  useSubscriptionCredits()
-
-const { handleAddApiCredits, handleRefresh } = useSubscriptionActions()
-
-// Focus-based polling: refresh balance when user returns from Stripe checkout
-const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
-const TOPUP_EXPIRY_MS = 5 * 60 * 1000 // 5 minutes
-
-function handleWindowFocus() {
-  const timestampStr = localStorage.getItem(PENDING_TOPUP_KEY)
-  if (!timestampStr) return
-
-  const timestamp = parseInt(timestampStr, 10)
-
-  // Clear expired tracking (older than 5 minutes)
-  if (Date.now() - timestamp > TOPUP_EXPIRY_MS) {
-    localStorage.removeItem(PENDING_TOPUP_KEY)
-    return
-  }
-
-  // Refresh and clear tracking to prevent repeated calls
-  void handleRefresh()
-  localStorage.removeItem(PENDING_TOPUP_KEY)
-}
-
-onMounted(() => {
-  window.addEventListener('focus', handleWindowFocus)
-  void Promise.all([fetchStatus(), fetchBalance()])
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('focus', handleWindowFocus)
 })
 </script>
 
