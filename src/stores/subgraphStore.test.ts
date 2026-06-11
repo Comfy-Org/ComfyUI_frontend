@@ -583,7 +583,7 @@ describe('useSubgraphStore', () => {
       const nodeDef = useNodeDefStore().nodeDefs.find(
         (d) => d.name === 'SubgraphBlueprint.bp_precedence'
       )
-      expect(nodeDef?.essentials_category).toBe('Generate')
+      expect(nodeDef?.essentials_category).toBe('Video Generation')
     })
 
     it('should pass essentials_category from GlobalSubgraphData to node def', async () => {
@@ -602,7 +602,7 @@ describe('useSubgraphStore', () => {
         (d) => d.name === 'SubgraphBlueprint.bp_essentials'
       )
       expect(nodeDef).toBeDefined()
-      expect(nodeDef?.essentials_category).toBe('Generate')
+      expect(nodeDef?.essentials_category).toBe('Image Generation')
     })
   })
 
