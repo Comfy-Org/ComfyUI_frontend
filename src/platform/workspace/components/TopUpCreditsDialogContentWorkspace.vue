@@ -269,7 +269,7 @@ async function handleBuy() {
       handleClose(false)
       settingsDialog.show('workspace')
     } else if (response.status === 'pending') {
-      billingOperationStore.startOperation(response.billing_op_id, 'topup')
+      void billingOperationStore.startOperation(response.billing_op_id, 'topup')
     } else {
       toast.add({
         severity: 'error',
