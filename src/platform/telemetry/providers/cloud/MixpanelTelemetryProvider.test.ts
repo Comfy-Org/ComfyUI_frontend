@@ -60,6 +60,7 @@ import type {
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
+  ShellLayoutMetadata,
   SurveyResponses,
   TemplateFilterMetadata,
   TemplateLibraryClosedMetadata,
@@ -333,6 +334,16 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     view_mode: 'graph',
     is_app_mode: false
   }
+  const shellLayoutMetadata: ShellLayoutMetadata = {
+    view_mode: 'graph',
+    is_app_mode: false,
+    dock_state: 'docked',
+    actionbar_position: 'Top',
+    active_sidebar_tab: null,
+    right_side_panel_open: false,
+    bottom_panel_open: false,
+    open_workflow_tabs: 1
+  }
   const authMetadata: AuthMetadata = {}
 
   it.for<
@@ -397,6 +408,11 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       'trackShareFlow',
       (p) => p.trackShareFlow(shareFlowMetadata),
       TelemetryEvents.SHARE_FLOW
+    ],
+    [
+      'trackShellLayout',
+      (p) => p.trackShellLayout(shellLayoutMetadata),
+      TelemetryEvents.SHELL_LAYOUT
     ],
     [
       'trackAuth',

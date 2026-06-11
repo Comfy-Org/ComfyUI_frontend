@@ -254,6 +254,20 @@ export interface TabCountMetadata {
 }
 
 /**
+ * Shell layout snapshot, sent once per session when the app is ready
+ */
+export interface ShellLayoutMetadata {
+  view_mode: AppMode
+  is_app_mode: boolean
+  dock_state: ActionbarDockState
+  actionbar_position: string
+  active_sidebar_tab: string | null
+  right_side_panel_open: boolean
+  bottom_panel_open: boolean
+  open_workflow_tabs: number
+}
+
+/**
  * Settings change metadata
  */
 export interface SettingChangedMetadata {
@@ -508,6 +522,9 @@ export interface TelemetryProvider {
   // Tab tracking events
   trackTabCount?(metadata: TabCountMetadata): void
 
+  // Shell layout snapshot events
+  trackShellLayout?(metadata: ShellLayoutMetadata): void
+
   // Node search analytics events
   trackNodeSearch?(metadata: NodeSearchMetadata): void
   trackNodeSearchResultSelected?(metadata: NodeSearchResultMetadata): void
@@ -603,6 +620,9 @@ export const TelemetryEvents = {
   // Tab Tracking
   TAB_COUNT_TRACKING: 'app:tab_count_tracking',
 
+  // Shell Layout
+  SHELL_LAYOUT: 'app:shell_layout',
+
   // Node Search Analytics
   NODE_SEARCH: 'app:node_search',
   NODE_SEARCH_RESULT_SELECTED: 'app:node_search_result_selected',
@@ -665,6 +685,7 @@ export type TelemetryEventProperties =
   | TemplateLibraryClosedMetadata
   | PageVisibilityMetadata
   | TabCountMetadata
+  | ShellLayoutMetadata
   | NodeSearchMetadata
   | NodeSearchResultMetadata
   | SearchQueryMetadata

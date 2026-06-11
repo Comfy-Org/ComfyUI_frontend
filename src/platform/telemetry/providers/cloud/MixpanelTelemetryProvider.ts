@@ -28,6 +28,7 @@ import type {
   RunButtonProperties,
   SettingChangedMetadata,
   ShareFlowMetadata,
+  ShellLayoutMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -394,6 +395,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackTabCount(metadata: TabCountMetadata): void {
     this.trackEvent(TelemetryEvents.TAB_COUNT_TRACKING, metadata)
+  }
+
+  trackShellLayout(metadata: ShellLayoutMetadata): void {
+    this.trackEvent(TelemetryEvents.SHELL_LAYOUT, metadata)
   }
 
   trackNodeSearch(metadata: NodeSearchMetadata): void {

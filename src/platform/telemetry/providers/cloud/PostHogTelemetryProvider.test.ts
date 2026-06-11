@@ -511,6 +511,29 @@ describe('PostHogTelemetryProvider', () => {
         }
       )
     })
+
+    it('captures shell layout snapshots', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const shellLayoutMetadata = {
+        view_mode: 'graph',
+        is_app_mode: false,
+        dock_state: 'floating',
+        actionbar_position: 'Top',
+        active_sidebar_tab: 'node-library',
+        right_side_panel_open: true,
+        bottom_panel_open: false,
+        open_workflow_tabs: 2
+      } as const
+
+      provider.trackShellLayout(shellLayoutMetadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SHELL_LAYOUT,
+        shellLayoutMetadata
+      )
+    })
   })
 
   describe('survey tracking', () => {
