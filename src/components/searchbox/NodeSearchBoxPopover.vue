@@ -342,9 +342,18 @@ function reset() {
   const canvas = canvasStore.getCanvas()
   canvas.linkConnector.events.removeEventListener('reset', preventDefault)
   if (disconnectOnReset) canvas.linkConnector.disconnectLinks()
+  disconnectOnReset = false
 
   canvas.linkConnector.reset()
   canvas.setDirty(true, true)
+}
+
+// Tears down a held link-release session synchronously so a new link drag can
+// take over without hitting LinkConnector's "Already dragging links" guard.
+function cancelLinkRelease() {
+  linkReleaseMenu.value?.hide()
+  visible.value = false
+  reset()
 }
 
 // Reset connecting links when the search box is closed
@@ -353,7 +362,7 @@ watch(visible, () => {
 })
 
 useEventListener(document, 'litegraph:canvas', canvasEventHandler)
-defineExpose({ showSearchBox })
+defineExpose({ showSearchBox, cancelLinkRelease })
 </script>
 
 <style>

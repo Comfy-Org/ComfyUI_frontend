@@ -1,5 +1,5 @@
 <template>
-  <DropdownMenuRoot :open="open" @update:open="onOpenChange">
+  <DropdownMenuRoot :open="open" :modal="false" @update:open="onOpenChange">
     <DropdownMenuTrigger as-child>
       <div
         aria-hidden="true"
@@ -188,11 +188,11 @@ let actionTaken = false
 
 const contentClass =
   'z-1700 flex max-h-[min(80vh,var(--reka-dropdown-menu-content-available-height))] min-w-[260px] max-w-sm flex-col overflow-hidden rounded-lg border border-interface-menu-stroke bg-interface-menu-surface p-1 shadow-interface'
-const scrollClass = 'overflow-y-auto scrollbar-custom'
+const scrollClass = 'overflow-y-auto overflow-x-hidden scrollbar-custom'
 const submenuContentClass =
   'z-1700 flex w-sm max-h-[min(80vh,var(--reka-dropdown-menu-content-available-height))] flex-col overflow-hidden rounded-lg border border-interface-menu-stroke bg-interface-menu-surface p-1 shadow-interface'
 const submenuScrollClass =
-  'overflow-y-auto scrollbar-custom max-h-[min(calc(var(--reka-dropdown-menu-content-available-height)-3.5rem),80vh)]'
+  'overflow-y-auto overflow-x-hidden scrollbar-custom max-h-[min(calc(var(--reka-dropdown-menu-content-available-height)-3.5rem),80vh)]'
 const itemClass =
   'flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm text-base-foreground outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-interface-menu-component-surface-hovered'
 
