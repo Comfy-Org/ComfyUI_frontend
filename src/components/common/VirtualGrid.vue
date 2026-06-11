@@ -58,10 +58,6 @@ const itemHeight = ref(defaultItemHeight)
 const itemWidth = ref(defaultItemWidth)
 const container = ref<HTMLElement | null>(null)
 const { width, height } = useElementSize(container)
-// No throttle: VueUse >=14 throttleFilter drops scroll events spaced wider
-// than the throttle window when leading=false (vueuse regression of #2390),
-// freezing scrollY for discrete mouse-wheel input. Scroll events are already
-// frame-aligned and this handler is cheap, so throttling buys nothing.
 const { y: scrollY } = useScroll(container, {
   eventListenerOptions: { passive: true }
 })
