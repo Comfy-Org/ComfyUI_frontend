@@ -1781,6 +1781,41 @@ describe('assetsStore - Assets API union streams', () => {
     expect(store.apiError).toBeInstanceOf(AssetRequestError)
   })
 
+  it('refreshApiAssets refetches the same streams from the start', async () => {
+    vi.mocked(assetService.getAssetsPage)
+      .mockResolvedValueOnce(page([makeAsset('o1', '2026-02-01T00:00:00Z')]))
+      .mockResolvedValueOnce(
+        page([
+          makeAsset('o2', '2026-03-01T00:00:00Z'),
+          makeAsset('o1', '2026-02-01T00:00:00Z')
+        ])
+      )
+
+    const store = useAssetsStore()
+    await store.fetchApiAssets({
+      tags: ['output'],
+      sort: 'created_at',
+      order: 'desc'
+    })
+    await store.refreshApiAssets()
+
+    expect(assetService.getAssetsPage).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        includeTags: ['output'],
+        sort: 'created_at',
+        order: 'desc',
+        offset: 0
+      })
+    )
+    expect(store.apiAssets.map((a) => a.id)).toEqual(['o2', 'o1'])
+  })
+
+  it('refreshApiAssets is a no-op before the first fetch', async () => {
+    const store = useAssetsStore()
+    await store.refreshApiAssets()
+    expect(assetService.getAssetsPage).not.toHaveBeenCalled()
+  })
+
   it('patchApiAsset updates loaded assets in place', async () => {
     vi.mocked(assetService.getAssetsPage).mockResolvedValue(
       page([makeAsset('t1', '2026-02-01T00:00:00Z', ['temp'])])

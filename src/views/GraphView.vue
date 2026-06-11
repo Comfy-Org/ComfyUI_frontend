@@ -231,23 +231,30 @@ useQueuePolling()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 const sidebarTabStore = useSidebarTabStore()
 
+// Only update assets if the assets sidebar is currently open (it refreshes
+// on mount otherwise). Linear mode always consumes history-shaped assets;
+// the sidebar consumes whichever data source is active.
+const refreshOpenAssetViews = async () => {
+  const assetsTabOpen = sidebarTabStore.activeSidebarTabId === 'assets'
+  if (!assetsTabOpen && !linearMode.value) return
+
+  if (linearMode.value || !assetsStore.assetApiSourceActive) {
+    await assetsStore.updateHistory()
+  }
+  if (assetsTabOpen && assetsStore.assetApiSourceActive) {
+    await assetsStore.refreshApiAssets()
+  }
+}
+
 const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   queuePendingTaskCountStore.update(e)
   await queueStore.update()
-  // Only update assets if the assets sidebar is currently open
-  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.updateHistory()
-  }
+  await refreshOpenAssetViews()
 }
 
 const onExecutionSuccess = async () => {
   await queueStore.update()
-  // Only update assets if the assets sidebar is currently open
-  // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
-    await assetsStore.updateHistory()
-  }
+  await refreshOpenAssetViews()
 }
 
 const { onReconnecting, onReconnected } = useReconnectingNotification()

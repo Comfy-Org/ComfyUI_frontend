@@ -30,6 +30,7 @@ import type {
   AssetStreamState
 } from '@/platform/assets/utils/assetStreamMerge'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
 
@@ -349,6 +350,16 @@ export const useAssetsStore = defineStore('assets', () => {
    */
   const assetApiUnavailable = ref(false)
 
+  /**
+   * Whether the media sidebar is on the assets-API data source: setting on
+   * and the API not detected as unavailable this session.
+   */
+  const assetApiSourceActive = computed(
+    () =>
+      !!useSettingStore().get('Comfy.Assets.UseAssetAPI') &&
+      !assetApiUnavailable.value
+  )
+
   let apiStreams: AssetStreamState[] = []
   let apiSortSpec: AssetSortSpec = { sort: 'created_at', order: 'desc' }
   let apiRequestId = 0
@@ -413,6 +424,20 @@ export const useAssetsStore = defineStore('assets', () => {
     } finally {
       if (requestId === apiRequestId) apiLoading.value = false
     }
+  }
+
+  /**
+   * Refetch the current streams from the start with the same tags and sort.
+   * Used when new assets may exist server-side (e.g. a job completed).
+   * No-op until the sidebar has performed its first fetch.
+   */
+  async function refreshApiAssets(): Promise<void> {
+    if (apiStreams.length === 0) return
+    await fetchApiAssets({
+      tags: apiStreams.map((stream) => stream.tag),
+      sort: apiSortSpec.sort,
+      order: apiSortSpec.order
+    })
   }
 
   /** Advance the stream whose frontier is least far along in sort order. */
@@ -1009,7 +1034,9 @@ export const useAssetsStore = defineStore('assets', () => {
     apiHasMore,
     apiIsLoadingMore,
     assetApiUnavailable,
+    assetApiSourceActive,
     fetchApiAssets,
+    refreshApiAssets,
     loadMoreApiAssets,
     patchApiAsset,
 

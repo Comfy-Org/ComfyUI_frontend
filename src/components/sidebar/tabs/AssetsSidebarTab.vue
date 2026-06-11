@@ -272,7 +272,6 @@ import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { ResultItemImpl } from '@/stores/queueStore'
@@ -302,20 +301,14 @@ const viewMode = useStorage<'list' | 'grid'>(
 )
 const isListView = computed(() => viewMode.value === 'list')
 
-const settingStore = useSettingStore()
 const assetsStore = useAssetsStore()
 
 /**
  * Data-source switch for the sidebar: the assets API path is used when the
  * setting is on and the API hasn't been detected as unavailable this session
- * (503/404 on first fetch falls back to the history path). Reads the setting
- * directly instead of isAssetAPIEnabled(), which hard-fails outside cloud.
+ * (503/404 on first fetch falls back to the history path).
  */
-const useAssetApiSource = computed(
-  () =>
-    !!settingStore.get('Comfy.Assets.UseAssetAPI') &&
-    !assetsStore.assetApiUnavailable
-)
+const useAssetApiSource = computed(() => assetsStore.assetApiSourceActive)
 
 const showPreviewAssets = useStorage(
   'Comfy.Assets.Sidebar.ShowPreviewAssets',
