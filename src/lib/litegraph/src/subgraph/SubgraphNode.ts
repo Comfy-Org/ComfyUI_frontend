@@ -41,6 +41,7 @@ import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuara
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
@@ -556,7 +557,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       delete input.widget
       delete input.pos
       delete input.widgetId
-      input._widget = undefined
+      this._clearPromotedWidget(input)
       const subgraphInput = input._subgraphSlot
       if (!subgraphInput) continue
       this._resolveInputWidget(subgraphInput, input)
@@ -633,7 +634,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   ) {
     this.invalidatePromotedViews()
 
-    input._widget = undefined
+    this._clearPromotedWidget(input)
 
     input.widget ??= { name: subgraphInput.name }
     input.widget.name = subgraphInput.name
@@ -654,13 +655,37 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           ? interiorWidget.isDOMWidget
           : undefined
     })
-    input._widget = this._projectPromotedWidget(input)
+    input._widget =
+      this.createPromotedHostWidget(input, id, interiorWidget) ??
+      this._projectPromotedWidget(input)
     this._setConcreteSlots()
 
     this.subgraph.events.dispatch('widget-promoted', {
       widget: interiorWidget,
       subgraphNode: this
     })
+  }
+
+  /**
+   * App-layer hook to build a promoted DOM widget; the default falls back to the
+   * store-backed projection. Litegraph core stays free of Vue/Pinia/DOM.
+   */
+  protected createPromotedHostWidget(
+    _input: INodeInputSlot,
+    _id: WidgetId,
+    _sourceWidget: Readonly<IBaseWidget>
+  ): IBaseWidget | undefined {
+    return undefined
+  }
+
+  /**
+   * Runs the host widget's `onRemove` (unregistering DOM widgets) and clears it.
+   * Unlike {@link ensureWidgetRemoved}, dispatches no demotion event, so it is
+   * safe on re-resolution.
+   */
+  private _clearPromotedWidget(input: INodeInputSlot): void {
+    input._widget?.onRemove?.()
+    input._widget = undefined
   }
 
   override onAdded(_graph: LGraph): void {
@@ -804,6 +829,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   override ensureWidgetRemoved(widget: IBaseWidget): void {
+    widget.onRemove?.()
     this.subgraph.events.dispatch('widget-demoted', {
       widget,
       subgraphNode: this
@@ -820,6 +846,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       ) {
         input._listenerController.abort()
       }
+      this._clearPromotedWidget(input)
     }
   }
   override drawTitleBox(
