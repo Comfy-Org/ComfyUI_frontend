@@ -98,14 +98,12 @@
       </div>
       <div v-else class="flex flex-col">
         <template v-for="(section, sectionIndex) in sections" :key="section.id">
-          <template v-if="sectionIndex === firstUserFolderSectionIndex">
-            <div class="mx-6 my-2 border-t border-border-default/40" />
-            <div
-              class="px-2 pt-1 pb-0.5 text-3xs font-medium tracking-wide text-muted-foreground uppercase"
-            >
-              {{ $t('assets.yourModels') }}
-            </div>
-          </template>
+          <div
+            v-if="sectionIndex === firstUserFolderSectionIndex"
+            class="px-2 pt-2 pb-0.5 text-3xs font-medium tracking-wide text-muted-foreground uppercase"
+          >
+            {{ $t('assets.otherModels') }}
+          </div>
           <button
             type="button"
             class="group/tree-node flex w-full min-w-0 cursor-pointer items-center gap-3 overflow-hidden rounded-sm border-0 bg-transparent py-2 pl-2 text-left outline-none select-none hover:bg-comfy-input"
