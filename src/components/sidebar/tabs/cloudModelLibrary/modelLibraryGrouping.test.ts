@@ -4,6 +4,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import {
   firstNonModelsTag,
+  groupAssetsByTopLevelFolder,
   groupIdForAsset,
   groupLabelForAsset,
   looksLikeVae,
@@ -104,6 +105,38 @@ describe('groupIdForAsset', () => {
     expect(
       groupIdForAsset(makeAsset({ tags: ['models', 'totallyunknown'] }))
     ).toBeNull()
+  })
+})
+
+describe('groupAssetsByTopLevelFolder', () => {
+  it('keeps each folder separate instead of consolidating into the taxonomy', () => {
+    const checkpoints = makeAsset({ id: 'c', tags: ['models', 'checkpoints'] })
+    const diffusion = makeAsset({
+      id: 'd',
+      tags: ['models', 'diffusion_models']
+    })
+    const fonts = makeAsset({ id: 'f', tags: ['models', 'kjnodes_fonts'] })
+    const entries = groupAssetsByTopLevelFolder([checkpoints, diffusion, fonts])
+    expect(entries.map(([folder]) => folder)).toEqual([
+      'checkpoints',
+      'diffusion_models',
+      'kjnodes_fonts'
+    ])
+  })
+
+  it('groups nested tags under their top-level folder', () => {
+    const a = makeAsset({ id: 'a', tags: ['models', 'checkpoints/sdxl'] })
+    const b = makeAsset({ id: 'b', tags: ['models', 'checkpoints'] })
+    const entries = groupAssetsByTopLevelFolder([a, b])
+    expect(entries).toHaveLength(1)
+    expect(entries[0][0]).toBe('checkpoints')
+    expect(entries[0][1]).toHaveLength(2)
+  })
+
+  it('skips assets with no folder tag', () => {
+    expect(
+      groupAssetsByTopLevelFolder([makeAsset({ tags: ['models'] })])
+    ).toEqual([])
   })
 })
 

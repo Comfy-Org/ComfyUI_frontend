@@ -103,7 +103,7 @@
             <div
               class="px-2 pt-1 pb-0.5 text-3xs font-medium tracking-wide text-muted-foreground uppercase"
             >
-              {{ $t('assets.yourFolders') }}
+              {{ $t(isCloud ? 'assets.yourFolders' : 'assets.yourModels') }}
             </div>
           </template>
           <button
@@ -215,6 +215,7 @@ import { isLikelyModelFile } from '@/components/sidebar/tabs/cloudModelLibrary/m
 import {
   directoryForAsset,
   firstNonModelsTag,
+  groupAssetsByTopLevelFolder,
   groupIdForAsset,
   groupLabelForAsset,
   partnerKind,
@@ -516,6 +517,17 @@ const sections = computed<Section[]>(() => {
       )
     const partners = buildPartnerSection()
     return partners ? [...directorySections, partners] : directorySections
+  }
+
+  // Local items carry no type metadata, so the library mirrors the disk:
+  // Partner Nodes pinned on top, then one verbatim section per folder.
+  if (!isCloud) {
+    const folderSections = groupAssetsByTopLevelFolder(matchedAssets.value)
+      .map(([folder, list]) => buildAssetSection(`tag:${folder}`, folder, list))
+      .filter((section): section is Section => section !== null)
+      .map((section) => ({ ...section, isUserFolder: true }))
+    const partners = buildPartnerSection()
+    return partners ? [partners, ...folderSections] : folderSections
   }
 
   const knownGroups = MODEL_GROUPS.filter(

@@ -33,6 +33,26 @@ export function directoryForAsset(asset: AssetItem): string | null {
   return dir || null
 }
 
+// Local items carry no type metadata — the folder name is all the backend
+// tells us — so the local library mirrors the disk with one section per
+// top-level folder instead of consolidating into the curated taxonomy.
+export function groupAssetsByTopLevelFolder(
+  assets: AssetItem[]
+): Array<[string, AssetItem[]]> {
+  const byFolder = new Map<string, AssetItem[]>()
+  for (const asset of assets) {
+    const tag = firstNonModelsTag(asset)
+    if (!tag) continue
+    const top = rawTagTopLevel(tag)
+    const list = byFolder.get(top) ?? []
+    list.push(asset)
+    byFolder.set(top, list)
+  }
+  return Array.from(byFolder.entries()).sort(([a], [b]) =>
+    a.localeCompare(b, undefined, { sensitivity: 'base' })
+  )
+}
+
 export function groupLabelForAsset(asset: AssetItem): string {
   const groupId = groupIdForAsset(asset)
   if (groupId) {
