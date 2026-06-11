@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
+import type { AppMode } from '@/composables/useAppMode'
 import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -61,6 +62,12 @@ interface QueuedJob {
    * `workflow.shareId`, which can gain attribution after the job was queued.
    */
   shareId?: string
+  /**
+   * View-mode attribution snapshotted at queue time, so mode switches during
+   * the run don't misattribute completion events.
+   */
+  viewMode?: AppMode
+  isAppMode?: boolean
 }
 
 function buildExecutionNodeLookup(
@@ -313,8 +320,8 @@ export const useExecutionStore = defineStore('execution', () => {
         telemetry?.trackSharedWorkflowRun({
           job_id: jobId,
           share_id: queuedJob.shareId,
-          view_mode: mode.value,
-          is_app_mode: isAppMode.value
+          view_mode: queuedJob.viewMode ?? mode.value,
+          is_app_mode: queuedJob.isAppMode ?? isAppMode.value
         })
       }
     }
@@ -598,6 +605,8 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.nodeLookup = buildExecutionNodeLookup(promptOutput)
     queuedJob.workflow = workflow
     queuedJob.shareId = workflow?.shareId
+    queuedJob.viewMode = mode.value
+    queuedJob.isAppMode = isAppMode.value
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)
