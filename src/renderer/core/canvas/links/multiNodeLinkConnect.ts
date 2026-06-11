@@ -173,8 +173,8 @@ export function connectImagesToDynamicInput(
   for (const source of sources) {
     const slotIndex = firstFreeGroupInputIndex(targetNode, groupName)
     if (slotIndex === undefined) break
-    source.node.connect(source.outputIndex, targetNode, slotIndex)
-    connected = true
+    const link = source.node.connect(source.outputIndex, targetNode, slotIndex)
+    if (link) connected = true
   }
   return connected
 }
@@ -196,10 +196,17 @@ export async function createBatchImagesNode(
 
   batchNode.pos = positionRightOfNodes(sources.map((source) => source.node))
 
+  let allConnected = true
   sources.forEach((source, index) => {
-    source.node.connect(source.outputIndex, batchNode, index)
+    const link = source.node.connect(source.outputIndex, batchNode, index)
+    if (!link) allConnected = false
   })
-  batchNode.connect(0, targetNode, targetInputIndex)
+  const targetLink = batchNode.connect(0, targetNode, targetInputIndex)
+  if (!targetLink) allConnected = false
+
+  if (!allConnected) {
+    console.warn('Some batch image connections could not be wired')
+  }
 
   canvas.setDirty(true, true)
   return batchNode
