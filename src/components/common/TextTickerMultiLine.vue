@@ -29,14 +29,12 @@ const containerRef = useTemplateRef('containerRef')
 const { width: textWidth } = useElementSize(measureRef)
 const { width: containerWidth } = useElementSize(containerRef)
 
-const lines = computed(() =>
-  !textWidth.value ||
-  !containerWidth.value ||
-  textWidth.value <= containerWidth.value - 30
-    ? [text]
-    : splitTextAtWordBoundary(
-        text,
-        (containerWidth.value - 30) / textWidth.value
-      )
-)
+const lines = computed(() => {
+  if (!textWidth.value || !containerWidth.value) return [text]
+
+  const renderWidth = containerWidth.value - 30
+  if (textWidth.value <= renderWidth) return [text]
+
+  return splitTextAtWordBoundary(text, renderWidth / textWidth.value)
+})
 </script>

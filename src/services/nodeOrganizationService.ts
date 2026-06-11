@@ -190,6 +190,7 @@ class NodeOrganizationService {
       ESSENTIALS_SECTION_RANK
     )
 
+    const nodeToLabel = (node: TreeNode) => node.data?.name ?? node.label
     for (const sectionNode of tree.children) {
       if (!sectionNode.children) continue
       const subgroupRank = ESSENTIALS_SUBGROUP_RANK.get(sectionNode.label ?? '')
@@ -200,13 +201,10 @@ class NodeOrganizationService {
         subgroupRank ?? new Map()
       )
 
-      for (const child of sectionNode.children)
+      for (const child of sectionNode.children) {
         if (child.children)
-          sortByKnownOrder(
-            child.children,
-            (node) => node.data?.name ?? node.label,
-            ESSENTIALS_NODE_RANK
-          )
+          sortByKnownOrder(child.children, nodeToLabel, ESSENTIALS_NODE_RANK)
+      }
 
       sortByKnownOrder(
         sectionNode.children,
@@ -298,8 +296,11 @@ class NodeOrganizationService {
         node.nodeSource.type === NodeSourceType.Core ||
         node.nodeSource.type === NodeSourceType.Essentials
       ) {
-        if (resolveEssentialsPath(node)) essentialNodes.push(node)
-        else comfyNodes.push(node)
+        if (resolveEssentialsPath(node)) {
+          essentialNodes.push(node)
+        } else {
+          comfyNodes.push(node)
+        }
       } else {
         extensions.push(node)
       }

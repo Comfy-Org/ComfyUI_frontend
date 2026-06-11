@@ -31,7 +31,7 @@
           )"
           :key="tile.nodeName ?? tile.label"
           :preview-panel
-          :tile="tile"
+          :tile
         />
       </div>
       <div v-else class="flex flex-col gap-10 px-4">
@@ -53,7 +53,7 @@
               v-for="tile in subgroup.tiles"
               :key="tile.nodeName ?? tile.label"
               :preview-panel
-              :tile="tile"
+              :tile
             />
           </div>
         </div>
@@ -87,6 +87,7 @@ const mediaFilters = defineModel<Record<EssentialsMediaType, boolean>>(
 const filteredSections = computed<EssentialSection[]>(() => {
   const query = searchQuery.trim().toLowerCase()
   if (!query) return ESSENTIAL_SECTIONS
+
   const matchesQuery = (tile: EssentialTile) =>
     tile.label.toLowerCase().includes(query)
   return ESSENTIAL_SECTIONS.flatMap<EssentialSection>((section) => {
@@ -94,6 +95,7 @@ const filteredSections = computed<EssentialSection[]>(() => {
       const tiles = section.tiles.filter(matchesQuery)
       return tiles.length ? [{ ...section, tiles }] : []
     }
+
     const subgroups = section.subgroups
       ?.map((sg) => ({ ...sg, tiles: sg.tiles.filter(matchesQuery) }))
       .filter((sg) => sg.tiles.length)

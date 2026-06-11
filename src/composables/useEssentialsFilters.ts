@@ -11,12 +11,12 @@ export const ESSENTIALS_MEDIA_TYPES = [
 export type EssentialsMediaType = (typeof ESSENTIALS_MEDIA_TYPES)[number]
 
 export const ESSENTIALS_MEDIA_LABELS: Record<EssentialsMediaType, string> = {
-  image: 'Image',
-  video: 'Video',
-  text: 'Text',
-  audio: 'Audio',
-  '3d': '3D'
-}
+  image: 'sideToolbar.mediaAssets.filterImage',
+  video: 'sideToolbar.mediaAssets.filterVideo',
+  text: 'sideToolbar.mediaAssets.filterText',
+  audio: 'sideToolbar.mediaAssets.filterAudio',
+  '3d': 'sideToolbar.mediaAssets.filter3D'
+} as const
 
 export function useEssentialsFilters() {
   const mediaFilters = ref<Record<EssentialsMediaType, boolean>>({
@@ -36,18 +36,11 @@ export function useEssentialsFilters() {
   }
 
   function setMediaFilter(media: EssentialsMediaType, enabled: boolean) {
-    if (allMediaSelected.value) {
-      clearAllMedia()
-      allMediaSelected.value = false
-    }
+    if (allMediaSelected.value) allMediaSelected.value = false
+
     mediaFilters.value[media] = enabled
-    const allChecked = ESSENTIALS_MEDIA_TYPES.every(
-      (m) => mediaFilters.value[m]
-    )
-    const anyChecked = ESSENTIALS_MEDIA_TYPES.some((m) => mediaFilters.value[m])
-    if (allChecked || !anyChecked) {
-      selectAllMedia()
-    }
+    const isNew = (m: EssentialsMediaType) => mediaFilters.value[m] === enabled
+    if (ESSENTIALS_MEDIA_TYPES.every(isNew)) selectAllMedia()
   }
 
   function selectAllMedia() {
