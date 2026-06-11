@@ -2540,6 +2540,12 @@
       "pollingFailed": "Subscription activation failed",
       "pollingTimeout": "Timed out waiting for subscription. Please refresh and try again."
     },
+    "inactive": {
+      "memberTitle": "This workspace is paused",
+      "memberDescription": "Contact your workspace owner to resubscribe and continue running workflows.",
+      "memberRunTooltip": "Contact your workspace owner to resubscribe",
+      "runLabel": "Run"
+    },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeForMore": "Upgrade",
