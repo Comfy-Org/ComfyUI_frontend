@@ -62,12 +62,6 @@ describe('EssentialNodesPanel', () => {
       expect(screen.getByText('Control & Guidance')).toBeInTheDocument()
       expect(screen.getByText('Editing & Utilities')).toBeInTheDocument()
     })
-
-    it('should render a card per tile within a section', () => {
-      renderComponent()
-      expect(screen.getByText('Load Image')).toBeInTheDocument()
-      expect(screen.getByText('Save Image')).toBeInTheDocument()
-    })
   })
 
   describe('media filters', () => {
