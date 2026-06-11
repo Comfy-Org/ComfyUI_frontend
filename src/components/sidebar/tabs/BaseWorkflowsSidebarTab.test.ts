@@ -182,6 +182,10 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
   useWorkflowService: () => mockWorkflowService
 }))
 
+vi.mock('@/composables/usePragmaticDragAndDrop', () => ({
+  usePragmaticExternalFileDrop: () => ({ isDraggingOver: ref(false) })
+}))
+
 vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({ shiftDown: false })
 }))

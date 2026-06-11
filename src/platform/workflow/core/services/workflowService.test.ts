@@ -1397,4 +1397,79 @@ describe('useWorkflowService', () => {
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
   })
+
+  describe('importWorkflowFiles', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+    let service: ReturnType<typeof useWorkflowService>
+
+    beforeEach(() => {
+      workflowStore = useWorkflowStore()
+      service = useWorkflowService()
+      vi.spyOn(workflowStore, 'importWorkflowFromJson').mockResolvedValue(
+        {} as ComfyWorkflow
+      )
+    })
+
+    const jsonFile = (name: string, content: string) =>
+      new File([content], name, { type: 'application/json' })
+
+    it('validates and persists valid workflow files without opening them', async () => {
+      const file = jsonFile('flow.json', JSON.stringify(makeWorkflowData()))
+
+      const result = await service.importWorkflowFiles([file])
+
+      expect(workflowStore.importWorkflowFromJson).toHaveBeenCalledWith(
+        'flow.json',
+        expect.objectContaining({ version: 0.4 })
+      )
+      expect(result).toEqual({ imported: ['flow.json'], failed: [] })
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+    })
+
+    it('reports malformed JSON and non-workflow files as failed', async () => {
+      const result = await service.importWorkflowFiles([
+        jsonFile('broken.json', '{ not json'),
+        jsonFile('notflow.json', JSON.stringify({ hello: 'world' }))
+      ])
+
+      expect(workflowStore.importWorkflowFromJson).not.toHaveBeenCalled()
+      expect(result.imported).toEqual([])
+      expect(result.failed).toEqual(['broken.json', 'notflow.json'])
+    })
+
+    it('skips non-json files', async () => {
+      const result = await service.importWorkflowFiles([
+        new File(['data'], 'image.png', { type: 'image/png' })
+      ])
+
+      expect(workflowStore.importWorkflowFromJson).not.toHaveBeenCalled()
+      expect(result.failed).toEqual(['image.png'])
+    })
+
+    it('imports valid files even when others in the batch fail', async () => {
+      const result = await service.importWorkflowFiles([
+        jsonFile('good.json', JSON.stringify(makeWorkflowData())),
+        jsonFile('bad.json', 'nope')
+      ])
+
+      expect(result.imported).toEqual(['good.json'])
+      expect(result.failed).toEqual(['bad.json'])
+    })
+
+    it('shows success and error toasts summarizing the batch', async () => {
+      const addToastSpy = vi.spyOn(useToastStore(), 'add')
+
+      await service.importWorkflowFiles([
+        jsonFile('good.json', JSON.stringify(makeWorkflowData())),
+        jsonFile('bad.json', 'nope')
+      ])
+
+      expect(addToastSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+      expect(addToastSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+    })
+  })
 })

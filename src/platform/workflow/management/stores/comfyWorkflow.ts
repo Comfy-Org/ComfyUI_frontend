@@ -175,6 +175,15 @@ export class ComfyWorkflow extends UserFile {
   }
 
   /**
+   * Persist the workflow's current `content` directly, bypassing the
+   * `activeState`/changeTracker serialization that {@link save} performs.
+   * Used to import a workflow file without loading it into the canvas.
+   */
+  async persist(): Promise<UserFile> {
+    return super.save({ force: true })
+  }
+
+  /**
    * Save the workflow as a new file.
    * @param path The path to save the workflow to. Note: with 'workflows/' prefix.
    * @returns this

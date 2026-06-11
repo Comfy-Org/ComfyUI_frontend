@@ -17,6 +17,7 @@ import {
 } from '@/platform/workflow/management/stores/workflowStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
@@ -37,6 +38,7 @@ import {
   appendWorkflowJsonExt,
   generateUUID
 } from '@/utils/formatUtil'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
@@ -634,10 +636,72 @@ export const useWorkflowService = () => {
     }
   }
 
+  const readWorkflowFile = async (
+    file: File
+  ): Promise<ComfyWorkflowJSON | null> => {
+    if (!file.name.toLowerCase().endsWith('.json')) return null
+    try {
+      return await validateComfyWorkflow(
+        parseJsonWithNonFinite(await file.text())
+      )
+    } catch {
+      return null
+    }
+  }
+
+  /**
+   * Import external workflow files into the user's workflow list without
+   * loading them into the canvas. Valid files are persisted; invalid or
+   * non-workflow files are reported. The batch never aborts on a failure.
+   */
+  const importWorkflowFiles = async (
+    files: File[]
+  ): Promise<{ imported: string[]; failed: string[] }> => {
+    const imported: string[] = []
+    const failed: string[] = []
+
+    for (const file of files) {
+      const workflow = await readWorkflowFile(file)
+      if (!workflow) {
+        failed.push(file.name)
+        continue
+      }
+      try {
+        await workflowStore.importWorkflowFromJson(file.name, workflow)
+        imported.push(file.name)
+      } catch {
+        failed.push(file.name)
+      }
+    }
+
+    if (imported.length) {
+      toastStore.add({
+        severity: 'success',
+        summary: t('sideToolbar.workflowTab.importSuccess', {
+          count: imported.length
+        }),
+        life: 3000
+      })
+    }
+    if (failed.length) {
+      toastStore.add({
+        severity: 'error',
+        summary: t('sideToolbar.workflowTab.importFailedTitle'),
+        detail: t('sideToolbar.workflowTab.importFailed', {
+          count: failed.length
+        }),
+        life: 5000
+      })
+    }
+
+    return { imported, failed }
+  }
+
   return {
     exportWorkflow,
     saveWorkflowAs,
     saveWorkflow,
+    importWorkflowFiles,
     loadDefaultWorkflow,
     loadBlankWorkflow,
     reloadCurrentWorkflow,
