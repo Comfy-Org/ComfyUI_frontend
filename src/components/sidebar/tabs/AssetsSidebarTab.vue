@@ -460,7 +460,17 @@ const emptyStateTitleKey = computed(() => {
 })
 const loading = computed(() => currentAssets.value.loading.value)
 const error = computed(() => currentAssets.value.error.value)
-const mediaAssets = computed(() => currentAssets.value.media.value)
+/**
+ * Loaded assets with preview (temp) assets removed unless the toggle is on.
+ * The streams already fetch temp only when toggled, but this guard keeps
+ * display and group counts correct for assets carrying both output and temp
+ * tags, and for loaded temp assets after the toggle is switched off.
+ */
+const mediaAssets = computed(() => {
+  const assets = currentAssets.value.media.value
+  if (!useAssetApiSource.value || showPreviewAssets.value) return assets
+  return assets.filter((asset) => !asset.tags?.includes(TEMP_TAG))
+})
 
 const galleryActiveIndex = ref(-1)
 const currentGalleryAssetId = ref<string | null>(null)
@@ -633,10 +643,11 @@ watch(
   { immediate: true }
 )
 
-// Server-side parameters of the API path: refetch when they change.
-// (On the history path sorting stays client-side, as before.)
+// Server-side parameters of the API path: refetch when they change, even
+// while in folder view, so the main list is fresh on exit. (On the history
+// path sorting stays client-side, as before.)
 watch([showPreviewAssets, apiSort], () => {
-  if (useAssetApiSource.value && !isInFolderView.value) {
+  if (useAssetApiSource.value) {
     void refreshAssets()
   }
 })
