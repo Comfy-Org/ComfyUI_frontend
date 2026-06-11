@@ -1,100 +1,152 @@
 <template>
-  <div class="mb-4 flex w-full flex-col">
-    <!-- Type header row: type name + chevron -->
-    <div class="flex h-8 w-full items-center">
-      <p class="text-foreground min-w-0 flex-1 truncate text-sm font-medium">
-        {{ `${group.type} (${group.nodeTypes.length})` }}
-      </p>
-
+  <div class="mb-1 flex w-full flex-col gap-0.5 last:mb-0">
+    <div class="flex min-h-8 w-full items-center gap-1">
       <Button
+        v-if="hasMultipleNodeTypes"
         variant="textonly"
-        size="icon-sm"
+        size="unset"
         :class="
           cn(
-            'size-8 shrink-0 transition-transform duration-200 hover:bg-transparent',
-            { 'rotate-180': expanded }
+            'h-8 w-4 shrink-0 p-0 transition-transform duration-200 hover:bg-transparent',
+            expanded && 'rotate-90'
           )
         "
-        :aria-label="
-          expanded
-            ? t('rightSidePanel.missingNodePacks.collapse', 'Collapse')
-            : t('rightSidePanel.missingNodePacks.expand', 'Expand')
-        "
+        aria-hidden="true"
+        tabindex="-1"
         @click="toggleExpand"
       >
         <i
-          class="icon-[lucide--chevron-down] size-4 text-muted-foreground group-hover:text-base-foreground"
+          aria-hidden="true"
+          class="icon-[lucide--chevron-right] size-4 text-muted-foreground"
         />
       </Button>
-    </div>
 
-    <!-- Sub-labels: individual node instances, each with their own Locate button -->
-    <TransitionCollapse>
-      <div
-        v-if="expanded"
-        class="mb-2 flex flex-col gap-0.5 overflow-hidden pl-2"
-      >
-        <div
-          v-for="nodeType in group.nodeTypes"
-          :key="getKey(nodeType)"
-          class="flex h-7 items-center"
-        >
-          <span
-            v-if="
-              showNodeIdBadge &&
-              typeof nodeType !== 'string' &&
-              nodeType.nodeId != null
-            "
-            class="mr-1 shrink-0 rounded-md bg-secondary-background-selected px-2 py-0.5 font-mono text-xs font-bold text-muted-foreground"
-          >
-            #{{ nodeType.nodeId }}
+      <span class="flex min-w-0 flex-1 flex-col gap-0">
+        <span class="flex min-w-0 items-center gap-2">
+          <span class="flex min-w-0 items-center gap-2.5">
+            <button
+              v-if="hasMultipleNodeTypes"
+              type="button"
+              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-1 focus-visible:outline-none"
+              :title="group.type"
+              :aria-label="titleToggleAriaLabel"
+              :aria-expanded="expanded"
+              @click="toggleExpand"
+            >
+              {{ group.type }}
+            </button>
+            <button
+              v-else-if="primaryLocatableNodeType"
+              type="button"
+              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-1 focus-visible:outline-none"
+              :title="group.type"
+              @click="handleLocateNode(primaryLocatableNodeType)"
+            >
+              {{ group.type }}
+            </button>
+            <span
+              v-else
+              class="min-w-0 truncate text-sm/relaxed font-normal text-base-foreground"
+              :title="group.type"
+            >
+              {{ group.type }}
+            </span>
+            <span
+              v-if="hasMultipleNodeTypes"
+              data-testid="swap-node-group-count"
+              role="img"
+              class="flex size-6 shrink-0 items-center justify-center rounded-md bg-secondary-background-selected text-xs font-bold text-muted-foreground"
+              :aria-label="t('g.nodesCount', group.nodeTypes.length)"
+            >
+              {{ group.nodeTypes.length }}
+            </span>
           </span>
-          <p class="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-            {{ getLabel(nodeType) }}
-          </p>
-          <Button
-            v-if="typeof nodeType !== 'string' && nodeType.nodeId != null"
-            variant="textonly"
-            size="icon-sm"
-            class="mr-1 size-6 shrink-0 text-muted-foreground hover:text-base-foreground"
-            :aria-label="t('rightSidePanel.locateNode', 'Locate Node')"
-            @click="handleLocateNode(nodeType)"
+        </span>
+        <span class="min-w-0 text-xs/relaxed text-muted-foreground">
+          {{
+            t(
+              'nodeReplacement.willBeReplacedBy',
+              'This node will be replaced by:'
+            )
+          }}
+          <span
+            class="inline-flex rounded-sm bg-modal-card-tag-background px-1.5 py-0.5 text-xs/none font-medium text-modal-card-tag-foreground"
           >
-            <i class="icon-[lucide--locate] size-3" />
-          </Button>
-        </div>
-      </div>
-    </TransitionCollapse>
+            {{ replacementLabel }}
+          </span>
+        </span>
+      </span>
 
-    <!-- Description rows: what it is replaced by -->
-    <div class="mt-1 mb-2 flex flex-col gap-0.5 px-1 text-[13px]">
-      <span class="text-muted-foreground">{{
-        t('nodeReplacement.willBeReplacedBy', 'This node will be replaced by:')
-      }}</span>
-      <span class="text-foreground font-bold">{{
-        group.newNodeId ?? t('nodeReplacement.unknownNode', 'Unknown')
-      }}</span>
-    </div>
-
-    <!-- Replace Action Button -->
-    <div class="flex w-full items-start py-1">
       <Button
         variant="secondary"
-        size="md"
-        class="flex w-full flex-1"
+        size="sm"
+        class="h-8 shrink-0 rounded-lg text-sm"
         @click="handleReplaceNode"
       >
-        <i class="text-foreground mr-1 icon-[lucide--repeat] size-4 shrink-0" />
-        <span class="text-foreground min-w-0 truncate text-sm">
+        <i
+          aria-hidden="true"
+          class="text-foreground mr-1 icon-[lucide--repeat] size-4 shrink-0"
+        />
+        <span class="text-foreground min-w-0 truncate">
           {{ t('nodeReplacement.replaceNode', 'Replace Node') }}
         </span>
       </Button>
+
+      <Button
+        v-if="primaryLocatableNodeType"
+        variant="textonly"
+        size="icon-sm"
+        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+        :aria-label="locateNodeLabel"
+        @click="handleLocateNode(primaryLocatableNodeType)"
+      >
+        <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
+      </Button>
     </div>
+
+    <TransitionCollapse>
+      <ul v-if="expanded" class="m-0 list-none space-y-1 p-0 pl-5">
+        <li
+          v-for="(nodeType, index) in group.nodeTypes"
+          :key="getKey(nodeType, index)"
+          class="min-w-0"
+        >
+          <div class="flex min-w-0 items-center gap-2">
+            <span class="flex min-w-0 flex-1 items-center gap-1">
+              <button
+                v-if="isLocatableNodeType(nodeType)"
+                type="button"
+                class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-1 focus-visible:outline-none"
+                @click="handleLocateNode(nodeType)"
+              >
+                {{ getLabel(nodeType) }}
+              </button>
+              <span
+                v-else
+                class="text-sm/relaxed wrap-break-word text-muted-foreground"
+              >
+                {{ getLabel(nodeType) }}
+              </span>
+            </span>
+            <Button
+              v-if="isLocatableNodeType(nodeType)"
+              variant="textonly"
+              size="icon-sm"
+              class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+              :aria-label="locateNodeLabel"
+              @click="handleLocateNode(nodeType)"
+            >
+              <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
+            </Button>
+          </div>
+        </li>
+      </ul>
+    </TransitionCollapse>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
@@ -102,9 +154,8 @@ import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCol
 import type { MissingNodeType } from '@/types/comfy'
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 
-const props = defineProps<{
+const { group } = defineProps<{
   group: SwapNodeGroup
-  showNodeIdBadge: boolean
 }>()
 
 const emit = defineEmits<{
@@ -115,28 +166,54 @@ const emit = defineEmits<{
 const { t } = useI18n()
 
 const expanded = ref(false)
+const hasMultipleNodeTypes = computed(() => group.nodeTypes.length > 1)
+const replacementLabel = computed(
+  () => group.newNodeId ?? t('nodeReplacement.unknownNode', 'Unknown')
+)
+const locateNodeLabel = computed(() =>
+  t('rightSidePanel.locateNode', 'Locate node on canvas')
+)
+const titleToggleAriaLabel = computed(
+  () =>
+    `${
+      expanded.value
+        ? t('rightSidePanel.missingNodePacks.collapse', 'Collapse')
+        : t('rightSidePanel.missingNodePacks.expand', 'Expand')
+    } ${group.type}`
+)
+const primaryLocatableNodeType = computed(() => {
+  if (group.nodeTypes.length !== 1) return null
+  const [nodeType] = group.nodeTypes
+  return isLocatableNodeType(nodeType) ? nodeType : null
+})
 
 function toggleExpand() {
   expanded.value = !expanded.value
 }
 
-function getKey(nodeType: MissingNodeType): string {
-  if (typeof nodeType === 'string') return nodeType
-  return nodeType.nodeId != null ? String(nodeType.nodeId) : nodeType.type
+function getKey(nodeType: MissingNodeType, index: number): string {
+  if (typeof nodeType === 'string') return `${nodeType}-${index}`
+  return nodeType.nodeId != null
+    ? String(nodeType.nodeId)
+    : `${nodeType.type}-${index}`
 }
 
 function getLabel(nodeType: MissingNodeType): string {
   return typeof nodeType === 'string' ? nodeType : nodeType.type
 }
 
+function isLocatableNodeType(
+  nodeType: MissingNodeType
+): nodeType is Exclude<MissingNodeType, string> & { nodeId: string | number } {
+  return typeof nodeType !== 'string' && nodeType.nodeId != null
+}
+
 function handleLocateNode(nodeType: MissingNodeType) {
-  if (typeof nodeType === 'string') return
-  if (nodeType.nodeId != null) {
-    emit('locate-node', String(nodeType.nodeId))
-  }
+  if (!isLocatableNodeType(nodeType)) return
+  emit('locate-node', String(nodeType.nodeId))
 }
 
 function handleReplaceNode() {
-  emit('replace', props.group)
+  emit('replace', group)
 }
 </script>

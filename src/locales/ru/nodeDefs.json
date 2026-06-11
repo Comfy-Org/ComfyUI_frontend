@@ -2982,6 +2982,98 @@
       }
     }
   },
+  "DA3GeometryToMesh": {
+    "description": "Преобразовать карту глубины в триангулированную 3D-модель (mesh).",
+    "display_name": "Преобразовать DA3 Geometry в Mesh",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Какое изображение из батча конвертировать. Количество вершин на изображение различается, поэтому батчи не могут быть объединены."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "Исключать пиксели, у которых нормализованная уверенность ниже этого значения (0 = оставить все, 1 = оставить только самый уверенный пиксель). Используется, если в geometry есть карта уверенности (Small/Base модели)."
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Шаг по вершинам. 1 = полное разрешение, 2 = половина и т.д."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Удалять треугольники, у которых диапазон глубины 3x3 превышает эту долю. 0 = отключено."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Использовать исходное изображение как текстуру базового цвета."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "Исключать пиксели с вероятностью неба (sky >= 0.5) из mesh. Используется, если в geometry есть карта неба (Mono/Metric модели)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "Запустить Depth Anything 3 на изображении. В режиме multi-view каждое изображение рассматривается как отдельный вид одной сцены.",
+    "display_name": "Запустить Depth Anything 3",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: одновидовое изображение (работает с любым вариантом модели).\nmultiview: все изображения обрабатываются вместе для геометрической согласованности + позы камеры (только для Small/Base моделей)."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: масштабировать так, чтобы длинная сторона = resolution (ограничивает память, по умолчанию).\nlower_bound_resize: масштабировать так, чтобы короткая сторона = resolution (сохраняет больше деталей на высоких/широких изображениях, требует больше памяти)."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Разрешение, на котором работает модель (длинная сторона, кратно 14).\nМеньше = быстрее / меньше VRAM.\nБольше = больше деталей.\nРезультат увеличивается до исходного размера."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "Словарь ненормализованных тензоров.\nВсегда содержит ключи: depth, image, mode.\nДополнительные ключи: sky (для Mono/Metric), confidence (для Small/Base), extrinsics + intrinsics (для multi-view)."
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "Визуализировать карту глубины, карту уверенности или sky mask из данных geometry Depth Anything 3.",
+    "display_name": "Визуализировать Depth Anything 3",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: нормализованное изображение глубины в оттенках серого.\n- depth_colored: глубина, отображённая через Turbo colormap.\n- sky_mask: вероятность неба в диапазоне [0, 1] (только для Mono/Metric моделей).\n- confidence: нормализованная уверенность глубины (только для Small/Base моделей)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "Загрузить модель ControlNet (дифф)",
     "inputs": {
@@ -8983,6 +9075,22 @@
     "outputs": {
       "0": {
         "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "Загрузить Depth Anything 3",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
