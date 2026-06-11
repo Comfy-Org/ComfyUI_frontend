@@ -3,10 +3,14 @@ import BaseLayout from '../../layouts/BaseLayout.astro'
 import HeroSection from '../../components/gallery/HeroSection.vue'
 import GallerySection from '../../components/gallery/GallerySection.vue'
 import ContactSection from '../../components/gallery/ContactSection.vue'
+import { getVisibleGalleryByLocale } from '../../content/queries'
+
+const entries = await getVisibleGalleryByLocale('zh-CN')
+const items = entries.map((entry) => entry.data)
 ---
 
 <BaseLayout title="作品集 — Comfy">
   <HeroSection locale="zh-CN" />
-  <GallerySection locale="zh-CN" client:load />
+  <GallerySection locale="zh-CN" items={items} client:load />
   <ContactSection locale="zh-CN" />
 </BaseLayout>

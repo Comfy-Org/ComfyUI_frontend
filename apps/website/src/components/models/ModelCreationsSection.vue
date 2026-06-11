@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import type { GalleryItem } from '../../data/gallery'
+import type { GalleryItem } from '../../content.config'
 import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
@@ -16,26 +16,25 @@ const ctaHref = 'https://comfy.org/workflows/model/grok'
 
 const items: GalleryItem[] = [
   {
-    id: 'subway-swan',
     image: 'https://media.comfy.org/website/gallery/subway-swan_compressed.png',
     title: 'Subway Swan',
     userAlias: 'Purz Beats',
     teamAlias: 'Comfy',
     tool: 'Grok Imagine',
-    href: 'https://www.youtube.com/@PurzBeats'
+    href: 'https://www.youtube.com/@PurzBeats',
+    visible: true
   },
   {
-    id: 'milos-little-wonder',
     video:
       'https://media.comfy.org/website/gallery/milos-little-wonder_compressed.mp4',
     title: 'Milos Little Wonder',
     userAlias: 'Purz Beats',
     teamAlias: 'Comfy',
     tool: 'Grok Imagine',
-    href: 'https://www.youtube.com/@PurzBeats'
+    href: 'https://www.youtube.com/@PurzBeats',
+    visible: true
   },
   {
-    id: 'amber-passage',
     image:
       'https://media.comfy.org/website/gallery/amber-passage_compressed.jpg',
     title: 'Amber Passage',
@@ -43,27 +42,28 @@ const items: GalleryItem[] = [
     teamAlias: 'Comfy',
     tool: 'Grok Imagine',
     href: 'https://www.youtube.com/@PurzBeats',
-    objectPosition: 'bottom'
+    objectPosition: 'bottom',
+    visible: true
   },
   {
-    id: 'neon-revenant',
     video:
       'https://media.comfy.org/website/gallery/neon-revenant_compressed.mp4',
     title: 'Neon Revenant',
     userAlias: 'Eric Solorio',
     teamAlias: 'Comfy',
     tool: 'Grok Imagine',
-    href: 'https://www.instagram.com/enigmatic_e'
+    href: 'https://www.instagram.com/enigmatic_e',
+    visible: true
   },
   {
-    id: 'midnight-umami',
     image:
       'https://media.comfy.org/website/gallery/midnight_umami_compressed.png',
     title: 'Midnight Umami',
     userAlias: 'Purz Beats',
     teamAlias: 'Comfy',
     tool: 'Grok Imagine',
-    href: 'https://www.youtube.com/@PurzBeats'
+    href: 'https://www.youtube.com/@PurzBeats',
+    visible: true
   }
 ]
 
