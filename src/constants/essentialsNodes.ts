@@ -15,7 +15,7 @@ export const ESSENTIALS_ICON_OVERRIDES: Record<string, string> = {
   VideoCrop: 'icon-s1.3-[lucide--crop]',
   KlingLipSyncAudioToVideoNode: 'icon-s1.3-[lucide--mic-vocal]',
   WebcamCapture: 'icon-s1.3-[lucide--camera]',
-  ComfySwitchNode: 'icon-s1.3-[lucide--toggle-left]'
+  ComfySwitchNode: 'icon-s1.3-[lucide--merge]'
 }
 
 export const ESSENTIALS_CATEGORIES = [
