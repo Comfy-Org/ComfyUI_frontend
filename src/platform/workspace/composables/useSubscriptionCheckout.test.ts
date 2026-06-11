@@ -96,9 +96,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-// Mocked to shield the test from the real workspaceApi → @/scripts/api → app.ts
-// import chain. The composable reads resubscribe from useBillingContext (above),
-// not from workspaceApi directly.
+// Shields the test from the real workspaceApi → @/scripts/api → app.ts import chain
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: { resubscribe: mockResubscribe }
 }))

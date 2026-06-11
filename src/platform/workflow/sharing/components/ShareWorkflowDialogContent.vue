@@ -112,7 +112,10 @@
         </template>
 
         <template v-if="dialogState === 'shared' && publishResult">
-          <ShareUrlCopyField :url="publishResult.shareUrl" />
+          <ShareUrlCopyField
+            :url="publishResult.shareUrl"
+            :share-id="publishResult.shareId"
+          />
           <div class="flex flex-col gap-1">
             <p
               v-if="publishResult.publishedAt"
@@ -437,7 +440,8 @@ const {
     acknowledged.value = false
     useTelemetry()?.trackShareFlow({
       step: 'link_created',
-      source: getShareSource()
+      source: getShareSource(),
+      share_id: result.shareId
     })
 
     return result

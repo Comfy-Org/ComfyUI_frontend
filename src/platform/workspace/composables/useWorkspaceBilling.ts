@@ -285,9 +285,6 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   }
 
   async function topup(amountCents: number): Promise<CreateTopupResponse> {
-    // Pass-through: the caller orchestrates the completed/pending branches
-    // (balance refresh on completed, billing-op polling on pending), so the
-    // facade must not refresh here or it double-fetches.
     isLoading.value = true
     error.value = null
     try {

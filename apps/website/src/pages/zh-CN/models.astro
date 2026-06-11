@@ -1,0 +1,23 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import ModelsHeroSection from '../../components/models/ModelsHeroSection.vue'
+import ModelCreationsSection from '../../components/models/ModelCreationsSection.vue'
+import AIModelsSection from '../../components/product/shared/AIModelsSection.vue'
+import ProductShowcaseSection from '../../components/home/ProductShowcaseSection.vue'
+---
+
+<BaseLayout
+  title="模型 — Comfy"
+  description="在 ComfyUI 中运行世界领先的 AI 模型。浏览所有支持的模型及社区工作流模板。"
+>
+  <ModelsHeroSection
+    locale="zh-CN"
+    modelName="Grok Imagine"
+    ctaHref="/zh-CN/p/supported-models/grok-imagine"
+    videoSrc="https://media.comfy.org/website/models/video_ComfdyUI_00001_.mp4"
+    videoAriaLabel="使用 ComfyUI 创建的 Grok Imagine 作品"
+  />
+  <ModelCreationsSection client:load locale="zh-CN" />
+  <AIModelsSection client:load locale="zh-CN" />
+  <ProductShowcaseSection client:load locale="zh-CN" />
+</BaseLayout>
