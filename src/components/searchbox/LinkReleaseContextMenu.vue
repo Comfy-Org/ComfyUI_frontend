@@ -19,13 +19,11 @@
       >
         <DropdownMenuLabel
           v-if="headerLabel"
-          class="block truncate px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase"
+          class="block shrink-0 truncate px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase"
         >
           {{ headerLabel }}
         </DropdownMenuLabel>
-        <DropdownMenuSeparator class="m-1 h-px bg-border-subtle" />
-
-        <div class="px-1 py-1.5">
+        <div class="shrink-0 px-1 py-1.5">
           <div
             class="flex h-9 items-center gap-2 rounded-lg bg-secondary-background px-2"
           >
@@ -37,98 +35,93 @@
               v-model="query"
               type="text"
               :placeholder="t('contextMenu.Search')"
-              class="size-full min-w-0 bg-transparent text-sm text-base-foreground outline-none placeholder:text-muted-foreground"
+              class="size-full min-w-0 appearance-none border-none bg-transparent text-sm text-base-foreground outline-none placeholder:text-muted-foreground"
               @keydown="onRootSearchKeydown"
             />
-            <button
-              v-if="query"
-              type="button"
-              :aria-label="t('g.clear')"
-              class="shrink-0 cursor-pointer text-muted-foreground hover:text-base-foreground"
-              @click="clearQuery"
-            >
-              <i class="icon-[lucide--x] size-4" />
-            </button>
           </div>
         </div>
-        <DropdownMenuSeparator class="m-1 h-px bg-border-subtle" />
+        <DropdownMenuSeparator
+          class="-mx-1 my-1 h-px shrink-0 bg-border-subtle"
+        />
 
-        <template v-if="trimmedQuery">
-          <DropdownMenuItem
-            v-for="match in searchResults"
-            :key="`${match.category.key}:${match.node.name}`"
-            :class="itemClass"
-            @select="selectNode(match.node)"
-          >
-            <i :class="cn(match.category.icon, 'size-4 shrink-0 opacity-80')" />
-            <span class="min-w-0 flex-1 truncate">
-              <span class="text-muted-foreground">
-                {{ t(match.category.labelKey) }}:
+        <div :class="scrollClass">
+          <template v-if="trimmedQuery">
+            <DropdownMenuItem
+              v-for="match in searchResults"
+              :key="`${match.category.key}:${match.node.name}`"
+              :class="itemClass"
+              @select="selectNode(match.node)"
+            >
+              <i
+                :class="cn(match.category.icon, 'size-4 shrink-0 opacity-80')"
+              />
+              <span class="min-w-0 flex-1 truncate">
+                <span class="text-muted-foreground">
+                  {{ t(match.category.labelKey) }}:
+                </span>
+                <span>{{ match.node.display_name }}</span>
               </span>
-              <span>{{ match.node.display_name }}</span>
+            </DropdownMenuItem>
+            <div
+              v-if="searchResults.length === 0"
+              class="px-3 py-2 text-sm text-muted-foreground"
+            >
+              {{ t('g.noResults') }}
+            </div>
+          </template>
+
+          <template v-else>
+            <template v-if="suggestions.length">
+              <DropdownMenuLabel
+                class="block truncate px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground uppercase"
+              >
+                {{ t('contextMenu.Most Relevant') }}
+              </DropdownMenuLabel>
+              <DropdownMenuItem
+                v-for="nodeDef in suggestions"
+                :key="nodeDef.name"
+                :class="itemClass"
+                @select="selectNode(nodeDef)"
+              >
+                <span class="min-w-0 flex-1 truncate">
+                  {{ nodeDef.display_name }}
+                </span>
+              </DropdownMenuItem>
+            </template>
+
+            <template v-if="categories.length">
+              <DropdownMenuLabel
+                class="block truncate px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground uppercase"
+              >
+                {{ t('contextMenu.Compatible Nodes') }}
+              </DropdownMenuLabel>
+              <LinkReleaseNodeSubmenu
+                v-for="category in categories"
+                :key="category.key"
+                :category
+                :item-class="itemClass"
+                :content-class="contentClass"
+                :scroll-class="scrollClass"
+                @select="selectNode"
+              />
+            </template>
+          </template>
+        </div>
+
+        <template v-if="!trimmedQuery">
+          <DropdownMenuSeparator
+            class="-mx-1 my-1 h-px shrink-0 bg-border-subtle"
+          />
+          <DropdownMenuItem
+            :class="cn(itemClass, 'shrink-0')"
+            @select="addReroute"
+          >
+            <i class="icon-[lucide--git-fork] size-4 shrink-0 opacity-80" />
+            <span class="flex-1 truncate">
+              {{ t('contextMenu.Add Reroute') }}
             </span>
           </DropdownMenuItem>
-          <div
-            v-if="searchResults.length === 0"
-            class="px-3 py-2 text-sm text-muted-foreground"
-          >
-            {{ t('g.noResults') }}
-          </div>
         </template>
-
-        <template v-else>
-          <template v-if="suggestions.length">
-            <DropdownMenuLabel
-              class="block truncate px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground uppercase"
-            >
-              {{ t('contextMenu.Most Relevant') }}
-            </DropdownMenuLabel>
-            <DropdownMenuItem
-              v-for="nodeDef in suggestions"
-              :key="nodeDef.name"
-              :class="itemClass"
-              @select="selectNode(nodeDef)"
-            >
-              <span class="flex-1 truncate">{{ nodeDef.display_name }}</span>
-            </DropdownMenuItem>
-          </template>
-
-          <template v-if="categories.length">
-            <DropdownMenuSeparator class="m-1 h-px bg-border-subtle" />
-            <DropdownMenuLabel
-              class="block truncate px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground uppercase"
-            >
-              {{ t('contextMenu.Compatible Nodes') }}
-            </DropdownMenuLabel>
-            <LinkReleaseNodeSubmenu
-              v-for="category in categories"
-              :key="category.key"
-              :category
-              :item-class="itemClass"
-              :content-class="contentClass"
-              @select="selectNode"
-            />
-          </template>
-        </template>
-
-        <DropdownMenuSeparator class="m-1 h-px bg-border-subtle" />
-        <DropdownMenuItem :class="itemClass" @select="addReroute">
-          <i class="icon-[lucide--git-fork] size-4 shrink-0 opacity-80" />
-          <span class="flex-1 truncate">
-            {{ t('contextMenu.Add Reroute') }}
-          </span>
-        </DropdownMenuItem>
-
-        <div
-          class="flex items-center gap-1.5 px-3 pt-2 pb-1 text-xs text-muted-foreground"
-        >
-          <span
-            class="rounded-sm bg-interface-menu-keybind-surface-default px-1 py-0.5"
-          >
-            {{ t('contextMenu.Esc') }}
-          </span>
-          <span>{{ t('contextMenu.Dismiss') }}</span>
-        </div>
       </DropdownMenuContent>
     </DropdownMenuPortal>
   </DropdownMenuRoot>
@@ -182,7 +175,8 @@ const query = ref('')
 let actionTaken = false
 
 const contentClass =
-  'z-1700 flex max-h-[80vh] min-w-[260px] flex-col overflow-y-auto rounded-lg border border-interface-menu-stroke bg-interface-menu-surface p-1 shadow-interface scrollbar-hide'
+  'z-1700 flex max-h-[80vh] min-w-[260px] max-w-sm flex-col overflow-hidden rounded-lg border border-interface-menu-stroke bg-interface-menu-surface p-1 shadow-interface'
+const scrollClass = 'min-h-0 overflow-y-auto scrollbar-custom'
 const itemClass =
   'flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-base-foreground outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-interface-menu-component-surface-hovered'
 
@@ -245,11 +239,6 @@ function addReroute() {
 }
 
 function focusSearch() {
-  searchInput.value?.focus()
-}
-
-function clearQuery() {
-  query.value = ''
   searchInput.value?.focus()
 }
 
