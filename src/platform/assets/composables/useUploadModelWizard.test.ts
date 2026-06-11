@@ -312,7 +312,7 @@ describe('useUploadModelWizard', () => {
     })
   })
 
-  it('keeps generic sync imports successful when an existing asset has another model type', async () => {
+  it('does not block sync imports as mismatches without a required model type', async () => {
     const { assetService } =
       await import('@/platform/assets/services/assetService')
     vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
