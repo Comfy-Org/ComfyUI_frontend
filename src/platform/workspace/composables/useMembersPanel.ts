@@ -1,3 +1,4 @@
+import type { MenuItem } from 'primevue/menuitem'
 import { storeToRefs } from 'pinia'
 import { useToast } from 'primevue/usetoast'
 import { computed, ref } from 'vue'
@@ -5,6 +6,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
@@ -21,9 +23,13 @@ type SortDirection = 'asc' | 'desc'
 export function sortMembers(
   members: WorkspaceMember[],
   currentUserEmail: string | null,
-  sortDirection: SortDirection
+  sortDirection: SortDirection,
+  originalOwnerId: string | null = null
 ): WorkspaceMember[] {
   return [...members].sort((a, b) => {
+    if (a.id === originalOwnerId) return -1
+    if (b.id === originalOwnerId) return 1
+
     if (a.role !== b.role) {
       const ownerFirst = a.role === 'owner' ? -1 : 1
       return sortDirection === 'desc' ? ownerFirst : -ownerFirst
@@ -76,6 +82,7 @@ export function useMembersPanel() {
   const {
     showRemoveMemberDialog,
     showRevokeInviteDialog,
+    showChangeMemberRoleDialog,
     showInviteMemberDialog,
     showInviteMemberUpsellDialog
   } = useDialogService()
@@ -83,6 +90,7 @@ export function useMembersPanel() {
   const {
     members,
     pendingInvites,
+    originalOwnerId,
     totalMemberSlots,
     isInviteLimitReached,
     isInPersonalWorkspace: isPersonalWorkspace
@@ -154,31 +162,50 @@ export function useMembersPanel() {
   const sortField = ref<SortField>('inviteDate')
   const sortDirection = ref<SortDirection>('desc')
 
-  const selectedMember = ref<WorkspaceMember | null>(null)
-
-  const memberMenuItems = computed(() => [
-    {
-      label: t('workspacePanel.members.actions.removeMember'),
-      icon: 'pi pi-user-minus',
-      command: () => {
-        if (selectedMember.value) {
-          handleRemoveMember(selectedMember.value)
-        }
-      }
+  function roleMenuItem(
+    member: WorkspaceMember,
+    role: WorkspaceRole,
+    label: string
+  ): MenuItem {
+    return {
+      label,
+      checked: member.role === role,
+      command: () => handleChangeRole(member, role)
     }
-  ])
+  }
 
-  function selectMember(member: WorkspaceMember) {
-    selectedMember.value = member
+  function memberMenuItems(member: WorkspaceMember): MenuItem[] {
+    return [
+      {
+        label: t('workspacePanel.members.actions.changeRole'),
+        items: [
+          roleMenuItem(member, 'owner', t('workspaceSwitcher.roleOwner')),
+          roleMenuItem(member, 'member', t('workspaceSwitcher.roleMember'))
+        ]
+      },
+      {
+        label: t('workspacePanel.members.actions.removeMember'),
+        command: () => handleRemoveMember(member)
+      }
+    ]
   }
 
   function isCurrentUser(member: WorkspaceMember): boolean {
     return member.email.toLowerCase() === userEmail.value?.toLowerCase()
   }
 
+  function isOriginalOwner(member: WorkspaceMember): boolean {
+    return member.id === originalOwnerId.value
+  }
+
   const filteredMembers = computed(() => {
     const searched = filterBySearch(members.value, searchQuery.value)
-    return sortMembers(searched, userEmail.value ?? null, sortDirection.value)
+    return sortMembers(
+      searched,
+      userEmail.value ?? null,
+      sortDirection.value,
+      originalOwnerId.value
+    )
   })
 
   const filteredPendingInvites = computed(() => {
@@ -219,12 +246,23 @@ export function useMembersPanel() {
     void showRemoveMemberDialog(member.id)
   }
 
+  function handleChangeRole(
+    member: WorkspaceMember,
+    targetRole: WorkspaceRole
+  ) {
+    if (member.role === targetRole) return
+    void showChangeMemberRoleDialog({
+      memberId: member.id,
+      memberName: member.name,
+      targetRole
+    })
+  }
+
   return {
     searchQuery,
     activeView,
     sortField,
     sortDirection,
-    selectedMember,
     maxSeats,
     isOnTeamPlan,
     hasMultipleMembers,
@@ -245,11 +283,12 @@ export function useMembersPanel() {
     uiConfig,
     userPhotoUrl,
     isCurrentUser,
-    selectMember,
+    isOriginalOwner,
     toggleSort,
     showSubscriptionDialog,
     handleResendInvite,
     handleRevokeInvite,
-    handleRemoveMember
+    handleRemoveMember,
+    handleChangeRole
   }
 }

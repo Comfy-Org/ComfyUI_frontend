@@ -15,13 +15,14 @@ import type {
 const mockHandleResendInvite = vi.fn()
 const mockHandleRevokeInvite = vi.fn()
 const mockShowSubscriptionDialog = vi.fn()
-const mockSelectMember = vi.fn()
+const mockMemberMenuItems = vi.fn(() => [])
 const mockToggleSort = vi.fn()
 const mockHandleInviteMember = vi.fn()
 
 const {
   mockMembers,
   mockPendingInvites,
+  mockOriginalOwnerId,
   mockFilteredMembers,
   mockFilteredPendingInvites,
   mockIsPersonalWorkspace,
@@ -42,6 +43,7 @@ const {
   return {
     mockMembers: ref<WorkspaceMember[]>([]),
     mockPendingInvites: ref<PendingInvite[]>([]),
+    mockOriginalOwnerId: ref<string | null>(null),
     mockHasMultipleMembers: ref(true),
     mockShowSearch: ref(true),
     mockShowViewTabs: ref(true),
@@ -101,7 +103,7 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     })),
     filteredMembers: mockFilteredMembers,
     filteredPendingInvites: mockFilteredPendingInvites,
-    memberMenuItems: computed(() => []),
+    memberMenuItems: mockMemberMenuItems,
     isPersonalWorkspace: mockIsPersonalWorkspace,
     members: mockMembers,
     pendingInvites: mockPendingInvites,
@@ -110,12 +112,13 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
     userPhotoUrl: ref(null),
     isCurrentUser: (m: WorkspaceMember) =>
       m.email.toLowerCase() === 'owner@example.com',
-    selectMember: mockSelectMember,
+    isOriginalOwner: (m: WorkspaceMember) => m.id === mockOriginalOwnerId.value,
     toggleSort: mockToggleSort,
     showSubscriptionDialog: mockShowSubscriptionDialog,
     handleResendInvite: mockHandleResendInvite,
     handleRevokeInvite: mockHandleRevokeInvite,
-    handleRemoveMember: vi.fn()
+    handleRemoveMember: vi.fn(),
+    handleChangeRole: vi.fn()
   })
 }))
 
@@ -155,8 +158,7 @@ function renderComponent() {
         Button: ButtonStub,
         SearchInput: SearchInputStub,
         UserAvatar: true,
-        WorkspaceMenuButton: true,
-        Menu: { template: '<div />', props: ['model', 'popup'] }
+        WorkspaceMenuButton: true
       },
       directives: { tooltip: () => {} }
     }
@@ -189,8 +191,10 @@ function createInvite(overrides: Partial<PendingInvite> = {}): PendingInvite {
 describe('MembersPanelContent', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockMemberMenuItems.mockReturnValue([])
     mockMembers.value = []
     mockPendingInvites.value = []
+    mockOriginalOwnerId.value = null
     mockFilteredMembers.value = []
     mockFilteredPendingInvites.value = []
     mockIsPersonalWorkspace.value = false
@@ -309,6 +313,23 @@ describe('MembersPanelContent', () => {
       expect(
         screen.queryAllByRole('button', { name: 'g.moreOptions' })
       ).toHaveLength(0)
+    })
+
+    it('does not show more options on the original owner row', () => {
+      mockOriginalOwnerId.value = 'creator-1'
+      mockFilteredMembers.value = [
+        createMember({
+          id: 'creator-1',
+          name: 'Creator',
+          email: 'creator@test.com',
+          role: 'owner'
+        }),
+        createMember({ id: '2', name: 'Other', email: 'other@test.com' })
+      ]
+      renderComponent()
+      expect(
+        screen.queryAllByRole('button', { name: 'g.moreOptions' })
+      ).toHaveLength(1)
     })
   })
 

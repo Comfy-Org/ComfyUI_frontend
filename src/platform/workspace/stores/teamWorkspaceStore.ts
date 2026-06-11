@@ -148,6 +148,15 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => activeWorkspace.value?.pendingInvites ?? []
   )
 
+  // Earliest-joined member is the workspace creator ("original owner").
+  // FE inference until the BE exposes an explicit flag (FE-770 BE blocker Q3).
+  const originalOwnerId = computed<string | null>(() => {
+    if (members.value.length === 0) return null
+    return members.value.reduce((earliest, member) =>
+      member.joinDate < earliest.joinDate ? member : earliest
+    ).id
+  })
+
   const totalMemberSlots = computed(
     () => members.value.length + pendingInvites.value.length
   )
@@ -519,6 +528,24 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   /**
+   * Change a member's role in the current workspace.
+   */
+  async function changeMemberRole(
+    userId: string,
+    role: WorkspaceMember['role']
+  ): Promise<void> {
+    await workspaceApi.updateMemberRole(userId, role)
+    const current = activeWorkspace.value
+    if (current) {
+      updateActiveWorkspace({
+        members: current.members.map((m) =>
+          m.id === userId ? { ...m, role } : m
+        )
+      })
+    }
+  }
+
+  /**
    * Fetch pending invites for the current workspace.
    */
   async function fetchPendingInvites(): Promise<PendingInvite[]> {
@@ -633,6 +660,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     canCreateWorkspace,
     members,
     pendingInvites,
+    originalOwnerId,
     totalMemberSlots,
     isInviteLimitReached,
     workspaceId,
@@ -656,6 +684,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     // Member Actions
     fetchMembers,
     removeMember,
+    changeMemberRole,
 
     // Invite Actions
     fetchPendingInvites,

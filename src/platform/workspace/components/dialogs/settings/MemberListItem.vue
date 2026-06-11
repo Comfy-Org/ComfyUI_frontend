@@ -37,24 +37,32 @@
       }}
     </span>
     <div
-      v-if="canRemoveMembers && !isSingleSeatPlan"
+      v-if="canManageMembers && !isSingleSeatPlan"
       class="flex items-center justify-end"
     >
-      <Button
-        v-if="!isCurrentUser"
-        v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-        variant="muted-textonly"
-        size="icon"
-        :aria-label="$t('g.moreOptions')"
-        @click="$emit('showMenu', $event)"
+      <DropdownMenu
+        v-if="!isCurrentUser && !isOriginalOwner"
+        :entries="menuItems"
       >
-        <i class="pi pi-ellipsis-h" />
-      </Button>
+        <template #button>
+          <Button
+            v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+            variant="muted-textonly"
+            size="icon"
+            :aria-label="$t('g.moreOptions')"
+          >
+            <i class="pi pi-ellipsis-h" />
+          </Button>
+        </template>
+      </DropdownMenu>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import type { MenuItem } from 'primevue/menuitem'
+
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -62,21 +70,21 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   showRoleColumn = false,
-  canRemoveMembers = false,
+  canManageMembers = false,
   isSingleSeatPlan = false,
-  striped = false
+  isOriginalOwner = false,
+  striped = false,
+  menuItems = []
 } = defineProps<{
   member: WorkspaceMember
   isCurrentUser: boolean
   photoUrl?: string
   gridCols: string
   showRoleColumn?: boolean
-  canRemoveMembers?: boolean
+  canManageMembers?: boolean
   isSingleSeatPlan?: boolean
+  isOriginalOwner?: boolean
   striped?: boolean
-}>()
-
-defineEmits<{
-  showMenu: [event: Event]
+  menuItems?: MenuItem[]
 }>()
 </script>

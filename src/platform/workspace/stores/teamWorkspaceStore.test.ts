@@ -38,6 +38,7 @@ const mockWorkspaceApi = vi.hoisted(() => ({
   leave: vi.fn(),
   listMembers: vi.fn(),
   removeMember: vi.fn(),
+  updateMemberRole: vi.fn(),
   listInvites: vi.fn(),
   createInvite: vi.fn(),
   revokeInvite: vi.fn(),
@@ -677,6 +678,100 @@ describe('useTeamWorkspaceStore', () => {
       expect(mockWorkspaceApi.removeMember).toHaveBeenCalledWith('user-1')
       expect(store.members).toHaveLength(1)
       expect(store.members[0].id).toBe('user-2')
+    })
+
+    it('changeMemberRole updates the role in the local list', async () => {
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members: [
+          {
+            id: 'user-1',
+            name: 'User One',
+            email: 'one@test.com',
+            joined_at: '2024-01-01T00:00:00Z',
+            role: 'owner'
+          },
+          {
+            id: 'user-2',
+            name: 'User Two',
+            email: 'two@test.com',
+            joined_at: '2024-01-02T00:00:00Z',
+            role: 'member'
+          }
+        ],
+        pagination: { offset: 0, limit: 50, total: 2 }
+      })
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      await store.fetchMembers()
+
+      await store.changeMemberRole('user-2', 'owner')
+
+      expect(mockWorkspaceApi.updateMemberRole).toHaveBeenCalledWith(
+        'user-2',
+        'owner'
+      )
+      expect(store.members.find((m) => m.id === 'user-2')?.role).toBe('owner')
+    })
+
+    it('changeMemberRole leaves the list untouched when the API rejects', async () => {
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members: [
+          {
+            id: 'user-2',
+            name: 'User Two',
+            email: 'two@test.com',
+            joined_at: '2024-01-02T00:00:00Z',
+            role: 'member'
+          }
+        ],
+        pagination: { offset: 0, limit: 50, total: 1 }
+      })
+      mockWorkspaceApi.updateMemberRole.mockRejectedValue(new Error('boom'))
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      await store.fetchMembers()
+
+      await expect(store.changeMemberRole('user-2', 'owner')).rejects.toThrow()
+      expect(store.members[0].role).toBe('member')
+    })
+
+    it('originalOwnerId is the earliest joined member', async () => {
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members: [
+          {
+            id: 'late-owner',
+            name: 'Late Owner',
+            email: 'late@test.com',
+            joined_at: '2024-02-01T00:00:00Z',
+            role: 'owner'
+          },
+          {
+            id: 'creator',
+            name: 'Creator',
+            email: 'creator@test.com',
+            joined_at: '2024-01-01T00:00:00Z',
+            role: 'owner'
+          }
+        ],
+        pagination: { offset: 0, limit: 50, total: 2 }
+      })
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      expect(store.originalOwnerId).toBeNull()
+
+      await store.fetchMembers()
+
+      expect(store.originalOwnerId).toBe('creator')
     })
   })
 
