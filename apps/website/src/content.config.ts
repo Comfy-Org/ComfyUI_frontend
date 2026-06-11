@@ -28,12 +28,25 @@ export const eventsSchema = z.object({
 
 export type EventItem = z.infer<typeof eventsSchema>
 
+export const tutorialsSchema = z.object({
+  order: z.number().int(),
+  tags: z.array(z.string()),
+  title: z.string(),
+  videoSrc: z.string().url(),
+  href: z.string().url().optional(),
+  poster: z.string().url().optional(),
+  posterTime: z.number().optional()
+})
+
+export type LearningTutorial = z.infer<typeof tutorialsSchema>
+export type ResolvedTutorial = LearningTutorial & { slug: string }
+
 // The default `generateId` lowercases path segments (e.g. `zh-CN/foo` becomes
 // `zh-cn/foo`), which collides with the BCP-47 locale codes Astro's i18n
-// config uses elsewhere. Strip just the `.json` extension to keep the path —
-// and therefore the locale prefix — verbatim.
+// config uses elsewhere. Strip the file extension to keep the path — and
+// therefore the locale prefix — verbatim.
 const preservePathId = ({ entry }: { entry: string }): string =>
-  entry.replace(/\.json$/, '')
+  entry.replace(/\.[^.]+$/, '')
 
 const gallery = defineCollection({
   loader: glob({
@@ -53,4 +66,13 @@ const events = defineCollection({
   schema: eventsSchema
 })
 
-export const collections = { gallery, events }
+const tutorials = defineCollection({
+  loader: glob({
+    pattern: '**/*.md',
+    base: './src/content/tutorials',
+    generateId: preservePathId
+  }),
+  schema: tutorialsSchema
+})
+
+export const collections = { gallery, events, tutorials }

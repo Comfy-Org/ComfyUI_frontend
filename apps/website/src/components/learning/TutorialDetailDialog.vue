@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, useTemplateRef } from 'vue'
 
-import type { LearningTutorial } from '../../data/learningTutorials'
+import type { ResolvedTutorial } from '../../content.config'
 import type { Locale } from '../../i18n/translations'
 
 import { lockScroll, unlockScroll } from '../../composables/scrollLock'
@@ -9,7 +9,7 @@ import { t } from '../../i18n/translations'
 import VideoPlayer from '../common/VideoPlayer.vue'
 
 const { tutorial, locale = 'en' } = defineProps<{
-  tutorial: LearningTutorial
+  tutorial: ResolvedTutorial
   locale?: Locale
 }>()
 
@@ -39,7 +39,7 @@ onUnmounted(() => {
   <Teleport to="body">
     <dialog
       ref="dialogRef"
-      :aria-label="tutorial.title[locale]"
+      :aria-label="tutorial.title"
       class="fixed inset-0 z-50 flex size-full max-h-none max-w-none flex-col items-center justify-center border-0 bg-transparent px-4 py-8 backdrop-blur-xl backdrop:bg-transparent lg:px-20 lg:py-8"
       @click="handleBackdropClick"
       @keydown="handleKeydown"
@@ -60,7 +60,7 @@ onUnmounted(() => {
         class="border-primary-comfy-yellow rounded-5xl flex w-full max-w-7xl items-center justify-center overflow-hidden border-2 bg-primary-comfy-ink p-3 lg:p-4"
       >
         <VideoPlayer
-          :key="tutorial.id"
+          :key="tutorial.slug"
           :locale
           :src="tutorial.videoSrc"
           :poster="tutorial.poster"
@@ -73,7 +73,7 @@ onUnmounted(() => {
         class="mt-6 text-center text-lg font-medium text-primary-comfy-canvas lg:text-xl"
       >
         {{ t('learning.tutorials.titlePrefix', locale) }}
-        {{ tutorial.title[locale] }}
+        {{ tutorial.title }}
       </h2>
     </dialog>
   </Teleport>

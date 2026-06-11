@@ -8,14 +8,20 @@ import CallToActionSection from '../components/common/CallToActionSection.vue'
 import { getRoutes } from '../config/routes'
 import { externalLinks } from '../config/routes'
 // import { learningEvents } from '../data/events'
+import { getTutorialsByLocale, slugOf } from '../content/queries'
 
 const routes = getRoutes('en')
+const tutorialEntries = await getTutorialsByLocale('en')
+const tutorials = tutorialEntries.map((entry) => ({
+  slug: slugOf(entry),
+  ...entry.data
+}))
 ---
 
 <BaseLayout title="Learning — Comfy">
   <HeroSection client:load />
   <FeaturedWorkflowSection client:visible />
-  <TutorialsSection client:visible />
+  <TutorialsSection tutorials={tutorials} client:visible />
   <CallToActionSection
     headingKey="learning.cta.heading"
     primaryLabelKey="learning.cta.contactSales"

@@ -7,7 +7,7 @@ vi.mock('astro/loaders', () => ({
   glob: () => ({})
 }))
 
-import { eventsSchema, gallerySchema } from './content.config'
+import { eventsSchema, gallerySchema, tutorialsSchema } from './content.config'
 
 const validEntry = {
   order: 1,
@@ -91,6 +91,41 @@ describe('eventsSchema', () => {
 
   it('rejects a truly malformed href that is neither a URL nor "#"', () => {
     const result = eventsSchema.safeParse({ ...validEvent, href: 'not a url' })
+    expect(result.success).toBe(false)
+  })
+})
+
+const validTutorial = {
+  order: 1,
+  tags: ['Partner Nodes', 'Image To Video'],
+  title: 'Cleanplate Walkthrough',
+  videoSrc:
+    'https://media.comfy.org/website/learning/cleanplate_walkthrough_v03.mp4',
+  poster:
+    'https://media.comfy.org/website/learning/cleanplate_walkthrough_v03_thumbnail.jpg'
+}
+
+describe('tutorialsSchema', () => {
+  it('accepts a valid entry', () => {
+    const result = tutorialsSchema.safeParse(validTutorial)
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects an entry missing a required field with a Zod error naming the field', () => {
+    const { title: _omit, ...withoutTitle } = validTutorial
+    const result = tutorialsSchema.safeParse(withoutTitle)
+    expect(result.success).toBe(false)
+    if (!result.success) {
+      const paths = result.error.issues.map((issue) => issue.path.join('.'))
+      expect(paths).toContain('title')
+    }
+  })
+
+  it('rejects an invalid videoSrc URL', () => {
+    const result = tutorialsSchema.safeParse({
+      ...validTutorial,
+      videoSrc: 'not a url'
+    })
     expect(result.success).toBe(false)
   })
 })

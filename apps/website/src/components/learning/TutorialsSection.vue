@@ -1,22 +1,23 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+import type { ResolvedTutorial } from '../../content.config'
 import type { Locale } from '../../i18n/translations'
 
-import {
-  getTutorialPosterSrc,
-  learningTutorials
-} from '../../data/learningTutorials'
 import { t } from '../../i18n/translations'
+import { getTutorialPosterSrc } from '../../utils/tutorial'
 import Badge from '../common/Badge.vue'
 import MaskRevealButton from '../common/MaskRevealButton.vue'
 import TutorialDetailDialog from './TutorialDetailDialog.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { tutorials, locale = 'en' } = defineProps<{
+  tutorials: readonly ResolvedTutorial[]
+  locale?: Locale
+}>()
 
-const activeTutorialId = ref<string | null>(null)
+const activeTutorialSlug = ref<string | null>(null)
 const activeTutorial = () =>
-  learningTutorials.find((tutorial) => tutorial.id === activeTutorialId.value)
+  tutorials.find((tutorial) => tutorial.slug === activeTutorialSlug.value)
 </script>
 
 <template>
@@ -31,15 +32,15 @@ const activeTutorial = () =>
       class="grid grid-cols-1 gap-x-6 gap-y-10 md:grid-cols-2 lg:grid-cols-3 lg:gap-x-8"
     >
       <li
-        v-for="tutorial in learningTutorials"
-        :key="tutorial.id"
+        v-for="tutorial in tutorials"
+        :key="tutorial.slug"
         class="bg-transparency-white-t4 flex flex-col gap-4 overflow-hidden rounded-3xl border-0 p-2"
       >
         <button
           type="button"
           class="group relative block aspect-video cursor-pointer overflow-hidden rounded-3xl"
-          :aria-label="`${t('learning.tutorials.titlePrefix', locale)} ${tutorial.title[locale]}`"
-          @click="activeTutorialId = tutorial.id"
+          :aria-label="`${t('learning.tutorials.titlePrefix', locale)} ${tutorial.title}`"
+          @click="activeTutorialSlug = tutorial.slug"
         >
           <video
             :src="getTutorialPosterSrc(tutorial)"
@@ -74,7 +75,7 @@ const activeTutorial = () =>
               class="text-sm/snug text-primary-comfy-canvas lg:text-base/snug"
             >
               {{ t('learning.tutorials.titlePrefix', locale) }}<br />
-              {{ tutorial.title[locale] }}
+              {{ tutorial.title }}
             </h3>
             <MaskRevealButton
               v-if="tutorial.href"
@@ -103,7 +104,7 @@ const activeTutorial = () =>
 
           <ul class="flex flex-wrap gap-2">
             <li v-for="tag in tutorial.tags" :key="tag">
-              <Badge>{{ t(tag, locale) }}</Badge>
+              <Badge>{{ tag }}</Badge>
             </li>
           </ul>
         </div>
@@ -114,7 +115,7 @@ const activeTutorial = () =>
       v-if="activeTutorial()"
       :tutorial="activeTutorial()!"
       :locale="locale"
-      @close="activeTutorialId = null"
+      @close="activeTutorialSlug = null"
     />
   </section>
 </template>

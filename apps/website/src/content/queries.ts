@@ -5,6 +5,7 @@ import type { Locale } from '../i18n/translations'
 
 export type GalleryEntry = CollectionEntry<'gallery'>
 export type EventsEntry = CollectionEntry<'events'>
+export type TutorialsEntry = CollectionEntry<'tutorials'>
 
 export function slugOf(entry: { id: string }): string {
   const slash = entry.id.indexOf('/')
@@ -44,6 +45,16 @@ export async function getEventsByLocale(
 ): Promise<EventsEntry[]> {
   const prefix = `${locale}/`
   const entries: EventsEntry[] = await getCollection('events')
+  return entries
+    .filter((entry) => entry.id.startsWith(prefix))
+    .sort((a, b) => a.data.order - b.data.order)
+}
+
+export async function getTutorialsByLocale(
+  locale: Locale
+): Promise<TutorialsEntry[]> {
+  const prefix = `${locale}/`
+  const entries: TutorialsEntry[] = await getCollection('tutorials')
   return entries
     .filter((entry) => entry.id.startsWith(prefix))
     .sort((a, b) => a.data.order - b.data.order)

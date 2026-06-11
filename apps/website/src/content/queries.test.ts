@@ -5,6 +5,7 @@ import { getCollection } from 'astro:content'
 import {
   getEventsByLocale,
   getGalleryByIds,
+  getTutorialsByLocale,
   getVisibleGalleryByLocale,
   slugOf
 } from './queries'
@@ -200,5 +201,64 @@ describe('getEventsByLocale', () => {
 
     const result = await getEventsByLocale('zh-CN')
     expect(result).toEqual([])
+  })
+})
+
+interface TutorialsFixtureEntry {
+  id: string
+  collection: 'tutorials'
+  data: {
+    order: number
+    tags: string[]
+    title: string
+    videoSrc: string
+    href?: string
+    poster?: string
+    posterTime?: number
+  }
+}
+
+function tutorialEntry(
+  id: string,
+  overrides: Partial<TutorialsFixtureEntry['data']> = {}
+): TutorialsFixtureEntry {
+  return {
+    id,
+    collection: 'tutorials',
+    data: {
+      order: 0,
+      tags: ['Tag'],
+      title: 'Title',
+      videoSrc: 'https://example.com/video.mp4',
+      ...overrides
+    }
+  }
+}
+
+describe('getTutorialsByLocale', () => {
+  it('returns only entries whose id starts with the requested locale prefix', async () => {
+    getCollectionMock.mockResolvedValue([
+      tutorialEntry('en/alpha'),
+      tutorialEntry('en/beta'),
+      tutorialEntry('zh-CN/alpha')
+    ] as never)
+
+    const en = await getTutorialsByLocale('en')
+    expect(en.map((e) => e.id)).toEqual(['en/alpha', 'en/beta'])
+  })
+
+  it('sorts entries by the order field ascending, not by id', async () => {
+    getCollectionMock.mockResolvedValue([
+      tutorialEntry('en/charlie', { order: 1 }),
+      tutorialEntry('en/alpha', { order: 3 }),
+      tutorialEntry('en/bravo', { order: 2 })
+    ] as never)
+
+    const result = await getTutorialsByLocale('en')
+    expect(result.map((e) => e.id)).toEqual([
+      'en/charlie',
+      'en/bravo',
+      'en/alpha'
+    ])
   })
 })
