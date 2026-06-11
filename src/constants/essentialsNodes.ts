@@ -108,7 +108,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
         label: 'Preview Text',
         icon: 'icon-s1.5-[lucide--text]',
         media: 'text',
-        nodeName: 'Preview as Text'
+        nodeName: 'PreviewAny'
       }
     ]
   },
@@ -124,17 +124,17 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           {
             label: 'Nano Banana',
             icon: 'icon-[comfy--gemini]',
-            nodeName: 'Nano Banana (Google Gemini Image)'
+            nodeName: 'GeminiImageNode'
           },
           {
             label: 'Grok Image Edit',
             icon: 'icon-[comfy--grok] text-[#B6B6B6]',
-            nodeName: 'Grok Image Edit'
+            nodeName: 'GrokImageEditNode'
           },
           {
             label: 'Bytedance Seedream',
             icon: 'icon-[comfy--bytedance]',
-            nodeName: 'ByteDance Seedream 4.5 & 5.0'
+            nodeName: 'ByteDanceSeedreamNode'
           },
           {
             label: 'Text to Image',
@@ -164,7 +164,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           {
             label: 'Vectorize',
             icon: 'icon-[comfy--image-vectorize]',
-            nodeName: 'Recraft Vectorize Image'
+            nodeName: 'RecraftVectorizeImageNode'
           },
           {
             label: 'Pose to Image',
@@ -191,17 +191,17 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           {
             label: 'Grok Video',
             icon: 'icon-[comfy--grok] text-[#B6B6B6]',
-            nodeName: 'Grok Video'
+            nodeName: 'GrokVideoNode'
           },
           {
             label: 'Kling Video',
             icon: 'icon-[comfy--kling]',
-            nodeName: 'Kling Image(First Frame) to Video'
+            nodeName: 'KlingImage2VideoNode'
           },
           {
             label: 'Bytedance Seedance',
             icon: 'icon-[comfy--bytedance]',
-            nodeName: 'ByteDance Seedance 2.0 Reference to Video'
+            nodeName: 'ByteDance2ReferenceNode'
           },
           {
             label: 'Text to Video',
@@ -221,17 +221,17 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           {
             label: 'Edit Video',
             icon: 'icon-[comfy--video-edit]',
-            nodeName: 'Kling 3.0 Omni Edit Video'
+            nodeName: 'KlingOmniProEditVideoNode'
           },
           {
             label: 'Lipsync Video',
             icon: 'icon-s1.5-[lucide--mic-vocal]',
-            nodeName: 'Kling Lip Sync Video with Audio'
+            nodeName: 'KlingLipSyncAudioToVideoNode'
           },
           {
             label: 'Inpaint Video',
             icon: 'icon-[comfy--video-inpaint]',
-            nodeName: blueprint('Video Inpaint(Wan2.1 VACE)')
+            nodeName: blueprint('Video Inpainting (Wan2.1 VACE)')
           },
           {
             label: 'Pose to Video',
@@ -258,13 +258,13 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           {
             label: 'Google Gemini',
             icon: 'icon-[comfy--gemini]',
-            nodeName: 'Google Gemini'
+            nodeName: 'GeminiNode'
           },
           {
             label: 'Anthropic Claude',
             // FIXME: Don't hard code color here
             icon: 'icon-[comfy--claude] text-[#D97757]',
-            nodeName: 'Anthropic Claude'
+            nodeName: 'ClaudeNode'
           },
           {
             label: 'Text Enhancer',
@@ -296,12 +296,12 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           {
             label: 'Text to Speech',
             icon: 'icon-s1.5-[lucide--speech]',
-            nodeName: 'ElevenLabs Text to Speech'
+            nodeName: 'ElevenLabsTextToSpeech'
           },
           {
             label: 'Voice Clone',
             icon: 'icon-[comfy--voice-clone]',
-            nodeName: 'ElevenLabs Instant Voice Clone'
+            nodeName: 'ElevenLabsInstantVoiceClone'
           }
         ]
       },
@@ -313,7 +313,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           {
             label: 'Text to Model',
             icon: 'icon-[comfy--text-to-3d]',
-            nodeName: 'Hunyuan3D: Text to Model'
+            nodeName: 'TencentTextToModelNode'
           },
           {
             label: 'Image to Model',
@@ -406,7 +406,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           {
             label: 'Image Frames to Video',
             icon: 'icon-[comfy--frames-to-video]',
-            nodeName: 'Create Video'
+            nodeName: 'CreateVideo'
           }
         ]
       },
@@ -448,7 +448,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           {
             label: 'Shader',
             icon: 'icon-[comfy--image-shader]',
-            nodeName: 'GLSL Shader'
+            nodeName: 'GLSLShader'
           }
         ]
       },
@@ -507,7 +507,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           {
             label: 'Remove Background',
             icon: 'icon-[comfy--image-remove-background]',
-            nodeName: 'Recraft Remove Background'
+            nodeName: 'RecraftRemoveBackgroundNode'
           }
         ]
       },
@@ -524,7 +524,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           {
             label: 'Upscale Video',
             icon: 'icon-[comfy--video-upscale]',
-            nodeName: 'Topaz Video Enhance'
+            nodeName: 'TopazVideoEnhanceV2'
           }
         ]
       },
@@ -570,12 +570,12 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           {
             label: 'UV Unwrapping',
             icon: 'icon-s1.5-[lucide--package-open]',
-            nodeName: 'Hunyuan3D: Model to UV'
+            nodeName: 'TencentModelTo3DUVNode'
           },
           {
             label: 'Decompose 3D Model',
             icon: 'icon-[comfy--3d-decomp]',
-            nodeName: 'Hunyuan3D: 3D Part'
+            nodeName: 'Tencent3DPartNode'
           }
         ]
       }
@@ -603,7 +603,7 @@ export const NODE_TO_ESSENTIALS_CATEGORY: Record<string, string> = mapValues(
   (v) => v?.subgroup ?? v.section
 )
 
-export const ESSENTIALS_NODE_NAMES = Object.keys(NODE_TO_ESSENTIALS_CATEGORY)
+const ESSENTIALS_NODE_NAMES = Object.keys(NODE_TO_ESSENTIALS_CATEGORY)
 
 // Deprecated, used for sorting old node library
 export const ESSENTIALS_NODE_RANK: ReadonlyMap<string, number> = new Map(
