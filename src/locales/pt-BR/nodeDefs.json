@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "Nó de condicionamento para Bernini em condicionamento de vídeo/imagem em contexto. Pode ser usado para as seguintes tarefas: t2v (texto para vídeo), v2v (vídeo para vídeo), rv2v (edição de vídeo guiada por referência), r2v (referência para vídeo), ads2v (inserir imagem/vídeo em vídeo). Imagens de referência injetadas como tokens em contexto (r2v, rv2v) são codificadas independentemente em sua própria proporção nativa (borda longa limitada por ref_max_size)",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "tamanho_do_lote"
+      },
+      "height": {
+        "name": "altura"
+      },
+      "length": {
+        "name": "duração"
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "ref_max_size": {
+        "name": "ref_max_size",
+        "tooltip": "Tamanho máximo para a borda longa de reference_video e reference_images. Redimensionado mantendo a proporção e ajustado para múltiplos de 16px."
+      },
+      "reference_images": {
+        "name": "imagens_referência"
+      },
+      "reference_video": {
+        "name": "vídeo_referência",
+        "tooltip": "Vídeo a ser inserido no vídeo fonte (ads2v)."
+      },
+      "source_video": {
+        "name": "vídeo_fonte",
+        "tooltip": "Vídeo fonte para editar ou estilizar (v2v, rv2v). Redimensionado para largura/altura e cortado para a duração."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "Agendador de Amostragem Beta",
     "inputs": {
@@ -2922,6 +2978,98 @@
       },
       "1": {
         "name": "ÍNDICE",
+        "tooltip": null
+      }
+    }
+  },
+  "DA3GeometryToMesh": {
+    "description": "Converta um mapa de profundidade em uma malha 3D triangulada.",
+    "display_name": "Converter Geometria DA3 para Malha",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Qual imagem de um lote converter. A contagem de vértices por imagem difere, então os lotes não podem ser empilhados."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "Excluir pixels cuja confiança normalizada por imagem esteja abaixo deste valor (0 = manter todos, 1 = manter apenas o pixel mais confiável). Usado quando a geometria possui um mapa de confiança (modelos Small/Base)."
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Intervalo de vértices. 1 = resolução total, 2 = metade, etc."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Descartar triângulos cuja variação de profundidade em 3x3 exceda essa fração. 0 = desativado."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Usar a imagem de origem como textura de cor base."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "Excluir pixels com alta probabilidade de céu (sky >= 0.5) da malha. Usado quando a geometria possui um mapa de céu (modelos Mono/Metric)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "Execute o Depth Anything 3 em uma imagem. No modo multiview, cada imagem é tratada como uma visão separada da mesma cena.",
+    "display_name": "Executar Depth Anything 3",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: imagem de visão única (funciona com qualquer variante do modelo).\nmultiview: todas as imagens processadas juntas para consistência geométrica + pose da câmera (apenas para modelos Small/Base)."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: escala para que o lado mais longo = resolução (limita a memória, padrão).\nlower_bound_resize: escala para que o lado mais curto = resolução (preserva mais detalhes em imagens altas/largas, usa mais memória)."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Resolução em que o modelo será executado (lado mais longo, múltiplo de 14).\nMenor = mais rápido / menos VRAM.\nMaior = mais detalhes.\nA saída é redimensionada de volta ao tamanho original."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "Dicionário de tensores não normalizados.\nSempre possui as chaves: depth, image, mode.\nChaves opcionais: sky (para Mono/Metric), confidence (para Small/Base), extrinsics + intrinsics (para multi-view)."
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "Renderize um mapa de profundidade, mapa de confiança ou máscara de céu a partir dos dados de geometria do Depth Anything 3.",
+    "display_name": "Renderizar Depth Anything 3",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: imagem de profundidade em escala de cinza normalizada.\n- depth_colored: profundidade mapeada pela colormap Turbo.\n- sky_mask: probabilidade de céu em [0, 1] (apenas para modelos Mono/Metric).\n- confidence: confiança de profundidade normalizada (apenas para modelos Small/Base)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -8927,6 +9075,22 @@
     "outputs": {
       "0": {
         "name": "modelo_fundo",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "Carregar Depth Anything 3",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15904,6 +16068,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "Criar Máscara Colorida SCAIL-2",
+    "inputs": {
+      "driving_track_data": {
+        "name": "dados_de_rastreamento_driving",
+        "tooltip": "Trilha SAM3 do vídeo de pose de condução. Será renderizada na saída pose_video_mask."
+      },
+      "object_indices": {
+        "name": "índices_de_objetos",
+        "tooltip": "Lista separada por vírgulas dos índices das pessoas a incluir (ex: '0,2,3'). Aplicado tanto às máscaras de vídeo de referência quanto de pose. Vazio = todos."
+      },
+      "ref_track_data": {
+        "name": "dados_de_rastreamento_referência",
+        "tooltip": "Trilha SAM3 da imagem de referência."
+      },
+      "replacement_mode": {
+        "name": "modo_de_substituição",
+        "tooltip": "Falso = mask_video tem fundo preto (Modo Animação). Verdadeiro = fundo branco (Modo Substituição). Defina o mesmo replacement_mode em WanSCAILToVideo. reference_image_mask é sempre com fundo preto."
+      },
+      "sort_by": {
+        "name": "ordenar_por",
+        "tooltip": "Ordem em que as cores da paleta são atribuídas aos objetos rastreados (aplicado tanto ao vídeo de referência quanto ao de pose para que cada identidade mantenha a mesma cor). left_to_right = objeto mais à esquerda (pelo centróide do primeiro quadro) recebe a primeira cor; area = maior objeto (pela área da máscara do primeiro quadro) recebe a primeira cor; none = mantém a ordem do SAM3."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -22338,7 +22537,8 @@
         "name": "tamanho_do_lote"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "Recursos de visão do CLIP para condicionamento. O modelo é treinado com redimensionamento esticado para a proporção de aspecto."
       },
       "height": {
         "name": "altura"
@@ -22365,14 +22565,39 @@
         "name": "vídeo_de_pose",
         "tooltip": "Vídeo usado para condicionamento de pose. Será redimensionado para metade da resolução do vídeo principal."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "Apenas SCAIL-2. Vídeo de máscara SAM3 colorido por identidade na mesma resolução de pose_video."
+      },
       "positive": {
         "name": "positivo"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "Quadros finais de previous_frames para ancorar. SCAIL-2 foi treinado com 5 (segmentos de 81 quadros, passo de 76 quadros)."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "Apenas SCAIL-2. Saída totalmente decodificada do segmento anterior. Apenas os últimos previous_frame_count são usados como âncora de extensão."
+      },
       "reference_image": {
-        "name": "imagem_de_referência"
+        "name": "imagem_de_referência",
+        "tooltip": "Imagem de referência; para múltiplas referências, componha todas em uma única imagem."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "Apenas SCAIL-2. Máscara de referência colorida na mesma resolução da reference_image."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "Apenas SCAIL-2. Falso = Modo Animação (pose_video_mask deve ter fundo preto). Verdadeiro = Modo Substituição (pose_video_mask deve ter fundo branco)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "Quadro cumulativo de saída onde este segmento começa. Conecte a partir da saída video_frame_offset do segmento anterior."
       },
       "width": {
         "name": "largura"
@@ -22390,6 +22615,10 @@
       "2": {
         "name": "latente",
         "tooltip": "Espaço latente vazio do tamanho da geração."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "Offset ajustado + comprimento. Conecte ao próximo segmento."
       }
     }
   },

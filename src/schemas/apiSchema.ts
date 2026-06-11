@@ -252,6 +252,7 @@ const zSystemStats = z.object({
     python_version: z.string(),
     embedded_python: z.boolean(),
     comfyui_version: z.string(),
+    deploy_environment: z.string().optional(),
     pytorch_version: z.string(),
     required_frontend_version: z.string().optional(),
     argv: z.array(z.string()),

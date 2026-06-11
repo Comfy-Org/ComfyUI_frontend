@@ -408,6 +408,45 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       })
     )
   })
+
+  it('omits share_id from existing Mixpanel events', async () => {
+    const provider = new MixpanelTelemetryProvider()
+    await waitForMixpanelInit()
+    mockMixpanel.track.mockClear()
+
+    provider.trackAuth({ method: 'google', share_id: 'share-1' })
+    provider.trackWorkflowImported({
+      missing_node_count: 0,
+      missing_node_types: [],
+      open_source: 'shared_url',
+      share_id: 'share-1'
+    })
+    provider.trackShareFlow({
+      step: 'link_copied',
+      source: 'app_mode',
+      share_id: 'share-1'
+    })
+
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.USER_AUTH_COMPLETED,
+      { method: 'google' }
+    )
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.WORKFLOW_IMPORTED,
+      {
+        missing_node_count: 0,
+        missing_node_types: [],
+        open_source: 'shared_url'
+      }
+    )
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.SHARE_FLOW,
+      {
+        step: 'link_copied',
+        source: 'app_mode'
+      }
+    )
+  })
 })
 
 describe('MixpanelTelemetryProvider — topup delegation', () => {

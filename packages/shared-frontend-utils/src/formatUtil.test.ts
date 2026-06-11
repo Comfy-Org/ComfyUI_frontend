@@ -111,6 +111,7 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('scene.fbx')).toBe('3D')
         expect(getMediaTypeFromFilename('asset.gltf')).toBe('3D')
         expect(getMediaTypeFromFilename('binary.glb')).toBe('3D')
+        expect(getMediaTypeFromFilename('print.stl')).toBe('3D')
         expect(getMediaTypeFromFilename('apple.usdz')).toBe('3D')
         expect(getMediaTypeFromFilename('scan.ply')).toBe('3D')
       })

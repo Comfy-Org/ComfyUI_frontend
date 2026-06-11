@@ -148,7 +148,6 @@
           <MissingNodeCard
             v-if="group.type === 'missing_node'"
             :show-info-button="shouldShowManagerButtons"
-            :show-node-id-badge="showNodeIdBadge"
             :missing-pack-groups="missingPackGroups"
             @locate-node="handleLocateMissingNode"
             @open-manager-info="handleOpenManagerInfo"
@@ -158,7 +157,6 @@
           <SwapNodesCard
             v-if="group.type === 'swap_nodes'"
             :swap-node-groups="swapNodeGroups"
-            :show-node-id-badge="showNodeIdBadge"
             @locate-node="handleLocateMissingNode"
             @replace="handleReplaceGroup"
           />

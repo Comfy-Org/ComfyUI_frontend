@@ -51,6 +51,9 @@ const AudioPreviewPlayer = defineAsyncComponent(
 const Load3D = defineAsyncComponent(
   () => import('@/components/load3d/Load3D.vue')
 )
+const Load3DAdvanced = defineAsyncComponent(
+  () => import('@/components/load3d/Load3DAdvanced.vue')
+)
 const WidgetImageCrop = defineAsyncComponent(
   () => import('@/components/imagecrop/WidgetImageCrop.vue')
 )
@@ -170,6 +173,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
   ],
   ['load3D', { component: Load3D, aliases: ['LOAD_3D'], essential: false }],
   [
+    'load3DAdvanced',
+    {
+      component: Load3DAdvanced,
+      aliases: ['LOAD_3D_ADVANCED'],
+      essential: false
+    }
+  ],
+  [
     'imagecrop',
     {
       component: WidgetImageCrop,
@@ -243,6 +254,7 @@ const EXPANDING_TYPES = [
   'textarea',
   'markdown',
   'load3D',
+  'load3DAdvanced',
   'curve',
   'painter',
   'imagecompare',
