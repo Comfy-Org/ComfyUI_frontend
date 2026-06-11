@@ -3659,7 +3659,7 @@
       "typeMismatch": "This model seems to be a \"{detectedType}\". Are you sure?",
       "importAnyway": "Import Anyway",
       "alreadyExistsInCategory": "This model already exists in \"{category}\"",
-      "customNodeDownloadDisabled": "Cloud environment does not support model imports for custom nodes in this section. Please use standard loader nodes or substitute with a model from the library below.",
+      "customNodeDownloadDisabled": "Nodes that reference the models below do not support imported models. Open the node to choose a supported built-in model, or replace it with a standard node that supports imported models.",
       "importNotSupported": "Import Not Supported",
       "copyModelName": "Copy model name",
       "copyUrl": "Copy URL",

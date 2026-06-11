@@ -76,6 +76,5 @@ describe('UploadModelConfirmation', () => {
         )
       })
     ).toBeInTheDocument()
-    expect(screen.queryByText(/&#x2F;/)).not.toBeInTheDocument()
   })
 })

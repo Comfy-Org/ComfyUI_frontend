@@ -5,12 +5,16 @@ import {
   countAssetRequestsByTag,
   createCloudAssetsFixture
 } from '@e2e/fixtures/assetApiFixture'
+import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 const WORKFLOW = 'missing/nested_subgraph_installed_model'
+const IMPORT_SECTIONS_WORKFLOW = 'missing/cloud_missing_model_import_sections'
 const OUTER_SUBGRAPH_NODE_ID = '205'
 const LOTUS_MODEL_NAME = 'lotus-depth-d-v1-1.safetensors'
+const CLOUD_IMPORTABLE_MODEL_NAME = 'cloud_importable_model.safetensors'
+const CLOUD_UNKNOWN_MODEL_NAME = 'cloud_unknown_model.safetensors'
 
 const LOTUS_DIFFUSION_MODEL: Asset & { hash?: string } = {
   id: 'test-lotus-depth-d-v1-1',
@@ -34,6 +38,10 @@ test.describe(
   { tag: ['@cloud', '@vue-nodes'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.featureFlags.setServerFlags({
+        model_upload_button_enabled: true,
+        private_models_enabled: true
+      })
       await comfyPage.settings.setSetting(
         'Comfy.RightSidePanel.ShowErrorsTab',
         true
@@ -87,6 +95,114 @@ test.describe(
         .toBe(true)
 
       await expect(errorsTab).toBeHidden()
+    })
+
+    test('separates importable cloud models from unsupported rows', async ({
+      comfyPage
+    }) => {
+      await loadWorkflowAndOpenErrorsTab(comfyPage, IMPORT_SECTIONS_WORKFLOW)
+
+      const missingModelsGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelsGroup
+      )
+      const importableRows = missingModelsGroup.getByTestId(
+        TestIds.dialogs.missingModelImportableRows
+      )
+      const unsupportedSection = missingModelsGroup.getByTestId(
+        TestIds.dialogs.missingModelUnsupportedSection
+      )
+
+      await expect(
+        importableRows.getByRole('button', {
+          name: CLOUD_IMPORTABLE_MODEL_NAME,
+          exact: true
+        })
+      ).toBeVisible()
+      await expect(
+        importableRows.getByTestId(TestIds.dialogs.missingModelImport)
+      ).toBeVisible()
+
+      await expect(unsupportedSection).toBeVisible()
+      await expect(
+        unsupportedSection.getByText('Import Not Supported')
+      ).toBeVisible()
+      await expect(
+        unsupportedSection.getByText(
+          /Nodes that reference the models below do not support imported models/
+        )
+      ).toBeVisible()
+      await expect(
+        unsupportedSection.getByText(CLOUD_UNKNOWN_MODEL_NAME)
+      ).toBeVisible()
+      await expect(
+        unsupportedSection.getByText('Unknown', { exact: true })
+      ).toBeVisible()
+      await expect(
+        unsupportedSection.getByRole('button', {
+          name: 'Load Image',
+          exact: true
+        })
+      ).toBeVisible()
+      await expect(
+        unsupportedSection.getByTestId(TestIds.dialogs.missingModelImport)
+      ).toHaveCount(0)
+    })
+
+    test('opens cloud import with missing-model replacement context', async ({
+      comfyPage
+    }) => {
+      await comfyPage.modelLibrary.mockModelFolders([
+        { name: 'checkpoints', folders: [] }
+      ])
+      await comfyPage.page.route('**/assets/remote-metadata?**', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            content_length: 1024,
+            final_url:
+              'https://huggingface.co/comfy/test/resolve/main/replacement.safetensors',
+            content_type: 'application/octet-stream',
+            filename: 'replacement.safetensors',
+            tags: ['loras']
+          })
+        })
+      )
+      await loadWorkflowAndOpenErrorsTab(comfyPage, IMPORT_SECTIONS_WORKFLOW)
+
+      const missingModelsGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelsGroup
+      )
+      await missingModelsGroup
+        .getByTestId(TestIds.dialogs.missingModelImport)
+        .click()
+
+      const urlInput = comfyPage.page.locator(
+        '[data-attr="upload-model-step1-url-input"]'
+      )
+      await expect(urlInput).toBeVisible()
+      await urlInput.fill(
+        'https://huggingface.co/comfy/test/resolve/main/replacement.safetensors'
+      )
+      await comfyPage.page
+        .locator('[data-attr="upload-model-step1-continue-button"]')
+        .click()
+
+      const uploadDialog = comfyPage.page.getByRole('dialog', {
+        name: /Import a model/
+      })
+      await expect(
+        uploadDialog.getByText(
+          `This import will replace ${CLOUD_IMPORTABLE_MODEL_NAME} in:`
+        )
+      ).toBeVisible()
+      await expect(uploadDialog.getByText('Load Checkpoint')).toBeVisible()
+      await expect(uploadDialog.getByText('- ckpt_name')).toBeVisible()
+      await expect(
+        uploadDialog.getByText(
+          /Locked to (Checkpoints|checkpoints) for this missing model/
+        )
+      ).toBeVisible()
     })
   }
 )

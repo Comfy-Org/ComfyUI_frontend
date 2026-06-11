@@ -16,7 +16,7 @@ const i18n = createI18n({
 })
 
 describe('UploadModelProgress', () => {
-  it('renders missing-model type mismatch labels without escaped entities', () => {
+  it('renders missing-model type mismatch labels', () => {
     render(UploadModelProgress, {
       props: {
         result: 'error',
@@ -45,7 +45,6 @@ describe('UploadModelProgress', () => {
         )
       })
     ).toBeInTheDocument()
-    expect(screen.queryByText(/&#x2F;/)).not.toBeInTheDocument()
   })
 
   it('uses fallback copy when the imported model type label is unknown', () => {

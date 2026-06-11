@@ -1,12 +1,41 @@
 <template>
   <div class="px-4 pb-2">
-    <div class="flex flex-col gap-1 overflow-hidden py-2">
+    <div
+      v-if="importableModelRows.length > 0"
+      data-testid="missing-model-importable-rows"
+      class="flex flex-col gap-1 overflow-hidden py-2"
+    >
       <MissingModelRow
-        v-for="row in sortedModelRows"
+        v-for="row in importableModelRows"
         :key="row.key"
         :model="row.model"
         :directory="row.directory"
         :is-asset-supported="row.isAssetSupported"
+        :can-cloud-import="true"
+        @locate-model="emit('locateModel', $event)"
+      />
+    </div>
+
+    <div
+      v-if="unsupportedModelRows.length > 0"
+      data-testid="missing-model-import-not-supported-section"
+      class="flex flex-col gap-1 border-t border-interface-stroke pt-3"
+    >
+      <div class="mb-1">
+        <p class="m-0 text-sm font-semibold text-warning-background">
+          {{ t('rightSidePanel.missingModels.importNotSupported') }}
+        </p>
+        <p class="m-0 mt-1 text-xs/relaxed text-muted-foreground">
+          {{ t('rightSidePanel.missingModels.customNodeDownloadDisabled') }}
+        </p>
+      </div>
+      <MissingModelRow
+        v-for="row in unsupportedModelRows"
+        :key="row.key"
+        :model="row.model"
+        :directory="row.directory"
+        :is-asset-supported="row.isAssetSupported"
+        :can-cloud-import="false"
         @locate-model="emit('locateModel', $event)"
       />
     </div>
@@ -81,6 +110,14 @@ const sortedModelRows = computed(() =>
     .sort((a, b) => compareModelRows(a, b))
 )
 
+const importableModelRows = computed(() =>
+  sortedModelRows.value.filter((row) => !isCloud || canCloudImport(row))
+)
+
+const unsupportedModelRows = computed(() =>
+  isCloud ? sortedModelRows.value.filter((row) => !canCloudImport(row)) : []
+)
+
 const downloadableModels = computed(() => {
   if (isCloud) return []
 
@@ -130,5 +167,9 @@ function getModelTypeSortIndex(directory: string | null) {
     directory as (typeof MODEL_TYPE_SORT_ORDER)[number]
   )
   return index === -1 ? MODEL_TYPE_SORT_ORDER.length : index
+}
+
+function canCloudImport(row: MissingModelRowEntry) {
+  return row.isAssetSupported && row.directory !== null
 }
 </script>

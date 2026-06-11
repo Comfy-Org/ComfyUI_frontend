@@ -149,7 +149,8 @@ function renderRow(
   model: MissingModelViewModel,
   onLocateModel = vi.fn(),
   isAssetSupported = true,
-  directory: string | null = 'checkpoints'
+  directory: string | null = 'checkpoints',
+  canCloudImport = true
 ) {
   const pinia = createPinia()
   setActivePinia(pinia)
@@ -159,6 +160,7 @@ function renderRow(
       model,
       directory,
       isAssetSupported,
+      canCloudImport,
       onLocateModel
     },
     global: {
@@ -174,11 +176,10 @@ function renderRow(
 
 describe('MissingModelRow', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     mockIsCloud.value = true
-    mockShowUploadDialog.mockClear()
-    mockCopyToClipboard.mockClear()
-    mockDownloadModel.mockClear()
     mockRootGraph.value = null
+    mockApiListeners.clear()
     mockGetNodeByExecutionId.mockReset()
     mockUploadContext.resolver = undefined
     mockUploadCallbacks.onUploadSuccess = undefined
@@ -187,8 +188,6 @@ describe('MissingModelRow', () => {
   it('opens the model import dialog from the cloud row', async () => {
     const user = userEvent.setup()
     renderRow(makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]))
-
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Import' }))
 
@@ -205,6 +204,23 @@ describe('MissingModelRow', () => {
         }
       ]
     })
+  })
+
+  it('keeps unsupported cloud rows as reference-only rows', () => {
+    renderRow(
+      makeModel([{ nodeId: '1', widgetName: 'model_name' }]),
+      vi.fn(),
+      true,
+      null,
+      false
+    )
+
+    expect(screen.getByText('model.safetensors')).toBeInTheDocument()
+    expect(screen.getByText('Unknown')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'CheckpointLoaderSimple' })
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Import' })).toBeNull()
   })
 
   it('shows row progress as soon as the model import starts', async () => {

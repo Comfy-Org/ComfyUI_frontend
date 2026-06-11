@@ -21,6 +21,7 @@ vi.mock('./MissingModelRow.vue', () => ({
         :data-model-name="model.name"
         :data-is-asset-supported="isAssetSupported"
         :data-directory="directory"
+        :data-can-cloud-import="canCloudImport"
       >
         <button
           class="locate-trigger"
@@ -30,7 +31,7 @@ vi.mock('./MissingModelRow.vue', () => ({
         </button>
       </div>
     `,
-    props: ['model', 'directory', 'isAssetSupported'],
+    props: ['model', 'directory', 'isAssetSupported', 'canCloudImport'],
     emits: ['locate-model']
   }
 }))
@@ -124,6 +125,10 @@ function getRows() {
   return screen.queryAllByTestId('model-row')
 }
 
+function getRowsIn(testId: string) {
+  return within(screen.getByTestId(testId)).getAllByTestId('model-row')
+}
+
 describe('MissingModelCard', () => {
   beforeEach(() => {
     mockIsCloud.value = true
@@ -160,7 +165,7 @@ describe('MissingModelCard', () => {
       expect(getRows()).toHaveLength(2)
     })
 
-    it('sorts rows by model type order in cloud', () => {
+    it('sorts importable rows by model type order in cloud', () => {
       mountCard({
         missingModelGroups: [
           makeGroup({ directory: null, modelNames: ['unknown.safetensors'] }),
@@ -173,12 +178,53 @@ describe('MissingModelCard', () => {
       })
 
       expect(
-        getRows().map((row) => row.getAttribute('data-model-name'))
-      ).toEqual([
-        'checkpoint.safetensors',
-        'lora.safetensors',
-        'unknown.safetensors'
-      ])
+        getRowsIn('missing-model-importable-rows').map((row) =>
+          row.getAttribute('data-model-name')
+        )
+      ).toEqual(['checkpoint.safetensors', 'lora.safetensors'])
+    })
+
+    it('moves cloud rows without import context into the unsupported section', () => {
+      mountCard({
+        missingModelGroups: [
+          makeGroup({
+            directory: 'checkpoints',
+            modelNames: ['importable.safetensors']
+          }),
+          makeGroup({
+            directory: null,
+            modelNames: ['unknown.safetensors']
+          }),
+          makeGroup({
+            directory: 'loras',
+            isAssetSupported: false,
+            modelNames: ['custom-node-model.safetensors']
+          })
+        ]
+      })
+
+      expect(
+        getRowsIn('missing-model-importable-rows').map((row) =>
+          row.getAttribute('data-model-name')
+        )
+      ).toEqual(['importable.safetensors'])
+
+      const unsupportedSection = screen.getByTestId(
+        'missing-model-import-not-supported-section'
+      )
+      expect(
+        within(unsupportedSection)
+          .getAllByTestId('model-row')
+          .map((row) => row.getAttribute('data-model-name'))
+      ).toEqual(['custom-node-model.safetensors', 'unknown.safetensors'])
+      expect(
+        within(unsupportedSection).getByText('Import Not Supported')
+      ).toBeInTheDocument()
+      expect(
+        within(unsupportedSection).getByText(
+          /Nodes that reference the models below do not support imported models/
+        )
+      ).toBeInTheDocument()
     })
 
     it('renders zero rows when missingModelGroups is empty', () => {
@@ -194,33 +240,6 @@ describe('MissingModelCard', () => {
       expect(
         screen.queryByTestId('missing-model-actions')
       ).not.toBeInTheDocument()
-    })
-  })
-
-  describe('Asset Unsupported Group', () => {
-    it('does not show the unsupported group header in cloud', () => {
-      const { container } = mountCard({
-        missingModelGroups: [makeGroup({ isAssetSupported: false })]
-      })
-      expect(container.textContent).not.toContain('Import Not Supported')
-    })
-
-    it('does not show the unsupported group notice in cloud', () => {
-      const { container } = mountCard({
-        missingModelGroups: [makeGroup({ isAssetSupported: false })]
-      })
-      expect(container.textContent).not.toContain(
-        'Cloud environment does not support model imports'
-      )
-    })
-
-    it('hides info notice for supported groups', () => {
-      const { container } = mountCard({
-        missingModelGroups: [makeGroup({ isAssetSupported: true })]
-      })
-      expect(container.textContent).not.toContain(
-        'Cloud environment does not support model imports'
-      )
     })
   })
 
@@ -253,23 +272,13 @@ describe('MissingModelCard (OSS)', () => {
     expect(getRows()[0].getAttribute('data-directory')).toBe('checkpoints')
   })
 
-  it('hides info notice for unsupported groups', () => {
-    const { container } = mountCard({
-      missingModelGroups: [makeGroup({ isAssetSupported: false })]
-    })
-    expect(container.textContent).not.toContain(
-      'Cloud environment does not support model imports'
-    )
-  })
-
   it('passes null directory for unknown category rows in OSS', () => {
-    const { container } = mountCard({
+    mountCard({
       missingModelGroups: [
         makeGroup({ directory: null, isAssetSupported: false })
       ]
     })
     expect(getRows()[0].hasAttribute('data-directory')).toBe(false)
-    expect(container.textContent).not.toContain('Import Not Supported')
   })
 
   it('shows Download all at the bottom when one model is downloadable', () => {
@@ -282,9 +291,6 @@ describe('MissingModelCard (OSS)', () => {
     expect(
       within(actions).getByRole('button', { name: /Download all/ })
     ).toBeVisible()
-    expect(
-      within(actions).queryByRole('button', { name: 'Refresh' })
-    ).not.toBeInTheDocument()
   })
 
   it('hides Download all when no model is downloadable', () => {

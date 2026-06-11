@@ -60,8 +60,12 @@ export const TestIds = {
     missingNodePacksGroup: 'error-group-missing-node',
     missingModelsGroup: 'error-group-missing-model',
     missingModelExpand: 'missing-model-expand',
+    missingModelImport: 'missing-model-import',
+    missingModelImportableRows: 'missing-model-importable-rows',
     missingModelLocate: 'missing-model-locate',
     missingModelReferenceCount: 'missing-model-reference-count',
+    missingModelUnsupportedSection:
+      'missing-model-import-not-supported-section',
     missingModelDownload: 'missing-model-download',
     missingModelActions: 'missing-model-actions',
     missingModelDownloadAll: 'missing-model-download-all',

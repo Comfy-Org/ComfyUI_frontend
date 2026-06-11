@@ -26,48 +26,46 @@
         />
       </Button>
 
-      <span class="flex min-w-0 flex-1 flex-col gap-0">
-        <span class="flex min-w-0 items-center gap-2">
-          <span class="flex min-w-0 items-center gap-2.5">
-            <button
-              v-if="hasMultipleReferences"
-              ref="modelLabelControl"
-              type="button"
-              class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
-              :title="displayModelName"
-              @click="handleToggleExpand"
-            >
-              {{ displayModelName }}
-            </button>
-            <button
-              v-else-if="!isUnknownCategory && primaryReference"
-              ref="modelLabelControl"
-              type="button"
-              class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
-              :title="displayModelName"
-              @click="handleLocatePrimary"
-            >
-              {{ displayModelName }}
-            </button>
-            <span
-              v-else
-              class="min-w-0 truncate text-sm/relaxed font-normal text-base-foreground"
-              :title="displayModelName"
-            >
-              {{ displayModelName }}
-            </span>
-            <span
-              v-if="hasMultipleReferences"
-              data-testid="missing-model-reference-count"
-              class="flex size-6 shrink-0 items-center justify-center rounded-md bg-secondary-background-selected text-xs font-bold text-muted-foreground"
-            >
-              {{ model.referencingNodes.length }}
-            </span>
+      <span class="min-w-0 flex-1">
+        <span class="block min-w-0 text-sm/relaxed">
+          <button
+            v-if="hasMultipleReferences"
+            ref="modelLabelControl"
+            type="button"
+            class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
+            :title="displayModelName"
+            @click="handleToggleExpand"
+          >
+            {{ displayModelName }}
+          </button>
+          <button
+            v-else-if="!isUnknownCategory && primaryReference"
+            ref="modelLabelControl"
+            type="button"
+            class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
+            :title="displayModelName"
+            @click="handleLocatePrimary"
+          >
+            {{ displayModelName }}
+          </button>
+          <span
+            v-else
+            class="font-normal wrap-break-word text-base-foreground"
+            :title="displayModelName"
+          >
+            {{ displayModelName }}
+          </span>
+          <span
+            v-if="hasMultipleReferences"
+            data-testid="missing-model-reference-count"
+            class="ml-2 inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-secondary-background-selected align-middle text-xs font-bold text-muted-foreground"
+          >
+            {{ model.referencingNodes.length }}
           </span>
           <Button
             variant="textonly"
             size="icon-sm"
-            class="size-7 shrink-0 text-muted-foreground hover:bg-transparent hover:text-base-foreground"
+            class="ml-2 inline-flex size-7 shrink-0 align-middle text-muted-foreground hover:bg-transparent hover:text-base-foreground"
             :aria-label="linkLabel"
             :title="linkLabel"
             @click="copyModelLink"
@@ -88,7 +86,7 @@
         </span>
       </span>
 
-      <template v-if="isCloud">
+      <template v-if="isCloud && canCloudImport">
         <Button
           v-if="!isCloudImportDownloadActive"
           data-testid="missing-model-import"
@@ -275,10 +273,16 @@ import {
 } from '@/platform/missingModel/missingModelDownload'
 import { formatSize } from '@/utils/formatUtil'
 
-const { model, directory, isAssetSupported } = defineProps<{
+const {
+  model,
+  directory,
+  isAssetSupported,
+  canCloudImport = true
+} = defineProps<{
   model: MissingModelViewModel
   directory: string | null
   isAssetSupported: boolean
+  canCloudImport?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -302,7 +306,7 @@ const isDownloadActive = computed(
     downloadStatus.value?.status === 'created'
 )
 const isCloudImportDownloadActive = computed(
-  () => isCloud && isDownloadActive.value
+  () => isCloud && canCloudImport && isDownloadActive.value
 )
 const cloudImportProgressPercent = computed(() =>
   Math.round((downloadStatus.value?.progress ?? 0) * 100)
@@ -382,7 +386,7 @@ const modelMetadataLabel = computed(() =>
 const missingModelUploadContext = computed<
   UploadModelDialogContext | undefined
 >(() => {
-  if (!directory) return undefined
+  if (!canCloudImport || !directory) return undefined
 
   return {
     kind: 'missing-model-resolution',
