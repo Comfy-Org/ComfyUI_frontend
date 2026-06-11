@@ -368,4 +368,20 @@ describe('connectImagesToDynamicInput', () => {
       ])
     ).toBe(false)
   })
+
+  it('does not report success when the connection is rejected', () => {
+    const graph = new LGraph()
+    const node = addAutogrowImageNode(graph)
+
+    const maskSource = new LGraphNode('Mask')
+    maskSource.addOutput('MASK', 'MASK')
+    graph.add(maskSource)
+
+    const handled = connectImagesToDynamicInput(node, node.inputs[0], [
+      { node: maskSource, outputIndex: 0 }
+    ])
+
+    expect(handled).toBe(false)
+    expect(node.inputs[0].link).toBeNull()
+  })
 })
