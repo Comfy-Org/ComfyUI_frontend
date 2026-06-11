@@ -8,6 +8,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import ImageUpload from '@/components/ui/image-upload/ImageUpload.vue'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
@@ -15,6 +16,8 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 
 const modelValue = defineModel<string>()
+
+const { t } = useI18n()
 
 const isUploading = ref(false)
 
@@ -29,24 +32,21 @@ const uploadFile = async (file: File): Promise<string | null> => {
   })
 
   if (resp.status !== 200) {
-    useToastStore().addAlert(
-      `Upload failed: ${resp.status} - ${resp.statusText}`
-    )
+    useToastStore().addAlert(t('toastMessages.failedToUploadBackgroundImage'))
     return null
   }
 
   const data = await resp.json()
-  return data.subfolder ? `${data.subfolder}/${data.name}` : data.name
+  return data.name
 }
 
 const handleFileUpload = async (file: File) => {
   isUploading.value = true
   try {
-    const uploadedPath = await uploadFile(file)
-    if (uploadedPath) {
-      // Set the value to the API view URL with subfolder parameter
+    const uploadedName = await uploadFile(file)
+    if (uploadedName) {
       const params = new URLSearchParams({
-        filename: uploadedPath,
+        filename: uploadedName,
         type: 'input',
         subfolder: 'backgrounds'
       })
@@ -54,7 +54,11 @@ const handleFileUpload = async (file: File) => {
       modelValue.value = `/api/view?${params.toString()}`
     }
   } catch (error) {
-    useToastStore().addAlert(`Upload error: ${String(error)}`)
+    useToastStore().addAlert(
+      t('toastMessages.errorUploadingBackgroundImage', {
+        error: String(error)
+      })
+    )
   } finally {
     isUploading.value = false
   }

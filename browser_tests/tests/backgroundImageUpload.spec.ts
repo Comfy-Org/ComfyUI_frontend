@@ -18,7 +18,7 @@ test.describe('Background Image Upload', () => {
     await comfyPage.settings.setSetting('Comfy.Canvas.BackgroundImage', '')
   })
 
-  const openBackgroundImageSetting = async (comfyPage: ComfyPage) => {
+  async function openBackgroundImageSetting(comfyPage: ComfyPage) {
     await comfyPage.page.keyboard.press('Control+,')
     await comfyPage.page.locator('text=Appearance').click()
     return comfyPage.page.locator('#Comfy\\.Canvas\\.BackgroundImage')

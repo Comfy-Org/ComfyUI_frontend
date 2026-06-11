@@ -82,6 +82,7 @@ function clearImage() {
           v-else-if="modelValue && !previewFailed"
           :src="modelValue"
           alt=""
+          data-testid="image-upload-preview"
           class="size-5 rounded-sm object-cover"
           @error="previewFailed = true"
         />

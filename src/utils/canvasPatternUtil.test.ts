@@ -88,6 +88,11 @@ describe('getEffectiveCanvasBackgroundColor', () => {
       '#aabbcc'
     )
   })
+
+  it('normalizes a non-hex palette color to a hex string', () => {
+    const result = getEffectiveCanvasBackgroundColor('', 'lightgray')
+    expect(result).toMatch(/^#[0-9a-f]{6}$/)
+  })
 })
 
 describe('generateCanvasPatternImage', () => {

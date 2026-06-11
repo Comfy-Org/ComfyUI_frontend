@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -33,6 +33,13 @@ describe('ImageUpload', () => {
         '/api/view?filename=backgrounds%2Fmountain+lake.png&type=input'
     })
     expect(screen.getByText('mountain lake.png')).toBeTruthy()
+  })
+
+  it('falls back to the icon when the preview image fails to load', async () => {
+    renderImageUpload({ modelValue: '/api/view?filename=missing.png' })
+    const img = screen.getByTestId('image-upload-preview')
+    await fireEvent.error(img)
+    expect(screen.queryByTestId('image-upload-preview')).toBeNull()
   })
 
   it('opens the file browser when the row is clicked', async () => {
