@@ -45,27 +45,6 @@
             </template>
             <template #default>
               <div class="flex min-w-44 flex-col">
-                <template v-if="isCloud">
-                  <Button
-                    v-for="option in GROUP_BY_OPTIONS"
-                    :key="option.value"
-                    variant="textonly"
-                    class="w-full"
-                    @click="groupBy = option.value"
-                  >
-                    <span class="flex items-center gap-2">
-                      <i :class="cn(option.icon, 'size-4')" />
-                      <span>{{ $t(option.labelKey) }}</span>
-                    </span>
-                    <i
-                      class="ml-auto icon-[lucide--check] size-4"
-                      :class="groupBy !== option.value && 'opacity-0'"
-                    />
-                  </Button>
-
-                  <div class="my-1 w-full border-b border-border-subtle" />
-                </template>
-
                 <Button
                   v-for="option in SORT_OPTIONS"
                   :key="option.value"
@@ -215,7 +194,6 @@ import {
 } from '@/components/sidebar/tabs/cloudModelLibrary/modelGroups'
 import { isLikelyModelFile } from '@/components/sidebar/tabs/cloudModelLibrary/modelFileFilter'
 import {
-  directoryForAsset,
   firstNonModelsTag,
   groupAssetsByTopLevelFolder,
   groupIdForAsset,
@@ -291,30 +269,6 @@ const SORT_OPTIONS = isCloud
       (option) =>
         option.value !== 'baseModelAsc' && option.value !== 'baseModelDesc'
     )
-
-type GroupBy = 'category' | 'directory'
-
-const GROUP_BY_OPTIONS: ReadonlyArray<{
-  value: GroupBy
-  labelKey: string
-  icon: string
-}> = [
-  {
-    value: 'category',
-    labelKey: 'assets.groupBy.category',
-    icon: 'icon-[lucide--layers]'
-  },
-  {
-    value: 'directory',
-    labelKey: 'assets.groupBy.directory',
-    icon: 'icon-[lucide--folder]'
-  }
-] as const
-
-const groupBy = useStorage<GroupBy>(
-  'Comfy.CloudModelLibrary.GroupBy',
-  'category'
-)
 
 const sortMode = useStorage<SortMode>(
   'Comfy.CloudModelLibrary.SortBy',
@@ -499,8 +453,6 @@ const sections = computed<Section[]>(() => {
 
   // Local items carry no type metadata, so the library mirrors the disk:
   // Partner Nodes pinned on top, then one verbatim section per folder.
-  // The group-by toggle is cloud-only — locally both modes would render
-  // the same folder list, so the folder view is unconditional.
   if (!isCloud) {
     const folderSections = groupAssetsByTopLevelFolder(matchedAssets.value)
       .map(([folder, list]) => buildAssetSection(`tag:${folder}`, folder, list))
@@ -508,30 +460,6 @@ const sections = computed<Section[]>(() => {
       .map((section) => ({ ...section, isUserFolder: true }))
     const partners = buildPartnerSection()
     return partners ? [partners, ...folderSections] : folderSections
-  }
-
-  // Group by on-disk folder instead of model category. Directories sort
-  // alphabetically; partner nodes (which have no directory) trail at the end.
-  if (groupBy.value === 'directory') {
-    const byDirectory = new Map<string, AssetItem[]>()
-    for (const asset of matchedAssets.value) {
-      const directory = directoryForAsset(asset) ?? ''
-      const list = byDirectory.get(directory) ?? []
-      list.push(asset)
-      byDirectory.set(directory, list)
-    }
-    const directorySections = Array.from(byDirectory.entries())
-      .map(([directory, list]) => {
-        const id = directory ? `dir:${directory}` : 'dir:uncategorized'
-        const label = directory || t('assets.groupBy.ungrouped')
-        return buildAssetSection(id, label, list)
-      })
-      .filter((section): section is Section => section !== null)
-      .sort((a, b) =>
-        a.label.localeCompare(b.label, undefined, { sensitivity: 'base' })
-      )
-    const partners = buildPartnerSection()
-    return partners ? [...directorySections, partners] : directorySections
   }
 
   const knownGroups = MODEL_GROUPS.filter(

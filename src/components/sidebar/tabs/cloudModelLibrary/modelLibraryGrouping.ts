@@ -18,21 +18,6 @@ export function rawTagTopLevel(tag: string): string {
   return tag.split('/')[0]
 }
 
-// The on-disk folder a model lives in. On cloud the first non-models tag is the
-// model's relative folder path (e.g. `loras/flux1`); locally we fall back to
-// the directory portion of the filepath.
-export function directoryForAsset(asset: AssetItem): string | null {
-  const tag = firstNonModelsTag(asset)
-  if (tag) return tag
-  const filepath =
-    typeof asset.metadata?.filepath === 'string'
-      ? asset.metadata.filepath
-      : null
-  if (!filepath) return null
-  const dir = filepath.split('/').slice(0, -1).join('/')
-  return dir || null
-}
-
 // Local items carry no type metadata — the folder name is all the backend
 // tells us — so the local library mirrors the disk with one section per
 // top-level folder instead of consolidating into the curated taxonomy.
