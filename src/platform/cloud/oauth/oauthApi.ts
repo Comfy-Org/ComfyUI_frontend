@@ -145,10 +145,17 @@ export async function submitOAuthConsentDecision({
   }
 
   // Defense in depth: even though the cloud backend is trusted, never hand
-  // the browser off to a non-http(s) scheme. javascript:/data: URLs would
-  // execute in our origin.
+  // the browser off to a scheme that can execute in our origin
+  // (javascript:/data:/blob:). Allowed: http(s) — the loopback redirects
+  // desktop/CLI register — and RFC 8252 reverse-DNS custom schemes
+  // (e.g. org.comfy.ios:), which native-app clients use to return the
+  // authorization code. The dot requirement mirrors the backend's
+  // redirect policy (redirect_policy.go: native custom schemes must
+  // contain a dot); no executable scheme contains one.
   const target = new URL(redirectUrl, globalThis.location.origin)
-  if (target.protocol !== 'http:' && target.protocol !== 'https:') {
+  const isHttp = target.protocol === 'http:' || target.protocol === 'https:'
+  const isReverseDnsScheme = target.protocol.slice(0, -1).includes('.')
+  if (!isHttp && !isReverseDnsScheme) {
     throw new Error('OAuth consent redirect_url has an unsafe scheme')
   }
 

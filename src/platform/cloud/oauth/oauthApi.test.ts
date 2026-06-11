@@ -220,6 +220,71 @@ describe('submitOAuthConsentDecision', () => {
     ).rejects.toThrow('redirect_url')
   })
 
+  it('navigates to a reverse-DNS custom-scheme redirect_url (native clients)', async () => {
+    // RFC 8252 native-app callback — the comfy-ios client returns the
+    // authorization code via org.comfy.ios://oauth-callback. The backend
+    // has already validated the URL byte-identically against the client's
+    // registered redirect_uris.
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      okResponse({
+        redirect_url: 'org.comfy.ios://oauth-callback?code=xyz&state=s'
+      })
+    )
+    const originalLocation = globalThis.location
+    const hrefSetter = vi.fn()
+    Object.defineProperty(globalThis, 'location', {
+      configurable: true,
+      value: new Proxy(originalLocation, {
+        set(_target, prop, value) {
+          if (prop === 'href') {
+            hrefSetter(value)
+            return true
+          }
+          return Reflect.set(originalLocation, prop, value)
+        },
+        get(_target, prop) {
+          return Reflect.get(originalLocation, prop)
+        }
+      })
+    })
+
+    try {
+      await submitOAuthConsentDecision({
+        oauthRequestId: validChallenge.oauth_request_id,
+        csrfToken: validChallenge.csrf_token,
+        decision: 'allow',
+        workspaceId: 'personal-workspace'
+      })
+
+      expect(hrefSetter).toHaveBeenCalledWith(
+        'org.comfy.ios://oauth-callback?code=xyz&state=s'
+      )
+    } finally {
+      Object.defineProperty(globalThis, 'location', {
+        configurable: true,
+        value: originalLocation
+      })
+    }
+  })
+
+  it('rejects a dotless custom-scheme redirect_url', async () => {
+    // Dotless schemes are exactly the executable class (javascript:,
+    // data:, blob:) plus denylisted bare schemes (comfy:) — mirrors the
+    // backend's dot-in-scheme rule for native clients.
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      okResponse({ redirect_url: 'comfy://oauth-callback?code=xyz' })
+    )
+
+    await expect(
+      submitOAuthConsentDecision({
+        oauthRequestId: validChallenge.oauth_request_id,
+        csrfToken: validChallenge.csrf_token,
+        decision: 'allow',
+        workspaceId: 'personal-workspace'
+      })
+    ).rejects.toThrow('unsafe scheme')
+  })
+
   it('rejects an unsafe redirect_url scheme', async () => {
     // Defense in depth: even though the cloud backend is trusted, never
     // hand the browser off to a non-http(s) URL.
