@@ -1136,6 +1136,31 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.20.4',
     versionModified: '1.20.5'
   },
+  {
+    id: 'Comfy.Canvas.BackgroundPattern',
+    category: ['Appearance', 'Canvas', 'Background'],
+    name: 'Canvas background pattern',
+    type: 'combo',
+    options: [
+      { value: 'dots', text: 'Dots' },
+      { value: 'grid', text: 'Grid' },
+      { value: 'none', text: 'None' }
+    ],
+    tooltip:
+      'Pattern drawn on the canvas background. Not shown while a custom background image is set.',
+    defaultValue: 'dots',
+    versionAdded: '1.47.1'
+  },
+  {
+    id: 'Comfy.Canvas.BackgroundColor',
+    category: ['Appearance', 'Canvas', 'Background'],
+    name: 'Canvas background color',
+    type: 'color',
+    tooltip:
+      'Custom canvas background color. Leave empty to follow the active theme.',
+    defaultValue: '',
+    versionAdded: '1.47.1'
+  },
   // Release data stored in settings
   {
     id: 'Comfy.Release.Version',
