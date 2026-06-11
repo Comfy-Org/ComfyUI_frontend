@@ -10,6 +10,7 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
   DialogComponentProps,
@@ -606,7 +607,8 @@ export const useDialogService = () => {
    * Refreshes the member list, then shows a type-"I understand" confirm
    * dialog warning that all other members will be immediately removed. When
    * the workspace has no other members the dialog is skipped and the
-   * downgrade proceeds directly.
+   * downgrade proceeds directly; failures on that path surface as an error
+   * toast (the dialog path toasts from the dialog itself).
    */
   async function showDowngradeToPersonalDialog(options: {
     planName: string
@@ -616,10 +618,19 @@ export const useDialogService = () => {
       await import('@/platform/workspace/composables/useDowngradeToPersonal')
     const { hasOtherMembers, refreshMembers, downgradeToPersonal } =
       useDowngradeToPersonal()
-    await refreshMembers()
 
-    if (!hasOtherMembers.value) {
-      await downgradeToPersonal(options.planSlug)
+    try {
+      await refreshMembers()
+      if (!hasOtherMembers.value) {
+        await downgradeToPersonal(options.planSlug)
+        return
+      }
+    } catch (error) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('subscription.downgrade.failed'),
+        detail: error instanceof Error ? error.message : t('g.unknownError')
+      })
       return
     }
 

@@ -85,7 +85,10 @@ export function useDowngradeToPersonal() {
       if (!response.payment_method_url) {
         throw new Error(t('subscription.downgrade.paymentMethodRequired'))
       }
-      window.open(response.payment_method_url, '_blank')
+      const paymentTab = window.open(response.payment_method_url, '_blank')
+      if (!paymentTab) {
+        throw new Error(t('subscription.downgrade.paymentPageBlocked'))
+      }
       billingOperationStore.startOperation(
         response.billing_op_id,
         'subscription'

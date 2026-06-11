@@ -81,7 +81,7 @@ describe('useDowngradeToPersonal', () => {
   let windowOpen: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
-    vi.clearAllMocks()
+    vi.resetAllMocks()
     mockMembers.value = []
     mockUserEmail.value = 'owner@example.com'
     mockPreviewSubscribe.mockResolvedValue({ allowed: true })
@@ -89,7 +89,7 @@ describe('useDowngradeToPersonal', () => {
       billing_op_id: 'op-1',
       status: 'subscribed'
     })
-    windowOpen = vi.spyOn(window, 'open').mockReturnValue(null)
+    windowOpen = vi.spyOn(window, 'open').mockReturnValue({} as Window)
   })
 
   afterEach(() => {
@@ -138,6 +138,7 @@ describe('useDowngradeToPersonal', () => {
         'https://platform.test/payment/success',
         'https://platform.test/payment/failed'
       )
+      expect(mockStartOperation).not.toHaveBeenCalled()
     })
 
     it('never removes the creator', async () => {
@@ -206,6 +207,32 @@ describe('useDowngradeToPersonal', () => {
         '_blank'
       )
       expect(mockStartOperation).toHaveBeenCalledWith('op-2', 'subscription')
+    })
+
+    it('falls back to the generic message when the transition is disallowed without a reason', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({ allowed: false })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.notAllowed'
+      )
+    })
+
+    it('throws and skips polling when the payment tab is popup-blocked', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockSubscribe.mockResolvedValue({
+        billing_op_id: 'op-5',
+        status: 'needs_payment_method',
+        payment_method_url: 'https://pay.test/method'
+      })
+      windowOpen.mockReturnValue(null)
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.paymentPageBlocked'
+      )
+      expect(mockStartOperation).not.toHaveBeenCalled()
     })
 
     it('throws when a payment method is needed but no url is provided', async () => {
