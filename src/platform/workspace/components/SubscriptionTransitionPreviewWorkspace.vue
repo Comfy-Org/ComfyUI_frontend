@@ -9,7 +9,7 @@
       <!-- Plan Comparison Header -->
       <div class="flex items-center gap-4">
         <!-- Current Plan -->
-        <div class="flex w-[250px] flex-col gap-1">
+        <div class="flex flex-1 flex-col gap-1">
           <span class="text-sm text-base-foreground">
             {{ currentTierName }}
           </span>
@@ -36,10 +36,10 @@
         </div>
 
         <!-- Arrow -->
-        <i class="pi pi-arrow-right size-8 text-muted-foreground" />
+        <i class="pi pi-arrow-right size-8 shrink-0 text-muted-foreground" />
 
         <!-- New Plan -->
-        <div class="flex flex-col gap-1">
+        <div class="flex flex-1 flex-col gap-1">
           <span class="text-sm font-semibold text-base-foreground">
             {{ newTierName }}
           </span>
@@ -63,11 +63,18 @@
         </div>
       </div>
 
-      <!-- Credits Section -->
+      <!-- Next Cycle Section -->
       <div class="flex flex-col gap-3 pt-12 pb-6">
+        <span class="text-base-foreground">
+          {{
+            $t('subscription.preview.everyMonthStarting', {
+              date: effectiveDate
+            })
+          }}
+        </span>
         <div class="flex items-center justify-between">
-          <span class="text-base-foreground">
-            {{ $t('subscription.preview.eachMonthCreditsRefill') }}
+          <span class="text-muted-foreground">
+            {{ $t('subscription.preview.creditsRefillTo') }}
           </span>
           <div class="flex items-center gap-1">
             <i class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400" />
@@ -75,6 +82,12 @@
               {{ newDisplayCredits }}
             </span>
           </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-muted-foreground">
+            {{ $t('subscription.preview.youllBeCharged') }}
+          </span>
+          <span class="text-base-foreground">${{ newMonthlyCharge }}</span>
         </div>
       </div>
 
@@ -131,6 +144,8 @@
 
     <!-- Footer -->
     <div class="flex flex-col gap-2 pt-8">
+      <SubscriptionTermsNote />
+
       <Button
         variant="secondary"
         size="lg"
@@ -159,6 +174,8 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+
+import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
 
 interface Props {
   previewData: PreviewSubscribeResponse
@@ -200,6 +217,10 @@ const currentDisplayPrice = computed(() =>
 
 const newDisplayPrice = computed(() =>
   (previewData.new_plan.price_cents / 100).toFixed(0)
+)
+
+const newMonthlyCharge = computed(() =>
+  (previewData.new_plan.price_cents / 100).toFixed(2)
 )
 
 const currentDisplayCredits = computed(() => {
