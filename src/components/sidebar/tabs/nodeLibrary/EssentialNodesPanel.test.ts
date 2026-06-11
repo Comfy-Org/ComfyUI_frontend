@@ -1,15 +1,15 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
 
 import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
+import { i18n } from '@/i18n'
 
 import EssentialNodesPanel from './EssentialNodesPanel.vue'
 
 vi.mock('./EssentialNodeCard.vue', () => ({
   default: {
     props: ['tile', 'previewPanel'],
-    template: '<div data-testid="essential-node-card">{{ tile.label }}</div>'
+    template: '<div data-testid="essential-node-card">{{ tile.nodeName }}</div>'
   }
 }))
 
@@ -25,19 +25,6 @@ function createMediaFilters(
     ...overrides
   }
 }
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  messages: {
-    en: {
-      sideToolbar: {
-        nodeLibraryTab: {
-          noMatchingNodes: 'No nodes match "{query}"'
-        }
-      }
-    }
-  }
-})
 
 describe('EssentialNodesPanel', () => {
   function renderComponent({
@@ -67,22 +54,22 @@ describe('EssentialNodesPanel', () => {
   describe('media filters', () => {
     it('should hide tiles whose media is disabled', () => {
       renderComponent({ mediaFilters: createMediaFilters({ video: false }) })
-      expect(screen.getByText('Load Image')).toBeInTheDocument()
-      expect(screen.queryByText('Load Video')).not.toBeInTheDocument()
+      expect(screen.getByText('LoadImage')).toBeInTheDocument()
+      expect(screen.queryByText('LoadVideo')).not.toBeInTheDocument()
     })
 
     it('should hide subgroups whose media is disabled', () => {
       renderComponent({ mediaFilters: createMediaFilters({ video: false }) })
       expect(screen.queryByText('Text to Video')).not.toBeInTheDocument()
-      expect(screen.getByText('Text to Image')).toBeInTheDocument()
+      expect(screen.getByText(/Text to Image/)).toBeInTheDocument()
     })
   })
 
   describe('search', () => {
     it('should only show tiles matching the query', () => {
       renderComponent({ searchQuery: 'load image' })
-      expect(screen.getByText('Load Image')).toBeInTheDocument()
-      expect(screen.queryByText('Save Image')).not.toBeInTheDocument()
+      expect(screen.getByText('LoadImage')).toBeInTheDocument()
+      expect(screen.queryByText('SaveImage')).not.toBeInTheDocument()
     })
 
     it('should drop sections with no matching tiles', () => {
@@ -92,9 +79,9 @@ describe('EssentialNodesPanel', () => {
     })
 
     it('should match tiles inside subgroups', () => {
-      renderComponent({ searchQuery: 'nano banana' })
-      expect(screen.getByText('Generate')).toBeInTheDocument()
-      expect(screen.getByText('Nano Banana')).toBeInTheDocument()
+      renderComponent({ searchQuery: 'batch image' })
+      expect(screen.getByText('Image Utilities')).toBeInTheDocument()
+      expect(screen.getByText('BatchImagesNode')).toBeInTheDocument()
       expect(screen.queryByText('Inputs & Outputs')).not.toBeInTheDocument()
     })
 
