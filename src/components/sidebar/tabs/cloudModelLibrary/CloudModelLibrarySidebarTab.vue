@@ -84,7 +84,7 @@
             <div
               class="px-2 pt-1 pb-0.5 text-3xs font-medium tracking-wide text-muted-foreground uppercase"
             >
-              {{ $t(isCloud ? 'assets.yourFolders' : 'assets.yourModels') }}
+              {{ $t('assets.yourModels') }}
             </div>
           </template>
           <button
@@ -194,12 +194,9 @@ import {
 } from '@/components/sidebar/tabs/cloudModelLibrary/modelGroups'
 import { isLikelyModelFile } from '@/components/sidebar/tabs/cloudModelLibrary/modelFileFilter'
 import {
-  firstNonModelsTag,
-  groupAssetsByTopLevelFolder,
-  groupIdForAsset,
+  groupAsset,
   groupLabelForAsset,
-  partnerKind,
-  rawTagTopLevel
+  partnerKind
 } from '@/components/sidebar/tabs/cloudModelLibrary/modelLibraryGrouping'
 import { buildProviderGroups } from '@/components/sidebar/tabs/cloudModelLibrary/modelLibrarySort'
 import type {
@@ -451,40 +448,28 @@ const sections = computed<Section[]>(() => {
     }
   }
 
-  // Local items carry no type metadata, so the library mirrors the disk:
-  // Partner Nodes pinned on top, then one verbatim section per folder.
-  if (!isCloud) {
-    const folderSections = groupAssetsByTopLevelFolder(matchedAssets.value)
-      .map(([folder, list]) => buildAssetSection(`tag:${folder}`, folder, list))
-      .filter((section): section is Section => section !== null)
-      .map((section) => ({ ...section, isUserFolder: true }))
-    const partners = buildPartnerSection()
-    return partners ? [partners, ...folderSections] : folderSections
-  }
-
   const knownGroups = MODEL_GROUPS.filter(
     (g) => g.id !== PARTNER_NODES_GROUP_ID
   )
   const assetsByGroup = new Map<string, AssetItem[]>()
   const unmappedByTag = new Map<string, AssetItem[]>()
 
+  // An asset may belong to several groups: the backend tags a file with
+  // every model folder it could live in (shared-folder setups), and the
+  // base-model override can pull it into a family bucket. Membership in
+  // multiple sections is intended; tags with no mapping fall through to
+  // the verbatim "Your models" tail.
   for (const asset of matchedAssets.value) {
-    const tag = firstNonModelsTag(asset)
-    if (!tag) continue
-    const top = rawTagTopLevel(tag)
-    // groupIdForAsset applies the base-model category override (e.g. an
-    // ACE-Step text encoder lands under "TTS & audio" with its base, not
-    // "Encoders"). Falls back to the tag-derived group for assets with no
-    // resolvable base.
-    const groupId = groupIdForAsset(asset)
-    if (groupId) {
+    const { groupIds, unmappedTags } = groupAsset(asset)
+    for (const groupId of groupIds) {
       const list = assetsByGroup.get(groupId) ?? []
       list.push(asset)
       assetsByGroup.set(groupId, list)
-    } else {
-      const list = unmappedByTag.get(top) ?? []
+    }
+    for (const tag of unmappedTags) {
+      const list = unmappedByTag.get(tag) ?? []
       list.push(asset)
-      unmappedByTag.set(top, list)
+      unmappedByTag.set(tag, list)
     }
   }
 

@@ -18,36 +18,46 @@ export function rawTagTopLevel(tag: string): string {
   return tag.split('/')[0]
 }
 
-// Local items carry no type metadata — the folder name is all the backend
-// tells us — so the local library mirrors the disk with one section per
-// top-level folder instead of consolidating into the curated taxonomy.
-export function groupAssetsByTopLevelFolder(
-  assets: AssetItem[]
-): Array<[string, AssetItem[]]> {
-  const byFolder = new Map<string, AssetItem[]>()
-  for (const asset of assets) {
-    const tag = firstNonModelsTag(asset)
-    if (!tag) continue
-    const top = rawTagTopLevel(tag)
-    const list = byFolder.get(top) ?? []
-    list.push(asset)
-    byFolder.set(top, list)
+function categoryTagsForAsset(asset: AssetItem): string[] {
+  return asset.tags.filter((tag) => tag && tag !== MODELS_TAG)
+}
+
+export interface AssetGrouping {
+  /** Curated group ids the asset belongs to (deduplicated). */
+  groupIds: string[]
+  /** Top-level raw tags with no curated mapping (deduplicated). */
+  unmappedTags: string[]
+}
+
+/**
+ * Resolves every group an asset belongs to. An asset may carry multiple
+ * category tags (the backend tags a file with every model folder it could
+ * belong to, e.g. a file in a shared folder gets both `checkpoints` and
+ * `loras`), and membership in multiple groups is the intended behavior.
+ * Tags with no curated mapping surface verbatim so new categories and user
+ * folders stay visible.
+ */
+export function groupAsset(asset: AssetItem): AssetGrouping {
+  const groupIds = new Set<string>()
+  const unmappedTags = new Set<string>()
+  for (const tag of categoryTagsForAsset(asset)) {
+    const groupId = groupIdForTag(asset, tag)
+    if (groupId) {
+      groupIds.add(groupId)
+    } else {
+      unmappedTags.add(rawTagTopLevel(tag))
+    }
   }
-  return Array.from(byFolder.entries()).sort(([a], [b]) =>
-    a.localeCompare(b, undefined, { sensitivity: 'base' })
-  )
+  return { groupIds: [...groupIds], unmappedTags: [...unmappedTags] }
 }
 
 export function groupLabelForAsset(asset: AssetItem): string {
-  const groupId = groupIdForAsset(asset)
-  if (groupId) {
-    const group = MODEL_GROUPS.find((g) => g.id === groupId)
+  const { groupIds, unmappedTags } = groupAsset(asset)
+  if (groupIds.length > 0) {
+    const group = MODEL_GROUPS.find((g) => g.id === groupIds[0])
     if (group) return group.label
   }
-  // Unmapped tags are the user's own folders — show them verbatim rather
-  // than dressing them up as curated categories.
-  const tag = firstNonModelsTag(asset)
-  return tag ? rawTagTopLevel(tag) : ''
+  return unmappedTags[0] ?? ''
 }
 
 export function partnerKind(category: string | undefined): string {
@@ -56,9 +66,7 @@ export function partnerKind(category: string | undefined): string {
   return parts[1] ?? ''
 }
 
-export function groupIdForAsset(asset: AssetItem): string | null {
-  const tag = firstNonModelsTag(asset)
-  if (!tag) return null
+function groupIdForTag(asset: AssetItem, tag: string): string | null {
   const tagGroup = groupIdForRawTag(rawTagTopLevel(tag))
   // Cross-base file-types stay in their type bucket. The Base-model sort
   // axis still keeps each family's items grouped together within that bucket.

@@ -4,8 +4,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
 import {
   firstNonModelsTag,
-  groupAssetsByTopLevelFolder,
-  groupIdForAsset,
+  groupAsset,
   groupLabelForAsset,
   looksLikeVae,
   partnerKind,
@@ -70,21 +69,35 @@ describe('looksLikeVae', () => {
   })
 })
 
-describe('groupIdForAsset', () => {
+describe('groupAsset', () => {
   it('keeps cross-base file types (loras, vae, conditioning) in their bucket', () => {
-    expect(groupIdForAsset(makeAsset({ tags: ['models', 'loras'] }))).toBe(
-      'loras'
+    expect(
+      groupAsset(makeAsset({ tags: ['models', 'loras'] })).groupIds
+    ).toEqual(['loras'])
+    expect(groupAsset(makeAsset({ tags: ['models', 'vae'] })).groupIds).toEqual(
+      ['vae']
     )
-    expect(groupIdForAsset(makeAsset({ tags: ['models', 'vae'] }))).toBe('vae')
-    expect(groupIdForAsset(makeAsset({ tags: ['models', 'controlnet'] }))).toBe(
-      'conditioning'
-    )
+    expect(
+      groupAsset(makeAsset({ tags: ['models', 'controlnet'] })).groupIds
+    ).toEqual(['conditioning'])
+  })
+
+  it('places an asset in every group its folder tags map to', () => {
+    const shared = makeAsset({ tags: ['models', 'checkpoints', 'loras'] })
+    expect(groupAsset(shared).groupIds.sort()).toEqual(['diffusion', 'loras'])
+  })
+
+  it('deduplicates groups when several tags map to the same bucket', () => {
+    const asset = makeAsset({
+      tags: ['models', 'checkpoints/sdxl', 'checkpoints']
+    })
+    expect(groupAsset(asset).groupIds).toEqual(['diffusion'])
   })
 
   it('routes vae-looking assets to the vae bucket even when tagged otherwise', () => {
     expect(
-      groupIdForAsset(makeAsset({ tags: ['models', 'CogVideo/VAE'] }))
-    ).toBe('vae')
+      groupAsset(makeAsset({ tags: ['models', 'CogVideo/VAE'] })).groupIds
+    ).toEqual(['vae'])
   })
 
   it('lets a base-model category override the file-type bucket', () => {
@@ -92,51 +105,28 @@ describe('groupIdForAsset', () => {
       tags: ['models', 'text_encoders'],
       metadata: { base_model: 'SDXL' }
     })
-    expect(groupIdForAsset(asset)).toBe('diffusion')
+    expect(groupAsset(asset).groupIds).toEqual(['diffusion'])
   })
 
   it('falls back to the tag-derived group when no base override applies', () => {
     expect(
-      groupIdForAsset(makeAsset({ tags: ['models', 'text_encoders'] }))
-    ).toBe('encoders')
+      groupAsset(makeAsset({ tags: ['models', 'text_encoders'] })).groupIds
+    ).toEqual(['encoders'])
   })
 
-  it('returns null for an unmapped tag with no resolvable base', () => {
-    expect(
-      groupIdForAsset(makeAsset({ tags: ['models', 'totallyunknown'] }))
-    ).toBeNull()
+  it('surfaces unmapped tags verbatim by top-level folder', () => {
+    const result = groupAsset(
+      makeAsset({ tags: ['models', 'kjnodes_fonts', 'loras'] })
+    )
+    expect(result.groupIds).toEqual(['loras'])
+    expect(result.unmappedTags).toEqual(['kjnodes_fonts'])
   })
-})
 
-describe('groupAssetsByTopLevelFolder', () => {
-  it('keeps each folder separate instead of consolidating into the taxonomy', () => {
-    const checkpoints = makeAsset({ id: 'c', tags: ['models', 'checkpoints'] })
-    const diffusion = makeAsset({
-      id: 'd',
-      tags: ['models', 'diffusion_models']
+  it('returns nothing for an asset with only the models tag', () => {
+    expect(groupAsset(makeAsset({ tags: ['models'] }))).toEqual({
+      groupIds: [],
+      unmappedTags: []
     })
-    const fonts = makeAsset({ id: 'f', tags: ['models', 'kjnodes_fonts'] })
-    const entries = groupAssetsByTopLevelFolder([checkpoints, diffusion, fonts])
-    expect(entries.map(([folder]) => folder)).toEqual([
-      'checkpoints',
-      'diffusion_models',
-      'kjnodes_fonts'
-    ])
-  })
-
-  it('groups nested tags under their top-level folder', () => {
-    const a = makeAsset({ id: 'a', tags: ['models', 'checkpoints/sdxl'] })
-    const b = makeAsset({ id: 'b', tags: ['models', 'checkpoints'] })
-    const entries = groupAssetsByTopLevelFolder([a, b])
-    expect(entries).toHaveLength(1)
-    expect(entries[0][0]).toBe('checkpoints')
-    expect(entries[0][1]).toHaveLength(2)
-  })
-
-  it('skips assets with no folder tag', () => {
-    expect(
-      groupAssetsByTopLevelFolder([makeAsset({ tags: ['models'] })])
-    ).toEqual([])
   })
 })
 
