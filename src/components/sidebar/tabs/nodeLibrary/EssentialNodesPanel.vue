@@ -19,7 +19,7 @@
       <div
         class="sticky top-0 z-10 flex h-14 w-full items-center justify-between border-0 bg-comfy-menu-bg px-4 text-sm font-bold tracking-wide text-muted-foreground"
       >
-        <span class="uppercase">{{ section.label }}</span>
+        <span class="uppercase">{{ $t(`essentials.${section.key}`) }}</span>
       </div>
       <div
         v-if="section.tiles?.length"
@@ -29,7 +29,7 @@
           v-for="tile in section.tiles.filter(
             (t) => !t.media || mediaFilters[t.media]
           )"
-          :key="tile.nodeName ?? tile.label"
+          :key="tile.nodeName"
           :preview-panel
           :tile
         />
@@ -44,14 +44,14 @@
           class="scroll-mt-14 last:pb-4"
         >
           <div class="text-foreground text-sm leading-[15px] font-normal">
-            {{ subgroup.label }}
+            {{ $t(`essentials.${subgroup.key}`) }}
           </div>
           <div
             class="mt-4 grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2"
           >
             <EssentialNodeCard
               v-for="tile in subgroup.tiles"
-              :key="tile.nodeName ?? tile.label"
+              :key="tile.nodeName"
               :preview-panel
               :tile
             />
@@ -71,7 +71,7 @@ import type {
   EssentialSection,
   EssentialTile
 } from '@/constants/essentialsNodes'
-import { ESSENTIAL_SECTIONS } from '@/constants/essentialsNodes'
+import { ESSENTIAL_SECTIONS, getLabel } from '@/constants/essentialsNodes'
 
 import EssentialNodeCard from './EssentialNodeCard.vue'
 
@@ -89,7 +89,7 @@ const filteredSections = computed<EssentialSection[]>(() => {
   if (!query) return ESSENTIAL_SECTIONS
 
   const matchesQuery = (tile: EssentialTile) =>
-    tile.label.toLowerCase().includes(query)
+    t(getLabel(tile)).toLowerCase().includes(query)
   return ESSENTIAL_SECTIONS.flatMap<EssentialSection>((section) => {
     if (section.tiles?.length) {
       const tiles = section.tiles.filter(matchesQuery)

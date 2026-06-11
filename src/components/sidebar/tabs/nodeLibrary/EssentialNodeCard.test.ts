@@ -2,6 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import type { EssentialTile } from '@/constants/essentialsNodes'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
@@ -33,6 +34,18 @@ vi.mock('@/components/node/NodePreviewCard.vue', () => ({
   }
 }))
 
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      essentials: {
+        LoadImage: 'Load Image'
+      }
+    }
+  }
+})
+
 function createNodeDef(name: string): ComfyNodeDefV1 {
   return {
     name,
@@ -49,14 +62,12 @@ function createNodeDef(name: string): ComfyNodeDefV1 {
 }
 
 const REGISTERED_TILE: EssentialTile = {
-  label: 'Load Image',
   icon: 'icon-s1.5-[lucide--image-up]',
   media: 'image',
   nodeName: 'LoadImage'
 }
 
 const UNRESOLVED_TILE: EssentialTile = {
-  label: 'Missing Node',
   icon: 'icon-[comfy--node]',
   nodeName: 'NotARegisteredNode'
 }
@@ -73,6 +84,7 @@ describe('EssentialNodeCard', () => {
     const { container } = render(EssentialNodeCard, {
       props: { tile },
       global: {
+        plugins: [i18n],
         stubs: {
           Teleport: true
         }

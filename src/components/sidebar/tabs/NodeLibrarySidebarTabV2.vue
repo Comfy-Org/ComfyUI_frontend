@@ -64,7 +64,7 @@
                         @update:model-value="setMediaFilter(media, $event)"
                       >
                         <span class="flex-1">
-                          {{ ESSENTIALS_MEDIA_LABELS[media] }}
+                          {{ t(ESSENTIALS_MEDIA_LABELS[media]) }}
                         </span>
                         <DropdownMenuItemIndicator class="size-4 shrink-0">
                           <i class="icon-[lucide--check]" />
@@ -563,17 +563,17 @@ const jumpMenuEntries = computed<MenuItem[]>(() => {
   const entries = ESSENTIAL_SECTIONS.map((section) => {
     if (!section.subgroups)
       return {
-        label: section.label,
+        label: t(`essentials.${section.key}`),
         command: () => jumpToSection(section.key),
         noIcon: true
       }
 
     const items = section.subgroups.map((subgroup) => ({
-      label: subgroup.label,
+      label: t(`essentials.${subgroup.key}`),
       command: () => jumpToSubgroup(subgroup.key),
       noIcon: true
     }))
-    return { label: section.label, items }
+    return { label: t(`essentials.${section.key}`), items }
   })
   const label = t('essentials.jumpTo').toUpperCase()
   return [{ label, noIcon: true }, ...entries]
