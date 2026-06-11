@@ -145,7 +145,6 @@ import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
-import { ACTIONBAR_DOCKED_STORAGE_KEY } from '@/constants/storageKeys'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -182,7 +181,7 @@ const { shouldShowRedDot: shouldShowConflictRedDot } =
   useConflictAcknowledgment()
 const isTopMenuHovered = ref(false)
 const actionbarContainerRef = ref<HTMLElement>()
-const isActionbarDocked = useLocalStorage(ACTIONBAR_DOCKED_STORAGE_KEY, true)
+const isActionbarDocked = useLocalStorage('Comfy.MenuPosition.Docked', true)
 const actionbarPosition = computed(() => settingStore.get('Comfy.UseNewMenu'))
 const isActionbarEnabled = computed(
   () => actionbarPosition.value !== 'Disabled'
