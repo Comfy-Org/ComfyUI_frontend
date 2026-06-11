@@ -1,5 +1,5 @@
-import { getCollection } from 'astro:content';
-import type { CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content'
+import type { CollectionEntry } from 'astro:content'
 
 import type { Locale } from '../i18n/translations'
 
@@ -15,9 +15,11 @@ export async function getVisibleGalleryByLocale(
 ): Promise<GalleryEntry[]> {
   const prefix = `${locale}/`
   const entries: GalleryEntry[] = await getCollection('gallery')
-  return entries.filter(
-    (entry) => entry.id.startsWith(prefix) && entry.data.visible !== false
-  )
+  return entries
+    .filter(
+      (entry) => entry.id.startsWith(prefix) && entry.data.visible !== false
+    )
+    .sort((a, b) => a.data.order - b.data.order)
 }
 
 export async function getGalleryByIds(

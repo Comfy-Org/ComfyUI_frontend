@@ -1,8 +1,9 @@
 {
+  "order": 4,
   "video": "https://media.comfy.org/videos/compressed_512/dusk_mountains.webm",
   "title": "Untitled",
   "userAlias": "MidJourney man",
-  "teamAlias": "DOGSTUDIO/DEPT®",
+  "teamAlias": "DOGSTUDIO/DEPT\u00ae",
   "tool": "ComfyUI",
   "href": "https://www.instagram.com/midjourney.man/?hl=fr"
 }

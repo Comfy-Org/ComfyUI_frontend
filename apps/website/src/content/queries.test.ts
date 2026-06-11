@@ -14,6 +14,7 @@ interface FixtureEntry {
   id: string
   collection: 'gallery'
   data: {
+    order: number
     title: string
     userAlias: string
     teamAlias: string
@@ -35,6 +36,7 @@ function entry(
     id,
     collection: 'gallery',
     data: {
+      order: 0,
       title: 'Title',
       userAlias: 'User',
       teamAlias: 'Team',
@@ -86,6 +88,21 @@ describe('getVisibleGalleryByLocale', () => {
 
     const result = await getVisibleGalleryByLocale('en')
     expect(result.map((e) => e.id)).toEqual(['en/shown', 'en/also-shown'])
+  })
+
+  it('sorts entries by the order field ascending, not by id', async () => {
+    getCollectionMock.mockResolvedValue([
+      entry('en/charlie', { order: 1 }),
+      entry('en/alpha', { order: 3 }),
+      entry('en/bravo', { order: 2 })
+    ] as never)
+
+    const result = await getVisibleGalleryByLocale('en')
+    expect(result.map((e) => e.id)).toEqual([
+      'en/charlie',
+      'en/bravo',
+      'en/alpha'
+    ])
   })
 })
 

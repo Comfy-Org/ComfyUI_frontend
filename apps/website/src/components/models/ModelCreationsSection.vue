@@ -22,7 +22,8 @@ const items: GalleryItem[] = [
     teamAlias: 'Comfy',
     tool: 'Grok Imagine',
     href: 'https://www.youtube.com/@PurzBeats',
-    visible: true
+    visible: true,
+    order: 0
   },
   {
     video:
@@ -32,7 +33,8 @@ const items: GalleryItem[] = [
     teamAlias: 'Comfy',
     tool: 'Grok Imagine',
     href: 'https://www.youtube.com/@PurzBeats',
-    visible: true
+    visible: true,
+    order: 0
   },
   {
     image:
@@ -43,7 +45,8 @@ const items: GalleryItem[] = [
     tool: 'Grok Imagine',
     href: 'https://www.youtube.com/@PurzBeats',
     objectPosition: 'bottom',
-    visible: true
+    visible: true,
+    order: 0
   },
   {
     video:
@@ -53,7 +56,8 @@ const items: GalleryItem[] = [
     teamAlias: 'Comfy',
     tool: 'Grok Imagine',
     href: 'https://www.instagram.com/enigmatic_e',
-    visible: true
+    visible: true,
+    order: 0
   },
   {
     image:
@@ -63,7 +67,8 @@ const items: GalleryItem[] = [
     teamAlias: 'Comfy',
     tool: 'Grok Imagine',
     href: 'https://www.youtube.com/@PurzBeats',
-    visible: true
+    visible: true,
+    order: 0
   }
 ]
 

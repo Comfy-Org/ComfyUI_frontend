@@ -10,6 +10,7 @@ vi.mock('astro/loaders', () => ({
 import { gallerySchema } from './content.config'
 
 const validEntry = {
+  order: 1,
   title: 'Until Our Eye Interlink harajuku',
   userAlias: 'ShaneF Motion Design',
   teamAlias: 'ThinkDiffusion',
