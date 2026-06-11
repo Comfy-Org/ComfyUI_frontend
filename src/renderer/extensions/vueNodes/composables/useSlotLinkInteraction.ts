@@ -32,6 +32,7 @@ import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
+import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { createRafBatch } from '@/utils/rafBatch'
 
 interface SlotInteractionOptions {
@@ -604,6 +605,13 @@ export function useSlotLinkInteraction({
     const canvas = app.canvas
     const graph = canvas?.graph
     if (!canvas || !graph) return
+
+    // A held link-release session (menu open, links kept alive) leaves the
+    // connector mid-drag. Tear it down so this new drag can take over instead
+    // of tripping LinkConnector's "Already dragging links" guard.
+    if (canvas.linkConnector.isConnecting && !pointerSession.isActive()) {
+      useSearchBoxStore().cancelLinkRelease()
+    }
 
     activeAdapter = createLinkConnectorAdapter()
     if (!activeAdapter) return

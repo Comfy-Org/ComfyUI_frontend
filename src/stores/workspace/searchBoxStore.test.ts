@@ -20,7 +20,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 function createMockPopover(): InstanceType<typeof NodeSearchBoxPopover> {
-  return { showSearchBox: vi.fn() } as Partial<
+  return { showSearchBox: vi.fn(), cancelLinkRelease: vi.fn() } as Partial<
     InstanceType<typeof NodeSearchBoxPopover>
   > as InstanceType<typeof NodeSearchBoxPopover>
 }
@@ -133,6 +133,25 @@ describe('useSearchBoxStore', () => {
     it('should have search box hidden by default', () => {
       const store = useSearchBoxStore()
       expect(store.visible).toBe(false)
+    })
+  })
+
+  describe('cancelLinkRelease', () => {
+    it('delegates to the popover to tear down a held link-release session', () => {
+      const store = useSearchBoxStore()
+      const mockPopover = createMockPopover()
+      store.setPopoverRef(mockPopover)
+
+      store.cancelLinkRelease()
+
+      expect(vi.mocked(mockPopover.cancelLinkRelease)).toHaveBeenCalled()
+    })
+
+    it('does nothing when the popover is not ready', () => {
+      const store = useSearchBoxStore()
+      store.setPopoverRef(null)
+
+      expect(() => store.cancelLinkRelease()).not.toThrow()
     })
   })
 })

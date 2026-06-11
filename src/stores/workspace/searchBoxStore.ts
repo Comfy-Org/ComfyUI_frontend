@@ -28,6 +28,10 @@ export const useSearchBoxStore = defineStore('searchBox', () => {
     popoverRef.value = popover
   }
 
+  function cancelLinkRelease() {
+    popoverRef.value?.cancelLinkRelease()
+  }
+
   const visible = ref(false)
   function toggleVisible() {
     if (newSearchBoxEnabled.value) {
@@ -49,6 +53,7 @@ export const useSearchBoxStore = defineStore('searchBox', () => {
     useSearchBoxV2,
     newSearchBoxEnabled,
     setPopoverRef,
+    cancelLinkRelease,
     toggleVisible,
     visible
   }
