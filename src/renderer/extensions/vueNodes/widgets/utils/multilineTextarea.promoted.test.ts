@@ -19,10 +19,14 @@ import { createPromotedMultilineWidget } from './multilineTextarea'
 const WIDGET_ID = makeWidgetId('graph-1', 'node-1', 'prompt')
 
 function subgraphNode(): LGraphNode {
-  return fromAny<LGraphNode, unknown>({
+  const node = fromAny<LGraphNode, unknown>({
     id: 'node-1',
-    graph: { rootGraph: { id: 'graph-1' } }
+    graph: {
+      rootGraph: { id: 'graph-1' },
+      getNodeById: (id: string) => (id === 'node-1' ? node : undefined)
+    }
   })
+  return node
 }
 
 function textareaSource(): IBaseWidget {
@@ -86,5 +90,22 @@ describe('createPromotedMultilineWidget', () => {
   it('falls back to the canvas projection for non-DOM widgets', () => {
     const widget = promote(fromAny({ name: 'prompt', type: 'number' }))
     expect(widget).toBeUndefined()
+  })
+
+  it('defers materialization while the host node is not settled in its graph', () => {
+    const unsettled = fromAny<LGraphNode, unknown>({
+      id: 'node-1',
+      graph: { rootGraph: { id: 'graph-1' }, getNodeById: () => undefined }
+    })
+
+    const widget = createPromotedMultilineWidget({
+      subgraphNode: unsettled,
+      input: fromAny({ name: 'prompt', widgetId: WIDGET_ID }),
+      widgetId: WIDGET_ID,
+      sourceWidget: textareaSource()
+    })
+
+    expect(widget).toBeUndefined()
+    expect(useDomWidgetStore().widgetStates.size).toBe(0)
   })
 })

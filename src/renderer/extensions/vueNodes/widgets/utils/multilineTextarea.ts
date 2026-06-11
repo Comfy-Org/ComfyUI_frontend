@@ -116,17 +116,20 @@ interface PromotedMultilineWidgetContext {
 }
 
 /**
- * Builds a promoted `customtext` textarea as a host-owned DOM widget for
- * `input._widget`. `SubgraphNode.widgets` is a projected getter, so it cannot go
- * through `node.addDOMWidget`; the widget is registered with the DOM widget store
- * directly. Returns undefined for non-textarea sources to fall back to the
- * store-backed projection.
+ * Builds the promoted textarea as a host-owned DOM widget, registered directly
+ * with the DOM widget store since `SubgraphNode.widgets` is a projected getter.
+ * Returns undefined to fall back to the store-backed projection.
  */
 export function createPromotedMultilineWidget(
   context: PromotedMultilineWidgetContext
 ): IBaseWidget | undefined {
   const { subgraphNode, input, widgetId, sourceWidget } = context
 
+  // Only materialize once the host node is settled in its graph; clone/configure
+  // run with a transient id and would leak duplicate DOM widgets.
+  const graph = subgraphNode.graph
+  if (!graph || graph.getNodeById(subgraphNode.id) !== subgraphNode)
+    return undefined
   if (!isDOMWidget(sourceWidget)) return undefined
   if (!(sourceWidget.element instanceof HTMLTextAreaElement)) return undefined
 
