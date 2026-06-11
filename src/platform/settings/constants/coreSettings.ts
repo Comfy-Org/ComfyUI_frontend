@@ -1138,7 +1138,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Canvas.BackgroundPattern',
-    category: ['Appearance', 'Canvas', 'Background'],
+    category: ['Appearance', 'Canvas', 'BackgroundPattern'],
     name: 'Canvas background pattern',
     type: 'combo',
     options: [
@@ -1153,7 +1153,7 @@ export const CORE_SETTINGS: SettingParams[] = [
   },
   {
     id: 'Comfy.Canvas.BackgroundColor',
-    category: ['Appearance', 'Canvas', 'Background'],
+    category: ['Appearance', 'Canvas', 'BackgroundColor'],
     name: 'Canvas background color',
     type: 'color',
     tooltip:
