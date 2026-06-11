@@ -3,12 +3,9 @@ import { useI18n } from 'vue-i18n'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { st } from '@/i18n'
 import { assetService } from '@/platform/assets/services/assetService'
-import {
-  getAssetDisplayName,
-  getAssetFilename
-} from '@/platform/assets/utils/assetMetadataUtils'
 import { civitaiImportSource } from '@/platform/assets/importSources/civitaiImportSource'
 import { huggingfaceImportSource } from '@/platform/assets/importSources/huggingfaceImportSource'
+import type { UploadModelSuccess } from '@/platform/assets/composables/useUploadModelWizard'
 import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -16,12 +13,7 @@ import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { app } from '@/scripts/app'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
-import type {
-  MissingModelCandidate,
-  MissingModelViewModel
-} from '@/platform/missingModel/types'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { MissingModelViewModel } from '@/platform/missingModel/types'
 
 const importSources = [civitaiImportSource, huggingfaceImportSource]
 
@@ -58,33 +50,6 @@ export function getNodeDisplayLabel(
   })
 }
 
-function getModelComboWidget(
-  model: MissingModelCandidate
-): { node: LGraphNode; widget: IBaseWidget } | null {
-  if (model.nodeId == null) return null
-
-  const graph = app.rootGraph
-  if (!graph) return null
-  const node = getNodeByExecutionId(graph, String(model.nodeId))
-  if (!node) return null
-
-  const widget = node.widgets?.find((w) => w.name === model.widgetName)
-  if (!widget) return null
-
-  return { node, widget }
-}
-
-export function getComboValue(
-  model: MissingModelCandidate
-): string | undefined {
-  const result = getModelComboWidget(model)
-  if (!result) return undefined
-  const val = result.widget.value
-  if (typeof val === 'string') return val
-  if (typeof val === 'number') return String(val)
-  return undefined
-}
-
 export function useMissingModelInteractions() {
   const { t } = useI18n()
   const store = useMissingModelStore()
@@ -100,30 +65,6 @@ export function useMissingModelInteractions() {
 
   function isModelExpanded(key: string): boolean {
     return store.modelExpandState[key] ?? false
-  }
-
-  function getComboOptions(
-    model: MissingModelCandidate
-  ): { name: string; value: string }[] {
-    if (model.isAssetSupported && model.nodeType) {
-      const assets = assetsStore.getAssets(model.nodeType) ?? []
-      return assets.map((asset) => ({
-        name: getAssetDisplayName(asset),
-        value: getAssetFilename(asset)
-      }))
-    }
-
-    const result = getModelComboWidget(model)
-    if (!result) return []
-    const values = result.widget.options?.values
-    if (!Array.isArray(values)) return []
-    return values.map((v) => ({ name: String(v), value: String(v) }))
-  }
-
-  function handleComboSelect(key: string, value: string | undefined) {
-    if (value) {
-      store.selectedLibraryModel[key] = value
-    }
   }
 
   function isSelectionConfirmable(key: string): boolean {
@@ -307,6 +248,16 @@ export function useMissingModelInteractions() {
     }
   }
 
+  function handleUploadedModelImport(key: string, result: UploadModelSuccess) {
+    if (result.taskId) {
+      handleAsyncPending(key, result.taskId, result.modelType, result.filename)
+    } else if (result.status === 'success') {
+      handleAsyncCompleted(result.modelType)
+    }
+
+    store.selectedLibraryModel[key] = result.filename
+  }
+
   function handleSyncResult(
     key: string,
     tags: string[],
@@ -380,14 +331,13 @@ export function useMissingModelInteractions() {
   return {
     toggleModelExpand,
     isModelExpanded,
-    getComboOptions,
-    handleComboSelect,
     isSelectionConfirmable,
     cancelLibrarySelect,
     confirmLibrarySelect,
     handleUrlInput,
     getTypeMismatch,
     getDownloadStatus,
+    handleUploadedModelImport,
     handleImport
   }
 }

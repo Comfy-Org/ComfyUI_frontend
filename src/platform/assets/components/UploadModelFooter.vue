@@ -73,6 +73,7 @@
         variant="muted-textonly"
         size="lg"
         data-attr="upload-model-step3-import-another-button"
+        :disabled="!canImportAnother"
         @click="emit('importAnother')"
       >
         {{ $t('assetBrowser.importAnother') }}
@@ -88,6 +89,24 @@
             ? $t('g.close')
             : $t('assetBrowser.finish')
         }}
+      </Button>
+    </template>
+    <template v-else-if="currentStep === 3 && uploadStatus === 'error'">
+      <Button
+        variant="muted-textonly"
+        size="lg"
+        data-attr="upload-model-step3-back-button"
+        @click="emit('back')"
+      >
+        {{ $t('g.back') }}
+      </Button>
+      <Button
+        variant="secondary"
+        size="lg"
+        data-attr="upload-model-step3-close-button"
+        @click="emit('close')"
+      >
+        {{ $t('g.close') }}
       </Button>
     </template>
     <VideoHelpDialog
@@ -113,13 +132,14 @@ import VideoHelpDialog from '@/platform/assets/components/VideoHelpDialog.vue'
 const showCivitaiHelp = ref(false)
 const showHuggingFaceHelp = ref(false)
 
-defineProps<{
+const { canImportAnother = true } = defineProps<{
   currentStep: number
   isFetchingMetadata: boolean
   isUploading: boolean
   canFetchMetadata: boolean
   canUploadModel: boolean
   uploadStatus?: 'processing' | 'success' | 'error'
+  canImportAnother?: boolean
 }>()
 
 const emit = defineEmits<{

@@ -3,7 +3,6 @@
     aria-live="polite"
     class="bg-foreground/5 relative mt-1 overflow-hidden rounded-lg border border-interface-stroke p-2"
   >
-    <!-- Progress bar fill -->
     <div
       v-if="isDownloadActive"
       class="absolute inset-y-0 left-0 bg-primary/10 transition-all duration-200 ease-linear"
@@ -65,7 +64,7 @@
             }}
           </template>
           <template v-else>
-            {{ t('rightSidePanel.missingModels.usingFromLibrary') }}
+            {{ t('rightSidePanel.missingModels.readyToApply') }}
           </template>
         </span>
       </div>

@@ -1,24 +1,36 @@
 import { createTestingPinia } from '@pinia/testing'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
   MissingModelGroup,
   MissingModelViewModel
 } from '@/platform/missingModel/types'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
 vi.mock('./MissingModelRow.vue', () => ({
   default: {
     name: 'MissingModelRow',
-    template:
-      '<div class="model-row" :data-show-node-id-badge="showNodeIdBadge" :data-is-asset-supported="isAssetSupported" :data-directory="directory"><button class="locate-trigger" @click="$emit(\'locate-model\', model?.representative?.nodeId)">Locate</button></div>',
-    props: ['model', 'directory', 'showNodeIdBadge', 'isAssetSupported'],
+    template: `
+      <div
+        data-testid="model-row"
+        class="model-row"
+        :data-model-name="model.name"
+        :data-is-asset-supported="isAssetSupported"
+        :data-directory="directory"
+      >
+        <button
+          class="locate-trigger"
+          @click="$emit('locate-model', model?.representative?.nodeId)"
+        >
+          Locate
+        </button>
+      </div>
+    `,
+    props: ['model', 'directory', 'isAssetSupported'],
     emits: ['locate-model']
   }
 }))
@@ -35,21 +47,7 @@ import MissingModelCard from './MissingModelCard.vue'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: {
-    en: {
-      rightSidePanel: {
-        missingModels: {
-          importNotSupported: 'Import Not Supported',
-          customNodeDownloadDisabled:
-            'Cloud environment does not support model imports for custom nodes.',
-          unknownCategory: 'Unknown Category',
-          downloadAll: 'Download all',
-          refresh: 'Refresh',
-          refreshing: 'Refreshing missing models.'
-        }
-      }
-    }
-  },
+  messages: { en: enMessages },
   missingWarn: false,
   fallbackWarn: false
 })
@@ -106,7 +104,6 @@ function makeGroup(
 function mountCard(
   props: Partial<{
     missingModelGroups: MissingModelGroup[]
-    showNodeIdBadge: boolean
   }> = {},
   onLocateModel?: (nodeId: string) => void
 ) {
@@ -114,7 +111,6 @@ function mountCard(
   return render(MissingModelCard, {
     props: {
       missingModelGroups: [makeGroup()],
-      showNodeIdBadge: false,
       ...props,
       ...(onLocateModel ? { onLocateModel } : {})
     },
@@ -124,62 +120,70 @@ function mountCard(
   })
 }
 
+function getRows() {
+  return screen.queryAllByTestId('model-row')
+}
+
 describe('MissingModelCard', () => {
   beforeEach(() => {
     mockIsCloud.value = true
   })
 
   describe('Rendering & Props', () => {
-    it('renders directory name in category header', () => {
-      const { container } = mountCard({
+    it('passes the model directory to rows', () => {
+      mockIsCloud.value = false
+      mountCard({
         missingModelGroups: [makeGroup({ directory: 'loras' })]
       })
-      expect(container.textContent).toContain('loras')
-    })
-
-    it('renders translated unknown category when directory is null', () => {
-      const { container } = mountCard({
-        missingModelGroups: [makeGroup({ directory: null })]
-      })
-      expect(container.textContent).toContain('Unknown Category')
-    })
-
-    it('renders model count in category header', () => {
-      const { container } = mountCard({
-        missingModelGroups: [
-          makeGroup({ modelNames: ['a.safetensors', 'b.safetensors'] })
-        ]
-      })
-      expect(container.textContent).toContain('(2)')
+      expect(getRows()[0].getAttribute('data-directory')).toBe('loras')
     })
 
     it('renders correct number of MissingModelRow components', () => {
-      const { container } = mountCard({
+      mountCard({
         missingModelGroups: [
           makeGroup({
             modelNames: ['a.safetensors', 'b.safetensors', 'c.safetensors']
           })
         ]
       })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelectorAll('.model-row')).toHaveLength(3)
+      expect(getRows()).toHaveLength(3)
     })
 
-    it('renders multiple groups', () => {
-      const { container } = mountCard({
+    it('flattens multiple groups into rows', () => {
+      mockIsCloud.value = false
+      mountCard({
         missingModelGroups: [
           makeGroup({ directory: 'checkpoints' }),
           makeGroup({ directory: 'loras' })
         ]
       })
-      expect(container.textContent).toContain('checkpoints')
-      expect(container.textContent).toContain('loras')
+      expect(getRows()).toHaveLength(2)
+    })
+
+    it('sorts rows by model type order in cloud', () => {
+      mountCard({
+        missingModelGroups: [
+          makeGroup({ directory: null, modelNames: ['unknown.safetensors'] }),
+          makeGroup({ directory: 'loras', modelNames: ['lora.safetensors'] }),
+          makeGroup({
+            directory: 'checkpoints',
+            modelNames: ['checkpoint.safetensors']
+          })
+        ]
+      })
+
+      expect(
+        getRows().map((row) => row.getAttribute('data-model-name'))
+      ).toEqual([
+        'checkpoint.safetensors',
+        'lora.safetensors',
+        'unknown.safetensors'
+      ])
     })
 
     it('renders zero rows when missingModelGroups is empty', () => {
-      const { container } = mountCard({ missingModelGroups: [] })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      expect(container.querySelectorAll('.model-row')).toHaveLength(0)
+      mountCard({ missingModelGroups: [] })
+      expect(getRows()).toHaveLength(0)
     })
 
     it('hides bulk actions in cloud', () => {
@@ -191,31 +195,21 @@ describe('MissingModelCard', () => {
         screen.queryByTestId('missing-model-actions')
       ).not.toBeInTheDocument()
     })
-
-    it('passes props correctly to MissingModelRow children', () => {
-      const { container } = mountCard({ showNodeIdBadge: true })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const row = container.querySelector('.model-row')
-      expect(row).not.toBeNull()
-      expect(row!.getAttribute('data-show-node-id-badge')).toBe('true')
-      expect(row!.getAttribute('data-is-asset-supported')).toBe('true')
-      expect(row!.getAttribute('data-directory')).toBe('checkpoints')
-    })
   })
 
   describe('Asset Unsupported Group', () => {
-    it('shows "Import Not Supported" header for unsupported groups', () => {
+    it('does not show the unsupported group header in cloud', () => {
       const { container } = mountCard({
         missingModelGroups: [makeGroup({ isAssetSupported: false })]
       })
-      expect(container.textContent).toContain('Import Not Supported')
+      expect(container.textContent).not.toContain('Import Not Supported')
     })
 
-    it('shows info notice for unsupported groups', () => {
+    it('does not show the unsupported group notice in cloud', () => {
       const { container } = mountCard({
         missingModelGroups: [makeGroup({ isAssetSupported: false })]
       })
-      expect(container.textContent).toContain(
+      expect(container.textContent).not.toContain(
         'Cloud environment does not support model imports'
       )
     })
@@ -251,13 +245,12 @@ describe('MissingModelCard (OSS)', () => {
   })
 
   it('shows directory name instead of "Import Not Supported" for unsupported groups', () => {
-    const { container } = mountCard({
+    mountCard({
       missingModelGroups: [
         makeGroup({ directory: 'checkpoints', isAssetSupported: false })
       ]
     })
-    expect(container.textContent).toContain('checkpoints')
-    expect(container.textContent).not.toContain('Import Not Supported')
+    expect(getRows()[0].getAttribute('data-directory')).toBe('checkpoints')
   })
 
   it('hides info notice for unsupported groups', () => {
@@ -269,61 +262,39 @@ describe('MissingModelCard (OSS)', () => {
     )
   })
 
-  it('renders unknown category for null directory in OSS', () => {
+  it('passes null directory for unknown category rows in OSS', () => {
     const { container } = mountCard({
       missingModelGroups: [
         makeGroup({ directory: null, isAssetSupported: false })
       ]
     })
-    expect(container.textContent).toContain('Unknown Category')
+    expect(getRows()[0].hasAttribute('data-directory')).toBe(false)
     expect(container.textContent).not.toContain('Import Not Supported')
   })
 
-  it('shows bulk actions when one model is downloadable', () => {
+  it('shows Download all at the bottom when one model is downloadable', () => {
     mountCard({
       missingModelGroups: [makeGroup({ withDownloadUrls: true })]
     })
 
-    expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible()
+    const actions = screen.getByTestId('missing-model-actions')
+    expect(actions).toBeVisible()
+    expect(
+      within(actions).getByRole('button', { name: /Download all/ })
+    ).toBeVisible()
+    expect(
+      within(actions).queryByRole('button', { name: 'Refresh' })
+    ).not.toBeInTheDocument()
   })
 
-  it('hides bulk actions when no model is downloadable', () => {
+  it('hides Download all when no model is downloadable', () => {
     mountCard()
 
     expect(
       screen.queryByRole('button', { name: /Download all/ })
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Refresh' })
+      screen.queryByTestId('missing-model-actions')
     ).not.toBeInTheDocument()
-  })
-
-  it('refreshes missing models from the action bar', async () => {
-    mountCard({
-      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
-    })
-    const store = useMissingModelStore()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Refresh' }))
-
-    expect(store.refreshMissingModels).toHaveBeenCalled()
-  })
-
-  it('keeps the Refresh button focusable and announces refresh progress', async () => {
-    mountCard({
-      missingModelGroups: [makeGroup({ withDownloadUrls: true })]
-    })
-    const store = useMissingModelStore()
-
-    store.isRefreshingMissingModels = true
-    await nextTick()
-
-    const refreshButton = screen.getByRole('button', { name: 'Refresh' })
-    expect(refreshButton).toHaveAttribute('aria-disabled', 'true')
-    expect(refreshButton).toHaveAttribute('aria-busy', 'true')
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Refreshing missing models.'
-    )
   })
 })
