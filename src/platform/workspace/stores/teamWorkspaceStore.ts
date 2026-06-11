@@ -583,7 +583,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
   function buildInviteLink(token: string): string {
     const baseUrl = window.location.origin
-    return `${baseUrl}?invite=${encodeURIComponent(token)}`
+    const params = new URLSearchParams({ invite: token })
+    return `${baseUrl}?${params.toString()}`
   }
 
   /**
