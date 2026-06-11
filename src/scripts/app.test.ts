@@ -1,10 +1,18 @@
+import { createTestingPinia } from '@pinia/testing'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
+  IBaseWidget,
+  IStringComboWidget
+} from '@/lib/litegraph/src/types/widgets'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { ComfyApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -16,6 +24,52 @@ import {
   pasteVideoNodes
 } from '@/composables/usePaste'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { api } from '@/scripts/api'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import type { NodeError } from '@/schemas/apiSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { widgetEntityId } from '@/world/entityIds'
+import type { WidgetEntityId } from '@/world/entityIds'
+import { ensureWidgetState, getWidgetState } from '@/world/widgetValueIO'
+
+const {
+  mockApiKeyAuthStore,
+  mockAuthStore,
+  mockSettingStore,
+  mockToastStore,
+  mockExtensionService,
+  mockNodeOutputStore,
+  mockWorkspaceWorkflow,
+  mockRefreshMissingModelPipeline
+} = vi.hoisted(() => ({
+  mockApiKeyAuthStore: {
+    getApiKey: vi.fn()
+  },
+  mockAuthStore: {
+    getAuthToken: vi.fn()
+  },
+  mockSettingStore: {
+    get: vi.fn()
+  },
+  mockToastStore: {
+    addAlert: vi.fn(),
+    add: vi.fn(),
+    remove: vi.fn()
+  },
+  mockExtensionService: {
+    invokeExtensions: vi.fn(),
+    invokeExtensionsAsync: vi.fn()
+  },
+  mockNodeOutputStore: {
+    refreshNodeOutputs: vi.fn()
+  },
+  mockWorkspaceWorkflow: {
+    activeWorkflow: null as ComfyWorkflow | null
+  },
+  mockRefreshMissingModelPipeline: vi.fn()
+}))
 
 vi.mock('@/utils/litegraphUtil', () => ({
   createNode: vi.fn(),
@@ -24,6 +78,18 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isAudioNode: vi.fn(),
   executeWidgetsCallback: vi.fn(),
   fixLinkInputSlots: vi.fn()
+}))
+
+vi.mock('@/stores/apiKeyAuthStore', () => ({
+  useApiKeyAuthStore: vi.fn(() => mockApiKeyAuthStore)
+}))
+
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => mockAuthStore)
+}))
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: vi.fn(() => mockSettingStore)
 }))
 
 vi.mock('@/composables/usePaste', () => ({
@@ -40,11 +106,26 @@ vi.mock('@/scripts/metadata/parser', () => ({
 }))
 
 vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({
-    addAlert: vi.fn(),
-    add: vi.fn(),
-    remove: vi.fn()
+  useToastStore: vi.fn(() => mockToastStore)
+}))
+
+vi.mock('@/services/extensionService', () => ({
+  useExtensionService: vi.fn(() => mockExtensionService)
+}))
+
+vi.mock('@/stores/nodeOutputStore', () => ({
+  useNodeOutputStore: vi.fn(() => mockNodeOutputStore)
+}))
+
+vi.mock('@/stores/workspaceStore', () => ({
+  useWorkspaceStore: vi.fn(() => ({
+    workflow: mockWorkspaceWorkflow
   }))
+}))
+
+vi.mock('@/platform/missingModel/missingModelPipeline', () => ({
+  refreshMissingModelPipeline: mockRefreshMissingModelPipeline,
+  runMissingModelPipeline: vi.fn()
 }))
 
 function createMockNode(options: { [K in keyof LGraphNode]?: any } = {}) {
@@ -66,6 +147,7 @@ function createMockCanvas(): Partial<LGraphCanvas> {
 
   return {
     graph: mockGraph as LGraph,
+    draw: vi.fn(),
     selectItems: vi.fn()
   }
 }
@@ -74,15 +156,277 @@ function createTestFile(name: string, type: string): File {
   return new File([''], name, { type })
 }
 
+function createWorkflowGraphData(): ComfyWorkflowJSON {
+  return {
+    last_node_id: 0,
+    last_link_id: 0,
+    nodes: [],
+    links: [],
+    groups: [],
+    config: {},
+    extra: {},
+    version: 0.4
+  }
+}
+
+type PromotedComboWidget = IStringComboWidget & {
+  readonly entityId: WidgetEntityId
+  readonly sourceNodeId: string
+  readonly sourceWidgetName: string
+}
+
+type PromotedNumberWidget = IBaseWidget<number, 'number'> & {
+  readonly entityId: WidgetEntityId
+  readonly sourceNodeId: string
+  readonly sourceWidgetName: string
+}
+
 describe('ComfyApp', () => {
   let app: ComfyApp
   let mockCanvas: LGraphCanvas
 
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas
+    mockWorkspaceWorkflow.activeWorkflow = null
+    mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
+    mockAuthStore.getAuthToken.mockResolvedValue(undefined)
+    mockExtensionService.invokeExtensions.mockReturnValue([])
+    mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
+    mockSettingStore.get.mockImplementation((key: string) =>
+      key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
+    )
+  })
+
+  describe('queuePrompt', () => {
+    it('shows the error overlay for successful prompt responses with node errors', async () => {
+      const graph = new LGraph()
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/review.json',
+        modified: 0,
+        size: 0
+      })
+      const promptOutput: ComfyApiWorkflow = {
+        '1': {
+          class_type: 'PreviewAny',
+          inputs: {},
+          _meta: { title: 'PreviewAny' }
+        }
+      }
+      const nodeErrors: Record<string, NodeError> = {
+        '1': {
+          class_type: 'PreviewAny',
+          dependent_outputs: ['1'],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Required input is missing: source',
+              details: '',
+              extra_info: { input_name: 'source' }
+            }
+          ]
+        }
+      }
+      Reflect.set(app, 'rootGraphInternal', graph)
+      mockWorkspaceWorkflow.activeWorkflow = workflow
+      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+        output: promptOutput,
+        workflow: createWorkflowGraphData()
+      })
+      vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        node_errors: nodeErrors,
+        error: ''
+      })
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      const errorStore = useExecutionErrorStore()
+      const executionStore = useExecutionStore()
+      expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
+      expect(errorStore.isErrorOverlayOpen).toBe(true)
+      expect(executionStore.queuedJobs['job-1']?.nodes).toEqual({ '1': false })
+      expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(
+        'workflows/review.json'
+      )
+      expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+    })
+  })
+
+  describe('refreshComboInNodes', () => {
+    it('shows success toast and removes the pending toast after node defs reload', async () => {
+      app.vueAppReady = true
+      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
+
+      await app.refreshComboInNodes()
+
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'info' })
+      )
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+      expect(mockToastStore.remove).toHaveBeenCalledWith(
+        mockToastStore.add.mock.calls[0][0]
+      )
+    })
+
+    it('shows failure toast, removes the pending toast, and rethrows reload failures', async () => {
+      app.vueAppReady = true
+      const error = new Error('object_info failed')
+      vi.spyOn(app, 'reloadNodeDefs').mockRejectedValue(error)
+
+      await expect(app.refreshComboInNodes()).rejects.toThrow(error)
+
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(mockToastStore.remove).toHaveBeenCalledWith(
+        mockToastStore.add.mock.calls[0][0]
+      )
+    })
+  })
+
+  describe('reloadNodeDefs', () => {
+    it('syncs refreshed combo options into promoted widget host state', async () => {
+      const graph = new LGraph()
+      const node = new LGraphNode(
+        'CheckpointLoaderSimple',
+        'CheckpointLoaderSimple'
+      )
+      graph.add(node)
+
+      const initialOptions = ['missing.safetensors']
+      const refreshedOptions = ['missing.safetensors', 'present.safetensors']
+      const promotedEntityId = widgetEntityId(graph.id, node.id, 'ckpt_name')
+      const missingStateEntityId = widgetEntityId(
+        graph.id,
+        node.id,
+        'missing_state_ckpt'
+      )
+      const promotedNumberEntityId = widgetEntityId(graph.id, node.id, 'steps')
+      const plainComboWidget: IStringComboWidget = {
+        name: 'ckpt_name',
+        type: 'combo',
+        value: 'missing.safetensors',
+        options: { values: initialOptions },
+        y: 0
+      }
+      const promotedNumberWidget: PromotedNumberWidget = {
+        name: 'steps',
+        type: 'number',
+        value: 20,
+        options: { min: 1, max: 100 },
+        y: 0,
+        entityId: promotedNumberEntityId,
+        sourceNodeId: '1',
+        sourceWidgetName: 'steps'
+      }
+      const missingStatePromotedWidget: PromotedComboWidget = {
+        name: 'missing_state_ckpt',
+        type: 'combo',
+        value: 'missing.safetensors',
+        options: { values: initialOptions },
+        y: 0,
+        entityId: missingStateEntityId,
+        sourceNodeId: '1',
+        sourceWidgetName: 'missing_state_ckpt'
+      }
+      const promotedWidget: PromotedComboWidget = {
+        name: 'ckpt_name',
+        type: 'combo',
+        value: 'missing.safetensors',
+        options: { values: initialOptions },
+        y: 0,
+        entityId: promotedEntityId,
+        sourceNodeId: '1',
+        sourceWidgetName: 'ckpt_name'
+      }
+      const defs: Record<string, ComfyNodeDef> = {
+        CheckpointLoaderSimple: {
+          name: 'CheckpointLoaderSimple',
+          display_name: 'CheckpointLoaderSimple',
+          category: 'loaders',
+          python_module: 'nodes',
+          description: '',
+          input: {
+            required: {
+              ckpt_name: [refreshedOptions, {}]
+            },
+            optional: {}
+          },
+          output: [],
+          output_name: [],
+          output_tooltips: [],
+          output_node: false,
+          deprecated: false,
+          experimental: false
+        }
+      }
+      node.widgets = [
+        plainComboWidget,
+        promotedNumberWidget,
+        missingStatePromotedWidget,
+        promotedWidget
+      ]
+      Reflect.set(app, 'rootGraphInternal', graph)
+      ensureWidgetState(promotedEntityId, {
+        type: 'combo',
+        value: 'missing.safetensors',
+        options: { values: initialOptions },
+        serialize: false
+      })
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue(defs)
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
+
+      await app.reloadNodeDefs()
+
+      expect(plainComboWidget.options.values).toEqual(refreshedOptions)
+      expect(promotedWidget.options.values).toEqual(refreshedOptions)
+      expect(getWidgetState(promotedEntityId)?.options.values).toEqual(
+        refreshedOptions
+      )
+      expect(getWidgetState(missingStateEntityId)).toBeUndefined()
+      expect(getWidgetState(promotedNumberEntityId)).toBeUndefined()
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'refreshComboInNodes',
+        defs
+      )
+    })
+  })
+
+  describe('refreshMissingModels', () => {
+    it('delegates to the app-independent missing model refresh pipeline', async () => {
+      const graph = {
+        nodes: [],
+        serialize: vi.fn(() => createWorkflowGraphData())
+      }
+      const result = {
+        missingModels: [],
+        confirmedCandidates: []
+      }
+      Reflect.set(app, 'rootGraphInternal', graph)
+      vi.spyOn(app, 'reloadNodeDefs').mockResolvedValue()
+      mockRefreshMissingModelPipeline.mockResolvedValue(result)
+
+      await expect(app.refreshMissingModels({ silent: false })).resolves.toBe(
+        result
+      )
+
+      expect(mockRefreshMissingModelPipeline).toHaveBeenCalledWith({
+        graph,
+        reloadNodeDefs: expect.any(Function),
+        missingModelStore: useMissingModelStore(),
+        silent: false
+      })
+
+      await mockRefreshMissingModelPipeline.mock.calls[0][0].reloadNodeDefs()
+      expect(app.reloadNodeDefs).toHaveBeenCalled()
+    })
   })
 
   describe('handleFileList', () => {
@@ -310,6 +654,32 @@ describe('ComfyApp', () => {
         expect.any(DataTransferItemList),
         mockNode
       )
+    })
+  })
+
+  describe('drop handler', () => {
+    it('syncs graph_mouse from the drop event before downstream handlers run', async () => {
+      // graph_mouse is only updated on mousemove, so when files are dragged in
+      // from another window the canvas-space cursor is stale. The drop handler
+      // must derive the position from the drop event itself.
+      const graphMouse: [number, number] = [-999, -999]
+      const adjustMouseEvent = vi.fn((e: DragEvent) => {
+        ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasX = 123
+        ;(e as DragEvent & { canvasX: number; canvasY: number }).canvasY = 456
+      })
+      app.canvas = {
+        ...mockCanvas,
+        graph_mouse: graphMouse,
+        adjustMouseEvent
+      } as unknown as LGraphCanvas
+
+      ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+
+      document.dispatchEvent(new DragEvent('drop'))
+      await Promise.resolve()
+
+      expect(adjustMouseEvent).toHaveBeenCalledTimes(1)
+      expect(graphMouse).toEqual([123, 456])
     })
   })
 })

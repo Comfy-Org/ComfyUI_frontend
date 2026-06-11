@@ -13,7 +13,7 @@
 import { useElementHover, useElementSize, useRafFn } from '@vueuse/core'
 import { ref, watch } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { speed = 70 } = defineProps<{
   /** Scroll speed in pixels per second */

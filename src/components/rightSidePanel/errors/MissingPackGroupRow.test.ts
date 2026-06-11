@@ -1,5 +1,6 @@
-import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import { ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -60,16 +61,16 @@ const i18n = createI18n({
   messages: {
     en: {
       g: {
-        loading: 'Loading'
+        install: 'Install',
+        loading: 'Loading',
+        search: 'Search'
       },
       rightSidePanel: {
         locateNode: 'Locate node on canvas',
         missingNodePacks: {
           unknownPack: 'Unknown pack',
-          installNodePack: 'Install node pack',
           installing: 'Installing...',
           installed: 'Installed',
-          searchInManager: 'Search in Node Manager',
           viewInManager: 'View in Manager',
           collapse: 'Collapse',
           expand: 'Expand'
@@ -95,30 +96,33 @@ function makeGroup(
   }
 }
 
-function mountRow(
+function renderRow(
   props: Partial<{
     group: MissingPackGroup
     showInfoButton: boolean
-    showNodeIdBadge: boolean
   }> = {}
 ) {
-  return mount(MissingPackGroupRow, {
+  const user = userEvent.setup()
+  const onLocateNode = vi.fn()
+  const onOpenManagerInfo = vi.fn()
+  render(MissingPackGroupRow, {
     props: {
       group: makeGroup(),
       showInfoButton: false,
-      showNodeIdBadge: false,
+      onLocateNode,
+      onOpenManagerInfo,
       ...props
     },
     global: {
       plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue, i18n],
       stubs: {
-        TransitionCollapse: { template: '<div><slot /></div>' },
         DotSpinner: {
           template: '<span role="status" aria-label="loading" />'
         }
       }
     }
   })
+  return { user, onLocateNode, onOpenManagerInfo }
 }
 
 describe('MissingPackGroupRow', () => {
@@ -135,27 +139,40 @@ describe('MissingPackGroupRow', () => {
 
   describe('Basic Rendering', () => {
     it('renders pack name from packId', () => {
-      const wrapper = mountRow()
-      expect(wrapper.text()).toContain('my-pack')
+      renderRow()
+      expect(screen.getByText(/my-pack/)).toBeInTheDocument()
     })
 
     it('renders "Unknown pack" when packId is null', () => {
-      const wrapper = mountRow({ group: makeGroup({ packId: null }) })
-      expect(wrapper.text()).toContain('Unknown pack')
+      renderRow({ group: makeGroup({ packId: null }) })
+      expect(screen.getByText(/Unknown pack/)).toBeInTheDocument()
     })
 
     it('renders loading text when isResolving is true', () => {
-      const wrapper = mountRow({ group: makeGroup({ isResolving: true }) })
-      expect(wrapper.text()).toContain('Loading')
+      renderRow({ group: makeGroup({ isResolving: true }) })
+      expect(screen.getByText(/Loading/)).toBeInTheDocument()
+    })
+
+    it('does not render header locate while pack metadata is resolving', () => {
+      renderRow({
+        group: makeGroup({
+          isResolving: true,
+          nodeTypes: [{ type: 'OnlyNode', nodeId: '100', isReplaceable: false }]
+        })
+      })
+
+      expect(
+        screen.queryByRole('button', { name: 'Locate node on canvas' })
+      ).not.toBeInTheDocument()
     })
 
     it('renders node count', () => {
-      const wrapper = mountRow()
-      expect(wrapper.text()).toContain('(2)')
+      renderRow()
+      expect(screen.getByText('2')).toBeInTheDocument()
     })
 
     it('renders count of 5 for 5 nodeTypes', () => {
-      const wrapper = mountRow({
+      renderRow({
         group: makeGroup({
           nodeTypes: Array.from({ length: 5 }, (_, i) => ({
             type: `Node${i}`,
@@ -164,39 +181,30 @@ describe('MissingPackGroupRow', () => {
           }))
         })
       })
-      expect(wrapper.text()).toContain('(5)')
-    })
-  })
-
-  describe('Expand / Collapse', () => {
-    it('starts collapsed', () => {
-      const wrapper = mountRow()
-      expect(wrapper.text()).not.toContain('MissingA')
-    })
-
-    it('expands when chevron is clicked', async () => {
-      const wrapper = mountRow()
-      await wrapper.get('button[aria-label="Expand"]').trigger('click')
-      expect(wrapper.text()).toContain('MissingA')
-      expect(wrapper.text()).toContain('MissingB')
-    })
-
-    it('collapses when chevron is clicked again', async () => {
-      const wrapper = mountRow()
-      await wrapper.get('button[aria-label="Expand"]').trigger('click')
-      expect(wrapper.text()).toContain('MissingA')
-      await wrapper.get('button[aria-label="Collapse"]').trigger('click')
-      expect(wrapper.text()).not.toContain('MissingA')
+      expect(screen.getByText('5')).toBeInTheDocument()
     })
   })
 
   describe('Node Type List', () => {
-    async function expand(wrapper: ReturnType<typeof mountRow>) {
-      await wrapper.get('button[aria-label="Expand"]').trigger('click')
-    }
+    it('hides multiple nodeTypes behind the expand control by default', () => {
+      renderRow()
+      expect(screen.queryByText('MissingA')).not.toBeInTheDocument()
+      expect(screen.queryByText('MissingB')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Expand' })).toBeInTheDocument()
+    })
 
-    it('renders all nodeTypes when expanded', async () => {
-      const wrapper = mountRow({
+    it('shows unknown pack nodeTypes by default', () => {
+      renderRow({ group: makeGroup({ packId: null }) })
+
+      expect(
+        screen.getByRole('button', { name: 'Collapse' })
+      ).toBeInTheDocument()
+      expect(screen.getByText('MissingA')).toBeInTheDocument()
+      expect(screen.getByText('MissingB')).toBeInTheDocument()
+    })
+
+    it('renders all nodeTypes after expanding', async () => {
+      const { user } = renderRow({
         group: makeGroup({
           nodeTypes: [
             { type: 'NodeA', nodeId: '1', isReplaceable: false },
@@ -205,49 +213,94 @@ describe('MissingPackGroupRow', () => {
           ]
         })
       })
-      await expand(wrapper)
-      expect(wrapper.text()).toContain('NodeA')
-      expect(wrapper.text()).toContain('NodeB')
-      expect(wrapper.text()).toContain('NodeC')
+
+      await user.click(screen.getByRole('button', { name: 'Expand' }))
+
+      expect(screen.getByText('NodeA')).toBeInTheDocument()
+      expect(screen.getByText('NodeB')).toBeInTheDocument()
+      expect(screen.getByText('NodeC')).toBeInTheDocument()
     })
 
-    it('shows nodeId badge when showNodeIdBadge is true', async () => {
-      const wrapper = mountRow({ showNodeIdBadge: true })
-      await expand(wrapper)
-      expect(wrapper.text()).toContain('#10')
+    it('hides multiple nodeTypes again after collapsing', async () => {
+      const { user } = renderRow()
+
+      await user.click(screen.getByRole('button', { name: 'Expand' }))
+      expect(screen.getByText('MissingA')).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'Collapse' }))
+      expect(screen.queryByText('MissingA')).not.toBeInTheDocument()
     })
 
-    it('hides nodeId badge when showNodeIdBadge is false', async () => {
-      const wrapper = mountRow({ showNodeIdBadge: false })
-      await expand(wrapper)
-      expect(wrapper.text()).not.toContain('#10')
+    it('hides a single nodeType without an expand control', () => {
+      renderRow({
+        group: makeGroup({
+          nodeTypes: [{ type: 'OnlyNode', nodeId: '1', isReplaceable: false }]
+        })
+      })
+
+      expect(screen.queryByText('OnlyNode')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Expand' })
+      ).not.toBeInTheDocument()
     })
 
-    it('emits locateNode when Locate button is clicked', async () => {
-      const wrapper = mountRow({ showNodeIdBadge: true })
-      await expand(wrapper)
-      await wrapper
-        .get('button[aria-label="Locate node on canvas"]')
-        .trigger('click')
-      expect(wrapper.emitted('locateNode')).toBeTruthy()
-      expect(wrapper.emitted('locateNode')?.[0]).toEqual(['10'])
+    it('emits locateNode when the pack label is clicked for one nodeType', async () => {
+      const { user, onLocateNode } = renderRow({
+        group: makeGroup({
+          nodeTypes: [{ type: 'OnlyNode', nodeId: '100', isReplaceable: false }]
+        })
+      })
+
+      await user.click(screen.getByRole('button', { name: 'my-pack' }))
+
+      expect(onLocateNode).toHaveBeenCalledWith('100')
     })
 
-    it('does not show Locate for nodeType without nodeId', async () => {
-      const wrapper = mountRow({
+    it('moves locate to the header when there is one nodeType', async () => {
+      const { user, onLocateNode } = renderRow({
+        group: makeGroup({
+          nodeTypes: [{ type: 'OnlyNode', nodeId: '100', isReplaceable: false }]
+        })
+      })
+
+      await user.click(
+        screen.getByRole('button', { name: 'Locate node on canvas' })
+      )
+
+      expect(onLocateNode).toHaveBeenCalledWith('100')
+    })
+
+    it('emits locateNode when expanded child Locate button is clicked', async () => {
+      const { user, onLocateNode } = renderRow()
+      await user.click(screen.getByRole('button', { name: 'Expand' }))
+
+      await user.click(
+        screen.getAllByRole('button', { name: 'Locate node on canvas' })[0]
+      )
+
+      expect(onLocateNode).toHaveBeenCalledWith('10')
+    })
+
+    it('emits locateNode when node label is clicked', async () => {
+      const { user, onLocateNode } = renderRow()
+      await user.click(screen.getByRole('button', { name: 'Expand' }))
+      await user.click(screen.getByRole('button', { name: 'MissingA' }))
+      expect(onLocateNode).toHaveBeenCalledWith('10')
+    })
+
+    it('does not show Locate for nodeType without nodeId', () => {
+      renderRow({
         group: makeGroup({
           nodeTypes: [{ type: 'NoId', isReplaceable: false } as never]
         })
       })
-      await expand(wrapper)
       expect(
-        wrapper.find('button[aria-label="Locate node on canvas"]').exists()
-      ).toBe(false)
+        screen.queryByRole('button', { name: 'Locate node on canvas' })
+      ).not.toBeInTheDocument()
     })
 
     it('handles mixed nodeTypes with and without nodeId', async () => {
-      const wrapper = mountRow({
-        showNodeIdBadge: true,
+      const { user } = renderRow({
         group: makeGroup({
           nodeTypes: [
             { type: 'WithId', nodeId: '100', isReplaceable: false },
@@ -255,11 +308,11 @@ describe('MissingPackGroupRow', () => {
           ]
         })
       })
-      await expand(wrapper)
-      expect(wrapper.text()).toContain('WithId')
-      expect(wrapper.text()).toContain('WithoutId')
+      await user.click(screen.getByRole('button', { name: 'Expand' }))
+      expect(screen.getByText('WithId')).toBeInTheDocument()
+      expect(screen.getByText('WithoutId')).toBeInTheDocument()
       expect(
-        wrapper.findAll('button[aria-label="Locate node on canvas"]')
+        screen.getAllByRole('button', { name: 'Locate node on canvas' })
       ).toHaveLength(1)
     })
   })
@@ -267,102 +320,107 @@ describe('MissingPackGroupRow', () => {
   describe('Manager Integration', () => {
     it('hides install UI when shouldShowManagerButtons is false', () => {
       mockShouldShowManagerButtons.value = false
-      const wrapper = mountRow()
-      expect(wrapper.text()).not.toContain('Install node pack')
+      renderRow()
+      expect(
+        screen.queryByRole('button', { name: 'Install' })
+      ).not.toBeInTheDocument()
     })
 
     it('hides install UI when packId is null', () => {
       mockShouldShowManagerButtons.value = true
-      const wrapper = mountRow({ group: makeGroup({ packId: null }) })
-      expect(wrapper.text()).not.toContain('Install node pack')
+      renderRow({ group: makeGroup({ packId: null }) })
+      expect(
+        screen.queryByRole('button', { name: 'Install' })
+      ).not.toBeInTheDocument()
     })
 
-    it('shows "Search in Node Manager" when packId exists but pack not in registry', () => {
+    it('shows Search when packId exists but pack not in registry', () => {
       mockShouldShowManagerButtons.value = true
       mockIsPackInstalled.mockReturnValue(false)
       mockMissingNodePacks.value = []
-      const wrapper = mountRow()
-      expect(wrapper.text()).toContain('Search in Node Manager')
+      renderRow()
+      expect(screen.getByRole('button', { name: 'Search' })).toBeInTheDocument()
     })
 
     it('shows "Installed" state when pack is installed', () => {
       mockShouldShowManagerButtons.value = true
       mockIsPackInstalled.mockReturnValue(true)
       mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
-      const wrapper = mountRow()
-      expect(wrapper.text()).toContain('Installed')
+      renderRow()
+      expect(screen.getByText('Installed')).toBeInTheDocument()
     })
 
     it('shows spinner when installing', () => {
       mockShouldShowManagerButtons.value = true
       mockIsInstalling.value = true
       mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
-      const wrapper = mountRow()
-      expect(wrapper.find('[role="status"]').exists()).toBe(true)
+      renderRow()
+      expect(screen.getByRole('status')).toBeInTheDocument()
     })
 
     it('shows install button when not installed and pack found', () => {
       mockShouldShowManagerButtons.value = true
       mockIsPackInstalled.mockReturnValue(false)
       mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
-      const wrapper = mountRow()
-      expect(wrapper.text()).toContain('Install node pack')
+      renderRow()
+      expect(
+        screen.getByRole('button', { name: 'Install' })
+      ).toBeInTheDocument()
     })
 
     it('calls installAllPacks when Install button is clicked', async () => {
       mockShouldShowManagerButtons.value = true
       mockIsPackInstalled.mockReturnValue(false)
       mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
-      const wrapper = mountRow()
-      await wrapper.get('button:not([aria-label])').trigger('click')
+      const { user } = renderRow()
+      await user.click(screen.getByRole('button', { name: 'Install' }))
       expect(mockInstallAllPacks).toHaveBeenCalledOnce()
     })
 
     it('shows loading spinner when registry is loading', () => {
       mockShouldShowManagerButtons.value = true
       mockIsLoading.value = true
-      const wrapper = mountRow()
-      expect(wrapper.find('[role="status"]').exists()).toBe(true)
+      renderRow()
+      expect(screen.getByRole('status')).toBeInTheDocument()
     })
   })
 
   describe('Info Button', () => {
     it('shows Info button when showInfoButton true and packId not null', () => {
-      const wrapper = mountRow({ showInfoButton: true })
+      renderRow({ showInfoButton: true })
       expect(
-        wrapper.find('button[aria-label="View in Manager"]').exists()
-      ).toBe(true)
+        screen.getByRole('button', { name: 'View in Manager' })
+      ).toBeInTheDocument()
     })
 
     it('hides Info button when showInfoButton is false', () => {
-      const wrapper = mountRow({ showInfoButton: false })
+      renderRow({ showInfoButton: false })
       expect(
-        wrapper.find('button[aria-label="View in Manager"]').exists()
-      ).toBe(false)
+        screen.queryByRole('button', { name: 'View in Manager' })
+      ).not.toBeInTheDocument()
     })
 
     it('hides Info button when packId is null', () => {
-      const wrapper = mountRow({
+      renderRow({
         showInfoButton: true,
         group: makeGroup({ packId: null })
       })
       expect(
-        wrapper.find('button[aria-label="View in Manager"]').exists()
-      ).toBe(false)
+        screen.queryByRole('button', { name: 'View in Manager' })
+      ).not.toBeInTheDocument()
     })
 
     it('emits openManagerInfo when Info button is clicked', async () => {
-      const wrapper = mountRow({ showInfoButton: true })
-      await wrapper.get('button[aria-label="View in Manager"]').trigger('click')
-      expect(wrapper.emitted('openManagerInfo')).toBeTruthy()
-      expect(wrapper.emitted('openManagerInfo')?.[0]).toEqual(['my-pack'])
+      const { user, onOpenManagerInfo } = renderRow({ showInfoButton: true })
+      await user.click(screen.getByRole('button', { name: 'View in Manager' }))
+      expect(onOpenManagerInfo).toHaveBeenCalledWith('my-pack')
     })
   })
 
   describe('Edge Cases', () => {
     it('handles empty nodeTypes array', () => {
-      const wrapper = mountRow({ group: makeGroup({ nodeTypes: [] }) })
-      expect(wrapper.text()).toContain('(0)')
+      renderRow({ group: makeGroup({ nodeTypes: [] }) })
+      expect(screen.getByText('0')).toBeInTheDocument()
     })
   })
 })

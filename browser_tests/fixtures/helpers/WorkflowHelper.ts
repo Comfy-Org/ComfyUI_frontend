@@ -1,13 +1,15 @@
 import { readFileSync } from 'fs'
 
-import type { AppMode } from '../../../src/composables/useAppMode'
+import { test } from '@playwright/test'
+
+import type { AppMode } from '@/composables/useAppMode'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
-} from '../../../src/platform/workflow/validation/schemas/workflowSchema'
-import type { WorkspaceStore } from '../../types/globals'
-import type { ComfyPage } from '../ComfyPage'
-import { assetPath } from '../utils/paths'
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { WorkspaceStore } from '@e2e/types/globals'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 type FolderStructure = {
   [key: string]: FolderStructure | string
@@ -58,11 +60,69 @@ export class WorkflowHelper {
     await this.comfyPage.nextFrame()
   }
 
+  async waitForDraftPersisted() {
+    await this.comfyPage.page.waitForFunction(() =>
+      Object.keys(localStorage).some((key) =>
+        key.startsWith('Comfy.Workflow.Draft.v2:')
+      )
+    )
+  }
+
+  /** Waits for V2 draft index recency, not payload content freshness. */
+  async waitForDraftIndexUpdatedSince(updatedSince: number) {
+    await this.comfyPage.page.waitForFunction((indexUpdatedSince) => {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i)
+        if (!key?.startsWith('Comfy.Workflow.DraftIndex.v2:')) continue
+
+        const json = window.localStorage.getItem(key)
+        if (!json) continue
+
+        try {
+          const index = JSON.parse(json)
+          if (
+            typeof index.updatedAt === 'number' &&
+            index.updatedAt >= indexUpdatedSince
+          ) {
+            return true
+          }
+        } catch {
+          // Ignore malformed storage while waiting for persistence.
+        }
+      }
+
+      return false
+    }, updatedSince)
+  }
+
+  /**
+   * Reloads the current page and waits for the app to initialize.
+   * Unlike ComfyPage.setup(), this preserves localStorage (drafts) and
+   * the URL hash (subgraph navigation state), so the app restores
+   * exactly where the user left off.
+   */
+  async reloadAndWaitForApp() {
+    await this.comfyPage.page.reload({ waitUntil: 'domcontentloaded' })
+    await this.comfyPage.waitForAppReady()
+  }
+
+  async loadGraphData(workflow: ComfyWorkflowJSON): Promise<void> {
+    await this.comfyPage.page.evaluate(
+      (wf) => window.app!.loadGraphData(wf),
+      workflow
+    )
+    await this.comfyPage.nextFrame()
+  }
+
   async loadWorkflow(workflowName: string) {
     await this.comfyPage.workflowUploadInput.setInputFiles(
       assetPath(`${workflowName}.json`)
     )
+    await this.waitForWorkflowIdle()
     await this.comfyPage.nextFrame()
+    if (test.info().tags.includes('@vue-nodes')) {
+      await this.comfyPage.vueNodes.waitForNodes()
+    }
   }
 
   async deleteWorkflow(
@@ -104,6 +164,14 @@ export class WorkflowHelper {
         .activeWorkflow
       return workflow?.changeTracker.redoQueue.length
     })
+  }
+
+  async waitForActiveWorkflow(): Promise<void> {
+    await this.comfyPage.page.waitForFunction(
+      () =>
+        (window.app!.extensionManager as WorkspaceStore).workflow
+          .activeWorkflow !== null
+    )
   }
 
   async getActiveWorkflowPath(): Promise<string | undefined> {
@@ -155,6 +223,11 @@ export class WorkflowHelper {
       undefined,
       { timeout }
     )
+  }
+
+  async switchToTab(tabName: string): Promise<void> {
+    await this.comfyPage.menu.topbar.getWorkflowTab(tabName).click()
+    await this.waitForWorkflowIdle()
   }
 
   async getExportedWorkflow(options: { api: true }): Promise<ComfyApiWorkflow>

@@ -89,7 +89,7 @@ import {
   useQueueSettingsStore
 } from '@/stores/queueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'
 
 const workspaceStore = useWorkspaceStore()

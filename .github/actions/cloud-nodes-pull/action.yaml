@@ -1,0 +1,19 @@
+name: Cloud Nodes Pull
+description: 'Refresh the apps/website cloud nodes snapshot from the Comfy Cloud /api/object_info endpoint'
+inputs:
+  api_key:
+    description: 'Comfy Cloud API key (WEBSITE_CLOUD_API_KEY).'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    # Note: this action assumes the frontend repo is checked out at the workspace root.
+
+    - name: Setup frontend
+      uses: ./.github/actions/setup-frontend
+
+    - name: Refresh cloud nodes snapshot
+      shell: bash
+      env:
+        WEBSITE_CLOUD_API_KEY: ${{ inputs.api_key }}
+      run: pnpm --filter @comfyorg/website cloud-nodes:refresh-snapshot

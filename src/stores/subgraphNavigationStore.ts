@@ -2,15 +2,21 @@ import QuickLRU from '@alloc/quick-lru'
 import { useRouteHash } from '@vueuse/router'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import {
+  NavigationFailureType,
+  isNavigationFailure,
+  useRouter
+} from 'vue-router'
 
 import type { DragAndScaleState } from '@/lib/litegraph/src/DragAndScale'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLitegraphService } from '@/services/litegraphService'
+import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
+import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { app } from '@/scripts/app'
+import { useLitegraphService } from '@/services/litegraphService'
 import { findSubgraphPathById } from '@/utils/graphTraversalUtil'
 import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
 
@@ -138,12 +144,17 @@ export const useSubgraphNavigationStore = defineStore(
         return
       }
 
-      // Cache miss — fit to content after the canvas has the new graph.
-      // rAF fires after layout + paint, when nodes are positioned.
-      const expectedGraphId = graphId
+      // First visit — fit to content so subgraph nodes are visible
       requestAnimationFrame(() => {
-        if (getActiveGraphId() !== expectedGraphId) return
+        if (getActiveGraphId() !== graphId) return
+        if (!canvas.graph?.nodes?.length) return
         useLitegraphService().fitView()
+        // fitView changes scale/offset, so re-sync slot positions for
+        // collapsed nodes whose DOM-relative measurement is now stale.
+        requestAnimationFrame(() => {
+          if (getActiveGraphId() !== graphId) return
+          requestSlotLayoutSyncForAllNodes()
+        })
       })
     }
 
@@ -194,20 +205,64 @@ export const useSubgraphNavigationStore = defineStore(
       { flush: 'sync' }
     )
 
-    //Allow navigation with forward/back buttons
-    let blockHashUpdate = false
+    // Counter so nested/overlapping async navigations don't release
+    // suppression early; gates both the canvasStore.currentGraph watcher
+    // (updateHash) and the routeHash watcher to prevent re-entrant
+    // navigateToHash calls during router.replace().
+    let blockNavDepth = 0
     let initialLoad = true
+
+    async function withNavBlocked<T>(op: () => Promise<T>): Promise<T> {
+      blockNavDepth++
+      try {
+        return await op()
+      } finally {
+        blockNavDepth--
+      }
+    }
+
+    function ensureCanvasOnRoot() {
+      const root = app.rootGraph
+      const canvas = canvasStore.getCanvas()
+      if (!root || !canvas) return
+      if (canvas.graph?.id !== root.id) canvas.setGraph(root)
+    }
+
+    async function redirectToRoot(reason: string) {
+      const root = app.rootGraph
+      console.warn(`[subgraphNavigation] ${reason}; redirecting to root graph`)
+      try {
+        await withNavBlocked(() => router.replace('#' + root.id))
+      } catch (err) {
+        if (
+          !isNavigationFailure(err, NavigationFailureType.duplicated) &&
+          !isNavigationFailure(err, NavigationFailureType.cancelled)
+        ) {
+          console.warn(
+            '[subgraphNavigation] router.replace rejected during recovery',
+            err
+          )
+        }
+      } finally {
+        ensureCanvasOnRoot()
+      }
+    }
 
     async function navigateToHash(newHash: string) {
       const root = app.rootGraph
       const locatorId = newHash?.slice(1) || root.id
       const canvas = canvasStore.getCanvas()
-      if (canvas.graph?.id === locatorId) return
-      const targetGraph =
-        (locatorId || root.id) !== root.id
+
+      const isRoot = locatorId === root.id
+      const targetGraph = isRoot
+        ? root
+        : isUuidShapedSubgraphId(locatorId)
           ? root.subgraphs.get(locatorId)
-          : root
-      if (targetGraph) return canvas.setGraph(targetGraph)
+          : undefined
+      if (targetGraph) {
+        if (canvas.graph?.id === targetGraph.id) return
+        return canvas.setGraph(targetGraph)
+      }
 
       //Search all open workflows
       for (const workflow of workflowStore.openWorkflows) {
@@ -216,29 +271,48 @@ export const useSubgraphNavigationStore = defineStore(
         const subgraphs = activeState.definitions?.subgraphs ?? []
         for (const graph of [activeState, ...subgraphs]) {
           if (graph.id !== locatorId) continue
-          //This will trigger a navigation, which can break forward history
+          // This will trigger a navigation, which can break forward history.
+          // After openWorkflow resolves, app.rootGraph has been swapped, so we
+          // intentionally re-read app.rootGraph below instead of using the
+          // `root` captured at function entry.
           try {
-            blockHashUpdate = true
-            await useWorkflowService().openWorkflow(workflow)
-          } finally {
-            blockHashUpdate = false
+            await withNavBlocked(() =>
+              useWorkflowService().openWorkflow(workflow)
+            )
+          } catch (err) {
+            console.warn(
+              '[subgraphNavigation] openWorkflow rejected during recovery',
+              err
+            )
+            return redirectToRoot('workflow load failed')
           }
-          const targetGraph =
+          const loadedGraph =
             app.rootGraph.id === locatorId
               ? app.rootGraph
               : app.rootGraph.subgraphs.get(locatorId)
-          if (!targetGraph) {
-            console.error('subgraph poofed after load?')
-            return
+          if (!loadedGraph) {
+            return redirectToRoot('subgraph not found after workflow load')
           }
+          if (canvas.graph?.id === loadedGraph.id) return
+          return canvas.setGraph(loadedGraph)
+        }
+      }
 
-          return canvas.setGraph(targetGraph)
+      await redirectToRoot(`subgraph not found: ${locatorId}`)
+    }
+
+    async function safeRouterCall(op: () => Promise<unknown>, label: string) {
+      try {
+        await op()
+      } catch (err) {
+        if (!isNavigationFailure(err, NavigationFailureType.duplicated)) {
+          console.warn(`[subgraphNavigation] ${label} rejected`, err)
         }
       }
     }
 
     async function updateHash() {
-      if (blockHashUpdate) return
+      if (blockNavDepth > 0) return
       if (initialLoad) {
         initialLoad = false
         if (!routeHash.value) return
@@ -249,16 +323,22 @@ export const useSubgraphNavigationStore = defineStore(
       }
 
       const newId = canvasStore.getCanvas().graph?.id ?? ''
-      if (!routeHash.value) await router.replace('#' + app.rootGraph.id)
+      if (!routeHash.value) {
+        await safeRouterCall(
+          () => router.replace('#' + app.rootGraph.id),
+          'router.replace'
+        )
+      }
       const currentId = routeHash.value?.slice(1)
       if (!newId || newId === currentId) return
 
-      await router.push('#' + newId)
+      await safeRouterCall(() => router.push('#' + newId), 'router.push')
     }
-    //update navigation hash
-    //NOTE: Doesn't apply on workflow load
     watch(() => canvasStore.currentGraph, updateHash)
-    watch(routeHash, () => navigateToHash(String(routeHash.value)))
+    watch(routeHash, () => {
+      if (blockNavDepth > 0) return
+      void navigateToHash(String(routeHash.value))
+    })
 
     /** Save the current viewport for the active graph/workflow. Called by
      *  workflowService.beforeLoadNewGraph() before the canvas is overwritten. */

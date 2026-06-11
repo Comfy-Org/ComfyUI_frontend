@@ -50,7 +50,11 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
       </p>
     </div>
     <template v-else>
-      <p v-if="!hasNodes" class="mt-0 max-w-md text-sm text-base-foreground">
+      <p
+        v-if="!hasNodes"
+        data-testid="linear-welcome-empty-workflow"
+        class="mt-0 max-w-md text-sm text-base-foreground"
+      >
         {{ t('linearMode.emptyWorkflowExplanation') }}
       </p>
       <p
@@ -66,11 +70,17 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
         </i18n-t>
       </p>
       <div class="flex flex-row gap-2">
-        <Button variant="textonly" size="lg" @click="setMode('graph')">
+        <Button
+          data-testid="linear-welcome-back-to-workflow"
+          variant="textonly"
+          size="lg"
+          @click="setMode('graph')"
+        >
           {{ t('linearMode.backToWorkflow') }}
         </Button>
         <Button
           v-if="!hasNodes"
+          data-testid="linear-welcome-load-template"
           variant="secondary"
           size="lg"
           @click="templateSelectorDialog.show('appbuilder')"
@@ -79,6 +89,7 @@ const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
         </Button>
         <Button
           v-else
+          data-testid="linear-welcome-build-app"
           variant="primary"
           size="lg"
           @click="appModeStore.enterBuilder()"

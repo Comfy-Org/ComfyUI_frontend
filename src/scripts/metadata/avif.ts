@@ -1,3 +1,7 @@
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   type AvifIinfBox,
   type AvifIlocBox,
@@ -6,6 +10,7 @@ import {
   ComfyMetadataTags,
   type IsobmffBoxContentRange
 } from '@/types/metadataTypes'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const readNullTerminatedString = (
   dataView: DataView,
@@ -281,7 +286,10 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
       if (typeof value === 'string') {
         if (key === 'usercomment') {
           try {
-            const metadataJson = JSON.parse(value)
+            const metadataJson = parseJsonWithNonFinite<{
+              prompt?: ComfyApiWorkflow
+              workflow?: ComfyWorkflowJSON
+            }>(value)
             if (metadataJson.prompt) {
               metadata[ComfyMetadataTags.PROMPT] = metadataJson.prompt
             }
@@ -301,7 +309,9 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
               ComfyMetadataTags.WORKFLOW.toLowerCase()
           ) {
             try {
-              const jsonValue = JSON.parse(metadataValue)
+              const jsonValue = parseJsonWithNonFinite<
+                ComfyApiWorkflow | ComfyWorkflowJSON
+              >(metadataValue)
               metadata[metadataKey.toLowerCase() as keyof ComfyMetadata] =
                 jsonValue
             } catch (e) {
@@ -407,6 +417,7 @@ export function getFromAvifFile(file: File): Promise<Record<string, string>> {
       console.error('FileReader: Error reading AVIF file:', err)
       resolve({})
     }
+    reader.onabort = () => resolve({})
     reader.readAsArrayBuffer(file)
   })
 }

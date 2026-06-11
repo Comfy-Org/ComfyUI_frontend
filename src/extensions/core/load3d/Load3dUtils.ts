@@ -89,6 +89,15 @@ class Load3dUtils {
     return uploadPath
   }
 
+  static getFilenameExtension(url: string): string | undefined {
+    const queryString = url.split('?')[1]
+    if (queryString) {
+      const filename = new URLSearchParams(queryString).get('filename')
+      if (filename) return filename.split('.').pop()?.toLowerCase()
+    }
+    return url.split('?')[0].split('.').pop()?.toLowerCase()
+  }
+
   static splitFilePath(path: string): [string, string] {
     const folder_separator = path.lastIndexOf('/')
     if (folder_separator === -1) {
@@ -121,6 +130,19 @@ class Load3dUtils {
     )
 
     await Promise.all(uploadPromises)
+  }
+
+  static mapSceneLightIntensityToHdri(
+    sceneIntensity: number,
+    sceneMin: number,
+    sceneMax: number
+  ): number {
+    const span = sceneMax - sceneMin
+    const t = span > 0 ? (sceneIntensity - sceneMin) / span : 0
+    const clampedT = Math.min(1, Math.max(0, t))
+    const mapped = clampedT * 5
+    const minHdri = 0.25
+    return Math.min(5, Math.max(minHdri, mapped))
   }
 }
 

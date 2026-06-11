@@ -1,23 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from '../../layout'
-import type { FormDropdownItem } from './types'
-
-interface Props {
-  isOpen?: boolean
-  placeholder?: string
-  items: FormDropdownItem[]
-  /** Items used for display in the input field. Falls back to items if not provided. */
-  displayItems?: FormDropdownItem[]
-  selected: Set<string>
-  maxSelectable: number
-  uploadable: boolean
-  disabled: boolean
-  accept?: string
-}
+import type { FormDropdownInputProps } from './types'
 
 const {
   isOpen,
@@ -29,7 +17,9 @@ const {
   uploadable,
   disabled,
   accept
-} = defineProps<Props>()
+} = defineProps<FormDropdownInputProps>()
+
+const { t } = useI18n()
 
 const emit = defineEmits<{
   (e: 'select-click', event: MouseEvent): void
@@ -50,6 +40,14 @@ const theButtonStyle = computed(() =>
     selectedItems.value.length > 0 && 'text-text-primary'
   )
 )
+
+const buttonRef = ref<HTMLButtonElement>()
+
+function focus() {
+  buttonRef.value?.focus()
+}
+
+defineExpose({ focus })
 </script>
 
 <template>
@@ -61,6 +59,7 @@ const theButtonStyle = computed(() =>
     "
   >
     <button
+      ref="buttonRef"
       :class="
         cn(
           theButtonStyle,
@@ -101,10 +100,11 @@ const theButtonStyle = computed(() =>
         )
       "
     >
-      <i class="icon-[lucide--folder-search] size-4" />
+      <i class="icon-[lucide--folder-search] size-4" aria-hidden="true" />
       <input
         type="file"
         class="absolute inset-0 -z-1 opacity-0"
+        :aria-label="t('g.upload')"
         :multiple="maxSelectable > 1"
         :disabled="disabled"
         :accept="accept"

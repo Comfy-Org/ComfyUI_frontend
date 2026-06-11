@@ -49,10 +49,10 @@ describe('setWorkflowDefaultView', () => {
     expect(app.rootGraph.extra.linearMode).toBe(false)
   })
 
-  it('calls changeTracker.checkState', () => {
+  it('calls changeTracker.captureCanvasState', () => {
     const workflow = createMockLoadedWorkflow()
     setWorkflowDefaultView(workflow, true)
-    expect(workflow.changeTracker.checkState).toHaveBeenCalledOnce()
+    expect(workflow.changeTracker.captureCanvasState).toHaveBeenCalledOnce()
   })
 
   it('tracks telemetry with correct default_view', () => {

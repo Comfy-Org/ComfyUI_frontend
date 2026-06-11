@@ -5,7 +5,7 @@ import path from 'node:path'
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '../fixtures/ComfyPage'
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 const TEST_PRESET = {
   name: 'test-preset',
@@ -79,9 +79,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     await expect(presetTrigger).toContainText('test-preset')
 
     // Wait for toast to auto-dismiss, then close settings via Escape
-    await expect(comfyPage.toast.visibleToasts).toHaveCount(0, {
-      timeout: 5000
-    })
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
     await page.keyboard.press('Escape')
     await comfyPage.settingDialog.waitForHidden()
 
@@ -133,9 +131,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     await expect(presetTrigger).toContainText('test-preset')
 
     // Wait for toast to auto-dismiss
-    await expect(comfyPage.toast.visibleToasts).toHaveCount(0, {
-      timeout: 5000
-    })
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
 
     // Export via ellipsis menu
     await menuButton.click()
@@ -183,9 +179,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     await expect(presetTrigger).toContainText('test-preset')
 
     // Wait for toast to auto-dismiss
-    await expect(comfyPage.toast.visibleToasts).toHaveCount(0, {
-      timeout: 5000
-    })
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
 
     // Delete via ellipsis menu
     await menuButton.click()
@@ -223,9 +217,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     await expect(presetTrigger).toContainText('test-preset')
 
     // Wait for toast to auto-dismiss
-    await expect(comfyPage.toast.visibleToasts).toHaveCount(0, {
-      timeout: 5000
-    })
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
 
     // Save as new preset via ellipsis menu
     await menuButton.click()
@@ -237,9 +229,7 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     await promptInput.press('Enter')
 
     // Wait for toast to auto-dismiss
-    await expect(comfyPage.toast.visibleToasts).toHaveCount(0, {
-      timeout: 5000
-    })
+    await expect(comfyPage.toast.visibleToasts).toHaveCount(0)
 
     // Verify preset trigger shows my-custom-preset
     await expect(presetTrigger).toContainText('my-custom-preset')

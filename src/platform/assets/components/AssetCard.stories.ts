@@ -17,7 +17,6 @@ const createAssetData = (
     { label: '2.1 GB', type: 'size' }
   ],
   stats: {
-    formattedDate: '3/15/25',
     downloadCount: '1.8k',
     stars: '4.2k'
   },
@@ -147,8 +146,7 @@ export const EdgeCases: Story = {
           name: 'No Stars',
           secondaryText: 'Testing missing stars data gracefully',
           stats: {
-            downloadCount: '1.8k',
-            formattedDate: '3/15/25'
+            downloadCount: '1.8k'
           }
         }),
         // No downloads
@@ -157,8 +155,7 @@ export const EdgeCases: Story = {
           name: 'No Downloads',
           secondaryText: 'Testing missing downloads data gracefully',
           stats: {
-            stars: '4.2k',
-            formattedDate: '3/15/25'
+            stars: '4.2k'
           }
         }),
         // No date

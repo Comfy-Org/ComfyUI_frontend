@@ -41,7 +41,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { supportsWorkflowMetadata } from '@/platform/workflow/utils/workflowExtractionUtil'
 import { isPreviewableMediaType } from '@/utils/formatUtil'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
@@ -217,7 +217,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
   items.push({
     label: t('mediaAsset.actions.download'),
     icon: 'icon-[lucide--download]',
-    command: () => actions.downloadAsset(asset)
+    command: () => actions.downloadAssets([asset])
   })
 
   // Separator before workflow actions (only if there are workflow actions)

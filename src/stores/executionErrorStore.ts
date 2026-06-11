@@ -52,7 +52,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     isErrorOverlayOpen.value = false
   }
 
-  /** Clear all error state. Called at execution start and workflow changes.
+  /** Clear all error state.
    *  Missing model state is intentionally preserved here to avoid wiping
    *  in-progress model repairs (importTaskIds, URL inputs, etc.).
    *  Missing models are cleared separately during workflow load/clean paths. */
@@ -62,6 +62,17 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     lastNodeErrors.value = null
     missingNodesStore.setMissingNodeTypes([])
     isErrorOverlayOpen.value = false
+  }
+
+  function clearExecutionStartErrors() {
+    lastExecutionError.value = null
+    lastPromptError.value = null
+    if (
+      !lastNodeErrors.value ||
+      Object.keys(lastNodeErrors.value).length === 0
+    ) {
+      isErrorOverlayOpen.value = false
+    }
   }
 
   /** Clear only prompt-level errors. Called during resetExecutionState. */
@@ -141,8 +152,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * Clears both validation errors and missing model state for a widget.
    *
    * @param errorInputName Name matched against `error.extra_info.input_name`.
-   *   For promoted subgraph widgets this is the subgraph input slot name
-   *   (`widget.slotName`), which differs from the interior widget name.
+   *   For promoted subgraph widgets this is the resolved interior widget name.
    * @param widgetName The actual widget name, used for missing model lookup.
    *   At the legacy canvas call site both names are identical (`widget.name`).
    */
@@ -163,10 +173,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     missingMediaStore.removeMissingMediaByWidget(executionId, widgetName)
   }
 
-  /** Set missing models and open the error overlay if the Errors tab is enabled. */
-  function surfaceMissingModels(models: MissingModelCandidate[]) {
+  /** Set missing models and optionally open the error overlay. */
+  function surfaceMissingModels(
+    models: MissingModelCandidate[],
+    options?: { silent?: boolean }
+  ) {
     missingModelStore.setMissingModels(models)
     if (
+      !options?.silent &&
       models.length &&
       useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
     ) {
@@ -174,10 +188,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     }
   }
 
-  /** Set missing media and open the error overlay if the Errors tab is enabled. */
-  function surfaceMissingMedia(media: MissingMediaCandidate[]) {
+  /** Set missing media and optionally open the error overlay. */
+  function surfaceMissingMedia(
+    media: MissingMediaCandidate[],
+    options?: { silent?: boolean }
+  ) {
     missingMediaStore.setMissingMedia(media)
     if (
+      !options?.silent &&
       media.length &&
       useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
     ) {
@@ -353,6 +371,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
     // Clearing
     clearAllErrors,
+    clearExecutionStartErrors,
     clearPromptError,
 
     // Overlay UI

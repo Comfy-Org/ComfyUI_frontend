@@ -1,4 +1,5 @@
-import { mount } from '@vue/test-utils'
+import { render, screen, fireEvent } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -72,14 +73,14 @@ const i18n = createI18n({
 
 const MODEL_KEY = 'supported::checkpoints::model.safetensors'
 
-function mountComponent(
+function renderComponent(
   props: Partial<{
     modelKey: string
     directory: string | null
     typeMismatch: string | null
   }> = {}
 ) {
-  return mount(MissingModelUrlInput, {
+  return render(MissingModelUrlInput, {
     props: {
       modelKey: MODEL_KEY,
       directory: 'checkpoints',
@@ -104,24 +105,25 @@ describe('MissingModelUrlInput', () => {
   describe('URL input is always editable', () => {
     it('input is editable when privateModelsEnabled is true', () => {
       mockPrivateModelsEnabled.value = true
-      const wrapper = mountComponent()
-      const input = wrapper.find('input')
-      expect(input.attributes('readonly')).toBeUndefined()
+      renderComponent()
+      const input = screen.getByRole('textbox')
+      expect(input).not.toHaveAttribute('readonly')
     })
 
     it('input is editable when privateModelsEnabled is false (free tier)', () => {
       mockPrivateModelsEnabled.value = false
-      const wrapper = mountComponent()
-      const input = wrapper.find('input')
-      expect(input.attributes('readonly')).toBeUndefined()
+      renderComponent()
+      const input = screen.getByRole('textbox')
+      expect(input).not.toHaveAttribute('readonly')
     })
 
     it('input accepts user typing when privateModelsEnabled is false', async () => {
       mockPrivateModelsEnabled.value = false
-      const wrapper = mountComponent()
-      const input = wrapper.find('input')
-      input.element.value = 'https://example.com/model.safetensors'
-      await input.trigger('input')
+      renderComponent()
+      const input = screen.getByRole('textbox') as HTMLInputElement
+      input.value = 'https://example.com/model.safetensors'
+      // eslint-disable-next-line testing-library/prefer-user-event
+      await fireEvent.input(input)
       expect(mockHandleUrlInput).toHaveBeenCalledWith(
         MODEL_KEY,
         'https://example.com/model.safetensors'
@@ -132,6 +134,7 @@ describe('MissingModelUrlInput', () => {
   describe('Import button gates on subscription', () => {
     it('calls handleImport when privateModelsEnabled is true', async () => {
       mockPrivateModelsEnabled.value = true
+      const user = userEvent.setup()
       const store = useMissingModelStore()
       store.urlMetadata[MODEL_KEY] = {
         filename: 'model.safetensors',
@@ -139,12 +142,10 @@ describe('MissingModelUrlInput', () => {
         final_url: 'https://example.com/model.safetensors'
       }
 
-      const wrapper = mountComponent()
-      const importBtn = wrapper
-        .findAll('button')
-        .find((b) => b.text().includes('Import'))
-      expect(importBtn).toBeTruthy()
-      await importBtn!.trigger('click')
+      renderComponent()
+      const importBtn = screen.getByRole('button', { name: /Import/ })
+      expect(importBtn).toBeInTheDocument()
+      await user.click(importBtn)
 
       expect(mockHandleImport).toHaveBeenCalledWith(MODEL_KEY, 'checkpoints')
       expect(mockShowUploadDialog).not.toHaveBeenCalled()
@@ -152,6 +153,7 @@ describe('MissingModelUrlInput', () => {
 
     it('calls showUploadDialog when privateModelsEnabled is false (free tier)', async () => {
       mockPrivateModelsEnabled.value = false
+      const user = userEvent.setup()
       const store = useMissingModelStore()
       store.urlMetadata[MODEL_KEY] = {
         filename: 'model.safetensors',
@@ -159,12 +161,10 @@ describe('MissingModelUrlInput', () => {
         final_url: 'https://example.com/model.safetensors'
       }
 
-      const wrapper = mountComponent()
-      const importBtn = wrapper
-        .findAll('button')
-        .find((b) => b.text().includes('Import'))
-      expect(importBtn).toBeTruthy()
-      await importBtn!.trigger('click')
+      renderComponent()
+      const importBtn = screen.getByRole('button', { name: /Import/ })
+      expect(importBtn).toBeInTheDocument()
+      await user.click(importBtn)
 
       expect(mockShowUploadDialog).toHaveBeenCalled()
       expect(mockHandleImport).not.toHaveBeenCalled()
@@ -172,11 +172,12 @@ describe('MissingModelUrlInput', () => {
 
     it('clear button works for free-tier users', async () => {
       mockPrivateModelsEnabled.value = false
+      const user = userEvent.setup()
       const store = useMissingModelStore()
       store.urlInputs[MODEL_KEY] = 'https://example.com/model.safetensors'
-      const wrapper = mountComponent()
-      const clearBtn = wrapper.find('button[aria-label="Clear URL"]')
-      await clearBtn.trigger('click')
+      renderComponent()
+      const clearBtn = screen.getByRole('button', { name: 'Clear URL' })
+      await user.click(clearBtn)
       expect(mockHandleUrlInput).toHaveBeenCalledWith(MODEL_KEY, '')
     })
   })

@@ -1,6 +1,7 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
@@ -27,6 +28,26 @@ function createMockExtensionService(): ReturnType<typeof useExtensionService> {
   } as Partial<ReturnType<typeof useExtensionService>> as ReturnType<
     typeof useExtensionService
   >
+}
+
+const { settingGetMock } = vi.hoisted(() => ({
+  settingGetMock: vi.fn()
+}))
+
+const defaultSettingValues: Record<string, unknown> = {
+  'Comfy.UseNewMenu': 'Top',
+  'Comfy.NodeLibrary.NewDesign': true,
+  'Comfy.Load3D.3DViewerEnable': true
+}
+
+function mockSettingValues(overrides: Record<string, unknown> = {}) {
+  const settingValues = {
+    ...defaultSettingValues,
+    ...overrides
+  }
+  settingGetMock.mockImplementation(
+    (key: string): unknown => settingValues[key] ?? null
+  )
 }
 
 // Mock the composables and services
@@ -79,10 +100,7 @@ vi.mock('@/utils/nodeFilterUtil', () => ({
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
-    get: vi.fn((key: string) => {
-      if (key === 'Comfy.Load3D.3DViewerEnable') return true
-      return null
-    })
+    get: settingGetMock
   })
 }))
 
@@ -128,7 +146,7 @@ describe('SelectionToolbox', () => {
   }
 
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia({ createSpy: vi.fn, stubActions: false }))
     canvasStore = useCanvasStore()
     nodeDefMock = {
       type: 'TestNode',
@@ -139,6 +157,7 @@ describe('SelectionToolbox', () => {
     canvasStore.canvas = createMockCanvas()
 
     vi.resetAllMocks()
+    mockSettingValues()
   })
 
   function renderComponent(props = {}): { container: Element } {
@@ -229,6 +248,42 @@ describe('SelectionToolbox', () => {
       nodeDefMock = null
       const { container } = renderComponent()
       expect(container.querySelector('.info-button')).toBeFalsy()
+    })
+
+    it('should not show info button when legacy menu uses the new node library', () => {
+      mockSettingValues({
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.NodeLibrary.NewDesign': true
+      })
+      canvasStore.selectedItems = [createMockPositionable()]
+
+      const { container } = renderComponent()
+
+      expect(container.querySelector('.info-button')).toBeFalsy()
+    })
+
+    it('should not show info button when legacy menu uses the legacy node library', () => {
+      mockSettingValues({
+        'Comfy.UseNewMenu': 'Disabled',
+        'Comfy.NodeLibrary.NewDesign': false
+      })
+      canvasStore.selectedItems = [createMockPositionable()]
+
+      const { container } = renderComponent()
+
+      expect(container.querySelector('.info-button')).toBeFalsy()
+    })
+
+    it('should show info button when new menu uses the legacy node library', () => {
+      mockSettingValues({
+        'Comfy.UseNewMenu': 'Top',
+        'Comfy.NodeLibrary.NewDesign': false
+      })
+      canvasStore.selectedItems = [createMockPositionable()]
+
+      const { container } = renderComponent()
+
+      expect(container.querySelector('.info-button')).toBeTruthy()
     })
 
     it('should show color picker for all selections', () => {
@@ -417,7 +472,9 @@ describe('SelectionToolbox', () => {
       const forwardEventToCanvasSpy = vi.fn()
       mockCanvasInteractions.mockReturnValue({
         handleWheel: vi.fn(),
-        handlePointer: vi.fn(),
+        handlePointerDown: vi.fn(),
+        handlePointerMove: vi.fn(),
+        handlePointerUp: vi.fn(),
         forwardEventToCanvas: forwardEventToCanvasSpy,
         shouldHandleNodePointerEvents: { value: true } as ReturnType<
           typeof useCanvasInteractions

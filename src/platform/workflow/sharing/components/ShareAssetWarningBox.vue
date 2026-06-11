@@ -58,7 +58,7 @@ import { ref } from 'vue'
 
 import type { AssetInfo } from '@/schemas/apiSchema'
 import AssetSectionList from '@/platform/workflow/sharing/components/AssetSectionList.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 
 const { items } = defineProps<{

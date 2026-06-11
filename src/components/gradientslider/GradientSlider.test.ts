@@ -1,8 +1,10 @@
-import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
-import GradientSlider from './GradientSlider.vue'
+import { render, screen } from '@testing-library/vue'
+
 import type { ColorStop } from '@/lib/litegraph/src/interfaces'
+
+import GradientSlider from './GradientSlider.vue'
 import { interpolateStops, stopsToGradient } from './gradients'
 
 const TEST_STOPS: ColorStop[] = [
@@ -10,40 +12,44 @@ const TEST_STOPS: ColorStop[] = [
   { offset: 1, color: [255, 255, 255] }
 ]
 
-function mountSlider(props: {
+function renderSlider(props: {
   stops?: ColorStop[]
   modelValue: number
   min?: number
   max?: number
   step?: number
 }) {
-  return mount(GradientSlider, {
+  return render(GradientSlider, {
     props: { stops: TEST_STOPS, ...props }
   })
 }
 
 describe('GradientSlider', () => {
-  it('passes min, max, step to SliderRoot', () => {
-    const wrapper = mountSlider({
+  it('passes min and max to SliderRoot', () => {
+    renderSlider({
       modelValue: 50,
       min: -100,
       max: 100,
       step: 5
     })
-    const thumb = wrapper.find('[role="slider"]')
-    expect(thumb.attributes('aria-valuemin')).toBe('-100')
-    expect(thumb.attributes('aria-valuemax')).toBe('100')
+    const thumb = screen.getByRole('slider', { hidden: true })
+    expect(thumb).toBeInTheDocument()
+    expect(thumb).toHaveAttribute('aria-valuemin', '-100')
+    expect(thumb).toHaveAttribute('aria-valuemax', '100')
   })
 
   it('renders slider root with track and thumb', () => {
-    const wrapper = mountSlider({ modelValue: 0 })
-    expect(wrapper.find('[data-slider-impl]').exists()).toBe(true)
-    expect(wrapper.find('[role="slider"]').exists()).toBe(true)
+    const { container } = renderSlider({ modelValue: 0 })
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    expect(container.querySelector('[data-slider-impl]')).toBeInTheDocument()
+    expect(screen.getByRole('slider', { hidden: true })).toBeInTheDocument()
   })
 
   it('does not render SliderRange', () => {
-    const wrapper = mountSlider({ modelValue: 50 })
-    expect(wrapper.find('[data-slot="slider-range"]').exists()).toBe(false)
+    const { container } = renderSlider({ modelValue: 50 })
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const range = container.querySelector('[data-slot="slider-range"]')
+    expect(range).not.toBeInTheDocument()
   })
 })
 

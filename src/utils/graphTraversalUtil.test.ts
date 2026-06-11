@@ -28,8 +28,12 @@ import {
   traverseSubgraphPath,
   triggerCallbackOnAllNodes,
   visitGraphNodes,
-  getExecutionIdByNode
+  getExecutionIdByNode,
+  getExecutionIdForNodeInGraph,
+  isAncestorPathActive,
+  isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 
@@ -639,6 +643,221 @@ describe('graphTraversalUtil', () => {
 
         const execId = getExecutionIdByNode(rootGraph, targetNode)
         expect(execId).toBe('123:456:999')
+      })
+    })
+
+    describe('getExecutionIdForNodeInGraph', () => {
+      it('returns local id when graph is rootGraph', () => {
+        const node = createMockNode('42')
+        const rootGraph = createMockGraph([node])
+        expect(getExecutionIdForNodeInGraph(rootGraph, rootGraph, '42')).toBe(
+          '42'
+        )
+      })
+
+      it('returns local id when graph.isRootGraph is true', () => {
+        const node = createMockNode('42')
+        const rootGraph = createMockGraph([node])
+        const otherRoot = createMockGraph([])
+        expect(getExecutionIdForNodeInGraph(otherRoot, rootGraph, '42')).toBe(
+          '42'
+        )
+      })
+
+      it('builds parentPath:nodeId for a single-level subgraph', () => {
+        const interior = createMockNode('63')
+        const subgraph = createMockSubgraph('sub-uuid', [interior])
+        const subgraphNode = createMockNode('65', {
+          isSubgraph: true,
+          subgraph
+        })
+        const rootGraph = createMockGraph([subgraphNode])
+
+        expect(getExecutionIdForNodeInGraph(rootGraph, subgraph, '63')).toBe(
+          '65:63'
+        )
+      })
+
+      it('builds nested parentPath:nodeId for deeply-nested subgraph', () => {
+        const interior = createMockNode('999')
+        const deep = createMockSubgraph('deep', [interior])
+        const midNode = createMockNode('456', {
+          isSubgraph: true,
+          subgraph: deep
+        })
+        const mid = createMockSubgraph('mid', [midNode])
+        const topNode = createMockNode('123', {
+          isSubgraph: true,
+          subgraph: mid
+        })
+        const rootGraph = createMockGraph([topNode])
+
+        expect(getExecutionIdForNodeInGraph(rootGraph, deep, '999')).toBe(
+          '123:456:999'
+        )
+      })
+
+      it('works when node is detached (node.graph = null)', () => {
+        // This is the primary use case — onNodeRemoved fires after
+        // LiteGraph nulls node.graph, but the hook closure still has
+        // the local graph instance, which is enough.
+        const interior = createMockNode('63')
+        const subgraph = createMockSubgraph('sub-uuid', [interior])
+        const subgraphNode = createMockNode('65', {
+          isSubgraph: true,
+          subgraph
+        })
+        const rootGraph = createMockGraph([subgraphNode])
+        interior.graph = null as unknown as LGraph
+
+        expect(
+          getExecutionIdForNodeInGraph(rootGraph, subgraph, interior.id)
+        ).toBe('65:63')
+      })
+
+      it('falls back to local id when graph is not reachable from root', () => {
+        const interior = createMockNode('63')
+        const orphanSubgraph = createMockSubgraph('orphan', [interior])
+        const rootGraph = createMockGraph([])
+
+        expect(
+          getExecutionIdForNodeInGraph(rootGraph, orphanSubgraph, '63')
+        ).toBe('63')
+      })
+    })
+
+    describe('isAncestorPathActive', () => {
+      function makeActiveSubgraph(id: string, nodes: LGraphNode[]) {
+        return createMockSubgraph(id, nodes)
+      }
+
+      it('returns true for root-level nodes (no ancestors)', () => {
+        const node = createMockNode('42')
+        const rootGraph = createMockGraph([node])
+        expect(isAncestorPathActive(rootGraph, '42')).toBe(true)
+      })
+
+      it('returns true when all ancestor containers are active', () => {
+        const interior = createMockNode('63')
+        const subgraph = makeActiveSubgraph('sub', [interior])
+        const container = createMockNode('65', {
+          isSubgraph: true,
+          subgraph
+        })
+        // container mode defaults to ALWAYS (active)
+        const rootGraph = createMockGraph([container])
+
+        expect(isAncestorPathActive(rootGraph, '65:63')).toBe(true)
+      })
+
+      it('returns false when the immediate parent container is bypassed', () => {
+        const interior = createMockNode('63')
+        const subgraph = makeActiveSubgraph('sub', [interior])
+        const container = createMockLGraphNode({
+          id: 65,
+          isSubgraphNode: () => true,
+          subgraph,
+          mode: LGraphEventMode.BYPASS
+        }) satisfies Partial<LGraphNode> as LGraphNode
+        const rootGraph = createMockGraph([container])
+
+        expect(isAncestorPathActive(rootGraph, '65:63')).toBe(false)
+      })
+
+      it('returns false when an outer ancestor is muted (deeply nested)', () => {
+        const interior = createMockNode('999')
+        const deep = makeActiveSubgraph('deep', [interior])
+        const midNode = createMockNode('456', {
+          isSubgraph: true,
+          subgraph: deep
+        })
+        const mid = makeActiveSubgraph('mid', [midNode])
+        const topNode = createMockLGraphNode({
+          id: 123,
+          isSubgraphNode: () => true,
+          subgraph: mid,
+          mode: LGraphEventMode.NEVER
+        }) satisfies Partial<LGraphNode> as LGraphNode
+        const rootGraph = createMockGraph([topNode])
+
+        expect(isAncestorPathActive(rootGraph, '123:456:999')).toBe(false)
+      })
+
+      it('returns true when ancestor node cannot be resolved (defensive)', () => {
+        const rootGraph = createMockGraph([])
+        // Unknown ancestor ID "99" — not found, treated as active.
+        expect(isAncestorPathActive(rootGraph, '99:63')).toBe(true)
+      })
+
+      it('returns true when rootGraph is null/undefined', () => {
+        expect(isAncestorPathActive(null, '65:63')).toBe(true)
+        expect(isAncestorPathActive(undefined, '65:63')).toBe(true)
+      })
+    })
+
+    describe('isMissingCandidateActive', () => {
+      function makeBypassedContainer(interiorId: string) {
+        const interior = createMockNode(interiorId)
+        const subgraph = createMockSubgraph('sub', [interior])
+        const container = createMockLGraphNode({
+          id: 65,
+          isSubgraphNode: () => true,
+          subgraph,
+          mode: LGraphEventMode.BYPASS
+        }) satisfies Partial<LGraphNode> as LGraphNode
+        return createMockGraph([container])
+      }
+
+      it('surfaces confirmed missing candidates under active ancestors', () => {
+        const interior = createMockNode('63')
+        const subgraph = createMockSubgraph('sub', [interior])
+        const container = createMockNode('65', {
+          isSubgraph: true,
+          subgraph
+        })
+        const rootGraph = createMockGraph([container])
+        expect(
+          isMissingCandidateActive(rootGraph, {
+            nodeId: '65:63',
+            isMissing: true
+          })
+        ).toBe(true)
+      })
+
+      it('drops confirmed missing candidates whose ancestor is bypassed (cloud .then race)', () => {
+        // Mirrors the reopen gap: pipeline-start filter passed, then
+        // the user bypassed the container during verification, and the
+        // async resolver must not resurface the candidate.
+        const rootGraph = makeBypassedContainer('63')
+        expect(
+          isMissingCandidateActive(rootGraph, {
+            nodeId: '65:63',
+            isMissing: true
+          })
+        ).toBe(false)
+      })
+
+      it('drops unverified candidates (isMissing !== true)', () => {
+        const rootGraph = createMockGraph([])
+        expect(
+          isMissingCandidateActive(rootGraph, {
+            nodeId: '1',
+            isMissing: undefined
+          })
+        ).toBe(false)
+        expect(
+          isMissingCandidateActive(rootGraph, { nodeId: '1', isMissing: false })
+        ).toBe(false)
+      })
+
+      it('keeps workflow-level candidates (nodeId == null) when confirmed missing', () => {
+        const rootGraph = makeBypassedContainer('63')
+        expect(
+          isMissingCandidateActive(rootGraph, {
+            nodeId: undefined,
+            isMissing: true
+          })
+        ).toBe(true)
       })
     })
 

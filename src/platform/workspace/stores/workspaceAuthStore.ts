@@ -33,6 +33,10 @@ const WorkspaceTokenResponseSchema = z.object({
   permissions: z.array(z.string())
 })
 
+export type WorkspaceTokenResponse = z.infer<
+  typeof WorkspaceTokenResponseSchema
+>
+
 export class WorkspaceAuthError extends Error {
   constructor(
     message: string,
@@ -343,6 +347,10 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
   }
 
+  function getWorkspaceToken(): string | undefined {
+    return workspaceToken.value ?? undefined
+  }
+
   function clearWorkspaceContext(): void {
     // Increment request ID to invalidate any in-flight stale refresh operations
     refreshRequestId++
@@ -370,6 +378,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     switchWorkspace,
     refreshToken,
     getWorkspaceAuthHeader,
+    getWorkspaceToken,
     clearWorkspaceContext
   }
 })

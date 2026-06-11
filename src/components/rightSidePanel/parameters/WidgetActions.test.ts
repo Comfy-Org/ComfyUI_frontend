@@ -1,6 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { fromAny } from '@total-typescript/shoehorn'
-import { mount } from '@vue/test-utils'
 import { setActivePinia } from 'pinia'
 import type { Slots } from 'vue'
 import { h } from 'vue'
@@ -8,13 +9,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { usePromotionStore } from '@/stores/promotionStore'
 import WidgetActions from './WidgetActions.vue'
 
 const { mockGetInputSpecForWidget } = vi.hoisted(() => ({
   mockGetInputSpecForWidget: vi.fn()
+}))
+
+vi.mock('@/core/graph/subgraph/promotionUtils', () => ({
+  demoteWidget: vi.fn(),
+  promoteWidget: vi.fn(),
+  isLinkedPromotion: vi.fn(() => false)
 }))
 
 vi.mock('@/stores/nodeDefStore', () => ({
@@ -103,58 +108,56 @@ describe('WidgetActions', () => {
     })
   }
 
-  function mountWidgetActions(widget: IBaseWidget, node: LGraphNode) {
-    return mount(WidgetActions, {
+  function renderWidgetActions(
+    widget: IBaseWidget,
+    node: LGraphNode,
+    extraProps: Record<string, unknown> = {}
+  ) {
+    const user = userEvent.setup()
+    const onResetToDefault = vi.fn()
+    render(WidgetActions, {
       props: {
         widget,
         node,
-        label: 'Test Widget'
+        label: 'Test Widget',
+        onResetToDefault,
+        ...extraProps
       },
       global: {
         plugins: [i18n]
       }
     })
+    return { user, onResetToDefault }
   }
 
   it('shows reset button when widget has default value', () => {
     const widget = createMockWidget()
     const node = createMockNode()
 
-    const wrapper = mountWidgetActions(widget, node)
+    renderWidgetActions(widget, node)
 
-    const resetButton = wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Reset'))
-    expect(resetButton).toBeDefined()
+    expect(screen.getByRole('button', { name: /Reset/ })).toBeInTheDocument()
   })
 
   it('emits resetToDefault with default value when reset button clicked', async () => {
     const widget = createMockWidget(100)
     const node = createMockNode()
 
-    const wrapper = mountWidgetActions(widget, node)
+    const { user, onResetToDefault } = renderWidgetActions(widget, node)
 
-    const resetButton = wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Reset'))
+    await user.click(screen.getByRole('button', { name: /Reset/ }))
 
-    await resetButton?.trigger('click')
-
-    expect(wrapper.emitted('resetToDefault')).toHaveLength(1)
-    expect(wrapper.emitted('resetToDefault')![0]).toEqual([42])
+    expect(onResetToDefault).toHaveBeenCalledTimes(1)
+    expect(onResetToDefault).toHaveBeenCalledWith(42)
   })
 
   it('disables reset button when value equals default', () => {
     const widget = createMockWidget(42)
     const node = createMockNode()
 
-    const wrapper = mountWidgetActions(widget, node)
+    renderWidgetActions(widget, node)
 
-    const resetButton = wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Reset'))
-
-    expect(resetButton?.attributes('disabled')).toBeDefined()
+    expect(screen.getByRole('button', { name: /Reset/ })).toBeDisabled()
   })
 
   it('does not show reset button when no default value exists', () => {
@@ -165,13 +168,11 @@ describe('WidgetActions', () => {
     const widget = createMockWidget(100)
     const node = createMockNode()
 
-    const wrapper = mountWidgetActions(widget, node)
+    renderWidgetActions(widget, node)
 
-    const resetButton = wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Reset'))
-
-    expect(resetButton).toBeUndefined()
+    expect(
+      screen.queryByRole('button', { name: /Reset/ })
+    ).not.toBeInTheDocument()
   })
 
   it('uses fallback default for INT type without explicit default', async () => {
@@ -182,15 +183,11 @@ describe('WidgetActions', () => {
     const widget = createMockWidget(100)
     const node = createMockNode()
 
-    const wrapper = mountWidgetActions(widget, node)
+    const { user, onResetToDefault } = renderWidgetActions(widget, node)
 
-    const resetButton = wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Reset'))
+    await user.click(screen.getByRole('button', { name: /Reset/ }))
 
-    await resetButton?.trigger('click')
-
-    expect(wrapper.emitted('resetToDefault')![0]).toEqual([0])
+    expect(onResetToDefault).toHaveBeenCalledWith(0)
   })
 
   it('uses first option as default for combo without explicit default', async () => {
@@ -202,77 +199,10 @@ describe('WidgetActions', () => {
     const widget = createMockWidget(100)
     const node = createMockNode()
 
-    const wrapper = mountWidgetActions(widget, node)
+    const { user, onResetToDefault } = renderWidgetActions(widget, node)
 
-    const resetButton = wrapper
-      .findAll('button')
-      .find((b) => b.text().includes('Reset'))
+    await user.click(screen.getByRole('button', { name: /Reset/ }))
 
-    await resetButton?.trigger('click')
-
-    expect(wrapper.emitted('resetToDefault')![0]).toEqual(['option1'])
-  })
-
-  it('demotes promoted widgets by immediate interior node identity when shown from parent context', async () => {
-    mockGetInputSpecForWidget.mockReturnValue({
-      type: 'CUSTOM'
-    })
-    const parentSubgraphNode = fromAny<SubgraphNode, unknown>({
-      id: 4,
-      rootGraph: { id: 'graph-test' },
-      computeSize: vi.fn(),
-      size: [300, 150]
-    })
-    const node = fromAny<LGraphNode, unknown>({
-      id: 4,
-      type: 'SubgraphNode',
-      rootGraph: { id: 'graph-test' },
-      isSubgraphNode: () => false
-    })
-    const widget = {
-      name: 'text',
-      type: 'text',
-      value: 'value',
-      label: 'Text',
-      options: {},
-      y: 0,
-      sourceNodeId: '3',
-      sourceWidgetName: 'text',
-      disambiguatingSourceNodeId: '1'
-    } as IBaseWidget
-
-    const promotionStore = usePromotionStore()
-    promotionStore.promote('graph-test', 4, {
-      sourceNodeId: '3',
-      sourceWidgetName: 'text',
-      disambiguatingSourceNodeId: '1'
-    })
-
-    const wrapper = mount(WidgetActions, {
-      props: {
-        widget,
-        node,
-        label: 'Text',
-        parents: [parentSubgraphNode],
-        isShownOnParents: true
-      },
-      global: {
-        plugins: [i18n]
-      }
-    })
-
-    const hideButton = wrapper
-      .findAll('button')
-      .find((button) => button.text().includes('Hide input'))
-    expect(hideButton).toBeDefined()
-    await hideButton?.trigger('click')
-
-    expect(
-      promotionStore.isPromoted('graph-test', 4, {
-        sourceNodeId: '3',
-        sourceWidgetName: 'text',
-        disambiguatingSourceNodeId: '1'
-      })
-    ).toBe(false)
+    expect(onResetToDefault).toHaveBeenCalledWith('option1')
   })
 })

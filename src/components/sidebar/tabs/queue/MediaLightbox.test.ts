@@ -1,9 +1,8 @@
-import { enableAutoUnmount, mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
-
-enableAutoUnmount(afterEach)
 
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ResultItemImpl } from '@/stores/queueStore'
@@ -99,16 +98,13 @@ describe('MediaLightbox', () => {
   ]
 
   beforeEach(() => {
-    document.body.innerHTML = '<div id="app"></div>'
-  })
-
-  afterEach(() => {
     document.body.innerHTML = ''
-    vi.restoreAllMocks()
   })
 
-  const mountGallery = (props = {}) => {
-    return mount(MediaLightbox, {
+  const renderGallery = (props = {}) => {
+    const onUpdateActiveIndex = vi.fn()
+    const user = userEvent.setup()
+    const { rerender, container } = render(MediaLightbox, {
       global: {
         plugins: [i18n],
         components: {
@@ -123,107 +119,118 @@ describe('MediaLightbox', () => {
       props: {
         allGalleryItems: mockGalleryItems as ResultItemImpl[],
         activeIndex: 0,
+        'onUpdate:activeIndex': onUpdateActiveIndex,
         ...props
       },
-      attachTo: document.getElementById('app') || undefined
+      container: document.body.appendChild(document.createElement('div'))
     })
+    return { user, onUpdateActiveIndex, rerender, container }
   }
 
   it('renders overlay with role="dialog" and aria-modal', async () => {
-    const wrapper = mountGallery()
+    renderGallery()
     await nextTick()
 
-    const dialog = wrapper.find('[role="dialog"]')
-    expect(dialog.exists()).toBe(true)
-    expect(dialog.attributes('aria-modal')).toBe('true')
+    const dialog = screen.getByRole('dialog')
+    expect(dialog).toBeInTheDocument()
+    expect(dialog).toHaveAttribute('aria-modal', 'true')
   })
 
   it('shows navigation buttons when multiple items', async () => {
-    const wrapper = mountGallery()
+    renderGallery()
     await nextTick()
 
-    expect(wrapper.find('[aria-label="Previous"]').exists()).toBe(true)
-    expect(wrapper.find('[aria-label="Next"]').exists()).toBe(true)
+    expect(screen.getByLabelText('Previous')).toBeInTheDocument()
+    expect(screen.getByLabelText('Next')).toBeInTheDocument()
   })
 
   it('hides navigation buttons for single item', async () => {
-    const wrapper = mountGallery({
+    renderGallery({
       allGalleryItems: [mockGalleryItems[0]] as ResultItemImpl[]
     })
     await nextTick()
 
-    expect(wrapper.find('[aria-label="Previous"]').exists()).toBe(false)
-    expect(wrapper.find('[aria-label="Next"]').exists()).toBe(false)
+    expect(screen.queryByLabelText('Previous')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Next')).not.toBeInTheDocument()
   })
 
   it('shows gallery when activeIndex changes from -1', async () => {
-    const wrapper = mountGallery({ activeIndex: -1 })
+    const { rerender, container } = renderGallery({ activeIndex: -1 })
 
-    expect(wrapper.find('[data-mask]').exists()).toBe(false)
+    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+    expect(container.querySelector('[data-mask]')).not.toBeInTheDocument()
+    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
 
-    await wrapper.setProps({ activeIndex: 0 })
+    await rerender({
+      allGalleryItems: mockGalleryItems as ResultItemImpl[],
+      activeIndex: 0
+    })
     await nextTick()
 
-    expect(wrapper.find('[data-mask]').exists()).toBe(true)
+    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+    expect(container.querySelector('[data-mask]')).toBeInTheDocument()
+    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
   })
 
   it('emits update:activeIndex with -1 when close button clicked', async () => {
-    const wrapper = mountGallery()
+    const { user, onUpdateActiveIndex } = renderGallery()
     await nextTick()
 
-    await wrapper.find('[aria-label="Close"]').trigger('click')
+    await user.click(screen.getByLabelText('Close'))
     await nextTick()
 
-    expect(wrapper.emitted('update:activeIndex')?.[0]).toEqual([-1])
+    expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
   })
 
+  /* eslint-disable testing-library/prefer-user-event -- keyDown on dialog element for navigation, not text input */
   describe('keyboard navigation', () => {
     it('navigates to next item on ArrowRight', async () => {
-      const wrapper = mountGallery({ activeIndex: 0 })
+      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await wrapper
-        .find('[role="dialog"]')
-        .trigger('keydown', { key: 'ArrowRight' })
+      await fireEvent.keyDown(screen.getByRole('dialog'), {
+        key: 'ArrowRight'
+      })
       await nextTick()
 
-      expect(wrapper.emitted('update:activeIndex')?.[0]).toEqual([1])
+      expect(onUpdateActiveIndex).toHaveBeenCalledWith(1)
     })
 
     it('navigates to previous item on ArrowLeft', async () => {
-      const wrapper = mountGallery({ activeIndex: 1 })
+      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 1 })
       await nextTick()
 
-      await wrapper
-        .find('[role="dialog"]')
-        .trigger('keydown', { key: 'ArrowLeft' })
+      await fireEvent.keyDown(screen.getByRole('dialog'), {
+        key: 'ArrowLeft'
+      })
       await nextTick()
 
-      expect(wrapper.emitted('update:activeIndex')?.[0]).toEqual([0])
+      expect(onUpdateActiveIndex).toHaveBeenCalledWith(0)
     })
 
     it('wraps to last item on ArrowLeft from first', async () => {
-      const wrapper = mountGallery({ activeIndex: 0 })
+      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await wrapper
-        .find('[role="dialog"]')
-        .trigger('keydown', { key: 'ArrowLeft' })
+      await fireEvent.keyDown(screen.getByRole('dialog'), {
+        key: 'ArrowLeft'
+      })
       await nextTick()
 
-      expect(wrapper.emitted('update:activeIndex')?.[0]).toEqual([2])
+      expect(onUpdateActiveIndex).toHaveBeenCalledWith(2)
     })
 
     it('closes gallery on Escape', async () => {
-      const wrapper = mountGallery({ activeIndex: 0 })
+      const { onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()
 
-      await wrapper
-        .find('[role="dialog"]')
-        .trigger('keydown', { key: 'Escape' })
+      await fireEvent.keyDown(screen.getByRole('dialog'), {
+        key: 'Escape'
+      })
       await nextTick()
 
-      expect(wrapper.emitted('update:activeIndex')?.[0]).toEqual([-1])
+      expect(onUpdateActiveIndex).toHaveBeenCalledWith(-1)
     })
   })
+  /* eslint-enable testing-library/prefer-user-event */
 })

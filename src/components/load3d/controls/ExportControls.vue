@@ -48,7 +48,8 @@ const showExportFormats = ref(false)
 const exportFormats = [
   { label: 'GLB', value: 'glb' },
   { label: 'OBJ', value: 'obj' },
-  { label: 'STL', value: 'stl' }
+  { label: 'STL', value: 'stl' },
+  { label: 'FBX', value: 'fbx' }
 ]
 
 function toggleExportFormats() {

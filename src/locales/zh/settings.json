@@ -196,13 +196,12 @@
     "tooltip": "设置3D场景允许的最小光照强度值。此值定义在任何3D组件中调整光照时可设置的最小亮度。"
   },
   "Comfy_Load3D_PLYEngine": {
-    "name": "PLY引擎",
+    "name": "点云引擎",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
-    "tooltip": "选择用于加载PLY文件的引擎。\"threejs\" 使用原生Three.js PLYLoader（适合网格PLY文件）。\"fastply\" 用于优化的ASCII点云PLY文件加载。\"sparkjs\" 用于3D高斯斑点PLY文件的Spark.js。"
+    "tooltip": "选择用于加载点云PLY文件的引擎。\"threejs\" 使用原生Three.js PLYLoader（支持二进制和ASCII，可处理网格）。\"fastply\" 使用针对ASCII PLY的优化解析器。3D高斯泼溅PLY会自动识别并始终通过sparkjs渲染，不受此设置影响。"
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "初始网格可见性",
@@ -271,6 +270,10 @@
       "litegraph (legacy)": "litegraph（旧版）",
       "v1 (legacy)": "v1（旧版）"
     }
+  },
+  "Comfy_NodeSearchBoxImpl_FollowCursor": {
+    "name": "新增节点跟随光标",
+    "tooltip": "启用后，从搜索框添加的节点会跟随光标，直到点击以放置。仅适用于默认实现。"
   },
   "Comfy_NodeSearchBoxImpl_NodePreview": {
     "name": "显示节点预览",
@@ -424,11 +427,11 @@
     "name": "校验工作流"
   },
   "Comfy_VueNodes_AutoScaleLayout": {
-    "name": "自动缩放布局（Vue节点）",
+    "name": "自动缩放布局（Nodes 2.0）",
     "tooltip": "切换到Vue渲染时自动缩放节点位置以防止重叠"
   },
   "Comfy_VueNodes_Enabled": {
-    "name": "现代节点设计（Vue节点）",
+    "name": "现代节点设计（Nodes 2.0）",
     "tooltip": "现代：基于DOM的渲染，具有增强的交互性、原生浏览器功能和更新的视觉设计。经典：传统的画布渲染。"
   },
   "Comfy_WidgetControlMode": {

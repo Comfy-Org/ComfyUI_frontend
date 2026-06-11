@@ -1,0 +1,245 @@
+name: 'PR: Update Website Screenshots'
+
+on:
+  pull_request:
+    types: [labeled]
+  issue_comment:
+    types: [created, edited]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  update-screenshots:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.58.1-noble
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: read
+    # Trigger: (1) label, (2) /slash-command, or (3) checkbox in E2E status comment
+    # ⚠️ This condition is duplicated on `post-starting-comment` — keep them in sync.
+    if: >
+      ( github.event_name == 'pull_request' &&
+        github.event.label.name == 'Update Website Screenshots' ) ||
+      ( github.event.issue.pull_request &&
+        github.event_name == 'issue_comment' &&
+        (
+          github.event.comment.author_association == 'OWNER' ||
+          github.event.comment.author_association == 'MEMBER' ||
+          github.event.comment.author_association == 'COLLABORATOR'
+        ) &&
+        startsWith(github.event.comment.body, '/update-website-screenshots') ) ||
+      ( github.event.issue.pull_request &&
+        github.event_name == 'issue_comment' &&
+        github.event.comment.user.login == 'github-actions[bot]' &&
+        github.actor != 'github-actions[bot]' &&
+        contains(github.event.comment.body, '<!-- WEBSITE_E2E_STATUS -->') &&
+        contains(github.event.comment.body, '- [x] Update website screenshots') )
+    outputs:
+      pr-number: ${{ steps.pr-info.outputs.pr-number }}
+      update-outcome: ${{ steps.update-screenshots.outcome }}
+      has-changes: ${{ steps.commit.outputs.has-changes }}
+      changed-count: ${{ steps.commit.outputs.changed-count }}
+    steps:
+      - name: Verify sender permissions
+        if: >
+          github.event_name == 'issue_comment' &&
+          contains(github.event.comment.body, '<!-- WEBSITE_E2E_STATUS -->')
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const { data } = await github.rest.repos.getCollaboratorPermissionLevel({
+              ...context.repo,
+              username: context.actor
+            })
+            if (!['admin', 'write'].includes(data.permission)) {
+              core.setFailed(`User ${context.actor} does not have write access`)
+            }
+
+      - name: Get PR info
+        id: pr-info
+        uses: actions/github-script@v8
+        env:
+          PR_NUMBER: ${{ github.event.number || github.event.issue.number }}
+        with:
+          script: |
+            const prNumber = Number(process.env.PR_NUMBER)
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: prNumber
+            })
+            core.setOutput('pr-number', prNumber)
+            core.setOutput('branch', pr.head.ref)
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.pr-info.outputs.branch }}
+          token: ${{ secrets.PR_GH_TOKEN }}
+
+      - name: Install pnpm
+        run: corepack enable && corepack prepare
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build website
+        env:
+          WEBSITE_GITHUB_STARS_OVERRIDE: 110000
+        run: pnpm --filter @comfyorg/website build
+
+      - name: Update screenshots
+        id: update-screenshots
+        run: pnpm --filter @comfyorg/website test:visual:update
+        continue-on-error: true
+
+      - name: Commit updated screenshots
+        id: commit
+        if: steps.update-screenshots.outcome == 'success'
+        run: |
+          git config --global --add safe.directory "$(pwd)"
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+
+          CHANGED=$(git status --porcelain=v1 --untracked-files=all -- apps/website/e2e/ | wc -l)
+          echo "changed-count=${CHANGED}" >> $GITHUB_OUTPUT
+
+          if [ "$CHANGED" -eq 0 ]; then
+            echo "No screenshot changes to commit"
+            echo "has-changes=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "has-changes=true" >> $GITHUB_OUTPUT
+          git add apps/website/e2e/
+          git commit -m "[automated] Update website screenshot expectations"
+          git push origin ${{ steps.pr-info.outputs.branch }}
+
+      - name: Upload test report
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: website-screenshot-update-report
+          path: apps/website/playwright-report/
+          retention-days: 14
+
+      - name: Remove label
+        if: always() && github.event_name == 'pull_request'
+        uses: actions/github-script@v8
+        env:
+          PR_NUMBER: ${{ steps.pr-info.outputs.pr-number }}
+        with:
+          script: |
+            try {
+              await github.rest.issues.removeLabel({
+                ...context.repo,
+                issue_number: Number(process.env.PR_NUMBER),
+                name: 'Update Website Screenshots'
+              })
+            } catch (e) {
+              if (e.status !== 404) {
+                throw e
+              }
+              core.info('Label "Update Website Screenshots" was already removed')
+            }
+
+  post-starting-comment:
+    # Runs in parallel with update-screenshots to show "in progress" immediately.
+    # ⚠️ This condition is duplicated from `update-screenshots` — keep them in sync.
+    if: >
+      ( github.event_name == 'pull_request' &&
+        github.event.label.name == 'Update Website Screenshots' ) ||
+      ( github.event.issue.pull_request &&
+        github.event_name == 'issue_comment' &&
+        (
+          github.event.comment.author_association == 'OWNER' ||
+          github.event.comment.author_association == 'MEMBER' ||
+          github.event.comment.author_association == 'COLLABORATOR'
+        ) &&
+        startsWith(github.event.comment.body, '/update-website-screenshots') ) ||
+      ( github.event.issue.pull_request &&
+        github.event_name == 'issue_comment' &&
+        github.event.comment.user.login == 'github-actions[bot]' &&
+        github.actor != 'github-actions[bot]' &&
+        contains(github.event.comment.body, '<!-- WEBSITE_E2E_STATUS -->') &&
+        contains(github.event.comment.body, '- [x] Update website screenshots') )
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    concurrency:
+      group: website-pr-comment-${{ github.event.number || github.event.issue.number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ github.event.number || github.event.issue.number }}
+          section-name: screenshot-update
+          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          section-content: |-
+            ## 📸 Screenshot Update
+
+            > [!NOTE]
+            > Updating screenshots… [View workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+
+  post-result-comment:
+    needs: update-screenshots
+    if: always() && !cancelled() && needs.update-screenshots.result != 'skipped'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+    concurrency:
+      group: website-pr-comment-${{ needs.update-screenshots.outputs.pr-number }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build screenshot-update section content
+        id: content
+        uses: actions/github-script@v8
+        env:
+          UPDATE_OUTCOME: ${{ needs.update-screenshots.outputs.update-outcome }}
+          HAS_CHANGES: ${{ needs.update-screenshots.outputs.has-changes }}
+          CHANGED_COUNT: ${{ needs.update-screenshots.outputs.changed-count }}
+        with:
+          script: |
+            const outcome = process.env.UPDATE_OUTCOME
+            const hasChanges = process.env.HAS_CHANGES === 'true'
+            const changedCount = parseInt(process.env.CHANGED_COUNT) || 0
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`
+
+            const lines = ['## 📸 Screenshot Update', '']
+
+            if (outcome !== 'success') {
+              lines.push(
+                '> [!CAUTION]',
+                `> Screenshot update failed. [View workflow run](${runUrl})`
+              )
+            } else if (!hasChanges) {
+              lines.push(
+                '> [!TIP]',
+                '> All screenshots are already up to date.'
+              )
+            } else {
+              const s = changedCount === 1 ? '' : 's'
+              lines.push(
+                '> [!TIP]',
+                `> Updated ${changedCount} screenshot${s} and pushed to the branch.`
+              )
+            }
+
+            core.setOutput('section-content', lines.join('\n'))
+
+      - uses: ./.github/actions/upsert-comment-section
+        with:
+          pr-number: ${{ needs.update-screenshots.outputs.pr-number }}
+          section-name: screenshot-update
+          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          section-content: ${{ steps.content.outputs.section-content }}

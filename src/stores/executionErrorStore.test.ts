@@ -351,6 +351,142 @@ describe('executionErrorStore — node error operations', () => {
   })
 })
 
+describe('surfaceMissingModels — silent option', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockShowErrorsTab.value = true
+  })
+
+  it('opens error overlay when silent is not specified and setting is enabled', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingModels([
+      fromAny({
+        name: 'model.safetensors',
+        nodeId: '1',
+        nodeType: 'Loader',
+        widgetName: 'ckpt',
+        isMissing: true,
+        isAssetSupported: false
+      })
+    ])
+
+    expect(store.isErrorOverlayOpen).toBe(true)
+  })
+
+  it('opens error overlay when silent is false and setting is enabled', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingModels(
+      [
+        fromAny({
+          name: 'model.safetensors',
+          nodeId: '1',
+          nodeType: 'Loader',
+          widgetName: 'ckpt',
+          isMissing: true,
+          isAssetSupported: false
+        })
+      ],
+      { silent: false }
+    )
+
+    expect(store.isErrorOverlayOpen).toBe(true)
+  })
+
+  it('does NOT open error overlay when silent is true', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingModels(
+      [
+        fromAny({
+          name: 'model.safetensors',
+          nodeId: '1',
+          nodeType: 'Loader',
+          widgetName: 'ckpt',
+          isMissing: true,
+          isAssetSupported: false
+        })
+      ],
+      { silent: true }
+    )
+
+    expect(store.isErrorOverlayOpen).toBe(false)
+  })
+
+  it('does NOT open error overlay for empty models even without silent', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingModels([])
+
+    expect(store.isErrorOverlayOpen).toBe(false)
+  })
+})
+
+describe('surfaceMissingMedia — silent option', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    mockShowErrorsTab.value = true
+  })
+
+  it('opens error overlay when silent is not specified and setting is enabled', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingMedia([
+      fromAny({
+        name: 'photo.png',
+        nodeId: '1',
+        nodeType: 'LoadImage',
+        widgetName: 'image',
+        mediaType: 'image',
+        isMissing: true
+      })
+    ])
+
+    expect(store.isErrorOverlayOpen).toBe(true)
+  })
+
+  it('opens error overlay when silent is false and setting is enabled', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingMedia(
+      [
+        fromAny({
+          name: 'photo.png',
+          nodeId: '1',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          isMissing: true
+        })
+      ],
+      { silent: false }
+    )
+
+    expect(store.isErrorOverlayOpen).toBe(true)
+  })
+
+  it('does NOT open error overlay when silent is true', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingMedia(
+      [
+        fromAny({
+          name: 'photo.png',
+          nodeId: '1',
+          nodeType: 'LoadImage',
+          widgetName: 'image',
+          mediaType: 'image',
+          isMissing: true
+        })
+      ],
+      { silent: true }
+    )
+
+    expect(store.isErrorOverlayOpen).toBe(false)
+  })
+
+  it('does NOT open error overlay for empty media even without silent', () => {
+    const store = useExecutionErrorStore()
+    store.surfaceMissingMedia([])
+
+    expect(store.isErrorOverlayOpen).toBe(false)
+  })
+})
+
 describe('clearAllErrors', () => {
   let executionErrorStore: ReturnType<typeof useExecutionErrorStore>
   let missingNodesStore: ReturnType<typeof useMissingNodesErrorStore>

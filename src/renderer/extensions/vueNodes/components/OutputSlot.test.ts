@@ -1,7 +1,8 @@
-import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { render, screen } from '@testing-library/vue'
 
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -52,8 +53,8 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function mountOutputSlot(slotData: Partial<INodeSlot>, index = 0) {
-  return mount(OutputSlot, {
+function renderOutputSlot(slotData: Partial<INodeSlot>, index = 0) {
+  return render(OutputSlot, {
     props: {
       slotData: { type: '*', ...slotData } as INodeSlot,
       index,
@@ -69,36 +70,36 @@ function mountOutputSlot(slotData: Partial<INodeSlot>, index = 0) {
 
 describe('OutputSlot', () => {
   it('renders label when present on slotData', () => {
-    const wrapper = mountOutputSlot({
+    renderOutputSlot({
       name: 'internal_name',
       localized_name: 'Localized Name',
       label: 'My Custom Label'
     })
 
-    expect(wrapper.text()).toContain('My Custom Label')
-    expect(wrapper.text()).not.toContain('internal_name')
-    expect(wrapper.text()).not.toContain('Localized Name')
+    expect(screen.getByText('My Custom Label')).toBeInTheDocument()
+    expect(screen.queryByText('internal_name')).not.toBeInTheDocument()
+    expect(screen.queryByText('Localized Name')).not.toBeInTheDocument()
   })
 
   it('falls back to localized_name when label is absent', () => {
-    const wrapper = mountOutputSlot({
+    renderOutputSlot({
       name: 'internal_name',
       localized_name: 'Localized Name'
     })
 
-    expect(wrapper.text()).toContain('Localized Name')
-    expect(wrapper.text()).not.toContain('internal_name')
+    expect(screen.getByText('Localized Name')).toBeInTheDocument()
+    expect(screen.queryByText('internal_name')).not.toBeInTheDocument()
   })
 
   it('falls back to name when label and localized_name are absent', () => {
-    const wrapper = mountOutputSlot({ name: 'internal_name' })
+    renderOutputSlot({ name: 'internal_name' })
 
-    expect(wrapper.text()).toContain('internal_name')
+    expect(screen.getByText('internal_name')).toBeInTheDocument()
   })
 
   it('falls back to "Output N" when all names are absent', () => {
-    const wrapper = mountOutputSlot({ name: undefined }, 2)
+    renderOutputSlot({ name: undefined }, 2)
 
-    expect(wrapper.text()).toContain('Output 2')
+    expect(screen.getByText('Output 2')).toBeInTheDocument()
   })
 })

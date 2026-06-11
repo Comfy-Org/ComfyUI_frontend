@@ -8,15 +8,20 @@
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
+    :data-ghost="nodeData.flags?.ghost || undefined"
     :class="
       cn(
         'group/node lg-node absolute isolate text-sm',
         'flex flex-col contain-layout contain-style',
-        isRerouteNode ? 'h-(--node-height)' : 'min-w-(--min-node-width)',
+        isRerouteNode
+          ? 'h-(--node-height)'
+          : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
         isSelected && 'outline-node-component-outline',
         executing && 'outline-node-stroke-executing',
-        shouldHandleNodePointerEvents && !nodeData.flags?.ghost
+        shouldHandleNodePointerEvents &&
+          !nodeData.flags?.ghost &&
+          !isGhostPlacing
           ? 'pointer-events-auto'
           : 'pointer-events-none'
       )
@@ -27,6 +32,7 @@
       zIndex: zIndex,
       opacity: nodeOpacity
     }"
+    :inert="isGhostPlacing"
     v-bind="remainingPointerHandlers"
     @pointerdown="nodeOnPointerdown"
     @wheel="handleWheel"
@@ -35,7 +41,6 @@
     @dragleave="handleDragLeave"
     @drop="handleDrop"
   >
-    <!-- Selection/Execution Outline Overlay -->
     <AppOutput
       v-if="
         lgraphNode?.constructor?.nodeData?.output_node &&
@@ -52,22 +57,19 @@
         cn(
           'pointer-events-none absolute z-0 border-3 outline-none',
           selectionShapeClass,
-          hasAnyError ? '-inset-[7px]' : '-inset-[3px]',
+          hasAnyError ? 'inset-[-7px]' : 'inset-[-3px]',
           isSelected
             ? 'border-node-component-outline'
-            : 'border-node-stroke-executing',
-          footerStateOutlineBottomClass
+            : 'border-node-stroke-executing'
         )
       "
     />
-    <!-- Root Border Overlay -->
     <div
       :class="
         cn(
           'pointer-events-none absolute border border-solid border-component-node-border',
           rootBorderShapeClass,
-          hasAnyError ? '-inset-1' : 'inset-0',
-          footerRootBorderBottomClass
+          hasAnyError ? '-inset-1' : 'inset-0'
         )
       "
     />
@@ -77,16 +79,12 @@
         cn(
           'flex flex-1 flex-col border border-solid border-transparent bg-node-component-header-surface',
           'w-(--node-width)',
-          !isRerouteNode && 'min-h-(--node-height) min-w-(--min-node-width)',
+          !isRerouteNode && 'min-w-(--min-node-width)',
           shapeClass,
           hasAnyError && 'ring-4 ring-destructive-background',
-          {
-            [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0 before:bg-bypass/60`]:
-              bypassed,
-            [`${beforeShapeClass} before:pointer-events-none before:absolute before:inset-0`]:
-              muted,
-            'bg-primary-500/10 ring-4 ring-primary-500': isDraggingOver
-          }
+          bypassed && bypassOverlayClass,
+          muted && mutedOverlayClass,
+          isDraggingOver && 'bg-primary-500/10 ring-4 ring-primary-500'
         )
       "
       :style="{
@@ -137,7 +135,6 @@
 
       <template v-else-if="!isCollapsed">
         <div class="relative">
-          <!-- Progress bar for executing state -->
           <div
             v-if="executing && progress !== undefined"
             :class="
@@ -177,9 +174,8 @@
               :media="preview"
             />
           </div>
-          <!-- Live mid-execution preview images -->
           <LivePreview
-            v-if="shouldShowPreviewImg"
+            v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
             :image-url="latestPreviewUrl"
           />
           <NodeBadges
@@ -196,7 +192,6 @@
       :is-subgraph="!!lgraphNode?.isSubgraphNode()"
       :has-any-error="hasAnyError"
       :show-errors-tab-enabled="showErrorsTabEnabled"
-      :is-collapsed="isCollapsed"
       :show-advanced-inputs-button="showAdvancedInputsButton"
       :show-advanced-state="showAdvancedState"
       :header-color="applyLightThemeColor(nodeData?.color)"
@@ -217,13 +212,12 @@
         v-for="handle in RESIZE_HANDLES"
         :key="handle.corner"
         role="button"
+        :data-corner="handle.corner"
         :aria-label="t(handle.i18nKey)"
         :class="
           cn(
             baseResizeHandleClasses,
             handle.positionClasses,
-            (handle.corner === 'SE' || handle.corner === 'SW') &&
-              footerResizeHandleBottomClass,
             handle.cursorClass,
             'group-hover/node:opacity-100'
           )
@@ -271,6 +265,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { hasUnpromotedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { st } from '@/i18n'
+import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import {
   LGraphCanvas,
   LGraphEventMode,
@@ -313,10 +308,9 @@ import {
   getLocatorIdFromNodeData,
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import { isTransparent } from '@/utils/colorUtil'
 
-import type { CompassCorners } from '@/lib/litegraph/src/interfaces'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
@@ -346,9 +340,9 @@ const { handleNodeCollapse, handleNodeTitleUpdate, handleNodeRightClick } =
   useNodeEventHandlers()
 const { bringNodeToFront } = useNodeZIndex()
 
-useVueElementTracking(() => nodeData.id, 'node')
+useVueElementTracking(String(nodeData.id), 'node')
 
-const { selectedNodeIds } = storeToRefs(useCanvasStore())
+const { selectedNodeIds, isGhostPlacing } = storeToRefs(useCanvasStore())
 const isSelected = computed(() => {
   return selectedNodeIds.value.has(nodeData.id)
 })
@@ -393,7 +387,7 @@ const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
 
-  if (nodeData.flags?.ghost) return globalOpacity * 0.3
+  if (nodeData.flags?.ghost) return globalOpacity * 0.6
 
   // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
   if (bypassed.value || muted.value) {
@@ -566,30 +560,6 @@ const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   }
 )
 
-const hasFooter = computed(() => {
-  return !!(
-    (hasAnyError.value && showErrorsTabEnabled.value) ||
-    lgraphNode.value?.isSubgraphNode() ||
-    (!lgraphNode.value?.isSubgraphNode() &&
-      (showAdvancedState.value || showAdvancedInputsButton.value))
-  )
-})
-
-// Footer offset computed classes
-
-const footerStateOutlineBottomClass = computed(() =>
-  hasFooter.value ? '-bottom-[35px]' : ''
-)
-
-const footerRootBorderBottomClass = computed(() =>
-  hasFooter.value ? '-bottom-8' : ''
-)
-
-const footerResizeHandleBottomClass = computed(() => {
-  if (!hasFooter.value) return ''
-  return hasAnyError.value ? 'bottom-[-31px]' : 'bottom-[-35px]'
-})
-
 const cursorClass = computed(() => {
   if (nodeData.flags?.pinned) return 'cursor-default'
   return layoutStore.isDraggingVueNodes.value
@@ -658,14 +628,28 @@ const selectionShapeClass = computed(() => {
   }
 })
 
-const beforeShapeClass = computed(() => {
+const BEFORE_OVERLAY_BASE =
+  'before:pointer-events-none before:absolute before:inset-0'
+
+const bypassOverlayClass = computed(() => {
   switch (nodeData.shape) {
     case RenderShape.BOX:
-      return ''
+      return `${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
     case RenderShape.CARD:
-      return 'before:rounded-tl-2xl before:rounded-br-2xl'
+      return `before:rounded-tl-2xl before:rounded-br-2xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
     default:
-      return 'before:rounded-2xl'
+      return `before:rounded-2xl ${BEFORE_OVERLAY_BASE} before:bg-bypass/60`
+  }
+})
+
+const mutedOverlayClass = computed(() => {
+  switch (nodeData.shape) {
+    case RenderShape.BOX:
+      return BEFORE_OVERLAY_BASE
+    case RenderShape.CARD:
+      return `before:rounded-tl-2xl before:rounded-br-2xl ${BEFORE_OVERLAY_BASE}`
+    default:
+      return `before:rounded-2xl ${BEFORE_OVERLAY_BASE}`
   }
 })
 
@@ -736,6 +720,7 @@ useGLSLPreview(lgraphNode)
 const showAdvancedInputsButton = computed(() => {
   const node = lgraphNode.value
   if (!node) return false
+  if (isCollapsed.value) return false
 
   // For subgraph nodes: check for unpromoted widgets
   if (node instanceof SubgraphNode) {
@@ -796,6 +781,8 @@ const nodeMedia = computed(() => {
   if (!node || !newOutputs?.images?.length || node.hideOutputImages)
     return undefined
 
+  if (node instanceof SubgraphNode) return undefined
+
   const urls = nodeOutputs.getNodeImageUrls(node)
   if (!urls?.length) return undefined
 
@@ -830,16 +817,8 @@ function handleDragLeave() {
   isDraggingOver.value = false
 }
 
-function handleDrop(event: DragEvent) {
+function handleDrop() {
   isDraggingOver.value = false
-
-  const node = lgraphNode.value
-  if (!node?.onDragDrop) return
-
-  const handled = node.onDragDrop(event)
-  if (handled === true) {
-    event.preventDefault()
-    event.stopPropagation()
-  }
+  app.dragOverNode = lgraphNode.value
 }
 </script>

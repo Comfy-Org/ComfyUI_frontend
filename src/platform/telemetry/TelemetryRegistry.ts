@@ -6,18 +6,23 @@ import type {
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
+  ShareLinkOpenedMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   ExecutionTriggerSource,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
+  NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
   SettingChangedMetadata,
+  SharedWorkflowRunMetadata,
   SubscriptionMetadata,
+  SubscriptionSuccessMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryDispatcher,
@@ -80,8 +85,12 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackBeginCheckout?.(metadata))
   }
 
-  trackMonthlySubscriptionSucceeded(): void {
-    this.dispatch((provider) => provider.trackMonthlySubscriptionSucceeded?.())
+  trackMonthlySubscriptionSucceeded(
+    metadata?: SubscriptionSuccessMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackMonthlySubscriptionSucceeded?.(metadata)
+    )
   }
 
   trackMonthlySubscriptionCancelled(): void {
@@ -175,6 +184,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackShareFlow?.(metadata))
   }
 
+  trackShareLinkOpened(metadata: ShareLinkOpenedMetadata): void {
+    this.dispatch((provider) => provider.trackShareLinkOpened?.(metadata))
+  }
+
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
     this.dispatch((provider) => provider.trackPageVisibilityChanged?.(metadata))
   }
@@ -191,6 +204,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) =>
       provider.trackNodeSearchResultSelected?.(metadata)
     )
+  }
+
+  trackSearchQuery(metadata: SearchQueryMetadata): void {
+    this.dispatch((provider) => provider.trackSearchQuery?.(metadata))
+  }
+
+  trackNodeAdded(metadata: NodeAddedMetadata): void {
+    this.dispatch((provider) => provider.trackNodeAdded?.(metadata))
   }
 
   trackTemplateFilterChanged(metadata: TemplateFilterMetadata): void {
@@ -223,6 +244,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
     this.dispatch((provider) => provider.trackExecutionSuccess?.(metadata))
+  }
+
+  trackSharedWorkflowRun(metadata: SharedWorkflowRunMetadata): void {
+    this.dispatch((provider) => provider.trackSharedWorkflowRun?.(metadata))
   }
 
   trackSettingChanged(metadata: SettingChangedMetadata): void {

@@ -1,11 +1,24 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { ComfyPage } from '../ComfyPage'
-import type { NodeReference } from '../utils/litegraphUtils'
-import { TestIds } from '../selectors'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { dragByIndex } from '@e2e/fixtures/utils/dragAndDrop'
 
 export class BuilderSelectHelper {
-  constructor(private readonly comfyPage: ComfyPage) {}
+  /** All IoItem locators in the current step sidebar. */
+  public readonly inputItems: Locator
+  /** All IoItem title locators in the inputs step sidebar. */
+  public readonly inputItemTitles: Locator
+  /** All widget label locators in the preview/arrange sidebar. */
+  public readonly previewWidgetLabels: Locator
+
+  constructor(private readonly comfyPage: ComfyPage) {
+    this.inputItems = this.page.getByTestId(TestIds.builder.ioItem)
+    this.inputItemTitles = this.page.getByTestId(TestIds.builder.ioItemTitle)
+    this.previewWidgetLabels = this.page.getByTestId(
+      TestIds.builder.widgetLabel
+    )
+  }
 
   private get page(): Page {
     return this.comfyPage.page
@@ -16,12 +29,9 @@ export class BuilderSelectHelper {
    * @param title The widget title shown in the IoItem.
    */
   getInputItemMenu(title: string): Locator {
-    return this.page
-      .getByTestId(TestIds.builder.ioItem)
+    return this.inputItems
       .filter({
-        has: this.page
-          .getByTestId(TestIds.builder.ioItemTitle)
-          .getByText(title, { exact: true })
+        has: this.inputItemTitles.getByText(title, { exact: true })
       })
       .getByTestId(TestIds.builder.widgetActionsMenu)
   }
@@ -90,50 +100,79 @@ export class BuilderSelectHelper {
     await popoverTrigger.click()
     await this.page.getByText('Rename', { exact: true }).click()
 
-    const dialogInput = this.page.locator(
-      '.p-dialog-content input[type="text"]'
-    )
+    const dialogInput = this.page.getByRole('dialog').getByRole('textbox')
     await dialogInput.fill(newName)
     await this.page.keyboard.press('Enter')
     await dialogInput.waitFor({ state: 'hidden' })
     await this.comfyPage.nextFrame()
   }
 
-  /** Center on a node and click its first widget to select it as input. */
-  async selectInputWidget(node: NodeReference) {
+  /**
+   * Click a widget on the canvas to select it as a builder input.
+   * @param nodeTitle The displayed title of the node.
+   * @param widgetName The widget name to click.
+   */
+  async selectInputWidget(nodeTitle: string, widgetName: string) {
     await this.comfyPage.canvasOps.setScale(1)
-    await node.centerOnNode()
-
-    const widgetRef = await node.getWidget(0)
-    const widgetPos = await widgetRef.getPosition()
-    const titleHeight = await this.page.evaluate(
-      () => window.LiteGraph!['NODE_TITLE_HEIGHT'] as number
-    )
-    await this.page.mouse.click(widgetPos.x, widgetPos.y + titleHeight)
+    const nodeRef = (
+      await this.comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
+    )[0]
+    if (!nodeRef) throw new Error(`Node ${nodeTitle} not found`)
+    await nodeRef.centerOnNode()
+    const widgetLocator = this.comfyPage.vueNodes
+      .getNodeLocator(String(nodeRef.id))
+      .getByLabel(widgetName, { exact: true })
+    // oxlint-disable-next-line playwright/no-force-option -- Node container has conditional pointer-events:none that blocks actionability
+    await widgetLocator.click({ force: true })
     await this.comfyPage.nextFrame()
   }
 
-  /** Click the first SaveImage/PreviewImage node on the canvas. */
-  async selectOutputNode() {
-    const saveImageNodeId = await this.page.evaluate(() => {
-      const node = window.app!.rootGraph.nodes.find(
-        (n: { type?: string }) =>
-          n.type === 'SaveImage' || n.type === 'PreviewImage'
-      )
-      return node ? String(node.id) : null
-    })
-    if (!saveImageNodeId)
-      throw new Error('SaveImage/PreviewImage node not found')
-    const saveImageRef =
-      await this.comfyPage.nodeOps.getNodeRefById(saveImageNodeId)
-    await saveImageRef.centerOnNode()
+  /**
+   * Get the subtitle locator for a builder IoItem by its title text.
+   * Useful for asserting "Widget not visible" on disconnected inputs.
+   */
+  getInputItemSubtitle(title: string): Locator {
+    return this.inputItems
+      .filter({
+        has: this.inputItemTitles.getByText(title, { exact: true })
+      })
+      .getByTestId(TestIds.builder.ioItemSubtitle)
+  }
 
-    const canvasBox = await this.page.locator('#graph-canvas').boundingBox()
-    if (!canvasBox) throw new Error('Canvas not found')
-    await this.page.mouse.click(
-      canvasBox.x + canvasBox.width / 2,
-      canvasBox.y + canvasBox.height / 2
+  /**
+   * Drag an IoItem from one index to another in the inputs step.
+   * Items are identified by their 0-based position among visible IoItems.
+   */
+  async dragInputItem(fromIndex: number, toIndex: number) {
+    await dragByIndex(this.inputItems, fromIndex, toIndex)
+    await this.comfyPage.nextFrame()
+  }
+
+  /**
+   * Drag a widget item from one index to another in the preview/arrange step.
+   */
+  async dragPreviewItem(fromIndex: number, toIndex: number) {
+    const items = this.page.getByTestId(TestIds.builder.widgetItem)
+    await dragByIndex(items, fromIndex, toIndex)
+    await this.comfyPage.nextFrame()
+  }
+
+  /**
+   * Click an output node on the canvas to select it as a builder output.
+   * @param nodeTitle The displayed title of the output node.
+   */
+  async selectOutputNode(nodeTitle: string) {
+    await this.comfyPage.canvasOps.setScale(1)
+    const nodeRef = (
+      await this.comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
+    )[0]
+    if (!nodeRef) throw new Error(`Node ${nodeTitle} not found`)
+    await nodeRef.centerOnNode()
+    const nodeLocator = this.comfyPage.vueNodes.getNodeLocator(
+      String(nodeRef.id)
     )
+    // oxlint-disable-next-line playwright/no-force-option -- Node container has conditional pointer-events:none that blocks actionability
+    await nodeLocator.click({ force: true })
     await this.comfyPage.nextFrame()
   }
 }

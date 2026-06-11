@@ -2,9 +2,11 @@ import { MediaRecorder as ExtendableMediaRecorder } from 'extendable-media-recor
 import { onUnmounted, ref } from 'vue'
 
 import { useAudioService } from '@/services/audioService'
+import { toError } from '@/utils/errorUtil'
 
 interface AudioRecorderOptions {
   onRecordingComplete?: (audioBlob: Blob) => Promise<void>
+  onStop?: () => void
   onError?: (error: Error) => void
 }
 
@@ -48,12 +50,12 @@ export function useAudioRecorder(options: AudioRecorderOptions = {}) {
         }
         recordedURL.value = URL.createObjectURL(blob)
 
+        cleanup()
+
         // Notify completion
         if (options.onRecordingComplete) {
           await options.onRecordingComplete(blob)
         }
-
-        cleanup()
       }
 
       // Start recording
@@ -61,7 +63,7 @@ export function useAudioRecorder(options: AudioRecorderOptions = {}) {
       isRecording.value = true
     } catch (err) {
       if (options.onError) {
-        options.onError(err as Error)
+        options.onError(toError(err))
       }
       throw err
     }
@@ -77,11 +79,14 @@ export function useAudioRecorder(options: AudioRecorderOptions = {}) {
 
   function cleanup() {
     isRecording.value = false
+    mediaRecorder.value = null
 
     if (stream.value) {
       stream.value.getTracks().forEach((track) => track.stop())
       stream.value = null
     }
+
+    options.onStop?.()
   }
 
   function dispose() {

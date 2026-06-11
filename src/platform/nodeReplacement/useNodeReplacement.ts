@@ -159,6 +159,7 @@ function replaceWithMapping(
   nodeGraph: LGraph,
   idx: number
 ): void {
+  node.onRemoved?.()
   newNode.id = node.id
   newNode.pos = [...node.pos]
   newNode.size = [...node.size]
