@@ -42,7 +42,7 @@
                 ? t('mediaAsset.previewBadge')
                 : undefined
             "
-            :stack-count="stackCountFor(item.asset)"
+            :stack-count="item.isChild ? undefined : stackCountFor(item.asset)"
             :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
             :stack-expanded="isStackExpanded(item.asset)"
             @mouseenter="onAssetEnter(item.asset.id)"
