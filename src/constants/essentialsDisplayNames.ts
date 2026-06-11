@@ -16,6 +16,7 @@ const EXACT_NAME_MAP: Record<string, string> = {
   Load3D: 'essentials.load3DModel',
   SaveGLB: 'essentials.save3DModel',
   PrimitiveStringMultiline: 'essentials.text',
+  ComfySwitchNode: 'essentials.switch',
 
   // Image Tools
   BatchImagesNode: 'essentials.batchImage',

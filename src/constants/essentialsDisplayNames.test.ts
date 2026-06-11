@@ -12,6 +12,7 @@ describe('resolveEssentialsDisplayName', () => {
       ['LoadImage', 'essentials.loadImage'],
       ['SaveImage', 'essentials.saveImage'],
       ['PrimitiveStringMultiline', 'essentials.text'],
+      ['ComfySwitchNode', 'essentials.switch'],
       ['ImageScale', 'essentials.resizeImage'],
       ['LoraLoader', 'essentials.loadStyleLora'],
       ['OpenAIChatNode', 'essentials.textGenerationLLM'],

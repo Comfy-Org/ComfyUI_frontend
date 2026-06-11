@@ -4170,6 +4170,7 @@
     "load3DModel": "Load 3D model",
     "save3DModel": "Save 3D Model",
     "text": "Text",
+    "switch": "Switch",
     "batchImage": "Batch Image",
     "cropImage": "Crop Image",
     "resizeImage": "Resize Image",
