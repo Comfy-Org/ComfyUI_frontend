@@ -35,9 +35,13 @@ const mockAppModeState = vi.hoisted(() => ({
   isAppMode: { value: false }
 }))
 
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => mockAppModeState
-}))
+vi.mock('@/composables/useAppMode', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+  return {
+    ...actual,
+    useAppMode: () => mockAppModeState
+  }
+})
 
 beforeEach(() => {
   mockAppModeState.mode.value = 'graph'
@@ -1192,6 +1196,29 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         share_id: 'share-1',
         view_mode: 'graph',
         is_app_mode: false
+      })
+    })
+
+    it('attributes shared workflow run to the queued workflow, not the active one', () => {
+      const workflow = createQueuedWorkflow()
+      workflow.shareId = 'share-1'
+      workflow.activeMode = 'app'
+      store.storeJob({
+        nodes: ['a'],
+        id: 'job-1',
+        promptOutput: {
+          a: createPromptNode('Node A', 'NodeA')
+        },
+        workflow
+      })
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
+        job_id: 'job-1',
+        share_id: 'share-1',
+        view_mode: 'app',
+        is_app_mode: true
       })
     })
   })

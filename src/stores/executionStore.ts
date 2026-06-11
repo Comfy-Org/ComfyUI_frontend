@@ -3,7 +3,11 @@ import { computed, ref, shallowRef } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import type { AppMode } from '@/composables/useAppMode'
-import { useAppMode } from '@/composables/useAppMode'
+import {
+  getWorkflowMode,
+  isAppModeValue,
+  useAppMode
+} from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -605,8 +609,9 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.nodeLookup = buildExecutionNodeLookup(promptOutput)
     queuedJob.workflow = workflow
     queuedJob.shareId = workflow?.shareId
-    queuedJob.viewMode = mode.value
-    queuedJob.isAppMode = isAppMode.value
+    const queuedMode = getWorkflowMode(workflow)
+    queuedJob.viewMode = queuedMode
+    queuedJob.isAppMode = isAppModeValue(queuedMode)
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)
