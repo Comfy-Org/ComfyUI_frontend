@@ -98,6 +98,7 @@
                 size="icon"
                 class="mr-2 shrink-0 rounded-lg hover:bg-transparent hover:text-base-foreground"
                 :aria-label="t('rightSidePanel.missingModels.refresh')"
+                :disabled="missingModelStore.isRefreshingMissingModels"
                 :aria-busy="missingModelStore.isRefreshingMissingModels"
                 :aria-disabled="missingModelStore.isRefreshingMissingModels"
                 @click.stop="handleMissingModelRefresh"
@@ -457,6 +458,8 @@ const showMissingModelHeaderRefresh = computed(
 )
 
 function handleMissingModelRefresh() {
+  if (missingModelStore.isRefreshingMissingModels) return
+
   void missingModelStore.refreshMissingModels()
 }
 
