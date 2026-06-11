@@ -214,7 +214,7 @@ import {
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
-import { ESSENTIAL_PLACEHOLDER_SECTIONS } from '@/constants/essentialsPlaceholders'
+import { ESSENTIAL_SECTIONS } from '@/constants/essentialsNodes'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import {
   DEFAULT_SORTING_ID,
@@ -560,7 +560,7 @@ async function jumpToSubgroup(subgroupKey: string) {
 }
 
 const jumpMenuEntries = computed<MenuItem[]>(() => {
-  const entries = ESSENTIAL_PLACEHOLDER_SECTIONS.map((section) => {
+  const entries = ESSENTIAL_SECTIONS.map((section) => {
     if (!section.subgroups)
       return {
         label: section.label,

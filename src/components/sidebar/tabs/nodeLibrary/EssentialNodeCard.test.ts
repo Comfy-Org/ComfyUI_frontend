@@ -3,7 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { EssentialPlaceholderTile } from '@/constants/essentialsPlaceholders'
+import type { EssentialTile } from '@/constants/essentialsNodes'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -48,14 +48,14 @@ function createNodeDef(name: string): ComfyNodeDefV1 {
   }
 }
 
-const REGISTERED_TILE: EssentialPlaceholderTile = {
+const REGISTERED_TILE: EssentialTile = {
   label: 'Load Image',
   icon: 'icon-s1.5-[lucide--image-up]',
   media: 'image',
   nodeName: 'LoadImage'
 }
 
-const UNRESOLVED_TILE: EssentialPlaceholderTile = {
+const UNRESOLVED_TILE: EssentialTile = {
   label: 'Missing Node',
   icon: 'icon-[comfy--node]',
   nodeName: 'NotARegisteredNode'
@@ -68,7 +68,7 @@ describe('EssentialNodeCard', () => {
     useNodeDefStore().updateNodeDefs([createNodeDef('LoadImage')])
   })
 
-  function renderComponent(tile: EssentialPlaceholderTile = REGISTERED_TILE) {
+  function renderComponent(tile: EssentialTile = REGISTERED_TILE) {
     const user = userEvent.setup()
     const { container } = render(EssentialNodeCard, {
       props: { tile },

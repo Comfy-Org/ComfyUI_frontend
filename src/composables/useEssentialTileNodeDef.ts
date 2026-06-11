@@ -1,14 +1,14 @@
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import type { EssentialPlaceholderTile } from '@/constants/essentialsPlaceholders'
+import type { EssentialTile } from '@/constants/essentialsNodes'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 // FIXME: Move all uses of SubgraphBlueprint to a shared source
 const BLUEPRINT_PREFIX = 'SubgraphBlueprint.'
 
 export function useEssentialTileNodeDef(
-  title: MaybeRefOrGetter<EssentialPlaceholderTile>
+  title: MaybeRefOrGetter<EssentialTile>
 ) {
   const nodeDefStore = useNodeDefStore()
   return computed(() => {

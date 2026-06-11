@@ -34,11 +34,11 @@ import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useNodePreviewAndDrag } from '@/composables/node/useNodePreviewAndDrag'
 import { useEssentialTileNodeDef } from '@/composables/useEssentialTileNodeDef'
-import type { EssentialPlaceholderTile } from '@/constants/essentialsPlaceholders'
+import type { EssentialTile } from '@/constants/essentialsNodes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { previewPanel, tile } = defineProps<{
-  tile: EssentialPlaceholderTile
+  tile: EssentialTile
   previewPanel?: HTMLElement | null
 }>()
 const nodeDef = useEssentialTileNodeDef(() => tile)

@@ -1,11 +1,9 @@
-import { resolveBlueprintEssentialsPath } from '@/constants/essentialsDisplayNames'
 import type { EssentialsPath } from '@/constants/essentialsNodes'
 import {
-  ESSENTIALS_NODE_PATH_MAP,
+  NODE_TO_ESSENTIALS_PATH,
   ESSENTIALS_NODE_RANK,
   ESSENTIALS_SECTION_RANK,
-  ESSENTIALS_SUBGROUP_RANK,
-  resolveBackendEssentialsPath
+  ESSENTIALS_SUBGROUP_RANK
 } from '@/constants/essentialsNodes'
 import { t } from '@/i18n'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -27,15 +25,7 @@ const UNKNOWN_RANK = Number.MAX_SAFE_INTEGER
 function resolveEssentialsPath(
   nodeDef: ComfyNodeDefImpl
 ): EssentialsPath | undefined {
-  if (!nodeDef.isCoreNode) return undefined
-
-  const known = ESSENTIALS_NODE_PATH_MAP.get(nodeDef.name)
-  if (known) return known
-
-  const blueprintPath = resolveBlueprintEssentialsPath(nodeDef.name)
-  if (blueprintPath) return blueprintPath
-
-  return resolveBackendEssentialsPath(nodeDef.essentials_category)
+  return NODE_TO_ESSENTIALS_PATH[nodeDef.name]
 }
 
 function sortByKnownOrder<T>(
@@ -166,18 +156,10 @@ class NodeOrganizationService {
     tabId: TabId = DEFAULT_TAB_ID
   ): NodeSection[] {
     switch (tabId) {
-      case 'essentials':
-        return this.organizeEssentials(nodes)
-      case 'blueprints':
-        return this.organizeBlueprints(nodes)
       case 'all':
       default:
         return this.organizeAll(nodes)
     }
-  }
-
-  private organizeEssentials(nodes: ComfyNodeDefImpl[]): NodeSection[] {
-    return [{ tree: this.buildEssentialsTree(nodes) }]
   }
 
   private buildEssentialsTree(nodes: ComfyNodeDefImpl[]): TreeNode {
@@ -232,28 +214,6 @@ class NodeOrganizationService {
         ESSENTIALS_NODE_RANK
       )
     }
-  }
-
-  private organizeBlueprints(nodes: ComfyNodeDefImpl[]): NodeSection[] {
-    const { myBlueprints, comfyBlueprints } = this.partitionBlueprints(nodes)
-    return [
-      {
-        title: 'sideToolbar.nodeLibraryTab.sections.myBlueprints',
-        tree: unwrapTreeRoot(
-          buildNodeDefTree(myBlueprints, {
-            pathExtractor: categoryPathExtractor
-          })
-        )
-      },
-      {
-        title: 'sideToolbar.nodeLibraryTab.sections.comfyBlueprints',
-        tree: unwrapTreeRoot(
-          buildNodeDefTree(comfyBlueprints, {
-            pathExtractor: categoryPathExtractor
-          })
-        )
-      }
-    ]
   }
 
   private organizeAll(nodes: ComfyNodeDefImpl[]): NodeSection[] {
@@ -311,20 +271,6 @@ class NodeOrganizationService {
     }
 
     return sections
-  }
-
-  private partitionBlueprints(nodes: ComfyNodeDefImpl[]): {
-    myBlueprints: ComfyNodeDefImpl[]
-    comfyBlueprints: ComfyNodeDefImpl[]
-  } {
-    const myBlueprints: ComfyNodeDefImpl[] = []
-    const comfyBlueprints: ComfyNodeDefImpl[] = []
-    for (const node of nodes) {
-      if (!isBlueprint(node)) continue
-      if (node.isGlobal) comfyBlueprints.push(node)
-      else myBlueprints.push(node)
-    }
-    return { myBlueprints, comfyBlueprints }
   }
 
   private classifyNodes(nodes: ComfyNodeDefImpl[]): {

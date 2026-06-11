@@ -68,10 +68,10 @@ import { useI18n } from 'vue-i18n'
 
 import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
 import type {
-  EssentialPlaceholderSection,
-  EssentialPlaceholderTile
-} from '@/constants/essentialsPlaceholders'
-import { ESSENTIAL_PLACEHOLDER_SECTIONS } from '@/constants/essentialsPlaceholders'
+  EssentialSection,
+  EssentialTile
+} from '@/constants/essentialsNodes'
+import { ESSENTIAL_SECTIONS } from '@/constants/essentialsNodes'
 
 import EssentialNodeCard from './EssentialNodeCard.vue'
 
@@ -84,22 +84,20 @@ const mediaFilters = defineModel<Record<EssentialsMediaType, boolean>>(
   { required: true }
 )
 
-const filteredSections = computed<EssentialPlaceholderSection[]>(() => {
+const filteredSections = computed<EssentialSection[]>(() => {
   const query = searchQuery.trim().toLowerCase()
-  if (!query) return ESSENTIAL_PLACEHOLDER_SECTIONS
-  const matchesQuery = (tile: EssentialPlaceholderTile) =>
+  if (!query) return ESSENTIAL_SECTIONS
+  const matchesQuery = (tile: EssentialTile) =>
     tile.label.toLowerCase().includes(query)
-  return ESSENTIAL_PLACEHOLDER_SECTIONS.flatMap<EssentialPlaceholderSection>(
-    (section) => {
-      if (section.tiles?.length) {
-        const tiles = section.tiles.filter(matchesQuery)
-        return tiles.length ? [{ ...section, tiles }] : []
-      }
-      const subgroups = section.subgroups
-        ?.map((sg) => ({ ...sg, tiles: sg.tiles.filter(matchesQuery) }))
-        .filter((sg) => sg.tiles.length)
-      return subgroups?.length ? [{ ...section, subgroups }] : []
+  return ESSENTIAL_SECTIONS.flatMap<EssentialSection>((section) => {
+    if (section.tiles?.length) {
+      const tiles = section.tiles.filter(matchesQuery)
+      return tiles.length ? [{ ...section, tiles }] : []
     }
-  )
+    const subgroups = section.subgroups
+      ?.map((sg) => ({ ...sg, tiles: sg.tiles.filter(matchesQuery) }))
+      .filter((sg) => sg.tiles.length)
+    return subgroups?.length ? [{ ...section, subgroups }] : []
+  })
 })
 </script>
