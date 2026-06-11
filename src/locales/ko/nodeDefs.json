@@ -2982,6 +2982,98 @@
       }
     }
   },
+  "DA3GeometryToMesh": {
+    "description": "깊이 맵을 삼각형 3D 메시로 변환합니다.",
+    "display_name": "DA3 지오메트리를 메시로 변환",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "변환할 배치 내 이미지 인덱스입니다. 이미지마다 버텍스 개수가 다르므로 배치를 쌓을 수 없습니다."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "이미지별 정규화된 신뢰도가 이 값보다 낮은 픽셀을 제외합니다 (0 = 모두 유지, 1 = 가장 신뢰도 높은 픽셀만 유지). 지오메트리에 신뢰도 맵이 있을 때 사용합니다 (Small/Base 모델)."
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "버텍스 간격입니다. 1 = 전체 해상도, 2 = 절반 해상도 등."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "3x3 깊이 범위가 이 비율을 초과하는 삼각형을 제거합니다. 0 = 비활성화."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "원본 이미지를 기본 색상 텍스처로 사용합니다."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "메시에서 하늘 확률 픽셀(하늘 >= 0.5)을 제외합니다. 지오메트리에 하늘 맵이 있을 때 사용합니다 (Mono/Metric 모델)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "이미지에서 Depth Anything 3을 실행합니다. 다중 뷰 모드에서는 각 이미지를 동일한 장면의 별도 뷰로 처리합니다.",
+    "display_name": "Depth Anything 3 실행",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: 단일 뷰 이미지(모든 모델 변형에서 사용 가능).\nmultiview: 모든 이미지를 기하학적 일관성 및 카메라 포즈를 위해 함께 처리(Small/Base 모델 전용)."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: 가장 긴 변이 resolution이 되도록 스케일(메모리 제한, 기본값).\nlower_bound_resize: 가장 짧은 변이 resolution이 되도록 스케일(세로/가로가 긴 이미지에서 더 많은 디테일 보존, 메모리 더 사용)."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "모델이 실행되는 해상도 (가장 긴 변, 14의 배수).\n낮을수록 빠르고 VRAM 사용량이 적음.\n높을수록 더 많은 디테일.\n출력은 원본 크기로 업샘플링됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "정규화되지 않은 텐서의 딕셔너리.\n항상 포함되는 키: depth, image, mode.\n선택적 키: sky(Mono/Metric), confidence(Small/Base), extrinsics + intrinsics(다중 뷰)."
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "Depth Anything 3 지오메트리 데이터에서 깊이 맵, 신뢰도 맵 또는 하늘 마스크를 렌더링합니다.",
+    "display_name": "Depth Anything 3 렌더",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: 정규화된 그레이스케일 깊이 이미지.\n- depth_colored: Turbo 컬러맵을 적용한 깊이.\n- sky_mask: [0, 1] 범위의 하늘 확률(Mono/Metric 모델 전용).\n- confidence: 정규화된 깊이 신뢰도(Small/Base 모델 전용)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "컨트롤넷 모델 로드 (차이)",
     "inputs": {
@@ -8983,6 +9075,22 @@
     "outputs": {
       "0": {
         "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "Depth Anything 3 불러오기",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
