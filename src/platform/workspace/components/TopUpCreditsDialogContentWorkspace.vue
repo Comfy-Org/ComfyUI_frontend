@@ -177,7 +177,7 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance } = useBillingContext()
+const { fetchBalance, fetchStatus } = useBillingContext()
 
 const billingOperationStore = useBillingOperationStore()
 const isPolling = computed(() => billingOperationStore.hasPendingOperations)
@@ -265,7 +265,7 @@ async function handleBuy() {
         summary: t('credits.topUp.purchaseSuccess'),
         life: 5000
       })
-      await fetchBalance()
+      await Promise.all([fetchBalance(), fetchStatus()])
       handleClose(false)
       settingsDialog.show('workspace')
     } else if (response.status === 'pending') {
