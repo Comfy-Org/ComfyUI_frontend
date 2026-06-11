@@ -81,39 +81,20 @@ describe('groupAsset', () => {
     ).toEqual(['video'])
   })
 
-  it('keeps companion file types in their bucket regardless of base model', () => {
+  it('ignores base-model metadata entirely — tags are the only input', () => {
     const clipEncoder = makeAsset({
       tags: ['models', 'text_encoders'],
       metadata: { base_model: 'SDXL' }
     })
     expect(groupAsset(clipEncoder).groupIds).toEqual(['encoders'])
-    const upscaler = makeAsset({
-      tags: ['models', 'latent_upscale_models'],
-      metadata: { base_model: 'LTX 2.3' }
-    })
-    expect(groupAsset(upscaler).groupIds).toEqual(['upscale'])
-  })
-
-  it('re-homes main generative models into their modality by base model', () => {
     const videoTransformer = makeAsset({
       tags: ['models', 'diffusion_models'],
       metadata: { base_model: 'LTX 2.3' }
     })
-    expect(groupAsset(videoTransformer).groupIds).toEqual(['video'])
-    const audioCheckpoint = makeAsset({
-      tags: ['models', 'checkpoints'],
-      metadata: { base_model: 'ACE-Step' }
-    })
-    expect(groupAsset(audioCheckpoint).groupIds).toEqual(['audio'])
+    expect(groupAsset(videoTransformer).groupIds).toEqual(['diffusion'])
   })
 
-  it('falls back to the tag-derived group when no base override applies', () => {
-    expect(
-      groupAsset(makeAsset({ tags: ['models', 'text_encoders'] })).groupIds
-    ).toEqual(['encoders'])
-  })
-
-  it('does not capture unmapped tags by base model', () => {
+  it('leaves unmapped tags unmapped regardless of metadata', () => {
     const result = groupAsset(
       makeAsset({
         tags: ['models', 'intrinsic_loras'],

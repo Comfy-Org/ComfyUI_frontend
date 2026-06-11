@@ -1,11 +1,9 @@
-import { getCategoryOverrideForBase } from '@/components/sidebar/tabs/cloudModelLibrary/baseModelCategoryOverrides'
 import {
   MODEL_GROUPS,
   groupIdForRawTag
 } from '@/components/sidebar/tabs/cloudModelLibrary/modelGroups'
 import { MODELS_TAG } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import { getAssetBaseModels } from '@/platform/assets/utils/assetMetadataUtils'
 
 export function firstNonModelsTag(asset: AssetItem): string | null {
   for (const tag of asset.tags) {
@@ -49,18 +47,19 @@ export interface AssetGrouping {
 }
 
 /**
- * Resolves every group an asset belongs to. An asset may carry multiple
- * category tags (the backend tags a file with every model folder it could
- * belong to, e.g. a file in a shared folder gets both `checkpoints` and
- * `loras`), and membership in multiple groups is the intended behavior.
- * Tags with no curated mapping surface verbatim so new categories and user
- * folders stay visible.
+ * Resolves every group an asset belongs to — a pure remapping of its folder
+ * tags onto the curated groups. An asset may carry multiple category tags
+ * (the backend tags a file with every model folder it could belong to, e.g.
+ * a file in a shared folder gets both `checkpoints` and `loras`), and
+ * membership in multiple groups is the intended behavior. Tags with no
+ * curated mapping surface verbatim so new categories and user folders stay
+ * visible.
  */
 export function groupAsset(asset: AssetItem): AssetGrouping {
   const groupIds = new Set<string>()
   const unmappedTags = new Set<string>()
   for (const tag of categoryTagsForAsset(asset)) {
-    const groupId = groupIdForTag(asset, tag)
+    const groupId = groupIdForRawTag(rawTagTopLevel(tag))
     if (groupId) {
       groupIds.add(groupId)
     } else {
@@ -83,20 +82,4 @@ export function partnerKind(category: string | undefined): string {
   if (!category) return ''
   const parts = category.split('/')
   return parts[1] ?? ''
-}
-
-function groupIdForTag(asset: AssetItem, tag: string): string | null {
-  const tagGroup = groupIdForRawTag(rawTagTopLevel(tag))
-  // Type wins. The base-model override only re-homes MAIN generative models
-  // (checkpoints / diffusion_models) into their modality — an LTX transformer
-  // belongs in Video & motion, but an SDXL text encoder is still an encoder.
-  // The Base-model sort axis keeps each family together within a bucket.
-  if (tagGroup === 'diffusion') {
-    const bases = getAssetBaseModels(asset)
-    for (const base of bases) {
-      const override = getCategoryOverrideForBase(base)
-      if (override) return override
-    }
-  }
-  return tagGroup
 }
