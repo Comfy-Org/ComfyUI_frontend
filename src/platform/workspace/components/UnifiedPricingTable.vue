@@ -403,6 +403,7 @@ import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
   TEAM_PLAN_CREDIT_STOPS
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 
@@ -426,9 +427,9 @@ const emit = defineEmits<{
   subscribe: [payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }]
   resubscribe: []
   // Team-plan checkout. NOTE: the slider stop -> plan-slug mapping is blocked on
-  // the BE discount-breakpoint contract (FE-934 / doc Open Q#2); the host stubs
-  // this until the contract lands.
-  subscribeTeam: [payload: { usd: number; credits: number }]
+  // the BE discount-breakpoint contract (FE-934 / doc Open Q#2); the host shows
+  // the confirm step but stubs the final subscribe until the contract lands.
+  subscribeTeam: [payload: TeamPlanSelection]
 }>()
 
 const { t, n } = useI18n()

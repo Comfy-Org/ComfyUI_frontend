@@ -57,6 +57,15 @@ export const ConfirmNewSubscription: Story = {
   })
 }
 
+/** Team subscription — "Confirm your payment" rendered from a slider stop. */
+export const ConfirmTeamSubscription: Story = {
+  render: () => ({
+    components: { SubscriptionAddPaymentPreviewWorkspace },
+    data: () => ({ teamPlan: { usd: 400, credits: 84_400 } }),
+    template: `${shell}<SubscriptionAddPaymentPreviewWorkspace :team-plan="teamPlan" /></div>`
+  })
+}
+
 /** Plan change — "Confirm your plan change" (Transition preview, Pro → Creator). */
 export const ConfirmPlanChange: Story = {
   render: () => ({
