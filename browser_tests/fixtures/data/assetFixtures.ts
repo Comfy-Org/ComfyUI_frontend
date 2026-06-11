@@ -1,10 +1,11 @@
 import type { Asset } from '@comfyorg/ingest-types'
-function createModelAsset(overrides: Partial<Asset> = {}): Asset {
+function createModelAsset(
+  overrides: Partial<Asset> = {}
+): Asset & { hash?: string } {
   return {
     id: 'test-model-001',
     name: 'model.safetensors',
-    asset_hash:
-      'blake3:0000000000000000000000000000000000000000000000000000000000000000',
+    hash: 'blake3:0000000000000000000000000000000000000000000000000000000000000000',
     size: 2_147_483_648,
     mime_type: 'application/octet-stream',
     tags: ['models', 'checkpoints'],
@@ -16,12 +17,13 @@ function createModelAsset(overrides: Partial<Asset> = {}): Asset {
   }
 }
 
-function createInputAsset(overrides: Partial<Asset> = {}): Asset {
+function createInputAsset(
+  overrides: Partial<Asset> = {}
+): Asset & { hash?: string } {
   return {
     id: 'test-input-001',
     name: 'input.png',
-    asset_hash:
-      'blake3:1111111111111111111111111111111111111111111111111111111111111111',
+    hash: 'blake3:1111111111111111111111111111111111111111111111111111111111111111',
     size: 2_048_576,
     mime_type: 'image/png',
     tags: ['input'],
@@ -32,12 +34,13 @@ function createInputAsset(overrides: Partial<Asset> = {}): Asset {
   }
 }
 
-function createOutputAsset(overrides: Partial<Asset> = {}): Asset {
+function createOutputAsset(
+  overrides: Partial<Asset> = {}
+): Asset & { hash?: string } {
   return {
     id: 'test-output-001',
     name: 'output_00001.png',
-    asset_hash:
-      'blake3:2222222222222222222222222222222222222222222222222222222222222222',
+    hash: 'blake3:2222222222222222222222222222222222222222222222222222222222222222',
     size: 4_194_304,
     mime_type: 'image/png',
     tags: ['output'],

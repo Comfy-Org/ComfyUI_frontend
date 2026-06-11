@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   capturePreservedQuery,
   clearPreservedQuery,
+  getPreservedQueryParam,
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
@@ -27,6 +28,22 @@ describe('preservedQueryManager', () => {
 
     expect(merged).toEqual({ template: 'flux', source: 'custom' })
     expect(sessionStorage.getItem('Comfy.PreservedQuery.template')).toBeTruthy()
+  })
+
+  it('reads a preserved query param by key', () => {
+    capturePreservedQuery(NAMESPACE, { template: 'flux' }, ['template'])
+
+    expect(getPreservedQueryParam(NAMESPACE, 'template')).toBe('flux')
+    expect(getPreservedQueryParam(NAMESPACE, 'source')).toBeUndefined()
+  })
+
+  it('hydrates from sessionStorage when reading a param', () => {
+    sessionStorage.setItem(
+      'Comfy.PreservedQuery.template',
+      JSON.stringify({ template: 'flux' })
+    )
+
+    expect(getPreservedQueryParam(NAMESPACE, 'template')).toBe('flux')
   })
 
   it('hydrates cached payload from sessionStorage once', () => {

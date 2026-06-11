@@ -174,10 +174,50 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
 
       const { bottomRight } = node.resize
       await expect.poll(() => countColumns(node.imageGrid)).toBe(10)
-      await comfyMouse.resizeByDragging(bottomRight, { x: 200 })
+      await comfyMouse.dragElementBy(bottomRight, { x: 200 })
       await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
-      await comfyMouse.resizeByDragging(bottomRight, { x: -200, y: 200 })
+      await comfyMouse.dragElementBy(bottomRight, { x: -200, y: 200 })
       await expect.poll(() => countColumns(node.imageGrid)).toBeLessThan(10)
+    }
+  )
+
+  wstest(
+    'requests lightweight thumbnail URLs for grid cells',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+
+      await test.step('Add node', async () => {
+        await comfyPage.menu.topbar.newWorkflowButton.click()
+        await comfyPage.nextFrame()
+
+        await comfyPage.searchBoxV2.addNode('Preview Image')
+        const previewImage = comfyPage.vueNodes.getNodeByTitle('Preview Image')
+        await expect(previewImage).toBeVisible()
+      })
+
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+      const gridImages = node.imageGrid.locator('img')
+
+      await test.step('Inject a multi-image grid', async () => {
+        const images = Array.from({ length: 4 }, (_, index) => ({
+          filename: `grid-${index}.png`,
+          subfolder: '',
+          type: 'output'
+        }))
+        execution.executed('', '1', { images })
+        await expect(gridImages).toHaveCount(4)
+      })
+
+      // FE-741: small on-node grid cells must request a server re-encoded
+      // thumbnail (`preview=webp;75`, `;` may be percent-encoded) instead of
+      // downloading the full-resolution image, while still pointing at the
+      // real `/api/view` URL for that output. Verifies the full path: WS
+      // output -> nodeOutputStore.buildImageUrls -> getGridThumbnailUrl ->
+      // rendered grid `<img>`.
+      for (const cell of await gridImages.all()) {
+        await expect(cell).toHaveAttribute('src', /[?&]preview=webp(%3B|;)75/)
+        await expect(cell).toHaveAttribute('src', /[?&]filename=grid-\d+\.png/)
+      }
     }
   )
 })

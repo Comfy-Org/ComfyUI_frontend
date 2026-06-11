@@ -6,15 +6,15 @@
   >
     <div v-if="isVisible" class="pointer-events-none flex w-full justify-end">
       <div
-        role="alert"
-        aria-live="assertive"
+        role="status"
+        aria-live="polite"
         data-testid="error-overlay"
-        class="pointer-events-auto flex w-80 min-w-72 flex-col overflow-hidden rounded-lg border border-destructive-background bg-comfy-menu-bg shadow-interface transition-colors duration-200 ease-in-out"
+        class="pointer-events-auto flex w-fit max-w-120 min-w-80 flex-col overflow-hidden rounded-lg border border-destructive-background bg-comfy-menu-bg shadow-interface transition-colors duration-200 ease-in-out"
       >
         <!-- Header -->
         <div class="flex h-12 items-center gap-2 px-4">
           <span class="flex-1 text-sm font-bold text-destructive-background">
-            {{ errorCountLabel }}
+            {{ overlayTitle }}
           </span>
           <Button
             variant="muted-textonly"
@@ -28,20 +28,11 @@
 
         <!-- Body -->
         <div class="px-4 pb-3" data-testid="error-overlay-messages">
-          <ul class="m-0 flex list-none flex-col gap-1.5 p-0">
-            <li
-              v-for="(message, idx) in overlayMessages"
-              :key="idx"
-              class="flex min-w-0 items-baseline gap-2 text-sm/snug text-muted-foreground"
-            >
-              <span
-                class="mt-1.5 size-1 shrink-0 rounded-full bg-muted-foreground"
-              />
-              <span class="line-clamp-3 wrap-break-word whitespace-pre-wrap">{{
-                message
-              }}</span>
-            </li>
-          </ul>
+          <p
+            class="m-0 line-clamp-3 text-sm/snug wrap-break-word whitespace-pre-wrap text-muted-foreground"
+          >
+            {{ overlayMessage }}
+          </p>
         </div>
 
         <!-- Footer -->
@@ -60,7 +51,11 @@
             data-testid="error-overlay-see-errors"
             @click="seeErrors"
           >
-            {{ appMode ? t('linearMode.error.goto') : seeErrorsLabel }}
+            {{
+              appMode
+                ? t('linearMode.error.goto')
+                : t('errorOverlay.viewDetails')
+            }}
           </Button>
         </div>
       </div>
@@ -69,73 +64,22 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { storeToRefs } from 'pinia'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
+import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 
-defineProps<{ appMode?: boolean }>()
+const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
 const { t } = useI18n()
 const executionErrorStore = useExecutionErrorStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const canvasStore = useCanvasStore()
 
-const { totalErrorCount, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
-const { allErrorGroups } = useErrorGroups(ref(''))
-
-const singleErrorType = computed(() => {
-  const types = new Set(allErrorGroups.value.map((g) => g.type))
-  return types.size === 1 ? [...types][0] : null
-})
-
-const overlayMessages = computed<string[]>(() => {
-  const messages = new Set<string>()
-  for (const group of allErrorGroups.value) {
-    if (group.type === 'execution') {
-      // TODO(FE-816 overlay-redesign): Keep runtime overlay copy raw until the
-      // overlay redesign decides how to use catalog toast fields.
-      for (const card of group.cards) {
-        for (const err of card.errors) {
-          messages.add(err.message)
-        }
-      }
-    } else {
-      messages.add(group.displayMessage ?? group.displayTitle)
-    }
-  }
-  return Array.from(messages)
-})
-
-const seeErrorsLabel = computed(() => {
-  const labelMap: Record<string, string> = {
-    missing_node: t('errorOverlay.showMissingNodes'),
-    missing_model: t('errorOverlay.showMissingModels'),
-    swap_nodes: t('errorOverlay.showSwapNodes'),
-    missing_media: t('errorOverlay.showMissingMedia')
-  }
-  if (singleErrorType.value) {
-    return labelMap[singleErrorType.value] ?? t('errorOverlay.seeErrors')
-  }
-  return t('errorOverlay.seeErrors')
-})
-
-const errorCountLabel = computed(() =>
-  t(
-    'errorOverlay.errorCount',
-    { count: totalErrorCount.value },
-    totalErrorCount.value
-  )
-)
-
-const isVisible = computed(
-  () => isErrorOverlayOpen.value && totalErrorCount.value > 0
-)
+const { isVisible, overlayMessage, overlayTitle } = useErrorOverlayState()
 
 function dismiss() {
   executionErrorStore.dismissErrorOverlay()

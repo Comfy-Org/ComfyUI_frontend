@@ -52,6 +52,7 @@
         v-model:background-image="sceneConfig!.backgroundImage"
         v-model:background-render-mode="sceneConfig!.backgroundRenderMode"
         v-model:fov="cameraConfig!.fov"
+        :show-background-image="canUseBackgroundImage"
         :hdri-active="
           !!lightConfig?.hdri?.hdriPath && !!lightConfig?.hdri?.enabled
         "
@@ -71,7 +72,6 @@
         v-if="showCameraControls"
         v-model:camera-type="cameraConfig!.cameraType"
         v-model:fov="cameraConfig!.fov"
-        v-model:retain-view-on-reload="cameraConfig!.retainViewOnReload"
       />
 
       <div v-if="showLightControls" class="flex flex-col">
@@ -82,6 +82,7 @@
         />
 
         <HDRIControls
+          v-if="canUseHdri"
           v-model:hdri-config="lightConfig!.hdri"
           :has-background-image="!!sceneConfig?.backgroundImage"
           @update-hdri-file="handleHDRIFileUpdate"
@@ -130,12 +131,16 @@ const {
   canUseGizmo = true,
   canUseLighting = true,
   canExport = true,
+  canUseHdri = true,
+  canUseBackgroundImage = true,
   materialModes = ['original', 'normal', 'wireframe'],
   hasSkeleton = false
 } = defineProps<{
   canUseGizmo?: boolean
   canUseLighting?: boolean
   canExport?: boolean
+  canUseHdri?: boolean
+  canUseBackgroundImage?: boolean
   materialModes?: readonly MaterialMode[]
   hasSkeleton?: boolean
 }>()

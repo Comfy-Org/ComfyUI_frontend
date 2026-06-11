@@ -1,8 +1,9 @@
 <template>
   <Dialog v-model:open="visible">
     <DialogPortal>
-      <DialogOverlay />
+      <DialogOverlay v-reka-z-index />
       <DialogContent
+        v-reka-z-index
         size="md"
         :aria-labelledby="titleId"
         @pointer-down-outside.prevent
@@ -125,6 +126,7 @@ import DialogHeader from '@/components/ui/dialog/DialogHeader.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'

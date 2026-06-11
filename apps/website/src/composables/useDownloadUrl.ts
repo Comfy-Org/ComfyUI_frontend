@@ -2,7 +2,7 @@ import { computed, onMounted, ref } from 'vue'
 
 import { externalLinks } from '@/config/routes'
 
-const downloadUrls = {
+export const downloadUrls = {
   windows: 'https://download.comfy.org/windows/nsis/x64',
   macArm: 'https://download.comfy.org/mac/dmg/arm64'
 } as const
@@ -24,6 +24,8 @@ function detectPlatform(ua: string): DetectedPlatform {
 // When Linux and/or macIntel builds are added, extend detection and URLs here.
 export function useDownloadUrl() {
   const platform = ref<DetectedPlatform>(null)
+  const detected = ref(false)
+  const isMobileUa = ref(false)
 
   const downloadUrl = computed(() => {
     if (platform.value === 'windows') return downloadUrls.windows
@@ -31,9 +33,16 @@ export function useDownloadUrl() {
     return externalLinks.github
   })
 
+  const showFallback = computed(
+    () => detected.value && !platform.value && !isMobileUa.value
+  )
+
   onMounted(() => {
-    platform.value = detectPlatform(navigator.userAgent.toLowerCase())
+    const ua = navigator.userAgent.toLowerCase()
+    isMobileUa.value = isMobile(ua)
+    platform.value = detectPlatform(ua)
+    detected.value = true
   })
 
-  return { downloadUrl, platform }
+  return { downloadUrl, platform, showFallback }
 }

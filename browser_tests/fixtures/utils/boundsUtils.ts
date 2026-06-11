@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
 import { SELECTION_BOUNDS_PADDING } from '@/base/common/selectionBounds'
 import type { CanvasRect } from '@/base/common/selectionBounds'
@@ -90,4 +90,22 @@ export async function measureSelectionBounds(
     },
     { ids: nodeIds, padding: SELECTION_BOUNDS_PADDING }
   ) as Promise<MeasureResult>
+}
+
+export async function intersection(a: Locator, b: Locator) {
+  const aBounds = await a.boundingBox()
+  const bBounds = await b.boundingBox()
+  if (!aBounds || !bBounds) return undefined
+
+  const y = Math.max(aBounds.y, bBounds.y)
+  const x = Math.max(aBounds.x, bBounds.x)
+  const bot = Math.min(aBounds.y + aBounds.height, bBounds.y + bBounds.height)
+  const right = Math.min(aBounds.x + aBounds.width, bBounds.x + bBounds.width)
+
+  if (y > bot || x > right) return undefined
+
+  const width = right - x
+  const height = bot - y
+
+  return { x, y, width, height }
 }

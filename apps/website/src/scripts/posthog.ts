@@ -38,3 +38,12 @@ export function capturePageview() {
     console.error('PostHog pageview capture failed', error)
   }
 }
+
+export function captureDownloadClick(platform: string) {
+  if (!initialized) return
+  try {
+    posthog.capture('website:download_button_clicked', { platform })
+  } catch (error) {
+    console.error('PostHog download click capture failed', error)
+  }
+}
