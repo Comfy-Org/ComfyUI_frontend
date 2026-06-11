@@ -11,16 +11,27 @@ const isDragging = ref(false)
 const draggedNode = shallowRef<ComfyNodeDefImpl | null>(null)
 const cursorPosition = ref({ x: 0, y: 0 })
 const dragMode = ref<DragMode>('click')
+const lastNativeDragPosition = shallowRef<{ x: number; y: number }>()
 let listenersSetup = false
 
 function updatePosition(e: PointerEvent) {
   cursorPosition.value = { x: e.clientX, y: e.clientY }
 }
 
+// Firefox dragend can report stale clientX/Y and `drag` can fire with
+// (0, 0). dragover on the target reliably reports real client coords.
+// https://bugzilla.mozilla.org/show_bug.cgi?id=1773886
+function trackNativeDragPosition(e: DragEvent) {
+  if (dragMode.value !== 'native') return
+  if (e.clientX === 0 && e.clientY === 0) return
+  lastNativeDragPosition.value = { x: e.clientX, y: e.clientY }
+}
+
 function cancelDrag() {
   isDragging.value = false
   draggedNode.value = null
   dragMode.value = 'click'
+  lastNativeDragPosition.value = undefined
 }
 
 function isOverCanvas(clientX: number, clientY: number): boolean {
@@ -85,6 +96,7 @@ function setupGlobalListeners() {
   document.addEventListener('pointerdown', blockCommitPointerDown, true)
   document.addEventListener('pointerup', endDrag, true)
   document.addEventListener('keydown', handleKeydown)
+  document.addEventListener('dragover', trackNativeDragPosition)
 }
 
 function cleanupGlobalListeners() {
@@ -95,6 +107,7 @@ function cleanupGlobalListeners() {
   document.removeEventListener('pointerdown', blockCommitPointerDown, true)
   document.removeEventListener('pointerup', endDrag, true)
   document.removeEventListener('keydown', handleKeydown)
+  document.removeEventListener('dragover', trackNativeDragPosition)
 
   if (isDragging.value && dragMode.value === 'click') {
     cancelDrag()
@@ -110,8 +123,9 @@ export function useNodeDragToCanvas() {
 
   function handleNativeDrop(clientX: number, clientY: number) {
     if (dragMode.value !== 'native') return
+    const tracked = lastNativeDragPosition.value
     try {
-      addNodeAtPosition(clientX, clientY)
+      addNodeAtPosition(tracked?.x ?? clientX, tracked?.y ?? clientY)
     } finally {
       cancelDrag()
     }

@@ -55,6 +55,7 @@ export class ComfyWorkflow extends UserFile {
    * Takes precedence over initialMode when present.
    */
   activeMode: AppMode | null = null
+  shareId?: string
   /**
    * @param options The path, modified, and size of the workflow.
    * Note: path is the full path, including the 'workflows/' prefix.

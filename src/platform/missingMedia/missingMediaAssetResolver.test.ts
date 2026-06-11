@@ -50,7 +50,7 @@ function makeAsset(name: string, assetHash: string | null = null): AssetItem {
   return {
     id: name,
     name,
-    asset_hash: assetHash,
+    hash: assetHash,
     mime_type: null,
     tags: ['input']
   }

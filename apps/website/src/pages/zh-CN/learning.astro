@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import HeroSection from '../../components/learning/HeroSection.vue'
+import FeaturedWorkflowSection from '../../components/learning/FeaturedWorkflowSection.vue'
+import TutorialsSection from '../../components/learning/TutorialsSection.vue'
+import CallToActionSection from '../../components/common/CallToActionSection.vue'
+import EventsSection from '../../components/common/EventsSection.vue'
+import { getRoutes, externalLinks } from '../../config/routes'
+import { learningEvents } from '../../data/events'
+
+const routes = getRoutes('zh-CN')
+---
+
+<BaseLayout title="学习 — Comfy">
+  <HeroSection locale="zh-CN" client:load />
+  <FeaturedWorkflowSection locale="zh-CN" client:visible />
+  <TutorialsSection locale="zh-CN" client:visible />
+  <CallToActionSection
+    locale="zh-CN"
+    headingKey="learning.cta.heading"
+    primaryLabelKey="learning.cta.contactSales"
+    primaryHref={routes.contact}
+    secondaryLabelKey="cta.tryWorkflow"
+    secondaryHref={externalLinks.workflows}
+    client:visible
+  />
+</BaseLayout>

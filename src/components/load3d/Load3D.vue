@@ -23,6 +23,8 @@
         :can-use-gizmo="canUseGizmo"
         :can-use-lighting="canUseLighting"
         :can-export="canExport"
+        :can-use-hdri="canUseHdri"
+        :can-use-background-image="canUseBackgroundImage"
         :material-modes="materialModes"
         :has-skeleton="hasSkeleton"
         @update-background-image="handleBackgroundImageUpdate"
@@ -86,7 +88,7 @@
       />
 
       <RecordingControls
-        v-if="!isPreview"
+        v-if="canUseRecording && !isPreview"
         v-model:is-recording="isRecording"
         v-model:has-recording="hasRecording"
         v-model:recording-duration="recordingDuration"
@@ -117,9 +119,18 @@ import { resolveNode } from '@/utils/litegraphUtil'
 import type { ComponentWidget } from '@/scripts/domWidget'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-const props = defineProps<{
+const {
+  widget,
+  nodeId,
+  canUseRecording = true,
+  canUseHdri = true,
+  canUseBackgroundImage = true
+} = defineProps<{
   widget: ComponentWidget<string[]> | SimplifiedWidget
   nodeId?: NodeId
+  canUseRecording?: boolean
+  canUseHdri?: boolean
+  canUseBackgroundImage?: boolean
 }>()
 
 function isComponentWidget(
@@ -130,11 +141,11 @@ function isComponentWidget(
 
 const node = ref<LGraphNode | null>(null)
 
-if (isComponentWidget(props.widget)) {
-  node.value = props.widget.node
-} else if (props.nodeId) {
+if (isComponentWidget(widget)) {
+  node.value = widget.node
+} else if (nodeId) {
   onMounted(() => {
-    node.value = resolveNode(props.nodeId!) ?? null
+    node.value = resolveNode(nodeId) ?? null
   })
 }
 
