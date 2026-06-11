@@ -146,7 +146,7 @@ const canvasStore = useCanvasStore()
 function connectNewNode(
   nodeDef: ComfyNodeDefImpl,
   options: { ghost?: boolean; dragEvent?: MouseEvent } = {}
-) {
+): LGraphNode | null {
   const { ghost = false, dragEvent } = options
   const node = withNodeAddSource('search_modal', () =>
     litegraphService.addNodeOnGraph(
@@ -155,7 +155,7 @@ function connectNewNode(
       { ghost, dragEvent }
     )
   )
-  if (!node) return
+  if (!node) return null
 
   if (disconnectOnReset && triggerEvent) {
     canvasStore.getCanvas().linkConnector.connectToNode(node, triggerEvent)
@@ -167,6 +167,8 @@ function connectNewNode(
 
   // Notify changeTracker - new step should be added
   useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
+
+  return node
 }
 
 function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
@@ -238,7 +240,8 @@ function showContextMenu(e: CanvasPointerEvent) {
 }
 
 function connectNodeFromMenu(nodeDef: ComfyNodeDefImpl) {
-  connectNewNode(nodeDef)
+  const node = connectNewNode(nodeDef)
+  if (node) canvasStore.getCanvas().selectNode(node)
   reset()
 }
 

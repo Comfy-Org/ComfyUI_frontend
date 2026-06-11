@@ -17,14 +17,15 @@
         @open-auto-focus.prevent="focusSearch"
         @close-auto-focus.prevent
         @entry-focus="onEntryFocus"
+        @keydown.capture="redirectTypingToSearch"
       >
         <DropdownMenuLabel
           v-if="headerLabel"
-          class="block shrink-0 truncate px-3 py-1.5 text-xs font-medium text-muted-foreground uppercase"
+          class="block shrink-0 truncate p-2 text-xs font-medium text-muted-foreground uppercase"
         >
           {{ headerLabel }}
         </DropdownMenuLabel>
-        <div class="shrink-0 px-1 py-1.5">
+        <div class="p-.5 shrink-0">
           <div
             class="flex h-9 items-center gap-2 rounded-lg bg-secondary-background px-2"
           >
@@ -68,7 +69,7 @@
             </DropdownMenuItem>
             <div
               v-if="searchResults.length === 0"
-              class="px-3 py-2 text-sm text-muted-foreground"
+              class="p-1 text-sm text-muted-foreground"
             >
               {{ t('g.noResults') }}
             </div>
@@ -77,7 +78,7 @@
           <template v-else>
             <template v-if="suggestions.length">
               <DropdownMenuLabel
-                class="block truncate px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground uppercase"
+                class="block truncate p-2 text-xs font-medium text-muted-foreground uppercase"
               >
                 {{ t('contextMenu.Most Relevant') }}
               </DropdownMenuLabel>
@@ -94,9 +95,14 @@
               </DropdownMenuItem>
             </template>
 
+            <DropdownMenuSeparator
+              v-if="suggestions.length && categories.length"
+              class="-mx-1 my-1 h-px shrink-0 bg-border-subtle"
+            />
+
             <template v-if="categories.length">
               <DropdownMenuLabel
-                class="block truncate px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground uppercase"
+                class="block truncate p-2 text-xs font-medium text-muted-foreground uppercase"
               >
                 {{ t('contextMenu.Compatible Nodes') }}
               </DropdownMenuLabel>
@@ -188,7 +194,7 @@ const submenuContentClass =
 const submenuScrollClass =
   'overflow-y-auto scrollbar-custom max-h-[min(calc(var(--reka-dropdown-menu-content-available-height)-3.5rem),80vh)]'
 const itemClass =
-  'flex cursor-pointer items-center gap-2 rounded-lg px-3 py-1.5 text-sm text-base-foreground outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-interface-menu-component-surface-hovered'
+  'flex cursor-pointer items-center gap-2 rounded-lg px-2 py-2 text-sm text-base-foreground outline-none select-none data-disabled:pointer-events-none data-disabled:opacity-50 data-highlighted:bg-interface-menu-component-surface-hovered'
 
 const headerLabel = computed(() =>
   context ? getLinkReleaseHeaderLabel(context) : ''
@@ -250,6 +256,26 @@ function addReroute() {
 
 function focusSearch() {
   searchInput.value?.focus()
+}
+
+function isPrintableKey(event: KeyboardEvent) {
+  return (
+    event.key.length === 1 &&
+    event.key !== ' ' &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey
+  )
+}
+
+// When the keyboard focus is on a menu item, funnel printable keystrokes into
+// the search field instead of letting Reka run its item type-ahead.
+function redirectTypingToSearch(event: KeyboardEvent) {
+  if (event.target === searchInput.value || !isPrintableKey(event)) return
+  event.preventDefault()
+  event.stopPropagation()
+  query.value += event.key
+  focusSearch()
 }
 
 // Reka refocuses the first item (scrolling the list to the top) whenever the

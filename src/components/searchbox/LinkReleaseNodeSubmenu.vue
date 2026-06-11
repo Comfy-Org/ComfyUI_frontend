@@ -1,6 +1,11 @@
 <template>
   <DropdownMenuSub v-model:open="open">
-    <DropdownMenuSubTrigger :class="triggerClass">
+    <DropdownMenuSubTrigger
+      :class="triggerClass"
+      @focus="open = true"
+      @keydown="onTriggerKeydown"
+      @blur="onTriggerBlur"
+    >
       <i :class="cn(category.icon, 'size-4 shrink-0 opacity-80')" />
       <span class="flex-1 truncate">{{ t(category.labelKey) }}</span>
       <span
@@ -29,10 +34,11 @@
         :align-offset="-5"
         :collision-padding="8"
         update-position-strategy="optimized"
-        @open-auto-focus.prevent="focusSearch"
+        @open-auto-focus.prevent
         @entry-focus="onEntryFocus"
+        @keydown.capture="redirectTypingToSearch"
       >
-        <div class="shrink-0 p-2">
+        <div class="p-.5 shrink-0">
           <div
             class="flex h-9 items-center gap-2 rounded-lg bg-secondary-background px-2"
           >
@@ -88,7 +94,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger
 } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -128,6 +134,46 @@ watch(open, (isOpen) => {
 
 function focusSearch() {
   searchInput.value?.focus()
+}
+
+function submenuContent() {
+  return searchInput.value?.closest<HTMLElement>('[role="menu"]') ?? null
+}
+
+// Step into the open submenu, landing on its search field.
+function onTriggerKeydown(event: KeyboardEvent) {
+  if (event.key !== 'ArrowRight' && event.key !== 'Enter') return
+  event.preventDefault()
+  open.value = true
+  void nextTick(focusSearch)
+}
+
+// Close the preview when focus leaves the trigger to a sibling item rather
+// than into the submenu content.
+function onTriggerBlur(event: FocusEvent) {
+  const next = event.relatedTarget
+  if (next instanceof Node && submenuContent()?.contains(next)) return
+  open.value = false
+}
+
+function isPrintableKey(event: KeyboardEvent) {
+  return (
+    event.key.length === 1 &&
+    event.key !== ' ' &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey
+  )
+}
+
+// When the keyboard focus is on a submenu item, funnel printable keystrokes
+// into this submenu's search field instead of Reka's item type-ahead.
+function redirectTypingToSearch(event: KeyboardEvent) {
+  if (event.target === searchInput.value || !isPrintableKey(event)) return
+  event.preventDefault()
+  event.stopPropagation()
+  query.value += event.key
+  focusSearch()
 }
 
 // Reka refocuses the first item (scrolling the list to the top) whenever the

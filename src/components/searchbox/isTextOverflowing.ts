@@ -11,16 +11,12 @@ const FONT_PROPS = [
 ] as const
 
 /**
- * Detects whether a single-line, ellipsis-truncated element is actually
- * clipping its text. `scrollWidth > clientWidth` is unreliable for
- * `text-overflow: ellipsis` in Chrome (it often reports equal), so the source
- * of truth is measuring the full text with a hidden clone that copies the
- * element's font metrics, then comparing against the available content width.
+ * Measures the full, unclipped width of an element's text by rendering it in a
+ * hidden clone that copies the element's font metrics. `scrollWidth` is
+ * unreliable for `text-overflow: ellipsis` in Chrome (it often reports equal to
+ * `clientWidth`), so the clone is the source of truth.
  */
-export function isTextOverflowing(el: HTMLElement): boolean {
-  const contentWidth = el.clientWidth
-  if (contentWidth <= 0) return false
-
+export function measureTextWidth(el: HTMLElement): number {
   const style = getComputedStyle(el)
   const clone = document.createElement('span')
   clone.textContent = el.textContent ?? ''
@@ -35,5 +31,16 @@ export function isTextOverflowing(el: HTMLElement): boolean {
   const textWidth = clone.getBoundingClientRect().width
   clone.remove()
 
-  return textWidth > contentWidth + 0.5
+  return textWidth
+}
+
+/**
+ * Detects whether a single-line, ellipsis-truncated element is actually
+ * clipping its text by comparing its full text width against the available
+ * content width.
+ */
+export function isTextOverflowing(el: HTMLElement): boolean {
+  const contentWidth = el.clientWidth
+  if (contentWidth <= 0) return false
+  return measureTextWidth(el) > contentWidth + 0.5
 }

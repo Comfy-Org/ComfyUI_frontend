@@ -51,6 +51,7 @@ describe('NodeSearchBoxPopover', () => {
     let emitAddFilter: EmitAddFilter | null = null
     let emitAddNodeV1: EmitAddNode | null = null
     let emitAddNodeV2: EmitAddNode | null = null
+    let emitSelectNode: ((nodeDef: ComfyNodeDefImpl) => void) | null = null
 
     const NodeSearchBoxStub = defineComponent({
       name: 'NodeSearchBox',
@@ -82,6 +83,17 @@ describe('NodeSearchBoxPopover', () => {
       template: '<div data-testid="search-content-v2"></div>'
     })
 
+    const LinkReleaseContextMenuStub = defineComponent({
+      name: 'LinkReleaseContextMenu',
+      props: { context: { type: Object, default: null } },
+      emits: ['selectNode', 'addReroute', 'dismiss'],
+      setup(_, { emit }) {
+        emitSelectNode = (nodeDef) => emit('selectNode', nodeDef)
+        return {}
+      },
+      template: '<div data-testid="link-release-menu" />'
+    })
+
     const pinia = createTestingPinia({
       stubActions: false,
       initialState: {
@@ -99,6 +111,7 @@ describe('NodeSearchBoxPopover', () => {
         stubs: {
           NodeSearchBox: NodeSearchBoxStub,
           NodeSearchContent: NodeSearchContentStub,
+          LinkReleaseContextMenu: LinkReleaseContextMenuStub,
           NodePreviewCard: true,
           Dialog: {
             template: '<div><slot name="container" /></div>',
@@ -122,6 +135,11 @@ describe('NodeSearchBoxPopover', () => {
         if (!emitAddNodeV2)
           throw new Error('NodeSearchContent stub did not mount')
         return emitAddNodeV2
+      },
+      get emitSelectNode() {
+        if (!emitSelectNode)
+          throw new Error('LinkReleaseContextMenu stub did not mount')
+        return emitSelectNode
       }
     }
   }
@@ -273,6 +291,124 @@ describe('NodeSearchBoxPopover', () => {
         nodeDef,
         expect.objectContaining({ pos: expect.any(Array) }),
         expect.objectContaining({ ghost: true, dragEvent })
+      )
+    })
+  })
+
+  describe('selecting a node from the link-release menu', () => {
+    function setupCanvas() {
+      const selectNode = vi.fn()
+      const canvasStore = useCanvasStore()
+      canvasStore.canvas = {
+        graph: { nodes: [] },
+        allow_searchbox: false,
+        setDirty: vi.fn(),
+        selectNode,
+        linkConnector: {
+          events: new EventTarget(),
+          reset: vi.fn(),
+          disconnectLinks: vi.fn(),
+          connectToNode: vi.fn()
+        }
+      } as unknown as ReturnType<typeof useCanvasStore>['canvas']
+      return { selectNode }
+    }
+
+    it('auto-selects the placed node on the canvas', async () => {
+      const node = { id: 7 }
+      const { emitSelectNode } = renderComponent({
+        'Comfy.NodeSearchBoxImpl': 'default'
+      })
+      const { selectNode } = setupCanvas()
+      addNodeOnGraph.mockReturnValue(node)
+
+      emitSelectNode({ name: 'KSampler' } as ComfyNodeDefImpl)
+      await nextTick()
+
+      expect(selectNode).toHaveBeenCalledWith(node)
+    })
+
+    it('does not select when the node could not be created', async () => {
+      const { emitSelectNode } = renderComponent({
+        'Comfy.NodeSearchBoxImpl': 'default'
+      })
+      const { selectNode } = setupCanvas()
+      addNodeOnGraph.mockReturnValue(null)
+
+      emitSelectNode({ name: 'KSampler' } as ComfyNodeDefImpl)
+      await nextTick()
+
+      expect(selectNode).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('defaultRootFilter on dialog open', () => {
+    function setGraphNodes(nodes: unknown[]) {
+      const canvasStore = useCanvasStore()
+      canvasStore.canvas = {
+        graph: { nodes },
+        allow_searchbox: false,
+        setDirty: vi.fn(),
+        linkConnector: {
+          events: new EventTarget(),
+          reset: vi.fn(),
+          disconnectLinks: vi.fn()
+        }
+      } as unknown as ReturnType<typeof useCanvasStore>['canvas']
+    }
+
+    async function openSearch() {
+      useSearchBoxStore().visible = true
+      await nextTick()
+    }
+
+    it('defaults to Essentials when the graph is empty', async () => {
+      renderComponent({ 'Comfy.NodeSearchBoxImpl': 'default' })
+      setGraphNodes([])
+      await openSearch()
+
+      expect(screen.getByTestId('search-content-v2')).toHaveAttribute(
+        'data-default-root-filter',
+        RootCategory.Essentials
+      )
+    })
+
+    it('defaults to Essentials when the canvas is not yet available', async () => {
+      renderComponent({ 'Comfy.NodeSearchBoxImpl': 'default' })
+      await openSearch()
+
+      expect(screen.getByTestId('search-content-v2')).toHaveAttribute(
+        'data-default-root-filter',
+        RootCategory.Essentials
+      )
+    })
+
+    it('defaults to null when the graph has nodes', async () => {
+      renderComponent({ 'Comfy.NodeSearchBoxImpl': 'default' })
+      setGraphNodes([{ id: 1 }])
+      await openSearch()
+
+      expect(screen.getByTestId('search-content-v2')).not.toHaveAttribute(
+        'data-default-root-filter'
+      )
+    })
+
+    it('re-evaluates each time the dialog opens', async () => {
+      renderComponent({ 'Comfy.NodeSearchBoxImpl': 'default' })
+
+      setGraphNodes([])
+      await openSearch()
+      expect(screen.getByTestId('search-content-v2')).toHaveAttribute(
+        'data-default-root-filter',
+        RootCategory.Essentials
+      )
+
+      useSearchBoxStore().visible = false
+      await nextTick()
+      setGraphNodes([{ id: 1 }])
+      await openSearch()
+      expect(screen.getByTestId('search-content-v2')).not.toHaveAttribute(
+        'data-default-root-filter'
       )
     })
   })
