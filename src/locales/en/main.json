@@ -2661,6 +2661,7 @@
       "actions": {
         "resendInvite": "Resend invite",
         "cancelInvite": "Cancel invite",
+        "changeRole": "Change role",
         "removeMember": "Remove member"
       },
       "upsellBanner": "To add teammates, upgrade your plan.",
@@ -2698,6 +2699,16 @@
       "remove": "Remove member",
       "success": "Member removed",
       "error": "Failed to remove member"
+    },
+    "changeRoleDialog": {
+      "promoteTitle": "Make {name} an owner?",
+      "promoteMessage": "They'll have the same access as you — managing members, billing, and workspace settings.",
+      "promoteConfirm": "Make owner",
+      "demoteTitle": "Demote {name} to member?",
+      "demoteMessage": "They'll lose admin access.",
+      "demoteConfirm": "Demote to member",
+      "success": "Role updated",
+      "error": "Failed to update role"
     },
     "revokeInviteDialog": {
       "title": "Uninvite this person?",

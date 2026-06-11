@@ -167,14 +167,12 @@
                 :show-role-column="
                   uiConfig.showRoleColumn && hasMultipleMembers
                 "
-                :can-remove-members="permissions.canRemoveMembers"
+                :can-manage-members="permissions.canRemoveMembers"
                 :is-single-seat-plan="!isOnTeamPlan"
+                :is-original-owner="isOriginalOwner(member)"
                 :striped="index % 2 === 1"
-                @show-menu="showMemberMenu($event, member)"
+                :menu-items="memberMenuItems(member)"
               />
-
-              <!-- Member actions menu (shared for all members) -->
-              <Menu ref="memberMenu" :model="memberMenuItems" :popup="true" />
             </template>
           </template>
 
@@ -215,9 +213,6 @@
 </template>
 
 <script setup lang="ts">
-import Menu from 'primevue/menu'
-import { ref } from 'vue'
-
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -226,7 +221,6 @@ import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
 import WorkspaceMenuButton from '@/platform/workspace/components/dialogs/settings/WorkspaceMenuButton.vue'
 import { useMembersPanel } from '@/platform/workspace/composables/useMembersPanel'
-import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -252,7 +246,7 @@ const {
   uiConfig,
   userPhotoUrl,
   isCurrentUser,
-  selectMember,
+  isOriginalOwner,
   toggleSort,
   showSubscriptionDialog,
   handleResendInvite,
@@ -260,13 +254,6 @@ const {
 } = useMembersPanel()
 
 const { staticUrls } = useExternalLink()
-
-const memberMenu = ref<InstanceType<typeof Menu> | null>(null)
-
-function showMemberMenu(event: Event, member: WorkspaceMember) {
-  selectMember(member)
-  memberMenu.value?.toggle(event)
-}
 
 function handleContactUs() {
   window.open(staticUrls.discord, '_blank', 'noopener,noreferrer')
