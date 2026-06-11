@@ -603,9 +603,10 @@ export const useDialogService = () => {
   /**
    * Downgrade a team plan to a personal plan (FE-977).
    *
-   * Shows a type-"I understand" confirm dialog warning that all other members
-   * will be immediately removed. When the workspace has no other members the
-   * dialog is skipped and the downgrade proceeds directly.
+   * Refreshes the member list, then shows a type-"I understand" confirm
+   * dialog warning that all other members will be immediately removed. When
+   * the workspace has no other members the dialog is skipped and the
+   * downgrade proceeds directly.
    */
   async function showDowngradeToPersonalDialog(options: {
     planName: string
@@ -613,7 +614,9 @@ export const useDialogService = () => {
   }) {
     const { useDowngradeToPersonal } =
       await import('@/platform/workspace/composables/useDowngradeToPersonal')
-    const { hasOtherMembers, downgradeToPersonal } = useDowngradeToPersonal()
+    const { hasOtherMembers, refreshMembers, downgradeToPersonal } =
+      useDowngradeToPersonal()
+    await refreshMembers()
 
     if (!hasOtherMembers.value) {
       await downgradeToPersonal(options.planSlug)
@@ -630,7 +633,11 @@ export const useDialogService = () => {
         planSlug: options.planSlug,
         onConfirm: downgradeToPersonal
       },
-      dialogComponentProps: workspaceDialogPt
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        closable: false,
+        dismissableMask: false
+      }
     })
   }
 

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -9,7 +9,10 @@ const mockMembers = vi.hoisted(() => ({
 }))
 const mockUserEmail = vi.hoisted(() => ({ value: '' as string | null }))
 const mockRemoveMember = vi.hoisted(() => vi.fn())
+const mockFetchMembers = vi.hoisted(() => vi.fn())
 const mockSubscribe = vi.hoisted(() => vi.fn())
+const mockPreviewSubscribe = vi.hoisted(() => vi.fn())
+const mockStartOperation = vi.hoisted(() => vi.fn())
 
 vi.mock('pinia', async (importOriginal) => {
   const actual = await importOriginal()
@@ -22,7 +25,14 @@ vi.mock('pinia', async (importOriginal) => {
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     members: mockMembers,
-    removeMember: mockRemoveMember
+    removeMember: mockRemoveMember,
+    fetchMembers: mockFetchMembers
+  })
+}))
+
+vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
+  useBillingOperationStore: () => ({
+    startOperation: mockStartOperation
   })
 }))
 
@@ -34,8 +44,17 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    subscribe: mockSubscribe
+    subscribe: mockSubscribe,
+    previewSubscribe: mockPreviewSubscribe
   })
+}))
+
+vi.mock('@/i18n', () => ({
+  t: (key: string) => key
+}))
+
+vi.mock('@/config/comfyApi', () => ({
+  getComfyPlatformBaseUrl: () => 'https://platform.test'
 }))
 
 function createMember(
@@ -51,23 +70,35 @@ function createMember(
   }
 }
 
+function teamWithOwnerAnd(...memberIds: string[]) {
+  return [
+    createMember({ id: 'owner', role: 'owner', email: 'owner@example.com' }),
+    ...memberIds.map((id) => createMember({ id, email: `${id}@example.com` }))
+  ]
+}
+
 describe('useDowngradeToPersonal', () => {
+  let windowOpen: ReturnType<typeof vi.spyOn>
+
   beforeEach(() => {
     vi.clearAllMocks()
     mockMembers.value = []
     mockUserEmail.value = 'owner@example.com'
+    mockPreviewSubscribe.mockResolvedValue({ allowed: true })
+    mockSubscribe.mockResolvedValue({
+      billing_op_id: 'op-1',
+      status: 'subscribed'
+    })
+    windowOpen = vi.spyOn(window, 'open').mockReturnValue(null)
+  })
+
+  afterEach(() => {
+    windowOpen.mockRestore()
   })
 
   describe('removableMembers / hasOtherMembers', () => {
     it('excludes the owner role from removable members', () => {
-      mockMembers.value = [
-        createMember({
-          id: 'owner',
-          role: 'owner',
-          email: 'owner@example.com'
-        }),
-        createMember({ id: 'm1', email: 'm1@example.com' })
-      ]
+      mockMembers.value = teamWithOwnerAnd('m1')
       const { removableMembers, hasOtherMembers } = useDowngradeToPersonal()
       expect(removableMembers.value.map((m) => m.id)).toEqual(['m1'])
       expect(hasOtherMembers.value).toBe(true)
@@ -84,9 +115,7 @@ describe('useDowngradeToPersonal', () => {
     })
 
     it('reports no other members when only the creator is present', () => {
-      mockMembers.value = [
-        createMember({ id: 'owner', role: 'owner', email: 'owner@example.com' })
-      ]
+      mockMembers.value = teamWithOwnerAnd()
       const { removableMembers, hasOtherMembers } = useDowngradeToPersonal()
       expect(removableMembers.value).toEqual([])
       expect(hasOtherMembers.value).toBe(false)
@@ -95,15 +124,7 @@ describe('useDowngradeToPersonal', () => {
 
   describe('downgradeToPersonal', () => {
     it('removes every non-creator member then initiates the tier change', async () => {
-      mockMembers.value = [
-        createMember({
-          id: 'owner',
-          role: 'owner',
-          email: 'owner@example.com'
-        }),
-        createMember({ id: 'm1', email: 'm1@example.com' }),
-        createMember({ id: 'm2', email: 'm2@example.com' })
-      ]
+      mockMembers.value = teamWithOwnerAnd('m1', 'm2')
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
       await downgradeToPersonal('founder-monthly')
@@ -112,7 +133,11 @@ describe('useDowngradeToPersonal', () => {
       expect(mockRemoveMember).toHaveBeenCalledWith('m1')
       expect(mockRemoveMember).toHaveBeenCalledWith('m2')
       expect(mockRemoveMember).not.toHaveBeenCalledWith('owner')
-      expect(mockSubscribe).toHaveBeenCalledWith('founder-monthly')
+      expect(mockSubscribe).toHaveBeenCalledWith(
+        'founder-monthly',
+        'https://platform.test/payment/success',
+        'https://platform.test/payment/failed'
+      )
     })
 
     it('never removes the creator', async () => {
@@ -125,32 +150,115 @@ describe('useDowngradeToPersonal', () => {
       await downgradeToPersonal('founder-monthly')
 
       expect(mockRemoveMember).not.toHaveBeenCalled()
-      expect(mockSubscribe).toHaveBeenCalledWith('founder-monthly')
+      expect(mockSubscribe).toHaveBeenCalled()
     })
 
-    it('removes members before changing the tier', async () => {
-      mockMembers.value = [
-        createMember({
-          id: 'owner',
-          role: 'owner',
-          email: 'owner@example.com'
-        }),
-        createMember({ id: 'm1', email: 'm1@example.com' })
-      ]
+    it('validates the transition before removing, then removes, then subscribes', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
       const calls: string[] = []
+      mockPreviewSubscribe.mockImplementation(() => {
+        calls.push('preview')
+        return Promise.resolve({ allowed: true })
+      })
       mockRemoveMember.mockImplementation(() => {
         calls.push('remove')
         return Promise.resolve()
       })
       mockSubscribe.mockImplementation(() => {
         calls.push('subscribe')
-        return Promise.resolve()
+        return Promise.resolve({ billing_op_id: 'op-1', status: 'subscribed' })
       })
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
       await downgradeToPersonal('founder-monthly')
 
-      expect(calls).toEqual(['remove', 'subscribe'])
+      expect(calls).toEqual(['preview', 'remove', 'subscribe'])
+    })
+
+    it('throws the BE reason and removes nobody when the transition is disallowed', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockPreviewSubscribe.mockResolvedValue({
+        allowed: false,
+        reason: 'Outstanding balance'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'Outstanding balance'
+      )
+      expect(mockRemoveMember).not.toHaveBeenCalled()
+      expect(mockSubscribe).not.toHaveBeenCalled()
+    })
+
+    it('opens the payment-method page and polls when subscribe needs a payment method', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockSubscribe.mockResolvedValue({
+        billing_op_id: 'op-2',
+        status: 'needs_payment_method',
+        payment_method_url: 'https://pay.test/method'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await downgradeToPersonal('founder-monthly')
+
+      expect(windowOpen).toHaveBeenCalledWith(
+        'https://pay.test/method',
+        '_blank'
+      )
+      expect(mockStartOperation).toHaveBeenCalledWith('op-2', 'subscription')
+    })
+
+    it('throws when a payment method is needed but no url is provided', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockSubscribe.mockResolvedValue({
+        billing_op_id: 'op-3',
+        status: 'needs_payment_method'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.paymentMethodRequired'
+      )
+      expect(mockStartOperation).not.toHaveBeenCalled()
+    })
+
+    it('polls without opening a tab when the payment is pending', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockSubscribe.mockResolvedValue({
+        billing_op_id: 'op-4',
+        status: 'pending_payment'
+      })
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await downgradeToPersonal('founder-monthly')
+
+      expect(windowOpen).not.toHaveBeenCalled()
+      expect(mockStartOperation).toHaveBeenCalledWith('op-4', 'subscription')
+    })
+
+    it('throws when subscribe resolves without a response', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1')
+      mockSubscribe.mockResolvedValue(undefined)
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'subscription.downgrade.failed'
+      )
+    })
+  })
+
+  describe('refreshMembers', () => {
+    it('refetches members so a stale empty list cannot skip the confirm gate', async () => {
+      mockMembers.value = []
+      mockFetchMembers.mockImplementation(() => {
+        mockMembers.value = teamWithOwnerAnd('m1')
+        return Promise.resolve(mockMembers.value)
+      })
+      const { refreshMembers, hasOtherMembers } = useDowngradeToPersonal()
+
+      await refreshMembers()
+
+      expect(hasOtherMembers.value).toBe(true)
     })
   })
 })
