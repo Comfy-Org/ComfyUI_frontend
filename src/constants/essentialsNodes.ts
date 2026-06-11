@@ -92,12 +92,6 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
         nodeName: 'SaveAudio'
       },
       {
-        label: 'Load LoRA',
-        icon: 'icon-[comfy--lora-loader]',
-        media: 'image',
-        nodeName: 'LoraLoader'
-      },
-      {
         label: 'Input Text',
         icon: 'icon-s1.5-[lucide--text]',
         media: 'text',
@@ -108,6 +102,12 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
         icon: 'icon-s1.5-[lucide--text]',
         media: 'text',
         nodeName: 'PreviewAny'
+      },
+      {
+        label: 'Load LoRA',
+        icon: 'icon-[comfy--lora-loader]',
+        media: 'image',
+        nodeName: 'LoraLoader'
       }
     ]
   },
