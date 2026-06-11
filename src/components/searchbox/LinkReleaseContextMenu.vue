@@ -55,27 +55,36 @@
 
         <div :class="scrollClass">
           <template v-if="trimmedQuery">
-            <template v-for="section in searchSections" :key="section.key">
-              <DropdownMenuLabel
-                class="flex items-center gap-2 p-2 text-xs font-medium text-muted-foreground uppercase"
-              >
-                <i
-                  v-if="section.icon"
-                  :class="cn(section.icon, 'size-4 shrink-0 opacity-80')"
-                />
-                <span class="truncate">{{ t(section.labelKey) }}</span>
-              </DropdownMenuLabel>
-              <DropdownMenuItem
-                v-for="nodeDef in section.nodes"
-                :key="`${section.key}:${nodeDef.name}`"
-                :class="itemClass"
-                @select="selectNode(nodeDef)"
-              >
-                <MiddleTruncate
-                  :text="nodeDef.display_name"
-                  class="min-w-0 flex-1"
-                />
-              </DropdownMenuItem>
+            <template
+              v-for="(section, index) in searchSections"
+              :key="section.key"
+            >
+              <DropdownMenuSeparator
+                v-if="index > 0"
+                class="-mx-1 my-1 h-px shrink-0 bg-border-subtle"
+              />
+              <div>
+                <DropdownMenuLabel
+                  class="sticky top-0 z-10 flex items-center gap-2 bg-interface-menu-surface p-2 text-xs font-medium text-muted-foreground uppercase"
+                >
+                  <i
+                    v-if="section.icon"
+                    :class="cn(section.icon, 'size-4 shrink-0 opacity-80')"
+                  />
+                  <span class="truncate">{{ t(section.labelKey) }}</span>
+                </DropdownMenuLabel>
+                <DropdownMenuItem
+                  v-for="nodeDef in section.nodes"
+                  :key="`${section.key}:${nodeDef.name}`"
+                  :class="itemClass"
+                  @select="selectNode(nodeDef)"
+                >
+                  <MiddleTruncate
+                    :text="nodeDef.display_name"
+                    class="min-w-0 flex-1"
+                  />
+                </DropdownMenuItem>
+              </div>
             </template>
             <div
               v-if="searchSections.length === 0"
