@@ -202,4 +202,68 @@ describe('useOutputStacks', () => {
       child.id
     ])
   })
+
+  describe('live children overrides (job grouping)', () => {
+    function createApiAsset(id: string, jobId: string | null): AssetItem {
+      return {
+        id,
+        name: `${id}.png`,
+        tags: ['output'],
+        created_at: '2025-01-01T00:00:00.000Z',
+        job_id: jobId
+      }
+    }
+
+    it('expands in-memory children without resolving history', async () => {
+      const rep = createApiAsset('rep', 'job-1')
+      const member = createApiAsset('member', 'job-1')
+      const { assetItems, toggleStack } = useOutputStacks({
+        assets: ref([rep]),
+        getJobId: (asset) => asset.job_id ?? null,
+        liveChildren: (asset) => (asset.id === 'rep' ? [member] : [])
+      })
+
+      await toggleStack(rep)
+
+      expect(mocks.resolveOutputAssetItems).not.toHaveBeenCalled()
+      expect(assetItems.value.map((item) => item.asset.id)).toEqual([
+        'rep',
+        'member'
+      ])
+      expect(assetItems.value[1].isChild).toBe(true)
+    })
+
+    it('does not stack assets whose override job id is null', async () => {
+      const single = createApiAsset('single', null)
+      const { assetItems, toggleStack } = useOutputStacks({
+        assets: ref([single]),
+        getJobId: (asset) => asset.job_id ?? null,
+        liveChildren: () => []
+      })
+
+      await toggleStack(single)
+
+      expect(assetItems.value).toHaveLength(1)
+    })
+
+    it('falls back to history resolution when overrides return undefined', async () => {
+      const parent = createAsset({ id: 'parent' })
+      const child = createAsset({ id: 'child' })
+      mocks.resolveOutputAssetItems.mockResolvedValue([child])
+
+      const { assetItems, toggleStack } = useOutputStacks({
+        assets: ref([parent]),
+        getJobId: () => undefined,
+        liveChildren: () => undefined
+      })
+
+      await toggleStack(parent)
+
+      expect(mocks.resolveOutputAssetItems).toHaveBeenCalledTimes(1)
+      expect(assetItems.value.map((item) => item.asset.id)).toEqual([
+        'parent',
+        'child'
+      ])
+    })
+  })
 })

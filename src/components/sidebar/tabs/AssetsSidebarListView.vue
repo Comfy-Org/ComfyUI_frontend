@@ -37,7 +37,12 @@
             :is-video-preview="isVideoAsset(item.asset)"
             :primary-text="getAssetPrimaryText(item.asset)"
             :secondary-text="getAssetSecondaryText(item.asset)"
-            :stack-count="getStackCount(item.asset)"
+            :badge-label="
+              item.asset.tags?.includes(TEMP_TAG)
+                ? t('mediaAsset.previewBadge')
+                : undefined
+            "
+            :stack-count="stackCountFor(item.asset)"
             :stack-indicator-label="t('mediaAsset.actions.seeMoreOutputs')"
             :stack-expanded="isStackExpanded(item.asset)"
             @mouseenter="onAssetEnter(item.asset.id)"
@@ -74,6 +79,7 @@ import VirtualGrid from '@/components/common/VirtualGrid.vue'
 import Button from '@/components/ui/button/Button.vue'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
 import type { OutputStackListItem } from '@/platform/assets/composables/useOutputStacks'
+import { TEMP_TAG } from '@/platform/assets/constants/assetTags'
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
@@ -92,13 +98,16 @@ const {
   selectableAssets,
   isSelected,
   isStackExpanded,
-  toggleStack
+  toggleStack,
+  getStackCount
 } = defineProps<{
   assetItems: OutputStackListItem[]
   selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
   isStackExpanded: (asset: AssetItem) => boolean
   toggleStack: (asset: AssetItem) => Promise<void>
+  /** Override the stack count (e.g. job-group size); undefined falls back to history metadata. */
+  getStackCount?: (asset: AssetItem) => number | undefined
 }>()
 
 const assetsStore = useAssetsStore()
@@ -158,7 +167,10 @@ function getAssetSecondaryText(asset: AssetItem): string {
   return ''
 }
 
-function getStackCount(asset: AssetItem): number | undefined {
+function stackCountFor(asset: AssetItem): number | undefined {
+  const override = getStackCount?.(asset)
+  if (override !== undefined) return override
+
   const metadata = getOutputAssetMetadata(asset.user_metadata)
   if (typeof metadata?.outputCount === 'number') {
     return metadata.outputCount

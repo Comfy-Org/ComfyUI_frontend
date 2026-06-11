@@ -97,6 +97,13 @@
       </div>
     </div>
 
+    <span
+      v-if="badgeLabel"
+      class="relative z-1 flex h-3.5 shrink-0 items-center rounded-full bg-base-foreground px-1 text-[9px] font-semibold text-base-background uppercase"
+    >
+      {{ badgeLabel }}
+    </span>
+
     <div
       v-if="$slots.actions"
       class="relative z-1 flex shrink-0 items-center gap-2"
@@ -156,6 +163,7 @@ const {
   isVideoPreview = false,
   primaryText,
   secondaryText,
+  badgeLabel,
   stackCount,
   stackIndicatorLabel,
   stackExpanded = false,
@@ -171,6 +179,7 @@ const {
   isVideoPreview?: boolean
   primaryText?: string
   secondaryText?: string
+  badgeLabel?: string
   stackCount?: number
   stackIndicatorLabel?: string
   stackExpanded?: boolean

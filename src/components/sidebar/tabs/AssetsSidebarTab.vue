@@ -107,6 +107,7 @@
           :selectable-assets="listViewSelectableAssets"
           :is-stack-expanded="isListViewStackExpanded"
           :toggle-stack="toggleListViewStack"
+          :get-stack-count="listViewStackCount"
           @select-asset="handleAssetSelect"
           @preview-asset="handleZoomClick"
           @context-menu="handleAssetContextMenu"
@@ -536,8 +537,21 @@ const {
   isStackExpanded: isListViewStackExpanded,
   toggleStack: toggleListViewStack
 } = useOutputStacks({
-  assets: computed(() => displayAssets.value)
+  assets: computed(() => displayAssets.value),
+  // With job grouping on, stacks expand the in-memory group instead of
+  // resolving history outputs.
+  getJobId: (asset) =>
+    groupingEnabled.value ? (getGroup(asset)?.jobId ?? null) : undefined,
+  liveChildren: (asset) => {
+    if (!groupingEnabled.value) return undefined
+    const group = getGroup(asset)
+    if (!group) return []
+    return group.assets.filter((member) => member.id !== asset.id)
+  }
 })
+
+const listViewStackCount = (asset: AssetItem): number | undefined =>
+  groupingEnabled.value ? getGroupCount(asset) : undefined
 
 const visibleAssets = computed(() => {
   if (!isListView.value) return displayAssets.value
