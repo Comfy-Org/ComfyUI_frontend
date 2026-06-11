@@ -9,68 +9,13 @@ import BrandButton from '../common/BrandButton.vue'
 import GalleryCard from '../gallery/GalleryCard.vue'
 import GalleryDetailModal from '../gallery/GalleryDetailModal.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { items, locale = 'en' } = defineProps<{
+  items: readonly GalleryItem[]
+  locale?: Locale
+}>()
 
 const modelName = 'Grok'
 const ctaHref = 'https://comfy.org/workflows/model/grok'
-
-const items: GalleryItem[] = [
-  {
-    image: 'https://media.comfy.org/website/gallery/subway-swan_compressed.png',
-    title: 'Subway Swan',
-    userAlias: 'Purz Beats',
-    teamAlias: 'Comfy',
-    tool: 'Grok Imagine',
-    href: 'https://www.youtube.com/@PurzBeats',
-    visible: true,
-    order: 0
-  },
-  {
-    video:
-      'https://media.comfy.org/website/gallery/milos-little-wonder_compressed.mp4',
-    title: 'Milos Little Wonder',
-    userAlias: 'Purz Beats',
-    teamAlias: 'Comfy',
-    tool: 'Grok Imagine',
-    href: 'https://www.youtube.com/@PurzBeats',
-    visible: true,
-    order: 0
-  },
-  {
-    image:
-      'https://media.comfy.org/website/gallery/amber-passage_compressed.jpg',
-    title: 'Amber Passage',
-    userAlias: 'Purz Beats',
-    teamAlias: 'Comfy',
-    tool: 'Grok Imagine',
-    href: 'https://www.youtube.com/@PurzBeats',
-    objectPosition: 'bottom',
-    visible: true,
-    order: 0
-  },
-  {
-    video:
-      'https://media.comfy.org/website/gallery/neon-revenant_compressed.mp4',
-    title: 'Neon Revenant',
-    userAlias: 'Eric Solorio',
-    teamAlias: 'Comfy',
-    tool: 'Grok Imagine',
-    href: 'https://www.instagram.com/enigmatic_e',
-    visible: true,
-    order: 0
-  },
-  {
-    image:
-      'https://media.comfy.org/website/gallery/midnight_umami_compressed.png',
-    title: 'Midnight Umami',
-    userAlias: 'Purz Beats',
-    teamAlias: 'Comfy',
-    tool: 'Grok Imagine',
-    href: 'https://www.youtube.com/@PurzBeats',
-    visible: true,
-    order: 0
-  }
-]
 
 const modalOpen = ref(false)
 const modalIndex = ref(0)
