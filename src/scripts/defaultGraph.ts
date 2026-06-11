@@ -400,15 +400,9 @@ export const defaultGraph: ComfyWorkflowJSON = {
   config: {},
   extra: {
     ds: {
-      scale: 0.8,
-      offset: [493.2835661399886, 100.22932409739724]
-    },
-    frontendVersion: '1.46.13',
-    workflowRendererVersion: 'LG',
-    VHS_latentpreview: false,
-    VHS_latentpreviewrate: 0,
-    VHS_MetadataImage: true,
-    VHS_KeepIntermediate: true
+      scale: 0.9,
+      offset: [416, 110]
+    }
   },
   version: 0.4
 }
