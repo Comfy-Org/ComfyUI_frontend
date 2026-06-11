@@ -4245,7 +4245,6 @@
     "Video Segmentation (SAM3)": "Select Video Object",
     "TencentModelTo3DUVNode": "UV Unwrapping",
     "Tencent3DPartNode": "Decompose 3D Model",
-
     "inputs-outputs": "Inputs & Outputs",
     "generate": "Generate",
     "generate-image": "Image",
