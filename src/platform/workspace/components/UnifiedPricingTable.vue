@@ -81,13 +81,13 @@
                 <span
                   class="font-inter text-[28px] leading-normal font-semibold text-base-foreground"
                 >
+                  ${{ getPrice(tier) }}
                   <span
                     v-show="currentBillingCycle === 'yearly'"
                     class="text-2xl text-muted-foreground line-through"
                   >
                     ${{ getMonthlyPrice(tier) }}
                   </span>
-                  ${{ getPrice(tier) }}
                 </span>
                 <span class="font-inter text-sm/normal text-base-foreground">
                   {{ t('subscription.usdPerMonth') }}
