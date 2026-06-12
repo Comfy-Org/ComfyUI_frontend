@@ -940,7 +940,7 @@ describe('CanvasPathRenderer', () => {
   })
 
   describe('direction offsets', () => {
-    it.each([
+    it.for([
       { dir: 'left', expectedInnerA: [-15, 0] },
       { dir: 'right', expectedInnerA: [15, 0] },
       { dir: 'up', expectedInnerA: [0, -15] },

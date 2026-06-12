@@ -1,14 +1,24 @@
 <script setup lang="ts">
-import { computed, inject, provide, ref, shallowRef, watchEffect } from 'vue'
+import { useMounted, watchDebounced } from '@vueuse/core'
+import {
+  computed,
+  inject,
+  onBeforeUnmount,
+  provide,
+  ref,
+  shallowRef,
+  watchEffect
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { isWidgetPromotedOnSubgraphNode } from '@/core/graph/subgraph/promotionUtils'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { usePromotionStore } from '@/stores/promotionStore'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { DraggableList } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -54,11 +64,73 @@ const {
 
 const collapse = defineModel<boolean>('collapse', { default: false })
 
+const emit = defineEmits<{
+  reorder: [event: { fromIndex: number; toIndex: number }]
+}>()
+
 const widgetsContainer = ref<HTMLElement>()
 const rootElement = ref<HTMLElement>()
 
 const widgets = shallowRef(widgetsProp)
 watchEffect(() => (widgets.value = widgetsProp))
+
+const draggableList = ref<DraggableList | undefined>()
+const isMounted = useMounted()
+
+function setDraggableState() {
+  draggableList.value?.dispose()
+  draggableList.value = undefined
+
+  if (!isMounted.value || !isDraggable || collapse.value) return
+  const container = widgetsContainer.value
+  if (!container?.children?.length) return
+
+  const list = new DraggableList(container, '.draggable-item')
+
+  list.applyNewItemsOrder = function () {
+    const reorderedItems: HTMLElement[] = []
+
+    let oldPosition = -1
+    this.getAllItems().forEach((item, index) => {
+      if (item === this.draggableItem) {
+        oldPosition = index
+        return
+      }
+      if (!this.isItemToggled(item)) {
+        reorderedItems[index] = item
+        return
+      }
+      const newIndex = this.isItemAbove(item) ? index + 1 : index - 1
+      reorderedItems[newIndex] = item
+    })
+
+    if (oldPosition === -1) {
+      console.error('[SectionWidgets] draggableItem not found in items')
+      return
+    }
+
+    for (let index = 0; index < this.getAllItems().length; index++) {
+      if (typeof reorderedItems[index] === 'undefined') {
+        reorderedItems[index] = this.draggableItem as HTMLElement
+      }
+    }
+
+    const newPosition = reorderedItems.indexOf(
+      this.draggableItem as HTMLElement
+    )
+
+    emit('reorder', { fromIndex: oldPosition, toIndex: newPosition })
+  }
+
+  draggableList.value = list
+}
+
+watchDebounced(
+  [widgets, () => isDraggable, collapse],
+  () => setDraggableState(),
+  { debounce: 100, immediate: true }
+)
+onBeforeUnmount(() => draggableList.value?.dispose())
 
 provide(HideLayoutFieldKey, true)
 
@@ -69,8 +141,6 @@ const nodeDefStore = useNodeDefStore()
 const { t } = useI18n()
 
 const getNodeParentGroup = inject(GetNodeParentGroupKey, null)
-
-const promotionStore = usePromotionStore()
 
 function isWidgetShownOnParents(
   widgetNode: LGraphNode,
@@ -83,13 +153,12 @@ function isWidgetShownOnParents(
           ? widget.sourceNodeId
           : String(widgetNode.id)
 
-      return promotionStore.isPromoted(parent.rootGraph.id, parent.id, {
+      return isWidgetPromotedOnSubgraphNode(parent, {
         sourceNodeId: interiorNodeId,
-        sourceWidgetName: widget.sourceWidgetName,
-        disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
+        sourceWidgetName: widget.sourceWidgetName
       })
     }
-    return promotionStore.isPromoted(parent.rootGraph.id, parent.id, {
+    return isWidgetPromotedOnSubgraphNode(parent, {
       sourceNodeId: String(widgetNode.id),
       sourceWidgetName: widget.name
     })

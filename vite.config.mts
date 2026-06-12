@@ -172,7 +172,6 @@ export default defineConfig({
         '*.config.{ts,mts}',
         '**/.git/**',
         '**/.github/**',
-        '**/.nx/**',
         '**/*.{test,spec,stories}.ts',
         '**/coverage/**',
         '**/dist/**',
@@ -215,6 +214,11 @@ export default defineConfig({
 
           return null
         }
+      },
+
+      '/oauth': {
+        target: DEV_SERVER_COMFYUI_URL,
+        ...cloudProxyConfig
       },
 
       '/ws': {

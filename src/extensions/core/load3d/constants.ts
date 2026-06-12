@@ -22,3 +22,5 @@ export const SUPPORTED_HDRI_EXTENSIONS = new Set(['.hdr', '.exr'])
 export const SUPPORTED_HDRI_EXTENSIONS_ACCEPT = [
   ...SUPPORTED_HDRI_EXTENSIONS
 ].join(',')
+
+export const LOAD3D_NONE_MODEL = 'none'

@@ -94,28 +94,47 @@ const isOpen = defineModel<boolean>('isOpen', { default: false })
 
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
-const triggerRef = useTemplateRef('triggerRef')
+const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
+const triggerRef =
+  useTemplateRef<InstanceType<typeof FormDropdownInput>>('triggerRef')
+const displayedSearchQuery = ref('')
+const isFiltering = ref(false)
 
 const maxSelectable = computed(() => {
   if (multiple === true) return Infinity
   if (typeof multiple === 'number') return multiple
   return 1
 })
+const isSingleSelect = computed(() => maxSelectable.value === 1)
 
 const debouncedSearchQuery = refDebounced(searchQuery, 250, { maxWait: 1000 })
 
-const filteredItems = computedAsync(async (onCancel) => {
-  if (!isOpen.value) {
-    return items
-  }
+const filteredItems = computedAsync(
+  async (onCancel) => {
+    if (!isOpen.value) {
+      displayedSearchQuery.value = ''
+      return items
+    }
 
-  let cleanupFn: (() => void) | undefined
-  onCancel(() => cleanupFn?.())
-  const result = await searcher(debouncedSearchQuery.value, items, (cb) => {
-    cleanupFn = cb
-  })
-  return result
-}, items)
+    const query = debouncedSearchQuery.value
+    let cancelled = false
+    let cleanupFn: (() => void) | undefined
+    onCancel(() => {
+      cancelled = true
+      cleanupFn?.()
+    })
+
+    const result = await searcher(query, items, (cb) => {
+      cleanupFn = cb
+    })
+    if (!cancelled) displayedSearchQuery.value = query
+    return result
+  },
+  items,
+  {
+    evaluating: isFiltering
+  }
+)
 
 const defaultSorter = computed<SortOption['sorter']>(() => {
   const sorter = sortOptions.find((option) => option.id === 'default')?.sorter
@@ -135,6 +154,23 @@ const sortedItems = computed(() => {
 
   return selectedSorter.value({ items: filteredItems.value }) || []
 })
+const isShowingCurrentSearchResults = computed(
+  () =>
+    isOpen.value &&
+    isSingleSelect.value &&
+    !isFiltering.value &&
+    searchQuery.value.trim() !== '' &&
+    displayedSearchQuery.value === searchQuery.value &&
+    sortedItems.value.length > 0
+)
+
+const candidateIndex = computed(() =>
+  isShowingCurrentSearchResults.value ? 0 : -1
+)
+const candidateLabel = computed(() => {
+  const candidate = sortedItems.value[candidateIndex.value]
+  return candidate?.label ?? candidate?.name
+})
 
 function internalIsSelected(item: FormDropdownItem, index: number): boolean {
   return isSelected(selected.value, item, index)
@@ -142,17 +178,23 @@ function internalIsSelected(item: FormDropdownItem, index: number): boolean {
 
 const toggleDropdown = (event: Event) => {
   if (disabled) return
-  if (popoverRef.value && triggerRef.value) {
-    popoverRef.value.toggle?.(event, triggerRef.value)
+  if (popoverRef.value && triggerAnchorRef.value) {
+    popoverRef.value.toggle?.(event, triggerAnchorRef.value)
     isOpen.value = !isOpen.value
   }
 }
 
-const closeDropdown = () => {
+function focusTrigger() {
+  triggerRef.value?.focus()
+}
+
+const closeDropdown = ({ restoreFocus = false } = {}) => {
   if (popoverRef.value) {
     popoverRef.value.hide?.()
     isOpen.value = false
   }
+
+  if (restoreFocus) focusTrigger()
 }
 
 function handleFileChange(event: Event) {
@@ -184,14 +226,47 @@ function handleSelection(item: FormDropdownItem, index: number) {
   selected.value = new Set(sel)
 
   if (maxSelectable.value === 1) {
-    closeDropdown()
+    closeDropdown({ restoreFocus: true })
   }
+}
+
+async function getTopSearchResult() {
+  const query = searchQuery.value
+  if (query.trim() === '') return
+
+  const sourceItems = items
+  const matches =
+    isShowingCurrentSearchResults.value && displayedSearchQuery.value === query
+      ? filteredItems.value
+      : await searcher(query, sourceItems, () => {})
+
+  if (query !== searchQuery.value || sourceItems !== items || !isOpen.value) {
+    return
+  }
+
+  return selectedSorter.value({ items: matches })?.[0]
+}
+
+async function selectTopSearchResult() {
+  try {
+    if (disabled || !isOpen.value || !isSingleSelect.value) return
+    const topResult = await getTopSearchResult()
+    if (!topResult) return
+    handleSelection(topResult, 0)
+  } catch (error) {
+    console.error('[FormDropdown] search selection failed', error)
+  }
+}
+
+function handleSearchEnter() {
+  void selectTopSearchResult()
 }
 </script>
 
 <template>
-  <div ref="triggerRef">
+  <div ref="triggerAnchorRef">
     <FormDropdownInput
+      ref="triggerRef"
       :files
       :is-open
       :placeholder="placeholderText"
@@ -235,9 +310,12 @@ function handleSelection(item: FormDropdownItem, index: number) {
         :base-model-options
         :disabled
         :items="sortedItems"
+        :candidate-index
+        :candidate-label
         :is-selected="internalIsSelected"
         :max-selectable
         @close="closeDropdown"
+        @search-enter="handleSearchEnter"
         @item-click="handleSelection"
       />
     </Popover>

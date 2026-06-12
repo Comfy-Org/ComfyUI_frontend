@@ -237,7 +237,7 @@ import Button from '@/components/ui/button/Button.vue'
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
 import MediaAssetFilterBar from '@/platform/assets/components/MediaAssetFilterBar.vue'
 import { getAssetType } from '@/platform/assets/composables/media/assetMappers'
-import { useMediaAssets } from '@/platform/assets/composables/media/useMediaAssets'
+import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { useAssetSelection } from '@/platform/assets/composables/useAssetSelection'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import { useMediaAssetFiltering } from '@/platform/assets/composables/useMediaAssetFiltering'
@@ -246,6 +246,7 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
+import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
@@ -309,8 +310,8 @@ const formattedExecutionTime = computed(() => {
 
 const toast = useToast()
 
-const inputAssets = useMediaAssets('input')
-const outputAssets = useMediaAssets('output')
+const inputAssets = useAssetsApi('input')
+const outputAssets = useAssetsApi('output')
 
 // Asset selection
 const {
@@ -582,7 +583,7 @@ const handleZoomClick = (asset: AssetItem) => {
       title: getAssetDisplayName(asset),
       component: Load3dViewerContent,
       props: {
-        modelUrl: asset.preview_url || ''
+        modelUrl: asset.preview_url || getAssetUrl(asset)
       },
       dialogComponentProps: {
         style: 'width: 80vw; height: 80vh;',

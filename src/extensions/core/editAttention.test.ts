@@ -39,8 +39,16 @@ describe('incrementWeight', () => {
   })
 })
 
+type Enclosure = { start: number; end: number } | null
+type EnclosureCase = [
+  name: string,
+  text: string,
+  cursor: number,
+  expected: Enclosure
+]
+
 describe('findNearestEnclosure', () => {
-  it.each([
+  it.for<EnclosureCase>([
     [
       'returns start and end of a simple parenthesized expression',
       '(cat)',
@@ -74,13 +82,15 @@ describe('findNearestEnclosure', () => {
       2,
       null
     ]
-  ])('%s', (_, text, cursor, expected) => {
+  ])('%s', ([, text, cursor, expected]) => {
     expect(findNearestEnclosure(text, cursor)).toEqual(expected)
   })
 })
 
+type WeightCase = [name: string, input: string, expected: string]
+
 describe('addWeightToParentheses', () => {
-  it.each([
+  it.for<WeightCase>([
     ['adds weight 1.0 to a bare parenthesized token', '(cat)', '(cat:1.0)'],
     [
       'leaves a token that already has a weight unchanged',
@@ -118,7 +128,7 @@ describe('addWeightToParentheses', () => {
       '(sdxl1:0.8)',
       '(sdxl1:0.8)'
     ]
-  ])('%s', (_, input, expected) => {
+  ])('%s', ([, input, expected]) => {
     expect(addWeightToParentheses(input)).toBe(expected)
   })
 })

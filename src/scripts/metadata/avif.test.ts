@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
+  EXPECTED_PROMPT_NAN_COERCED,
   EXPECTED_WORKFLOW,
   mockFileReaderAbort,
   mockFileReaderError
@@ -11,6 +12,10 @@ import {
 import { getFromAvifFile } from './avif'
 
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.avif')
+const nanFixturePath = path.resolve(
+  __dirname,
+  '__fixtures__/with_nan_metadata.avif'
+)
 
 afterEach(() => vi.restoreAllMocks())
 
@@ -23,6 +28,16 @@ describe('AVIF metadata', () => {
 
     expect(JSON.parse(result.workflow)).toEqual(EXPECTED_WORKFLOW)
     expect(JSON.parse(result.prompt)).toEqual(EXPECTED_PROMPT)
+  })
+
+  it('parses Python generated prompt with bare NaN/Infinity tokens', async () => {
+    const bytes = fs.readFileSync(nanFixturePath)
+    const file = new File([bytes], 'nan.avif', { type: 'image/avif' })
+
+    const result = await getFromAvifFile(file)
+
+    expect(result.workflow).toBeUndefined()
+    expect(JSON.parse(result.prompt)).toEqual(EXPECTED_PROMPT_NAN_COERCED)
   })
 
   it('returns empty for non-AVIF data', async () => {

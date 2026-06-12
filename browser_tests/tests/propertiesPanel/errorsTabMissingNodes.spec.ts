@@ -4,7 +4,7 @@ import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 
-test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
+test.describe('Errors tab - Missing nodes', { tag: ['@ui', '@canvas'] }, () => {
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.settings.setSetting(
       'Comfy.RightSidePanel.ShowErrorsTab',
@@ -12,23 +12,39 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
     )
   })
 
-  test('Should show MissingNodeCard in errors tab', async ({ comfyPage }) => {
+  test('Should show missing node pack card with guidance', async ({
+    comfyPage
+  }) => {
     await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
+
+    const missingNodeGroup = comfyPage.page.getByTestId(
+      TestIds.dialogs.missingNodePacksGroup
+    )
 
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.missingNodeCard)
     ).toBeVisible()
+    await expect(missingNodeGroup).toBeVisible()
+    await expect(
+      missingNodeGroup.getByTestId(TestIds.dialogs.errorGroupDisplayMessage)
+    ).toHaveText(/\S/)
   })
 
-  test('Should show missing node packs group', async ({ comfyPage }) => {
+  test('Should show unknown pack node rows by default', async ({
+    comfyPage
+  }) => {
     await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
 
+    const missingNodeCard = comfyPage.page.getByTestId(
+      TestIds.dialogs.missingNodeCard
+    )
+    await expect(missingNodeCard.getByText('Unknown pack')).toBeVisible()
     await expect(
-      comfyPage.page.getByTestId(TestIds.dialogs.missingNodePacksGroup)
+      missingNodeCard.getByRole('button', { name: 'UNKNOWN NODE' })
     ).toBeVisible()
   })
 
-  test('Should expand pack group to reveal node type names', async ({
+  test('Should show subgraph missing node rows by default', async ({
     comfyPage
   }) => {
     await loadWorkflowAndOpenErrorsTab(
@@ -39,66 +55,72 @@ test.describe('Errors tab - Missing nodes', { tag: '@ui' }, () => {
     const missingNodeCard = comfyPage.page.getByTestId(
       TestIds.dialogs.missingNodeCard
     )
-    await expect(missingNodeCard).toBeVisible()
-
-    await missingNodeCard
-      .getByRole('button', { name: /expand/i })
-      .first()
-      .click()
     await expect(
-      missingNodeCard.getByText('MISSING_NODE_TYPE_IN_SUBGRAPH')
+      missingNodeCard.getByRole('button', {
+        name: 'MISSING_NODE_TYPE_IN_SUBGRAPH'
+      })
     ).toBeVisible()
   })
 
-  test('Should collapse expanded pack group', async ({ comfyPage }) => {
-    await loadWorkflowAndOpenErrorsTab(
-      comfyPage,
-      'missing/missing_nodes_in_subgraph'
-    )
+  test('Should locate missing node from the row label', async ({
+    comfyPage
+  }) => {
+    await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_nodes')
 
     const missingNodeCard = comfyPage.page.getByTestId(
       TestIds.dialogs.missingNodeCard
     )
-    await missingNodeCard
-      .getByRole('button', { name: /expand/i })
-      .first()
-      .click()
-    await expect(
-      missingNodeCard.getByText('MISSING_NODE_TYPE_IN_SUBGRAPH')
-    ).toBeVisible()
+    await comfyPage.canvasOps.pan({ x: -800, y: -800 })
+    const offsetBeforeLocate = await comfyPage.canvasOps.getOffset()
 
-    await missingNodeCard
-      .getByRole('button', { name: /collapse/i })
-      .first()
-      .click()
-    await expect(
-      missingNodeCard.getByText('MISSING_NODE_TYPE_IN_SUBGRAPH')
-    ).toBeHidden()
+    await missingNodeCard.getByRole('button', { name: 'UNKNOWN NODE' }).click()
+
+    await expect
+      .poll(() => comfyPage.canvasOps.getOffset())
+      .not.toEqual(offsetBeforeLocate)
   })
 
-  test('Locate node button is visible for expanded pack nodes', async ({
+  test('Should toggle grouped pack nodes from chevron and title', async ({
     comfyPage
   }) => {
     await loadWorkflowAndOpenErrorsTab(
       comfyPage,
-      'missing/missing_nodes_in_subgraph'
+      'missing/missing_nodes_same_pack'
     )
 
     const missingNodeCard = comfyPage.page.getByTestId(
       TestIds.dialogs.missingNodeCard
     )
-    await missingNodeCard
-      .getByRole('button', { name: /expand/i })
-      .first()
-      .click()
-
-    const locateButton = missingNodeCard.getByRole('button', {
-      name: /locate/i
+    const packTitle = missingNodeCard.getByRole('button', {
+      name: 'test-missing-node-pack'
     })
-    await expect(locateButton.first()).toBeVisible()
-    // TODO: Add navigation assertion once subgraph node ID deduplication
-    // timing is fixed. Currently, collectMissingNodes runs before
-    // configure(), so execution IDs use pre-remapped node IDs that don't
-    // match the runtime graph. See PR #9510 / #8762.
+    const expandButton = missingNodeCard.getByTestId(
+      TestIds.dialogs.missingNodePackExpand
+    )
+    const firstNode = missingNodeCard.getByRole('button', {
+      name: 'TEST_MISSING_PACK_NODE_A'
+    })
+    const secondNode = missingNodeCard.getByRole('button', {
+      name: 'TEST_MISSING_PACK_NODE_B'
+    })
+
+    await expect(packTitle).toBeVisible()
+    await expect(
+      missingNodeCard.getByTestId(TestIds.dialogs.missingNodePackCount)
+    ).toHaveText('2')
+    await expect(firstNode).toBeHidden()
+    await expect(secondNode).toBeHidden()
+
+    await expandButton.click()
+    await expect(firstNode).toBeVisible()
+    await expect(secondNode).toBeVisible()
+
+    await packTitle.click()
+    await expect(firstNode).toBeHidden()
+    await expect(secondNode).toBeHidden()
+
+    await packTitle.click()
+    await expect(firstNode).toBeVisible()
+    await expect(secondNode).toBeVisible()
   })
 })

@@ -1,56 +1,54 @@
 import { expect, mergeTests } from '@playwright/test'
-import type { JobEntry } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import { jobsApiMockFixture } from '@e2e/fixtures/jobsApiMockFixture'
 import {
-  createMockJob,
-  createMockJobRecords
-} from '@e2e/fixtures/utils/jobFixtures'
+  createRouteMockJob,
+  jobsRouteFixture
+} from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
-const test = mergeTests(comfyPageFixture, jobsApiMockFixture)
+const test = mergeTests(comfyPageFixture, jobsRouteFixture)
+const mockJobTimestamp = Date.UTC(2026, 0, 1, 12)
 
-const now = Date.now()
-
-const MOCK_JOBS: JobEntry[] = [
-  createMockJob({
+const MOCK_JOBS: RawJobListItem[] = [
+  createRouteMockJob({
     id: 'job-completed-1',
     status: 'completed',
-    create_time: now - 60_000,
-    execution_start_time: now - 60_000,
-    execution_end_time: now - 50_000,
+    create_time: mockJobTimestamp - 60_000,
+    execution_start_time: mockJobTimestamp - 60_000,
+    execution_end_time: mockJobTimestamp - 50_000,
     outputs_count: 2
   }),
-  createMockJob({
+  createRouteMockJob({
     id: 'job-completed-2',
     status: 'completed',
-    create_time: now - 120_000,
-    execution_start_time: now - 120_000,
-    execution_end_time: now - 115_000,
+    create_time: mockJobTimestamp - 120_000,
+    execution_start_time: mockJobTimestamp - 120_000,
+    execution_end_time: mockJobTimestamp - 115_000,
     outputs_count: 1
   }),
-  createMockJob({
+  createRouteMockJob({
     id: 'job-failed-1',
     status: 'failed',
-    create_time: now - 30_000,
-    execution_start_time: now - 30_000,
-    execution_end_time: now - 28_000,
+    create_time: mockJobTimestamp - 30_000,
+    execution_start_time: mockJobTimestamp - 30_000,
+    execution_end_time: mockJobTimestamp - 28_000,
     outputs_count: 0
   }),
-  createMockJob({
+  createRouteMockJob({
     id: 'job-failed-bottom',
     status: 'failed',
-    create_time: now - 180_000,
-    execution_start_time: now - 180_000,
-    execution_end_time: now - 178_000,
+    create_time: mockJobTimestamp - 180_000,
+    execution_start_time: mockJobTimestamp - 180_000,
+    execution_end_time: mockJobTimestamp - 178_000,
     outputs_count: 0
   })
 ]
 
 test.describe('Queue overlay', () => {
-  test.beforeEach(async ({ comfyPage, jobsApi }) => {
-    await jobsApi.mockJobs(createMockJobRecords(MOCK_JOBS))
+  test.beforeEach(async ({ comfyPage, jobsRoutes }) => {
+    await jobsRoutes.mockJobsScenario({ history: MOCK_JOBS, queue: [] })
     await comfyPage.settings.setSetting('Comfy.Minimap.Visible', false)
     await comfyPage.settings.setSetting('Comfy.Queue.QPOV2', false)
     await comfyPage.setup()

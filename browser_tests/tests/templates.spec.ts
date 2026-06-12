@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { WorkflowTemplates } from '@/platform/workflow/templates/types/template'
+import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -106,6 +107,49 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect(comfyPage.templates.content).toBeVisible()
   })
 
+  test('dialog should not be shown when first-time user opens a shared workflow link', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.route(
+      '**/workflows/published/test-share-id',
+      async (route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            share_id: 'test-share-id',
+            workflow_id: 'wf-1',
+            name: 'Shared Workflow',
+            listed: true,
+            publish_time: new Date().toISOString(),
+            workflow_json: {
+              version: 0.4,
+              nodes: [],
+              links: [],
+              groups: [],
+              config: {},
+              extra: {}
+            },
+            assets: []
+          })
+        })
+      }
+    )
+
+    await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
+
+    await comfyPage.setup({
+      clearStorage: true,
+      url: '/?share=test-share-id'
+    })
+
+    await expect(
+      comfyPage.page.getByTestId(TestIds.dialogs.openSharedWorkflowTitle)
+    ).toBeVisible()
+
+    await expect(comfyPage.templates.content).toBeHidden()
+  })
+
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.Locale', 'fr')
 
@@ -131,48 +175,51 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
   test('Falls back to English templates when locale file not found', async ({
     comfyPage
   }) => {
-    // Set locale to a language that doesn't have a template file
-    await comfyPage.settings.setSetting('Comfy.Locale', 'de') // German - no index.de.json exists
+    // Pick a shipped LTR locale and simulate its template index returning 404.
+    // (Previously this test used 'de', but unsupported locales are now
+    // clamped to 'en' at boot so they never hit the template fallback path.
+    // 'fa' would also work but flips document.dir to rtl, which can leak
+    // into adjacent specs in the same worker.)
+    const locale = 'tr'
 
-    // Wait for the German request (expected to 404)
-    const germanRequestPromise = comfyPage.page.waitForRequest(
-      '**/templates/index.de.json'
+    await comfyPage.page.route(
+      `**/templates/index.${locale}.json`,
+      async (route) => {
+        await route.fulfill({
+          status: 404,
+          headers: { 'Content-Type': 'text/plain' },
+          body: 'Not Found'
+        })
+      }
     )
 
-    // Wait for the fallback English request
-    const englishRequestPromise = comfyPage.page.waitForRequest(
-      '**/templates/index.json'
-    )
-
-    // Intercept the German file to simulate a 404
-    await comfyPage.page.route('**/templates/index.de.json', async (route) => {
-      await route.fulfill({
-        status: 404,
-        headers: { 'Content-Type': 'text/plain' },
-        body: 'Not Found'
-      })
-    })
-
-    // Allow the English index to load normally
     await comfyPage.page.route('**/templates/index.json', (route) =>
       route.continue()
     )
 
-    // Load the templates dialog
+    await comfyPage.settings.setSetting('Comfy.Locale', locale)
+
+    const localeRequestPromise = comfyPage.page.waitForRequest(
+      `**/templates/index.${locale}.json`
+    )
+    const englishRequestPromise = comfyPage.page.waitForRequest(
+      '**/templates/index.json'
+    )
+
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
 
-    // Verify German was requested first, then English as fallback
-    const germanRequest = await germanRequestPromise
+    const localeRequest = await localeRequestPromise
     const englishRequest = await englishRequestPromise
 
-    expect(germanRequest.url()).toContain('templates/index.de.json')
+    expect(localeRequest.url()).toContain(`templates/index.${locale}.json`)
     expect(englishRequest.url()).toContain('templates/index.json')
 
-    // Verify English titles are shown as fallback
-    await expect(
-      comfyPage.page.getByRole('main').getByText('All Templates')
-    ).toBeVisible()
+    // Assert on rendered content, not just the container — the container
+    // testid is present even when the dialog body is empty, which would let
+    // a regression where the fallback fetch succeeds but no cards render
+    // pass silently.
+    await expect(comfyPage.templates.allTemplateCards.first()).toBeVisible()
   })
 
   test('template cards are dynamically sized and responsive', async ({
@@ -404,4 +451,57 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
       )
     }
   )
+
+  test('Can open associated tutorial', async ({ comfyPage }) => {
+    const tutorialUrl = 'https://comfyanonymous.github.io/ComfyUI_examples/'
+    await comfyPage.page.route('**/templates/index.json', async (route) => {
+      const response = [
+        {
+          moduleName: 'default',
+          title: 'Test Templates',
+          type: 'image',
+          templates: [
+            {
+              name: 'template-with-tutorial',
+              title: 'Template with a tutorial',
+              mediaType: 'audio',
+              mediaSubtype: 'wav',
+              description: 'This template has a tutorial',
+              tutorialUrl
+            }
+          ]
+        }
+      ]
+      await route.fulfill({
+        status: 200,
+        body: JSON.stringify(response),
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store'
+        }
+      })
+    })
+
+    await comfyPage.page.route('**/templates/**.wav', async (route) => {
+      await route.fulfill({
+        status: 200,
+        body: getWav(),
+        headers: {
+          'Content-Type': 'image/x-wav',
+          'Cache-Control': 'no-store'
+        }
+      })
+    })
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+    const card = comfyPage.page.getByTestId(
+      'template-workflow-template-with-tutorial'
+    )
+    await card.hover()
+    const tutorialButton = card.getByRole('button', { name: 'See a tutorial' })
+    await expect(tutorialButton).toBeVisible()
+    const popupPromise = comfyPage.page.waitForEvent('popup', { timeout: 0 })
+    await tutorialButton.click()
+    const popup = await popupPromise
+    expect(popup.url()).toEqual(tutorialUrl)
+  })
 })

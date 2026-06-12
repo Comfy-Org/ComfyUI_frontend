@@ -12,9 +12,9 @@ const meta: Meta<typeof ProductCard> = {
     })
   ],
   args: {
-    title: 'Comfy\nLocal',
+    title: 'Comfy\nDesktop',
     description: 'Run ComfyUI on your own hardware.',
-    cta: 'SEE LOCAL FEATURES',
+    cta: 'SEE DESKTOP FEATURES',
     href: '#',
     bg: 'bg-primary-warm-gray'
   }
@@ -31,9 +31,9 @@ export const AllCards: Story = {
     template: `
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <ProductCard
-          title="Comfy\nLocal"
+          title="Comfy\nDesktop"
           description="Run ComfyUI on your own hardware."
-          cta="SEE LOCAL FEATURES"
+          cta="SEE DESKTOP FEATURES"
           href="#"
           bg="bg-primary-warm-gray"
         />

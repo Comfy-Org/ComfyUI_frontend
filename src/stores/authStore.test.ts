@@ -6,6 +6,8 @@ import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
+import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import { createTestingPinia } from '@pinia/testing'
@@ -139,6 +141,8 @@ describe('useAuthStore', () => {
 
   beforeEach(() => {
     vi.resetAllMocks()
+    sessionStorage.clear()
+    clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
     // Setup dialog service mock
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
@@ -593,7 +597,7 @@ describe('useAuthStore', () => {
         )
       })
 
-      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
         '%s should track is_new_user=true when Firebase says new user',
         async (method) => {
           vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
@@ -610,7 +614,7 @@ describe('useAuthStore', () => {
         }
       )
 
-      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
         '%s should track is_new_user=true when UI options say new user',
         async (method) => {
           vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
@@ -627,7 +631,7 @@ describe('useAuthStore', () => {
         }
       )
 
-      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
         '%s should track is_new_user=false when neither source says new user',
         async (method) => {
           vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
@@ -644,7 +648,7 @@ describe('useAuthStore', () => {
         }
       )
 
-      it.each(['loginWithGoogle', 'loginWithGithub'] as const)(
+      it.for(['loginWithGoogle', 'loginWithGithub'] as const)(
         '%s should track is_new_user=false when getAdditionalUserInfo returns null',
         async (method) => {
           vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue(null)
@@ -656,6 +660,30 @@ describe('useAuthStore', () => {
           )
         }
       )
+
+      it('includes preserved share id on new-user social auth', async () => {
+        sessionStorage.setItem(
+          'Comfy.PreservedQuery.share_auth',
+          JSON.stringify({ share: 'share-1' })
+        )
+        vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
+          isNewUser: true,
+          providerId: 'google.com',
+          profile: null
+        })
+
+        await store.loginWithGoogle()
+
+        expect(mockTrackAuth).toHaveBeenCalledWith(
+          expect.objectContaining({
+            is_new_user: true,
+            share_id: 'share-1'
+          })
+        )
+        expect(
+          sessionStorage.getItem('Comfy.PreservedQuery.share_auth')
+        ).toBeNull()
+      })
     })
   })
 

@@ -594,3 +594,226 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
     expect(load3d.setLightIntensity).toHaveBeenCalledWith(9)
   })
 })
+
+describe('Load3DConfiguration "none" model handling', () => {
+  let load3d: Load3d
+  let loadModelSpy: ReturnType<typeof vi.fn>
+  let clearModelSpy: ReturnType<typeof vi.fn>
+
+  function makeLoad3dMock(): Load3d {
+    loadModelSpy = vi.fn().mockResolvedValue(undefined)
+    clearModelSpy = vi.fn()
+    return {
+      loadModel: loadModelSpy,
+      clearModel: clearModelSpy,
+      setUpDirection: vi.fn(),
+      setMaterialMode: vi.fn(),
+      setTargetSize: vi.fn(),
+      setCameraState: vi.fn(),
+      toggleGrid: vi.fn(),
+      setBackgroundColor: vi.fn(),
+      setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+      setBackgroundRenderMode: vi.fn(),
+      toggleCamera: vi.fn(),
+      setFOV: vi.fn(),
+      setLightIntensity: vi.fn(),
+      setHDRIIntensity: vi.fn(),
+      setHDRIAsBackground: vi.fn(),
+      setHDRIEnabled: vi.fn(),
+      emitModelReady: vi.fn()
+    } as unknown as Load3d
+  }
+
+  async function flush() {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+  }
+
+  beforeEach(() => {
+    load3d = makeLoad3dMock()
+    vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'model.glb'])
+    vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view')
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  it('does not load or clear a model when the initial widget value is "none"', async () => {
+    const config = new Load3DConfiguration(load3d)
+    config.configure({
+      modelWidget: { value: 'none' } as unknown as IBaseWidget,
+      loadFolder: 'input'
+    })
+    await flush()
+
+    expect(loadModelSpy).not.toHaveBeenCalled()
+    expect(clearModelSpy).not.toHaveBeenCalled()
+  })
+
+  it('clears the model (and skips loadModel) when the widget value changes to "none"', async () => {
+    const config = new Load3DConfiguration(load3d)
+    const widget = { value: 'model.glb' } as unknown as IBaseWidget
+    config.configure({ modelWidget: widget, loadFolder: 'input' })
+    await flush()
+
+    loadModelSpy.mockClear()
+    clearModelSpy.mockClear()
+
+    widget.value = 'none'
+    await flush()
+
+    expect(clearModelSpy).toHaveBeenCalledTimes(1)
+    expect(loadModelSpy).not.toHaveBeenCalled()
+  })
+
+  it('loads a model when the widget value transitions from "none" to a real path', async () => {
+    const config = new Load3DConfiguration(load3d)
+    const widget = { value: 'none' } as unknown as IBaseWidget
+    config.configure({ modelWidget: widget, loadFolder: 'input' })
+    await flush()
+
+    expect(loadModelSpy).not.toHaveBeenCalled()
+
+    widget.value = 'model.glb'
+    await flush()
+
+    expect(loadModelSpy).toHaveBeenCalledWith(expect.any(String), 'model.glb', {
+      silentOnNotFound: false
+    })
+  })
+})
+
+describe('Load3DConfiguration.onSceneInvalidated', () => {
+  function makeLoad3dMock(): Load3d {
+    return {
+      loadModel: vi.fn().mockResolvedValue(undefined),
+      clearModel: vi.fn(),
+      setUpDirection: vi.fn(),
+      setMaterialMode: vi.fn(),
+      setTargetSize: vi.fn(),
+      setCameraState: vi.fn(),
+      toggleGrid: vi.fn(),
+      setBackgroundColor: vi.fn(),
+      setBackgroundImage: vi.fn().mockResolvedValue(undefined),
+      setBackgroundRenderMode: vi.fn(),
+      toggleCamera: vi.fn(),
+      setFOV: vi.fn(),
+      setLightIntensity: vi.fn(),
+      setHDRIIntensity: vi.fn(),
+      setHDRIAsBackground: vi.fn(),
+      setHDRIEnabled: vi.fn(),
+      emitModelReady: vi.fn()
+    } as unknown as Load3d
+  }
+
+  async function flush() {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0))
+  }
+
+  beforeEach(() => {
+    vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'model.glb'])
+    vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view')
+  })
+
+  it('width.callback invokes onSceneInvalidated', async () => {
+    const onSceneInvalidated = vi.fn()
+    const width = { value: 1024 } as unknown as IBaseWidget
+    const height = { value: 1024 } as unknown as IBaseWidget
+    const config = new Load3DConfiguration(makeLoad3dMock())
+
+    config.configure({
+      modelWidget: { value: 'none' } as unknown as IBaseWidget,
+      loadFolder: 'input',
+      width,
+      height,
+      onSceneInvalidated
+    })
+    await flush()
+
+    width.callback!(2048)
+
+    expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
+  })
+
+  it('height.callback invokes onSceneInvalidated', async () => {
+    const onSceneInvalidated = vi.fn()
+    const width = { value: 1024 } as unknown as IBaseWidget
+    const height = { value: 1024 } as unknown as IBaseWidget
+    const config = new Load3DConfiguration(makeLoad3dMock())
+
+    config.configure({
+      modelWidget: { value: 'none' } as unknown as IBaseWidget,
+      loadFolder: 'input',
+      width,
+      height,
+      onSceneInvalidated
+    })
+    await flush()
+
+    height.callback!(2048)
+
+    expect(onSceneInvalidated).toHaveBeenCalledTimes(1)
+  })
+
+  it('model_file widget callback invokes onSceneInvalidated after the model loads', async () => {
+    const onSceneInvalidated = vi.fn()
+    const modelWidget = { value: 'none' } as unknown as IBaseWidget
+    const config = new Load3DConfiguration(makeLoad3dMock())
+
+    config.configure({
+      modelWidget,
+      loadFolder: 'input',
+      onSceneInvalidated
+    })
+    await flush()
+
+    modelWidget.value = 'model.glb'
+    await flush()
+
+    expect(onSceneInvalidated).toHaveBeenCalled()
+  })
+
+  it('preserves any pre-existing model widget callback alongside the invalidation hook', async () => {
+    const onSceneInvalidated = vi.fn()
+    const original = vi.fn()
+    const modelWidget = {
+      value: 'none',
+      callback: original
+    } as unknown as IBaseWidget
+    const config = new Load3DConfiguration(makeLoad3dMock())
+
+    config.configure({
+      modelWidget,
+      loadFolder: 'input',
+      onSceneInvalidated
+    })
+    await flush()
+
+    modelWidget.value = 'model.glb'
+    await flush()
+
+    expect(original).toHaveBeenCalledWith('model.glb')
+    expect(onSceneInvalidated).toHaveBeenCalled()
+  })
+
+  it('callbacks remain safe when onSceneInvalidated is omitted', async () => {
+    const width = { value: 1024 } as unknown as IBaseWidget
+    const height = { value: 1024 } as unknown as IBaseWidget
+    const modelWidget = { value: 'none' } as unknown as IBaseWidget
+    const config = new Load3DConfiguration(makeLoad3dMock())
+
+    config.configure({
+      modelWidget,
+      loadFolder: 'input',
+      width,
+      height
+    })
+    await flush()
+
+    expect(() => width.callback!(2048)).not.toThrow()
+    expect(() => height.callback!(2048)).not.toThrow()
+    expect(() => {
+      modelWidget.value = 'model.glb'
+    }).not.toThrow()
+  })
+})

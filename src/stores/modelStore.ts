@@ -205,6 +205,13 @@ export const useModelStore = defineStore('models', () => {
     modelFolders.value.flatMap((folder) => Object.values(folder.models))
   )
 
+  function createGetModelsFunc(): (folder: string) => Promise<ModelFile[]> {
+    const useAssetAPI: boolean = settingStore.get('Comfy.Assets.UseAssetAPI')
+    return useAssetAPI
+      ? (folder) => assetService.getAssetModels(folder)
+      : (folder) => api.getModels(folder)
+  }
+
   /**
    * Loads the model folders from the server
    */
@@ -216,11 +223,8 @@ export const useModelStore = defineStore('models', () => {
       : await api.getModelFolders()
     modelFolderNames.value = resData.map((folder) => folder.name)
     modelFolderByName.value = {}
+    const getModelsFunc = createGetModelsFunc()
     for (const folderName of modelFolderNames.value) {
-      const getModelsFunc = useAssetAPI
-        ? (folder: string) => assetService.getAssetModels(folder)
-        : (folder: string) => api.getModels(folder)
-
       modelFolderByName.value[folderName] = new ModelFolder(
         folderName,
         getModelsFunc
@@ -242,11 +246,48 @@ export const useModelStore = defineStore('models', () => {
     return Promise.all(modelFolders.value.map((folder) => folder.load()))
   }
 
+  /**
+   * Discards the cache for a single folder and re-loads its contents.
+   * Use when on-disk contents of that folder have changed (e.g. after upload).
+   * Falls back to refreshing the whole library when the folder is unknown so
+   * a newly-introduced folder type is picked up without dropping other
+   * folders' loaded contents.
+   */
+  async function refreshModelFolder(folderName: string) {
+    if (!(folderName in modelFolderByName.value)) {
+      await refresh()
+      return
+    }
+    const folder = new ModelFolder(folderName, createGetModelsFunc())
+    await folder.load()
+    modelFolderByName.value[folderName] = folder
+  }
+
+  /**
+   * Refreshes the folder structure and re-loads any folder whose contents
+   * had previously been loaded. Used by manual refresh actions ("r" key,
+   * sidebar refresh button) to pick up on-disk changes without losing the
+   * currently-visible contents.
+   */
+  async function refresh() {
+    const previouslyLoaded = modelFolders.value
+      .filter((folder) => folder.state === ResourceState.Loaded)
+      .map((folder) => folder.directory)
+    await loadModelFolders()
+    await Promise.all(
+      previouslyLoaded
+        .filter((name) => name in modelFolderByName.value)
+        .map((name) => modelFolderByName.value[name].load())
+    )
+  }
+
   return {
     models,
     modelFolders,
     loadModelFolders,
     loadModels,
-    getLoadedModelFolder
+    getLoadedModelFolder,
+    refreshModelFolder,
+    refresh
   }
 })

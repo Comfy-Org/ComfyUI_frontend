@@ -1833,38 +1833,6 @@ const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
   }
 }
 
-/**
- * Convert selected nodes to a group node
- * @throws {Error} if no nodes are selected
- * @throws {Error} if a group node is already selected
- * @throws {Error} if a group node is selected
- *
- * The context menu item should not be available if any of the above conditions are met.
- * The error is automatically handled by the commandStore when the command is executed.
- */
-async function convertSelectedNodesToGroupNode() {
-  const nodes = Object.values(app.canvas.selected_nodes ?? {})
-  if (nodes.length === 0) {
-    throw new Error('No nodes selected')
-  }
-  if (nodes.length === 1) {
-    throw new Error('Please select multiple nodes to convert to group node')
-  }
-
-  for (const node of nodes) {
-    if (node instanceof SubgraphNode) {
-      throw new Error('Selected nodes contain a subgraph node')
-    }
-    if (GroupNodeHandler.isGroupNode(node)) {
-      throw new Error('Selected nodes contain a group node')
-    }
-  }
-  return await GroupNodeHandler.fromNodes(nodes)
-}
-
-const convertDisabled = (selected: LGraphNode[]) =>
-  selected.length < 2 || !!selected.find((n) => GroupNodeHandler.isGroupNode(n))
-
 function ungroupSelectedGroupNodes() {
   const nodes = Object.values(app.canvas.selected_nodes ?? {})
   for (const node of nodes) {
@@ -1901,13 +1869,6 @@ const ext: ComfyExtension = {
   name: id,
   commands: [
     {
-      id: 'Comfy.GroupNode.ConvertSelectedNodesToGroupNode',
-      label: 'Convert selected nodes to group node',
-      icon: 'pi pi-sitemap',
-      versionAdded: '1.3.17',
-      function: () => convertSelectedNodesToGroupNode()
-    },
-    {
       id: 'Comfy.GroupNode.UngroupSelectedGroupNodes',
       label: 'Ungroup selected group nodes',
       icon: 'pi pi-sitemap',
@@ -1925,13 +1886,6 @@ const ext: ComfyExtension = {
   ],
   keybindings: [
     {
-      commandId: 'Comfy.GroupNode.ConvertSelectedNodesToGroupNode',
-      combo: {
-        alt: true,
-        key: 'g'
-      }
-    },
-    {
       commandId: 'Comfy.GroupNode.UngroupSelectedGroupNodes',
       combo: {
         alt: true,
@@ -1942,42 +1896,13 @@ const ext: ComfyExtension = {
   ],
 
   getCanvasMenuItems(canvas): IContextMenuValue[] {
-    const items: IContextMenuValue[] = []
-    const selected = Object.values(canvas.selected_nodes ?? {})
-    const convertEnabled = !convertDisabled(selected)
-
-    items.push({
-      content: `Convert to Group Node (Deprecated)`,
-      disabled: !convertEnabled,
-      // @ts-expect-error async callback - legacy menu API doesn't expect Promise
-      callback: async () => convertSelectedNodesToGroupNode()
-    })
-
     const groups = canvas.graph?.extra?.groupNodes
     const manageDisabled = !groups || !Object.keys(groups).length
-    items.push({
-      content: `Manage Group Nodes`,
-      disabled: manageDisabled,
-      callback: () => manageGroupNodes()
-    })
-
-    return items
-  },
-
-  getNodeMenuItems(node): IContextMenuValue[] {
-    if (GroupNodeHandler.isGroupNode(node)) {
-      return []
-    }
-
-    const selected = Object.values(app.canvas.selected_nodes ?? {})
-    const convertEnabled = !convertDisabled(selected)
-
     return [
       {
-        content: `Convert to Group Node (Deprecated)`,
-        disabled: !convertEnabled,
-        // @ts-expect-error async callback - legacy menu API doesn't expect Promise
-        callback: async () => convertSelectedNodesToGroupNode()
+        content: `Manage Group Nodes`,
+        disabled: manageDisabled,
+        callback: () => manageGroupNodes()
       }
     ]
   },

@@ -159,7 +159,7 @@
 
   <audio
     :ref="(el) => (audioRef = el as HTMLAudioElement)"
-    :src="audioSrc"
+    :src
     preload="metadata"
     class="hidden"
   />
@@ -192,7 +192,6 @@ const progressRef = ref<HTMLElement>()
 const {
   audioRef,
   waveformRef,
-  audioSrc,
   bars,
   loading,
   isPlaying,

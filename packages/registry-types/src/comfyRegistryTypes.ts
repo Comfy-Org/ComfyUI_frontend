@@ -10057,6 +10057,8 @@ export interface components {
             };
             progress: number;
             create_time: number;
+            /** @description Actual credits consumed by the task. Present once status is finalized; 0 for failed tasks. */
+            consumed_credit?: number;
         };
         TripoSuccessTask: {
             /** @enum {integer} */

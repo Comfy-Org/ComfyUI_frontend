@@ -96,9 +96,11 @@ import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
 
+import type { NodeId } from '@/world/entityIds'
+
 // #region Types
 
-export type NodeId = number | string
+export type { NodeId }
 
 export type NodeProperty = string | number | boolean | object
 
@@ -997,7 +999,6 @@ export class LGraphNode
     return o
   }
 
-  /* Creates a clone of this node */
   clone(): LGraphNode | null {
     if (this.type == null) return null
     const node = LiteGraph.createNode(this.type)
@@ -1023,9 +1024,9 @@ export class LGraphNode
     // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
     data.id = undefined
 
-    if (LiteGraph.use_uuids) data.id = LiteGraph.uuidv4()
-
+    node.id = this.id
     node.configure(data)
+    if (LiteGraph.use_uuids) node.id = LiteGraph.uuidv4()
 
     return node
   }

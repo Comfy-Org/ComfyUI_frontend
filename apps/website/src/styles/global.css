@@ -101,13 +101,13 @@
     transform: translateX(0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translateX(calc(-100% - var(--marquee-gap, 0px)));
   }
 }
 
 @keyframes marquee-reverse {
   0% {
-    transform: translateX(-50%);
+    transform: translateX(calc(-100% - var(--marquee-gap, 0px)));
   }
   100% {
     transform: translateX(0);
@@ -115,11 +115,15 @@
 }
 
 @utility animate-marquee {
-  animation: marquee 30s linear infinite;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: marquee 30s linear infinite;
+  }
 }
 
 @utility animate-marquee-reverse {
-  animation: marquee-reverse 30s linear infinite;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: marquee-reverse 30s linear infinite;
+  }
 }
 
 @keyframes ripple-effect {

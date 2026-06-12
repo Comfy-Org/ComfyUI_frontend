@@ -19,3 +19,19 @@ test('Can display a slot mismatched from widget type', async ({
   await expect(width.locator('path[fill*="INT"]')).toBeVisible()
   await expect(width.locator('path[fill*="FLOAT"]')).toBeVisible()
 })
+
+test('MatchType updates output color @vue-nodes', async ({ comfyPage }) => {
+  await comfyPage.menu.topbar.newWorkflowButton.click()
+  await comfyPage.nextFrame()
+
+  await comfyPage.searchBoxV2.addNode('Load Image')
+  const loadImage = await comfyPage.vueNodes.getFixtureByTitle('Load Image')
+  await comfyPage.searchBoxV2.addNode('Switch', {
+    position: { x: 600, y: 200 }
+  })
+  const switchNode = await comfyPage.vueNodes.getFixtureByTitle('switch')
+
+  await loadImage.getSlot('MASK').dragTo(switchNode.getSlot('on_false'))
+  const slotEl = switchNode.getSlot('output').locator('.slot-dot')
+  await expect.poll(() => slotEl.getAttribute('style')).toContain('MASK')
+})

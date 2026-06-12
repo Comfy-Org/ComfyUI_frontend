@@ -4,7 +4,7 @@ import { computed, toValue } from 'vue'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import { usePriceBadge } from '@/composables/node/usePriceBadge'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
@@ -69,6 +69,38 @@ export function trackNodePrice(node: TrackableNode) {
   }
 }
 
+/**
+ * Register reactive deps on every contained api node's pricing inputs so the
+ * SubgraphNode wrapper's badge computed re-runs when an inner (e.g. promoted)
+ * widget value changes. Also tracks the wrapper's own promoted widget host
+ * values so user edits on the wrapper trigger re-evaluation.
+ */
+function trackSubgraphInnerNodePrices(wrapper: LGraphNode) {
+  if (!wrapper.isSubgraphNode()) return
+  // Touch each promoted widget's host value to register reactive deps.
+  for (const w of wrapper.widgets ?? []) void w.value
+
+  const visited = new Set<string>()
+  function walk(nodes: LGraphNode[]) {
+    for (const inner of nodes) {
+      if (inner.isSubgraphNode()) {
+        const id = String(inner.subgraph.id)
+        if (visited.has(id)) continue
+        visited.add(id)
+        walk(inner.subgraph.nodes)
+        continue
+      }
+      if (!inner.constructor?.nodeData?.api_node) continue
+      trackNodePrice({
+        id: inner.id,
+        type: inner.type ?? '',
+        inputs: inner.inputs
+      })
+    }
+  }
+  walk(wrapper.subgraph.nodes)
+}
+
 export function usePartitionedBadges(nodeData: VueNodeData) {
   // Use per-node pricing revision to re-compute badges only when this node's pricing updates
   const {
@@ -96,6 +128,10 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
     nodeData?.apiNode ? getInputNames(nodeData.type) : []
   )
   const unpartitionedBadges = computed<NodeBadgeProps[]>(() => {
+    if (nodeData?.id != null) {
+      const wrapper = app.canvas?.graph?.getNodeById(nodeData.id)
+      if (wrapper?.isSubgraphNode()) trackSubgraphInnerNodePrices(wrapper)
+    }
     // For ALL API nodes: access per-node revision ref to detect when async pricing evaluation completes
     // This is needed even for static pricing because JSONata 2.x evaluation is async
     if (nodeData?.apiNode && nodeData?.id != null) {

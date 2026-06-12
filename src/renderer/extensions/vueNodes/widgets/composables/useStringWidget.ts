@@ -3,6 +3,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
@@ -66,30 +67,7 @@ function addMultilineWidget(
     { signal }
   )
 
-  // Allow middle mouse button panning
-  inputEl.addEventListener(
-    'pointerdown',
-    (event: PointerEvent) => {
-      if (event.button === 1) app.canvas.processMouseDown(event)
-    },
-    { signal }
-  )
-
-  inputEl.addEventListener(
-    'pointermove',
-    (event: PointerEvent) => {
-      if ((event.buttons & 4) === 4) app.canvas.processMouseMove(event)
-    },
-    { signal }
-  )
-
-  inputEl.addEventListener(
-    'pointerup',
-    (event: PointerEvent) => {
-      if (event.button === 1) app.canvas.processMouseUp(event)
-    },
-    { signal }
-  )
+  forwardMiddleButtonToCanvas(inputEl, signal)
 
   inputEl.addEventListener(
     'wheel',

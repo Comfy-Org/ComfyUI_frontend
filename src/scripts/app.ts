@@ -9,6 +9,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { st, t } from '@/i18n'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -25,6 +26,8 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
+import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
 import type { WorkflowOpenSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
@@ -84,6 +87,7 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/nodeReplacement/cnrIdUtil'
 import { rescanAndSurfaceMissingNodes } from '@/platform/nodeReplacement/missingNodeScan'
 import {
@@ -96,7 +100,7 @@ import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import {
   scanAllMediaCandidates,
-  verifyCloudMediaCandidates
+  verifyMediaCandidates
 } from '@/platform/missingMedia/missingMediaScan'
 
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
@@ -124,6 +128,7 @@ import {
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
+import { getWidgetState } from '@/world/widgetValueIO'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
@@ -164,6 +169,19 @@ export function sanitizeNodeName(string: string) {
   }
   return String(string).replace(/[&<>"'`=]/g, function fromEntityMap(s) {
     return entityMap[s as keyof typeof entityMap]
+  })
+}
+
+function syncPromotedComboHostOptions(rootGraph: LGraph): void {
+  forEachNode(rootGraph, (node) => {
+    for (const widget of node.widgets ?? []) {
+      if (!isPromotedWidgetView(widget) || widget.type !== 'combo') continue
+
+      const state = getWidgetState(widget.entityId)
+      if (!state) continue
+
+      state.options = { ...(widget.options ?? {}) }
+    }
   })
 }
 
@@ -591,6 +609,13 @@ export class ComfyApp {
         event.preventDefault()
         event.stopPropagation()
 
+        // graph_mouse is only updated on mousemove, so when files are dragged
+        // in from another window the canvas-space cursor is stale. Sync it
+        // from the drop event so nodes created below land at the cursor.
+        this.canvas.adjustMouseEvent(event)
+        this.canvas.graph_mouse[0] = event.canvasX
+        this.canvas.graph_mouse[1] = event.canvasY
+
         const n = this.dragOverNode
         this.dragOverNode = null
         // Node handles file drop, we dont use the built in onDropFile handler as its buggy
@@ -880,6 +905,7 @@ export class ComfyApp {
     this.addAfterConfigureHandler(graph)
 
     this.rootGraphInternal = graph
+    installNodeAddedTelemetry(graph)
     this.canvas = new LGraphCanvas(canvasEl, graph)
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
@@ -1084,7 +1110,7 @@ export class ComfyApp {
       }
 
       // Check for old clipboard format
-      const data = JSON.parse(template.data)
+      const data = parseJsonWithNonFinite<{ reroutes?: unknown }>(template.data)
       if (!data.reroutes) {
         deserialiseAndCreate(template.data, app.canvas)
       } else {
@@ -1127,6 +1153,7 @@ export class ComfyApp {
     options: {
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
+      shareId?: string
       deferWarnings?: boolean
       skipAssetScans?: boolean
       silentAssetErrors?: boolean
@@ -1135,6 +1162,7 @@ export class ComfyApp {
     const {
       checkForRerouteMigration = false,
       openSource,
+      shareId,
       deferWarnings = false,
       skipAssetScans = false,
       silentAssetErrors = false
@@ -1412,18 +1440,24 @@ export class ComfyApp {
         missingNodeTypes
       )
 
+      const effectiveShareId =
+        shareId ??
+        (workflow instanceof ComfyWorkflow ? workflow.shareId : undefined)
       const telemetryPayload = {
         missing_node_count: missingNodeTypes.length,
         missing_node_types: missingNodeTypes.map((node) =>
           typeof node === 'string' ? node : node.type
         ),
-        open_source: openSource ?? 'unknown'
+        missing_node_packs: groupMissingNodesByPack(missingNodeTypes),
+        open_source: openSource ?? 'unknown',
+        ...(effectiveShareId ? { share_id: effectiveShareId } : {})
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
       await useWorkflowService().afterLoadNewGraph(
         workflow,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+        effectiveShareId
       )
 
       // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
@@ -1508,9 +1542,13 @@ export class ComfyApp {
       return
     }
 
-    if (isCloud) {
+    const pending = candidates.some((c) => c.isMissing === undefined)
+    if (pending) {
       const controller = missingMediaStore.createVerificationAbortController()
-      void verifyCloudMediaCandidates(candidates, controller.signal)
+      void verifyMediaCandidates(candidates, {
+        isCloud,
+        signal: controller.signal
+      })
         .then(() => {
           if (controller.signal.aborted) return
           // Re-check ancestor after async verification (see model pipeline).
@@ -1611,19 +1649,32 @@ export class ComfyApp {
             })
             delete api.authToken
             delete api.apiKey
-            executionErrorStore.lastNodeErrors = res.node_errors ?? null
-            if (executionErrorStore.lastNodeErrors?.length) {
+            const nodeErrors = res.node_errors
+            const hasNodeErrors =
+              nodeErrors && Object.keys(nodeErrors).length > 0
+            executionErrorStore.lastNodeErrors = hasNodeErrors
+              ? nodeErrors
+              : null
+            try {
+              if (res.prompt_id) {
+                executionStore.storeJob({
+                  id: res.prompt_id,
+                  nodes: Object.keys(p.output),
+                  promptOutput: p.output,
+                  workflow: queuedWorkflow
+                })
+              }
+            } catch (error) {
+              console.warn('Failed to store queued job metadata', {
+                promptId: res.prompt_id,
+                error
+              })
+            }
+            if (hasNodeErrors) {
+              if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+                executionErrorStore.showErrorOverlay()
+              }
               this.canvas.draw(true, true)
-            } else {
-              try {
-                if (res.prompt_id) {
-                  executionStore.storeJob({
-                    id: res.prompt_id,
-                    nodes: Object.keys(p.output),
-                    workflow: queuedWorkflow
-                  })
-                }
-              } catch (error) {}
             }
           } catch (error: unknown) {
             if (
@@ -1791,7 +1842,9 @@ export class ComfyApp {
       let workflowObj: ComfyWorkflowJSON | undefined = undefined
       try {
         workflowObj =
-          typeof workflow === 'string' ? JSON.parse(workflow) : workflow
+          typeof workflow === 'string'
+            ? parseJsonWithNonFinite<ComfyWorkflowJSON>(workflow)
+            : (workflow as ComfyWorkflowJSON)
 
         // Only load workflow if parsing succeeded AND validation passed
         if (
@@ -1820,7 +1873,9 @@ export class ComfyApp {
     if (prompt) {
       try {
         const promptObj =
-          typeof prompt === 'string' ? JSON.parse(prompt) : prompt
+          typeof prompt === 'string'
+            ? parseJsonWithNonFinite<ComfyApiWorkflow>(prompt)
+            : prompt
         if (this.isApiJson(promptObj)) {
           this.loadApiJson(promptObj, fileName)
           return
@@ -2103,6 +2158,9 @@ export class ComfyApp {
       'refreshComboInNodes',
       defs
     )
+
+    // Promoted widgets keep hosted option snapshots; sync them after source refresh hooks run.
+    syncPromotedComboHostOptions(this.rootGraph)
 
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)

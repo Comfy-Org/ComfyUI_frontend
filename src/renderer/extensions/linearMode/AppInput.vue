@@ -4,10 +4,11 @@ import { computed } from 'vue'
 
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useAppModeStore } from '@/stores/appModeStore'
+import type { WidgetEntityId } from '@/world/entityIds'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { id, name } = defineProps<{
-  id: string
+const { entityId, name } = defineProps<{
+  entityId?: WidgetEntityId
   enable: boolean
   name: string
 }>()
@@ -15,12 +16,13 @@ const { id, name } = defineProps<{
 const appModeStore = useAppModeStore()
 const isPromoted = computed(() => appModeStore.selectedInputs.some(matchesThis))
 
-function matchesThis([nodeId, widgetName]: LinearInput) {
-  return id == nodeId && name === widgetName
+function matchesThis([storedId]: LinearInput) {
+  return entityId !== undefined && storedId === entityId
 }
 function togglePromotion() {
+  if (!entityId) return
   if (isPromoted.value) remove(appModeStore.selectedInputs, matchesThis)
-  else appModeStore.selectedInputs.push([id, name])
+  else appModeStore.selectedInputs.push([entityId, name])
 }
 </script>
 <template>

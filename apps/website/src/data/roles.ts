@@ -3,7 +3,7 @@ export interface Role {
   title: string
   department: string
   location: string
-  applyUrl: string
+  jobUrl: string
 }
 
 export interface Department {

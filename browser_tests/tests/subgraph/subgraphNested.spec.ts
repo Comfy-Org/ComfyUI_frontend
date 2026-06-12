@@ -34,49 +34,43 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
   test.describe(
     'Nested subgraph duplicate widget names',
-    { tag: ['@widget'] },
+    { tag: ['@widget', '@vue-nodes'] },
     () => {
       const WORKFLOW = 'subgraphs/nested-duplicate-widget-names'
-
-      test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Disabled')
-      })
+      const OUTER_NODE_ID = '4'
+      const INNER_SUBGRAPH_NODE_ID = '3'
 
       test('Promoted widget values from both inner CLIPTextEncode nodes are distinguishable', async ({
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
-        await comfyExpect(async () => {
-          const widgetValues = await comfyPage.page.evaluate(() => {
-            const graph = window.app!.canvas.graph!
-            const outerNode = graph.getNodeById('4')
-            if (
-              !outerNode ||
-              typeof outerNode.isSubgraphNode !== 'function' ||
-              !outerNode.isSubgraphNode()
-            ) {
-              return []
-            }
+        const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
+        await comfyExpect(outerNode).toBeVisible()
 
-            const innerSubgraphNode = outerNode.subgraph.getNodeById(3)
-            if (!innerSubgraphNode) return []
+        const outerWidgets = outerNode.getByTestId(TestIds.widgets.widget)
+        await comfyExpect(outerWidgets).toHaveCount(1)
 
-            return (innerSubgraphNode.widgets ?? []).map((w) => ({
-              name: w.name,
-              value: w.value
-            }))
-          })
+        const exposedTextWidget = outerNode.getByRole('textbox', {
+          name: 'text'
+        })
+        await comfyExpect(exposedTextWidget).toHaveValue('22222222222')
 
-          const textWidgets = widgetValues.filter((w) =>
-            w.name.startsWith('text')
-          )
-          comfyExpect(textWidgets).toHaveLength(2)
+        await comfyPage.vueNodes.enterSubgraph(OUTER_NODE_ID)
 
-          const values = textWidgets.map((w) => w.value)
-          comfyExpect(values).toContain('11111111111')
-          comfyExpect(values).toContain('22222222222')
-        }).toPass({ timeout: 5_000 })
+        const innerNode = comfyPage.vueNodes.getNodeLocator(
+          INNER_SUBGRAPH_NODE_ID
+        )
+        await comfyExpect(innerNode).toBeVisible()
+
+        const innerTextboxes = innerNode.getByRole('textbox')
+        await comfyExpect(innerTextboxes).toHaveCount(2)
+        const innerValues = await innerTextboxes.evaluateAll<
+          string[],
+          HTMLInputElement
+        >((boxes) => boxes.map((b) => b.value))
+        comfyExpect(innerValues).toContain('11111111111')
+        comfyExpect(innerValues).toContain('22222222222')
       })
     }
   )
@@ -96,7 +90,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
-        await comfyPage.vueNodes.waitForNodes()
 
         const nodeLocator = comfyPage.vueNodes.getNodeLocator(HOST_NODE_ID)
         await comfyExpect(nodeLocator).toBeVisible()
@@ -129,7 +122,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         await comfyPage.subgraph.packAllInteriorNodes(HOST_NODE_ID)
 
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-        await comfyPage.vueNodes.waitForNodes()
 
         const nodeAfter = comfyPage.vueNodes.getNodeLocator(HOST_NODE_ID)
         await comfyExpect(nodeAfter).toBeVisible()
@@ -176,7 +168,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
-        await comfyPage.vueNodes.waitForNodes()
 
         const outerNode = comfyPage.vueNodes.getNodeLocator('10')
         await comfyExpect(outerNode).toBeVisible()
@@ -210,7 +201,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
 
         try {
           await comfyPage.workflow.loadWorkflow(WORKFLOW)
-          await comfyPage.vueNodes.waitForNodes()
 
           const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
           await comfyExpect(outerNode).toBeVisible()
@@ -231,7 +221,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
-        await comfyPage.vueNodes.waitForNodes()
 
         const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
         await comfyExpect(outerNode).toBeVisible()
@@ -250,7 +239,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
-        await comfyPage.vueNodes.waitForNodes()
 
         await expect
           .poll(async () => {
@@ -268,7 +256,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow(WORKFLOW)
-        await comfyPage.vueNodes.waitForNodes()
 
         const outerNode = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
         const widgets = outerNode.getByTestId(TestIds.widgets.widget)
@@ -279,7 +266,6 @@ test.describe('Nested Subgraphs', { tag: ['@subgraph'] }, () => {
         const initialCount = await widgets.count()
 
         await comfyPage.subgraph.serializeAndReload()
-        await comfyPage.vueNodes.waitForNodes()
 
         const outerNodeAfter = comfyPage.vueNodes.getNodeLocator(OUTER_NODE_ID)
         const widgetsAfter = outerNodeAfter.getByTestId(TestIds.widgets.widget)
