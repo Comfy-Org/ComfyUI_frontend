@@ -2,7 +2,15 @@ import { nextTick } from 'vue'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
-import { nodeToLoad3dMap, useLoad3d } from '@/composables/useLoad3d'
+import {
+  type Load3dCachedOutput,
+  getLoad3dOutputCache,
+  isLoad3dSceneDirty,
+  markLoad3dSceneDirty,
+  nodeToLoad3dMap,
+  setLoad3dOutputCache,
+  useLoad3d
+} from '@/composables/useLoad3d'
 import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper'
 import type {
   CameraConfig,
@@ -14,6 +22,7 @@ import {
   LOAD3D_NONE_MODEL,
   SUPPORTED_EXTENSIONS_ACCEPT
 } from '@/extensions/core/load3d/constants'
+import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -96,6 +105,8 @@ async function handleModelUpload(files: FileList, node: LGraphNode) {
 
       modelWidget.value = uploadPath
     }
+
+    markLoad3dSceneDirty(node)
   } catch (error) {
     console.error('Model upload failed:', error)
     useToastStore().addAlert(t('toastMessages.fileUploadFailed'))
@@ -113,6 +124,7 @@ async function handleResourcesUpload(files: FileList, node: LGraphNode) {
       : '3d'
 
     await Load3dUtils.uploadMultipleFiles(files, subfolder)
+    markLoad3dSceneDirty(node)
   } catch (error) {
     console.error('Extra resources upload failed:', error)
     useToastStore().addAlert(t('toastMessages.extraResourcesUploadFailed'))
@@ -270,8 +282,16 @@ useExtensionService().registerExtension({
     }
   ],
   getCustomWidgets() {
+    const VIEWPORT_STATE_NODES = new Set([
+      'Preview3DAdvanced',
+      'PreviewGaussianSplat',
+      'PreviewPointCloud'
+    ])
     return {
       LOAD_3D(node) {
+        const inputName = VIEWPORT_STATE_NODES.has(node.constructor.comfyClass)
+          ? 'viewport_state'
+          : 'image'
         const hasModelFileWidget = node.widgets?.some(
           (w) => w.name === 'model_file'
         )
@@ -311,14 +331,15 @@ useExtensionService().registerExtension({
             if (modelWidget) {
               modelWidget.value = LOAD3D_NONE_MODEL
             }
+            markLoad3dSceneDirty(node)
           })
         }
 
         const widget = new ComponentWidgetImpl({
           node: node,
-          name: 'image',
+          name: inputName,
           component: Load3D,
-          inputSpec: inputSpecLoad3D,
+          inputSpec: { ...inputSpecLoad3D, name: inputName },
           options: {}
         })
 
@@ -369,7 +390,8 @@ useExtensionService().registerExtension({
         modelWidget,
         cameraState,
         width,
-        height
+        height,
+        onSceneInvalidated: () => markLoad3dSceneDirty(node)
       })
     })
 
@@ -387,16 +409,15 @@ useExtensionService().registerExtension({
             return null
           }
 
-          const cameraConfig: CameraConfig = (node.properties[
-            'Camera Config'
-          ] as CameraConfig | undefined) || {
-            cameraType: currentLoad3d.getCurrentCameraType(),
-            fov: currentLoad3d.cameraManager.perspectiveCamera.fov
+          if (!isLoad3dSceneDirty(node)) {
+            const cached = getLoad3dOutputCache(node)
+            if (cached) return cached
           }
-          cameraConfig.state = currentLoad3d.getCameraState()
-          node.properties['Camera Config'] = cameraConfig
 
-          currentLoad3d.stopRecording()
+          const { camera_info, model_3d_info } = snapshotLoad3dState(
+            node,
+            currentLoad3d
+          )
 
           const {
             scene: imageData,
@@ -415,16 +436,11 @@ useExtensionService().registerExtension({
 
           currentLoad3d.handleResize()
 
-          const modelInfo = currentLoad3d.getModelInfo()
-          const model_3d_info: Model3DInfo = modelInfo ? [modelInfo] : []
-
-          const returnVal = {
+          const returnVal: Load3dCachedOutput = {
             image: `threed/${data.name} [temp]`,
             mask: `threed/${dataMask.name} [temp]`,
             normal: `threed/${dataNormal.name} [temp]`,
-            camera_info:
-              (node.properties['Camera Config'] as CameraConfig | undefined)
-                ?.state || null,
+            camera_info,
             recording: '',
             model_3d_info
           }
@@ -435,8 +451,10 @@ useExtensionService().registerExtension({
             const [recording] = await Promise.all([
               Load3dUtils.uploadTempImage(recordingData, 'recording', 'mp4')
             ])
-            returnVal['recording'] = `threed/${recording.name} [temp]`
+            returnVal.recording = `threed/${recording.name} [temp]`
           }
+
+          setLoad3dOutputCache(node, returnVal)
 
           return returnVal
         }
@@ -715,7 +733,7 @@ useExtensionService().registerExtension({
     })
 
     useLoad3d(node).waitForLoad3d((load3d) => {
-      const sceneWidget = node.widgets?.find((w) => w.name === 'image')
+      const sceneWidget = node.widgets?.find((w) => w.name === 'viewport_state')
       if (!sceneWidget) return
 
       const resolveLoad3d = () => nodeToLoad3dMap.get(node) ?? load3d

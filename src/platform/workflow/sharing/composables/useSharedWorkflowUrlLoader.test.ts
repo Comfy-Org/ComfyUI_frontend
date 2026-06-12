@@ -5,6 +5,7 @@ import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composab
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 
 const preservedQueryMocks = vi.hoisted(() => ({
+  capturePreservedQuery: vi.fn(),
   clearPreservedQuery: vi.fn(),
   hydratePreservedQuery: vi.fn(),
   mergePreservedQueryIntoQuery: vi.fn()
@@ -28,6 +29,27 @@ vi.mock('vue-router', () => ({
 }))
 
 const mockImportPublishedAssets = vi.fn()
+const mockIsLoggedIn = vi.hoisted(() => ({ value: false }))
+const mockTrackShareLinkOpened = vi.hoisted(() => vi.fn())
+
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    isLoggedIn: mockIsLoggedIn
+  })
+}))
+
+vi.mock('@/composables/useAppMode', () => ({
+  useAppMode: () => ({
+    mode: { value: 'graph' },
+    isAppMode: { value: false }
+  })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackShareLinkOpened: mockTrackShareLinkOpened
+  })
+}))
 
 vi.mock('@/platform/workflow/sharing/services/workflowShareService', () => ({
   SharedWorkflowLoadError: class extends Error {
@@ -174,6 +196,7 @@ describe('useSharedWorkflowUrlLoader', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockQueryParams = {}
+    mockIsLoggedIn.value = false
     mockDialogStack.length = 0
     mockShowLayoutDialog.mockImplementation(createDialogInstance)
     mockUpdateDialog.mockImplementation(
@@ -213,6 +236,7 @@ describe('useSharedWorkflowUrlLoader', () => {
     expect(loaded).toBe('not-present')
     expect(mockShowLayoutDialog).not.toHaveBeenCalled()
     expect(mockLoadGraphData).not.toHaveBeenCalled()
+    expect(mockTrackShareLinkOpened).not.toHaveBeenCalled()
   })
 
   it('opens dialog immediately with shareId and loads graph on confirm', async () => {
@@ -234,12 +258,43 @@ describe('useSharedWorkflowUrlLoader', () => {
       true,
       true,
       'Test Workflow',
-      { openSource: 'shared_url' }
+      { openSource: 'shared_url', shareId: 'share-id-1' }
+    )
+    expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
+      share_id: 'share-id-1',
+      is_authenticated: false,
+      view_mode: 'graph',
+      is_app_mode: false
+    })
+    expect(preservedQueryMocks.capturePreservedQuery).toHaveBeenCalledWith(
+      'share_auth',
+      { share: 'share-id-1' },
+      ['share']
     )
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'share'
     )
+  })
+
+  it('does not capture share auth attribution for authenticated users', async () => {
+    mockQueryParams = { share: 'share-id-1' }
+    mockIsLoggedIn.value = true
+    mockShowLayoutDialog.mockImplementation(() => {
+      resolveDialogWithConfirm(makePayload())
+    })
+
+    const { loadSharedWorkflowFromUrl } = useSharedWorkflowUrlLoader()
+    const loaded = await loadSharedWorkflowFromUrl()
+
+    expect(loaded).toBe('loaded')
+    expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
+      share_id: 'share-id-1',
+      is_authenticated: true,
+      view_mode: 'graph',
+      is_app_mode: false
+    })
+    expect(preservedQueryMocks.capturePreservedQuery).not.toHaveBeenCalled()
   })
 
   it('hides template selector when user confirms opening shared workflow', async () => {
@@ -300,6 +355,9 @@ describe('useSharedWorkflowUrlLoader', () => {
     expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'share'
+    )
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'share_auth'
     )
   })
 
@@ -411,7 +469,7 @@ describe('useSharedWorkflowUrlLoader', () => {
       true,
       true,
       'Test Workflow',
-      { openSource: 'shared_url' }
+      { openSource: 'shared_url', shareId: 'share-id-1' }
     )
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -541,7 +599,7 @@ describe('useSharedWorkflowUrlLoader', () => {
       true,
       true,
       'Open shared workflow',
-      { openSource: 'shared_url' }
+      { openSource: 'shared_url', shareId: 'share-id-1' }
     )
   })
 })

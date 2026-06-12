@@ -45,6 +45,8 @@ export const TestIds = {
     errorOverlayMessages: 'error-overlay-messages',
     runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
+    missingNodePackExpand: 'missing-node-pack-expand',
+    missingNodePackCount: 'missing-node-pack-count',
     errorCardFindOnGithub: 'error-card-find-on-github',
     errorCardCopy: 'error-card-copy',
     errorDialog: 'error-dialog',
@@ -68,12 +70,8 @@ export const TestIds = {
     missingModelImportUnsupported: 'missing-model-import-unsupported',
     missingMediaGroup: 'error-group-missing-media',
     swapNodesGroup: 'error-group-swap-nodes',
+    swapNodeGroupCount: 'swap-node-group-count',
     missingMediaRow: 'missing-media-row',
-    missingMediaUploadDropzone: 'missing-media-upload-dropzone',
-    missingMediaLibrarySelect: 'missing-media-library-select',
-    missingMediaStatusCard: 'missing-media-status-card',
-    missingMediaConfirmButton: 'missing-media-confirm-button',
-    missingMediaCancelButton: 'missing-media-cancel-button',
     missingMediaLocateButton: 'missing-media-locate-button',
     publishTabPanel: 'publish-tab-panel',
     apiSignin: 'api-signin-dialog',
@@ -139,7 +137,8 @@ export const TestIds = {
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
     colorRed: 'red',
-    convertSubgraph: 'convert-to-subgraph-button'
+    convertSubgraph: 'convert-to-subgraph-button',
+    bypass: 'bypass-button'
   },
   menu: {
     moreMenuContent: 'more-menu-content'

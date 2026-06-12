@@ -822,6 +822,8 @@
     "CONDITIONING": "條件設定",
     "CONTROL_NET": "ControlNet",
     "CURVE": "曲線",
+    "DA3_GEOMETRY": "DA3_GEOMETRY",
+    "DA3_MODEL": "DA3_MODEL",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FACE_DETECTION_MODEL": "人臉偵測模型",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
@@ -832,7 +834,9 @@
     "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FILE_3D_OBJ",
     "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
     "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FILE_3D_STL",
     "FILE_3D_USDZ": "FILE_3D_USDZ",
@@ -945,6 +949,47 @@
     "fallbacks": {
       "inputName": "未知輸入",
       "nodeName": "此節點"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "必要的媒體輸入未選擇檔案。",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastMessageMany": "請在執行此工作流程前選擇缺少的媒體輸入。",
+        "toastMessageWithNode": "{nodeName} 缺少必要的媒體檔案。",
+        "toastTitleMany": "缺少媒體輸入",
+        "toastTitleOne": "缺少媒體輸入"
+      },
+      "missing_model": {
+        "displayMessageCloud": "請匯入模型，或開啟節點進行替換。",
+        "displayMessageOss": "請下載模型，或開啟節點進行替換。",
+        "toastMessageManyCloud": "部分模型不支援，請選擇其他模型。",
+        "toastMessageManyOss": "缺少 {count} 個模型檔案。",
+        "toastMessageOneCloud": "此模型不支援，請選擇其他模型。",
+        "toastMessageOneOss": "{nodeName} 缺少必要的模型檔案。",
+        "toastTitleMany": "缺少模型",
+        "toastTitleManyCloud": "模型在雲端不可用",
+        "toastTitleOneCloud": "{modelName} 在雲端不可用",
+        "toastTitleOneOss": "{modelName} 缺失"
+      },
+      "missing_node": {
+        "displayMessageCloud": "雲端不支援所需的自訂節點。請以支援的節點取代。",
+        "displayMessageOss": "請安裝缺少的套件以使用此工作流程。",
+        "toastMessageManyCloud": "此工作流程使用雲端不支援的節點。",
+        "toastMessageManyOss": "{count} 個節點需要缺少的節點套件。",
+        "toastMessageOneCloud": "此節點不支援雲端。",
+        "toastMessageOneOss": "此工作流程使用尚未安裝的自訂節點。請從註冊表安裝或取代該節點。",
+        "toastTitleManyCloud": "節點在雲端不可用",
+        "toastTitleManyOss": "缺少節點",
+        "toastTitleOneCloud": "{nodeType} 在雲端不可用",
+        "toastTitleOneOss": "缺少節點：{nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "部分節點可替換為其他選項",
+        "toastMessageMany": "{count} 種節點類型可替換為相容選項。",
+        "toastMessageOne": "請在錯誤面板中以 {replacementNodeType} 取代。",
+        "toastTitleMany": "節點可被替換",
+        "toastTitleOne": "{nodeType} 可被替換"
+      }
     },
     "promptErrors": {
       "missing_node_type": {
@@ -1240,6 +1285,15 @@
         "toastMessageWithTypes": "{nodeName} 的 {inputName} 輸入預期為 {expectedType}，但連接的輸出為 {receivedType}。",
         "toastTitle": "無效的連接"
       },
+      "unknown_validation_error": {
+        "details": "{nodeName} 返回了無法識別的驗證錯誤：{errorType}",
+        "detailsWithRawDetails": "{nodeName} 返回了無法識別的驗證錯誤（{errorType}）：{rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "某個節點返回了 ComfyUI 無法識別的驗證錯誤。",
+        "title": "驗證失敗",
+        "toastMessage": "{nodeName} 返回了無法識別的驗證錯誤。",
+        "toastTitle": "驗證失敗"
+      },
       "value_bigger_than_max": {
         "details": "{nodeName} 的 {inputName} 值高於最大值。",
         "detailsWithValue": "{nodeName} 的 {inputName} 值 {receivedValue} 高於最大值 {maxValue}。",
@@ -1287,12 +1341,9 @@
     "missingMedia": "有些節點缺少必要的輸入",
     "missingModels": "缺少 {count} 個必要模型",
     "missingNodes": "有些節點缺失，需要安裝",
-    "seeErrors": "查看錯誤",
-    "showMissingMedia": "顯示缺少的輸入",
-    "showMissingModels": "顯示缺少的模型",
-    "showMissingNodes": "顯示缺少的節點",
-    "showSwapNodes": "顯示可替換的節點",
-    "swapNodes": "有些節點可以用其他選項替換"
+    "multipleErrorCount": "發現 {count} 個錯誤",
+    "multipleErrorsMessage": "請在執行工作流程前解決這些錯誤。",
+    "viewDetails": "檢視詳情"
   },
   "errorPanelSurvey": {
     "ctaButton": "提供回饋",
@@ -1376,6 +1427,11 @@
     "amount": "數量",
     "apply": "套用",
     "architecture": "架構",
+    "arrange": "排列",
+    "arrangeAsGrid": "網格排列",
+    "arrangeHorizontally": "水平排列",
+    "arrangeSpacing": "排列間距",
+    "arrangeVertically": "垂直排列",
     "asset": "{count} 筆資產",
     "audioFailedToLoad": "無法載入音訊",
     "audioProgress": "音訊進度",
@@ -1441,6 +1497,7 @@
     "deleteImage": "刪除圖片",
     "deprecated": "已棄用",
     "description": "描述",
+    "details": "詳細資訊",
     "devOnly": "開發專用",
     "devices": "裝置",
     "disableAll": "全部停用",
@@ -1530,6 +1587,7 @@
     "jobIdCopied": "工作 ID 已複製到剪貼簿",
     "keybinding": "快捷鍵",
     "keybindingAlreadyExists": "快捷鍵已存在於",
+    "keybindingListAriaLabel": "快捷鍵：{combos}",
     "keybindingPresets": {
       "default": "預設預設",
       "deletePreset": "刪除預設",
@@ -1580,6 +1638,7 @@
     "mostRelevant": "最相關",
     "multiSelectDropdown": "多選下拉式選單",
     "nMoreKeybindings": "+ 還有 {count} 個",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "名稱",
     "newFolder": "新資料夾",
     "next": "下一步",
@@ -2715,6 +2774,7 @@
     "qwen": "千問",
     "samplers": "取樣器",
     "sampling": "取樣",
+    "scail": "scail",
     "schedulers": "排程器",
     "scheduling": "排程",
     "sd3": "sd3",
@@ -2781,7 +2841,6 @@
     "replacedNode": "已替換節點：{nodeType}",
     "selectAll": "全選",
     "skipForNow": "暫時略過",
-    "swapNodesGuide": "以下節點可以自動替換為相容的替代品。",
     "swapNodesTitle": "交換節點",
     "unknownNode": "未知",
     "willBeReplacedBy": "此節點將被替換為："
@@ -2953,6 +3012,7 @@
     "errorHelp": "如需更多協助，請{github}或{support}",
     "errorHelpGithub": "提交 GitHub 問題",
     "errorHelpSupport": "聯絡我們的客服",
+    "errorLog": "錯誤日誌",
     "errors": "錯誤",
     "executionErrorOccurred": "執行時發生錯誤。請查看「錯誤」分頁以取得詳細資訊。",
     "fallbackGroupTitle": "群組",
@@ -2987,26 +3047,14 @@
     "hideAdvancedShort": "隱藏進階",
     "hideInput": "隱藏輸入",
     "info": "資訊",
+    "infoFor": "{item} 的資訊",
     "inputs": "輸入",
     "inputsNone": "無輸入",
     "inputsNoneTooltip": "此節點沒有輸入",
     "locateNode": "在畫布上定位節點",
+    "locateNodeFor": "定位 {item}",
     "missingMedia": {
-      "audio": "音訊",
-      "cancelSelection": "取消選取",
-      "collapseNodes": "隱藏引用節點",
-      "confirmSelection": "確認選取",
-      "expandNodes": "顯示引用節點",
-      "image": "影像",
-      "locateNode": "定位節點",
-      "missingMediaTitle": "缺少輸入",
-      "or": "或",
-      "selectedFromLibrary": "已從媒體庫選取",
-      "uploadFile": "上傳{type}",
-      "uploaded": "已上傳",
-      "uploading": "正在上傳...",
-      "useFromLibrary": "從媒體庫使用",
-      "video": "影片"
+      "missingMediaTitle": "缺少輸入"
     },
     "missingModels": {
       "alreadyExistsInCategory": "此模型已存在於「{category}」中",
@@ -3042,16 +3090,12 @@
     },
     "missingNodePacks": {
       "applyChanges": "套用變更",
-      "cloudMessage": "此工作流程需要 Comfy Cloud 尚未提供的自訂節點。",
       "collapse": "收合",
       "expand": "展開",
       "installAll": "全部安裝",
-      "installNodePack": "安裝節點包",
       "installed": "已安裝",
       "installing": "安裝中⋯⋯",
       "ossManagerDisabledHint": "若要安裝缺少的節點，請先在您的 Python 環境中執行 {pipCmd} 以安裝 Node Manager，然後使用 {flag} 旗標重新啟動 ComfyUI。",
-      "ossMessage": "此工作流程使用了你尚未安裝的自訂節點。",
-      "searchInManager": "在節點管理器中搜尋",
       "title": "缺少節點包",
       "unknownPack": "未知的節點包",
       "unsupportedTitle": "不支援的節點包",
@@ -3629,6 +3673,7 @@
     "comfyCloudLogo": "Comfy Cloud 標誌",
     "contactOwnerToSubscribe": "請聯絡工作區擁有者以訂閱",
     "contactUs": "聯絡我們",
+    "creditSliderSave": "節省 {percent}%（{amount}）",
     "creditsRemainingThisMonth": "本月剩餘點數",
     "creditsRemainingThisYear": "本年剩餘點數",
     "creditsYouveAdded": "您已儲值的點數",

@@ -573,7 +573,8 @@ describe('useMediaAssetActions', () => {
       expect(mockDownloadFile).not.toHaveBeenCalled()
       expect(mockCreateAssetExport).toHaveBeenCalledWith({
         job_ids: ['job1'],
-        naming_strategy: 'preserve'
+        naming_strategy: 'preserve',
+        include_previews: true
       })
       expect(mockTrackExport).toHaveBeenCalledWith('test-task-id')
 
