@@ -55,9 +55,7 @@ async function enableEditing() {
 }
 
 onClickOutside(rootEl, () => {
-  if (!alwaysEditing) {
-    isEditing.value = false
-  }
+  if (!alwaysEditing) isEditing.value = false
 })
 </script>
 

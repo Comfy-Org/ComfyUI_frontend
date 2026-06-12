@@ -14,9 +14,8 @@ export class LayoutStoreDataSource extends AbstractMinimapDataSource {
     const allNodes = layoutStore.getAllNodes().value
     if (allNodes.size === 0) return []
 
-    if (!executionStore) {
-      executionStore = useExecutionStore()
-    }
+    if (!executionStore) executionStore = useExecutionStore()
+
     const nodeProgressStates = executionStore.nodeLocationProgressStates
 
     const nodes: MinimapNodeData[] = []

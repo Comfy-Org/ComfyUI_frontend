@@ -103,9 +103,8 @@ describe('executionErrorUtil', () => {
 
       expect(result).not.toBeNull()
       expect(result?.kind).toBe('nodeErrors')
-      if (result?.kind === 'nodeErrors') {
+      if (result?.kind === 'nodeErrors')
         expect(result.nodeErrors['11:1'].class_type).toBe('CLIPTextEncode')
-      }
     })
 
     it('should classify prompt error when error is an object and no node_errors', () => {

@@ -242,9 +242,8 @@ function handlePresetClick(amount: number) {
 }
 
 function handleClose(clearTracking = true) {
-  if (clearTracking) {
-    clearTopupTracking()
-  }
+  if (clearTracking) clearTopupTracking()
+
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
 

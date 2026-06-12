@@ -16,16 +16,12 @@ export function truncateText(
 ): string {
   const textWidth = cachedMeasureText(ctx, text)
 
-  if (textWidth <= maxWidth || maxWidth <= 0) {
-    return text
-  }
+  if (textWidth <= maxWidth || maxWidth <= 0) return text
 
   const ellipsisWidth = cachedMeasureText(ctx, ellipsis)
   const availableWidth = maxWidth - ellipsisWidth
 
-  if (availableWidth <= 0) {
-    return ellipsis
-  }
+  if (availableWidth <= 0) return ellipsis
 
   // Binary search for the right length
   let low = 0

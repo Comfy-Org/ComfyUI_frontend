@@ -37,9 +37,7 @@ export function searchWidgets<T extends { widget: IBaseWidget }[]>(
   list: T,
   query: string
 ): T {
-  if (query.trim() === '') {
-    return list
-  }
+  if (query.trim() === '') return list
 
   const searchableList: WidgetSearchItem[] = list.map((item, index) => {
     const searchableItem = {
@@ -87,9 +85,7 @@ export function searchWidgetsAndNodes(
   list: NodeWidgetsListList,
   query: string
 ): NodeWidgetsListList {
-  if (query.trim() === '') {
-    return list
-  }
+  if (query.trim() === '') return list
 
   const searchableList: NodeSearchItem[] = list.map((item) => ({
     nodeId: item.node.id,
@@ -109,9 +105,8 @@ export function searchWidgetsAndNodes(
 
   return list
     .map((item) => {
-      if (matchedNodeIds.has(item.node.id)) {
-        return { ...item, keep: true }
-      }
+      if (matchedNodeIds.has(item.node.id)) return { ...item, keep: true }
+
       return {
         ...item,
         keep: false,
@@ -222,9 +217,7 @@ function flatItems(
     } else if (isLGraphNode(item)) {
       result.push(item)
       nodes.push(item)
-      if (ctx.parentGroup) {
-        ctx.nodeToParentGroup.set(item, ctx.parentGroup)
-      }
+      if (ctx.parentGroup) ctx.nodeToParentGroup.set(item, ctx.parentGroup)
     } else {
       // Other types of items are not supported yet
       // Do not add to all

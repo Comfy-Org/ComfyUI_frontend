@@ -29,9 +29,8 @@ export const useWorkflowThumbnail = () => {
     if (thumbnail) {
       // Clean up existing thumbnail if it exists
       const existingThumbnail = workflowThumbnails.value.get(workflow.key)
-      if (existingThumbnail) {
-        URL.revokeObjectURL(existingThumbnail)
-      }
+      if (existingThumbnail) URL.revokeObjectURL(existingThumbnail)
+
       workflowThumbnails.value.set(workflow.key, thumbnail)
     }
   }
@@ -48,9 +47,8 @@ export const useWorkflowThumbnail = () => {
    */
   const clearThumbnail = (workflowKey: string) => {
     const thumbnail = workflowThumbnails.value.get(workflowKey)
-    if (thumbnail) {
-      URL.revokeObjectURL(thumbnail)
-    }
+    if (thumbnail) URL.revokeObjectURL(thumbnail)
+
     workflowThumbnails.value.delete(workflowKey)
   }
 
@@ -58,9 +56,9 @@ export const useWorkflowThumbnail = () => {
    * Clear all thumbnails
    */
   const clearAllThumbnails = () => {
-    for (const thumbnail of workflowThumbnails.value.values()) {
+    for (const thumbnail of workflowThumbnails.value.values())
       URL.revokeObjectURL(thumbnail)
-    }
+
     workflowThumbnails.value.clear()
   }
 

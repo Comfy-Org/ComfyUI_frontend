@@ -52,9 +52,8 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
 
     let clearCalled = false
     await comfyPage.page.route('**/api/history', (route) => {
-      if (route.request().method() === 'POST') {
-        clearCalled = true
-      }
+      if (route.request().method() === 'POST') clearCalled = true
+
       return route.continue()
     })
 
@@ -75,9 +74,8 @@ test.describe('Queue Clear History Dialog', { tag: '@ui' }, () => {
 
     let clearCalled = false
     await comfyPage.page.route('**/api/history', (route) => {
-      if (route.request().method() === 'POST') {
-        clearCalled = true
-      }
+      if (route.request().method() === 'POST') clearCalled = true
+
       return route.continue()
     })
 

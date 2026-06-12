@@ -99,9 +99,8 @@ defineExpose({
 })
 
 const handleSubmenuClick = (subOption: SubMenuOption) => {
-  if (subOption.disabled) {
-    return
-  }
+  if (subOption.disabled) return
+
   emit('submenu-click', subOption)
   popoverRef.value?.hide()
 }

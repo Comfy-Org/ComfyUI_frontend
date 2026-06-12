@@ -183,9 +183,8 @@ const availableCategories = computed(() => {
 watch(
   availableCategories,
   (categories) => {
-    if (!categories.includes(activeCategory.value)) {
+    if (!categories.includes(activeCategory.value))
       activeCategory.value = 'scene'
-    }
   },
   { immediate: true }
 )

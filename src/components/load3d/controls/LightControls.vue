@@ -96,9 +96,8 @@ const sliderStep = computed(() =>
 )
 
 const sliderValue = computed(() => {
-  if (usesHdriIntensity.value) {
-    return [hdriConfig.value?.intensity ?? 1]
-  }
+  if (usesHdriIntensity.value) return [hdriConfig.value?.intensity ?? 1]
+
   return [lightIntensity.value ?? lightIntensityMinimum]
 })
 

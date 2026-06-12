@@ -27,9 +27,8 @@ describe('surveyRegistry', () => {
   })
 
   afterEach(() => {
-    for (const key of Object.keys(FEATURE_SURVEYS)) {
-      delete FEATURE_SURVEYS[key]
-    }
+    for (const key of Object.keys(FEATURE_SURVEYS)) delete FEATURE_SURVEYS[key]
+
     Object.assign(FEATURE_SURVEYS, originalEntries)
   })
 

@@ -253,9 +253,7 @@ watch(
     if (!urlsChanged) return
 
     // Reset current index if it's out of bounds
-    if (currentIndex.value >= newUrls.length) {
-      currentIndex.value = 0
-    }
+    if (currentIndex.value >= newUrls.length) currentIndex.value = 0
 
     // Reset loading and error states when URLs change
     actualDimensions.value = null
@@ -273,21 +271,18 @@ function handleImageLoad(event: Event) {
   stopDelayedLoader()
   showLoader.value = false
   imageError.value = false
-  if (img.naturalWidth && img.naturalHeight) {
+  if (img.naturalWidth && img.naturalHeight)
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
-  }
 
-  if (nodeId) {
+  if (nodeId)
     nodeOutputStore.syncLegacyNodeImgs(nodeId, img, currentIndex.value)
-  }
 }
 
 function updateAspectRatio(event: Event, index: number) {
   if (!(event.target instanceof HTMLImageElement) || index !== 0) return
   const { naturalWidth, naturalHeight } = event.target
-  if (naturalWidth && naturalHeight) {
+  if (naturalWidth && naturalHeight)
     imageAspectRatio.value = naturalWidth / naturalHeight
-  }
 }
 
 function handleImageError() {

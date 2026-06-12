@@ -61,9 +61,7 @@ const toggleSlider = () => {
 const closeSlider = (e: MouseEvent) => {
   const target = e.target as HTMLElement
 
-  if (!target.closest('.show-slider')) {
-    showSlider.value = false
-  }
+  if (!target.closest('.show-slider')) showSlider.value = false
 }
 
 onMounted(() => {

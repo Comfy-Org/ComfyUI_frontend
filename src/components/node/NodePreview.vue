@@ -136,15 +136,11 @@ const truncateDefaultValue = (
 ): string => {
   let stringValue: string
 
-  if (typeof value === 'object' && value !== null) {
+  if (typeof value === 'object' && value !== null)
     stringValue = JSON.stringify(value)
-  } else if (Array.isArray(value)) {
-    stringValue = JSON.stringify(value)
-  } else if (typeof value === 'string') {
-    stringValue = value
-  } else {
-    stringValue = String(value)
-  }
+  else if (Array.isArray(value)) stringValue = JSON.stringify(value)
+  else if (typeof value === 'string') stringValue = value
+  else stringValue = String(value)
 
   return _.truncate(stringValue, { length: charLimit })
 }

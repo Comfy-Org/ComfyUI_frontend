@@ -48,9 +48,8 @@ export function usePacksStatus(nodePacks: Ref<NodePack[]>) {
 
     // Find the highest priority status from all packages
     for (const priorityStatus of STATUS_PRIORITY) {
-      if (nodePacks.value.some((pack) => pack.status === priorityStatus)) {
+      if (nodePacks.value.some((pack) => pack.status === priorityStatus))
         return priorityStatus as NodeStatus | NodeVersionStatus
-      }
     }
 
     // Default to active if no specific status found

@@ -47,9 +47,8 @@ export function useCanvasManager() {
       !imgCtx ||
       !maskCtx ||
       !rgbCtx
-    ) {
+    )
       throw new Error('Canvas elements or contexts not available')
-    }
 
     imgCanvas.width = origImage.width
     imgCanvas.height = origImage.height
@@ -60,9 +59,8 @@ export function useCanvasManager() {
 
     imgCtx.drawImage(origImage, 0, 0, origImage.width, origImage.height)
 
-    if (paintImage) {
+    if (paintImage)
       rgbCtx.drawImage(paintImage, 0, 0, paintImage.width, paintImage.height)
-    }
 
     await prepareMask(maskImage, maskCanvas, maskCtx)
   }
@@ -72,13 +70,12 @@ export function useCanvasManager() {
 
     if (!canvasBackground) return
 
-    if (store.maskBlendMode === MaskBlendMode.Black) {
+    if (store.maskBlendMode === MaskBlendMode.Black)
       canvasBackground.style.backgroundColor = 'rgba(0,0,0,1)'
-    } else if (store.maskBlendMode === MaskBlendMode.White) {
+    else if (store.maskBlendMode === MaskBlendMode.White)
       canvasBackground.style.backgroundColor = 'rgba(255,255,255,1)'
-    } else if (store.maskBlendMode === MaskBlendMode.Negative) {
+    else if (store.maskBlendMode === MaskBlendMode.Negative)
       canvasBackground.style.backgroundColor = 'rgba(255,255,255,1)'
-    }
   }
 
   const updateMaskColor = async (): Promise<void> => {

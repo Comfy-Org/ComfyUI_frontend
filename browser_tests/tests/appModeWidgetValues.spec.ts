@@ -87,8 +87,7 @@ test.describe('App mode widget values in prompt', { tag: '@ui' }, () => {
 
     const prompt = await appMode.widgets.runAndCapturePrompt()
 
-    for (const { nodeId, widgetName, expected } of WIDGET_TEST_DATA) {
+    for (const { nodeId, widgetName, expected } of WIDGET_TEST_DATA)
       expect(prompt[nodeId].inputs[widgetName]).toBe(expected)
-    }
   })
 })

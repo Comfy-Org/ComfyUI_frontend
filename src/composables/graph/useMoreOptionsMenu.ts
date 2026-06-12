@@ -58,9 +58,7 @@ const hoveredWidget = ref<[string, NodeId | undefined]>()
  * @param event - The trigger event
  */
 export function toggleNodeOptions(event: Event) {
-  if (nodeOptionsInstance?.toggle) {
-    nodeOptionsInstance.toggle(event)
-  }
+  if (nodeOptionsInstance?.toggle) nodeOptionsInstance.toggle(event)
 }
 
 /**
@@ -74,9 +72,7 @@ export function showNodeOptions(
   nodeId?: NodeId
 ) {
   hoveredWidget.value = widgetName ? [widgetName, nodeId] : undefined
-  if (nodeOptionsInstance?.show) {
-    nodeOptionsInstance.show(event)
-  }
+  if (nodeOptionsInstance?.show) nodeOptionsInstance.show(event)
 }
 
 /**
@@ -109,9 +105,8 @@ export function registerNodeOptionsInstance(
 function markAsVueOptions(options: MenuOption[]): MenuOption[] {
   return options.map((opt) => {
     // Don't mark dividers or category labels
-    if (opt.type === 'divider' || opt.type === 'category') {
-      return opt
-    }
+    if (opt.type === 'divider' || opt.type === 'category') return opt
+
     return { ...opt, source: 'vue' }
   })
 }
@@ -228,35 +223,28 @@ export function useMoreOptionsMenu() {
         hasMultipleSelection: hasMultipleNodes.value
       })
     )
-    if (hasMultipleNodes.value) {
-      options.push(...getMultipleNodesOptions())
-    }
+    if (hasMultipleNodes.value) options.push(...getMultipleNodesOptions())
+
     if (groupContext) {
       options.push(getFitGroupToNodesOption(groupContext))
     } else {
       // Node context: Expand/Minimize
       const visualOptions = getNodeVisualOptions(states, bump)
-      if (visualOptions.length > 0) {
-        options.push(visualOptions[0]) // Expand/Minimize (index 0)
-      }
+      if (visualOptions.length > 0) options.push(visualOptions[0]) // Expand/Minimize (index 0)
     }
     options.push({ type: 'divider' })
 
     // Section 4: Node properties (Node Info, Shape, Color)
-    if (canOpenNodeInfo.value) {
-      options.push(getNodeInfoOption(openNodeInfo))
-    }
+    if (canOpenNodeInfo.value) options.push(getNodeInfoOption(openNodeInfo))
+
     if (groupContext) {
       options.push(getGroupColorOptions(groupContext, bump))
     } else {
       // Add shape and color options
       const visualOptions = getNodeVisualOptions(states, bump)
-      if (visualOptions.length > 1) {
-        options.push(visualOptions[1]) // Shape (index 1)
-      }
-      if (visualOptions.length > 2) {
-        options.push(visualOptions[2]) // Color (index 2)
-      }
+      if (visualOptions.length > 1) options.push(visualOptions[1]) // Shape (index 1)
+
+      if (visualOptions.length > 2) options.push(visualOptions[2]) // Color (index 2)
     }
     options.push({ type: 'divider' })
 

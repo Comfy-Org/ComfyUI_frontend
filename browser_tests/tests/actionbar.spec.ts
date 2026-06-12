@@ -83,9 +83,7 @@ test.describe('Actionbar', { tag: '@ui' }, () => {
     // Trigger a bunch of changes
     const START = 32
     const END = 64
-    for (let i = START; i <= END; i += 8) {
-      await triggerChange(i)
-    }
+    for (let i = START; i <= END; i += 8) await triggerChange(i)
 
     // Ensure the queued width is the first value
     expect(

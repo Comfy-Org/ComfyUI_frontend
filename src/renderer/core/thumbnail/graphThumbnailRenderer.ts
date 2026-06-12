@@ -17,18 +17,14 @@ export function createGraphThumbnail(): string | null {
   const workflowStore = useWorkflowStore()
 
   const graph = workflowStore.activeSubgraph || canvasStore.canvas?.graph
-  if (!graph || !graph._nodes || graph._nodes.length === 0) {
-    return null
-  }
+  if (!graph || !graph._nodes || graph._nodes.length === 0) return null
 
   const width = 250
   const height = 200
 
   // Calculate bounds using spatial calculator
   const bounds = calculateNodeBounds(graph._nodes)
-  if (!bounds) {
-    return null
-  }
+  if (!bounds) return null
 
   const scale = calculateMinimapScale(bounds, width, height)
 
@@ -56,9 +52,7 @@ export function createGraphThumbnail(): string | null {
 
   // Explicit cleanup (optional but good practice)
   const ctx = canvas.getContext('2d')
-  if (ctx) {
-    ctx.clearRect(0, 0, width, height)
-  }
+  if (ctx) ctx.clearRect(0, 0, width, height)
 
   return dataUrl
 }

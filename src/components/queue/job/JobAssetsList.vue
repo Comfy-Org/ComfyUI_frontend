@@ -197,9 +197,7 @@ function getRowHeight(
   index: number,
   rows: VirtualJobRow[]
 ): number {
-  if (row.type === 'header') {
-    return HEADER_ROW_HEIGHT
-  }
+  if (row.type === 'header') return HEADER_ROW_HEIGHT
 
   return (
     JOB_ROW_HEIGHT + (rows[index + 1]?.type === 'header' ? GROUP_ROW_GAP : 0)
@@ -274,26 +272,22 @@ function scheduleDetailsHide(jobId?: string) {
   if (!jobId) return
 
   clearShowTimer()
-  if (hideTimerJobId.value && hideTimerJobId.value !== jobId) {
-    return
-  }
+  if (hideTimerJobId.value && hideTimerJobId.value !== jobId) return
 
   clearHideTimer()
   hideTimerJobId.value = jobId
   hideTimer.value = window.setTimeout(() => {
     const currentActive = activeDetails.value
-    if (currentActive?.jobId === jobId) {
-      isDetailsOpen.value = false
-    }
+    if (currentActive?.jobId === jobId) isDetailsOpen.value = false
+
     hideTimer.value = null
     hideTimerJobId.value = null
   }, DETAILS_HIDE_DELAY_MS)
 }
 
 function onJobLeave(jobId: string) {
-  if (hoveredJobId.value === jobId) {
-    hoveredJobId.value = null
-  }
+  if (hoveredJobId.value === jobId) hoveredJobId.value = null
+
   scheduleDetailsHide(jobId)
 }
 
@@ -336,9 +330,8 @@ function getPreviewOutput(job: JobListItem) {
 
 function getJobPreviewUrl(job: JobListItem) {
   const preview = getPreviewOutput(job)
-  if (preview?.isImage || preview?.isVideo) {
-    return preview.previewUrl
-  }
+  if (preview?.isImage || preview?.isVideo) return preview.previewUrl
+
   return job.iconImageUrl
 }
 
@@ -381,16 +374,14 @@ function onPopoverLeave() {
 }
 
 function onPopoverOpenChange(open: boolean) {
-  if (!open) {
-    resetActiveDetails()
-  }
+  if (!open) resetActiveDetails()
 }
 
 function getJobIconClass(job: JobListItem): string | undefined {
   const iconName = job.iconName ?? iconForJobState(job.state)
-  if (!job.iconImageUrl && iconName === iconForJobState('pending')) {
+  if (!job.iconImageUrl && iconName === iconForJobState('pending'))
     return 'animate-spin'
-  }
+
   return undefined
 }
 
@@ -400,9 +391,7 @@ watch(
     const currentActive = activeDetails.value
     if (!currentActive) return
 
-    if (!hasDisplayedJob(currentActive.jobId)) {
-      resetActiveDetails()
-    }
+    if (!hasDisplayedJob(currentActive.jobId)) resetActiveDetails()
   }
 )
 

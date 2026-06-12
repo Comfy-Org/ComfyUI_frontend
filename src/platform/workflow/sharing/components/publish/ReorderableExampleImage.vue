@@ -101,9 +101,8 @@ async function handleRemove() {
 }
 
 function handleFileDrop(event: DragEvent) {
-  if (event.dataTransfer?.files?.length) {
+  if (event.dataTransfer?.files?.length)
     emit('insertFiles', index, event.dataTransfer.files)
-  }
 }
 
 const tileRef = ref<HTMLElement | null>(null)

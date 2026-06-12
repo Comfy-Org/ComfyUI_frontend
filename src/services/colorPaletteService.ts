@@ -108,11 +108,8 @@ export const useColorPaletteService = () => {
       const cssVar = `color-datatype-${dataType}`
 
       const valueMaybe = linkColorPalette[dataType as keyof Colors['node_slot']]
-      if (valueMaybe) {
-        rootStyle.setProperty(`--${cssVar}`, valueMaybe)
-      } else {
-        rootStyle.removeProperty(`--${cssVar}`)
-      }
+      if (valueMaybe) rootStyle.setProperty(`--${cssVar}`, valueMaybe)
+      else rootStyle.removeProperty(`--${cssVar}`)
     }
   }
 
@@ -125,20 +122,16 @@ export const useColorPaletteService = () => {
     if (!rootStyle) return
 
     for (const themeVar of Object.keys(THEME_PROPERTY_MAP)) {
-      if (!validThemeProp(themeVar)) {
-        continue
-      }
+      if (!validThemeProp(themeVar)) continue
+
       const cssVar = THEME_PROPERTY_MAP[themeVar]
       if (colorPaletteId === 'dark' || colorPaletteId === 'light') {
         rootStyle.removeProperty(`--${cssVar}`)
         continue
       }
       const valueMaybe = palette[themeVar]
-      if (valueMaybe) {
-        rootStyle.setProperty(`--${cssVar}`, valueMaybe)
-      } else {
-        rootStyle.removeProperty(`--${cssVar}`)
-      }
+      if (valueMaybe) rootStyle.setProperty(`--${cssVar}`, valueMaybe)
+      else rootStyle.removeProperty(`--${cssVar}`)
     }
   }
 
@@ -160,7 +153,7 @@ export const useColorPaletteService = () => {
     }
     app.canvas._pattern = undefined
 
-    if (typeof palette.NODE_DEFAULT_SHAPE === 'string')
+    if (typeof palette.NODE_DEFAULT_SHAPE === 'string') {
       console.warn(
         `litegraph_base.NODE_DEFAULT_SHAPE only accepts [${[
           LiteGraph.BOX_SHAPE,
@@ -168,6 +161,7 @@ export const useColorPaletteService = () => {
           LiteGraph.CARD_SHAPE
         ].join(', ')}] but got ${palette.NODE_DEFAULT_SHAPE}`
       )
+    }
 
     const default_shape =
       typeof palette.NODE_DEFAULT_SHAPE === 'string'
@@ -192,9 +186,8 @@ export const useColorPaletteService = () => {
     const shape = schema.shape
 
     for (const [key, value] of Object.entries(shape)) {
-      if (value instanceof z.ZodOptional || value instanceof z.ZodDefault) {
+      if (value instanceof z.ZodOptional || value instanceof z.ZodDefault)
         optionalKeys.push(key)
-      }
     }
 
     return optionalKeys
@@ -212,9 +205,8 @@ export const useColorPaletteService = () => {
   ) => {
     if (!comfyColorPalette) return
     const rootStyle = document.documentElement.style
-    for (const [key, value] of Object.entries(comfyColorPalette)) {
+    for (const [key, value] of Object.entries(comfyColorPalette))
       rootStyle.setProperty('--' + key, value)
-    }
 
     for (const optionalKey of optionalComfyBaseKeys) {
       if (!(optionalKey in comfyColorPalette)) {
@@ -226,11 +218,9 @@ export const useColorPaletteService = () => {
     }
 
     const backgroundImage = settingStore.get('Comfy.Canvas.BackgroundImage')
-    if (backgroundImage) {
+    if (backgroundImage)
       rootStyle.setProperty('--bg-img', `url('${backgroundImage}')`)
-    } else {
-      rootStyle.removeProperty('--bg-img')
-    }
+    else rootStyle.removeProperty('--bg-img')
 
     try {
       const splashBg = isLightTheme ? '#FFFFFF' : comfyColorPalette['bg-color']
@@ -248,9 +238,8 @@ export const useColorPaletteService = () => {
    */
   const loadColorPalette = async (colorPaletteId: string) => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
-    if (!colorPalette) {
+    if (!colorPalette)
       throw new Error(`Color palette ${colorPaletteId} not found`)
-    }
 
     const completedPalette = colorPaletteStore.completePalette(colorPalette)
     loadLinkColorPalette(completedPalette.colors.node_slot)
@@ -276,9 +265,9 @@ export const useColorPaletteService = () => {
    */
   const exportColorPalette = (colorPaletteId: string) => {
     const colorPalette = colorPaletteStore.palettesLookup[colorPaletteId]
-    if (!colorPalette) {
+    if (!colorPalette)
       throw new Error(`Color palette ${colorPaletteId} not found`)
-    }
+
     downloadBlob(
       colorPalette.id + '.json',
       new Blob([JSON.stringify(toRaw(colorPalette), null, 2)], {

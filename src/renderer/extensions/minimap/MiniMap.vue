@@ -133,9 +133,7 @@ const toggleOptionsPanel = () => {
 }
 
 onMounted(() => {
-  if (minimapRef.value) {
-    setMinimapRef(minimapRef.value)
-  }
+  if (minimapRef.value) setMinimapRef(minimapRef.value)
 })
 
 onUnmounted(() => {

@@ -193,11 +193,9 @@ function sortedGroups(category: SettingTreeNode): ISettingGroup[] {
 
 function handleSearch(query: string) {
   handleSearchBase(query.trim(), searchableNavItems.value)
-  if (query) {
-    activeCategoryKey.value = null
-  } else if (!activeCategoryKey.value) {
+  if (query) activeCategoryKey.value = null
+  else if (!activeCategoryKey.value)
     activeCategoryKey.value = defaultCategory.value?.key ?? null
-  }
 }
 
 function onNavItemClick(id: string) {
@@ -234,12 +232,10 @@ if (scrollToSettingId) {
 }
 
 watch(activeCategoryKey, (newKey, oldKey) => {
-  if (!newKey && !inSearch.value) {
-    activeCategoryKey.value = oldKey
-  }
-  if (newKey === 'credits') {
-    void authActions.fetchBalance()
-  }
+  if (!newKey && !inSearch.value) activeCategoryKey.value = oldKey
+
+  if (newKey === 'credits') void authActions.fetchBalance()
+
   if (newKey) {
     void nextTick(() => {
       navRef.value

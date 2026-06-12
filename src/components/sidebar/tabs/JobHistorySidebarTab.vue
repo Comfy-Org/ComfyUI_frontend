@@ -145,15 +145,13 @@ const queuedJobsLabel = computed(() =>
   })
 )
 const activeQueueSummary = computed(() => {
-  if (runningCount.value === 0 && queuedCount.value === 0) {
+  if (runningCount.value === 0 && queuedCount.value === 0)
     return t('sideToolbar.queueProgressOverlay.noActiveJobs')
-  }
-  if (queuedCount.value === 0) {
-    return runningJobsLabel.value
-  }
-  if (runningCount.value === 0) {
-    return queuedJobsLabel.value
-  }
+
+  if (queuedCount.value === 0) return runningJobsLabel.value
+
+  if (runningCount.value === 0) return queuedJobsLabel.value
+
   return t('sideToolbar.queueProgressOverlay.runningQueuedSummary', {
     running: runningJobsLabel.value,
     queued: queuedJobsLabel.value

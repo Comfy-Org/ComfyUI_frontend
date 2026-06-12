@@ -46,9 +46,7 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
   test('scan large graph for containment candidates', async ({ comfyPage }) => {
     await comfyPage.workflow.loadWorkflow('large-graph-workflow')
 
-    for (let i = 0; i < STABILIZATION_FRAMES; i++) {
-      await comfyPage.nextFrame()
-    }
+    for (let i = 0; i < STABILIZATION_FRAMES; i++) await comfyPage.nextFrame()
 
     // Walk the DOM and find candidates
     const candidates = await comfyPage.page.evaluate((): ContainCandidate[] => {
@@ -147,9 +145,8 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
 
     // Measure baseline performance (idle)
     await comfyPage.perf.startMeasuring()
-    for (let i = 0; i < STABILIZATION_FRAMES; i++) {
-      await comfyPage.nextFrame()
-    }
+    for (let i = 0; i < STABILIZATION_FRAMES; i++) await comfyPage.nextFrame()
+
     const baseline = await comfyPage.perf.stopMeasuring('baseline-idle')
 
     // Take a baseline screenshot for visual comparison
@@ -177,15 +174,12 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
 
       if (applied === 0) continue
 
-      for (let i = 0; i < SETTLE_FRAMES; i++) {
-        await comfyPage.nextFrame()
-      }
+      for (let i = 0; i < SETTLE_FRAMES; i++) await comfyPage.nextFrame()
 
       // Measure with containment
       await comfyPage.perf.startMeasuring()
-      for (let i = 0; i < STABILIZATION_FRAMES; i++) {
-        await comfyPage.nextFrame()
-      }
+      for (let i = 0; i < STABILIZATION_FRAMES; i++) await comfyPage.nextFrame()
+
       const withContain = await comfyPage.perf.stopMeasuring(
         `contain-${candidate.selector}`
       )
@@ -199,15 +193,11 @@ test.describe('CSS Containment Audit', { tag: ['@audit'] }, () => {
       // Remove containment
       await comfyPage.page.evaluate((sel: string) => {
         document.querySelectorAll(sel).forEach((el) => {
-          if (el instanceof HTMLElement) {
-            el.style.contain = ''
-          }
+          if (el instanceof HTMLElement) el.style.contain = ''
         })
       }, candidate.selector)
 
-      for (let i = 0; i < SETTLE_FRAMES; i++) {
-        await comfyPage.nextFrame()
-      }
+      for (let i = 0; i < SETTLE_FRAMES; i++) await comfyPage.nextFrame()
 
       results.push({
         candidate,

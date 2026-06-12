@@ -169,18 +169,18 @@ describe('useAuthStore', () => {
 
     // Mock fetch responses
     mockFetch.mockImplementation((url: string) => {
-      if (url.endsWith('/customers')) {
+      if (url.endsWith('/customers'))
         return Promise.resolve(mockCreateCustomerResponse)
-      }
-      if (url.endsWith('/customers/balance')) {
+
+      if (url.endsWith('/customers/balance'))
         return Promise.resolve(mockFetchBalanceResponse)
-      }
-      if (url.endsWith('/customers/credit')) {
+
+      if (url.endsWith('/customers/credit'))
         return Promise.resolve(mockAddCreditsResponse)
-      }
-      if (url.endsWith('/customers/billing')) {
+
+      if (url.endsWith('/customers/billing'))
         return Promise.resolve(mockAccessBillingPortalResponse)
-      }
+
       return Promise.reject(new Error('Unexpected API call'))
     })
 

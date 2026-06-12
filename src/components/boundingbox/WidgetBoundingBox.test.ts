@@ -117,16 +117,14 @@ describe('WidgetBoundingBox', () => {
   describe('Disabled state', () => {
     it('disables all four inputs when disabled=true', () => {
       renderBox({ x: 0, y: 0, width: 1, height: 1 }, true)
-      for (const input of screen.getAllByRole('spinbutton')) {
+      for (const input of screen.getAllByRole('spinbutton'))
         expect(input).toBeDisabled()
-      }
     })
 
     it('leaves all four inputs enabled when disabled=false', () => {
       renderBox({ x: 0, y: 0, width: 1, height: 1 }, false)
-      for (const input of screen.getAllByRole('spinbutton')) {
+      for (const input of screen.getAllByRole('spinbutton'))
         expect(input).not.toBeDisabled()
-      }
     })
   })
 })

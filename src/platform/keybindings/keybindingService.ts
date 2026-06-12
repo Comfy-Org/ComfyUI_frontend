@@ -16,9 +16,7 @@ export function useKeybindingService() {
 
   async function keybindHandler(event: KeyboardEvent) {
     const keyCombo = KeyComboImpl.fromEvent(event)
-    if (keyCombo.isModifier) {
-      return
-    }
+    if (keyCombo.isModifier) return
 
     const target = event.composedPath()[0] as HTMLElement
     if (
@@ -28,9 +26,8 @@ export function useKeybindingService() {
         target.contentEditable === 'true' ||
         (target.tagName === 'SPAN' &&
           target.classList.contains('property_value')))
-    ) {
+    )
       return
-    }
 
     const keybinding = keybindingStore.getKeybinding(keyCombo)
     if (keybinding) {
@@ -40,9 +37,7 @@ export function useKeybindingService() {
           : keybinding.targetElementId
       if (targetElementId) {
         const container = document.getElementById(targetElementId)
-        if (!container?.contains(target)) {
-          return
-        }
+        if (!container?.contains(target)) return
       }
       if (
         event.key === 'Escape' &&
@@ -50,9 +45,7 @@ export function useKeybindingService() {
         !event.altKey &&
         !event.metaKey
       ) {
-        if (dialogStore.dialogStack.length > 0) {
-          return
-        }
+        if (dialogStore.dialogStack.length > 0) return
       }
 
       event.preventDefault()
@@ -73,9 +66,7 @@ export function useKeybindingService() {
       return
     }
 
-    if (event.ctrlKey || event.altKey || event.metaKey) {
-      return
-    }
+    if (event.ctrlKey || event.altKey || event.metaKey) return
 
     if (event.key === 'Escape') {
       const modals = document.querySelectorAll<HTMLElement>('.comfy-modal')
@@ -99,26 +90,26 @@ export function useKeybindingService() {
       if (
         isCloud &&
         keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
-      ) {
+      )
         continue
-      }
+
       keybindingStore.addDefaultKeybinding(new KeybindingImpl(keybinding))
     }
   }
 
   function registerUserKeybindings() {
     const unsetBindings = settingStore.get('Comfy.Keybinding.UnsetBindings')
-    for (const keybinding of unsetBindings) {
+    for (const keybinding of unsetBindings)
       keybindingStore.unsetKeybinding(new KeybindingImpl(keybinding))
-    }
+
     const newBindings = settingStore.get('Comfy.Keybinding.NewBindings')
     for (const keybinding of newBindings) {
       if (
         isCloud &&
         keybinding.commandId === 'Workspace.ToggleBottomPanelTab.logs-terminal'
-      ) {
+      )
         continue
-      }
+
       keybindingStore.addUserKeybinding(new KeybindingImpl(keybinding))
     }
   }

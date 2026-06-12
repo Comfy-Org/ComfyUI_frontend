@@ -297,9 +297,8 @@ const contextMenuFileKind = computed<MediaKind>(() =>
 )
 
 const shouldShowOutputCount = (item: AssetItem): boolean => {
-  if (activeTab.value !== 'output' || isInFolderView.value) {
-    return false
-  }
+  if (activeTab.value !== 'output' || isInFolderView.value) return false
+
   return getOutputCount(item) > 1
 }
 
@@ -393,9 +392,8 @@ const {
 
 // Base assets before search filtering
 const baseAssets = computed(() => {
-  if (isInFolderView.value) {
-    return folderAssets.value
-  }
+  if (isInFolderView.value) return folderAssets.value
+
   return mediaAssets.value
 })
 
@@ -460,9 +458,7 @@ watch(visibleAssets, (newAssets) => {
 })
 
 watch(galleryActiveIndex, (index) => {
-  if (index === -1) {
-    currentGalleryAssetId.value = null
-  }
+  if (index === -1) currentGalleryAssetId.value = null
 })
 
 const galleryItems = computed(() => {
@@ -489,9 +485,7 @@ const galleryItems = computed(() => {
 
 const refreshAssets = async () => {
   await currentAssets.value.fetchMediaList()
-  if (error.value) {
-    console.error('Failed to refresh assets:', error.value)
-  }
+  if (error.value) console.error('Failed to refresh assets:', error.value)
 }
 
 watch(
@@ -539,9 +533,7 @@ const handleBulkDownload = (assets: AssetItem[]) => {
 }
 
 const handleBulkDelete = async (assets: AssetItem[]) => {
-  if (await deleteAssets(assets)) {
-    clearSelection()
-  }
+  if (await deleteAssets(assets)) clearSelection()
 }
 
 const handleBulkAddToWorkflow = async (assets: AssetItem[]) => {
@@ -565,16 +557,12 @@ const handleDownloadSelected = () => {
 }
 
 const handleDeleteSelected = async () => {
-  if (await deleteAssets(selectedAssets.value)) {
-    clearSelection()
-  }
+  if (await deleteAssets(selectedAssets.value)) clearSelection()
 }
 
 const handleZoomClick = (asset: AssetItem) => {
   const mediaType = getMediaTypeFromFilename(asset.name)
-  if (!isPreviewableMediaType(mediaType)) {
-    return
-  }
+  if (!isPreviewableMediaType(mediaType)) return
 
   if (mediaType === '3D') {
     const dialogStore = useDialogStore()
@@ -597,9 +585,7 @@ const handleZoomClick = (asset: AssetItem) => {
   const index = previewableVisibleAssets.value.findIndex(
     (a) => a.id === asset.id
   )
-  if (index !== -1) {
-    galleryActiveIndex.value = index
-  }
+  if (index !== -1) galleryActiveIndex.value = index
 }
 
 const enterFolderView = async (asset: AssetItem) => {
@@ -653,9 +639,7 @@ const handleDeselectAll = () => {
 }
 
 const handleEmptySpaceClick = () => {
-  if (hasSelection) {
-    clearSelection()
-  }
+  if (hasSelection) clearSelection()
 }
 
 const copyJobId = async () => {
@@ -684,8 +668,7 @@ const handleApproachEnd = useDebounceFn(async () => {
     !isInFolderView.value &&
     outputAssets.hasMore.value &&
     !outputAssets.isLoadingMore.value
-  ) {
+  )
     await outputAssets.loadMore()
-  }
 }, 300)
 </script>

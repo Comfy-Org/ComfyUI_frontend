@@ -76,9 +76,8 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     await comfyPage.nextFrame()
 
     const zoomOut = comfyPage.page.getByTestId(TestIds.canvas.zoomOutAction)
-    for (let i = 0; i < 30; i++) {
-      await zoomOut.click()
-    }
+    for (let i = 0; i < 30; i++) await zoomOut.click()
+
     await comfyPage.nextFrame()
 
     await expect.poll(() => comfyPage.canvasOps.getScale()).toBeCloseTo(0.1, 1)

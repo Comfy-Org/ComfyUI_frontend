@@ -17,9 +17,7 @@ function intersect(a: Rect, b: Rect): [number, number, number, number] | null {
   const x2 = Math.min(a.x + a.width, b.x + b.width)
   const y2 = Math.min(a.y + a.height, b.y + b.height)
 
-  if (x1 >= x2 || y1 >= y2) {
-    return null
-  }
+  if (x1 >= x2 || y1 >= y2) return null
 
   return [x1, y1, x2 - x1, y2 - y1]
 }
@@ -67,9 +65,7 @@ export const useDomClipping = (options: ClippingOptions = {}) => {
         }
       )
 
-      if (!intersection) {
-        return ''
-      }
+      if (!intersection) return ''
 
       // Convert intersection to canvas scale (element has scale transform)
       const clipX =

@@ -23,9 +23,8 @@ export function getNodeInputOnPos(
       input.label?.length ?? input.localized_name?.length ?? input.name?.length
     const width = 20 + (nameLength || 3) * 7
 
-    if (isInRectangle(x, y, pos[0] - 10, pos[1] - 10, width, 20)) {
+    if (isInRectangle(x, y, pos[0] - 10, pos[1] - 10, width, 20))
       return { index, input, pos }
-    }
   }
 }
 
@@ -40,9 +39,8 @@ export function getNodeOutputOnPos(
   for (const [index, output] of outputs.entries()) {
     const pos = node.getOutputPos(index)
 
-    if (isInRectangle(x, y, pos[0] - 10, pos[1] - 10, 40, 20)) {
+    if (isInRectangle(x, y, pos[0] - 10, pos[1] - 10, 40, 20))
       return { index, output, pos }
-    }
   }
 }
 

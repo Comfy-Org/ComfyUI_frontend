@@ -64,9 +64,8 @@ const { subcategories } = defineProps<{
 const filteredSubcategories = computed(() => {
   const result: Record<string, ComfyCommandImpl[]> = {}
 
-  for (const [subcategory, commands] of Object.entries(subcategories)) {
+  for (const [subcategory, commands] of Object.entries(subcategories))
     result[subcategory] = commands.filter((cmd) => !!cmd.keybinding)
-  }
 
   return result
 })

@@ -37,9 +37,7 @@ export function useAssetsApi(directory: 'input' | 'output') {
   const refresh = () => fetchMediaList()
 
   const loadMore = async (): Promise<void> => {
-    if (directory === 'output') {
-      await assetsStore.loadMoreHistory()
-    }
+    if (directory === 'output') await assetsStore.loadMoreHistory()
   }
 
   const hasMore = computed(() => {

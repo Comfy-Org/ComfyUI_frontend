@@ -65,11 +65,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
 
   /** @inheritdoc {@link IColorable.setColorOption} */
   setColorOption(colorOption: ColorOption | null): void {
-    if (colorOption == null) {
-      delete this.color
-    } else {
-      this.color = colorOption.groupcolor
-    }
+    if (colorOption == null) delete this.color
+    else this.color = colorOption.groupcolor
   }
 
   /** @inheritdoc {@link IColorable.getColorOption} */
@@ -234,9 +231,7 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this._pos[1] += deltaY
     if (skipChildren === true) return
 
-    for (const item of this._children) {
-      item.move(deltaX, deltaY)
-    }
+    for (const item of this._children) item.move(deltaX, deltaY)
   }
 
   /** @inheritdoc */
@@ -273,9 +268,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     }
 
     // Move reroutes we overlap the centre point of
-    for (const reroute of reroutes.values()) {
+    for (const reroute of reroutes.values())
       if (isPointInRect(reroute.pos, this._bounding)) children.add(reroute)
-    }
 
     // Move groups we wholly contain and recursively compute their children
     const containedGroups: LGraphGroup[] = []
@@ -289,13 +283,9 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
       group.recomputeInsideNodes(maxDepth - 1, visited)
 
     groups.sort((a, b) => {
-      if (a === this) {
-        return children.has(b) ? -1 : 0
-      } else if (b === this) {
-        return children.has(a) ? 1 : 0
-      } else {
-        return 0
-      }
+      if (a === this) return children.has(b) ? -1 : 0
+      else if (b === this) return children.has(a) ? 1 : 0
+      else return 0
     })
   }
 

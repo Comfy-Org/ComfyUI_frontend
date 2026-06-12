@@ -32,9 +32,8 @@ export function getSlotKey(
     return `${nodeId}-${isInput ? 'in' : 'out'}-${index}`
   }
 
-  if (index === undefined || isInput === undefined) {
+  if (index === undefined || isInput === undefined)
     throw new Error('Missing required parameters for slot key generation')
-  }
 
   return `${nodeIdOrIdentifier}-${isInput ? 'in' : 'out'}-${index}`
 }

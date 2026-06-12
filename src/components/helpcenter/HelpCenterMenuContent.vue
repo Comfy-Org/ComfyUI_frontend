@@ -476,9 +476,7 @@ const calculateSubmenuPosition = (button: HTMLElement): CSSProperties => {
   }
 
   // Ensure submenu doesn't go above viewport
-  if (top < SUBMENU_CONFIG.OFFSET_PX) {
-    top = SUBMENU_CONFIG.OFFSET_PX
-  }
+  if (top < SUBMENU_CONFIG.OFFSET_PX) top = SUBMENU_CONFIG.OFFSET_PX
 
   top -= 8
 
@@ -508,9 +506,7 @@ const formatReleaseDate = (dateString?: string): string => {
 
   for (const { unit, key } of timeUnits) {
     const value = Math.floor(diffTime / unit)
-    if (value > 0) {
-      return t(`g.relativeTime.${key}`, { count: value })
-    }
+    if (value > 0) return t(`g.relativeTime.${key}`, { count: value })
   }
 
   return t('g.relativeTime.now')
@@ -541,9 +537,8 @@ const onMenuItemHover = async (
 
   // After submenu is rendered, refine position if needed
   await nextTick()
-  if (submenuRef.value) {
+  if (submenuRef.value)
     submenuStyle.value = calculateSubmenuPosition(moreButton)
-  }
 }
 
 const onMenuItemLeave = (key: string): void => {
@@ -563,15 +558,11 @@ const onSubmenuLeave = (): void => {
 }
 
 const openDevTools = (): void => {
-  if (isDesktop) {
-    electronAPI().openDevTools()
-  }
+  if (isDesktop) electronAPI().openDevTools()
 }
 
 const onReinstall = (): void => {
-  if (isDesktop) {
-    void electronAPI().reinstall()
-  }
+  if (isDesktop) void electronAPI().reinstall()
 }
 
 const onUpdateComfyUI = async (): Promise<void> => {
@@ -625,9 +616,7 @@ const onReleaseClick = (release: ReleaseNote): void => {
 // Lifecycle
 onMounted(async () => {
   telemetry?.trackHelpCenterOpened({ source: 'sidebar' })
-  if (!hasReleases.value) {
-    await releaseStore.fetchReleases()
-  }
+  if (!hasReleases.value) await releaseStore.fetchReleases()
 })
 
 onBeforeUnmount(() => {

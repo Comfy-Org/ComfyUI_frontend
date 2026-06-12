@@ -99,9 +99,8 @@ describe('VirtualGrid', () => {
 
     expect(receivedIndices.length).toBeGreaterThan(0)
     expect(receivedIndices[0]).toBe(0)
-    for (let i = 1; i < receivedIndices.length; i++) {
+    for (let i = 1; i < receivedIndices.length; i++)
       expect(receivedIndices[i]).toBe(receivedIndices[i - 1] + 1)
-    }
   })
 
   it('respects maxColumns prop', async () => {

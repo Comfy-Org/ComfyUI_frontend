@@ -137,9 +137,7 @@ export function deletePayload(workspaceId: string, draftKey: string): void {
  * Deletes multiple draft payloads from localStorage.
  */
 export function deletePayloads(workspaceId: string, draftKeys: string[]): void {
-  for (const draftKey of draftKeys) {
-    deletePayload(workspaceId, draftKey)
-  }
+  for (const draftKey of draftKeys) deletePayload(workspaceId, draftKey)
 }
 
 /**
@@ -154,9 +152,7 @@ export function getPayloadKeys(workspaceId: string): string[] {
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i)
-      if (key?.startsWith(prefix)) {
-        keys.push(key.slice(prefix.length))
-      }
+      if (key?.startsWith(prefix)) keys.push(key.slice(prefix.length))
     }
   } catch {
     return []
@@ -231,16 +227,13 @@ function readSessionPointer<T extends { workspaceId: string }>(
     const json = sessionStorage.getItem(key)
     if (json) {
       const pointer = JSON.parse(json) as T
-      if (targetWorkspaceId && pointer.workspaceId !== targetWorkspaceId) {
+      if (targetWorkspaceId && pointer.workspaceId !== targetWorkspaceId)
         sessionStorage.removeItem(key)
-      } else {
-        return pointer
-      }
+      else return pointer
     }
 
-    if (targetWorkspaceId) {
+    if (targetWorkspaceId)
       return findAndMigratePointer<T>(key, prefix, targetWorkspaceId)
-    }
 
     return null
   } catch {

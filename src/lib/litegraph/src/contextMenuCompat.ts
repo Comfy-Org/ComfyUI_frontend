@@ -152,9 +152,8 @@ class LegacyMenuCompat {
       const patchedItems = methodToCall.apply(context, args) as
         | (IContextMenuValue | null)[]
         | undefined
-      if (!patchedItems) {
-        return []
-      }
+      if (!patchedItems) return []
+
       // Use content-based diff to detect additions (not reference-based)
       // Create composite keys from multiple properties to handle undefined content
       const createItemKey = (item: IContextMenuValue): string => {

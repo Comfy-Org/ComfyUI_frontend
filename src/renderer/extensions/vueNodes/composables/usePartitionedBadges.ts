@@ -53,18 +53,15 @@ export function trackNodePrice(node: TrackableNode) {
   const inputNames = getInputNames(node.type)
   if (inputNames.length > 0) {
     node?.inputs?.forEach((inp) => {
-      if (inp.name && inputNames.includes(inp.name)) {
-        void inp.link // Access link to create reactive dependency
-      }
+      if (inp.name && inputNames.includes(inp.name)) void inp.link // Access link to create reactive dependency
     })
   }
   // Access input connections for input_groups (e.g., autogrow inputs)
   const groupPrefixes = getInputGroupPrefixes(node.type)
   if (groupPrefixes.length > 0) {
     node?.inputs?.forEach((inp) => {
-      if (groupPrefixes.some((prefix) => inp.name?.startsWith(prefix + '.'))) {
+      if (groupPrefixes.some((prefix) => inp.name?.startsWith(prefix + '.')))
         void inp.link // Access link to create reactive dependency
-      }
     })
   }
 }
@@ -155,9 +152,7 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
         const inputNames = relevantInputNames.value
         if (inputNames.length > 0) {
           nodeData?.inputs?.forEach((inp) => {
-            if (inp.name && inputNames.includes(inp.name)) {
-              void inp.link // Access link to create reactive dependency
-            }
+            if (inp.name && inputNames.includes(inp.name)) void inp.link // Access link to create reactive dependency
           })
         }
         // Access input connections for input_groups (e.g., autogrow inputs)
@@ -166,9 +161,8 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
           nodeData?.inputs?.forEach((inp) => {
             if (
               groupPrefixes.some((prefix) => inp.name?.startsWith(prefix + '.'))
-            ) {
+            )
               void inp.link // Access link to create reactive dependency
-            }
           })
         }
       }

@@ -69,9 +69,8 @@ const accessibleErrors = computed(() =>
 )
 const allErrors = computed(() =>
   allErrorGroups.value.flatMap((group) => {
-    if (group.type !== 'execution') {
+    if (group.type !== 'execution')
       return [group.displayMessage ?? group.displayTitle]
-    }
 
     return group.cards.flatMap((c) =>
       c.errors.map((e) => {

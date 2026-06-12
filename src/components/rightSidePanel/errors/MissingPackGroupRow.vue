@@ -261,9 +261,9 @@ const isUnknownPack = computed(
 )
 
 const packDisplayName = computed(() => {
-  if (group.packId === null) {
+  if (group.packId === null)
     return t('rightSidePanel.missingNodePacks.unknownPack')
-  }
+
   return nodePack.value?.name ?? group.packId
 })
 
@@ -316,9 +316,7 @@ const primaryLocatableNodeType = computed(() => {
 
 function handlePackInstallClick() {
   if (!group.packId) return
-  if (!isPackInstalled.value) {
-    void installAllPacks()
-  }
+  if (!isPackInstalled.value) void installAllPacks()
 }
 
 function toggleExpand() {

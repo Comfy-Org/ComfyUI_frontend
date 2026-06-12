@@ -29,9 +29,8 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
     }
   )
   const revertChanges = () => {
-    for (const config of modifiedConfigs.value) {
+    for (const config of modifiedConfigs.value)
       config.value = config.initialValue
-    }
   }
   const serverConfigsByCategory = computed<
     Record<string, ServerConfigWithValue<ServerConfigValue>[]>
@@ -72,9 +71,9 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
           config.value === config.defaultValue ||
           config.value === null ||
           config.value === undefined
-        ) {
+        )
           return {}
-        }
+
         return config.getValue
           ? config.getValue(config.value)
           : { [config.id]: config.value }
@@ -85,9 +84,8 @@ export const useServerConfigStore = defineStore('serverConfig', () => {
     // Convert number to string
     return Object.fromEntries(
       Object.entries(args).map(([key, value]) => {
-        if (value === true) {
-          return [key, '']
-        }
+        if (value === true) return [key, '']
+
         return [key, value.toString()]
       })
     ) as Record<string, string>

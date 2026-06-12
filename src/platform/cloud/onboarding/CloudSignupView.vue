@@ -168,29 +168,24 @@ const navigateToLogin = async () => {
 
 const signInWithGoogle = async () => {
   authError.value = ''
-  if (await authActions.signInWithGoogle({ isNewUser: true })) {
+  if (await authActions.signInWithGoogle({ isNewUser: true }))
     await onAuthSuccess()
-  }
 }
 
 const signInWithGithub = async () => {
   authError.value = ''
-  if (await authActions.signInWithGithub({ isNewUser: true })) {
+  if (await authActions.signInWithGithub({ isNewUser: true }))
     await onAuthSuccess()
-  }
 }
 
 const signUpWithEmail = async (values: SignUpData) => {
   authError.value = ''
-  if (await authActions.signUpWithEmail(values.email, values.password)) {
+  if (await authActions.signUpWithEmail(values.email, values.password))
     await onAuthSuccess()
-  }
 }
 
 onMounted(async () => {
-  if (isCloud) {
-    telemetry?.trackSignupOpened()
-  }
+  if (isCloud) telemetry?.trackSignupOpened()
 
   userIsInChina.value = await isInChina()
 })

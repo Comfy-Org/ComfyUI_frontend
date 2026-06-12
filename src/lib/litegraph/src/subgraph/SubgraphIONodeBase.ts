@@ -136,9 +136,7 @@ export abstract class SubgraphIONodeBase<
   onPointerLeave() {
     this.isPointerOver = false
 
-    for (const slot of this.slots) {
-      slot.isPointerOver = false
-    }
+    for (const slot of this.slots) slot.isPointerOver = false
   }
 
   // #endregion Hoverable
@@ -164,9 +162,7 @@ export abstract class SubgraphIONodeBase<
    */
   getSlotInPosition(x: number, y: number): TSlot | undefined {
     for (const slot of this.allSlots) {
-      if (slot.boundingRect.containsXy(x, y)) {
-        return slot
-      }
+      if (slot.boundingRect.containsXy(x, y)) return slot
     }
   }
 
@@ -180,9 +176,7 @@ export abstract class SubgraphIONodeBase<
     event: CanvasPointerEvent
   ): void {
     // Only allow renaming non-empty slots
-    if (slot !== this.emptySlot) {
-      this._promptForSlotRename(slot, event)
-    }
+    if (slot !== this.emptySlot) this._promptForSlotRename(slot, event)
   }
 
   /**
@@ -212,14 +206,12 @@ export abstract class SubgraphIONodeBase<
     const options: (IContextMenuValue | null)[] = []
 
     // Disconnect option if slot has connections
-    if (slot !== this.emptySlot && slot.linkIds.length > 0) {
+    if (slot !== this.emptySlot && slot.linkIds.length > 0)
       options.push({ content: 'Disconnect Links', value: 'disconnect' })
-    }
 
     // Rename slot option (except for the empty slot)
-    if (slot !== this.emptySlot) {
+    if (slot !== this.emptySlot)
       options.push({ content: 'Rename Slot', value: 'rename' })
-    }
 
     if (slot !== this.emptySlot) {
       options.push(null) // separator
@@ -252,16 +244,14 @@ export abstract class SubgraphIONodeBase<
 
       // Remove the slot
       case 'remove':
-        if (slot !== this.emptySlot) {
-          this.removeSlot(slot)
-        }
+        if (slot !== this.emptySlot) this.removeSlot(slot)
+
         break
 
       // Rename the slot
       case 'rename':
-        if (slot !== this.emptySlot) {
-          this._promptForSlotRename(slot, event)
-        }
+        if (slot !== this.emptySlot) this._promptForSlotRename(slot, event)
+
         break
     }
 
@@ -356,9 +346,8 @@ export abstract class SubgraphIONodeBase<
     ctx.font = '12px Inter, sans-serif'
     ctx.textBaseline = 'middle'
 
-    for (const slot of this.allSlots) {
+    for (const slot of this.allSlots)
       slot.draw({ ctx, colorContext, fromSlot, editorAlpha })
-    }
   }
 
   configure(data: ExportedSubgraphIONode): void {

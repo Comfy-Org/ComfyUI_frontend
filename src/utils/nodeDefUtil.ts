@@ -46,9 +46,7 @@ const mergeNumericInputSpec = <T extends IntInputSpec | FloatInputSpec>(
   const range2 = getRange(options2)
 
   // If the ranges do not overlap, return null
-  if (range1.min > range2.max || range1.max < range2.min) {
-    return null
-  }
+  if (range1.min > range2.max || range1.max < range2.min) return null
 
   const step1 = options1.step ?? 1
   const step2 = options2.step ?? 1
@@ -79,9 +77,7 @@ const mergeComboInputSpec = <T extends ComboInputSpec | ComboInputSpecV2>(
   const intersection = _.intersection(comboOptions1, comboOptions2)
 
   // If the intersection is empty, return null
-  if (intersection.length === 0) {
-    return null
-  }
+  if (intersection.length === 0) return null
 
   return mergeCommonInputSpec(
     ['COMBO', { ...options1, options: intersection }] as T,
@@ -124,17 +120,13 @@ export const mergeInputSpec = (
   const type1 = getInputSpecType(spec1)
   const type2 = getInputSpecType(spec2)
 
-  if (type1 !== type2) {
-    return null
-  }
+  if (type1 !== type2) return null
 
-  if (isIntInputSpec(spec1) || isFloatInputSpec(spec1)) {
+  if (isIntInputSpec(spec1) || isFloatInputSpec(spec1))
     return mergeNumericInputSpec(spec1, spec2 as typeof spec1)
-  }
 
-  if (isComboInputSpec(spec1)) {
+  if (isComboInputSpec(spec1))
     return mergeComboInputSpec(spec1, spec2 as typeof spec1)
-  }
 
   return mergeCommonInputSpec(spec1, spec2)
 }

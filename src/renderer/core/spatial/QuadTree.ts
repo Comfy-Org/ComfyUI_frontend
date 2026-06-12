@@ -49,9 +49,7 @@ class QuadNode<T> {
 
   insert(item: QuadTreeItem<T>): boolean {
     // Check if item is within bounds
-    if (!this.contains(item.bounds)) {
-      return false
-    }
+    if (!this.contains(item.bounds)) return false
 
     // If we have space and haven't divided, add to this node
     if (this.items.length < this.maxItems && !this.divided) {
@@ -60,16 +58,12 @@ class QuadNode<T> {
     }
 
     // If we haven't reached max depth, subdivide
-    if (!this.divided && this.depth < this.maxDepth) {
-      this.subdivide()
-    }
+    if (!this.divided && this.depth < this.maxDepth) this.subdivide()
 
     // If divided, insert into children
     if (this.divided && this.children) {
       for (const child of this.children) {
-        if (child.insert(item)) {
-          return true
-        }
+        if (child.insert(item)) return true
       }
     }
 
@@ -87,9 +81,7 @@ class QuadNode<T> {
 
     if (this.divided && this.children) {
       for (const child of this.children) {
-        if (child.remove(item)) {
-          return true
-        }
+        if (child.remove(item)) return true
       }
     }
 
@@ -101,22 +93,16 @@ class QuadNode<T> {
     found: QuadTreeItem<T>[] = []
   ): QuadTreeItem<T>[] {
     // Check if search area intersects with this node
-    if (!this.intersects(searchBounds)) {
-      return found
-    }
+    if (!this.intersects(searchBounds)) return found
 
     // Add items in this node that intersect with search bounds
     for (const item of this.items) {
-      if (this.boundsIntersect(item.bounds, searchBounds)) {
-        found.push(item)
-      }
+      if (this.boundsIntersect(item.bounds, searchBounds)) found.push(item)
     }
 
     // Recursively search children
     if (this.divided && this.children) {
-      for (const child of this.children) {
-        child.query(searchBounds, found)
-      }
+      for (const child of this.children) child.query(searchBounds, found)
     }
 
     return found
@@ -178,9 +164,7 @@ class QuadNode<T> {
         }
       }
       // Keep in parent if it doesn't fit in any child
-      if (!inserted) {
-        this.items.push(item)
-      }
+      if (!inserted) this.items.push(item)
     }
   }
 
@@ -242,14 +226,11 @@ export class QuadTree<T> {
     const item: QuadTreeItem<T> = { id, bounds, data }
 
     // Remove old item if it exists
-    if (this.itemMap.has(id)) {
-      this.remove(id)
-    }
+    if (this.itemMap.has(id)) this.remove(id)
 
     const success = this.root.insert(item)
-    if (success) {
-      this.itemMap.set(id, item)
-    }
+    if (success) this.itemMap.set(id, item)
+
     return success
   }
 
@@ -258,9 +239,8 @@ export class QuadTree<T> {
     if (!item) return false
 
     const success = this.root.remove(item)
-    if (success) {
-      this.itemMap.delete(id)
-    }
+    if (success) this.itemMap.delete(id)
+
     return success
   }
 

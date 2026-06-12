@@ -178,9 +178,7 @@ const setInitialPosition = () => {
     const menuWidth = panel.offsetWidth
     const menuHeight = panel.offsetHeight
 
-    if (menuWidth === 0 || menuHeight === 0) {
-      return
-    }
+    if (menuWidth === 0 || menuHeight === 0) return
 
     // Check if stored position exists and is within bounds
     if (storedPosition.value.x !== 0 || storedPosition.value.y !== 0) {
@@ -212,9 +210,7 @@ async function comfyRunButtonResolved() {
 }
 
 watch(visible, async (newVisible) => {
-  if (newVisible) {
-    await nextTick(setInitialPosition)
-  }
+  if (newVisible) await nextTick(setInitialPosition)
 })
 
 /**
@@ -314,15 +310,11 @@ const isMouseOverDropZone = ref(false)
 
 // Mouse event handlers for self-contained drop zone
 const onMouseEnterDropZone = () => {
-  if (isDragging.value) {
-    isMouseOverDropZone.value = true
-  }
+  if (isDragging.value) isMouseOverDropZone.value = true
 }
 
 const onMouseLeaveDropZone = () => {
-  if (isDragging.value) {
-    isMouseOverDropZone.value = false
-  }
+  if (isDragging.value) isMouseOverDropZone.value = false
 }
 
 const inlineProgressTarget = computed(() => {
@@ -330,9 +322,9 @@ const inlineProgressTarget = computed(() => {
     !visible.value ||
     !isQueuePanelV2Enabled.value ||
     !isRunProgressBarEnabled.value
-  ) {
+  )
     return null
-  }
+
   if (isDocked.value) return topMenuContainer ?? null
   return panelElement.value
 })
@@ -351,14 +343,11 @@ watch(
 watch(isDragging, (dragging) => {
   if (dragging) {
     // Starting to drag - undock if docked
-    if (isDocked.value) {
-      isDocked.value = false
-    }
+    if (isDocked.value) isDocked.value = false
   } else {
     // Stopped dragging - dock if mouse is over drop zone
-    if (isMouseOverDropZone.value) {
-      isDocked.value = true
-    }
+    if (isMouseOverDropZone.value) isDocked.value = true
+
     // Reset drop zone state
     isMouseOverDropZone.value = false
   }

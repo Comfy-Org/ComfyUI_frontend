@@ -64,14 +64,11 @@ export const useBrowserTabTitle = () => {
       ([_, state]) => state.state === 'running'
     )
 
-    if (runningNodes.length === 0) {
-      return ''
-    }
+    if (runningNodes.length === 0) return ''
 
     // If multiple nodes are running
-    if (runningNodes.length > 1) {
+    if (runningNodes.length > 1)
       return `${executionText.value}[${runningNodes.length} ${t('g.nodesRunning', 'nodes running')}]`
-    }
 
     // If only one node is running
     const [, state] = runningNodes[0]

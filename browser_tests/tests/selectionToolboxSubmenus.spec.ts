@@ -98,9 +98,7 @@ test.describe(
       await expect(renameItem).toBeVisible()
 
       // Wait for multiple frames to allow PrimeVue's outside click handler to initialize
-      for (let i = 0; i < 30; i++) {
-        await comfyPage.nextFrame()
-      }
+      for (let i = 0; i < 30; i++) await comfyPage.nextFrame()
 
       await comfyPage.canvasOps.mouseClickAt({ x: 0, y: 50 })
       await expect(

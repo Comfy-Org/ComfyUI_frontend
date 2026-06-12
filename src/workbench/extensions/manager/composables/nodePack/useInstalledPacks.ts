@@ -25,15 +25,13 @@ export const useInstalledPacks = (options: UseNodePacksOptions = {}) => {
 
   const startFetchInstalled = async () => {
     // Prevent duplicate calls during initialization
-    if (isInitializing.value) {
-      return
-    }
+    if (isInitializing.value) return
 
     isInitializing.value = true
     try {
-      if (comfyManagerStore.installedPacksIds.size === 0) {
+      if (comfyManagerStore.installedPacksIds.size === 0)
         await comfyManagerStore.refreshInstalledList()
-      }
+
       await startFetch()
     } finally {
       isInitializing.value = false

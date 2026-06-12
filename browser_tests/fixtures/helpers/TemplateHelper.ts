@@ -113,9 +113,9 @@ export class TemplateHelper {
   }
 
   async clearMocks(): Promise<void> {
-    for (const { pattern, handler } of this.routeHandlers) {
+    for (const { pattern, handler } of this.routeHandlers)
       await this.page.unroute(pattern, handler)
-    }
+
     this.routeHandlers = []
     this.templates = []
     this.index = null

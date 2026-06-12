@@ -31,9 +31,8 @@ export const useSessionCookie = () => {
     Record<string, string>
   > => {
     const firebaseToken = await useAuthStore().getIdToken()
-    if (!firebaseToken) {
+    if (!firebaseToken)
       throw new Error('No Firebase token available for session creation')
-    }
 
     return { Authorization: `Bearer ${firebaseToken}` }
   }
@@ -95,9 +94,7 @@ export const useSessionCookie = () => {
 
     const authHeader = await getFirebaseSessionHeaderOrThrow()
     const response = await createSessionWithHeader(authHeader)
-    if (!response.ok) {
-      throw new Error(await readSessionError(response))
-    }
+    if (!response.ok) throw new Error(await readSessionError(response))
   }
 
   /**

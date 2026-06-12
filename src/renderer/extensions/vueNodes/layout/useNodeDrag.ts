@@ -78,9 +78,8 @@ function useNodeDragIndividual() {
         if (id === nodeId) continue
 
         const nodeLayout = layoutStore.getNodeLayoutRef(id).value
-        if (nodeLayout) {
+        if (nodeLayout)
           otherSelectedNodesStartPositions.set(id, { ...nodeLayout.position })
-        }
       }
     } else {
       otherSelectedNodesStartPositions = null
@@ -123,9 +122,7 @@ function useNodeDragIndividual() {
           }
         }
         if (selectedGroups) {
-          for (const group of selectedGroups) {
-            group.move(panX, panY, true)
-          }
+          for (const group of selectedGroups) group.move(panX, panY, true)
         }
         updateNodePositions(nodeId)
       }
@@ -187,18 +184,15 @@ function useNodeDragIndividual() {
         y: canvasDelta.y - lastCanvasDelta.y
       }
 
-      for (const group of selectedGroups) {
+      for (const group of selectedGroups)
         group.move(frameDelta.x, frameDelta.y, true)
-      }
     }
 
     lastCanvasDelta = canvasDelta
   }
 
   function handleDrag(event: PointerEvent, nodeId: NodeId) {
-    if (!dragStartPos || !dragStartMouse) {
-      return
-    }
+    if (!dragStartPos || !dragStartMouse) return
 
     // Throttle position updates using requestAnimationFrame for better performance
     if (rafId !== null) return // Skip if frame already scheduled
@@ -276,9 +270,8 @@ function useNodeDragIndividual() {
       }
 
       // Apply all snap updates in a single batched transaction
-      if (boundsUpdates.length > 0) {
+      if (boundsUpdates.length > 0)
         layoutStore.batchUpdateNodeBounds(boundsUpdates)
-      }
     }
 
     dragStartPos = null

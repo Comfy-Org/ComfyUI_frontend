@@ -64,12 +64,9 @@ function toRef(filename: string): ImageRef {
 function mkFileUrl(props: { ref: ImageRef; preview?: boolean }): string {
   const params = new URLSearchParams()
   params.set('filename', props.ref.filename)
-  if (props.ref.subfolder) {
-    params.set('subfolder', props.ref.subfolder)
-  }
-  if (props.ref.type) {
-    params.set('type', props.ref.type)
-  }
+  if (props.ref.subfolder) params.set('subfolder', props.ref.subfolder)
+
+  if (props.ref.type) params.set('type', props.ref.type)
 
   const pathPlusQueryParams = api.apiURL(
     '/view?' +
@@ -124,9 +121,7 @@ export function useMaskEditorLoader() {
           const response = await api.fetchApi(
             `/files/mask-layers?filename=${fileToQuery}`
           )
-          if (response.ok) {
-            maskLayersFromApi = await response.json()
-          }
+          if (response.ok) maskLayersFromApi = await response.json()
         } catch (error) {
           // Fallback to pattern matching if API call fails
         }
@@ -159,11 +154,10 @@ export function useMaskEditorLoader() {
         : nodeImageRef
 
       let paintLayerUrl: string | null = null
-      if (maskLayersFromApi?.paint) {
+      if (maskLayersFromApi?.paint)
         paintLayerUrl = mkFileUrl({ ref: toRef(maskLayersFromApi.paint) })
-      } else if (imageLayerFilenames?.paint) {
+      else if (imageLayerFilenames?.paint)
         paintLayerUrl = mkFileUrl({ ref: toRef(imageLayerFilenames.paint) })
-      }
 
       const [baseLayer, maskLayer, paintLayer] = await Promise.all([
         loadImageLayer(baseImageUrl, 'rgb'),
@@ -193,14 +187,10 @@ export function useMaskEditorLoader() {
   }
 
   function validateNode(node: LGraphNode): void {
-    if (!node) {
-      throw new Error('Node is null or undefined')
-    }
+    if (!node) throw new Error('Node is null or undefined')
 
     const hasImages = node.imgs?.length || node.previewMediaType === 'image'
-    if (!hasImages) {
-      throw new Error('Node has no images')
-    }
+    if (!hasImages) throw new Error('Node has no images')
   }
 
   function getNodeImageUrl(node: LGraphNode): string {
@@ -217,9 +207,8 @@ export function useMaskEditorLoader() {
     const outputs = nodeOutputStore.getNodeOutputs(node)
     if (outputs?.images?.[0]) {
       const img = outputs.images[0]
-      if (!img.filename) {
+      if (!img.filename)
         throw new Error('nodeOutputStore image missing filename')
-      }
 
       const params = new URLSearchParams()
       params.set('filename', img.filename)
@@ -232,9 +221,7 @@ export function useMaskEditorLoader() {
       const index = node.imageIndex ?? 0
       const imgSrc = node.imgs[index].src
 
-      if (imgSrc && !imgSrc.startsWith('data:')) {
-        return imgSrc
-      }
+      if (imgSrc && !imgSrc.startsWith('data:')) return imgSrc
     }
 
     throw new Error('Unable to get image URL from node')
@@ -245,9 +232,7 @@ export function useMaskEditorLoader() {
       const urlObj = new URL(url)
       const filename = urlObj.searchParams.get('filename')
 
-      if (!filename) {
-        throw new Error('Image URL missing filename parameter')
-      }
+      if (!filename) throw new Error('Image URL missing filename parameter')
 
       return {
         filename,

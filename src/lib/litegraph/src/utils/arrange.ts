@@ -137,8 +137,7 @@ export function alignNodes(
     }
   })
 
-  for (const { node, newPos } of nodePositions) {
-    node.setPos(newPos.x, newPos.y)
-  }
+  for (const { node, newPos } of nodePositions) node.setPos(newPos.x, newPos.y)
+
   return nodePositions
 }

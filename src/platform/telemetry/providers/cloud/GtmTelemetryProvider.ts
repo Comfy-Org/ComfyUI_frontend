@@ -52,15 +52,12 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     if (gtmId) {
       this.initializeGtm(gtmId)
     } else {
-      if (import.meta.env.MODE === 'development') {
+      if (import.meta.env.MODE === 'development')
         console.warn('[GTM] No GTM ID configured, skipping initialization')
-      }
     }
 
     const measurementId = window.__CONFIG__?.ga_measurement_id
-    if (measurementId) {
-      this.bootstrapGtag(measurementId)
-    }
+    if (measurementId) this.bootstrapGtag(measurementId)
   }
 
   private initializeGtm(gtmId: string): void {
@@ -173,9 +170,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   trackMonthlySubscriptionSucceeded(
     metadata?: SubscriptionSuccessMetadata
   ): void {
-    if (this.initialized && metadata?.ecommerce) {
+    if (this.initialized && metadata?.ecommerce)
       window.dataLayer?.push({ ecommerce: null })
-    }
 
     this.pushEvent(
       'subscription_success',

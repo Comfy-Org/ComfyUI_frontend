@@ -109,13 +109,9 @@ const copyCommandLineArgs = async () => {
 const { t } = useI18n()
 
 onBeforeUnmount(() => {
-  if (restartTriggered) {
-    return
-  }
+  if (restartTriggered) return
 
-  if (modifiedConfigs.value.length === 0) {
-    return
-  }
+  if (modifiedConfigs.value.length === 0) return
 
   toastStore.add({
     severity: 'warn',

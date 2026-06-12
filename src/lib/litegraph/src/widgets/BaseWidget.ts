@@ -286,11 +286,10 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     ctx.fillStyle = this.background_color
     ctx.beginPath()
 
-    if (showText) {
+    if (showText)
       ctx.roundRect(margin, y, width - margin * 2, height, [height * 0.5])
-    } else {
-      ctx.rect(margin, y, width - margin * 2, height)
-    }
+    else ctx.rect(margin, y, width - margin * 2, height)
+
     ctx.fill()
     if (showText && !this.computedDisabled) ctx.stroke()
   }
@@ -425,9 +424,9 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     if (
       this.options?.property &&
       node.properties[this.options.property] !== undefined
-    ) {
+    )
       node.setProperty(this.options.property, v)
-    }
+
     const pos = canvas.graph_mouse
     this.callback?.(this.value, canvas, node, pos, e)
 

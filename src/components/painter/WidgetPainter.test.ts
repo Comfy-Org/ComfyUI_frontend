@@ -136,27 +136,24 @@ describe('WidgetPainter', () => {
       sizeHolder.width = 600
       primePainterState()
       renderWidget()
-      for (const label of allLabels) {
+      for (const label of allLabels)
         expect(screen.getByText(label)).toBeInTheDocument()
-      }
     })
 
     it('still renders every label in compact layout (width < 350)', () => {
       sizeHolder.width = 200
       primePainterState()
       renderWidget()
-      for (const label of allLabels) {
+      for (const label of allLabels)
         expect(screen.getByText(label)).toBeInTheDocument()
-      }
     })
 
     it('keeps labels at the responsive boundary (width = 350)', () => {
       sizeHolder.width = 350
       primePainterState()
       renderWidget()
-      for (const label of allLabels) {
+      for (const label of allLabels)
         expect(screen.getByText(label)).toBeInTheDocument()
-      }
     })
   })
 

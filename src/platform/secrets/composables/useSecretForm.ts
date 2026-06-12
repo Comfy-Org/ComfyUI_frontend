@@ -143,9 +143,8 @@ export function useSecretForm(options: UseSecretFormOptions) {
         const updatePayload: { name: string; secret_value?: string } = {
           name: form.name.trim()
         }
-        if (form.secretValue) {
-          updatePayload.secret_value = form.secretValue
-        }
+        if (form.secretValue) updatePayload.secret_value = form.secretValue
+
         await updateSecret(secret.id, updatePayload)
       }
       onSaved()

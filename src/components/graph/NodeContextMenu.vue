@@ -107,9 +107,8 @@ const updateMenuPosition = () => {
     scale === lastScale &&
     offset[0] === lastOffsetX &&
     offset[1] === lastOffsetY
-  ) {
+  )
     return
-  }
 
   lastScale = scale
   lastOffsetX = offset[0]
@@ -131,11 +130,8 @@ const { resume: startSync, pause: stopSync } = useRafFn(updateMenuPosition, {
 
 // Start/stop syncing based on menu visibility
 watchEffect(() => {
-  if (isOpen.value) {
-    startSync()
-  } else {
-    stopSync()
-  }
+  if (isOpen.value) startSync()
+  else stopSync()
 })
 
 // Close on touch outside to handle mobile devices where click might be swallowed
@@ -152,9 +148,7 @@ useEventListener(
     }
     const menuEl = contextMenuInstance.container || contextMenuInstance.$el
 
-    if (menuEl && !menuEl.contains(target)) {
-      hide()
-    }
+    if (menuEl && !menuEl.contains(target)) hide()
   },
   { passive: true }
 )
@@ -246,21 +240,17 @@ function hide() {
 }
 
 function toggle(event: Event) {
-  if (isOpen.value) {
-    hide()
-  } else {
-    show(event as MouseEvent)
-  }
+  if (isOpen.value) hide()
+  else show(event as MouseEvent)
 }
 
 defineExpose({ toggle, hide, isOpen, show })
 
 function onItemClick(event: MouseEvent, item: ExtendedMenuItem) {
-  if (item.isColorSubmenu) {
+  if (item.isColorSubmenu)
     openSubmenuPopover(event, colorSubmenu.value, shapeSubmenu.value)
-  } else if (item.isShapeSubmenu) {
+  else if (item.isShapeSubmenu)
     openSubmenuPopover(event, shapeSubmenu.value, colorSubmenu.value)
-  }
 }
 
 function openSubmenuPopover(

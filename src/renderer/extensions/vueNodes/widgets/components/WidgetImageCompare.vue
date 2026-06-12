@@ -98,9 +98,8 @@ const afterIndex = ref(0)
 const { elementX, elementWidth, isOutside } = useMouseInElement(containerRef)
 
 watch([elementX, elementWidth, isOutside], ([x, width, outside]) => {
-  if (!outside && width > 0) {
+  if (!outside && width > 0)
     sliderPosition.value = Math.max(0, Math.min(100, (x / width) * 100))
-  }
 })
 
 function isSingleImage(

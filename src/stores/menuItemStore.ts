@@ -41,9 +41,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
       }
 
       // Ensure the found item has an 'items' array
-      if (!found.items) {
-        found.items = []
-      }
+      if (!found.items) found.items = []
 
       // Move to the next level
       currentLevel = found.items
@@ -83,9 +81,7 @@ export const useMenuItemStore = defineStore('menuItem', () => {
   }
 
   const loadExtensionMenuCommands = (extension: ComfyExtension) => {
-    if (!extension.menuCommands) {
-      return
-    }
+    if (!extension.menuCommands) return
 
     const extensionCommandIds = new Set(
       extension.commands?.map((command) => command.id) ?? []
@@ -94,16 +90,13 @@ export const useMenuItemStore = defineStore('menuItem', () => {
       const commands = menuCommand.commands.filter((command) =>
         extensionCommandIds.has(command)
       )
-      if (commands.length) {
-        registerCommands(menuCommand.path, commands)
-      }
+      if (commands.length) registerCommands(menuCommand.path, commands)
     })
   }
 
   const registerCoreMenuCommands = () => {
-    for (const [path, commands] of CORE_MENU_COMMANDS) {
+    for (const [path, commands] of CORE_MENU_COMMANDS)
       registerCommands(path, commands)
-    }
   }
 
   return {

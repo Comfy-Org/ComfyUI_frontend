@@ -31,9 +31,7 @@ export function useTerminal(element: Ref<HTMLElement | undefined>) {
   })
 
   onMounted(async () => {
-    if (element.value) {
-      terminal.open(element.value)
-    }
+    if (element.value) terminal.open(element.value)
   })
 
   onUnmounted(() => {
@@ -58,9 +56,9 @@ export function useTerminal(element: Ref<HTMLElement | undefined>) {
       onResize?: () => void
     }) {
       const ensureValidRows = (rows: number | undefined): number => {
-        if (rows == null || isNaN(rows)) {
+        if (rows == null || isNaN(rows))
           return (root.value?.clientHeight ?? 80) / 20
-        }
+
         return rows
       }
 

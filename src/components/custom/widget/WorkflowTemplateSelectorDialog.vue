@@ -496,9 +496,7 @@ const getOverlayThumbnailSrc = (template: TemplateInfo) => {
 
 // Open tutorial in new tab
 const openTutorial = (template: TemplateInfo) => {
-  if (template.tutorialUrl) {
-    window.open(template.tutorialUrl, '_blank')
-  }
+  if (template.tutorialUrl) window.open(template.tutorialUrl, '_blank')
 }
 
 // Get navigation items from the store, with skeleton items while loading
@@ -546,9 +544,7 @@ const selectedNavItem = ref<string | null>(initialCategory)
 
 // Filter templates based on selected navigation item
 const navigationFilteredTemplates = computed(() => {
-  if (!selectedNavItem.value) {
-    return allTemplates.value
-  }
+  if (!selectedNavItem.value) return allTemplates.value
 
   return workflowTemplatesStore.filterTemplatesByCategory(selectedNavItem.value)
 })
@@ -611,9 +607,7 @@ const coordinateNavAndSort = (source: 'nav' | 'sort') => {
   } else if (source === 'sort') {
     // When sort is changed away from 'Popular' while in the 'Popular' category,
     // reset the category to 'All Templates' to avoid a confusing state.
-    if (isPopularNav && !isPopularSort) {
-      selectedNavItem.value = 'all'
-    }
+    if (isPopularNav && !isPopularSort) selectedNavItem.value = 'all'
   }
 }
 
@@ -782,9 +776,8 @@ useIntersectionObserver(loadTrigger, () => {
     shouldUsePagination.value &&
     hasMoreTemplates.value &&
     !isLoadingMore.value
-  ) {
+  )
     void loadNextPage()
-  }
 })
 
 // Reset pagination when filters change
@@ -827,9 +820,7 @@ const pageTitle = computed(() => {
       : item.items?.some((sub) => sub.id === selectedNavItem.value)
   )
 
-  if (!navItem) {
-    return t('templateWorkflows.allTemplates', 'All Templates')
-  }
+  if (!navItem) return t('templateWorkflows.allTemplates', 'All Templates')
 
   return 'id' in navItem
     ? navItem.label

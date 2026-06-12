@@ -80,12 +80,10 @@ export class ResultItemImpl {
     params.set('type', this.type)
     params.set('subfolder', this.subfolder)
 
-    if (this.format) {
-      params.set('format', this.format)
-    }
-    if (this.frame_rate) {
-      params.set('frame_rate', this.frame_rate.toString())
-    }
+    if (this.format) params.set('format', this.format)
+
+    if (this.frame_rate) params.set('frame_rate', this.frame_rate.toString())
+
     return params
   }
 
@@ -119,40 +117,29 @@ export class ResultItemImpl {
   }
 
   get htmlVideoType(): string | undefined {
-    if (this.isWebm) {
-      return 'video/webm'
-    }
-    if (this.isMp4) {
-      return 'video/mp4'
-    }
-    if (this.filename.endsWith('.mov')) {
-      return 'video/quicktime'
-    }
+    if (this.isWebm) return 'video/webm'
+
+    if (this.isMp4) return 'video/mp4'
+
+    if (this.filename.endsWith('.mov')) return 'video/quicktime'
 
     if (this.isVhsFormat) {
-      if (this.format?.endsWith('webm')) {
-        return 'video/webm'
-      }
-      if (this.format?.endsWith('mp4')) {
-        return 'video/mp4'
-      }
+      if (this.format?.endsWith('webm')) return 'video/webm'
+
+      if (this.format?.endsWith('mp4')) return 'video/mp4'
     }
     return undefined
   }
 
   get htmlAudioType(): string | undefined {
-    if (this.isMp3) {
-      return 'audio/mpeg'
-    }
-    if (this.isWav) {
-      return 'audio/wav'
-    }
-    if (this.isOgg) {
-      return 'audio/ogg'
-    }
-    if (this.isFlac) {
-      return 'audio/flac'
-    }
+    if (this.isMp3) return 'audio/mpeg'
+
+    if (this.isWav) return 'audio/wav'
+
+    if (this.isOgg) return 'audio/ogg'
+
+    if (this.isFlac) return 'audio/flac'
+
     return undefined
   }
 
@@ -272,9 +259,8 @@ export class TaskItemImpl {
   }
 
   calculateFlatOutputs(): ReadonlyArray<ResultItemImpl> {
-    if (!this.outputs) {
-      return []
-    }
+    if (!this.outputs) return []
+
     return parseTaskOutput(this.outputs)
   }
 
@@ -386,9 +372,9 @@ export class TaskItemImpl {
   }
 
   get executionTime() {
-    if (!this.executionStartTimestamp || !this.executionEndTimestamp) {
+    if (!this.executionStartTimestamp || !this.executionEndTimestamp)
       return undefined
-    }
+
     return this.executionEndTimestamp - this.executionStartTimestamp
   }
 
@@ -404,39 +390,30 @@ export class TaskItemImpl {
    */
   public async loadFullOutputs(): Promise<TaskItemImpl> {
     // Only load for history tasks (caller checks outputsCount > 1)
-    if (!this.isHistory) {
-      return this
-    }
+    if (!this.isHistory) return this
+
     const jobDetail = await getJobDetail(this.jobId)
 
-    if (!jobDetail?.outputs) {
-      return this
-    }
+    if (!jobDetail?.outputs) return this
 
     // Create new TaskItemImpl with full outputs
     return new TaskItemImpl(this.job, jobDetail.outputs)
   }
 
   public async loadWorkflow(app: ComfyApp) {
-    if (!this.isHistory) {
-      return
-    }
+    if (!this.isHistory) return
 
     // Single fetch for both workflow and outputs (with caching)
     const jobDetail = await getJobDetail(this.jobId)
 
     const workflowData = await extractWorkflow(jobDetail)
-    if (!workflowData) {
-      return
-    }
+    if (!workflowData) return
 
     await app.loadGraphData(toRaw(workflowData))
 
     // Use full outputs from job detail, or fall back to existing outputs
     const outputsToLoad = jobDetail?.outputs ?? this.outputs
-    if (!outputsToLoad) {
-      return
-    }
+    if (!outputsToLoad) return
 
     const nodeOutputsStore = useNodeOutputStore()
     const rawOutputs = toRaw(outputsToLoad)
@@ -453,9 +430,7 @@ export class TaskItemImpl {
   }
 
   public flatten(): TaskItemImpl[] {
-    if (this.displayStatus !== TaskItemDisplayStatus.Completed) {
-      return [this]
-    }
+    if (this.displayStatus !== TaskItemDisplayStatus.Completed) return [this]
 
     return this.flatOutputs.map(
       (output: ResultItemImpl, i: number) =>
@@ -541,9 +516,8 @@ export const useQueueStore = defineStore('queue', () => {
         appearedTasks.forEach((task) => {
           const jobIdString = String(task.jobId)
           const workflowId = task.workflowId
-          if (workflowId && jobIdString) {
+          if (workflowId && jobIdString)
             executionStore.registerJobWorkflowIdMapping(jobIdString, workflowId)
-          }
         })
 
         const activeJobIds = new Set([
@@ -574,9 +548,9 @@ export const useQueueStore = defineStore('queue', () => {
           const existing = existingByJobId.get(job.id)
           if (!existing) return new TaskItemImpl(job)
           // Recreate if outputs_count changed to ensure lazy loading works
-          if (existing.outputsCount !== (job.outputs_count ?? undefined)) {
+          if (existing.outputsCount !== (job.outputs_count ?? undefined))
             return new TaskItemImpl(job)
-          }
+
           return existing
         })
 
@@ -586,9 +560,8 @@ export const useQueueStore = defineStore('queue', () => {
             (task, index) => task === currentHistory[index]
           )
 
-        if (!isHistoryUnchanged) {
-          historyTasks.value = nextHistoryTasks
-        }
+        if (!isHistoryUnchanged) historyTasks.value = nextHistoryTasks
+
         hasFetchedHistorySnapshot.value = true
       } else {
         console.error('Failed to fetch history:', historyResult.reason)
@@ -596,18 +569,15 @@ export const useQueueStore = defineStore('queue', () => {
     } finally {
       isLoading.value = false
       inFlight = false
-      if (dirty) {
-        void update()
-      }
+      if (dirty) void update()
     }
   }
 
   const clear = async (
     targets: ('queue' | 'history')[] = ['queue', 'history']
   ) => {
-    if (targets.length === 0) {
-      return
-    }
+    if (targets.length === 0) return
+
     await Promise.all(targets.map((type) => api.clearItems(type)))
     await update()
   }

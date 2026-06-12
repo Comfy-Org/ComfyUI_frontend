@@ -90,13 +90,11 @@ const errorMessage = computed(() => {
   // Provide user-friendly error messages
   const errorStr = error.value.toString().toLowerCase()
 
-  if (errorStr.includes('network') || errorStr.includes('fetch')) {
+  if (errorStr.includes('network') || errorStr.includes('fetch'))
     return 'Connection problem. Please check your internet connection.'
-  }
 
-  if (errorStr.includes('timeout')) {
+  if (errorStr.includes('timeout'))
     return 'Request timed out. Please try again.'
-  }
 
   return 'Unable to check account status. Please try again.'
 })

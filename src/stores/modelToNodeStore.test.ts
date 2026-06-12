@@ -484,9 +484,8 @@ describe('useModelToNodeStore', () => {
       const modelToNodeStore = useModelToNodeStore()
       modelToNodeStore.registerDefaults()
 
-      for (const modelType of EXPECTED_DEFAULT_TYPES) {
+      for (const modelType of EXPECTED_DEFAULT_TYPES)
         expect.soft(modelToNodeStore.getNodeProvider(modelType)).toBeDefined()
-      }
     })
 
     it('should be idempotent', () => {
@@ -625,9 +624,9 @@ describe('useModelToNodeStore', () => {
 
       // Measure performance without assuming implementation
       const start = performance.now()
-      for (let i = 0; i < 1000; i++) {
+      for (let i = 0; i < 1000; i++)
         modelToNodeStore.getCategoryForNodeType('CheckpointLoaderSimple')
-      }
+
       const end = performance.now()
 
       // Should be fast enough for UI responsiveness (O(1) map lookup)

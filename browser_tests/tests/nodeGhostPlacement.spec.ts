@@ -7,9 +7,7 @@ type ComfyPage = Parameters<Parameters<typeof test>[2]>[0]['comfyPage']
 
 async function setVueMode(comfyPage: ComfyPage, enabled: boolean) {
   await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', enabled)
-  if (enabled) {
-    await comfyPage.vueNodes.waitForNodes()
-  }
+  if (enabled) await comfyPage.vueNodes.waitForNodes()
 }
 
 async function addGhostAtCenter(comfyPage: ComfyPage) {

@@ -72,18 +72,16 @@ function handleImageLoad(event: Event) {
   emit('mediaLoad', event)
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
   const img = event.target
-  if (img.naturalWidth && img.naturalHeight) {
+  if (img.naturalWidth && img.naturalHeight)
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
-  }
 }
 
 function handleVideoLoad(event: Event) {
   emit('mediaLoad', event)
   if (!event.target || !(event.target instanceof HTMLVideoElement)) return
   const video = event.target
-  if (video.videoWidth && video.videoHeight) {
+  if (video.videoWidth && video.videoHeight)
     actualDimensions.value = `${video.videoWidth} x ${video.videoHeight}`
-  }
 }
 </script>
 

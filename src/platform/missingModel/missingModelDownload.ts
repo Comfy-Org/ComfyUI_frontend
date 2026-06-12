@@ -67,12 +67,11 @@ async function startDesktop2ModelDownload(
  * - Civitai: strips `/api/download` or `/api/v1` prefix (model page)
  */
 export function toBrowsableUrl(url: string): string {
-  if (isCivitaiModelUrl(url)) {
+  if (isCivitaiModelUrl(url))
     return url.replace('/api/download/', '/').replace('/api/v1/', '/')
-  }
-  if (url.includes('huggingface.co')) {
-    return url.replace('/resolve/', '/blob/')
-  }
+
+  if (url.includes('huggingface.co')) return url.replace('/resolve/', '/blob/')
+
   return url
 }
 
@@ -172,9 +171,9 @@ async function fetchHeadMetadata(url: string): Promise<ModelMetadata> {
       if (
         url.includes('huggingface.co') &&
         GATED_STATUS_CODES.has(response.status)
-      ) {
+      )
         return { fileSize: null, gatedRepoUrl: downloadUrlToHfRepoUrl(url) }
-      }
+
       return { fileSize: null, gatedRepoUrl: null }
     }
     const size = response.headers.get('content-length')
@@ -205,9 +204,8 @@ export async function fetchModelMetadata(url: string): Promise<ModelMetadata> {
       ? await fetchCivitaiMetadata(url)
       : await fetchHeadMetadata(url)
 
-    if (isComplete(metadata)) {
-      metadataCache.set(url, metadata)
-    }
+    if (isComplete(metadata)) metadataCache.set(url, metadata)
+
     return metadata
   })()
 

@@ -310,15 +310,11 @@ export function useConflictDetection() {
 
     // 5. Banned package check using shared logic
     const bannedConflict = createBannedConflict(packageReq.is_banned)
-    if (bannedConflict) {
-      conflicts.push(bannedConflict)
-    }
+    if (bannedConflict) conflicts.push(bannedConflict)
 
     // 6. Registry data availability check using shared logic
     const pendingConflict = createPendingConflict(packageReq.is_pending)
-    if (pendingConflict) {
-      conflicts.push(pendingConflict)
-    }
+    if (pendingConflict) conflicts.push(pendingConflict)
 
     // Generate result
     const hasConflict = conflicts.length > 0
@@ -366,9 +362,7 @@ export function useConflictDetection() {
         const importFailures: ImportFailureMap = {}
 
         Object.entries(bulkResult).forEach(([packageId, failInfo]) => {
-          if (failInfo !== null) {
-            importFailures[packageId] = failInfo
-          }
+          if (failInfo !== null) importFailures[packageId] = failInfo
         })
 
         return importFailures
@@ -393,9 +387,7 @@ export function useConflictDetection() {
     importFailInfo: ImportFailureMap
   ): ConflictDetectionResult[] {
     const results: ConflictDetectionResult[] = []
-    if (!importFailInfo || typeof importFailInfo !== 'object') {
-      return results
-    }
+    if (!importFailInfo || typeof importFailInfo !== 'object') return results
 
     // Process import failures
     for (const [packageId, failureInfo] of Object.entries(importFailInfo)) {
@@ -535,9 +527,7 @@ export function useConflictDetection() {
     } finally {
       isDetecting.value = false
       // Clear abort controller to prevent memory leaks
-      if (abortController.value) {
-        abortController.value = null
-      }
+      if (abortController.value) abortController.value = null
     }
   }
 
@@ -555,9 +545,7 @@ export function useConflictDetection() {
       // Now check if manager is new Manager
       const managerState = useManagerState()
 
-      if (!managerState.isNewManagerUI.value) {
-        return
-      }
+      if (!managerState.isNewManagerUI.value) return
 
       // Manager is new Manager, perform conflict detection
       // The useInstalledPacks will handle fetching installed list if needed
@@ -595,9 +583,7 @@ export function useConflictDetection() {
    */
   async function shouldShowConflictModalAfterUpdate(): Promise<boolean> {
     // Ensure conflict detection has run
-    if (detectionResults.value.length === 0) {
-      await runFullConflictAnalysis()
-    }
+    if (detectionResults.value.length === 0) await runFullConflictAnalysis()
 
     // Check if this is a version update scenario
     // In a real scenario, this would check actual version change
@@ -622,18 +608,14 @@ export function useConflictDetection() {
       normalizeOSList(node.supported_os),
       systemEnvironment.value?.os
     )
-    if (osConflict) {
-      conflicts.push(osConflict)
-    }
+    if (osConflict) conflicts.push(osConflict)
 
     // Check Accelerator compatibility
     const acceleratorConflict = checkAcceleratorCompatibility(
       node.supported_accelerators as RegistryAccelerator[],
       systemEnvironment.value?.accelerator
     )
-    if (acceleratorConflict) {
-      conflicts.push(acceleratorConflict)
-    }
+    if (acceleratorConflict) conflicts.push(acceleratorConflict)
 
     // Check ComfyUI version compatibility
     const comfyUIVersionConflict = checkVersionCompatibility(
@@ -641,9 +623,7 @@ export function useConflictDetection() {
       systemEnvironment.value?.comfyui_version,
       node.supported_comfyui_version
     )
-    if (comfyUIVersionConflict) {
-      conflicts.push(comfyUIVersionConflict)
-    }
+    if (comfyUIVersionConflict) conflicts.push(comfyUIVersionConflict)
 
     // Check ComfyUI Frontend version compatibility
     const currentFrontendVersion = getFrontendVersion()
@@ -652,26 +632,20 @@ export function useConflictDetection() {
       currentFrontendVersion,
       node.supported_comfyui_frontend_version
     )
-    if (frontendVersionConflict) {
-      conflicts.push(frontendVersionConflict)
-    }
+    if (frontendVersionConflict) conflicts.push(frontendVersionConflict)
 
     // Check banned package status using shared logic
     const bannedConflict = createBannedConflict(
       node.status === 'NodeStatusBanned' ||
         node.status === 'NodeVersionStatusBanned'
     )
-    if (bannedConflict) {
-      conflicts.push(bannedConflict)
-    }
+    if (bannedConflict) conflicts.push(bannedConflict)
 
     // Check pending status using shared logic
     const pendingConflict = createPendingConflict(
       node.status === 'NodeVersionStatusPending'
     )
-    if (pendingConflict) {
-      conflicts.push(pendingConflict)
-    }
+    if (pendingConflict) conflicts.push(pendingConflict)
 
     return {
       hasConflict: conflicts.length > 0,

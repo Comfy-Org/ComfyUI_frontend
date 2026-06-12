@@ -169,9 +169,8 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   function onJobComplete(jobId: JobId) {
     // On any job complete, remove all pending resolve items.
     if (pendingResolve.value.size > 0) {
-      for (const oldJobId of pendingResolve.value) {
-        removeJobItems(oldJobId)
-      }
+      for (const oldJobId of pendingResolve.value) removeJobItems(oldJobId)
+
       pendingResolve.value = new Set()
     }
 
@@ -180,9 +179,7 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
       raf = null
     }
     currentSkeletonId.value = null
-    if (trackedJobId.value === jobId) {
-      trackedJobId.value = null
-    }
+    if (trackedJobId.value === jobId) trackedJobId.value = null
 
     const hasImages = inProgressItems.value.some(
       (i) => i.jobId === jobId && i.state === 'image'
@@ -208,9 +205,8 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     if (
       selectedId.value &&
       removed.some((i) => `slot:${i.id}` === selectedId.value)
-    ) {
+    )
       selectedId.value = null
-    }
   }
 
   function resolveIfReady(jobId: JobId, historyLoaded: boolean) {
@@ -273,18 +269,16 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     ],
     ([jobId], [oldJobId]) => {
       if (!isAppMode.value) return
-      if (oldJobId && oldJobId !== jobId) {
-        onJobComplete(oldJobId)
-      }
+      if (oldJobId && oldJobId !== jobId) onJobComplete(oldJobId)
+
       // Guard with trackedJobId to avoid double-starting when the
       // path mapping arrives after activeJobId was already set.
       if (
         jobId &&
         trackedJobId.value !== jobId &&
         isJobForActiveWorkflow(jobId)
-      ) {
+      )
         onJobStart(jobId)
-      }
     }
   )
 
@@ -304,21 +298,17 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     // Complete any tracked job that finished while we were away.
     // The activeJobId watcher couldn't fire onJobComplete because
     // isAppMode was false at the time.
-    if (
-      trackedJobId.value &&
-      trackedJobId.value !== executionStore.activeJobId
-    ) {
+    if (trackedJobId.value && trackedJobId.value !== executionStore.activeJobId)
       onJobComplete(trackedJobId.value)
-    }
+
     // Start tracking the current job only if it belongs to this
     // workflow — otherwise we'd adopt another tab's job.
     if (
       executionStore.activeJobId &&
       trackedJobId.value !== executionStore.activeJobId &&
       isJobForActiveWorkflow(executionStore.activeJobId)
-    ) {
+    )
       onJobStart(executionStore.activeJobId)
-    }
 
     // Clear stale selection from another workflow's job.
     if (
@@ -343,12 +333,8 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     // If the tracked job already finished (no longer the active job),
     // complete it now to clean up skeletons/latents. If it's still
     // running, preserve all items for tab switching.
-    if (
-      trackedJobId.value &&
-      trackedJobId.value !== executionStore.activeJobId
-    ) {
+    if (trackedJobId.value && trackedJobId.value !== executionStore.activeJobId)
       onJobComplete(trackedJobId.value)
-    }
   }
 
   watch(

@@ -41,9 +41,8 @@ describe('useSubscriptionCancellationWatcher', () => {
     scope.run(() => {
       result = useSubscriptionCancellationWatcher(options)
     })
-    if (!result) {
-      throw new Error('Failed to initialize cancellation watcher')
-    }
+    if (!result) throw new Error('Failed to initialize cancellation watcher')
+
     activeScopes.push(scope)
     return result
   }
@@ -138,9 +137,7 @@ describe('useSubscriptionCancellationWatcher', () => {
     startCancellationWatcher()
 
     const delays = [5000, 15000, 45000, 135000]
-    for (const delay of delays) {
-      await vi.advanceTimersByTimeAsync(delay)
-    }
+    for (const delay of delays) await vi.advanceTimersByTimeAsync(delay)
 
     expect(fetchStatus).toHaveBeenCalledTimes(4)
     expect(trackMonthlySubscriptionCancelled).not.toHaveBeenCalled()

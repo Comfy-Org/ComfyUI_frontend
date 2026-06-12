@@ -29,9 +29,7 @@ export const useContextMenuTranslation = () => {
 
     // Add items from new extension API
     const newApiItems = app.collectCanvasMenuItems(this)
-    for (const item of newApiItems) {
-      res.push(item)
-    }
+    for (const item of newApiItems) res.push(item)
 
     // Add legacy monkey-patched items
     const legacyItems = legacyMenuCompat.extractLegacyItems(
@@ -39,15 +37,12 @@ export const useContextMenuTranslation = () => {
       this,
       ...args
     )
-    for (const item of legacyItems) {
-      res.push(item)
-    }
+    for (const item of legacyItems) res.push(item)
 
     // Translate all items
     for (const item of res) {
-      if (item?.content) {
+      if (item?.content)
         item.content = st(`contextMenu.${item.content}`, item.content)
-      }
     }
     return res
   }
@@ -75,9 +70,7 @@ export const useContextMenuTranslation = () => {
     // Add items from new extension API
     const node = args[0]
     const newApiItems = app.collectNodeMenuItems(node)
-    for (const item of newApiItems) {
-      res.push(item)
-    }
+    for (const item of newApiItems) res.push(item)
 
     // Add legacy monkey-patched items
     const legacyItems = legacyMenuCompat.extractLegacyItems(
@@ -85,9 +78,7 @@ export const useContextMenuTranslation = () => {
       this,
       ...args
     )
-    for (const item of legacyItems) {
-      res.push(item)
-    }
+    for (const item of legacyItems) res.push(item)
 
     return res
   }
@@ -115,12 +106,10 @@ export const useContextMenuTranslation = () => {
       if (typeof value === 'string') continue
 
       translateMenus(value?.submenu?.options, options)
-      if (!value?.content) {
-        continue
-      }
-      if (te(`contextMenu.${value.content}`)) {
+      if (!value?.content) continue
+
+      if (te(`contextMenu.${value.content}`))
         value.content = st(`contextMenu.${value.content}`, value.content)
-      }
 
       // for capture translation text of input and widget
       const extraInfo = (options.extra ||

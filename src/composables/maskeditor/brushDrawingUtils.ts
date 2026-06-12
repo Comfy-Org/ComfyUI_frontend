@@ -58,11 +58,10 @@ function drawShapeOnContext(
   radius: number
 ): void {
   ctx.beginPath()
-  if (brushType === BrushShape.Rect) {
+  if (brushType === BrushShape.Rect)
     ctx.rect(x - radius, y - radius, radius * 2, radius * 2)
-  } else {
-    ctx.arc(x, y, radius, 0, Math.PI * 2, false)
-  }
+  else ctx.arc(x, y, radius, 0, Math.PI * 2, false)
+
   ctx.fill()
 }
 
@@ -76,9 +75,8 @@ function createBrushGradient(
   opacity: number,
   isErasing: boolean
 ): CanvasGradient {
-  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(radius)) {
+  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(radius))
     return ctx.createRadialGradient(0, 0, 0, 0, 0, 0)
-  }
 
   const gradient = ctx.createRadialGradient(x, y, 0, x, y, radius)
 
@@ -107,17 +105,14 @@ function getCachedBrushTexture(
   if (cached) return cached
 
   const size = Math.max(1, Math.ceil(radius * 2))
-  if (!Number.isFinite(size)) {
-    throw new Error(`Invalid brush radius: ${radius}`)
-  }
+  if (!Number.isFinite(size)) throw new Error(`Invalid brush radius: ${radius}`)
 
   const tempCanvas = document.createElement('canvas')
   tempCanvas.width = size
   tempCanvas.height = size
   const tempCtx = tempCanvas.getContext('2d')
-  if (!tempCtx) {
+  if (!tempCtx)
     throw new Error('Unable to create 2D canvas context for brush texture')
-  }
 
   const centerX = size / 2
   const centerY = size / 2

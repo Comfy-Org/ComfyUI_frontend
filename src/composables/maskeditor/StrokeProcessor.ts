@@ -28,9 +28,7 @@ export class StrokeProcessor {
     this.controlPoints.push(point)
 
     // Require 4 points for a spline segment
-    if (this.controlPoints.length < 4) {
-      return []
-    }
+    if (this.controlPoints.length < 4) return []
 
     // Generate segment p1->p2
     const p0 = this.controlPoints[0]

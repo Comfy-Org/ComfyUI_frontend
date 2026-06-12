@@ -93,9 +93,9 @@ export class PerformanceHelper {
       if (!state) return 0
 
       // Flush any queued-but-undelivered entries into our accumulator
-      for (const entry of state.observer.takeRecords()) {
+      for (const entry of state.observer.takeRecords())
         if (entry.duration > 50) state.tbtMs += entry.duration - 50
-      }
+
       const result = state.tbtMs
       state.tbtMs = 0
       return result
@@ -124,9 +124,9 @@ export class PerformanceHelper {
               return
             }
             const durations: number[] = []
-            for (let i = 1; i < timestamps.length; i++) {
+            for (let i = 1; i < timestamps.length; i++)
               durations.push(timestamps[i] - timestamps[i - 1])
-            }
+
             resolve(durations)
           }
         }
@@ -153,9 +153,8 @@ export class PerformanceHelper {
               observer: PerformanceObserver
               tbtMs: number
             }
-            for (const entry of list.getEntries()) {
+            for (const entry of list.getEntries())
               if (entry.duration > 50) self.tbtMs += entry.duration - 50
-            }
           }),
           tbtMs: 0
         }

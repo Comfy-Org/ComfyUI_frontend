@@ -99,9 +99,9 @@ test.describe('CanvasModeSelector', { tag: '@canvas' }, () => {
       test(`clicking "${mode.label}" sets canvas readOnly=${mode.isReadOnly}`, async ({
         comfyPage
       }) => {
-        if (!mode.isReadOnly) {
+        if (!mode.isReadOnly)
           await comfyPage.command.executeCommand('Comfy.Canvas.Lock')
-        }
+
         const { trigger, menu, selectItem, handItem } = getLocators(
           comfyPage.page
         )

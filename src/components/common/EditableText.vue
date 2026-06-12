@@ -47,9 +47,8 @@ const inputRef = ref<InstanceType<typeof Input>>()
 const isCanceling = ref(false)
 
 function finishEditing() {
-  if (!isCanceling.value) {
-    emit('edit', inputValue.value)
-  }
+  if (!isCanceling.value) emit('edit', inputValue.value)
+
   isCanceling.value = false
 }
 

@@ -42,9 +42,7 @@ export class FuseFilter<T, O = string> {
   public getAllNodeOptions(data: T[]): O[] {
     const options = new Set<O>()
     for (const item of data) {
-      for (const option of this.getItemOptions(item)) {
-        options.add(option)
-      }
+      for (const option of this.getItemOptions(item)) options.add(option)
     }
     return Array.from(options)
   }
@@ -58,9 +56,8 @@ export class FuseFilter<T, O = string> {
   ): boolean {
     const { wildcard } = extraOptions
 
-    if (wildcard && value === wildcard) {
-      return true
-    }
+    if (wildcard && value === wildcard) return true
+
     const options = this.getItemOptions(item)
     if (wildcard) return options.some((option) => option === wildcard)
     if (typeof value !== 'string' || !value.includes(','))
@@ -117,9 +114,7 @@ export class FuseSearch<T> {
       ? this.data.map((x) => ({ item: x, score: 0 }))
       : this.fuse.search(query, options)
 
-    if (!this.advancedScoring) {
-      return fuseResult.map((x) => x.item)
-    }
+    if (!this.advancedScoring) return fuseResult.map((x) => x.item)
 
     const aux = fuseResult
       .map((x) => ({
@@ -151,9 +146,8 @@ export class FuseSearch<T> {
       x.toLocaleLowerCase().includes('deprecated')
     )
     result[0] += deprecated && result[0] !== 0 ? 5 : 0
-    if (isFuseSearchable(entry)) {
-      result = entry.postProcessSearchScores(result)
-    }
+    if (isFuseSearchable(entry)) result = entry.postProcessSearchScores(result)
+
     return result
   }
 
@@ -210,9 +204,7 @@ export class FuseSearch<T> {
 
   public compareAux(a: SearchAuxScore, b: SearchAuxScore) {
     for (let i = 0; i < Math.min(a.length, b.length); i++) {
-      if (a[i] !== b[i]) {
-        return a[i] - b[i]
-      }
+      if (a[i] !== b[i]) return a[i] - b[i]
     }
     return a.length - b.length
   }

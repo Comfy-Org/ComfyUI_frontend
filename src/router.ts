@@ -70,11 +70,8 @@ const router = createRouter({
             // Then check user store
             const userStore = useUserStore()
             await userStore.initialize()
-            if (userStore.needsLogin) {
-              next('/user-select')
-            } else {
-              next()
-            }
+            if (userStore.needsLogin) next('/user-select')
+            else next()
           }
         },
         {
@@ -87,11 +84,8 @@ const router = createRouter({
   ],
 
   scrollBehavior(_to, _from, savedPosition) {
-    if (savedPosition) {
-      return savedPosition
-    } else {
-      return { top: 0 }
-    }
+    if (savedPosition) return savedPosition
+    else return { top: 0 }
   }
 })
 
@@ -171,23 +165,19 @@ if (isCloud) {
     const isLoggedIn = !!authHeader
 
     // Allow public routes
-    if (isPublicRoute(to)) {
-      return next()
-    }
+    if (isPublicRoute(to)) return next()
 
     // Special handling for user-check
     // These routes need auth but handle their own routing logic
     if (to.name === 'cloud-user-check') {
-      if (to.meta.requiresAuth && !isLoggedIn) {
+      if (to.meta.requiresAuth && !isLoggedIn)
         return next({ name: 'cloud-login' })
-      }
+
       return next()
     }
 
     // Prevent redirect loop when coming from user-check
-    if (_from.name === 'cloud-user-check' && to.path === '/') {
-      return next()
-    }
+    if (_from.name === 'cloud-user-check' && to.path === '/') return next()
 
     const query =
       to.fullPath === '/'
@@ -221,9 +211,8 @@ if (isCloud) {
     // User is logged in - check if they need onboarding (when enabled)
     // For root path, check actual user status to handle waitlisted users
     if (!isDesktop && isLoggedIn && to.path === '/') {
-      if (!flags.onboardingSurveyEnabled) {
-        return next()
-      }
+      if (!flags.onboardingSurveyEnabled) return next()
+
       // Import auth functions dynamically to avoid circular dependency
       const { getSurveyCompletedStatus } =
         await import('@/platform/cloud/onboarding/auth')
@@ -232,9 +221,7 @@ if (isCloud) {
         const surveyCompleted = await getSurveyCompletedStatus()
 
         // Survey is required for all users (when feature flag enabled)
-        if (!surveyCompleted) {
-          return next({ name: 'cloud-survey' })
-        }
+        if (!surveyCompleted) return next({ name: 'cloud-survey' })
       } catch (error) {
         console.error('Failed to check user status:', error)
         // On error, redirect to user-check as fallback

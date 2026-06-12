@@ -158,9 +158,8 @@ const packageConflicts = computed(() => {
 
   for (const pack of notInstalledPacks.value) {
     const compatibilityCheck = checkNodeCompatibility(pack)
-    if (compatibilityCheck.hasConflict && pack.id) {
+    if (compatibilityCheck.hasConflict && pack.id)
       conflictsByPackage.set(pack.id, compatibilityCheck.conflicts)
-    }
   }
 
   return conflictsByPackage
@@ -173,9 +172,7 @@ const conflictInfo = computed<ConflictDetail[]>(() => {
   packageConflicts.value.forEach((conflicts) => {
     conflicts.forEach((conflict) => {
       const key = `${conflict.type}-${conflict.current_value}-${conflict.required_value}`
-      if (!conflictMap.has(key)) {
-        conflictMap.set(key, conflict)
-      }
+      if (!conflictMap.has(key)) conflictMap.set(key, conflict)
     })
   })
 

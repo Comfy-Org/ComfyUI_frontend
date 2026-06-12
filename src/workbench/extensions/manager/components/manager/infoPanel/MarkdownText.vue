@@ -98,9 +98,7 @@ const parsedSegments = computed(() => {
     })
 
     // Add any remaining text
-    if (rest) {
-      segments.push({ type: 'text', text: rest })
-    }
+    if (rest) segments.push({ type: 'text', text: rest })
   }
 
   return segments

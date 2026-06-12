@@ -82,11 +82,8 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     const successTaskLogs: TaskLog[] = []
     const failTaskLogs: TaskLog[] = []
     for (const log of taskLogs.value) {
-      if (failedTasksIds.value.includes(log.taskId)) {
-        failTaskLogs.push(log)
-      } else {
-        successTaskLogs.push(log)
-      }
+      if (failedTasksIds.value.includes(log.taskId)) failTaskLogs.push(log)
+      else successTaskLogs.push(log)
     }
     succeededTasksLogs.value = successTaskLogs
     failedTasksLogs.value = failTaskLogs
@@ -96,11 +93,9 @@ export const useComfyManagerStore = defineStore('comfyManager', () => {
     const successTasksIds = []
     const failTasksIds = []
     for (const task of Object.values(taskHistory.value)) {
-      if (task.status?.status_str === 'success') {
+      if (task.status?.status_str === 'success')
         successTasksIds.push(task.ui_id)
-      } else {
-        failTasksIds.push(task.ui_id)
-      }
+      else failTasksIds.push(task.ui_id)
     }
     succeededTasksIds.value = successTasksIds
     failedTasksIds.value = failTasksIds

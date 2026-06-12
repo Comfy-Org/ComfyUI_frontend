@@ -140,9 +140,7 @@ const isTemporary = computed(
 function checkNeedsSave() {
   const workflow = workflowStore.activeWorkflow
   needsSave.value = !workflow || workflow.isTemporary || workflow.isModified
-  if (workflow) {
-    workflowName.value = workflow.filename.replace(/\.json$/i, '')
-  }
+  if (workflow) workflowName.value = workflow.filename.replace(/\.json$/i, '')
 }
 
 watch(needsSave, async (needs) => {
@@ -206,17 +204,14 @@ function handleRequireProfile() {
 }
 
 async function handlePublish(): Promise<void> {
-  if (isPublishing.value) {
-    return
-  }
+  if (isPublishing.value) return
 
   isPublishing.value = true
   try {
     await submitToComfyHub(formData.value)
     const path = workflowStore.activeWorkflow?.path
-    if (path) {
-      cachePublishPrefill(path, formData.value)
-    }
+    if (path) cachePublishPrefill(path, formData.value)
+
     toast.add({
       severity: 'success',
       summary: t('comfyHubPublish.publishSuccessTitle'),
@@ -249,15 +244,11 @@ async function fetchPublishPrefill() {
     const prefill = status.isPublished
       ? (status.prefill ?? getCachedPrefill(path))
       : getCachedPrefill(path)
-    if (prefill) {
-      applyPrefill(prefill)
-    }
+    if (prefill) applyPrefill(prefill)
   } catch (error) {
     console.warn('Failed to fetch publish prefill:', error)
     const cached = getCachedPrefill(path)
-    if (cached) {
-      applyPrefill(cached)
-    }
+    if (cached) applyPrefill(cached)
   }
 }
 
@@ -269,9 +260,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   for (const image of formData.value.exampleImages) {
-    if (image.file) {
-      URL.revokeObjectURL(image.url)
-    }
+    if (image.file) URL.revokeObjectURL(image.url)
   }
 })
 

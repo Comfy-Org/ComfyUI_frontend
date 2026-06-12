@@ -78,9 +78,7 @@ export function useImportFailedDetection(
     importFailedInfo,
     importFailed,
     showImportFailedDialog: (onClose?: () => void) => {
-      if (conflicts.value) {
-        openDialog([conflicts.value], onClose)
-      }
+      if (conflicts.value) openDialog([conflicts.value], onClose)
     },
     isInstalled
   }

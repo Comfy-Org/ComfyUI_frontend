@@ -146,9 +146,7 @@ describe('curvesToLUT', () => {
       [0, 0],
       [1, 1]
     ])
-    for (let i = 0; i < 256; i++) {
-      expect(lut[i]).toBeCloseTo(i, 0)
-    }
+    for (let i = 0; i < 256; i++) expect(lut[i]).toBeCloseTo(i, 0)
   })
 
   it('clamps output to [0, 255]', () => {

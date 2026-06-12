@@ -49,17 +49,13 @@ function focusContainer() {
 const { isDragging, dragMessage, handleDragOver, handleDragLeave, handleDrop } =
   useLoad3dDrag({
     onModelDrop: async (file) => {
-      if (props.onModelDrop) {
-        await props.onModelDrop(file)
-      }
+      if (props.onModelDrop) await props.onModelDrop(file)
     },
     disabled: computed(() => props.isPreview)
   })
 
 onMounted(() => {
-  if (container.value) {
-    void props.initializeLoad3d(container.value)
-  }
+  if (container.value) void props.initializeLoad3d(container.value)
 })
 
 onUnmounted(() => {

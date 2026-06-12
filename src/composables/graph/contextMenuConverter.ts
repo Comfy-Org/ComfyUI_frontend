@@ -134,9 +134,8 @@ function isDuplicateItem(label: string, existingItems: MenuOption[]): boolean {
       if (
         values.includes(normalizedLabel) &&
         values.includes(existingNormalized)
-      ) {
+      )
         return true
-      }
     }
 
     return false
@@ -174,9 +173,8 @@ function removeDuplicateMenuOptions(options: MenuOption[]): MenuOption[] {
     }
 
     // Group by label
-    if (!itemsByLabel.has(opt.label)) {
-      itemsByLabel.set(opt.label, [])
-    }
+    if (!itemsByLabel.has(opt.label)) itemsByLabel.set(opt.label, [])
+
     itemsByLabel.get(opt.label)!.push(opt)
   }
 
@@ -196,9 +194,8 @@ function removeDuplicateMenuOptions(options: MenuOption[]): MenuOption[] {
     }
 
     // Skip if we already processed this label
-    if (seenLabels.has(opt.label)) {
-      continue
-    }
+    if (seenLabels.has(opt.label)) continue
+
     seenLabels.add(opt.label)
 
     // Get all items with this label
@@ -281,14 +278,10 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
   // Separate items into core and extension categories
   for (const option of deduplicated) {
     // Skip dividers for now - we'll add them between sections later
-    if (option.type === 'divider') {
-      continue
-    }
+    if (option.type === 'divider') continue
 
     // Skip category labels (they'll be added separately)
-    if (option.type === 'category') {
-      continue
-    }
+    if (option.type === 'category') continue
 
     // Check if this is the Delete/Remove item - save it for the end
     const isDeleteItem = option.label === 'Delete' || option.label === 'Remove'
@@ -298,11 +291,9 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
     }
 
     // Categorize based on label
-    if (option.label && isCoreMenuItem(option.label)) {
+    if (option.label && isCoreMenuItem(option.label))
       coreItemsMap.set(option.label, option)
-    } else {
-      extensionItems.push(option)
-    }
+    else extensionItems.push(option)
   }
   // Build ordered core items based on MENU_ORDER
   const orderedCoreItems: MenuOption[] = []
@@ -332,9 +323,8 @@ export function buildStructuredMenu(options: MenuOption[]): MenuOption[] {
     const currentSection = getSectionNumber(itemIndex)
 
     // Add divider when moving to a new section
-    if (lastSection !== -1 && currentSection !== lastSection) {
+    if (lastSection !== -1 && currentSection !== lastSection)
       orderedCoreItems.push({ type: 'divider' })
-    }
 
     orderedCoreItems.push(item)
     lastSection = currentSection
@@ -393,26 +383,19 @@ export function convertContextMenuToOptions(
     }
 
     // Skip items without content (shouldn't happen, but be safe)
-    if (!item.content) {
-      continue
-    }
+    if (!item.content) continue
 
     // Skip hard blacklisted items
-    if (HARD_BLACKLIST.has(item.content)) {
-      continue
-    }
+    if (HARD_BLACKLIST.has(item.content)) continue
 
     // Skip built-in LiteGraph items that the Vue menu replaces.
     // Matched by callback identity, not label, to avoid suppressing
     // extension-provided items that happen to share a label.
-    if (item.callback && SUPPRESSED_LITEGRAPH_CALLBACKS.has(item.callback)) {
+    if (item.callback && SUPPRESSED_LITEGRAPH_CALLBACKS.has(item.callback))
       continue
-    }
 
     // Skip if a similar item already exists in results
-    if (isDuplicateItem(item.content, result)) {
-      continue
-    }
+    if (isDuplicateItem(item.content, result)) continue
 
     const option: MenuOption = {
       label: item.content,
@@ -420,9 +403,7 @@ export function convertContextMenuToOptions(
     }
 
     // Pass through disabled state
-    if (item.disabled) {
-      option.disabled = true
-    }
+    if (item.disabled) option.disabled = true
 
     // Handle submenus
     if (item.has_submenu) {
@@ -469,9 +450,7 @@ export function convertContextMenuToOptions(
   }
 
   // Apply structured menu with core items and extensions section (if requested)
-  if (applyStructuring) {
-    return buildStructuredMenu(result)
-  }
+  if (applyStructuring) return buildStructuredMenu(result)
 
   return result
 }
@@ -565,9 +544,7 @@ function convertSubmenuToOptions(
 
   for (const item of items) {
     // Skip null separators
-    if (item === null) {
-      continue
-    }
+    if (item === null) continue
 
     // Handle string items (simple labels like in Mode/Shapes menus)
     if (typeof item === 'string') {
@@ -596,9 +573,7 @@ function convertSubmenuToOptions(
     }
 
     // Handle object items
-    if (!item.content) {
-      continue
-    }
+    if (!item.content) continue
 
     // Extract text content from HTML if present
     const content = stripHtmlTags(item.content)
@@ -622,9 +597,7 @@ function convertSubmenuToOptions(
     }
 
     // Pass through disabled state
-    if (item.disabled) {
-      subOption.disabled = true
-    }
+    if (item.disabled) subOption.disabled = true
 
     result.push(subOption)
   }

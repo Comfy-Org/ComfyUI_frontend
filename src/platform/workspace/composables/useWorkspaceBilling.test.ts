@@ -55,9 +55,8 @@ function setupBilling() {
   scope?.stop()
   scope = effectScope()
   const billing = scope.run(() => useWorkspaceBilling())
-  if (!billing) {
-    throw new Error('Failed to create billing composable')
-  }
+  if (!billing) throw new Error('Failed to create billing composable')
+
   return billing
 }
 

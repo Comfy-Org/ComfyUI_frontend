@@ -17,9 +17,7 @@ export const useAssetsSidebarTab = (): SidebarTabExtension => {
     iconBadge: () => {
       const settingStore = useSettingStore()
 
-      if (!settingStore.get('Comfy.Queue.QPOV2')) {
-        return null
-      }
+      if (!settingStore.get('Comfy.Queue.QPOV2')) return null
 
       const assetsSidebarBadgeStore = useAssetsSidebarBadgeStore()
       const count = assetsSidebarBadgeStore.unseenAddedAssetsCount

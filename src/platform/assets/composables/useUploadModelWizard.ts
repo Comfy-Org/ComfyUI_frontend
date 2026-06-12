@@ -134,9 +134,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
         const typeTag = metadata.tags.find((tag) =>
           modelTypes.value.some((type) => type.value === tag)
         )
-        if (typeTag) {
-          selectedModelType.value = typeTag
-        }
+        if (typeTag) selectedModelType.value = typeTag
       }
 
       currentStep.value = 2
@@ -166,9 +164,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
       const mimeMatch = wizardData.value.previewImage.match(
         /^data:image\/([^;]+);/
       )
-      if (mimeMatch) {
-        extension = mimeMatch[1] === 'jpeg' ? 'jpg' : mimeMatch[1]
-      }
+      if (mimeMatch) extension = mimeMatch[1] === 'jpeg' ? 'jpg' : mimeMatch[1]
 
       const previewAsset = await assetService.uploadAssetFromBase64({
         data: wizardData.value.previewImage,
@@ -205,9 +201,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
 
   async function uploadModel(): Promise<boolean> {
     if (isUploading.value) return false
-    if (!canUploadModel.value) {
-      return false
-    }
+    if (!canUploadModel.value) return false
 
     const source = detectedSource.value
     if (!source) {
@@ -305,9 +299,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   }
 
   function goToPreviousStep() {
-    if (currentStep.value > 1) {
-      currentStep.value = currentStep.value - 1
-    }
+    if (currentStep.value > 1) currentStep.value = currentStep.value - 1
   }
 
   function resetWizard() {

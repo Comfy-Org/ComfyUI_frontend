@@ -12,18 +12,16 @@ function getFileContentType(file: File): string {
 
 function getUsername(profile: ComfyHubProfile | null): string {
   const username = profile?.username?.trim()
-  if (!username) {
+  if (!username)
     throw new Error('ComfyHub profile is required before publishing')
-  }
 
   return username
 }
 
 function getWorkflowFilename(path: string | null | undefined): string {
   const workflowFilename = path?.trim()
-  if (!workflowFilename) {
+  if (!workflowFilename)
     throw new Error('No active workflow file available for publishing')
-  }
 
   return workflowFilename
 }
@@ -35,9 +33,9 @@ function getAssetIds(assets: AssetInfo[]): string[] {
 function resolveThumbnailFile(
   formData: ComfyHubPublishFormData
 ): File | undefined {
-  if (formData.thumbnailType === 'imageComparison') {
+  if (formData.thumbnailType === 'imageComparison')
     return formData.comparisonBeforeFile ?? undefined
-  }
+
   return formData.thumbnailFile ?? undefined
 }
 

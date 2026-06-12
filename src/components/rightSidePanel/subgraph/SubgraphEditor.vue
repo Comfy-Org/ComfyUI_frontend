@@ -121,12 +121,12 @@ function updateActivePromotedRows(
   }
   const currentKeys = new Set(currentItems.map(promotedRowKey))
   const nextKeys = new Set(value.map(promotedRowKey))
-  for (const item of value) {
+  for (const item of value)
     if (!currentKeys.has(promotedRowKey(item))) promotePromotedRow(item)
-  }
-  for (const item of currentItems) {
+
+  for (const item of currentItems)
     if (!nextKeys.has(promotedRowKey(item))) demoteRow(item)
-  }
+
   if (currentKeys.size === nextKeys.size) {
     reorderSubgraphInputsByWidgetOrder(
       node,
@@ -215,9 +215,8 @@ function refreshPromotedWidgetRendering() {
 }
 
 function rowDisplayName(row: ActiveRow): string {
-  if (row.kind === 'promoted') {
-    return row.widget.label || row.widget.name
-  }
+  if (row.kind === 'promoted') return row.widget.label || row.widget.name
+
   return (
     row.realWidget?.label ||
     row.realWidget?.name ||
@@ -284,9 +283,7 @@ function promoteCandidate([node, widget]: WidgetItem) {
 }
 
 function showAll() {
-  for (const item of filteredCandidates.value) {
-    promoteCandidate(item)
-  }
+  for (const item of filteredCandidates.value) promoteCandidate(item)
 }
 function hideAll() {
   for (const row of filteredActive.value) {
@@ -295,9 +292,7 @@ function hideAll() {
   }
 }
 function showRecommended() {
-  for (const item of recommendedWidgets.value) {
-    promoteCandidate(item)
-  }
+  for (const item of recommendedWidgets.value) promoteCandidate(item)
 }
 
 onMounted(() => {

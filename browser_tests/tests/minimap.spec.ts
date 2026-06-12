@@ -15,9 +15,8 @@ function hasCanvasContent(canvas: Locator): Promise<boolean> {
     const ctx = el.getContext('2d')
     if (!ctx) return false
     const { data } = ctx.getImageData(0, 0, el.width, el.height)
-    for (let i = 3; i < data.length; i += 4) {
-      if (data[i] > 0) return true
-    }
+    for (let i = 3; i < data.length; i += 4) if (data[i] > 0) return true
+
     return false
   })
 }

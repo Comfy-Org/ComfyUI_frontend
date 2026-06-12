@@ -44,7 +44,5 @@ export function markDeletedAssetsAsMissingMedia(
     }
   }
 
-  if (candidates.length) {
-    useMissingMediaStore().addMissingMedia(candidates)
-  }
+  if (candidates.length) useMissingMediaStore().addMissingMedia(candidates)
 }

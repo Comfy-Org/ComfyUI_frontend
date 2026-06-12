@@ -148,9 +148,7 @@ export const useSubscriptionDialog = () => {
       if (!pending) return
       sessionStorage.removeItem(RESUME_PRICING_KEY)
 
-      if (!workspaceStore.isInPersonalWorkspace) {
-        showPricingTable()
-      }
+      if (!workspaceStore.isInPersonalWorkspace) showPricingTable()
     } catch {
       // sessionStorage may be unavailable
     }

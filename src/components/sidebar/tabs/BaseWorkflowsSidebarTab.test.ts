@@ -125,9 +125,7 @@ vi.mock('@/components/common/TreeExplorer.vue', () => ({
       selectionKeys?: Record<string, boolean>
     }) {
       watchEffect(() => {
-        if (props.selectionKeys === undefined) {
-          captureSearchRoot(props.root)
-        }
+        if (props.selectionKeys === undefined) captureSearchRoot(props.root)
       })
     }
   }

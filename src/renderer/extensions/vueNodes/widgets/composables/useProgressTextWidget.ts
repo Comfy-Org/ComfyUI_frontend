@@ -50,9 +50,10 @@ export function useTextPreviewWidget(
             node.id,
             inputSpec.name
           )
-          if (widgetState)
+          if (widgetState) {
             widgetState.value =
               typeof value === 'string' ? value : String(value)
+          }
         },
         getMinHeight: () => options.minHeight ?? 42 + PADDING,
         serialize: false,

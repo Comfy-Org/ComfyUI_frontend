@@ -185,9 +185,8 @@ const textClasses = computed(() => {
 const iconColorClass = computed(() => textClasses.value)
 
 const iconClass = computed(() => {
-  if (badge.icon) {
-    return badge.icon
-  }
+  if (badge.icon) return badge.icon
+
   switch (variant.value) {
     case 'error':
       return 'pi pi-exclamation-circle'

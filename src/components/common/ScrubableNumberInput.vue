@@ -119,11 +119,9 @@ function handleBlur(e: Event) {
     : raw === ''
       ? undefined
       : Number(raw)
-  if (parsed != null && !isNaN(parsed)) {
-    modelValue.value = clamp(parsed)
-  } else {
-    target.value = displayValue ?? String(modelValue.value)
-  }
+  if (parsed != null && !isNaN(parsed)) modelValue.value = clamp(parsed)
+  else target.value = displayValue ?? String(modelValue.value)
+
   textEdit.value = false
 }
 

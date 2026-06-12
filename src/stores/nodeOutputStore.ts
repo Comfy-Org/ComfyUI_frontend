@@ -189,11 +189,9 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
           const existingValue = existingOutput[k]
           const newValue = (outputs as Record<NodeLocatorId, unknown>)[k]
 
-          if (Array.isArray(existingValue) && Array.isArray(newValue)) {
+          if (Array.isArray(existingValue) && Array.isArray(newValue))
             existingOutput[k] = existingValue.concat(newValue)
-          } else {
-            existingOutput[k] = newValue
-          }
+          else existingOutput[k] = newValue
         }
         nodeOutputs.value[nodeLocatorId] = { ...existingOutput }
         return
@@ -260,13 +258,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       delete scheduledRevoke[nodeLocatorId]
     }
     if (existingPreviews?.[Symbol.iterator]) {
-      for (const url of existingPreviews) {
-        releaseSharedObjectUrl(url)
-      }
+      for (const url of existingPreviews) releaseSharedObjectUrl(url)
     }
-    for (const url of previewImages) {
-      retainSharedObjectUrl(url)
-    }
+    for (const url of previewImages) retainSharedObjectUrl(url)
+
     app.nodePreviewImages[nodeLocatorId] = previewImages
     nodePreviewImages.value[nodeLocatorId] = previewImages
   }
@@ -290,9 +285,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const previews = app.nodePreviewImages[nodeLocatorId]
     if (!previews?.[Symbol.iterator]) return
 
-    for (const url of previews) {
-      releaseSharedObjectUrl(url)
-    }
+    for (const url of previews) releaseSharedObjectUrl(url)
 
     delete app.nodePreviewImages[nodeLocatorId]
     delete nodePreviewImages.value[nodeLocatorId]
@@ -303,9 +296,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       const previews = app.nodePreviewImages[nodeLocatorId]
       if (!previews?.[Symbol.iterator]) continue
 
-      for (const url of previews) {
-        releaseSharedObjectUrl(url)
-      }
+      for (const url of previews) releaseSharedObjectUrl(url)
     }
     app.nodePreviewImages = {}
     nodePreviewImages.value = {}
@@ -317,9 +308,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
 
     const graphId = graph.isRootGraph ? '' : graph.id + ':'
     revokePreviewsByLocatorId(graphId + subgraphNode.id)
-    for (const node of subgraphNode.subgraph.nodes) {
+    for (const node of subgraphNode.subgraph.nodes)
       revokePreviewsByLocatorId(subgraphNode.subgraph.id + node.id)
-    }
   }
 
   function removeOutputsByLocatorId(nodeLocatorId: NodeLocatorId) {
@@ -330,9 +320,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     if (app.nodePreviewImages[nodeLocatorId]) {
       const previews = app.nodePreviewImages[nodeLocatorId]
       if (previews?.[Symbol.iterator]) {
-        for (const url of previews) {
-          releaseSharedObjectUrl(url)
-        }
+        for (const url of previews) releaseSharedObjectUrl(url)
       }
       delete app.nodePreviewImages[nodeLocatorId]
       delete nodePreviewImages.value[nodeLocatorId]

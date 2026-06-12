@@ -124,10 +124,11 @@ const onHelpClick = () => {
   props.openNodeHelp(nodeDef.value)
 }
 const editBlueprint = async () => {
-  if (!props.node.data)
+  if (!props.node.data) {
     throw new Error(
       'Failed to edit subgraph blueprint lacking backing node data'
     )
+  }
   await useSubgraphStore().editBlueprint(props.node.data.name)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)

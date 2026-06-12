@@ -29,9 +29,9 @@ describe('draftCacheV2 properties', () => {
         fc.integer({ min: 1, max: 10 }),
         (operations, limit) => {
           let index = createEmptyIndex()
-          for (const [path, meta] of operations) {
+          for (const [path, meta] of operations)
             index = upsertEntry(index, path, meta, limit).index
-          }
+
           expect(index.order.length).toBeLessThanOrEqual(limit)
         }
       )
@@ -47,9 +47,9 @@ describe('draftCacheV2 properties', () => {
         }),
         (operations) => {
           let index = createEmptyIndex()
-          for (const [path, meta] of operations) {
+          for (const [path, meta] of operations)
             index = upsertEntry(index, path, meta).index
-          }
+
           const orderSet = new Set(index.order)
           const entriesSet = new Set(Object.keys(index.entries))
           expect(orderSet).toEqual(entriesSet)
@@ -67,9 +67,9 @@ describe('draftCacheV2 properties', () => {
         }),
         (operations) => {
           let index = createEmptyIndex()
-          for (const [path, meta] of operations) {
+          for (const [path, meta] of operations)
             index = upsertEntry(index, path, meta).index
-          }
+
           expect(new Set(index.order).size).toBe(index.order.length)
         }
       )
@@ -158,16 +158,13 @@ describe('draftCacheV2 properties', () => {
 
             // Current key must never be evicted
             const currentKey = newIndex.order[newIndex.order.length - 1]
-            for (const key of evicted) {
-              expect(key).not.toBe(currentKey)
-            }
+            for (const key of evicted) expect(key).not.toBe(currentKey)
 
             // Evicted keys must come from the old order
             if (evicted.length > 0) {
               const evictedSet = new Set(evicted)
-              for (const key of evicted) {
-                expect(orderBefore).toContain(key)
-              }
+              for (const key of evicted) expect(orderBefore).toContain(key)
+
               // Non-evicted keys preserve their relative order
               const remaining = orderBefore.filter((k) => !evictedSet.has(k))
               const newOrderWithoutCurrent = newIndex.order.filter(

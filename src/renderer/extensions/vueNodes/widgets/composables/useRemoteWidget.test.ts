@@ -648,9 +648,8 @@ describe('useRemoteWidget', () => {
       let executionSuccessHandler: (() => void) | undefined
 
       vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
-        if (event === 'execution_success') {
+        if (event === 'execution_success')
           executionSuccessHandler = handler as () => void
-        }
       })
 
       const mockNode = createMockLGraphNode({
@@ -686,9 +685,8 @@ describe('useRemoteWidget', () => {
       let executionSuccessHandler: (() => void) | undefined
 
       vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
-        if (event === 'execution_success') {
+        if (event === 'execution_success')
           executionSuccessHandler = handler as () => void
-        }
       })
 
       const mockNode = createMockLGraphNode({
@@ -718,9 +716,8 @@ describe('useRemoteWidget', () => {
       let executionSuccessHandler: (() => void) | undefined
 
       vi.spyOn(api, 'addEventListener').mockImplementation((event, handler) => {
-        if (event === 'execution_success') {
+        if (event === 'execution_success')
           executionSuccessHandler = handler as () => void
-        }
       })
 
       const removeEventListenerSpy = vi.spyOn(api, 'removeEventListener')

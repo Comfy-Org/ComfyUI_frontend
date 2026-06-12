@@ -150,9 +150,7 @@ onMounted(async () => {
     await viewer.initializeStandaloneViewer(containerRef.value, props.modelUrl)
   } else if (props.node) {
     const source = await useLoad3dService().getLoad3dAsync(props.node)
-    if (source) {
-      await viewer.initializeViewer(containerRef.value, source)
-    }
+    if (source) await viewer.initializeViewer(containerRef.value, source)
   }
 
   if (viewerContentRef.value) {
@@ -183,9 +181,8 @@ onMounted(async () => {
 })
 
 const handleCancel = () => {
-  if (!isStandaloneMode) {
-    viewer.restoreInitialState()
-  }
+  if (!isStandaloneMode) viewer.restoreInitialState()
+
   useDialogStore().closeDialog()
 }
 

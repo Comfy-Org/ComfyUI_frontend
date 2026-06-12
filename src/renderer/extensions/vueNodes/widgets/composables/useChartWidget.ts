@@ -9,9 +9,8 @@ import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 
 export const useChartWidget = (): ComfyWidgetConstructorV2 => {
   return (node: LGraphNode, inputSpec: InputSpecV2): IChartWidget => {
-    if (!isChartInputSpec(inputSpec)) {
+    if (!isChartInputSpec(inputSpec))
       throw new Error('Invalid input spec for chart widget')
-    }
 
     const { name, options = {} } = inputSpec as ChartInputSpec
 

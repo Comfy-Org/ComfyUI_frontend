@@ -56,29 +56,25 @@ export const useExtensionStore = defineStore('extension', () => {
   }
 
   function registerExtension(extension: ComfyExtension) {
-    if (!extension.name) {
+    if (!extension.name)
       throw new Error("Extensions must have a 'name' property.")
-    }
 
-    if (extensionByName.value[extension.name]) {
+    if (extensionByName.value[extension.name])
       throw new Error(`Extension named '${extension.name}' already registered.`)
-    }
 
-    if (disabledExtensionNames.value.has(extension.name)) {
+    if (disabledExtensionNames.value.has(extension.name))
       console.warn(`Extension ${extension.name} is disabled.`)
-    }
 
     extensionByName.value[extension.name] = markRaw(extension)
   }
 
   function loadDisabledExtensionNames(names: string[]) {
     disabledExtensionNames.value = new Set(names)
-    for (const name of ALWAYS_DISABLED_EXTENSIONS) {
+    for (const name of ALWAYS_DISABLED_EXTENSIONS)
       disabledExtensionNames.value.add(name)
-    }
-    for (const name of ALWAYS_ENABLED_EXTENSIONS) {
+
+    for (const name of ALWAYS_ENABLED_EXTENSIONS)
       disabledExtensionNames.value.delete(name)
-    }
   }
 
   /**

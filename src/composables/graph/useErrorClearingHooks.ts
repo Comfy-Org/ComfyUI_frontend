@@ -234,18 +234,16 @@ function restoreNodeHooks(node: LGraphNode): void {
 function installNodeHooksRecursive(node: LGraphNode): void {
   installNodeHooks(node)
   if (node.isSubgraphNode?.()) {
-    for (const innerNode of node.subgraph._nodes ?? []) {
+    for (const innerNode of node.subgraph._nodes ?? [])
       installNodeHooksRecursive(innerNode)
-    }
   }
 }
 
 function restoreNodeHooksRecursive(node: LGraphNode): void {
   restoreNodeHooks(node)
   if (node.isSubgraphNode?.()) {
-    for (const innerNode of node.subgraph._nodes ?? []) {
+    for (const innerNode of node.subgraph._nodes ?? [])
       restoreNodeHooksRecursive(innerNode)
-    }
   }
 }
 
@@ -310,16 +308,14 @@ function scanSingleNodeModelsAndTypes(node: LGraphNode): void {
     (nodeType) => useModelToNodeStore().getCategoryForNodeType(nodeType)
   )
   const confirmedModels = modelCandidates.filter((c) => c.isMissing === true)
-  if (confirmedModels.length) {
+  if (confirmedModels.length)
     useMissingModelStore().addMissingModels(confirmedModels)
-  }
+
   // Cloud scans return isMissing: undefined for asset-browser-supported
   // widgets until async verification resolves. Without this, realtime
   // add/un-bypass paths would silently drop those candidates.
   const pendingModels = modelCandidates.filter((c) => c.isMissing === undefined)
-  if (pendingModels.length) {
-    void verifyAndAddPendingModels(pendingModels)
-  }
+  if (pendingModels.length) void verifyAndAddPendingModels(pendingModels)
 
   const originalType = node.last_serialization?.type ?? node.type ?? 'Unknown'
   if (!(originalType in LiteGraph.registered_node_types)) {
@@ -346,15 +342,13 @@ function scanSingleNodeMedia(node: LGraphNode): void {
 
   const mediaCandidates = scanNodeMediaCandidates(app.rootGraph, node, isCloud)
   const confirmedMedia = mediaCandidates.filter((c) => c.isMissing === true)
-  if (confirmedMedia.length) {
+  if (confirmedMedia.length)
     useMissingMediaStore().addMissingMedia(confirmedMedia)
-  }
+
   // Cloud media scans return pending for asset verification. OSS scans only
   // return pending for generated output media.
   const pendingMedia = mediaCandidates.filter((c) => c.isMissing === undefined)
-  if (pendingMedia.length) {
-    void verifyAndAddPendingMedia(pendingMedia)
-  }
+  if (pendingMedia.length) void verifyAndAddPendingMedia(pendingMedia)
 }
 
 /**
@@ -459,9 +453,8 @@ function handleNodeModeChange(
       useMissingModelStore().hasMissingModels ||
       useMissingMediaStore().hasMissingMedia ||
       useMissingNodesErrorStore().hasMissingNodes
-    ) {
+    )
       useExecutionErrorStore().showErrorOverlay()
-    }
   }
 }
 
@@ -488,9 +481,7 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
 }
 
 export function installErrorClearingHooks(graph: LGraph): () => void {
-  for (const node of graph._nodes ?? []) {
-    installNodeHooksRecursive(node)
-  }
+  for (const node of graph._nodes ?? []) installNodeHooksRecursive(node)
 
   const originalOnNodeAdded = graph.onNodeAdded
   graph.onNodeAdded = function (node: LGraphNode) {
@@ -503,9 +494,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     // missing-model errors appear before selection-scoped tabs recalculate.
     // Media gets one extra microtask so drag/drop upload handlers can mark
     // transient upload state before media detection reads the widget value.
-    if (!ChangeTracker.isLoadingGraph) {
-      scheduleAddedNodeScan(node)
-    }
+    if (!ChangeTracker.isLoadingGraph) scheduleAddedNodeScan(node)
 
     originalOnNodeAdded?.call(this, node)
   }
@@ -540,9 +529,8 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
   }
 
   return () => {
-    for (const node of graph._nodes ?? []) {
-      restoreNodeHooksRecursive(node)
-    }
+    for (const node of graph._nodes ?? []) restoreNodeHooksRecursive(node)
+
     graph.onNodeAdded = originalOnNodeAdded || undefined
     graph.onNodeRemoved = originalOnNodeRemoved || undefined
     graph.onTrigger = originalOnTrigger || undefined

@@ -22,8 +22,7 @@ export function nextUniqueName(
 ): string {
   let i = 1
   const baseName = name
-  while (existingNames.includes(name)) {
-    name = `${baseName}_${i++}`
-  }
+  while (existingNames.includes(name)) name = `${baseName}_${i++}`
+
   return name
 }

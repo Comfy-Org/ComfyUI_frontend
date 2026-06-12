@@ -35,9 +35,7 @@ export const graphToPrompt = async (
       ? node.getInnerNodes(new Map())
       : [node]
     for (const innerNode of innerNodes) {
-      if (innerNode.isVirtualNode) {
-        innerNode.applyToGraph?.()
-      }
+      if (innerNode.isVirtualNode) innerNode.applyToGraph?.()
     }
   }
 
@@ -45,12 +43,9 @@ export const graphToPrompt = async (
 
   // Remove localized_name from the workflow
   for (const node of workflow.nodes) {
-    for (const slot of node.inputs ?? []) {
-      delete slot.localized_name
-    }
-    for (const slot of node.outputs ?? []) {
-      delete slot.localized_name
-    }
+    for (const slot of node.inputs ?? []) delete slot.localized_name
+
+    for (const slot of node.outputs ?? []) delete slot.localized_name
   }
 
   compressWidgetInputSlots(workflow)
@@ -68,13 +63,11 @@ export const graphToPrompt = async (
     if (
       node.mode === LGraphEventMode.NEVER ||
       node.mode === LGraphEventMode.BYPASS
-    ) {
+    )
       continue
-    }
 
-    for (const innerNode of dto.getInnerNodes()) {
+    for (const innerNode of dto.getInnerNodes())
       nodeDtoMap.set(innerNode.id, innerNode)
-    }
   }
 
   const output: ComfyApiWorkflow = {}
@@ -85,9 +78,8 @@ export const graphToPrompt = async (
       node.isVirtualNode ||
       node.mode === LGraphEventMode.NEVER ||
       node.mode === LGraphEventMode.BYPASS
-    ) {
+    )
       continue
-    }
 
     const inputs: ComfyApiWorkflow[string]['inputs'] = {}
     const { widgets } = node
@@ -149,9 +141,8 @@ export const graphToPrompt = async (
   // Remove inputs connected to removed nodes
   for (const { inputs } of Object.values(output)) {
     for (const [i, input] of Object.entries(inputs)) {
-      if (Array.isArray(input) && input.length === 2 && !output[input[0]]) {
+      if (Array.isArray(input) && input.length === 2 && !output[input[0]])
         delete inputs[i]
-      }
     }
   }
 

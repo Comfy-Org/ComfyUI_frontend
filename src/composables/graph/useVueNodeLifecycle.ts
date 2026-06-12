@@ -75,9 +75,7 @@ function useVueNodeLifecycleIndividual() {
   watch(
     () => shouldRenderVueNodes.value && Boolean(comfyApp.canvas?.graph),
     (enabled) => {
-      if (enabled) {
-        initializeNodeManager()
-      }
+      if (enabled) initializeNodeManager()
     },
     { immediate: true }
   )
@@ -123,23 +121,20 @@ function useVueNodeLifecycleIndividual() {
       !shouldRenderVueNodes.value ||
       nodeManager.value ||
       activeGraph?._nodes.length !== 0
-    ) {
+    )
       return
-    }
+
     const originalOnNodeAdded = activeGraph.onNodeAdded
     activeGraph.onNodeAdded = function (node: LGraphNode) {
       // Restore original handler
       activeGraph.onNodeAdded = originalOnNodeAdded
 
       // Initialize node manager if needed
-      if (shouldRenderVueNodes.value && !nodeManager.value) {
+      if (shouldRenderVueNodes.value && !nodeManager.value)
         initializeNodeManager()
-      }
 
       // Call original handler
-      if (originalOnNodeAdded) {
-        originalOnNodeAdded.call(this, node)
-      }
+      if (originalOnNodeAdded) originalOnNodeAdded.call(this, node)
     }
   }
 

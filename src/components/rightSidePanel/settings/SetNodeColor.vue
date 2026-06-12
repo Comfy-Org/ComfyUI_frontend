@@ -72,9 +72,8 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
     const theColorOptions = nodes.map((item) => item.getColorOption())
 
     let colorOption: ColorOption | null | false = theColorOptions[0]
-    if (!theColorOptions.every((option) => option === colorOption)) {
+    if (!theColorOptions.every((option) => option === colorOption))
       colorOption = false
-    }
 
     if (colorOption === false) return null
     if (colorOption == null || (!colorOption.bgcolor && !colorOption.color))
@@ -95,9 +94,7 @@ const nodeColor = computed<NodeColorOption['name'] | null>({
         ? null
         : LGraphCanvas.node_colors[colorName]
 
-    for (const item of nodes) {
-      item.setColorOption(canvasColorOption)
-    }
+    for (const item of nodes) item.setColorOption(canvasColorOption)
 
     emit('changed')
   }

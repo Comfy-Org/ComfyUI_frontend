@@ -133,11 +133,9 @@ function handleRight() {
 
 function handleLeft() {
   if (node.children?.length && isExpanded.value) {
-    if (expandedCategory.startsWith(node.key + '/')) {
-      emit('collapse', node.key)
-    } else {
-      emit('select', node.key)
-    }
+    if (expandedCategory.startsWith(node.key + '/')) emit('collapse', node.key)
+    else emit('select', node.key)
+
     return
   }
   focusParent?.()

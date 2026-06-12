@@ -43,9 +43,8 @@ async function setLocaleAndWaitForWorkflowReload(
     const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
       .activeWorkflow
 
-    if (!workflow) {
+    if (!workflow)
       throw new Error('No active workflow while waiting for locale reload')
-    }
 
     const changeTracker = workflow.changeTracker.constructor as unknown as {
       isLoadingGraph: boolean
@@ -56,9 +55,7 @@ async function setLocaleAndWaitForWorkflowReload(
       const timeoutAt = performance.now() + 5000
 
       const tick = () => {
-        if (changeTracker.isLoadingGraph) {
-          sawLoading = true
-        }
+        if (changeTracker.isLoadingGraph) sawLoading = true
 
         if (sawLoading && !changeTracker.isLoadingGraph) {
           resolve()
@@ -99,9 +96,8 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       // Select a single node (KSampler) using node references
       const ksamplerNodes =
         await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-      if (ksamplerNodes.length === 0) {
+      if (ksamplerNodes.length === 0)
         throw new Error('No KSampler nodes found in the workflow')
-      }
 
       // Select the node with panning to ensure toolbox is visible
       await selectNodeWithPan(comfyPage, ksamplerNodes[0])

@@ -256,9 +256,7 @@ export const useWorkflowTemplatesStore = defineStore(
      * Filter templates by category ID using stored filter mappings
      */
     const filterTemplatesByCategory = (categoryId: string) => {
-      if (categoryId === 'all') {
-        return enhancedTemplates.value
-      }
+      if (categoryId === 'all') return enhancedTemplates.value
 
       if (categoryId.startsWith('basics-')) {
         // Filter for templates from categories marked as essential
@@ -270,9 +268,7 @@ export const useWorkflowTemplatesStore = defineStore(
         )
       }
 
-      if (categoryId === 'popular') {
-        return enhancedTemplates.value
-      }
+      if (categoryId === 'popular') return enhancedTemplates.value
 
       if (categoryId === 'partner-nodes') {
         // Filter for templates where OpenSource === false
@@ -289,21 +285,19 @@ export const useWorkflowTemplatesStore = defineStore(
 
       // Look up the filter from our stored mappings
       const filter = categoryFilters.value.get(categoryId)
-      if (!filter) {
-        return enhancedTemplates.value
-      }
+      if (!filter) return enhancedTemplates.value
 
       // Apply the filter
       return enhancedTemplates.value.filter((template) => {
-        if (filter.category && template.category !== filter.category) {
+        if (filter.category && template.category !== filter.category)
           return false
-        }
+
         if (
           filter.categoryGroup &&
           template.categoryGroup !== filter.categoryGroup
-        ) {
+        )
           return false
-        }
+
         return true
       })
     }
@@ -540,9 +534,8 @@ export const useWorkflowTemplatesStore = defineStore(
         !safePathPattern.test(logoPath) ||
         logoPath.includes('..') ||
         logoPath.startsWith('/')
-      ) {
+      )
         return ''
-      }
 
       return api.fileURL(`/templates/${logoPath}`)
     }
@@ -554,9 +547,7 @@ export const useWorkflowTemplatesStore = defineStore(
       models?: string[]
       license?: string
     } | null {
-      if (englishTemplates.value.length === 0) {
-        return null
-      }
+      if (englishTemplates.value.length === 0) return null
 
       for (const category of englishTemplates.value) {
         const template = category.templates.find((t) => t.name === templateName)

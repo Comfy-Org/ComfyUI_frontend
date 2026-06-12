@@ -28,9 +28,9 @@ export async function fitToViewInstant(
 
       const canvas = app.canvas
       const items = (() => {
-        if (selectionOnly && canvas.selectedItems?.size) {
+        if (selectionOnly && canvas.selectedItems?.size)
           return Array.from(canvas.selectedItems)
-        }
+
         try {
           return Array.from(canvas.positionableItems ?? [])
         } catch {

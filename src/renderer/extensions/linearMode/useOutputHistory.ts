@@ -152,11 +152,8 @@ export function useOutputHistory(): {
 
   function selectFirstHistory() {
     const first = outputs.media.value[0]
-    if (first) {
-      linearStore.selectAsLatest(`history:${first.id}:0`)
-    } else {
-      linearStore.selectAsLatest(null)
-    }
+    if (first) linearStore.selectAsLatest(`history:${first.id}:0`)
+    else linearStore.selectAsLatest(null)
   }
 
   // Resolve in-progress items when history outputs are loaded.

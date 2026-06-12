@@ -528,25 +528,19 @@ const useCaseFuse = new Fuse(USE_CASE_CATEGORIES, FUSE_OPTIONS)
  * Normalize industry responses using Fuse.js fuzzy search
  */
 export function normalizeIndustry(rawIndustry: unknown): string {
-  if (!rawIndustry || typeof rawIndustry !== 'string') {
+  if (!rawIndustry || typeof rawIndustry !== 'string')
     return 'Other / Undefined'
-  }
 
   const industry = rawIndustry.toLowerCase().trim()
 
   // Handle common undefined responses
-  if (
-    industry.match(/^(other|none|undefined|unknown|n\/a|not applicable|-|)$/)
-  ) {
+  if (industry.match(/^(other|none|undefined|unknown|n\/a|not applicable|-|)$/))
     return 'Other / Undefined'
-  }
 
   // Fuse.js fuzzy search for best category match
   const results = industryFuse.search(rawIndustry)
 
-  if (results.length > 0) {
-    return results[0].item.name
-  }
+  if (results.length > 0) return results[0].item.name
 
   // No good match found - preserve original with prefix
   return `Uncategorized: ${rawIndustry}`
@@ -556,25 +550,18 @@ export function normalizeIndustry(rawIndustry: unknown): string {
  * Normalize use case responses using Fuse.js fuzzy search
  */
 export function normalizeUseCase(rawUseCase: unknown): string {
-  if (!rawUseCase || typeof rawUseCase !== 'string') {
-    return 'Other / Undefined'
-  }
+  if (!rawUseCase || typeof rawUseCase !== 'string') return 'Other / Undefined'
 
   const useCase = rawUseCase.toLowerCase().trim()
 
   // Handle common undefined responses
-  if (
-    useCase.match(/^(other|none|undefined|unknown|n\/a|not applicable|-|)$/)
-  ) {
+  if (useCase.match(/^(other|none|undefined|unknown|n\/a|not applicable|-|)$/))
     return 'Other / Undefined'
-  }
 
   // Fuse.js fuzzy search for best category match
   const results = useCaseFuse.search(rawUseCase)
 
-  if (results.length > 0) {
-    return results[0].item.name
-  }
+  if (results.length > 0) return results[0].item.name
 
   // No good match found - preserve original with prefix
   return `Uncategorized: ${rawUseCase}`

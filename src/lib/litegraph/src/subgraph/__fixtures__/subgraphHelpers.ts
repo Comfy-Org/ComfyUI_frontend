@@ -195,23 +195,19 @@ export function createTestSubgraph(
   const subgraph = new Subgraph(rootGraph, subgraphData)
 
   if (options.inputs) {
-    for (const input of options.inputs) {
+    for (const input of options.inputs)
       subgraph.addInput(input.name, String(input.type))
-    }
   } else if (options.inputCount) {
-    for (let i = 0; i < options.inputCount; i++) {
+    for (let i = 0; i < options.inputCount; i++)
       subgraph.addInput(`input_${i}`, '*')
-    }
   }
 
   if (options.outputs) {
-    for (const output of options.outputs) {
+    for (const output of options.outputs)
       subgraph.addOutput(output.name, String(output.type))
-    }
   } else if (options.outputCount) {
-    for (let i = 0; i < options.outputCount; i++) {
+    for (let i = 0; i < options.outputCount; i++)
       subgraph.addOutput(`output_${i}`, '*')
-    }
   }
 
   // Add test nodes if requested
@@ -382,21 +378,16 @@ export function assertSubgraphStructure(
   subgraph: Subgraph,
   expected: SubgraphStructureExpectation
 ): void {
-  if (expected.inputCount !== undefined) {
+  if (expected.inputCount !== undefined)
     expect(subgraph.inputs.length).toBe(expected.inputCount)
-  }
 
-  if (expected.outputCount !== undefined) {
+  if (expected.outputCount !== undefined)
     expect(subgraph.outputs.length).toBe(expected.outputCount)
-  }
 
-  if (expected.nodeCount !== undefined) {
+  if (expected.nodeCount !== undefined)
     expect(subgraph.nodes.length).toBe(expected.nodeCount)
-  }
 
-  if (expected.name !== undefined) {
-    expect(subgraph.name).toBe(expected.name)
-  }
+  if (expected.name !== undefined) expect(subgraph.name).toBe(expected.name)
 
   if (expected.hasInputNode !== false) {
     expect(subgraph.inputNode).toBeDefined()
@@ -430,9 +421,8 @@ export function verifyEventSequence<T = unknown>(
 ): void {
   expect(capturedEvents.length).toBe(expectedSequence.length)
 
-  for (const [i, element] of expectedSequence.entries()) {
+  for (const [i, element] of expectedSequence.entries())
     expect(capturedEvents[i].type).toBe(element)
-  }
 
   // Verify timestamps are in order
   for (let i = 1; i < capturedEvents.length; i++) {

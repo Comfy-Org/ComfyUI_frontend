@@ -37,9 +37,8 @@ type AssetOperator = (config: AssetConfig) => AssetConfig
 
 function addAssets(config: AssetConfig, newAssets: Asset[]): AssetConfig {
   const merged = new Map(config.assets)
-  for (const asset of newAssets) {
-    merged.set(asset.id, asset)
-  }
+  for (const asset of newAssets) merged.set(asset.id, asset)
+
   return { ...config, assets: merged }
 }
 export function withModels(
@@ -221,9 +220,7 @@ export class AssetHelper {
     const offset = parseInt(url.searchParams.get('offset') ?? '0', 10)
 
     let filtered = this.getFilteredAssets(includeTags, excludeTags)
-    if (limit > 0) {
-      filtered = filtered.slice(offset, offset + limit)
-    }
+    if (limit > 0) filtered = filtered.slice(offset, offset + limit)
 
     const response: ListAssetsResponse = {
       assets: filtered,
@@ -288,9 +285,9 @@ export class AssetHelper {
   }
 
   async clearMocks(): Promise<void> {
-    for (const { pattern, handler } of this.routeHandlers) {
+    for (const { pattern, handler } of this.routeHandlers)
       await this.page.unroute(pattern, handler)
-    }
+
     this.routeHandlers = []
     this.store.clear()
     this.mutations = []

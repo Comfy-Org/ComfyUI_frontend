@@ -61,9 +61,7 @@ export class GradientSliderWidget
     const newValue =
       this.options.min + (this.options.max - this.options.min) * slideFactor
 
-    if (newValue !== this.value) {
-      this.setValue(newValue, options)
-    }
+    if (newValue !== this.value) this.setValue(newValue, options)
   }
 
   override onDrag(options: WidgetEventOptions) {
@@ -78,8 +76,6 @@ export class GradientSliderWidget
     const newValue =
       this.options.min + (this.options.max - this.options.min) * slideFactor
 
-    if (newValue !== this.value) {
-      this.setValue(newValue, options)
-    }
+    if (newValue !== this.value) this.setValue(newValue, options)
   }
 }

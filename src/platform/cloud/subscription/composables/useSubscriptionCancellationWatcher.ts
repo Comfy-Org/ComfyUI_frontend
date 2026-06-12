@@ -92,9 +92,7 @@ export function useSubscriptionCancellationWatcher({
         return
       }
 
-      if (!triggeredFromFocus) {
-        scheduleNextCancellationCheck()
-      }
+      if (!triggeredFromFocus) scheduleNextCancellationCheck()
     } catch (error) {
       console.error('[Subscription] Error checking cancellation status:', error)
       scheduleNextCancellationCheck()
@@ -104,9 +102,8 @@ export function useSubscriptionCancellationWatcher({
   }
 
   const startCancellationWatcher = () => {
-    if (!shouldWatchCancellation() || !subscriptionStatus.value?.is_active) {
+    if (!shouldWatchCancellation() || !subscriptionStatus.value?.is_active)
       return
-    }
 
     stopCancellationWatcher()
     watcherActive.value = true

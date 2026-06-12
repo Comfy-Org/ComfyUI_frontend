@@ -189,9 +189,7 @@ const brushSizeSliderValue = computed({
   get: () => {
     if (rawSliderValue.value !== null) {
       const cachedSize = Math.round(Math.pow(250, rawSliderValue.value))
-      if (cachedSize === brushSize.value) {
-        return rawSliderValue.value
-      }
+      if (cachedSize === brushSize.value) return rawSliderValue.value
     }
 
     return Math.log(brushSize.value) / Math.log(250)
@@ -229,9 +227,7 @@ const resetToDefault = () => {
 }
 
 onMounted(() => {
-  if (colorInputRef.value) {
-    store.colorInput = colorInputRef.value
-  }
+  if (colorInputRef.value) store.colorInput = colorInputRef.value
 })
 
 onBeforeUnmount(() => {

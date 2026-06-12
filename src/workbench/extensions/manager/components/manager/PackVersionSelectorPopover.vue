@@ -224,9 +224,7 @@ const onNodePackChange = async () => {
 whenever(
   () => nodePack.id,
   (nodePackId, oldNodePackId) => {
-    if (nodePackId !== oldNodePackId) {
-      void onNodePackChange()
-    }
+    if (nodePackId !== oldNodePackId) void onNodePackChange()
   },
   { deep: true, immediate: true }
 )
@@ -234,9 +232,8 @@ whenever(
 const handleSubmit = async () => {
   isQueueing.value = true
 
-  if (!nodePack.id) {
-    throw new Error('Node ID is required for installation')
-  }
+  if (!nodePack.id) throw new Error('Node ID is required for installation')
+
   // Convert 'latest' to actual version number for installation
   const actualVersion =
     selectedVersion.value === 'latest'
@@ -291,15 +288,14 @@ const getVersionCompatibility = (version: string) => {
 }
 // Helper to determine if an option is selected.
 const isOptionSelected = (optionValue: string) => {
-  if (selectedVersion.value === optionValue) {
-    return true
-  }
+  if (selectedVersion.value === optionValue) return true
+
   if (
     optionValue === 'latest' &&
     selectedVersion.value === nodePack.latest_version?.version
-  ) {
+  )
     return true
-  }
+
   return false
 }
 const isVersionInstalled = (version: string) => {

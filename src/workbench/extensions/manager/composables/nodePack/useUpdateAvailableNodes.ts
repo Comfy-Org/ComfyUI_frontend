@@ -26,9 +26,7 @@ export const useUpdateAvailableNodes = () => {
 
     const isNightlyPack = !!installedVersion && !valid(installedVersion)
 
-    if (isNightlyPack || !latestVersion || !installedVersion) {
-      return false
-    }
+    if (isNightlyPack || !latestVersion || !installedVersion) return false
 
     return compare(latestVersion, installedVersion) > 0
   }
@@ -64,9 +62,8 @@ export const useUpdateAvailableNodes = () => {
 
   // Automatically fetch installed pack data when composable is used
   onMounted(async () => {
-    if (!installedPacks.value.length && !isLoading.value) {
+    if (!installedPacks.value.length && !isLoading.value)
       await startFetchInstalled()
-    }
   })
 
   return {

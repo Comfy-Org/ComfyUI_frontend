@@ -58,22 +58,18 @@ export function useToolManager(
     const currentTool = store.currentTool
 
     const maskOnlyTools = [Tools.MaskPen, Tools.MaskBucket, Tools.MaskColorFill]
-    if (maskOnlyTools.includes(currentTool) && layer === 'rgb') {
+    if (maskOnlyTools.includes(currentTool) && layer === 'rgb')
       switchTool(Tools.PaintPen)
-    }
 
-    if (currentTool === Tools.PaintPen && layer === 'mask') {
+    if (currentTool === Tools.PaintPen && layer === 'mask')
       switchTool(Tools.MaskPen)
-    }
   }
 
   const switchTool = (tool: Tools) => {
     store.currentTool = tool
 
     const newActiveLayer = toolSettings[tool].newActiveLayerOnSet
-    if (newActiveLayer) {
-      store.activeLayer = newActiveLayer
-    }
+    if (newActiveLayer) store.activeLayer = newActiveLayer
 
     const cursor = toolSettings[tool].cursor
     const pointerZone = store.pointerZone
@@ -106,9 +102,8 @@ export function useToolManager(
   watch(
     () => store.currentTool,
     (newTool) => {
-      if (newTool !== Tools.MaskColorFill) {
+      if (newTool !== Tools.MaskColorFill)
         canvasTools.clearLastColorSelectPoint()
-      }
     }
   )
 
@@ -116,9 +111,7 @@ export function useToolManager(
     event.preventDefault()
     if (event.pointerType === 'touch') return
 
-    if (event.pointerType === 'pen') {
-      panZoom.addPenPointerId(event.pointerId)
-    }
+    if (event.pointerType === 'pen') panZoom.addPenPointerId(event.pointerId)
 
     if (shouldStartPan(event)) {
       panZoom.handlePanStart(event)
@@ -210,9 +203,7 @@ export function useToolManager(
     store.isPanning = false
     store.brushVisible = true
 
-    if (event.pointerType === 'pen') {
-      panZoom.removePenPointerId(event.pointerId)
-    }
+    if (event.pointerType === 'pen') panZoom.removePenPointerId(event.pointerId)
 
     if (event.pointerType === 'touch') return
     updateCursor()

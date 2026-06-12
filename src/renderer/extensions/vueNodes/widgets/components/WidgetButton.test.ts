@@ -77,9 +77,7 @@ describe('WidgetButton Interactions', () => {
 
       const numClicks = 8
 
-      for (let i = 0; i < numClicks; i++) {
-        await clickButton(user)
-      }
+      for (let i = 0; i < numClicks; i++) await clickButton(user)
 
       expect(mockCallback).toHaveBeenCalledTimes(numClicks)
     })
@@ -189,9 +187,7 @@ describe('WidgetButton Interactions', () => {
       const widget = createButtonWidget({ callback: mockCallback })
       const { user } = mountComponent(widget)
 
-      for (let i = 0; i < 16; i++) {
-        await clickButton(user)
-      }
+      for (let i = 0; i < 16; i++) await clickButton(user)
 
       expect(mockCallback).toHaveBeenCalledTimes(16)
     })

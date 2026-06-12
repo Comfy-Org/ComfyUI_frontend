@@ -59,9 +59,9 @@ function addMultilineWidget(
   inputEl.addEventListener(
     'input',
     (event) => {
-      if (event.target instanceof HTMLTextAreaElement) {
+      if (event.target instanceof HTMLTextAreaElement)
         widget.value = event.target.value
-      }
+
       widget.callback?.(widget.value)
     },
     { signal }
@@ -136,9 +136,8 @@ export const useStringWidget = () => {
     node: LGraphNode,
     inputSpec: InputSpec
   ) => {
-    if (!isStringInputSpec(inputSpec)) {
+    if (!isStringInputSpec(inputSpec))
       throw new Error(`Invalid input data: ${inputSpec}`)
-    }
 
     const defaultVal = inputSpec.default ?? ''
     const multiline = inputSpec.multiline
@@ -150,9 +149,8 @@ export const useStringWidget = () => {
         })
       : node.addWidget('text', inputSpec.name, defaultVal, () => {}, {})
 
-    if (typeof inputSpec.dynamicPrompts === 'boolean') {
+    if (typeof inputSpec.dynamicPrompts === 'boolean')
       widget.dynamicPrompts = inputSpec.dynamicPrompts
-    }
 
     return widget
   }

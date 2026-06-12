@@ -6,9 +6,8 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 const getAddedAssetCount = (task: TaskItemImpl): number => {
-  if (typeof task.outputsCount === 'number') {
+  if (typeof task.outputsCount === 'number')
     return Math.max(task.outputsCount, 0)
-  }
 
   return task.previewOutput ? 1 : 0
 }
@@ -39,9 +38,7 @@ export const useAssetsSidebarBadgeStore = defineStore(
           queueStore.hasFetchedHistorySnapshot
         ] as const,
       ([historyTasks, hasFetchedHistorySnapshot]) => {
-        if (!hasFetchedHistorySnapshot) {
-          return
-        }
+        if (!hasFetchedHistorySnapshot) return
 
         if (!hasInitializedHistory.value) {
           hasInitializedHistory.value = true
@@ -55,19 +52,16 @@ export const useAssetsSidebarBadgeStore = defineStore(
 
         for (const task of historyTasks) {
           const jobId = task.jobId
-          if (!jobId) {
-            continue
-          }
+          if (!jobId) continue
 
           const countedAssets = previousCountedAssetsByJobId.get(jobId) ?? 0
           const currentAssets = getAddedAssetCount(task)
           const hasSeenJob = previousCountedAssetsByJobId.has(jobId)
 
-          if (!isAssetsTabOpen && !hasSeenJob) {
+          if (!isAssetsTabOpen && !hasSeenJob)
             unseenAddedAssetsCount.value += currentAssets
-          } else if (!isAssetsTabOpen && currentAssets > countedAssets) {
+          else if (!isAssetsTabOpen && currentAssets > countedAssets)
             unseenAddedAssetsCount.value += currentAssets - countedAssets
-          }
 
           nextCountedAssetsByJobId.set(
             jobId,
@@ -83,9 +77,7 @@ export const useAssetsSidebarBadgeStore = defineStore(
     watch(
       () => sidebarTabStore.activeSidebarTabId,
       (activeSidebarTabId) => {
-        if (activeSidebarTabId !== 'assets') {
-          return
-        }
+        if (activeSidebarTabId !== 'assets') return
 
         unseenAddedAssetsCount.value = 0
         markCurrentHistoryAsSeen()

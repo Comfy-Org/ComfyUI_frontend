@@ -288,11 +288,8 @@ const renderTreeNode = (
     this: TreeExplorerNode<ComfyWorkflow>,
     e: MouseEvent
   ) {
-    if (this.leaf) {
-      await workflowService.openWorkflow(workflow)
-    } else {
-      toggleNodeOnEvent(e, this)
-    }
+    if (this.leaf) await workflowService.openWorkflow(workflow)
+    else toggleNodeOnEvent(e, this)
   }
 
   const actions = node.leaf

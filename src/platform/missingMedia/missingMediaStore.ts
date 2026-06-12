@@ -39,9 +39,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     () => {
       const ids = new Set<NodeExecutionId>()
       for (const nodeId of missingMediaNodeIds.value) {
-        for (const id of getAncestorExecutionIds(nodeId)) {
-          ids.add(id)
-        }
+        for (const id of getAncestorExecutionIds(nodeId)) ids.add(id)
       }
       return ids
     }
@@ -113,9 +111,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
         remaining.push(m)
         continue
       }
-      if (!String(m.nodeId).startsWith(prefix)) {
-        remaining.push(m)
-      }
+      if (!String(m.nodeId).startsWith(prefix)) remaining.push(m)
     }
     if (remaining.length === missingMediaCandidates.value.length) return
     missingMediaCandidates.value = remaining.length ? remaining : null

@@ -240,33 +240,27 @@ function onToggleFilter(
   const existing = filters.find(
     (f) => f.filterDef.id === filterDef.id && f.value === value
   )
-  if (existing) {
-    emit('removeFilter', existing)
-  } else {
-    emit('addFilter', { filterDef, value })
-  }
+  if (existing) emit('removeFilter', existing)
+  else emit('addFilter', { filterDef, value })
 }
 
 function onClearFilterGroup(filterId: string) {
-  for (const f of filters.filter((f) => f.filterDef.id === filterId)) {
+  for (const f of filters.filter((f) => f.filterDef.id === filterId))
     emit('removeFilter', f)
-  }
 }
 
 function onSelectCategory(category: RootCategoryId) {
-  if (rootFilter.value === category) {
-    rootFilter.value = null
-  } else {
-    rootFilter.value = category
-  }
+  if (rootFilter.value === category) rootFilter.value = null
+  else rootFilter.value = category
+
   selectedCategory.value = DEFAULT_CATEGORY
   nextTick(() => searchInputRef.value?.focus())
 }
 
 const searchResults = computed(() => {
-  if (!searchQuery.value && filters.length === 0) {
+  if (!searchQuery.value && filters.length === 0)
     return nodeFrequencyStore.topNodeDefs
-  }
+
   return nodeDefStore.nodeSearchService.searchNode(searchQuery.value, filters, {
     limit: 64
   })

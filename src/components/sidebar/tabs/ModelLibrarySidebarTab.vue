@@ -132,9 +132,8 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
       leaf: node.leaf,
       data: node.data,
       getIcon() {
-        if (model) {
-          return model.image ? 'pi pi-image' : 'pi pi-file'
-        }
+        if (model) return model.image ? 'pi pi-image' : 'pi pi-file'
+
         if (folder) {
           return folder.state === ResourceState.Loading
             ? 'pi pi-spin pi-spinner'
@@ -145,9 +144,8 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
       getBadgeText() {
         // Return undefined to apply default badge text
         // Return empty string to hide badge
-        if (!folder) {
-          return
-        }
+        if (!folder) return
+
         return folder.state === ResourceState.Loaded ? undefined : ''
       },
       children,
@@ -162,9 +160,7 @@ const renderedRoot = computed<TreeExplorerNode<ModelOrFolder>>(() => {
             const widget = graphNode?.widgets?.find(
               (widget) => widget.name === provider.key
             )
-            if (widget) {
-              widget.value = model.file_name
-            }
+            if (widget) widget.value = model.file_name
           }
         } else {
           toggleNodeOnEvent(e, node)
@@ -202,9 +198,8 @@ watch(
 
 onMounted(async () => {
   searchBoxRef.value?.focus()
-  if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll')) {
+  if (settingStore.get('Comfy.ModelLibrary.AutoLoadAll'))
     await modelStore.loadModels()
-  }
 })
 </script>
 

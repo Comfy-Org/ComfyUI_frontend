@@ -84,11 +84,8 @@ export function useJobMenu(
     const target = resolveItem(item)
     if (!target) return
     if (target.state === 'running' || target.state === 'initialization') {
-      if (isCloud) {
-        await api.deleteItem('queue', target.id)
-      } else {
-        await api.interrupt(target.id)
-      }
+      if (isCloud) await api.deleteItem('queue', target.id)
+      else await api.interrupt(target.id)
     } else if (target.state === 'pending') {
       await api.deleteItem('queue', target.id)
     }
@@ -222,9 +219,7 @@ export function useJobMenu(
 
     const asset = mapTaskOutputToAssetItem(task, preview)
     const confirmed = await mediaAssetActions.deleteAssets(asset)
-    if (confirmed) {
-      await queueStore.update()
-    }
+    if (confirmed) await queueStore.update()
   }
 
   const removeFailedJob = async (task?: TaskItemImpl | null) => {

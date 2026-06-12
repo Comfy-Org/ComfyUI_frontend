@@ -38,14 +38,11 @@ export function useNodePreviewAndDrag(
     let left: number
     if (sidebarLocation.value === 'left') {
       left = rect.right + PREVIEW_MARGIN
-      if (left + PREVIEW_WIDTH > viewportWidth) {
+      if (left + PREVIEW_WIDTH > viewportWidth)
         left = rect.left - PREVIEW_MARGIN - PREVIEW_WIDTH
-      }
     } else {
       left = rect.left - PREVIEW_MARGIN - PREVIEW_WIDTH
-      if (left < 0) {
-        left = rect.right + PREVIEW_MARGIN
-      }
+      if (left < 0) left = rect.right + PREVIEW_MARGIN
     }
 
     return { left, viewportHeight }

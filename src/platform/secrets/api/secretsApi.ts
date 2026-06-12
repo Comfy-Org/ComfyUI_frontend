@@ -83,7 +83,5 @@ export async function deleteSecret(id: string): Promise<void> {
   const response = await api.fetchApi(`/secrets/${id}`, {
     method: 'DELETE'
   })
-  if (!response.ok) {
-    await handleResponse<void>(response)
-  }
+  if (!response.ok) await handleResponse<void>(response)
 }

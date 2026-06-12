@@ -38,9 +38,8 @@ const props = defineProps<{
 const modelDef = computed<ComfyModelDef>(() => props.node.data!)
 
 const modelPreviewUrl = computed(() => {
-  if (modelDef.value.image) {
-    return modelDef.value.image
-  }
+  if (modelDef.value.image) return modelDef.value.image
+
   const folder = modelDef.value.directory
   const path_index = modelDef.value.path_index
   const extension = modelDef.value.file_name.split('.').pop()
@@ -74,11 +73,9 @@ const handleModelHover = async () => {
     previewHeight > availableSpaceBelow
       ? `${Math.max(0, targetRect.top - (previewHeight - availableSpaceBelow) - 20)}px`
       : `${targetRect.top - 40}px`
-  if (sidebarLocation.value === 'left') {
+  if (sidebarLocation.value === 'left')
     modelPreviewStyle.value.left = `${targetRect.right}px`
-  } else {
-    modelPreviewStyle.value.left = `${targetRect.left - 400}px`
-  }
+  else modelPreviewStyle.value.left = `${targetRect.left - 400}px`
 
   await modelDef.value.load()
 }

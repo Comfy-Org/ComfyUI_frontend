@@ -48,9 +48,8 @@ export const useOverflowObserver = (
       }).stop
     )
   }
-  if (options.useResizeObserver) {
+  if (options.useResizeObserver)
     disposeFns.push(useResizeObserver(element, checkOverflow).stop)
-  }
 
   return {
     isOverflowing: readonly(isOverflowing),

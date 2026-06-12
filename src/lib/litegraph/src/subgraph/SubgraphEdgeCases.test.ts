@@ -223,14 +223,10 @@ describe('SubgraphEdgeCases - Boundary Conditions', () => {
     const subgraph = createTestSubgraph({ nodeCount: 1 })
 
     // Add many inputs (test with 20 to keep test fast)
-    for (let i = 0; i < 20; i++) {
-      subgraph.addInput(`input_${i}`, 'number')
-    }
+    for (let i = 0; i < 20; i++) subgraph.addInput(`input_${i}`, 'number')
 
     // Add many outputs
-    for (let i = 0; i < 20; i++) {
-      subgraph.addOutput(`output_${i}`, 'number')
-    }
+    for (let i = 0; i < 20; i++) subgraph.addOutput(`output_${i}`, 'number')
 
     const subgraphNode = createTestSubgraphNode(subgraph)
 

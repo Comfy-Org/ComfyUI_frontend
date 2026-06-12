@@ -87,9 +87,7 @@ const incrementButtonClass = 'rounded-tr-none border-b border-border-subtle'
 const decrementButtonClass = 'rounded-br-none'
 
 watch(batchCount, (nextBatchCount) => {
-  if (!isEditing.value) {
-    batchCountInput.value = String(nextBatchCount)
-  }
+  if (!isEditing.value) batchCountInput.value = String(nextBatchCount)
 })
 
 const clampBatchCount = (nextBatchCount: number): number =>

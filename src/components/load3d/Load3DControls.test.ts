@@ -195,9 +195,8 @@ describe('Load3DControls', () => {
         'Light',
         'Gizmo',
         'Export'
-      ]) {
+      ])
         expect(screen.getByRole('button', { name: label })).toBeInTheDocument()
-      }
     })
 
     it('omits the light category when canUseLighting is false', async () => {

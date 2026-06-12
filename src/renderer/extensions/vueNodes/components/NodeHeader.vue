@@ -119,9 +119,8 @@ const { getNodeDescription, createTooltipConfig } = useNodeTooltips(
 )
 
 const tooltipConfig = computed(() => {
-  if (isEditing.value) {
-    return { value: '', disabled: true }
-  }
+  if (isEditing.value) return { value: '', disabled: true }
+
   const description = getNodeDescription.value
   return createTooltipConfig(description)
 })
@@ -179,9 +178,7 @@ watch(
   () => [nodeData?.title, nodeData?.type] as const,
   () => {
     const next = resolveTitle(nodeData)
-    if (next !== displayTitle.value) {
-      displayTitle.value = next
-    }
+    if (next !== displayTitle.value) displayTitle.value = next
   }
 )
 

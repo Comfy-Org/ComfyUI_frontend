@@ -52,22 +52,16 @@ export async function getOutputsForTask(
   const outputsCount = task.outputsCount ?? 0
   const needsLazyLoad = outputsCount > 1
 
-  if (!needsLazyLoad) {
-    return [...task.previewableOutputs]
-  }
+  if (!needsLazyLoad) return [...task.previewableOutputs]
 
   const cached = taskCache.get(requestId)
-  if (cached) {
-    return [...cached.previewableOutputs]
-  }
+  if (cached) return [...cached.previewableOutputs]
 
   try {
     const loadedTask = await task.loadFullOutputs()
 
     // Check if request was superseded while loading
-    if (latestTaskRequestId !== requestId) {
-      return null
-    }
+    if (latestTaskRequestId !== requestId) return null
 
     taskCache.set(requestId, loadedTask)
     return [...loadedTask.previewableOutputs]
@@ -98,9 +92,8 @@ export async function getJobDetail(
 
   try {
     const detail = await api.getJobDetail(jobId)
-    if (detail) {
-      jobDetailCache.set(jobId, detail)
-    }
+    if (detail) jobDetailCache.set(jobId, detail)
+
     return detail
   } catch (error) {
     console.warn('Failed to fetch job detail:', error)

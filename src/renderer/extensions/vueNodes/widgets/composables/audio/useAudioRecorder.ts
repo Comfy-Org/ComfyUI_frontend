@@ -20,9 +20,8 @@ export function useAudioRecorder(options: AudioRecorderOptions = {}) {
   async function startRecording() {
     try {
       // Clean up previous recording
-      if (recordedURL.value?.startsWith('blob:')) {
+      if (recordedURL.value?.startsWith('blob:'))
         URL.revokeObjectURL(recordedURL.value)
-      }
 
       // Initialize
       audioChunks.value = []
@@ -45,36 +44,31 @@ export function useAudioRecorder(options: AudioRecorderOptions = {}) {
         const blob = new Blob(audioChunks.value, { type: 'audio/wav' })
 
         // Create blob URL for preview
-        if (recordedURL.value?.startsWith('blob:')) {
+        if (recordedURL.value?.startsWith('blob:'))
           URL.revokeObjectURL(recordedURL.value)
-        }
+
         recordedURL.value = URL.createObjectURL(blob)
 
         cleanup()
 
         // Notify completion
-        if (options.onRecordingComplete) {
-          await options.onRecordingComplete(blob)
-        }
+        if (options.onRecordingComplete) await options.onRecordingComplete(blob)
       }
 
       // Start recording
       mediaRecorder.value.start(100)
       isRecording.value = true
     } catch (err) {
-      if (options.onError) {
-        options.onError(toError(err))
-      }
+      if (options.onError) options.onError(toError(err))
+
       throw err
     }
   }
 
   function stopRecording() {
-    if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive') {
+    if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive')
       mediaRecorder.value.stop()
-    } else {
-      cleanup()
-    }
+    else cleanup()
   }
 
   function cleanup() {

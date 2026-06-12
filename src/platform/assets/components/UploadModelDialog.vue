@@ -88,9 +88,7 @@ async function handleFetchMetadata() {
 
 async function handleUploadModel() {
   const success = await uploadModel()
-  if (success) {
-    emit('upload-success')
-  }
+  if (success) emit('upload-success')
 }
 
 function handleClose() {

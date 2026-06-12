@@ -30,9 +30,7 @@ export function useBrushAdjustment(initialSettings?: {
   }
 
   async function handleBrushAdjustment(event: PointerEvent): Promise<void> {
-    if (!initialPoint.value) {
-      return
-    }
+    if (!initialPoint.value) return
 
     const coords = { x: event.offsetX, y: event.offsetY }
     const brushDeadZone = 5
@@ -51,11 +49,8 @@ export function useBrushAdjustment(initialSettings?: {
       const ratio = Math.abs(effectiveDeltaX) / Math.abs(effectiveDeltaY)
       const threshold = 2.0
 
-      if (ratio > threshold) {
-        finalDeltaY = 0
-      } else if (ratio < 1 / threshold) {
-        finalDeltaX = 0
-      }
+      if (ratio > threshold) finalDeltaY = 0
+      else if (ratio < 1 / threshold) finalDeltaX = 0
     }
 
     const newSize = Math.max(

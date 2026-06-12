@@ -61,17 +61,14 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
    * Check if a provider's circuit breaker should be closed (available to try)
    */
   const isCircuitClosed = (providerState: ProviderState): boolean => {
-    if (providerState.consecutiveFailures < CIRCUIT_BREAKER_THRESHOLD) {
+    if (providerState.consecutiveFailures < CIRCUIT_BREAKER_THRESHOLD)
       return true
-    }
 
     // Check if enough time has passed to retry
     if (providerState.lastAttempt) {
       const timeSinceLastAttempt =
         Date.now() - providerState.lastAttempt.getTime()
-      if (timeSinceLastAttempt > CIRCUIT_BREAKER_TIMEOUT) {
-        return true
-      }
+      if (timeSinceLastAttempt > CIRCUIT_BREAKER_TIMEOUT) return true
     }
 
     return false
@@ -108,9 +105,8 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
   const getActiveProvider = (): NodePackSearchProvider => {
     // First, try to use the current active provider if it's healthy
     const currentProvider = providers[activeProviderIndex]
-    if (currentProvider && isCircuitClosed(currentProvider)) {
+    if (currentProvider && isCircuitClosed(currentProvider))
       return currentProvider.provider
-    }
 
     // Otherwise, find the first healthy provider
     for (let i = 0; i < providers.length; i++) {
@@ -129,9 +125,7 @@ export const useRegistrySearchGateway = (): NodePackSearchProvider => {
    * Move to the next provider if available.
    */
   const updateActiveProviderOnFailure = () => {
-    if (activeProviderIndex < providers.length - 1) {
-      activeProviderIndex++
-    }
+    if (activeProviderIndex < providers.length - 1) activeProviderIndex++
   }
 
   /**

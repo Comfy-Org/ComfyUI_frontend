@@ -223,9 +223,8 @@ watchEffect(() => {
   if (
     !tabs.value.some((tab) => tab.value === activeTab.value) &&
     !(activeTab.value === 'subgraph' && isSingleSubgraphNode.value)
-  ) {
+  )
     rightSidePanelStore.openPanel(tabs.value[0].value)
-  }
 })
 
 function resolveTitle() {
@@ -233,13 +232,12 @@ function resolveTitle() {
   const nodes = selectedNodes.value
   const groups = selectedGroups.value
 
-  if (items.length === 0) {
-    return t('rightSidePanel.workflowOverview')
-  }
+  if (items.length === 0) return t('rightSidePanel.workflowOverview')
+
   if (directlySelectedItems.value.length === 1) {
-    if (groups.length === 1) {
+    if (groups.length === 1)
       return groups[0].title || t('rightSidePanel.fallbackGroupTitle')
-    }
+
     if (nodes.length === 1) {
       const fallbackNodeTitle = t('rightSidePanel.fallbackNodeTitle')
       return resolveNodeDisplayName(nodes[0], {

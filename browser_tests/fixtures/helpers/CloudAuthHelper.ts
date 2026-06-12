@@ -75,9 +75,8 @@ export class CloudAuthHelper {
         request.onerror = () => reject(request.error)
         request.onupgradeneeded = () => {
           const db = request.result
-          if (!db.objectStoreNames.contains(STORE_NAME)) {
+          if (!db.objectStoreNames.contains(STORE_NAME))
             db.createObjectStore(STORE_NAME)
-          }
         }
         request.onsuccess = () => {
           const db = request.result
@@ -87,9 +86,8 @@ export class CloudAuthHelper {
             upgradeReq.onerror = () => reject(upgradeReq.error)
             upgradeReq.onupgradeneeded = () => {
               const upgradedDb = upgradeReq.result
-              if (!upgradedDb.objectStoreNames.contains(STORE_NAME)) {
+              if (!upgradedDb.objectStoreNames.contains(STORE_NAME))
                 upgradedDb.createObjectStore(STORE_NAME)
-              }
             }
             upgradeReq.onsuccess = () => {
               const upgradedDb = upgradeReq.result

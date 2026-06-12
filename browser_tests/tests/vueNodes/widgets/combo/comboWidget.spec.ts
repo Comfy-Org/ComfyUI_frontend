@@ -49,9 +49,7 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     await expect.poll(() => viewport.boundingBox()).not.toBeNull()
 
     const box = await viewport.boundingBox()
-    if (!box) {
-      throw new Error('Widget select viewport is not visible')
-    }
+    if (!box) throw new Error('Widget select viewport is not visible')
 
     return box
   }
@@ -268,9 +266,7 @@ test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
     await comfyPage.vueNodes.waitForNodes()
 
     const [ksamplerNode] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-    if (!ksamplerNode) {
-      throw new Error('KSampler node not found after reload')
-    }
+    if (!ksamplerNode) throw new Error('KSampler node not found after reload')
 
     const schedulerWidget = await ksamplerNode.getWidgetByName('scheduler')
     await expect.poll(() => schedulerWidget.getValue()).toBe('karras')

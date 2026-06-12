@@ -28,9 +28,8 @@ const tabs = computed(() => [
 ])
 
 const focusedLogs = computed(() => {
-  if (activeTabIndex.value === 0) {
-    return comfyManagerStore.succeededTasksLogs
-  }
+  if (activeTabIndex.value === 0) return comfyManagerStore.succeededTasksLogs
+
   return comfyManagerStore.failedTasksLogs
 })
 
@@ -73,12 +72,11 @@ const totalTasksCount = computed(() => {
 })
 
 const currentTaskName = computed(() => {
-  if (isRestarting.value) {
-    return t('manager.restartingBackend')
-  }
-  if (isRestartCompleted.value) {
+  if (isRestarting.value) return t('manager.restartingBackend')
+
+  if (isRestartCompleted.value)
     return t('manager.extensionsSuccessfullyInstalled')
-  }
+
   if (!comfyManagerStore.taskLogs.length)
     return t('manager.installingDependencies')
   const task = comfyManagerStore.taskLogs.at(-1)

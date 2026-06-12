@@ -34,9 +34,8 @@ export const useFloatWidget = () => {
     node: LGraphNode,
     inputSpec: InputSpec
   ) => {
-    if (!isFloatInputSpec(inputSpec)) {
+    if (!isFloatInputSpec(inputSpec))
       throw new Error(`Invalid input data: ${inputSpec}`)
-    }
 
     const settingStore = useSettingStore()
     const sliderEnabled = !settingStore.get('Comfy.DisableSliders')

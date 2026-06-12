@@ -56,15 +56,12 @@ function handleKeydown(event: KeyboardEvent) {
 
   let targetIndex = -1
 
-  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+  if (event.key === 'ArrowRight' || event.key === 'ArrowDown')
     targetIndex = (currentIndex + 1) % tabs.length
-  } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+  else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp')
     targetIndex = (currentIndex - 1 + tabs.length) % tabs.length
-  } else if (event.key === 'Home') {
-    targetIndex = 0
-  } else if (event.key === 'End') {
-    targetIndex = tabs.length - 1
-  }
+  else if (event.key === 'Home') targetIndex = 0
+  else if (event.key === 'End') targetIndex = tabs.length - 1
 
   if (targetIndex !== -1) {
     event.preventDefault()

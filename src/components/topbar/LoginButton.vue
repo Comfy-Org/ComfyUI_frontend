@@ -75,9 +75,8 @@ const showPopover = (event: Event) => {
   }
 
   showTimeout = setTimeout(() => {
-    if (popoverRef.value) {
+    if (popoverRef.value)
       popoverRef.value.show(event, event.target as HTMLElement)
-    }
   }, 200)
 }
 
@@ -96,9 +95,7 @@ const hidePopover = () => {
   }
 
   hideTimeout = setTimeout(() => {
-    if (popoverRef.value) {
-      popoverRef.value.hide()
-    }
+    if (popoverRef.value) popoverRef.value.hide()
   }, 150) // Minimal delay to allow moving to popover
 }
 </script>

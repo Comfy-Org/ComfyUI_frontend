@@ -18,14 +18,10 @@ export function useSubgraphOperations() {
   const convertToSubgraph = () => {
     const canvas = canvasStore.getCanvas()
     const graph = canvas.subgraph ?? canvas.graph
-    if (!graph) {
-      return null
-    }
+    if (!graph) return null
 
     const res = graph.convertToSubgraph(canvas.selectedItems)
-    if (!res) {
-      return
-    }
+    if (!res) return
 
     const { node } = res
     canvas.select(node)
@@ -53,18 +49,15 @@ export function useSubgraphOperations() {
     const canvas = canvasStore.getCanvas()
     const graph = canvas.subgraph ?? canvas.graph
 
-    if (!graph) {
-      return
-    }
+    if (!graph) return
 
     const selectedItems = Array.from(canvas.selectedItems)
     const subgraphNodes = selectedItems.filter(
       (item): item is SubgraphNode => item instanceof SubgraphNode
     )
 
-    if (subgraphNodes.length === 0) {
-      return
-    }
+    if (subgraphNodes.length === 0) return
+
     doUnpack(subgraphNodes, true)
   }
 
@@ -73,9 +66,8 @@ export function useSubgraphOperations() {
     const subgraphNodes = selectedItems.filter(
       (item): item is SubgraphNode => item instanceof SubgraphNode
     )
-    if (subgraphNodes.length !== 1) {
-      return
-    }
+    if (subgraphNodes.length !== 1) return
+
     await subgraphStore.publishSubgraph()
   }
 

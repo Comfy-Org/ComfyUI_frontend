@@ -44,9 +44,7 @@ const customNodesI18nData: Record<string, unknown> = {}
  * `setActiveLocale`, which is the boundary helper for arbitrary input.
  */
 export async function loadLocale(locale: SupportedLocale): Promise<void> {
-  if (loadedLocales.has(locale)) {
-    return
-  }
+  if (loadedLocales.has(locale)) return
 
   const existingLoad = loadingLocales.get(locale)
   if (existingLoad) {
@@ -55,9 +53,7 @@ export async function loadLocale(locale: SupportedLocale): Promise<void> {
   }
 
   const loaders = localeDefinitions[locale].loaders
-  if (!loaders) {
-    return
-  }
+  if (!loaders) return
 
   const loadPromise = (async () => {
     try {
@@ -78,9 +74,8 @@ export async function loadLocale(locale: SupportedLocale): Promise<void> {
       i18n.global.setLocaleMessage(locale, messages as LocaleMessages)
       loadedLocales.add(locale)
 
-      if (customNodesI18nData[locale]) {
+      if (customNodesI18nData[locale])
         i18n.global.mergeLocaleMessage(locale, customNodesI18nData[locale])
-      }
     } catch (error) {
       console.error(`Failed to load locale "${locale}":`, error)
       throw error
@@ -120,15 +115,14 @@ export async function setActiveLocale(
  */
 export function mergeCustomNodesI18n(i18nData: Record<string, unknown>): void {
   // Clear existing data and replace with new data
-  for (const key of Object.keys(customNodesI18nData)) {
+  for (const key of Object.keys(customNodesI18nData))
     delete customNodesI18nData[key]
-  }
+
   Object.assign(customNodesI18nData, i18nData)
 
   for (const [locale, message] of Object.entries(i18nData)) {
-    if (loadedLocales.has(locale)) {
+    if (loadedLocales.has(locale))
       i18n.global.mergeLocaleMessage(locale, message)
-    }
   }
 }
 

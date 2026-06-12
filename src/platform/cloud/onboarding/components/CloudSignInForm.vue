@@ -108,9 +108,7 @@ const emit = defineEmits<{
 const emailInputId = 'cloud-sign-in-email'
 
 const onSubmit = (event: FormSubmitEvent) => {
-  if (event.valid) {
-    emit('submit', event.values as SignInData)
-  }
+  if (event.valid) emit('submit', event.values as SignInData)
 }
 </script>
 <style scoped>

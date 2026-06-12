@@ -271,9 +271,8 @@ export function toHexFromFormat(val: unknown, format: ColorFormat): string {
   }
 
   if (format === 'hsb') {
-    if (isHSBObject(val)) {
-      return rgbToHex(hsbToRgb(val)).toLowerCase()
-    }
+    if (isHSBObject(val)) return rgbToHex(hsbToRgb(val)).toLowerCase()
+
     if (isHSVObject(val)) {
       const { h, s, v } = val
       return rgbToHex(hsbToRgb({ h, s, b: v })).toLowerCase()
@@ -422,13 +421,10 @@ const applyColorAdjustments = (
     return color
   }
 
-  if (options.lightness) {
+  if (options.lightness)
     hsla.l = Math.max(0, Math.min(100, hsla.l + options.lightness * 100.0))
-  }
 
-  if (options.opacity) {
-    hsla.a = Math.max(0, Math.min(1, options.opacity))
-  }
+  if (options.opacity) hsla.a = Math.max(0, Math.min(1, options.opacity))
 
   return `hsla(${hsla.h}, ${hsla.s}%, ${hsla.l}%, ${hsla.a})`
 }

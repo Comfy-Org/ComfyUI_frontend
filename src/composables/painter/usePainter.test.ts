@@ -123,9 +123,8 @@ describe('usePainter', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.resetAllMocks()
     mockWidgets.length = 0
-    for (const key of Object.keys(mockProperties)) {
-      delete mockProperties[key]
-    }
+    for (const key of Object.keys(mockProperties)) delete mockProperties[key]
+
     mockIsInputConnected.mockReturnValue(false)
     mockGetInputNode.mockReturnValue(null)
   })

@@ -49,13 +49,14 @@ function bindWidget() {
   }
   node = resolved.node
   widgetInstance = resolved.widget
-  if (!widgetInstance.triggerDraw)
+  if (!widgetInstance.triggerDraw) {
     widgetInstance.callback = useChainCallback(
       widgetInstance.callback,
       function (this: IBaseWidget) {
         this?.triggerDraw?.()
       }
     )
+  }
   widgetInstance.triggerDraw = draw
   draw()
 }
@@ -80,13 +81,12 @@ function draw() {
   const width = canvasEl.value.parentElement.clientWidth
   // Priority: computedHeight (from litegraph) > computeLayoutSize > computeSize
   let height = 20
-  if (widgetInstance.computedHeight) {
-    height = widgetInstance.computedHeight
-  } else if (widgetInstance.computeLayoutSize) {
+  if (widgetInstance.computedHeight) height = widgetInstance.computedHeight
+  else if (widgetInstance.computeLayoutSize)
     height = widgetInstance.computeLayoutSize(node).minHeight
-  } else if (widgetInstance.computeSize) {
+  else if (widgetInstance.computeSize)
     height = widgetInstance.computeSize(width)[1]
-  }
+
   containerHeight.value = height
   // Set node.canvasHeight for legacy widgets that use it (e.g., Impact Pack)
   // @ts-expect-error canvasHeight is a custom property used by some extensions
@@ -105,9 +105,10 @@ function handleDown(e: PointerEvent) {
   if (!node || !widgetInstance || !pointer) return
   augmentToCanvasPointerEvent(e, node, canvas)
   pointer.down(e)
-  if (widgetInstance.mouse)
+  if (widgetInstance.mouse) {
     pointer.onDrag = (e) =>
       widgetInstance!.mouse?.(e, [e.offsetX, e.offsetY], node!)
+  }
   //NOTE: a mouseUp event is already registed under pointer.finally
   canvas.processWidgetClick(e, node, widgetInstance, pointer)
 }

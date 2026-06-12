@@ -249,9 +249,7 @@ const fuseOptions: UseFuseOptions<SelectOption> = {
 const { results } = useFuse(searchQuery, () => options, fuseOptions)
 
 const filteredOptions = computed(() => {
-  if (!searchQuery.value || searchQuery.value.trim() === '') {
-    return options
-  }
+  if (!searchQuery.value || searchQuery.value.trim() === '') return options
 
   const searchResults = results.value.map(
     (result: { item: SelectOption }) => result.item

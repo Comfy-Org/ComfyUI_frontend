@@ -136,17 +136,15 @@ export function createJobsWithExecutionTimes(
 
 function parseLimit(url: URL, total: number): number {
   const value = Number(url.searchParams.get('limit'))
-  if (!Number.isInteger(value) || value <= 0) {
-    return total
-  }
+  if (!Number.isInteger(value) || value <= 0) return total
+
   return value
 }
 
 function parseOffset(url: URL): number {
   const value = Number(url.searchParams.get('offset'))
-  if (!Number.isInteger(value) || value < 0) {
-    return 0
-  }
+  if (!Number.isInteger(value) || value < 0) return 0
+
   return value
 }
 
@@ -181,9 +179,7 @@ export class AssetsHelper {
   async mockOutputHistory(jobs: RawJobListItem[]): Promise<void> {
     this.generatedJobs = [...jobs]
 
-    if (this.jobsRouteHandler) {
-      return
-    }
+    if (this.jobsRouteHandler) return
 
     this.jobsRouteHandler = async (route: Route) => {
       const url = new URL(route.request().url())
@@ -254,9 +250,7 @@ export class AssetsHelper {
   async mockCloudAssets(response: ListAssetsResponse): Promise<void> {
     this.cloudAssetsResponse = response
 
-    if (this.cloudAssetsRouteHandler) {
-      return
-    }
+    if (this.cloudAssetsRouteHandler) return
 
     this.cloudAssetsRouteHandler = async (route: Route) => {
       await route.fulfill({
@@ -286,9 +280,7 @@ export class AssetsHelper {
     this.assetExportRequests = []
     this.assetExportResponse = response
 
-    if (this.assetExportRouteHandler) {
-      return this.assetExportRequests
-    }
+    if (this.assetExportRouteHandler) return this.assetExportRequests
 
     this.assetExportRouteHandler = async (route: Route) => {
       this.assetExportRequests.push(
@@ -311,9 +303,7 @@ export class AssetsHelper {
     const pattern = `**/api/jobs/${encodeURIComponent(jobId)}`
     const existingHandler = this.jobDetailRouteHandlers.get(pattern)
 
-    if (existingHandler) {
-      await this.page.unroute(pattern, existingHandler)
-    }
+    if (existingHandler) await this.page.unroute(pattern, existingHandler)
 
     const handler = async (route: Route) => {
       await route.fulfill({
@@ -330,9 +320,7 @@ export class AssetsHelper {
   async mockInputFiles(files: string[]): Promise<void> {
     this.importedFiles = [...files]
 
-    if (this.inputFilesRouteHandler) {
-      return
-    }
+    if (this.inputFilesRouteHandler) return
 
     this.inputFilesRouteHandler = async (route: Route) => {
       await route.fulfill({
@@ -424,9 +412,9 @@ export class AssetsHelper {
       this.deleteHistoryRouteHandler = null
     }
 
-    for (const [pattern, handler] of this.jobDetailRouteHandlers) {
+    for (const [pattern, handler] of this.jobDetailRouteHandlers)
       await this.page.unroute(pattern, handler)
-    }
+
     this.jobDetailRouteHandlers.clear()
   }
 }

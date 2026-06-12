@@ -265,8 +265,7 @@ describe('ensureCorrectLayoutScale (legacy normalizer)', () => {
     }
 
     // All runs should produce the same distance
-    for (let i = 1; i < distances.length; i++) {
+    for (let i = 1; i < distances.length; i++)
       expect(distances[i] / distances[0]).toBeCloseTo(1, 5)
-    }
   })
 })

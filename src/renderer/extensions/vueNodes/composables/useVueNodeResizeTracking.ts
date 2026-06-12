@@ -187,9 +187,8 @@ const resizeObserver = new ResizeObserver((entries) => {
         height: normalizedHeight
       }) &&
       hasMatchingCachedNodeMeasurement
-    ) {
+    )
       continue
-    }
 
     // Use existing position from layout store (source of truth) rather than
     // converting screen-space getBoundingClientRect() back to canvas coords.
@@ -227,9 +226,8 @@ const resizeObserver = new ResizeObserver((entries) => {
       })
     }
 
-    if (nodeLayout && isBoundsEqual(nodeLayout.bounds, normalizedBounds)) {
+    if (nodeLayout && isBoundsEqual(nodeLayout.bounds, normalizedBounds))
       continue
-    }
 
     let updates = updatesByType.get(elementType)
     if (!updates) {
@@ -239,9 +237,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     updates.push({ id: elementId, bounds })
 
     // If this entry is a node, mark it for slot layout resync
-    if (nodeId) {
-      nodesNeedingSlotResync.add(nodeId)
-    }
+    if (nodeId) nodesNeedingSlotResync.add(nodeId)
   }
 
   if (updatesByType.size === 0 && nodesNeedingSlotResync.size === 0) return
@@ -258,9 +254,8 @@ const resizeObserver = new ResizeObserver((entries) => {
 
   // After node bounds are updated, refresh slot cached offsets and layouts
   if (nodesNeedingSlotResync.size > 0) {
-    for (const nodeId of nodesNeedingSlotResync) {
+    for (const nodeId of nodesNeedingSlotResync)
       syncNodeSlotLayoutsFromDOM(nodeId)
-    }
   }
 })
 

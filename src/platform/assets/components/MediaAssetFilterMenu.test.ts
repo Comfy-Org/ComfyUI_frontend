@@ -43,9 +43,8 @@ describe('MediaAssetFilterMenu', () => {
 
     const checkboxes = screen.getAllByRole('checkbox')
     expect(checkboxes).toHaveLength(4)
-    for (const type of Object.keys(labelByType)) {
+    for (const type of Object.keys(labelByType))
       expect(getCheckbox(type)).toBeTruthy()
-    }
   })
 
   it('reflects checked state from the prop via aria-checked', () => {

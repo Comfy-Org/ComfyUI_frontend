@@ -122,12 +122,11 @@ function updateItemSize(): void {
 
     if (!firstItem?.clientHeight || !firstItem?.clientWidth) return
 
-    if (itemHeight.value !== firstItem.clientHeight) {
+    if (itemHeight.value !== firstItem.clientHeight)
       itemHeight.value = firstItem.clientHeight
-    }
-    if (itemWidth.value !== firstItem.clientWidth) {
+
+    if (itemWidth.value !== firstItem.clientWidth)
       itemWidth.value = firstItem.clientWidth
-    }
   }
 }
 const onResize = debounce(updateItemSize, resizeDebounce)

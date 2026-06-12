@@ -84,18 +84,13 @@ export function buildSubgraphExecutionPaths(
 
       const path = parentPrefix ? `${parentPrefix}:${n.id}` : String(n.id)
       const existing = pathMap.get(n.type)
-      if (existing) {
-        existing.push(path)
-      } else {
-        pathMap.set(n.type, [path])
-      }
+      if (existing) existing.push(path)
+      else pathMap.set(n.type, [path])
 
       visited.add(n.type)
 
       const innerDef = subgraphDefMap.get(n.type)
-      if (innerDef) {
-        build(innerDef.nodes, path)
-      }
+      if (innerDef) build(innerDef.nodes, path)
 
       visited.delete(n.type)
     }
@@ -122,9 +117,9 @@ export function collectSubgraphDefinitions(
       result.push(def)
 
       const nestedSubgraphs = def.definitions?.subgraphs
-      if (!Array.isArray(nestedSubgraphs) || nestedSubgraphs.length === 0) {
+      if (!Array.isArray(nestedSubgraphs) || nestedSubgraphs.length === 0)
         continue
-      }
+
       collect(nestedSubgraphs)
     }
   }

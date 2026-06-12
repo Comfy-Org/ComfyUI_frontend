@@ -193,9 +193,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       if (
         node.constructor.comfyClass?.startsWith('Preview') ||
         !(widthWidget && heightWidget)
-      ) {
+      )
         isPreview.value = true
-      }
 
       load3d = createLoad3d(containerRef, {
         width: widthWidget?.value as number | undefined,
@@ -237,9 +236,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       node.onDrawBackground = useChainCallback(
         node.onDrawBackground,
         function (this: LGraphNode) {
-          if (load3d) {
+          if (load3d)
             load3d.renderer.domElement.hidden = this.flags.collapsed ?? false
-          }
         }
       )
 
@@ -306,9 +304,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
     const savedCameraConfig = node.properties['Camera Config'] as CameraConfig
 
-    if (savedCameraConfig) {
-      cameraConfig.value = savedCameraConfig
-    }
+    if (savedCameraConfig) cameraConfig.value = savedCameraConfig
 
     const savedLightConfig = node.properties['Light Config'] as LightConfig
     const savedHdriEnabled = savedLightConfig?.hdri?.enabled ?? false
@@ -360,12 +356,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     if (!load3d) return
     const cfg = sceneConfig.value
     load3d.toggleGrid(cfg.showGrid)
-    if (!lightConfig.value.hdri?.enabled) {
+    if (!lightConfig.value.hdri?.enabled)
       load3d.setBackgroundColor(cfg.backgroundColor)
-    }
-    if (cfg.backgroundRenderMode) {
+
+    if (cfg.backgroundRenderMode)
       load3d.setBackgroundRenderMode(cfg.backgroundRenderMode)
-    }
   }
 
   const applyGizmoConfigToLoad3d = () => {
@@ -382,15 +377,12 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       gizmo.scale.x !== 1 ||
       gizmo.scale.y !== 1 ||
       gizmo.scale.z !== 1
-    if (hasTransform) {
+    if (hasTransform)
       load3d.applyGizmoTransform(gizmo.position, gizmo.rotation, gizmo.scale)
-    }
-    if (gizmo.enabled) {
-      load3d.setGizmoEnabled(true)
-    }
-    if (gizmo.mode !== 'translate') {
-      load3d.setGizmoMode(gizmo.mode)
-    }
+
+    if (gizmo.enabled) load3d.setGizmoEnabled(true)
+
+    if (gizmo.mode !== 'translate') load3d.setGizmoMode(gizmo.mode)
   }
 
   const applyLightConfigToLoad3d = () => {
@@ -406,9 +398,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
   const persistLightConfigToNode = () => {
     const n = nodeRef.value
-    if (n) {
-      n.properties['Light Config'] = lightConfig.value
-    }
+    if (n) n.properties['Light Config'] = lightConfig.value
+
     markDirty()
   }
 
@@ -424,9 +415,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       return
     }
 
-    if (!pendingCallbacks.has(node)) {
-      pendingCallbacks.set(node, [])
-    }
+    if (!pendingCallbacks.has(node)) pendingCallbacks.set(node, [])
 
     pendingCallbacks.get(node)!.push(callback)
     ensureNodeCleanupChained(node)
@@ -438,9 +427,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
     const node = rawNode as LGraphNode
 
-    if (!persistentReadyCallbacks.has(node)) {
+    if (!persistentReadyCallbacks.has(node))
       persistentReadyCallbacks.set(node, [])
-    }
+
     persistentReadyCallbacks.get(node)!.push(callback)
     ensureNodeCleanupChained(node)
 
@@ -451,9 +440,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   watch(
     sceneConfig,
     (newValue) => {
-      if (nodeRef.value) {
-        nodeRef.value.properties['Scene Config'] = newValue
-      }
+      if (nodeRef.value) nodeRef.value.properties['Scene Config'] = newValue
+
       markDirty()
     },
     { deep: true }
@@ -492,9 +480,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   watch(
     modelConfig,
     (newValue) => {
-      if (nodeRef.value) {
-        nodeRef.value.properties['Model Config'] = newValue
-      }
+      if (nodeRef.value) nodeRef.value.properties['Model Config'] = newValue
+
       markDirty()
     },
     { deep: true }
@@ -538,9 +525,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     () => lightConfig.value.intensity,
     (intensity) => {
       if (!load3d || !nodeRef.value) return
-      if (!lightConfig.value.hdri?.enabled) {
+      if (!lightConfig.value.hdri?.enabled)
         lastNonHdriLightIntensity.value = intensity
-      }
+
       persistLightConfigToNode()
       load3d.setLightIntensity(intensity)
     }
@@ -571,9 +558,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     (enabled, prevEnabled) => {
       if (!load3d || !nodeRef.value) return
       if (enabled === undefined) return
-      if (enabled && prevEnabled === false) {
+      if (enabled && prevEnabled === false)
         lastNonHdriLightIntensity.value = lightConfig.value.intensity
-      }
+
       if (!enabled && prevEnabled === true) {
         lightConfig.value = {
           ...lightConfig.value,
@@ -586,23 +573,21 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   )
 
   watch(playing, (newValue) => {
-    if (load3d) {
-      load3d.toggleAnimation(newValue)
-    }
+    if (load3d) load3d.toggleAnimation(newValue)
+
     markDirty()
   })
 
   watch(selectedSpeed, (newValue) => {
-    if (load3d && newValue) {
-      load3d.setAnimationSpeed(newValue)
-    }
+    if (load3d && newValue) load3d.setAnimationSpeed(newValue)
+
     markDirty()
   })
 
   watch(selectedAnimation, (newValue) => {
-    if (load3d && newValue !== undefined) {
+    if (load3d && newValue !== undefined)
       load3d.updateSelectedAnimation(newValue)
-    }
+
     markDirty()
   })
 
@@ -683,9 +668,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       : '3d'
 
     const uploadedPath = await Load3dUtils.uploadFile(file, subfolder)
-    if (!uploadedPath) {
-      return
-    }
+    if (!uploadedPath) return
 
     // Re-validate: node may have been removed during upload
     if (load3d !== capturedLoad3d) return
@@ -827,9 +810,9 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
 
       if (modelWidget) {
         const options = modelWidget.options as { values?: string[] } | undefined
-        if (options?.values && !options.values.includes(uploadedPath)) {
+        if (options?.values && !options.values.includes(uploadedPath))
           options.values.push(uploadedPath)
-        }
+
         modelWidget.value = uploadedPath
       }
     } catch (error) {
@@ -1032,9 +1015,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   }
 
   const handleResetGizmoTransform = () => {
-    if (load3d) {
-      load3d.resetGizmoTransform()
-    }
+    if (load3d) load3d.resetGizmoTransform()
   }
 
   const handleEvents = (action: 'add' | 'remove') => {
@@ -1051,9 +1032,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     if (!rawNode) return
 
     const node = rawNode as LGraphNode
-    if (nodeToLoad3dMap.get(node) === load3d) {
-      nodeToLoad3dMap.delete(node)
-    }
+    if (nodeToLoad3dMap.get(node) === load3d) nodeToLoad3dMap.delete(node)
 
     load3d?.remove()
     load3d = null

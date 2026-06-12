@@ -17,9 +17,8 @@ export const useModelLibrarySidebarTab = (): SidebarTabExtension => {
     iconBadge: () => {
       if (isDesktop) {
         const electronDownloadStore = useElectronDownloadStore()
-        if (electronDownloadStore.inProgressDownloads.length > 0) {
+        if (electronDownloadStore.inProgressDownloads.length > 0)
           return electronDownloadStore.inProgressDownloads.length.toString()
-        }
       }
 
       return null

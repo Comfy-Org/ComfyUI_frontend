@@ -33,9 +33,7 @@ export function onRekaPointerDownOutside(
     event.preventDefault()
     return
   }
-  if (options.dismissableMask === false) {
-    event.preventDefault()
-  }
+  if (options.dismissableMask === false) event.preventDefault()
 }
 
 // Focus / interact-outside fires when focus moves to a sibling portal (a
@@ -43,7 +41,5 @@ export function onRekaPointerDownOutside(
 // non-modal Reka dialog would dismiss itself the moment a nested dialog
 // receives focus.
 export function onRekaFocusOutside(event: OutsideEvent) {
-  if (isInsideOverlay(event.detail.originalEvent.target)) {
-    event.preventDefault()
-  }
+  if (isInsideOverlay(event.detail.originalEvent.target)) event.preventDefault()
 }

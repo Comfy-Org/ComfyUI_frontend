@@ -110,9 +110,8 @@ const showWorkflowActions = computed(() => {
   if (assetType === 'output') return true
 
   // Input assets: only formats that support workflow metadata
-  if (assetType === 'input' && asset?.name) {
+  if (assetType === 'input' && asset?.name)
     return supportsWorkflowMetadata(asset.name)
-  }
 
   return false
 })
@@ -256,9 +255,7 @@ const contextMenuItems = computed<MenuItem[]>(() => {
       command: async () => {
         if (asset) {
           const confirmed = await actions.deleteAssets(asset)
-          if (confirmed) {
-            emit('asset-deleted')
-          }
+          if (confirmed) emit('asset-deleted')
         }
       }
     })

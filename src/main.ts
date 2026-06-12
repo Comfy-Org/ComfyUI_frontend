@@ -91,9 +91,8 @@ Sentry.init({
 // Strings here are intentionally not i18n'd: they're developer/nightly diagnostics,
 // not user-facing in stable releases.
 setAssertReporter((message) => {
-  if (isDesktop) {
-    Sentry.captureMessage(message, { level: 'warning' })
-  }
+  if (isDesktop) Sentry.captureMessage(message, { level: 'warning' })
+
   if (isNightly) {
     useToastStore(pinia).add({
       severity: 'warn',

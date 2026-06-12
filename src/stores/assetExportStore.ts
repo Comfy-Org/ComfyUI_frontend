@@ -101,9 +101,8 @@ export const useAssetExportStore = defineStore('assetExport', () => {
     if (
       (existing?.status === 'completed' || existing?.status === 'failed') &&
       existing?.downloadTriggered
-    ) {
+    )
       return
-    }
 
     const exp: AssetExport = {
       taskId: data.task_id,
@@ -122,9 +121,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
 
     exports.value.set(data.task_id, exp)
 
-    if (data.status === 'completed') {
-      void triggerDownload(exp)
-    }
+    if (data.status === 'completed') void triggerDownload(exp)
   }
 
   async function pollStaleExports() {
@@ -182,9 +179,7 @@ export const useAssetExportStore = defineStore('assetExport', () => {
   api.addEventListener('asset_export', (e) => handleAssetExport(e.detail))
 
   function clearFinishedExports() {
-    for (const exp of finishedExports.value) {
-      exports.value.delete(exp.taskId)
-    }
+    for (const exp of finishedExports.value) exports.value.delete(exp.taskId)
   }
 
   return {

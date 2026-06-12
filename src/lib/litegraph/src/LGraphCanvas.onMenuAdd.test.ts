@@ -77,9 +77,9 @@ describe('LGraphCanvas.onMenuAdd category sorting', () => {
 
   afterEach(() => {
     LiteGraph.ContextMenu = originalContextMenu
-    for (const type of registeredTypes) {
+    for (const type of registeredTypes)
       delete LiteGraph.registered_node_types[type]
-    }
+
     registeredTypes.length = 0
   })
 

@@ -241,9 +241,9 @@ describe(usePreviewExposureStore, () => {
         hostA,
         outer.name,
         (rootGraphId, hostLocator, sourceNodeId) => {
-          if (hostLocator === hostA && sourceNodeId === '99') {
+          if (hostLocator === hostA && sourceNodeId === '99')
             return { rootGraphId, hostNodeLocator: innerHost }
-          }
+
           return undefined
         }
       )

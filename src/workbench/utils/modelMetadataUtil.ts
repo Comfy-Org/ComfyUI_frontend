@@ -36,9 +36,8 @@ export function getSelectedModelsMetadata(node: {
 
     const stringWidgetValues = new Set<string>()
     for (const widgetValue of widgetValues) {
-      if (typeof widgetValue === 'string' && widgetValue.trim()) {
+      if (typeof widgetValue === 'string' && widgetValue.trim())
         stringWidgetValues.add(widgetValue)
-      }
     }
 
     // Return the node's models that are present in the widget values

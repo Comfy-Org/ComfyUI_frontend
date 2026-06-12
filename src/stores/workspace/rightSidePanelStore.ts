@@ -43,17 +43,13 @@ export const useRightSidePanelStore = defineStore('rightSidePanel', () => {
 
   // Auto-close panel when switching to legacy menu mode
   watch(isLegacyMenu, (legacy) => {
-    if (legacy) {
-      void settingStore.set('Comfy.RightSidePanel.IsOpen', false)
-    }
+    if (legacy) void settingStore.set('Comfy.RightSidePanel.IsOpen', false)
   })
 
   function openPanel(tab?: RightSidePanelTab) {
     if (isLegacyMenu.value) return
     isOpen.value = true
-    if (tab) {
-      activeTab.value = tab
-    }
+    if (tab) activeTab.value = tab
   }
 
   function closePanel() {

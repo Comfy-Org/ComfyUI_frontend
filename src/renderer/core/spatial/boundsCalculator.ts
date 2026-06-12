@@ -22,9 +22,7 @@ export interface PositionedNode {
 export function calculateNodeBounds(
   nodes: PositionedNode[]
 ): SpatialBounds | null {
-  if (!nodes || nodes.length === 0) {
-    return null
-  }
+  if (!nodes || nodes.length === 0) return null
 
   let minX = Infinity
   let minY = Infinity
@@ -89,9 +87,7 @@ export function calculateMinimapScale(
   viewportHeight: number,
   padding: number = 0.9
 ): number {
-  if (bounds.width === 0 || bounds.height === 0) {
-    return 1
-  }
+  if (bounds.width === 0 || bounds.height === 0) return 1
 
   const scaleX = viewportWidth / bounds.width
   const scaleY = viewportHeight / bounds.height

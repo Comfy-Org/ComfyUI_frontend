@@ -308,9 +308,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
       leaf: node.leaf,
       data: node.data,
       getIcon() {
-        if (this.leaf) {
-          return 'pi pi-circle-fill'
-        }
+        if (this.leaf) return 'pi pi-circle-fill'
       },
       children,
       draggable: node.leaf,
@@ -365,9 +363,7 @@ const handleSearch = async (query: string) => {
 
   await nextTick()
   // Expand the search results tree
-  if (filteredNodeDefs.value.length > 0) {
-    expandNode(root.value)
-  }
+  if (filteredNodeDefs.value.length > 0) expandNode(root.value)
 }
 
 const onAddFilter = async (
@@ -390,9 +386,8 @@ const onRemoveFilter = async (
   }
 ) => {
   const index = filters.value.findIndex((f) => f === filterAndValue)
-  if (index !== -1) {
-    filters.value.splice(index, 1)
-  }
+  if (index !== -1) filters.value.splice(index, 1)
+
   await handleSearch(searchQuery.value)
 }
 </script>

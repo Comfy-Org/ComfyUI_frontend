@@ -34,11 +34,8 @@ const props = defineProps<{
 
 const targetNodes = shallowRef<LGraphNode[] | LGraphGroup[]>([])
 watchEffect(() => {
-  if (props.nodes) {
-    targetNodes.value = props.nodes
-  } else {
-    targetNodes.value = []
-  }
+  if (props.nodes) targetNodes.value = props.nodes
+  else targetNodes.value = []
 })
 
 const canvasStore = useCanvasStore()

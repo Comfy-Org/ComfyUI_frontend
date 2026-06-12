@@ -126,9 +126,8 @@ const dataTableFirst = computed(
 const tooltipContentMap = computed(() => {
   const map = new Map<string, string>()
   events.value.forEach((event) => {
-    if (customerEventService.hasAdditionalInfo(event) && event.event_id) {
+    if (customerEventService.hasAdditionalInfo(event) && event.event_id)
       map.set(event.event_id, customerEventService.getTooltipContent(event))
-    }
   })
   return map
 })
@@ -144,25 +143,15 @@ const loadEvents = async () => {
     })
 
     if (response) {
-      if (response.events) {
-        events.value = response.events
-      }
+      if (response.events) events.value = response.events
 
-      if (response.page) {
-        pagination.value.page = response.page
-      }
+      if (response.page) pagination.value.page = response.page
 
-      if (response.limit) {
-        pagination.value.limit = response.limit
-      }
+      if (response.limit) pagination.value.limit = response.limit
 
-      if (response.total) {
-        pagination.value.total = response.total
-      }
+      if (response.total) pagination.value.total = response.total
 
-      if (response.totalPages) {
-        pagination.value.totalPages = response.totalPages
-      }
+      if (response.totalPages) pagination.value.totalPages = response.totalPages
 
       // Check if a pending top-up has completed
       useTelemetry()?.checkForCompletedTopup(response.events)

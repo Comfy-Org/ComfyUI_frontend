@@ -27,12 +27,10 @@ const translations: Record<string, string> = {
 let localeRef: Ref<string>
 let tMock: ReturnType<typeof vi.fn>
 const ensureLocaleMocks = () => {
-  if (!localeRef) {
-    localeRef = ref('en-US') as Ref<string>
-  }
-  if (!tMock) {
-    tMock = vi.fn((key: string) => translations[key] ?? key)
-  }
+  if (!localeRef) localeRef = ref('en-US') as Ref<string>
+
+  if (!tMock) tMock = vi.fn((key: string) => translations[key] ?? key)
+
   return { localeRef, tMock }
 }
 
@@ -115,9 +113,8 @@ let executionStoreMock: {
 }
 let isJobInitializingMock: (jobId?: string | number) => boolean
 const ensureExecutionStore = () => {
-  if (!isJobInitializingMock) {
-    isJobInitializingMock = vi.fn(() => false)
-  }
+  if (!isJobInitializingMock) isJobInitializingMock = vi.fn(() => false)
+
   if (!executionStoreMock) {
     executionStoreMock = reactive({
       activeJobId: null as string | null,

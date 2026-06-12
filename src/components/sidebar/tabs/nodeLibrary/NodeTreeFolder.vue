@@ -51,15 +51,12 @@ onMounted(() => {
 })
 
 const updateIconColor = () => {
-  if (iconElement.value && customization.value) {
+  if (iconElement.value && customization.value)
     iconElement.value.style.color = customization.value.color ?? ''
-  }
 }
 
 onUnmounted(() => {
-  if (stopWatchCustomization) {
-    stopWatchCustomization()
-  }
+  if (stopWatchCustomization) stopWatchCustomization()
 })
 
 const expandedKeys = inject(InjectKeyExpandedKeys)

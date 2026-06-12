@@ -297,10 +297,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     const graphNode = errorNodeCache.value.get(executionNodeId)
     if (graphNode && nodeIds.has(String(graphNode.id))) return true
 
-    for (const containerExecId of selectedNodeInfo.value
-      .containerExecutionIds) {
+    for (const containerExecId of selectedNodeInfo.value.containerExecutionIds)
       if (executionNodeId.startsWith(`${containerExecId}:`)) return true
-    }
 
     return false
   }
@@ -321,9 +319,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       1,
       error.displayMessage
     )
-    if (!cards.has(nodeId)) {
+    if (!cards.has(nodeId))
       cards.set(nodeId, createErrorCard(nodeId, classType, idPrefix))
-    }
+
     const card = cards.get(nodeId)
     if (!card) return
     card.errors.push(error)
@@ -450,9 +448,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       onCleanup(() => {
         cancelled = true
         const next = new Map(asyncResolvedIds.value)
-        for (const type of resolvingTypes) {
+        for (const type of resolvingTypes)
           if (next.get(type) === RESOLVING) next.delete(type)
-        }
+
         asyncResolvedIds.value = next
       })
 
@@ -470,16 +468,13 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
       const final = new Map(asyncResolvedIds.value)
       for (const r of results) {
-        if (r.status === 'fulfilled') {
-          final.set(r.value.type, r.value.packId)
-        } else {
-          console.warn('Failed to resolve pack ID:', r.reason)
-        }
+        if (r.status === 'fulfilled') final.set(r.value.type, r.value.packId)
+        else console.warn('Failed to resolve pack ID:', r.reason)
       }
       // Clear any remaining RESOLVING markers for failed lookups
-      for (const type of resolvingTypes) {
+      for (const type of resolvingTypes)
         if (final.get(type) === RESOLVING) final.set(type, null)
-      }
+
       asyncResolvedIds.value = final
     },
     { immediate: true }
@@ -489,9 +484,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   watch(
     () => missingNodesStore.missingNodesError,
     (error) => {
-      if (!error && asyncResolvedIds.value.size > 0) {
+      if (!error && asyncResolvedIds.value.size > 0)
         asyncResolvedIds.value = new Map()
-      }
     }
   )
 
@@ -523,11 +517,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       }
 
       const existing = map.get(packId)
-      if (existing) {
-        existing.nodeTypes.push(nodeType)
-      } else {
-        map.set(packId, { nodeTypes: [nodeType], isResolving: false })
-      }
+      if (existing) existing.nodeTypes.push(nodeType)
+      else map.set(packId, { nodeTypes: [nodeType], isResolving: false })
     }
 
     for (const key of resolvingKeys) {
@@ -721,10 +712,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       if (graphNode && nodeIds.has(String(graphNode.id))) return true
     }
 
-    for (const containerExecId of selectedNodeInfo.value
-      .containerExecutionIds) {
+    for (const containerExecId of selectedNodeInfo.value.containerExecutionIds)
       if (executionNodeId.startsWith(`${containerExecId}:`)) return true
-    }
 
     return false
   }
@@ -870,9 +859,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     for (const group of allErrorGroups.value) {
       if (group.type === 'execution') {
         for (const card of group.cards) {
-          for (const err of card.errors) {
+          for (const err of card.errors)
             messages.add(err.displayMessage ?? err.message)
-          }
         }
       } else {
         messages.add(group.displayMessage ?? group.displayTitle)

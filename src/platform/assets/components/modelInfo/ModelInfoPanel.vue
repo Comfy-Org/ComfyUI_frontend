@@ -312,9 +312,8 @@ function queueMetadataUpdate(updates: AssetUserMetadata) {
 
 function handleDisplayNameEdit(newName: string) {
   isEditingDisplayName.value = false
-  if (newName && newName !== displayName.value) {
+  if (newName && newName !== displayName.value)
     queueMetadataUpdate({ name: newName })
-  }
 }
 
 const debouncedSaveModelType = useDebounceFn((newModelType: string) => {

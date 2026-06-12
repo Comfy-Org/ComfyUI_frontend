@@ -243,21 +243,16 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
   // Animation watches
   watch(playing, (newValue) => {
-    if (load3d) {
-      load3d.toggleAnimation(newValue)
-    }
+    if (load3d) load3d.toggleAnimation(newValue)
   })
 
   watch(selectedSpeed, (newValue) => {
-    if (load3d && newValue) {
-      load3d.setAnimationSpeed(newValue)
-    }
+    if (load3d && newValue) load3d.setAnimationSpeed(newValue)
   })
 
   watch(selectedAnimation, (newValue) => {
-    if (load3d && newValue !== undefined) {
+    if (load3d && newValue !== undefined)
       load3d.updateSelectedAnimation(newValue)
-    }
   })
 
   /**
@@ -305,15 +300,11 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   }
 
   watch(gizmoEnabled, (newValue) => {
-    if (load3d) {
-      load3d.setGizmoEnabled(newValue)
-    }
+    if (load3d) load3d.setGizmoEnabled(newValue)
   })
 
   watch(gizmoMode, (newValue) => {
-    if (load3d) {
-      load3d.setGizmoMode(newValue)
-    }
+    if (load3d) load3d.setGizmoMode(newValue)
   })
 
   /**
@@ -348,9 +339,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         isViewerMode: hasTargetDimensions
       })
 
-      if (mouseOnViewer) {
-        load3d.updateStatusMouseOnViewer(true)
-      }
+      if (mouseOnViewer) load3d.updateStatusMouseOnViewer(true)
 
       await useLoad3dService().copyLoad3dState(source, load3d)
 
@@ -399,11 +388,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
           cameraConfig.fov || source.cameraManager.perspectiveCamera.fov
       }
 
-      if (lightConfig) {
-        lightIntensity.value = lightConfig.intensity || 1
-      } else {
-        lightIntensity.value = 1
-      }
+      if (lightConfig) lightIntensity.value = lightConfig.intensity || 1
+      else lightIntensity.value = 1
 
       if (modelConfig) {
         upDirection.value =
@@ -469,9 +455,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
         isViewerMode: true
       })
 
-      if (mouseOnViewer) {
-        load3d.updateStatusMouseOnViewer(true)
-      }
+      if (mouseOnViewer) load3d.updateStatusMouseOnViewer(true)
 
       await load3d.loadModel(modelUrl)
       currentModelUrl = modelUrl
@@ -547,9 +531,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     materialMode.value = config.materialMode
     gizmoEnabled.value = config.gizmoEnabled
     gizmoMode.value = config.gizmoMode
-    if (cached?.cameraState && load3d) {
-      load3d.setCameraState(cached.cameraState)
-    }
+    if (cached?.cameraState && load3d) load3d.setCameraState(cached.cameraState)
   }
 
   /**
@@ -700,9 +682,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
 
     sourceLoad3d.forceRender()
 
-    if (nodeValue.graph) {
-      nodeValue.graph.setDirtyCanvas(true, true)
-    }
+    if (nodeValue.graph) nodeValue.graph.setDirtyCanvas(true, true)
 
     return true
   }
@@ -795,9 +775,9 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
       const modelWidget = node?.widgets?.find((w) => w.name === 'model_file')
       if (modelWidget) {
         const options = modelWidget.options as { values?: string[] } | undefined
-        if (options?.values && !options.values.includes(uploadedPath)) {
+        if (options?.values && !options.values.includes(uploadedPath))
           options.values.push(uploadedPath)
-        }
+
         modelWidget.value = uploadedPath
       }
     } catch (error) {
@@ -810,9 +790,8 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
    * Cleans up the viewer resources and saves the current standalone config if applicable.
    */
   const cleanup = () => {
-    if (isStandaloneMode.value) {
-      saveStandaloneConfig()
-    }
+    if (isStandaloneMode.value) saveStandaloneConfig()
+
     mouseOnViewer = false
     load3d?.remove()
     load3d = null

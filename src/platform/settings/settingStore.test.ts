@@ -451,9 +451,7 @@ describe('useSettingStore', () => {
         // Get the value and try to mutate it
         const retrievedValue = store.get('test.setting')
         retrievedValue.foo = 'changed'
-        if (retrievedValue.nested) {
-          retrievedValue.nested.value = 456
-        }
+        if (retrievedValue.nested) retrievedValue.nested.value = 456
 
         // Get the value again
         const newRetrievedValue = store.get('test.setting')
@@ -472,9 +470,7 @@ describe('useSettingStore', () => {
 
         // Attempt to mutate the original array
         originalArray.push(4)
-        if (typeof originalArray[2] === 'object') {
-          originalArray[2].value = 999
-        }
+        if (typeof originalArray[2] === 'object') originalArray[2].value = 999
 
         // Get the stored value
         const storedValue = store.get('test.setting')
@@ -492,9 +488,7 @@ describe('useSettingStore', () => {
         // Get the value and try to mutate it
         const retrievedArray = store.get('test.setting')
         retrievedArray.push(4)
-        if (typeof retrievedArray[2] === 'object') {
-          retrievedArray[2].value = 999
-        }
+        if (typeof retrievedArray[2] === 'object') retrievedArray[2].value = 999
 
         // Get the value again
         const newRetrievedValue = store.get('test.setting')

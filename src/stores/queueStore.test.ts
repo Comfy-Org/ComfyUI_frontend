@@ -1007,9 +1007,8 @@ describe('useQueueStore', () => {
 
       mockGetQueue.mockImplementation(() => {
         callCount++
-        if (callCount === 1) {
-          return Promise.reject(new Error('network error'))
-        }
+        if (callCount === 1) return Promise.reject(new Error('network error'))
+
         return new Promise<QueueResponse>((resolve) => {
           resolveSecond = resolve
         })

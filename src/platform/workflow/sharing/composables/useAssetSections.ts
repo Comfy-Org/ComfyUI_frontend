@@ -58,9 +58,7 @@ export function useAssetSections(items: () => AssetInfo[]) {
       expandedSectionId.value = sectionId
       return
     }
-    if (expandedSectionId.value === sectionId) {
-      expandedSectionId.value = null
-    }
+    if (expandedSectionId.value === sectionId) expandedSectionId.value = null
   }
 
   return {

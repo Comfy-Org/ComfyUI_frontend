@@ -30,23 +30,18 @@ function traversePromotedWidgetChain(
   for (let depth = 0; depth < MAX_PROMOTED_WIDGET_CHAIN_DEPTH; depth++) {
     const key = `${currentNodeId}:${currentWidgetName}`
     const visited = visitedByHost.get(currentHost) ?? new Set<string>()
-    if (visited.has(key)) {
-      return { status: 'failure', failure: 'cycle' }
-    }
+    if (visited.has(key)) return { status: 'failure', failure: 'cycle' }
+
     visited.add(key)
     visitedByHost.set(currentHost, visited)
 
     const sourceNode = currentHost.subgraph.getNodeById(currentNodeId)
-    if (!sourceNode) {
-      return { status: 'failure', failure: 'missing-node' }
-    }
+    if (!sourceNode) return { status: 'failure', failure: 'missing-node' }
 
     const sourceWidget = sourceNode.widgets?.find(
       (entry) => entry.name === currentWidgetName
     )
-    if (!sourceWidget) {
-      return { status: 'failure', failure: 'missing-widget' }
-    }
+    if (!sourceWidget) return { status: 'failure', failure: 'missing-widget' }
 
     if (!isPromotedWidgetView(sourceWidget)) {
       return {
@@ -55,9 +50,8 @@ function traversePromotedWidgetChain(
       }
     }
 
-    if (!sourceWidget.node?.isSubgraphNode()) {
+    if (!sourceWidget.node?.isSubgraphNode())
       return { status: 'failure', failure: 'missing-node' }
-    }
 
     currentHost = sourceWidget.node
     currentNodeId = sourceWidget.sourceNodeId
@@ -86,9 +80,9 @@ export function resolveConcretePromotedWidget(
   nodeId: string,
   widgetName: string
 ): PromotedWidgetResolutionResult {
-  if (!hostNode.isSubgraphNode()) {
+  if (!hostNode.isSubgraphNode())
     return { status: 'failure', failure: 'invalid-host' }
-  }
+
   return traversePromotedWidgetChain(hostNode, nodeId, widgetName)
 }
 

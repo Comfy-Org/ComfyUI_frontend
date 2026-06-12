@@ -38,9 +38,8 @@ export function useMaskEditorSaver() {
 
   const save = async (): Promise<void> => {
     const sourceNode = dataStore.sourceNode as LGraphNode
-    if (!sourceNode || !dataStore.inputData) {
+    if (!sourceNode || !dataStore.inputData)
       throw new Error('No source node or input data')
-    }
 
     try {
       const outputData = await prepareOutputData()
@@ -64,9 +63,8 @@ export function useMaskEditorSaver() {
     const paintCanvas = editorStore.rgbCanvas
     const imgCanvas = editorStore.imgCanvas
 
-    if (!maskCanvas || !paintCanvas || !imgCanvas) {
+    if (!maskCanvas || !paintCanvas || !imgCanvas)
       throw new Error('Canvas not initialized')
-    }
 
     const timestamp = Date.now()
     const filenames = imageLayerFilenamesByTimestamp(timestamp)
@@ -121,9 +119,9 @@ export function useMaskEditorSaver() {
     }
 
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    for (let i = 0; i < imageData.data.length; i += 4) {
+    for (let i = 0; i < imageData.data.length; i += 4)
       imageData.data[i + 3] = refinedMaskData[i + 3]
-    }
+
     ctx.putImageData(imageData, 0, 0)
 
     const blob = await canvasToBlob(canvas)
@@ -197,9 +195,9 @@ export function useMaskEditorSaver() {
     }
 
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    for (let i = 0; i < imageData.data.length; i += 4) {
+    for (let i = 0; i < imageData.data.length; i += 4)
       imageData.data[i + 3] = refinedMaskData[i + 3]
-    }
+
     ctx.putImageData(imageData, 0, 0)
 
     const blob = await canvasToBlob(canvas)
@@ -244,9 +242,8 @@ export function useMaskEditorSaver() {
       body: formData
     })
 
-    if (!response.ok) {
+    if (!response.ok)
       throw new Error(`Failed to upload mask: ${layer.ref.filename}`)
-    }
 
     try {
       const data = await response.json()
@@ -279,9 +276,8 @@ export function useMaskEditorSaver() {
       body: formData
     })
 
-    if (!response.ok) {
+    if (!response.ok)
       throw new Error(`Failed to upload image: ${layer.ref.filename}`)
-    }
 
     try {
       const data = await response.json()
@@ -338,15 +334,11 @@ export function useMaskEditorSaver() {
 
       imageWidget.value = widgetValue
 
-      if (node.properties) {
-        node.properties['image'] = widgetValue
-      }
+      if (node.properties) node.properties['image'] = widgetValue
 
       if (node.widgets_values && node.widgets) {
         const widgetIndex = node.widgets.indexOf(imageWidget)
-        if (widgetIndex >= 0) {
-          node.widgets_values[widgetIndex] = widgetValue
-        }
+        if (widgetIndex >= 0) node.widgets_values[widgetIndex] = widgetValue
       }
     }
 

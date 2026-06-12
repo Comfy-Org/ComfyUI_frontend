@@ -384,9 +384,8 @@ describe('ImagePreview', () => {
 
       const gridImages = screen.getAllByRole('img')
       expect(gridImages).toHaveLength(2)
-      for (const img of gridImages) {
+      for (const img of gridImages)
         expect(img.getAttribute('src')).toMatch(/[?&]preview=/)
-      }
     })
 
     it('defaults to gallery mode for single image', () => {

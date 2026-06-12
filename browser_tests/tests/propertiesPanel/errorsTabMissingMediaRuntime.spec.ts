@@ -98,28 +98,22 @@ function setComboInputOptions(
   values: string[]
 ) {
   const nodeInfo = objectInfo[nodeType]
-  if (!nodeInfo) {
-    throw new Error(`Missing object_info entry for ${nodeType}`)
-  }
+  if (!nodeInfo) throw new Error(`Missing object_info entry for ${nodeType}`)
 
   const requiredInputs = nodeInfo.input?.required
-  if (!requiredInputs) {
+  if (!requiredInputs)
     throw new Error(`Missing required inputs for ${nodeType}`)
-  }
 
   const input = requiredInputs[inputName]
-  if (!Array.isArray(input)) {
+  if (!Array.isArray(input))
     throw new Error(`Expected ${nodeType}.${inputName} to be a combo input`)
-  }
 
   const [valuesOrType, options] = input
   const optionsObject =
     options && typeof options === 'object' && !Array.isArray(options)
-  if (Array.isArray(valuesOrType)) {
-    input[0] = values
-  } else if (valuesOrType !== 'COMBO') {
+  if (Array.isArray(valuesOrType)) input[0] = values
+  else if (valuesOrType !== 'COMBO')
     throw new Error(`Expected ${nodeType}.${inputName} to have combo options`)
-  }
 
   if (optionsObject) {
     Object.assign(options, { options: values })

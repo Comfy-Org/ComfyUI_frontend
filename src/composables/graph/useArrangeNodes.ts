@@ -30,9 +30,9 @@ interface ArrangeUpdate {
 
 const titleHeightOf = (node: LGraphNode): number => {
   const mode = node.title_mode
-  if (mode === TitleMode.TRANSPARENT_TITLE || mode === TitleMode.NO_TITLE) {
+  if (mode === TitleMode.TRANSPARENT_TITLE || mode === TitleMode.NO_TITLE)
     return 0
-  }
+
   return LiteGraph.NODE_TITLE_HEIGHT
 }
 
@@ -64,9 +64,9 @@ const cumulativeOffsets = (
   gap: number
 ): number[] => {
   const offsets: number[] = [origin]
-  for (let i = 1; i < sizes.length; i++) {
+  for (let i = 1; i < sizes.length; i++)
     offsets.push(offsets[i - 1] + sizes[i - 1] + gap)
-  }
+
   return offsets
 }
 
@@ -177,9 +177,8 @@ export function useArrangeNodes() {
     mutations.setSource(LayoutSource.Canvas)
     mutations.batchMoveNodes(updates)
     app.canvas?.setDirty(true, true)
-    if (captureUndo) {
+    if (captureUndo)
       workflowStore.activeWorkflow?.changeTracker?.captureCanvasState()
-    }
   }
 
   return { arrangeNodes, canArrange: hasMultipleSelection }

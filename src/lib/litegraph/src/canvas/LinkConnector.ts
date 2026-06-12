@@ -150,10 +150,11 @@ export class LinkConnector {
 
       try {
         const reroute = network.reroutes.get(floatingLink.parentId)
-        if (!reroute)
+        if (!reroute) {
           throw new Error(
             `Invalid reroute id: [${floatingLink.parentId}] for floating link id: [${floatingLink.id}].`
           )
+        }
 
         const renderLink = new FloatingRenderLink(
           network,
@@ -245,9 +246,8 @@ export class LinkConnector {
           renderLinks.push(renderLink)
 
           this.listenUntilReset('input-moved', (e) => {
-            if ('link' in e.detail && e.detail.link) {
+            if ('link' in e.detail && e.detail.link)
               e.detail.link.disconnect(network, 'output')
-            }
           })
         } catch (error) {
           console.warn(
@@ -280,10 +280,11 @@ export class LinkConnector {
       for (const floatingLink of output._floatingLinks.values()) {
         try {
           const reroute = LLink.getFirstReroute(network, floatingLink)
-          if (!reroute)
+          if (!reroute) {
             throw new Error(
               `Invalid reroute id: [${floatingLink.parentId}] for floating link id: [${floatingLink.id}].`
             )
+          }
 
           const renderLink = new FloatingRenderLink(
             network,
@@ -648,11 +649,9 @@ export class LinkConnector {
         // Get reroute if no node is found
         const reroute = locator.getRerouteOnPos(canvasX, canvasY)
         // Drop output->input link on reroute is not impl.
-        if (reroute && this.isRerouteValidDrop(reroute)) {
+        if (reroute && this.isRerouteValidDrop(reroute))
           this.dropOnReroute(reroute, event)
-        } else {
-          this.dropOnNothing(event)
-        }
+        else this.dropOnNothing(event)
       }
     } finally {
       this.events.dispatch('after-drop-links', {
@@ -766,11 +765,9 @@ export class LinkConnector {
     if (connectingTo === 'output') {
       const output = node.getOutputOnPos([canvasX, canvasY])
 
-      if (output) {
-        this._dropOnOutput(node, output)
-      } else {
-        this.connectToNode(node, event)
-      }
+      if (output) this._dropOnOutput(node, output)
+      else this.connectToNode(node, event)
+
       // To input
     } else if (connectingTo === 'input') {
       const input = node.getInputOnPos([canvasX, canvasY])
@@ -795,10 +792,11 @@ export class LinkConnector {
 
     // Connecting to input
     if (this.state.connectingTo === 'input') {
-      if (this.renderLinks.length !== 1)
+      if (this.renderLinks.length !== 1) {
         throw new Error(
           `Attempted to connect ${this.renderLinks.length} input links to a reroute.`
         )
+      }
 
       const renderLink = this.renderLinks[0]
       this._connectOutputToReroute(reroute, renderLink)
@@ -841,9 +839,8 @@ export class LinkConnector {
         for (const originalReroute of originalReroutes) {
           if (originalReroute.id === fromReroute.id) break
 
-          for (const linkId of reroute.floatingLinkIds) {
+          for (const linkId of reroute.floatingLinkIds)
             originalReroute.floatingLinkIds.delete(linkId)
-          }
         }
       }
     }
@@ -895,9 +892,8 @@ export class LinkConnector {
       if (
         link instanceof MovingLinkBase ||
         link instanceof ToInputFromIoNodeLink
-      ) {
+      )
         link.disconnect()
-      }
     }
   }
 
@@ -1145,9 +1141,8 @@ function canConnectInputLinkToReroute(
     fromReroute?.id === reroute.id ||
     // Cannot connect from child to parent reroute
     fromReroute?.getReroutes()?.includes(reroute)
-  ) {
+  )
     return false
-  }
 
   // Would result in no change
   if (link instanceof ToInputRenderLink) {

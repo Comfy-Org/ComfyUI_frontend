@@ -441,9 +441,8 @@ const expandedCommandIds = ref<Set<string>>(new Set())
 const expandedRows = computed({
   get() {
     const result: Record<string, boolean> = {}
-    for (const id of expandedCommandIds.value) {
-      result[id] = true
-    }
+    for (const id of expandedCommandIds.value) result[id] = true
+
     return result
   },
   set(value: Record<string, boolean>) {
@@ -452,11 +451,9 @@ const expandedRows = computed({
 })
 
 function toggleExpanded(commandId: string) {
-  if (expandedCommandIds.value.has(commandId)) {
+  if (expandedCommandIds.value.has(commandId))
     expandedCommandIds.value.delete(commandId)
-  } else {
-    expandedCommandIds.value.add(commandId)
-  }
+  else expandedCommandIds.value.add(commandId)
 }
 
 watch(filters, () => expandedCommandIds.value.clear(), { deep: true })
@@ -492,17 +489,14 @@ function handleRowClick(event: { originalEvent: Event; data: ICommandData }) {
   if (
     commandData.keybindings.length >= 2 ||
     expandedCommandIds.value.has(commandData.id)
-  ) {
+  )
     toggleExpanded(commandData.id)
-  }
 }
 
 function handleRowDblClick(commandData: ICommandData) {
-  if (commandData.keybindings.length === 0) {
-    addKeybinding(commandData)
-  } else if (commandData.keybindings.length === 1) {
+  if (commandData.keybindings.length === 0) addKeybinding(commandData)
+  else if (commandData.keybindings.length === 1)
     editKeybinding(commandData, commandData.keybindings[0])
-  }
 }
 
 function handleRowContextMenu(event: {
@@ -523,9 +517,9 @@ async function removeSingleKeybinding(
   const binding = commandData.keybindings[index]
   if (binding) {
     keybindingStore.unsetKeybinding(binding)
-    if (commandData.keybindings.length <= 2) {
+    if (commandData.keybindings.length <= 2)
       expandedCommandIds.value.delete(commandData.id)
-    }
+
     await keybindingService.persistUserKeybindings()
   }
 }
@@ -548,11 +542,9 @@ function handleRemoveAllKeybindings(commandData: ICommandData) {
 }
 
 function handleRemoveKeybindingFromMenu(commandData: ICommandData) {
-  if (commandData.keybindings.length >= 2) {
+  if (commandData.keybindings.length >= 2)
     handleRemoveAllKeybindings(commandData)
-  } else {
-    removeSingleKeybinding(commandData, 0)
-  }
+  else removeSingleKeybinding(commandData, 0)
 }
 
 function ctxChangeKeybinding() {
@@ -561,31 +553,21 @@ function ctxChangeKeybinding() {
   if (target.keybindings.length === 1) {
     editKeybinding(target, target.keybindings[0])
   } else if (target.keybindings.length >= 2) {
-    if (!expandedCommandIds.value.has(target.id)) {
-      toggleExpanded(target.id)
-    }
+    if (!expandedCommandIds.value.has(target.id)) toggleExpanded(target.id)
   }
 }
 
 function ctxAddKeybinding() {
-  if (contextMenuTarget.value) {
-    addKeybinding(contextMenuTarget.value)
-  }
+  if (contextMenuTarget.value) addKeybinding(contextMenuTarget.value)
 }
 
 function ctxResetToDefault() {
-  if (contextMenuTarget.value) {
-    resetKeybinding(contextMenuTarget.value)
-  }
+  if (contextMenuTarget.value) resetKeybinding(contextMenuTarget.value)
 }
 
 function ctxRemoveKeybinding() {
-  if (
-    contextMenuTarget.value &&
-    contextMenuTarget.value.keybindings.length > 0
-  ) {
+  if (contextMenuTarget.value && contextMenuTarget.value.keybindings.length > 0)
     handleRemoveKeybindingFromMenu(contextMenuTarget.value)
-  }
 }
 
 async function resetKeybinding(commandData: ICommandData) {

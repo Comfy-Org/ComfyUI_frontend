@@ -423,9 +423,7 @@ export class LiteGraphGlobal {
     }
 
     const prev = this.registered_node_types[type]
-    if (prev && this.debug) {
-      console.warn('replacing node type:', type)
-    }
+    if (prev && this.debug) console.warn('replacing node type:', type)
 
     this.registered_node_types[type] = base_class
     if (base_class.constructor.name) this.Nodes[classname] = base_class
@@ -434,10 +432,11 @@ export class LiteGraphGlobal {
     if (prev) this.onNodeTypeReplaced?.(type, base_class, prev)
 
     // warnings
-    if (base_class.prototype.onPropertyChange)
+    if (base_class.prototype.onPropertyChange) {
       console.warn(
         `LiteGraph node class ${type} has onPropertyChange method, it must be called onPropertyChanged with d at the end`
       )
+    }
 
     // TODO one would want to know input and output :: this would allow through registerNodeAndSlotType to get all the slots types
     if (this.auto_load_slot_types) new base_class(base_class.title || 'tmpnode')
@@ -480,13 +479,10 @@ export class LiteGraphGlobal {
     const class_type = base_class.constructor.type
 
     let allTypes: string[]
-    if (typeof slot_type === 'string') {
-      allTypes = slot_type.split(',')
-    } else if (slot_type == this.EVENT || slot_type == this.ACTION) {
+    if (typeof slot_type === 'string') allTypes = slot_type.split(',')
+    else if (slot_type == this.EVENT || slot_type == this.ACTION)
       allTypes = ['_event_']
-    } else {
-      allTypes = ['*']
-    }
+    else allTypes = ['*']
 
     for (let slotType of allTypes) {
       if (slotType === '') slotType = '*'
@@ -564,9 +560,7 @@ export class LiteGraphGlobal {
     node.mode ||= LGraphEventMode.ALWAYS
 
     // extra options
-    if (options) {
-      Object.assign(node, options)
-    }
+    if (options) Object.assign(node, options)
 
     // callback
     node.onNodeCreated?.()
@@ -619,9 +613,8 @@ export class LiteGraphGlobal {
       }
     }
     const result = []
-    for (const i in categories) {
-      result.push(i)
-    }
+    for (const i in categories) result.push(i)
+
     return result
   }
 
@@ -630,9 +623,7 @@ export class LiteGraphGlobal {
     const tmp = document.getElementsByTagName('script')
     // weird, this array changes by its own, so we use a copy
     const script_files = []
-    for (const element of tmp) {
-      script_files.push(element)
-    }
+    for (const element of tmp) script_files.push(element)
 
     const docHeadObj = document.getElementsByTagName('head')[0]
     folder_wildcard = document.location.href + folder_wildcard
@@ -691,9 +682,8 @@ export class LiteGraphGlobal {
       !type_b ||
       type_a == type_b ||
       (type_a == this.EVENT && type_b == this.ACTION)
-    ) {
+    )
       return true
-    }
 
     // Enforce string type to handle toLowerCase call (-1 number not ok)
     type_a = String(type_a)
@@ -708,9 +698,8 @@ export class LiteGraphGlobal {
     const supported_types_a = type_a.split(',')
     const supported_types_b = type_b.split(',')
     for (const a of supported_types_a) {
-      for (const b of supported_types_b) {
+      for (const b of supported_types_b)
         if (this.isValidConnection(a, b)) return true
-      }
     }
 
     return false
@@ -807,9 +796,8 @@ export class LiteGraphGlobal {
       case 'gotpointercapture':
       // @ts-expect-error - intentional fallthrough
       case 'lostpointercapture': {
-        if (sMethod != 'mouse') {
+        if (sMethod != 'mouse')
           return oDOM.addEventListener(sMethod + sEvent, fCall, capture)
-        }
       }
       // not "pointer" || "mouse"
       // falls through
@@ -892,17 +880,11 @@ export class LiteGraphGlobal {
 
   // [minx,miny,maxx,maxy]
   growBounding(bounding: Rect, x: number, y: number): void {
-    if (x < bounding[0]) {
-      bounding[0] = x
-    } else if (x > bounding[2]) {
-      bounding[2] = x
-    }
+    if (x < bounding[0]) bounding[0] = x
+    else if (x > bounding[2]) bounding[2] = x
 
-    if (y < bounding[1]) {
-      bounding[1] = y
-    } else if (y > bounding[3]) {
-      bounding[3] = y
-    }
+    if (y < bounding[1]) bounding[1] = y
+    else if (y > bounding[3]) bounding[3] = y
   }
 
   overlapBounding = overlapBounding
@@ -914,9 +896,9 @@ export class LiteGraphGlobal {
       p[1] < bb[0][1] ||
       p[0] > bb[1][0] ||
       p[1] > bb[1][1]
-    ) {
+    )
       return false
-    }
+
     return true
   }
 
@@ -924,10 +906,9 @@ export class LiteGraphGlobal {
   // format of a hex triplet - the kind we use for HTML colours. The function
   // will return an array with three values.
   hex2num(hex: string): number[] {
-    if (hex.charAt(0) == '#') {
-      hex = hex.slice(1)
-      // Remove the '#' char - if there is one.
-    }
+    if (hex.charAt(0) == '#') hex = hex.slice(1)
+    // Remove the '#' char - if there is one.
+
     hex = hex.toUpperCase()
     const hex_alphabets = '0123456789ABCDEF'
     const value = new Array(3)
@@ -964,11 +945,9 @@ export class LiteGraphGlobal {
     if (!elements.length) return
 
     for (const element of elements) {
-      if ('close' in element && typeof element.close === 'function') {
+      if ('close' in element && typeof element.close === 'function')
         element.close()
-      } else {
-        element.remove()
-      }
+      else element.remove()
     }
   }
 
@@ -999,9 +978,7 @@ export class LiteGraphGlobal {
 
         // Use Object.getOwnPropertyDescriptor to copy getters/setters properly
         const descriptor = Object.getOwnPropertyDescriptor(originProto, i)
-        if (descriptor) {
-          Object.defineProperty(targetProto, i, descriptor)
-        }
+        if (descriptor) Object.defineProperty(targetProto, i, descriptor)
       }
     }
   }

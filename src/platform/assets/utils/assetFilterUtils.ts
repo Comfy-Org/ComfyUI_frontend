@@ -11,9 +11,9 @@ export function filterByCategory(category: string) {
 
     // Check if any tag's top-level folder matches the category
     return asset.tags.some((tag) => {
-      if (typeof tag === 'string' && tag.includes('/')) {
+      if (typeof tag === 'string' && tag.includes('/'))
         return tag.split('/')[0] === category
-      }
+
       return false
     })
   }

@@ -184,9 +184,8 @@ describe('LGraphCanvas group selection', () => {
       }
 
       // Recompute from innermost to outermost
-      for (let i = groups.length - 1; i >= 0; i--) {
+      for (let i = groups.length - 1; i >= 0; i--)
         groups[i].recomputeInsideNodes()
-      }
 
       canvas.select(group)
 
@@ -275,9 +274,8 @@ describe('LGraphCanvas group selection', () => {
         nodes.push(nestedNode)
       }
 
-      for (let i = groups.length - 1; i >= 0; i--) {
+      for (let i = groups.length - 1; i >= 0; i--)
         groups[i].recomputeInsideNodes()
-      }
 
       canvas.select(group)
       canvas.deselect(group)

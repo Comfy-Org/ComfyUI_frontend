@@ -134,15 +134,14 @@ const MOCK_NODE = createMockLGraphNode({ id: 'node-1', type: 'Load3D' })
 
 async function renderViewerContent(options: RenderOptions = {}) {
   const viewerStub = buildViewerStub()
-  if (options.viewerOverrides) {
+  if (options.viewerOverrides)
     Object.assign(viewerStub, options.viewerOverrides)
-  }
+
   viewerState.current = viewerStub
 
   const dragStub = buildDragStub()
-  if (options.dragOverrides) {
-    Object.assign(dragStub, options.dragOverrides)
-  }
+  if (options.dragOverrides) Object.assign(dragStub, options.dragOverrides)
+
   dragState.current = dragStub
 
   getLoad3dAsyncMock.mockResolvedValue(serviceSourceLoad3d.current)

@@ -51,16 +51,14 @@ async function loadThumbnail() {
 
   if (asset.name && isAssetPreviewSupported()) {
     const serverPreviewUrl = await findServerPreviewUrl(asset.name)
-    if (serverPreviewUrl) {
-      thumbnailSrc.value = serverPreviewUrl
-    }
+    if (serverPreviewUrl) thumbnailSrc.value = serverPreviewUrl
   }
 }
 
 function revokeThumbnail() {
-  if (thumbnailSrc.value?.startsWith('blob:')) {
+  if (thumbnailSrc.value?.startsWith('blob:'))
     URL.revokeObjectURL(thumbnailSrc.value)
-  }
+
   thumbnailSrc.value = null
 }
 

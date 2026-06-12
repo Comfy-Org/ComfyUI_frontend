@@ -60,9 +60,9 @@ export class SpatialIndexManager {
    * More efficient than calling update() multiple times as it only invalidates cache once
    */
   batchUpdate(updates: Array<{ nodeId: NodeId; bounds: Bounds }>): void {
-    for (const { nodeId, bounds } of updates) {
+    for (const { nodeId, bounds } of updates)
       this.quadTree.update(nodeId, bounds)
-    }
+
     this.invalidateCache()
   }
 
@@ -84,9 +84,8 @@ export class SpatialIndexManager {
     // Check cache validity
     if (cached) {
       const age = Date.now() - cached.timestamp
-      if (age < PERFORMANCE_CONFIG.SPATIAL_CACHE_TTL) {
-        return cached.result
-      }
+      if (age < PERFORMANCE_CONFIG.SPATIAL_CACHE_TTL) return cached.result
+
       // Remove stale entry
       this.queryCache.delete(cacheKey)
       this.cacheSize--

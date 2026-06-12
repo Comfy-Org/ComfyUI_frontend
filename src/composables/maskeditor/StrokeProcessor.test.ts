@@ -18,9 +18,8 @@ describe('StrokeProcessor', () => {
       { x: 100, y: 0 } // dist 70
     ]
 
-    for (const p of inputPoints) {
-      outputPoints.push(...processor.addPoint(p))
-    }
+    for (const p of inputPoints) outputPoints.push(...processor.addPoint(p))
+
     outputPoints.push(...processor.endStroke())
 
     // Verify we have points

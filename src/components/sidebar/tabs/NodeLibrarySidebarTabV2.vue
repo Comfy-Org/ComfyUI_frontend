@@ -226,12 +226,8 @@ const selectedTab = useLocalStorage<TabId>(
 )
 
 watchEffect(() => {
-  if (
-    !flags.nodeLibraryEssentialsEnabled &&
-    selectedTab.value === 'essentials'
-  ) {
+  if (!flags.nodeLibraryEssentialsEnabled && selectedTab.value === 'essentials')
     selectedTab.value = DEFAULT_TAB_ID
-  }
 })
 
 const sortOrderByTab = useLocalStorage<Record<TabId, SortingStrategyId>>(
@@ -273,9 +269,8 @@ const nodeDefStore = useNodeDefStore()
 const { startDrag } = useNodeDragToCanvas()
 
 const filteredNodeDefs = computed(() => {
-  if (searchQuery.value.length === 0) {
-    return []
-  }
+  if (searchQuery.value.length === 0) return []
+
   return nodeDefStore.nodeSearchService.searchNode(
     searchQuery.value,
     [],
@@ -306,9 +301,9 @@ function getFolderIcon(node: TreeNode): string {
   if (
     firstLeaf?.data?.api_node &&
     firstLeaf.key?.replace(`${node.key}/`, '') === firstLeaf.label
-  ) {
+  )
     return getProviderIcon(node.label ?? '')
-  }
+
   return 'icon-[lucide--folder]'
 }
 
@@ -349,9 +344,9 @@ function fillNodeInfo(
 }
 
 function applySorting(tree: TreeNode): TreeNode {
-  if (sortOrder.value === 'alphabetical') {
+  if (sortOrder.value === 'alphabetical')
     return sortedTree(tree, { groupLeaf: true })
-  }
+
   return tree
 }
 
@@ -454,23 +449,19 @@ const renderedBlueprintsSections = computed(() =>
 function collectFolderKeys(node: TreeNode): string[] {
   if (node.leaf) return []
   const keys = [node.key]
-  for (const child of node.children ?? []) {
+  for (const child of node.children ?? [])
     keys.push(...collectFolderKeys(child))
-  }
+
   return keys
 }
 
 function handleNodeClick(node: RenderedTreeExplorerNode<ComfyNodeDefImpl>) {
-  if (node.type === 'node' && node.data) {
-    startDrag(node.data)
-  }
+  if (node.type === 'node' && node.data) startDrag(node.data)
+
   if (node.type === 'folder') {
     const index = expandedKeys.value.indexOf(node.key)
-    if (index === -1) {
-      expandedKeys.value = [...expandedKeys.value, node.key]
-    } else {
-      expandedKeys.value = expandedKeys.value.filter((k) => k !== node.key)
-    }
+    if (index === -1) expandedKeys.value = [...expandedKeys.value, node.key]
+    else expandedKeys.value = expandedKeys.value.filter((k) => k !== node.key)
   }
 }
 
@@ -484,17 +475,14 @@ async function handleSearch() {
 
   const allKeys: string[] = []
   if (selectedTab.value === 'essentials') {
-    for (const section of essentialSections.value) {
+    for (const section of essentialSections.value)
       allKeys.push(...collectFolderKeys(section.tree))
-    }
   } else if (selectedTab.value === 'blueprints') {
-    for (const section of blueprintsSections.value) {
+    for (const section of blueprintsSections.value)
       allKeys.push(...collectFolderKeys(section.tree))
-    }
   } else {
-    for (const section of sections.value) {
+    for (const section of sections.value)
       allKeys.push(...collectFolderKeys(section.tree))
-    }
   }
   expandedKeys.value = allKeys
 }

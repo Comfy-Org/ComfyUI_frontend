@@ -47,9 +47,9 @@ const props = defineProps<{
 const modelValue = defineModel<string | undefined>()
 
 const comboSpec = computed<ComboInputSpec | undefined>(() => {
-  if (props.widget.spec && isComboInputSpec(props.widget.spec)) {
+  if (props.widget.spec && isComboInputSpec(props.widget.spec))
     return props.widget.spec
-  }
+
   return undefined
 })
 
@@ -80,15 +80,10 @@ const specDescriptor = computed<{
   } = spec
 
   let kind: AssetKind = 'unknown'
-  if (video_upload) {
-    kind = 'video'
-  } else if (image_upload || animated_image_upload) {
-    kind = 'image'
-  } else if (audio_upload) {
-    kind = 'audio'
-  } else if (mesh_upload) {
-    kind = 'mesh'
-  }
+  if (video_upload) kind = 'video'
+  else if (image_upload || animated_image_upload) kind = 'image'
+  else if (audio_upload) kind = 'audio'
+  else if (mesh_upload) kind = 'mesh'
 
   // TODO: add support for models (checkpoints, VAE, LoRAs, etc.) -- get widgetType from spec
 

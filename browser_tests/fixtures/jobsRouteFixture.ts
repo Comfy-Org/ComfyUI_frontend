@@ -145,12 +145,10 @@ class JobsRouteMocker {
   }
 
   async mockJobsScenario({ history, queue }: JobsScenario): Promise<void> {
-    if (history) {
+    if (history)
       await this.mockJobsHistory(history, defaultScenarioHistoryLimit)
-    }
-    if (queue) {
-      await this.mockJobsQueue(queue)
-    }
+
+    if (queue) await this.mockJobsQueue(queue)
   }
 
   async mockJobsList(route: JobsListRoute): Promise<void> {

@@ -92,21 +92,18 @@ export const useMaskEditorStore = defineStore('maskEditor', () => {
   const pendingGPURgbData = ref<GPUCompatibleArray | null>(null)
 
   watch(maskCanvas, (canvas) => {
-    if (canvas) {
+    if (canvas)
       maskCtx.value = canvas.getContext('2d', { willReadFrequently: true })
-    }
   })
 
   watch(rgbCanvas, (canvas) => {
-    if (canvas) {
+    if (canvas)
       rgbCtx.value = canvas.getContext('2d', { willReadFrequently: true })
-    }
   })
 
   watch(imgCanvas, (canvas) => {
-    if (canvas) {
+    if (canvas)
       imgCtx.value = canvas.getContext('2d', { willReadFrequently: true })
-    }
   })
 
   const canUndo = computed(() => {

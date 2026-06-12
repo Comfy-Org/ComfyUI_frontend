@@ -45,9 +45,9 @@ vi.mock('@/types/nodeSource', () => ({
     CustomNodes: 'custom_nodes'
   },
   getNodeSource: vi.fn((pythonModule) => {
-    if (pythonModule?.startsWith('custom_nodes.')) {
+    if (pythonModule?.startsWith('custom_nodes.'))
       return { type: 'custom_nodes' }
-    }
+
     return { type: 'core' }
   })
 }))

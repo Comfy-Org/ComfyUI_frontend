@@ -175,9 +175,7 @@ export class SubgraphInputNode
 
     // Break floating links
     if (input._floatingLinks?.size) {
-      for (const link of input._floatingLinks) {
-        subgraph.removeFloatingLink(link)
-      }
+      for (const link of input._floatingLinks) subgraph.removeFloatingLink(link)
     }
 
     input.link = null
@@ -210,9 +208,8 @@ export class SubgraphInputNode
       )
     }
 
-    if (subgraphInput.linkIds.length === 0) {
-      subgraphInput._widget = undefined
-    }
+    if (subgraphInput.linkIds.length === 0) subgraphInput._widget = undefined
+
     subgraphInput.events.dispatch('input-disconnected', {
       input: subgraphInput
     })

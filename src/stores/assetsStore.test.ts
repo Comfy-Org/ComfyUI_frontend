@@ -503,11 +503,8 @@ describe('assetsStore - Refactored (Option A)', () => {
         )
         vi.mocked(api.getHistory).mockResolvedValueOnce(items)
 
-        if (batch === 0) {
-          await store.updateHistory()
-        } else {
-          await store.loadMoreHistory()
-        }
+        if (batch === 0) await store.updateHistory()
+        else await store.loadMoreHistory()
       }
 
       // Should be limited to 1000
@@ -527,11 +524,8 @@ describe('assetsStore - Refactored (Option A)', () => {
         )
         vi.mocked(api.getHistory).mockResolvedValueOnce(items)
 
-        if (batch === 0) {
-          await store.updateHistory()
-        } else {
-          await store.loadMoreHistory()
-        }
+        if (batch === 0) await store.updateHistory()
+        else await store.loadMoreHistory()
       }
 
       expect(store.historyAssets).toHaveLength(1000)
@@ -606,9 +600,8 @@ describe('assetsStore - Refactored (Option A)', () => {
       // Patch using a non-matching prefix; the other assets must stay untouched
       store.setAssetPreview('output_1', 'p', '/p')
 
-      for (const asset of store.historyAssets) {
+      for (const asset of store.historyAssets)
         expect(asset.preview_id).toBeUndefined()
-      }
     })
 
     it('replaces the asset object so reactivity fires for v-for keyed by id', async () => {

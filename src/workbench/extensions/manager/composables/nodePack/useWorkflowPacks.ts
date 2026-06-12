@@ -34,12 +34,12 @@ const _useWorkflowPacks = () => {
   const unresolvedNodeNames = ref<string[]>([])
 
   const getWorkflowNodePackId = (node: LGraphNode): string | undefined => {
-    if (typeof node.properties?.cnr_id === 'string') {
+    if (typeof node.properties?.cnr_id === 'string')
       return node.properties.cnr_id
-    }
-    if (typeof node.properties?.aux_id === 'string') {
+
+    if (typeof node.properties?.aux_id === 'string')
       return node.properties.aux_id
-    }
+
     return undefined
   }
 
@@ -62,9 +62,9 @@ const _useWorkflowPacks = () => {
     // Check if node is a core node
     const nodeDef = nodeDefStore.nodeDefsByName[nodeName]
     if (nodeDef?.isCoreNode) {
-      if (!systemStatsStore.systemStats) {
+      if (!systemStatsStore.systemStats)
         await systemStatsStore.refetchSystemStats()
-      }
+
       return {
         id: CORE_NODES_PACK_NAME,
         version:
@@ -136,9 +136,8 @@ const _useWorkflowPacks = () => {
             nodeName &&
             getWorkflowNodePackId(node) === undefined &&
             !nodeDefStore.nodeDefsByName[nodeName]
-          ) {
+          )
             unresolved.push(nodeName)
-          }
         }
       })
     )

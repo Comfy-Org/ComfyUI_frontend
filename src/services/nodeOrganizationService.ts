@@ -83,9 +83,7 @@ class NodeOrganizationService {
       getNodePath: (nodeDef: ComfyNodeDefImpl) => {
         const pythonModule = nodeDef.python_module || ''
 
-        if (!pythonModule) {
-          return ['unknown_module', nodeDef.name]
-        }
+        if (!pythonModule) return ['unknown_module', nodeDef.name]
 
         // Split the module path into components
         const parts = pythonModule.split('.')
@@ -113,15 +111,12 @@ class NodeOrganizationService {
       icon: 'pi pi-server',
       description: 'sideToolbar.nodeLibraryTab.groupStrategies.sourceDesc',
       getNodePath: (nodeDef: ComfyNodeDefImpl) => {
-        if (nodeDef.api_node) {
-          return ['API nodes', nodeDef.name]
-        } else if (nodeDef.nodeSource.type === NodeSourceType.Core) {
+        if (nodeDef.api_node) return ['API nodes', nodeDef.name]
+        else if (nodeDef.nodeSource.type === NodeSourceType.Core)
           return ['Core', nodeDef.name]
-        } else if (nodeDef.nodeSource.type === NodeSourceType.CustomNodes) {
+        else if (nodeDef.nodeSource.type === NodeSourceType.CustomNodes)
           return ['Custom nodes', nodeDef.name]
-        } else {
-          return ['Unknown', nodeDef.name]
-        }
+        else return ['Unknown', nodeDef.name]
       }
     }
   ]
@@ -251,9 +246,9 @@ class NodeOrganizationService {
 
     const sections: NodeSection[] = []
 
-    if (blueprintTree.children?.length) {
+    if (blueprintTree.children?.length)
       sections.push({ category: 'blueprints', tree: blueprintTree })
-    }
+
     if (partnerNodes.length > 0) {
       sections.push({
         category: 'partnerNodes',
@@ -375,13 +370,10 @@ class NodeOrganizationService {
     const groupingStrategy = this.getGroupingStrategy(groupBy)
     const sortingStrategy = this.getSortingStrategy(sortBy)
 
-    if (!groupingStrategy) {
+    if (!groupingStrategy)
       throw new Error(`Unknown grouping strategy: ${groupBy}`)
-    }
 
-    if (!sortingStrategy) {
-      throw new Error(`Unknown sorting strategy: ${sortBy}`)
-    }
+    if (!sortingStrategy) throw new Error(`Unknown sorting strategy: ${sortBy}`)
 
     const sortedNodes =
       sortingStrategy.id === 'original'
@@ -392,9 +384,7 @@ class NodeOrganizationService {
       pathExtractor: groupingStrategy.getNodePath
     })
 
-    if (sortBy === 'alphabetical') {
-      return sortedTree(tree, { groupLeaf: true })
-    }
+    if (sortBy === 'alphabetical') return sortedTree(tree, { groupLeaf: true })
 
     return tree
   }

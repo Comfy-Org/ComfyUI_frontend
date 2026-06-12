@@ -23,14 +23,10 @@ export function useJobActions(
 
   const canCancelJob = computed(() => {
     const currentJob = jobRef.value
-    if (!currentJob) {
-      return false
-    }
+    if (!currentJob) return false
 
     const configuredActions = actionsByJobId.value[currentJob.id]
-    if (configuredActions) {
-      return configuredActions.length > 0
-    }
+    if (configuredActions) return configuredActions.length > 0
 
     return currentJob.showClear !== false && isActiveJobState(currentJob.state)
   })

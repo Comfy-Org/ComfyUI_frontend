@@ -189,11 +189,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       return true
     })
 
-    if (cache)
+    if (cache) {
       this._linkedEntriesCache = {
         version: this._cacheVersion,
         entries: deduplicatedEntries
       }
+    }
 
     return deduplicatedEntries
   }
@@ -272,10 +273,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     Object.defineProperty(this, 'widgets', {
       get: () => this._getPromotedViews(),
       set: () => {
-        if (import.meta.env.DEV)
+        if (import.meta.env.DEV) {
           console.warn(
             'Cannot manually set widgets on SubgraphNode; use the promotion system.'
           )
+        }
       },
       configurable: true,
       enumerable: true
@@ -306,7 +308,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           if (!inputNode || !input) return
 
           const widget = inputNode.getWidgetFromSlot(input)
-          if (widget)
+          if (widget) {
             this._setWidget(
               subgraphInput,
               existingInput,
@@ -314,6 +316,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
               input.widget,
               inputNode
             )
+          }
           return
         }
         const input = this.addInput(name, type, {
@@ -412,11 +415,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     button: LGraphButton,
     canvas: LGraphCanvas
   ): void {
-    if (button.name === 'enter_subgraph') {
+    if (button.name === 'enter_subgraph')
       canvas.openSubgraph(this.subgraph, this)
-    } else {
-      super.onTitleButtonClick(button, canvas)
-    }
+    else super.onTitleButtonClick(button, canvas)
   }
 
   private _addSubgraphInputListeners(
@@ -428,9 +429,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (
       input._listenerController &&
       typeof input._listenerController.abort === 'function'
-    ) {
+    )
       input._listenerController.abort()
-    }
+
     input._listenerController = new AbortController()
     const { signal } = input._listenerController
 
@@ -454,7 +455,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
             ) !== true
 
         const shouldSetWidgetFromEvent = !input._widget || hasStaleBoundWidget
-        if (shouldSetWidgetFromEvent)
+        if (shouldSetWidgetFromEvent) {
           this._setWidget(
             subgraphInput,
             input,
@@ -462,6 +463,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
             e.detail.input.widget,
             e.detail.node
           )
+        }
 
         this.invalidatePromotedViews()
       },
@@ -502,18 +504,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     for (const slot of subgraphSlots) {
       const signature = `${slot.name}:${String(slot.type)}`
       const signatureSlots = slotsBySignature.get(signature)
-      if (signatureSlots) {
-        signatureSlots.push(slot)
-      } else {
-        slotsBySignature.set(signature, [slot])
-      }
+      if (signatureSlots) signatureSlots.push(slot)
+      else slotsBySignature.set(signature, [slot])
 
       const nameSlots = slotsByName.get(slot.name)
-      if (nameSlots) {
-        nameSlots.push(slot)
-      } else {
-        slotsByName.set(slot.name, [slot])
-      }
+      if (nameSlots) nameSlots.push(slot)
+      else slotsByName.set(slot.name, [slot])
     }
 
     const assignedSlotIds = new Set<string>()
@@ -553,9 +549,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (
         input._listenerController &&
         typeof input._listenerController.abort === 'function'
-      ) {
+      )
         input._listenerController.abort()
-      }
     }
 
     this.inputs.length = 0
@@ -757,9 +752,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       isPromotedWidgetView(previousView) &&
       (previousView.sourceNodeId !== nodeId ||
         previousView.sourceWidgetName !== widgetName)
-    ) {
+    )
       this._removePromotedView(previousView)
-    }
 
     const view = this._promotedViewManager.getOrCreate(
       nodeId,
@@ -867,9 +861,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   resolveSubgraphOutputLink(slot: number): ResolvedConnection | undefined {
     const outputSlot = this.subgraph.outputNode.slots[slot]
     const innerLink = outputSlot.getLinks().at(0)
-    if (innerLink) {
-      return innerLink.resolve(this.subgraph)
-    }
+    if (innerLink) return innerLink.resolve(this.subgraph)
+
     console.warn(
       `[SubgraphNode.resolveSubgraphOutputLink] No inner link found for output slot [${slot}] ${outputSlot.name}`,
       this
@@ -941,9 +934,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       interiorWidget &&
       'id' in interiorWidget &&
       ('element' in interiorWidget || 'component' in interiorWidget)
-    ) {
+    )
       useDomWidgetStore().clearPositionOverride(String(interiorWidget.id))
-    }
   }
 
   private _removePromotedView(view: PromotedWidgetView): void {
@@ -995,9 +987,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     this.invalidatePromotedViews()
 
     for (const widget of this.widgets) {
-      if (isPromotedWidgetView(widget)) {
-        this._clearDomOverrideForView(widget)
-      }
+      if (isPromotedWidgetView(widget)) this._clearDomOverrideForView(widget)
+
       this.subgraph.events.dispatch('widget-demoted', {
         widget,
         subgraphNode: this
@@ -1010,9 +1001,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       if (
         input._listenerController &&
         typeof input._listenerController.abort === 'function'
-      ) {
+      )
         input._listenerController.abort()
-      }
     }
   }
   override drawTitleBox(
@@ -1095,11 +1085,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       return [isWidgetValue(value) ? value : undefined]
     })
 
-    if (widgetValues.some((value) => value !== undefined)) {
+    if (widgetValues.some((value) => value !== undefined))
       serialized.widgets_values = widgetValues
-    } else {
-      delete serialized.widgets_values
-    }
+    else delete serialized.widgets_values
 
     return serialized
   }

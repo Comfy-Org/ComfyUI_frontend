@@ -25,9 +25,9 @@ const conditionMatches = (
   const expected = condition.equals
   if (expected === undefined) return true
   const expectedSet = Array.isArray(expected) ? expected : [expected]
-  if (Array.isArray(current)) {
+  if (Array.isArray(current))
     return current.some((v) => expectedSet.includes(v))
-  }
+
   return typeof current === 'string' && expectedSet.includes(current)
 }
 

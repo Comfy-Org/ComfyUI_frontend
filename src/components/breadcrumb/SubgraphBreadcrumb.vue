@@ -178,9 +178,7 @@ watch(breadcrumbElement, (el) => {
           const totalWidth = itemsWidth + separatorsWidth + gapsWidth
           const containerWidth = el.clientWidth
 
-          if (totalWidth <= containerWidth) {
-            collapseTabs.value = false
-          }
+          if (totalWidth <= containerWidth) collapseTabs.value = false
         }
       } else if (isOverflowing) {
         collapseTabs.value = true
@@ -191,9 +189,7 @@ watch(breadcrumbElement, (el) => {
 
 // If e.g. the workflow name changes, we need to check the overflow again
 onUpdated(() => {
-  if (!overflowObserver?.disposed.value) {
-    overflowObserver?.checkOverflow()
-  }
+  if (!overflowObserver?.disposed.value) overflowObserver?.checkOverflow()
 })
 </script>
 

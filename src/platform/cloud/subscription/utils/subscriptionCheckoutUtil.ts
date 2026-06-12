@@ -19,9 +19,7 @@ const getCheckoutTier = (
 
 const getCheckoutAttributionForCloud =
   async (): Promise<CheckoutAttributionMetadata> => {
-    if (__DISTRIBUTION__ !== 'cloud') {
-      return {}
-    }
+    if (__DISTRIBUTION__ !== 'cloud') return {}
 
     const { getCheckoutAttribution } =
       await import('@/platform/telemetry/utils/checkoutAttribution')
@@ -54,9 +52,8 @@ export async function performSubscriptionCheckout(
   const telemetry = useTelemetry()
   const authHeader = await authStore.getAuthHeader()
 
-  if (!authHeader) {
+  if (!authHeader)
     throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-  }
 
   const checkoutTier = getCheckoutTier(tierKey, currentBillingCycle)
   let checkoutAttribution: CheckoutAttributionMetadata = {}
@@ -117,9 +114,7 @@ export async function performSubscriptionCheckout(
 
     if (openInNewTab) {
       const checkoutWindow = window.open(data.checkout_url, '_blank')
-      if (!checkoutWindow) {
-        return
-      }
+      if (!checkoutWindow) return
 
       recordPendingSubscriptionCheckoutAttempt({
         tier: tierKey,

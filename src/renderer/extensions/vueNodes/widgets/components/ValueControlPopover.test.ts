@@ -101,9 +101,8 @@ describe('ValueControlPopover', () => {
   describe('Option rendering', () => {
     it('renders all four control options', () => {
       renderPopover()
-      for (const label of Object.values(CONTROL_LABELS)) {
+      for (const label of Object.values(CONTROL_LABELS))
         expect(screen.getByText(label)).toBeInTheDocument()
-      }
     })
 
     it('renders a radio input for each option', () => {

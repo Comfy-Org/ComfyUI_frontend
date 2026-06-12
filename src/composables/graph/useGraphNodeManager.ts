@@ -187,25 +187,25 @@ function getSharedWidgetEnhancements(
  * Validates that a value is a valid WidgetValue type
  */
 function normalizeWidgetValue(value: unknown): WidgetValue {
-  if (value === null || value === undefined || value === void 0) {
+  if (value === null || value === undefined || value === void 0)
     return undefined
-  }
+
   if (
     typeof value === 'string' ||
     typeof value === 'number' ||
     typeof value === 'boolean'
-  ) {
+  )
     return value
-  }
+
   if (typeof value === 'object') {
     // Check if it's a File array
     if (
       Array.isArray(value) &&
       value.length > 0 &&
       value.every((item): item is File => item instanceof File)
-    ) {
+    )
       return value
-    }
+
     // Otherwise it's a generic object
     return value
   }
@@ -426,9 +426,9 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
         if (
           current.length !== reactiveWidgets.length ||
           current.some((w, i) => w !== reactiveWidgets[i])
-        ) {
+        )
           reactiveWidgets.splice(0, reactiveWidgets.length, ...current)
-        }
+
         return reactiveWidgets
       },
       set: existingWidgetsDescriptor.set ?? (() => {}),
@@ -475,9 +475,8 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
 
     const freshMetadata = buildSlotMetadata(node.inputs, node.graph)
     slotMetadata.clear()
-    for (const [key, value] of freshMetadata) {
-      slotMetadata.set(key, value)
-    }
+    for (const [key, value] of freshMetadata) slotMetadata.set(key, value)
+
     return widgetsSnapshot.map(safeWidgetMapper(node, slotMetadata))
   })
 
@@ -533,9 +532,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     const slotMetadata = buildSlotMetadata(nodeRef.inputs, graph)
 
     // Update only widgets with new slot metadata, keeping other widget data intact
-    for (const widget of currentData.widgets ?? []) {
+    for (const widget of currentData.widgets ?? [])
       widget.slotMetadata = slotMetadata.get(widget.slotName ?? widget.name)
-    }
   }
 
   // Get access to original LiteGraph node (non-reactive)
@@ -626,9 +624,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     }
 
     // Call original callback if provided
-    if (originalCallback) {
-      void originalCallback(node)
-    }
+    if (originalCallback) void originalCallback(node)
   }
 
   /**
@@ -649,9 +645,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     vueNodeData.delete(id)
 
     // Call original callback if provided
-    if (originalCallback) {
-      originalCallback(node)
-    }
+    if (originalCallback) originalCallback(node)
   }
 
   /**
@@ -795,9 +789,8 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         refreshNodeSlots(String(slotErrorsEvent.nodeId))
       },
       'node:slot-links:changed': (slotLinksEvent) => {
-        if (slotLinksEvent.slotType === NodeSlotType.INPUT) {
+        if (slotLinksEvent.slotType === NodeSlotType.INPUT)
           refreshNodeSlots(String(slotLinksEvent.nodeId))
-        }
       },
       'node:slot-label:changed': (slotLabelEvent) => {
         const nodeId = String(slotLabelEvent.nodeId)
@@ -806,12 +799,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
         // Force shallowReactive to detect the deep property change
         // by re-assigning the affected array through the defineProperty setter.
-        if (slotLabelEvent.slotType !== NodeSlotType.OUTPUT && nodeRef.inputs) {
+        if (slotLabelEvent.slotType !== NodeSlotType.OUTPUT && nodeRef.inputs)
           nodeRef.inputs = [...nodeRef.inputs]
-        }
-        if (slotLabelEvent.slotType !== NodeSlotType.INPUT && nodeRef.outputs) {
+
+        if (slotLabelEvent.slotType !== NodeSlotType.INPUT && nodeRef.outputs)
           nodeRef.outputs = [...nodeRef.outputs]
-        }
+
         // Re-extract widget data so promotedLabel reflects the rename
         vueNodeData.set(nodeId, extractVueNodeData(nodeRef))
       }
@@ -854,9 +847,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Process any existing nodes after event listeners are set up
   if (graph._nodes && graph._nodes.length > 0) {
     graph._nodes.forEach((node: LGraphNode) => {
-      if (graph.onNodeAdded) {
-        graph.onNodeAdded(node)
-      }
+      if (graph.onNodeAdded) graph.onNodeAdded(node)
     })
   }
 

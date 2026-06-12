@@ -33,9 +33,8 @@ function triggerLinkDownload(href: string, filename: string): void {
  * @throws {Error} If the URL is invalid or empty
  */
 export function downloadFile(url: string, filename?: string): void {
-  if (!url || typeof url !== 'string' || url.trim().length === 0) {
+  if (!url || typeof url !== 'string' || url.trim().length === 0)
     throw new Error('Invalid URL provided for download')
-  }
 
   const inferredFilename =
     filename || extractFilenameFromUrl(url) || DEFAULT_DOWNLOAD_FILENAME
@@ -103,15 +102,11 @@ export function extractFilenameFromContentDisposition(
 
   // Try simple quoted format: filename="..."
   const quotedMatch = header.match(/filename="([^"]+)"/i)
-  if (quotedMatch?.[1]) {
-    return quotedMatch[1]
-  }
+  if (quotedMatch?.[1]) return quotedMatch[1]
 
   // Try unquoted format: filename=...
   const unquotedMatch = header.match(/filename=([^;\s]+)/i)
-  if (unquotedMatch?.[1]) {
-    return unquotedMatch[1]
-  }
+  if (unquotedMatch?.[1]) return unquotedMatch[1]
 
   return null
 }
@@ -122,9 +117,9 @@ export function extractFilenameFromContentDisposition(
  */
 async function fetchAsBlob(url: string): Promise<Response> {
   const response = await fetch(url)
-  if (!response.ok) {
+  if (!response.ok)
     throw new Error(`Failed to fetch ${url}: ${response.status}`)
-  }
+
   return response
 }
 

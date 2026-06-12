@@ -389,9 +389,8 @@ export function resolveRuntimeCatalogMatch(
 ): RuntimeCatalogMatch | undefined {
   const message = info.exceptionMessage.trim()
 
-  for (const rule of RUNTIME_MATCH_RULES) {
+  for (const rule of RUNTIME_MATCH_RULES)
     if (rule.matches(info, message)) return rule.resolve(info, message)
-  }
 
   return undefined
 }

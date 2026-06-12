@@ -36,9 +36,8 @@ export class Topbar {
    * Get a menu item by its label, optionally within a specific parent container
    */
   getMenuItem(itemLabel: string, parent?: Locator): Locator {
-    if (parent) {
+    if (parent)
       return parent.locator(`.p-tieredmenu-item:has-text("${itemLabel}")`)
-    }
 
     return this.page.locator(`.p-menubar-item-label:text-is("${itemLabel}")`)
   }
@@ -119,9 +118,7 @@ export class Topbar {
     const confirmationDialog = this.page
       .getByRole('dialog')
       .filter({ hasText: 'Overwrite' })
-    if (await confirmationDialog.isVisible()) {
-      return
-    }
+    if (await confirmationDialog.isVisible()) return
   }
 
   async openTopbarMenu() {
@@ -201,9 +198,7 @@ export class Topbar {
   }
 
   async triggerTopbarCommand(path: string[]) {
-    if (path.length < 1) {
-      throw new Error('Path cannot be empty')
-    }
+    if (path.length < 1) throw new Error('Path cannot be empty')
 
     const menu = await this.openTopbarMenu()
     const tabName = path[0]

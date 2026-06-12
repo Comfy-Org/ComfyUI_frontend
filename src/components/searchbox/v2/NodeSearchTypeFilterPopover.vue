@@ -148,9 +148,9 @@ function onSelectionChange(value: AcceptableValue) {
 
 const filteredOptions = computed(() => {
   const { fuseSearch } = chip.filter
-  if (searchQuery.value) {
+  if (searchQuery.value)
     return fuseSearch.search(searchQuery.value).slice(0, 64)
-  }
+
   return fuseSearch.data.slice().sort()
 })
 

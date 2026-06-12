@@ -12,11 +12,9 @@ export const useWorkflowsSidebarTab = (): SidebarTabExtension => {
     id: 'workflows',
     icon: 'icon-[comfy--workflow]',
     iconBadge: () => {
-      if (
-        settingStore.get('Comfy.Workflow.WorkflowTabsPosition') !== 'Sidebar'
-      ) {
+      if (settingStore.get('Comfy.Workflow.WorkflowTabsPosition') !== 'Sidebar')
         return null
-      }
+
       const value = workflowStore.openWorkflows.length.toString()
       return value === '0' ? null : value
     },

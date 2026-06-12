@@ -37,9 +37,7 @@ export function useCreateWorkspaceUrlLoader() {
   async function loadCreateWorkspaceFromUrl() {
     hydratePreservedQuery(NAMESPACE)
     const mergedQuery = mergePreservedQueryIntoQuery(NAMESPACE, route.query)
-    if (mergedQuery) {
-      await router.replace({ query: mergedQuery })
-    }
+    if (mergedQuery) await router.replace({ query: mergedQuery })
 
     const query = mergedQuery ?? route.query
     const param = query.create_workspace

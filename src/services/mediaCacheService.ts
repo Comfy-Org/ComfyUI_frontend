@@ -114,9 +114,7 @@ class MediaCacheService {
     try {
       // Fetch the media
       const response = await fetch(src, { cache: 'force-cache' })
-      if (!response.ok) {
-        throw new Error(`Failed to fetch: ${response.status}`)
-      }
+      if (!response.ok) throw new Error(`Failed to fetch: ${response.status}`)
 
       const blob = await response.blob()
       const objectUrl = URL.createObjectURL(blob)
@@ -176,9 +174,7 @@ class MediaCacheService {
   clearCache() {
     // Revoke all object URLs
     for (const entry of Array.from(this.cache.values())) {
-      if (entry.objectUrl) {
-        URL.revokeObjectURL(entry.objectUrl)
-      }
+      if (entry.objectUrl) URL.revokeObjectURL(entry.objectUrl)
     }
     this.cache.clear()
     this.urlRefCount.clear()
@@ -197,9 +193,7 @@ class MediaCacheService {
 let mediaCacheInstance: MediaCacheService | null = null
 
 export function useMediaCache(options?: MediaCacheOptions) {
-  if (!mediaCacheInstance) {
-    mediaCacheInstance = new MediaCacheService(options)
-  }
+  if (!mediaCacheInstance) mediaCacheInstance = new MediaCacheService(options)
 
   const getCachedMedia = (src: string) =>
     mediaCacheInstance!.getCachedMedia(src)
@@ -219,8 +213,6 @@ export function useMediaCache(options?: MediaCacheOptions) {
 // Cleanup on page unload
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeunload', () => {
-    if (mediaCacheInstance) {
-      mediaCacheInstance.destroy()
-    }
+    if (mediaCacheInstance) mediaCacheInstance.destroy()
   })
 }

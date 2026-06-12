@@ -158,9 +158,7 @@ const fixPopoverIntoViewport = async () => {
 watch(
   () => isSelected,
   (isSelected, wasSelected) => {
-    if (wasSelected && !isSelected) {
-      closeVersionSelector()
-    }
+    if (wasSelected && !isSelected) closeVersionSelector()
   }
 )
 </script>

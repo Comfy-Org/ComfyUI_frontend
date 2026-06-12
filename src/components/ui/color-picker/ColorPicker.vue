@@ -25,18 +25,14 @@ const displayMode = ref<'hex' | 'rgba'>('hex')
 
 watch(modelValue, (newVal) => {
   const current = hsvaToHex(hsva.value)
-  if (newVal !== current) {
-    hsva.value = hexToHsva(newVal || '#000000')
-  }
+  if (newVal !== current) hsva.value = hexToHsva(newVal || '#000000')
 })
 
 watch(
   hsva,
   (newHsva) => {
     const hex = hsvaToHex(newHsva)
-    if (hex !== modelValue.value) {
-      modelValue.value = hex
-    }
+    if (hex !== modelValue.value) modelValue.value = hex
   },
   { deep: true }
 )

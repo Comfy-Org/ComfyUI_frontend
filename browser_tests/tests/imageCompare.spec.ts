@@ -54,9 +54,9 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
       })
       .toBe(true)
     const box = await containerLocator.boundingBox()
-    if (!box || box.width <= 0 || box.height <= 0) {
+    if (!box || box.width <= 0 || box.height <= 0)
       throw new Error('Slider move target has no layout box')
-    }
+
     await page.mouse.move(
       box.x + box.width * (percentage / 100),
       box.y + box.height / 2
@@ -261,9 +261,8 @@ test.describe('Image Compare', { tag: ['@widget', '@vue-nodes'] }, () => {
       .toBe(true)
 
     const box = await compareArea.boundingBox()
-    if (!box || box.width <= 0 || box.height <= 0) {
+    if (!box || box.width <= 0 || box.height <= 0)
       throw new Error('Compare viewport layout not ready')
-    }
 
     await comfyPage.page.mouse.move(box.x, box.y + box.height / 2)
     await expect

@@ -62,9 +62,8 @@ export const useWorkflowService = () => {
   }
 
   const persistActiveWorkflowDraft = (activeWorkflow: ComfyWorkflow) => {
-    if (!settingStore.get('Comfy.Workflow.Persist') || !activeWorkflow.path) {
+    if (!settingStore.get('Comfy.Workflow.Persist') || !activeWorkflow.path)
       return
-    }
 
     const activeState = activeWorkflow.activeState
     if (!activeState) return
@@ -79,9 +78,7 @@ export const useWorkflowService = () => {
         }
       )
 
-      if (!saved) {
-        showFailedToSaveDraftToast()
-      }
+      if (!saved) showFailedToSaveDraftToast()
     } catch (err) {
       console.error('Failed to persist active workflow draft', err)
       showFailedToSaveDraftToast()
@@ -105,9 +102,8 @@ export const useWorkflowService = () => {
         defaultValue: defaultName
       })
       if (!filename) return null
-      if (!filename.toLowerCase().endsWith('.json')) {
-        filename += '.json'
-      }
+      if (!filename.toLowerCase().endsWith('.json')) filename += '.json'
+
       return filename
     }
     return defaultName
@@ -137,9 +133,8 @@ export const useWorkflowService = () => {
     promptProperty: 'workflow' | 'output'
   ): Promise<void> => {
     const workflow = workflowStore.activeWorkflow
-    if (workflow?.path) {
-      filename = workflow.filename
-    }
+    if (workflow?.path) filename = workflow.filename
+
     const p = await app.graphToPrompt()
 
     addViewRestore(p.workflow)
@@ -210,9 +205,7 @@ export const useWorkflowService = () => {
    * @param workflow The workflow to save
    */
   const saveWorkflow = async (workflow: ComfyWorkflow): Promise<boolean> => {
-    if (workflow.isTemporary) {
-      return await saveWorkflowAs(workflow)
-    }
+    if (workflow.isTemporary) return await saveWorkflowAs(workflow)
 
     workflow.changeTracker?.prepareForSave()
     const isApp = workflow.initialMode === 'app'
@@ -264,9 +257,7 @@ export const useWorkflowService = () => {
    */
   const reloadCurrentWorkflow = async () => {
     const workflow = workflowStore.activeWorkflow
-    if (workflow) {
-      await openWorkflow(workflow, { force: true })
-    }
+    if (workflow) await openWorkflow(workflow, { force: true })
   }
 
   /**
@@ -281,9 +272,7 @@ export const useWorkflowService = () => {
     if (workflowStore.isActive(workflow) && !options.force) return
 
     const loadFromRemote = !workflow.isLoaded
-    if (loadFromRemote) {
-      await workflow.load()
-    }
+    if (loadFromRemote) await workflow.load()
 
     await app.loadGraphData(
       toRaw(workflow.activeState) as ComfyWorkflowJSON,
@@ -333,9 +322,8 @@ export const useWorkflowService = () => {
     workflowDraftStore.removeDraft(workflow.path)
 
     // If this is the last workflow, create a new default temporary workflow
-    if (workflowStore.openWorkflows.length === 1) {
-      await loadDefaultWorkflow()
-    }
+    if (workflowStore.openWorkflows.length === 1) await loadDefaultWorkflow()
+
     // If this is the active workflow, load the most recent workflow from history
     if (workflowStore.isActive(workflow)) {
       const mostRecentWorkflow = workflowStore.getMostRecentWorkflow()
@@ -458,9 +446,8 @@ export const useWorkflowService = () => {
     useAppModeStore().loadSelections(workflowData.extra?.linearData)
 
     function trackIfEnteringApp(workflow: ComfyWorkflow) {
-      if (!wasAppMode && workflow.initialMode === 'app') {
+      if (!wasAppMode && workflow.initialMode === 'app')
         useTelemetry()?.trackEnterLinear({ source: 'workflow' })
-      }
     }
 
     if (value === null || typeof value === 'string') {
@@ -500,9 +487,8 @@ export const useWorkflowService = () => {
               ) ?? freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
-          if (shareId) {
-            loadedWorkflow.shareId = shareId
-          }
+          if (shareId) loadedWorkflow.shareId = shareId
+
           loadedWorkflow.changeTracker.reset(workflowData)
           loadedWorkflow.changeTracker.restore()
           return
@@ -514,18 +500,16 @@ export const useWorkflowService = () => {
         workflowData
       )
       tempWorkflow.initialMode = freshLoadMode
-      if (shareId) {
-        tempWorkflow.shareId = shareId
-      }
+      if (shareId) tempWorkflow.shareId = shareId
+
       trackIfEnteringApp(tempWorkflow)
       await workflowStore.openWorkflow(tempWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
-    if (shareId) {
-      loadedWorkflow.shareId = shareId
-    }
+    if (shareId) loadedWorkflow.shareId = shareId
+
     if (loadedWorkflow.initialMode === undefined) {
       loadedWorkflow.initialMode = freshLoadMode
       trackIfEnteringApp(loadedWorkflow)
@@ -555,23 +539,17 @@ export const useWorkflowService = () => {
     canvas.selectItems()
     canvas.copyToClipboard()
     app.canvas.pasteFromClipboard(options)
-    if (old !== null) {
-      localStorage.setItem('litegrapheditor_clipboard', old)
-    }
+    if (old !== null) localStorage.setItem('litegrapheditor_clipboard', old)
   }
 
   const loadNextOpenedWorkflow = async () => {
     const nextWorkflow = workflowStore.openedWorkflowIndexShift(1)
-    if (nextWorkflow) {
-      await openWorkflow(nextWorkflow)
-    }
+    if (nextWorkflow) await openWorkflow(nextWorkflow)
   }
 
   const loadPreviousOpenedWorkflow = async () => {
     const previousWorkflow = workflowStore.openedWorkflowIndexShift(-1)
-    if (previousWorkflow) {
-      await openWorkflow(previousWorkflow)
-    }
+    if (previousWorkflow) await openWorkflow(previousWorkflow)
   }
 
   /**
@@ -608,15 +586,14 @@ export const useWorkflowService = () => {
     if (
       missingNodesErrorStore.surfaceMissingNodes(missingNodeTypes ?? []) &&
       !options?.silent
-    ) {
+    )
       useExecutionErrorStore().showErrorOverlay()
-    }
-    if (missingModelCandidates?.length) {
+
+    if (missingModelCandidates?.length)
       useMissingModelStore().setMissingModels(missingModelCandidates)
-    }
-    if (missingMediaCandidates?.length) {
+
+    if (missingMediaCandidates?.length)
       useMissingMediaStore().setMissingMedia(missingMediaCandidates)
-    }
 
     // Keep cache for future tab switches
     if (

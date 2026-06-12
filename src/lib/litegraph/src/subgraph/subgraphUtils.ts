@@ -126,11 +126,8 @@ export function getBoundaryLinks(
           // Output end of this link is outside the items set
           const { link, outputNode } = resolved
           if (outputNode) {
-            if (!items.has(outputNode)) {
-              boundaryInputLinks.push(link)
-            } else {
-              internalLinks.push(link)
-            }
+            if (!items.has(outputNode)) boundaryInputLinks.push(link)
+            else internalLinks.push(link)
           } else if (link.origin_id === SUBGRAPH_INPUT_ID) {
             // Subgraph input node - always boundary
             boundaryInputLinks.push(link)
@@ -152,9 +149,9 @@ export function getBoundaryLinks(
               link.target_id === SUBGRAPH_OUTPUT_ID ||
               // Input end of this link is outside the items set
               (inputNode && !items.has(inputNode))
-            ) {
+            )
               boundaryOutputLinks.push(link)
-            }
+
             // Internal links are discovered on input side.
           }
         }
@@ -183,9 +180,8 @@ export function getBoundaryLinks(
           reroutesOutside.length ||
           (inputNode && !items.has(inputNode)) ||
           (outputNode && !items.has(outputNode))
-        ) {
+        )
           boundaryLinks.push(link)
-        }
       }
     }
   }
@@ -252,11 +248,8 @@ export function groupResolvedByOutput(
     // Force no group (unique object) if output is undefined; corruption or an error has occurred
     const groupBy = resolved.subgraphInput ?? resolved.output ?? {}
     const group = groupedByOutput.get(groupBy)
-    if (group) {
-      group.push(resolved)
-    } else {
-      groupedByOutput.set(groupBy, [resolved])
-    }
+    if (group) group.push(resolved)
+    else groupedByOutput.set(groupBy, [resolved])
   }
 
   return groupedByOutput
@@ -443,9 +436,7 @@ export function getDirectSubgraphIds(graph: GraphOrSubgraph): Set<SubgraphId> {
   const subgraphIds = new Set<SubgraphId>()
 
   for (const node of graph._nodes) {
-    if (node.isSubgraphNode()) {
-      subgraphIds.add(node.type)
-    }
+    if (node.isSubgraphNode()) subgraphIds.add(node.type)
   }
 
   return subgraphIds
@@ -472,9 +463,7 @@ export function findUsedSubgraphIds(
       if (!usedSubgraphIds.has(id)) {
         usedSubgraphIds.add(id)
         const subgraph = subgraphRegistry.get(id)
-        if (subgraph) {
-          toVisit.push(subgraph)
-        }
+        if (subgraph) toVisit.push(subgraph)
       }
     }
   }
@@ -491,9 +480,7 @@ function* indexedLinks<S>(
   resolve: (slot: S) => Iterable<LLink | undefined>
 ): Generator<readonly [number, LLink]> {
   for (const [index, slot] of slots.entries()) {
-    for (const link of resolve(slot)) {
-      if (link) yield [index, link] as const
-    }
+    for (const link of resolve(slot)) if (link) yield [index, link] as const
   }
 }
 
@@ -526,16 +513,14 @@ export function reorderSubgraphInputs(
   function* innerLinks(input: SubgraphInput): Generator<LLink | undefined> {
     for (const id of input.linkIds) yield subgraph.getLink(id)
   }
-  for (const [slot, link] of indexedLinks(subgraph.inputs, innerLinks)) {
+  for (const [slot, link] of indexedLinks(subgraph.inputs, innerLinks))
     link.origin_slot = slot
-  }
 
   function* outerLink(input: INodeInputSlot): Generator<LLink | undefined> {
     if (input.link != null) yield subgraphNode.graph?.getLink(input.link)
   }
-  for (const [slot, link] of indexedLinks(subgraphNode.inputs, outerLink)) {
+  for (const [slot, link] of indexedLinks(subgraphNode.inputs, outerLink))
     link.target_slot = slot
-  }
 
   const newOrder = subgraph.inputs.map((i) => i.id)
   if (!isEqual(oldOrder, newOrder)) {

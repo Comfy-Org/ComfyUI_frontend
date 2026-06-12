@@ -92,11 +92,8 @@ export function createMonotoneInterpolator(
 
   slopes.push(deltas[0] ?? 0)
   for (let i = 1; i < n - 1; i++) {
-    if (deltas[i - 1] * deltas[i] <= 0) {
-      slopes.push(0)
-    } else {
-      slopes.push((deltas[i - 1] + deltas[i]) / 2)
-    }
+    if (deltas[i - 1] * deltas[i] <= 0) slopes.push(0)
+    else slopes.push((deltas[i - 1] + deltas[i]) / 2)
   }
   slopes.push(deltas[n - 2] ?? 0)
 
@@ -171,8 +168,7 @@ export function curveDataToFloatLUT(
 ): Float32Array {
   const lut = new Float32Array(size)
   const interpolate = createInterpolator(curve.points, curve.interpolation)
-  for (let i = 0; i < size; i++) {
-    lut[i] = interpolate(i / (size - 1))
-  }
+  for (let i = 0; i < size; i++) lut[i] = interpolate(i / (size - 1))
+
   return lut
 }

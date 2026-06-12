@@ -247,9 +247,7 @@ function validateUploadedAssetResponse(
   data: unknown
 ): AssetItem & { created_new: boolean } {
   const result = uploadedAssetResponseSchema.safeParse(data)
-  if (result.success) {
-    return result.data
-  }
+  if (result.success) return result.data
 
   console.error('Invalid asset upload response:', fromZodError(result.error))
   throw new Error(
@@ -303,19 +301,17 @@ function createAssetService() {
       include_tags: normalizedIncludeTags.join(','),
       limit: limit.toString()
     })
-    if (normalizedExcludeTags.length > 0) {
+    if (normalizedExcludeTags.length > 0)
       queryParams.set('exclude_tags', normalizedExcludeTags.join(','))
-    }
+
     // `after` (keyset cursor) takes precedence over `offset`; the server ignores
     // `offset` when a cursor is supplied, so we avoid sending a redundant param.
-    if (after) {
-      queryParams.set('after', after)
-    } else if (offset !== undefined && offset > 0) {
+    if (after) queryParams.set('after', after)
+    else if (offset !== undefined && offset > 0)
       queryParams.set('offset', offset.toString())
-    }
-    if (includePublic !== undefined) {
+
+    if (includePublic !== undefined)
       queryParams.set('include_public', includePublic ? 'true' : 'false')
-    }
 
     const url = `${ASSETS_ENDPOINT}?${queryParams.toString()}`
     const res = signal
@@ -429,17 +425,13 @@ function createAssetService() {
     nodeType: string,
     { limit = DEFAULT_LIMIT, offset = 0 }: PaginationOptions = {}
   ): Promise<AssetItem[]> {
-    if (!nodeType || typeof nodeType !== 'string') {
-      return []
-    }
+    if (!nodeType || typeof nodeType !== 'string') return []
 
     // Find the category for this node type using efficient O(1) lookup
     const modelToNodeStore = useModelToNodeStore()
     const category = modelToNodeStore.getCategoryForNodeType(nodeType)
 
-    if (!category) {
-      return []
-    }
+    if (!category) return []
 
     // Fetch assets for this category using same API pattern as getAssetModels
     const data = await handleAssetRequest(
@@ -565,16 +557,13 @@ function createAssetService() {
         signal
       })
       const batch = data.assets
-      if (batch.length === 0) {
-        return assets
-      }
+      if (batch.length === 0) return assets
 
       assets.push(...batch)
 
       // A server that returns a non-advancing cursor would loop forever.
-      if (!data.has_more || !data.next_cursor || data.next_cursor === after) {
+      if (!data.has_more || !data.next_cursor || data.next_cursor === after)
         return assets
-      }
 
       after = data.next_cursor
     }
@@ -587,15 +576,14 @@ function createAssetService() {
       limit: INPUT_ASSETS_WITH_PUBLIC_LIMIT
     })
       .then((assets) => {
-        if (requestId === inputAssetsIncludingPublicRequestId) {
+        if (requestId === inputAssetsIncludingPublicRequestId)
           inputAssetsIncludingPublic = assets
-        }
+
         return assets
       })
       .finally(() => {
-        if (requestId === inputAssetsIncludingPublicRequestId) {
+        if (requestId === inputAssetsIncludingPublicRequestId)
           pendingInputAssetsIncludingPublic = null
-        }
       })
 
     void pendingInputAssetsIncludingPublic.catch(() => {})
@@ -669,9 +657,7 @@ function createAssetService() {
     }
 
     const newAsset = assetItemSchema.safeParse(await res.json())
-    if (newAsset.success) {
-      return newAsset.data
-    }
+    if (newAsset.success) return newAsset.data
 
     throw new Error(
       `Unable to update asset ${id}: Invalid response - ${newAsset.error}`
@@ -782,13 +768,10 @@ function createAssetService() {
     const formData = new FormData()
     formData.append('file', blob, params.name)
 
-    if (params.tags) {
-      formData.append('tags', JSON.stringify(params.tags))
-    }
+    if (params.tags) formData.append('tags', JSON.stringify(params.tags))
 
-    if (params.user_metadata) {
+    if (params.user_metadata)
       formData.append('user_metadata', JSON.stringify(params.user_metadata))
-    }
 
     const res = await api.fetchApi(ASSETS_ENDPOINT, {
       method: 'POST',
@@ -830,9 +813,8 @@ function createAssetService() {
 
     const result = await res.json()
     const parseResult = tagsOperationResultSchema.safeParse(result)
-    if (!parseResult.success) {
-      throw fromZodError(parseResult.error)
-    }
+    if (!parseResult.success) throw fromZodError(parseResult.error)
+
     invalidateInputAssetsIncludingPublic()
     return parseResult.data
   }
@@ -861,9 +843,8 @@ function createAssetService() {
 
     const result = await res.json()
     const parseResult = tagsOperationResultSchema.safeParse(result)
-    if (!parseResult.success) {
-      throw fromZodError(parseResult.error)
-    }
+    if (!parseResult.success) throw fromZodError(parseResult.error)
+
     invalidateInputAssetsIncludingPublic()
     return parseResult.data
   }
@@ -920,9 +901,9 @@ function createAssetService() {
         params.tags?.includes('input') &&
         result.data.type === 'async' &&
         result.data.task.status === 'completed'
-      ) {
+      )
         invalidateInputAssetsIncludingPublic()
-      }
+
       return result.data
     }
 
@@ -951,9 +932,7 @@ function createAssetService() {
       body: JSON.stringify(params)
     })
 
-    if (!res.ok) {
-      throw new Error(`Failed to create asset export: ${res.status}`)
-    }
+    if (!res.ok) throw new Error(`Failed to create asset export: ${res.status}`)
 
     return await res.json()
   }
@@ -963,9 +942,8 @@ function createAssetService() {
   ): Promise<{ url: string; expires_at?: string }> {
     const res = await api.fetchApi(`/assets/exports/${exportName}`)
 
-    if (!res.ok) {
+    if (!res.ok)
       throw new Error(`Failed to get export download URL: ${res.status}`)
-    }
 
     return await res.json()
   }

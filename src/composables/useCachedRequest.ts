@@ -69,9 +69,7 @@ export function useCachedRequest<TParams, TResult>(
   }
 
   const abortAllRequests = () => {
-    for (const controller of abortControllers.values()) {
-      controller.abort()
-    }
+    for (const controller of abortControllers.values()) controller.abort()
   }
 
   /**

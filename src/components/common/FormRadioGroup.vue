@@ -42,9 +42,7 @@ const normalizedOptions = computed<SettingOption[]>(() => {
   if (!props.options) return []
 
   return props.options.map((option) => {
-    if (typeof option === 'string') {
-      return { text: option, value: option }
-    }
+    if (typeof option === 'string') return { text: option, value: option }
 
     if ('text' in option) {
       return {

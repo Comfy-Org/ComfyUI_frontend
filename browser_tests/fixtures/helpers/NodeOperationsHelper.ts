@@ -157,9 +157,7 @@ export class NodeOperationsHelper {
     try {
       for (const nodeTitle of nodeTitles) {
         const nodes = await this.getNodeRefsByTitle(nodeTitle)
-        for (const node of nodes) {
-          await node.click('title')
-        }
+        for (const node of nodes) await node.click('title')
       }
     } finally {
       await this.page.keyboard.up('Control')

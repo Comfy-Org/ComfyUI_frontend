@@ -67,9 +67,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   function loadIndex(): DraftIndexV2 {
     const workspaceId = currentWorkspaceId()
 
-    if (indexCacheByWorkspace.value[workspaceId]) {
+    if (indexCacheByWorkspace.value[workspaceId])
       return indexCacheByWorkspace.value[workspaceId]
-    }
 
     const stored = readIndex(workspaceId)
     if (stored) {
@@ -171,9 +170,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
       const result = removeEntry(currentIndex, oldestEntry.path)
       currentIndex = result.index
-      if (result.removedKey) {
-        deletePayload(workspaceId, result.removedKey)
-      }
+      if (result.removedKey) deletePayload(workspaceId, result.removedKey)
 
       // Try writing again
       const success = writePayload(workspaceId, draftKey, {
@@ -351,33 +348,25 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     } = options
 
     // 1. Try preferred path
-    if (preferredPath && (await loadDraft(preferredPath))) {
-      return true
-    }
+    if (preferredPath && (await loadDraft(preferredPath))) return true
 
     // 2. Fall back to most recent draft
     if (fallbackToLatestDraft) {
       const mostRecent = getMostRecentPath()
-      if (mostRecent && (await loadDraft(mostRecent))) {
-        return true
-      }
+      if (mostRecent && (await loadDraft(mostRecent))) return true
     }
 
     // Legacy fallbacks are NOT workspace-scoped and must only be used for
     // personal workspace to prevent cross-workspace data leakage.
     // These exist only for migration from V1 and should be removed after 2026-07-15.
-    if (currentWorkspaceId() !== 'personal') {
-      return false
-    }
+    if (currentWorkspaceId() !== 'personal') return false
 
     // 3. Legacy fallback: sessionStorage payload (remove after 2026-07-15)
     const clientId = api.initialClientId ?? api.clientId
     if (clientId) {
       try {
         const sessionPayload = sessionStorage.getItem(`workflow:${clientId}`)
-        if (await tryLoadGraph(sessionPayload, workflowName)) {
-          return true
-        }
+        if (await tryLoadGraph(sessionPayload, workflowName)) return true
       } catch {
         // Ignore storage access errors and continue fallback chain
       }

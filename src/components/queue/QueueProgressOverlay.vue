@@ -109,9 +109,8 @@ const internalExpanded = ref(false)
 const isExpanded = computed({
   get: () => (expanded === undefined ? internalExpanded.value : expanded),
   set: (value) => {
-    if (expanded === undefined) {
-      internalExpanded.value = value
-    }
+    if (expanded === undefined) internalExpanded.value = value
+
     emit('update:expanded', value)
   }
 })
@@ -160,17 +159,11 @@ const queuedJobsLabel = computed(() =>
   })
 )
 const headerTitle = computed(() => {
-  if (!hasActiveJob.value) {
-    return t('sideToolbar.queueProgressOverlay.jobQueue')
-  }
+  if (!hasActiveJob.value) return t('sideToolbar.queueProgressOverlay.jobQueue')
 
-  if (queuedCount.value === 0) {
-    return runningJobsLabel.value
-  }
+  if (queuedCount.value === 0) return runningJobsLabel.value
 
-  if (runningCount.value === 0) {
-    return queuedJobsLabel.value
-  }
+  if (runningCount.value === 0) return queuedJobsLabel.value
 
   return t('sideToolbar.queueProgressOverlay.runningQueuedSummary', {
     running: runningJobsLabel.value,
@@ -198,11 +191,9 @@ const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   if (item.state === 'running' || item.state === 'initialization') {
     // Running/initializing jobs: interrupt execution
     // Cloud backend uses deleteItem, local uses interrupt
-    if (isCloud) {
-      await api.deleteItem('queue', jobId)
-    } else {
-      await api.interrupt(jobId)
-    }
+    if (isCloud) await api.deleteItem('queue', jobId)
+    else await api.interrupt(jobId)
+
     executionStore.clearInitializationByJobId(jobId)
     await queueStore.update()
   } else if (item.state === 'pending') {
@@ -255,9 +246,8 @@ const focusAssetInSidebar = async (item: JobListItem) => {
   const asset = assetsStore.historyAssets.find(
     (existingAsset) => existingAsset.id === assetId
   )
-  if (!asset) {
-    throw new Error('Asset not found in media assets panel')
-  }
+  if (!asset) throw new Error('Asset not found in media assets panel')
+
   assetSelectionStore.setSelection([assetId])
   assetSelectionStore.setLastSelectedAssetId(assetId)
 }

@@ -93,9 +93,7 @@ export function useNodeCustomization() {
         : LGraphCanvas.node_colors[colorName]
 
     for (const item of canvasStore.selectedItems) {
-      if (isColorable(item)) {
-        item.setColorOption(canvasColorOption)
-      }
+      if (isColorable(item)) item.setColorOption(canvasColorOption)
     }
 
     canvasRefresh.refreshCanvas()
@@ -106,9 +104,7 @@ export function useNodeCustomization() {
       (item): item is LGraphNode => item instanceof LGraphNode
     )
 
-    if (selectedNodes.length === 0) {
-      return
-    }
+    if (selectedNodes.length === 0) return
 
     selectedNodes.forEach((node) => {
       node.shape = shapeOption.value

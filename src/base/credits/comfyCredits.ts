@@ -21,9 +21,8 @@ const formatNumber = ({
     typeof merged.maximumFractionDigits === 'number' &&
     typeof merged.minimumFractionDigits === 'number' &&
     merged.maximumFractionDigits < merged.minimumFractionDigits
-  ) {
+  )
     merged.minimumFractionDigits = merged.maximumFractionDigits
-  }
 
   return new Intl.NumberFormat(locale, merged).format(value)
 }

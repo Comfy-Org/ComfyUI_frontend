@@ -37,9 +37,8 @@ export class LGraphNodeProperties {
    * Sets up property instrumentation for all tracked properties
    */
   private _setupInstrumentation(): void {
-    for (const path of DEFAULT_TRACKED_PROPERTIES) {
+    for (const path of DEFAULT_TRACKED_PROPERTIES)
       this._instrumentProperty(path)
-    }
   }
 
   private _resolveTargetObject(parts: string[]): {
@@ -52,16 +51,12 @@ export class LGraphNodeProperties {
       unknown
     >
 
-    if (parts.length === 1) {
-      return { targetObject, propertyName: parts[0] }
-    }
+    if (parts.length === 1) return { targetObject, propertyName: parts[0] }
 
     for (let i = 0; i < parts.length - 1; i++) {
       const key = parts[i]
       const next = targetObject[key]
-      if (isRecord(next)) {
-        targetObject = next
-      }
+      if (isRecord(next)) targetObject = next
     }
 
     return {
@@ -76,9 +71,7 @@ export class LGraphNodeProperties {
   private _instrumentProperty(path: string): void {
     const parts = path.split('.')
 
-    if (parts.length > 1) {
-      this._ensureNestedPath(path)
-    }
+    if (parts.length > 1) this._ensureNestedPath(path)
 
     const { targetObject, propertyName } = this._resolveTargetObject(parts)
 
@@ -194,13 +187,10 @@ export class LGraphNodeProperties {
     // Create all parent objects except the last property
     for (let i = 0; i < parts.length - 1; i++) {
       const part = parts[i]
-      if (!current[part]) {
-        current[part] = {}
-      }
+      if (!current[part]) current[part] = {}
+
       const next = current[part]
-      if (isRecord(next)) {
-        current = next
-      }
+      if (isRecord(next)) current = next
     }
   }
 

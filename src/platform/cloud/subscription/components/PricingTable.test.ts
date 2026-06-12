@@ -90,9 +90,8 @@ vi.mock('@/composables/useErrorHandling', () => ({
           try {
             return await fn(...args)
           } catch (error) {
-            if (errorHandler) {
-              errorHandler(error)
-            }
+            if (errorHandler) errorHandler(error)
+
             throw error
           }
         }

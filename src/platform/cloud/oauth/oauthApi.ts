@@ -86,9 +86,8 @@ async function readErrorMessage(response: Response): Promise<string> {
 function assertChallenge(
   value: unknown
 ): asserts value is OAuthConsentChallenge {
-  if (typeof value !== 'object' || value === null) {
+  if (typeof value !== 'object' || value === null)
     throw new Error('OAuth consent challenge is invalid')
-  }
 
   const challenge = value as Partial<OAuthConsentChallenge>
   if (
@@ -99,9 +98,8 @@ function assertChallenge(
     !challenge.scopes.every((scope) => typeof scope === 'string') ||
     !Array.isArray(challenge.workspaces) ||
     !challenge.workspaces.every(isValidWorkspace)
-  ) {
+  )
     throw new Error('OAuth consent challenge is invalid')
-  }
 }
 
 function isValidWorkspace(value: unknown): value is OAuthWorkspace {
@@ -126,9 +124,8 @@ export async function fetchOAuthConsentChallenge(
     }
   )
 
-  if (!response.ok) {
+  if (!response.ok)
     throw new OAuthApiError(await readErrorMessage(response), response.status)
-  }
 
   const challenge: unknown = await response.json()
   assertChallenge(challenge)
@@ -156,15 +153,13 @@ export async function submitOAuthConsentDecision({
     })
   })
 
-  if (!response.ok) {
+  if (!response.ok)
     throw new OAuthApiError(await readErrorMessage(response), response.status)
-  }
 
   const body: unknown = await response.json()
   const redirectUrl = (body as { redirect_url?: unknown } | null)?.redirect_url
-  if (typeof redirectUrl !== 'string') {
+  if (typeof redirectUrl !== 'string')
     throw new Error('OAuth consent response did not include redirect_url')
-  }
 
   // Defense in depth at this sink. Two risks: schemes that execute in our
   // origin (always rejected, below), and the OS routing the authorization
@@ -185,9 +180,9 @@ export async function submitOAuthConsentDecision({
     }
   }
   const target = parseTarget()
-  if (EXECUTABLE_SCHEMES.has(target.protocol)) {
+  if (EXECUTABLE_SCHEMES.has(target.protocol))
     throw new Error('OAuth consent redirect_url has an unsafe scheme')
-  }
+
   if (expectedRedirectUri) {
     const parseExpected = () => {
       try {

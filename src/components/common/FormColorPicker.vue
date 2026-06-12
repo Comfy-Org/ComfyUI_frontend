@@ -67,10 +67,7 @@ function commitDraft() {
     draftText.value = modelValue.value ?? ''
     return
   }
-  if (FULL_HEX.test(raw)) {
-    modelValue.value = raw.replace(/^#/, '').toLowerCase()
-  } else {
-    draftText.value = modelValue.value ?? ''
-  }
+  if (FULL_HEX.test(raw)) modelValue.value = raw.replace(/^#/, '').toLowerCase()
+  else draftText.value = modelValue.value ?? ''
 }
 </script>

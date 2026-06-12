@@ -87,9 +87,7 @@ export class ContextMenu<TValue = unknown> {
         this.parentMenu.lock = true
         this.parentMenu.current_submenu = this
       }
-      if (parent.options?.className === 'dark') {
-        options.className = 'dark'
-      }
+      if (parent.options?.className === 'dark') options.className = 'dark'
     }
 
     // use strings because comparing classes between windows doesnt work
@@ -120,9 +118,8 @@ export class ContextMenu<TValue = unknown> {
       document.addEventListener(
         'pointerdown',
         (e) => {
-          if (e.target instanceof Node && !this.containsNode(e.target)) {
+          if (e.target instanceof Node && !this.containsNode(e.target))
             this.close()
-          }
         },
         eventOptions
       )
@@ -202,10 +199,11 @@ export class ContextMenu<TValue = unknown> {
 
       const body_rect = document.body.getBoundingClientRect()
       const root_rect = root.getBoundingClientRect()
-      if (body_rect.height == 0)
+      if (body_rect.height == 0) {
         console.error(
           'document.body height is 0. That is dangerous, set html,body { height: 100%; }'
         )
+      }
 
       if (body_rect.width && left > body_rect.width - root_rect.width - 10)
         left = body_rect.width - root_rect.width - 10
@@ -216,9 +214,8 @@ export class ContextMenu<TValue = unknown> {
     root.style.left = `${left}px`
     root.style.top = `${top}px`
 
-    if (LiteGraph.context_menu_scaling && options.scale) {
+    if (LiteGraph.context_menu_scaling && options.scale)
       root.style.transform = `scale(${Math.round(options.scale * 4) * 0.25})`
-    }
   }
 
   /**
@@ -259,11 +256,8 @@ export class ContextMenu<TValue = unknown> {
         // Use innerHTML for content that contains HTML tags, textContent otherwise
         const hasHtmlContent =
           value?.content !== undefined && /<[a-z][\s\S]*>/i.test(value.content)
-        if (hasHtmlContent) {
-          element.innerHTML = sanitizeMenuHTML(value.content!)
-        } else {
-          element.textContent = value?.title ?? label
-        }
+        if (hasHtmlContent) element.innerHTML = sanitizeMenuHTML(value.content!)
+        else element.textContent = value?.title ?? label
 
         if (value.disabled) {
           disabled = true
@@ -298,9 +292,8 @@ export class ContextMenu<TValue = unknown> {
         'div.litemenu-entry.has_submenu'
       )
       if (entries) {
-        for (const entry of entries) {
+        for (const entry of entries)
           entry.setAttribute('aria-expanded', 'false')
-        }
       }
       element.setAttribute('aria-expanded', 'true')
     }
@@ -325,9 +318,8 @@ export class ContextMenu<TValue = unknown> {
       if (
         (value as IContextMenuValue)?.has_submenu ||
         (value as IContextMenuValue)?.submenu
-      ) {
+      )
         setAriaExpanded()
-      }
 
       // global callback
       if (options.callback) {
@@ -444,9 +436,9 @@ export class ContextMenu<TValue = unknown> {
       top < rect.top + rect.height &&
       left > rect.left &&
       left < rect.left + rect.width
-    ) {
+    )
       return true
-    }
+
     return false
   }
 }

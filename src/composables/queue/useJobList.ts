@@ -77,12 +77,10 @@ const dateLabelForTimestamp = (
       ? formatted[0].toLocaleUpperCase(locale) + formatted.slice(1)
       : formatted
   }
-  if (isToday(ts)) {
-    return formatRelativeDay(0)
-  }
-  if (isYesterday(ts)) {
-    return formatRelativeDay(-1)
-  }
+  if (isToday(ts)) return formatRelativeDay(0)
+
+  if (isYesterday(ts)) return formatRelativeDay(-1)
+
   return formatShortMonthDay(ts, locale)
 }
 
@@ -118,9 +116,7 @@ export function useJobList() {
     const timeoutId = setTimeout(() => {
       addedHintTimeouts.delete(id)
       const updated = new Set(recentlyAddedPendingIds.value)
-      if (updated.delete(id)) {
-        recentlyAddedPendingIds.value = updated
-      }
+      if (updated.delete(id)) recentlyAddedPendingIds.value = updated
     }, ADDED_HINT_DURATION_MS)
     addedHintTimeouts.set(id, timeoutId)
   }
@@ -226,19 +222,17 @@ export function useJobList() {
   watch(
     () => hasFailedJobs.value,
     (hasFailed) => {
-      if (!hasFailed && selectedJobTab.value === 'Failed') {
+      if (!hasFailed && selectedJobTab.value === 'Failed')
         selectedJobTab.value = 'All'
-      }
     }
   )
 
   const filteredTaskEntries = computed<TaskWithState[]>(() => {
     let entries = tasksWithJobState.value
-    if (selectedJobTab.value === 'Completed') {
+    if (selectedJobTab.value === 'Completed')
       entries = entries.filter(({ state }) => state === 'completed')
-    } else if (selectedJobTab.value === 'Failed') {
+    else if (selectedJobTab.value === 'Failed')
       entries = entries.filter(({ state }) => state === 'failed')
-    }
 
     if (selectedWorkflowFilter.value === 'current') {
       const activeId = workflowStore.activeWorkflow?.activeState?.id
@@ -320,9 +314,7 @@ export function useJobList() {
     return filteredTaskEntries.value.filter(({ task }) => {
       const taskId = String(task.jobId ?? '').toLocaleLowerCase()
       const item = jobItemById.value.get(String(task.jobId))
-      if (!item) {
-        return taskId.includes(normalizedSearchQuery.value)
-      }
+      if (!item) return taskId.includes(normalizedSearchQuery.value)
 
       const title = item.title.toLocaleLowerCase()
       const meta = item.meta.toLocaleLowerCase()
@@ -340,11 +332,10 @@ export function useJobList() {
     const localeValue = locale.value
     for (const { task, state } of searchableTaskEntries.value) {
       let ts: number | undefined
-      if (state === 'completed' || state === 'failed') {
+      if (state === 'completed' || state === 'failed')
         ts = task.executionEndTimestamp
-      } else {
-        ts = task.createTime
-      }
+      else ts = task.createTime
+
       const key = ts === undefined ? 'undated' : dateKey(ts)
       let groupIdx = index.get(key)
       if (groupIdx === undefined) {

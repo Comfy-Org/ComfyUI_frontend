@@ -8,9 +8,8 @@ vi.mock('@/stores/dialogStore')
 
 vi.mock('@/i18n', () => ({
   t: (key: string, params?: Record<string, string>) => {
-    if (params) {
-      return `${key}:${JSON.stringify(params)}`
-    }
+    if (params) return `${key}:${JSON.stringify(params)}`
+
     return key
   }
 }))

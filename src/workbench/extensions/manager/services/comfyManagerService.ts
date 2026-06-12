@@ -168,9 +168,7 @@ export const useComfyManagerService = () => {
   ) => {
     const errorContext = 'Fetching bulk import failure information'
 
-    if (!params.cnr_ids?.length && !params.urls?.length) {
-      return {}
-    }
+    if (!params.cnr_ids?.length && !params.urls?.length) return {}
 
     return executeRequest<components['schemas']['ImportFailInfoBulkResponse']>(
       () =>

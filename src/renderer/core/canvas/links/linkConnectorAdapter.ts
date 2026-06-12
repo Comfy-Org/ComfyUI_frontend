@@ -165,9 +165,7 @@ export function createLinkConnectorAdapter(): LinkConnectorAdapter | null {
   if (!graph || !connector) return null
 
   const adapter = adapterByGraph.get(graph)
-  if (adapter && adapter.linkConnector === connector) {
-    return adapter
-  }
+  if (adapter && adapter.linkConnector === connector) return adapter
 
   const newAdapter = new LinkConnectorAdapter(graph, connector)
   adapterByGraph.set(graph, newAdapter)

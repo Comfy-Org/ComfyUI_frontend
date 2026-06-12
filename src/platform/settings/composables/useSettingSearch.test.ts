@@ -272,9 +272,8 @@ describe('useSettingSearch', () => {
 
       // Mock st to return translated category names
       vi.mocked(st).mockImplementation((key: string, fallback: string) => {
-        if (key === 'settingsCategories.Category') {
-          return 'Translated Category'
-        }
+        if (key === 'settingsCategories.Category') return 'Translated Category'
+
         return fallback
       })
 

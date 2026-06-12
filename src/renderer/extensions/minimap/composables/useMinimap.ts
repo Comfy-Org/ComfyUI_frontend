@@ -118,9 +118,8 @@ export function useMinimap({
     if (canvas.value && graph.value) {
       graphManager.init()
 
-      if (containerRef.value) {
-        interaction.updateContainerRect()
-      }
+      if (containerRef.value) interaction.updateContainerRect()
+
       viewport.updateCanvasDimensions()
 
       window.addEventListener('resize', interaction.updateContainerRect)
@@ -163,9 +162,7 @@ export function useMinimap({
         window.removeEventListener('scroll', interaction.updateContainerRect)
         window.removeEventListener('resize', viewport.updateCanvasDimensions)
       }
-      if (newCanvas && !initialized.value) {
-        await init()
-      }
+      if (newCanvas && !initialized.value) await init()
     },
     { immediate: true, flush: 'post' }
   )
@@ -182,9 +179,8 @@ export function useMinimap({
 
   watch(visible, async (isVisible) => {
     if (isVisible) {
-      if (containerRef.value) {
-        interaction.updateContainerRect()
-      }
+      if (containerRef.value) interaction.updateContainerRect()
+
       viewport.updateCanvasDimensions()
 
       renderer.forceFullRedraw()

@@ -267,9 +267,8 @@ test.describe('Subgraph Slots', { tag: ['@slow', '@subgraph'] }, () => {
             app.canvas.linkConnector
           )
 
-          if (app.canvas.pointer.onDoubleClick) {
+          if (app.canvas.pointer.onDoubleClick)
             app.canvas.pointer.onDoubleClick(leftClickEvent)
-          }
         }
       })
 

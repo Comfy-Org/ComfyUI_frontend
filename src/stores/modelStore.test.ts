@@ -36,9 +36,8 @@ function enableMocks(useAssetAPI = false) {
   // Mock settingStore to return the useAssetAPI setting
   const mockSettingStore = {
     get: vi.fn().mockImplementation((key: string) => {
-      if (key === 'Comfy.Assets.UseAssetAPI') {
-        return useAssetAPI
-      }
+      if (key === 'Comfy.Assets.UseAssetAPI') return useAssetAPI
+
       return false
     })
   }
@@ -69,9 +68,8 @@ function enableMocks(useAssetAPI = false) {
   ])
 
   vi.mocked(api.viewMetadata).mockImplementation((_, model) => {
-    if (model === 'noinfo.safetensors') {
-      return Promise.resolve({})
-    }
+    if (model === 'noinfo.safetensors') return Promise.resolve({})
+
     return Promise.resolve({
       'modelspec.title': `Title of ${model}`,
       display_name: 'Should not show',

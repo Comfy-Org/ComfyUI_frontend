@@ -247,12 +247,9 @@ watch(galleryImages, (images) => {
     activeIndex.value = 0
     return
   }
-  if (activeIndex.value >= images.length) {
-    activeIndex.value = images.length - 1
-  }
-  if (images.length <= 1) {
-    displayMode.value = 'single'
-  }
+  if (activeIndex.value >= images.length) activeIndex.value = images.length - 1
+
+  if (images.length <= 1) displayMode.value = 'single'
 })
 
 function getItemSrc(item: GalleryImage): string {
@@ -278,17 +275,14 @@ function handleFocusOut(event: FocusEvent) {
     displayMode.value === 'single'
       ? imageContainerEl.value
       : gridContainerEl.value
-  if (!container?.contains(event.relatedTarget as Node)) {
-    isFocused.value = false
-  }
+  if (!container?.contains(event.relatedTarget as Node)) isFocused.value = false
 }
 
 function handleImageLoad(event: Event) {
   if (!(event.target instanceof HTMLImageElement)) return
   const { naturalWidth, naturalHeight } = event.target
-  if (naturalWidth && naturalHeight) {
+  if (naturalWidth && naturalHeight)
     imageDimensions.value = `${naturalWidth} x ${naturalHeight}`
-  }
 }
 
 function setThumbnailRef(el: HTMLElement | null, index: number) {
@@ -367,9 +361,7 @@ function handleRemove() {
   if (node) {
     node.imgs = undefined
     const imageWidget = node.widgets?.find((w) => w.name === 'image')
-    if (imageWidget) {
-      imageWidget.value = ''
-    }
+    if (imageWidget) imageWidget.value = ''
   }
 }
 </script>

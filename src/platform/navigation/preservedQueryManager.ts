@@ -12,9 +12,9 @@ const getStorageKey = (namespace: string) => `${STORAGE_PREFIX}${namespace}`
 const isValidQueryRecord = (
   value: unknown
 ): value is Record<string, string> => {
-  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+  if (typeof value !== 'object' || value === null || Array.isArray(value))
     return false
-  }
+
   return Object.values(value).every((v) => typeof v === 'string')
 }
 
@@ -56,13 +56,10 @@ const writeToStorage = (
 }
 
 export const hydratePreservedQuery = (namespace: string) => {
-  if (preservedQueries.has(namespace)) {
-    return
-  }
+  if (preservedQueries.has(namespace)) return
+
   const payload = readFromStorage(namespace)
-  if (payload) {
-    preservedQueries.set(namespace, payload)
-  }
+  if (payload) preservedQueries.set(namespace, payload)
 }
 
 export const capturePreservedQuery = (
@@ -74,14 +71,10 @@ export const capturePreservedQuery = (
 
   keys.forEach((key) => {
     const value = readQueryParam(query[key])
-    if (value) {
-      payload[key] = value
-    }
+    if (value) payload[key] = value
   })
 
-  if (Object.keys(payload).length === 0) {
-    return
-  }
+  if (Object.keys(payload).length === 0) return
 
   preservedQueries.set(namespace, payload)
   writeToStorage(namespace, payload)

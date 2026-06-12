@@ -19,9 +19,7 @@ function getCurrentWorkspaceId(): string {
   const workspaceJson = sessionStorage.getItem(
     WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
   )
-  if (!workspaceJson) {
-    throw new Error('Unable to determine current workspace')
-  }
+  if (!workspaceJson) throw new Error('Unable to determine current workspace')
 
   let workspace: unknown
   try {
@@ -36,9 +34,8 @@ function getCurrentWorkspaceId(): string {
     !('id' in workspace) ||
     typeof workspace.id !== 'string' ||
     workspace.id.length === 0
-  ) {
+  )
     throw new Error('Unable to determine current workspace')
-  }
 
   return workspace.id
 }
@@ -55,9 +52,7 @@ export function useComfyHubProfileGate() {
 
   function syncCachedProfileWithCurrentUser(): void {
     const currentUserId = resolvedUserInfo.value?.id ?? null
-    if (cachedUserId.value === currentUserId) {
-      return
-    }
+    if (cachedUserId.value === currentUserId) return
 
     hasProfile.value = null
     profile.value = null
@@ -91,9 +86,7 @@ export function useComfyHubProfileGate() {
   }): Promise<ComfyHubProfile | null> {
     syncCachedProfileWithCurrentUser()
 
-    if (!options?.force && profile.value) {
-      return Promise.resolve(profile.value)
-    }
+    if (!options?.force && profile.value) return Promise.resolve(profile.value)
 
     if (!options?.force && inflightFetch) return inflightFetch
 

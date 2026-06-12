@@ -180,9 +180,7 @@ export const useNodeBadge = () => {
                   inputGroupPrefixes.some((prefix) =>
                     inputName.startsWith(prefix + '.')
                   )
-                if (isRelevantInput) {
-                  nodePricing.triggerPriceRecalculation(node)
-                }
+                if (isRelevantInput) nodePricing.triggerPriceRecalculation(node)
               }
             }
           }

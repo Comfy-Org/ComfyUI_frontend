@@ -78,9 +78,8 @@ describe('ToolPanel', () => {
 
     it('should render the icon HTML for each tool', () => {
       renderPanel()
-      for (const tool of allTools) {
+      for (const tool of allTools)
         expect(screen.getByTestId(`icon-${tool}`)).toBeInTheDocument()
-      }
     })
   })
 

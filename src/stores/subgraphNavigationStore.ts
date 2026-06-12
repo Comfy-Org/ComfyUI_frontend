@@ -168,11 +168,9 @@ export const useSubgraphNavigationStore = defineStore(
       // outgoing viewport — skip the save here to avoid caching stale
       // canvas state from the transition.
       if (!isWorkflowSwitching) {
-        if (prevSubgraph) {
-          saveViewport(prevSubgraph.id)
-        } else if (!prevSubgraph && subgraph) {
+        if (prevSubgraph) saveViewport(prevSubgraph.id)
+        else if (!prevSubgraph && subgraph)
           saveViewport(getCurrentRootGraphId())
-        }
       }
 
       const isInRootGraph = !subgraph
@@ -184,11 +182,8 @@ export const useSubgraphNavigationStore = defineStore(
 
       const path = findSubgraphPathById(subgraph.rootGraph, subgraph.id)
       const isInReachableSubgraph = !!path
-      if (isInReachableSubgraph) {
-        idStack.value = [...path]
-      } else {
-        idStack.value = [subgraph.id]
-      }
+      if (isInReachableSubgraph) idStack.value = [...path]
+      else idStack.value = [subgraph.id]
 
       restoreViewport(subgraph.id)
     }
@@ -290,9 +285,9 @@ export const useSubgraphNavigationStore = defineStore(
             app.rootGraph.id === locatorId
               ? app.rootGraph
               : app.rootGraph.subgraphs.get(locatorId)
-          if (!loadedGraph) {
+          if (!loadedGraph)
             return redirectToRoot('subgraph not found after workflow load')
-          }
+
           if (canvas.graph?.id === loadedGraph.id) return
           return canvas.setGraph(loadedGraph)
         }
@@ -305,9 +300,8 @@ export const useSubgraphNavigationStore = defineStore(
       try {
         await op()
       } catch (err) {
-        if (!isNavigationFailure(err, NavigationFailureType.duplicated)) {
+        if (!isNavigationFailure(err, NavigationFailureType.duplicated))
           console.warn(`[subgraphNavigation] ${label} rejected`, err)
-        }
       }
     }
 

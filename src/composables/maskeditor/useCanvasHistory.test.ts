@@ -84,9 +84,8 @@ describe('useCanvasHistory', () => {
     let rafCallCount = 0
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation(
       (cb: FrameRequestCallback) => {
-        if (rafCallCount++ < 100) {
-          setTimeout(() => cb(0), 0)
-        }
+        if (rafCallCount++ < 100) setTimeout(() => cb(0), 0)
+
         return rafCallCount
       }
     )

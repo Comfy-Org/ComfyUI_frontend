@@ -91,9 +91,8 @@ const openImagePicker = () => {
 
 const handleImageUpload = (event: Event) => {
   const input = event.target as HTMLInputElement
-  if (input.files && input.files[0]) {
+  if (input.files && input.files[0])
     emit('updateBackgroundImage', input.files[0])
-  }
 
   input.value = ''
 }

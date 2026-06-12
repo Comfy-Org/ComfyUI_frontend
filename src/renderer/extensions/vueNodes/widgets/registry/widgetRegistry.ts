@@ -228,9 +228,7 @@ const aliasMap = new Map<string, string>()
 
 for (const [type, def] of coreWidgetDefinitions) {
   widgets.set(type, def)
-  for (const alias of def.aliases) {
-    aliasMap.set(alias, type)
-  }
+  for (const alias of def.aliases) aliasMap.set(alias, type)
 }
 
 // Utility functions

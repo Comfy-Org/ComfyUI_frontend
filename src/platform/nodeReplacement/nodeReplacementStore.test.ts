@@ -26,9 +26,8 @@ vi.mock('@/scripts/api', () => ({
 function mockSettingStore(enabled: boolean) {
   vi.mocked(useSettingStore, { partial: true }).mockReturnValue({
     get: vi.fn().mockImplementation((key: string) => {
-      if (key === 'Comfy.NodeReplacement.Enabled') {
-        return enabled
-      }
+      if (key === 'Comfy.NodeReplacement.Enabled') return enabled
+
       return false
     }),
     load: vi.fn().mockResolvedValue(undefined)
@@ -40,9 +39,9 @@ function createStore(settingEnabled = true, serverFeatureEnabled = true) {
   mockSettingStore(settingEnabled)
   vi.mocked(api.getServerFeature).mockImplementation(
     (flag: string, defaultValue?: unknown) => {
-      if (flag === ServerFeatureFlag.NODE_REPLACEMENTS) {
+      if (flag === ServerFeatureFlag.NODE_REPLACEMENTS)
         return serverFeatureEnabled
-      }
+
       return defaultValue
     }
   )

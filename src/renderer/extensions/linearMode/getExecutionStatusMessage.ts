@@ -51,15 +51,13 @@ export function getExecutionStatusMessage(
   properties?: Record<string, unknown>
 ): string | null {
   const customMessage = properties?.['Execution Message']
-  if (typeof customMessage === 'string' && customMessage.trim()) {
+  if (typeof customMessage === 'string' && customMessage.trim())
     return customMessage.trim()
-  }
 
   if (nodeType in statusMap) return t(`execution.${statusMap[nodeType]}`)
 
-  for (const [pattern, key] of identifierRules) {
+  for (const [pattern, key] of identifierRules)
     if (pattern.test(nodeType)) return t(`execution.${key}`)
-  }
 
   if (nodeDef?.api_node) return t('execution.processing')
 

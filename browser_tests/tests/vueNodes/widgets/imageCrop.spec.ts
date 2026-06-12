@@ -340,9 +340,9 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
                   v.y <= valueBefore.y ||
                   v.width !== valueBefore.width ||
                   v.height !== valueBefore.height
-                ) {
+                )
                   return null
-                }
+
                 return v
               },
               {
@@ -811,9 +811,9 @@ test.describe('Image Crop', { tag: ['@widget', '@vue-nodes'] }, () => {
           .poll(
             async () => {
               const v = await getCropValue(comfyPage, 2)
-              if (!v || v.width <= before.width || v.height <= before.height) {
+              if (!v || v.width <= before.width || v.height <= before.height)
                 return null
-              }
+
               const r = v.width / v.height
               if (Math.abs(r - ratio) > 0.06) return null
               return v

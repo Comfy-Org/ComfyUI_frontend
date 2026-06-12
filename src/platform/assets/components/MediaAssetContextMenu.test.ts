@@ -155,9 +155,9 @@ function findDownloadMenuItem(): MenuItemWithCommand {
   const downloadItem = capturedMenu.model.find(
     (item) => item.label === 'mediaAsset.actions.download'
   )
-  if (!downloadItem?.command) {
+  if (!downloadItem?.command)
     throw new Error('Download menu item or command was not registered')
-  }
+
   return downloadItem as MenuItemWithCommand
 }
 

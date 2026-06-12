@@ -355,18 +355,16 @@ function isModelReferencedByActiveNode(
             m.directory === undefined ||
             m.directory === modelDirectory)
       )
-    ) {
+    )
       return true
-    }
 
     // widgets_values carries only the name, so directory cannot be
     // checked here — fall back to filename matching.
     const values = node.widgets_values
     if (!values) continue
     const valueArray = Array.isArray(values) ? values : Object.values(values)
-    for (const v of valueArray) {
+    for (const v of valueArray)
       if (typeof v === 'string' && v === modelName) return true
-    }
   }
   return false
 }
@@ -434,9 +432,9 @@ function findWidgetNameForModel(
   modelName: string
 ): string {
   if (Array.isArray(node.widgets_values) || !node.widgets_values) return ''
-  for (const [key, val] of Object.entries(node.widgets_values)) {
+  for (const [key, val] of Object.entries(node.widgets_values))
     if (val === modelName) return key
-  }
+
   return ''
 }
 

@@ -135,9 +135,8 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
 
       // Sort children: non-leaf nodes first, then leaf nodes, both alphabetically
       const sortedChildren = children?.sort((a, b) => {
-        if (a.leaf === b.leaf) {
-          return a.label.localeCompare(b.label)
-        }
+        if (a.leaf === b.leaf) return a.label.localeCompare(b.label)
+
         return a.leaf ? 1 : -1
       })
 
@@ -147,9 +146,8 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         leaf: node.leaf,
         data: node.data,
         getIcon() {
-          if (this.leaf) {
-            return 'pi pi-circle-fill'
-          }
+          if (this.leaf) return 'pi pi-circle-fill'
+
           const customization =
             nodeBookmarkStore.bookmarksCustomization[node.data?.nodePath]
           return customization?.icon
@@ -159,9 +157,8 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
         children: sortedChildren,
         draggable: node.leaf,
         async handleAddFolder(newName: string) {
-          if (newName !== '') {
+          if (newName !== '')
             await nodeBookmarkStore.addNewBookmarkFolder(this.data, newName)
-          }
         },
         renderDragPreview(container) {
           const vnode = h(NodePreview, { nodeDef: node.data })
@@ -176,9 +173,9 @@ const renderedBookmarkedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(
           const nodeDefToAdd = data.data.data
           if (!nodeDefToAdd) return
           // Remove bookmark if the source is the top level bookmarked node.
-          if (nodeBookmarkStore.isBookmarked(nodeDefToAdd)) {
+          if (nodeBookmarkStore.isBookmarked(nodeDefToAdd))
             await nodeBookmarkStore.toggleBookmark(nodeDefToAdd)
-          }
+
           const folderNodeDef = node.data as ComfyNodeDefImpl
           const nodePath = folderNodeDef.category + '/' + nodeDefToAdd.name
           await nodeBookmarkStore.addBookmark(nodePath)

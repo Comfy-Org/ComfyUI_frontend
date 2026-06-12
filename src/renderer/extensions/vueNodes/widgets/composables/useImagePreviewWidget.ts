@@ -38,9 +38,7 @@ function scheduleDeferredImageRender() {
     deferredImageRenders = []
     deferredRenderScheduled = false
 
-    for (const render of renders) {
-      render()
-    }
+    for (const render of renders) render()
   })
 }
 
@@ -96,9 +94,9 @@ const renderPreview = (
     if (
       mouse[0] === node.pointerDown.pos[0] &&
       mouse[1] === node.pointerDown.pos[1]
-    ) {
+    )
       node.imageIndex = node.pointerDown.index
-    }
+
     node.pointerDown = null
   }
 
@@ -176,9 +174,9 @@ const renderPreview = (
           node.overIndex = i
           let value = 110
           if (canvas.pointer_is_down) {
-            if (!node.pointerDown || node.pointerDown.index !== i) {
+            if (!node.pointerDown || node.pointerDown.index !== i)
               node.pointerDown = { index: i, pos: [...mouse] }
-            }
+
             value = 125
           }
           ctx.filter = `contrast(${value}%) brightness(${value}%)`
@@ -329,15 +327,13 @@ const renderPreview = (
   const imageNum = (node.imageIndex ?? 0) + 1
   if (drawButton(dw - 40, dh + shiftY - 40, 30, `${imageNum}/${numImages}`)) {
     const i = imageNum >= numImages ? 0 : imageNum
-    if (!node.pointerDown || node.pointerDown.index !== i) {
+    if (!node.pointerDown || node.pointerDown.index !== i)
       node.pointerDown = { index: i, pos: [...mouse] }
-    }
   }
 
   if (drawButton(dw - 40, shiftY + 10, 30, `x`)) {
-    if (!node.pointerDown || node.pointerDown.index !== null) {
+    if (!node.pointerDown || node.pointerDown.index !== null)
       node.pointerDown = { index: null, pos: [...mouse] }
-    }
   }
 }
 

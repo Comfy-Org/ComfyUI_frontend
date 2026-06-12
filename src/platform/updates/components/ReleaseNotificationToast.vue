@@ -96,9 +96,8 @@ const changelogUrl = computed(() => {
 })
 
 const formattedContent = computed(() => {
-  if (!latestRelease.value?.content) {
+  if (!latestRelease.value?.content)
     return DOMPurify.sanitize(`<p>${t('releaseToast.description')}</p>`)
-  }
 
   try {
     const markdown = latestRelease.value.content
@@ -111,9 +110,8 @@ const formattedContent = computed(() => {
 
     // Check if there's meaningful content left after cleanup
     const trimmedContent = contentWithoutImages.trim()
-    if (!trimmedContent || trimmedContent.replace(/\s+/g, '') === '') {
+    if (!trimmedContent || trimmedContent.replace(/\s+/g, '') === '')
       return DOMPurify.sanitize(`<p>${t('releaseToast.description')}</p>`)
-    }
 
     // renderMarkdownToHtml already sanitizes with DOMPurify, so this is safe
     return renderMarkdownToHtml(contentWithoutImages)
@@ -150,16 +148,16 @@ const dismissToast = () => {
 }
 
 const handleSkip = () => {
-  if (latestRelease.value) {
+  if (latestRelease.value)
     void releaseStore.handleSkipRelease(latestRelease.value.version)
-  }
+
   dismissToast()
 }
 
 const handleLearnMore = () => {
-  if (latestRelease.value) {
+  if (latestRelease.value)
     void releaseStore.handleShowChangelog(latestRelease.value.version)
-  }
+
   // Do not dismiss; anchor will navigate in new tab but keep toast? spec maybe wants dismiss? We'll dismiss.
   dismissToast()
 }
@@ -184,19 +182,14 @@ const handleUpdate = async () => {
 
 // Start auto-hide when toast becomes visible
 watch(shouldShow, (isVisible) => {
-  if (isVisible) {
-    startAutoHide()
-  } else {
-    clearAutoHide()
-  }
+  if (isVisible) startAutoHide()
+  else clearAutoHide()
 })
 
 // Initialize on mount
 onMounted(async () => {
   // Fetch releases if not already loaded
-  if (!releaseStore.releases.length) {
-    await releaseStore.fetchReleases()
-  }
+  if (!releaseStore.releases.length) await releaseStore.fetchReleases()
 })
 
 // Expose methods for testing

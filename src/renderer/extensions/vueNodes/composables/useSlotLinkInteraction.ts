@@ -64,9 +64,7 @@ function createPointerSession(): PointerSession {
 
   const register = (...newStops: Array<Fn | null | undefined>) => {
     for (const stop of newStops) {
-      if (typeof stop === 'function') {
-        stops.push(stop)
-      }
+      if (typeof stop === 'function') stops.push(stop)
     }
   }
 
@@ -76,9 +74,8 @@ function createPointerSession(): PointerSession {
   const isActive = () => pointerId !== null
 
   const clear = () => {
-    for (const stop of stops) {
-      stop()
-    }
+    for (const stop of stops) stop()
+
     stops = []
     pointerId = null
   }
@@ -186,9 +183,8 @@ export function useSlotLinkInteraction({
       .filter(isToInputLink)
       .filter((link) => link.canConnectToInput(node, inputSlot))
 
-    for (const link of validCandidates) {
+    for (const link of validCandidates)
       link.connectToInput(node, inputSlot, activeAdapter?.linkConnector.events)
-    }
 
     return validCandidates.length > 0
   }
@@ -287,9 +283,8 @@ export function useSlotLinkInteraction({
   const cleanupInteraction = () => {
     autoPan?.stop()
     autoPan = null
-    if (state.pointerId != null) {
-      clearCanvasPointerHistory(state.pointerId)
-    }
+    if (state.pointerId != null) clearCanvasPointerHistory(state.pointerId)
+
     activeAdapter?.reset()
     pointerSession.clear()
     endDrag()
@@ -401,9 +396,8 @@ export function useSlotLinkInteraction({
       const currentSnap = activeAdapter.linkConnector.state.snapLinksPos
       snapPosChanged =
         !currentSnap || currentSnap[0] !== snapX || currentSnap[1] !== snapY
-      if (snapPosChanged) {
+      if (snapPosChanged)
         activeAdapter.linkConnector.state.snapLinksPos = [snapX, snapY]
-      }
     }
 
     const shouldRedraw = candidateChanged || snapPosChanged
@@ -544,9 +538,8 @@ export function useSlotLinkInteraction({
     )
     const hasConnected = connectByPriority(dropTarget, snappedCandidate)
 
-    if (!hasConnected && dropTarget === app.canvas?.canvas) {
+    if (!hasConnected && dropTarget === app.canvas?.canvas)
       activeAdapter?.dropOnCanvas(canvasEvent)
-    }
 
     cleanupInteraction()
     app.canvas?.setDirty(true, true)
@@ -652,9 +645,8 @@ export function useSlotLinkInteraction({
         ? graph.getLink(inputLinkId)
         : undefined
 
-    if (shouldBreakExistingInputLink && resolvedNode) {
+    if (shouldBreakExistingInputLink && resolvedNode)
       resolvedNode.disconnectInput(index, true)
-    }
 
     if (shouldBatchDisconnectOutputLinks && resolvedNode) {
       resolvedNode.disconnectOutput(index)
@@ -690,9 +682,8 @@ export function useSlotLinkInteraction({
       })
     }
 
-    if (shouldMoveExistingInput && existingInputLink) {
+    if (shouldMoveExistingInput && existingInputLink)
       existingInputLink._dragging = true
-    }
 
     syncRenderLinkOrigins()
 
@@ -767,9 +758,9 @@ export function useSlotLinkInteraction({
           canvasX,
           canvasY
         )
-        if (activeAdapter) {
+        if (activeAdapter)
           activeAdapter.linkConnector.state.snapLinksPos = [canvasX, canvasY]
-        }
+
         canvas.setDirty(true, true)
       }
     })
@@ -780,9 +771,7 @@ export function useSlotLinkInteraction({
   }
 
   tryOnScopeDispose(() => {
-    if (pointerSession.isActive()) {
-      cleanupInteraction()
-    }
+    if (pointerSession.isActive()) cleanupInteraction()
   })
 
   function onDoubleClick(e: PointerEvent) {

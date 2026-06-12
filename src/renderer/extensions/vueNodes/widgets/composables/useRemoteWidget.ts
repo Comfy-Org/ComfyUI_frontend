@@ -114,9 +114,7 @@ export function useRemoteWidget<
     entry.error = error instanceof Error ? error : new Error(String(error))
     entry.data ??= defaultValue
     entry.fetchPromise = undefined
-    if (entry.retryCount >= max_retries) {
-      setFailed(entry)
-    }
+    if (entry.retryCount >= max_retries) setFailed(entry)
   }
 
   const setFailed = (entry: CacheEntry<T>) => {
@@ -254,9 +252,7 @@ export function useRemoteWidget<
 
     // Handler for execution success
     const handleExecutionSuccess = () => {
-      if (autoRefreshEnabled && widget.refresh) {
-        widget.refresh()
-      }
+      if (autoRefreshEnabled && widget.refresh) widget.refresh()
     }
 
     // Add toggle widget

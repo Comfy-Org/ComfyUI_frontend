@@ -158,11 +158,8 @@ export function useSelectionToolboxPosition(
   const { resume: startSync, pause: stopSync } = useRafFn(updateTransform)
 
   watchEffect(() => {
-    if (visible.value) {
-      startSync()
-    } else {
-      stopSync()
-    }
+    if (visible.value) startSync()
+    else stopSync()
   })
 
   // Watch for selection changes
@@ -173,11 +170,9 @@ export function useSelectionToolboxPosition(
         if (moreOptionsRestorePending.value || moreOptionsSelectionSignature) {
           moreOptionsRestorePending.value = false
           moreOptionsWasOpenBeforeDrag = false
-          if (!moreOptionsOpen.value) {
-            moreOptionsSelectionSignature = null
-          } else {
+          if (!moreOptionsOpen.value) moreOptionsSelectionSignature = null
+          else
             moreOptionsSelectionSignature = buildSelectionSignature(canvasStore)
-          }
         }
         updateSelectionBounds()
         canvasStore.getCanvas().state.selectionChanged = false
@@ -221,9 +216,8 @@ export function useSelectionToolboxPosition(
     const currentSig = buildSelectionSignature(canvasStore)
     const selectionChanged = currentSig !== moreOptionsSelectionSignature
 
-    if (selectionChanged) {
-      moreOptionsSelectionSignature = null
-    }
+    if (selectionChanged) moreOptionsSelectionSignature = null
+
     moreOptionsOpen.value = false
     moreOptionsWasOpenBeforeDrag = true
     moreOptionsRestorePending.value = !!moreOptionsSelectionSignature
@@ -252,9 +246,7 @@ export function useSelectionToolboxPosition(
         shouldRestore && moreOptionsRestorePending.value
       moreOptionsWasOpenBeforeDrag = false
 
-      if (shouldRestore) {
-        restoreMoreOptionsSignal.value++
-      }
+      if (shouldRestore) restoreMoreOptionsSignal.value++
     })
   }
 

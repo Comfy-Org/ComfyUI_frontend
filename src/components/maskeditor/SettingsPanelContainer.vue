@@ -20,12 +20,8 @@ import PaintBucketSettingsPanel from './PaintBucketSettingsPanel.vue'
 const currentPanelComponent = computed<Component>(() => {
   const tool = useMaskEditorStore().currentTool
 
-  if (tool === Tools.MaskBucket) {
-    return PaintBucketSettingsPanel
-  } else if (tool === Tools.MaskColorFill) {
-    return ColorSelectSettingsPanel
-  } else {
-    return BrushSettingsPanel
-  }
+  if (tool === Tools.MaskBucket) return PaintBucketSettingsPanel
+  else if (tool === Tools.MaskColorFill) return ColorSelectSettingsPanel
+  else return BrushSettingsPanel
 })
 </script>

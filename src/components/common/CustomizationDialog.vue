@@ -131,9 +131,7 @@ const confirmCustomization = () => {
 watch(
   visible,
   (newValue) => {
-    if (newValue) {
-      resetCustomization()
-    }
+    if (newValue) resetCustomization()
   },
   { immediate: true }
 )

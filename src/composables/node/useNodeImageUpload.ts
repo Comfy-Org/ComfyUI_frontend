@@ -90,11 +90,9 @@ export const useNodeImageUpload = (
       if (!path) return
       return path
     } catch (error) {
-      if (error instanceof DOMException && error.name === 'TimeoutError') {
+      if (error instanceof DOMException && error.name === 'TimeoutError')
         useToastStore().addAlert(t('g.uploadTimedOut'))
-      } else {
-        useToastStore().addAlert(String(error))
-      }
+      else useToastStore().addAlert(String(error))
     }
   }
 
@@ -112,11 +110,9 @@ export const useNodeImageUpload = (
 
       const paths = await Promise.all(files.map(handleUpload))
       const validPaths = paths.filter((p): p is string => !!p)
-      if (validPaths.length) {
-        onUploadComplete(validPaths)
-      } else {
-        options.onUploadError?.()
-      }
+      if (validPaths.length) onUploadComplete(validPaths)
+      else options.onUploadError?.()
+
       return validPaths
     } finally {
       node.isUploading = false

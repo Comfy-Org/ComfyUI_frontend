@@ -81,9 +81,8 @@ export function useMinimapRenderer(
       needsFullRedraw.value ||
       updateFlags.value.nodes ||
       updateFlags.value.connections
-    ) {
+    )
       renderMinimap()
-    }
 
     // Update viewport if needed (e.g., after bounds change)
     if (updateFlags.value.viewport) {

@@ -40,9 +40,7 @@ export async function extractWorkflowFromAsset(asset: AssetItem): Promise<{
   try {
     const fileUrl = getAssetUrl(asset)
     const response = await fetch(fileUrl)
-    if (!response.ok) {
-      return { workflow: null, filename: baseFilename }
-    }
+    if (!response.ok) return { workflow: null, filename: baseFilename }
 
     const blob = await response.blob()
     const file = new File([blob], asset.name, { type: blob.type })

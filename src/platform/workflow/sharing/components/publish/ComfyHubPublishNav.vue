@@ -102,9 +102,7 @@ const steps = [
 const isProfileCreationFlow = computed(() => currentStep === 'profileCreation')
 
 const currentStepNumber = computed(() => {
-  if (isProfileCreationFlow.value) {
-    return 3
-  }
+  if (isProfileCreationFlow.value) return 3
 
   return steps.find((step) => step.name === currentStep)?.number ?? 0
 })

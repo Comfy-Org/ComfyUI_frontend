@@ -67,9 +67,7 @@ export function useTemplateUrlLoader() {
   const loadTemplateFromUrl = async () => {
     const templateParam = route.query.template
 
-    if (!templateParam || typeof templateParam !== 'string') {
-      return
-    }
+    if (!templateParam || typeof templateParam !== 'string') return
 
     if (!isValidParameter(templateParam)) {
       console.warn(

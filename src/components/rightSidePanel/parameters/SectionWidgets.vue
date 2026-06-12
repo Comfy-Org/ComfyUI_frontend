@@ -110,9 +110,8 @@ function setDraggableState() {
     }
 
     for (let index = 0; index < this.getAllItems().length; index++) {
-      if (typeof reorderedItems[index] === 'undefined') {
+      if (typeof reorderedItems[index] === 'undefined')
         reorderedItems[index] = this.draggableItem as HTMLElement
-      }
     }
 
     const newPosition = reorderedItems.indexOf(
@@ -222,9 +221,7 @@ function handleLocateNode() {
   if (!targetNode.value || !canvasStore.canvas) return
 
   const graphNode = canvasStore.canvas.graph?.getNodeById(targetNode.value.id)
-  if (graphNode) {
-    canvasStore.canvas.animateToBounds(graphNode.boundingRect)
-  }
+  if (graphNode) canvasStore.canvas.animateToBounds(graphNode.boundingRect)
 }
 
 function navigateToErrorTab() {
@@ -244,9 +241,7 @@ function handleResetAllWidgets() {
   for (const { widget, node: widgetNode } of widgetsProp) {
     const spec = nodeDefStore.getInputSpecForWidget(widgetNode, widget.name)
     const defaultValue = getWidgetDefaultValue(spec)
-    if (defaultValue !== undefined) {
-      writeWidgetValue(widget, defaultValue)
-    }
+    if (defaultValue !== undefined) writeWidgetValue(widget, defaultValue)
   }
 }
 

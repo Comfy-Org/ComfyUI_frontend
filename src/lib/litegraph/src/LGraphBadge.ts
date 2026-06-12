@@ -60,9 +60,8 @@ export class LGraphBadge {
     this.padding = padding
     this.height = height
     this.cornerRadius = cornerRadius
-    if (iconOptions) {
-      this.icon = new LGraphIcon(iconOptions)
-    }
+    if (iconOptions) this.icon = new LGraphIcon(iconOptions)
+
     this.onClick = onClick
     this.xOffset = xOffset
     this.yOffset = yOffset

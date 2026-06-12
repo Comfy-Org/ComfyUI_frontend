@@ -47,9 +47,7 @@ export let runWhenGlobalIdle: (
     // Fallback implementation for browsers without native support (e.g., Safari)
     _runWhenIdle = (_targetWindow, runner, _timeout?) => {
       setTimeout(() => {
-        if (disposed) {
-          return
-        }
+        if (disposed) return
 
         // Simulate IdleDeadline - give 15ms window (one frame at ~64fps)
         const end = Date.now() + 15
@@ -66,9 +64,8 @@ export let runWhenGlobalIdle: (
       let disposed = false
       return {
         dispose() {
-          if (disposed) {
-            return
-          }
+          if (disposed) return
+
           disposed = true
         }
       }
@@ -84,9 +81,8 @@ export let runWhenGlobalIdle: (
       let disposed = false
       return {
         dispose() {
-          if (disposed) {
-            return
-          }
+          if (disposed) return
+
           disposed = true
           targetWindow.cancelIdleCallback(handle)
         }

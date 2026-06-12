@@ -492,9 +492,7 @@ test.describe(
         await comfyMouse.drop()
         dropped = true
       } finally {
-        if (!dropped) {
-          await comfyMouse.drop().catch(() => {})
-        }
+        if (!dropped) await comfyMouse.drop().catch(() => {})
       }
 
       await expect
@@ -1155,9 +1153,8 @@ test.describe('Vue Node Widget Link Position', { tag: '@vue-nodes' }, () => {
         schedulerIndex: findIndex('scheduler')
       }
     })
-    if (!ksampler) {
-      throw new Error('KSampler should be present in fixture')
-    }
+    if (!ksampler) throw new Error('KSampler should be present in fixture')
+
     expect(
       ksampler.denoiseIndex,
       'denoise input slot not found'

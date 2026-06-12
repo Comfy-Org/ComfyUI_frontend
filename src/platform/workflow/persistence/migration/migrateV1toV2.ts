@@ -76,9 +76,7 @@ export function migrateV1toV2(
   clientId?: string
 ): number {
   // Check if V2 already exists
-  if (isV2MigrationComplete(workspaceId)) {
-    return -1
-  }
+  if (isV2MigrationComplete(workspaceId)) return -1
 
   // Read V1 data
   const v1Data = readV1Drafts(workspaceId)
@@ -132,9 +130,9 @@ export function migrateV1toV2(
   // users upgrading from V1 lose their open tab list.
   migrateV1TabState(workspaceId, clientId)
 
-  if (migrated > 0) {
+  if (migrated > 0)
     console.warn(`[V2 Migration] Migrated ${migrated} drafts from V1 to V2`)
-  }
+
   return migrated
 }
 
@@ -157,9 +155,8 @@ function migrateV1TabState(workspaceId: string, clientId?: string): void {
     let activeIndex = 0
     if (indexJson !== null) {
       const parsed = JSON.parse(indexJson)
-      if (typeof parsed === 'number' && Number.isFinite(parsed)) {
+      if (typeof parsed === 'number' && Number.isFinite(parsed))
         activeIndex = Math.min(Math.max(0, parsed), paths.length - 1)
-      }
     }
 
     writeOpenPaths(clientId, { workspaceId, paths, activeIndex })

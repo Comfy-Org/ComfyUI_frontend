@@ -66,9 +66,7 @@ export function classifyCloudValidationError(
   const { error, node_errors } = extracted
   const hasNodeErrors = node_errors && Object.keys(node_errors).length > 0
 
-  if (hasNodeErrors) {
-    return { kind: 'nodeErrors', nodeErrors: node_errors }
-  }
+  if (hasNodeErrors) return { kind: 'nodeErrors', nodeErrors: node_errors }
 
   if (error && typeof error === 'object') {
     return {

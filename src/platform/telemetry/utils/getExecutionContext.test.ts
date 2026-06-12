@@ -53,9 +53,8 @@ function mockNode(
 vi.mock('@/utils/graphTraversalUtil', () => ({
   reduceAllNodes: vi.fn((_graph, reducer, initial) => {
     let result = initial
-    for (const node of hoisted.mockNodes) {
-      result = reducer(result, node)
-    }
+    for (const node of hoisted.mockNodes) result = reducer(result, node)
+
     return result
   })
 }))
@@ -70,9 +69,9 @@ describe('getExecutionContext', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     hoisted.mockNodes.length = 0
-    for (const key of Object.keys(hoisted.mockNodeDefsByName)) {
+    for (const key of Object.keys(hoisted.mockNodeDefsByName))
       delete hoisted.mockNodeDefsByName[key]
-    }
+
     hoisted.mockActiveWorkflow = null
     hoisted.mockKnownTemplateNames = new Set()
     hoisted.mockTemplateByName = null

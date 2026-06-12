@@ -34,9 +34,8 @@ describe('FormSelectButton Core Component', () => {
       button.textContent?.includes(buttonText)
     )
 
-    if (!targetButton) {
+    if (!targetButton)
       throw new Error(`Button with text "${buttonText}" not found`)
-    }
 
     const user = userEvent.setup()
     await user.click(targetButton)

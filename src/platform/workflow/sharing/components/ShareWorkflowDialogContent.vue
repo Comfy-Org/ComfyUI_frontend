@@ -306,9 +306,8 @@ async function handleDialogModeChange(nextMode: DialogMode) {
 }
 
 watch(showPublishToHubTab, (isVisible) => {
-  if (!isVisible && dialogMode.value === 'publishToHub') {
+  if (!isVisible && dialogMode.value === 'publishToHub')
     dialogMode.value = 'shareLink'
-  }
 })
 
 const formattedDate = computed(() => {
@@ -353,9 +352,8 @@ async function refreshDialogState() {
       step: 'save_prompted',
       ...shareFlowContext.value
     })
-    if (workflow) {
-      workflowName.value = stripJsonExtension(workflow.filename)
-    }
+    if (workflow) workflowName.value = stripJsonExtension(workflow.filename)
+
     return
   }
 
@@ -424,9 +422,7 @@ const {
 
     const publishableAssets = assetInfo.value
 
-    if (publishableAssets.length > 0 && !acknowledged.value) {
-      return null
-    }
+    if (publishableAssets.length > 0 && !acknowledged.value) return null
 
     const result = await shareService.publishWorkflow(
       workflow.path,

@@ -8,9 +8,8 @@ export const useBooleanWidget = () => {
     node: LGraphNode,
     inputSpec: InputSpec
   ) => {
-    if (!isBooleanInputSpec(inputSpec)) {
+    if (!isBooleanInputSpec(inputSpec))
       throw new Error(`Invalid input data: ${inputSpec}`)
-    }
 
     const defaultVal = inputSpec.default ?? false
     const options = {

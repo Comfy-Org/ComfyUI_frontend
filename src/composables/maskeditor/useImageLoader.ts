@@ -11,15 +11,12 @@ function useImageLoaderInternal() {
   const loadImages = async (): Promise<HTMLImageElement> => {
     const inputData = dataStore.inputData
 
-    if (!inputData) {
-      throw new Error('No input data available in dataStore')
-    }
+    if (!inputData) throw new Error('No input data available in dataStore')
 
     const { imgCanvas, maskCanvas, rgbCanvas, imgCtx, maskCtx } = store
 
-    if (!imgCanvas || !maskCanvas || !rgbCanvas || !imgCtx || !maskCtx) {
+    if (!imgCanvas || !maskCanvas || !rgbCanvas || !imgCtx || !maskCtx)
       throw new Error('Canvas elements or contexts not available')
-    }
 
     imgCtx.clearRect(0, 0, imgCanvas.width, imgCanvas.height)
     maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height)

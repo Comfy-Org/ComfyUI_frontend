@@ -41,9 +41,8 @@ export function getExecutionContext(): ExecutionContext {
       if (isApiNode) {
         metrics.has_api_nodes = true
         const canonicalName = nodeDef?.name
-        if (canonicalName && !metrics.api_node_names.includes(canonicalName)) {
+        if (canonicalName && !metrics.api_node_names.includes(canonicalName))
           metrics.api_node_names.push(canonicalName)
-        }
       }
 
       const isToolkitNode =
@@ -53,9 +52,8 @@ export function getExecutionContext(): ExecutionContext {
       if (isToolkitNode) {
         metrics.has_toolkit_nodes = true
         const trackingName = nodeDef?.name ?? node.type
-        if (!metrics.toolkit_node_names.includes(trackingName)) {
+        if (!metrics.toolkit_node_names.includes(trackingName))
           metrics.toolkit_node_names.push(trackingName)
-        }
       }
 
       metrics.custom_node_count += isCustomNode ? 1 : 0

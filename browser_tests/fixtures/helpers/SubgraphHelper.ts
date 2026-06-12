@@ -61,13 +61,10 @@ export class SubgraphHelper {
           slotType === 'input' ? subgraph.inputNode : subgraph.outputNode
         const slots = slotType === 'input' ? subgraph.inputs : subgraph.outputs
 
-        if (!node) {
-          throw new Error(`No ${slotType} node found in subgraph`)
-        }
+        if (!node) throw new Error(`No ${slotType} node found in subgraph`)
 
-        if (!slots || slots.length === 0) {
+        if (!slots || slots.length === 0)
           throw new Error(`No ${slotType} slots found in subgraph`)
-        }
 
         // Filter slots based on target name and action type
         const slotsToTry = targetSlotName
@@ -115,9 +112,8 @@ export class SubgraphHelper {
         } else if (action === 'doubleClick') {
           // Double-click: use first slot with bounding rect center
           const slot = slotsToTry[0]
-          if (!slot.boundingRect) {
+          if (!slot.boundingRect)
             throw new Error(`${slotType} slot bounding rect not found`)
-          }
 
           const rect = slot.boundingRect
           const testX = rect[0] + rect[2] / 2 // x + width/2
@@ -398,9 +394,7 @@ export class SubgraphHelper {
 
     await this.comfyPage.nextFrame()
     await expect.poll(async () => this.isInSubgraph()).toBe(false)
-    if (this.comfyPage.isVueNodes) {
-      await this.comfyPage.vueNodes.waitForNodes()
-    }
+    if (this.comfyPage.isVueNodes) await this.comfyPage.vueNodes.waitForNodes()
   }
 
   async countGraphPseudoPreviewEntries(): Promise<number> {
@@ -461,11 +455,9 @@ export class SubgraphHelper {
   }
 
   async removeSlot(type: 'input' | 'output', slotName?: string): Promise<void> {
-    if (type === 'input') {
-      await this.rightClickInputSlot(slotName)
-    } else {
-      await this.rightClickOutputSlot(slotName)
-    }
+    if (type === 'input') await this.rightClickInputSlot(slotName)
+    else await this.rightClickOutputSlot(slotName)
+
     await this.comfyPage.contextMenu.clickLitegraphMenuItem('Remove Slot')
     await this.comfyPage.contextMenu.waitForHidden()
   }
@@ -592,9 +584,7 @@ export class SubgraphHelper {
     const warnings: string[] = []
     const handler = (msg: ConsoleMessage) => {
       const text = msg.text()
-      if (patterns.some((p) => text.includes(p))) {
-        warnings.push(text)
-      }
+      if (patterns.some((p) => text.includes(p))) warnings.push(text)
     }
     page.on('console', handler)
     return { warnings, dispose: () => page.off('console', handler) }

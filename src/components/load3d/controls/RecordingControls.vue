@@ -87,11 +87,8 @@ const emit = defineEmits<{
 }>()
 
 function toggleRecording() {
-  if (isRecording.value) {
-    emit('stopRecording')
-  } else {
-    emit('startRecording')
-  }
+  if (isRecording.value) emit('stopRecording')
+  else emit('startRecording')
 }
 
 function handleExportRecording() {

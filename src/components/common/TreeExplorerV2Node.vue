@@ -149,21 +149,18 @@ const isUserBlueprint = computed(() =>
 )
 
 function toggleBookmark() {
-  if (nodeDef.value) {
-    nodeBookmarkStore.toggleBookmark(nodeDef.value)
-  }
+  if (nodeDef.value) nodeBookmarkStore.toggleBookmark(nodeDef.value)
 }
 
 function deleteBlueprint() {
-  if (nodeDef.value) {
-    void subgraphStore.deleteBlueprint(nodeDef.value.name)
-  }
+  if (nodeDef.value) void subgraphStore.deleteBlueprint(nodeDef.value.name)
 }
 const editBlueprint = async () => {
-  if (!nodeDef.value)
+  if (!nodeDef.value) {
     throw new Error(
       'Failed to edit subgraph blueprint lacking backing node data'
     )
+  }
   await useSubgraphStore().editBlueprint(nodeDef.value.name)
 }
 
@@ -187,22 +184,17 @@ function handleClick(
   handleSelect: () => void
 ) {
   handleSelect()
-  if (item.value.type === 'folder') {
-    handleToggle()
-  }
+  if (item.value.type === 'folder') handleToggle()
+
   emit('nodeClick', item.value, e)
 }
 
 function handleContextMenu() {
-  if (contextMenuNode) {
-    contextMenuNode.value = item.value
-  }
+  if (contextMenuNode) contextMenuNode.value = item.value
 }
 
 function clearContextMenuNode() {
-  if (contextMenuNode) {
-    contextMenuNode.value = null
-  }
+  if (contextMenuNode) contextMenuNode.value = null
 }
 
 function handleMouseEnter(e: MouseEvent) {

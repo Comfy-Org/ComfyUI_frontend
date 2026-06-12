@@ -57,9 +57,8 @@ function buildDisplayItem(asset: AssetItem): AssetDisplayItem {
     badges.push({ label: badgeLabel, type: 'type' })
   }
 
-  for (const model of getAssetBaseModels(asset)) {
+  for (const model of getAssetBaseModels(asset))
     badges.push({ label: model, type: 'base' })
-  }
 
   // Intentionally no formatted date here — the WeakMap caches by AssetItem
   // reference, so a pre-formatted string would pin the locale active at first
@@ -112,12 +111,9 @@ export function useAssetBrowser(
   })
 
   const selectedCategory = computed(() => {
-    if (
-      selectedNavItem.value === 'all' ||
-      selectedNavItem.value === 'imported'
-    ) {
+    if (selectedNavItem.value === 'all' || selectedNavItem.value === 'imported')
       return 'all'
-    }
+
     return selectedNavItem.value
   })
 
@@ -156,9 +152,7 @@ export function useAssetBrowser(
       }
     ]
 
-    if (typeCategories.value.length === 0) {
-      return quickFilters
-    }
+    if (typeCategories.value.length === 0) return quickFilters
 
     return [
       ...quickFilters,
@@ -176,12 +170,9 @@ export function useAssetBrowser(
 
   // Compute content title from selected nav item
   const contentTitle = computed(() => {
-    if (selectedNavItem.value === 'all') {
-      return t('assetBrowser.allModels')
-    }
-    if (selectedNavItem.value === 'imported') {
-      return t('assetBrowser.imported')
-    }
+    if (selectedNavItem.value === 'all') return t('assetBrowser.allModels')
+
+    if (selectedNavItem.value === 'imported') return t('assetBrowser.imported')
 
     const category = typeCategories.value.find(
       (cat) => cat.id === selectedNavItem.value

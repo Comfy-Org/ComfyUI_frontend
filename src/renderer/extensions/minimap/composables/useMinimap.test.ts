@@ -65,16 +65,13 @@ vi.mock('@vueuse/core', () => {
       const id = rafCallbackId++
       rafCallbacks[id] = callback
 
-      if (options?.immediate !== false) {
+      if (options?.immediate !== false)
         void Promise.resolve().then(() => callback())
-      }
 
       const resumeFn = vi.fn(() => {
         mockResume()
         // Execute the RAF callback immediately when resumed
-        if (rafCallbacks[id]) {
-          rafCallbacks[id]()
-        }
+        if (rafCallbacks[id]) rafCallbacks[id]()
       })
 
       return {
@@ -354,9 +351,7 @@ describe('useMinimap', () => {
         expect.any(Function)
       )
 
-      if (minimap.visible.value) {
-        expect(mockResume).toHaveBeenCalled()
-      }
+      if (minimap.visible.value) expect(mockResume).toHaveBeenCalled()
     })
 
     it('should not initialize without canvas and graph', async () => {
@@ -855,9 +850,7 @@ describe('useMinimap', () => {
         | EventListener
         | undefined
 
-      if (resizeHandler) {
-        resizeHandler(new Event('resize'))
-      }
+      if (resizeHandler) resizeHandler(new Event('resize'))
 
       await nextTick()
 
@@ -880,9 +873,7 @@ describe('useMinimap', () => {
       }
 
       moduleMockGraph._nodes.push(newNode)
-      if (moduleMockGraph.onNodeAdded) {
-        moduleMockGraph.onNodeAdded(newNode)
-      }
+      if (moduleMockGraph.onNodeAdded) moduleMockGraph.onNodeAdded(newNode)
 
       await new Promise((resolve) => setTimeout(resolve, 600))
     })
@@ -895,9 +886,8 @@ describe('useMinimap', () => {
       const removedNode = moduleMockGraph._nodes[0]
       moduleMockGraph._nodes.splice(0, 1)
 
-      if (moduleMockGraph.onNodeRemoved) {
+      if (moduleMockGraph.onNodeRemoved)
         moduleMockGraph.onNodeRemoved(removedNode)
-      }
 
       await new Promise((resolve) => setTimeout(resolve, 600))
     })
@@ -907,9 +897,8 @@ describe('useMinimap', () => {
 
       await minimap.init()
 
-      if (moduleMockGraph.onConnectionChange) {
+      if (moduleMockGraph.onConnectionChange)
         moduleMockGraph.onConnectionChange(moduleMockGraph._nodes[0])
-      }
 
       await new Promise((resolve) => setTimeout(resolve, 600))
     })

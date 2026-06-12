@@ -38,9 +38,7 @@ export class LGraphButton extends LGraphBadge {
    * @param y The y-coordinate to draw the button at.
    */
   override draw(ctx: CanvasRenderingContext2D, x: number, y: number): void {
-    if (!this.visible) {
-      return
-    }
+    if (!this.visible) return
 
     const width = this.getWidth(ctx)
 
@@ -68,9 +66,7 @@ export class LGraphButton extends LGraphBadge {
     const centerX = adjustedX + width / 2
     const centerY = adjustedY + this.height / 2
 
-    if (this.text) {
-      ctx.fillText(this.text, centerX, centerY)
-    }
+    if (this.text) ctx.fillText(this.text, centerX, centerY)
 
     // Restore context
     ctx.font = font

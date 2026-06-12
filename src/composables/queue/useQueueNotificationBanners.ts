@@ -37,9 +37,8 @@ export type QueueNotificationBanner =
   | QueueFailedNotification
 
 const sanitizeCount = (value: number | undefined) => {
-  if (!(typeof value === 'number' && value > 0)) {
-    return 1
-  }
+  if (!(typeof value === 'number' && value > 0)) return 1
+
   return Math.floor(value)
 }
 
@@ -62,17 +61,15 @@ export const useQueueNotificationBanners = () => {
 
   const clearIdleCompletionHooks = () => {
     idleCompletionScheduleToken++
-    if (!stopIdleHistoryWatch) {
-      return
-    }
+    if (!stopIdleHistoryWatch) return
+
     stopIdleHistoryWatch()
     stopIdleHistoryWatch = null
   }
 
   const clearDismissTimer = () => {
-    if (dismissTimer.value === null) {
-      return
-    }
+    if (dismissTimer.value === null) return
+
     clearTimeout(dismissTimer.value)
     dismissTimer.value = null
   }
@@ -84,14 +81,11 @@ export const useQueueNotificationBanners = () => {
   }
 
   const showNextNotification = () => {
-    if (activeNotification.value !== null) {
-      return
-    }
+    if (activeNotification.value !== null) return
+
     const [nextNotification, ...rest] = pendingNotifications.value
     pendingNotifications.value = rest
-    if (!nextNotification) {
-      return
-    }
+    if (!nextNotification) return
 
     activeNotification.value = nextNotification
     clearDismissTimer()
@@ -161,17 +155,14 @@ export const useQueueNotificationBanners = () => {
         (requestId === undefined || notification.requestId === requestId)
     )
 
-    if (pendingIndex === -1) {
-      return false
-    }
+    if (pendingIndex === -1) return false
 
     const queuedPendingNotification = pendingNotifications.value[pendingIndex]
     if (
       queuedPendingNotification === undefined ||
       queuedPendingNotification.type !== 'queuedPending'
-    ) {
+    )
       return false
-    }
 
     pendingNotifications.value = [
       ...pendingNotifications.value.slice(0, pendingIndex),
@@ -217,9 +208,7 @@ export const useQueueNotificationBanners = () => {
       return typeof ts === 'number' && ts >= startTs
     })
 
-    if (!finishedTasks.length) {
-      return false
-    }
+    if (!finishedTasks.length) return false
 
     let completedCount = 0
     let failedCount = 0
@@ -230,21 +219,16 @@ export const useQueueNotificationBanners = () => {
       if (state === 'completed') {
         completedCount++
         const preview = task.previewOutput
-        if (preview?.isImage) {
-          imagePreviews.push(preview.urlWithTimestamp)
-        }
+        if (preview?.isImage) imagePreviews.push(preview.urlWithTimestamp)
       } else if (state === 'failed') {
         failedCount++
       }
     }
 
-    if (completedCount > 0) {
+    if (completedCount > 0)
       queueNotification(toCompletedNotification(completedCount, imagePreviews))
-    }
 
-    if (failedCount > 0) {
-      queueNotification(toFailedNotification(failedCount))
-    }
+    if (failedCount > 0) queueNotification(toFailedNotification(failedCount))
 
     return completedCount > 0 || failedCount > 0
   }
@@ -278,9 +262,7 @@ export const useQueueNotificationBanners = () => {
       }
 
       const hasShownNotifications = queueCompletionBatchNotifications()
-      if (hasShownNotifications) {
-        clearIdleCompletionHooks()
-      }
+      if (hasShownNotifications) clearIdleCompletionHooks()
     })
   }
 
@@ -292,9 +274,7 @@ export const useQueueNotificationBanners = () => {
         lastActiveStartTs.value = Date.now()
         return
       }
-      if (prev && !active) {
-        scheduleIdleCompletionBatchNotifications()
-      }
+      if (prev && !active) scheduleIdleCompletionBatchNotifications()
     },
     { immediate: true }
   )

@@ -43,9 +43,8 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
         // Extension nodes may not be installed
         if (!provider.nodeDef) continue
         // Only store the first category for each node type (matches current assetService behavior)
-        if (!lookup[provider.nodeDef.name]) {
+        if (!lookup[provider.nodeDef.name])
           lookup[provider.nodeDef.name] = category
-        }
       }
     }
     return lookup
@@ -67,9 +66,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
     registerDefaults()
 
     // Handle invalid input gracefully
-    if (!nodeType || typeof nodeType !== 'string') {
-      return undefined
-    }
+    if (!nodeType || typeof nodeType !== 'string') return undefined
 
     return nodeTypeToCategory.value[nodeType]
   }
@@ -82,9 +79,7 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   function findProvidersWithFallback(
     modelType: string
   ): ModelNodeProvider[] | undefined {
-    if (!modelType || typeof modelType !== 'string') {
-      return undefined
-    }
+    if (!modelType || typeof modelType !== 'string') return undefined
 
     const segments = modelType.split('/')
     for (let i = segments.length; i >= 1; i--) {
@@ -130,9 +125,8 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   ) {
     registerDefaults()
     if (!nodeProvider.nodeDef) return
-    if (!modelToNodeMap.value[modelType]) {
-      modelToNodeMap.value[modelType] = []
-    }
+    if (!modelToNodeMap.value[modelType]) modelToNodeMap.value[modelType] = []
+
     modelToNodeMap.value[modelType].push(nodeProvider)
   }
   /**
@@ -149,17 +143,14 @@ export const useModelToNodeStore = defineStore('modelToNode', () => {
   }
 
   function registerDefaults() {
-    if (haveDefaultsLoaded.value) {
-      return
-    }
-    if (Object.keys(nodeDefStore.nodeDefsByName).length === 0) {
-      return
-    }
+    if (haveDefaultsLoaded.value) return
+
+    if (Object.keys(nodeDefStore.nodeDefsByName).length === 0) return
+
     haveDefaultsLoaded.value = true
 
-    for (const [modelType, nodeClass, key] of MODEL_NODE_MAPPINGS) {
+    for (const [modelType, nodeClass, key] of MODEL_NODE_MAPPINGS)
       quickRegister(modelType, nodeClass, key)
-    }
   }
 
   return {

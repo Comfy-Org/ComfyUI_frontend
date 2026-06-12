@@ -109,16 +109,14 @@ export function normalizeOSList(
   if (isNil(osValues) || isEmpty(osValues)) return undefined
 
   // "OS Independent" means all OS supported
-  if (osValues.some((os) => os.toLowerCase() === 'os independent')) {
+  if (osValues.some((os) => os.toLowerCase() === 'os independent'))
     return undefined
-  }
 
   // Filter to valid Registry OS values only
   const validOS: RegistryOS[] = []
   osValues.forEach((os) => {
-    if (os === 'Windows' || os === 'macOS' || os === 'Linux') {
+    if (os === 'Windows' || os === 'macOS' || os === 'Linux')
       if (!validOS.includes(os)) validOS.push(os)
-    }
   })
 
   return validOS.length > 0 ? validOS : undefined

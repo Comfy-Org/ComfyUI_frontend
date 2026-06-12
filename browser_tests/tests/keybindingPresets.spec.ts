@@ -103,9 +103,8 @@ test.describe('Keybinding Presets', { tag: '@keyboard' }, () => {
     const discardButton = page.getByRole('button', {
       name: /Discard and Switch/i
     })
-    if (await discardButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+    if (await discardButton.isVisible({ timeout: 2000 }).catch(() => false))
       await discardButton.click()
-    }
 
     await expect(presetTrigger).toContainText('Default Preset')
 

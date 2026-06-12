@@ -40,10 +40,11 @@ export const useReleaseService = () => {
     context: string,
     routeSpecificErrors?: Record<number, string>
   ): string => {
-    if (!axios.isAxiosError(err))
+    if (!axios.isAxiosError(err)) {
       return err instanceof Error
         ? `${context}: ${err.message}`
         : `${context}: Unknown error occurred`
+    }
 
     const axiosError = err as AxiosError<ErrorResponse>
 

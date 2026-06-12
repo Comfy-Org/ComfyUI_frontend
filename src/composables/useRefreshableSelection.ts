@@ -30,9 +30,7 @@ export const useRefreshableSelection = () => {
       if (!node.widgets) return []
       const items: RefreshableItem[] = []
       for (const widget of node.widgets) {
-        if (isRefreshableWidget(widget)) {
-          items.push(widget)
-        }
+        if (isRefreshableWidget(widget)) items.push(widget)
       }
       return items
     })

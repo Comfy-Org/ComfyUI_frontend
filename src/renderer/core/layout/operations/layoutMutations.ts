@@ -225,9 +225,7 @@ export function useLayoutMutations(): LayoutMutations {
     let maxZIndex = 0
 
     for (const [, layout] of allNodes) {
-      if (layout.zIndex > maxZIndex) {
-        maxZIndex = layout.zIndex
-      }
+      if (layout.zIndex > maxZIndex) maxZIndex = layout.zIndex
     }
 
     // Set this node's z-index to be one higher than the current max

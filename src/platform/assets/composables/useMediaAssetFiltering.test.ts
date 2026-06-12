@@ -15,12 +15,11 @@ interface AssetSpec {
 
 function makeAsset(spec: AssetSpec): AssetItem {
   const userMetadata: Record<string, unknown> = {}
-  if (spec.createTime !== undefined) {
-    userMetadata.create_time = spec.createTime
-  }
-  if (spec.executionSeconds !== undefined) {
+  if (spec.createTime !== undefined) userMetadata.create_time = spec.createTime
+
+  if (spec.executionSeconds !== undefined)
     userMetadata.executionTimeInSeconds = spec.executionSeconds
-  }
+
   return {
     id: spec.id,
     name: spec.name,

@@ -26,9 +26,9 @@ export function getWidgetDefaultValue(
     case 'STRING':
       return ''
     default:
-      if (Array.isArray(spec.options) && spec.options.length > 0) {
+      if (Array.isArray(spec.options) && spec.options.length > 0)
         return spec.options[0] as WidgetValue
-      }
+
       return undefined
   }
 }
@@ -67,17 +67,13 @@ export function renameWidget(
     const interiorInput = interiorNode.inputs?.find(
       (inp) => inp.widget?.name === originalWidget.name
     )
-    if (interiorInput) {
-      interiorInput.label = newLabel || undefined
-    }
+    if (interiorInput) interiorInput.label = newLabel || undefined
   }
 
   const input = node.inputs?.find((inp) => inp.widget?.name === widget.name)
 
   widget.label = newLabel || undefined
-  if (input) {
-    input.label = newLabel || undefined
-  }
+  if (input) input.label = newLabel || undefined
 
   // Fires for all node types; listeners guard against non-subgraph nodes.
   node.graph?.trigger('node:slot-label:changed', {

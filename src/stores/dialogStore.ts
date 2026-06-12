@@ -160,9 +160,7 @@ export const useDialogStore = defineStore('dialog', () => {
     B extends Component = Component,
     F extends Component = Component
   >(options: ShowDialogOptions<H, B, F> & { key: string }) {
-    if (dialogStack.value.length >= 10) {
-      dialogStack.value.shift()
-    }
+    if (dialogStack.value.length >= 10) dialogStack.value.shift()
 
     const dialog = {
       key: options.key,

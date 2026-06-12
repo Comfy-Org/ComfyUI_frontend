@@ -122,22 +122,22 @@ const MAX_VISIBLE_DOTS = 4
 
 const categoryButtons = computed(() => {
   const buttons: { id: RootCategoryId; label: string }[] = []
-  if (hasFavorites) {
+  if (hasFavorites)
     buttons.push({ id: RootCategory.Favorites, label: t('g.bookmarked') })
-  }
-  if (hasBlueprintNodes) {
+
+  if (hasBlueprintNodes)
     buttons.push({ id: RootCategory.Blueprint, label: t('g.blueprints') })
-  }
+
   buttons.push({ id: RootCategory.Comfy, label: t('g.comfy') })
-  if (hasEssentialNodes) {
+  if (hasEssentialNodes)
     buttons.push({ id: RootCategory.Essentials, label: t('g.essentials') })
-  }
-  if (hasPartnerNodes) {
+
+  if (hasPartnerNodes)
     buttons.push({ id: RootCategory.PartnerNodes, label: t('g.partner') })
-  }
-  if (hasCustomNodes) {
+
+  if (hasCustomNodes)
     buttons.push({ id: RootCategory.Custom, label: t('g.extensions') })
-  }
+
   return buttons
 })
 

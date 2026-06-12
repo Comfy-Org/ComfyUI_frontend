@@ -56,9 +56,8 @@ function startScroll() {
 
 function stopScroll() {
   pause()
-  if (containerRef.value) {
-    containerRef.value.scrollLeft = 0
-  }
+  if (containerRef.value) containerRef.value.scrollLeft = 0
+
   isScrolling.value = false
 }
 

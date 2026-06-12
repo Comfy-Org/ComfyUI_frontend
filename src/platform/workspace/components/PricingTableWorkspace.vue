@@ -471,9 +471,9 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
 const getButtonSeverity = (
   tier: PricingTierConfig
 ): 'primary' | 'secondary' => {
-  if (isCurrentPlan(tier.key)) {
+  if (isCurrentPlan(tier.key))
     return isCancelled.value ? 'primary' : 'secondary'
-  }
+
   if (tier.key === 'creator') return 'primary'
   return 'secondary'
 }
@@ -521,9 +521,8 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
 
   // Handle resubscribe for cancelled subscription on current plan
   if (isCurrentPlan(tierKey)) {
-    if (isCancelled.value) {
-      emit('resubscribe')
-    }
+    if (isCancelled.value) emit('resubscribe')
+
     return
   }
 

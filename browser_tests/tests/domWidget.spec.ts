@@ -22,9 +22,8 @@ test.describe('DOM Widget', { tag: '@widget' }, () => {
     await expect(lastMultiline).toBeVisible()
 
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-    for (const node of nodes) {
-      await node.click('collapse')
-    }
+    for (const node of nodes) await node.click('collapse')
+
     await expect(firstMultiline).toBeHidden()
     await expect(lastMultiline).toBeHidden()
   })

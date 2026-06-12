@@ -83,9 +83,9 @@ export const useVersionCompatibilityStore = defineStore(
         !backendVersion.value &&
         !requiredFrontendVersion.value &&
         outdatedComfyPackages.value.length === 0
-      ) {
+      )
         return null
-      }
+
       const baseKey = `${frontendVersion.value}-${backendVersion.value}-${requiredFrontendVersion.value}`
       if (outdatedComfyPackages.value.length === 0) return baseKey
       const packageKey = [...outdatedComfyPackages.value]
@@ -162,9 +162,8 @@ export const useVersionCompatibilityStore = defineStore(
     )
 
     async function checkVersionCompatibility() {
-      if (!systemStatsStore.systemStats) {
+      if (!systemStatsStore.systemStats)
         await until(systemStatsStore.isInitialized)
-      }
     }
 
     function dismissWarning() {
@@ -172,9 +171,9 @@ export const useVersionCompatibilityStore = defineStore(
 
       const now = Date.now()
       const pruned: Record<string, number> = {}
-      for (const [key, until] of Object.entries(dismissalStorage.value)) {
+      for (const [key, until] of Object.entries(dismissalStorage.value))
         if (until > now) pruned[key] = until
-      }
+
       pruned[versionKey.value] = now + DISMISSAL_DURATION_MS
       dismissalStorage.value = pruned
     }

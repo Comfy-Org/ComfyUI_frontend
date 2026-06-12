@@ -20,9 +20,8 @@ function isResultItem(item: unknown): item is ResultItem {
   if (
     candidate.type !== undefined &&
     !resultItemType.safeParse(candidate.type).success
-  ) {
+  )
     return false
-  }
 
   return true
 }

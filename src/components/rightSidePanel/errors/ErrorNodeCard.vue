@@ -225,15 +225,11 @@ function toggleRuntimeDetails() {
 }
 
 function handleLocateNode() {
-  if (card.nodeId) {
-    emit('locateNode', card.nodeId)
-  }
+  if (card.nodeId) emit('locateNode', card.nodeId)
 }
 
 function handleEnterSubgraph() {
-  if (card.nodeId) {
-    emit('enterSubgraph', card.nodeId)
-  }
+  if (card.nodeId) emit('enterSubgraph', card.nodeId)
 }
 
 function handleCopyError(idx: number) {

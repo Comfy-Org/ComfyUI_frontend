@@ -71,9 +71,8 @@ export function useWorkflowAutoSave() {
       if (
         newSetting === 'after delay' &&
         workflowStore.activeWorkflow?.isModified
-      ) {
+      )
         scheduleAutoSave()
-      }
     },
     { immediate: true }
   )

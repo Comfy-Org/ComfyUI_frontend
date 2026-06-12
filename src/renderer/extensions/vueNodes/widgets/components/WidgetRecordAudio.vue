@@ -131,9 +131,8 @@ const waveform = useAudioWaveform({
 const playback = useAudioPlayback(audioRef, {
   onPlaybackEnded: handlePlaybackEnded,
   onMetadataLoaded: (duration) => {
-    if (!isPlaying.value && !isRecording.value) {
+    if (!isPlaying.value && !isRecording.value)
       timer.value = Math.floor(duration)
-    }
   }
 })
 
@@ -177,9 +176,8 @@ function handleRecordingComplete(blob: Blob) {
     )
       continue
 
-    if (w.element.src.startsWith('blob:')) {
-      URL.revokeObjectURL(w.element.src)
-    }
+    if (w.element.src.startsWith('blob:')) URL.revokeObjectURL(w.element.src)
+
     w.element.src = URL.createObjectURL(blob)
     break
   }
@@ -195,9 +193,7 @@ async function handleStartRecording() {
     // Setup waveform visualization for recording
     if (recorder.mediaRecorder.value) {
       const stream = recorder.mediaRecorder.value.stream
-      if (stream) {
-        await waveform.setupRecordingVisualization(stream)
-      }
+      if (stream) await waveform.setupRecordingVisualization(stream)
     }
 
     // Start timer
@@ -263,11 +259,8 @@ function handlePlaybackEnded() {
   }
 
   const duration = playback.getDuration()
-  if (duration) {
-    timer.value = Math.floor(duration)
-  } else {
-    timer.value = 0
-  }
+  if (duration) timer.value = Math.floor(duration)
+  else timer.value = 0
 }
 
 onMounted(() => {

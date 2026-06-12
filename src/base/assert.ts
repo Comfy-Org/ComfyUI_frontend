@@ -24,9 +24,7 @@ export function assert(condition: unknown, message: string): asserts condition {
   const formatted = `[Assertion failed]: ${message}`
   console.error(formatted)
 
-  if (import.meta.env.DEV) {
-    throw new Error(formatted)
-  }
+  if (import.meta.env.DEV) throw new Error(formatted)
 
   try {
     reporter?.(formatted)

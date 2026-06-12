@@ -220,17 +220,17 @@ export const useAuthStore = defineStore('auth', () => {
 
   const getAuthHeaderOrThrow = async (): Promise<AuthHeader> => {
     const authHeader = await getAuthHeader()
-    if (!authHeader) {
+    if (!authHeader)
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
+
     return authHeader
   }
 
   const getFirebaseAuthHeaderOrThrow = async (): Promise<AuthHeader> => {
     const authHeader = await getFirebaseAuthHeader()
-    if (!authHeader) {
+    if (!authHeader)
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
+
     return authHeader
   }
 
@@ -238,9 +238,8 @@ export const useAuthStore = defineStore('auth', () => {
     isFetchingBalance.value = true
     try {
       const authHeader = await getAuthHeader()
-      if (!authHeader) {
+      if (!authHeader)
         throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-      }
 
       const response = await fetch(buildApiUrl('/customers/balance'), {
         headers: {
@@ -274,9 +273,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   const createCustomer = async (): Promise<CreateCustomerResponse> => {
     const authHeader = await getAuthHeader()
-    if (!authHeader) {
+    if (!authHeader)
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
 
     const createCustomerRes = await fetch(buildApiUrl('/customers'), {
       method: 'POST',
@@ -320,9 +318,9 @@ export const useAuthStore = defineStore('auth', () => {
       // Create customer if needed
       if (options?.createCustomer) {
         const token = await getIdToken()
-        if (!token) {
+        if (!token)
           throw new Error('Cannot create customer: User not authenticated')
-        }
+
         await createCustomer()
       }
 
@@ -434,9 +432,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   /** Update password for current user */
   const _updatePassword = async (newPassword: string): Promise<void> => {
-    if (!currentUser.value) {
+    if (!currentUser.value)
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
+
     await updatePassword(currentUser.value, newPassword)
   }
 
@@ -444,9 +442,8 @@ export const useAuthStore = defineStore('auth', () => {
     requestBodyContent: CreditPurchasePayload
   ): Promise<CreditPurchaseResponse> => {
     const authHeader = await getAuthHeader()
-    if (!authHeader) {
+    if (!authHeader)
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
 
     // Ensure customer was created during login/registration
     if (!customerCreated.value) {
@@ -484,9 +481,8 @@ export const useAuthStore = defineStore('auth', () => {
     targetTier?: BillingPortalTargetTier
   ): Promise<AccessBillingPortalResponse> => {
     const authHeader = await getAuthHeader()
-    if (!authHeader) {
+    if (!authHeader)
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
 
     const response = await fetch(buildApiUrl('/customers/billing'), {
       method: 'POST',

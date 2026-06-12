@@ -86,9 +86,7 @@ function resolveBlueprintDisplayName(
   blueprintName: string
 ): string | undefined {
   for (const [prefix, displayNameKey] of BLUEPRINT_PREFIX_MAP) {
-    if (blueprintName.startsWith(prefix)) {
-      return t(displayNameKey)
-    }
+    if (blueprintName.startsWith(prefix)) return t(displayNameKey)
   }
   return undefined
 }
@@ -139,9 +137,7 @@ export function resolveBlueprintEssentialsCategory(
   if (!nodeName.startsWith(BLUEPRINT_PREFIX)) return undefined
   const blueprintName = nodeName.slice(BLUEPRINT_PREFIX.length)
   for (const [prefix, , category] of BLUEPRINT_PREFIX_MAP) {
-    if (blueprintName.startsWith(prefix)) {
-      return category
-    }
+    if (blueprintName.startsWith(prefix)) return category
   }
   return undefined
 }

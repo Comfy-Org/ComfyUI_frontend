@@ -168,9 +168,7 @@ export const useExtensionService = () => {
       if (method in ext) {
         try {
           const fn = ext[method]
-          if (typeof fn === 'function') {
-            results.push(fn.call(ext, ...args, app))
-          }
+          if (typeof fn === 'function') results.push(fn.call(ext, ...args, app))
         } catch (error) {
           console.error(
             `Error calling extension '${ext.name}' method '${method}'`,
@@ -200,28 +198,21 @@ export const useExtensionService = () => {
         if (method in ext) {
           try {
             const fn = ext[method]
-            if (typeof fn !== 'function') {
-              return
-            }
+            if (typeof fn !== 'function') return
 
             // Set current extension name for legacy compatibility tracking
-            if (method === 'setup') {
+            if (method === 'setup')
               legacyMenuCompat.setCurrentExtension(ext.name)
-            }
 
             const result = await fn.call(ext, ...args, app)
 
             // Clear current extension after setup
-            if (method === 'setup') {
-              legacyMenuCompat.setCurrentExtension(null)
-            }
+            if (method === 'setup') legacyMenuCompat.setCurrentExtension(null)
 
             return result
           } catch (error) {
             // Clear current extension on error too
-            if (method === 'setup') {
-              legacyMenuCompat.setCurrentExtension(null)
-            }
+            if (method === 'setup') legacyMenuCompat.setCurrentExtension(null)
 
             console.error(
               `Error calling extension '${ext.name}' method '${method}'`,

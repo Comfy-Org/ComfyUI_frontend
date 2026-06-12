@@ -15,9 +15,8 @@ describe('useLazyPagination', () => {
   const runInScope = <T>(fn: () => T): T => {
     scope = effectScope()
     const result = scope.run(fn)
-    if (result === undefined) {
-      throw new Error('composable returned nothing')
-    }
+    if (result === undefined) throw new Error('composable returned nothing')
+
     return result
   }
 

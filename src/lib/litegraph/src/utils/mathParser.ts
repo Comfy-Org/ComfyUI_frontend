@@ -55,9 +55,9 @@ export function evaluateMathExpression(input: string): number | undefined {
       const result = expr()
       if (result === undefined) return undefined
       const closing = peek()
-      if (!closing || closing.type !== 'op' || closing.value !== ')') {
+      if (!closing || closing.type !== 'op' || closing.value !== ')')
         return undefined
-      }
+
       consume()
       depth--
       return result

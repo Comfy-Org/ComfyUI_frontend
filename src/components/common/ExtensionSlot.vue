@@ -28,8 +28,7 @@ const mountCustomExtension = (extension: CustomExtension, el: HTMLElement) => {
 }
 
 onBeforeUnmount(() => {
-  if (props.extension.type === 'custom' && props.extension.destroy) {
+  if (props.extension.type === 'custom' && props.extension.destroy)
     props.extension.destroy()
-  }
 })
 </script>

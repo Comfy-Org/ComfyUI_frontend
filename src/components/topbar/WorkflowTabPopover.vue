@@ -91,9 +91,7 @@ const showPopover = (event: Event) => {
           pos = newPos
         }
 
-        if (shift + halfWidth < 0) {
-          shift = -halfWidth + 24
-        }
+        if (shift + halfWidth < 0) shift = -halfWidth + 24
 
         el.style.left = `${pos}px`
         el.style.setProperty('--shift', `${shift}px`)
@@ -120,16 +118,12 @@ const hidePopover = () => {
   }
 
   hideTimeout = setTimeout(() => {
-    if (popoverRef.value) {
-      popoverRef.value.hide()
-    }
+    if (popoverRef.value) popoverRef.value.hide()
   }, 100) // Minimal delay to allow moving to popover
 }
 
 const togglePopover = (event: Event) => {
-  if (popoverRef.value) {
-    popoverRef.value.toggle(event)
-  }
+  if (popoverRef.value) popoverRef.value.toggle(event)
 }
 
 defineExpose({

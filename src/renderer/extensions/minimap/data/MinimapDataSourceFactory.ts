@@ -13,9 +13,7 @@ export class MinimapDataSourceFactory {
     // Check if LayoutStore has data
     const layoutStoreHasData = layoutStore.getAllNodes().value.size > 0
 
-    if (layoutStoreHasData) {
-      return new LayoutStoreDataSource(graph)
-    }
+    if (layoutStoreHasData) return new LayoutStoreDataSource(graph)
 
     return new LiteGraphDataSource(graph)
   }

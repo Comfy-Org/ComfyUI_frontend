@@ -121,11 +121,10 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
 
         await triggerReconnect(comfyPage, ws, scenario, jobId)
 
-        if (scenario.expectsActiveAfter) {
+        if (scenario.expectsActiveAfter)
           await expect(firstSkeleton).toBeVisible()
-        } else {
+        else
           await expect(comfyPage.appMode.outputHistory.skeletons).toHaveCount(0)
-        }
       })
     }
 
@@ -200,11 +199,9 @@ test.describe('WebSocket reconnect with stale job', { tag: '@ui' }, () => {
 
         await triggerReconnect(comfyPage, ws, scenario, jobId)
 
-        if (scenario.expectsActiveAfter) {
+        if (scenario.expectsActiveAfter)
           await expect(ksamplerNode).toHaveClass(EXECUTING_CLASS)
-        } else {
-          await expect(ksamplerNode).not.toHaveClass(EXECUTING_CLASS)
-        }
+        else await expect(ksamplerNode).not.toHaveClass(EXECUTING_CLASS)
       })
     }
   })

@@ -188,9 +188,7 @@ const isLeftPanelOpen = ref<boolean>(true)
 const mobileMenuOpen = ref<boolean>(false)
 
 watch(notMobile, (isDesktop) => {
-  if (!isDesktop) {
-    mobileMenuOpen.value = false
-  }
+  if (!isDesktop) mobileMenuOpen.value = false
 })
 
 const showLeftPanel = computed(() => {
@@ -215,11 +213,8 @@ const gridStyle = computed(() => ({
 }))
 
 const toggleLeftPanel = () => {
-  if (notMobile.value) {
-    isLeftPanelOpen.value = !isLeftPanelOpen.value
-  } else {
-    mobileMenuOpen.value = !mobileMenuOpen.value
-  }
+  if (notMobile.value) isLeftPanelOpen.value = !isLeftPanelOpen.value
+  else mobileMenuOpen.value = !mobileMenuOpen.value
 }
 
 const toggleRightPanel = () => {
@@ -234,9 +229,9 @@ function handleEscape(event: KeyboardEvent) {
     target instanceof HTMLTextAreaElement ||
     target instanceof HTMLSelectElement ||
     target.isContentEditable
-  ) {
+  )
     return
-  }
+
   if (isRightPanelOpen.value) {
     event.stopPropagation()
     isRightPanelOpen.value = false

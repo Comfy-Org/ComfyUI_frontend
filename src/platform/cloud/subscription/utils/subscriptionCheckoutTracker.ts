@@ -51,17 +51,14 @@ interface RecordPendingSubscriptionCheckoutAttemptInput {
 }
 
 const dispatchPendingCheckoutChangeEvent = () => {
-  if (typeof window === 'undefined') {
-    return
-  }
+  if (typeof window === 'undefined') return
 
   window.dispatchEvent(new Event(PENDING_SUBSCRIPTION_CHECKOUT_EVENT))
 }
 
 const createAttemptId = (): string => {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
     return crypto.randomUUID()
-  }
 
   return `attempt-${Date.now()}`
 }
@@ -80,9 +77,8 @@ const getStorage = (): Storage | null => {
     typeof storage.getItem !== 'function' ||
     typeof storage.setItem !== 'function' ||
     typeof storage.removeItem !== 'function'
-  ) {
+  )
     return null
-  }
 
   return storage
 }
@@ -91,9 +87,8 @@ const getAnnualCheckoutValue = (tier: Exclude<TierKey, 'free' | 'founder'>) =>
   getTierPrice(tier, true) * 12
 
 const getCheckoutValue = (tier: TierKey, cycle: BillingCycle): number => {
-  if (tier === 'free' || tier === 'founder') {
+  if (tier === 'free' || tier === 'founder')
     return getTierPrice(tier, cycle === 'yearly')
-  }
 
   return cycle === 'yearly'
     ? getAnnualCheckoutValue(tier)
@@ -104,9 +99,7 @@ const getTierFromStatus = (
   status: SubscriptionStatusSnapshot
 ): TierKey | null => {
   const subscriptionTier = status.subscription_tier
-  if (!subscriptionTier) {
-    return null
-  }
+  if (!subscriptionTier) return null
 
   return TIER_TO_KEY[subscriptionTier] ?? null
 }
@@ -114,13 +107,9 @@ const getTierFromStatus = (
 const getCycleFromStatus = (
   status: SubscriptionStatusSnapshot
 ): BillingCycle | null => {
-  if (status.subscription_duration === 'ANNUAL') {
-    return 'yearly'
-  }
+  if (status.subscription_duration === 'ANNUAL') return 'yearly'
 
-  if (status.subscription_duration === 'MONTHLY') {
-    return 'monthly'
-  }
+  if (status.subscription_duration === 'MONTHLY') return 'monthly'
 
   return null
 }
@@ -131,9 +120,7 @@ const isExpired = (attempt: PendingSubscriptionCheckoutAttempt): boolean =>
 const normalizeAttempt = (
   value: unknown
 ): PendingSubscriptionCheckoutAttempt | null => {
-  if (!value || typeof value !== 'object') {
-    return null
-  }
+  if (!value || typeof value !== 'object') return null
 
   const candidate = value as Partial<PendingSubscriptionCheckoutAttempt>
 
@@ -143,17 +130,15 @@ const normalizeAttempt = (
     typeof candidate.tier !== 'string' ||
     typeof candidate.cycle !== 'string' ||
     typeof candidate.checkout_type !== 'string'
-  ) {
+  )
     return null
-  }
 
   if (
     !VALID_TIER_KEYS.has(candidate.tier as TierKey) ||
     (candidate.cycle !== 'monthly' && candidate.cycle !== 'yearly') ||
     (candidate.checkout_type !== 'new' && candidate.checkout_type !== 'change')
-  ) {
+  )
     return null
-  }
 
   return {
     attempt_id: candidate.attempt_id,
@@ -174,9 +159,7 @@ const normalizeAttempt = (
 
 export const clearPendingSubscriptionCheckoutAttempt = (): void => {
   const storage = getStorage()
-  if (!storage) {
-    return
-  }
+  if (!storage) return
 
   try {
     storage.removeItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
@@ -189,9 +172,7 @@ export const clearPendingSubscriptionCheckoutAttempt = (): void => {
 const getPendingSubscriptionCheckoutAttempt =
   (): PendingSubscriptionCheckoutAttempt | null => {
     const storage = getStorage()
-    if (!storage) {
-      return null
-    }
+    if (!storage) return null
 
     let rawAttempt: string | null
 
@@ -201,9 +182,7 @@ const getPendingSubscriptionCheckoutAttempt =
       return null
     }
 
-    if (!rawAttempt) {
-      return null
-    }
+    if (!rawAttempt) return null
 
     try {
       const parsed = JSON.parse(rawAttempt)
@@ -238,9 +217,7 @@ export const recordPendingSubscriptionCheckoutAttempt = (
     ...(input.previous_cycle ? { previous_cycle: input.previous_cycle } : {})
   }
 
-  if (!storage) {
-    return attempt
-  }
+  if (!storage) return attempt
 
   try {
     storage.setItem(
@@ -259,9 +236,7 @@ const didAttemptSucceed = (
   attempt: PendingSubscriptionCheckoutAttempt,
   status: SubscriptionStatusSnapshot
 ): boolean => {
-  if (!status.is_active) {
-    return false
-  }
+  if (!status.is_active) return false
 
   return (
     getTierFromStatus(status) === attempt.tier &&
@@ -273,9 +248,7 @@ export const consumePendingSubscriptionCheckoutSuccess = (
   status: SubscriptionStatusSnapshot
 ): SubscriptionSuccessMetadata | null => {
   const attempt = getPendingSubscriptionCheckoutAttempt()
-  if (!attempt || !didAttemptSucceed(attempt, status)) {
-    return null
-  }
+  if (!attempt || !didAttemptSucceed(attempt, status)) return null
 
   clearPendingSubscriptionCheckoutAttempt()
 

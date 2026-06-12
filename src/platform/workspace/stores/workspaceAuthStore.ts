@@ -126,9 +126,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function initializeFromSession(): boolean {
-    if (!flags.teamWorkspacesEnabled) {
-      return false
-    }
+    if (!flags.teamWorkspacesEnabled) return false
 
     try {
       const workspaceJson = sessionStorage.getItem(
@@ -139,9 +137,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         WORKSPACE_STORAGE_KEYS.EXPIRES_AT
       )
 
-      if (!workspaceJson || !token || !expiresAtStr) {
-        return false
-      }
+      if (!workspaceJson || !token || !expiresAtStr) return false
 
       const expiresAt = parseInt(expiresAtStr, 10)
       if (isNaN(expiresAt) || expiresAt <= Date.now()) {
@@ -170,16 +166,12 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   async function switchWorkspace(workspaceId: string): Promise<void> {
-    if (!flags.teamWorkspacesEnabled) {
-      return
-    }
+    if (!flags.teamWorkspacesEnabled) return
 
     // Only increment request ID when switching to a different workspace
     // This invalidates stale refresh operations for the old workspace
     // but allows refresh operations for the same workspace to complete
-    if (currentWorkspace.value?.id !== workspaceId) {
-      refreshRequestId++
-    }
+    if (currentWorkspace.value?.id !== workspaceId) refreshRequestId++
 
     isLoading.value = true
     error.value = null
@@ -275,9 +267,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   async function refreshToken(): Promise<void> {
-    if (!currentWorkspace.value) {
-      return
-    }
+    if (!currentWorkspace.value) return
 
     const workspaceId = currentWorkspace.value.id
     // Capture the current request ID to detect if workspace context changed during refresh
@@ -339,9 +329,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function getWorkspaceAuthHeader(): AuthHeader | null {
-    if (!workspaceToken.value) {
-      return null
-    }
+    if (!workspaceToken.value) return null
+
     return {
       Authorization: `Bearer ${workspaceToken.value}`
     }

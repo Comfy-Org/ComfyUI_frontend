@@ -27,9 +27,8 @@ const isLoading = computed<boolean>(() => workspaceStore.spinner)
 watch(
   isLoading,
   (loading, prevLoading) => {
-    if (prevLoading && !loading) {
+    if (prevLoading && !loading)
       document.getElementById('splash-loader')?.remove()
-    }
   },
   { flush: 'post' }
 )
@@ -61,9 +60,7 @@ function handleResourceError(url: string, tagName: string) {
 onMounted(() => {
   window['__COMFYUI_FRONTEND_VERSION__'] = config.app_version
 
-  if (isDesktop) {
-    document.addEventListener('contextmenu', showContextMenu)
-  }
+  if (isDesktop) document.addEventListener('contextmenu', showContextMenu)
 
   // Handle preload errors that occur during dynamic imports (e.g., stale chunks after deployment)
   // See: https://vite.dev/guide/build#load-error-handling
@@ -111,14 +108,13 @@ onMounted(() => {
       'error',
       (event) => {
         const target = event.target
-        if (target instanceof HTMLScriptElement) {
+        if (target instanceof HTMLScriptElement)
           handleResourceError(target.src, 'script')
-        } else if (
+        else if (
           target instanceof HTMLLinkElement &&
           target.rel === 'stylesheet'
-        ) {
+        )
           handleResourceError(target.href, 'link')
-        }
       },
       true
     )

@@ -167,9 +167,9 @@ function getLegacyCommandsContainer(container: Element): HTMLElement {
   const legacyContainer = container.querySelector(
     '[data-testid="legacy-topbar-container"]'
   )
-  if (!(legacyContainer instanceof HTMLElement)) {
+  if (!(legacyContainer instanceof HTMLElement))
     throw new Error('Expected legacy commands container to be present')
-  }
+
   return legacyContainer
 }
 

@@ -47,9 +47,7 @@ function readStoredAttribution(): Partial<Record<AttributionQueryKey, string>> {
 
     for (const key of ATTRIBUTION_QUERY_KEYS) {
       const value = asNonEmptyString(parsed[key])
-      if (value) {
-        result[key] = value
-      }
+      if (value) result[key] = value
     }
 
     return result
@@ -79,9 +77,7 @@ function readAttributionFromUrl(
 
   for (const key of ATTRIBUTION_QUERY_KEYS) {
     const value = params.get(key)
-    if (value) {
-      result[key] = value
-    }
+    if (value) result[key] = value
   }
 
   return result
@@ -93,18 +89,14 @@ function hasAttributionChanges(
 ): boolean {
   for (const key of ATTRIBUTION_QUERY_KEYS) {
     const value = incoming[key]
-    if (value !== undefined && existing[key] !== value) {
-      return true
-    }
+    if (value !== undefined && existing[key] !== value) return true
   }
 
   return false
 }
 
 function asNonEmptyString(value: unknown): string | undefined {
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return String(value)
-  }
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
 
   return typeof value === 'string' && value.length > 0 ? value : undefined
 }
@@ -113,9 +105,9 @@ async function getGaIdentityField(
   measurementId: string,
   fieldName: GaIdentityField
 ): Promise<string | undefined> {
-  if (typeof window === 'undefined' || typeof window.gtag !== 'function') {
+  if (typeof window === 'undefined' || typeof window.gtag !== 'function')
     return undefined
-  }
+
   const gtag = window.gtag
 
   return withTimeout(
@@ -131,9 +123,7 @@ async function getGaIdentityField(
 
 async function getGaIdentity(): Promise<GaIdentity | undefined> {
   const measurementId = asNonEmptyString(window.__CONFIG__?.ga_measurement_id)
-  if (!measurementId) {
-    return undefined
-  }
+  if (!measurementId) return undefined
 
   const [clientId, sessionId, sessionNumber] = await Promise.all(
     GA_IDENTITY_FIELDS.map((fieldName) =>
@@ -141,9 +131,7 @@ async function getGaIdentity(): Promise<GaIdentity | undefined> {
     )
   )
 
-  if (!clientId && !sessionId && !sessionNumber) {
-    return undefined
-  }
+  if (!clientId && !sessionId && !sessionNumber) return undefined
 
   return {
     client_id: clientId,
@@ -153,14 +141,10 @@ async function getGaIdentity(): Promise<GaIdentity | undefined> {
 }
 
 async function getGeneratedClickId(): Promise<string | undefined> {
-  if (typeof window === 'undefined') {
-    return undefined
-  }
+  if (typeof window === 'undefined') return undefined
 
   const impactQueue = window.ire
-  if (typeof impactQueue !== 'function') {
-    return undefined
-  }
+  if (typeof impactQueue !== 'function') return undefined
 
   try {
     return await withTimeout(
@@ -230,13 +214,10 @@ export async function getCheckoutAttribution(): Promise<CheckoutAttributionMetad
     ...fromUrl
   }
 
-  if (generatedClickId) {
-    attribution.im_ref = generatedClickId
-  }
+  if (generatedClickId) attribution.im_ref = generatedClickId
 
-  if (hasAttributionChanges(storedAttribution, attribution)) {
+  if (hasAttributionChanges(storedAttribution, attribution))
     persistAttribution(attribution)
-  }
 
   const [gaIdentity, rewardfulReferral] = await Promise.all([
     getGaIdentity(),

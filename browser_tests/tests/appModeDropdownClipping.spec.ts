@@ -39,9 +39,8 @@ function isClippedByAnyAncestor(el: Element): boolean {
         child.bottom > p.bottom ||
         child.left < p.left ||
         child.right > p.right
-      ) {
+      )
         return true
-      }
     }
     parent = parent.parentElement
   }

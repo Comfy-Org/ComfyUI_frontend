@@ -194,9 +194,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   private flushPendingFirstAuthAt(): void {
-    for (const [userId, firstAuthAt] of this.pendingFirstAuthAt) {
+    for (const [userId, firstAuthAt] of this.pendingFirstAuthAt)
       this.setFirstAuthAt(userId, firstAuthAt)
-    }
+
     this.pendingFirstAuthAt.clear()
   }
 
@@ -215,9 +215,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       return
     }
 
-    if (!this.pendingFirstAuthAt.has(userId)) {
+    if (!this.pendingFirstAuthAt.has(userId))
       this.pendingFirstAuthAt.set(userId, firstAuthAt)
-    }
   }
 
   private trackEvent(
@@ -315,9 +314,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     watch(
       subscriptionTier,
       (tier) => {
-        if (tier && this.posthog) {
+        if (tier && this.posthog)
           this.posthog.people.set({ subscription_tier: tier })
-        }
       },
       { immediate: true }
     )
@@ -328,9 +326,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
-    if (metadata.is_new_user && metadata.user_id) {
+    if (metadata.is_new_user && metadata.user_id)
       this.setFirstAuthAt(metadata.user_id)
-    }
+
     this.trackEvent(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
   }
 

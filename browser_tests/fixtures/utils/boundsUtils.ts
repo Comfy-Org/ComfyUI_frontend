@@ -56,9 +56,8 @@ export async function measureSelectionBounds(
           const node = window.app!.graph._nodes.find(
             (n: { id: number | string }) => String(n.id) === id
           )
-          if (!node) {
-            throw new Error(`Node ${id} not found in graph`)
-          }
+          if (!node) throw new Error(`Node ${id} not found in graph`)
+
           const rect = node.boundingRect
           nodeVisualBounds[id] = {
             x: rect[0],
@@ -74,9 +73,8 @@ export async function measureSelectionBounds(
           '[data-testid="subgraph-enter-button"], [data-testid="node-footer"]'
         )
         let bottom = domRect.bottom
-        for (const footerEl of footerEls) {
+        for (const footerEl of footerEls)
           bottom = Math.max(bottom, footerEl.getBoundingClientRect().bottom)
-        }
 
         nodeVisualBounds[id] = {
           x: (domRect.left - canvasRect.left) / ds.scale - ds.offset[0],

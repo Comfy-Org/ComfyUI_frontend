@@ -197,9 +197,9 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
   afterEach(() => {
     LGraph.proxyWidgetMigrationFlush = originalFlush
     LGraph.autoExposePreviewNodes = originalAutoExpose
-    for (const type of registeredTypesToCleanup) {
+    for (const type of registeredTypesToCleanup)
       LiteGraph.unregisterNodeType(type)
-    }
+
     registeredTypesToCleanup.length = 0
   })
 

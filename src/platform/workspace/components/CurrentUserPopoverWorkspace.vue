@@ -323,11 +323,8 @@ const handleOpenPlansAndPricing = () => {
 }
 
 const handleOpenPlanAndCreditsSettings = () => {
-  if (isCloud) {
-    settingsDialog.show('workspace')
-  } else {
-    settingsDialog.show('credits')
-  }
+  if (isCloud) settingsDialog.show('workspace')
+  else settingsDialog.show('credits')
 
   emit('close')
 }

@@ -124,9 +124,7 @@ export function useWorkflowActionsMenu(
       label: t('breadcrumbsMenu.duplicate'),
       icon: 'pi pi-copy',
       command: async () => {
-        if (workflow) {
-          await workflowService.duplicateWorkflow(workflow)
-        }
+        if (workflow) await workflowService.duplicateWorkflow(workflow)
       },
       visible: isRoot && !isBlueprint
     })
@@ -138,9 +136,7 @@ export function useWorkflowActionsMenu(
         : t('tabMenu.addToBookmarks'),
       icon: 'pi pi-bookmark' + (isBookmarked ? '-fill' : ''),
       command: async () => {
-        if (workflow?.path) {
-          await bookmarkStore.toggleBookmarked(workflow.path)
-        }
+        if (workflow?.path) await bookmarkStore.toggleBookmarked(workflow.path)
       },
       visible: isRoot,
       disabled: workflow?.isTemporary ?? false
@@ -265,9 +261,7 @@ export function useWorkflowActionsMenu(
       label: t('subgraphStore.publish'),
       icon: 'pi pi-upload',
       command: async () => {
-        if (workflow) {
-          await workflowService.saveWorkflowAs(workflow)
-        }
+        if (workflow) await workflowService.saveWorkflowAs(workflow)
       },
       visible: isRoot && isBlueprint,
       prependSeparator: true
@@ -280,9 +274,7 @@ export function useWorkflowActionsMenu(
         : t('breadcrumbsMenu.deleteWorkflow'),
       icon: 'pi pi-times',
       command: async () => {
-        if (workflow) {
-          await workflowService.deleteWorkflow(workflow)
-        }
+        if (workflow) await workflowService.deleteWorkflow(workflow)
       },
       visible: isRoot && includeDelete,
       prependSeparator: true

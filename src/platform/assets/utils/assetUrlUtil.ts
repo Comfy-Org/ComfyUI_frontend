@@ -27,8 +27,8 @@ export function getAssetUrl(
   const params = new URLSearchParams()
   params.set('filename', asset.name)
   params.set('type', assetType)
-  if (typeof subfolder === 'string' && subfolder) {
+  if (typeof subfolder === 'string' && subfolder)
     params.set('subfolder', subfolder)
-  }
+
   return api.apiURL(`/view?${params}`)
 }

@@ -48,9 +48,7 @@ export class ExecutableGroupNodeChildDTO extends ExecutableNodeDTO {
     // If not found, try with just the last part of the ID (for nodes inside the group)
     if (!inputNodeDto) {
       const id = inputNodeId.split(':').at(-1)
-      if (id !== undefined) {
-        inputNodeDto = this.nodesByExecutionId?.get(id)
-      }
+      if (id !== undefined) inputNodeDto = this.nodesByExecutionId?.get(id)
     }
 
     if (!inputNodeDto) {

@@ -124,9 +124,8 @@ export function useCanvasHistory(maxStates = 20) {
     // Maintain max history size and clean up memory
     if (states.value.length > maxStates) {
       const removed = states.value.shift()
-      if (removed) {
-        cleanupState(removed)
-      }
+      if (removed) cleanupState(removed)
+
       currentStateIndex.value--
     }
   }

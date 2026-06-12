@@ -310,9 +310,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   )
 
   const allItems = computed<FormDropdownItem[]>(() => {
-    if (toValue(options.isAssetMode) && assetData) {
+    if (toValue(options.isAssetMode) && assetData)
       return filteredAssetItems.value
-    }
+
     return [
       ...(missingValueItem.value ? [missingValueItem.value] : []),
       ...inputItems.value,
@@ -321,9 +321,7 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   })
 
   const dropdownItems = computed<FormDropdownItem[]>(() => {
-    if (toValue(options.isAssetMode)) {
-      return allItems.value
-    }
+    if (toValue(options.isAssetMode)) return allItems.value
 
     switch (filterSelected.value) {
       case 'inputs':
@@ -337,9 +335,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   })
 
   const displayItems = computed<FormDropdownItem[]>(() => {
-    if (toValue(options.isAssetMode) && assetData && missingValueItem.value) {
+    if (toValue(options.isAssetMode) && assetData && missingValueItem.value)
       return [missingValueItem.value, ...filteredAssetItems.value]
-    }
+
     return dropdownItems.value
   })
 

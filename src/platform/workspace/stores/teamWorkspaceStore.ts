@@ -219,9 +219,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
             response.workspaces.map(createWorkspaceState)
           )
 
-          if (workspaces.value.length === 0) {
+          if (workspaces.value.length === 0)
             throw new Error('No workspaces available')
-          }
 
           // Verify session workspace exists in fetched list
           const sessionWorkspaceId = workspaceAuthStore.currentWorkspace.id
@@ -263,17 +262,15 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
           response.workspaces.map(createWorkspaceState)
         )
 
-        if (workspaces.value.length === 0) {
+        if (workspaces.value.length === 0)
           throw new Error('No workspaces available')
-        }
 
         // 3. Determine target workspace (priority: localStorage > personal)
         let targetWorkspaceId: string | null = null
 
         const lastId = getLastWorkspaceId()
-        if (lastId && workspaces.value.some((w) => w.id === lastId)) {
+        if (lastId && workspaces.value.some((w) => w.id === lastId))
           targetWorkspaceId = lastId
-        }
 
         if (!targetWorkspaceId) {
           const personal = workspaces.value.find((w) => w.type === 'personal')
@@ -357,9 +354,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         const refreshedWorkspace = workspaces.value.find(
           (w) => w.id === workspaceId
         )
-        if (!refreshedWorkspace) {
+        if (!refreshedWorkspace)
           throw new Error('Workspace not found or access denied')
-        }
       }
 
       // Clear current workspace context and persist new workspace ID
@@ -416,9 +412,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     const workspace = workspaces.value.find((w) => w.id === targetId)
     if (!workspace) throw new Error('Workspace not found')
-    if (workspace.type === 'personal') {
+    if (workspace.type === 'personal')
       throw new Error('Cannot delete personal workspace')
-    }
 
     const workspaceAuthStore = useWorkspaceAuthStore()
 
@@ -431,9 +426,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
         // Deleted active workspace - go to personal
         const personal = personalWorkspace.value
         workspaceAuthStore.clearWorkspaceContext()
-        if (personal) {
-          setLastWorkspaceId(personal.id)
-        }
+        if (personal) setLastWorkspaceId(personal.id)
+
         window.location.reload()
         // Code after this won't run (page reloads)
       } else {
@@ -462,9 +456,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    * Update workspace name (convenience for current workspace).
    */
   async function updateWorkspaceName(name: string): Promise<void> {
-    if (!activeWorkspaceId.value) {
-      throw new Error('No active workspace')
-    }
+    if (!activeWorkspaceId.value) throw new Error('No active workspace')
+
     await renameWorkspace(activeWorkspaceId.value, name)
   }
 
@@ -474,9 +467,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
    */
   async function leaveWorkspace(): Promise<void> {
     const current = activeWorkspace.value
-    if (!current || current.type === 'personal') {
+    if (!current || current.type === 'personal')
       throw new Error('Cannot leave personal workspace')
-    }
 
     const workspaceAuthStore = useWorkspaceAuthStore()
 
@@ -485,9 +477,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     // Go to personal workspace
     const personal = personalWorkspace.value
     workspaceAuthStore.clearWorkspaceContext()
-    if (personal) {
-      setLastWorkspaceId(personal.id)
-    }
+    if (personal) setLastWorkspaceId(personal.id)
+
     window.location.reload()
     // Code after this won't run (page reloads)
   }
@@ -611,9 +602,8 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     const invite = activeWorkspace.value?.pendingInvites.find(
       (i) => i.id === inviteId
     )
-    if (!invite) {
-      throw new Error('Invite not found')
-    }
+    if (!invite) throw new Error('Invite not found')
+
     const inviteLink = buildInviteLink(invite.token)
     await navigator.clipboard.writeText(inviteLink)
     return inviteLink

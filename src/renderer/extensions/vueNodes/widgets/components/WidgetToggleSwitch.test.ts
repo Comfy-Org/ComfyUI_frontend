@@ -280,9 +280,7 @@ describe('WidgetToggleSwitch Value Binding', () => {
       mountComponent(widget, false)
 
       const buttons = screen.getAllByRole('button')
-      for (const button of buttons) {
-        expect(button).toBeDisabled()
-      }
+      for (const button of buttons) expect(button).toBeDisabled()
     })
 
     it('does not emit when clicking already-selected option', async () => {

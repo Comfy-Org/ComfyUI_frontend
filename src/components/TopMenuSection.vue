@@ -244,9 +244,9 @@ function updateProgressTarget(target: HTMLElement | null) {
   progressTarget.value = target
 }
 const inlineProgressSummaryTarget = computed(() => {
-  if (!shouldShowInlineProgressSummary.value || !isActionbarFloating.value) {
+  if (!shouldShowInlineProgressSummary.value || !isActionbarFloating.value)
     return null
-  }
+
   return progressTarget.value
 })
 const shouldHideInlineProgressSummary = computed(

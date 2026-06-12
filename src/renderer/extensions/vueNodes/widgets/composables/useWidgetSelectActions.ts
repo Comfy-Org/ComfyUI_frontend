@@ -42,8 +42,9 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
   ) {
     const body = new FormData()
     body.append('image', file)
-    if (isPasted) body.append('subfolder', 'pasted')
-    else {
+    if (isPasted) {
+      body.append('subfolder', 'pasted')
+    } else {
       const subfolder = toValue(options.uploadSubfolder)
       if (subfolder) body.append('subfolder', subfolder)
     }
@@ -93,17 +94,13 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
       const values = widget.options?.values
       if (Array.isArray(values)) {
         uploadedPaths.forEach((path) => {
-          if (!values.includes(path)) {
-            values.push(path)
-          }
+          if (!values.includes(path)) values.push(path)
         })
       }
 
       modelValue.value = uploadedPaths[0]
 
-      if (widget.callback) {
-        widget.callback(uploadedPaths[0])
-      }
+      if (widget.callback) widget.callback(uploadedPaths[0])
 
       useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
     }

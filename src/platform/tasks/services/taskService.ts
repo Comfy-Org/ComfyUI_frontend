@@ -56,18 +56,15 @@ function createTaskService() {
     const res = await api.fetchApi(`${TASKS_ENDPOINT}/${taskId}`)
 
     if (!res.ok) {
-      if (res.status === 404) {
-        throw new Error(`Task not found: ${taskId}`)
-      }
+      if (res.status === 404) throw new Error(`Task not found: ${taskId}`)
+
       throw new Error(`Failed to get task ${taskId}: ${res.status}`)
     }
 
     const data = await res.json()
     const result = zTaskResponse.safeParse(data)
 
-    if (!result.success) {
-      throw new Error(fromZodError(result.error).message)
-    }
+    if (!result.success) throw new Error(fromZodError(result.error).message)
 
     return result.data
   }

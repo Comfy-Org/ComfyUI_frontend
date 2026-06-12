@@ -121,9 +121,7 @@ export function useMissingModelInteractions() {
   }
 
   function handleComboSelect(key: string, value: string | undefined) {
-    if (value) {
-      store.selectedLibraryModel[key] = value
-    }
+    if (value) store.selectedLibraryModel[key] = value
   }
 
   function isSelectionConfirmable(key: string): boolean {
@@ -131,12 +129,9 @@ export function useMissingModelInteractions() {
     if (store.importCategoryMismatch[key]) return false
 
     const status = getDownloadStatus(key)
-    if (
-      status &&
-      (status.status === 'running' || status.status === 'created')
-    ) {
+    if (status && (status.status === 'running' || status.status === 'created'))
       return false
-    }
+
     return true
   }
 
@@ -237,9 +232,7 @@ export function useMissingModelInteractions() {
         try {
           const decoded = decodeURIComponent(metadata.filename)
           const basename = decoded.split(/[/\\]/).pop() ?? decoded
-          if (!basename.includes('..')) {
-            metadata.filename = basename
-          }
+          if (!basename.includes('..')) metadata.filename = basename
         } catch {
           /* keep original */
         }
@@ -254,9 +247,7 @@ export function useMissingModelInteractions() {
           ? error.message
           : t('rightSidePanel.missingModels.metadataFetchFailed')
     } finally {
-      if (_requestTokens[key] === token) {
-        store.urlFetching[key] = false
-      }
+      if (_requestTokens[key] === token) store.urlFetching[key] = false
     }
   }
 
@@ -274,9 +265,8 @@ export function useMissingModelInteractions() {
     )
     if (!detectedType) return null
 
-    if (detectedType !== groupDirectory) {
-      return detectedType
-    }
+    if (detectedType !== groupDirectory) return detectedType
+
     return null
   }
 
@@ -295,9 +285,7 @@ export function useMissingModelInteractions() {
     filename: string
   ) {
     store.importTaskIds[key] = taskId
-    if (modelType) {
-      assetDownloadStore.trackDownload(taskId, modelType, filename)
-    }
+    if (modelType) assetDownloadStore.trackDownload(taskId, modelType, filename)
   }
 
   function handleAsyncCompleted(modelType: string | undefined) {
@@ -315,9 +303,8 @@ export function useMissingModelInteractions() {
     const existingCategory = tags.find((tag) =>
       MODEL_TYPE_TAGS.includes(tag as (typeof MODEL_TYPE_TAGS)[number])
     )
-    if (existingCategory && modelType && existingCategory !== modelType) {
+    if (existingCategory && modelType && existingCategory !== modelType)
       store.importCategoryMismatch[key] = existingCategory
-    }
   }
 
   async function handleImport(key: string, groupDirectory: string | null) {
@@ -354,13 +341,11 @@ export function useMissingModelInteractions() {
 
       if (_requestTokens[key] !== token) return
 
-      if (result.type === 'async' && result.task.status !== 'completed') {
+      if (result.type === 'async' && result.task.status !== 'completed')
         handleAsyncPending(key, result.task.task_id, modelType, filename)
-      } else if (result.type === 'async') {
-        handleAsyncCompleted(modelType)
-      } else if (result.type === 'sync') {
+      else if (result.type === 'async') handleAsyncCompleted(modelType)
+      else if (result.type === 'sync')
         handleSyncResult(key, result.asset.tags ?? [], modelType)
-      }
 
       store.selectedLibraryModel[key] = filename
     } catch (error) {
@@ -371,9 +356,7 @@ export function useMissingModelInteractions() {
           ? error.message
           : t('rightSidePanel.missingModels.importFailed')
     } finally {
-      if (_requestTokens[key] === token) {
-        store.urlImporting[key] = false
-      }
+      if (_requestTokens[key] === token) store.urlImporting[key] = false
     }
   }
 

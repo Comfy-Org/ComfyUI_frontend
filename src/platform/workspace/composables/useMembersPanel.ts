@@ -126,9 +126,7 @@ export function useMembersPanel() {
       label: t('workspacePanel.members.actions.removeMember'),
       icon: 'pi pi-user-minus',
       command: () => {
-        if (selectedMember.value) {
-          handleRemoveMember(selectedMember.value)
-        }
+        if (selectedMember.value) handleRemoveMember(selectedMember.value)
       }
     }
   ])

@@ -191,9 +191,8 @@ const { t, d, n } = useI18n()
 // Check compatibility once and pass to children
 const conflictResult = computed((): ConflictDetectionResult | null => {
   // For installed packages, use stored conflict data
-  if (isInstalled.value && nodePack.id) {
+  if (isInstalled.value && nodePack.id)
     return getConflictsForPackageByID(nodePack.id) || null
-  }
 
   // For non-installed packages, perform compatibility check
   const compatibility = checkNodeCompatibility(nodePack)
@@ -255,9 +254,8 @@ const infoItems = computed<InfoItem[]>(() => [
 whenever(
   () => nodePack.id,
   (nodePackId, oldNodePackId) => {
-    if (nodePackId !== oldNodePackId && scrollContainer.value) {
+    if (nodePackId !== oldNodePackId && scrollContainer.value)
       scrollContainer.value.scrollTop = 0
-    }
   },
   { immediate: true }
 )

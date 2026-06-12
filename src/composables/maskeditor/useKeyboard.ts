@@ -15,26 +15,20 @@ export function useKeyboard() {
   }
 
   const handleKeyDown = (event: KeyboardEvent): void => {
-    if (!keysDown.value.includes(event.key)) {
-      keysDown.value.push(event.key)
-    }
+    if (!keysDown.value.includes(event.key)) keysDown.value.push(event.key)
 
     if (event.key === ' ') {
       event.preventDefault()
       const activeElement = document.activeElement as HTMLElement
-      if (activeElement && activeElement.blur) {
-        activeElement.blur()
-      }
+      if (activeElement && activeElement.blur) activeElement.blur()
     }
 
     if ((event.ctrlKey || event.metaKey) && !event.altKey) {
       const key = event.key.toUpperCase()
 
-      if ((key === 'Y' && !event.shiftKey) || (key === 'Z' && event.shiftKey)) {
+      if ((key === 'Y' && !event.shiftKey) || (key === 'Z' && event.shiftKey))
         store.canvasHistory.redo()
-      } else if (key === 'Z' && !event.shiftKey) {
-        store.canvasHistory.undo()
-      }
+      else if (key === 'Z' && !event.shiftKey) store.canvasHistory.undo()
     }
   }
 

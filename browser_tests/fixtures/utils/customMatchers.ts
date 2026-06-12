@@ -14,11 +14,8 @@ function makeMatcher<T>(
   ) {
     await expect(async () => {
       const value = await getValue(node)
-      if (this.isNot) {
-        expect(value, 'Node is ' + type).not.toBeTruthy()
-      } else {
-        expect(value, 'Node is not ' + type).toBeTruthy()
-      }
+      if (this.isNot) expect(value, 'Node is ' + type).not.toBeTruthy()
+      else expect(value, 'Node is not ' + type).toBeTruthy()
     }).toPass({ timeout: 5000, ...options })
     return {
       pass: !this.isNot,

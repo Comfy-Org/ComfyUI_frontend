@@ -152,11 +152,9 @@ export class DragAndScale {
     zooming_center?: Point,
     roundToScaleOne = true
   ): void {
-    if (value < this.min_scale) {
-      value = this.min_scale
-    } else if (value > this.max_scale) {
-      value = this.max_scale
-    }
+    if (value < this.min_scale) value = this.min_scale
+    else if (value > this.max_scale) value = this.max_scale
+
     if (value == this.scale) return
 
     const rect = this.element.getBoundingClientRect()
@@ -294,11 +292,8 @@ export class DragAndScale {
 
       setDirty()
 
-      if (progress < 1) {
-        animationId = requestAnimationFrame(animate)
-      } else {
-        cancelAnimationFrame(animationId)
-      }
+      if (progress < 1) animationId = requestAnimationFrame(animate)
+      else cancelAnimationFrame(animationId)
     }
     let animationId = requestAnimationFrame(animate)
   }

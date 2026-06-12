@@ -35,18 +35,20 @@ function onEditComplete(newName: string) {
 
 const entries = computed(() => {
   const items = []
-  if (canRename)
+  if (canRename) {
     items.push({
       label: t('g.rename'),
       command: () => setTimeout(() => (isEditing.value = true)),
       icon: 'icon-[lucide--pencil]'
     })
-  if (remove)
+  }
+  if (remove) {
     items.push({
       label: t('g.delete'),
       command: remove,
       icon: 'icon-[lucide--trash-2]'
     })
+  }
   return items
 })
 </script>

@@ -307,13 +307,11 @@ describe('resolveOutputAssetItems', () => {
     expect(mocks.getJobDetail).not.toHaveBeenCalled()
     expect(results).toHaveLength(1)
     const [asset] = results
-    if (!asset) {
-      throw new Error('Expected a root output asset')
-    }
+    if (!asset) throw new Error('Expected a root output asset')
+
     expect(asset.id).toBe('job-root-1--root.png')
-    if (!asset.user_metadata) {
-      throw new Error('Expected output metadata')
-    }
+    if (!asset.user_metadata) throw new Error('Expected output metadata')
+
     expect(asset.user_metadata.subfolder).toBe('')
   })
 })

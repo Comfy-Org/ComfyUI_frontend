@@ -20,9 +20,9 @@ const eventHandlers = vi.hoisted(() => ({
 vi.mock('@vueuse/core', () => ({
   useEventListener: vi.fn(
     (eventName: string, handler: (...args: unknown[]) => void) => {
-      if (eventName === 'pointermove' || eventName === 'pointerup') {
+      if (eventName === 'pointermove' || eventName === 'pointerup')
         eventHandlers[eventName] = handler as (e: PointerEvent) => void
-      }
+
       return vi.fn()
     }
   )

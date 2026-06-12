@@ -53,9 +53,7 @@ async function flushAsyncWork() {
 }
 
 function toUint8Array(data: BufferSource): Uint8Array {
-  if (data instanceof ArrayBuffer) {
-    return new Uint8Array(data)
-  }
+  if (data instanceof ArrayBuffer) return new Uint8Array(data)
 
   return new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
 }
@@ -80,9 +78,8 @@ describe('ImpactTelemetryProvider', () => {
     window.ire_o = undefined
 
     vi.spyOn(document, 'querySelector').mockImplementation((selector) => {
-      if (selector === `script[src="${IMPACT_SCRIPT_URL}"]`) {
+      if (selector === `script[src="${IMPACT_SCRIPT_URL}"]`)
         return document.createElement('script')
-      }
 
       return null
     })

@@ -223,9 +223,8 @@ export async function runMissingModelPipeline({
         downloadableCandidates.map(async (c) => {
           const { fetchModelMetadata } = await missingModelDownload
           const metadata = await fetchModelMetadata(c.url)
-          if (!controller.signal.aborted && metadata.fileSize !== null) {
+          if (!controller.signal.aborted && metadata.fileSize !== null)
             missingModelStore.setFileSize(c.url, metadata.fileSize)
-          }
         })
       )
     }

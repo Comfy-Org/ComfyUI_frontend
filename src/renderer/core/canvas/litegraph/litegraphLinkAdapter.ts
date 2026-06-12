@@ -159,9 +159,9 @@ export class LitegraphLinkAdapter {
     colors: Record<string, CanvasColour>
   ): Record<string, string> {
     const result: Record<string, string> = {}
-    for (const [key, value] of Object.entries(colors)) {
+    for (const [key, value] of Object.entries(colors))
       result[key] = String(value)
-    }
+
     return result
   }
 
@@ -298,9 +298,7 @@ export class LitegraphLinkAdapter {
     const pathContext = this.convertToPathRenderContext(context)
 
     // Override skip_border if needed
-    if (skip_border) {
-      pathContext.style.borderWidth = undefined
-    }
+    if (skip_border) pathContext.style.borderWidth = undefined
 
     // Render using pure renderer
     const path = this.pathRenderer.drawLink(ctx, linkData, pathContext)
@@ -318,9 +316,8 @@ export class LitegraphLinkAdapter {
         linkSegment._pos[1] = linkData.centerPos.y
 
         // Store center angle if calculated (for arrow markers)
-        if (linkData.centerAngle !== undefined) {
+        if (linkData.centerAngle !== undefined)
           linkSegment._centreAngle = linkData.centerAngle
-        }
       }
 
       // Update layout store when writes are enabled (event-driven path)

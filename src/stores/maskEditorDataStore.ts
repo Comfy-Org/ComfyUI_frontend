@@ -58,9 +58,7 @@ export const useMaskEditorDataStore = defineStore('maskEditorData', () => {
 
   const setLoading = (loading: boolean, error?: string) => {
     isLoading.value = loading
-    if (error) {
-      loadError.value = error
-    }
+    if (error) loadError.value = error
   }
 
   return {

@@ -7,9 +7,7 @@ export async function openMoreOptionsMenu(
   nodeTitle: string
 ) {
   const nodes = await comfyPage.nodeOps.getNodeRefsByTitle(nodeTitle)
-  if (nodes.length === 0) {
-    throw new Error(`No "${nodeTitle}" nodes found`)
-  }
+  if (nodes.length === 0) throw new Error(`No "${nodeTitle}" nodes found`)
 
   await nodes[0].centerOnNode()
   await nodes[0].click('title')

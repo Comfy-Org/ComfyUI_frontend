@@ -97,15 +97,13 @@ export class ComfyModelDef {
 
   /** Loads the model metadata from the server, filling in this object if data is available */
   async load(): Promise<void> {
-    if (this.has_loaded_metadata || this.is_load_requested) {
-      return
-    }
+    if (this.has_loaded_metadata || this.is_load_requested) return
+
     this.is_load_requested = true
     try {
       const metadata = await api.viewMetadata(this.directory, this.file_name)
-      if (!metadata) {
-        return
-      }
+      if (!metadata) return
+
       this.title =
         _findInMetadata(
           metadata,
@@ -174,9 +172,8 @@ export class ModelFolder {
    * Loads the models in this folder from the server
    */
   async load() {
-    if (this.state !== ResourceState.Uninitialized) {
-      return this
-    }
+    if (this.state !== ResourceState.Uninitialized) return this
+
     this.state = ResourceState.Loading
     const models = await this.getModelsFunc(this.directory)
     for (const model of models) {

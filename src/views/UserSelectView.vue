@@ -75,9 +75,7 @@ const login = async () => {
       ? await userStore.createUser(newUsername.value)
       : selectedUser.value
 
-    if (!user) {
-      throw new Error('No user selected')
-    }
+    if (!user) throw new Error('No user selected')
 
     await userStore.login(user)
     await router.push('/')

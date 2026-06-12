@@ -34,9 +34,8 @@ watchPostEffect(() => {
 
     for (let index = 0; index < this.getAllItems().length; index++) {
       const item = reorderedItems[index]
-      if (typeof item === 'undefined') {
+      if (typeof item === 'undefined')
         reorderedItems[index] = this.draggableItem
-      }
     }
     const newPosition = reorderedItems.indexOf(this.draggableItem)
     const itemList = modelValue.value

@@ -45,9 +45,8 @@ export function resolveRuntimeCatalogCopy(
   )
   if (displayDetails) result.displayDetails = displayDetails
 
-  if (options.includeItemLabel) {
+  if (options.includeItemLabel)
     result.displayItemLabel = resolveMessage('itemLabel', nodeName)
-  }
 
   return result
 }

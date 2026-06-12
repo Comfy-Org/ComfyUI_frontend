@@ -62,9 +62,8 @@ async function expectNodePositionStable(
 
 async function setVueMode(comfyPage: ComfyPage, enabled: boolean) {
   await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', enabled)
-  if (enabled) {
-    await comfyPage.vueNodes.waitForNodes()
-  }
+  if (enabled) await comfyPage.vueNodes.waitForNodes()
+
   await comfyPage.nextFrame()
 }
 

@@ -112,9 +112,7 @@ function handleWidgetPointerEvent(event: PointerEvent) {
 }
 
 function handleBringToFront() {
-  if (nodeData?.id != null) {
-    bringNodeToFront(String(nodeData.id))
-  }
+  if (nodeData?.id != null) bringNodeToFront(String(nodeData.id))
 }
 
 // Error boundary implementation
@@ -132,7 +130,6 @@ const { canSelectInputs, gridTemplateRows, nodeType, processedWidgets } =
   useProcessedWidgets(() => nodeData)
 
 // Tracks widget-row growth that the node-level RO can't see
-if (nodeData?.id != null) {
+if (nodeData?.id != null)
   useVueElementTracking(String(nodeData.id), 'widgets-grid')
-}
 </script>

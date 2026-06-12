@@ -104,9 +104,7 @@ const showConflictModal = (skipModalDismissed: boolean) => {
           ? t('manager.conflicts.enableAnyway')
           : t('manager.conflicts.understood'),
         onButtonClick: async () => {
-          if (!isEnabled.value) {
-            await handleEnable()
-          }
+          if (!isEnabled.value) await handleEnable()
         },
         dialogComponentProps: {
           onClose: () => {
@@ -119,9 +117,8 @@ const showConflictModal = (skipModalDismissed: boolean) => {
 }
 
 const handleEnable = () => {
-  if (!nodePack.id) {
-    throw new Error('Node ID is required for enabling')
-  }
+  if (!nodePack.id) throw new Error('Node ID is required for enabling')
+
   return enablePack({
     id: nodePack.id,
     version:
@@ -131,9 +128,8 @@ const handleEnable = () => {
 }
 
 const handleDisable = () => {
-  if (!nodePack.id) {
-    throw new Error('Node ID is required for disabling')
-  }
+  if (!nodePack.id) throw new Error('Node ID is required for disabling')
+
   return disablePack({
     id: nodePack.id,
     version:
@@ -146,11 +142,9 @@ const handleToggle = async (enable: boolean) => {
   if (isLoading.value) return
 
   isLoading.value = true
-  if (enable) {
-    await handleEnable()
-  } else {
-    await handleDisable()
-  }
+  if (enable) await handleEnable()
+  else await handleDisable()
+
   isLoading.value = false
 }
 

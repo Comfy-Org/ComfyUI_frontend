@@ -12,9 +12,8 @@ vi.mock('@/platform/distribution/types', () => ({
 const downloadFileMock = vi.fn()
 vi.mock('@/base/common/downloadUtil', () => ({
   downloadFile: (url: string, filename?: string) => {
-    if (filename === undefined) {
-      return downloadFileMock(url)
-    }
+    if (filename === undefined) return downloadFileMock(url)
+
     return downloadFileMock(url, filename)
   }
 }))

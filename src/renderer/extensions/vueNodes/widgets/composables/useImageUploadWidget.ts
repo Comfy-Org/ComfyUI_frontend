@@ -49,9 +49,9 @@ export const useImageUploadWidget = () => {
 
     const fileFilter = isVideo ? isVideoFile : isImageFile
     const fileComboWidget = findFileComboWidget(node, imageInputName)
-    if (!fileComboWidget) {
+    if (!fileComboWidget)
       throw new Error(`Widget "${imageInputName}" not found on node`)
-    }
+
     const formatPath = (value: string | ResultItem) =>
       createAnnotatedPath(value, { rootFolder: image_folder })
 

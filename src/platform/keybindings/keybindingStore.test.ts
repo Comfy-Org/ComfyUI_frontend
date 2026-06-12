@@ -228,27 +228,24 @@ describe('useKeybindingStore', () => {
       })
     ]
 
-    for (const keybinding of newCoreKeybindings) {
+    for (const keybinding of newCoreKeybindings)
       store.addDefaultKeybinding(keybinding)
-    }
 
     expect(store.keybindings).toHaveLength(1)
     expect(store.getKeybinding(userNewKeybindings[0].combo)).toEqual(
       userNewKeybindings[0]
     )
 
-    for (const keybinding of userUnsetKeybindings) {
+    for (const keybinding of userUnsetKeybindings)
       store.unsetKeybinding(keybinding)
-    }
 
     expect(store.keybindings).toHaveLength(1)
     expect(store.getKeybinding(userNewKeybindings[0].combo)).toEqual(
       userNewKeybindings[0]
     )
 
-    for (const keybinding of userNewKeybindings) {
+    for (const keybinding of userNewKeybindings)
       store.addUserKeybinding(keybinding)
-    }
 
     expect(store.keybindings).toHaveLength(1)
     expect(store.getKeybinding(userNewKeybindings[0].combo)).toEqual(

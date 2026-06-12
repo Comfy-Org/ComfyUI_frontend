@@ -59,9 +59,8 @@ function extractPrefill(fields: PrefillMetadataFields): PublishPrefill | null {
     !tags?.length &&
     !thumbnailType &&
     !sampleImageUrls?.length
-  ) {
+  )
     return null
-  }
 
   return { description, tags, thumbnailType, sampleImageUrls }
 }
@@ -95,9 +94,8 @@ function parsePublishedAt(value: string | null | undefined): Date | null {
 
 function normalizeShareUrl(shareId: string): string {
   const queryString = `share=${encodeURIComponent(shareId)}`
-  if (typeof window === 'undefined' || !window.location?.origin) {
+  if (typeof window === 'undefined' || !window.location?.origin)
     return `/?${queryString}`
-  }
 
   const normalizedUrl = new URL(window.location.href)
   normalizedUrl.search = queryString
@@ -161,14 +159,12 @@ export function useWorkflowShareService() {
       }
     )
 
-    if (!response.ok) {
+    if (!response.ok)
       throw new Error(`Failed to publish workflow: ${response.status}`)
-    }
 
     const record = decodePublishRecord(await response.json())
-    if (!record?.shareId || !record.publishedAt) {
+    if (!record?.shareId || !record.publishedAt)
       throw new Error('Failed to publish workflow: invalid response')
-    }
 
     return {
       shareId: record.shareId,
@@ -239,14 +235,11 @@ export function useWorkflowShareService() {
       )
     }
 
-    if (!response.ok) {
-      throw new SharedWorkflowLoadError(response.status)
-    }
+    if (!response.ok) throw new SharedWorkflowLoadError(response.status)
 
     const workflow = decodeSharedWorkflowPayload(await response.json())
-    if (!workflow) {
+    if (!workflow)
       throw new Error('Failed to load shared workflow: invalid response')
-    }
 
     return workflow
   }
@@ -266,9 +259,8 @@ export function useWorkflowShareService() {
       body: JSON.stringify(body)
     })
 
-    if (!response.ok) {
+    if (!response.ok)
       throw new Error(`Failed to import assets: ${response.status}`)
-    }
 
     assetService.invalidateInputAssetsIncludingPublic()
   }

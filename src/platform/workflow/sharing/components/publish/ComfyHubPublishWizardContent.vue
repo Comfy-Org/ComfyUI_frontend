@@ -141,9 +141,7 @@ const isPublishDisabled = computed(
 )
 
 async function handlePublish() {
-  if (isResolvingPublishAccess.value || isPublishing) {
-    return
-  }
+  if (isResolvingPublishAccess.value || isPublishing) return
 
   isResolvingPublishAccess.value = true
   try {

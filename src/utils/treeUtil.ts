@@ -48,9 +48,9 @@ export function unwrapTreeRoot(tree: TreeNode): TreeNode {
     tree.children?.length === 1 &&
     !tree.children[0].leaf &&
     (tree.children[0].children?.length ?? 0) > 0
-  ) {
+  )
     return { ...tree, children: tree.children[0].children }
-  }
+
   return tree
 }
 
@@ -124,17 +124,13 @@ export const findNodeByKey = <T extends TreeNode>(
   root: T,
   key: string
 ): T | null => {
-  if (root.key === key) {
-    return root
-  }
-  if (!root.children) {
-    return null
-  }
+  if (root.key === key) return root
+
+  if (!root.children) return null
+
   for (const child of root.children) {
     const result = findNodeByKey(child, key)
-    if (result) {
-      return result
-    }
+    if (result) return result
   }
   return null
 }
@@ -148,9 +144,8 @@ function cloneTree<T extends TreeNode>(node: T): T {
   const clone = { ...node }
 
   // Clone children recursively
-  if (node.children && node.children.length > 0) {
+  if (node.children && node.children.length > 0)
     clone.children = node.children.map((child) => cloneTree(child))
-  }
 
   return clone
 }

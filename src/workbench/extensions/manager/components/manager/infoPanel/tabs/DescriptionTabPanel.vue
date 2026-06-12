@@ -139,9 +139,8 @@ const formatLicense = (
   try {
     const licenseObj = JSON.parse(license)
     // Handle empty object case
-    if (Object.keys(licenseObj).length === 0) {
-      return null
-    }
+    if (Object.keys(licenseObj).length === 0) return null
+
     return parseLicenseObject(licenseObj)
   } catch (e) {
     if (isLicenseFile(license) && nodePack.repository) {

@@ -53,15 +53,14 @@ export function preview3dRestoreCameraStatesMatch(
   a: unknown,
   b: unknown
 ): boolean {
-  if (!isPreview3dCameraStatePayload(a) || !isPreview3dCameraStatePayload(b)) {
+  if (!isPreview3dCameraStatePayload(a) || !isPreview3dCameraStatePayload(b))
     return false
-  }
+
   if (a.cameraType !== b.cameraType) return false
   const zoomA = typeof a.zoom === 'number' ? a.zoom : 0
   const zoomB = typeof b.zoom === 'number' ? b.zoom : 0
-  if (Math.abs(zoomA - zoomB) > PREVIEW3D_CAMERA_ZOOM_RESTORE_EPS) {
-    return false
-  }
+  if (Math.abs(zoomA - zoomB) > PREVIEW3D_CAMERA_ZOOM_RESTORE_EPS) return false
+
   return (
     vecWithinEps(a.position, b.position, PREVIEW3D_CAMERA_AXIS_RESTORE_EPS) &&
     vecWithinEps(a.target, b.target, PREVIEW3D_CAMERA_AXIS_RESTORE_EPS)
@@ -73,9 +72,9 @@ export function preview3dCameraStatesDiffer(
   b: unknown,
   eps: number
 ): boolean {
-  if (!isPreview3dCameraStatePayload(a) || !isPreview3dCameraStatePayload(b)) {
+  if (!isPreview3dCameraStatePayload(a) || !isPreview3dCameraStatePayload(b))
     return true
-  }
+
   if (a.cameraType !== b.cameraType) return true
   const zoomA = typeof a.zoom === 'number' ? a.zoom : 0
   const zoomB = typeof b.zoom === 'number' ? b.zoom : 0

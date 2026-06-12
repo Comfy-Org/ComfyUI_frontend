@@ -195,9 +195,8 @@ function toComboboxValue(value: string) {
 }
 
 function fromComboboxValue(value: string | undefined) {
-  if (value === undefined || !value.startsWith(COMBOBOX_VALUE_PREFIX)) {
+  if (value === undefined || !value.startsWith(COMBOBOX_VALUE_PREFIX))
     return undefined
-  }
 
   return value.slice(COMBOBOX_VALUE_PREFIX.length)
 }
@@ -348,10 +347,7 @@ function focusSearchInput() {
 function handleOpenChange(open: boolean) {
   isOpen.value = open
 
-  if (open) {
-    refreshOptions()
-  } else {
-    searchQuery.value = ''
-  }
+  if (open) refreshOptions()
+  else searchQuery.value = ''
 }
 </script>

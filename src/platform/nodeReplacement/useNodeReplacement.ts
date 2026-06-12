@@ -125,24 +125,21 @@ function generateDefaultMapping(
 
   const inputMapping: { old_id: string; new_id: string }[] = []
   for (const newInput of newNode.inputs ?? []) {
-    if (oldInputNames.has(newInput.name)) {
+    if (oldInputNames.has(newInput.name))
       inputMapping.push({ old_id: newInput.name, new_id: newInput.name })
-    }
   }
 
   const oldWidgetIds = (newNode.widgets ?? []).map((w) => w.name)
   for (const widget of newNode.widgets ?? []) {
-    if (!oldInputNames.has(widget.name)) {
+    if (!oldInputNames.has(widget.name))
       inputMapping.push({ old_id: widget.name, new_id: widget.name })
-    }
   }
 
   const outputMapping: { old_idx: number; new_idx: number }[] = []
   for (const [oldIdx, oldOutput] of (serialized.outputs ?? []).entries()) {
     const newIdx = newNode.outputs?.findIndex((o) => o.name === oldOutput.name)
-    if (newIdx != null && newIdx !== -1) {
+    if (newIdx != null && newIdx !== -1)
       outputMapping.push({ old_idx: oldIdx, new_idx: newIdx })
-    }
   }
 
   return {
@@ -176,9 +173,8 @@ function replaceWithMapping(
   if (serialized.title != null) newNode.title = serialized.title
   if (serialized.properties) {
     newNode.properties = { ...serialized.properties }
-    if ('Node name for S&R' in newNode.properties) {
+    if ('Node name for S&R' in newNode.properties)
       newNode.properties['Node name for S&R'] = replacement.new_node_id
-    }
   }
 
   if (replacement.input_mapping) {
@@ -200,9 +196,8 @@ function replaceWithMapping(
           inputMap.new_id
         )
       } else {
-        if (!isDotNotation(inputMap.new_id)) {
+        if (!isDotNotation(inputMap.new_id))
           applySetValue(newNode, inputMap.new_id, inputMap.set_value)
-        }
       }
     }
   }
@@ -291,9 +286,7 @@ export function useNodeReplacement() {
         // so onNodeAdded must be called explicitly to update VueNodeData.
         nodeGraph.onNodeAdded?.(newNode)
 
-        if (!replacedTypes.includes(match.type)) {
-          replacedTypes.push(match.type)
-        }
+        if (!replacedTypes.includes(match.type)) replacedTypes.push(match.type)
       }
 
       if (replacedTypes.length > 0) {
@@ -334,9 +327,8 @@ export function useNodeReplacement() {
    */
   function replaceGroup(group: ReplacementGroup): void {
     const replaced = replaceNodesInPlace(group.nodeTypes)
-    if (replaced.length > 0) {
+    if (replaced.length > 0)
       useMissingNodesErrorStore().removeMissingNodesByType(replaced)
-    }
   }
 
   /**
@@ -346,9 +338,8 @@ export function useNodeReplacement() {
   function replaceAllGroups(groups: ReplacementGroup[]): void {
     const allNodeTypes = groups.flatMap((g) => g.nodeTypes)
     const replaced = replaceNodesInPlace(allNodeTypes)
-    if (replaced.length > 0) {
+    if (replaced.length > 0)
       useMissingNodesErrorStore().removeMissingNodesByType(replaced)
-    }
   }
 
   return {

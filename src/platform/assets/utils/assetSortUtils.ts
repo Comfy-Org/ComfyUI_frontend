@@ -29,9 +29,7 @@ export function sortAssets<T extends SortableItem>(
   items: readonly T[],
   sortBy: AssetSortOption
 ): T[] {
-  if (sortBy === 'default') {
-    return items.slice()
-  }
+  if (sortBy === 'default') return items.slice()
 
   const sorted = items.slice()
 

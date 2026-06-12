@@ -128,9 +128,8 @@ function onMaskMouseUp(event: MouseEvent) {
   if (
     maskMouseDownTarget === event.target &&
     (event.target as HTMLElement)?.hasAttribute('data-mask')
-  ) {
+  )
     close()
-  }
 }
 
 function handleKeyDown(event: KeyboardEvent) {

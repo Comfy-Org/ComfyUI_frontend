@@ -56,9 +56,7 @@ export function getOutputKey({
   subfolder,
   filename
 }: OutputKeyParts): string | null {
-  if (nodeId == null || subfolder == null || !filename) {
-    return null
-  }
+  if (nodeId == null || subfolder == null || !filename) return null
 
   return `${nodeId}-${subfolder}-${filename}`
 }
@@ -89,12 +87,11 @@ function mapOutputsToAssetItems({
 
   return outputs.reduce<AssetItem[]>((items, output) => {
     const outputKey = getOutputKey(output)
-    if (!output.filename || !outputKey || outputKey === excludeOutputKey) {
+    if (!output.filename || !outputKey || outputKey === excludeOutputKey)
       return items
-    }
-    if (seenOutputKeys.has(outputKey)) {
-      return items
-    }
+
+    if (seenOutputKeys.has(outputKey)) return items
+
     seenOutputKeys.add(outputKey)
 
     items.push({
@@ -127,9 +124,7 @@ export async function resolveOutputAssetItems(
   if (shouldLoadFullOutputs(metadata.outputCount, outputsToDisplay.length)) {
     const jobDetail = await getJobDetail(metadata.jobId)
     const previewableOutputs = getPreviewableOutputsFromJobDetail(jobDetail)
-    if (previewableOutputs.length) {
-      outputsToDisplay = previewableOutputs
-    }
+    if (previewableOutputs.length) outputsToDisplay = previewableOutputs
   }
 
   // Reverse so the most recent outputs appear first

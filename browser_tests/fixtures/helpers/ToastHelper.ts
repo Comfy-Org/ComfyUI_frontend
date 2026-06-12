@@ -27,9 +27,7 @@ export class ToastHelper {
     const toastCloseButtons = await this.page
       .locator('.p-toast-close-button')
       .all()
-    for (const button of toastCloseButtons) {
-      await button.click()
-    }
+    for (const button of toastCloseButtons) await button.click()
 
     // Assert all toasts are closed
     await expect(this.visibleToasts).toHaveCount(0)

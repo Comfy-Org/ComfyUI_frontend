@@ -41,9 +41,8 @@ const emit = defineEmits<{
 
 const normalizedOptions = computed((): DropdownOption[] => {
   return props.options.map((option) => {
-    if (typeof option === 'string') {
-      return { label: option, value: option }
-    }
+    if (typeof option === 'string') return { label: option, value: option }
+
     return option
   })
 })

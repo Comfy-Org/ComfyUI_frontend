@@ -39,9 +39,8 @@ vi.mock('@/composables/useImageCrop', async () => {
       custom: null
     },
     useImageCrop: () => {
-      if (!cropHolder.state) {
-        cropHolder.state = createDefaultCropState()
-      }
+      if (!cropHolder.state) cropHolder.state = createDefaultCropState()
+
       return cropHolder.state
     }
   }

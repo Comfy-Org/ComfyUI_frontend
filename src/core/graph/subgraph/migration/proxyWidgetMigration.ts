@@ -223,9 +223,8 @@ export function flushProxyWidgetMigration(args: FlushArgs): void {
       for (const e of c) quarantineToAppend.push(quarantineFor(e, r.reason))
   }
 
-  if (quarantineToAppend.length > 0) {
+  if (quarantineToAppend.length > 0)
     appendQuarantine(hostNode, quarantineToAppend)
-  }
 
   delete hostNode.properties.proxyWidgets
 }
@@ -239,9 +238,9 @@ function pickHostValue(
     index < 0 ||
     index >= hostWidgetValues.length ||
     !Object.hasOwn(hostWidgetValues, index)
-  ) {
+  )
     return { value: undefined, isHole: true }
-  }
+
   const raw = hostWidgetValues[index]
   if (!isWidgetValue(raw)) return { value: undefined, isHole: true }
   return { value: raw, isHole: false }
@@ -310,16 +309,14 @@ function classify(
           w.sourceWidgetName === normalized.sourceWidgetName
         )
       }).length > 1
-    if (ambiguous) {
+    if (ambiguous)
       return { kind: 'quarantine', reason: 'ambiguousSubgraphInput' }
-    }
+
     return { kind: 'alreadyLinked', subgraphInputName: linkedInput.name }
   }
 
   const sourceNode = hostNode.subgraph.getNodeById(normalized.sourceNodeId)
-  if (!sourceNode) {
-    return { kind: 'quarantine', reason: 'missingSourceNode' }
-  }
+  if (!sourceNode) return { kind: 'quarantine', reason: 'missingSourceNode' }
 
   if (sourceNode.type === PRIMITIVE_NODE_TYPE) {
     const bypassedTo = sourceNode.properties?.[PROXY_BYPASS_MARKER_PROPERTY]
@@ -327,9 +324,8 @@ function classify(
       const existingInput = hostNode.inputs.find(
         (input) => input.name === bypassedTo
       )
-      if (existingInput) {
+      if (existingInput)
         return { kind: 'alreadyLinked', subgraphInputName: existingInput.name }
-      }
     }
 
     const targets = collectTargetsSkippingDangling(hostNode, sourceNode)
@@ -353,9 +349,8 @@ function classify(
     normalized.sourceWidgetName,
     normalized.disambiguatingSourceNodeId
   )
-  if (!sourceWidget) {
+  if (!sourceWidget)
     return { kind: 'quarantine', reason: 'missingSourceWidget' }
-  }
 
   if (
     normalized.sourceWidgetName.startsWith('$$') ||
@@ -415,16 +410,13 @@ function repairAlreadyLinked(
   const matches = hostNode.inputs.filter(
     (input) => input.name === subgraphInputName
   )
-  if (matches.length === 0) {
-    return { ok: false, reason: 'missingSubgraphInput' }
-  }
-  if (matches.length > 1) {
-    return { ok: false, reason: 'ambiguousSubgraphInput' }
-  }
+  if (matches.length === 0) return { ok: false, reason: 'missingSubgraphInput' }
+
+  if (matches.length > 1) return { ok: false, reason: 'ambiguousSubgraphInput' }
+
   const hostInput = matches[0]
-  if (!hostInput._widget) {
-    return { ok: false, reason: 'missingSubgraphInput' }
-  }
+  if (!hostInput._widget) return { ok: false, reason: 'missingSubgraphInput' }
+
   applyHostValue(hostInput._widget, entry)
   return { ok: true, subgraphInputName: hostInput.name }
 }
@@ -438,18 +430,14 @@ function repairCreateSubgraphInput(
   const sourceNode: LGraphNode | null = subgraph.getNodeById(
     entry.normalized.sourceNodeId
   )
-  if (!sourceNode) {
-    return { ok: false, reason: 'missingSourceNode' }
-  }
+  if (!sourceNode) return { ok: false, reason: 'missingSourceNode' }
 
   const sourceWidget = resolveSourceWidget(
     sourceNode,
     sourceWidgetName,
     entry.normalized.disambiguatingSourceNodeId
   )
-  if (!sourceWidget) {
-    return { ok: false, reason: 'missingSourceWidget' }
-  }
+  if (!sourceWidget) return { ok: false, reason: 'missingSourceWidget' }
 
   const slot: INodeInputSlot | undefined =
     sourceNode.getSlotFromWidget(sourceWidget)
@@ -480,9 +468,8 @@ function repairCreateSubgraphInput(
   const hostInput = hostNode.inputs.find(
     (input) => input.name === newSubgraphInput.name
   )
-  if (!hostInput?._widget) {
+  if (!hostInput?._widget)
     return { ok: true, subgraphInputName: newSubgraphInput.name }
-  }
 
   applyHostValue(hostInput._widget, entry)
   return { ok: true, subgraphInputName: newSubgraphInput.name }
@@ -530,15 +517,13 @@ function validateCohort(
       entry.plan.kind !== 'primitiveBypass' ||
       entry.plan.primitiveNodeId !== primitiveNodeId ||
       entry.plan.sourceWidgetName !== sourceWidgetName
-    ) {
+    )
       return { ok: false }
-    }
   }
   const uniqueEntries: PendingEntry[] = []
   for (const entry of cohort) {
-    if (!uniqueEntries.some((k) => isEqual(k.normalized, entry.normalized))) {
+    if (!uniqueEntries.some((k) => isEqual(k.normalized, entry.normalized)))
       uniqueEntries.push(entry)
-    }
   }
   return { ok: true, primitiveNodeId, sourceWidgetName, uniqueEntries }
 }
@@ -574,9 +559,8 @@ function repairPrimitive(
   const subgraph = hostNode.subgraph
   const primitiveNode = subgraph.getNodeById(validated.primitiveNodeId)
   if (!primitiveNode) return failPrimitive('primitive node missing', validated)
-  if (primitiveNode.type !== PRIMITIVE_NODE_TYPE) {
+  if (primitiveNode.type !== PRIMITIVE_NODE_TYPE)
     return failPrimitive('node is not a PrimitiveNode', primitiveNode.type)
-  }
 
   const targets = collectTargetsStrict(hostNode, primitiveNode)
   if (!targets?.length)
@@ -625,10 +609,11 @@ function repairPrimitive(
 
     for (const snap of snapshot) {
       const targetNode = subgraph.getNodeById(snap.targetNodeId)
-      if (!targetNode)
+      if (!targetNode) {
         throw new Error(
           `target node ${snap.targetNodeId} disappeared mid-mutation`
         )
+      }
       targetNode.disconnectInput(snap.targetSlot, false)
     }
 
@@ -640,9 +625,7 @@ function repairPrimitive(
       if (!targetSlot)
         throw new Error(`target slot ${target.targetSlot} disappeared`)
       const link = newSubgraphInput.connect(targetSlot, targetNode)
-      if (!link) {
-        throw new Error('SubgraphInput.connect returned no link')
-      }
+      if (!link) throw new Error('SubgraphInput.connect returned no link')
     }
   } catch (e) {
     rollback(hostNode, primitiveNode, newSubgraphInput, snapshot)
@@ -697,18 +680,14 @@ function migratePreview(
   const sourceNode = hostNode.subgraph.getNodeById(
     entry.normalized.sourceNodeId
   )
-  if (!sourceNode) {
-    return { ok: false, reason: 'missingSourceNode' }
-  }
+  if (!sourceNode) return { ok: false, reason: 'missingSourceNode' }
 
   const isCanonicalPseudo = plan.sourcePreviewName.startsWith('$$')
   if (!isCanonicalPseudo) {
     const widget = sourceNode.widgets?.find(
       (w) => w.name === plan.sourcePreviewName
     )
-    if (!widget) {
-      return { ok: false, reason: 'missingSourceWidget' }
-    }
+    if (!widget) return { ok: false, reason: 'missingSourceWidget' }
   }
 
   const hostNodeLocator = String(hostNode.id)
@@ -755,11 +734,8 @@ export function appendQuarantine(
   )
   const merged = [...existing]
   for (const candidate of entries) {
-    if (
-      !merged.some((e) => isEqual(e.originalEntry, candidate.originalEntry))
-    ) {
+    if (!merged.some((e) => isEqual(e.originalEntry, candidate.originalEntry)))
       merged.push(candidate)
-    }
   }
   if (merged.length === 0) delete hostNode.properties[QUARANTINE_PROPERTY]
   else hostNode.properties[QUARANTINE_PROPERTY] = merged
@@ -783,8 +759,7 @@ export function makeQuarantineEntry(args: {
     reason: args.reason,
     attemptedAtVersion: QUARANTINE_VERSION
   }
-  if (args.hostValue !== undefined) {
-    entry.hostValue = args.hostValue
-  }
+  if (args.hostValue !== undefined) entry.hostValue = args.hostValue
+
   return entry
 }

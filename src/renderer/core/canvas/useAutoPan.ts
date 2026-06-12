@@ -33,13 +33,11 @@ export function calculateEdgePanSpeed(
 
   if (distFromMax < 0) return maxPanSpeed / scale
 
-  if (distFromMin < EDGE_THRESHOLD) {
+  if (distFromMin < EDGE_THRESHOLD)
     return (-maxPanSpeed * (1 - distFromMin / EDGE_THRESHOLD)) / scale
-  }
 
-  if (distFromMax < EDGE_THRESHOLD) {
+  if (distFromMax < EDGE_THRESHOLD)
     return (maxPanSpeed * (1 - distFromMax / EDGE_THRESHOLD)) / scale
-  }
 
   return 0
 }

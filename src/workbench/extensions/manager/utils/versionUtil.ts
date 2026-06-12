@@ -30,14 +30,10 @@ export function checkVersionCompatibility(
   supportedVersion?: string
 ): ConflictDetail | null {
   // If current version is unknown, assume compatible (no conflict)
-  if (isNil(currentVersion) || isEmpty(currentVersion)) {
-    return null
-  }
+  if (isNil(currentVersion) || isEmpty(currentVersion)) return null
 
   // If no version requirement specified, assume compatible (no conflict)
-  if (isNil(supportedVersion) || isEmpty(supportedVersion?.trim())) {
-    return null
-  }
+  if (isNil(supportedVersion) || isEmpty(supportedVersion?.trim())) return null
 
   // Clean and check version compatibility
   const cleanCurrent = cleanVersion(currentVersion)

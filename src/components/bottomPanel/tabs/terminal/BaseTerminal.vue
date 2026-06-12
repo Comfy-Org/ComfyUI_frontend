@@ -81,9 +81,7 @@ const handleCopy = async () => {
   if (selectedText) {
     await navigator.clipboard.writeText(selectedText)
 
-    if (shouldSelectAll) {
-      terminal.clearSelection()
-    }
+    if (shouldSelectAll) terminal.clearSelection()
   }
 }
 
@@ -92,9 +90,7 @@ const showContextMenu = (event: MouseEvent) => {
   electronAPI()?.showContextMenu({ type: 'text' })
 }
 
-if (isDesktop) {
-  useEventListener(terminalEl, 'contextmenu', showContextMenu)
-}
+if (isDesktop) useEventListener(terminalEl, 'contextmenu', showContextMenu)
 
 onMounted(() => {
   selectionDisposable = terminal.onSelectionChange(() => {

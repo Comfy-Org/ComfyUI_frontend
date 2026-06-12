@@ -152,9 +152,8 @@ const formattedLastUpdateTime = computed(() =>
 watch(
   () => authStore.lastBalanceUpdateTime,
   (newTime, oldTime) => {
-    if (newTime && newTime !== oldTime && usageLogsTableRef.value) {
+    if (newTime && newTime !== oldTime && usageLogsTableRef.value)
       usageLogsTableRef.value.refresh()
-    }
   }
 )
 

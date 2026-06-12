@@ -17,17 +17,13 @@ export function getOrderedInputSpecs(
   const orderedInputSpecs: InputSpec[] = []
 
   // If no input_order, return default Object.values order
-  if (!nodeDefImpl.input_order) {
-    return Object.values(inputs)
-  }
+  if (!nodeDefImpl.input_order) return Object.values(inputs)
 
   // Process required inputs in specified order
   if (nodeDefImpl.input_order.required) {
     for (const name of nodeDefImpl.input_order.required) {
       const inputSpec = inputs[name]
-      if (inputSpec && !inputSpec.isOptional) {
-        orderedInputSpecs.push(inputSpec)
-      }
+      if (inputSpec && !inputSpec.isOptional) orderedInputSpecs.push(inputSpec)
     }
   }
 
@@ -35,18 +31,14 @@ export function getOrderedInputSpecs(
   if (nodeDefImpl.input_order.optional) {
     for (const name of nodeDefImpl.input_order.optional) {
       const inputSpec = inputs[name]
-      if (inputSpec && inputSpec.isOptional) {
-        orderedInputSpecs.push(inputSpec)
-      }
+      if (inputSpec && inputSpec.isOptional) orderedInputSpecs.push(inputSpec)
     }
   }
 
   // Add any remaining inputs not specified in input_order
   const processedNames = new Set(orderedInputSpecs.map((spec) => spec.name))
   for (const inputSpec of Object.values(inputs)) {
-    if (!processedNames.has(inputSpec.name)) {
-      orderedInputSpecs.push(inputSpec)
-    }
+    if (!processedNames.has(inputSpec.name)) orderedInputSpecs.push(inputSpec)
   }
 
   return orderedInputSpecs
@@ -66,16 +58,12 @@ export function sortWidgetValuesByInputOrder(
   currentWidgetOrder: string[],
   inputOrder: string[]
 ): TWidgetValue[] {
-  if (!inputOrder || inputOrder.length === 0) {
-    return widgetValues
-  }
+  if (!inputOrder || inputOrder.length === 0) return widgetValues
 
   // Create a map of widget name to value
   const valueMap = new Map<string, TWidgetValue>()
   currentWidgetOrder.forEach((name, index) => {
-    if (index < widgetValues.length) {
-      valueMap.set(name, widgetValues[index])
-    }
+    if (index < widgetValues.length) valueMap.set(name, widgetValues[index])
   })
 
   // Reorder based on input_order
@@ -92,16 +80,13 @@ export function sortWidgetValuesByInputOrder(
 
   // Then add any remaining values not in input_order
   for (const [name, value] of valueMap.entries()) {
-    if (!usedNames.has(name)) {
-      reordered.push(value)
-    }
+    if (!usedNames.has(name)) reordered.push(value)
   }
 
   // If there are extra values not in the map, append them
   if (widgetValues.length > currentWidgetOrder.length) {
-    for (let i = currentWidgetOrder.length; i < widgetValues.length; i++) {
+    for (let i = currentWidgetOrder.length; i < widgetValues.length; i++)
       reordered.push(widgetValues[i])
-    }
   }
 
   return reordered

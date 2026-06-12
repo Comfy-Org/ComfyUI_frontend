@@ -122,9 +122,9 @@ const workflowValue = computed(() => {
   const wid = props.workflowId
   if (!wid) return ''
   const activeId = workflowStore.activeWorkflow?.activeState?.id
-  if (activeId && activeId === wid) {
+  if (activeId && activeId === wid)
     return workflowStore.activeWorkflow?.filename ?? wid
-  }
+
   return wid
 })
 const jobIdValue = computed(() => props.jobId)
@@ -219,14 +219,13 @@ const formatEta = (lo: number, hi: number): string => {
       return t('queue.jobDetails.eta.seconds', { count: hiS }, hiS)
     return t('queue.jobDetails.eta.secondsRange', { lo: loS, hi: hiS })
   }
-  if (lo >= 60 && hi < 90) {
+  if (lo >= 60 && hi < 90)
     return t('queue.jobDetails.eta.minutes', { count: 1 }, 1)
-  }
+
   const loM = Math.max(1, Math.floor(lo / 60))
   const hiM = Math.max(loM, Math.ceil(hi / 60))
-  if (loM === hiM) {
-    return t('queue.jobDetails.eta.minutes', { count: loM }, loM)
-  }
+  if (loM === hiM) return t('queue.jobDetails.eta.minutes', { count: loM }, loM)
+
   return t('queue.jobDetails.eta.minutesRange', { lo: loM, hi: hiM })
 }
 

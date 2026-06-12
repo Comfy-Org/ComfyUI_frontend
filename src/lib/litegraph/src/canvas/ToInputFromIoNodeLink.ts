@@ -162,10 +162,11 @@ export class ToInputFromIoNodeLink implements RenderLink {
     if (!inputNode || !input) return false
     this.node._disconnectNodeInput(inputNode, input, this.existingLink)
 
-    if (subgraphInput)
+    if (subgraphInput) {
       subgraphInput.events.dispatch('input-disconnected', {
         input: subgraphInput
       })
+    }
 
     return true
   }

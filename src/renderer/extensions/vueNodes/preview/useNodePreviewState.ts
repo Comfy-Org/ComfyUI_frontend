@@ -32,9 +32,8 @@ export const useNodePreviewState = (
   })
 
   const shouldShowPreviewImg = computed(() => {
-    if (!options?.isCollapsed) {
-      return hasPreview.value
-    }
+    if (!options?.isCollapsed) return hasPreview.value
+
     return !options.isCollapsed.value && hasPreview.value
   })
 

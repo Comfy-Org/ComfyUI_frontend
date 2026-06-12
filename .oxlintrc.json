@@ -27,6 +27,7 @@
   ],
   "rules": {
     "no-async-promise-executor": "off",
+    "curly": ["error", "multi-or-nest", "consistent"],
     "no-console": [
       "error",
       {

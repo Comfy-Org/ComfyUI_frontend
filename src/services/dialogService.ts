@@ -435,9 +435,7 @@ export const useDialogService = () => {
   async function showSubscriptionRequiredDialog(options?: {
     reason?: SubscriptionDialogReason
   }) {
-    if (!isCloud || !window.__CONFIG__?.subscription_required) {
-      return
-    }
+    if (!isCloud || !window.__CONFIG__?.subscription_required) return
 
     const { useSubscriptionDialog } =
       await import('@/platform/cloud/subscription/composables/useSubscriptionDialog')

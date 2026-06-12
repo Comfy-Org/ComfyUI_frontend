@@ -82,8 +82,7 @@ watch(selectedColorOption, (newOption, oldOption) => {
 })
 
 watch(customColorValue, (newValue) => {
-  if (selectedColorOption.value.name === '_custom') {
+  if (selectedColorOption.value.name === '_custom')
     emit('update:modelValue', newValue || null)
-  }
 })
 </script>

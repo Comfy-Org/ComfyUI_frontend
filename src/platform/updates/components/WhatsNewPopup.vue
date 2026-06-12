@@ -96,18 +96,16 @@ const changelogUrl = computed(() => {
 })
 
 const formattedContent = computed(() => {
-  if (!latestRelease.value?.content) {
+  if (!latestRelease.value?.content)
     return DOMPurify.sanitize(`<p>${t('whatsNewPopup.noReleaseNotes')}</p>`)
-  }
 
   try {
     const markdown = latestRelease.value.content
 
     // Check if content is meaningful (not just whitespace)
     const trimmedContent = markdown.trim()
-    if (!trimmedContent || trimmedContent.replace(/\s+/g, '') === '') {
+    if (!trimmedContent || trimmedContent.replace(/\s+/g, '') === '')
       return DOMPurify.sanitize(`<p>${t('whatsNewPopup.noReleaseNotes')}</p>`)
-    }
 
     // Extract image and remaining content separately
     const imageMatch = markdown.match(/!\[.*?\]\(.*?\)/)
@@ -144,18 +142,16 @@ const hide = () => {
 
 const closePopup = async () => {
   // Mark "what's new" seen when popup is closed
-  if (latestRelease.value) {
+  if (latestRelease.value)
     await releaseStore.handleWhatsNewSeen(latestRelease.value.version)
-  }
+
   hide()
 }
 
 // Initialize on mount
 onMounted(async () => {
   // Fetch releases if not already loaded
-  if (!releaseStore.releases.length) {
-    await releaseStore.fetchReleases()
-  }
+  if (!releaseStore.releases.length) await releaseStore.fetchReleases()
 })
 
 // Expose methods for parent component and tests

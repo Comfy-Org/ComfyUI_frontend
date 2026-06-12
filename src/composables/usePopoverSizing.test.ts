@@ -15,9 +15,7 @@ describe('usePrimeVueOverlayChildStyle', () => {
       composable = usePrimeVueOverlayChildStyle()
     })
 
-    if (!composable) {
-      throw new Error('Failed to mount composable')
-    }
+    if (!composable) throw new Error('Failed to mount composable')
 
     return composable
   }
@@ -79,9 +77,7 @@ function appendPrimeVueOverlay(
 ): HTMLElement {
   const overlay = document.createElement('div')
   overlay.className = className
-  if (zIndex !== undefined) {
-    overlay.style.zIndex = String(zIndex)
-  }
+  if (zIndex !== undefined) overlay.style.zIndex = String(zIndex)
 
   const anchor = document.createElement('div')
   overlay.append(anchor)

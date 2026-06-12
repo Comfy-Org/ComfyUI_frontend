@@ -135,22 +135,17 @@ const navigateToSignup = async () => {
 
 const signInWithGoogle = async () => {
   authError.value = ''
-  if (await authActions.signInWithGoogle()) {
-    await onAuthSuccess()
-  }
+  if (await authActions.signInWithGoogle()) await onAuthSuccess()
 }
 
 const signInWithGithub = async () => {
   authError.value = ''
-  if (await authActions.signInWithGithub()) {
-    await onAuthSuccess()
-  }
+  if (await authActions.signInWithGithub()) await onAuthSuccess()
 }
 
 const signInWithEmail = async (values: SignInData) => {
   authError.value = ''
-  if (await authActions.signInWithEmail(values.email, values.password)) {
+  if (await authActions.signInWithEmail(values.email, values.password))
     await onAuthSuccess()
-  }
 }
 </script>

@@ -147,9 +147,8 @@ describe('useCanvasTools', () => {
     })
 
     it('should erase filled area', () => {
-      for (let i = 0; i < mockMaskImageData.data.length; i += 4) {
+      for (let i = 0; i < mockMaskImageData.data.length; i += 4)
         mockMaskImageData.data[i + 3] = 255
-      }
 
       const tools = useCanvasTools()
 
@@ -162,9 +161,9 @@ describe('useCanvasTools', () => {
     it('should respect tolerance', () => {
       mockStore.paintBucketTolerance = 0
 
-      for (let i = 0; i < mockMaskImageData.data.length; i += 4) {
+      for (let i = 0; i < mockMaskImageData.data.length; i += 4)
         mockMaskImageData.data[i + 3] = 0
-      }
+
       const centerIndex = (50 * 100 + 50) * 4
       mockMaskImageData.data[centerIndex + 3] = 10
 
@@ -253,9 +252,8 @@ describe('useCanvasTools', () => {
     it('should respect color tolerance', async () => {
       mockStore.colorSelectTolerance = 0
 
-      for (let i = 0; i < mockImgImageData.data.length; i += 4) {
+      for (let i = 0; i < mockImgImageData.data.length; i += 4)
         mockImgImageData.data[i] = 200
-      }
 
       const tools = useCanvasTools()
 
@@ -318,9 +316,8 @@ describe('useCanvasTools', () => {
       mockStore.maskBoundary = true
       mockStore.maskTolerance = 0
 
-      for (let i = 0; i < mockMaskImageData.data.length; i += 4) {
+      for (let i = 0; i < mockMaskImageData.data.length; i += 4)
         mockMaskImageData.data[i + 3] = 255
-      }
 
       const tools = useCanvasTools()
 
@@ -364,15 +361,13 @@ describe('useCanvasTools', () => {
       )
       expect(mockCanvasHistory.saveState).toHaveBeenCalled()
 
-      for (let i = 0; i < mockMaskImageData.data.length; i += 4) {
+      for (let i = 0; i < mockMaskImageData.data.length; i += 4)
         expect(mockMaskImageData.data[i + 3]).toBe(127)
-      }
     })
 
     it('should preserve mask color for empty pixels', () => {
-      for (let i = 0; i < mockMaskImageData.data.length; i += 4) {
+      for (let i = 0; i < mockMaskImageData.data.length; i += 4)
         mockMaskImageData.data[i + 3] = 0
-      }
 
       const firstPixelIndex = 100
       mockMaskImageData.data[firstPixelIndex * 4] = 128

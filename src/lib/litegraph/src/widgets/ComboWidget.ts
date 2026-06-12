@@ -49,9 +49,7 @@ export class ComboWidget
     if (rawValues) {
       const values = typeof rawValues === 'function' ? rawValues() : rawValues
 
-      if (values && !Array.isArray(values)) {
-        return values[this.value]
-      }
+      if (values && !Array.isArray(values)) return values[this.value]
     }
     return typeof this.value === 'number' ? String(this.value) : this.value
   }

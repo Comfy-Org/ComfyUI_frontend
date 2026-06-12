@@ -289,11 +289,8 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
    * Toggle a widget's favorite status.
    */
   function toggleFavorite(node: LGraphNode, widgetName: string) {
-    if (isFavorited(node, widgetName)) {
-      removeFavorite(node, widgetName)
-    } else {
-      addFavorite(node, widgetName)
-    }
+    if (isFavorited(node, widgetName)) removeFavorite(node, widgetName)
+    else addFavorite(node, widgetName)
   }
 
   /**

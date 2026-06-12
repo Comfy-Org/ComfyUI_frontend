@@ -83,9 +83,7 @@ export function computeUnionBounds(
   rectangles: readonly ReadOnlyRect[]
 ): Bounds | null {
   const n = rectangles.length
-  if (n === 0) {
-    return null
-  }
+  if (n === 0) return null
 
   const r0 = rectangles[0]
   let minX = r0[0]

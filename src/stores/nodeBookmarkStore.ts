@@ -54,9 +54,8 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
         const name = parts.pop() ?? ''
         const category = parts.join('/')
         const srcNodeDef = nodeDefStore.allNodeDefsByName[name]
-        if (!srcNodeDef) {
-          return null
-        }
+        if (!srcNodeDef) return null
+
         const nodeDef = _.clone(srcNodeDef)
         nodeDef.category = category
         return nodeDef
@@ -90,25 +89,19 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     folderNode: ComfyNodeDefImpl,
     newName: string
   ) => {
-    if (!folderNode.isDummyFolder) {
+    if (!folderNode.isDummyFolder)
       throw new Error('Cannot rename non-folder node')
-    }
 
-    if (newName.includes('/')) {
-      throw new Error('Folder name cannot contain "/"')
-    }
+    if (newName.includes('/')) throw new Error('Folder name cannot contain "/"')
 
     const newNodePath =
       folderNode.category.split('/').slice(0, -1).concat(newName).join('/') +
       '/'
 
-    if (newNodePath === folderNode.nodePath) {
-      return
-    }
+    if (newNodePath === folderNode.nodePath) return
 
-    if (bookmarks.value.some((b: string) => b.startsWith(newNodePath))) {
+    if (bookmarks.value.some((b: string) => b.startsWith(newNodePath)))
       throw new Error(`Folder name "${newNodePath}" already exists`)
-    }
 
     await settingStore.set(
       BOOKMARK_SETTING_ID,
@@ -122,9 +115,9 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
   }
 
   const deleteBookmarkFolder = async (folderNode: ComfyNodeDefImpl) => {
-    if (!folderNode.isDummyFolder) {
+    if (!folderNode.isDummyFolder)
       throw new Error('Cannot delete non-folder node')
-    }
+
     await settingStore.set(
       BOOKMARK_SETTING_ID,
       bookmarks.value.filter(
@@ -147,12 +140,11 @@ export const useNodeBookmarkStore = defineStore('nodeBookmark', () => {
     const newCustomization = { ...currentCustomization, ...customization }
 
     // Remove attributes that are set to default values
-    if (newCustomization.icon === defaultBookmarkIcon) {
+    if (newCustomization.icon === defaultBookmarkIcon)
       delete newCustomization.icon
-    }
-    if (newCustomization.color === defaultBookmarkColor) {
+
+    if (newCustomization.color === defaultBookmarkColor)
       delete newCustomization.color
-    }
 
     // If the customization is empty, remove it entirely
     if (Object.keys(newCustomization).length === 0) {

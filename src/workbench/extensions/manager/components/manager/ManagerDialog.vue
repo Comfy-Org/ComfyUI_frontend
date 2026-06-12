@@ -335,9 +335,8 @@ const selectedTab = computed(() =>
 )
 
 watch(navItems, (items) => {
-  if (selectedNavId.value && !findNavItemById(items, selectedNavId.value)) {
+  if (selectedNavId.value && !findNavItemById(items, selectedNavId.value))
     selectedNavId.value = ManagerTab.Missing
-  }
 })
 
 const {
@@ -451,9 +450,9 @@ const emptyStateMessage = computed(() => {
   if (isManagerErrorRelevant.value) return t('manager.tryAgainLater')
   if (searchQuery.value) {
     const baseMessage = t('manager.tryDifferentSearch')
-    if (isLegacyManagerSearch.value) {
+    if (isLegacyManagerSearch.value)
       return `${baseMessage}\n\n${t('manager.legacyManagerSearchTip')}`
-    }
+
     return baseMessage
   }
 
@@ -497,9 +496,7 @@ const isRightPanelOpen = ref(false)
 watch(
   () => selectedNodePacks.value.length,
   (length, oldLength) => {
-    if (length > 0 && oldLength === 0) {
-      isRightPanelOpen.value = true
-    }
+    if (length > 0 && oldLength === 0) isRightPanelOpen.value = true
   }
 )
 
@@ -563,9 +560,8 @@ const unSelectItems = () => {
 }
 const handleGridContainerClick = (event: MouseEvent) => {
   const targetElement = event.target as HTMLElement
-  if (targetElement && !targetElement.closest('[data-virtual-grid-item]')) {
+  if (targetElement && !targetElement.closest('[data-virtual-grid-item]'))
     unSelectItems()
-  }
 }
 
 const hasMultipleSelections = computed(() => selectedNodePacks.value.length > 1)
@@ -585,9 +581,8 @@ whenever(selectedNodePack, async () => {
     const packIndex = selectedNodePacks.value.findIndex(
       (p) => p.id === mergedPack.id
     )
-    if (packIndex !== -1) {
+    if (packIndex !== -1)
       selectedNodePacks.value.splice(packIndex, 1, mergedPack)
-    }
   }
 })
 

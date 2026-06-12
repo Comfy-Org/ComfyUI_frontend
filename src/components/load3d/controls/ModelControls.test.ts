@@ -86,9 +86,8 @@ describe('ModelControls', () => {
       const { user } = renderComponent()
       await user.click(screen.getByRole('button', { name: 'Up direction' }))
 
-      for (const label of ['ORIGINAL', '-X', '+X', '-Y', '+Y', '-Z', '+Z']) {
+      for (const label of ['ORIGINAL', '-X', '+X', '-Y', '+Y', '-Z', '+Z'])
         expect(screen.getByRole('button', { name: label })).toBeVisible()
-      }
     })
 
     it('updates upDirection v-model when a direction is selected', async () => {

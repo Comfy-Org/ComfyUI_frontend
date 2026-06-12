@@ -202,16 +202,12 @@ const normalizeWidgetValue = (
   raw: unknown,
   declaredType: string
 ): NormalizedWidgetValue => {
-  if (raw === undefined || raw === null) {
-    return null
-  }
+  if (raw === undefined || raw === null) return null
 
   const upperType = declaredType.toUpperCase()
 
   // Numeric types
-  if (upperType === 'INT' || upperType === 'FLOAT') {
-    return asFiniteNumber(raw)
-  }
+  if (upperType === 'INT' || upperType === 'FLOAT') return asFiniteNumber(raw)
 
   // Boolean type
   if (upperType === 'BOOLEAN') {
@@ -285,15 +281,15 @@ const buildSignature = (
   rule: JsonataPricingRule
 ): string => {
   const parts: string[] = []
-  for (const dep of rule.depends_on.widgets) {
+  for (const dep of rule.depends_on.widgets)
     parts.push(`w:${dep.name}=${safeValueForSig(ctx.widgets[dep.name])}`)
-  }
-  for (const name of rule.depends_on.inputs) {
+
+  for (const name of rule.depends_on.inputs)
     parts.push(`i:${name}=${ctx.inputs[name]?.connected ? '1' : '0'}`)
-  }
-  for (const name of rule.depends_on.input_groups) {
+
+  for (const name of rule.depends_on.input_groups)
     parts.push(`g:${name}=${ctx.inputGroups[name] ?? 0}`)
-  }
+
   return parts.join('|')
 }
 
@@ -334,15 +330,13 @@ export const formatPricingResult = (
   }
 
   if (!isPricingResult(result)) {
-    if (result !== undefined && result !== null) {
+    if (result !== undefined && result !== null)
       console.warn('[pricing/jsonata] invalid result format:', result)
-    }
+
     return ''
   }
 
-  if (result.type === 'text') {
-    return result.text ?? ''
-  }
+  if (result.type === 'text') return result.text ?? ''
 
   if (result.type === 'usd') {
     const usd = asFiniteNumber(result.usd)
@@ -430,9 +424,8 @@ const getCompiledRuleForNodeType = (
   if (!priceBadge) return null
 
   // Check cache first
-  if (compiledRulesCache.has(nodeName)) {
+  if (compiledRulesCache.has(nodeName))
     return compiledRulesCache.get(nodeName) ?? null
-  }
 
   // Compile and cache
   const rule = priceBadgeToRule(priceBadge)
@@ -501,9 +494,7 @@ const scheduleEvaluation = (
     })
     .catch(() => {
       // Cache empty to avoid retry-spam for same signature
-      if (desiredSig.get(node) === sig) {
-        cache.set(node, { sig, label: '' })
-      }
+      if (desiredSig.get(node) === sig) cache.set(node, { sig, label: '' })
     })
     .finally(() => {
       const cur = inflight.get(node)
@@ -575,9 +566,7 @@ export const useNodePricing = () => {
     const sig = buildSignature(ctx, rule)
 
     const cached = cache.get(node)
-    if (cached && cached.sig === sig) {
-      return cached.label
-    }
+    if (cached && cached.sig === sig) return cached.label
 
     // Cache miss: start async evaluation.
     // Return last-known label (if any) to avoid flicker; otherwise return empty.
@@ -618,9 +607,9 @@ export const useNodePricing = () => {
       ...widgetNames,
       ...(dependsOn.inputs ?? []),
       ...(dependsOn.input_groups ?? [])
-    ]) {
+    ])
       if (!out.includes(n)) out.push(n)
-    }
+
     return out
   }
 
@@ -690,9 +679,8 @@ function extractDefaultFromSpec(spec: unknown[]): unknown {
   const specOptions = spec[1] as Record<string, unknown> | undefined
 
   // Check for explicit default
-  if (specOptions && 'default' in specOptions) {
-    return specOptions.default
-  }
+  if (specOptions && 'default' in specOptions) return specOptions.default
+
   // COMBO/DYNAMICCOMBO type with options array
   if (
     specOptions &&
@@ -705,16 +693,15 @@ function extractDefaultFromSpec(spec: unknown[]): unknown {
       typeof firstOption === 'object' &&
       firstOption !== null &&
       'key' in firstOption
-    ) {
+    )
       return (firstOption as { key: unknown }).key
-    }
+
     // Standard combo: options are primitive values
     return firstOption
   }
   // COMBO type (old format): [["option1", "option2"], {...}]
-  if (Array.isArray(spec[0]) && spec[0].length > 0) {
-    return spec[0][0]
-  }
+  if (Array.isArray(spec[0]) && spec[0].length > 0) return spec[0][0]
+
   return null
 }
 
@@ -756,15 +743,13 @@ export const evaluateNodeDefPricing = memoize(
 
       // Build inputs context: assume all inputs are disconnected in preview
       const inputs: Record<string, { connected: boolean }> = {}
-      for (const name of priceBadge.depends_on?.inputs ?? []) {
+      for (const name of priceBadge.depends_on?.inputs ?? [])
         inputs[name] = { connected: false }
-      }
 
       // Build inputGroups context: assume 0 connected inputs in preview
       const inputGroups: Record<string, number> = {}
-      for (const groupName of priceBadge.depends_on?.input_groups ?? []) {
+      for (const groupName of priceBadge.depends_on?.input_groups ?? [])
         inputGroups[groupName] = 0
-      }
 
       const context: JsonataEvalContext = { widgets, inputs, inputGroups }
       const result = await rule._compiled.evaluate(context)

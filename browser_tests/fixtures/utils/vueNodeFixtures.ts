@@ -103,9 +103,8 @@ export class VueNodeFixture {
   }> {
     await this.header.click()
     const box = await this.boundingBox()
-    if (!box) {
-      throw new Error('Node bounding box not found after select')
-    }
+    if (!box) throw new Error('Node bounding box not found after select')
+
     return box
   }
 

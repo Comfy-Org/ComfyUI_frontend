@@ -69,9 +69,7 @@ export function useWorkflowValidation() {
     const validatedGraphData = await validateComfyWorkflow(
       graphData,
       /* onError=*/ (err) => {
-        if (!silent) {
-          toastStore.addAlert(err)
-        }
+        if (!silent) toastStore.addAlert(err)
       }
     )
 

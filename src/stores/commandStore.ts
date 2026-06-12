@@ -76,16 +76,14 @@ export const useCommandStore = defineStore('command', () => {
   const commands = computed(() => Object.values(commandsById.value))
 
   const registerCommand = (command: ComfyCommand) => {
-    if (commandsById.value[command.id]) {
+    if (commandsById.value[command.id])
       console.warn(`Command ${command.id} already registered`)
-    }
+
     commandsById.value[command.id] = new ComfyCommandImpl(command)
   }
 
   const registerCommands = (commands: ComfyCommand[]) => {
-    for (const command of commands) {
-      registerCommand(command)
-    }
+    for (const command of commands) registerCommand(command)
   }
 
   const getCommand = (command: string) => {

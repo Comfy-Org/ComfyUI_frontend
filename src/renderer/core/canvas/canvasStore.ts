@@ -68,9 +68,8 @@ export const useCanvasStore = defineStore('canvas', () => {
 
       // Set up continuous sync
       app.canvas.ds.onChanged = () => {
-        if (app.canvas?.ds?.scale) {
-          updateAppScalePercentage(app.canvas.ds.scale)
-        }
+        if (app.canvas?.ds?.scale) updateAppScalePercentage(app.canvas.ds.scale)
+
         // Call original handler if exists
         originalOnChanged?.(app.canvas.ds.scale, app.canvas.ds.offset)
       }

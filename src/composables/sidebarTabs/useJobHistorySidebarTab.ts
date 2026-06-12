@@ -16,9 +16,7 @@ export const useJobHistorySidebarTab = (): SidebarTabExtension => {
     type: 'vue',
     iconBadge: () => {
       const sidebarTabStore = useSidebarTabStore()
-      if (sidebarTabStore.activeSidebarTabId === 'job-history') {
-        return null
-      }
+      if (sidebarTabStore.activeSidebarTabId === 'job-history') return null
 
       const queueStore = useQueueStore()
       const count = queueStore.activeJobsCount

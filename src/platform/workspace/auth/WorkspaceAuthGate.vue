@@ -93,9 +93,8 @@ async function initialize(): Promise<void> {
     // Only safe after workspace store initialized successfully — the pricing
     // dialog reads workspace state to decide which variant to show.
     const workspaceStore = useTeamWorkspaceStore()
-    if (workspaceStore.initState === 'ready') {
+    if (workspaceStore.initState === 'ready')
       subscriptionDialog.resumePendingPricingFlow()
-    }
   } catch (error) {
     console.error('[WorkspaceAuthGate] Initialization failed:', error)
   } finally {
@@ -113,9 +112,8 @@ async function initializeWorkspaceMode(): Promise<void> {
   // - Setting active workspace
   try {
     const workspaceStore = useTeamWorkspaceStore()
-    if (workspaceStore.initState === 'uninitialized') {
+    if (workspaceStore.initState === 'uninitialized')
       await workspaceStore.initialize()
-    }
   } catch (error) {
     // Log but don't block - workspace UI features may not work but app will render
     // API calls will fall back to Firebase token

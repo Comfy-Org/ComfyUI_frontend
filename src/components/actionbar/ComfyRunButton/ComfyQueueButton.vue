@@ -187,37 +187,28 @@ const queueMenuTriggerClass =
 const queueMenuItemButtonClass = 'w-full justify-start font-normal'
 
 const iconClass = computed(() => {
-  if (isStopInstantAction.value) {
-    return 'icon-[lucide--square]'
-  }
-  if (hasMissingNodes.value) {
-    return 'icon-[lucide--triangle-alert]'
-  }
-  if (workspaceStore.shiftDown) {
-    return 'icon-[lucide--list-start]'
-  }
-  if (queueMode.value === 'disabled') {
-    return 'icon-[lucide--play]'
-  }
-  if (isInstantMode(queueMode.value)) {
-    return 'icon-[lucide--fast-forward]'
-  }
-  if (queueMode.value === 'change') {
-    return 'icon-[lucide--step-forward]'
-  }
+  if (isStopInstantAction.value) return 'icon-[lucide--square]'
+
+  if (hasMissingNodes.value) return 'icon-[lucide--triangle-alert]'
+
+  if (workspaceStore.shiftDown) return 'icon-[lucide--list-start]'
+
+  if (queueMode.value === 'disabled') return 'icon-[lucide--play]'
+
+  if (isInstantMode(queueMode.value)) return 'icon-[lucide--fast-forward]'
+
+  if (queueMode.value === 'change') return 'icon-[lucide--step-forward]'
+
   return 'icon-[lucide--play]'
 })
 
 const queueButtonTooltip = computed(() => {
-  if (isStopInstantAction.value) {
-    return t('menu.stopRunInstantTooltip')
-  }
-  if (hasMissingNodes.value) {
-    return t('menu.runWorkflowDisabled')
-  }
-  if (workspaceStore.shiftDown) {
-    return t('menu.runWorkflowFront')
-  }
+  if (isStopInstantAction.value) return t('menu.stopRunInstantTooltip')
+
+  if (hasMissingNodes.value) return t('menu.runWorkflowDisabled')
+
+  if (workspaceStore.shiftDown) return t('menu.runWorkflowFront')
+
   return t('menu.runWorkflow')
 })
 
@@ -233,9 +224,7 @@ const queuePrompt = async (e: Event) => {
     ? 'Comfy.QueuePromptFront'
     : 'Comfy.QueuePrompt'
 
-  if (isInstantMode(queueMode.value)) {
-    queueMode.value = 'instant-running'
-  }
+  if (isInstantMode(queueMode.value)) queueMode.value = 'instant-running'
 
   if (batchCount.value > 1) {
     useTelemetry()?.trackUiButtonClicked({

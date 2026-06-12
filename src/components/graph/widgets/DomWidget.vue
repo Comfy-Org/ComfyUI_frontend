@@ -125,9 +125,8 @@ watch(
   [() => widgetState, left, top, enableDomClipping],
   ([widgetState]) => {
     updatePosition(widgetState)
-    if (enableDomClipping.value) {
-      updateDomClipping()
-    }
+    if (enableDomClipping.value) updateDomClipping()
+
     composeStyle()
   },
   { deep: true }
@@ -142,24 +141,20 @@ watch(clippingStyle, composeStyle, { deep: true })
 watch(
   () => widgetState.visible,
   (newVisible, oldVisible) => {
-    if (!newVisible && oldVisible) {
-      widget.options.onHide?.(widget)
-    }
+    if (!newVisible && oldVisible) widget.options.onHide?.(widget)
   }
 )
 useEventListener(document, 'mousedown', (event) => {
-  if (!isDOMWidget(widget) || !widgetState.visible || !widget.element.blur) {
+  if (!isDOMWidget(widget) || !widgetState.visible || !widget.element.blur)
     return
-  }
-  if (!widget.element.contains(event.target as HTMLElement)) {
+
+  if (!widget.element.contains(event.target as HTMLElement))
     widget.element.blur()
-  }
 })
 
 onMounted(() => {
-  if (!isDOMWidget(widget)) {
-    return
-  }
+  if (!isDOMWidget(widget)) return
+
   useEventListener(
     widget.element,
     widget.options.selectOn ?? ['focus', 'click'],
@@ -185,13 +180,11 @@ const tooltip = inputSpec?.inputs?.[widget.name]?.tooltip
 
 // Mount DOM element when widget is or becomes visible
 const mountElementIfVisible = () => {
-  if (!(widgetState.visible && isDOMWidget(widget) && widgetElement.value)) {
+  if (!(widgetState.visible && isDOMWidget(widget) && widgetElement.value))
     return
-  }
+
   // Only append if not already a child
-  if (widgetElement.value.contains(widget.element)) {
-    return
-  }
+  if (widgetElement.value.contains(widget.element)) return
 
   widget.element.classList.add('h-full', 'w-full')
   widgetElement.value.appendChild(widget.element)

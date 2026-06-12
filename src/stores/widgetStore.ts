@@ -27,9 +27,8 @@ export const useWidgetStore = defineStore('widget', () => {
     // null/undefined. Guard here so a single misbehaving custom node can't
     // throw "Cannot convert undefined or null to object" and break app init.
     if (!newWidgets) return
-    for (const [type, widget] of Object.entries(newWidgets)) {
+    for (const [type, widget] of Object.entries(newWidgets))
       customWidgets.value.set(type, widget)
-    }
   }
 
   return {

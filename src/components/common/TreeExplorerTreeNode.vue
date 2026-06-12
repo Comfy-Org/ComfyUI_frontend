@@ -67,12 +67,11 @@ const emit = defineEmits<{
 }>()
 
 const nodeBadgeText = computed<string>(() => {
-  if (props.node.leaf) {
-    return ''
-  }
-  if (props.node.badgeText !== undefined && props.node.badgeText !== null) {
+  if (props.node.leaf) return ''
+
+  if (props.node.badgeText !== undefined && props.node.badgeText !== null)
     return props.node.badgeText
-  }
+
   return props.node.totalLeaves.toString()
 })
 const showNodeBadgeText = computed<boolean>(() => nodeBadgeText.value !== '')
@@ -128,9 +127,7 @@ if (props.node.droppable) {
     },
     onDragEnter: (event) => {
       const dndData = event.source.data as TreeExplorerDragAndDropData
-      if (dndData.type === 'tree-explorer-node') {
-        canDrop.value = true
-      }
+      if (dndData.type === 'tree-explorer-node') canDrop.value = true
     },
     onDragLeave: () => {
       canDrop.value = false

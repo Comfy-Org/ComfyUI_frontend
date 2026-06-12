@@ -240,9 +240,8 @@ function addAssetIdentifiers(
   pathOptions: { allowCompactSuffix: boolean }
 ) {
   for (const asset of assets) {
-    for (const name of getAssetDetectionNames(asset, pathOptions)) {
+    for (const name of getAssetDetectionNames(asset, pathOptions))
       identifiers.add(name)
-    }
   }
 }
 

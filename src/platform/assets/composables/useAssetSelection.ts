@@ -109,9 +109,7 @@ export function useAssetSelection() {
   }
 
   function reconcileSelection(assets: AssetItem[]) {
-    if (selectionStore.selectedAssetIds.size === 0) {
-      return
-    }
+    if (selectionStore.selectedAssetIds.size === 0) return
 
     if (assets.length === 0) {
       selectionStore.clearSelection()
@@ -122,9 +120,7 @@ export function useAssetSelection() {
     const nextSelectedIds: string[] = []
 
     for (const id of selectionStore.selectedAssetIds) {
-      if (visibleIds.has(id)) {
-        nextSelectedIds.push(id)
-      }
+      if (visibleIds.has(id)) nextSelectedIds.push(id)
     }
 
     if (nextSelectedIds.length === selectionStore.selectedAssetIds.size) {

@@ -72,9 +72,9 @@ export function boundsExtractor(): ValueExtractor<Bounds> {
       y !== undefined &&
       width !== undefined &&
       height !== undefined
-    ) {
+    )
       return { x, y, width, height }
-    }
+
     return undefined
   }
 }

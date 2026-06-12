@@ -22,9 +22,9 @@ const PREVIEW_TYPES_BY_MEDIA = {
 
 function getPreviewMediaType(node: LGraphNode): PromotedPreview['type'] {
   const media = node.previewMediaType
-  if (media && media in PREVIEW_TYPES_BY_MEDIA) {
+  if (media && media in PREVIEW_TYPES_BY_MEDIA)
     return PREVIEW_TYPES_BY_MEDIA[media as keyof typeof PREVIEW_TYPES_BY_MEDIA]
-  }
+
   return 'image'
 }
 

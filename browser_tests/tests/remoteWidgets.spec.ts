@@ -151,9 +151,8 @@ test.describe('Remote COMBO Widget', { tag: '@widget' }, () => {
       let requestWasMade = false
 
       comfyPage.page.on('request', (request) => {
-        if (request.url().includes('/api/models/checkpoints')) {
+        if (request.url().includes('/api/models/checkpoints'))
           requestWasMade = true
-        }
       })
 
       expect(requestWasMade).toBe(false)

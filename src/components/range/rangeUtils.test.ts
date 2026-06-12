@@ -22,9 +22,8 @@ describe('gammaToPosition', () => {
   })
 
   it('round-trips with positionToGamma', () => {
-    for (const pos of [0.1, 0.3, 0.5, 0.7, 0.9]) {
+    for (const pos of [0.1, 0.3, 0.5, 0.7, 0.9])
       expect(gammaToPosition(positionToGamma(pos))).toBeCloseTo(pos)
-    }
   })
 })
 

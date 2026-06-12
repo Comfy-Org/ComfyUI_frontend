@@ -71,9 +71,7 @@ export const useCanvasDrop = (canvasRef: Ref<HTMLCanvasElement | null>) => {
             const widget = targetGraphNode.widgets?.find(
               (widget) => widget.name === targetProvider?.key
             )
-            if (widget) {
-              widget.value = model.file_name
-            }
+            if (widget) widget.value = model.file_name
           }
         } else if (node.data instanceof ComfyWorkflow) {
           const workflow = node.data

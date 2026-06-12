@@ -137,9 +137,7 @@ watch(
 )
 
 onUnmounted(() => {
-  if (showTimeout) {
-    clearTimeout(showTimeout)
-  }
+  if (showTimeout) clearTimeout(showTimeout)
 })
 
 function handleDismiss() {

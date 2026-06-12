@@ -220,9 +220,8 @@ export class CanvasPointer {
 
     const longerThanBufferTime =
       e.timeStamp - eDown.timeStamp > CanvasPointer.bufferTime
-    if (longerThanBufferTime || !this._hasSamePosition(e, eDown)) {
+    if (longerThanBufferTime || !this._hasSamePosition(e, eDown))
       this._setDragStarted(e)
-    }
   }
 
   /**
@@ -317,9 +316,7 @@ export class CanvasPointer {
     if (this._isHighResWheelEvent(e, now)) {
       this.detectedDevice = 'mouse'
     } else if (this._isWithinCooldown(timeSinceLastEvent)) {
-      if (this._shouldBufferLinuxEvent(e)) {
-        this._bufferLinuxEvent(e, now)
-      }
+      if (this._shouldBufferLinuxEvent(e)) this._bufferLinuxEvent(e, now)
     } else {
       this._updateDeviceMode(e, now)
       this.hasReceivedWheelEvent = true
@@ -333,9 +330,8 @@ export class CanvasPointer {
    * @returns `true` if switched to mouse mode
    */
   private _isHighResWheelEvent(event: WheelEvent, now: number): boolean {
-    if (!this.bufferedLinuxEvent || this.bufferedLinuxEventTime <= 0) {
+    if (!this.bufferedLinuxEvent || this.bufferedLinuxEventTime <= 0)
       return false
-    }
 
     const timeSinceBuffer = now - this.bufferedLinuxEventTime
 
@@ -368,16 +364,13 @@ export class CanvasPointer {
    * Updates the device mode based on event patterns.
    */
   private _updateDeviceMode(event: WheelEvent, now: number): void {
-    if (this._isTrackpadPattern(event)) {
-      this.detectedDevice = 'trackpad'
-    } else if (this._isMousePattern(event)) {
-      this.detectedDevice = 'mouse'
-    } else if (
+    if (this._isTrackpadPattern(event)) this.detectedDevice = 'trackpad'
+    else if (this._isMousePattern(event)) this.detectedDevice = 'mouse'
+    else if (
       this.detectedDevice === 'trackpad' &&
       this._shouldBufferLinuxEvent(event)
-    ) {
+    )
       this._bufferLinuxEvent(event, now)
-    }
   }
 
   /**
@@ -448,9 +441,8 @@ export class CanvasPointer {
    * @param now The current timestamp
    */
   private _bufferLinuxEvent(event: WheelEvent, now: number): void {
-    if (this.linuxBufferTimeoutId !== undefined) {
+    if (this.linuxBufferTimeoutId !== undefined)
       clearTimeout(this.linuxBufferTimeoutId)
-    }
 
     this.bufferedLinuxEvent = event
     this.bufferedLinuxEventTime = now
@@ -505,8 +497,7 @@ export class CanvasPointer {
 
     const { element, pointerId } = this
     this.pointerId = undefined
-    if (typeof pointerId === 'number' && element.hasPointerCapture(pointerId)) {
+    if (typeof pointerId === 'number' && element.hasPointerCapture(pointerId))
       element.releasePointerCapture(pointerId)
-    }
   }
 }

@@ -140,11 +140,10 @@ function addNode(nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) {
   )
   if (!node) return
 
-  if (disconnectOnReset && triggerEvent) {
+  if (disconnectOnReset && triggerEvent)
     canvasStore.getCanvas().linkConnector.connectToNode(node, triggerEvent)
-  } else if (!triggerEvent) {
+  else if (!triggerEvent)
     console.warn('The trigger event was undefined when addNode was called.')
-  }
 
   disconnectOnReset = false
 
@@ -283,9 +282,7 @@ function canvasEventHandler(e: LiteGraphCanvasEvent) {
     const [_, y] = group.pos
     const relativeY = e.detail.originalEvent.canvasY - y
     // Show search box if the click is NOT on the title bar
-    if (relativeY > group.titleHeight) {
-      showSearchBox(e.detail.originalEvent)
-    }
+    if (relativeY > group.titleHeight) showSearchBox(e.detail.originalEvent)
   }
 }
 

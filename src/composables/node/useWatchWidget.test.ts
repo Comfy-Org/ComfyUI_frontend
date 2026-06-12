@@ -171,9 +171,7 @@ describe('useComputedWithWidgetWatch', () => {
 
     // Trigger widget callback
     const widget = mockNode.widgets?.[0]
-    if (widget && widget.callback) {
-      widget.callback(widget.value)
-    }
+    if (widget && widget.callback) widget.callback(widget.value)
 
     await nextTick()
 

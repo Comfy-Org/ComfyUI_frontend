@@ -82,9 +82,8 @@ const inputWidth = computed(() =>
 )
 
 watch(modelValue, (newValue) => {
-  if (document.activeElement !== inputRef.value) {
+  if (document.activeElement !== inputRef.value)
     inputValue.value = formatNumber(newValue)
-  }
 })
 
 function formatNumber(num: number): string {
@@ -114,18 +113,15 @@ function formatWithCursor(
   let digitCount = 0
   let newCursor = 0
   for (let i = 0; i < formatted.length; i++) {
-    if (/[0-9]/.test(formatted[i])) {
-      digitCount++
-    }
+    if (/[0-9]/.test(formatted[i])) digitCount++
+
     if (digitCount >= digitsBeforeCursor) {
       newCursor = i + 1
       break
     }
   }
 
-  if (digitCount < digitsBeforeCursor) {
-    newCursor = formatted.length
-  }
+  if (digitCount < digitsBeforeCursor) newCursor = formatted.length
 
   return { formatted, newCursor }
 }
@@ -143,9 +139,7 @@ function handleInputChange(e: Event) {
   const clamped = Math.min(num, max)
   const wasClamped = num > max
 
-  if (wasClamped) {
-    emit('max-reached')
-  }
+  if (wasClamped) emit('max-reached')
 
   modelValue.value = clamped
 

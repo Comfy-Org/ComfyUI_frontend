@@ -32,9 +32,8 @@ export function getConflictMessage(
     conflict.type === 'banned' ||
     conflict.type === 'pending' ||
     conflict.type === 'import_failed'
-  ) {
+  )
     return t(messageKey)
-  }
 
   // Fallback to generic message with interpolation
   return t('manager.conflicts.conflictMessages.generic', {

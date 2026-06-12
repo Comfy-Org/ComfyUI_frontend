@@ -49,16 +49,13 @@ export function useAssetWidgetData(
     watch(
       () => toValue(nodeType),
       async (currentNodeType) => {
-        if (!currentNodeType) {
-          return
-        }
+        if (!currentNodeType) return
 
         const isLoading = assetsStore.isModelLoading(currentNodeType)
         const hasBeenInitialized = assetsStore.hasAssetKey(currentNodeType)
 
-        if (!isLoading && !hasBeenInitialized) {
+        if (!isLoading && !hasBeenInitialized)
           await assetsStore.updateModelsForNodeType(currentNodeType)
-        }
       },
       { immediate: true }
     )

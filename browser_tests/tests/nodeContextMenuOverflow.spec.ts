@@ -18,9 +18,7 @@ test.describe(
     async function openMoreOptions(comfyPage: ComfyPage) {
       const ksamplerNodes =
         await comfyPage.nodeOps.getNodeRefsByTitle('KSampler')
-      if (ksamplerNodes.length === 0) {
-        throw new Error('No KSampler nodes found')
-      }
+      if (ksamplerNodes.length === 0) throw new Error('No KSampler nodes found')
 
       // Drag the KSampler toward the lower-left so the menu has limited space below it.
       const nodePos = await ksamplerNodes[0].getPosition()

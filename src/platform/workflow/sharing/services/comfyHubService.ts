@@ -37,9 +37,7 @@ interface PublishWorkflowInput {
 }
 
 function normalizeThumbnailType(type: ThumbnailTypeInput): HubThumbnailType {
-  if (type === 'imageComparison') {
-    return 'image_comparison'
-  }
+  if (type === 'imageComparison') return 'image_comparison'
 
   return type
 }
@@ -49,13 +47,9 @@ async function parseErrorMessage(
   fallbackMessage: string
 ): Promise<string> {
   const body = await response.json().catch(() => null)
-  if (!body || typeof body !== 'object') {
-    return fallbackMessage
-  }
+  if (!body || typeof body !== 'object') return fallbackMessage
 
-  if ('message' in body && typeof body.message === 'string') {
-    return body.message
-  }
+  if ('message' in body && typeof body.message === 'string') return body.message
 
   return fallbackMessage
 }
@@ -71,9 +65,7 @@ async function parseRequiredJson<T>(
 ): Promise<T> {
   const payload = await response.json().catch(() => null)
   const parsed = parser.safeParse(payload)
-  if (!parsed.success) {
-    throw new Error(fallbackMessage)
-  }
+  if (!parsed.success) throw new Error(fallbackMessage)
 
   return parsed.data
 }
@@ -131,9 +123,7 @@ export function useComfyHubService() {
     const response = await api.fetchApi('/hub/profiles/me')
 
     if (!response.ok) {
-      if (response.status === 404) {
-        return null
-      }
+      if (response.status === 404) return null
 
       throw new Error(
         await parseErrorMessage(response, 'Failed to load ComfyHub profile')

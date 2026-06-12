@@ -86,9 +86,7 @@ export class SliderWidget
     const newValue =
       this.options.min + (this.options.max - this.options.min) * slideFactor
 
-    if (newValue !== this.value) {
-      this.setValue(newValue, options)
-    }
+    if (newValue !== this.value) this.setValue(newValue, options)
   }
 
   /**
@@ -106,8 +104,6 @@ export class SliderWidget
     const newValue =
       this.options.min + (this.options.max - this.options.min) * slideFactor
 
-    if (newValue !== this.value) {
-      this.setValue(newValue, options)
-    }
+    if (newValue !== this.value) this.setValue(newValue, options)
   }
 }

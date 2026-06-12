@@ -219,9 +219,8 @@ async function mockSharedWorkflowImportFlow(
       body: JSON.stringify(response)
     })
 
-    if (isAfterImportPublicInclusiveInputAssetRequest) {
+    if (isAfterImportPublicInclusiveInputAssetRequest)
       resolvePublicInclusiveInputAssetResponseAfterImport()
-    }
   })
 
   return {

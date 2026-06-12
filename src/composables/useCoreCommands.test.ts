@@ -47,9 +47,7 @@ vi.mock('@/scripts/app', () => {
     app: {
       clean: vi.fn(() => {
         // Simulate app.clean() calling graph.clear() only when not in subgraph
-        if (!mockCanvas.subgraph) {
-          mockGraphClear()
-        }
+        if (!mockCanvas.subgraph) mockGraphClear()
       }),
       openClipspace: vi.fn(),
       refreshComboInNodes: vi.fn().mockResolvedValue(undefined),

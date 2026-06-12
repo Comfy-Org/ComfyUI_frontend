@@ -32,9 +32,9 @@ export const usePackUpdateStatus = (
       isNightlyPack.value ||
       !latestVersion.value ||
       !installedVersion.value
-    ) {
+    )
       return false
-    }
+
     return compare(latestVersion.value, installedVersion.value) > 0
   })
 

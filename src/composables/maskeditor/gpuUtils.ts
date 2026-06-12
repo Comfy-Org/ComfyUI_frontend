@@ -36,9 +36,9 @@ export function buildStrokePoints(
   skipResampling: boolean,
   stepSize: number
 ): { x: number; y: number; pressure: number }[] {
-  if (skipResampling) {
+  if (skipResampling)
     return points.map((p) => ({ x: p.x, y: p.y, pressure: 1.0 }))
-  }
+
   const result: { x: number; y: number; pressure: number }[] = []
   for (let i = 0; i < points.length - 1; i++) {
     const p1 = points[i]

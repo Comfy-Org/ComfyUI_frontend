@@ -189,9 +189,9 @@ class PublishApiHelper {
   }
 
   async cleanup(): Promise<void> {
-    for (const { pattern, handler } of this.routeHandlers) {
+    for (const { pattern, handler } of this.routeHandlers)
       await this.page.unroute(pattern, handler)
-    }
+
     this.routeHandlers = []
   }
 
@@ -207,9 +207,9 @@ class PublishApiHelper {
     const handlers = this.routeHandlers.filter(
       (route) => route.pattern === pattern
     )
-    for (const { handler } of handlers) {
+    for (const { handler } of handlers)
       await this.page.unroute(pattern, handler)
-    }
+
     this.routeHandlers = this.routeHandlers.filter(
       (route) => route.pattern !== pattern
     )

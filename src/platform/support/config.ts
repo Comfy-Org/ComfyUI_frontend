@@ -62,9 +62,7 @@ export function buildSupportUrl(params?: {
     searchParams.append(ZENDESK_FIELDS.ANONYMOUS_EMAIL, params.userEmail)
     searchParams.append(ZENDESK_FIELDS.EMAIL, params.userEmail)
   }
-  if (params?.userId) {
-    searchParams.append(ZENDESK_FIELDS.USER_ID, params.userId)
-  }
+  if (params?.userId) searchParams.append(ZENDESK_FIELDS.USER_ID, params.userId)
 
   return `${SUPPORT_BASE_URL}?${searchParams.toString()}`
 }

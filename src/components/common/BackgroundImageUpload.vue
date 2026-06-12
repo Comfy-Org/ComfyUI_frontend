@@ -102,8 +102,6 @@ const handleFileUpload = async (event: Event) => {
 
 const clearImage = () => {
   modelValue.value = ''
-  if (fileInput.value) {
-    fileInput.value.value = ''
-  }
+  if (fileInput.value) fileInput.value.value = ''
 }
 </script>

@@ -30,9 +30,8 @@ export function createGridStyle(options: GridOptions = {}): CSSProperties {
   } = options
 
   // Runtime validation for columns
-  if (columns !== undefined && columns < 1) {
+  if (columns !== undefined && columns < 1)
     console.warn('createGridStyle: columns must be >= 1, defaulting to 1')
-  }
 
   const gridTemplateColumns = columns
     ? `repeat(${Math.max(1, columns ?? 1)}, 1fr)`

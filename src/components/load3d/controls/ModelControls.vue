@@ -156,13 +156,9 @@ function formatMaterialMode(mode: MaterialMode) {
 function closeSceneSlider(e: MouseEvent) {
   const target = e.target as HTMLElement
 
-  if (!target.closest('.show-up-direction')) {
-    showUpDirection.value = false
-  }
+  if (!target.closest('.show-up-direction')) showUpDirection.value = false
 
-  if (!target.closest('.show-material-mode')) {
-    showMaterialMode.value = false
-  }
+  if (!target.closest('.show-material-mode')) showMaterialMode.value = false
 }
 
 onMounted(() => {

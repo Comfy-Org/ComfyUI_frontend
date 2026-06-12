@@ -37,27 +37,21 @@ export function useJobActions(
 
   const canCancelJob = computed(() => {
     const currentJob = jobRef.value
-    if (!currentJob) {
-      return false
-    }
+    if (!currentJob) return false
 
     return currentJob.showClear !== false && isActiveJobState(currentJob.state)
   })
 
   const canDeleteJob = computed(() => {
     const currentJob = jobRef.value
-    if (!currentJob) {
-      return false
-    }
+    if (!currentJob) return false
 
     return currentJob.state === 'failed'
   })
 
   const runCancelJob = wrapWithErrorHandlingAsync(async () => {
     const currentJob = jobRef.value
-    if (!currentJob) {
-      return
-    }
+    if (!currentJob) return
 
     await cancelJob(currentJob)
   })
@@ -65,9 +59,7 @@ export function useJobActions(
   const runDeleteJob = wrapWithErrorHandlingAsync(async () => {
     const currentJob = jobRef.value
     const task = currentJob?.taskRef as TaskItemImpl | undefined
-    if (!task) {
-      return
-    }
+    if (!task) return
 
     await removeFailedJob(task)
   })

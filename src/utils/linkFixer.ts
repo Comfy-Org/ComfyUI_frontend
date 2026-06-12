@@ -47,9 +47,8 @@ enum IoDirection {
 }
 
 function getNodeById(graph: ISerialisedGraph | LGraph, id: NodeId) {
-  if ((graph as LGraph).getNodeById) {
-    return (graph as LGraph).getNodeById(id)
-  }
+  if ((graph as LGraph).getNodeById) return (graph as LGraph).getNodeById(id)
+
   graph = graph as ISerialisedGraph
   return graph.nodes.find((node: ISerialisedNode) => node.id == id)!
 }
@@ -86,9 +85,7 @@ export function fixBadLinks(
   const { fix = false, silent = false, logger: _logger = console } = options
   const logger = {
     log: (...args: unknown[]) => {
-      if (!silent) {
-        _logger.log(...args)
-      }
+      if (!silent) _logger.log(...args)
     }
   }
 
@@ -144,9 +141,7 @@ export function fixBadLinks(
         return false
       }
       patchedNode['inputs']![slot] = linkIdToSet
-      if (fix) {
-        inputSlot!.link = linkIdToSet
-      }
+      if (fix) inputSlot!.link = linkIdToSet
     } else {
       patchedNode['outputs'] = patchedNode['outputs'] || {}
       patchedNode['outputs']![slot] = patchedNode['outputs']![slot] || {
@@ -190,9 +185,7 @@ export function fixBadLinks(
           return false
         }
         patchedNode['outputs']![slot]!['links'].splice(linkIdIndex, 1)
-        if (fix) {
-          node.outputs?.[slot]!.links!.splice(linkIdIndex, 1)
-        }
+        if (fix) node.outputs?.[slot]!.links!.splice(linkIdIndex, 1)
       }
     }
     data.patchedNodes.push(node)
@@ -216,9 +209,9 @@ export function fixBadLinks(
         const patchedHasIt =
           patchedNodeSlots[node.id]!['inputs']![slot] === linkId
         // If we're fixing, double check that node matches.
-        if (fix && nodeHasIt !== patchedHasIt) {
+        if (fix && nodeHasIt !== patchedHasIt)
           throw Error('Error. Expected node to match patched data.')
-        }
+
         has = patchedHasIt
       } else {
         has = !!nodeHasIt
@@ -229,9 +222,9 @@ export function fixBadLinks(
         const patchedHasIt =
           patchedNodeSlots[node.id]!['outputs']![slot]?.links.includes(linkId)
         // If we're fixing, double check that node matches.
-        if (fix && nodeHasIt !== patchedHasIt) {
+        if (fix && nodeHasIt !== patchedHasIt)
           throw Error('Error. Expected node to match patched data.')
-        }
+
         has = !!patchedHasIt
       } else {
         has = !!nodeHasIt
@@ -256,9 +249,9 @@ export function fixBadLinks(
         const patchedHasAny =
           patchedNodeSlots[node.id]!['inputs']![slot] != null
         // If we're fixing, double check that node matches.
-        if (fix && nodeHasAny !== patchedHasAny) {
+        if (fix && nodeHasAny !== patchedHasAny)
           throw Error('Error. Expected node to match patched data.')
-        }
+
         hasAny = patchedHasAny
       } else {
         hasAny = !!nodeHasAny
@@ -269,9 +262,9 @@ export function fixBadLinks(
         const patchedHasAny =
           patchedNodeSlots[node.id]!['outputs']![slot]?.links.length
         // If we're fixing, double check that node matches.
-        if (fix && nodeHasAny !== patchedHasAny) {
+        if (fix && nodeHasAny !== patchedHasAny)
           throw Error('Error. Expected node to match patched data.')
-        }
+
         hasAny = !!patchedHasAny
       } else {
         hasAny = !!nodeHasAny
@@ -440,17 +433,16 @@ export function fixBadLinks(
             (l[0] === data.deletedLinks[i] ||
               ('id' in l && l.id === data.deletedLinks[i]))
         )
-        if (idx === -1) {
+        if (idx === -1)
           logger.log(`INDEX NOT FOUND for #${data.deletedLinks[i]}`)
-        }
+
         logger.log(`splicing ${idx} from links`)
         graph.links.splice(idx, 1)
       }
     }
     // If we're a serialized graph, we can filter out the links because it's just an array.
-    if (!(graph as LGraph).getNodeById) {
+    if (!(graph as LGraph).getNodeById)
       graph.links = (graph as ISerialisedGraph).links.filter((l) => !!l)
-    }
   }
   if (!data.patchedNodes.length && !data.deletedLinks.length) {
     return {

@@ -18,9 +18,8 @@ export function useBuilderSteps(options?: { hasOutputs?: Ref<boolean> }) {
   const { mode, isBuilderMode, setMode } = useAppMode()
 
   const activeStep = computed<BuilderStepId>(() => {
-    if (isBuilderMode.value) {
-      return mode.value as BuilderStepId
-    }
+    if (isBuilderMode.value) return mode.value as BuilderStepId
+
     return 'builder:inputs'
   })
 

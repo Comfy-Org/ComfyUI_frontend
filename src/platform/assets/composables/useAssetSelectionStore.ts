@@ -34,11 +34,8 @@ export const useAssetSelectionStore = defineStore('assetSelection', () => {
   }
 
   function toggleSelection(assetId: AssetId) {
-    if (isSelected(assetId)) {
-      removeFromSelection(assetId)
-    } else {
-      addToSelection(assetId)
-    }
+    if (isSelected(assetId)) removeFromSelection(assetId)
+    else addToSelection(assetId)
   }
 
   function isSelected(assetId: AssetId): boolean {

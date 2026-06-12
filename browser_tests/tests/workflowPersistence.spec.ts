@@ -16,12 +16,9 @@ const waitForWorkflowTabState = async (comfyPage: ComfyPage, minPaths = 2) => {
 
     for (let i = 0; i < window.sessionStorage.length; i++) {
       const key = window.sessionStorage.key(i)
-      if (key?.startsWith('Comfy.Workflow.ActivePath:')) {
-        hasActivePath = true
-      }
-      if (!key?.startsWith('Comfy.Workflow.OpenPaths:')) {
-        continue
-      }
+      if (key?.startsWith('Comfy.Workflow.ActivePath:')) hasActivePath = true
+
+      if (!key?.startsWith('Comfy.Workflow.OpenPaths:')) continue
 
       const raw = window.sessionStorage.getItem(key)
       if (!raw) continue

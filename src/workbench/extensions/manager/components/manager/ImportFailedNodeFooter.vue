@@ -29,9 +29,8 @@ const formatErrorText = computed(() => {
       (conflict) => conflict.type === 'import_failed'
     )
 
-    if (importFailedConflict?.required_value) {
+    if (importFailedConflict?.required_value)
       errorParts.push(importFailedConflict.required_value)
-    }
   })
 
   return errorParts.join('\n\n')

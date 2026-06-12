@@ -25,11 +25,9 @@ export const usePriceBadge = () => {
       const innerApiNodes = collectInnerApiNodes(node.subgraph)
       // When a single inner api node is the price source, swap its static
       // getter for a wrapper-aware one that resolves promoted widget values.
-      if (innerApiNodes.length === 1) {
+      if (innerApiNodes.length === 1)
         node.badges.push(buildWrapperAwarePriceBadge(node, innerApiNodes[0]))
-      } else {
-        node.badges.push(...innerCreditsBadges)
-      }
+      else node.badges.push(...innerCreditsBadges)
     }
     const graph = node.graph
     if (!graph) return
@@ -67,11 +65,9 @@ export const usePriceBadge = () => {
     visited.add(graph.id)
     const apiNodes: LGraphNode[] = []
     for (const node of graph.nodes) {
-      if (node.isSubgraphNode()) {
+      if (node.isSubgraphNode())
         apiNodes.push(...collectInnerApiNodes(node.subgraph, visited))
-      } else if (node.constructor?.nodeData?.api_node) {
-        apiNodes.push(node)
-      }
+      else if (node.constructor?.nodeData?.api_node) apiNodes.push(node)
     }
     return apiNodes
   }

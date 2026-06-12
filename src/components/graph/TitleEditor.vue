@@ -55,9 +55,8 @@ const onEdit = (newValue: string) => {
 
     // If this is a subgraph node, sync the runtime subgraph name for breadcrumb reactivity
     const target = titleEditorStore.titleEditorTarget
-    if (target instanceof LGraphNode && target.isSubgraphNode?.()) {
+    if (target instanceof LGraphNode && target.isSubgraphNode?.())
       target.subgraph.name = trimmedTitle
-    }
 
     app.canvas.setDirty(true, true)
   }
@@ -69,9 +68,8 @@ const onEdit = (newValue: string) => {
 watch(
   () => titleEditorStore.titleEditorTarget,
   (target) => {
-    if (target === null) {
-      return
-    }
+    if (target === null) return
+
     editedTitle.value = target.title
     showInput.value = true
     const canvas = canvasStore.canvas!
@@ -102,9 +100,7 @@ watch(
 
 const canvasEventHandler = (event: LiteGraphCanvasEvent) => {
   if (event.detail.subType === 'group-double-click') {
-    if (!settingStore.get('Comfy.Group.DoubleClickTitleToEdit')) {
-      return
-    }
+    if (!settingStore.get('Comfy.Group.DoubleClickTitleToEdit')) return
 
     const group: LGraphGroup = event.detail.group
     const [_, y] = group.pos
@@ -112,13 +108,10 @@ const canvasEventHandler = (event: LiteGraphCanvasEvent) => {
     const e = event.detail.originalEvent
     const relativeY = e.canvasY - y
     // Only allow editing if the click is on the title bar
-    if (relativeY <= group.titleHeight) {
+    if (relativeY <= group.titleHeight)
       titleEditorStore.titleEditorTarget = group
-    }
   } else if (event.detail.subType === 'node-double-click') {
-    if (!settingStore.get('Comfy.Node.DoubleClickTitleToEdit')) {
-      return
-    }
+    if (!settingStore.get('Comfy.Node.DoubleClickTitleToEdit')) return
 
     const node: LGraphNode = event.detail.node
     const [_, y] = node.pos
@@ -126,9 +119,7 @@ const canvasEventHandler = (event: LiteGraphCanvasEvent) => {
     const e = event.detail.originalEvent
     const relativeY = e.canvasY - y
     // Only allow editing if the click is on the title bar
-    if (relativeY <= 0) {
-      titleEditorStore.titleEditorTarget = node
-    }
+    if (relativeY <= 0) titleEditorStore.titleEditorTarget = node
   }
 }
 

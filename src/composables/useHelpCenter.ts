@@ -57,9 +57,7 @@ export function useHelpCenter() {
       // Check if conflict modal should be shown after update
       const shouldShow =
         await conflictDetection.shouldShowConflictModalAfterUpdate()
-      if (shouldShow) {
-        showConflictModal()
-      }
+      if (shouldShow) showConflictModal()
     } catch (error) {
       console.error('[HelpCenter] Error checking conflict modal:', error)
     }

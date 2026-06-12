@@ -120,9 +120,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
                 this.isInitialized = true
                 this.flushEventQueue() // flush events that were queued while initializing
                 useCurrentUser().onUserResolved((user) => {
-                  if (this.mixpanel && user.id) {
-                    this.mixpanel.identify(user.id)
-                  }
+                  if (this.mixpanel && user.id) this.mixpanel.identify(user.id)
                 })
               }
             })
@@ -142,9 +140,7 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
   }
 
   private flushEventQueue(): void {
-    if (!this.isInitialized || !this.mixpanel) {
-      return
-    }
+    if (!this.isInitialized || !this.mixpanel) return
 
     while (this.eventQueue.length > 0) {
       const event = this.eventQueue.shift()!
@@ -160,13 +156,9 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     eventName: TelemetryEventName,
     properties?: TelemetryEventProperties
   ): void {
-    if (!this.isEnabled) {
-      return
-    }
+    if (!this.isEnabled) return
 
-    if (this.disabledEvents.has(eventName)) {
-      return
-    }
+    if (this.disabledEvents.has(eventName)) return
 
     const event: QueuedEvent = { eventName, properties }
 

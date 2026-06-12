@@ -18,13 +18,10 @@ export const useCurrentUser = () => {
   )
 
   const resolvedUserInfo = computed<AuthUserInfo | null>(() => {
-    if (isApiKeyLogin.value && apiKeyStore.currentUser) {
+    if (isApiKeyLogin.value && apiKeyStore.currentUser)
       return { id: apiKeyStore.currentUser.id }
-    }
 
-    if (firebaseUser.value) {
-      return { id: firebaseUser.value.uid }
-    }
+    if (firebaseUser.value) return { id: firebaseUser.value.uid }
 
     return null
   })
@@ -42,53 +39,41 @@ export const useCurrentUser = () => {
   }
 
   const userDisplayName = computed(() => {
-    if (isApiKeyLogin.value) {
-      return apiKeyStore.currentUser?.name
-    }
+    if (isApiKeyLogin.value) return apiKeyStore.currentUser?.name
+
     return firebaseUser.value?.displayName
   })
 
   const userEmail = computed(() => {
-    if (isApiKeyLogin.value) {
-      return apiKeyStore.currentUser?.email
-    }
+    if (isApiKeyLogin.value) return apiKeyStore.currentUser?.email
+
     return firebaseUser.value?.email
   })
 
   const providerName = computed(() => {
-    if (isApiKeyLogin.value) {
-      return 'Comfy API Key'
-    }
+    if (isApiKeyLogin.value) return 'Comfy API Key'
 
     const providerId = firebaseUser.value?.providerData[0]?.providerId
-    if (providerId?.includes('google')) {
-      return 'Google'
-    }
-    if (providerId?.includes('github')) {
-      return 'GitHub'
-    }
+    if (providerId?.includes('google')) return 'Google'
+
+    if (providerId?.includes('github')) return 'GitHub'
+
     return providerId
   })
 
   const providerIcon = computed(() => {
-    if (isApiKeyLogin.value) {
-      return 'pi pi-key'
-    }
+    if (isApiKeyLogin.value) return 'pi pi-key'
 
     const providerId = firebaseUser.value?.providerData[0]?.providerId
-    if (providerId?.includes('google')) {
-      return 'pi pi-google'
-    }
-    if (providerId?.includes('github')) {
-      return 'pi pi-github'
-    }
+    if (providerId?.includes('google')) return 'pi pi-google'
+
+    if (providerId?.includes('github')) return 'pi pi-github'
+
     return 'pi pi-user'
   })
 
   const isEmailProvider = computed(() => {
-    if (isApiKeyLogin.value) {
-      return false
-    }
+    if (isApiKeyLogin.value) return false
 
     const providerId = firebaseUser.value?.providerData[0]?.providerId
     return providerId === 'password'
@@ -100,11 +85,8 @@ export const useCurrentUser = () => {
   })
 
   const handleSignOut = async () => {
-    if (isApiKeyLogin.value) {
-      await apiKeyStore.clearStoredApiKey()
-    } else {
-      await commandStore.execute('Comfy.User.SignOut')
-    }
+    if (isApiKeyLogin.value) await apiKeyStore.clearStoredApiKey()
+    else await commandStore.execute('Comfy.User.SignOut')
   }
 
   const handleSignIn = async () => {

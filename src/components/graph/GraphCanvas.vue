@@ -274,9 +274,8 @@ watch(() => canvasStore.currentGraph, handleVueNodeLifecycleReset)
 watch(
   () => canvasStore.isInSubgraph,
   async (newValue, oldValue) => {
-    if (oldValue && !newValue) {
-      useWorkflowStore().updateActiveGraph()
-    }
+    if (oldValue && !newValue) useWorkflowStore().updateActiveGraph()
+
     await handleVueNodeLifecycleReset()
   }
 )
@@ -357,9 +356,7 @@ watch(
         if (!w[IS_CONTROL_WIDGET]) continue
         updateControlWidgetLabel(w)
         if (!w.linkedWidgets) continue
-        for (const l of w.linkedWidgets) {
-          updateControlWidgetLabel(l)
-        }
+        for (const l of w.linkedWidgets) updateControlWidgetLabel(l)
       }
     })
     canvasStore.canvas.setDirty(true)
@@ -418,11 +415,9 @@ watch(
     for (const node of canvas.graph.nodes) {
       const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(node.id)
       const progressState = nodeLocationProgressStates[nodeLocatorId]
-      if (progressState && progressState.state === 'running') {
+      if (progressState && progressState.state === 'running')
         node.progress = progressState.value / progressState.max
-      } else {
-        node.progress = undefined
-      }
+      else node.progress = undefined
     }
 
     // Force canvas redraw to ensure progress updates are visible
@@ -540,9 +535,8 @@ onMounted(async () => {
     comfyAppReady.value = true
 
     // Install error-clearing hooks on the initial graph
-    if (comfyApp.canvas?.graph) {
+    if (comfyApp.canvas?.graph)
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
-    }
 
     vueNodeLifecycle.setupEmptyGraphListener()
 
@@ -567,9 +561,8 @@ onMounted(async () => {
 
   // Accept workspace invite from URL if present (e.g., ?invite=TOKEN)
   // WorkspaceAuthGate ensures flag state is resolved before GraphCanvas mounts
-  if (inviteUrlLoader && flags.teamWorkspacesEnabled) {
+  if (inviteUrlLoader && flags.teamWorkspacesEnabled)
     await inviteUrlLoader.loadInviteFromUrl()
-  }
 
   // Open create workspace dialog from URL if present (e.g., ?create_workspace=1)
   if (createWorkspaceUrlLoader && flags.teamWorkspacesEnabled) {

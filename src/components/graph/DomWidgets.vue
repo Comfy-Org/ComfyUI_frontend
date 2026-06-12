@@ -48,11 +48,8 @@ const updateWidgets = () => {
     const useTransitionGrace =
       inOverrideTransitionGap && !overrideTransitionGrace.has(widget.id)
 
-    if (useTransitionGrace) {
-      overrideTransitionGrace.add(widget.id)
-    } else if (!inOverrideTransitionGap) {
-      overrideTransitionGrace.delete(widget.id)
-    }
+    if (useTransitionGrace) overrideTransitionGrace.add(widget.id)
+    else if (!inOverrideTransitionGap) overrideTransitionGrace.delete(widget.id)
 
     // Early exit for non-visible widgets.
     // When a position override is active (widget promoted to SubgraphNode),
@@ -97,9 +94,7 @@ const updateWidgets = () => {
   }
 
   for (const widgetId of overrideTransitionGrace) {
-    if (!seenWidgetIds.has(widgetId)) {
-      overrideTransitionGrace.delete(widgetId)
-    }
+    if (!seenWidgetIds.has(widgetId)) overrideTransitionGrace.delete(widgetId)
   }
 }
 

@@ -126,9 +126,8 @@ test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
       tab.filterVideoCheckbox,
       tab.filterAudioCheckbox,
       tab.filter3DCheckbox
-    ]) {
+    ])
       await expect(cb).toHaveAttribute('aria-checked', 'false')
-    }
   })
 
   test('Selecting only "Image" hides non-image assets', async ({

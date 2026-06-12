@@ -51,16 +51,14 @@ const emit = defineEmits<{
 }>()
 
 const updateSelectedFilterValue = () => {
-  if (filterValues.value.includes(selectedFilterValue.value)) {
-    return
-  }
+  if (filterValues.value.includes(selectedFilterValue.value)) return
+
   selectedFilterValue.value = filterValues.value[0]
 }
 
 const submit = () => {
-  if (!selectedFilter.value) {
-    return
-  }
+  if (!selectedFilter.value) return
+
   emit('addFilter', {
     filterDef: selectedFilter.value,
     value: selectedFilterValue.value

@@ -293,9 +293,7 @@ const getCheckoutTier = (
 
 const getCheckoutAttributionForCloud =
   async (): Promise<CheckoutAttributionMetadata> => {
-    if (__DISTRIBUTION__ !== 'cloud') {
-      return {}
-    }
+    if (__DISTRIBUTION__ !== 'cloud') return {}
 
     const { getCheckoutAttribution } =
       await import('@/platform/telemetry/utils/checkoutAttribution')
@@ -483,9 +481,7 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
           await accessBillingPortal()
         } else {
           const didOpenPortal = await accessBillingPortal(checkoutTier)
-          if (!didOpenPortal) {
-            return
-          }
+          if (!didOpenPortal) return
 
           recordPendingSubscriptionCheckoutAttempt({
             tier: targetPlan.tierKey,

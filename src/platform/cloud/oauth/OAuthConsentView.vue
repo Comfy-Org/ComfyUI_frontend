@@ -295,8 +295,6 @@ async function submit(decision: 'allow' | 'deny') {
 }
 
 onMounted(() => {
-  if (!initialChallenge) {
-    void loadChallenge()
-  }
+  if (!initialChallenge) void loadChallenge()
 })
 </script>

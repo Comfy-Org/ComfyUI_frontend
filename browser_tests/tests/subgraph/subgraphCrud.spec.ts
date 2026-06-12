@@ -40,9 +40,8 @@ test.describe('Subgraph CRUD', { tag: ['@slow', '@subgraph'] }, () => {
       const result = await comfyPage.page.evaluate(() => {
         const graph = window.app!.graph!
         const subgraphNode = graph.nodes.find((n) => n.isSubgraphNode())
-        if (!subgraphNode || !subgraphNode.isSubgraphNode()) {
+        if (!subgraphNode || !subgraphNode.isSubgraphNode())
           return { error: 'No subgraph node found' }
-        }
 
         graph.unpackSubgraph(subgraphNode)
 

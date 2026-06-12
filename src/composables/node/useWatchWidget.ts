@@ -71,9 +71,7 @@ export const useComputedWithWidgetWatch = (
         }
 
         // Optionally trigger a canvas redraw
-        if (triggerCanvasRedraw) {
-          node.graph?.setDirtyCanvas(true, true)
-        }
+        if (triggerCanvasRedraw) node.graph?.setDirtyCanvas(true, true)
       })
     })
     if (widgetNames && widgetNames.length > widgetsToObserve.length) {
@@ -93,9 +91,7 @@ export const useComputedWithWidgetWatch = (
             ...widgetValues.value,
             [indexesToObserve[index]]: isConnected
           }
-          if (triggerCanvasRedraw) {
-            node.graph?.setDirtyCanvas(true, true)
-          }
+          if (triggerCanvasRedraw) node.graph?.setDirtyCanvas(true, true)
         }
       )
     }

@@ -807,9 +807,9 @@ describe('SubgraphWidgetPromotion', () => {
         for (const edit of c.edits) applyEdit(host, edit)
         applyReorder(host, c.reorder)
 
-        if (c.expectedNames) {
+        if (c.expectedNames)
           expect(host.widgets.map((w) => w.name)).toEqual(c.expectedNames)
-        }
+
         if (c.expectedWidgetsValues !== undefined) {
           expect(host.serialize().widgets_values).toEqual(
             c.expectedWidgetsValues
@@ -913,9 +913,9 @@ describe('SubgraphWidgetPromotion', () => {
 
         reorderSubgraphInputsByName(host, ['text_1', 'seed', 'text'])
 
-        if (c.mutateSourceSeedAfterReorder !== undefined) {
+        if (c.mutateSourceSeedAfterReorder !== undefined)
           seed.widget.value = c.mutateSourceSeedAfterReorder
-        }
+
         if (c.callAfterQueued) host.widgets[1].afterQueued?.()
 
         if (c.expect.promptSeed !== undefined) {
@@ -924,9 +924,9 @@ describe('SubgraphWidgetPromotion', () => {
             c.expect.promptSeed
           )
         }
-        if (c.expect.sourceSeed !== undefined) {
+        if (c.expect.sourceSeed !== undefined)
           expect(seed.widget.value).toBe(c.expect.sourceSeed)
-        }
+
         if (c.expect.processedSeedValue !== undefined) {
           const updated = computeProcessedWidgets({
             nodeData: extractVueNodeData(host),
@@ -938,9 +938,9 @@ describe('SubgraphWidgetPromotion', () => {
           })
           expect(updated[1].value).toBe(c.expect.processedSeedValue)
         }
-        if (c.expect.hostSeedValue !== undefined) {
+        if (c.expect.hostSeedValue !== undefined)
           expect(host.widgets[1].value).toBe(c.expect.hostSeedValue)
-        }
+
         if (c.expect.storeSeedValue !== undefined) {
           expect(
             useWidgetValueStore()
@@ -1183,15 +1183,13 @@ describe('SubgraphWidgetPromotion', () => {
         if (c.staleProperty)
           hostNode.properties.previewExposures = c.staleProperty
         const store = usePreviewExposureStore()
-        for (const e of c.addExposures) {
+        for (const e of c.addExposures)
           store.addExposure(hostNode.rootGraph.id, String(hostNode.id), e)
-        }
 
         const serialized = hostNode.serialize()
         expect(serialized.properties?.previewExposures).toEqual(c.expected)
-        if (c.expectLiveUnchanged) {
+        if (c.expectLiveUnchanged)
           expect(hostNode.properties.previewExposures).toEqual(c.staleProperty)
-        }
       })
 
       it('preserves an explicit empty previewExposures across reload, ignoring legacy locator entries', () => {
@@ -1239,9 +1237,8 @@ describe('SubgraphWidgetPromotion', () => {
           firstHost.serialize().properties?.previewExposures
         const secondExposures =
           secondHost.serialize().properties?.previewExposures
-        if (!Array.isArray(firstExposures) || !Array.isArray(secondExposures)) {
+        if (!Array.isArray(firstExposures) || !Array.isArray(secondExposures))
           throw new Error('Expected serialized previewExposures arrays')
-        }
 
         expect(firstExposures).toEqual([named12])
         expect(secondExposures).toEqual([named14])

@@ -59,9 +59,8 @@ const combinedProps = computed(() =>
 const getAssetData = () => {
   const nodeType: string | undefined =
     props.widget.options?.nodeType ?? props.nodeType
-  if (props.isAssetMode && nodeType) {
-    return useAssetWidgetData(toRef(nodeType))
-  }
+  if (props.isAssetMode && nodeType) return useAssetWidgetData(toRef(nodeType))
+
   return null
 }
 const assetData = getAssetData()
@@ -99,9 +98,7 @@ const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
 const mediaPlaceholder = computed(() => {
   const options = props.widget.options
 
-  if (options?.placeholder) {
-    return options.placeholder
-  }
+  if (options?.placeholder) return options.placeholder
 
   switch (props.assetKind) {
     case 'image':
@@ -146,9 +143,8 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 function handleIsOpenUpdate(isOpen: boolean) {
-  if (isOpen && !outputMediaAssets.loading.value) {
+  if (isOpen && !outputMediaAssets.loading.value)
     void outputMediaAssets.refresh()
-  }
 }
 </script>
 

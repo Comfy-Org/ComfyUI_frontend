@@ -80,10 +80,11 @@ export class Reroute
   }
 
   set pos(value: Point) {
-    if (!(value?.length >= 2))
+    if (!(value?.length >= 2)) {
       throw new TypeError(
         'Reroute.pos is an x,y point, and expects an indexable with at least two values.'
       )
+    }
     this.posInternal[0] = value[0]
     this.posInternal[1] = value[1]
   }
@@ -243,12 +244,11 @@ export class Reroute
     floatingLinks: ReadonlyMap<LinkId, LLink>
   ): boolean {
     const { linkIds, floatingLinkIds } = this
-    for (const linkId of linkIds) {
-      if (!links.has(linkId)) linkIds.delete(linkId)
-    }
-    for (const linkId of floatingLinkIds) {
+    for (const linkId of linkIds) if (!links.has(linkId)) linkIds.delete(linkId)
+
+    for (const linkId of floatingLinkIds)
       if (!floatingLinks.has(linkId)) floatingLinkIds.delete(linkId)
-    }
+
     return linkIds.size > 0 || floatingLinkIds.size > 0
   }
 
@@ -437,9 +437,7 @@ export class Reroute
   }
 
   removeAllFloatingLinks() {
-    for (const linkId of this.floatingLinkIds) {
-      this.removeFloatingLink(linkId)
-    }
+    for (const linkId of this.floatingLinkIds) this.removeFloatingLink(linkId)
   }
 
   removeFloatingLink(linkId: LinkId) {
@@ -468,11 +466,8 @@ export class Reroute
     if (!network) return
 
     const floatingLink = network.floatingLinks.get(link.id)
-    if (link === floatingLink) {
-      this.floatingLinkIds.delete(link.id)
-    } else {
-      this.linkIds.delete(link.id)
-    }
+    if (link === floatingLink) this.floatingLinkIds.delete(link.id)
+    else this.linkIds.delete(link.id)
   }
 
   remove() {

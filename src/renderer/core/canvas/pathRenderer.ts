@@ -105,11 +105,9 @@ export class CanvasPathRenderer {
     ctx.save()
 
     // Apply disabled pattern if needed
-    if (link.disabled && context.patterns?.disabled) {
+    if (link.disabled && context.patterns?.disabled)
       ctx.strokeStyle = context.patterns.disabled
-    } else {
-      ctx.strokeStyle = color
-    }
+    else ctx.strokeStyle = color
 
     // Set line properties
     ctx.lineWidth = context.style.connectionWidth
@@ -141,9 +139,7 @@ export class CanvasPathRenderer {
     this.calculateCenterPoint(link, context)
 
     // Draw arrows if needed
-    if (context.style.showArrows) {
-      this.drawArrows(ctx, link, context, color)
-    }
+    if (context.style.showArrows) this.drawArrows(ctx, link, context, color)
 
     // Draw center marker if needed (for link menu interaction)
     if (
@@ -151,14 +147,12 @@ export class CanvasPathRenderer {
       context.scale &&
       context.scale >= 0.6 &&
       context.style.highQuality
-    ) {
+    )
       this.drawCenterMarker(ctx, link, context, color)
-    }
 
     // Draw flow animation if needed
-    if (link.flow && context.animation) {
+    if (link.flow && context.animation)
       this.drawFlowAnimation(ctx, path, link, context)
-    }
 
     ctx.restore()
 
@@ -170,15 +164,13 @@ export class CanvasPathRenderer {
     context: RenderContext,
     isHighlighted: boolean
   ): string {
-    if (isHighlighted) {
-      return context.colors.highlighted
-    }
-    if (link.color) {
-      return link.color
-    }
-    if (link.type && context.colors.byType[link.type]) {
+    if (isHighlighted) return context.colors.highlighted
+
+    if (link.color) return link.color
+
+    if (link.type && context.colors.byType[link.type])
       return context.colors.byType[link.type]
-    }
+
     return context.colors.default
   }
 
@@ -722,9 +714,8 @@ export class CanvasPathRenderer {
         y: (innerA.y + innerB.y) * 0.5
       }
 
-      if (context.style.centerMarkerShape === 'arrow') {
+      if (context.style.centerMarkerShape === 'arrow')
         link.centerAngle = Math.atan2(innerB.y - innerA.y, innerB.x - innerA.x)
-      }
     } else if (context.style.mode === 'straight') {
       // For straight mode, match original STRAIGHT_LINK center calculation
       const l = 10 // Same offset as buildStraightPath
@@ -771,13 +762,9 @@ export class CanvasPathRenderer {
 
       if (context.style.centerMarkerShape === 'arrow') {
         const diff = innerB.y - innerA.y
-        if (Math.abs(diff) < 4) {
-          link.centerAngle = 0
-        } else if (diff > 0) {
-          link.centerAngle = Math.PI * 0.5
-        } else {
-          link.centerAngle = -(Math.PI * 0.5)
-        }
+        if (Math.abs(diff) < 4) link.centerAngle = 0
+        else if (diff > 0) link.centerAngle = Math.PI * 0.5
+        else link.centerAngle = -(Math.PI * 0.5)
       }
     } else {
       // Fallback to simple midpoint

@@ -220,9 +220,8 @@ export const CORE_SETTINGS: SettingParams[] = [
         if (
           (newValue === 'select' && navigationMode === 'standard') ||
           (newValue === 'panning' && navigationMode === 'legacy')
-        ) {
+        )
           return
-        }
 
         // only set to custom if it doesn't match the preset modes
         await settingStore.set('Comfy.Canvas.NavigationMode', 'custom')
@@ -250,9 +249,8 @@ export const CORE_SETTINGS: SettingParams[] = [
         if (
           (newValue === 'panning' && navigationMode === 'standard') ||
           (newValue === 'zoom' && navigationMode === 'legacy')
-        ) {
+        )
           return
-        }
 
         // only set to custom if it doesn't match the preset modes
         await settingStore.set('Comfy.Canvas.NavigationMode', 'custom')
@@ -575,9 +573,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false,
     onChange: (value) => {
       const element = document.getElementById('comfy-dev-save-api-button')
-      if (element) {
-        element.style.display = value ? 'flex' : 'none'
-      }
+      if (element) element.style.display = value ? 'flex' : 'none'
     }
   },
   {
@@ -615,11 +611,9 @@ export const CORE_SETTINGS: SettingParams[] = [
     migrateDeprecatedValue: (val: unknown) => {
       const value = val as string
       // Floating is now supported by dragging the docked actionbar off.
-      if (value === 'Floating') {
-        return 'Top'
-      } else if (value === 'Bottom') {
-        return 'Top'
-      }
+      if (value === 'Floating') return 'Top'
+      else if (value === 'Bottom') return 'Top'
+
       return value
     }
   },
@@ -631,9 +625,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: 'Topbar',
     migrateDeprecatedValue: (val: unknown) => {
       const value = val as string
-      if (value === 'Topbar (2nd-row)') {
-        return 'Topbar'
-      }
+      if (value === 'Topbar (2nd-row)') return 'Topbar'
+
       return value
     }
   },
@@ -663,9 +656,9 @@ export const CORE_SETTINGS: SettingParams[] = [
     migrateDeprecatedValue: (val: unknown) => {
       const value = val as (Keybinding & { targetSelector?: string })[]
       return value.map((keybinding) => {
-        if (keybinding.targetSelector === '#graph-canvas') {
+        if (keybinding.targetSelector === '#graph-canvas')
           keybinding.targetElementId = 'graph-canvas-container'
-        }
+
         return keybinding
       })
     }

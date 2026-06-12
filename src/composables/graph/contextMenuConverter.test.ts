@@ -242,9 +242,8 @@ describe('contextMenuConverter', () => {
     it('surfaces the whole image action group above generic node actions', () => {
       const result = buildStructuredMenu(mediaNodeOptions())
       const renameIndex = indexOfLabel(result, 'Rename')
-      for (const label of IMAGE_GROUP) {
+      for (const label of IMAGE_GROUP)
         expect(indexOfLabel(result, label)).toBeLessThan(renameIndex)
-      }
     })
 
     it('keeps Copy Image, Paste Image, Save Image in that relative order', () => {

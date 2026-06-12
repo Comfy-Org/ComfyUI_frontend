@@ -59,9 +59,9 @@ export function useResolvedSelectedInputs() {
         const { nodeId, name } = parseWidgetEntityId(entityId)
         const node = rootGraph.getNodeById(nodeId)
         const widget = node?.widgets?.find((w) => w.name === name)
-        if (!node || !widget) {
+        if (!node || !widget)
           return [{ status: 'unknown', entityId, displayName, config }]
-        }
+
         return [
           { status: 'resolved', entityId, node, widget, displayName, config }
         ]

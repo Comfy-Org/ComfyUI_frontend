@@ -36,9 +36,8 @@ export function useWorkspaceTierLabel() {
   function getTierLabel(workspace: WorkspaceSubscriptionInfo): string | null {
     if (!workspace.isSubscribed) return null
 
-    if (workspace.subscriptionTier) {
+    if (workspace.subscriptionTier)
       return formatTierName(workspace.subscriptionTier, false)
-    }
 
     if (!workspace.subscriptionPlan) return null
 

@@ -78,9 +78,7 @@ export function useSelectionMenuOptions() {
     const options: MenuOption[] = []
     const showConvertOption = !hasSubgraphs || hasMultipleSelection
 
-    if (showConvertOption) {
-      options.push(convertOption)
-    }
+    if (showConvertOption) options.push(convertOption)
 
     if (hasSubgraphs) {
       if (!hasMultipleSelection) {

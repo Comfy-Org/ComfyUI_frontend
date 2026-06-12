@@ -192,12 +192,11 @@ const onSearchQueryUpdate = (value: string | undefined) => {
 }
 
 const sortLabel = (mode: JobSortMode) => {
-  if (mode === 'mostRecent') {
-    return t('queue.jobList.sortMostRecent')
-  }
-  if (mode === 'totalGenerationTime') {
+  if (mode === 'mostRecent') return t('queue.jobList.sortMostRecent')
+
+  if (mode === 'totalGenerationTime')
     return t('queue.jobList.sortTotalGenerationTime')
-  }
+
   return ''
 }
 </script>

@@ -505,9 +505,7 @@ describe('SubgraphSerialization - Data Integrity', () => {
     )
 
     expect(subgraphAIds).toEqual(new Set([3, 8, 37]))
-    for (const id of subgraphAIds) {
-      expect(subgraphBIds.has(id)).toBe(false)
-    }
+    for (const id of subgraphAIds) expect(subgraphBIds.has(id)).toBe(false)
   })
 
   it('patches remapped link and proxyWidget references during duplicate-ID hydration', () => {
@@ -524,15 +522,13 @@ describe('SubgraphSerialization - Data Integrity', () => {
 
     const rootProxyWidgetsA = graph.getNodeById(102)?.properties?.proxyWidgets
     expect(Array.isArray(rootProxyWidgetsA)).toBe(true)
-    for (const entry of rootProxyWidgetsA as string[][]) {
+    for (const entry of rootProxyWidgetsA as string[][])
       expect(subgraphAIds.has(String(entry[0]))).toBe(true)
-    }
 
     const rootProxyWidgetsB = graph.getNodeById(103)?.properties?.proxyWidgets
     expect(Array.isArray(rootProxyWidgetsB)).toBe(true)
-    for (const entry of rootProxyWidgetsB as string[][]) {
+    for (const entry of rootProxyWidgetsB as string[][])
       expect(subgraphBIds.has(String(entry[0]))).toBe(true)
-    }
 
     for (const [, link] of subgraphB.links) {
       expect(subgraphBIds.has(String(link.origin_id))).toBe(true)

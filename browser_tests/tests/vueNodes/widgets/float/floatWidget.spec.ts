@@ -68,9 +68,7 @@ test.describe('Vue Float Widget', { tag: '@vue-nodes' }, () => {
     await comfyPage.vueNodes.waitForNodes()
 
     const [ksamplerNode] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
-    if (!ksamplerNode) {
-      throw new Error('KSampler node not found after reload')
-    }
+    if (!ksamplerNode) throw new Error('KSampler node not found after reload')
 
     const cfgWidgetAfterReload = await ksamplerNode.getWidgetByName('cfg')
     await expect.poll(() => cfgWidgetAfterReload.getValue()).toBe(7.5)

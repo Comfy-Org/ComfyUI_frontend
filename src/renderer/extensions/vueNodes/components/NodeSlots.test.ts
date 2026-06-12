@@ -176,9 +176,9 @@ function getRenderedSlotIndex(container: Element, slotName: string) {
 function getRenderedSlotElement(container: Element, slotName: string) {
   // eslint-disable-next-line testing-library/no-node-access
   const el = container.querySelector(`[data-name="${slotName}"]`)
-  if (!(el instanceof HTMLElement)) {
+  if (!(el instanceof HTMLElement))
     throw new Error(`Slot element "${slotName}" not found`)
-  }
+
   return el
 }
 

@@ -280,9 +280,8 @@ usePragmaticDroppable(tabGetter, {
     const toIndex = workflowStore.openWorkflows.findIndex(
       (wf) => wf.key === e.location.current.dropTargets[0]?.data.workflowKey
     )
-    if (fromIndex !== toIndex) {
+    if (fromIndex !== toIndex)
       workflowStore.reorderWorkflows(fromIndex, toIndex)
-    }
   }
 })
 

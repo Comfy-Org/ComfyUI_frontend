@@ -40,9 +40,8 @@ function getNodeColor(
   settings: MinimapRenderContext['settings'],
   colors: ReturnType<typeof getMinimapColors>
 ): string {
-  if (settings.renderBypass && node.mode === LGraphEventMode.BYPASS) {
+  if (settings.renderBypass && node.mode === LGraphEventMode.BYPASS)
     return colors.bypassColor
-  }
 
   if (settings.nodeColors) {
     if (node.bgcolor) {
@@ -81,9 +80,7 @@ function renderGroups(
     if (context.settings.nodeColors) {
       color = group.color ?? colors.groupColorDefault
 
-      if (colors.isLightTheme) {
-        color = adjustColor(color, { opacity: 0.5 })
-      }
+      if (colors.isLightTheme) color = adjustColor(color, { opacity: 0.5 })
     }
 
     ctx.fillStyle = color
@@ -128,9 +125,7 @@ function renderNodes(
 
     const color = getNodeColor(node, context.settings, colors)
 
-    if (!nodesByColor.has(color)) {
-      nodesByColor.set(color, [])
-    }
+    if (!nodesByColor.has(color)) nodesByColor.set(color, [])
 
     nodesByColor.get(color)!.push({
       x,
@@ -145,9 +140,7 @@ function renderNodes(
   // Batch render nodes by color
   for (const [color, nodes] of nodesByColor) {
     ctx.fillStyle = color
-    for (const node of nodes) {
-      ctx.fillRect(node.x, node.y, node.w, node.h)
-    }
+    for (const node of nodes) ctx.fillRect(node.x, node.y, node.w, node.h)
   }
 
   ctx.lineWidth = 0.3
@@ -257,22 +250,18 @@ export function renderMinimapToCanvas(
   const dataSource = MinimapDataSourceFactory.create(graph)
 
   // Fast path for empty graph
-  if (!dataSource.hasData()) {
-    return
-  }
+  if (!dataSource.hasData()) return
 
   const colors = getMinimapColors()
   const offsetX = (context.width - context.bounds.width * context.scale) / 2
   const offsetY = (context.height - context.bounds.height * context.scale) / 2
 
   // Render in correct order: groups -> links -> nodes
-  if (context.settings.showGroups) {
+  if (context.settings.showGroups)
     renderGroups(ctx, dataSource, offsetX, offsetY, context, colors)
-  }
 
-  if (context.settings.showLinks) {
+  if (context.settings.showLinks)
     renderConnections(ctx, dataSource, offsetX, offsetY, context, colors)
-  }
 
   renderNodes(ctx, dataSource, offsetX, offsetY, context, colors)
 }

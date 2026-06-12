@@ -59,9 +59,7 @@ describe('assetFilterUtils properties', () => {
           const filter = filterByCategory(category)
           const result = assets.filter(filter)
           expect(result.length).toBeLessThanOrEqual(assets.length)
-          for (const item of result) {
-            expect(assets).toContain(item)
-          }
+          for (const item of result) expect(assets).toContain(item)
         }
       )
     )
@@ -122,9 +120,7 @@ describe('assetFilterUtils properties', () => {
         (items, ownership) => {
           const result = filterItemByOwnership(items, ownership)
           expect(result.length).toBeLessThanOrEqual(items.length)
-          for (const item of result) {
-            expect(items).toContain(item)
-          }
+          for (const item of result) expect(items).toContain(item)
         }
       )
     )
@@ -177,9 +173,7 @@ describe('assetFilterUtils properties', () => {
         (items, models) => {
           const result = filterItemByBaseModels(items, new Set(models))
           expect(result.length).toBeLessThanOrEqual(items.length)
-          for (const item of result) {
-            expect(items).toContain(item)
-          }
+          for (const item of result) expect(items).toContain(item)
         }
       )
     )

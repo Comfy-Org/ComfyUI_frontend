@@ -207,9 +207,8 @@ const contextMenuItems = computed(() => [
     icon: 'pi pi-check',
     command: async () => {
       selectedExtensions.value.forEach((ext) => {
-        if (!extensionStore.isExtensionReadOnly(ext.name)) {
+        if (!extensionStore.isExtensionReadOnly(ext.name))
           editingEnabledExtensions.value[ext.name] = true
-        }
       })
       await updateExtensionStatus()
     }
@@ -219,9 +218,8 @@ const contextMenuItems = computed(() => [
     icon: 'pi pi-times',
     command: async () => {
       selectedExtensions.value.forEach((ext) => {
-        if (!extensionStore.isExtensionReadOnly(ext.name)) {
+        if (!extensionStore.isExtensionReadOnly(ext.name))
           editingEnabledExtensions.value[ext.name] = false
-        }
       })
       await updateExtensionStatus()
     }

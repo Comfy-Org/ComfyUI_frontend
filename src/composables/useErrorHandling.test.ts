@@ -153,9 +153,8 @@ describe('useErrorHandling', () => {
         let attemptCount = 0
         const action = vi.fn(async (value: string) => {
           attemptCount++
-          if (attemptCount === 1) {
-            throw new Error('first attempt failed')
-          }
+          if (attemptCount === 1) throw new Error('first attempt failed')
+
           return `success: ${value}`
         })
 

@@ -32,11 +32,8 @@ export function useAudioWaveform(options: AudioWaveformOptions = {}) {
   function updateWaveform(isActive: Ref<boolean>) {
     if (!isActive.value) return
 
-    if (analyser.value && dataArray.value) {
-      updateWaveformFromAudio()
-    } else {
-      updateWaveformRandom()
-    }
+    if (analyser.value && dataArray.value) updateWaveformFromAudio()
+    else updateWaveformRandom()
 
     animationId.value = requestAnimationFrame(() => updateWaveform(isActive))
   }
@@ -51,9 +48,9 @@ export function useAudioWaveform(options: AudioWaveformOptions = {}) {
 
     waveformBars.value = waveformBars.value.map((_, i) => {
       let sum = 0
-      for (let j = 0; j < samplesPerBar; j++) {
+      for (let j = 0; j < samplesPerBar; j++)
         sum += dataArray.value![i * samplesPerBar + j] || 0
-      }
+
       const average = sum / samplesPerBar
       const normalizedHeight =
         (average / 255) * (maxHeight - minHeight) + minHeight
@@ -71,9 +68,9 @@ export function useAudioWaveform(options: AudioWaveformOptions = {}) {
   }
 
   async function setupAudioContext() {
-    if (audioContext.value && audioContext.value.state !== 'closed') {
+    if (audioContext.value && audioContext.value.state !== 'closed')
       await audioContext.value.close()
-    }
+
     audioContext.value = null
     mediaElementSource.value = null
   }
@@ -89,9 +86,8 @@ export function useAudioWaveform(options: AudioWaveformOptions = {}) {
   }
 
   async function setupPlaybackVisualization(audioElement: HTMLAudioElement) {
-    if (audioContext.value && audioContext.value.state !== 'closed') {
+    if (audioContext.value && audioContext.value.state !== 'closed')
       await audioContext.value.close()
-    }
 
     mediaElementSource.value = null
 
@@ -121,9 +117,9 @@ export function useAudioWaveform(options: AudioWaveformOptions = {}) {
 
   function dispose() {
     stopWaveform()
-    if (audioContext.value && audioContext.value.state !== 'closed') {
+    if (audioContext.value && audioContext.value.state !== 'closed')
       void audioContext.value.close()
-    }
+
     audioContext.value = null
     mediaElementSource.value = null
   }

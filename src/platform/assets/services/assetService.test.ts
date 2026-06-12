@@ -587,9 +587,9 @@ describe(assetService.getAllAssetsByTag, () => {
     expect(fetchApiMock).toHaveBeenCalledTimes(2)
 
     const secondUrl = fetchApiMock.mock.calls[1]?.[0]
-    if (typeof secondUrl !== 'string') {
+    if (typeof secondUrl !== 'string')
       throw new Error('Expected a second asset request URL')
-    }
+
     const secondParams = new URL(secondUrl, 'http://localhost').searchParams
     expect(secondParams.get('after')).toBe('cursor-next')
   })

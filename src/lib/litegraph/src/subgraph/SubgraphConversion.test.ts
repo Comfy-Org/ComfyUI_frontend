@@ -41,9 +41,8 @@ function createNode(
     LiteGraph.registered_node_types[type] = testnode
   }
   const node = LiteGraph.createNode(type, title)
-  if (!node) {
-    throw new Error('Failed to create node')
-  }
+  if (!node) throw new Error('Failed to create node')
+
   graph.add(node)
   return node
 }
@@ -153,9 +152,9 @@ describe('SubgraphConversion', () => {
       expect(graph.reroutes.size).toBe(3)
       expect(graph.links.size).toBe(3)
       let linkRefCount = 0
-      for (const reroute of graph.reroutes.values()) {
+      for (const reroute of graph.reroutes.values())
         linkRefCount += reroute.linkIds.size
-      }
+
       expect(linkRefCount).toBe(4)
     })
     it('Should map reroutes onto split inputs', () => {
@@ -198,9 +197,9 @@ describe('SubgraphConversion', () => {
       expect(graph.reroutes.size).toBe(3)
       expect(graph.links.size).toBe(3)
       let linkRefCount = 0
-      for (const reroute of graph.reroutes.values()) {
+      for (const reroute of graph.reroutes.values())
         linkRefCount += reroute.linkIds.size
-      }
+
       expect(linkRefCount).toBe(4)
     })
   })

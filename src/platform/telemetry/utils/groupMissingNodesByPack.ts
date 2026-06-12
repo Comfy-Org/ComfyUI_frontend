@@ -15,11 +15,8 @@ export function groupMissingNodesByPack(
       typeof node === 'string' ? UNKNOWN_PACK_ID : node.cnrId || UNKNOWN_PACK_ID
 
     const existing = byPack.get(packId)
-    if (existing) {
-      existing.add(type)
-    } else {
-      byPack.set(packId, new Set([type]))
-    }
+    if (existing) existing.add(type)
+    else byPack.set(packId, new Set([type]))
   }
 
   return Array.from(byPack, ([pack_id, types]) => ({

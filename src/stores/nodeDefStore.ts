@@ -344,9 +344,7 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   watchEffect(() => {
     const devModeEnabled = showDevOnly.value
     for (const nodeType of Object.values(LiteGraph.registered_node_types)) {
-      if (nodeType.nodeData?.dev_only) {
-        nodeType.skip_list = !devModeEnabled
-      }
+      if (nodeType.nodeData?.dev_only) nodeType.skip_list = !devModeEnabled
     }
   })
 
@@ -361,20 +359,16 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   const nodeDataTypes = computed(() => {
     const types = new Set<string>()
     for (const nodeDef of nodeDefs.value) {
-      for (const input of Object.values(nodeDef.inputs)) {
-        types.add(input.type)
-      }
-      for (const output of nodeDef.outputs) {
-        types.add(output.type)
-      }
+      for (const input of Object.values(nodeDef.inputs)) types.add(input.type)
+
+      for (const output of nodeDef.outputs) types.add(output.type)
     }
     return types
   })
   const allNodeDefsByName = computed(() => {
     const map: Record<string, ComfyNodeDefImpl> = {}
-    for (const nodeDef of nodeDefs.value) {
-      map[nodeDef.name] = nodeDef
-    }
+    for (const nodeDef of nodeDefs.value) map[nodeDef.name] = nodeDef
+
     return map
   })
 

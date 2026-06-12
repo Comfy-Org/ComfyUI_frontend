@@ -189,9 +189,8 @@ const isCurrentValid = computed(() => {
 const onFieldChange = (id: string, value: string | string[]) => {
   setFieldValue(id, value)
   liveValues.value = { ...liveValues.value, [id]: value }
-  if (stepIndex.value > visible.value.length - 1) {
+  if (stepIndex.value > visible.value.length - 1)
     stepIndex.value = Math.max(0, visible.value.length - 1)
-  }
 }
 
 const goNext = () => {

@@ -16,9 +16,9 @@ vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
       typeof metadata.jobId === 'string' &&
       (typeof metadata.nodeId === 'string' ||
         typeof metadata.nodeId === 'number')
-    ) {
+    )
       return metadata
-    }
+
     return null
   }
 }))
@@ -62,9 +62,8 @@ describe('useOutputStacks properties', () => {
         const { assetItems } = useOutputStacks({ assets: assetsRef })
 
         const inputIds = new Set(assets.map((a) => a.id))
-        for (const item of assetItems.value) {
+        for (const item of assetItems.value)
           expect(inputIds.has(item.asset.id)).toBe(true)
-        }
       })
     )
   })
@@ -100,9 +99,8 @@ describe('useOutputStacks properties', () => {
         const assetsRef = ref(assets)
         const { assetItems } = useOutputStacks({ assets: assetsRef })
 
-        for (const item of assetItems.value) {
+        for (const item of assetItems.value)
           expect(item.isChild).toBeUndefined()
-        }
       })
     )
   })
@@ -113,9 +111,7 @@ describe('useOutputStacks properties', () => {
         const assetsRef = ref(assets)
         const { isStackExpanded } = useOutputStacks({ assets: assetsRef })
 
-        for (const asset of assets) {
-          expect(isStackExpanded(asset)).toBe(false)
-        }
+        for (const asset of assets) expect(isStackExpanded(asset)).toBe(false)
       })
     )
   })

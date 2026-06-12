@@ -27,11 +27,9 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
   trackPageView(_pageName: string, properties?: PageViewMetadata): void {
     const search = this.extractSearchFromPath(properties?.path)
 
-    if (search) {
-      captureCheckoutAttributionFromSearch(search)
-    } else if (typeof window !== 'undefined') {
+    if (search) captureCheckoutAttributionFromSearch(search)
+    else if (typeof window !== 'undefined')
       captureCheckoutAttributionFromSearch(window.location.search)
-    }
 
     void this.identifyCurrentUser()
   }
@@ -136,9 +134,7 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
     apiKeyAuthStore: ReturnType<typeof useApiKeyAuthStore>
     authStore: ReturnType<typeof useAuthStore>
   } | null {
-    if (this.stores) {
-      return this.stores
-    }
+    if (this.stores) return this.stores
 
     try {
       const stores = {
@@ -154,9 +150,8 @@ export class ImpactTelemetryProvider implements TelemetryProvider {
 
   private async hashSha1(value: string): Promise<string> {
     try {
-      if (!globalThis.crypto?.subtle || typeof TextEncoder === 'undefined') {
+      if (!globalThis.crypto?.subtle || typeof TextEncoder === 'undefined')
         return EMPTY_CUSTOMER_VALUE
-      }
 
       const digestBuffer = await crypto.subtle.digest(
         'SHA-1',

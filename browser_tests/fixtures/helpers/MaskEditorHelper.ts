@@ -94,9 +94,9 @@ class MaskEditorHelper {
       if (!ctx) return null
       const data = ctx.getImageData(0, 0, canvas.width, canvas.height)
       let nonTransparentPixels = 0
-      for (let i = 3; i < data.data.length; i += 4) {
+      for (let i = 3; i < data.data.length; i += 4)
         if (data.data[i] > 0) nonTransparentPixels++
-      }
+
       return { nonTransparentPixels, totalPixels: data.data.length / 4 }
     }, canvasIndex)
   }

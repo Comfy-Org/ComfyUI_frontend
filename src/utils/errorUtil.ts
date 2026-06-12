@@ -30,8 +30,8 @@ export function getErrorMessage(value: unknown): string | undefined {
     value !== null &&
     'message' in value &&
     typeof (value as { message: unknown }).message === 'string'
-  ) {
+  )
     return (value as { message: string }).message
-  }
+
   return undefined
 }

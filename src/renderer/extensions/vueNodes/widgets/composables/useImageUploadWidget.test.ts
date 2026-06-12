@@ -50,9 +50,7 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 vi.mock('@/utils/litegraphUtil', () => ({
   addToComboValues: (widget: IComboWidget, value: string) => {
     const values = widget.options?.values
-    if (Array.isArray(values) && !values.includes(value)) {
-      values.push(value)
-    }
+    if (Array.isArray(values) && !values.includes(value)) values.push(value)
   }
 }))
 

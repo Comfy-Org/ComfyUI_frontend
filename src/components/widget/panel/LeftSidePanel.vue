@@ -59,18 +59,14 @@ const emit = defineEmits<{
 const collapsedGroups = ref<Record<string, boolean>>({})
 
 const getFirstItemId = () => {
-  if (!navItems || navItems.length === 0) {
-    return null
-  }
+  if (!navItems || navItems.length === 0) return null
 
   const firstEntry = navItems[0]
 
-  if ('items' in firstEntry && firstEntry.items.length > 0) {
+  if ('items' in firstEntry && firstEntry.items.length > 0)
     return firstEntry.items[0].id
-  }
-  if ('id' in firstEntry) {
-    return firstEntry.id
-  }
+
+  if ('id' in firstEntry) return firstEntry.id
 
   return null
 }

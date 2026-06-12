@@ -46,8 +46,6 @@ const handleButtonClick = () => {
   // Close the conflict dialog
   dialogStore.closeDialog({ key: 'global-node-conflict' })
   // Execute the custom button action if provided
-  if (onButtonClick) {
-    onButtonClick()
-  }
+  if (onButtonClick) onButtonClick()
 }
 </script>

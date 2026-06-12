@@ -9,9 +9,8 @@ const STORAGE_KEY = 'maskeditor_brush_settings'
 function loadBrushFromStorage(): Brush | null {
   try {
     const brushString = getStorageValue(STORAGE_KEY)
-    if (brushString) {
-      return JSON.parse(brushString) as Brush
-    }
+    if (brushString) return JSON.parse(brushString) as Brush
+
     return null
   } catch (error) {
     console.error('Failed to load brush from cache:', error)

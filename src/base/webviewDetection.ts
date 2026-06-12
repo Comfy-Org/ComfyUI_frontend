@@ -38,9 +38,9 @@ function hasWebViewBridge(): boolean {
       win.webkit !== null &&
       typeof (win.webkit as Record<string, unknown>).messageHandlers ===
         'object'
-    ) {
+    )
       return true
-    }
+
     if (win.ReactNativeWebView != null) return true
   } catch {
     // Access to bridge objects may throw in sandboxed contexts

@@ -61,9 +61,7 @@ watch(
 
 function handleFocus(event: FocusEvent) {
   const target = event.target
-  if (target instanceof HTMLInputElement) {
-    target.select()
-  }
+  if (target instanceof HTMLInputElement) target.select()
 }
 
 function handleKeydownEnter(event: KeyboardEvent) {

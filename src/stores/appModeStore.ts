@@ -68,9 +68,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
     const rootGraph = app.rootGraph
-    if (!rootGraph) {
-      return { inputs: rawInputs, outputs: rawOutputs }
-    }
+    if (!rootGraph) return { inputs: rawInputs, outputs: rawOutputs }
+
     return {
       inputs: rawInputs
         .map((input) => upgradeAndValidateInput(input, rootGraph))
@@ -99,9 +98,9 @@ export const useAppModeStore = defineStore('appMode', () => {
       const widget = findWidgetByEntityId(rootGraph, storedId)
       if (widget) return buildEntry(storedId, widgetName, config)
       const { nodeId } = parseWidgetEntityId(storedId)
-      if (rootGraph.getNodeById?.(nodeId)) {
+      if (rootGraph.getNodeById?.(nodeId))
         return buildEntry(storedId, widgetName, config)
-      }
+
       return null
     }
 
@@ -126,9 +125,9 @@ export const useAppModeStore = defineStore('appMode', () => {
         if (
           widget.sourceNodeId !== String(storedId) ||
           widget.sourceWidgetName !== widgetName
-        ) {
+        )
           return []
-        }
+
         return widget.entityId
           ? [buildEntry(widget.entityId, inputSlot.name, config)]
           : []
@@ -197,11 +196,12 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (!state) return
     state.readOnly = inSelect
     unwatchReadOnly?.()
-    if (inSelect)
+    if (inSelect) {
       unwatchReadOnly = watch(
         () => state.readOnly,
         () => (state.readOnly = true)
       )
+    }
   }
 
   function autoEnableVueNodes(inSelect: boolean) {
@@ -209,9 +209,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (!settingStore.get('Comfy.VueNodes.Enabled')) {
       void settingStore.set('Comfy.VueNodes.Enabled', true)
 
-      if (!settingStore.get('Comfy.AppBuilder.VueNodeSwitchDismissed')) {
+      if (!settingStore.get('Comfy.AppBuilder.VueNodeSwitchDismissed'))
         showVueNodeSwitchPopup.value = true
-      }
     }
   }
 

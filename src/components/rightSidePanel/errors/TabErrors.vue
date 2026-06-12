@@ -425,9 +425,9 @@ function compareExecutionItemListEntry(
 
 function getExecutionGroupCount(group: ErrorGroup) {
   if (group.type !== 'execution') return 0
-  if (isExecutionItemListGroup(group)) {
+  if (isExecutionItemListGroup(group))
     return group.cards.reduce((count, card) => count + card.errors.length, 0)
-  }
+
   return group.cards.length
 }
 
@@ -437,11 +437,9 @@ function isExecutionItemDetailExpanded(key: string) {
 
 function toggleExecutionItemDetail(key: string) {
   const nextKeys = new Set(expandedExecutionItemDetailKeys.value)
-  if (nextKeys.has(key)) {
-    nextKeys.delete(key)
-  } else {
-    nextKeys.add(key)
-  }
+  if (nextKeys.has(key)) nextKeys.delete(key)
+  else nextKeys.add(key)
+
   expandedExecutionItemDetailKeys.value = nextKeys
 }
 
@@ -485,9 +483,8 @@ const isAllCollapsed = computed({
     return filteredGroups.value.every((g) => isSectionCollapsed(g.groupKey))
   },
   set(collapse: boolean) {
-    for (const group of tabErrorGroups.value) {
+    for (const group of tabErrorGroups.value)
       setSectionCollapsed(group.groupKey, collapse)
-    }
   }
 })
 
@@ -540,11 +537,9 @@ function handleLocateAssetNode(nodeId: string) {
 
 function handleOpenManagerInfo(packId: string) {
   const isKnownToRegistry = missingNodePacks.value.some((p) => p.id === packId)
-  if (isKnownToRegistry) {
+  if (isKnownToRegistry)
     openManager({ initialTab: ManagerTab.Missing, initialPackId: packId })
-  } else {
-    openManager({ initialTab: ManagerTab.All, initialPackId: packId })
-  }
+  else openManager({ initialTab: ManagerTab.All, initialPackId: packId })
 }
 
 function handleReplaceGroup(group: SwapNodeGroup) {

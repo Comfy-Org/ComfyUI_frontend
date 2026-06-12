@@ -43,13 +43,11 @@ export function deduplicateSubgraphNodeIds(
     patchPromotedWidgets(subgraph.widgets ?? [], remappedIds)
   }
 
-  for (const subgraph of clonedSubgraphs) {
+  for (const subgraph of clonedSubgraphs)
     patchProxyWidgets(subgraph.nodes ?? [], subgraphIdSet, remapBySubgraph)
-  }
 
-  if (clonedRootNodes) {
+  if (clonedRootNodes)
     patchProxyWidgets(clonedRootNodes, subgraphIdSet, remapBySubgraph)
-  }
 
   return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
 }
@@ -98,9 +96,8 @@ function findNextAvailableId(
 ): NodeId {
   while (true) {
     const nextId = state.lastNodeId + 1
-    if (nextId > MAX_NODE_ID) {
-      throw new Error('Node ID space exhausted')
-    }
+    if (nextId > MAX_NODE_ID) throw new Error('Node ID space exhausted')
+
     state.lastNodeId = nextId
     if (!usedNodeIds.has(nextId)) return nextId as NodeId
   }
@@ -167,9 +164,7 @@ export function topologicalSortSubgraphs(
 
   // Kahn's algorithm — leaves (in-degree 0) are emitted first.
   const queue: string[] = []
-  for (const [id, degree] of inDegree) {
-    if (degree === 0) queue.push(id)
-  }
+  for (const [id, degree] of inDegree) if (degree === 0) queue.push(id)
 
   const sorted: ExportedSubgraph[] = []
   while (queue.length > 0) {

@@ -216,7 +216,7 @@ function createInnerPreview(
     if (inner) return getAutogrowLimits(inner)
 
     const node = nodeRef.value
-    if (!node)
+    if (!node) {
       return {
         maxInputs: 5,
         maxFloatUniforms: 20,
@@ -224,6 +224,7 @@ function createInnerPreview(
         maxBoolUniforms: 10,
         maxCurves: 4
       }
+    }
     return getAutogrowLimits(node)
   })
 
@@ -251,9 +252,9 @@ function createInnerPreview(
       for (let slot = 0; slot < node.inputs.length; slot++) {
         if (node.inputs[slot].type !== 'IMAGE') continue
         const upstreamNode = node.getInputNode(slot)
-        if (upstreamNode?.imgs?.length) {
+        if (upstreamNode?.imgs?.length)
           renderer.bindInputImage(imageSlotIndex, upstreamNode.imgs[0])
-        }
+
         imageSlotIndex++
       }
       return
@@ -274,9 +275,7 @@ function createInnerPreview(
       const owner = ownerSubgraphNode
       if (owner) {
         const img = getImageThroughSubgraphBoundary(node, slot, owner)
-        if (img) {
-          renderer.bindInputImage(imageSlotIndex, img)
-        }
+        if (img) renderer.bindInputImage(imageSlotIndex, img)
       }
       imageSlotIndex++
     }
@@ -420,19 +419,18 @@ function createInnerPreview(
 
       loadInputImages()
 
-      for (let i = 0; i < floatValues.value.length; i++) {
+      for (let i = 0; i < floatValues.value.length; i++)
         r.setFloatUniform(i, floatValues.value[i])
-      }
-      for (let i = 0; i < intValues.value.length; i++) {
+
+      for (let i = 0; i < intValues.value.length; i++)
         r.setIntUniform(i, intValues.value[i])
-      }
-      for (let i = 0; i < boolValues.value.length; i++) {
+
+      for (let i = 0; i < boolValues.value.length; i++)
         r.setBoolUniform(i, boolValues.value[i])
-      }
+
       const curves = curveValues.value
-      for (let i = 0; i < curves.length; i++) {
+      for (let i = 0; i < curves.length; i++)
         r.bindCurveTexture(i, curveDataToFloatLUT(curves[i]))
-      }
 
       r.render()
 
@@ -446,9 +444,8 @@ function createInnerPreview(
           nodeOutputStore.setNodePreviewsByLocatorId(innerLocatorId, [blobUrl])
         } else {
           const nId = nodeId.value
-          if (nId != null) {
+          if (nId != null)
             nodeOutputStore.setNodePreviewsByNodeId(nId, [blobUrl])
-          }
         }
       } finally {
         releaseSharedObjectUrl(blobUrl)

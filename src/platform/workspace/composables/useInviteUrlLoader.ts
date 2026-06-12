@@ -40,9 +40,7 @@ export function useInviteUrlLoader() {
       route.query
     )
 
-    if (mergedQuery) {
-      await router.replace({ query: mergedQuery })
-    }
+    if (mergedQuery) await router.replace({ query: mergedQuery })
 
     return mergedQuery ?? route.query
   }
@@ -71,9 +69,7 @@ export function useInviteUrlLoader() {
     // Restore preserved query from sessionStorage (handles login redirect case)
     const query = await ensureInviteQueryFromIntent()
     const inviteParam = query.invite
-    if (!inviteParam || typeof inviteParam !== 'string') {
-      return
-    }
+    if (!inviteParam || typeof inviteParam !== 'string') return
 
     try {
       const result = await workspaceStore.acceptInvite(inviteParam)

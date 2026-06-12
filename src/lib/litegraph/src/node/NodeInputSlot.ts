@@ -53,13 +53,11 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   override isValidTarget(
     fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput
   ): boolean {
-    if ('links' in fromSlot) {
+    if ('links' in fromSlot)
       return LiteGraph.isValidConnection(fromSlot.type, this.type)
-    }
 
-    if (isSubgraphInput(fromSlot)) {
+    if (isSubgraphInput(fromSlot))
       return LiteGraph.isValidConnection(fromSlot.type, this.type)
-    }
 
     return false
   }

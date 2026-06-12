@@ -59,25 +59,21 @@ async function getNodeGroupCenteringErrors(
     const app = window.app!
     const node = app.graph.nodes[0] as GraphNode | undefined
 
-    if (!node) {
-      throw new Error('Expected a node in the loaded workflow')
-    }
+    if (!node) throw new Error('Expected a node in the loaded workflow')
 
     const nodeElement = document.querySelector<HTMLElement>(
       `[data-node-id="${node.id}"]`
     )
 
-    if (!nodeElement) {
+    if (!nodeElement)
       throw new Error(`Vue node element not found for node ${node.id}`)
-    }
 
     const groups = app.graph.groups as GraphGroup[]
     const innerGroup = groups.find((group) => group.title === 'Inner Group')
     const outerGroup = groups.find((group) => group.title === 'Outer Group')
 
-    if (!innerGroup || !outerGroup) {
+    if (!innerGroup || !outerGroup)
       throw new Error('Expected both Inner Group and Outer Group in graph')
-    }
 
     const nodeRect = nodeElement.getBoundingClientRect()
 

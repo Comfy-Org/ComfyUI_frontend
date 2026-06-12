@@ -26,16 +26,12 @@ export const useLitegraphSettings = () => {
 
   watchEffect(() => {
     const zoomSpeed = settingStore.get('Comfy.Graph.ZoomSpeed')
-    if (canvasStore.canvas) {
-      canvasStore.canvas.zoom_speed = zoomSpeed
-    }
+    if (canvasStore.canvas) canvasStore.canvas.zoom_speed = zoomSpeed
   })
 
   watchEffect(() => {
     const autoPanSpeed = settingStore.get('Comfy.Graph.AutoPanSpeed')
-    if (canvasStore.canvas) {
-      canvasStore.canvas.auto_pan_speed = autoPanSpeed
-    }
+    if (canvasStore.canvas) canvasStore.canvas.auto_pan_speed = autoPanSpeed
   })
 
   watchEffect(() => {

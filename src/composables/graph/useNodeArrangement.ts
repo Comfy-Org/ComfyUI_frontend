@@ -75,9 +75,7 @@ export function useNodeArrangement() {
       isLGraphNode(item)
     )
 
-    if (selectedNodes.length === 0) {
-      return
-    }
+    if (selectedNodes.length === 0) return
 
     const newPositions = alignNodes(selectedNodes, alignOption.value)
     canvasStore.canvas?.repositionNodesVueMode(newPositions)
@@ -90,9 +88,7 @@ export function useNodeArrangement() {
       isLGraphNode(item)
     )
 
-    if (selectedNodes.length < 2) {
-      return
-    }
+    if (selectedNodes.length < 2) return
 
     const newPositions = distributeNodes(selectedNodes, distributeOption.value)
     canvasStore.canvas?.repositionNodesVueMode(newPositions)

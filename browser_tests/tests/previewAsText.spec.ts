@@ -20,9 +20,8 @@ test.describe('Preview as Text node', () => {
     await comfyPage.page.evaluate(() => {
       const node = window.app!.graph.nodes.find((n) => n.type === 'PreviewAny')!
       for (const widget of node.widgets ?? []) {
-        if (widget.name?.startsWith('preview_')) {
+        if (widget.name?.startsWith('preview_'))
           widget.value = 'rendered preview content from previous execution'
-        }
       }
     })
 

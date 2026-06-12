@@ -67,16 +67,14 @@ export class BottomPanel {
   async toggleLogs() {
     await this.toggleButton.click()
     await this.logs.tab.waitFor({ state: 'visible' })
-    if ((await this.logs.tab.getAttribute('aria-selected')) !== 'true') {
+    if ((await this.logs.tab.getAttribute('aria-selected')) !== 'true')
       await this.logs.tab.click()
-    }
   }
 
   async resizeByDragging(deltaY: number): Promise<void> {
     const gutterBox = await this.resizeGutter.boundingBox()
-    if (!gutterBox) {
+    if (!gutterBox)
       throw new Error('Bottom panel resize gutter should have layout')
-    }
 
     const gutterCenterX = gutterBox.x + gutterBox.width / 2
     const gutterCenterY = gutterBox.y + gutterBox.height / 2

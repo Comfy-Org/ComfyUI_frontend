@@ -32,10 +32,11 @@ export class ToInputRenderLink implements RenderLink {
     public dragDirection: LinkDirection = LinkDirection.CENTER
   ) {
     const outputIndex = node.outputs.indexOf(fromSlot)
-    if (outputIndex === -1)
+    if (outputIndex === -1) {
       throw new Error(
         `Creating render link for node [${this.node.id}] failed: Slot index not found.`
       )
+    }
 
     this.fromSlotIndex = outputIndex
     this.fromPos = fromReroute

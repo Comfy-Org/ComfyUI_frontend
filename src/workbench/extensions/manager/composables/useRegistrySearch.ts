@@ -52,9 +52,8 @@ export function useRegistrySearch(
 
   const updateSearchResults = async (options: { append?: boolean }) => {
     isLoading.value = true
-    if (!options.append) {
-      pageNumber.value = 0
-    }
+    if (!options.append) pageNumber.value = 0
+
     const { nodePacks, querySuggestions } = await searchPacks(
       searchQuery.value,
       {
@@ -80,11 +79,10 @@ export function useRegistrySearch(
       )
     }
 
-    if (options.append && searchResults.value?.length) {
+    if (options.append && searchResults.value?.length)
       searchResults.value = searchResults.value.concat(sortedPacks)
-    } else {
-      searchResults.value = sortedPacks
-    }
+    else searchResults.value = sortedPacks
+
     suggestions.value = querySuggestions
     isLoading.value = false
   }

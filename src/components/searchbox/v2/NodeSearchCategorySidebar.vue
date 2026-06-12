@@ -148,9 +148,8 @@ watch(
       if (
         selectedCategory.value !== rootKey &&
         !selectedCategory.value.startsWith(rootKey + '/')
-      ) {
+      )
         emit('autoExpand', rootKey)
-      }
     }
   },
   { immediate: true }
@@ -172,9 +171,8 @@ const expandedCategory = ref(selectedCategory.value)
 let lastEmittedCategory = ''
 
 watch(selectedCategory, (val) => {
-  if (val !== lastEmittedCategory) {
-    expandedCategory.value = val
-  }
+  if (val !== lastEmittedCategory) expandedCategory.value = val
+
   lastEmittedCategory = ''
 })
 
@@ -184,11 +182,10 @@ function parentCategory(key: string): string {
 }
 
 function selectCategory(categoryId: string) {
-  if (expandedCategory.value === categoryId) {
+  if (expandedCategory.value === categoryId)
     expandedCategory.value = parentCategory(categoryId)
-  } else {
-    expandedCategory.value = categoryId
-  }
+  else expandedCategory.value = categoryId
+
   lastEmittedCategory = categoryId
   selectedCategory.value = categoryId
 }

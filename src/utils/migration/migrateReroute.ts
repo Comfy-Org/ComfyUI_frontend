@@ -96,9 +96,7 @@ class ConversionContext {
       const inputLink: ComfyLinkObject | undefined =
         this.linkById[currentNode.inputs?.[0]?.link ?? 0]
 
-      if (!inputLink) {
-        break
-      }
+      if (!inputLink) break
 
       currentNode = this.nodeById[inputLink.origin_id] as RerouteNode
     }
@@ -108,9 +106,7 @@ class ConversionContext {
 
   private _connectRerouteChain(rerouteNodes: RerouteNode[]): Reroute[] {
     const reroutes = rerouteNodes.map((node) => this.rerouteByNodeId[node.id])
-    for (const reroute of reroutes) {
-      this.validReroutes.add(reroute)
-    }
+    for (const reroute of reroutes) this.validReroutes.add(reroute)
 
     for (let i = 0; i < rerouteNodes.length - 1; i++) {
       const to = reroutes[i]
@@ -126,9 +122,7 @@ class ConversionContext {
     endingLink: ComfyLinkObject,
     rerouteNodes: RerouteNode[]
   ): ComfyLinkObject {
-    if (rerouteNodes.length === 0) {
-      throw new Error('No reroute nodes found')
-    }
+    if (rerouteNodes.length === 0) throw new Error('No reroute nodes found')
 
     const reroute = this.rerouteByNodeId[rerouteNodes[0].id]
     this.linkExtensions.push({
@@ -203,12 +197,9 @@ class ConversionContext {
   private _reconnectLinks(nodes: ComfyNode[], links: ComfyLinkObject[]): void {
     // Remove all existing links on sockets
     for (const node of nodes) {
-      for (const input of node.inputs ?? []) {
-        input.link = null
-      }
-      for (const output of node.outputs ?? []) {
-        output.links = []
-      }
+      for (const input of node.inputs ?? []) input.link = null
+
+      for (const output of node.outputs ?? []) output.links = []
     }
 
     const nodesById = _.keyBy(nodes, 'id')
@@ -234,11 +225,8 @@ class ConversionContext {
       const targetIsReroute = !!this.rerouteByNodeId[link.target_id]
 
       // Process links that are not connected to reroute nodes
-      if (!sourceIsReroute && !targetIsReroute) {
-        links.push(link)
-      } else if (sourceIsReroute && !targetIsReroute) {
-        endingLinks.push(link)
-      }
+      if (!sourceIsReroute && !targetIsReroute) links.push(link)
+      else if (sourceIsReroute && !targetIsReroute) endingLinks.push(link)
     }
 
     for (const endingLink of endingLinks) {
@@ -320,17 +308,13 @@ export const migrateLegacyRerouteNodes = (
   const legacyRerouteNodes = findLegacyRerouteNodes(workflow)
 
   // If no reroute nodes, return the workflow unchanged
-  if (legacyRerouteNodes.length === 0) {
-    return workflow
-  }
+  if (legacyRerouteNodes.length === 0) return workflow
 
   // Create a deep copy of the workflow to avoid mutating the original
   const newWorkflow = JSON.parse(JSON.stringify(workflow)) as WorkflowJSON04
 
   // Initialize extra structure if needed
-  if (!newWorkflow.extra) {
-    newWorkflow.extra = {}
-  }
+  if (!newWorkflow.extra) newWorkflow.extra = {}
 
   const context = new ConversionContext(newWorkflow)
   return context.migrateReroutes()

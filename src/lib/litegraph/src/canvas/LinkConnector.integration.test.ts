@@ -40,9 +40,8 @@ const test = baseTest.extend<TestContext>({
 
   graph: async ({ reroutesComplexGraph }, use) => {
     const mockCtx = createMockCanvasRenderingContext2D()
-    for (const node of reroutesComplexGraph.nodes) {
-      node.updateArea(mockCtx)
-    }
+    for (const node of reroutesComplexGraph.nodes) node.updateArea(mockCtx)
+
     await use(reroutesComplexGraph)
   },
   setConnectingLinks: async (
@@ -74,9 +73,8 @@ const test = baseTest.extend<TestContext>({
       const reroutesExceptOne = [...graph.reroutes.values()].filter(
         (reroute) => reroute.id !== 1
       )
-      for (const reroute of reroutesExceptOne) {
+      for (const reroute of reroutesExceptOne)
         expect(reroute.floating).toBeUndefined()
-      }
     })
   },
 
@@ -88,9 +86,8 @@ const test = baseTest.extend<TestContext>({
       expect(graph.floatingLinks.size).toBe(0)
       expect([...graph.reroutes]).toEqual(reroutesBeforeTest)
 
-      for (const reroute of graph.reroutes.values()) {
+      for (const reroute of graph.reroutes.values())
         expect(reroute.floating).toBeUndefined()
-      }
     })
   },
 
@@ -291,9 +288,8 @@ describe('LinkConnector Integration', () => {
       expect([...graph.reroutes]).toEqual(reroutesBeforeTest)
 
       // All reroute floating property should be cleared
-      for (const reroute of graph.reroutes.values()) {
+      for (const reroute of graph.reroutes.values())
         expect(reroute.floating).toBeUndefined()
-      }
     })
 
     test('Should drop floating links when both sides are disconnected', ({
@@ -485,9 +481,8 @@ describe('LinkConnector Integration', () => {
       expect(graph.floatingLinks.size).toBe(0)
       expect([...graph.reroutes]).toEqual(reroutesBeforeTest.slice(1))
 
-      for (const reroute of graph.reroutes.values()) {
+      for (const reroute of graph.reroutes.values())
         expect(reroute.floating).toBeUndefined()
-      }
     })
 
     test('Should drop floating links when both sides are disconnected', ({
@@ -503,9 +498,8 @@ describe('LinkConnector Integration', () => {
       const reroutesExceptOne = [...graph.reroutes.values()].filter(
         (reroute) => reroute.id !== 1
       )
-      for (const reroute of reroutesExceptOne) {
+      for (const reroute of reroutesExceptOne)
         expect(reroute.floating).toBeUndefined()
-      }
 
       graph.getNodeById(3)!.disconnectInput(0, true)
       expect([...graph.reroutes]).toEqual(reroutesBeforeTest)
@@ -837,11 +831,9 @@ describe('LinkConnector Integration', () => {
 
     // The final reroutes should all be floating
     for (const reroute of graph.reroutes.values()) {
-      if ([3, 7, 15, 12].includes(reroute.id)) {
+      if ([3, 7, 15, 12].includes(reroute.id))
         expect(reroute.floating).toEqual({ slotType: 'input' })
-      } else {
-        expect(reroute.floating).toBeUndefined()
-      }
+      else expect(reroute.floating).toBeUndefined()
     }
 
     // Removed one reroute
@@ -971,18 +963,13 @@ describe('LinkConnector Integration', () => {
       // Parent reroutes should have lost the links or been removed
       for (const [index, parentId] of parentIds.entries()) {
         const reroute = graph.reroutes.get(parentId)!
-        if (linksAfter[index] === undefined) {
-          expect(reroute).not.toBeUndefined()
-        } else {
-          expect(reroute.linkIds.size).toBe(linksAfter[index])
-        }
+        if (linksAfter[index] === undefined) expect(reroute).not.toBeUndefined()
+        else expect(reroute.linkIds.size).toBe(linksAfter[index])
       }
 
       expect(linkCreatedCallback).toHaveBeenCalledTimes(nextLinkIds.length)
 
-      if (runIntegrityCheck) {
-        validateIntegrityNoChanges()
-      }
+      if (runIntegrityCheck) validateIntegrityNoChanges()
     }
   )
 
@@ -1127,9 +1114,8 @@ describe('LinkConnector Integration', () => {
 
       for (const rerouteId of shouldHaveLinkIdsRemoved) {
         const reroute = graph.reroutes.get(rerouteId)!
-        for (const linkId of toReroute.linkIds) {
+        for (const linkId of toReroute.linkIds)
           expect(reroute.linkIds).not.toContain(linkId)
-        }
       }
 
       // Validate all links in a reroute share the same origin
@@ -1218,9 +1204,8 @@ describe('LinkConnector Integration', () => {
       validateIntegrityNoChanges()
 
       // No links should have the same origin_id and target_id
-      for (const link of graph.links.values()) {
+      for (const link of graph.links.values())
         expect(link.origin_id).not.toEqual(link.target_id)
-      }
     }
   )
 
@@ -1245,9 +1230,8 @@ describe('LinkConnector Integration', () => {
       validateIntegrityNoChanges()
 
       // No links should have the same origin_id and target_id
-      for (const link of graph.links.values()) {
+      for (const link of graph.links.values())
         expect(link.origin_id).not.toEqual(link.target_id)
-      }
     }
   )
 
@@ -1276,9 +1260,8 @@ describe('LinkConnector Integration', () => {
       validateIntegrityNoChanges()
 
       // No links should have the same origin_id and target_id
-      for (const link of graph.links.values()) {
+      for (const link of graph.links.values())
         expect(link.origin_id).not.toEqual(link.target_id)
-      }
     }
   )
 })

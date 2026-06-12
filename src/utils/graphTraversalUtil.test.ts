@@ -443,9 +443,7 @@ describe('graphTraversalUtil', () => {
 
         const matchingNodes: number[] = []
         forEachNode(graph, (node) => {
-          if (node.type === subgraphId) {
-            matchingNodes.push(node.id as number)
-          }
+          if (node.type === subgraphId) matchingNodes.push(node.id as number)
         })
 
         expect(matchingNodes).toEqual([2, 4])
@@ -1445,9 +1443,9 @@ describe('graphTraversalUtil', () => {
       it('should handle subgraphs with many children efficiently', () => {
         // Create a subgraph with 100 nodes
         const manyNodes = []
-        for (let i = 0; i < 100; i++) {
+        for (let i = 0; i < 100; i++)
           manyNodes.push(createMockNode(`child-${i}`))
-        }
+
         const bigSubgraph = createMockSubgraph('big-uuid', manyNodes)
 
         const graph = createMockGraph([])

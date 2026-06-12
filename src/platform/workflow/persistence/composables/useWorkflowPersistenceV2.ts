@@ -59,9 +59,7 @@ export function useWorkflowPersistenceV2() {
 
   // Clear workflow persistence storage when user signs out (cloud only)
   onUserLogout(() => {
-    if (isCloud) {
-      clearAllV2Storage()
-    }
+    if (isCloud) clearAllV2Storage()
   })
 
   const ensureTemplateQueryFromIntent = async () => {
@@ -71,9 +69,7 @@ export function useWorkflowPersistenceV2() {
       route.query
     )
 
-    if (mergedQuery) {
-      await router.replace({ query: mergedQuery })
-    }
+    if (mergedQuery) await router.replace({ query: mergedQuery })
 
     return mergedQuery ?? route.query
   }
@@ -124,9 +120,8 @@ export function useWorkflowPersistenceV2() {
     lastSavedJsonByPath.value[workflowPath] = workflowJson
 
     // Clean up draft if workflow is saved and unmodified
-    if (!activeWorkflow.isTemporary && !activeWorkflow.isModified) {
+    if (!activeWorkflow.isTemporary && !activeWorkflow.isModified)
       draftStore.removeDraft(workflowPath)
-    }
   }
 
   // Debounced version for graphChanged events
@@ -172,9 +167,8 @@ export function useWorkflowPersistenceV2() {
     if (!settingStore.get('Comfy.TutorialCompleted')) {
       await settingStore.set('Comfy.TutorialCompleted', true)
       await useWorkflowService().loadBlankWorkflow()
-      if (!hasSharedWorkflowIntent()) {
+      if (!hasSharedWorkflowIntent())
         await useCommandStore().execute('Comfy.BrowseTemplates')
-      }
     } else {
       await comfyApp.loadGraphData()
     }
@@ -185,9 +179,8 @@ export function useWorkflowPersistenceV2() {
     const paths = storedTabState?.paths ?? []
     const activeIndex = storedTabState?.activeIndex ?? -1
 
-    if (paths.length === 0 || activeIndex < 0 || activeIndex >= paths.length) {
+    if (paths.length === 0 || activeIndex < 0 || activeIndex >= paths.length)
       return null
-    }
 
     return { paths, activeIndex }
   }
@@ -207,9 +200,7 @@ export function useWorkflowPersistenceV2() {
 
       await workflowStore.loadWorkflows()
       const restored = await loadPreviousWorkflowFromStorage()
-      if (!restored) {
-        await loadDefaultWorkflow()
-      }
+      if (!restored) await loadDefaultWorkflow()
     } catch (err) {
       console.error('Error loading previous workflow', err)
       await loadDefaultWorkflow()
@@ -220,9 +211,7 @@ export function useWorkflowPersistenceV2() {
     const query = await ensureTemplateQueryFromIntent()
     const hasTemplateUrl = query.template && typeof query.template === 'string'
 
-    if (hasTemplateUrl) {
-      await templateUrlLoader.loadTemplateFromUrl()
-    }
+    if (hasTemplateUrl) await templateUrlLoader.loadTemplateFromUrl()
   }
 
   const loadSharedWorkflowFromUrlIfPresent = async () => {
@@ -255,9 +244,8 @@ export function useWorkflowPersistenceV2() {
   const activeWorkflow = computed(() => workflowStore.activeWorkflow)
   const restoreState = computed<{ paths: string[]; activeIndex: number }>(
     () => {
-      if (!openWorkflows.value || !activeWorkflow.value) {
+      if (!openWorkflows.value || !activeWorkflow.value)
         return { paths: [], activeIndex: -1 }
-      }
 
       const paths = openWorkflows.value
         .map((workflow) => workflow?.path)
@@ -278,9 +266,8 @@ export function useWorkflowPersistenceV2() {
   watch(restoreState, ({ paths, activeIndex }) => {
     // Only persist after tab state has been restored to avoid
     // writing leaked data from wrong workspace during init
-    if (workflowPersistenceEnabled.value && tabStateRestored) {
+    if (workflowPersistenceEnabled.value && tabStateRestored)
       tabState.setOpenPaths(paths, activeIndex)
-    }
   })
 
   /**
@@ -339,9 +326,7 @@ export function useWorkflowPersistenceV2() {
     const workflow = activePath
       ? workflowStore.getWorkflowByPath(activePath)
       : null
-    if (workflow) {
-      await useWorkflowService().openWorkflow(workflow)
-    }
+    if (workflow) await useWorkflowService().openWorkflow(workflow)
   }
 
   return {

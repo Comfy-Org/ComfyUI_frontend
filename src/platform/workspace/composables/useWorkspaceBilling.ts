@@ -153,9 +153,9 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     try {
       await Promise.all([fetchStatus(), fetchBalance(), fetchPlans()])
       // Re-fetch balance if free tier credits were just lazily granted
-      if (isFreeTier.value && balance.value?.amountMicros === 0) {
+      if (isFreeTier.value && balance.value?.amountMicros === 0)
         await fetchBalance()
-      }
+
       isInitialized.value = true
     } catch (err) {
       error.value =
@@ -242,9 +242,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     try {
       const returnUrl = window.location.href
       const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
-      if (response.url) {
-        window.open(response.url, '_blank')
-      }
+      if (response.url) window.open(response.url, '_blank')
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to open billing portal'
@@ -303,9 +301,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       await billingPlans.fetchPlans()
-      if (billingPlans.error.value) {
-        error.value = billingPlans.error.value
-      }
+      if (billingPlans.error.value) error.value = billingPlans.error.value
     } finally {
       isLoading.value = false
     }
@@ -315,9 +311,7 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
 
   async function requireActiveSubscription(): Promise<void> {
     await fetchStatus()
-    if (!isActiveSubscription.value) {
-      subscriptionDialog.show()
-    }
+    if (!isActiveSubscription.value) subscriptionDialog.show()
   }
 
   function showSubscriptionDialog(): void {

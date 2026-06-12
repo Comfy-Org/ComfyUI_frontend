@@ -183,18 +183,15 @@ function getRoleLabel(role: AvailableWorkspace['role']): string {
 }
 
 function resolveTierLabel(workspace: AvailableWorkspace): string | null {
-  if (isCurrentWorkspace(workspace)) {
+  if (isCurrentWorkspace(workspace))
     return currentSubscriptionTierName.value || null
-  }
 
   return getTierLabel(workspace)
 }
 
 async function handleSelectWorkspace(workspace: AvailableWorkspace) {
   const success = await switchWorkspace(workspace.id)
-  if (success) {
-    emit('select', workspace)
-  }
+  if (success) emit('select', workspace)
 }
 
 function handleCreateWorkspace() {

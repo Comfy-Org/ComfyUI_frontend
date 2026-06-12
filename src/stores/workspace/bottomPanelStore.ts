@@ -39,9 +39,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
   const bottomPanelVisible = computed({
     get: () => !!activePanel.value,
     set: (visible: boolean) => {
-      if (!visible) {
-        activePanel.value = null
-      }
+      if (!visible) activePanel.value = null
     }
   })
   const bottomPanelTabs = computed(() => activePanelState.value?.tabs ?? [])
@@ -49,9 +47,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     get: () => activePanelState.value?.activeTabId ?? '',
     set: (tabId: string) => {
       const state = activePanelState.value
-      if (state) {
-        state.activeTabId = tabId
-      }
+      if (state) state.activeTabId = tabId
     }
   })
 
@@ -65,9 +61,8 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     } else {
       // Show target panel
       activePanel.value = panelType
-      if (!panel.activeTabId && panel.tabs.length > 0) {
+      if (!panel.activeTabId && panel.tabs.length > 0)
         panel.activeTabId = panel.tabs[0].id
-      }
     }
   }
 
@@ -88,9 +83,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
 
   const setActiveTab = (tabId: string) => {
     const state = activePanelState.value
-    if (state) {
-      state.activeTabId = tabId
-    }
+    if (state) state.activeTabId = tabId
   }
 
   const toggleBottomPanelTab = (tabId: string) => {
@@ -113,9 +106,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
     const panel = panels.value[targetPanel]
 
     panel.tabs = [...panel.tabs, tab]
-    if (panel.tabs.length === 1) {
-      panel.activeTabId = tab.id
-    }
+    if (panel.tabs.length === 1) panel.activeTabId = tab.id
 
     const tabName = tab.title || tab.titleKey || tab.id
     useCommandStore().registerCommand({
@@ -138,9 +129,7 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
         const { useLogsTerminalTab, useCommandTerminalTab } =
           await import('@/composables/bottomPanelTabs/useTerminalTabs')
         registerBottomPanelTab(useLogsTerminalTab())
-        if (isDesktop) {
-          registerBottomPanelTab(useCommandTerminalTab())
-        }
+        if (isDesktop) registerBottomPanelTab(useCommandTerminalTab())
       } catch (error) {
         console.error('Failed to load terminal tabs:', error)
       }
@@ -148,9 +137,8 @@ export const useBottomPanelStore = defineStore('bottomPanel', () => {
   }
 
   const registerExtensionBottomPanelTabs = (extension: ComfyExtension) => {
-    if (extension.bottomPanelTabs) {
+    if (extension.bottomPanelTabs)
       extension.bottomPanelTabs.forEach(registerBottomPanelTab)
-    }
   }
 
   return {

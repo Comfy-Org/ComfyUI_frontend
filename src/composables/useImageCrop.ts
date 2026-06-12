@@ -135,12 +135,10 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
   const isLockEnabled = computed({
     get: () => lockedRatio.value != null,
     set: (locked: boolean) => {
-      if (locked && lockedRatio.value == null) {
+      if (locked && lockedRatio.value == null)
         lockedRatio.value = cropWidth.value / cropHeight.value
-      }
-      if (!locked) {
-        lockedRatio.value = null
-      }
+
+      if (!locked) lockedRatio.value = null
     }
   })
 
@@ -161,9 +159,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
   }
 
   useResizeObserver(containerEl, () => {
-    if (imageEl.value && imageUrl.value) {
-      updateDisplayedDimensions()
-    }
+    if (imageEl.value && imageUrl.value) updateDisplayedDimensions()
   })
 
   const getInputImageUrl = (): string | null => {
@@ -182,9 +178,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
 
     const urls = nodeOutputStore.getNodeImageUrls(sourceNode)
 
-    if (urls?.length) {
-      return urls[0]
-    }
+    if (urls?.length) return urls[0]
 
     return null
   }
@@ -195,9 +189,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
 
   watch(imageUrl, (url, previous) => {
     const next = imageCropLoadingAfterUrlChange(url, previous)
-    if (next !== null) {
-      isLoading.value = next
-    }
+    if (next !== null) isLoading.value = next
   })
 
   const updateDisplayedDimensions = () => {
@@ -232,19 +224,16 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
       imageOffsetY.value = 0
     }
 
-    if (naturalWidth.value <= 0 || displayedWidth.value <= 0) {
+    if (naturalWidth.value <= 0 || displayedWidth.value <= 0)
       scaleFactor.value = 1
-    } else {
-      scaleFactor.value = displayedWidth.value / naturalWidth.value
-    }
+    else scaleFactor.value = displayedWidth.value / naturalWidth.value
   }
 
   const getEffectiveScale = (): number => {
     const container = containerEl.value
 
-    if (!container || naturalWidth.value <= 0 || displayedWidth.value <= 0) {
+    if (!container || naturalWidth.value <= 0 || displayedWidth.value <= 0)
       return 1
-    }
 
     const rect = container.getBoundingClientRect()
     const clientWidth = container.clientWidth
@@ -540,12 +529,11 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
     let newX = resizeStartCropX.value
     let newY = resizeStartCropY.value
 
-    if (affectsLeft) {
+    if (affectsLeft)
       newX = resizeStartCropX.value + resizeStartCropWidth.value - newWidth
-    }
-    if (affectsTop) {
+
+    if (affectsTop)
       newY = resizeStartCropY.value + resizeStartCropHeight.value - newHeight
-    }
 
     if (newX < 0) {
       newWidth += newX
@@ -581,9 +569,7 @@ export function useImageCrop(nodeId: NodeId, options: UseImageCropOptions) {
   }
 
   const initialize = () => {
-    if (nodeId != null) {
-      node.value = resolveNode(nodeId) ?? null
-    }
+    if (nodeId != null) node.value = resolveNode(nodeId) ?? null
 
     updateImageUrl()
   }

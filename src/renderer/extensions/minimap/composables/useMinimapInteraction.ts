@@ -36,9 +36,8 @@ export function useMinimapInteraction(
     isDragging.value = true
     updateContainerRect()
     const target = e.currentTarget
-    if (target instanceof HTMLElement) {
-      target.setPointerCapture(e.pointerId)
-    }
+    if (target instanceof HTMLElement) target.setPointerCapture(e.pointerId)
+
     handlePointerMove(e)
   }
 
@@ -62,12 +61,8 @@ export function useMinimapInteraction(
     if (!e) return
 
     const target = e.currentTarget
-    if (
-      target instanceof HTMLElement &&
-      target.hasPointerCapture(e.pointerId)
-    ) {
+    if (target instanceof HTMLElement && target.hasPointerCapture(e.pointerId))
       target.releasePointerCapture(e.pointerId)
-    }
   }
 
   const handlePointerUp = releasePointer
@@ -84,9 +79,8 @@ export function useMinimapInteraction(
       containerRect.value.left === 0 &&
       containerRect.value.top === 0 &&
       containerRef.value
-    ) {
+    )
       updateContainerRect()
-    }
 
     const ds = c.ds
     const delta = e.deltaY > 0 ? 0.9 : 1.1

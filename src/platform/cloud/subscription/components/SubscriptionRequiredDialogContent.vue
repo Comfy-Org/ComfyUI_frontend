@@ -193,9 +193,7 @@ const showCustomPricingTable = computed(() => isSubscriptionEnabled())
 watch(
   () => isActiveSubscription.value,
   (isActive) => {
-    if (isActive && showCustomPricingTable.value) {
-      emit('close', true)
-    }
+    if (isActive && showCustomPricingTable.value) emit('close', true)
   }
 )
 
@@ -204,11 +202,8 @@ const handleSubscribed = () => {
 }
 
 const handleChooseTeam = () => {
-  if (onChooseTeam) {
-    onChooseTeam()
-  } else {
-    onClose()
-  }
+  if (onChooseTeam) onChooseTeam()
+  else onClose()
 }
 
 const handleClose = () => {

@@ -46,9 +46,8 @@ export async function setupBuilder(
   await appMode.enterBuilder()
   await appMode.steps.goToInputs()
 
-  for (const name of inputWidgets) {
+  for (const name of inputWidgets)
     await appMode.select.selectInputWidget(inputNodeTitle, name)
-  }
 
   await appMode.steps.goToOutputs()
   await appMode.select.selectOutputNode('Save Image')

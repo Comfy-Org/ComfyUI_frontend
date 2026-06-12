@@ -20,9 +20,8 @@ export class AssetWidget
 
     // Force canvas redraw when value changes to show update immediately
     if (oldValue !== value && this.node.graph?.list_of_graphcanvas) {
-      for (const canvas of this.node.graph.list_of_graphcanvas) {
+      for (const canvas of this.node.graph.list_of_graphcanvas)
         canvas.setDirty(true)
-      }
     }
   }
 
@@ -44,9 +43,8 @@ export class AssetWidget
 
     this.drawWidgetShape(ctx, options)
 
-    if (showText) {
+    if (showText)
       this.drawTruncatingText({ ctx, width, leftPadding: 0, rightPadding: 0 })
-    }
 
     // Restore original context attributes
     Object.assign(ctx, { textAlign, strokeStyle, fillStyle })

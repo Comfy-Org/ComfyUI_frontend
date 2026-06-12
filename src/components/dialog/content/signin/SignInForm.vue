@@ -108,9 +108,7 @@ const emit = defineEmits<{
 const emailInputId = 'comfy-org-sign-in-email'
 
 const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
-  if (event.valid) {
-    emit('submit', event.values as SignInData)
-  }
+  if (event.valid) emit('submit', event.values as SignInData)
 }, 1_500)
 
 const handleForgotPassword = async (

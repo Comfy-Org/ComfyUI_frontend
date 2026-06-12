@@ -218,9 +218,9 @@ const createInputMappingWidget = (
   )
 
   if (inputSpec.control_after_generate) {
-    if (!isComboWidget(widget)) {
+    if (!isComboWidget(widget))
       throw new Error(`Expected combo widget but received ${widget.type}`)
-    }
+
     const defaultType =
       typeof inputSpec.control_after_generate === 'string'
         ? inputSpec.control_after_generate
@@ -276,9 +276,8 @@ const addComboWidget = (
   )
 
   if (inputSpec.remote) {
-    if (!isComboWidget(widget)) {
+    if (!isComboWidget(widget))
       throw new Error(`Expected combo widget but received ${widget.type}`)
-    }
 
     const remoteWidget = useRemoteWidget({
       remoteConfig: inputSpec.remote,
@@ -292,9 +291,8 @@ const addComboWidget = (
   }
 
   if (inputSpec.control_after_generate) {
-    if (!isComboWidget(widget)) {
+    if (!isComboWidget(widget))
       throw new Error(`Expected combo widget but received ${widget.type}`)
-    }
 
     const defaultType =
       typeof inputSpec.control_after_generate === 'string'
@@ -317,9 +315,9 @@ export const useComboWidget = () => {
     node: LGraphNode,
     inputSpec: InputSpec
   ) => {
-    if (!isComboInputSpec(inputSpec)) {
+    if (!isComboInputSpec(inputSpec))
       throw new Error(`Invalid input data: ${inputSpec}`)
-    }
+
     return inputSpec.multi_select
       ? addMultiSelectWidget(node, inputSpec)
       : addComboWidget(node, inputSpec)

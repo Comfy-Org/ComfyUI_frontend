@@ -66,16 +66,18 @@ export class FloatingRenderLink implements RenderLink {
     if (outputNodeId !== -1) {
       // Output connected
       const outputNode = network.getNodeById(outputNodeId) ?? undefined
-      if (!outputNode)
+      if (!outputNode) {
         throw new Error(
           `Creating DraggingRenderLink for link [${link.id}] failed: Output node [${outputNodeId}] not found.`
         )
+      }
 
       const outputSlot = outputNode?.outputs.at(outputIndex)
-      if (!outputSlot)
+      if (!outputSlot) {
         throw new Error(
           `Creating DraggingRenderLink for link [${link.id}] failed: Output slot [${outputIndex}] not found.`
         )
+      }
 
       this.outputNodeId = outputNodeId
       this.outputNode = outputNode
@@ -93,16 +95,18 @@ export class FloatingRenderLink implements RenderLink {
     } else {
       // Input connected
       const inputNode = network.getNodeById(inputNodeId) ?? undefined
-      if (!inputNode)
+      if (!inputNode) {
         throw new Error(
           `Creating DraggingRenderLink for link [${link.id}] failed: Input node [${inputNodeId}] not found.`
         )
+      }
 
       const inputSlot = inputNode?.inputs.at(inputIndex)
-      if (!inputSlot)
+      if (!inputSlot) {
         throw new Error(
           `Creating DraggingRenderLink for link [${link.id}] failed: Input slot [${inputIndex}] not found.`
         )
+      }
 
       this.inputNodeId = inputNodeId
       this.inputNode = inputNode

@@ -38,9 +38,7 @@ const collapseMap = reactive<Record<string, boolean>>({})
 watch(
   () => workflowStore.activeWorkflow?.path,
   () => {
-    for (const key of Object.keys(collapseMap)) {
-      delete collapseMap[key]
-    }
+    for (const key of Object.keys(collapseMap)) delete collapseMap[key]
   }
 )
 
@@ -60,9 +58,8 @@ const isAllCollapsed = computed({
     )
   },
   set(collapse: boolean) {
-    for (const { node } of widgetsSectionDataList.value) {
+    for (const { node } of widgetsSectionDataList.value)
       setSectionCollapsed(node.id, collapse)
-    }
   }
 })
 

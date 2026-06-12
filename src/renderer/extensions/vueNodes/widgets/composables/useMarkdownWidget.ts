@@ -72,9 +72,9 @@ function addMarkdownWidget(
   inputEl.addEventListener(
     'input',
     (event) => {
-      if (event.target instanceof HTMLTextAreaElement) {
+      if (event.target instanceof HTMLTextAreaElement)
         widget.value = event.target.value
-      }
+
       widget.callback?.(widget.value)
     },
     { signal }

@@ -14,9 +14,7 @@ export function usePragmaticDroppable(
   onMounted(() => {
     const element = toValue(dropTargetElement)
 
-    if (!element) {
-      return
-    }
+    if (!element) return
 
     cleanup = dropTargetForElements({
       element,
@@ -38,9 +36,7 @@ export function usePragmaticDraggable(
   onMounted(() => {
     const element = toValue(draggableElement)
 
-    if (!element) {
-      return
-    }
+    if (!element) return
 
     cleanup = draggable({
       element,

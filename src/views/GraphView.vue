@@ -115,9 +115,7 @@ const { isBuilderMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
 
 watch(linearMode, (isLinear) => {
-  if (isLinear) {
-    useSidebarTabStore().activeSidebarTabId = null
-  }
+  if (isLinear) useSidebarTabStore().activeSidebarTabId = null
 })
 
 const telemetry = useTelemetry()
@@ -128,11 +126,9 @@ watch(
   () => colorPaletteStore.completedActivePalette,
   (newTheme) => {
     const DARK_THEME_CLASS = 'dark-theme'
-    if (newTheme.light_theme) {
-      document.body.classList.remove(DARK_THEME_CLASS)
-    } else {
-      document.body.classList.add(DARK_THEME_CLASS)
-    }
+    if (newTheme.light_theme) document.body.classList.remove(DARK_THEME_CLASS)
+    else document.body.classList.add(DARK_THEME_CLASS)
+
     if (isDesktop) {
       electronAPI().changeTheme({
         color: 'rgba(0, 0, 0, 0)',
@@ -197,9 +193,7 @@ watchEffect(async () => {
     // Self-heal: a stored value from an older build (e.g. 'de') would otherwise
     // leave the language dropdown — derived from SUPPORTED_LOCALE_OPTIONS —
     // showing nothing selected until the user picks one manually.
-    if (resolved !== locale) {
-      await settingStore.set('Comfy.Locale', resolved)
-    }
+    if (resolved !== locale) await settingStore.set('Comfy.Locale', resolved)
   } catch (error) {
     console.error(`Failed to switch to locale "${locale}":`, error)
   }
@@ -237,18 +231,16 @@ const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
   await queueStore.update()
   // Only update assets if the assets sidebar is currently open
   // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
+  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value)
     await assetsStore.updateHistory()
-  }
 }
 
 const onExecutionSuccess = async () => {
   await queueStore.update()
   // Only update assets if the assets sidebar is currently open
   // When sidebar is closed, AssetsSidebarTab.vue will refresh on mount
-  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value) {
+  if (sidebarTabStore.activeSidebarTabId === 'assets' || linearMode.value)
     await assetsStore.updateHistory()
-  }
 }
 
 const { onReconnecting, onReconnected } = useReconnectingNotification()
@@ -321,9 +313,8 @@ const onGraphReady = () => {
         if (
           event.data.type === 'heartbeat' &&
           event.data.tabId !== currentTabId
-        ) {
+        )
           activeTabs.set(event.data.tabId, Date.now())
-        }
       }
 
       // 5-minute heartbeat interval
@@ -332,9 +323,7 @@ const onGraphReady = () => {
 
         // Clean up stale tabs (no heartbeat for 45 seconds)
         activeTabs.forEach((lastHeartbeat, tabId) => {
-          if (now - lastHeartbeat > 45000) {
-            activeTabs.delete(tabId)
-          }
+          if (now - lastHeartbeat > 45000) activeTabs.delete(tabId)
         })
 
         // Broadcast our heartbeat
@@ -353,9 +342,8 @@ const onGraphReady = () => {
     }
 
     // Shell layout snapshot, once per session (cloud only)
-    if (isCloud && telemetry) {
+    if (isCloud && telemetry)
       telemetry.trackShellLayout(getShellLayoutSnapshot())
-    }
 
     // Setting values now available after comfyApp.setup.
     // Load keybindings.

@@ -80,17 +80,13 @@ test.describe(
           await expect.poll(node.pollWidth).toBeGreaterThan(box.width)
           await expect.poll(node.pollHeight).toBeGreaterThan(box.height)
 
-          if (hasWestEdge(corner)) {
+          if (hasWestEdge(corner))
             await expect.poll(node.pollLeftEdge).toBeLessThan(box.x)
-          } else {
-            await expect.poll(node.pollLeftEdge).toBeCloseTo(box.x, 0)
-          }
+          else await expect.poll(node.pollLeftEdge).toBeCloseTo(box.x, 0)
 
-          if (hasNorthEdge(corner)) {
+          if (hasNorthEdge(corner))
             await expect.poll(node.pollTopEdge).toBeLessThan(box.y)
-          } else {
-            await expect.poll(node.pollTopEdge).toBeCloseTo(box.y, 0)
-          }
+          else await expect.poll(node.pollTopEdge).toBeCloseTo(box.y, 0)
         })
       })
     })

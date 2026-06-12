@@ -41,17 +41,11 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   let tierKeyParam: string | null = null
   let cycleParam = 'monthly'
 
-  if (typeof rawType === 'string') {
-    tierKeyParam = rawType
-  } else if (Array.isArray(rawType) && rawType[0]) {
-    tierKeyParam = rawType[0]
-  }
+  if (typeof rawType === 'string') tierKeyParam = rawType
+  else if (Array.isArray(rawType) && rawType[0]) tierKeyParam = rawType[0]
 
-  if (typeof rawCycle === 'string') {
-    cycleParam = rawCycle
-  } else if (Array.isArray(rawCycle) && rawCycle[0]) {
-    cycleParam = rawCycle[0]
-  }
+  if (typeof rawCycle === 'string') cycleParam = rawCycle
+  else if (Array.isArray(rawCycle) && rawCycle[0]) cycleParam = rawCycle[0]
 
   if (!tierKeyParam) {
     await router.push('/')
@@ -70,13 +64,10 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   selectedTierKey.value = tierKey
 
   const validCycles: BillingCycle[] = ['monthly', 'yearly']
-  if (!cycleParam || !(validCycles as string[]).includes(cycleParam)) {
+  if (!cycleParam || !(validCycles as string[]).includes(cycleParam))
     cycleParam = 'monthly'
-  }
 
-  if (!isInitialized.value) {
-    await initialize()
-  }
+  if (!isInitialized.value) await initialize()
 
   if (isActiveSubscription.value) {
     await accessBillingPortal(undefined, false)

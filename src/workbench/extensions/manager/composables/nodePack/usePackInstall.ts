@@ -28,9 +28,8 @@ export function usePackInstall(
   })
 
   const createPayload = (installItem: NodePack) => {
-    if (!installItem.id) {
+    if (!installItem.id)
       throw new Error(t('manager.packInstall.nodeIdRequired'))
-    }
 
     const isUnclaimedPack = installItem.publisher?.name === 'Unclaimed'
     const versionToInstall = isUnclaimedPack

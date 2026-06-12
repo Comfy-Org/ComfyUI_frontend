@@ -68,9 +68,8 @@ export function useSettingSearch() {
         setting.type === 'hidden' ||
         setting.deprecated ||
         (shouldRenderVueNodes.value && setting.hideInVueNodes)
-      ) {
+      )
         return false
-      }
 
       const idLower = setting.id.toLowerCase()
       const nameLower = setting.name.toLowerCase()
@@ -102,9 +101,8 @@ export function useSettingSearch() {
         if (
           item.key.toLocaleLowerCase().includes(queryLower) ||
           item.label.toLocaleLowerCase().includes(queryLower)
-        ) {
+        )
           matchedNavItemKeys.value.add(item.key)
-        }
       }
     }
 

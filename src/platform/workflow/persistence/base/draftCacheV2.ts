@@ -86,9 +86,7 @@ export function removeEntry(
 ): { index: DraftIndexV2; removedKey: string | null } {
   const draftKey = hashPath(path)
 
-  if (!(draftKey in index.entries)) {
-    return { index, removedKey: null }
-  }
+  if (!(draftKey in index.entries)) return { index, removedKey: null }
 
   const entries = { ...index.entries }
   delete entries[draftKey]

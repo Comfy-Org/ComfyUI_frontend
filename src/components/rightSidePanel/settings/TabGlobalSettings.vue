@@ -67,9 +67,9 @@ const showConnectedLinks = computed({
   get: () => settingStore.get('Comfy.LinkRenderMode') !== LiteGraph.HIDDEN_LINK,
   set: (value) => {
     let oldLinkRenderMode = settingStore.get('Comfy.LinkRenderMode')
-    if (oldLinkRenderMode !== LiteGraph.HIDDEN_LINK) {
+    if (oldLinkRenderMode !== LiteGraph.HIDDEN_LINK)
       theOldLinkRenderMode = oldLinkRenderMode
-    }
+
     const newMode = value ? theOldLinkRenderMode : LiteGraph.HIDDEN_LINK
     settingStore.set('Comfy.LinkRenderMode', newMode)
   }

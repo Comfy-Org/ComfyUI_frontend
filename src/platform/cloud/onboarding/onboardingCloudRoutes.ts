@@ -58,9 +58,7 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
               await import('@/composables/auth/useCurrentUser')
             const { isLoggedIn } = useCurrentUser()
 
-            if (isLoggedIn.value) {
-              return next(await oauthConsentRedirect())
-            }
+            if (isLoggedIn.value) return next(await oauthConsentRedirect())
           }
           next()
         }
@@ -76,9 +74,7 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
               await import('@/composables/auth/useCurrentUser')
             const { isLoggedIn } = useCurrentUser()
 
-            if (isLoggedIn.value) {
-              return next(await oauthConsentRedirect())
-            }
+            if (isLoggedIn.value) return next(await oauthConsentRedirect())
           }
           next()
         }

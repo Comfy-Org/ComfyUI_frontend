@@ -52,9 +52,8 @@ const useNodePreview = <T extends MediaElement>(
       createTimeout(MEDIA_LOAD_TIMEOUT)
     ])
 
-    if (result === null && retryCount < MAX_RETRIES) {
+    if (result === null && retryCount < MAX_RETRIES)
       return loadElementWithTimeout(url, retryCount + 1)
-    }
 
     return result
   }

@@ -104,9 +104,8 @@ watch(
         cachedSrc.value = src
       }
     } else if (!shouldLoadVal) {
-      if (cachedSrc.value?.startsWith('blob:')) {
-        releaseUrl(src)
-      }
+      if (cachedSrc.value?.startsWith('blob:')) releaseUrl(src)
+
       // Hide image when out of view
       isImageLoaded.value = false
       cachedSrc.value = undefined
@@ -127,8 +126,6 @@ const onImageError = () => {
 }
 
 onUnmounted(() => {
-  if (cachedSrc.value?.startsWith('blob:')) {
-    releaseUrl(src)
-  }
+  if (cachedSrc.value?.startsWith('blob:')) releaseUrl(src)
 })
 </script>

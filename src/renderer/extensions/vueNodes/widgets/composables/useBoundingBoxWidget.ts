@@ -49,9 +49,7 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
         for (let i = 0; i < fields.length; i++) {
           const field = fields[i]
           const subWidget = subWidgets[i]
-          if (subWidget) {
-            subWidget.value = widget.value[field]
-          }
+          if (subWidget) subWidget.value = widget.value[field]
         }
       },
       {
@@ -60,9 +58,8 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
       }
     )
 
-    if (!isBoundingBoxLikeWidget(rawWidget)) {
+    if (!isBoundingBoxLikeWidget(rawWidget))
       throw new Error(`Unexpected widget type: ${rawWidget.type}`)
-    }
 
     const widget = rawWidget
 
@@ -87,9 +84,8 @@ export const useBoundingBoxWidget = (): ComfyWidgetConstructorV2 => {
         }
       )
 
-      if (!isNumericWidget(subWidget)) {
+      if (!isNumericWidget(subWidget))
         throw new Error(`Unexpected widget type: ${subWidget.type}`)
-      }
 
       subWidgets.push(subWidget)
     }

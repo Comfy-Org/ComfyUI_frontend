@@ -315,9 +315,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     const subgraphInput = this.originIsIoNode
       ? network.inputNode?.slots[this.origin_slot]
       : undefined
-    if (subgraphInput) {
-      return { inputNode, input, subgraphInput, link: this }
-    }
+    if (subgraphInput) return { inputNode, input, subgraphInput, link: this }
 
     const outputNode =
       this.origin_id === -1

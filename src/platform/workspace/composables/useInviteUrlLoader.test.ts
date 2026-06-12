@@ -55,9 +55,9 @@ vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: vi.fn((key: string, params?: Record<string, unknown>) => {
       if (key === 'workspace.inviteAccepted') return 'Invite Accepted'
-      if (key === 'workspace.addedToWorkspace') {
+      if (key === 'workspace.addedToWorkspace')
         return `You have been added to ${params?.workspaceName}`
-      }
+
       if (key === 'workspace.inviteFailed') return 'Failed to Accept Invite'
       if (key === 'g.unknownError') return 'Unknown error'
       return key

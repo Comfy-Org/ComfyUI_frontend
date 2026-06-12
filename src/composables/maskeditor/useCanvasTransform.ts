@@ -128,9 +128,8 @@ export function useCanvasTransform() {
       !store.rgbCanvas ||
       !store.maskCtx ||
       !store.rgbCtx
-    ) {
+    )
       return
-    }
 
     // Get references to GPU resources from useBrushDrawing
     // These are stored as module-level variables in useBrushDrawing
@@ -219,9 +218,7 @@ export function useCanvasTransform() {
     imgCtx.putImageData(rotatedImg, 0, 0)
 
     // Recreate GPU textures with new dimensions if GPU is active
-    if (store.tgpuRoot) {
-      await recreateGPUTextures(origHeight, origWidth)
-    }
+    if (store.tgpuRoot) await recreateGPUTextures(origHeight, origWidth)
 
     // Save to history
     store.canvasHistory.saveState(rotatedMask, rotatedRgb, rotatedImg)
@@ -268,9 +265,7 @@ export function useCanvasTransform() {
     imgCtx.putImageData(rotatedImg, 0, 0)
 
     // Recreate GPU textures with new dimensions if GPU is active
-    if (store.tgpuRoot) {
-      await recreateGPUTextures(origHeight, origWidth)
-    }
+    if (store.tgpuRoot) await recreateGPUTextures(origHeight, origWidth)
 
     // Save to history
     store.canvasHistory.saveState(rotatedMask, rotatedRgb, rotatedImg)
@@ -305,9 +300,8 @@ export function useCanvasTransform() {
     imgCtx.putImageData(mirroredImg, 0, 0)
 
     // Update GPU textures if GPU is active (dimensions unchanged, just data)
-    if (store.tgpuRoot) {
+    if (store.tgpuRoot)
       await recreateGPUTextures(maskCanvas.width, maskCanvas.height)
-    }
 
     // Save to history
     store.canvasHistory.saveState(mirroredMask, mirroredRgb, mirroredImg)
@@ -342,9 +336,8 @@ export function useCanvasTransform() {
     imgCtx.putImageData(mirroredImg, 0, 0)
 
     // Update GPU textures if GPU is active (dimensions unchanged, just data)
-    if (store.tgpuRoot) {
+    if (store.tgpuRoot)
       await recreateGPUTextures(maskCanvas.width, maskCanvas.height)
-    }
 
     // Save to history
     store.canvasHistory.saveState(mirroredMask, mirroredRgb, mirroredImg)

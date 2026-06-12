@@ -67,14 +67,11 @@ const setDistribution = (distribution: Distribution) => {
 }
 
 function useSubscriptionWithScope() {
-  if (!scope) {
-    throw new Error('Test scope not initialized')
-  }
+  if (!scope) throw new Error('Test scope not initialized')
 
   const subscription = scope.run(() => useSubscription())
-  if (!subscription) {
+  if (!subscription)
     throw new Error('Failed to initialize subscription composable')
-  }
 
   return subscription
 }
@@ -114,9 +111,8 @@ vi.mock('@/composables/useErrorHandling', () => ({
           try {
             return await fn(...args)
           } catch (error) {
-            if (errorHandler) {
-              errorHandler(error)
-            }
+            if (errorHandler) errorHandler(error)
+
             throw error
           }
         }

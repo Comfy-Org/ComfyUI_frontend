@@ -41,9 +41,8 @@ async function getChangeTrackerDebugState(comfyPage: ComfyPage) {
     const workflow = workflowStore.workflow
       .activeWorkflow as ActiveWorkflowLike | null
     const tracker = workflow?.changeTracker
-    if (!workflow || !tracker) {
+    if (!workflow || !tracker)
       throw new Error('Active workflow change tracker is not available')
-    }
 
     const currentState = JSON.parse(
       JSON.stringify(window.app!.rootGraph.serialize())

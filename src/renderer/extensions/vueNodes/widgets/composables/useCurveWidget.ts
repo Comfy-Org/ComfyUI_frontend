@@ -24,9 +24,8 @@ export const useCurveWidget = (): ComfyWidgetConstructorV2 => {
 
     const rawWidget = node.addWidget('curve', spec.name, defaultValue, () => {})
 
-    if (rawWidget.type !== 'curve') {
+    if (rawWidget.type !== 'curve')
       throw new Error(`Unexpected widget type: ${rawWidget.type}`)
-    }
 
     return rawWidget as ICurveWidget
   }

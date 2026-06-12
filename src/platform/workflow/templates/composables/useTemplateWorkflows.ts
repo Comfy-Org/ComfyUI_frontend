@@ -32,9 +32,9 @@ export function useTemplateWorkflows() {
    * Loads all template workflows from the API
    */
   const loadTemplates = async () => {
-    if (!workflowTemplatesStore.isLoaded) {
+    if (!workflowTemplatesStore.isLoaded)
       await workflowTemplatesStore.loadWorkflowTemplates()
-    }
+
     return workflowTemplatesStore.isLoaded
   }
 

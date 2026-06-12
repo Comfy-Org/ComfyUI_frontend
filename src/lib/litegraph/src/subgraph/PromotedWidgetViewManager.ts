@@ -49,9 +49,8 @@ export class PromotedWidgetViewManager<TView> {
       views.push(nextView)
     }
 
-    for (const key of this.viewCache.keys()) {
+    for (const key of this.viewCache.keys())
       if (!seenKeys.has(key)) this.viewCache.delete(key)
-    }
 
     this.cachedViews = views
     this.cachedEntryKeys = entryKeys
@@ -101,9 +100,9 @@ export class PromotedWidgetViewManager<TView> {
     if (!this.cachedEntryKeys) return false
     if (this.cachedEntryKeys.length !== entryKeys.length) return false
 
-    for (let index = 0; index < entryKeys.length; index += 1) {
+    for (let index = 0; index < entryKeys.length; index += 1)
       if (this.cachedEntryKeys[index] !== entryKeys[index]) return false
-    }
+
     return true
   }
 

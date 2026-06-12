@@ -21,9 +21,8 @@ export function warnDeprecated(message: string, source?: object): void {
     sentWarnings.add(message)
   }
 
-  for (const callback of LiteGraph.onDeprecationWarning) {
+  for (const callback of LiteGraph.onDeprecationWarning)
     callback(message, source)
-  }
 }
 
 /**

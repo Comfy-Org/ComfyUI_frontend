@@ -142,9 +142,9 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
             const node = window.app!.graph.getNodeById(nodeId)
             const index =
               node?.inputs?.findIndex((input) => input.name === inputName) ?? -1
-            if (index < 0) {
+            if (index < 0)
               throw new Error(`Input slot "${inputName}" not found`)
-            }
+
             return index
           },
           { nodeId: ksamplerId, inputName: KSAMPLER_MODEL_INPUT_NAME }
@@ -264,9 +264,8 @@ test.describe('Vue Node Error', { tag: '@vue-nodes' }, () => {
       await test.step('drop an image onto the Load Image node', async () => {
         const dropPosition =
           await comfyPage.canvasOps.getNodeCenterByTitle('Load Image')
-        if (!dropPosition) {
+        if (!dropPosition)
           throw new Error('Load Image node center must be available for drop')
-        }
 
         await comfyPage.dragDrop.dragAndDropFile(LOAD_IMAGE_UPLOAD_FILE, {
           dropPosition,

@@ -37,8 +37,6 @@ const isBookmarked = computed(
 )
 
 const handleBookmarkClick = async () => {
-  if (node.data) {
-    await workflowBookmarkStore.toggleBookmarked(node.data.path)
-  }
+  if (node.data) await workflowBookmarkStore.toggleBookmarked(node.data.path)
 }
 </script>

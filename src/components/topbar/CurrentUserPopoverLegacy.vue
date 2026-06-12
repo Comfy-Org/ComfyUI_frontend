@@ -231,11 +231,8 @@ const handleOpenPlansAndPricing = () => {
 }
 
 const handleOpenPlanAndCreditsSettings = () => {
-  if (isCloud) {
-    settingsDialog.show('subscription')
-  } else {
-    settingsDialog.show('credits')
-  }
+  if (isCloud) settingsDialog.show('subscription')
+  else settingsDialog.show('credits')
 
   emit('close')
 }

@@ -41,9 +41,7 @@ function useNodeEventHandlersIndividual() {
       !multiSelect && node.selected && selectedItemsCount > 1
 
     if (multiSelect) {
-      if (!node.selected) {
-        canvasStore.canvas.select(node)
-      }
+      if (!node.selected) canvasStore.canvas.select(node)
     } else if (!preserveExistingSelection) {
       // Regular click -> single select
       canvasStore.canvas.deselectAll()
@@ -52,9 +50,7 @@ function useNodeEventHandlersIndividual() {
 
     // Bring node to front when clicked (similar to LiteGraph behavior)
     // Skip if node is pinned to avoid unwanted movement
-    if (!node.flags?.pinned) {
-      bringNodeToFront(nodeId)
-    }
+    if (!node.flags?.pinned) bringNodeToFront(nodeId)
 
     // Update canvas selection tracking
     canvasStore.updateSelectedItems()
@@ -74,9 +70,7 @@ function useNodeEventHandlersIndividual() {
 
     // Use LiteGraph's collapse method if the state needs to change
     const currentCollapsed = node.flags?.collapsed ?? false
-    if (currentCollapsed !== collapsed) {
-      node.collapse()
-    }
+    if (currentCollapsed !== collapsed) node.collapse()
   }
 
   /**
@@ -95,9 +89,7 @@ function useNodeEventHandlersIndividual() {
     node.title = newTitle
 
     // If this is a subgraph node, sync the subgraph name for breadcrumb reactivity
-    if (node.isSubgraphNode?.()) {
-      node.subgraph.name = newTitle
-    }
+    if (node.isSubgraphNode?.()) node.subgraph.name = newTitle
   }
 
   /**
@@ -116,9 +108,7 @@ function useNodeEventHandlersIndividual() {
     event.preventDefault()
 
     // Select the node if not already selected
-    if (!node.selected) {
-      handleNodeSelect(event, nodeId)
-    }
+    if (!node.selected) handleNodeSelect(event, nodeId)
 
     // Let LiteGraph handle the context menu
     // The canvas will handle showing the appropriate context menu
@@ -140,9 +130,8 @@ function useNodeEventHandlersIndividual() {
       canvasStore.canvas.select(node)
       canvasStore.updateSelectedItems()
       // Bring node to front when selected (unless pinned)
-      if (!node.flags?.pinned) {
-        bringNodeToFront(nodeId)
-      }
+      if (!node.flags?.pinned) bringNodeToFront(nodeId)
+
       return
     }
 
@@ -151,9 +140,7 @@ function useNodeEventHandlersIndividual() {
     } else {
       canvasStore.canvas.select(node)
       // Bring node to front when selected (unless pinned)
-      if (!node.flags?.pinned) {
-        bringNodeToFront(nodeId)
-      }
+      if (!node.flags?.pinned) bringNodeToFront(nodeId)
     }
 
     canvasStore.updateSelectedItems()

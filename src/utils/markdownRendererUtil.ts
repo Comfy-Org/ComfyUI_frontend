@@ -23,9 +23,9 @@ export function createMarkdownRenderer(baseUrl?: string): Renderer {
   const renderer = new Renderer()
   renderer.image = ({ href, title, text }) => {
     let src = href
-    if (normalizedBase && !/^(?:\/|https?:\/\/)/.test(href)) {
+    if (normalizedBase && !/^(?:\/|https?:\/\/)/.test(href))
       src = `${normalizedBase}/${href}`
-    }
+
     const titleAttr = title ? ` title="${title}"` : ''
     return `<img src="${src}" alt="${text}"${titleAttr} />`
   }
@@ -49,9 +49,7 @@ export function renderMarkdownToHtml(
     gfm: true // Enable GitHub Flavored Markdown (including autolinks)
   }) as string
 
-  if (baseUrl) {
-    html = html.replace(MEDIA_SRC_REGEX, `$1${baseUrl}$2$3`)
-  }
+  if (baseUrl) html = html.replace(MEDIA_SRC_REGEX, `$1${baseUrl}$2$3`)
 
   return DOMPurify.sanitize(html, {
     ADD_TAGS: ALLOWED_TAGS,

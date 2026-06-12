@@ -58,9 +58,8 @@ describe('useAssetSelection properties', () => {
             selection.reconcileSelection(visibleAssets)
 
             const visibleIds = new Set(visibleAssets.map((a) => a.id))
-            for (const id of store.selectedAssetIds) {
+            for (const id of store.selectedAssetIds)
               expect(visibleIds.has(id)).toBe(true)
-            }
           }
         )
       )
@@ -81,9 +80,8 @@ describe('useAssetSelection properties', () => {
 
             selection.reconcileSelection(visibleAssets)
 
-            for (const id of store.selectedAssetIds) {
+            for (const id of store.selectedAssetIds)
               expect(initialIds.has(id)).toBe(true)
-            }
           }
         )
       )

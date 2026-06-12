@@ -205,9 +205,9 @@ const sidebarTabKey = computed(() => {
 
 const sidebarStateKey = computed(() => {
   const base = sidebarTabKey.value
-  if (sidebarLocation.value === 'left' && !showOffsideSplitter.value) {
+  if (sidebarLocation.value === 'left' && !showOffsideSplitter.value)
     return base
-  }
+
   const suffix = showOffsideSplitter.value ? '-with-offside' : ''
   return `${base}-${sidebarLocation.value}${suffix}`
 })
@@ -241,9 +241,9 @@ function normalizeSavedSizes() {
       !Array.isArray(parsed) ||
       parsed.length === 0 ||
       parsed.some((s) => typeof s !== 'number' || !Number.isFinite(s))
-    ) {
+    )
       return
-    }
+
     const sum = parsed.reduce((a, b) => a + b, 0)
     if (sum <= 0 || Math.abs(sum - 100) <= 0.5) return
     localStorage.setItem(
@@ -265,17 +265,17 @@ const splitterRefreshKey = computed(() => {
 
 const firstPanelStyle = computed(() => {
   if (focusMode.value) return { display: 'none' }
-  if (sidebarLocation.value === 'left') {
+  if (sidebarLocation.value === 'left')
     return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
-  }
+
   return undefined
 })
 
 const lastPanelStyle = computed(() => {
   if (focusMode.value) return { display: 'none' }
-  if (sidebarLocation.value === 'right') {
+  if (sidebarLocation.value === 'right')
     return { display: sidebarPanelVisible.value ? 'flex' : 'none' }
-  }
+
   return undefined
 })
 </script>

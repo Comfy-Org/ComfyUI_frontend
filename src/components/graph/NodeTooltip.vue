@@ -50,13 +50,10 @@ async function showTooltip(tooltip: string | null | undefined) {
   const rect = tooltipRef.value?.getBoundingClientRect()
   if (!rect) return
 
-  if (rect.right > window.innerWidth) {
+  if (rect.right > window.innerWidth)
     left.value = comfyApp.canvas.mouse[0] - rect.width + 'px'
-  }
 
-  if (rect.top < 0) {
-    top.value = comfyApp.canvas.mouse[1] + rect.height + 'px'
-  }
+  if (rect.top < 0) top.value = comfyApp.canvas.mouse[1] + rect.height + 'px'
 }
 
 function onIdle() {
@@ -70,9 +67,8 @@ function onIdle() {
   if (
     ctor.title_mode !== LiteGraph.NO_TITLE &&
     canvas.graph_mouse[1] < node.pos[1] // If we are over a node, but not within the node then we are on its title
-  ) {
+  )
     return showTooltip(nodeDef?.description)
-  }
 
   if (node.flags?.collapsed) return
 

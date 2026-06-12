@@ -50,9 +50,9 @@ const settingStore = useSettingStore()
 const dontShowAgain = ref(false)
 
 function dismiss() {
-  if (dontShowAgain.value) {
+  if (dontShowAgain.value)
     void settingStore.set('Comfy.AppBuilder.VueNodeSwitchDismissed', true)
-  }
+
   appModeStore.showVueNodeSwitchPopup = false
 }
 </script>

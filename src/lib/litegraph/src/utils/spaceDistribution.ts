@@ -20,9 +20,7 @@ export function distributeSpace(
   const totalMinSize = requests.reduce((sum, req) => sum + req.minSize, 0)
 
   // If we can't meet minimum requirements, return the minimum sizes
-  if (totalSpace < totalMinSize) {
-    return requests.map((req) => req.minSize)
-  }
+  if (totalSpace < totalMinSize) return requests.map((req) => req.minSize)
 
   // Initialize allocations with minimum sizes
   let allocations = requests.map((req) => ({

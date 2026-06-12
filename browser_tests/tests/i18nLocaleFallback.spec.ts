@@ -40,8 +40,7 @@ test.describe('i18n locale fallback', () => {
       .allTextContents()
 
     expect(labelTexts.length).toBeGreaterThan(0)
-    for (const text of labelTexts) {
+    for (const text of labelTexts)
       expect(text).not.toContain('sideToolbar.labels')
-    }
   })
 })

@@ -35,9 +35,8 @@ const formatValue = (value: string | number, field: string) => {
     )
   ) {
     const num = Number(value)
-    if (Number.isFinite(num)) {
-      return formatSize(num)
-    }
+    if (Number.isFinite(num)) return formatSize(num)
+
     return value
   }
   return value

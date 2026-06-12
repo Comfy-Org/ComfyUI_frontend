@@ -126,12 +126,11 @@ function getDisplayValue(column: ColumnDef) {
   const value = column.getValue
     ? column.getValue()
     : systemInfo.value[column.field]
-  if (column.formatNumber && typeof value === 'number') {
+  if (column.formatNumber && typeof value === 'number')
     return column.formatNumber(value)
-  }
-  if (column.format && typeof value === 'string') {
-    return column.format(value)
-  }
+
+  if (column.format && typeof value === 'string') return column.format(value)
+
   return value
 }
 
@@ -140,9 +139,8 @@ function formatSystemInfoText(): string {
 
   for (const col of systemColumns.value) {
     const display = getDisplayValue(col)
-    if (display !== undefined && display !== '') {
+    if (display !== undefined && display !== '')
       lines.push(`${col.header}: ${display}`)
-    }
   }
 
   if (hasDevices.value) {

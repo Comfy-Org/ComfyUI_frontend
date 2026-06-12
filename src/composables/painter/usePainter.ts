@@ -191,9 +191,9 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
   })
 
   function getCtx() {
-    if (!mainCtx && canvasEl.value) {
+    if (!mainCtx && canvasEl.value)
       mainCtx = canvasEl.value.getContext('2d') ?? null
-    }
+
     return mainCtx
   }
 
@@ -384,16 +384,13 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     const isEraser = tool.value === PAINTER_TOOLS.ERASER
     ctx.globalAlpha = isEraser ? 1 : brushOpacity.value
     ctx.globalCompositeOperation = isEraser ? 'destination-out' : 'source-over'
-    if (useDirty && sw > 0 && sh > 0) {
+    if (useDirty && sw > 0 && sh > 0)
       ctx.drawImage(strokeCanvas, sx, sy, sw, sh, sx, sy, sw, sh)
-    } else {
-      ctx.drawImage(strokeCanvas, 0, 0)
-    }
+    else ctx.drawImage(strokeCanvas, 0, 0)
+
     ctx.restore()
 
-    if (!isPreview) {
-      hasBaseSnapshot = false
-    }
+    if (!isPreview) hasBaseSnapshot = false
   }
 
   function startStroke(e: PointerEvent) {
@@ -434,9 +431,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     if (!point) return
 
     const points = strokeProcessor.addPoint(point)
-    if (points.length === 0 && lastPoint) {
-      points.push(point)
-    }
+    if (points.length === 0 && lastPoint) points.push(point)
 
     if (points.length === 0) return
 
@@ -494,9 +489,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     el.height = canvasHeight.value
     mainCtx = null
 
-    if (tmp) {
-      getCtx()?.drawImage(tmp, 0, 0)
-    }
+    if (tmp) getCtx()?.drawImage(tmp, 0, 0)
 
     strokeCanvas = null
     strokeCtx = null
@@ -549,9 +542,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     if (!isDrawing) return
 
     pendingMoveEvent = e
-    if (!rafId) {
-      rafId = requestAnimationFrame(flushPendingStroke)
-    }
+    if (!rafId) rafId = requestAnimationFrame(flushPendingStroke)
   }
 
   function handlePointerUp(e: PointerEvent) {
@@ -684,9 +675,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     const targetWidget = node.widgets.find(
       (w: IBaseWidget) => w.name === 'mask'
     )
-    if (targetWidget) {
-      targetWidget.serializeValue = serializeValue
-    }
+    if (targetWidget) targetWidget.serializeValue = serializeValue
   }
 
   function restoreCanvas() {

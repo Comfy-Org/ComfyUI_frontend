@@ -207,9 +207,7 @@ describe('SubgraphMemory - Event Listener Management', () => {
       expect(rootGraph.nodes.length).toBe(5)
 
       // Should be able to remove them all without issues
-      for (const node of nodes) {
-        rootGraph.remove(node)
-      }
+      for (const node of nodes) rootGraph.remove(node)
 
       expect(rootGraph.nodes.length).toBe(0)
     }
@@ -251,9 +249,7 @@ describe('SubgraphMemory - Event Listener Management', () => {
 
         expect(rootGraph.nodes.length).toBe(5)
 
-        for (const node of nodes) {
-          rootGraph.remove(node)
-        }
+        for (const node of nodes) rootGraph.remove(node)
 
         expect(rootGraph.nodes.length).toBe(0)
       }
@@ -376,9 +372,7 @@ describe('SubgraphMemory - Performance and Scale', () => {
     expect(rootGraph.nodes.length).toBe(25)
 
     // Remove all instances (proper cleanup)
-    for (const instance of instances) {
-      rootGraph.remove(instance)
-    }
+    for (const instance of instances) rootGraph.remove(instance)
 
     expect(rootGraph.nodes.length).toBe(0)
   })

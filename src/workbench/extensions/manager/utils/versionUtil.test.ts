@@ -275,11 +275,9 @@ describe('versionUtil', () => {
     })
 
     afterEach(() => {
-      if (originalEnv !== undefined) {
+      if (originalEnv !== undefined)
         import.meta.env.VITE_APP_VERSION = originalEnv
-      } else {
-        delete import.meta.env.VITE_APP_VERSION
-      }
+      else delete import.meta.env.VITE_APP_VERSION
     })
 
     it('should return app_version from config when available', () => {

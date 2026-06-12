@@ -99,9 +99,8 @@ export const useQueueEstimates = ({
     const avg = sorted.reduce((sum, value) => sum + value, 0) / sorted.length
     const p75 =
       sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * 0.75))]
-    if (ahead <= 0) {
-      return runningRemainingRangeSeconds.value ?? [0, 0]
-    }
+    if (ahead <= 0) return runningRemainingRangeSeconds.value ?? [0, 0]
+
     const runningCount = Math.max(1, runningWorkflowCount.value || 1)
     const batches = Math.ceil(ahead / runningCount)
     return [Math.round(avg * batches), Math.round(p75 * batches)]

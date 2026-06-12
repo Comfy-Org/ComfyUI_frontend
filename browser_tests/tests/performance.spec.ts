@@ -13,9 +13,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
 
     // Let the canvas idle for 2 seconds — no user interaction.
     // Measures baseline style recalcs from reactive state + render loop.
-    for (let i = 0; i < 120; i++) {
-      await comfyPage.nextFrame()
-    }
+    for (let i = 0; i < 120; i++) await comfyPage.nextFrame()
 
     const m = await comfyPage.perf.stopMeasuring('canvas-idle')
     recordMeasurement(m)
@@ -77,9 +75,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     await comfyPage.workflow.loadWorkflow('subgraphs/nested-subgraph')
     await comfyPage.perf.startMeasuring()
 
-    for (let i = 0; i < 120; i++) {
-      await comfyPage.nextFrame()
-    }
+    for (let i = 0; i < 120; i++) await comfyPage.nextFrame()
 
     const m = await comfyPage.perf.stopMeasuring('subgraph-idle')
     recordMeasurement(m)
@@ -118,9 +114,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
 
     // Let the large graph idle for 2 seconds — measures compositor and
     // style recalculation cost at scale (245 nodes).
-    for (let i = 0; i < 120; i++) {
-      await comfyPage.nextFrame()
-    }
+    for (let i = 0; i < 120; i++) await comfyPage.nextFrame()
 
     const m = await comfyPage.perf.stopMeasuring('large-graph-idle')
     recordMeasurement(m)
@@ -263,9 +257,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     await comfyPage.perf.startMeasuring()
 
     // Idle for 2 seconds with minimap open and 245 nodes
-    for (let i = 0; i < 120; i++) {
-      await comfyPage.nextFrame()
-    }
+    for (let i = 0; i < 120; i++) await comfyPage.nextFrame()
 
     const m = await comfyPage.perf.stopMeasuring('minimap-idle')
     recordMeasurement(m)
@@ -284,9 +276,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
     test('idle', async ({ comfyPage }) => {
       await comfyPage.perf.startMeasuring()
 
-      for (let i = 0; i < 120; i++) {
-        await comfyPage.nextFrame()
-      }
+      for (let i = 0; i < 120; i++) await comfyPage.nextFrame()
 
       const m = await comfyPage.perf.stopMeasuring('vue-large-graph-idle')
       recordMeasurement(m)
@@ -324,9 +314,7 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
 
       // Zoom out far enough that nodes become < 4px screen size
       // (triggers size-based culling in isNodeInViewport)
-      for (let i = 0; i < 20; i++) {
-        await comfyPage.canvasOps.zoom(100)
-      }
+      for (let i = 0; i < 20; i++) await comfyPage.canvasOps.zoom(100)
 
       // Verify we actually entered the culling regime.
       // isNodeTooSmall triggers when max(width, height) * scale < 4px.
@@ -334,14 +322,10 @@ test.describe('Performance', { tag: ['@perf'] }, () => {
       await expect.poll(() => comfyPage.canvasOps.getScale()).toBeLessThan(0.02)
 
       // Idle at extreme zoom-out — most nodes should be culled
-      for (let i = 0; i < 60; i++) {
-        await comfyPage.nextFrame()
-      }
+      for (let i = 0; i < 60; i++) await comfyPage.nextFrame()
 
       // Zoom back in
-      for (let i = 0; i < 20; i++) {
-        await comfyPage.canvasOps.zoom(-100)
-      }
+      for (let i = 0; i < 20; i++) await comfyPage.canvasOps.zoom(-100)
 
       const m = await comfyPage.perf.stopMeasuring('vue-zoom-culling')
       recordMeasurement(m)

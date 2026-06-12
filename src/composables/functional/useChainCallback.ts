@@ -18,8 +18,6 @@ export function useChainCallback<O, T>(
     if (typeof originalCallback === 'function') {
       ;(originalCallback as (this: O, ...args: Args) => Ret).call(this, ...args)
     }
-    for (const callback of callbacks) {
-      callback.call(this, ...args)
-    }
+    for (const callback of callbacks) callback.call(this, ...args)
   } as (this: O, ...args: Args) => Ret
 }

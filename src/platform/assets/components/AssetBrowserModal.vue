@@ -160,11 +160,8 @@ const isLoading = computed(
 
 async function refreshAssets(): Promise<void> {
   if (props.overrideAssets) return
-  if (props.nodeType) {
-    await assetStore.updateModelsForNodeType(props.nodeType)
-  } else if (props.assetType) {
-    await assetStore.updateModelsForTag(props.assetType)
-  }
+  if (props.nodeType) await assetStore.updateModelsForNodeType(props.nodeType)
+  else if (props.assetType) await assetStore.updateModelsForTag(props.assetType)
 }
 
 void refreshAssets()
@@ -208,9 +205,8 @@ const primaryCategoryTag = computed(() => {
 })
 
 const activeCategoryTag = computed(() => {
-  if (selectedCategory.value !== 'all') {
-    return selectedCategory.value
-  }
+  if (selectedCategory.value !== 'all') return selectedCategory.value
+
   return primaryCategoryTag.value
 })
 

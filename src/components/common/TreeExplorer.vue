@@ -98,16 +98,13 @@ const renderedRoot = computed<RenderedTreeExplorerNode<T>>(() => {
 const getTreeNodeIcon = (node: TreeExplorerNode<T>) => {
   if (node.getIcon) {
     const icon = node.getIcon()
-    if (icon) {
-      return icon
-    }
+    if (icon) return icon
   } else if (node.icon) {
     return node.icon
   }
   // node.icon is undefined
-  if (node.leaf) {
-    return 'pi pi-file'
-  }
+  if (node.leaf) return 'pi pi-file'
+
   const isExpanded = expandedKeys.value?.[node.key] ?? false
   return isExpanded ? 'pi pi-folder-open' : 'pi pi-folder'
 }
@@ -132,12 +129,10 @@ const onNodeContentClick = async (
   e: MouseEvent,
   node: RenderedTreeExplorerNode<T>
 ) => {
-  if (!storeSelectionKeys) {
-    selectionKeys.value = {}
-  }
-  if (node.handleClick) {
-    await node.handleClick(e)
-  }
+  if (!storeSelectionKeys) selectionKeys.value = {}
+
+  if (node.handleClick) await node.handleClick(e)
+
   emit('nodeClick', node, e)
 }
 const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
@@ -159,11 +154,9 @@ const handleNodeLabelEdit = async (
   const node = n as RenderedTreeExplorerNode<T>
   await errorHandling.wrapWithErrorHandlingAsync(
     async () => {
-      if (node.key === newFolderNode.value?.key) {
+      if (node.key === newFolderNode.value?.key)
         await handleFolderCreation(newName)
-      } else {
-        await node.handleRename?.(newName)
-      }
+      else await node.handleRename?.(newName)
     },
     node.handleError,
     () => {
@@ -189,9 +182,7 @@ const menuItems = computed<MenuItem[]>(() => {
       label: t('g.rename'),
       icon: 'pi pi-file-edit',
       command: () => {
-        if (node) {
-          renameCommand(node)
-        }
+        if (node) renameCommand(node)
       },
       visible: node?.handleRename !== undefined
     },
@@ -199,9 +190,7 @@ const menuItems = computed<MenuItem[]>(() => {
       label: t('g.delete'),
       icon: 'pi pi-trash',
       command: async () => {
-        if (node) {
-          await deleteCommand(node)
-        }
+        if (node) await deleteCommand(node)
       },
       visible: node?.handleDelete !== undefined,
       isAsync: true // The delete command can be async
@@ -223,9 +212,8 @@ const handleContextMenu = (
 ) => {
   menuTargetNode.value = node
   emit('contextMenu', node, e)
-  if (menuItems.value.filter((item) => item.visible).length > 0) {
+  if (menuItems.value.filter((item) => item.visible).length > 0)
     menu.value?.show(e)
-  }
 }
 
 const wrapCommandWithErrorHandler = (
@@ -248,9 +236,7 @@ defineExpose({
    */
   addFolderCommand: (targetNodeKey: string) => {
     const targetNode = findNodeByKey(renderedRoot.value, targetNodeKey)
-    if (targetNode) {
-      addFolderCommand(targetNode)
-    }
+    if (targetNode) addFolderCommand(targetNode)
   }
 })
 </script>

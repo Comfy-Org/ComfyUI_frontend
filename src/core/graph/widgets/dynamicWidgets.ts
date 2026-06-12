@@ -260,7 +260,7 @@ function changeOutputType(
     const keep = LiteGraph.isValidConnection(combinedType, inputType)
     if (!keep && subgraphOutput) subgraphOutput.disconnect()
     else if (!keep && inputNode) inputNode.disconnectInput(link.target_slot)
-    if (input && inputNode?.onConnectionsChange)
+    if (input && inputNode?.onConnectionsChange) {
       inputNode.onConnectionsChange(
         LiteGraph.INPUT,
         link.target_slot,
@@ -268,6 +268,7 @@ function changeOutputType(
         link,
         input
       )
+    }
   }
 }
 
@@ -526,9 +527,9 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   }
   const removalChecks = groupInputs.slice(min * stride)
   let i
-  for (i = removalChecks.length - stride; i >= 0; i -= stride) {
+  for (i = removalChecks.length - stride; i >= 0; i -= stride)
     if (removalChecks.slice(i, i + stride).some((inp) => inp.link)) break
-  }
+
   const toRemove = removalChecks.slice(i + stride * 2)
   remove(node.inputs, (inp) => toRemove.includes(inp))
   for (const input of toRemove) {

@@ -125,9 +125,8 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
       arc_center.y
     )
     const gs = gradient_stops.split(';')
-    for (const [index, stop] of gs.entries()) {
+    for (const [index, stop] of gs.entries())
       gradient.addColorStop(index, stop.trim())
-    }
 
     ctx.strokeStyle = gradient
     const value_end_angle =
@@ -232,8 +231,6 @@ export class KnobWidget extends BaseWidget<IKnobWidget> implements IKnobWidget {
       this.options.min,
       this.options.max
     )
-    if (newValue !== this.value) {
-      this.setValue(newValue, options)
-    }
+    if (newValue !== this.value) this.setValue(newValue, options)
   }
 }

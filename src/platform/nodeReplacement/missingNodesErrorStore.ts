@@ -33,13 +33,10 @@ export const useMissingNodesErrorStore = defineStore(
         // type are kept as separate rows; fall back to type if nodeId is absent.
         const isString = typeof node === 'string'
         let key: string
-        if (isString) {
-          key = node
-        } else if (node.nodeId != null) {
-          key = String(node.nodeId)
-        } else {
-          key = node.type
-        }
+        if (isString) key = node
+        else if (node.nodeId != null) key = String(node.nodeId)
+        else key = node.type
+
         if (seen.has(key)) return false
         seen.add(key)
         return true
@@ -122,9 +119,8 @@ export const useMissingNodesErrorStore = defineStore(
       for (const nodeType of error.nodeTypes) {
         if (typeof nodeType === 'string') continue
         if (nodeType.nodeId == null) continue
-        for (const id of getAncestorExecutionIds(String(nodeType.nodeId))) {
+        for (const id of getAncestorExecutionIds(String(nodeType.nodeId)))
           ids.add(id)
-        }
       }
 
       return ids

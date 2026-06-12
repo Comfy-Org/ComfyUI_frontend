@@ -25,9 +25,7 @@ export function useLazyPagination<T>(
   // Simulate pagination by slicing the items
   const paginatedItems = computed(() => {
     const itemData = itemsArray.value
-    if (itemData.length === 0) {
-      return []
-    }
+    if (itemData.length === 0) return []
 
     const loadedPageNumbers = Array.from(loadedPages.value).sort(
       (a, b) => a - b
@@ -39,9 +37,7 @@ export function useLazyPagination<T>(
 
   const hasMoreItems = computed(() => {
     const itemData = itemsArray.value
-    if (itemData.length === 0) {
-      return false
-    }
+    if (itemData.length === 0) return false
 
     const loadedPagesArray = Array.from(loadedPages.value)
     const maxLoadedPage = Math.max(...loadedPagesArray, 0)
@@ -50,9 +46,8 @@ export function useLazyPagination<T>(
 
   const totalPages = computed(() => {
     const itemData = itemsArray.value
-    if (itemData.length === 0) {
-      return 0
-    }
+    if (itemData.length === 0) return 0
+
     return Math.ceil(itemData.length / itemsPerPage)
   })
 
@@ -77,9 +72,8 @@ export function useLazyPagination<T>(
   watch(
     () => itemsArray.value.length,
     (length) => {
-      if (length > 0 && loadedPages.value.size === 0) {
+      if (length > 0 && loadedPages.value.size === 0)
         loadedPages.value = new Set([1])
-      }
     },
     { immediate: true }
   )
@@ -91,9 +85,7 @@ export function useLazyPagination<T>(
 
     // Immediately load first page if we have items
     const itemData = itemsArray.value
-    if (itemData.length > 0) {
-      loadedPages.value = new Set([1])
-    }
+    if (itemData.length > 0) loadedPages.value = new Set([1])
   }
 
   return {

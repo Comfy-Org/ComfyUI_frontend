@@ -71,11 +71,10 @@ describe('NodeSearchContent', () => {
     bookmarkList: string[] = []
   ) {
     const bookmarkStore = useNodeBookmarkStore()
-    if (typeof isBookmarked === 'function') {
+    if (typeof isBookmarked === 'function')
       vi.spyOn(bookmarkStore, 'isBookmarked').mockImplementation(isBookmarked)
-    } else {
-      vi.spyOn(bookmarkStore, 'isBookmarked').mockReturnValue(isBookmarked)
-    }
+    else vi.spyOn(bookmarkStore, 'isBookmarked').mockReturnValue(isBookmarked)
+
     vi.spyOn(bookmarkStore, 'bookmarks', 'get').mockReturnValue(bookmarkList)
   }
 

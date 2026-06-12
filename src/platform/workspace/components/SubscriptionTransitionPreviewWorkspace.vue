@@ -233,9 +233,8 @@ const proratedRefundCents = computed(() => {
   if (!previewData.current_plan || !previewData.is_immediate) return 0
   const chargeToday = previewData.cost_today_cents
   const newPlanCost = previewData.new_plan.price_cents
-  if (chargeToday < newPlanCost) {
-    return newPlanCost - chargeToday
-  }
+  if (chargeToday < newPlanCost) return newPlanCost - chargeToday
+
   return 0
 })
 

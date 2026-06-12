@@ -20,9 +20,7 @@ const BUILD_TIME_PLATFORM_BASE_URL = __USE_PROD_CONFIG__
     STAGING_PLATFORM_BASE_URL)
 
 export function getComfyApiBaseUrl(): string {
-  if (!isCloud) {
-    return BUILD_TIME_API_BASE_URL
-  }
+  if (!isCloud) return BUILD_TIME_API_BASE_URL
 
   return configValueOrDefault(
     remoteConfig.value,
@@ -32,9 +30,7 @@ export function getComfyApiBaseUrl(): string {
 }
 
 export function getComfyPlatformBaseUrl(): string {
-  if (!isCloud) {
-    return BUILD_TIME_PLATFORM_BASE_URL
-  }
+  if (!isCloud) return BUILD_TIME_PLATFORM_BASE_URL
 
   return configValueOrDefault(
     remoteConfig.value,

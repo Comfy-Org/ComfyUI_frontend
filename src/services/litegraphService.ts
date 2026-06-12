@@ -105,9 +105,7 @@ async function reencodeAsPngBlob(
   try {
     ctx.drawImage(image, 0, 0)
   } finally {
-    if ('close' in image && typeof image.close === 'function') {
-      image.close()
-    }
+    if ('close' in image && typeof image.close === 'function') image.close()
   }
 
   return new Promise<Blob>((resolve, reject) => {
@@ -162,9 +160,9 @@ export function getExtraOptionsForWidget(
     }
   })
 
-  if (node.graph && !node.graph.isRootGraph) {
+  if (node.graph && !node.graph.isRootGraph)
     addWidgetPromotionOptions(options, widget, node)
-  }
+
   return options
 }
 
@@ -238,19 +236,14 @@ export const useLitegraphService = () => {
       const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
       const state =
         useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state
-      if (state === 'running') {
-        return { color: '#0f0', lineWidth: 3 }
-      }
+      if (state === 'running') return { color: '#0f0', lineWidth: 3 }
     }
     node.strokeStyles['dragOver'] = function (this: LGraphNode) {
-      if (app.dragOverNode?.id == this.id) {
-        return { color: 'dodgerblue' }
-      }
+      if (app.dragOverNode?.id == this.id) return { color: 'dodgerblue' }
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
-      if (app.lastExecutionError?.node_id == this.id) {
+      if (app.lastExecutionError?.node_id == this.id)
         return { color: '#f0f', lineWidth: 3 }
-      }
     }
   }
 
@@ -272,9 +265,8 @@ export const useLitegraphService = () => {
     { dynamic }: { dynamic?: boolean } = {}
   ) {
     const widgetInputSpec = { ...inputSpec }
-    if (inputSpec.widgetType) {
-      widgetInputSpec.type = inputSpec.widgetType
-    }
+    if (inputSpec.widgetType) widgetInputSpec.type = inputSpec.widgetType
+
     const inputName = inputSpec.name
     const nameKey = `${nodeKey(node)}.inputs.${normalizeI18nKey(inputName)}.name`
     const widgetConstructor = widgetStore.widgets.get(widgetInputSpec.type)
@@ -422,9 +414,8 @@ export const useLitegraphService = () => {
           if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
 
           const domWidgetStore = useDomWidgetStore()
-          if (domWidgetStore.widgetStates.has(widget.id)) {
+          if (domWidgetStore.widgetStates.has(widget.id))
             domWidgetStore.unregisterWidget(widget.id)
-          }
         })
 
         setupStrokeStyles(this)
@@ -806,11 +797,8 @@ export const useLitegraphService = () => {
       this.animatedImages = isAnimatedOutput(output)
 
       const isVideo = isVideoOutput(output) || isVideoNode(this)
-      if (isVideo) {
-        useNodeVideo(this, callback).showPreview()
-      } else {
-        useNodeImage(this, callback).showPreview()
-      }
+      if (isVideo) useNodeVideo(this, callback).showPreview()
+      else useNodeImage(this, callback).showPreview()
     }
 
     // Nothing to do
@@ -858,13 +846,10 @@ export const useLitegraphService = () => {
 
     node.prototype.onKeyDown = function (e) {
       // @ts-expect-error fixme ts strict error
-      if (origNodeOnKeyDown && origNodeOnKeyDown.apply(this, e) === false) {
+      if (origNodeOnKeyDown && origNodeOnKeyDown.apply(this, e) === false)
         return false
-      }
 
-      if (this.flags.collapsed || !this.imgs || this.imageIndex === null) {
-        return
-      }
+      if (this.flags.collapsed || !this.imgs || this.imageIndex === null) return
 
       let handled = false
 
@@ -917,10 +902,11 @@ export const useLitegraphService = () => {
       })
       if (!results) throw new Error('Failed to add subgraph blueprint')
       const node = results.nodes.values().next().value
-      if (!node)
+      if (!node) {
         throw new Error(
           'Subgraph blueprint was added, but failed to resolve a subgraph Node'
         )
+      }
       if (addOptions?.ghost) {
         node.flags.ghost = true
         canvas.graph?.trigger('node:property:changed', {
@@ -950,9 +936,8 @@ export const useLitegraphService = () => {
   function getCanvasCenter(): Point {
     const dpi = Math.max(window.devicePixelRatio ?? 1, 1)
     const visibleArea = app.canvas?.ds?.visible_area
-    if (!visibleArea) {
-      return [0, 0]
-    }
+    if (!visibleArea) return [0, 0]
+
     const [x, y, w, h] = visibleArea
     return [x + w / dpi / 2, y + h / dpi / 2]
   }

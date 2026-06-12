@@ -73,15 +73,12 @@ export function useManagerState() {
         systemStats.value?.system?.argv?.includes('--enable-manager')
 
       // If --enable-manager is NOT present, manager is disabled
-      if (!hasEnableManager) {
-        return ManagerUIState.DISABLED
-      }
+      if (!hasEnableManager) return ManagerUIState.DISABLED
 
       if (
         systemStats.value?.system?.argv?.includes('--enable-manager-legacy-ui')
-      ) {
+      )
         return ManagerUIState.LEGACY_UI
-      }
 
       // Server exposes v4 but is missing the CSRF-hardened POST endpoints
       // (Manager < 4.2.1). Treat as INCOMPATIBLE — hide manager UI and
@@ -92,32 +89,25 @@ export function useManagerState() {
       // here means the server did not publish the flag (i.e. Manager 4.2.0),
       // not a transient partial-delivery state. Using === false would let
       // flag-less Manager 4.2.0 fall through to NEW_UI → POST → 405 regression.
-      if (serverSupportsV4 === true && supportsCsrfPost !== true) {
+      if (serverSupportsV4 === true && supportsCsrfPost !== true)
         return ManagerUIState.INCOMPATIBLE
-      }
 
       // Both client and server support v4 = NEW_UI
-      if (clientSupportsV4 && serverSupportsV4 === true) {
+      if (clientSupportsV4 && serverSupportsV4 === true)
         return ManagerUIState.NEW_UI
-      }
 
       // Server supports v4 but client doesn't = LEGACY_UI
-      if (serverSupportsV4 === true && !clientSupportsV4) {
+      if (serverSupportsV4 === true && !clientSupportsV4)
         return ManagerUIState.LEGACY_UI
-      }
 
       // Server explicitly doesn't support v4 = LEGACY_UI
-      if (serverSupportsV4 === false) {
-        return ManagerUIState.LEGACY_UI
-      }
+      if (serverSupportsV4 === false) return ManagerUIState.LEGACY_UI
 
       // If server feature flags haven't loaded yet, default to NEW_UI
       // This is a temporary state - feature flags are exchanged immediately on WebSocket connection
       // NEW_UI is the safest default since v2 API is the current standard
       // If the server doesn't support v2, API calls will fail with 404 and be handled gracefully
-      if (serverSupportsV4 === undefined) {
-        return ManagerUIState.NEW_UI
-      }
+      if (serverSupportsV4 === undefined) return ManagerUIState.NEW_UI
 
       // Should never reach here, but if we do, disable manager
       return ManagerUIState.DISABLED
@@ -191,9 +181,7 @@ export function useManagerState() {
   watch(
     managerUIState,
     (state) => {
-      if (state === ManagerUIState.INCOMPATIBLE) {
-        showIncompatibleToast()
-      }
+      if (state === ManagerUIState.INCOMPATIBLE) showIncompatibleToast()
     },
     { immediate: true }
   )
@@ -247,9 +235,8 @@ export function useManagerState() {
             })
           }
           // Fallback to extensions panel if not showing toast
-          if (options?.showToastOnLegacyError === false) {
+          if (options?.showToastOnLegacyError === false)
             settingsDialog.show('extension')
-          }
         }
         break
       }

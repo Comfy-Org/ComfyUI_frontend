@@ -474,16 +474,14 @@ export class LGraph
    * Attach Canvas to this graph
    */
   attachCanvas(canvas: LGraphCanvas): void {
-    if (!(canvas instanceof LGraphCanvas)) {
+    if (!(canvas instanceof LGraphCanvas))
       throw new TypeError('attachCanvas expects an LGraphCanvas instance')
-    }
 
     this.primaryCanvas = canvas
 
     this.list_of_graphcanvas ??= []
-    if (!this.list_of_graphcanvas.includes(canvas)) {
+    if (!this.list_of_graphcanvas.includes(canvas))
       this.list_of_graphcanvas.push(canvas)
-    }
 
     if (canvas.graph === this) return
 
@@ -552,9 +550,8 @@ export class LGraph
 
     this.status = LGraph.STATUS_STOPPED
     if (this.execution_timer_id != null) {
-      if (this.execution_timer_id != -1) {
-        clearInterval(this.execution_timer_id)
-      }
+      if (this.execution_timer_id != -1) clearInterval(this.execution_timer_id)
+
       this.execution_timer_id = null
     }
 
@@ -598,9 +595,7 @@ export class LGraph
         for (let i = 0; i < num; i++) {
           for (let j = 0; j < limit; ++j) {
             const node = nodes[j]
-            if (node.mode == LGraphEventMode.ALWAYS) {
-              node.onExecute?.()
-            }
+            if (node.mode == LGraphEventMode.ALWAYS) node.onExecute?.()
           }
 
           this.fixedtime += this.fixedtime_lapse
@@ -637,9 +632,7 @@ export class LGraph
     this._nodes_in_order = this.computeExecutionOrder(false)
     this._nodes_executable = []
     for (const node of this._nodes_in_order) {
-      if (node.onExecute) {
-        this._nodes_executable.push(node)
-      }
+      if (node.onExecute) this._nodes_executable.push(node)
     }
   }
 
@@ -657,9 +650,7 @@ export class LGraph
 
     // search for the nodes without inputs (starting nodes)
     for (const node of this._nodes) {
-      if (only_onExecute && !node.onExecute) {
-        continue
-      }
+      if (only_onExecute && !node.onExecute) continue
 
       // add to pending nodes
       M[node.id] = node
@@ -668,9 +659,7 @@ export class LGraph
       let num = 0
       if (node.inputs) {
         for (const input of node.inputs) {
-          if (input?.link != null) {
-            num += 1
-          }
+          if (input?.link != null) num += 1
         }
       }
 
@@ -719,9 +708,8 @@ export class LGraph
 
           if (set_level) {
             node._level ??= 0
-            if (!target_node._level || target_node._level <= node._level) {
+            if (!target_node._level || target_node._level <= node._level)
               target_node._level = node._level + 1
-            }
           }
 
           // mark as visited
@@ -736,9 +724,7 @@ export class LGraph
     }
 
     // the remaining ones (loops)
-    for (const i in M) {
-      L.push(M[i])
-    }
+    for (const i in M) L.push(M[i])
 
     if (L.length != this._nodes.length && LiteGraph.debug)
       console.warn('something went wrong, nodes missing')
@@ -751,9 +737,7 @@ export class LGraph
       nodes: LGraphNode[]
     ): asserts nodes is OrderedLGraphNode[] {
       const l = nodes.length
-      for (let i = 0; i < l; ++i) {
-        nodes[i].order = i
-      }
+      for (let i = 0; i < l; ++i) nodes[i].order = i
     }
 
     // save order number in the node
@@ -803,9 +787,9 @@ export class LGraph
           layout == LiteGraph.VERTICAL_LAYOUT ? x : y
         )
         const max_size_index = layout == LiteGraph.VERTICAL_LAYOUT ? 1 : 0
-        if (node.size[max_size_index] > max_size) {
+        if (node.size[max_size_index] > max_size)
           max_size = node.size[max_size_index]
-        }
+
         const node_size_index = layout == LiteGraph.VERTICAL_LAYOUT ? 0 : 1
         y += node.size[node_size_index] + margin + LiteGraph.NODE_TITLE_HEIGHT
       }
@@ -976,25 +960,20 @@ export class LGraph
       node.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : ++state.lastNodeId
     }
 
-    if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
+    if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES)
       throw 'LiteGraph: max number of nodes in a graph reached'
-    }
 
     // give him an id
     if (LiteGraph.use_uuids) {
       if (node.id == null || node.id == -1) node.id = LiteGraph.uuidv4()
     } else {
-      if (node.id == null || node.id == -1) {
-        node.id = ++state.lastNodeId
-      } else if (typeof node.id === 'number' && state.lastNodeId < node.id) {
+      if (node.id == null || node.id == -1) node.id = ++state.lastNodeId
+      else if (typeof node.id === 'number' && state.lastNodeId < node.id)
         state.lastNodeId = node.id
-      }
     }
 
     // Set ghost flag before registration so VueNodeData picks it up
-    if (opts.ghost) {
-      node.flags.ghost = true
-    }
+    if (opts.ghost) node.flags.ghost = true
 
     node.graph = this
     this.incrementVersion()
@@ -1002,9 +981,8 @@ export class LGraph
     // Register all widgets with the WidgetValueStore now that node has a
     // valid ID and graph reference.
     if (node.widgets) {
-      for (const widget of node.widgets) {
+      for (const widget of node.widgets)
         if (isNodeBindable(widget)) widget.setNodeId(node.id)
-      }
     }
 
     this._nodes.push(node)
@@ -1021,9 +999,8 @@ export class LGraph
     this.setDirtyCanvas(true)
     this.change()
 
-    if (opts.ghost) {
+    if (opts.ghost)
       this.canvasAction((c) => c.startGhostPlacement(node, opts.dragEvent))
-    }
 
     if (node.isSubgraphNode?.()) {
       forEachNode(node.subgraph, (innerNode) => {
@@ -1046,9 +1023,8 @@ export class LGraph
       this.canvasAction((c) => c.deselect(node))
 
       const index = this._groups.indexOf(node)
-      if (index != -1) {
-        this._groups.splice(index, 1)
-      }
+      if (index != -1) this._groups.splice(index, 1)
+
       node.graph = undefined
       this.incrementVersion()
       this.setDirtyCanvas(true, true)
@@ -1074,23 +1050,20 @@ export class LGraph
 
     // disconnect inputs
     if (inputs) {
-      for (const [i, slot] of inputs.entries()) {
+      for (const [i, slot] of inputs.entries())
         if (slot.link != null) node.disconnectInput(i, true)
-      }
     }
 
     // disconnect outputs
     if (outputs) {
-      for (const [i, slot] of outputs.entries()) {
+      for (const [i, slot] of outputs.entries())
         if (slot.links?.length) node.disconnectOutput(i)
-      }
     }
 
     // Floating links
     for (const link of this.floatingLinks.values()) {
-      if (link.origin_id === node.id || link.target_id === node.id) {
+      if (link.origin_id === node.id || link.target_id === node.id)
         this.removeFloatingLink(link)
-      }
     }
 
     if (node.isSubgraphNode()) {
@@ -1166,9 +1139,9 @@ export class LGraph
     result = result || []
     result.length = 0
     const { _nodes } = this
-    for (const node of _nodes) {
+    for (const node of _nodes)
       if (node.constructor === classObject) result.push(node)
-    }
+
     return result
   }
 
@@ -1182,9 +1155,9 @@ export class LGraph
     result = result || []
     result.length = 0
     const { _nodes } = this
-    for (const node of _nodes) {
+    for (const node of _nodes)
       if (node.type?.toLowerCase() == matchType) result.push(node)
-    }
+
     return result
   }
 
@@ -1195,9 +1168,8 @@ export class LGraph
    */
   findNodeByTitle(title: string): LGraphNode | null {
     const { _nodes } = this
-    for (const node of _nodes) {
-      if (node.title == title) return node
-    }
+    for (const node of _nodes) if (node.title == title) return node
+
     return null
   }
 
@@ -1209,9 +1181,8 @@ export class LGraph
   findNodesByTitle(title: string): LGraphNode[] {
     const result: LGraphNode[] = []
     const { _nodes } = this
-    for (const node of _nodes) {
-      if (node.title == title) result.push(node)
-    }
+    for (const node of _nodes) if (node.title == title) result.push(node)
+
     return result
   }
 
@@ -1246,9 +1217,7 @@ export class LGraph
     // Iterate backwards through groups to find top-most
     for (let i = this._groups.length - 1; i >= 0; i--) {
       const group = this._groups[i]
-      if (group.isPointInside(x, y)) {
-        return group
-      }
+      if (group.isPointInside(x, y)) return group
     }
     return undefined
   }
@@ -1263,9 +1232,7 @@ export class LGraph
     // Iterate backwards through groups to find top-most
     for (let i = this._groups.length - 1; i >= 0; i--) {
       const group = this._groups[i]
-      if (group.isPointInTitlebar(x, y)) {
-        return group
-      }
+      if (group.isPointInTitlebar(x, y)) return group
     }
     return undefined
   }
@@ -1281,9 +1248,8 @@ export class LGraph
     y: number,
     reroutes?: Iterable<Reroute>
   ): Reroute | undefined {
-    for (const reroute of reroutes ?? this.reroutes.values()) {
+    for (const reroute of reroutes ?? this.reroutes.values())
       if (reroute.containsPoint([x, y])) return reroute
-    }
   }
 
   /**
@@ -1300,9 +1266,8 @@ export class LGraph
     const snapTo = this.getSnapToGridSize()
     if (!snapTo) return
 
-    for (const item of getAllNestedItems(items)) {
+    for (const item of getAllNestedItems(items))
       if (!item.pinned) item.snapToGrid(snapTo)
-    }
   }
 
   /**
@@ -1408,9 +1373,8 @@ export class LGraph
   }
 
   addFloatingLink(link: LLink): LLink {
-    if (link.id === -1) {
-      link.id = ++this._lastFloatingLinkId
-    }
+    if (link.id === -1) link.id = ++this._lastFloatingLinkId
+
     this.floatingLinksInternal.set(link.id, link)
 
     const slot =
@@ -1427,9 +1391,8 @@ export class LGraph
     }
 
     const reroutes = LLink.getReroutes(this, link)
-    for (const reroute of reroutes) {
-      reroute.floatingLinkIds.add(link.id)
-    }
+    for (const reroute of reroutes) reroute.floatingLinkIds.add(link.id)
+
     return link
   }
 
@@ -1440,16 +1403,12 @@ export class LGraph
       link.target_id !== -1
         ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
         : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
-    if (slot) {
-      slot._floatingLinks?.delete(link)
-    }
+    if (slot) slot._floatingLinks?.delete(link)
 
     const reroutes = LLink.getReroutes(this, link)
     for (const reroute of reroutes) {
       reroute.floatingLinkIds.delete(link.id)
-      if (reroute.floatingLinkIds.size === 0) {
-        delete reroute.floating
-      }
+      if (reroute.floatingLinkIds.size === 0) delete reroute.floating
 
       if (reroute.totalLinks === 0) this.removeReroute(reroute.id)
     }
@@ -1536,9 +1495,8 @@ export class LGraph
       if (link.parentId === before.parentId) link.parentId = rerouteId
 
       const reroutes = LLink.getReroutes(this, link)
-      for (const x of reroutes.filter((x) => x.parentId === before.parentId)) {
+      for (const x of reroutes.filter((x) => x.parentId === before.parentId))
         x.parentId = rerouteId
-      }
     }
 
     for (const linkId of floatingLinkIds) {
@@ -1547,9 +1505,8 @@ export class LGraph
       if (link.parentId === before.parentId) link.parentId = rerouteId
 
       const reroutes = LLink.getReroutes(this, link)
-      for (const x of reroutes.filter((x) => x.parentId === before.parentId)) {
+      for (const x of reroutes.filter((x) => x.parentId === before.parentId))
         x.parentId = rerouteId
-      }
     }
 
     return reroute
@@ -1569,9 +1526,8 @@ export class LGraph
 
     // Extract reroute from the reroute chain
     const { parentId, linkIds, floatingLinkIds } = reroute
-    for (const reroute of reroutes.values()) {
+    for (const reroute of reroutes.values())
       if (reroute.parentId === id) reroute.parentId = parentId
-    }
 
     for (const linkId of linkIds) {
       const link = this._links.get(linkId)
@@ -1783,16 +1739,18 @@ export class LGraph
     alignOutsideContainer(outputRect, Alignment.MidRight, boundingRect, [50, 0])
 
     // Remove items converted to subgraph
-    for (const resolved of resolvedInputLinks)
+    for (const resolved of resolvedInputLinks) {
       resolved.inputNode?.disconnectInput(
         resolved.inputNode.inputs.indexOf(resolved.input!),
         true
       )
-    for (const resolved of resolvedOutputLinks)
+    }
+    for (const resolved of resolvedOutputLinks) {
       resolved.outputNode?.disconnectOutput(
         resolved.outputNode.outputs.indexOf(resolved.output!),
         resolved.inputNode
       )
+    }
 
     for (const node of nodes) this.remove(node)
     for (const reroute of reroutes) this.removeReroute(reroute.id)
@@ -1814,9 +1772,8 @@ export class LGraph
       outputs: structuredClone(outputs)
     })
     if (!subgraphNode) throw new Error('Failed to create subgraph node')
-    for (let i = 0; i < inputs.length; i++) {
+    for (let i = 0; i < inputs.length; i++)
       Object.assign(subgraphNode.inputs[i], inputs[i])
-    }
 
     // Resize to inputs/outputs
     subgraphNode.setSize(subgraphNode.computeSize())
@@ -1861,9 +1818,8 @@ export class LGraph
           throw new TypeError('Subgraph input node is not a SubgraphInput')
         }
 
-        for (const resolved of others) {
-          resolved.link.disconnect(this)
-        }
+        for (const resolved of others) resolved.link.disconnect(this)
+
         continue
       }
 
@@ -2002,12 +1958,9 @@ export class LGraph
       // onConnectionsChange from resolving subgraph-internal link IDs
       // against the parent graph's link map (which may contain unrelated
       // links with the same numeric IDs).
-      for (const input of n_info.inputs ?? []) {
-        input.link = null
-      }
-      for (const output of n_info.outputs ?? []) {
-        output.links = []
-      }
+      for (const input of n_info.inputs ?? []) input.link = null
+
+      for (const output of n_info.outputs ?? []) output.links = []
 
       this.add(node, true)
       node.configure(n_info)
@@ -2033,9 +1986,8 @@ export class LGraph
         console.warn('Broken link', islot, islot.link)
         continue
       }
-      for (const reroute of LLink.getReroutes(this, link)) {
+      for (const reroute of LLink.getReroutes(this, link))
         reroute.linkIds.delete(link.id)
-      }
     }
     for (const oslot of subgraphNode.outputs) {
       for (const linkId of oslot.links ?? []) {
@@ -2044,9 +1996,8 @@ export class LGraph
           console.warn('Broken link', oslot, linkId)
           continue
         }
-        for (const reroute of LLink.getReroutes(this, link)) {
+        for (const reroute of LLink.getReroutes(this, link))
           reroute.linkIds.delete(link.id)
-        }
       }
     }
     const newLinks: {
@@ -2164,9 +2115,8 @@ export class LGraph
       //This is a little unwieldy since Map.has isn't a type guard
       const linkIds = linkIdMap.get(newLink.id) ?? []
       linkIds.push(created.id)
-      if (!linkIdMap.has(newLink.id)) {
-        linkIdMap.set(newLink.id, linkIds)
-      }
+      if (!linkIdMap.has(newLink.id)) linkIdMap.set(newLink.id, linkIds)
+
       newLink.id = created.id
     }
     const rerouteIdMap = new Map<RerouteId, RerouteId>()
@@ -2174,9 +2124,9 @@ export class LGraph
       if (
         reroute.parentId !== undefined &&
         rerouteIdMap.get(reroute.parentId) === undefined
-      ) {
+      )
         console.error('Missing Parent ID')
-      }
+
       const migratedReroute = new Reroute(++this.state.lastRerouteId, this, [
         reroute.pos[0] + offsetX,
         reroute.pos[1] + offsetY
@@ -2188,9 +2138,8 @@ export class LGraph
     //iterate over newly created links to update reroute parentIds
     for (const newLink of dedupedNewLinks) {
       const linkInstance = this.links.get(newLink.id)
-      if (!linkInstance) {
-        continue
-      }
+      if (!linkInstance) continue
+
       let instance: Reroute | LLink | undefined = linkInstance
       let parentId: RerouteId | undefined
       if (newLink.externalFirst) {
@@ -2272,14 +2221,16 @@ export class LGraph
 
     for (const nodeId of nodeIds) {
       const node: LGraphNode | null = currentGraph.getNodeById(nodeId)
-      if (!node)
+      if (!node) {
         throw new Error(
           `Node [${nodeId}] not found.  ID Path: ${nodeIds.join(':')}`
         )
-      if (!node.isSubgraphNode())
+      }
+      if (!node.isSubgraphNode()) {
         throw new Error(
           `Node [${nodeId}] is not a SubgraphNode.  ID Path: ${nodeIds.join(':')}`
         )
+      }
 
       result.push(node)
       currentGraph = node.subgraph
@@ -2402,9 +2353,8 @@ export class LGraph
       const usedSubgraphs = [...this._subgraphs.values()]
         .filter((subgraph) => usedSubgraphIds.has(subgraph.id))
         .map((x) => x.asSerialisable())
-      if (usedSubgraphs.length > 0) {
+      if (usedSubgraphs.length > 0)
         data.definitions = { subgraphs: usedSubgraphs }
-      }
     }
 
     this.onSerialize?.(data)
@@ -2415,11 +2365,8 @@ export class LGraph
     const { id, extra } = data
 
     // Create a new graph ID if none is provided or the zero UUID is used on the root graph
-    if (id && !(this.isRootGraph && id === zeroUuid)) {
-      this.id = id
-    } else if (this.id === zeroUuid) {
-      this.id = createUuidv4()
-    }
+    if (id && !(this.isRootGraph && id === zeroUuid)) this.id = id
+    else if (this.id === zeroUuid) this.id = createUuidv4()
 
     // Extra
     this.extra = extra ? structuredClone(extra) : {}
@@ -2510,9 +2457,7 @@ export class LGraph
 
       // Reroutes
       if (Array.isArray(reroutes)) {
-        for (const rerouteData of reroutes) {
-          this.setReroute(rerouteData)
-        }
+        for (const rerouteData of reroutes) this.setReroute(rerouteData)
       }
 
       const nodesData = data.nodes
@@ -2532,17 +2477,15 @@ export class LGraph
       let effectiveNodesData = nodesData
       if (subgraphs) {
         const reservedNodeIds = new Set<number>()
-        for (const node of this._nodes) {
+        for (const node of this._nodes)
           if (typeof node.id === 'number') reservedNodeIds.add(node.id)
-        }
+
         for (const sg of this.subgraphs.values()) {
-          for (const node of sg.nodes) {
+          for (const node of sg.nodes)
             if (typeof node.id === 'number') reservedNodeIds.add(node.id)
-          }
         }
-        for (const n of nodesData ?? []) {
+        for (const n of nodesData ?? [])
           if (typeof n.id === 'number') reservedNodeIds.add(n.id)
-        }
 
         const deduplicated = this.isRootGraph
           ? deduplicateSubgraphNodeIds(
@@ -2680,11 +2623,8 @@ export class LGraph
       const subgraphId = primaryCanvas?.subgraph?.id
       if (subgraphId) {
         const subgraph = this.subgraphs.get(subgraphId)
-        if (subgraph) {
-          primaryCanvas.setGraph(subgraph)
-        } else {
-          primaryCanvas.setGraph(this)
-        }
+        if (subgraph) primaryCanvas.setGraph(subgraph)
+        else primaryCanvas.setGraph(this)
       }
 
       this.setDirtyCanvas(true, true)
@@ -2869,9 +2809,8 @@ export class Subgraph
 
     if (outputs) {
       this.outputs.length = 0
-      for (const output of outputs) {
+      for (const output of outputs)
         this.outputs.push(new SubgraphOutput(output, this.outputNode))
-      }
     }
 
     // Repair IO slot linkIds that reference links removed by
@@ -2880,9 +2819,7 @@ export class Subgraph
 
     if (widgets) {
       this.widgets.length = 0
-      for (const widget of widgets) {
-        this.widgets.push(widget)
-      }
+      for (const widget of widgets) this.widgets.push(widget)
     }
 
     this.inputNode.configure(data.inputNode)
@@ -2910,12 +2847,11 @@ export class Subgraph
    * same IO node and slot index, and substitutes it.
    */
   private _repairIOSlotLinkIds(): void {
-    for (const [slotIndex, slot] of this.inputs.entries()) {
+    for (const [slotIndex, slot] of this.inputs.entries())
       this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_INPUT_ID, slotIndex)
-    }
-    for (const [slotIndex, slot] of this.outputs.entries()) {
+
+    for (const [slotIndex, slot] of this.outputs.entries())
       this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_OUTPUT_ID, slotIndex)
-    }
   }
 
   private _repairSlotLinkIds(
@@ -2952,9 +2888,8 @@ export class Subgraph
   }
 
   addInput(name: string, type: string): SubgraphInput {
-    if (name === null || type === null) {
+    if (name === null || type === null)
       throw new Error('Name and type are required for subgraph input')
-    }
 
     this.events.dispatch('adding-input', { name, type })
 
@@ -2974,9 +2909,8 @@ export class Subgraph
   }
 
   addOutput(name: string, type: string): SubgraphOutput {
-    if (name === null || type === null) {
+    if (name === null || type === null)
       throw new Error('Name and type are required for subgraph output')
-    }
 
     this.events.dispatch('adding-output', { name, type })
 
@@ -3051,9 +2985,7 @@ export class Subgraph
     this.inputs.splice(index, 1)
 
     const { length } = this.inputs
-    for (let i = index; i < length; i++) {
-      this.inputs[i].decrementSlots('inputs')
-    }
+    for (let i = index; i < length; i++) this.inputs[i].decrementSlots('inputs')
   }
 
   /**
@@ -3075,9 +3007,8 @@ export class Subgraph
     this.outputs.splice(index, 1)
 
     const { length } = this.outputs
-    for (let i = index; i < length; i++) {
+    for (let i = index; i < length; i++)
       this.outputs[i].decrementSlots('outputs')
-    }
   }
 
   draw(

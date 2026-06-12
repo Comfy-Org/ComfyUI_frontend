@@ -227,9 +227,9 @@ function handleThumbnailTypeChange(value: unknown) {
 
 const uploadSectionLabel = computed(() => {
   if (thumbnailType === 'video') return t('comfyHubPublish.uploadVideo')
-  if (thumbnailType === 'imageComparison') {
+  if (thumbnailType === 'imageComparison')
     return t('comfyHubPublish.uploadComparison')
-  }
+
   return t('comfyHubPublish.uploadThumbnail')
 })
 
@@ -286,9 +286,9 @@ const comparisonPreviewRef = ref<HTMLElement | null>(null)
 const previewSliderPosition = useSliderFromMouse(comparisonPreviewRef)
 
 const hasThumbnailContent = computed(() => {
-  if (thumbnailType === 'imageComparison') {
+  if (thumbnailType === 'imageComparison')
     return !!(comparisonPreviewUrls.before || comparisonPreviewUrls.after)
-  }
+
   return !!thumbnailPreviewUrl.value
 })
 
@@ -330,9 +330,7 @@ const { isOverDropZone: isOverSingleDrop } = useDropZone(singleDropRef, {
   multiple: false,
   onDrop(files) {
     const file = files?.[0]
-    if (file) {
-      setThumbnailPreview(file)
-    }
+    if (file) setThumbnailPreview(file)
   }
 })
 

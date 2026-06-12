@@ -188,15 +188,11 @@ const showVolumeOne = computed(() => !isMuted.value && volume.value > 0)
 
 // Playback controls
 const togglePlayPause = () => {
-  if (!audioRef.value || !audioRef.value.src) {
-    return
-  }
+  if (!audioRef.value || !audioRef.value.src) return
 
-  if (isPlaying.value) {
-    audioRef.value.pause()
-  } else {
-    void audioRef.value.play()
-  }
+  if (isPlaying.value) audioRef.value.pause()
+  else void audioRef.value.play()
+
   isPlaying.value = !isPlaying.value
 }
 
@@ -232,15 +228,11 @@ const handleSeek = (event: Event) => {
 
 // Audio events
 const handleLoadedMetadata = () => {
-  if (audioRef.value) {
-    duration.value = audioRef.value.duration
-  }
+  if (audioRef.value) duration.value = audioRef.value.duration
 }
 
 const handleTimeUpdate = () => {
-  if (audioRef.value) {
-    currentTime.value = audioRef.value.currentTime
-  }
+  if (audioRef.value) currentTime.value = audioRef.value.currentTime
 }
 
 const handleEnded = () => {
@@ -255,9 +247,7 @@ const toggleOptionsMenu = (event: Event) => {
 
 const setPlaybackSpeed = (speed: number) => {
   playbackRate.value = speed
-  if (audioRef.value) {
-    audioRef.value.playbackRate = speed
-  }
+  if (audioRef.value) audioRef.value.playbackRate = speed
 }
 
 const handleVolumeChange = (value: number | number[]) => {

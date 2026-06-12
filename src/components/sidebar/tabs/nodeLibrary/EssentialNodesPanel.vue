@@ -104,11 +104,8 @@ const folders = computed(() => {
 })
 
 function toggleFolder(key: string, open: boolean) {
-  if (open) {
-    expandedKeys.value = [...expandedKeys.value, key]
-  } else {
-    expandedKeys.value = expandedKeys.value.filter((k) => k !== key)
-  }
+  if (open) expandedKeys.value = [...expandedKeys.value, key]
+  else expandedKeys.value = expandedKeys.value.filter((k) => k !== key)
 }
 
 const hasAutoExpanded = ref(false)
@@ -118,9 +115,8 @@ watch(
   (value) => {
     if (!hasAutoExpanded.value && value.length > 0) {
       hasAutoExpanded.value = true
-      if (expandedKeys.value.length === 0) {
+      if (expandedKeys.value.length === 0)
         expandedKeys.value = value.map((folder) => folder.key)
-      }
     }
   },
   { immediate: true }

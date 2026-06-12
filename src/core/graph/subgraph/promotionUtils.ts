@@ -196,11 +196,8 @@ export function promoteValueWidgetViaSubgraphInput(
   sourceWidget: IBaseWidget
 ): CanonicalPromotionResult {
   const sourceWidgetName = getWidgetName(sourceWidget)
-  if (
-    isLinkedPromotion(subgraphNode, String(sourceNode.id), sourceWidgetName)
-  ) {
+  if (isLinkedPromotion(subgraphNode, String(sourceNode.id), sourceWidgetName))
     return { ok: true }
-  }
 
   const sourceSlot = sourceNode.getSlotFromWidget(sourceWidget)
   if (!sourceSlot) return { ok: false, reason: 'missingSourceSlot' }
@@ -300,11 +297,9 @@ export function demoteWidget(
     const linkedInput = hostInput?._subgraphSlot
     if (linkedInput) {
       const hasExternalLink = hostInput.link != null
-      if (hasExternalLink) {
-        linkedInput.disconnect()
-      } else {
-        parent.subgraph.removeInput(linkedInput)
-      }
+      if (hasExternalLink) linkedInput.disconnect()
+      else parent.subgraph.removeInput(linkedInput)
+
       continue
     }
 
@@ -364,7 +359,7 @@ export function addWidgetPromotionOptions(
   const promotableParents = parents.filter(
     (parent) => !isWidgetPromotedOnSubgraphNode(parent, source, widget)
   )
-  if (promotableParents.length > 0)
+  if (promotableParents.length > 0) {
     options.unshift({
       content: t('subgraphStore.promoteWidget', {
         name: widget.label ?? widget.name
@@ -374,7 +369,7 @@ export function addWidgetPromotionOptions(
         widget.callback?.(widget.value)
       }
     })
-  else {
+  } else {
     options.unshift({
       content: t('subgraphStore.unpromoteWidget', {
         name: widget.label ?? widget.name
@@ -441,9 +436,8 @@ export function getPromotableWidgets(node: LGraphNode): IBaseWidget[] {
     (widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET
   )
   const supportsVirtualPreview = supportsVirtualPreviewWidget(node)
-  if (!hasCanvasPreviewWidget && supportsVirtualPreview) {
+  if (!hasCanvasPreviewWidget && supportsVirtualPreview)
     widgets.push(createVirtualCanvasImagePreviewWidget())
-  }
 
   return widgets
 }
@@ -532,15 +526,12 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
     const hasWidget = getPromotableWidgets(node).some(
       (iw) => iw.name === widget.sourceWidgetName
     )
-    if (!hasWidget) {
-      removedEntries.push(widget)
-    }
+    if (!hasWidget) removedEntries.push(widget)
+
     return !hasWidget
   })
 
-  for (const input of staleInputs) {
-    subgraph.removeInput(input)
-  }
+  for (const input of staleInputs) subgraph.removeInput(input)
 
   if (removedEntries.length > 0 && import.meta.env.DEV) {
     console.warn(

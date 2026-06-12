@@ -35,18 +35,18 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   const missingModelNodeIds = computed<Set<string>>(() => {
     const ids = new Set<string>()
     if (!missingModelCandidates.value) return ids
-    for (const m of missingModelCandidates.value) {
+    for (const m of missingModelCandidates.value)
       if (m.nodeId != null) ids.add(String(m.nodeId))
-    }
+
     return ids
   })
 
   const missingModelWidgetKeys = computed<Set<string>>(() => {
     const keys = new Set<string>()
     if (!missingModelCandidates.value) return keys
-    for (const m of missingModelCandidates.value) {
+    for (const m of missingModelCandidates.value)
       keys.add(`${String(m.nodeId)}::${m.widgetName}`)
-    }
+
     return keys
   })
 
@@ -60,9 +60,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     () => {
       const ids = new Set<NodeExecutionId>()
       for (const nodeId of missingModelNodeIds.value) {
-        for (const id of getAncestorExecutionIds(nodeId)) {
-          ids.add(id)
-        }
+        for (const id of getAncestorExecutionIds(nodeId)) ids.add(id)
       }
       return ids
     }
@@ -154,9 +152,8 @@ export const useMissingModelStore = defineStore('missingModel', () => {
       (m) => String(m.nodeId) !== nodeId
     )
     for (const name of removedNames) {
-      if (!missingModelCandidates.value.some((m) => m.name === name)) {
+      if (!missingModelCandidates.value.some((m) => m.name === name))
         clearInteractionStateForName(name)
-      }
     }
     if (!missingModelCandidates.value.length)
       missingModelCandidates.value = null
@@ -181,18 +178,14 @@ export const useMissingModelStore = defineStore('missingModel', () => {
         remaining.push(m)
         continue
       }
-      if (String(m.nodeId).startsWith(prefix)) {
-        removedNames.add(m.name)
-      } else {
-        remaining.push(m)
-      }
+      if (String(m.nodeId).startsWith(prefix)) removedNames.add(m.name)
+      else remaining.push(m)
     }
     if (removedNames.size === 0) return
     missingModelCandidates.value = remaining.length ? remaining : null
     for (const name of removedNames) {
-      if (!remaining.some((m) => m.name === name)) {
+      if (!remaining.some((m) => m.name === name))
         clearInteractionStateForName(name)
-      }
     }
   }
 
@@ -234,9 +227,8 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     callback: () => void,
     delayMs: number
   ) {
-    if (_urlDebounceTimers[key]) {
-      clearTimeout(_urlDebounceTimers[key])
-    }
+    if (_urlDebounceTimers[key]) clearTimeout(_urlDebounceTimers[key])
+
     _urlDebounceTimers[key] = setTimeout(callback, delayMs)
   }
 

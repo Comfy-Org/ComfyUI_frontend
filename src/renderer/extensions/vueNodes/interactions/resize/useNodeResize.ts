@@ -100,9 +100,8 @@ export function useNodeResize(
         !resizeStartPointer.value ||
         !resizeStartSize.value ||
         !resizeStartPosition.value
-      ) {
+      )
         return
-      }
 
       const scale = transformState.camera.z
       const deltaX =
@@ -152,12 +151,9 @@ export function useNodeResize(
           newX = snapped.x
           newY = snapped.y
 
-          if (isNorthCorner) {
-            newHeight += originalY - newY
-          }
-          if (isWestCorner) {
-            newWidth += originalX - newX
-          }
+          if (isNorthCorner) newHeight += originalY - newY
+
+          if (isWestCorner) newWidth += originalX - newX
         }
 
         const snappedSize = applySnapToSize({
@@ -200,14 +196,11 @@ export function useNodeResize(
       }
 
       // Only include position for non-SE corners
-      if (activeCorner !== 'SE') {
-        payload.position = { x: newX, y: newY }
-      }
+      if (activeCorner !== 'SE') payload.position = { x: newX, y: newY }
 
       const targetNodeElement = target.closest('[data-node-id]')
-      if (targetNodeElement instanceof HTMLElement) {
+      if (targetNodeElement instanceof HTMLElement)
         resizeCallback(payload, targetNodeElement)
-      }
     }
 
     const cleanup = () => {

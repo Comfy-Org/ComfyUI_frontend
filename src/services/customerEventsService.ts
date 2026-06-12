@@ -122,14 +122,12 @@ export const useCustomerEventsService = () => {
   }
 
   function formatJsonValue(value: unknown) {
-    if (typeof value === 'number') {
-      return value.toLocaleString()
-    }
+    if (typeof value === 'number') return value.toLocaleString()
+
     if (typeof value === 'string') {
       const date = new Date(value)
-      if (!Number.isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+      if (!Number.isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}T/.test(value))
         return d(date, { dateStyle: 'medium', timeStyle: 'short' })
-      }
     }
     return value
   }

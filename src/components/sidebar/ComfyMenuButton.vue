@@ -275,9 +275,7 @@ const translatedItems = computed(() => {
 const onMenuShow = () => {
   void nextTick(() => {
     // Force the menu to show submenus on hover
-    if (menuRef.value) {
-      menuRef.value.dirty = true
-    }
+    if (menuRef.value) menuRef.value.dirty = true
   })
 }
 

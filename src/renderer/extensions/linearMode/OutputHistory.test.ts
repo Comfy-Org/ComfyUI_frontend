@@ -359,9 +359,8 @@ describe('OutputHistory', () => {
       const unchecked = screen
         .getAllByTestId('linear-history-item')
         .filter((item) => item.dataset.state === 'unchecked')
-      for (const item of unchecked) {
+      for (const item of unchecked)
         expect(item).toHaveAttribute('tabindex', '-1')
-      }
     })
 
     it('selects pending slot on click', async () => {

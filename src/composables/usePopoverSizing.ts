@@ -21,13 +21,9 @@ export function usePopoverSizing(
     const { minWidth, maxWidth } = options
     const style: CSSProperties = {}
 
-    if (minWidth) {
-      style.minWidth = minWidth
-    }
+    if (minWidth) style.minWidth = minWidth
 
-    if (maxWidth) {
-      style.maxWidth = maxWidth
-    }
+    if (maxWidth) style.maxWidth = maxWidth
 
     return style
   })

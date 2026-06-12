@@ -57,9 +57,7 @@ const upstreamValue = useUpstreamValue(
 )
 
 watch(upstreamValue, (upstream) => {
-  if (isDisabled.value && upstream) {
-    modelValue.value = upstream
-  }
+  if (isDisabled.value && upstream) modelValue.value = upstream
 })
 
 const effectiveValue = computed(() =>

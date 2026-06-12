@@ -25,14 +25,10 @@ export function useDismissableOverlay({
   dismissOnScroll = false
 }: UseDismissableOverlayOptions) {
   const dismissIfOutside = (event: Event) => {
-    if (!toValue(isOpen)) {
-      return
-    }
+    if (!toValue(isOpen)) return
 
     const overlay = getOverlayEl()
-    if (!overlay) {
-      return
-    }
+    if (!overlay) return
 
     if (!isNode(event.target)) {
       onDismiss()
@@ -42,9 +38,8 @@ export function useDismissableOverlay({
     if (
       isInside(event.target, overlay) ||
       isInside(event.target, getTriggerEl?.())
-    ) {
+    )
       return
-    }
 
     onDismiss()
   }

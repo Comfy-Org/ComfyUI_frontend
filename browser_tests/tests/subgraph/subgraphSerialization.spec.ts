@@ -42,9 +42,8 @@ async function getPrimitiveFanoutSnapshot(
   return comfyPage.page.evaluate((id) => {
     const graph = window.app!.canvas.graph!
     const hostNode = graph.getNodeById(Number(id))
-    if (!hostNode?.isSubgraphNode?.()) {
+    if (!hostNode?.isSubgraphNode?.())
       throw new Error(`Host node ${id} is not a SubgraphNode`)
-    }
 
     const [primitiveNode] = hostNode.subgraph.findNodesByType(
       'PrimitiveNode',
@@ -335,9 +334,8 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       const widgets = await getPromotedWidgets(comfyPage, '11')
       expect(widgets.length).toBeGreaterThan(0)
 
-      for (const [interiorNodeId] of widgets) {
+      for (const [interiorNodeId] of widgets)
         expect(Number(interiorNodeId)).toBeGreaterThan(0)
-      }
 
       await expectPromotedWidgetsToResolveToInteriorNodes(
         comfyPage,
@@ -609,9 +607,9 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
           g: typeof graph
         ): string | null => {
           if (isSentinelNodeId(id)) return null
-          if (typeof id !== 'number' || !g._nodes_by_id[id]) {
+          if (typeof id !== 'number' || !g._nodes_by_id[id])
             return `${label}: ${kind} ${id} invalid or not found`
-          }
+
           return null
         }
 

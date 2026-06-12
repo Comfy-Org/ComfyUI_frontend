@@ -15,9 +15,8 @@ export class FeatureFlagHelper {
    */
   async seedFlags(flags: Record<string, unknown>): Promise<void> {
     await this.page.addInitScript((flagMap: Record<string, unknown>) => {
-      for (const [key, value] of Object.entries(flagMap)) {
+      for (const [key, value] of Object.entries(flagMap))
         localStorage.setItem(`ff:${key}`, JSON.stringify(value))
-      }
     }, flags)
   }
 
@@ -28,9 +27,8 @@ export class FeatureFlagHelper {
    */
   async setFlags(flags: Record<string, unknown>): Promise<void> {
     await this.page.evaluate((flagMap: Record<string, unknown>) => {
-      for (const [key, value] of Object.entries(flagMap)) {
+      for (const [key, value] of Object.entries(flagMap))
         localStorage.setItem(`ff:${key}`, JSON.stringify(value))
-      }
     }, flags)
   }
 

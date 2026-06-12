@@ -27,9 +27,8 @@ export async function hasCanvasContent(canvas: Locator): Promise<boolean> {
     const ctx = el.getContext('2d')
     if (!ctx) return false
     const { data } = ctx.getImageData(0, 0, el.width, el.height)
-    for (let i = 3; i < data.length; i += 4) {
-      if (data[i] > 0) return true
-    }
+    for (let i = 3; i < data.length; i += 4) if (data[i] > 0) return true
+
     return false
   })
 }
@@ -58,14 +57,12 @@ export async function triggerSerialization(page: Page): Promise<void> {
     }
 
     const widgetIndex = node.widgets?.findIndex((w) => w.name === 'mask') ?? -1
-    if (widgetIndex === -1) {
+    if (widgetIndex === -1)
       throw new Error('Widget "mask" not found on target node 1.')
-    }
 
     const widget = node.widgets?.[widgetIndex]
-    if (!widget) {
+    if (!widget)
       throw new Error(`Widget index ${widgetIndex} not found on target node 1.`)
-    }
 
     if (typeof widget.serializeValue !== 'function') {
       throw new Error(

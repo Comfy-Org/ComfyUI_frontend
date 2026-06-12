@@ -256,9 +256,8 @@ class PromotedWidgetView implements IPromotedWidgetView {
         isPromotedWidgetView(w) &&
         w.sourceNodeId === this.sourceNodeId &&
         w.sourceWidgetName === this.sourceWidgetName
-      ) {
+      )
         return slot
-      }
     }
     return undefined
   }

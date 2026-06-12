@@ -148,9 +148,7 @@ const selectedSorter = computed<SortOption['sorter']>(() => {
   return sorter || defaultSorter.value
 })
 const sortedItems = computed(() => {
-  if (!isOpen.value) {
-    return items
-  }
+  if (!isOpen.value) return items
 
   return selectedSorter.value({ items: filteredItems.value }) || []
 })
@@ -201,9 +199,8 @@ function handleFileChange(event: Event) {
   if (disabled) return
   const target = event.target
   if (!(target instanceof HTMLInputElement)) return
-  if (target.files) {
-    files.value = Array.from(target.files)
-  }
+  if (target.files) files.value = Array.from(target.files)
+
   target.value = ''
 }
 
@@ -225,9 +222,7 @@ function handleSelection(item: FormDropdownItem, index: number) {
   }
   selected.value = new Set(sel)
 
-  if (maxSelectable.value === 1) {
-    closeDropdown({ restoreFocus: true })
-  }
+  if (maxSelectable.value === 1) closeDropdown({ restoreFocus: true })
 }
 
 async function getTopSearchResult() {
@@ -240,9 +235,8 @@ async function getTopSearchResult() {
       ? filteredItems.value
       : await searcher(query, sourceItems, () => {})
 
-  if (query !== searchQuery.value || sourceItems !== items || !isOpen.value) {
+  if (query !== searchQuery.value || sourceItems !== items || !isOpen.value)
     return
-  }
 
   return selectedSorter.value({ items: matches })?.[0]
 }

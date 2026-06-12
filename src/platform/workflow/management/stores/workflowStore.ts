@@ -126,9 +126,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const attachWorkflow = (workflow: ComfyWorkflow, openIndex: number = -1) => {
     workflowLookup.value[workflow.path] = workflow
 
-    if (openIndex !== -1) {
+    if (openIndex !== -1)
       openWorkflowPaths.value.splice(openIndex, 0, workflow.path)
-    }
   }
 
   /**
@@ -203,23 +202,21 @@ export const useWorkflowStore = defineStore('workflow', () => {
   ): Promise<LoadedComfyWorkflow> => {
     if (isActive(workflow)) return workflow as LoadedComfyWorkflow
 
-    if (!openWorkflowPaths.value.includes(workflow.path)) {
+    if (!openWorkflowPaths.value.includes(workflow.path))
       openWorkflowPaths.value.push(workflow.path)
-    }
+
     const loadedWorkflow = await workflow.load()
     activeWorkflow.value = loadedWorkflow
     comfyApp.canvas.bg_tint = loadedWorkflow.tintCanvasBg
 
     // Track activation in history (move to end if already present)
     const historyIndex = tabActivationHistory.value.indexOf(workflow.path)
-    if (historyIndex !== -1) {
-      tabActivationHistory.value.splice(historyIndex, 1)
-    }
+    if (historyIndex !== -1) tabActivationHistory.value.splice(historyIndex, 1)
+
     tabActivationHistory.value.push(workflow.path)
     // Trim history if too large
-    if (tabActivationHistory.value.length > MAX_HISTORY_SIZE) {
+    if (tabActivationHistory.value.length > MAX_HISTORY_SIZE)
       tabActivationHistory.value.shift()
-    }
 
     return loadedWorkflow
   }
@@ -264,9 +261,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       ? (JSON.parse(JSON.stringify(workflowData)) as ComfyWorkflowJSON)
       : (JSON.parse(defaultGraphJSON) as ComfyWorkflowJSON)
 
-    if (!base.id) {
-      base.id = generateUUID()
-    }
+    if (!base.id) base.id = generateUUID()
 
     return base
   }
@@ -443,14 +438,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
           }
 
           // Never unload the active workflow - it may contain unsaved in-memory edits.
-          if (isActiveWorkflow) {
-            return
-          }
+          if (isActiveWorkflow) return
 
           // If nothing changed, keep any loaded content cached.
-          if (isMetadataUnchanged) {
-            return
-          }
+          if (isMetadataUnchanged) return
 
           existingWorkflow.unload()
         },
@@ -506,9 +497,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       delete workflowLookup.value[oldPath]
       workflowLookup.value[workflow.path] = workflow
       const openIndex = openWorkflowPaths.value.indexOf(oldPath)
-      if (openIndex !== -1) {
+      if (openIndex !== -1)
         openWorkflowPaths.value.splice(openIndex, 1, workflow.path)
-      }
 
       draftStore.moveDraft(oldPath, newPath, workflow.key)
 
@@ -530,9 +520,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
     try {
       await workflow.delete()
       useWorkflowDraftStoreV2().removeDraft(workflow.path)
-      if (bookmarkStore.isBookmarked(workflow.path)) {
+      if (bookmarkStore.isBookmarked(workflow.path))
         await bookmarkStore.setBookmarked(workflow.path, false)
-      }
+
       // Clear thumbnail when workflow is deleted
       clearThumbnail(workflow.key)
       delete workflowLookup.value[workflow.path]
@@ -598,11 +588,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const subgraph = activeSubgraph.value
 
     // Short-circuit: ID belongs to the parent workflow / no active subgraph
-    if (!id.includes(':')) {
-      return !subgraph ? id : undefined
-    } else if (!subgraph) {
-      return
-    }
+    if (!id.includes(':')) return !subgraph ? id : undefined
+    else if (!subgraph) return
 
     // Parse the execution ID (e.g., "123:456:789")
     const subgraphNodeIds = id.split(':')
@@ -612,9 +599,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     // If the last subgraph is the active subgraph, return the node ID
     const subgraphs = getSubgraphsFromInstanceIds(graph, subgraphNodeIds)
-    if (subgraphs.at(-1) === subgraph) {
-      return subgraphNodeIds.at(-1)
-    }
+    if (subgraphs.at(-1) === subgraph) return subgraphNodeIds.at(-1)
   }
 
   watch(activeWorkflow, updateActiveGraph)
@@ -658,9 +643,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     nodeExecutionId: NodeExecutionId | string
   ): NodeLocatorId | null => {
     // Handle simple node IDs (root graph - no colons)
-    if (!nodeExecutionId.includes(':')) {
-      return nodeExecutionId
-    }
+    if (!nodeExecutionId.includes(':')) return nodeExecutionId
 
     const parts = parseNodeExecutionId(nodeExecutionId)
     if (!parts || parts.length === 0) return null
@@ -713,9 +696,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const { subgraphUuid, localNodeId } = parsed
 
     // If no subgraph UUID, this is a root graph node
-    if (!subgraphUuid) {
-      return String(localNodeId)
-    }
+    if (!subgraphUuid) return String(localNodeId)
 
     // Find the path from root to the subgraph with this UUID
     const findSubgraphPath = (
@@ -723,9 +704,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
       targetUuid: string,
       path: NodeId[] = []
     ): NodeId[] | null => {
-      if (isSubgraph(graph) && graph.id === targetUuid) {
-        return path
-      }
+      if (isSubgraph(graph) && graph.id === targetUuid) return path
 
       for (const node of graph._nodes) {
         if (node.isSubgraphNode() && node.subgraph) {
@@ -753,9 +732,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
         )
         return subgraphs[subgraphs.length - 1] === targetSubgraph
       })
-    ) {
+    )
       return null
-    }
 
     return createNodeExecutionId([...path, localNodeId])
   }
@@ -822,11 +800,9 @@ export const useWorkflowBookmarkStore = defineStore('workflowBookmark', () => {
 
   const setBookmarked = async (path: string, value: boolean) => {
     if (bookmarks.value.has(path) === value) return
-    if (value) {
-      bookmarks.value.add(path)
-    } else {
-      bookmarks.value.delete(path)
-    }
+    if (value) bookmarks.value.add(path)
+    else bookmarks.value.delete(path)
+
     await saveBookmarks()
   }
 

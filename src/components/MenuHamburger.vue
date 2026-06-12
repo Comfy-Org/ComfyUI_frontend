@@ -34,13 +34,9 @@ const exitFocusMode = () => {
 }
 
 watchEffect(() => {
-  if (settingStore.get('Comfy.UseNewMenu') !== 'Disabled') {
-    return
-  }
-  if (workspaceState.focusMode) {
-    app.ui.menuContainer.style.display = 'none'
-  } else {
-    app.ui.menuContainer.style.display = 'block'
-  }
+  if (settingStore.get('Comfy.UseNewMenu') !== 'Disabled') return
+
+  if (workspaceState.focusMode) app.ui.menuContainer.style.display = 'none'
+  else app.ui.menuContainer.style.display = 'block'
 })
 </script>

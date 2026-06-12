@@ -412,17 +412,15 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
   })
 
   it('should retain entries below the limit', () => {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 5; i++)
       fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
-    }
 
     expect(Object.keys(store.nodeProgressStatesByJob)).toHaveLength(5)
   })
 
   it('should evict oldest entries when exceeding MAX_PROGRESS_JOBS', () => {
-    for (let i = 0; i < MAX_PROGRESS_JOBS + 10; i++) {
+    for (let i = 0; i < MAX_PROGRESS_JOBS + 10; i++)
       fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
-    }
 
     const keys = Object.keys(store.nodeProgressStatesByJob)
     expect(keys).toHaveLength(MAX_PROGRESS_JOBS)
@@ -434,18 +432,17 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
   })
 
   it('should keep the most recently added job after eviction', () => {
-    for (let i = 0; i < MAX_PROGRESS_JOBS + 1; i++) {
+    for (let i = 0; i < MAX_PROGRESS_JOBS + 1; i++)
       fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
-    }
 
     const lastJobId = `job-${MAX_PROGRESS_JOBS}`
     expect(store.nodeProgressStatesByJob).toHaveProperty(lastJobId)
   })
 
   it('should not evict when updating an existing job', () => {
-    for (let i = 0; i < MAX_PROGRESS_JOBS; i++) {
+    for (let i = 0; i < MAX_PROGRESS_JOBS; i++)
       fireProgressState(`job-${i}`, makeProgressNodes(`${i}`, `job-${i}`))
-    }
+
     expect(Object.keys(store.nodeProgressStatesByJob)).toHaveLength(
       MAX_PROGRESS_JOBS
     )
@@ -1347,9 +1344,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       store.unbindExecutionEvents()
 
-      for (const event of events) {
+      for (const event of events)
         expect(removeSpy).toHaveBeenCalledWith(event, expect.any(Function))
-      }
     })
   })
 })

@@ -191,9 +191,8 @@ describe('ImageLayerSettingsPanel', () => {
       const { container } = renderPanel()
       const checkboxes = container.querySelectorAll('input[type="checkbox"]')
 
-      for (const cb of checkboxes) {
+      for (const cb of checkboxes)
         await expect(user.click(cb as HTMLInputElement)).resolves.not.toThrow()
-      }
     })
   })
 

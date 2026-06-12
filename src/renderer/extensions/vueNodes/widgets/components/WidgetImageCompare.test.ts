@@ -28,9 +28,9 @@ describe('WidgetImageCompare Display', () => {
       global: {
         mocks: {
           $t: (key: string, params?: Record<string, unknown>) => {
-            if (key === 'batch.index' && params) {
+            if (key === 'batch.index' && params)
               return `${params.current} / ${params.total}`
-            }
+
             return key
           }
         }

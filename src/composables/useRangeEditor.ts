@@ -42,9 +42,7 @@ export function useRangeEditor({
     const bestDist = Math.min(dMin, dMax)
     if (midpoint !== undefined && showMidpoint.value) {
       const midAbs = min + midpoint * (max - min)
-      if (Math.abs(value - midAbs) < bestDist) {
-        best = 'midpoint'
-      }
+      if (Math.abs(value - midAbs) < bestDist) best = 'midpoint'
     }
     return best
   }

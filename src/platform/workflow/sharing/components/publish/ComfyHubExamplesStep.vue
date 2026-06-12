@@ -130,9 +130,8 @@ function moveImage(id: string, direction: number) {
 
 function removeImage(id: string) {
   const image = exampleImages.value.find((img) => img.id === id)
-  if (image?.file) {
-    URL.revokeObjectURL(image.url)
-  }
+  if (image?.file) URL.revokeObjectURL(image.url)
+
   exampleImages.value = exampleImages.value.filter((img) => img.id !== id)
 }
 
@@ -153,12 +152,10 @@ function addImages(files: FileList) {
 
   const created = createExampleImages(files)
   const newImages = created.slice(0, remaining)
-  for (const img of created.slice(remaining)) {
-    URL.revokeObjectURL(img.url)
-  }
-  if (newImages.length > 0) {
+  for (const img of created.slice(remaining)) URL.revokeObjectURL(img.url)
+
+  if (newImages.length > 0)
     exampleImages.value = [...newImages, ...exampleImages.value]
-  }
 }
 
 function insertImagesAt(index: number, files: FileList) {
@@ -171,9 +168,7 @@ function insertImagesAt(index: number, files: FileList) {
   const maxInsert =
     remaining <= 0 ? Math.max(updated.length - safeIndex, 0) : remaining
   const newImages = created.slice(0, maxInsert)
-  for (const img of created.slice(maxInsert)) {
-    URL.revokeObjectURL(img.url)
-  }
+  for (const img of created.slice(maxInsert)) URL.revokeObjectURL(img.url)
 
   if (newImages.length === 0) return
   if (remaining <= 0) {
@@ -182,9 +177,7 @@ function insertImagesAt(index: number, files: FileList) {
       newImages.length,
       ...newImages
     )
-    for (const img of replacedImages) {
-      if (img.file) URL.revokeObjectURL(img.url)
-    }
+    for (const img of replacedImages) if (img.file) URL.revokeObjectURL(img.url)
   } else {
     updated.splice(safeIndex, 0, ...newImages)
   }
@@ -194,14 +187,10 @@ function insertImagesAt(index: number, files: FileList) {
 
 function handleFileSelect(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) return
-  if (event.target.files?.length) {
-    addImages(event.target.files)
-  }
+  if (event.target.files?.length) addImages(event.target.files)
 }
 
 function handleFileDrop(event: DragEvent) {
-  if (event.dataTransfer?.files?.length) {
-    addImages(event.dataTransfer.files)
-  }
+  if (event.dataTransfer?.files?.length) addImages(event.dataTransfer.files)
 }
 </script>

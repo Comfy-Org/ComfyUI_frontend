@@ -348,9 +348,8 @@ describe('Subgraph Definition Garbage Collection', () => {
     const { subgraph, innerNodes } = createSubgraphWithNodes(rootGraph, 2)
     const removedNodeIds = new Set<string>()
 
-    for (const node of innerNodes) {
+    for (const node of innerNodes)
       node.onRemoved = () => removedNodeIds.add(String(node.id))
-    }
 
     const subgraphNode = createTestSubgraphNode(subgraph, { pos: [100, 100] })
     rootGraph.add(subgraphNode)
@@ -916,12 +915,9 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const idsA = nodeIdSet(graph, SUBGRAPH_A)
     const idsB = nodeIdSet(graph, SUBGRAPH_B)
 
-    for (const id of SHARED_NODE_IDS) {
-      expect(idsA.has(id as NodeId)).toBe(true)
-    }
-    for (const id of idsA) {
-      expect(idsB.has(id)).toBe(false)
-    }
+    for (const id of SHARED_NODE_IDS) expect(idsA.has(id as NodeId)).toBe(true)
+
+    for (const id of idsA) expect(idsB.has(id)).toBe(false)
   })
 
   it('patches link references in remapped subgraph', () => {
@@ -938,9 +934,8 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const { graph } = configureFromFixture()
     const idsB = nodeIdSet(graph, SUBGRAPH_B)
 
-    for (const widget of graph.subgraphs.get(SUBGRAPH_B)!.widgets) {
+    for (const widget of graph.subgraphs.get(SUBGRAPH_B)!.widgets)
       expect(idsB.has(widget.id)).toBe(true)
-    }
   })
 
   it('patches proxyWidgets in root-level nodes referencing remapped IDs', () => {

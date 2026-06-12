@@ -250,9 +250,8 @@ onMounted(() => {
   if (url && !store.fileSizes[url]) {
     fetchModelMetadata(url)
       .then((metadata) => {
-        if (metadata.fileSize !== null) {
+        if (metadata.fileSize !== null)
           store.setFileSize(url, metadata.fileSize)
-        }
       })
       .catch((error: unknown) => {
         console.warn(

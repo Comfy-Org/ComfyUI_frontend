@@ -116,9 +116,7 @@ function useSubscriptionInternal() {
 
   const getCheckoutAttributionForCloud =
     async (): Promise<CheckoutAttributionMetadata> => {
-      if (__DISTRIBUTION__ !== 'cloud') {
-        return {}
-      }
+      if (__DISTRIBUTION__ !== 'cloud') return {}
 
       const { getCheckoutAttribution } =
         await import('@/platform/telemetry/utils/checkoutAttribution')
@@ -131,9 +129,8 @@ function useSubscriptionInternal() {
   let isRecoveringPendingCheckout = false
 
   const stopPendingCheckoutRecovery = () => {
-    if (pendingCheckoutRecoveryTimeout !== null && defaultWindow) {
+    if (pendingCheckoutRecoveryTimeout !== null && defaultWindow)
       defaultWindow.clearTimeout(pendingCheckoutRecoveryTimeout)
-    }
 
     pendingCheckoutRecoveryTimeout = null
     pendingCheckoutRecoveryAttempt = 0
@@ -145,18 +142,15 @@ function useSubscriptionInternal() {
       pendingCheckoutRecoveryTimeout !== null ||
       !isLoggedIn.value ||
       !hasPendingSubscriptionCheckoutAttempt()
-    ) {
+    )
       return
-    }
 
     const nextDelay =
       PENDING_SUBSCRIPTION_CHECKOUT_RETRY_DELAYS_MS[
         pendingCheckoutRecoveryAttempt
       ]
 
-    if (nextDelay === undefined) {
-      return
-    }
+    if (nextDelay === undefined) return
 
     pendingCheckoutRecoveryTimeout = defaultWindow.setTimeout(() => {
       pendingCheckoutRecoveryTimeout = null
@@ -171,11 +165,10 @@ function useSubscriptionInternal() {
     const metadata = consumePendingSubscriptionCheckoutSuccess(statusData)
 
     if (!metadata) {
-      if (hasPendingSubscriptionCheckoutAttempt()) {
+      if (hasPendingSubscriptionCheckoutAttempt())
         schedulePendingCheckoutRecovery()
-      } else {
-        stopPendingCheckoutRecovery()
-      }
+      else stopPendingCheckoutRecovery()
+
       return
     }
 
@@ -188,9 +181,8 @@ function useSubscriptionInternal() {
 
   const buildAuthHeaders = async (): Promise<Record<string, string>> => {
     const authHeader = await getAuthHeader()
-    if (!authHeader) {
+    if (!authHeader)
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
-    }
 
     return {
       ...authHeader,
@@ -215,9 +207,7 @@ function useSubscriptionInternal() {
     }
 
     const checkoutWindow = window.open(response.checkout_url, '_blank')
-    if (!checkoutWindow) {
-      return
-    }
+    if (!checkoutWindow) return
 
     recordPendingSubscriptionCheckoutAttempt({
       tier: 'standard',
@@ -265,9 +255,7 @@ function useSubscriptionInternal() {
 
   const manageSubscription = async () => {
     const didOpenPortal = await accessBillingPortal()
-    if (!didOpenPortal) {
-      return
-    }
+    if (!didOpenPortal) return
 
     startCancellationWatcher()
   }
@@ -275,9 +263,7 @@ function useSubscriptionInternal() {
   const requireActiveSubscription = async (): Promise<void> => {
     await fetchSubscriptionStatus()
 
-    if (!isSubscribedOrIsNotCloud.value) {
-      showSubscriptionDialog()
-    }
+    if (!isSubscribedOrIsNotCloud.value) showSubscriptionDialog()
   }
 
   const handleViewUsageHistory = () => {
@@ -300,9 +286,8 @@ function useSubscriptionInternal() {
       !isLoggedIn.value ||
       !hasPendingSubscriptionCheckoutAttempt() ||
       isRecoveringPendingCheckout
-    ) {
+    )
       return
-    }
 
     isRecoveringPendingCheckout = true
 
@@ -364,9 +349,8 @@ function useSubscriptionInternal() {
   })
 
   useEventListener(defaultWindow, 'storage', (event: StorageEvent) => {
-    if (event.key === PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) {
+    if (event.key === PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
       handlePendingSubscriptionCheckoutChange()
-    }
   })
 
   useEventListener(defaultWindow, 'pageshow', () => {
@@ -374,25 +358,20 @@ function useSubscriptionInternal() {
   })
 
   useEventListener(defaultDocument, 'visibilitychange', () => {
-    if (defaultDocument?.visibilityState === 'visible') {
+    if (defaultDocument?.visibilityState === 'visible')
       void recoverPendingSubscriptionCheckout('visibilitychange')
-    }
   })
 
   watch(
     () => [authStore.isInitialized, isLoggedIn.value] as const,
     async ([authInitialized, loggedIn]) => {
-      if (!authInitialized) {
-        return
-      }
+      if (!authInitialized) return
 
       if (loggedIn && isCloud) {
         try {
-          if (hasPendingSubscriptionCheckoutAttempt()) {
+          if (hasPendingSubscriptionCheckoutAttempt())
             await recoverPendingSubscriptionCheckout('bootstrap')
-          } else {
-            await fetchSubscriptionStatus()
-          }
+          else await fetchSubscriptionStatus()
         } catch (error) {
           // Network errors are expected during navigation/component unmount
           // and when offline - log for debugging but don't surface to user

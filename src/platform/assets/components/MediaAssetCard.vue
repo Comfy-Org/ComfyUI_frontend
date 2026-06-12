@@ -269,9 +269,8 @@ provide(MediaAssetKey, {
 const formattedDuration = computed(() => {
   // Check for execution time first (from history API)
   const executionTime = asset?.user_metadata?.executionTimeInSeconds
-  if (executionTime !== undefined && executionTime !== null) {
+  if (executionTime !== undefined && executionTime !== null)
     return `${Number(executionTime).toFixed(2)}s`
-  }
 
   // Fall back to duration for media files
   const duration = asset?.user_metadata?.duration
@@ -283,12 +282,12 @@ const formattedDuration = computed(() => {
 const metaInfo = computed(() => {
   if (!asset) return ''
   // TODO(assets): Re-enable once /assets API returns original image dimensions in metadata (#10590)
-  if (fileKind.value === 'image' && imageDimensions.value && !isCloud) {
+  if (fileKind.value === 'image' && imageDimensions.value && !isCloud)
     return `${imageDimensions.value.width}x${imageDimensions.value.height}`
-  }
-  if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value)) {
+
+  if (asset.size && ['video', 'audio', '3D'].includes(fileKind.value))
     return formatSize(asset.size)
-  }
+
   return ''
 })
 
@@ -298,9 +297,7 @@ const showActionsOverlay = computed(() => {
 })
 
 const handleZoomClick = () => {
-  if (asset && canInspect.value) {
-    emit('zoom', asset)
-  }
+  if (asset && canInspect.value) emit('zoom', asset)
 }
 
 const handleImageLoaded = (width: number, height: number) => {

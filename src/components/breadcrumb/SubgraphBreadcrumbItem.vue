@@ -138,9 +138,9 @@ const rename = async (
 const isRoot = item.key === 'root'
 
 const tooltipText = computed(() => {
-  if (hasMissingNodes.value && isRoot) {
+  if (hasMissingNodes.value && isRoot)
     return t('breadcrumbsMenu.missingNodesWarning')
-  }
+
   return item.label
 })
 
@@ -158,9 +158,8 @@ const startRename = async () => {
     if (itemInputRef.value?.$el) {
       itemInputRef.value.$el.focus()
       itemInputRef.value.$el.select()
-      if (wrapperRef.value) {
+      if (wrapperRef.value)
         itemInputRef.value.$el.style.width = `${Math.max(200, wrapperRef.value.offsetWidth)}px`
-      }
     }
   })
 }
@@ -168,16 +167,11 @@ const startRename = async () => {
 const { menuItems } = useWorkflowActionsMenu(startRename, { isRoot })
 
 const handleClick = (event: MouseEvent) => {
-  if (isEditing.value) {
-    return
-  }
+  if (isEditing.value) return
 
   if (event.detail === 1) {
-    if (isActive) {
-      menu.value?.toggle(event)
-    } else {
-      item.command?.({ item: item, originalEvent: event })
-    }
+    if (isActive) menu.value?.toggle(event)
+    else item.command?.({ item: item, originalEvent: event })
   } else if (isActive && event.detail === 2) {
     menu.value?.hide()
     event.stopPropagation()
@@ -187,9 +181,7 @@ const handleClick = (event: MouseEvent) => {
 }
 
 const inputBlur = async (doRename: boolean) => {
-  if (doRename) {
-    await rename(itemLabel.value, item.label as string)
-  }
+  if (doRename) await rename(itemLabel.value, item.label as string)
 
   isEditing.value = false
 }

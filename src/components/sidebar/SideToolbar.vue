@@ -136,26 +136,27 @@ const onTabClick = async (item: SidebarTabExtension) => {
   const isWorkflowsTab = item.id === 'workflows'
   const isAssetsTab = item.id === 'assets'
 
-  if (isNodeLibraryTab)
+  if (isNodeLibraryTab) {
     telemetry?.trackUiButtonClicked({
       button_id: 'sidebar_tab_node_library_selected',
       element_group: 'sidebar'
     })
-  else if (isModelLibraryTab)
+  } else if (isModelLibraryTab) {
     telemetry?.trackUiButtonClicked({
       button_id: 'sidebar_tab_model_library_selected',
       element_group: 'sidebar'
     })
-  else if (isWorkflowsTab)
+  } else if (isWorkflowsTab) {
     telemetry?.trackUiButtonClicked({
       button_id: 'sidebar_tab_workflows_selected',
       element_group: 'sidebar'
     })
-  else if (isAssetsTab)
+  } else if (isAssetsTab) {
     telemetry?.trackUiButtonClicked({
       button_id: 'sidebar_tab_assets_media_selected',
       element_group: 'sidebar'
     })
+  }
 
   await commandStore.commands
     .find((cmd) => cmd.id === `Workspace.ToggleSidebarTab.${item.id}`)

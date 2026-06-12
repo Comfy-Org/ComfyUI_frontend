@@ -37,8 +37,6 @@ const filteredProps = computed(() =>
 )
 
 const handleClick = () => {
-  if (props.widget.callback) {
-    props.widget.callback()
-  }
+  if (props.widget.callback) props.widget.callback()
 }
 </script>

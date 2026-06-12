@@ -22,9 +22,7 @@ function formatDisplayName(folderName: string): string {
     gligen: 'GLIGEN'
   }
 
-  if (specialCases[folderName]) {
-    return specialCases[folderName]
-  }
+  if (specialCases[folderName]) return specialCases[folderName]
 
   return folderName
     .split('_')

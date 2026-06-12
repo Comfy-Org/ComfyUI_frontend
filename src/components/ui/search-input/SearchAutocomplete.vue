@@ -177,9 +177,8 @@ function clearSearch() {
 }
 
 function getItemProperty(item: T, key: keyof T & string): string {
-  if (typeof item === 'object' && item !== null) {
-    return String(item[key])
-  }
+  if (typeof item === 'object' && item !== null) return String(item[key])
+
   return String(item)
 }
 

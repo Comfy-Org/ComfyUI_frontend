@@ -109,9 +109,7 @@ function cleanupGlobalListeners() {
   document.removeEventListener('keydown', handleKeydown)
   document.removeEventListener('dragover', trackNativeDragPosition)
 
-  if (isDragging.value && dragMode.value === 'click') {
-    cancelDrag()
-  }
+  if (isDragging.value && dragMode.value === 'click') cancelDrag()
 }
 
 export function useNodeDragToCanvas() {

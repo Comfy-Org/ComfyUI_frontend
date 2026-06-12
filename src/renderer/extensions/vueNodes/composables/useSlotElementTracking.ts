@@ -58,15 +58,12 @@ function getSlotElementRect(el: HTMLElement): DOMRect | null {
 
 export function requestSlotLayoutSyncForAllNodes(): void {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
-  for (const nodeId of nodeSlotRegistryStore.getNodeIds()) {
+  for (const nodeId of nodeSlotRegistryStore.getNodeIds())
     scheduleSlotLayoutSync(nodeId)
-  }
 
   // If no slots are currently registered, run the completion check immediately
   // so pendingSlotSync can be cleared when the graph has no nodes.
-  if (pendingNodes.size === 0) {
-    flushScheduledSlotLayoutSync()
-  }
+  if (pendingNodes.size === 0) flushScheduledSlotLayoutSync()
 }
 
 function createSlotLayout(options: {
@@ -212,9 +209,8 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
       existingSlotLayout &&
       isPointEqual(existingSlotLayout.position, nextLayout.position) &&
       isBoundsEqual(existingSlotLayout.bounds, nextLayout.bounds)
-    ) {
+    )
       continue
-    }
 
     batch.push({
       key: slotKey,
@@ -284,9 +280,8 @@ export function useSlotElementTracking(options: {
             () => layoutRef.value?.position,
             (newPosition, oldPosition) => {
               if (!newPosition) return
-              if (!oldPosition || !isPointEqual(newPosition, oldPosition)) {
+              if (!oldPosition || !isPointEqual(newPosition, oldPosition))
                 updateNodeSlotsFromCache(nodeId)
-              }
             }
           )
 
@@ -294,9 +289,8 @@ export function useSlotElementTracking(options: {
             () => layoutRef.value?.size,
             (newSize, oldSize) => {
               if (!newSize) return
-              if (!oldSize || !isSizeEqual(newSize, oldSize)) {
+              if (!oldSize || !isSizeEqual(newSize, oldSize))
                 scheduleSlotLayoutSync(nodeId)
-              }
             }
           )
 

@@ -69,16 +69,14 @@ const { notification } = defineProps<{
 const { t, n } = useI18n()
 
 const thumbnailUrls = computed(() => {
-  if (notification.type !== 'completed') {
-    return []
-  }
+  if (notification.type !== 'completed') return []
+
   return notification.thumbnailUrls?.slice(0, 2) ?? []
 })
 
 const showThumbnails = computed(() => {
-  if (notification.type !== 'completed') {
-    return false
-  }
+  if (notification.type !== 'completed') return false
+
   return thumbnailUrls.value.length > 0
 })
 
@@ -92,13 +90,11 @@ const showsCompletionPreview = computed(
 
 const bannerText = computed(() => {
   const count = notification.count
-  if (notification.type === 'queuedPending') {
-    return t('queue.jobQueueing')
-  }
+  if (notification.type === 'queuedPending') return t('queue.jobQueueing')
+
   if (notification.type === 'queued') {
-    if (count === 1) {
-      return t('queue.jobAddedToQueue')
-    }
+    if (count === 1) return t('queue.jobAddedToQueue')
+
     return t(
       'sideToolbar.queueProgressOverlay.jobsAddedToQueue',
       { count: n(count) },
@@ -106,18 +102,16 @@ const bannerText = computed(() => {
     )
   }
   if (notification.type === 'failed') {
-    if (count === 1) {
-      return t('sideToolbar.queueProgressOverlay.jobFailed')
-    }
+    if (count === 1) return t('sideToolbar.queueProgressOverlay.jobFailed')
+
     return t(
       'sideToolbar.queueProgressOverlay.jobsFailed',
       { count: n(count) },
       count
     )
   }
-  if (count === 1) {
-    return t('sideToolbar.queueProgressOverlay.jobCompleted')
-  }
+  if (count === 1) return t('sideToolbar.queueProgressOverlay.jobCompleted')
+
   return t(
     'sideToolbar.queueProgressOverlay.jobsCompleted',
     { count: n(count) },
@@ -126,25 +120,22 @@ const bannerText = computed(() => {
 })
 
 const iconClass = computed(() => {
-  if (notification.type === 'queuedPending') {
+  if (notification.type === 'queuedPending')
     return 'icon-[lucide--loader-circle]'
-  }
-  if (notification.type === 'queued') {
-    return 'icon-[lucide--check]'
-  }
-  if (notification.type === 'failed') {
-    return 'icon-[lucide--circle-alert]'
-  }
+
+  if (notification.type === 'queued') return 'icon-[lucide--check]'
+
+  if (notification.type === 'failed') return 'icon-[lucide--circle-alert]'
+
   return 'icon-[lucide--image]'
 })
 
 const iconColorClass = computed(() => {
-  if (notification.type === 'queuedPending') {
+  if (notification.type === 'queuedPending')
     return 'animate-spin text-text-secondary'
-  }
-  if (notification.type === 'failed') {
-    return 'text-danger-200'
-  }
+
+  if (notification.type === 'failed') return 'text-danger-200'
+
   return 'text-text-secondary'
 })
 </script>

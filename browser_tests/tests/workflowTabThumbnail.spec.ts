@@ -30,9 +30,8 @@ test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
     const popover = comfyPage.page.locator('.workflow-popover-fade')
     await expect(popover).toHaveCount(1)
     await expect(popover).toBeVisible()
-    if (name) {
-      await expect(popover).toContainText(name)
-    }
+    if (name) await expect(popover).toContainText(name)
+
     return popover
   }
 

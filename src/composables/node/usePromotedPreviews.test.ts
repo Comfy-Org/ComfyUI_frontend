@@ -59,9 +59,8 @@ function addInteriorNode(
 ): LGraphNode {
   const node = new LGraphNode('test')
   node.id = options.id
-  if (options.previewMediaType) {
-    node.previewMediaType = options.previewMediaType
-  }
+  if (options.previewMediaType) node.previewMediaType = options.previewMediaType
+
   setup.subgraph.add(node)
   return node
 }

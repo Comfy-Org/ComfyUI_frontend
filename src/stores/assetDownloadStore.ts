@@ -78,9 +78,7 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
 
   function acknowledgeAsset(assetId: string) {
     for (const download of downloads.value.values()) {
-      if (download.assetId === assetId) {
-        download.acknowledged = true
-      }
+      if (download.assetId === assetId) download.acknowledged = true
     }
   }
 
@@ -98,9 +96,8 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
     const existing = downloads.value.get(data.task_id)
 
     // Skip if already in terminal state
-    if (existing?.status === 'completed' || existing?.status === 'failed') {
+    if (existing?.status === 'completed' || existing?.status === 'failed')
       return
-    }
 
     const download: AssetDownload = {
       taskId: data.task_id,
@@ -182,9 +179,8 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   api.addEventListener('asset_download', handleAssetDownload)
 
   function clearFinishedDownloads() {
-    for (const download of finishedDownloads.value) {
+    for (const download of finishedDownloads.value)
       downloads.value.delete(download.taskId)
-    }
   }
 
   return {

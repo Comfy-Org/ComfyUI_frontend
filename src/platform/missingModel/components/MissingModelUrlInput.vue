@@ -126,10 +126,7 @@ const { urlInputs, urlMetadata, urlFetching, urlErrors, urlImporting } =
 const { handleUrlInput, handleImport } = useMissingModelInteractions()
 
 function handleImportClick() {
-  if (canImportModels.value) {
-    handleImport(modelKey, directory)
-  } else {
-    showUploadDialog()
-  }
+  if (canImportModels.value) handleImport(modelKey, directory)
+  else showUploadDialog()
 }
 </script>

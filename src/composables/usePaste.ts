@@ -19,17 +19,13 @@ export function cloneDataTransfer(original: DataTransfer): DataTransfer {
   // Copy string data
   for (const type of original.types) {
     const data = original.getData(type)
-    if (data) {
-      persistent.setData(type, data)
-    }
+    if (data) persistent.setData(type, data)
   }
 
   for (const item of original.items) {
     if (item.kind === 'file') {
       const file = item.getAsFile()
-      if (file) {
-        persistent.items.add(file)
-      }
+      if (file) persistent.items.add(file)
     }
   }
 
@@ -85,9 +81,7 @@ export async function pasteImageNode(
   imageNode: LGraphNode | null = null
 ): Promise<LGraphNode | null> {
   // No image node selected: add a new one
-  if (!imageNode) {
-    imageNode = await createNode(canvas, 'LoadImage')
-  }
+  if (!imageNode) imageNode = await createNode(canvas, 'LoadImage')
 
   pasteItemsOnNode(items, imageNode, 'image')
   return imageNode
@@ -104,9 +98,7 @@ export async function pasteImageNodes(
     transfer.items.add(file)
     const imageNode = await pasteImageNode(canvas, transfer.items)
 
-    if (imageNode) {
-      nodes.push(imageNode)
-    }
+    if (imageNode) nodes.push(imageNode)
   }
 
   return nodes
@@ -117,9 +109,8 @@ export async function pasteAudioNode(
   items: DataTransferItemList,
   audioNode: LGraphNode | null = null
 ): Promise<LGraphNode | null> {
-  if (!audioNode) {
-    audioNode = await createNode(canvas, 'LoadAudio')
-  }
+  if (!audioNode) audioNode = await createNode(canvas, 'LoadAudio')
+
   pasteItemsOnNode(items, audioNode, 'audio')
   return audioNode
 }
@@ -135,9 +126,7 @@ export async function pasteAudioNodes(
     transfer.items.add(file)
     const node = await pasteAudioNode(canvas, transfer.items)
 
-    if (node) {
-      nodes.push(node)
-    }
+    if (node) nodes.push(node)
   }
 
   return nodes
@@ -148,9 +137,8 @@ export async function pasteVideoNode(
   items: DataTransferItemList,
   videoNode: LGraphNode | null = null
 ): Promise<LGraphNode | null> {
-  if (!videoNode) {
-    videoNode = await createNode(canvas, 'LoadVideo')
-  }
+  if (!videoNode) videoNode = await createNode(canvas, 'LoadVideo')
+
   pasteItemsOnNode(items, videoNode, 'video')
   return videoNode
 }
@@ -166,9 +154,7 @@ export async function pasteVideoNodes(
     transfer.items.add(file)
     const node = await pasteVideoNode(canvas, transfer.items)
 
-    if (node) {
-      nodes.push(node)
-    }
+    if (node) nodes.push(node)
   }
 
   return nodes
@@ -257,9 +243,8 @@ export const usePaste = () => {
         (e.target instanceof HTMLTextAreaElement &&
           e.target.type === 'textarea') ||
         (e.target instanceof HTMLInputElement && e.target.type === 'text')
-      ) {
+      )
         return
-      }
 
       // Litegraph default paste
       canvas.pasteFromClipboard()

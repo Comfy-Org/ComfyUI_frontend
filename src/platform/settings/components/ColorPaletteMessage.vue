@@ -59,8 +59,6 @@ const { palettes, activePaletteId } = storeToRefs(colorPaletteStore)
 
 const importCustomPalette = async () => {
   const palette = await colorPaletteService.importColorPalette()
-  if (palette) {
-    await settingStore.set('Comfy.ColorPalette', palette.id)
-  }
+  if (palette) await settingStore.set('Comfy.ColorPalette', palette.id)
 }
 </script>

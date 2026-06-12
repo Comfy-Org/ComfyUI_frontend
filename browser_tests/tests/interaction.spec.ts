@@ -57,9 +57,9 @@ test.describe('Node Interaction', () => {
       }) => {
         const clipNodes =
           await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode')
-        for (const node of clipNodes) {
+        for (const node of clipNodes)
           await node.click('title', { modifiers: [modifier] })
-        }
+
         await expect
           .poll(() => comfyPage.nodeOps.getSelectedGraphNodesCount())
           .toBe(clipNodes.length)
@@ -854,9 +854,8 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
         if (!json) continue
         try {
           const index = JSON.parse(json)
-          if (typeof index.updatedAt === 'number' && index.updatedAt >= since) {
+          if (typeof index.updatedAt === 'number' && index.updatedAt >= since)
             return true
-          }
         } catch {
           // ignore
         }
@@ -889,9 +888,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       await comfyPage.page.waitForFunction(() => {
         for (let i = 0; i < window.sessionStorage.length; i++) {
           const key = window.sessionStorage.key(i)
-          if (key?.startsWith('Comfy.Workflow.OpenPaths:')) {
-            return true
-          }
+          if (key?.startsWith('Comfy.Workflow.OpenPaths:')) return true
         }
         return false
       })
@@ -962,9 +959,7 @@ test.describe('Load workflow', { tag: '@screenshot' }, () => {
       await comfyPage.page.waitForFunction(() => {
         for (let i = 0; i < window.localStorage.length; i++) {
           const key = window.localStorage.key(i)
-          if (key?.startsWith('Comfy.Workflow.LastOpenPaths:')) {
-            return true
-          }
+          if (key?.startsWith('Comfy.Workflow.LastOpenPaths:')) return true
         }
         return false
       })
@@ -1104,9 +1099,7 @@ test.describe('Viewport settings', () => {
     await changeTab(tabB)
 
     await comfyMouse.move(DefaultGraphPositions.emptySpace)
-    for (let i = 0; i < 4; i++) {
-      await comfyMouse.wheel(0, 60)
-    }
+    for (let i = 0; i < 4; i++) await comfyMouse.wheel(0, 60)
 
     await comfyPage.nextFrame()
     const screenshotB = (await comfyPage.canvas.screenshot()).toString('base64')

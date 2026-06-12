@@ -129,9 +129,9 @@ describe('useGraphHierarchy', () => {
       vi.spyOn(measure, 'containsRect').mockImplementation(
         (container, contained) => {
           // outerGroup contains innerGroup
-          if (container === outerGroup.boundingRect) {
+          if (container === outerGroup.boundingRect)
             return contained === innerGroup.boundingRect
-          }
+
           return false
         }
       )

@@ -150,9 +150,8 @@ export const useAuthActions = () => {
         })
       )
     }
-    if (openInNewTab) {
+    if (openInNewTab)
       return window.open(response.billing_portal_url, '_blank') !== null
-    }
 
     globalThis.location.href = response.billing_portal_url
     return true
@@ -218,17 +217,13 @@ export const useAuthActions = () => {
           type: 'default'
         })
 
-        if (!confirmed) {
-          return
-        }
+        if (!confirmed) return
 
         await authStore.logout()
 
         const signedIn = await dialogService.showSignInDialog()
 
-        if (signedIn) {
-          await retry(...args)
-        }
+        if (signedIn) await retry(...args)
       }
     }
   }

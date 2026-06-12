@@ -42,9 +42,8 @@ function buildPreviewAnyValidationError(): NodeError {
 function expectPartialExecutionRootNodes(requestBody: unknown): void {
   const prompt = (requestBody as PromptRequestBody).prompt ?? {}
 
-  for (const nodeId of PARTIAL_EXECUTION_ROOT_NODE_IDS) {
+  for (const nodeId of PARTIAL_EXECUTION_ROOT_NODE_IDS)
     expect(prompt[nodeId]).toMatchObject({ class_type: 'PreviewAny' })
-  }
 }
 
 async function getValidationErrorMessage(comfyPage: ComfyPage) {

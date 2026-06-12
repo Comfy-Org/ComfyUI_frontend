@@ -134,39 +134,30 @@ function isVideoAsset(asset: AssetItem): boolean {
 
 function getAssetPreviewUrl(asset: AssetItem): string {
   const mediaType = getAssetMediaType(asset)
-  if (mediaType === 'image' || mediaType === 'video') {
+  if (mediaType === 'image' || mediaType === 'video')
     return asset.preview_url || ''
-  }
+
   return ''
 }
 
 function getAssetSecondaryText(asset: AssetItem): string {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
-  if (typeof metadata?.executionTimeInSeconds === 'number') {
+  if (typeof metadata?.executionTimeInSeconds === 'number')
     return `${metadata.executionTimeInSeconds.toFixed(2)}s`
-  }
 
   const duration = asset.user_metadata?.duration
-  if (typeof duration === 'number') {
-    return formatDuration(duration)
-  }
+  if (typeof duration === 'number') return formatDuration(duration)
 
-  if (typeof asset.size === 'number') {
-    return formatSize(asset.size)
-  }
+  if (typeof asset.size === 'number') return formatSize(asset.size)
 
   return ''
 }
 
 function getStackCount(asset: AssetItem): number | undefined {
   const metadata = getOutputAssetMetadata(asset.user_metadata)
-  if (typeof metadata?.outputCount === 'number') {
-    return metadata.outputCount
-  }
+  if (typeof metadata?.outputCount === 'number') return metadata.outputCount
 
-  if (Array.isArray(metadata?.allOutputs)) {
-    return metadata.allOutputs.length
-  }
+  if (Array.isArray(metadata?.allOutputs)) return metadata.allOutputs.length
 
   return undefined
 }
@@ -185,8 +176,6 @@ function onAssetEnter(assetId: string) {
 }
 
 function onAssetLeave(assetId: string) {
-  if (hoveredAssetId.value === assetId) {
-    hoveredAssetId.value = null
-  }
+  if (hoveredAssetId.value === assetId) hoveredAssetId.value = null
 }
 </script>

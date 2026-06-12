@@ -15,14 +15,11 @@ export function extractCustomNodeName(
 
 export function getNodeHelpBaseUrl(node: ComfyNodeDefImpl): string {
   const nodeSource = getNodeSource(node.python_module)
-  if (nodeSource.type === NodeSourceType.Blueprint) {
-    return ''
-  }
+  if (nodeSource.type === NodeSourceType.Blueprint) return ''
+
   if (nodeSource.type === NodeSourceType.CustomNodes) {
     const customNodeName = extractCustomNodeName(node.python_module)
-    if (customNodeName) {
-      return `/extensions/${customNodeName}/docs/`
-    }
+    if (customNodeName) return `/extensions/${customNodeName}/docs/`
   }
   return `/docs/${node.name}/`
 }

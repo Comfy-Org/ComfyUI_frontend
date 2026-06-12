@@ -101,11 +101,8 @@ const activeAction = computed(() =>
   canCancelJob.value ? cancelAction : deleteAction
 )
 const runActiveAction = () => {
-  if (canCancelJob.value) {
-    runCancelJob()
-  } else if (canDeleteJob.value) {
-    runDeleteJob()
-  }
+  if (canCancelJob.value) runCancelJob()
+  else if (canDeleteJob.value) runDeleteJob()
 }
 
 const { progressBarPrimaryClass, hasProgressPercent, progressPercentStyle } =

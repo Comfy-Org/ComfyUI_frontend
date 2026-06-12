@@ -447,9 +447,7 @@ describe('useCanvasTransform', () => {
 
       let pixelDifferences = 0
       for (let i = 0; i < ccwResult.data.length; i++) {
-        if (ccwResult.data[i] !== cwResult.data[i]) {
-          pixelDifferences++
-        }
+        if (ccwResult.data[i] !== cwResult.data[i]) pixelDifferences++
       }
 
       expect(pixelDifferences).toBeGreaterThan(0)

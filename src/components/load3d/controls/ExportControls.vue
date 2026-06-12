@@ -65,9 +65,7 @@ function exportModel(format: string) {
 function closeExportFormatsList(e: MouseEvent) {
   const target = e.target as HTMLElement
 
-  if (!target.closest('.show-export-formats')) {
-    showExportFormats.value = false
-  }
+  if (!target.closest('.show-export-formats')) showExportFormats.value = false
 }
 
 onMounted(() => {

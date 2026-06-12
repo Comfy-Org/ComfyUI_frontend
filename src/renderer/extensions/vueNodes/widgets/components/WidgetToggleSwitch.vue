@@ -78,8 +78,6 @@ const hasLabels = computed(() => {
 })
 
 function handleOptionChange(value: string | undefined) {
-  if (value) {
-    modelValue.value = value === 'on'
-  }
+  if (value) modelValue.value = value === 'on'
 }
 </script>

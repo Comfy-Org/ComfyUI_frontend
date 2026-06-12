@@ -390,9 +390,8 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
 
         await comfyPage.page.evaluate((value) => {
           const hostNode = window.app!.graph!.getNodeById(2)
-          if (!hostNode?.isSubgraphNode()) {
+          if (!hostNode?.isSubgraphNode())
             throw new Error('Expected subgraph host node')
-          }
 
           const interiorNode = hostNode.subgraph.getNodeById(1)
           const widget = interiorNode?.widgets?.find(
@@ -410,9 +409,8 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
           }
           const settableWidget = widget as SettableWidget | undefined
 
-          if (!settableWidget?.setValue) {
+          if (!settableWidget?.setValue)
             throw new Error('Expected concrete ckpt_name widget')
-          }
 
           settableWidget.setValue(value, {
             e: new PointerEvent('pointerup'),

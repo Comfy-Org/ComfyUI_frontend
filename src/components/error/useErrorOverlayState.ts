@@ -75,9 +75,7 @@ export function useErrorOverlayState() {
   )
 
   const overlayMessage = computed(() => {
-    if (hasMultipleErrors.value) {
-      return t('errorOverlay.multipleErrorsMessage')
-    }
+    if (hasMultipleErrors.value) return t('errorOverlay.multipleErrorsMessage')
 
     return singleOverlayCopy.value?.message ?? ''
   })

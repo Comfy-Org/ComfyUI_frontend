@@ -55,9 +55,9 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
         Math.floor(((i + 1) * channelData.length) / barCount)
       )
       let sum = 0
-      for (let j = start; j < end && j < channelData.length; j++) {
+      for (let j = start; j < end && j < channelData.length; j++)
         sum += Math.abs(channelData[j])
-      }
+
       averages.push(sum / (end - start))
     }
 
@@ -78,9 +78,9 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
         : url
       const response = await api.fetchApi(route)
       if (requestId !== decodeRequestId) return
-      if (!response.ok) {
+      if (!response.ok)
         throw new Error(`Failed to fetch audio (${response.status})`)
-      }
+
       const arrayBuffer = await response.arrayBuffer()
 
       if (requestId !== decodeRequestId) return
@@ -90,14 +90,10 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
       if (requestId !== decodeRequestId) return
       generateBarsFromBuffer(audioBuffer)
     } catch {
-      if (requestId === decodeRequestId) {
-        bars.value = generatePlaceholderBars()
-      }
+      if (requestId === decodeRequestId) bars.value = generatePlaceholderBars()
     } finally {
       await ctx?.close()
-      if (requestId === decodeRequestId) {
-        loading.value = false
-      }
+      if (requestId === decodeRequestId) loading.value = false
     }
   }
 
@@ -143,9 +139,7 @@ export function useWaveAudioPlayer(options: UseWaveAudioPlayerOptions) {
     )
     currentTime.value = ratio * duration.value
 
-    if (!playing.value) {
-      playing.value = true
-    }
+    if (!playing.value) playing.value = true
   }
 
   whenever(

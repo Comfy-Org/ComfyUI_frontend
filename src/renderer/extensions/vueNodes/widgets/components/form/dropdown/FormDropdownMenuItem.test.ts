@@ -70,9 +70,7 @@ function renderItem(
 }
 
 function fireIntersection(isIntersecting = true) {
-  for (const cb of intersectionCallbacks) {
-    cb([{ isIntersecting }])
-  }
+  for (const cb of intersectionCallbacks) cb([{ isIntersecting }])
 }
 
 async function flushPromises() {

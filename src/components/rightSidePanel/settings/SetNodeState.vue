@@ -29,9 +29,7 @@ const nodeState = computed({
     // For multiple nodes, if all nodes have the same mode, return that mode, otherwise return null
     if (nodes.length > 1) {
       mode = nodes[0].mode
-      if (!nodes.every((node) => node.mode === mode)) {
-        mode = null
-      }
+      if (!nodes.every((node) => node.mode === mode)) mode = null
     } else {
       mode = nodes[0].mode
     }

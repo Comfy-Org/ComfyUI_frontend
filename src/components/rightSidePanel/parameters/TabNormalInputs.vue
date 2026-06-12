@@ -29,9 +29,8 @@ const { widgetsSectionDataList, includesAdvanced } = computedSectionDataList(
 )
 
 const advancedWidgetsSectionDataList = computed((): NodeWidgetsListList => {
-  if (includesAdvanced.value) {
-    return []
-  }
+  if (includesAdvanced.value) return []
+
   return nodes
     .map((node) => {
       const { widgets = [] } = node
@@ -61,9 +60,8 @@ const advancedCollapsed = ref(true)
 watch(
   () => workflowStore.activeWorkflow?.path,
   () => {
-    for (const key of Object.keys(collapseMap)) {
-      delete collapseMap[key]
-    }
+    for (const key of Object.keys(collapseMap)) delete collapseMap[key]
+
     advancedCollapsed.value = true
   }
 )
@@ -88,9 +86,9 @@ const isAllCollapsed = computed({
       : normalAllCollapsed
   },
   set(collapse: boolean) {
-    for (const { node } of widgetsSectionDataList.value) {
+    for (const { node } of widgetsSectionDataList.value)
       setSectionCollapsed(node.id, collapse)
-    }
+
     advancedCollapsed.value = collapse
   }
 })

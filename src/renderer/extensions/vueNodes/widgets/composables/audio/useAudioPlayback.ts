@@ -34,22 +34,17 @@ export function useAudioPlayback(
       audioRef.value.currentTime = 0
     }
     isPlaying.value = false
-    if (options.onPlaybackEnded) {
-      options.onPlaybackEnded()
-    }
+    if (options.onPlaybackEnded) options.onPlaybackEnded()
   }
 
   function onPlaybackEnded() {
     isPlaying.value = false
-    if (options.onPlaybackEnded) {
-      options.onPlaybackEnded()
-    }
+    if (options.onPlaybackEnded) options.onPlaybackEnded()
   }
 
   function onMetadataLoaded() {
-    if (audioRef.value?.duration && options.onMetadataLoaded) {
+    if (audioRef.value?.duration && options.onMetadataLoaded)
       options.onMetadataLoaded(audioRef.value.duration)
-    }
   }
 
   async function resetAudioElement() {

@@ -50,9 +50,8 @@ const handleImageLoad = (event: Event) => {
   if (!event.target || !(event.target instanceof HTMLImageElement)) return
   const img = event.target
   imageError.value = false
-  if (img.naturalWidth && img.naturalHeight) {
+  if (img.naturalWidth && img.naturalHeight)
     actualDimensions.value = `${img.naturalWidth} x ${img.naturalHeight}`
-  }
 }
 
 const handleImageError = () => {

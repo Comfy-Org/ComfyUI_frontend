@@ -53,11 +53,8 @@ export function useLoad3dDrag(options: UseLoad3dDragOptions) {
 
     const modelFile = files.find(isValidModelFile)
 
-    if (modelFile) {
-      await options.onModelDrop(modelFile)
-    } else {
-      useToastStore().addAlert(t('load3d.unsupportedFileType'))
-    }
+    if (modelFile) await options.onModelDrop(modelFile)
+    else useToastStore().addAlert(t('load3d.unsupportedFileType'))
   }
 
   return {

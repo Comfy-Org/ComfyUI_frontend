@@ -25,9 +25,7 @@ const settingStore = useSettingStore()
 watch(
   () => toastStore.messagesToAdd,
   (newMessages) => {
-    if (newMessages.length === 0) {
-      return
-    }
+    if (newMessages.length === 0) return
 
     newMessages.forEach((message) => {
       toast.add(message)
@@ -40,9 +38,7 @@ watch(
 watch(
   () => toastStore.messagesToRemove,
   (messagesToRemove) => {
-    if (messagesToRemove.length === 0) {
-      return
-    }
+    if (messagesToRemove.length === 0) return
 
     messagesToRemove.forEach((message) => {
       toast.remove(message)

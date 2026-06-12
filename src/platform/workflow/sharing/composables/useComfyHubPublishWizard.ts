@@ -73,9 +73,9 @@ export function useComfyHubPublishWizard() {
   const formData = ref<ComfyHubPublishFormData>(createDefaultFormData())
 
   const canGoNext = computed(() => {
-    if (stepper.isCurrent('describe')) {
+    if (stepper.isCurrent('describe'))
       return formData.value.name.trim().length > 0
-    }
+
     return true
   })
 

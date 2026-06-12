@@ -74,9 +74,8 @@ export class CurveEditor {
     ctx.strokeStyle = line_color
     if (inactive) ctx.globalAlpha = 0.5
     ctx.beginPath()
-    for (const p of points) {
-      ctx.lineTo(p[0] * w, (1.0 - p[1]) * h)
-    }
+    for (const p of points) ctx.lineTo(p[0] * w, (1.0 - p[1]) * h)
+
     ctx.stroke()
     ctx.globalAlpha = 1
     if (!inactive) {

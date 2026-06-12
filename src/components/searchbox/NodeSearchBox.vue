@@ -131,9 +131,7 @@ useSearchQueryTracking('node_modal', currentQuery, suggestions)
 
 // Debounced search tracking (500ms as per implementation plan)
 const debouncedTrackSearch = debounce((query: string) => {
-  if (query.trim()) {
-    telemetry?.trackNodeSearch({ query })
-  }
+  if (query.trim()) telemetry?.trackNodeSearch({ query })
 }, 500)
 
 const search = (query: string) => {

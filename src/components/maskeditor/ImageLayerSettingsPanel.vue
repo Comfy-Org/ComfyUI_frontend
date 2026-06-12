@@ -164,9 +164,8 @@ const onMaskLayerVisibilityChange = (event: Event) => {
   maskLayerVisible.value = checked
 
   const maskCanvas = store.maskCanvas
-  if (maskCanvas) {
+  if (maskCanvas)
     maskCanvas.style.opacity = checked ? String(store.maskOpacity) : '0'
-  }
 }
 
 const onPaintLayerVisibilityChange = (event: Event) => {
@@ -174,9 +173,7 @@ const onPaintLayerVisibilityChange = (event: Event) => {
   paintLayerVisible.value = checked
 
   const rgbCanvas = store.rgbCanvas
-  if (rgbCanvas) {
-    rgbCanvas.style.opacity = checked ? '1' : '0'
-  }
+  if (rgbCanvas) rgbCanvas.style.opacity = checked ? '1' : '0'
 }
 
 const onBaseImageLayerVisibilityChange = (event: Event) => {
@@ -184,18 +181,14 @@ const onBaseImageLayerVisibilityChange = (event: Event) => {
   baseImageLayerVisible.value = checked
 
   const imgCanvas = store.imgCanvas
-  if (imgCanvas) {
-    imgCanvas.style.opacity = checked ? '1' : '0'
-  }
+  if (imgCanvas) imgCanvas.style.opacity = checked ? '1' : '0'
 }
 
 const onMaskOpacityChange = (value: number) => {
   store.setMaskOpacity(value)
 
   const maskCanvas = store.maskCanvas
-  if (maskCanvas) {
-    maskCanvas.style.opacity = String(value)
-  }
+  if (maskCanvas) maskCanvas.style.opacity = String(value)
 
   maskLayerVisible.value = value !== 0
 }

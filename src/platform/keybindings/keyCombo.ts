@@ -83,9 +83,8 @@ export class KeyComboImpl implements KeyCombo {
   getKeySequences(): string[] {
     const sequences = getModifierSequences(this)
 
-    if (!this.isModifier || sequences.length === 0) {
+    if (!this.isModifier || sequences.length === 0)
       sequences.push(getKeyLabel(this.key))
-    }
 
     return sequences
   }
@@ -94,9 +93,8 @@ export class KeyComboImpl implements KeyCombo {
 function toNormalizedString(combo: KeyComboImpl): string {
   const sequences = getModifierSequences(combo)
 
-  if (!combo.isModifier || sequences.length === 0) {
+  if (!combo.isModifier || sequences.length === 0)
     sequences.push(getKeyLabel(combo.key, true))
-  }
 
   return sequences.join(' + ')
 }

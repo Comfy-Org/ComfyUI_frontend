@@ -59,9 +59,7 @@ export function transformNodeDefV1ToV2(
         }
 
         // Add options for combo outputs
-        if (Array.isArray(outputType)) {
-          outputSpec.options = outputType
-        }
+        if (Array.isArray(outputType)) outputSpec.options = outputType
 
         outputs.push(outputSpec)
       })

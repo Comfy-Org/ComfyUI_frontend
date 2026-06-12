@@ -135,11 +135,11 @@ const toggle = (event: Event) => {
 }
 
 const setMode = (mode: 'select' | 'hand') => {
-  if (mode === 'select' && isCanvasReadOnly.value) {
+  if (mode === 'select' && isCanvasReadOnly.value)
     void commandStore.execute('Comfy.Canvas.Unlock')
-  } else if (mode === 'hand' && !isCanvasReadOnly.value) {
+  else if (mode === 'hand' && !isCanvasReadOnly.value)
     void commandStore.execute('Comfy.Canvas.Lock')
-  }
+
   popover.value?.hide()
 }
 

@@ -98,9 +98,8 @@ export class ComfyWorkflow extends UserFile {
   override async load({ force = false }: { force?: boolean } = {}): Promise<
     this & LoadedComfyWorkflow
   > {
-    if (!force && this.isLoaded && this.changeTracker) {
+    if (!force && this.isLoaded && this.changeTracker)
       return this as this & LoadedComfyWorkflow
-    }
 
     const { useWorkflowDraftStoreV2 } =
       await import('@/platform/workflow/persistence/stores/workflowDraftStoreV2')
@@ -136,9 +135,8 @@ export class ComfyWorkflow extends UserFile {
         `[ASSERT] Workflow content should be loaded for '${this.path}'`
       )
     }
-    if (this.originalContent.trim().length === 0) {
+    if (this.originalContent.trim().length === 0)
       throw new Error(`Workflow content is empty for '${this.path}'`)
-    }
 
     const initialState = JSON.parse(this.originalContent)
     const { ChangeTracker } = await import('@/scripts/changeTracker')

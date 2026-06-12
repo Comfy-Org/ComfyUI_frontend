@@ -82,9 +82,9 @@ export function useManagerDisplayPacks(
         !installedVersion ||
         !latestVersion ||
         !valid(installedVersion) // nightly builds
-      ) {
+      )
         return false
-      }
+
       return compare(latestVersion, installedVersion) > 0
     })
 
@@ -193,12 +193,12 @@ export function useManagerDisplayPacks(
         ManagerTab.UpdateAvailable,
         ManagerTab.Conflicting
       ].includes(tab as ManagerTab)
-    ) {
+    )
       return isLoadingInstalled.value
-    }
-    if ([ManagerTab.Workflow, ManagerTab.Missing].includes(tab as ManagerTab)) {
+
+    if ([ManagerTab.Workflow, ManagerTab.Missing].includes(tab as ManagerTab))
       return isLoadingWorkflow.value
-    }
+
     return false
   })
 

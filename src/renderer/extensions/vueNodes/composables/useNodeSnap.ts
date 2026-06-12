@@ -38,9 +38,8 @@ export function useNodeSnap() {
     if (!size) return { ...position }
 
     const posArray: [number, number] = [position.x, position.y]
-    if (snapPoint(posArray, size)) {
-      return { x: posArray[0], y: posArray[1] }
-    }
+    if (snapPoint(posArray, size)) return { x: posArray[0], y: posArray[1] }
+
     return { ...position }
   }
 
@@ -57,9 +56,9 @@ export function useNodeSnap() {
     if (!gridSizeValue) return { ...size }
 
     const sizeArray: [number, number] = [size.width, size.height]
-    if (snapPoint(sizeArray, gridSizeValue, 'ceil')) {
+    if (snapPoint(sizeArray, gridSizeValue, 'ceil'))
       return { width: sizeArray[0], height: sizeArray[1] }
-    }
+
     return { ...size }
   }
 

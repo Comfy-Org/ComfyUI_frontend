@@ -7,15 +7,12 @@ class NodeHelpService {
   async fetchNodeHelp(node: ComfyNodeDefImpl, locale: string): Promise<string> {
     const nodeSource = getNodeSource(node.python_module)
 
-    if (nodeSource.type === NodeSourceType.Blueprint) {
+    if (nodeSource.type === NodeSourceType.Blueprint)
       return node.description || ''
-    }
 
-    if (nodeSource.type === NodeSourceType.CustomNodes) {
+    if (nodeSource.type === NodeSourceType.CustomNodes)
       return this.fetchCustomNodeHelp(node, locale)
-    } else {
-      return this.fetchCoreNodeHelp(node, locale)
-    }
+    else return this.fetchCoreNodeHelp(node, locale)
   }
 
   private async fetchCustomNodeHelp(
@@ -24,9 +21,7 @@ class NodeHelpService {
   ): Promise<string> {
     const customNodeName = extractCustomNodeName(node.python_module)
     let lastError: string | undefined
-    if (!customNodeName) {
-      throw new Error('Invalid custom node module')
-    }
+    if (!customNodeName) throw new Error('Invalid custom node module')
 
     // Try locale-specific path first
     const localePath = `/extensions/${customNodeName}/docs/${node.name}/${locale}.md`
@@ -49,9 +44,7 @@ class NodeHelpService {
   ): Promise<string> {
     const mdUrl = `/docs/${node.name}/${locale}.md`
     const doc = await this.tryFetchMarkdown(mdUrl)
-    if (!doc.text) {
-      throw new Error(doc.errorText ?? 'Help not found')
-    }
+    if (!doc.text) throw new Error(doc.errorText ?? 'Help not found')
 
     return doc.text
   }
@@ -65,9 +58,7 @@ class NodeHelpService {
   ): Promise<{ text: string | null; errorText?: string }> {
     const res = await fetch(api.fileURL(path))
 
-    if (!res.ok) {
-      return { text: null, errorText: res.statusText }
-    }
+    if (!res.ok) return { text: null, errorText: res.statusText }
 
     const contentType = res.headers?.get?.('content-type') ?? ''
     const text = await res.text()

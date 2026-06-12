@@ -19,15 +19,13 @@ class SidebarTab {
   }
 
   async open() {
-    if (await this.selectedTabButton.isVisible()) {
-      return
-    }
+    if (await this.selectedTabButton.isVisible()) return
+
     await this.tabButton.click()
   }
   async close() {
-    if (!this.tabButton.isVisible()) {
-      return
-    }
+    if (!this.tabButton.isVisible()) return
+
     await this.tabButton.click()
   }
 }
@@ -54,9 +52,7 @@ export class NodeLibrarySidebarTab extends SidebarTab {
   }
 
   override async close() {
-    if (!this.tabButton.isVisible()) {
-      return
-    }
+    if (!this.tabButton.isVisible()) return
 
     await this.tabButton.click()
     await this.nodeLibraryTree.waitFor({ state: 'hidden' })
@@ -124,9 +120,7 @@ export class NodeLibrarySidebarTabV2 extends SidebarTab {
   async expandFolder(folderName: string) {
     const folder = this.getFolder(folderName)
     const isExpanded = await folder.getAttribute('aria-expanded')
-    if (isExpanded !== 'true') {
-      await folder.click()
-    }
+    if (isExpanded !== 'true') await folder.click()
   }
 
   override async open() {
@@ -395,17 +389,15 @@ export class AssetsSidebarTab extends SidebarTab {
     await this.dismissToasts()
     await super.open()
     await this.generatedTab.waitFor({ state: 'visible' })
-    if (waitForAssets) {
-      await this.waitForAssets()
-    }
+    if (waitForAssets) await this.waitForAssets()
   }
 
   /** Dismiss all visible toast notifications by clicking their close buttons. */
   async dismissToasts() {
     const closeButtons = this.page.locator('.p-toast-close-button')
-    for (const btn of await closeButtons.all()) {
+    for (const btn of await closeButtons.all())
       await btn.click().catch(() => {})
-    }
+
     // Wait for all toast elements to fully animate out and detach from DOM
     await expect(this.page.locator('.p-toast-message'))
       .toHaveCount(0)
@@ -466,10 +458,8 @@ export class AssetsSidebarTab extends SidebarTab {
   }
 
   async waitForAssets(count?: number) {
-    if (count !== undefined) {
-      await expect(this.assetCards).toHaveCount(count)
-    } else {
+    if (count !== undefined) await expect(this.assetCards).toHaveCount(count)
+    else
       await this.assetCards.first().waitFor({ state: 'visible', timeout: 5000 })
-    }
   }
 }

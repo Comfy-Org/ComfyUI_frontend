@@ -129,15 +129,11 @@ const isCurrentNodeUserBlueprint = computed(() =>
 
 function handleToggleBookmark() {
   const node = contextMenuNode.value
-  if (node?.data) {
-    nodeBookmarkStore.toggleBookmark(node.data)
-  }
+  if (node?.data) nodeBookmarkStore.toggleBookmark(node.data)
 }
 
 function handleDeleteBlueprint() {
   const name = contextMenuNode.value?.data?.name
-  if (name) {
-    void subgraphStore.deleteBlueprint(name)
-  }
+  if (name) void subgraphStore.deleteBlueprint(name)
 }
 </script>

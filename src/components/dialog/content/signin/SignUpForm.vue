@@ -68,8 +68,6 @@ const emit = defineEmits<{
 }>()
 
 const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
-  if (event.valid) {
-    emit('submit', event.values as SignUpData)
-  }
+  if (event.valid) emit('submit', event.values as SignUpData)
 }, 1_500)
 </script>

@@ -390,9 +390,7 @@ const nodeOpacity = computed(() => {
   if (nodeData.flags?.ghost) return globalOpacity * 0.6
 
   // For muted/bypassed nodes, apply the 0.5 multiplier on top of global opacity
-  if (bypassed.value || muted.value) {
-    return globalOpacity * 0.5
-  }
+  if (bypassed.value || muted.value) return globalOpacity * 0.5
 
   return globalOpacity
 })
@@ -724,9 +722,7 @@ const showAdvancedInputsButton = computed(() => {
   if (isCollapsed.value) return false
 
   // For subgraph nodes: check for unpromoted widgets
-  if (node instanceof SubgraphNode) {
-    return hasUnpromotedWidgets(node)
-  }
+  if (node instanceof SubgraphNode) return hasUnpromotedWidgets(node)
 
   // For regular nodes: show button if there are advanced widgets and they're currently hidden
   const hasAdvancedWidgets = nodeData.widgets?.some((w) => w.options?.advanced)
@@ -740,9 +736,8 @@ const showAdvancedState = customRef((track, trigger) => {
   let internalState = false
 
   const node = lgraphNode.value
-  if (node && !(node instanceof SubgraphNode)) {
+  if (node && !(node instanceof SubgraphNode))
     internalState = !!node.showAdvanced
-  }
 
   return {
     get() {
@@ -755,11 +750,8 @@ const showAdvancedState = customRef((track, trigger) => {
 
       if (node instanceof SubgraphNode) {
         // Do not modify internalState for subgraph nodes
-        if (value) {
-          rightSidePanelStore.focusSection('advanced-inputs')
-        } else {
-          rightSidePanelStore.closePanel()
-        }
+        if (value) rightSidePanelStore.focusSection('advanced-inputs')
+        else rightSidePanelStore.closePanel()
       } else {
         node.showAdvanced = value
         internalState = value

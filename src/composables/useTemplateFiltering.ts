@@ -108,9 +108,8 @@ export function useTemplateFiltering(
   const availableModels = computed(() => {
     const modelSet = new Set<string>()
     visibleTemplates.value.forEach((template) => {
-      if (Array.isArray(template.models)) {
+      if (Array.isArray(template.models))
         template.models.forEach((model) => modelSet.add(model))
-      }
     })
     return Array.from(modelSet).sort()
   })
@@ -118,9 +117,8 @@ export function useTemplateFiltering(
   const availableUseCases = computed(() => {
     const tagSet = new Set<string>()
     visibleTemplates.value.forEach((template) => {
-      if (template.tags && Array.isArray(template.tags)) {
+      if (template.tags && Array.isArray(template.tags))
         template.tags.forEach((tag) => tagSet.add(tag))
-      }
     })
     return Array.from(tagSet).sort()
   })
@@ -157,9 +155,7 @@ export function useTemplateFiltering(
   const debouncedSearchQuery = refDebounced(searchQuery, 150)
 
   const filteredBySearch = computed(() => {
-    if (!debouncedSearchQuery.value.trim()) {
-      return visibleTemplates.value
-    }
+    if (!debouncedSearchQuery.value.trim()) return visibleTemplates.value
 
     const results = fuse.value.search(debouncedSearchQuery.value)
     return results.map((result) => result.item)
@@ -167,14 +163,11 @@ export function useTemplateFiltering(
 
   const filteredByModels = computed(() => {
     // Use active models instead of selected models for filtering
-    if (activeModels.value.length === 0) {
-      return filteredBySearch.value
-    }
+    if (activeModels.value.length === 0) return filteredBySearch.value
 
     return filteredBySearch.value.filter((template) => {
-      if (!template.models || !Array.isArray(template.models)) {
-        return false
-      }
+      if (!template.models || !Array.isArray(template.models)) return false
+
       return activeModels.value.some((activeModel) =>
         template.models?.includes(activeModel)
       )
@@ -183,14 +176,11 @@ export function useTemplateFiltering(
 
   const filteredByUseCases = computed(() => {
     // Use active use cases instead of selected use cases for filtering
-    if (activeUseCases.value.length === 0) {
-      return filteredByModels.value
-    }
+    if (activeUseCases.value.length === 0) return filteredByModels.value
 
     return filteredByModels.value.filter((template) => {
-      if (!template.tags || !Array.isArray(template.tags)) {
-        return false
-      }
+      if (!template.tags || !Array.isArray(template.tags)) return false
+
       return activeUseCases.value.some((activeUseCase) =>
         template.tags?.includes(activeUseCase)
       )
@@ -199,9 +189,7 @@ export function useTemplateFiltering(
 
   const filteredByRunsOn = computed(() => {
     // RunsOn filters are scope-independent
-    if (selectedRunsOn.value.length === 0) {
-      return filteredByUseCases.value
-    }
+    if (selectedRunsOn.value.length === 0) return filteredByUseCases.value
 
     return filteredByUseCases.value.filter((template) => {
       // Use openSource field to determine where template runs
@@ -211,11 +199,9 @@ export function useTemplateFiltering(
       const isComfyUI = template.openSource !== false
 
       return selectedRunsOn.value.some((runsOn) => {
-        if (runsOn === 'External or Remote API') {
-          return isExternalAPI
-        } else if (runsOn === 'ComfyUI') {
-          return isComfyUI
-        }
+        if (runsOn === 'External or Remote API') return isExternalAPI
+        else if (runsOn === 'ComfyUI') return isComfyUI
+
         return false
       })
     })
@@ -325,9 +311,7 @@ export function useTemplateFiltering(
 
   const loadFuseOptions = async () => {
     const fetchedOptions = await api.getFuseOptions()
-    if (fetchedOptions) {
-      fuseOptions.value = fetchedOptions
-    }
+    if (fetchedOptions) fuseOptions.value = fetchedOptions
   }
 
   // Watch for filter changes and track them
@@ -342,9 +326,7 @@ export function useTemplateFiltering(
         selectedRunsOn.value.length > 0 ||
         sortBy.value !== 'default'
 
-      if (hasActiveFilters) {
-        debouncedTrackFilterChange()
-      }
+      if (hasActiveFilters) debouncedTrackFilterChange()
     },
     { deep: true }
   )

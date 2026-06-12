@@ -129,9 +129,7 @@ export class SubgraphInput extends SubgraphSlot {
     if (lastReroute) {
       for (const linkId of lastReroute.floatingLinkIds) {
         const link = subgraph.floatingLinks.get(linkId)
-        if (link?.parentId === lastReroute.id) {
-          subgraph.removeFloatingLink(link)
-        }
+        if (link?.parentId === lastReroute.id) subgraph.removeFloatingLink(link)
       }
     }
     subgraph.incrementVersion()
@@ -209,9 +207,8 @@ export class SubgraphInput extends SubgraphSlot {
       otherWidget.options.step !== widget.options.step ||
       otherWidget.options.step2 !== widget.options.step2 ||
       otherWidget.options.precision !== widget.options.precision
-    ) {
+    )
       return false
-    }
 
     return true
   }
@@ -246,13 +243,11 @@ export class SubgraphInput extends SubgraphSlot {
   override isValidTarget(
     fromSlot: INodeInputSlot | INodeOutputSlot | SubgraphInput | SubgraphOutput
   ): boolean {
-    if (isNodeSlot(fromSlot) && 'link' in fromSlot) {
+    if (isNodeSlot(fromSlot) && 'link' in fromSlot)
       return LiteGraph.isValidConnection(this.type, fromSlot.type)
-    }
 
-    if (isSubgraphOutput(fromSlot)) {
+    if (isSubgraphOutput(fromSlot))
       return LiteGraph.isValidConnection(this.type, fromSlot.type)
-    }
 
     return false
   }

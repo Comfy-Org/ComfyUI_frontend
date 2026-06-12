@@ -109,9 +109,8 @@ export function useLayoutSync() {
       // node writeback — link rendering reads from the store directly.
       if (change.nodeIds.length === 0) return
 
-      for (const nodeId of change.nodeIds) {
-        pendingNodeIds.add(nodeId)
-      }
+      for (const nodeId of change.nodeIds) pendingNodeIds.add(nodeId)
+
       scheduleFlush(change.source, canvas)
     })
   }

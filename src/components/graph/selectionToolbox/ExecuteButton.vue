@@ -42,16 +42,15 @@ function outputNodeStokeStyle(this: LGraphNode) {
     this.selected &&
     this.constructor.nodeData?.output_node &&
     buttonHovered.value
-  ) {
+  )
     return { color: 'orange', lineWidth: 2, padding: 10 }
-  }
 }
 
 const handleMouseEnter = () => {
   buttonHovered.value = true
-  for (const node of selectedOutputNodes.value) {
+  for (const node of selectedOutputNodes.value)
     node.strokeStyles['outputNode'] = outputNodeStokeStyle
-  }
+
   canvas.setDirty(true)
 }
 

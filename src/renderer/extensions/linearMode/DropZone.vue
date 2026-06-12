@@ -50,15 +50,12 @@ const { isOverDropZone } = useDropZone(dropZoneRef, {
     // Stop propagation to prevent global handlers from creating a new node
     event?.stopPropagation()
 
-    if (onDragDrop && event) {
-      onDragDrop(event)
-    }
+    if (onDragDrop && event) onDragDrop(event)
+
     canAcceptDrop.value = false
   },
   onOver: (_, event) => {
-    if (onDragOver && event) {
-      canAcceptDrop.value = onDragOver(event)
-    }
+    if (onDragOver && event) canAcceptDrop.value = onDragOver(event)
   },
   onLeave: () => {
     canAcceptDrop.value = false

@@ -84,9 +84,8 @@ watch(
 
       const sectionComponent = advancedInputsSectionRef.value
       const sectionElement = sectionComponent?.rootElement
-      if (sectionElement) {
+      if (sectionElement)
         sectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }
     }
   },
   { immediate: true }

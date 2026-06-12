@@ -101,9 +101,7 @@ const ImageCropHarness = defineComponent({
 })
 
 function flushResizeObservers() {
-  for (const cb of [...resizeObserverCallbacks]) {
-    cb()
-  }
+  for (const cb of [...resizeObserverCallbacks]) cb()
 }
 
 function mountContainerLayout(
@@ -256,9 +254,8 @@ describe('useImageCrop', () => {
   })
 
   afterEach(() => {
-    for (const c of harnessCleanups) {
-      c()
-    }
+    for (const c of harnessCleanups) c()
+
     harnessCleanups.length = 0
   })
 

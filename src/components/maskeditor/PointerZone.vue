@@ -45,11 +45,8 @@ watch(
   (isPanning) => {
     if (!pointerZoneRef.value) return
 
-    if (isPanning) {
-      pointerZoneRef.value.style.cursor = 'grabbing'
-    } else {
-      toolManager.updateCursor()
-    }
+    if (isPanning) pointerZoneRef.value.style.cursor = 'grabbing'
+    else toolManager.updateCursor()
   }
 )
 
@@ -67,9 +64,7 @@ const handlePointerUp = (event: PointerEvent) => {
 
 const handlePointerLeave = () => {
   store.brushVisible = false
-  if (pointerZoneRef.value) {
-    pointerZoneRef.value.style.cursor = ''
-  }
+  if (pointerZoneRef.value) pointerZoneRef.value.style.cursor = ''
 }
 
 const handlePointerEnter = () => {

@@ -18,9 +18,10 @@ export class UserDataHelper {
       `${this.baseUrl}/api/userdata/${encodeURIComponent(file)}`,
       { method: 'DELETE', headers: { 'Comfy-User': this.userId } }
     )
-    if (!res.ok() && res.status() !== 404)
+    if (!res.ok() && res.status() !== 404) {
       throw new Error(
         `Failed to delete userdata file "${file}": HTTP ${res.status()}`
       )
+    }
   }
 }

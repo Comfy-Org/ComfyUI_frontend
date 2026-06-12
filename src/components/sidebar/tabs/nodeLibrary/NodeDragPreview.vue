@@ -33,16 +33,15 @@ const {
 const nativeDragPosition = ref({ x: 0, y: 0 })
 
 const previewPosition = computed(() => {
-  if (dragMode.value === 'native') {
-    return nativeDragPosition.value
-  }
+  if (dragMode.value === 'native') return nativeDragPosition.value
+
   return cursorPosition.value
 })
 
 const showPreview = computed(() => {
-  if (dragMode.value === 'native') {
+  if (dragMode.value === 'native')
     return nativeDragPosition.value.x > 0 || nativeDragPosition.value.y > 0
-  }
+
   return true
 })
 

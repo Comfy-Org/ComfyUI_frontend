@@ -29,9 +29,8 @@ export class TextWidget
 
     this.drawWidgetShape(ctx, options)
 
-    if (showText) {
+    if (showText)
       this.drawTruncatingText({ ctx, width, leftPadding: 0, rightPadding: 0 })
-    }
 
     // Restore original context attributes
     Object.assign(ctx, { textAlign, strokeStyle, fillStyle })
@@ -43,9 +42,7 @@ export class TextWidget
       'Value',
       this.value,
       (v: string) => {
-        if (v !== null) {
-          this.setValue(v, { e, node, canvas })
-        }
+        if (v !== null) this.setValue(v, { e, node, canvas })
       },
       e,
       this.options?.multiline ?? false

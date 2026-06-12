@@ -117,9 +117,8 @@ function createMockNode(comfyClass = 'TestNode'): LGraphNode {
         options: normalizedOptions
       })
       // Store the callback function on the widget for testing
-      if (typeof callback === 'function') {
-        widget.callback = callback
-      }
+      if (typeof callback === 'function') widget.callback = callback
+
       return widget
     }
   )
@@ -394,9 +393,8 @@ describe('useComboWidget', () => {
     ) {
       const options = vi.mocked(mockNode.addWidget).mock.calls[0]?.[4]
 
-      if (typeof options !== 'object' || !options) {
+      if (typeof options !== 'object' || !options)
         throw new Error('Expected options to be an object')
-      }
 
       return options
     }
@@ -404,9 +402,8 @@ describe('useComboWidget', () => {
     function getInputWidgetValues(mockNode: ReturnType<typeof createMockNode>) {
       const options = getInputWidgetOptions(mockNode)
 
-      if (!('values' in options)) {
+      if (!('values' in options))
         throw new Error('Expected options to have values property')
-      }
 
       return options.values
     }
@@ -645,13 +642,11 @@ describe('useComboWidget', () => {
       )
       const options = getInputWidgetOptions(mockNode)
 
-      if (!('getOptionLabel' in options)) {
+      if (!('getOptionLabel' in options))
         throw new Error('Expected options to have getOptionLabel property')
-      }
 
-      if (typeof options.getOptionLabel !== 'function') {
+      if (typeof options.getOptionLabel !== 'function')
         throw new Error('Expected getOptionLabel to be a function')
-      }
 
       const result = options.getOptionLabel(scenario.assetHash)
       expect(mockGetInputName).toHaveBeenCalledWith(scenario.assetHash)

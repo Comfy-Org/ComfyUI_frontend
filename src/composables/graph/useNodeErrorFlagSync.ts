@@ -76,9 +76,8 @@ function reconcileNodeErrorFlags(
 
     if (node.inputs) {
       const nodeSlotNames = errorSlots.get(node)
-      for (const slot of node.inputs) {
+      for (const slot of node.inputs)
         slot.hasErrors = !!nodeSlotNames?.has(slot.name)
-      }
     }
   })
 }

@@ -93,9 +93,7 @@ async function createMockNode(overrides?: {
     typeof LitegraphModule
   >('@/lib/litegraph/src/litegraph')
 
-  if (!hasWidgets) {
-    return Object.create(ActualLGraphNode.prototype)
-  }
+  if (!hasWidgets) return Object.create(ActualLGraphNode.prototype)
 
   type Widget = NonNullable<LGraphNode['widgets']>[number]
   const widget: Pick<Widget, 'name' | 'value' | 'type' | 'options' | 'y'> = {

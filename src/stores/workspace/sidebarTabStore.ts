@@ -57,9 +57,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       }
 
       const key = menubarLabelKeys[tab.id]
-      if (key && te(key)) {
-        return t(key)
-      }
+      if (key && te(key)) return t(key)
 
       return tab.title
     }
@@ -97,15 +95,12 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
     const index = sidebarTabs.value.findIndex((tab) => tab.id === id)
     if (index !== -1) {
       const tab = sidebarTabs.value[index]
-      if (tab.type === 'custom' && tab.destroy) {
-        tab.destroy()
-      }
+      if (tab.type === 'custom' && tab.destroy) tab.destroy()
+
       const newSidebarTabs = [...sidebarTabs.value]
       newSidebarTabs.splice(index, 1)
       sidebarTabs.value = newSidebarTabs
-      if (activeSidebarTabId.value === id) {
-        activeSidebarTabId.value = null
-      }
+      if (activeSidebarTabId.value === id) activeSidebarTabId.value = null
     }
   }
 
@@ -119,11 +114,10 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       const hasJobHistoryTab = sidebarTabs.value.some(
         (tab) => tab.id === jobHistoryTabId
       )
-      if (enabled && !hasJobHistoryTab) {
+      if (enabled && !hasJobHistoryTab)
         registerSidebarTab(useJobHistorySidebarTab(), { prepend: true })
-      } else if (!enabled && hasJobHistoryTab) {
+      else if (!enabled && hasJobHistoryTab)
         unregisterSidebarTab(jobHistoryTabId)
-      }
     }
 
     syncJobHistoryTab(settingStore.get('Comfy.Queue.QPOV2'))

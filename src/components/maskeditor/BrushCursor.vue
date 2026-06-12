@@ -92,9 +92,7 @@ const gradientBackground = computed(() => {
   const effectiveSize = getEffectiveBrushSize(size, hardness)
   const effectiveHardness = getEffectiveHardness(size, hardness, effectiveSize)
 
-  if (effectiveHardness === 1) {
-    return 'rgba(255, 0, 0, 0.5)'
-  }
+  if (effectiveHardness === 1) return 'rgba(255, 0, 0, 0.5)'
 
   const midStop = effectiveHardness * 100
   const outerStop = 100

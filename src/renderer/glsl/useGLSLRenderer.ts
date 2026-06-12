@@ -164,9 +164,8 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
   function cacheUniformLocations(): void {
     if (!program || !gl) return
-    for (const name of uniformNames) {
+    for (const name of uniformNames)
       uniformLocations.set(name, gl.getUniformLocation(program, name))
-    }
   }
 
   function getFallbackTexture(): WebGLTexture {
@@ -222,9 +221,9 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
 
     passCount = Math.min(detectPassCount(source), MAX_PASSES)
 
-    if (source === lastCompiledSource && program) {
+    if (source === lastCompiledSource && program)
       return { success: true, log: '' }
-    }
+
     lastCompiledSource = source
 
     if (fragmentShader) {
@@ -373,9 +372,7 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     gl.disable(gl.BLEND)
 
     const resLoc = uniformLocations.get('u_resolution')
-    if (resLoc != null) {
-      gl.uniform2f(resLoc, canvas.width, canvas.height)
-    }
+    if (resLoc != null) gl.uniform2f(resLoc, canvas.width, canvas.height)
 
     for (let i = 0; i < maxInputs; i++) {
       const loc = uniformLocations.get(`u_image${i}`)
@@ -448,14 +445,12 @@ export function useGLSLRenderer(config: GLSLRendererConfig = DEFAULT_CONFIG) {
     disposed = true
     if (!gl) return
 
-    for (const tex of inputTextures) {
-      if (tex) gl.deleteTexture(tex)
-    }
+    for (const tex of inputTextures) if (tex) gl.deleteTexture(tex)
+
     inputTextures.fill(null)
 
-    for (const tex of curveTextures) {
-      if (tex) gl.deleteTexture(tex)
-    }
+    for (const tex of curveTextures) if (tex) gl.deleteTexture(tex)
+
     curveTextures.fill(null)
 
     if (fallbackTexture) {

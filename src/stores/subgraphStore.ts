@@ -54,10 +54,11 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     }
 
     validateSubgraph() {
-      if (!this.activeState?.definitions)
+      if (!this.activeState?.definitions) {
         throw new Error(
           'The root graph of a subgraph blueprint must consist of only a single subgraph node'
         )
+      }
       const { subgraphs } = this.activeState.definitions
       const { nodes } = this.activeState
       //Instanceof doesn't function as nodes are serialized
@@ -148,10 +149,11 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       const sg = (st.definitions?.subgraphs ?? []).find(
         (sg) => sg.id == st.nodes[0].type
       )
-      if (!sg)
+      if (!sg) {
         throw new Error(
           'Loaded subgraph blueprint does not contain valid subgraph'
         )
+      }
       sg.name = st.nodes[0].title = this.filename
 
       // Copy blueprint metadata from workflow extra to subgraph extra
@@ -330,9 +332,8 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const { nodes = [], subgraphs = [] } = canvas._serializeItems([
       subgraphNode
     ])
-    if (nodes.length != 1) {
+    if (nodes.length != 1)
       throw new TypeError('Must have single SubgraphNode selected to publish')
-    }
 
     //create minimal workflow
     const workflowData = {

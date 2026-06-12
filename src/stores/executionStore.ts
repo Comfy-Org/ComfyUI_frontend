@@ -133,9 +133,9 @@ export const useExecutionStore = defineStore('execution', () => {
   function cachedExecutionIdToLocator(
     executionId: string
   ): NodeLocatorId | undefined {
-    if (executionIdToLocatorCache.has(executionId)) {
+    if (executionIdToLocatorCache.has(executionId))
       return executionIdToLocatorCache.get(executionId)
-    }
+
     const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     executionIdToLocatorCache.set(executionId, locatorId)
     return locatorId
@@ -145,9 +145,7 @@ export const useExecutionStore = defineStore('execution', () => {
     currentState: NodeProgressState | undefined,
     newState: NodeProgressState
   ): NodeProgressState => {
-    if (currentState === undefined) {
-      return newState
-    }
+    if (currentState === undefined) return newState
 
     const mergedState = { ...currentState }
     if (mergedState.state === 'error') {
@@ -294,9 +292,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
     if (!activeJob.value) return
-    for (const n of e.detail.nodes) {
-      activeJob.value.nodes[n] = true
-    }
+    for (const n of e.detail.nodes) activeJob.value.nodes[n] = true
   }
 
   function handleExecutionInterrupted(
@@ -340,9 +336,8 @@ export const useExecutionStore = defineStore('execution', () => {
 
     // Update the executing nodes list
     if (typeof e.detail !== 'string') {
-      if (activeJobId.value) {
-        delete queuedJobs.value[activeJobId.value]
-      }
+      if (activeJobId.value) delete queuedJobs.value[activeJobId.value]
+
       activeJobId.value = null
     }
   }
@@ -369,9 +364,8 @@ export const useExecutionStore = defineStore('execution', () => {
 
     const pruned: Record<string, Record<string, NodeProgressState>> = {}
     const keysToKeep = keys.slice(keys.length - MAX_PROGRESS_JOBS)
-    for (const key of keysToKeep) {
-      pruned[key] = current[key]
-    }
+    for (const key of keysToKeep) pruned[key] = current[key]
+
     nodeProgressStatesByJob.value = pruned
   }
 
@@ -474,11 +468,10 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)
 
-    if (result.kind === 'nodeErrors') {
+    if (result.kind === 'nodeErrors')
       executionErrorStore.lastNodeErrors = result.nodeErrors
-    } else {
-      executionErrorStore.lastPromptError = result.promptError
-    }
+    else executionErrorStore.lastPromptError = result.promptError
+
     return true
   }
 
@@ -513,9 +506,8 @@ export const useExecutionStore = defineStore('execution', () => {
     const toRemove = jobIds.filter((id) => current.has(id))
     if (!toRemove.length) return
     const next = new Set(current)
-    for (const id of toRemove) {
-      next.delete(id)
-    }
+    for (const id of toRemove) next.delete(id)
+
     initializingJobIds.value = next
   }
 
@@ -554,9 +546,8 @@ export const useExecutionStore = defineStore('execution', () => {
       nodeProgressStatesByJob.value = map
       useJobPreviewStore().clearPreview(jobId)
     }
-    if (activeJobId.value) {
-      delete queuedJobs.value[activeJobId.value]
-    }
+    if (activeJobId.value) delete queuedJobs.value[activeJobId.value]
+
     activeJobId.value = null
     _executingNodeProgress.value = null
     executionErrorStore.clearPromptError()
@@ -613,12 +604,9 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.viewMode = queuedMode
     queuedJob.isAppMode = isAppModeValue(queuedMode)
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
-    if (wid) {
-      jobIdToWorkflowId.value.set(id, wid)
-    }
-    if (workflow?.path) {
-      ensureSessionWorkflowPath(id, workflow.path)
-    }
+    if (wid) jobIdToWorkflowId.value.set(id, wid)
+
+    if (workflow?.path) ensureSessionWorkflowPath(id, workflow.path)
   }
 
   // ~0.65 MB at capacity (32 char GUID key + 50 char path value)
@@ -659,9 +647,8 @@ export const useExecutionStore = defineStore('execution', () => {
   const runningJobIds = computed<JobId[]>(() => {
     const result: JobId[] = []
     for (const [pid, nodes] of Object.entries(nodeProgressStatesByJob.value)) {
-      if (Object.values(nodes).some((n) => n.state === 'running')) {
+      if (Object.values(nodes).some((n) => n.state === 'running'))
         result.push(pid)
-      }
     }
     return result
   })

@@ -26,9 +26,8 @@ test.describe('Feature Flags', { tag: ['@slow', '@settings'] }, () => {
       WebSocket.prototype.send = function (data) {
         try {
           const parsed = JSON.parse(data as string)
-          if (parsed.type === 'feature_flags') {
+          if (parsed.type === 'feature_flags')
             window.__capturedMessages!.clientFeatureFlags = parsed
-          }
         } catch (e) {
           // Not JSON, ignore
         }

@@ -134,9 +134,8 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     updateOperationStatus(opId, 'succeeded', null)
     cleanup(opId)
 
-    if (operation.type === 'subscription') {
+    if (operation.type === 'subscription')
       useTelemetry()?.trackMonthlySubscriptionSucceeded()
-    }
 
     const billingContext = useBillingContext()
     await Promise.all([

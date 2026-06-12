@@ -128,9 +128,7 @@ const showContactSupport = async () => {
 }
 
 onMounted(async () => {
-  if (!systemStatsStore.systemStats) {
-    await systemStatsStore.refetchSystemStats()
-  }
+  if (!systemStatsStore.systemStats) await systemStatsStore.refetchSystemStats()
 
   try {
     const [logs] = await Promise.all([api.getLogs()])

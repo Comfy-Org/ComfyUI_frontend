@@ -147,9 +147,7 @@ export class DragDropHelper {
       }
     }, evaluateParams)
 
-    if (uploadResponsePromise) {
-      await uploadResponsePromise
-    }
+    if (uploadResponsePromise) await uploadResponsePromise
 
     await nextFrame(this.page)
   }

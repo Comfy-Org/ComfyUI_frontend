@@ -45,9 +45,8 @@ export function useWorkflowActionsService() {
     cancelled?: boolean
     error?: string
   }> => {
-    if (!workflow) {
+    if (!workflow)
       return { success: false, error: 'No workflow data available' }
-    }
 
     try {
       let filename = defaultFilename
@@ -100,9 +99,8 @@ export function useWorkflowActionsService() {
     success: boolean
     error?: string
   }> => {
-    if (!workflow) {
+    if (!workflow)
       return { success: false, error: 'No workflow data available' }
-    }
 
     try {
       const temp = workflowStore.createTemporary(filename, workflow)

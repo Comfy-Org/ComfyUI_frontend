@@ -12,18 +12,17 @@ export class CanvasHelper {
   ) {}
 
   async resetView(): Promise<void> {
-    if (await this.resetViewButton.isVisible()) {
+    if (await this.resetViewButton.isVisible())
       await this.resetViewButton.click()
-    }
+
     await this.page.mouse.move(10, 10)
     await nextFrame(this.page)
   }
 
   async zoom(deltaY: number, steps: number = 1): Promise<void> {
     await this.page.mouse.move(10, 10)
-    for (let i = 0; i < steps; i++) {
-      await this.page.mouse.wheel(0, deltaY)
-    }
+    for (let i = 0; i < steps; i++) await this.page.mouse.wheel(0, deltaY)
+
     await nextFrame(this.page)
   }
 

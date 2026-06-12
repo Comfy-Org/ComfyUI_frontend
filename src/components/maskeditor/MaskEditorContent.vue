@@ -118,9 +118,7 @@ const toolManager = useToolManager(keyboard, panZoom)
 let resizeObserver: ResizeObserver | null = null
 
 const handleDragStart = (event: DragEvent) => {
-  if (event.ctrlKey) {
-    event.preventDefault()
-  }
+  if (event.ctrlKey) event.preventDefault()
 }
 
 const initUI = async () => {
@@ -187,9 +185,7 @@ onMounted(() => {
 
   if (containerRef.value) {
     resizeObserver = new ResizeObserver(async () => {
-      if (panZoom) {
-        await panZoom.invalidatePanZoom()
-      }
+      if (panZoom) await panZoom.invalidatePanZoom()
     })
     resizeObserver.observe(containerRef.value)
   }

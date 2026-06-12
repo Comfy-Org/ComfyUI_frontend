@@ -48,12 +48,11 @@ export function getAssetBaseModel(asset: AssetItem): string | null {
 export function getAssetBaseModels(asset: AssetItem): string[] {
   const baseModel =
     asset.user_metadata?.base_model ?? asset.metadata?.base_model
-  if (Array.isArray(baseModel)) {
+  if (Array.isArray(baseModel))
     return baseModel.filter((m): m is string => typeof m === 'string')
-  }
-  if (typeof baseModel === 'string' && baseModel) {
-    return [baseModel]
-  }
+
+  if (typeof baseModel === 'string' && baseModel) return [baseModel]
+
   return []
 }
 
@@ -73,9 +72,9 @@ export function getAssetDisplayName(asset: AssetItem): string {
  * @returns The source URL or null if not present/parseable
  */
 export function getAssetSourceUrl(asset: AssetItem): string | null {
-  if (typeof asset.metadata?.repo_url === 'string') {
+  if (typeof asset.metadata?.repo_url === 'string')
     return asset.metadata.repo_url
-  }
+
   // Note: Reversed priority for backwards compatibility
   const sourceArn =
     asset.metadata?.source_arn ?? asset.user_metadata?.source_arn
@@ -101,9 +100,9 @@ export function getAssetSourceUrl(asset: AssetItem): string | null {
 export function getAssetTriggerPhrases(asset: AssetItem): string[] {
   const phrases =
     asset.user_metadata?.trained_words ?? asset.metadata?.trained_words
-  if (Array.isArray(phrases)) {
+  if (Array.isArray(phrases))
     return phrases.filter((p): p is string => typeof p === 'string')
-  }
+
   if (typeof phrases === 'string') return [phrases]
   return []
 }
@@ -115,9 +114,9 @@ export function getAssetTriggerPhrases(asset: AssetItem): string[] {
  */
 export function getAssetAdditionalTags(asset: AssetItem): string[] {
   const tags = asset.user_metadata?.additional_tags
-  if (Array.isArray(tags)) {
+  if (Array.isArray(tags))
     return tags.filter((t): t is string => typeof t === 'string')
-  }
+
   return []
 }
 
@@ -130,9 +129,8 @@ export function getSourceName(url: string): string {
   if (isCivitaiUrl(url)) return 'Civitai'
   try {
     const hostname = new URL(url).hostname.toLowerCase()
-    if (hostname === 'huggingface.co' || hostname.endsWith('.huggingface.co')) {
+    if (hostname === 'huggingface.co' || hostname.endsWith('.huggingface.co'))
       return 'Hugging Face'
-    }
   } catch {
     // fall through for invalid URLs
   }

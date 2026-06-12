@@ -35,14 +35,11 @@ function onChange(
   newValue: unknown,
   oldValue: unknown
 ) {
-  if (setting?.onChange) {
-    setting.onChange(newValue, oldValue)
-  }
+  if (setting?.onChange) setting.onChange(newValue, oldValue)
+
   // Backward compatibility with old settings dialog.
   // Some extensions still listens event emitted by the old settings dialog.
-  if (setting) {
-    app.ui.settings.dispatchChange(setting.id, newValue, oldValue)
-  }
+  if (setting) app.ui.settings.dispatchChange(setting.id, newValue, oldValue)
 }
 
 export const useSettingStore = defineStore('setting', () => {
@@ -136,14 +133,11 @@ export const useSettingStore = defineStore('setting', () => {
         key,
         settings[key] as Settings[typeof key]
       )
-      if (applied !== undefined) {
-        updatedSettings[key] = applied
-      }
+      if (applied !== undefined) updatedSettings[key] = applied
     }
 
-    if (Object.keys(updatedSettings).length > 0) {
+    if (Object.keys(updatedSettings).length > 0)
       await api.storeSettings(updatedSettings)
-    }
   }
 
   /**
@@ -183,9 +177,7 @@ export const useSettingStore = defineStore('setting', () => {
 
     const versionedDefault = getVersionedDefaultValue(key, param)
 
-    if (versionedDefault) {
-      return versionedDefault
-    }
+    if (versionedDefault) return versionedDefault
 
     const defaultValue = param.defaultValue
     return typeof defaultValue === 'function'
@@ -209,9 +201,7 @@ export const useSettingStore = defineStore('setting', () => {
 
         for (const version of sortedVersions) {
           // Ensure the version is in a valid format before comparing
-          if (!valid(version)) {
-            continue
-          }
+          if (!valid(version)) continue
 
           if (compare(installedVersion, version) >= 0) {
             const versionedDefault =
@@ -236,9 +226,8 @@ export const useSettingStore = defineStore('setting', () => {
    * @param setting - The setting to register.
    */
   function addSetting(setting: SettingParams) {
-    if (!setting.id) {
-      throw new Error('Settings must have an ID')
-    }
+    if (!setting.id) throw new Error('Settings must have an ID')
+
     if (setting.id in settingsById.value) {
       // Setting already registered - skip to allow component remounting
       // TODO: Add store reset methods to bootstrapStore and settingStore, then

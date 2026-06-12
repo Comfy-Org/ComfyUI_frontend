@@ -335,11 +335,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   set subgraph(value: Subgraph | undefined) {
     if (value !== this._subgraph) {
       this._subgraph = value
-      if (value)
+      if (value) {
         this.dispatch('litegraph:set-graph', {
           oldGraph: this._subgraph,
           newGraph: value
         })
+      }
     }
   }
 
@@ -384,17 +385,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       CanvasItem.SubgraphIoSlot
 
     let cursor = 'default'
-    if (this.state.draggingCanvas) {
-      cursor = 'grabbing'
-    } else if (this.state.readOnly) {
-      cursor = 'grab'
-    } else if (this.pointer.resizeDirection) {
+    if (this.state.draggingCanvas) cursor = 'grabbing'
+    else if (this.state.readOnly) cursor = 'grab'
+    else if (this.pointer.resizeDirection)
       cursor = cursors[this.pointer.resizeDirection] ?? cursors.SE
-    } else if (this.state.hoveringOver & crosshairItems) {
-      cursor = 'crosshair'
-    } else if (this.state.hoveringOver & CanvasItem.Reroute) {
-      cursor = 'grab'
-    }
+    else if (this.state.hoveringOver & crosshairItems) cursor = 'crosshair'
+    else if (this.state.hoveringOver & CanvasItem.Reroute) cursor = 'grab'
 
     this._setCursor(cursor)
   }
@@ -825,15 +821,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Set up zoom change handler for efficient LOD updates
     this.ds.onChanged = (scale: number, _offset: Point) => {
       // Only check LOD threshold if it's enabled
-      if (this._lowQualityZoomThreshold > 0) {
+      if (this._lowQualityZoomThreshold > 0)
         this._isLowQuality = scale < this._lowQualityZoomThreshold
-      }
     }
 
     // Initialize link renderer if graph is available
-    if (graph) {
-      this.linkRenderer = new LitegraphLinkAdapter(false)
-    }
+    if (graph) this.linkRenderer = new LitegraphLinkAdapter(false)
 
     this.linkConnector.events.addEventListener('link-created', () =>
       this._dirty()
@@ -1022,9 +1015,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    if (!options.skip_render) {
-      this.startRendering()
-    }
+    if (!options.skip_render) this.startRendering()
 
     this.autoresize = options.autoresize ?? false
 
@@ -1241,10 +1232,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             canvas.graph.beforeChange()
             const node = LiteGraph.createNode(value.value)
             if (node) {
-              if (!first_event)
+              if (!first_event) {
                 throw new TypeError(
                   'Context menu event was null. This should not occur in normal usage.'
                 )
+              }
               node.pos = canvas.convertEventToCanvasOffset(first_event)
               canvas.graph.add(node)
             } else {
@@ -1328,9 +1320,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (value && (typeof value === 'object' || Array.isArray(value))) {
         // submenu why?
         const entries = []
-        for (const i in value) {
-          entries.push({ content: i, value: value[i] })
-        }
+        for (const i in value) entries.push({ content: i, value: value[i] })
+
         new LiteGraph.ContextMenu(entries, {
           event: e,
           callback: inner_clicked,
@@ -1384,9 +1375,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         value: i
       })
     }
-    if (!entries.length) {
-      return
-    }
+    if (!entries.length) return
 
     new LiteGraph.ContextMenu<string>(entries, {
       event: e,
@@ -1437,9 +1426,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ) {
       fApplyMultiNode(node)
     } else {
-      for (const i in canvas.selected_nodes) {
+      for (const i in canvas.selected_nodes)
         fApplyMultiNode(canvas.selected_nodes[i])
-      }
     }
 
     canvas.setDirty(true, true)
@@ -1532,9 +1520,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     })
     dialog.addEventListener('mouseenter', function () {
-      if (LiteGraph.dialog_close_on_mouse_leave) {
+      if (LiteGraph.dialog_close_on_mouse_leave)
         if (dialogCloseTimer) clearTimeout(dialogCloseTimer)
-      }
     })
 
     function inner() {
@@ -1542,11 +1529,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     function setValue(value: NodeProperty) {
-      if (item.type == 'Number') {
-        value = Number(value)
-      } else if (item.type == 'Boolean') {
-        value = Boolean(value)
-      }
+      if (item.type == 'Number') value = Number(value)
+      else if (item.type == 'Boolean') value = Boolean(value)
+
       // @ts-expect-error Requires refactor.
       node[property] = value
       dialog.remove()
@@ -1560,9 +1545,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   ): string | undefined {
     if (!values) return String(value)
 
-    if (Array.isArray(values)) {
-      return String(value)
-    }
+    if (Array.isArray(values)) return String(value)
 
     if (typeof values === 'object') {
       let desc_value = ''
@@ -1599,9 +1582,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ) {
       fApplyMultiNode(node)
     } else {
-      for (const i in graphcanvas.selected_nodes) {
+      for (const i in graphcanvas.selected_nodes)
         fApplyMultiNode(graphcanvas.selected_nodes[i])
-      }
     }
 
     node.graph.afterChange()
@@ -1628,9 +1610,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ) {
       fApplyMultiNode(node)
     } else {
-      for (const i in graphcanvas.selected_nodes) {
+      for (const i in graphcanvas.selected_nodes)
         fApplyMultiNode(graphcanvas.selected_nodes[i])
-      }
     }
     node.graph.afterChange()
   }
@@ -1669,9 +1650,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ) {
         fApplyMultiNode(node)
       } else {
-        for (const i in graphcanvas.selected_nodes) {
+        for (const i in graphcanvas.selected_nodes)
           fApplyMultiNode(graphcanvas.selected_nodes[i])
-        }
       }
     }
 
@@ -1731,9 +1711,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ) {
         fApplyColor(node)
       } else {
-        for (const i in canvas.selected_nodes) {
+        for (const i in canvas.selected_nodes)
           fApplyColor(canvas.selected_nodes[i])
-        }
       }
       canvas.setDirty(true, true)
     }
@@ -1777,9 +1756,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ) {
         fApplyMultiNode(node)
       } else {
-        for (const i in canvas.selected_nodes) {
+        for (const i in canvas.selected_nodes)
           fApplyMultiNode(canvas.selected_nodes[i])
-        }
       }
 
       node.graph.afterChange()
@@ -1812,10 +1790,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     let offsetX = Infinity
     let offsetY = Infinity
     for (const item of nodes) {
-      if (item.pos == null)
+      if (item.pos == null) {
         throw new TypeError(
           'Invalid node encountered on clone.  `pos` was null.'
         )
+      }
       offsetX = Math.min(offsetX, item.pos[0])
       offsetY = Math.min(offsetY, item.pos[1])
     }
@@ -1969,9 +1948,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const ctx = element.getContext?.('2d')
     if (ctx == null) {
-      if (element.localName != 'canvas') {
+      if (element.localName != 'canvas')
         throw `Element supplied for LGraphCanvas must be a <canvas> element, you passed a ${element.localName}`
-      }
+
       throw "This browser doesn't support Canvas"
     }
     this.ctx = ctx
@@ -2148,9 +2127,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     /** Render loop */
     function renderFrame(this: LGraphCanvas) {
-      if (!this.pause_rendering) {
-        this.draw()
-      }
+      if (!this.pause_rendering) this.draw()
 
       const window = this.getCanvasWindow()
       if (this.is_rendering) {
@@ -2291,9 +2268,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         x: e.canvasX,
         y: e.canvasY
       })
-      if (slotLayout) {
-        node = graph.getNodeById(slotLayout.nodeId) ?? undefined
-      }
+      if (slotLayout) node = graph.getNodeById(slotLayout.nodeId) ?? undefined
     }
 
     this.mouse[0] = x
@@ -2388,9 +2363,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !ref_window.document.activeElement ||
       (ref_window.document.activeElement.nodeName.toLowerCase() != 'input' &&
         ref_window.document.activeElement.nodeName.toLowerCase() != 'textarea')
-    ) {
+    )
       e.preventDefault()
-    }
+
     e.stopPropagation()
 
     this.onMouseDown?.(e)
@@ -2414,9 +2389,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const ioNode = this.subgraph?.getIoNodeOnPos(x, y)
     if (ioNode) return ioNode
 
-    for (const reroute of this._visibleReroutes) {
+    for (const reroute of this._visibleReroutes)
       if (reroute.containsPoint([x, y])) return reroute
-    }
 
     return this.graph?.getGroupTitlebarOnPos(x, y)
   }
@@ -2509,9 +2483,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const rerouteLayout = layoutStore.queryRerouteAtPoint({ x, y })
         let foundReroute: Reroute | undefined
 
-        if (rerouteLayout) {
-          foundReroute = graph.getReroute(rerouteLayout.id)
-        }
+        if (rerouteLayout) foundReroute = graph.getReroute(rerouteLayout.id)
 
         // Fallback to checking visible reroutes directly
         for (const reroute of this._visibleReroutes) {
@@ -2745,9 +2717,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   ): void {
     // In Vue nodes mode, Vue components own all node-level interactions
     // Skip LiteGraph handling to prevent dual event processing
-    if (LiteGraph.vueNodesMode) {
-      return
-    }
+    if (LiteGraph.vueNodesMode) return
 
     const { pointer, graph, linkConnector } = this
     if (!graph) throw new NullGraphError()
@@ -2758,9 +2728,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     pointer.onClick = () => this.processSelect(node, e)
 
     // Immediately bring to front
-    if (!node.flags.pinned) {
-      this.bringToFront(node)
-    }
+    if (!node.flags.pinned) this.bringToFront(node)
 
     // Collapse toggle
     const inCollapse = node.isPointInCollapse(x, y)
@@ -2803,13 +2771,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             this._linkConnectorDrop()
 
             if (LiteGraph.shift_click_do_break_link_from) {
-              if (e.shiftKey) {
-                node.disconnectOutput(i)
-              }
+              if (e.shiftKey) node.disconnectOutput(i)
             } else if (LiteGraph.ctrl_alt_click_do_break_link) {
-              if (ctrlOrMeta && e.altKey && !e.shiftKey) {
+              if (ctrlOrMeta && e.altKey && !e.shiftKey)
                 node.disconnectOutput(i)
-              }
             }
 
             // TODO: Move callbacks to the start of this closure (onInputClick is already correct).
@@ -2841,17 +2806,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               !e.shiftKey
             if (input.link !== null || input._floatingLinks?.size) {
               // Existing link
-              if (shouldBreakLink || LiteGraph.click_do_break_link_to) {
+              if (shouldBreakLink || LiteGraph.click_do_break_link_to)
                 node.disconnectInput(i, true)
-              } else if (e.shiftKey || this.allow_reconnect_links) {
+              else if (e.shiftKey || this.allow_reconnect_links)
                 linkConnector.moveInputLink(graph, input)
-              }
             }
 
             // Dragging a new link from input to output
-            if (!linkConnector.isConnecting) {
+            if (!linkConnector.isConnecting)
               linkConnector.dragNewFromInput(graph, node, input)
-            }
 
             this._linkConnectorDrop()
             this.dirty_bgcanvas = true
@@ -2877,11 +2840,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         // Check if it's a double click on the title bar
         // Note: pos[1] is the y-coordinate of the node's body
         // If clicking on node header (title), pos[1] is negative
-        if (pos[1] < 0 && !inCollapse) {
-          node.onNodeTitleDblClick?.(e, pos, this)
-        } else if (node instanceof SubgraphNode) {
+        if (pos[1] < 0 && !inCollapse) node.onNodeTitleDblClick?.(e, pos, this)
+        else if (node instanceof SubgraphNode)
           this.openSubgraph(node.subgraph, node)
-        }
 
         node.onDblClick?.(e, pos, this)
         this.emitEvent({
@@ -2994,12 +2955,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                 snapPoint(newBounds.pos, this._snapToGrid)
 
                 // Adjust size to compensate for snapped position
-                if (resizeDirection.includes('N')) {
+                if (resizeDirection.includes('N'))
                   newBounds.height += originalY - newBounds.y
-                }
-                if (resizeDirection.includes('W')) {
+
+                if (resizeDirection.includes('W'))
                   newBounds.width += originalX - newBounds.x
-                }
               }
 
               snapPoint(newBounds.size, this._snapToGrid)
@@ -3016,16 +2976,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             }
             if (newBounds.width < min[0]) {
               // If resizing from left, adjust position to maintain right edge
-              if (resizeDirection.includes('W')) {
+              if (resizeDirection.includes('W'))
                 newBounds.x = startBounds.x + startBounds.width - min[0]
-              }
+
               newBounds.width = min[0]
             }
             if (newBounds.height < min[1]) {
               // If resizing from top, adjust position to maintain bottom edge
-              if (resizeDirection.includes('N')) {
+              if (resizeDirection.includes('N'))
                 newBounds.y = startBounds.y + startBounds.height - min[1]
-              }
+
               newBounds.height = min[1]
             }
 
@@ -3481,9 +3441,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                     firstLink.fromSlot.type,
                     node.outputs[outputId].type
                   )
-                ) {
+                )
                   highlightPos = pos
-                }
               }
             }
             this._highlight_pos = highlightPos
@@ -3516,16 +3475,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
         if (this.canvas) {
           const group = graph.getGroupOnPos(x, y)
-          if (
-            group &&
-            !e.ctrlKey &&
-            !this.read_only &&
-            group.isInResize(x, y)
-          ) {
+          if (group && !e.ctrlKey && !this.read_only && group.isInResize(x, y))
             pointer.resizeDirection = 'SE'
-          } else {
-            pointer.resizeDirection &&= undefined
-          }
+          else pointer.resizeDirection &&= undefined
         }
       }
 
@@ -3554,9 +3506,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (LiteGraph.vueNodesMode) {
           this.moveChildNodesInGroupVueMode(allItems, deltaX, deltaY)
         } else {
-          for (const item of allItems) {
-            item.move(deltaX, deltaY, true)
-          }
+          for (const item of allItems) item.move(deltaX, deltaY, true)
         }
 
         this._dirty()
@@ -3647,9 +3597,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (LiteGraph.vueNodesMode) {
           this.moveChildNodesInGroupVueMode(allItems, panX, panY)
         } else {
-          for (const item of allItems) {
-            item.move(panX, panY, true)
-          }
+          for (const item of allItems) item.move(panX, panY, true)
         }
 
         this._dirty()
@@ -3730,9 +3678,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // e.g. the search dialog just closed.
     // stopPropagation prevents window-level keybindings (like Comfy.Graph.ExitSubgraph on Escape) from firing alongside the cancel.
     this._ghostKeyHandler = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' && e.key !== 'Delete' && e.key !== 'Backspace') {
+      if (e.key !== 'Escape' && e.key !== 'Delete' && e.key !== 'Backspace')
         return
-      }
+
       this.finalizeGhostPlacement(true)
       e.stopPropagation()
       e.preventDefault()
@@ -3926,11 +3874,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.ds.changeScale(scale, [e.clientX, e.clientY], false)
       } else {
         // Mouse wheel - use stepped scaling
-        if (e.deltaY < 0) {
-          scale *= this.zoom_speed
-        } else if (e.deltaY > 0) {
-          scale *= 1 / this.zoom_speed
-        }
+        if (e.deltaY < 0) scale *= this.zoom_speed
+        else if (e.deltaY > 0) scale *= 1 / this.zoom_speed
+
         this.ds.changeScale(scale, [e.clientX, e.clientY])
       }
     } else {
@@ -3969,9 +3915,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (e.key === ' ') {
         // space
         this.read_only = true
-        if (this._previously_dragging_canvas === null) {
+        if (this._previously_dragging_canvas === null)
           this._previously_dragging_canvas = this.dragging_canvas
-        }
+
         this.dragging_canvas = this.pointer.isDown
         block_default = true
       } else if (e.key === 'Escape') {
@@ -3987,9 +3933,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       // TODO
-      for (const node of Object.values(this.selected_nodes)) {
-        node.onKeyDown?.(e)
-      }
+      for (const node of Object.values(this.selected_nodes)) node.onKeyDown?.(e)
     } else if (e.type == 'keyup') {
       if (e.key === ' ') {
         // space
@@ -3999,9 +3943,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._previously_dragging_canvas = null
       }
 
-      for (const node of Object.values(this.selected_nodes)) {
-        node.onKeyUp?.(e)
-      }
+      for (const node of Object.values(this.selected_nodes)) node.onKeyUp?.(e)
     }
 
     // TODO: Do we need to remeasure and recalculate everything on every key down/up?
@@ -4047,9 +3989,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         }
 
         // Find all unique referenced subgraphs
-        if (item instanceof SubgraphNode) {
-          subgraphs.add(item.subgraph)
-        }
+        if (item instanceof SubgraphNode) subgraphs.add(item.subgraph)
       } else if (item instanceof LGraphGroup) {
         // Groups
         serialisable.groups.push(item.serialize())
@@ -4063,9 +4003,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // NOTE: subgraphs is appended to mid iteration.
     for (const subgraph of subgraphs) {
       for (const node of subgraph.nodes) {
-        if (node instanceof SubgraphNode) {
-          subgraphs.add(node.subgraph)
-        }
+        if (node instanceof SubgraphNode) subgraphs.add(node.subgraph)
       }
       const cloned = subgraph.clone(true).asSerialisable()
       serialisable.subgraphs.push(cloned)
@@ -4147,10 +4085,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     let offsetX = Infinity
     let offsetY = Infinity
     for (const item of [...parsed.nodes, ...parsed.reroutes]) {
-      if (item.pos == null)
+      if (item.pos == null) {
         throw new TypeError(
           'Invalid node encountered on paste.  `pos` was null.'
         )
+      }
 
       if (item.pos[0] < offsetX) offsetX = item.pos[0]
       if (item.pos[1] < offsetY) offsetY = item.pos[1]
@@ -4183,9 +4122,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       parsed.nodes ? [parsed.nodes] : [],
       parsed.subgraphs ? parsed.subgraphs.map((s) => s.nodes ?? []) : []
     ].flat(2)
-    for (const nodeInfo of allNodeInfo)
+    for (const nodeInfo of allNodeInfo) {
       if (nodeInfo.type in subgraphIdMap)
         nodeInfo.type = subgraphIdMap[nodeInfo.type]
+    }
     remapClipboardSubgraphNodeIds(parsed, graph.rootGraph)
 
     // Subgraphs
@@ -4225,9 +4165,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (
           node.properties?.proxyWidgets !== undefined &&
           LiteGraph.LGraph.proxyWidgetMigrationFlush
-        ) {
+        )
           LiteGraph.LGraph.proxyWidgetMigrationFlush(node, info)
-        }
+
         LiteGraph.LGraph.autoExposePreviewNodes?.(node)
       }
 
@@ -4286,22 +4226,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       reroute.update(reroute.parentId, undefined, ids, reroute.floating)
 
       // Remove any invalid items
-      if (!reroute.validateLinks(graph.links, graph.floatingLinks)) {
+      if (!reroute.validateLinks(graph.links, graph.floatingLinks))
         graph.removeReroute(reroute.id)
-      }
     }
 
     // Adjust positions - use move/setPos to ensure layout store is updated
     const dx = position[0] - offsetX
     const dy = position[1] - offsetY
     for (const item of created) {
-      if (item instanceof LGraphNode) {
+      if (item instanceof LGraphNode)
         item.setPos(item.pos[0] + dx, item.pos[1] + dy)
-      } else if (item instanceof Reroute) {
-        item.move(dx, dy)
-      } else if (item instanceof LGraphGroup) {
-        item.move(dx, dy, true)
-      }
+      else if (item instanceof Reroute) item.move(dx, dy)
+      else if (item instanceof LGraphGroup) item.move(dx, dy, true)
     }
 
     // TODO: Report failures, i.e. `failedNodes`
@@ -4324,13 +4260,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Bring cloned/pasted nodes to front so they render above the originals
     const allNodes = layoutStore.getAllNodes().value
     let maxZIndex = 0
-    for (const [, layout] of allNodes) {
+    for (const [, layout] of allNodes)
       if (layout.zIndex > maxZIndex) maxZIndex = layout.zIndex
-    }
+
     const { setNodeZIndex } = useLayoutMutations()
-    for (let i = 0; i < newPositions.length; i++) {
+    for (let i = 0; i < newPositions.length; i++)
       setNodeZIndex(newPositions[i].nodeId, maxZIndex + i + 1)
-    }
 
     this.selectItems(created)
     forEachNode(graph, (n) => n.onGraphConfigured?.())
@@ -4390,9 +4325,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (overlapBounding(rect, outputNode.boundingRect)) items.add(outputNode)
     }
 
-    for (const node of graph._nodes) {
+    for (const node of graph._nodes)
       if (overlapBounding(rect, node.boundingRect)) items.add(node)
-    }
 
     // Check groups (must be wholly inside)
     for (const group of graph.groups) {
@@ -4403,9 +4337,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     // Check reroutes (center point must be inside)
-    for (const reroute of graph.reroutes.values()) {
+    for (const reroute of graph.reroutes.values())
       if (isPointInRect(reroute.pos, rect)) items.add(reroute)
-    }
 
     return items
   }
@@ -4501,9 +4434,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       for (const item of itemsInRect) this.deselect(item)
     } else {
       // Replace selection
-      for (const item of selectedItems.values()) {
+      for (const item of selectedItems.values())
         if (!itemsInRect.has(item)) this.deselect(item)
-      }
+
       for (const item of itemsInRect) this.select(item)
     }
 
@@ -4705,11 +4638,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   /** @deprecated See {@link LGraphCanvas.select} */
   selectNode(node: LGraphNode, add_to_current_selection?: boolean): void {
-    if (node == null) {
-      this.deselectAll()
-    } else {
-      this.selectNodes([node], add_to_current_selection)
-    }
+    if (node == null) this.deselectAll()
+    else this.selectNodes([node], add_to_current_selection)
   }
 
   get empty(): boolean {
@@ -5040,9 +4970,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.always_render_background ||
       (this.graph?._last_trigger_time &&
         now - this.graph._last_trigger_time < 1000)
-    ) {
+    )
       this.drawBackCanvas()
-    }
 
     if (this.dirty_canvas || force_canvas) this.drawFrontCanvas()
 
@@ -5148,20 +5077,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       )
 
       // on top (debug)
-      if (this.render_execution_order) {
-        this.drawExecutionOrder(ctx)
-      }
+      if (this.render_execution_order) this.drawExecutionOrder(ctx)
 
       // connections ontop?
-      if (graph.config.links_ontop) {
-        this.drawConnections(ctx)
-      }
+      if (graph.config.links_ontop) this.drawConnections(ctx)
 
-      if (!LiteGraph.vueNodesMode || !this.overlayCtx) {
+      if (!LiteGraph.vueNodesMode || !this.overlayCtx)
         this._drawConnectingLinks(ctx)
-      } else {
-        this._drawOverlayLinks()
-      }
+      else this._drawOverlayLinks()
 
       this._drawLinkTooltip(ctx)
 
@@ -5176,9 +5099,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   private _getLinkCentreOnPos(e: CanvasPointerEvent): LinkSegment | undefined {
-    if (this.linkMarkerShape === LinkMarkerShape.None) {
-      return undefined
-    }
+    if (this.linkMarkerShape === LinkMarkerShape.None) return undefined
 
     for (const linkSegment of this.renderedPaths) {
       const centre = linkSegment._pos
@@ -5186,9 +5107,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       if (
         isInRectangle(e.canvasX, e.canvasY, centre[0] - 4, centre[1] - 4, 8, 8)
-      ) {
+      )
         return linkSegment
-      }
     }
   }
 
@@ -5249,11 +5169,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   private _drawLinkTooltip(ctx: CanvasRenderingContext2D): void {
-    if (!this.isDragging && this.over_link_center && this.render_link_tooltip) {
+    if (!this.isDragging && this.over_link_center && this.render_link_tooltip)
       this.drawLinkTooltip(ctx, this.over_link_center)
-    } else {
-      this.onDrawLinkTooltip?.(ctx, null)
-    }
+    else this.onDrawLinkTooltip?.(ctx, null)
   }
 
   private _drawOverlayLinks(): void {
@@ -5452,9 +5370,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else {
       ctx.fillText('No graph selected', 5, lineHeight * line++)
     }
-    if (this.info_text) {
-      ctx.fillText(this.info_text, 5, lineHeight * line)
-    }
+    if (this.info_text) ctx.fillText(this.info_text, 5, lineHeight * line)
+
     ctx.restore()
   }
 
@@ -5471,9 +5388,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       canvas.height = this.canvas.height
     }
 
-    if (!this.bgctx) {
-      this.bgctx = this.bgcanvas.getContext('2d')
-    }
+    if (!this.bgctx) this.bgctx = this.bgcanvas.getContext('2d')
+
     const ctx = this.bgctx
     if (!ctx) throw new TypeError('Background canvas context was null.')
 
@@ -5485,9 +5401,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ]
 
     // clear
-    if (this.clear_background) {
+    if (this.clear_background)
       ctx.clearRect(viewport[0], viewport[1], viewport[2], viewport[3])
-    }
 
     const bg_already_painted = this.onRenderBackground
       ? this.onRenderBackground(canvas, ctx)
@@ -5521,11 +5436,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       if (this.background_image && this.ds.scale > 0.5 && !bg_already_painted) {
-        if (this.zoom_modify_alpha) {
+        if (this.zoom_modify_alpha)
           ctx.globalAlpha = (1.0 - 0.5 / this.ds.scale) * this.editor_alpha
-        } else {
-          ctx.globalAlpha = this.editor_alpha
-        }
+        else ctx.globalAlpha = this.editor_alpha
+
         ctx.imageSmoothingEnabled = false
         if (!this._bg_img || this._bg_img.name != this.background_image) {
           this._bg_img = new Image()
@@ -5571,9 +5485,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       // groups
-      if (this.graph._groups.length) {
-        this.drawGroups(canvas, ctx)
-      }
+      if (this.graph._groups.length) this.drawGroups(canvas, ctx)
 
       this.onDrawBackground?.(ctx, this.visible_area)
 
@@ -5621,9 +5533,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (LiteGraph.vueNodesMode) {
       // Prepare concrete slots and compute layout measures without rendering visuals.
       node._setConcreteSlots()
-      if (!node.collapsed) {
-        node.arrange()
-      }
+      if (!node.collapsed) node.arrange()
+
       // Skip all node body/widget/title rendering. Vue overlay handles visuals.
       return
     }
@@ -5652,21 +5563,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     size[0] = node.renderingSize[0]
     size[1] = node.renderingSize[1]
 
-    if (node.collapsed) {
-      ctx.font = this.inner_text_font
-    }
+    if (node.collapsed) ctx.font = this.inner_text_font
 
     if (node.clip_area) {
       // Start clipping
       ctx.save()
       ctx.beginPath()
-      if (shape == RenderShape.BOX) {
-        ctx.rect(0, 0, size[0], size[1])
-      } else if (shape == RenderShape.ROUND) {
+      if (shape == RenderShape.BOX) ctx.rect(0, 0, size[0], size[1])
+      else if (shape == RenderShape.ROUND)
         ctx.roundRect(0, 0, size[0], size[1], [10])
-      } else if (shape == RenderShape.CIRCLE) {
+      else if (shape == RenderShape.CIRCLE)
         ctx.arc(size[0] * 0.5, size[1] * 0.5, size[0] * 0.5, 0, Math.PI * 2)
-      }
+
       ctx.clip()
     }
 
@@ -5680,9 +5588,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       for (let i = 0; i < node.title_buttons.length; i++) {
         const button = node.title_buttons[i]
-        if (!button.visible) {
-          continue
-        }
+        if (!button.visible) continue
 
         const button_width = button.getWidth(ctx)
         current_x -= button_width
@@ -5695,9 +5601,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    if (!this.low_quality) {
-      node.drawBadges(ctx)
-    }
+    if (!this.low_quality) node.drawBadges(ctx)
 
     ctx.shadowColor = 'transparent'
 
@@ -5731,9 +5635,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       node.drawCollapsedSlots(ctx)
     }
 
-    if (node.clip_area) {
-      ctx.restore()
-    }
+    if (node.clip_area) ctx.restore()
 
     ctx.globalAlpha = 1.0
   }
@@ -6128,9 +6030,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
 
-    if (graph.floatingLinks.size > 0) {
+    if (graph.floatingLinks.size > 0)
       this._renderFloatingLinks(ctx, graph, visibleReroutes, now)
-    }
 
     const rerouteSet = this._visibleReroutes
     rerouteSet.clear()
@@ -6562,9 +6463,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     for (const group of groups) {
       // out of the visible area
-      if (!overlapBounding(this.visible_area, group._bounding)) {
-        continue
-      }
+      if (!overlapBounding(this.visible_area, group._bounding)) continue
 
       // Draw snap shadow
       if (drawSnapGuides && this.selectedItems.has(group))
@@ -6583,10 +6482,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   resize(width?: number, height?: number): void {
     if (!width && !height) {
       const parent = this.canvas.parentElement
-      if (!parent)
+      if (!parent) {
         throw new TypeError(
           'Attempted to resize canvas, but parent element was null.'
         )
+      }
       width = parent.offsetWidth
       height = parent.offsetHeight
     }
@@ -6667,9 +6567,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                 fromType ?? '*',
                 options
               )
-            ) {
+            )
               node.setPos(node.pos[0] - node.size[0] * 0.5, node.pos[1])
-            }
           })
           break
 
@@ -6839,25 +6738,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           // if is object pass options
           if (nodeNewOpts) {
             if (nodeNewOpts.properties) {
-              for (const i in nodeNewOpts.properties) {
+              for (const i in nodeNewOpts.properties)
                 newNode.addProperty(i, nodeNewOpts.properties[i])
-              }
             }
             if (nodeNewOpts.inputs) {
               newNode.inputs = []
-              for (const input of nodeNewOpts.inputs) {
+              for (const input of nodeNewOpts.inputs)
                 newNode.addInput(input[0], input[1])
-              }
             }
             if (nodeNewOpts.outputs) {
               newNode.outputs = []
-              for (const output of nodeNewOpts.outputs) {
+              for (const output of nodeNewOpts.outputs)
                 newNode.addOutput(output[0], output[1])
-              }
             }
-            if (nodeNewOpts.json) {
-              newNode.configure(nodeNewOpts.json)
-            }
+            if (nodeNewOpts.json) newNode.configure(nodeNewOpts.json)
           }
 
           // add the node
@@ -6878,10 +6772,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
           // connect the two!
           if (isFrom) {
-            if (!opts.nodeFrom)
+            if (!opts.nodeFrom) {
               throw new TypeError(
                 'createDefaultNodeForSlot - nodeFrom was null'
               )
+            }
             opts.nodeFrom.connectByType(iSlotConn, newNode, fromSlotType, {
               afterRerouteId
             })
@@ -6953,9 +6848,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       iSlotConn = nodeX.slots.findIndex((s) => s.name === name)
       // If it's not found in the main slots, it might be the empty slot from a Subgraph node.
       // In that case, the original `slotX` object is the correct one, so don't overwrite it.
-      if (iSlotConn !== -1) {
-        slotX = nodeX.slots[iSlotConn]
-      }
+      if (iSlotConn !== -1) slotX = nodeX.slots[iSlotConn]
+
       if (!slotX) {
         console.warn('Cant get slot information', slotX)
         return
@@ -6991,9 +6885,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const options = ['Add Node', 'Add Reroute', null]
 
-    if (opts.allow_searchbox) {
-      options.push('Search', null)
-    }
+    if (opts.allow_searchbox) options.push('Search', null)
 
     // get defaults nodes for this slottype
     const fromSlotType = slotX.type == LiteGraph.EVENT ? '_event_' : slotX.type
@@ -7002,9 +6894,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       : LiteGraph.slot_types_default_in
     if (slotTypesDefault?.[fromSlotType]) {
       if (typeof slotTypesDefault[fromSlotType] == 'object') {
-        for (const typeX in slotTypesDefault[fromSlotType]) {
+        for (const typeX in slotTypesDefault[fromSlotType])
           options.push(slotTypesDefault[fromSlotType][typeX])
-        }
       } else {
         options.push(slotTypesDefault[fromSlotType])
       }
@@ -7035,10 +6926,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             if (!node) return
 
             if (isFrom) {
-              if (!opts.nodeFrom)
+              if (!opts.nodeFrom) {
                 throw new TypeError(
                   'Cannot add node to SubgraphInputNode: nodeFrom was null'
                 )
+              }
               const slot = opts.nodeFrom.connectByType(
                 iSlotConn,
                 node,
@@ -7048,10 +6940,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               if (!slot) console.warn('Failed to make new connection.')
               // }
             } else {
-              if (!opts.nodeTo)
+              if (!opts.nodeTo) {
                 throw new TypeError(
                   'Cannot add node to SubgraphInputNode: nodeTo was null'
                 )
+              }
               opts.nodeTo.connectByTypeOutput(iSlotConn, node, fromSlotType, {
                 afterRerouteId
               })
@@ -7065,10 +6958,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           if (!graph) throw new NullGraphError()
           if (!node) throw new TypeError('Cannot add reroute: node was null')
           if (!slot) throw new TypeError('Cannot add reroute: slot was null')
-          if (!opts.e)
+          if (!opts.e) {
             throw new TypeError(
               'Cannot add reroute: CanvasPointerEvent was null'
             )
+          }
 
           if (node instanceof SubgraphIONodeBase) {
             throw new TypeError(
@@ -7138,9 +7032,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         : "<span class='name'></span> <input autofocus type='text' class='value'/><button class='rounded'>OK</button>",
       close() {
         that.prompt_box = null
-        if (dialog.parentNode) {
-          dialog.remove()
-        }
+        if (dialog.parentNode) dialog.remove()
       }
     } satisfies Partial<IDialog>
 
@@ -7149,10 +7041,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const graphcanvas = LGraphCanvas.active_canvas
     const { canvas } = graphcanvas
-    if (!canvas.parentNode)
+    if (!canvas.parentNode) {
       throw new TypeError(
         'canvas element parentNode was null when opening a prompt.'
       )
+    }
     canvas.parentNode.append(dialog)
 
     if (this.ds.scale > 1) dialog.style.transform = `scale(${this.ds.scale})`
@@ -7213,9 +7106,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         e.key == 'Enter' &&
         (e.target as Element).localName != 'textarea'
       ) {
-        if (callback) {
-          callback(this.value)
-        }
+        if (callback) callback(this.value)
+
         dialog.close()
       } else {
         return
@@ -7343,9 +7235,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       selOut = dialog.querySelector('.slot_out_type_filter')
     }
 
-    if (this.ds.scale > 1) {
-      dialog.style.transform = `scale(${this.ds.scale})`
-    }
+    if (this.ds.scale > 1) dialog.style.transform = `scale(${this.ds.scale})`
 
     // hide on mouse leave
     if (options.hide_on_mouse_leave) {
@@ -7420,17 +7310,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           // ESC
           dialog.close()
         } else if (e.key == 'Enter') {
-          if (selected instanceof HTMLElement) {
+          if (selected instanceof HTMLElement)
             select(unescape(String(selected.dataset['type'])))
-          } else if (first) {
-            select(first)
-          } else {
-            dialog.close()
-          }
+          else if (first) select(first)
+          else dialog.close()
         } else {
-          if (timeout) {
-            clearInterval(timeout)
-          }
+          if (timeout) clearInterval(timeout)
+
           timeout = setTimeout(refreshHelper, 10)
           return
         }
@@ -7450,9 +7336,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (
           options.type_filter_in == LiteGraph.EVENT ||
           options.type_filter_in == LiteGraph.ACTION
-        ) {
+        )
           options.type_filter_in = '_event_'
-        }
+
         for (let iK = 0; iK < nSlots; iK++) {
           const opt = document.createElement('option')
           opt.value = aSlots[iK]
@@ -7463,9 +7349,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             options.type_filter_in !== false &&
             String(options.type_filter_in).toLowerCase() ==
               String(aSlots[iK]).toLowerCase()
-          ) {
+          )
             opt.selected = true
-          }
         }
         selIn.addEventListener('change', function () {
           refreshHelper()
@@ -7477,9 +7362,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (
           options.type_filter_out == LiteGraph.EVENT ||
           options.type_filter_out == LiteGraph.ACTION
-        ) {
+        )
           options.type_filter_out = '_event_'
-        }
+
         for (const aSlot of aSlots) {
           const opt = document.createElement('option')
           opt.value = aSlot
@@ -7489,9 +7374,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             options.type_filter_out !== false &&
             String(options.type_filter_out).toLowerCase() ==
               String(aSlot).toLowerCase()
-          ) {
+          )
             opt.selected = true
-          }
         }
         selOut.addEventListener('change', function () {
           refreshHelper()
@@ -7519,9 +7403,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     dialog.style.top = `${top}px`
 
     // To avoid out of screen problems
-    if (safeEvent.layerY > rect.height - 200) {
+    if (safeEvent.layerY > rect.height - 200)
       helper.style.maxHeight = `${rect.height - safeEvent.layerY - 20}px`
-    }
+
     requestAnimationFrame(function () {
       input.focus()
     })
@@ -7549,10 +7433,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                 iS = options.node_from.findOutputSlot(options.slot_from)
                 break
               case 'object':
-                if (options.slot_from == null)
+                if (options.slot_from == null) {
                   throw new TypeError(
                     'options.slot_from was null when showing search box'
                   )
+                }
 
                 iS = options.slot_from.name
                   ? options.node_from.findOutputSlot(options.slot_from.name)
@@ -7571,10 +7456,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             }
             if (iS !== false && options.node_from.outputs[iS] !== undefined) {
               if (iS > -1) {
-                if (node == null)
+                if (node == null) {
                   throw new TypeError(
                     'options.slot_from was null when showing search box'
                   )
+                }
 
                 options.node_from.connectByType(
                   iS,
@@ -7593,10 +7479,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                 iS = options.node_to.findInputSlot(options.slot_from)
                 break
               case 'object':
-                if (options.slot_from == null)
+                if (options.slot_from == null) {
                   throw new TypeError(
                     'options.slot_from was null when showing search box'
                   )
+                }
 
                 iS = options.slot_from.name
                   ? options.node_to.findInputSlot(options.slot_from.name)
@@ -7615,10 +7502,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             }
             if (iS !== false && options.node_to.inputs[iS] !== undefined) {
               if (iS > -1) {
-                if (node == null)
+                if (node == null) {
                   throw new TypeError(
                     'options.slot_from was null when showing search box'
                   )
+                }
                 // try connection
                 options.node_to.connectByTypeOutput(
                   iS,
@@ -7666,9 +7554,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (that.onSearchBox) {
         const list = that.onSearchBox(helper, str, graphcanvas)
         if (list) {
-          for (const item of list) {
-            addResult(item)
-          }
+          for (const item of list) addResult(item)
         }
       } else {
         let c = 0
@@ -7713,9 +7599,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
                 inTypeOverride: sIn && sIn.value ? '*' : false,
                 outTypeOverride: sOut && sOut.value ? '*' : false
               })
-            ) {
+            )
               filtered_extra.push(i)
-            }
           }
           for (const extraItem of filtered_extra) {
             addResult(extraItem, 'generic_type')
@@ -7769,9 +7654,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             (!options.show_all_if_empty || str) &&
             !type.toLowerCase().includes(str) &&
             (!ctor.title || !ctor.title.toLowerCase().includes(str))
-          ) {
+          )
             return false
-          }
 
           // filter by slot IN, OUT types
           if (options.do_type_filter && !opts.skipFilter) {
@@ -7819,9 +7703,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
         help.dataset['type'] = escape(type)
         help.className = 'litegraph lite-search-item'
-        if (className) {
-          help.className += ` ${className}`
-        }
+        if (className) help.className += ` ${className}`
+
         help.addEventListener('click', function () {
           select(unescape(String(this.dataset['type'])))
         })
@@ -7900,9 +7783,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           node.properties[property] !== undefined
             ? node.properties[property]
             : ''
-        if (type !== 'string') {
-          v = JSON.stringify(v)
-        }
+        if (type !== 'string') v = JSON.stringify(v)
 
         // @ts-expect-error HTMLInputElement.value expects string but v can be other types
         input.value = v
@@ -7940,21 +7821,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         info?.values &&
         typeof info.values === 'object' &&
         info.values[value] != undefined
-      ) {
+      )
         value = info.values[value]
-      }
 
-      if (typeof node.properties[property] == 'number') {
-        value = Number(value)
-      }
+      if (typeof node.properties[property] == 'number') value = Number(value)
+
       if (type == 'array' || type == 'object') {
         // @ts-expect-error JSON.parse doesn't care.
         value = JSON.parse(value)
       }
       node.properties[property] = value
-      if (node.graph) {
-        node.graph.incrementVersion()
-      }
+      if (node.graph) node.graph.incrementVersion()
+
       node.onPropertyChanged?.(property, value)
       options.onclose?.()
       dialog.close()
@@ -8022,11 +7900,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         for (const iX of aI) {
           iX.addEventListener('keydown', function (e) {
             dialog.modified()
-            if (e.key == 'Escape') {
-              dialog.close()
-            } else if (e.key != 'Enter') {
-              return
-            }
+            if (e.key == 'Escape') dialog.close()
+            else if (e.key != 'Enter') return
+
             e.preventDefault()
             e.stopPropagation()
           })
@@ -8048,9 +7924,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     })
     dialog.addEventListener('mouseenter', function () {
-      if (options.closeOnLeave || LiteGraph.dialog_close_on_mouse_leave) {
+      if (options.closeOnLeave || LiteGraph.dialog_close_on_mouse_leave)
         if (dialogCloseTimer) clearTimeout(dialogCloseTimer)
-      }
     })
     const selInDia = dialog.querySelectorAll('select')
     // if filtering, check focus changed to comboboxes and prevent closing
@@ -8080,12 +7955,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       "<div class='dialog-header'><span class='dialog-title'></span></div><div class='dialog-content'></div><div style='display:none;' class='dialog-alt-content'></div><div class='dialog-footer'></div>"
     root.header = root.querySelector('.dialog-header')!
 
-    if (options.width)
+    if (options.width) {
       root.style.width =
         options.width + (typeof options.width === 'number' ? 'px' : '')
-    if (options.height)
+    }
+    if (options.height) {
       root.style.height =
         options.height + (typeof options.height === 'number' ? 'px' : '')
+    }
     if (options.closable) {
       const close = document.createElement('span')
       close.innerHTML = '&#10005;'
@@ -8125,11 +8002,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     root.toggleFooterVisibility = function (force?: boolean) {
       let vTo: string
-      if (force !== undefined) {
-        vTo = force ? 'block' : 'none'
-      } else {
-        vTo = root.footer.style.display != 'block' ? 'block' : 'none'
-      }
+      if (force !== undefined) vTo = force ? 'block' : 'none'
+      else vTo = root.footer.style.display != 'block' ? 'block' : 'none'
+
       root.footer.style.display = vTo
     }
 
@@ -8322,10 +8197,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this.graph.beforeChange(node)
         switch (name) {
           case 'Title':
-            if (typeof value !== 'string')
+            if (typeof value !== 'string') {
               throw new TypeError(
                 'Attempting to set title to non-string value.'
               )
+            }
 
             node.title = value
             break
@@ -8334,18 +8210,17 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               throw new TypeError('Attempting to set mode to non-string value.')
 
             const kV = Object.values(LiteGraph.NODE_MODES).indexOf(value)
-            if (kV !== -1 && LiteGraph.NODE_MODES[kV]) {
-              node.changeMode(kV)
-            } else {
-              console.warn(`unexpected mode: ${value}`)
-            }
+            if (kV !== -1 && LiteGraph.NODE_MODES[kV]) node.changeMode(kV)
+            else console.warn(`unexpected mode: ${value}`)
+
             break
           }
           case 'Color':
-            if (typeof value !== 'string')
+            if (typeof value !== 'string') {
               throw new TypeError(
                 'Attempting to set colour to non-string value.'
               )
+            }
 
             if (LGraphCanvas.node_colors[value]) {
               node.color = LGraphCanvas.node_colors[value].color
@@ -8677,19 +8552,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (node.getSlotMenuOptions) {
           menu_info = node.getSlotMenuOptions(slot)
         } else {
-          if (slot.output?.links?.length || slot.input?.link != null) {
+          if (slot.output?.links?.length || slot.input?.link != null)
             menu_info.push({ content: 'Disconnect Links', slot })
-          }
 
           const _slot = slot.input || slot.output
-          if (!_slot)
+          if (!_slot) {
             throw new TypeError(
               'Both in put and output slots were null when processing context menu.'
             )
-
-          if (!_slot.nameLocked && !('link' in _slot && _slot.widget)) {
-            menu_info.push({ content: 'Rename Slot', slot })
           }
+
+          if (!_slot.nameLocked && !('link' in _slot && _slot.widget))
+            menu_info.push({ content: 'Rename Slot', slot })
 
           if (_slot.removable) {
             menu_info.push(null)
@@ -8700,9 +8574,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             )
           }
 
-          if (node.getExtraSlotMenuOptions) {
+          if (node.getExtraSlotMenuOptions)
             menu_info.push(...node.getExtraSlotMenuOptions(slot))
-          }
         }
         // @ts-expect-error Slot type can be number and has number checks
         options.title = (slot.input ? slot.input.type : slot.output.type) || '*'
@@ -8789,47 +8662,47 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (!node?.graph) throw new NullGraphError()
 
         const info = v.slot
-        if (!info)
+        if (!info) {
           throw new TypeError(
             'Found-slot info was null when processing context menu.'
           )
+        }
 
         node.graph.beforeChange()
-        if (info.input) {
-          node.removeInput(info.slot)
-        } else if (info.output) {
-          node.removeOutput(info.slot)
-        }
+        if (info.input) node.removeInput(info.slot)
+        else if (info.output) node.removeOutput(info.slot)
+
         node.graph.afterChange()
         return
       } else if (v.content == 'Disconnect Links') {
         if (!node?.graph) throw new NullGraphError()
 
         const info = v.slot
-        if (!info)
+        if (!info) {
           throw new TypeError(
             'Found-slot info was null when processing context menu.'
           )
+        }
 
         node.graph.beforeChange()
-        if (info.output) {
-          node.disconnectOutput(info.slot)
-        } else if (info.input) {
-          node.disconnectInput(info.slot, true)
-        }
+        if (info.output) node.disconnectOutput(info.slot)
+        else if (info.input) node.disconnectInput(info.slot, true)
+
         node.graph.afterChange()
         return
       } else if (v.content == 'Rename Slot') {
-        if (!node)
+        if (!node) {
           throw new TypeError(
             '`node` was null when processing the context menu.'
           )
+        }
 
         const info = v.slot
-        if (!info)
+        if (!info) {
           throw new TypeError(
             'Found-slot info was null when processing context menu.'
           )
+        }
 
         const slot_info = info.input
           ? node.getInputInfo(info.slot)
@@ -8837,27 +8710,26 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const dialog = createDialog(options)
 
         const input = dialog.querySelector('input')
-        if (input && slot_info) {
-          input.value = slot_info.label || ''
-        }
+        if (input && slot_info) input.value = slot_info.label || ''
+
         const inner = function () {
           if (!node.graph) throw new NullGraphError()
 
           node.graph.beforeChange()
           if (input?.value) {
-            if (slot_info) {
-              slot_info.label = input.value
-            }
+            if (slot_info) slot_info.label = input.value
+
             setDirty()
           }
           dialog.close()
           node.graph.afterChange()
         }
         dialog.querySelector('button')?.addEventListener('click', inner)
-        if (!input)
+        if (!input) {
           throw new TypeError(
             'Input element was null when processing context menu.'
           )
+        }
 
         input.addEventListener('keydown', function (e) {
           dialog.is_modified = true
@@ -8896,10 +8768,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       ? Array.from(this.selectedItems)
       : this.positionableItems
     const bounds = createBounds(items)
-    if (!bounds)
+    if (!bounds) {
       throw new TypeError(
         'Attempted to fit to view but could not calculate bounds.'
       )
+    }
 
     const setDirty = () => this.setDirty(true, true)
     this.ds.animateToBounds(bounds, setDirty, options)
@@ -8939,9 +8812,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     for (const item of items) {
       if (item instanceof LGraphGroup) {
         for (const child of item._children) {
-          if (child instanceof LGraphNode) {
-            nodesInGroups.add(child)
-          }
+          if (child instanceof LGraphNode) nodesInGroups.add(child)
         }
       }
     }
@@ -8986,9 +8857,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       const isNode = item instanceof LGraphNode
       if (isNode) {
         const node = item as LGraphNode
-        if (nodesInMovingGroups.has(node)) {
-          continue
-        }
+        if (nodesInMovingGroups.has(node)) continue
+
         nodesToMove.push({
           node,
           newPos: this.calculateNewPosition(node, deltaX, deltaY)

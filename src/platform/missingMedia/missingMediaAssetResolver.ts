@@ -41,11 +41,8 @@ export async function resolveMissingMediaAssetSources({
 
   const controller = new AbortController()
   const abortFromCaller = () => controller.abort(signal?.reason)
-  if (signal?.aborted) {
-    abortFromCaller()
-  } else {
-    signal?.addEventListener('abort', abortFromCaller, { once: true })
-  }
+  if (signal?.aborted) abortFromCaller()
+  else signal?.addEventListener('abort', abortFromCaller, { once: true })
 
   try {
     const [inputAssets, generatedAssets] = await Promise.all([
@@ -89,9 +86,8 @@ export function getAssetDetectionNames(
   addPathDetectionNames(names, asset.name, options)
 
   const subfolder = asset.user_metadata?.subfolder
-  if (typeof subfolder === 'string' && subfolder) {
+  if (typeof subfolder === 'string' && subfolder)
     addSubfolderPathDetectionNames(names, subfolder, asset.name, options)
-  }
 
   return Array.from(names)
 }
@@ -151,9 +147,8 @@ async function fetchCloudGeneratedAssets(
     if (
       !assetPage.has_more ||
       hasResolvedAllTargetNames(targetNames, foundTargetNames)
-    ) {
+    )
       return assets
-    }
 
     offset += batch.length
   }
@@ -204,9 +199,8 @@ async function fetchGeneratedHistoryAssets(
       historyPage.jobs.length === 0 ||
       newJobCount === 0 ||
       hasResolvedAllTargetNames(targetNames, foundTargetNames)
-    ) {
+    )
       return assets
-    }
 
     offset = requestedOffset + historyPage.jobs.length
   }
@@ -230,9 +224,7 @@ function addPathDetectionNames(
   options: MediaPathDetectionOptions
 ) {
   if (!value) return
-  for (const name of getMediaPathDetectionNames(value, options)) {
-    names.add(name)
-  }
+  for (const name of getMediaPathDetectionNames(value, options)) names.add(name)
 }
 
 function addSubfolderPathDetectionNames(
@@ -244,9 +236,8 @@ function addSubfolderPathDetectionNames(
   if (!value) return
 
   const filePath = joinFilePath(subfolder, value)
-  for (const path of getFilePathSeparatorVariants(filePath)) {
+  for (const path of getFilePathSeparatorVariants(filePath))
     addPathDetectionNames(names, path, options)
-  }
 }
 
 function rememberResolvedTargetNames(
@@ -257,9 +248,8 @@ function rememberResolvedTargetNames(
 ) {
   if (targetNames.size === 0) return
 
-  for (const name of getAssetDetectionNames(asset, options)) {
+  for (const name of getAssetDetectionNames(asset, options))
     if (targetNames.has(name)) foundTargetNames.add(name)
-  }
 }
 
 function hasResolvedAllTargetNames(

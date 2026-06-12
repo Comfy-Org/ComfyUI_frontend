@@ -92,9 +92,8 @@ const MOCK_NODE = { id: 'node', type: 'Load3D' }
 
 function renderLoad3D(options: RenderOptions = {}) {
   const stub = buildLoad3dStub()
-  if (options.stateOverrides) {
-    Object.assign(stub, options.stateOverrides)
-  }
+  if (options.stateOverrides) Object.assign(stub, options.stateOverrides)
+
   load3dState.current = stub
 
   settingGetMock.mockImplementation((key: string) =>

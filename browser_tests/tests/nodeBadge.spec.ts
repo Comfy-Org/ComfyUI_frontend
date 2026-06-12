@@ -19,9 +19,8 @@ test.describe('Node Badge', { tag: ['@screenshot', '@smoke', '@node'] }, () => {
       const graph = app.graph
       const nodes = graph.nodes
 
-      for (const node of nodes) {
+      for (const node of nodes)
         node.badges = [new LGraphBadge({ text: 'Test Badge' })]
-      }
 
       graph.setDirtyCanvas(true, true)
     })

@@ -56,9 +56,8 @@ function addLinkedNestedSubgraphNode(
   }
   inputSlot.connect(input, innerSubgraphNode)
 
-  if (input.link == null) {
+  if (input.link == null)
     throw new Error(`Expected link to be created for input ${linkedInputName}`)
-  }
 
   return { innerSubgraphNode }
 }

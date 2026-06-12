@@ -24,9 +24,9 @@ export const useReleaseStore = defineStore('release', () => {
   const settingStore = useSettingStore()
 
   const currentVersion = computed(() => {
-    if (isCloud) {
+    if (isCloud)
       return systemStatsStore?.systemStats?.system?.cloud_version ?? ''
-    }
+
     return systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
   })
 
@@ -60,9 +60,9 @@ export const useReleaseStore = defineStore('release', () => {
     releaseVersion: string,
     currentVer: string
   ): number => {
-    if (valid(releaseVersion) && valid(currentVer)) {
+    if (valid(releaseVersion) && valid(currentVer))
       return compare(releaseVersion, currentVer)
-    }
+
     // Non-semver (e.g. git hash): assume different = newer
     return releaseVersion === currentVer ? 0 : 1
   }
@@ -94,31 +94,22 @@ export const useReleaseStore = defineStore('release', () => {
   // Show toast if needed
   const shouldShowToast = computed(() => {
     // Only show on desktop version
-    if (!isDesktop || isCloud) {
-      return false
-    }
+    if (!isDesktop || isCloud) return false
 
     // Skip if notifications are disabled
-    if (!showVersionUpdates.value) {
-      return false
-    }
+    if (!showVersionUpdates.value) return false
 
-    if (!isNewVersionAvailable.value) {
-      return false
-    }
+    if (!isNewVersionAvailable.value) return false
 
     // Skip if low attention
-    if (!hasMediumOrHighAttention.value) {
-      return false
-    }
+    if (!hasMediumOrHighAttention.value) return false
 
     // Skip if user already skipped or changelog seen
     if (
       releaseVersion.value === recentRelease.value?.version &&
       ['skipped', 'changelog seen'].includes(releaseStatus.value)
-    ) {
+    )
       return false
-    }
 
     return true
   })
@@ -126,19 +117,13 @@ export const useReleaseStore = defineStore('release', () => {
   // Show red-dot indicator
   const shouldShowRedDot = computed(() => {
     // Only show on desktop version
-    if (!isDesktop || isCloud) {
-      return false
-    }
+    if (!isDesktop || isCloud) return false
 
     // Skip if notifications are disabled
-    if (!showVersionUpdates.value) {
-      return false
-    }
+    if (!showVersionUpdates.value) return false
 
     // Already latest → no dot
-    if (!isNewVersionAvailable.value) {
-      return false
-    }
+    if (!isNewVersionAvailable.value) return false
 
     const { version } = recentRelease.value
 
@@ -146,9 +131,8 @@ export const useReleaseStore = defineStore('release', () => {
     if (
       releaseVersion.value === version &&
       releaseStatus.value === 'changelog seen'
-    ) {
+    )
       return false
-    }
 
     // Attention medium / high (levels 2 & 3)
     if (hasMediumOrHighAttention.value) {
@@ -162,39 +146,29 @@ export const useReleaseStore = defineStore('release', () => {
       releaseStatus.value === 'skipped' &&
       releaseTimestamp.value &&
       Date.now() - releaseTimestamp.value >= THREE_DAYS_MS
-    ) {
+    )
       return false
-    }
 
     // Not skipped → show
     return true
   })
 
   const shouldShowPopup = computed(() => {
-    if (!isDesktop && !isCloud) {
-      return false
-    }
+    if (!isDesktop && !isCloud) return false
 
-    if (!showVersionUpdates.value) {
-      return false
-    }
+    if (!showVersionUpdates.value) return false
 
-    if (!recentRelease.value) {
-      return false
-    }
+    if (!recentRelease.value) return false
 
     // Skip version check if current version isn't semver (e.g. git hash)
     const skipVersionCheck = !valid(currentVersion.value)
-    if (!skipVersionCheck && !isLatestVersion.value) {
-      return false
-    }
+    if (!skipVersionCheck && !isLatestVersion.value) return false
 
     if (
       releaseVersion.value === recentRelease.value.version &&
       releaseStatus.value === "what's new seen"
-    ) {
+    )
       return false
-    }
 
     return true
   })
@@ -204,9 +178,8 @@ export const useReleaseStore = defineStore('release', () => {
     if (
       version !== recentRelease.value?.version ||
       releaseStatus.value === 'changelog seen'
-    ) {
+    )
       return
-    }
 
     await settingStore.setMany({
       'Comfy.Release.Version': version,
@@ -216,9 +189,7 @@ export const useReleaseStore = defineStore('release', () => {
   }
 
   async function handleShowChangelog(version: string): Promise<void> {
-    if (version !== recentRelease.value?.version) {
-      return
-    }
+    if (version !== recentRelease.value?.version) return
 
     await settingStore.setMany({
       'Comfy.Release.Version': version,
@@ -228,9 +199,7 @@ export const useReleaseStore = defineStore('release', () => {
   }
 
   async function handleWhatsNewSeen(version: string): Promise<void> {
-    if (version !== recentRelease.value?.version) {
-      return
-    }
+    if (version !== recentRelease.value?.version) return
 
     await settingStore.setMany({
       'Comfy.Release.Version': version,
@@ -241,30 +210,25 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Fetch releases from API
   async function fetchReleases(): Promise<void> {
-    if (isLoading.value) {
-      return
-    }
+    if (isLoading.value) return
 
-    if (!isCloud && !showVersionUpdates.value) {
-      return
-    }
+    if (!isCloud && !showVersionUpdates.value) return
 
     // Skip fetching if API nodes are disabled via argv
     if (
       systemStatsStore.systemStats?.system?.argv?.includes(
         '--disable-api-nodes'
       )
-    ) {
+    )
       return
-    }
+
     isLoading.value = true
     error.value = null
 
     try {
       // Ensure system stats are loaded
-      if (!systemStatsStore.systemStats) {
+      if (!systemStatsStore.systemStats)
         await until(systemStatsStore.isInitialized)
-      }
 
       const fetchedReleases = await releaseService.getReleases(
         {
@@ -279,11 +243,9 @@ export const useReleaseStore = defineStore('release', () => {
         }
       )
 
-      if (fetchedReleases !== null) {
-        releases.value = fetchedReleases
-      } else if (releaseService.error.value) {
+      if (fetchedReleases !== null) releases.value = fetchedReleases
+      else if (releaseService.error.value)
         error.value = releaseService.error.value
-      }
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Unknown error occurred'

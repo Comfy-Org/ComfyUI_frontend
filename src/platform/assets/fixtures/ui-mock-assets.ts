@@ -75,9 +75,9 @@ function getRandomISODate(): string {
 function generateFakeAssetHash(): string {
   const chars = '0123456789abcdef'
   let hash = 'blake3:'
-  for (let i = 0; i < 64; i++) {
+  for (let i = 0; i < 64; i++)
     hash += chars[Math.floor(Math.random() * chars.length)]
-  }
+
   return hash
 }
 
@@ -153,9 +153,8 @@ export function createAssetWithSpecificExtension(
 ) {
   const asset = createMockAssets(1)[0]
   asset.name = `test-model.${extension}`
-  if (isImmutable !== undefined) {
-    asset.is_immutable = isImmutable
-  }
+  if (isImmutable !== undefined) asset.is_immutable = isImmutable
+
   return asset
 }
 

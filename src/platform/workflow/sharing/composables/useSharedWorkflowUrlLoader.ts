@@ -60,9 +60,7 @@ export function useSharedWorkflowUrlLoader() {
       route.query
     )
 
-    if (mergedQuery) {
-      await router.replace({ query: mergedQuery })
-    }
+    if (mergedQuery) await router.replace({ query: mergedQuery })
 
     return mergedQuery ?? route.query
   }
@@ -124,9 +122,7 @@ export function useSharedWorkflowUrlLoader() {
     const query = await ensureShareQueryFromIntent()
     const shareParam = query.share
 
-    if (shareParam == null) {
-      return 'not-present'
-    }
+    if (shareParam == null) return 'not-present'
 
     if (typeof shareParam !== 'string') {
       clearShareIntent()

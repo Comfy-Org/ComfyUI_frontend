@@ -79,9 +79,8 @@ export function usePanAndZoom() {
       pan_offset.value
     )
 
-    if (!canvasContainer.value) {
-      canvasContainer.value = store.canvasContainer
-    }
+    if (!canvasContainer.value) canvasContainer.value = store.canvasContainer
+
     if (!canvasContainer.value) return
 
     Object.assign(canvasContainer.value.style, {
@@ -91,9 +90,8 @@ export function usePanAndZoom() {
       top: styles.containerTop
     })
 
-    if (!rgbCanvas.value) {
-      rgbCanvas.value = store.rgbCanvas
-    }
+    if (!rgbCanvas.value) rgbCanvas.value = store.rgbCanvas
+
     if (rgbCanvas.value) {
       if (
         rgbCanvas.value.width !== image.value.width ||
@@ -119,9 +117,7 @@ export function usePanAndZoom() {
   }
 
   const handlePanMove = async (event: PointerEvent): Promise<void> => {
-    if (mouseDownPoint.value === null) {
-      throw new Error('mouseDownPoint is null')
-    }
+    if (mouseDownPoint.value === null) throw new Error('mouseDownPoint is null')
 
     pan_offset.value = calculateDragPan(
       mouseDownPoint.value,
@@ -203,9 +199,8 @@ export function usePanAndZoom() {
         y: pan_offset.value.y + midpoint.y - lastTouchMidPoint.value.y
       }
 
-      if (!maskCanvas.value) {
-        maskCanvas.value = store.maskCanvas
-      }
+      if (!maskCanvas.value) maskCanvas.value = store.maskCanvas
+
       if (!maskCanvas.value) return
 
       const rect = maskCanvas.value.getBoundingClientRect()
@@ -247,9 +242,8 @@ export function usePanAndZoom() {
   const zoom = async (event: WheelEvent): Promise<void> => {
     const cursorPosition = { x: event.clientX, y: event.clientY }
 
-    if (!maskCanvas.value) {
-      maskCanvas.value = store.maskCanvas
-    }
+    if (!maskCanvas.value) maskCanvas.value = store.maskCanvas
+
     if (!maskCanvas.value) return
 
     const rect = maskCanvas.value.getBoundingClientRect()
@@ -329,9 +323,7 @@ export function usePanAndZoom() {
       const interpolatedRatio = startZoom + (1.0 - startZoom) * eased
       store.displayZoomRatio = interpolatedRatio
 
-      if (progress < 1) {
-        requestAnimationFrame(animate)
-      }
+      if (progress < 1) requestAnimationFrame(animate)
     }
 
     requestAnimationFrame(animate)
@@ -359,9 +351,7 @@ export function usePanAndZoom() {
       sidePanelWidth
     })
 
-    if (image.value === null) {
-      image.value = img
-    }
+    if (image.value === null) image.value = img
 
     imageRootWidth.value = fitResult.fittedWidth
     imageRootHeight.value = fitResult.fittedHeight
@@ -383,16 +373,13 @@ export function usePanAndZoom() {
   )
 
   const addPenPointerId = (pointerId: number): void => {
-    if (!penPointerIdList.value.includes(pointerId)) {
+    if (!penPointerIdList.value.includes(pointerId))
       penPointerIdList.value.push(pointerId)
-    }
   }
 
   const removePenPointerId = (pointerId: number): void => {
     const index = penPointerIdList.value.indexOf(pointerId)
-    if (index !== -1) {
-      penPointerIdList.value.splice(index, 1)
-    }
+    if (index !== -1) penPointerIdList.value.splice(index, 1)
   }
 
   return {

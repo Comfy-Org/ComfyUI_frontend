@@ -19,9 +19,7 @@ export const installPreservedQueryTracker = (
     trackedDefinitions.forEach(({ namespace, keys }) => {
       hydratePreservedQuery(namespace)
       const shouldCapture = keys.some((key) => queryKeys.has(key))
-      if (shouldCapture) {
-        capturePreservedQuery(namespace, to.query, keys)
-      }
+      if (shouldCapture) capturePreservedQuery(namespace, to.query, keys)
     })
 
     next()

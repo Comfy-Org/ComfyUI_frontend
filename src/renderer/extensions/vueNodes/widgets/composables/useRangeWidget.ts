@@ -28,9 +28,8 @@ export const useRangeWidget = (): ComfyWidgetConstructorV2 => {
       options
     )
 
-    if (rawWidget.type !== 'range') {
+    if (rawWidget.type !== 'range')
       throw new Error(`Unexpected widget type: ${rawWidget.type}`)
-    }
 
     return rawWidget as IRangeWidget
   }

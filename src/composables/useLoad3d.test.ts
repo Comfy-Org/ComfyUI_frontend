@@ -889,9 +889,8 @@ describe('useLoad3d', () => {
 
       vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
         (event: string, handler: unknown) => {
-          if (event === 'materialModeChange') {
+          if (event === 'materialModeChange')
             materialModeHandler = handler as (mode: string) => void
-          }
         }
       )
 
@@ -911,11 +910,10 @@ describe('useLoad3d', () => {
 
       vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
         (event: string, handler: unknown) => {
-          if (event === 'modelLoadingStart') {
+          if (event === 'modelLoadingStart')
             modelLoadingStartHandler = handler as () => void
-          } else if (event === 'modelLoadingEnd') {
+          else if (event === 'modelLoadingEnd')
             modelLoadingEndHandler = handler as () => void
-          }
         }
       )
 
@@ -938,9 +936,8 @@ describe('useLoad3d', () => {
 
       vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
         (event: string, handler: unknown) => {
-          if (event === 'recordingStatusChange') {
+          if (event === 'recordingStatusChange')
             recordingStatusHandler = handler as (status: boolean) => void
-          }
         }
       )
 
@@ -1819,9 +1816,8 @@ describe('useLoad3d', () => {
       let cameraChangedHandler: ((state: unknown) => void) | undefined
       vi.mocked(mockLoad3d.addEventListener!).mockImplementation(
         (event: string, handler: unknown) => {
-          if (event === 'cameraChanged') {
+          if (event === 'cameraChanged')
             cameraChangedHandler = handler as (state: unknown) => void
-          }
         }
       )
 

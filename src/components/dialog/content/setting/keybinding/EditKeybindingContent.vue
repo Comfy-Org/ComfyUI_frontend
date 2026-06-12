@@ -48,9 +48,9 @@ const { dialogState, onUpdateCombo, existingKeybindingOnCombo } = defineProps<{
 }>()
 
 function captureKeybinding(event: KeyboardEvent) {
-  if (!event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
+  if (!event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey)
     if (event.key === 'Escape') return
-  }
+
   onUpdateCombo(KeyComboImpl.fromEvent(event))
 }
 </script>

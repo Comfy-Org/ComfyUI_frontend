@@ -89,15 +89,14 @@ export function useMediaAssetActions() {
     if (assetType === 'output') {
       const jobId =
         getOutputAssetMetadata(asset.user_metadata)?.jobId || asset.id
-      if (!jobId) {
-        throw new Error('Unable to extract job ID from asset')
-      }
+      if (!jobId) throw new Error('Unable to extract job ID from asset')
+
       await api.deleteItem('history', jobId)
     } else {
       // Input assets can only be deleted in cloud environment
-      if (!isCloud) {
+      if (!isCloud)
         throw new Error(t('mediaAsset.deletingImportedFilesCloudOnly'))
-      }
+
       await assetService.deleteAsset(asset.id)
     }
   }
@@ -161,9 +160,8 @@ export function useMediaAssetActions() {
         if (getAssetType(asset) === 'output') {
           const metadata = getOutputAssetMetadata(asset.user_metadata)
           const jobId = metadata?.jobId || asset.id
-          if (!jobIds.includes(jobId)) {
-            jobIds.push(jobId)
-          }
+          if (!jobIds.includes(jobId)) jobIds.push(jobId)
+
           // Only add name filters when outputCount is unknown.
           // When outputCount is set, the asset is a job-level selection
           // from the gallery and the user wants all outputs for that job.
@@ -177,12 +175,11 @@ export function useMediaAssetActions() {
           }
 
           if (metadata?.jobId && asset.name && metadata.outputCount == null) {
-            if (!jobAssetNameFilters[metadata.jobId]) {
+            if (!jobAssetNameFilters[metadata.jobId])
               jobAssetNameFilters[metadata.jobId] = []
-            }
-            if (!jobAssetNameFilters[metadata.jobId].includes(asset.name)) {
+
+            if (!jobAssetNameFilters[metadata.jobId].includes(asset.name))
               jobAssetNameFilters[metadata.jobId].push(asset.name)
-            }
           }
         } else {
           assetIds.push(asset.id)
@@ -516,11 +513,8 @@ export function useMediaAssetActions() {
           filename
         )
 
-        if (result.success) {
-          succeeded++
-        } else {
-          failed++
-        }
+        if (result.success) succeeded++
+        else failed++
       } catch {
         failed++
       }
@@ -570,11 +564,8 @@ export function useMediaAssetActions() {
           filename
         )
 
-        if (result.success) {
-          succeeded++
-        } else if (!result.cancelled) {
-          failed++
-        }
+        if (result.success) succeeded++
+        else if (!result.cancelled) failed++
       } catch {
         failed++
       }
@@ -677,21 +668,17 @@ export function useMediaAssetActions() {
                 (a) => getAssetType(a) === 'input'
               )
 
-              if (hasOutputAssets) {
-                await assetsStore.updateHistory()
-              }
-              if (hasInputAssets) {
-                await assetsStore.updateInputs()
-              }
+              if (hasOutputAssets) await assetsStore.updateHistory()
+
+              if (hasInputAssets) await assetsStore.updateInputs()
 
               const rootGraph = app.rootGraph
               if (rootGraph) {
                 const deletedValues = new Set<string>()
                 assetArray.forEach((asset, index) => {
                   if (results[index].status !== 'fulfilled') return
-                  for (const value of widgetValueVariantsForAsset(asset)) {
+                  for (const value of widgetValueVariantsForAsset(asset))
                     deletedValues.add(value)
-                  }
                 })
                 if (deletedValues.size > 0) {
                   const nodeOutputStore = useNodeOutputStore()
@@ -715,15 +702,12 @@ export function useMediaAssetActions() {
               for (const asset of assetArray) {
                 for (const tag of asset.tags ?? []) {
                   if (EXCLUDED_TAGS.has(tag)) continue
-                  if (assetsStore.hasCategory(tag)) {
-                    modelCategories.add(tag)
-                  }
+                  if (assetsStore.hasCategory(tag)) modelCategories.add(tag)
                 }
               }
 
-              for (const category of modelCategories) {
+              for (const category of modelCategories)
                 assetsStore.invalidateModelsForCategory(category)
-              }
 
               // Show appropriate feedback based on results
               if (failed.length === 0) {

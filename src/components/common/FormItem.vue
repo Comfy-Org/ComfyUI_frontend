@@ -86,9 +86,8 @@ function getFormAttrs(item: FormItem) {
 }
 
 function getFormComponent(item: FormItem): Component {
-  if (typeof item.type === 'function') {
-    return CustomFormValue
-  }
+  if (typeof item.type === 'function') return CustomFormValue
+
   switch (item.type) {
     case 'boolean':
       return ToggleSwitch

@@ -40,8 +40,8 @@ export const testI18n = createI18n({
 export function setViewport(viewport: { width: number; height: number }) {
   const happyDOM = (window as unknown as { happyDOM?: DetachedWindowAPI })
     .happyDOM
-  if (!happyDOM) {
+  if (!happyDOM)
     throw new Error('window.happyDOM is unavailable to set viewport')
-  }
+
   happyDOM.setViewport(viewport)
 }

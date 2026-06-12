@@ -31,9 +31,8 @@ const { t } = useI18n()
 const createPayload = (
   uninstallItem: NodePack
 ): ManagerComponents['schemas']['ManagerPackInfo'] => {
-  if (!uninstallItem.id) {
+  if (!uninstallItem.id)
     throw new Error('Node ID is required for uninstallation')
-  }
 
   return {
     id: uninstallItem.id,

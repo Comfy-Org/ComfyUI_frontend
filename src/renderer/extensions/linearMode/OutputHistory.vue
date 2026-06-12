@@ -61,9 +61,9 @@ const visibleHistory = computed(() =>
 
 const selectableItems = computed(() => {
   const items: SelectionValue[] = []
-  if (mayBeActiveWorkflowPending.value) {
+  if (mayBeActiveWorkflowPending.value)
     items.push({ id: 'slot:pending', kind: 'inProgress', itemId: 'pending' })
-  }
+
   for (const item of store.activeWorkflowInProgressItems) {
     items.push({
       id: `slot:${item.id}`,
@@ -157,13 +157,9 @@ watch(
   (path) => {
     if (!path) return
     const inProgress = store.activeWorkflowInProgressItems
-    if (inProgress.length > 0) {
-      store.selectAsLatest(`slot:${inProgress[0].id}`)
-    } else if (hasOutputs.value) {
-      selectFirstHistory()
-    } else {
-      store.selectAsLatest(null)
-    }
+    if (inProgress.length > 0) store.selectAsLatest(`slot:${inProgress[0].id}`)
+    else if (hasOutputs.value) selectFirstHistory()
+    else store.selectAsLatest(null)
   },
   { immediate: true }
 )
@@ -190,9 +186,8 @@ watch(
     }
 
     const wasFirst = sv.assetId === oldAssets[0]?.id
-    if (wasFirst || !newAssets.some((a) => a.id === sv.assetId)) {
+    if (wasFirst || !newAssets.some((a) => a.id === sv.assetId))
       if (hasOutputs.value) selectFirstHistory()
-    }
   }
 )
 

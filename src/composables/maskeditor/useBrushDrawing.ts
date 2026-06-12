@@ -246,11 +246,8 @@ export function useBrushDrawing(initialSettings?: {
         if (!isDrawing.value) return
         try {
           initShape(CompositionOperation.SourceOver)
-          if (gpu.hasRenderer.value) {
-            await gpu.gpuDrawPoint(coords_canvas)
-          } else {
-            drawShape(coords_canvas)
-          }
+          if (gpu.hasRenderer.value) await gpu.gpuDrawPoint(coords_canvas)
+          else drawShape(coords_canvas)
         } catch (error) {
           console.error('[useBrushDrawing] Drawing error:', error)
         }
@@ -259,11 +256,10 @@ export function useBrushDrawing(initialSettings?: {
       requestAnimationFrame(async () => {
         if (!isDrawing.value) return
         try {
-          if (currentTool === 'eraser' || event.buttons === 2) {
+          if (currentTool === 'eraser' || event.buttons === 2)
             initShape(CompositionOperation.DestinationOut)
-          } else {
-            initShape(CompositionOperation.SourceOver)
-          }
+          else initShape(CompositionOperation.SourceOver)
+
           await drawWithBetterSmoothing(coords_canvas)
         } catch (error) {
           console.error('[useBrushDrawing] Drawing error:', error)
@@ -332,14 +328,11 @@ export function useBrushDrawing(initialSettings?: {
     gpu.clearPreview()
 
     // Restore canvas visibility
-    if (isRgb && store.rgbCanvas) {
-      store.rgbCanvas.style.opacity = '1'
-    } else if (!isRgb && store.maskCanvas) {
+    if (isRgb && store.rgbCanvas) store.rgbCanvas.style.opacity = '1'
+    else if (!isRgb && store.maskCanvas)
       store.maskCanvas.style.opacity = String(store.maskOpacity)
-    }
-    if (gpu.previewCanvas.value) {
-      gpu.previewCanvas.value.style.opacity = '1'
-    }
+
+    if (gpu.previewCanvas.value) gpu.previewCanvas.value.style.opacity = '1'
   }
 
   return {

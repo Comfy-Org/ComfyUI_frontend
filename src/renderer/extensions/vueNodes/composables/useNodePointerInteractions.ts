@@ -59,9 +59,7 @@ export function useNodePointerInteractions(
     }
 
     // IMPORTANT: Read from actual LGraphNode to get correct state
-    if (nodeManager.value?.getNode(nodeId)?.flags?.pinned) {
-      return
-    }
+    if (nodeManager.value?.getNode(nodeId)?.flags?.pinned) return
 
     dragGuard.recordStart(event)
 
@@ -76,9 +74,7 @@ export function useNodePointerInteractions(
 
     const nodeId = toValue(nodeIdRef)
 
-    if (nodeManager.value?.getNode(nodeId)?.flags?.pinned) {
-      return
-    }
+    if (nodeManager.value?.getNode(nodeId)?.flags?.pinned) return
 
     const multiSelect = isMultiSelectKey(event)
 
@@ -102,9 +98,7 @@ export function useNodePointerInteractions(
       }
     }
 
-    if (layoutStore.isDraggingVueNodes.value) {
-      handleDrag(event, nodeId)
-    }
+    if (layoutStore.isDraggingVueNodes.value) handleDrag(event, nodeId)
   }
 
   function cleanupDragState() {
@@ -144,9 +138,7 @@ export function useNodePointerInteractions(
     if (hasDraggingStarted || wasDragging) {
       safeDragEnd(event)
 
-      if (wasDragging) {
-        return
-      }
+      if (wasDragging) return
     }
 
     // Skip selection handling for right-click (button 2) - context menu handles its own selection
@@ -155,9 +147,7 @@ export function useNodePointerInteractions(
     const multiSelect = isMultiSelectKey(event)
 
     const nodeId = toValue(nodeIdRef)
-    if (nodeId) {
-      toggleNodeSelectionAfterPointerUp(nodeId, multiSelect)
-    }
+    if (nodeId) toggleNodeSelectionAfterPointerUp(nodeId, multiSelect)
   }
 
   function onPointercancel(event: PointerEvent) {

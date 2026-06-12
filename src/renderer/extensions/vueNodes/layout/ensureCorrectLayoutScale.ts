@@ -76,9 +76,7 @@ export function ensureCorrectLayoutScale(
   ) => {
     if (LiteGraph.alwaysSnapToGrid) {
       const snapTo = graph.getSnapToGridSize?.()
-      if (snapTo) {
-        snapPoint(pos, snapTo, method)
-      }
+      if (snapTo) snapPoint(pos, snapTo, method)
     }
   }
 
@@ -112,18 +110,14 @@ export function ensureCorrectLayoutScale(
     applySnap(reroute.pos)
   }
 
-  for (const group of graph.groups) {
-    unprojectPosSize(group, anchor, graph)
-  }
+  for (const group of graph.groups) unprojectPosSize(group, anchor, graph)
 
   if ('inputNode' in graph && 'outputNode' in graph) {
     for (const ioNode of [
       graph.inputNode as SubgraphInputNode,
       graph.outputNode as SubgraphOutputNode
     ]) {
-      if (ioNode) {
-        unprojectPosSize(ioNode, anchor, graph)
-      }
+      if (ioNode) unprojectPosSize(ioNode, anchor, graph)
     }
   }
 

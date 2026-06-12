@@ -35,9 +35,8 @@ export const useIntWidget = () => {
     node: LGraphNode,
     inputSpec: InputSpec
   ) => {
-    if (!isIntInputSpec(inputSpec)) {
+    if (!isIntInputSpec(inputSpec))
       throw new Error(`Invalid input data: ${inputSpec}`)
-    }
 
     const settingStore = useSettingStore()
     const sliderEnabled = !settingStore.get('Comfy.DisableSliders')

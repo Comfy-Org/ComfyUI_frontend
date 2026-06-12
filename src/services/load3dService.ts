@@ -93,9 +93,9 @@ async function loadUseLoad3dViewer() {
 }
 
 async function loadSkeletonUtils() {
-  if (!cachedSkeletonUtils) {
+  if (!cachedSkeletonUtils)
     cachedSkeletonUtils = await import('three/examples/jsm/utils/SkeletonUtils')
-  }
+
   return cachedSkeletonUtils
 }
 
@@ -116,9 +116,8 @@ class Load3dService {
   private constructor() {}
 
   static getInstance(): Load3dService {
-    if (!Load3dService.instance) {
-      Load3dService.instance = new Load3dService()
-    }
+    if (!Load3dService.instance) Load3dService.instance = new Load3dService()
+
     return Load3dService.instance
   }
 
@@ -146,9 +145,7 @@ class Load3dService {
     const map = getNodeToLoad3dMapSync()
     if (!map) return null
     for (const [node, instance] of map) {
-      if (instance === load3d) {
-        return node
-      }
+      if (instance === load3d) return node
     }
     return null
   }
@@ -169,9 +166,7 @@ class Load3dService {
   clear() {
     const map = getNodeToLoad3dMapSync()
     if (!map) return
-    for (const [node] of map) {
-      this.removeLoad3d(node)
-    }
+    for (const [node] of map) this.removeLoad3d(node)
   }
 
   /**
@@ -196,9 +191,8 @@ class Load3dService {
     node: LGraphNode,
     useLoad3dViewer: T
   ): ReturnType<T> {
-    if (!viewerInstances.has(node.id)) {
+    if (!viewerInstances.has(node.id))
       viewerInstances.set(node.id, useLoad3dViewer(node))
-    }
 
     return viewerInstances.get(node.id) as ReturnType<T>
   }
@@ -206,9 +200,7 @@ class Load3dService {
   removeViewer(node: LGraphNode) {
     const viewer = viewerInstances.get(node.id)
 
-    if (viewer) {
-      viewer.cleanup()
-    }
+    if (viewer) viewer.cleanup()
 
     viewerInstances.delete(node.id)
   }
@@ -222,15 +214,11 @@ class Load3dService {
     if (sourceModel) {
       // Remove existing model from target scene before adding new one
       const existingModel = target.getModelManager().currentModel
-      if (existingModel) {
-        target.getSceneManager().scene.remove(existingModel)
-      }
+      if (existingModel) target.getSceneManager().scene.remove(existingModel)
 
       if (source.isSplatModel()) {
         const originalURL = source.modelManager.originalURL
-        if (originalURL) {
-          await target.loadModel(originalURL)
-        }
+        if (originalURL) await target.loadModel(originalURL)
       } else {
         // Use SkeletonUtils.clone for proper skeletal animation support
         const SkeletonUtils = await loadSkeletonUtils()
@@ -241,9 +229,8 @@ class Load3dService {
 
         const sourceOriginalModel = source.getModelManager().originalModel
 
-        if (sourceOriginalModel) {
+        if (sourceOriginalModel)
           target.getModelManager().originalModel = sourceOriginalModel
-        }
 
         target.getModelManager().materialMode =
           source.getModelManager().materialMode
@@ -285,9 +272,7 @@ class Load3dService {
         )
         const shouldEnable =
           gizmoWasEnabled || source.getGizmoManager().isEnabled()
-        if (shouldEnable) {
-          target.setGizmoEnabled(true)
-        }
+        if (shouldEnable) target.setGizmoEnabled(true)
 
         // Copy animation state
         if (source.hasAnimations()) {
@@ -318,9 +303,7 @@ class Load3dService {
         | SceneConfig
         | undefined
       const backgroundPath = sceneConfig?.backgroundImage
-      if (backgroundPath) {
-        await target.setBackgroundImage(backgroundPath)
-      }
+      if (backgroundPath) await target.setBackgroundImage(backgroundPath)
     } else {
       await target.setBackgroundImage('')
     }
@@ -329,9 +312,8 @@ class Load3dService {
       source.getLightingManager().lights[1]?.intensity || 1
     )
 
-    if (sourceCameraType === 'perspective') {
+    if (sourceCameraType === 'perspective')
       target.setFOV(source.getCameraManager().perspectiveCamera.fov)
-    }
   }
 
   handleViewportRefresh(load3d: Load3d | null) {
@@ -358,9 +340,7 @@ class Load3dService {
 
       // Sync configuration back to the node's UI
       const load3DNode = node as Load3DNode
-      if (load3DNode.syncLoad3dConfig) {
-        load3DNode.syncLoad3dConfig()
-      }
+      if (load3DNode.syncLoad3dConfig) load3DNode.syncLoad3dConfig()
     }
 
     useLoad3dService().removeViewer(node)

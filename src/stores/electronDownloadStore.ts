@@ -28,14 +28,10 @@ export const useElectronDownloadStore = defineStore('downloads', () => {
 
     const allDownloads = await DownloadManager.getAllDownloads()
 
-    for (const download of allDownloads) {
-      downloads.value.push(download)
-    }
+    for (const download of allDownloads) downloads.value.push(download)
 
     DownloadManager.onDownloadProgress((data) => {
-      if (!findByUrl(data.url)) {
-        downloads.value.push(data)
-      }
+      if (!findByUrl(data.url)) downloads.value.push(data)
 
       const download = findByUrl(data.url)
 

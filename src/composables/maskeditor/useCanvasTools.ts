@@ -177,9 +177,7 @@ export function useCanvasTools() {
     const width = canvas.width
     const height = canvas.height
 
-    if (startX < 0 || startX >= width || startY < 0 || startY >= height) {
-      return
-    }
+    if (startX < 0 || startX >= width || startY < 0 || startY >= height) return
 
     const imageData = ctx.getImageData(0, 0, width, height)
     const data = imageData.data
@@ -217,9 +215,8 @@ export function useCanvasTools() {
       }
     }
 
-    if (shouldProcessPixel(targetAlpha, targetAlpha, tolerance, isFillMode)) {
+    if (shouldProcessPixel(targetAlpha, targetAlpha, tolerance, isFillMode))
       stack.push([startX, startY])
-    }
 
     while (stack.length > 0) {
       const [x, y] = stack.pop()!
@@ -228,11 +225,8 @@ export function useCanvasTools() {
       if (visited[visitedIndex]) continue
 
       const currentAlpha = getPixelAlpha(data, x, y, width)
-      if (
-        !shouldProcessPixel(currentAlpha, targetAlpha, tolerance, isFillMode)
-      ) {
+      if (!shouldProcessPixel(currentAlpha, targetAlpha, tolerance, isFillMode))
         continue
-      }
 
       visited[visitedIndex] = 1
       setPixel(data, x, y, width, isFillMode ? fillOpacity : 0, maskColor)
@@ -241,9 +235,8 @@ export function useCanvasTools() {
         if (nx < 0 || nx >= width || ny < 0 || ny >= height) return
         if (!visited[ny * width + nx]) {
           const alpha = getPixelAlpha(data, nx, ny, width)
-          if (shouldProcessPixel(alpha, targetAlpha, tolerance, isFillMode)) {
+          if (shouldProcessPixel(alpha, targetAlpha, tolerance, isFillMode))
             stack.push([nx, ny])
-          }
         }
       }
 
@@ -301,9 +294,8 @@ export function useCanvasTools() {
               tolerance,
               method
             )
-          ) {
+          )
             setPixel(maskDataArray, x, y, width, selectOpacity, maskColor)
-          }
         }
         await new Promise((resolve) => setTimeout(resolve, 0))
       }
@@ -311,9 +303,8 @@ export function useCanvasTools() {
       const startX = Math.floor(point.x)
       const startY = Math.floor(point.y)
 
-      if (startX < 0 || startX >= width || startY < 0 || startY >= height) {
+      if (startX < 0 || startX >= width || startY < 0 || startY >= height)
         return
-      }
 
       const targetPixel = getPixelColor(imageDataArray, startX, startY, width)
       const stack: Array<[number, number]> = []
@@ -333,9 +324,8 @@ export function useCanvasTools() {
             tolerance,
             method
           )
-        ) {
+        )
           continue
-        }
 
         visited[visitedIndex] = 1
         setPixel(maskDataArray, x, y, width, selectOpacity, maskColor)
@@ -413,12 +403,12 @@ export function useCanvasTools() {
     const rgbCtx = store.rgbCtx
     const rgbCanvas = store.rgbCanvas
 
-    if (maskCtx && maskCanvas) {
+    if (maskCtx && maskCanvas)
       maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height)
-    }
-    if (rgbCtx && rgbCanvas) {
+
+    if (rgbCtx && rgbCanvas)
       rgbCtx.clearRect(0, 0, rgbCanvas.width, rgbCanvas.height)
-    }
+
     store.canvasHistory.saveState()
   }
 

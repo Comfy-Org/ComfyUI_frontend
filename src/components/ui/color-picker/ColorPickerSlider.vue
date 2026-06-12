@@ -25,9 +25,9 @@ const max = computed(() => (type === 'hue' ? 360 : 100))
 const fraction = computed(() => modelValue.value / max.value)
 
 const trackBackground = computed(() => {
-  if (type === 'hue') {
+  if (type === 'hue')
     return 'linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)'
-  }
+
   const rgb = hsbToRgb({ h: hue, s: saturation, b: brightness })
   const hex = rgbToHex(rgb)
   return `linear-gradient(to right, transparent, ${hex})`

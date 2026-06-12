@@ -45,9 +45,7 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
   const fuse = computed(() => new Fuse(assets.value, fuseOptions))
 
   const searchFiltered = computed(() => {
-    if (!debouncedSearchQuery.value.trim()) {
-      return assets.value
-    }
+    if (!debouncedSearchQuery.value.trim()) return assets.value
 
     const results = fuse.value.search(debouncedSearchQuery.value)
     return results.map((result) => result.item)
@@ -55,9 +53,7 @@ export function useMediaAssetFiltering(assets: Ref<AssetItem[]>) {
 
   const typeFiltered = computed(() => {
     // Apply media type filter
-    if (mediaTypeFilters.value.length === 0) {
-      return searchFiltered.value
-    }
+    if (mediaTypeFilters.value.length === 0) return searchFiltered.value
 
     return searchFiltered.value.filter((asset) => {
       const mediaType = getMediaTypeFromFilename(asset.name)

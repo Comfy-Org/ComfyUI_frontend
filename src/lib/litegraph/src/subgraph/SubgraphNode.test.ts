@@ -668,9 +668,7 @@ describe('SubgraphNode Edge Cases', () => {
     expect(flattened.length).toBe(5)
 
     // All flattened nodes should have proper path-based IDs
-    for (const dto of flattened) {
-      expect(dto.id).toMatch(/^\d+:\d+$/)
-    }
+    for (const dto of flattened) expect(dto.id).toMatch(/^\d+:\d+$/)
   })
 })
 
@@ -751,18 +749,14 @@ describe('SubgraphNode Cleanup', () => {
     }
 
     // All nodes should have 0 inputs
-    for (const node of removedNodes) {
-      expect(node.inputs.length).toBe(0)
-    }
+    for (const node of removedNodes) expect(node.inputs.length).toBe(0)
 
     // Trigger an event - no removed nodes should respond
     subgraph.addInput('test', 'number')
 
     // Without cleanup: all 3 removed nodes would have added an input
     // With cleanup: no nodes should have added an input
-    for (const node of removedNodes) {
-      expect(node.inputs.length).toBe(0) // Should stay 0 after cleanup
-    }
+    for (const node of removedNodes) expect(node.inputs.length).toBe(0) // Should stay 0 after cleanup
   })
 
   it('should clean up input listener controllers on removal', () => {

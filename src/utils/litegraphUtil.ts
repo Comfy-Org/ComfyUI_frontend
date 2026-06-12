@@ -46,9 +46,7 @@ export async function createNode(
   canvas: LGraphCanvas,
   name: string
 ): Promise<LGraphNode | null> {
-  if (!name) {
-    return null
-  }
+  if (!name) return null
 
   const {
     graph,
@@ -169,9 +167,7 @@ export function executeWidgetsCallback(
   options?: WidgetCallbackOptions
 ) {
   for (const node of nodes) {
-    for (const widget of node.widgets ?? []) {
-      widget[callbackName]?.(options)
-    }
+    for (const widget of node.widgets ?? []) widget[callbackName]?.(options)
   }
 }
 
@@ -250,9 +246,8 @@ export function fixLinkInputSlots(graph: LGraph) {
     }
 
     // Recursively fix links in subgraphs
-    if (node.isSubgraphNode?.() && node.subgraph) {
+    if (node.isSubgraphNode?.() && node.subgraph)
       fixLinkInputSlots(node.subgraph)
-    }
   }
 }
 
@@ -270,9 +265,7 @@ export function compressWidgetInputSlots(graph: ISerialisedGraph) {
     for (const [inputIndex, input] of node.inputs?.entries() ?? []) {
       if (input.link) {
         const link = graph.links.find((link) => link[0] === input.link)
-        if (link) {
-          link[4] = inputIndex
-        }
+        if (link) link[4] = inputIndex
       }
     }
   }

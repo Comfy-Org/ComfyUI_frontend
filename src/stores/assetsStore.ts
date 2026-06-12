@@ -36,9 +36,7 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
     }
   })
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch input files')
-  }
+  if (!response.ok) throw new Error('Failed to fetch input files')
 
   const filenames: string[] = await response.json()
   return filenames.map((name, index) =>
@@ -63,15 +61,11 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
   for (const job of historyItems) {
     // Only process completed jobs with preview output
-    if (job.status !== 'completed' || !job.preview_output) {
-      continue
-    }
+    if (job.status !== 'completed' || !job.preview_output) continue
 
     const task = new TaskItemImpl(job)
 
-    if (!task.previewOutput) {
-      continue
-    }
+    if (!task.previewOutput) continue
 
     const assetItem = mapTaskOutputToAssetItem(task, task.previewOutput)
 
@@ -103,11 +97,8 @@ export const useAssetsStore = defineStore('assets', () => {
   const deletingAssetIds = shallowReactive(new Set<string>())
 
   const setAssetDeleting = (assetId: string, isDeleting: boolean) => {
-    if (isDeleting) {
-      deletingAssetIds.add(assetId)
-    } else {
-      deletingAssetIds.delete(assetId)
-    }
+    if (isDeleting) deletingAssetIds.add(assetId)
+    else deletingAssetIds.delete(assetId)
   }
 
   const isAssetDeleting = (assetId: string): boolean => {
@@ -170,9 +161,8 @@ export const useAssetsStore = defineStore('assets', () => {
     if (loadMore) {
       // Filter out duplicates and insert in sorted order
       for (const asset of newAssets) {
-        if (loadedIds.has(asset.id)) {
-          continue // Skip duplicates
-        }
+        if (loadedIds.has(asset.id)) continue // Skip duplicates
+
         loadedIds.add(asset.id)
 
         // Find insertion index to maintain sorted order (newest first)
@@ -227,9 +217,7 @@ export const useAssetsStore = defineStore('assets', () => {
       console.error('Error fetching history assets:', err)
       historyError.value = err
       // Keep existing data when error occurs
-      if (!historyAssets.value.length) {
-        historyAssets.value = []
-      }
+      if (!historyAssets.value.length) historyAssets.value = []
     } finally {
       historyLoading.value = false
     }
@@ -252,9 +240,7 @@ export const useAssetsStore = defineStore('assets', () => {
       console.error('Error loading more history:', err)
       historyError.value = err
       // Keep existing data when error occurs (consistent with updateHistory)
-      if (!historyAssets.value.length) {
-        historyAssets.value = []
-      }
+      if (!historyAssets.value.length) historyAssets.value = []
     } finally {
       isLoadingMore.value = false
     }
@@ -353,9 +339,7 @@ export const useAssetsStore = defineStore('assets', () => {
     const map = new Map<string, AssetItem>()
     for (const asset of inputAssets.value) {
       const hash = asset.hash
-      if (hash) {
-        map.set(hash, asset)
-      }
+      if (hash) map.set(hash, asset)
     }
     return map
   })
@@ -423,9 +407,8 @@ export const useAssetsStore = defineStore('assets', () => {
        * @returns The category or undefined if not resolvable
        */
       function resolveCategory(key: string): string | undefined {
-        if (key.startsWith('tag:')) {
-          return key
-        }
+        if (key.startsWith('tag:')) return key
+
         return modelToNodeStore.getCategoryForNodeType(key)
       }
 
@@ -443,9 +426,7 @@ export const useAssetsStore = defineStore('assets', () => {
         if (!assetsMap) return EMPTY_ASSETS
 
         const cached = assetsArrayCache.get(category)
-        if (cached && cached.source === assetsMap) {
-          return cached.array
-        }
+        if (cached && cached.source === assetsMap) return cached.array
 
         const array = Array.from(assetsMap.values())
         assetsArrayCache.set(category, { source: assetsMap, array })
@@ -501,9 +482,8 @@ export const useAssetsStore = defineStore('assets', () => {
         category: string,
         fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
       ): Promise<void> {
-        if (pendingPromiseByCategory.has(category)) {
+        if (pendingPromiseByCategory.has(category))
           return pendingPromiseByCategory.get(category)!
-        }
 
         const existingState = modelStateByCategory.value.get(category)
         const state = createState(existingState?.assets)
@@ -548,13 +528,10 @@ export const useAssetsStore = defineStore('assets', () => {
               state.offset += newAssets.length
               state.hasMore = newAssets.length === MODEL_BATCH_SIZE
 
-              if (isFirstBatch) {
-                state.isLoading = false
-              }
+              if (isFirstBatch) state.isLoading = false
 
-              if (state.hasMore) {
+              if (state.hasMore)
                 await new Promise((resolve) => setTimeout(resolve, 50))
-              }
             } catch (err) {
               if (isStale(category, state)) return
               console.error(`Error loading batch for ${category}:`, err)
@@ -571,9 +548,8 @@ export const useAssetsStore = defineStore('assets', () => {
           const staleIds = [...state.assets.keys()].filter(
             (id) => !seenIds.has(id)
           )
-          for (const id of staleIds) {
-            state.assets.delete(id)
-          }
+          for (const id of staleIds) state.assets.delete(id)
+
           assetsArrayCache.delete(category)
           pendingRequestByCategory.delete(category)
         }
@@ -721,9 +697,8 @@ export const useAssetsStore = defineStore('assets', () => {
               : undefined
 
           const finalTags = (addResult ?? removeResult)?.total_tags
-          if (finalTags) {
+          if (finalTags)
             updateAssetInCache(asset.id, { tags: finalTags }, cacheKey)
-          }
         } catch (error) {
           console.error('Failed to update asset tags:', error)
           updateAssetInCache(asset.id, { tags: originalTags }, cacheKey)
@@ -738,20 +713,17 @@ export const useAssetsStore = defineStore('assets', () => {
               )
               const categoriesToInvalidate = new Set<string>()
               const resolved = cacheKey ? resolveCategory(cacheKey) : undefined
-              if (resolved) {
-                categoriesToInvalidate.add(resolved)
-              }
+              if (resolved) categoriesToInvalidate.add(resolved)
+
               for (const [
                 category,
                 state
               ] of modelStateByCategory.value.entries()) {
-                if (state.assets?.has(asset.id)) {
+                if (state.assets?.has(asset.id))
                   categoriesToInvalidate.add(category)
-                }
               }
-              for (const category of categoriesToInvalidate) {
+              for (const category of categoriesToInvalidate)
                 invalidateCategory(category)
-              }
             }
           }
         }

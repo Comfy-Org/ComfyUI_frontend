@@ -39,8 +39,6 @@ export async function syncEntities<T>(
   // Remove entities that no longer exist
   for (const [path, entity] of Object.entries(entityByPath)) {
     if (exclude(entity)) continue
-    if (!files.some((file) => file.path === path)) {
-      delete entityByPath[path]
-    }
+    if (!files.some((file) => file.path === path)) delete entityByPath[path]
   }
 }

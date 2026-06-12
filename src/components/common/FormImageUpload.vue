@@ -73,8 +73,6 @@ const handleFileUpload = (event: Event) => {
 
 const clearImage = () => {
   emit('update:modelValue', '')
-  if (fileInput.value) {
-    fileInput.value.value = ''
-  }
+  if (fileInput.value) fileInput.value.value = ''
 }
 </script>

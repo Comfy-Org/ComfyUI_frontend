@@ -108,9 +108,8 @@ export const useManagerQueue = (
     app.api,
     MANAGER_WS_TASK_DONE_NAME,
     (event: CustomEvent<ManagerWsTaskDoneMsg>) => {
-      if (event?.type === MANAGER_WS_TASK_DONE_NAME && event.detail?.state) {
+      if (event?.type === MANAGER_WS_TASK_DONE_NAME && event.detail?.state)
         updateTaskState(event.detail.state)
-      }
     }
   )
 
@@ -119,9 +118,8 @@ export const useManagerQueue = (
     app.api,
     MANAGER_WS_TASK_STARTED_NAME,
     (event: CustomEvent<ManagerWsTaskStartedMsg>) => {
-      if (event?.type === MANAGER_WS_TASK_STARTED_NAME && event.detail?.state) {
+      if (event?.type === MANAGER_WS_TASK_STARTED_NAME && event.detail?.state)
         updateTaskState(event.detail.state)
-      }
     }
   )
 

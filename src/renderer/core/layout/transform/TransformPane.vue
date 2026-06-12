@@ -44,9 +44,7 @@ const transformPaneRef = useTemplateRef('transformPaneRef')
  */
 
 watch([transformStyle, transformPaneRef], ([newStyle, el]) => {
-  if (el) {
-    Object.assign(el.style, newStyle)
-  }
+  if (el) Object.assign(el.style, newStyle)
 })
 watch([isInteracting, transformPaneRef], ([interacting, el]) => {
   if (el) {
@@ -57,9 +55,8 @@ watch([isInteracting, transformPaneRef], ([interacting, el]) => {
 
 useRafFn(
   () => {
-    if (!props.canvas) {
-      return
-    }
+    if (!props.canvas) return
+
     syncWithCanvas(props.canvas)
   },
   { immediate: true }

@@ -26,13 +26,9 @@ function captureApiError(
     error_type: errorType
   }
 
-  if (httpStatus !== undefined) {
-    tags.http_status = httpStatus
-  }
+  if (httpStatus !== undefined) tags.http_status = httpStatus
 
-  if (operation) {
-    tags.operation = operation
-  }
+  if (operation) tags.operation = operation
 
   const sentryOptions: Sentry.ExclusiveEventHintOrCaptureContext = {
     tags,
@@ -80,9 +76,9 @@ export async function getUserCloudStatus(): Promise<UserCloudStatus> {
     return response.json()
   } catch (error) {
     // Only capture network errors (not HTTP errors we already captured)
-    if (!isHttpError(error, 'Failed to get user:')) {
+    if (!isHttpError(error, 'Failed to get user:'))
       captureApiError(toError(error), '/user', 'network_error')
-    }
+
     throw error
   }
 }

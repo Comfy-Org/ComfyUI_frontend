@@ -248,9 +248,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       await expect(sizeDisplay).toHaveText('20')
 
       await sizeSlider.focus()
-      for (let i = 0; i < 10; i++) {
-        await sizeSlider.press('ArrowRight')
-      }
+      for (let i = 0; i < 10; i++) await sizeSlider.press('ArrowRight')
 
       await expect(sizeDisplay).toHaveText('30')
     })
@@ -268,9 +266,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       await expect(hardnessDisplay).toHaveText('100%')
 
       await hardnessSlider.focus()
-      for (let i = 0; i < 10; i++) {
-        await hardnessSlider.press('ArrowLeft')
-      }
+      for (let i = 0; i < 10; i++) await hardnessSlider.press('ArrowLeft')
 
       await expect(hardnessDisplay).toHaveText('90%')
     })
@@ -344,9 +340,9 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
               const cx = Math.floor(el.width / 2)
               const cy = Math.floor(el.height / 2)
               const { data } = ctx.getImageData(cx - 20, cy - 20, 40, 40)
-              for (let i = 3; i < data.length; i += 4) {
+              for (let i = 3; i < data.length; i += 4)
                 if (data[i] > 50 && data[i] < 230) return true
-              }
+
               return false
             }),
           {
@@ -677,9 +673,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       ).toHaveText('20')
 
       await sizeSlider.focus()
-      for (let i = 0; i < 10; i++) {
-        await sizeSlider.press('ArrowRight')
-      }
+      for (let i = 0; i < 10; i++) await sizeSlider.press('ArrowRight')
 
       await expect
         .poll(
@@ -764,9 +758,8 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
         if (!ctx) return false
         const cy = Math.floor(el.height * y)
         const { data } = ctx.getImageData(0, cy - 5, el.width, 10)
-        for (let i = 3; i < data.length; i += 4) {
-          if (data[i] > 0) return true
-        }
+        for (let i = 3; i < data.length; i += 4) if (data[i] > 0) return true
+
         return false
       }, yFraction)
 

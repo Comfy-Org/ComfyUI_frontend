@@ -37,12 +37,12 @@ export class NumberWidget
 
   override setValue(value: number, options: WidgetEventOptions) {
     let newValue = value
-    if (this.options.min != null && newValue < this.options.min) {
+    if (this.options.min != null && newValue < this.options.min)
       newValue = this.options.min
-    }
-    if (this.options.max != null && newValue > this.options.max) {
+
+    if (this.options.max != null && newValue > this.options.max)
       newValue = this.options.max
-    }
+
     super.setValue(newValue, options)
   }
 

@@ -77,9 +77,7 @@ describe('useDomClipping', () => {
   function flushRaf() {
     const callbacks = [...rafCallbacks.values()]
     rafCallbacks.clear()
-    for (const cb of callbacks) {
-      cb(performance.now())
-    }
+    for (const cb of callbacks) cb(performance.now())
   }
 
   it('coalesces multiple rapid calls into a single getBoundingClientRect read', () => {

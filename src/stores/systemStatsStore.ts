@@ -30,34 +30,23 @@ export const useSystemStatsStore = defineStore('systemStats', () => {
   )
 
   function getFormFactor(): string {
-    if (isCloud) {
-      return 'cloud'
-    }
+    if (isCloud) return 'cloud'
 
-    if (!systemStats.value?.system?.os) {
-      return 'other'
-    }
+    if (!systemStats.value?.system?.os) return 'other'
 
     const os = systemStats.value.system.os.toLowerCase()
 
     if (isDesktop) {
-      if (os.includes('windows')) {
-        return 'desktop-windows'
-      }
-      if (os.includes('darwin') || os.includes('mac')) {
-        return 'desktop-mac'
-      }
+      if (os.includes('windows')) return 'desktop-windows'
+
+      if (os.includes('darwin') || os.includes('mac')) return 'desktop-mac'
     } else {
       // Git/source installation
-      if (os.includes('windows')) {
-        return 'git-windows'
-      }
-      if (os.includes('darwin') || os.includes('mac')) {
-        return 'git-mac'
-      }
-      if (os.includes('linux')) {
-        return 'git-linux'
-      }
+      if (os.includes('windows')) return 'git-windows'
+
+      if (os.includes('darwin') || os.includes('mac')) return 'git-mac'
+
+      if (os.includes('linux')) return 'git-linux'
     }
 
     return 'other'

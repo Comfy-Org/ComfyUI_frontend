@@ -492,9 +492,8 @@ describe('GPUBrushRenderer', () => {
       // 4 buffers created in constructor
       const buffers = (device.createBuffer as ReturnType<typeof vi.fn>).mock
         .results
-      for (const result of buffers) {
+      for (const result of buffers)
         expect(result.value.destroy).toHaveBeenCalled()
-      }
     })
 
     it('destroys the stroke texture if one was created', () => {

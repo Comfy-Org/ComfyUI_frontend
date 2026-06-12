@@ -33,9 +33,7 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
         asset
       })
 
-      if (!jobId || !expandedStackJobIds.value.has(jobId)) {
-        continue
-      }
+      if (!jobId || !expandedStackJobIds.value.has(jobId)) continue
 
       const children = stackChildrenByJobId.value[jobId] ?? []
       for (const child of children) {
@@ -77,9 +75,8 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
     }
 
     if (!stackChildrenByJobId.value[jobId]?.length) {
-      if (loadingStackJobIds.value.has(jobId)) {
-        return
-      }
+      if (loadingStackJobIds.value.has(jobId)) return
+
       const nextLoading = new Set(loadingStackJobIds.value)
       nextLoading.add(jobId)
       loadingStackJobIds.value = nextLoading
@@ -90,9 +87,7 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
       afterLoading.delete(jobId)
       loadingStackJobIds.value = afterLoading
 
-      if (!children.length) {
-        return
-      }
+      if (!children.length) return
 
       stackChildrenByJobId.value = {
         ...stackChildrenByJobId.value,
@@ -107,9 +102,7 @@ export function useOutputStacks({ assets }: UseOutputStacksOptions) {
 
   async function resolveStackChildren(asset: AssetItem): Promise<AssetItem[]> {
     const metadata = getOutputAssetMetadata(asset.user_metadata)
-    if (!metadata) {
-      return []
-    }
+    if (!metadata) return []
 
     const excludeOutputKey =
       getOutputKey({

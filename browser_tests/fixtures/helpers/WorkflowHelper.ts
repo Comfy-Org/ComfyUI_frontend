@@ -83,9 +83,8 @@ export class WorkflowHelper {
           if (
             typeof index.updatedAt === 'number' &&
             index.updatedAt >= indexUpdatedSince
-          ) {
+          )
             return true
-          }
         } catch {
           // Ignore malformed storage while waiting for persistence.
         }
@@ -120,9 +119,8 @@ export class WorkflowHelper {
     )
     await this.waitForWorkflowIdle()
     await this.comfyPage.nextFrame()
-    if (test.info().tags.includes('@vue-nodes')) {
+    if (test.info().tags.includes('@vue-nodes'))
       await this.comfyPage.vueNodes.waitForNodes()
-    }
   }
 
   async deleteWorkflow(

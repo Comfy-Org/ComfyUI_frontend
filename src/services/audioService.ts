@@ -30,9 +30,7 @@ export const useAudioService = () => {
   }
 
   const registerWavEncoder = async (): Promise<void> => {
-    if (isEncoderRegistered) {
-      return
-    }
+    if (isEncoderRegistered) return
 
     try {
       await register(await connect())
@@ -41,11 +39,9 @@ export const useAudioService = () => {
       if (
         err instanceof Error &&
         err.message.includes('already an encoder stored')
-      ) {
+      )
         isEncoderRegistered = true
-      } else {
-        handleError('encoder', 'Failed to register WAV encoder', err)
-      }
+      else handleError('encoder', 'Failed to register WAV encoder', err)
     }
   }
 

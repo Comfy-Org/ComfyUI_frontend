@@ -43,22 +43,16 @@ export const useServerLogs = (options: UseServerLogsOptions = {}) => {
 
     if (isValidLogEvent(event)) {
       const messages = parseLogMessage(event)
-      if (messages.length > 0) {
-        logs.value.push(...messages)
-      }
+      if (messages.length > 0) logs.value.push(...messages)
     }
   }
 
   const handleTaskStarted = (event: CustomEvent<ManagerWsTaskStartedMsg>) => {
-    if (ui_id && event?.detail?.ui_id === ui_id) {
-      isTaskStarted.value = true
-    }
+    if (ui_id && event?.detail?.ui_id === ui_id) isTaskStarted.value = true
   }
 
   const handleTaskDone = (event: CustomEvent<ManagerWsTaskDoneMsg>) => {
-    if (ui_id && event?.detail?.ui_id === ui_id) {
-      isTaskStarted.value = false
-    }
+    if (ui_id && event?.detail?.ui_id === ui_id) isTaskStarted.value = false
   }
 
   const start = async () => {
@@ -89,9 +83,7 @@ export const useServerLogs = (options: UseServerLogsOptions = {}) => {
     await api.subscribeLogs(false)
   }
 
-  if (immediate) {
-    void start()
-  }
+  if (immediate) void start()
 
   onUnmounted(async () => {
     await stopListening()

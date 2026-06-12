@@ -63,9 +63,9 @@ const mappedSelections = computed((): WidgetEntry[] => {
     const { entityId, node, widget, config } = entry
     if (node.mode !== LGraphEventMode.ALWAYS) return []
 
-    if (!nodeDataByNode.has(node)) {
+    if (!nodeDataByNode.has(node))
       nodeDataByNode.set(node, nodeToNodeData(node))
-    }
+
     const fullNodeData = nodeDataByNode.get(node)!
 
     const matchingWidget = fullNodeData.widgets?.find((vueWidget) => {
@@ -133,9 +133,10 @@ function nodeToNodeData(node: LGraphNode) {
 
 async function handleDragDrop() {
   const onDragDrop = async (e: DragEvent) => {
-    for (const { nodeData } of mappedSelections.value)
+    for (const { nodeData } of mappedSelections.value) {
       if (nodeData?.onDragOver?.(e) && (await nodeData.onDragDrop?.(e)))
         return true
+    }
     return false
   }
 

@@ -50,9 +50,7 @@ export function useMinimapGraph(
     if (!g) return
 
     // Check if we've already wrapped this graph's callbacks
-    if (originalCallbacksMap.has(g.id)) {
-      return
-    }
+    if (originalCallbacksMap.has(g.id)) return
 
     // Store the original callbacks for this graph
     const originalCallbacks: GraphCallbacks = {
@@ -165,9 +163,7 @@ export function useMinimapGraph(
       updateFlags.value.nodes = true
     }
 
-    if (connectionChanged) {
-      updateFlags.value.connections = true
-    }
+    if (connectionChanged) updateFlags.value.connections = true
 
     return structureChanged || positionChanged || connectionChanged
   }

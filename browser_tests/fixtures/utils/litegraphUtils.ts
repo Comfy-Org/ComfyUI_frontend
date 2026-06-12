@@ -35,22 +35,18 @@ export class SubgraphSlotReference {
 
         const slots =
           type === 'input' ? currentGraph.inputs : currentGraph.outputs
-        if (!slots || slots.length === 0) {
+        if (!slots || slots.length === 0)
           throw new Error(`No ${type} slots found in subgraph`)
-        }
 
         // Find the specific slot or use the first one if no name specified
         const slot = slotName
           ? slots.find((s) => s.name === slotName)
           : slots[0]
 
-        if (!slot) {
-          throw new Error(`${type} slot '${slotName}' not found`)
-        }
+        if (!slot) throw new Error(`${type} slot '${slotName}' not found`)
 
-        if (!slot.pos) {
+        if (!slot.pos)
           throw new Error(`${type} slot '${slotName}' has no position`)
-        }
 
         // Convert from offset to canvas coordinates
         const canvasPos = window.app!.canvas.ds.convertOffsetToCanvas([
@@ -83,9 +79,7 @@ export class SubgraphSlotReference {
         const node =
           type === 'input' ? currentGraph.inputNode : currentGraph.outputNode
 
-        if (!node) {
-          throw new Error(`No ${type} node found in subgraph`)
-        }
+        if (!node) throw new Error(`No ${type} node found in subgraph`)
 
         // Convert from offset to canvas coordinates
         const canvasPos = window.app!.canvas.ds.convertOffsetToCanvas([
@@ -148,9 +142,8 @@ class NodeSlotReference {
       ([type, id, index]) => {
         const node = window.app!.canvas.graph!.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
-        if (type === 'input') {
-          return node.inputs[index].link == null ? 0 : 1
-        }
+        if (type === 'input') return node.inputs[index].link == null ? 0 : 1
+
         return node.outputs[index].links?.length ?? 0
       },
       [this.type, this.node.id, this.index] as const
@@ -161,11 +154,8 @@ class NodeSlotReference {
       ([type, id, index]) => {
         const node = window.app!.canvas.graph!.getNodeById(id)
         if (!node) throw new Error(`Node ${id} not found.`)
-        if (type === 'input') {
-          node.disconnectInput(index)
-        } else {
-          node.disconnectOutput(index)
-        }
+        if (type === 'input') node.disconnectInput(index)
+        else node.disconnectOutput(index)
       },
       [this.type, this.node.id, this.index] as const
     )
@@ -426,9 +416,8 @@ export class NodeReference {
 
         const widgetIndex =
           node.widgets?.findIndex((widget) => widget.name === widgetName) ?? -1
-        if (widgetIndex < 0) {
+        if (widgetIndex < 0)
           throw new Error(`Widget "${widgetName}" not found on node ${id}`)
-        }
 
         return widgetIndex
       },
@@ -460,14 +449,11 @@ export class NodeReference {
     }
 
     const moveMouseToEmptyArea = options?.moveMouseToEmptyArea
-    if (options) {
-      delete options.moveMouseToEmptyArea
-    }
+    if (options) delete options.moveMouseToEmptyArea
 
     await this.comfyPage.canvasOps.mouseClickAt(clickPos, options)
-    if (moveMouseToEmptyArea) {
+    if (moveMouseToEmptyArea)
       await this.comfyPage.canvasOps.moveMouseToEmptyArea()
-    }
   }
   async copy() {
     await this.click('title')

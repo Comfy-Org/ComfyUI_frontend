@@ -67,12 +67,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   function clearExecutionStartErrors() {
     lastExecutionError.value = null
     lastPromptError.value = null
-    if (
-      !lastNodeErrors.value ||
-      Object.keys(lastNodeErrors.value).length === 0
-    ) {
+    if (!lastNodeErrors.value || Object.keys(lastNodeErrors.value).length === 0)
       isErrorOverlayOpen.value = false
-    }
   }
 
   /** Clear only prompt-level errors. Called during resetExecutionState. */
@@ -183,9 +179,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       !options?.silent &&
       models.length &&
       useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
-    ) {
+    )
       showErrorOverlay()
-    }
   }
 
   /** Set missing media and optionally open the error overlay. */
@@ -198,9 +193,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
       !options?.silent &&
       media.length &&
       useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')
-    ) {
+    )
       showErrorOverlay()
-    }
   }
 
   const lastExecutionErrorNodeLocatorId = computed(() => {
@@ -236,14 +230,11 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   const allErrorExecutionIds = computed<string[]>(() => {
     const ids: string[] = []
-    if (lastNodeErrors.value) {
-      ids.push(...Object.keys(lastNodeErrors.value))
-    }
+    if (lastNodeErrors.value) ids.push(...Object.keys(lastNodeErrors.value))
+
     if (lastExecutionError.value) {
       const nodeId = lastExecutionError.value.node_id
-      if (nodeId !== null && nodeId !== undefined) {
-        ids.push(String(nodeId))
-      }
+      if (nodeId !== null && nodeId !== undefined) ids.push(String(nodeId))
     }
     return ids
   })
@@ -253,9 +244,9 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const nodeErrorCount = computed(() => {
     if (!lastNodeErrors.value) return 0
     let count = 0
-    for (const nodeError of Object.values(lastNodeErrors.value)) {
+    for (const nodeError of Object.values(lastNodeErrors.value))
       count += nodeError.errors.length
-    }
+
     return count
   })
 
@@ -282,18 +273,14 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     if (lastNodeErrors.value) {
       for (const executionId of Object.keys(lastNodeErrors.value)) {
         const graphNode = getNodeByExecutionId(app.rootGraph, executionId)
-        if (graphNode?.graph === activeGraph) {
-          ids.add(String(graphNode.id))
-        }
+        if (graphNode?.graph === activeGraph) ids.add(String(graphNode.id))
       }
     }
 
     if (lastExecutionError.value) {
       const execNodeId = String(lastExecutionError.value.node_id)
       const graphNode = getNodeByExecutionId(app.rootGraph, execNodeId)
-      if (graphNode?.graph === activeGraph) {
-        ids.add(String(graphNode.id))
-      }
+      if (graphNode?.graph === activeGraph) ids.add(String(graphNode.id))
     }
 
     return ids
@@ -310,9 +297,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
         lastNodeErrors.value
       )) {
         const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
-        if (locatorId) {
-          map[locatorId] = nodeError
-        }
+        if (locatorId) map[locatorId] = nodeError
       }
 
       return map
@@ -346,9 +331,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const errorAncestorExecutionIds = computed<Set<NodeExecutionId>>(() => {
     const ids = new Set<NodeExecutionId>()
     for (const executionId of allErrorExecutionIds.value) {
-      for (const id of getAncestorExecutionIds(executionId)) {
-        ids.add(id)
-      }
+      for (const id of getAncestorExecutionIds(executionId)) ids.add(id)
     }
     return ids
   })

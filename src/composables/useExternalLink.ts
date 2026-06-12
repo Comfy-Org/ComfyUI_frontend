@@ -31,9 +31,7 @@ export function useExternalLink() {
   })
 
   const platform = computed(() => {
-    if (!isDesktop) {
-      return null
-    }
+    if (!isDesktop) return null
 
     const electronPlatform = electronAPI().getPlatform()
     return electronPlatform === 'darwin' ? 'macos' : 'windows'
@@ -67,9 +65,7 @@ export function useExternalLink() {
 
     let url = 'https://docs.comfy.org'
 
-    if (includeLocale && isChinese.value) {
-      url += '/zh-CN'
-    }
+    if (includeLocale && isChinese.value) url += '/zh-CN'
 
     const normalizedPath = path.startsWith('/') ? path : `/${path}`
     url += normalizedPath

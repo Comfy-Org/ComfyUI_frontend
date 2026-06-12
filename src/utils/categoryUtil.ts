@@ -117,13 +117,10 @@ export function getProviderBorderStyle(providerName: string): string {
   const iconKey = providerName.toLowerCase().replaceAll(/\s+/g, '-')
   const colors = PROVIDER_COLORS[iconKey]
 
-  if (!colors) {
-    return '#525252' // neutral-600 fallback
-  }
+  if (!colors) return '#525252' // neutral-600 fallback
 
-  if (Array.isArray(colors)) {
+  if (Array.isArray(colors))
     return `linear-gradient(90deg, ${colors[0]}, ${colors[1]})`
-  }
 
   return colors
 }

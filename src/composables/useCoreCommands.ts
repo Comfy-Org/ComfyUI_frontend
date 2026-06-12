@@ -242,11 +242,9 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       function: async () => {
         // If Mask Editor is open, use its history instead of the graph
-        if (dialogStore.isDialogOpen('global-mask-editor')) {
+        if (dialogStore.isDialogOpen('global-mask-editor'))
           maskEditorStore.canvasHistory.undo()
-        } else {
-          await getTracker()?.undo?.()
-        }
+        else await getTracker()?.undo?.()
       }
     },
     {
@@ -255,11 +253,9 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Redo',
       category: 'essentials' as const,
       function: async () => {
-        if (dialogStore.isDialogOpen('global-mask-editor')) {
+        if (dialogStore.isDialogOpen('global-mask-editor'))
           maskEditorStore.canvasHistory.redo()
-        } else {
-          await getTracker()?.redo?.()
-        }
+        else await getTracker()?.redo?.()
       }
     },
     {
@@ -677,9 +673,8 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.33',
       function: () => {
         for (const item of app.canvas.selectedItems) {
-          if (item instanceof LGraphNode || item instanceof LGraphGroup) {
+          if (item instanceof LGraphNode || item instanceof LGraphGroup)
             item.pin(!item.pinned)
-          }
         }
         app.canvas.setDirty(true, true)
       }
@@ -890,9 +885,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--copy]',
       label: 'Copy',
       function: () => {
-        if (app.canvas.selectedItems?.size) {
-          app.canvas.copyToClipboard()
-        }
+        if (app.canvas.selectedItems?.size) app.canvas.copyToClipboard()
       }
     },
     {

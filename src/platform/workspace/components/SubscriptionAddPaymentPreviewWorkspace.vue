@@ -207,9 +207,9 @@ const isFeaturesCollapsed = ref(true)
 const tierName = computed(() => t(`subscription.tiers.${tierKey}.name`))
 
 const displayPrice = computed(() => {
-  if (previewData?.new_plan) {
+  if (previewData?.new_plan)
     return (previewData.new_plan.price_cents / 100).toFixed(0)
-  }
+
   return getTierPrice(tierKey, billingCycle === 'yearly')
 })
 
@@ -219,13 +219,11 @@ const hasCustomLoRAs = computed(() => getTierFeatures(tierKey).customLoRAs)
 const maxDuration = computed(() => t(`subscription.maxDuration.${tierKey}`))
 
 const totalDueToday = computed(() => {
-  if (previewData) {
-    return (previewData.cost_today_cents / 100).toFixed(2)
-  }
+  if (previewData) return (previewData.cost_today_cents / 100).toFixed(2)
+
   const priceValue = getTierPrice(tierKey, billingCycle === 'yearly')
-  if (billingCycle === 'yearly') {
-    return (priceValue * 12).toFixed(2)
-  }
+  if (billingCycle === 'yearly') return (priceValue * 12).toFixed(2)
+
   return priceValue.toFixed(2)
 })
 
@@ -241,11 +239,9 @@ const nextPaymentDate = computed(() => {
     )
   }
   const date = new Date()
-  if (billingCycle === 'yearly') {
-    date.setFullYear(date.getFullYear() + 1)
-  } else {
-    date.setMonth(date.getMonth() + 1)
-  }
+  if (billingCycle === 'yearly') date.setFullYear(date.getFullYear() + 1)
+  else date.setMonth(date.getMonth() + 1)
+
   return date.toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',

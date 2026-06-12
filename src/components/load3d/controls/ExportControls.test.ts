@@ -45,9 +45,8 @@ describe('ExportControls', () => {
 
     await user.click(screen.getByRole('button', { name: 'Export model' }))
 
-    for (const label of ['GLB', 'OBJ', 'STL']) {
+    for (const label of ['GLB', 'OBJ', 'STL'])
       expect(screen.getByRole('button', { name: label })).toBeVisible()
-    }
   })
 
   it('emits exportModel with the chosen format and hides the popup', async () => {

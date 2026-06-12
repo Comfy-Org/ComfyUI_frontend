@@ -278,9 +278,8 @@ export class ComfyPage {
       }
     )
 
-    if (resp.status() !== 200) {
+    if (resp.status() !== 200)
       throw new Error(`Failed to setup settings: ${await resp.text()}`)
-    }
   }
 
   async setup({
@@ -358,9 +357,7 @@ export class ComfyPage {
   }
 
   async idleFrames(count: number) {
-    for (let i = 0; i < count; i++) {
-      await this.nextFrame()
-    }
+    for (let i = 0; i < count; i++) await this.nextFrame()
   }
 
   async delay(ms: number) {
@@ -382,9 +379,7 @@ export class ComfyPage {
     const { runInCI = false, fullPage = false } = options
 
     // Skip in CI unless explicitly requested
-    if (process.env.CI && !runInCI) {
-      return
-    }
+    if (process.env.CI && !runInCI) return
 
     const testInfo = comfyPageFixture.info()
     await testInfo.attach(name, {
@@ -486,9 +481,7 @@ export const comfyPageFixture = base.extend<{
   initialSettings: [{}, { option: true }],
 
   page: async ({ page, browserName }, use) => {
-    if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
-      return use(page)
-    }
+    if (browserName !== 'chromium' || !COLLECT_COVERAGE) return use(page)
 
     await page.coverage.startJSCoverage({ resetOnNavigation: false })
     await use(page)
@@ -547,19 +540,14 @@ export const comfyPageFixture = base.extend<{
       console.error(e)
     }
 
-    if (testInfo.tags.includes('@cloud')) {
-      await comfyPage.cloudAuth.mockAuth()
-    }
+    if (testInfo.tags.includes('@cloud')) await comfyPage.cloudAuth.mockAuth()
 
-    if (Object.keys(initialFeatureFlags).length > 0) {
+    if (Object.keys(initialFeatureFlags).length > 0)
       await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
-    }
 
     await comfyPage.setup()
 
-    if (isVueNodes) {
-      await comfyPage.vueNodes.waitForNodes()
-    }
+    if (isVueNodes) await comfyPage.vueNodes.waitForNodes()
 
     const needsPerf =
       testInfo.tags.includes('@perf') || testInfo.tags.includes('@audit')

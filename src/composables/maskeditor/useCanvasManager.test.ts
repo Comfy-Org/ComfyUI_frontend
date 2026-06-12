@@ -295,18 +295,16 @@ describe('useCanvasManager', () => {
     it('should invert mask alpha', async () => {
       const manager = useCanvasManager()
 
-      for (let i = 0; i < mockImageData.data.length; i += 4) {
+      for (let i = 0; i < mockImageData.data.length; i += 4)
         mockImageData.data[i + 3] = 128
-      }
 
       const origImage = createMockImage(100, 100)
       const maskImage = createMockImage(100, 100)
 
       await manager.invalidateCanvas(origImage, maskImage, null)
 
-      for (let i = 0; i < mockImageData.data.length; i += 4) {
+      for (let i = 0; i < mockImageData.data.length; i += 4)
         expect(mockImageData.data[i + 3]).toBe(127)
-      }
     })
 
     it('should apply mask color to all pixels', async () => {

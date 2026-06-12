@@ -25,22 +25,19 @@ describe('essentialsNodes', () => {
 
   it('ESSENTIALS_CATEGORY_MAP covers every node in ESSENTIALS_NODES', () => {
     for (const [category, nodes] of Object.entries(ESSENTIALS_NODES)) {
-      for (const node of nodes) {
+      for (const node of nodes)
         expect(ESSENTIALS_CATEGORY_MAP[node]).toBe(category)
-      }
     }
   })
 
   it('TOOLKIT_NOVEL_NODE_NAMES excludes basics nodes', () => {
-    for (const basicNode of ESSENTIALS_NODES.basics) {
+    for (const basicNode of ESSENTIALS_NODES.basics)
       expect(TOOLKIT_NOVEL_NODE_NAMES.has(basicNode)).toBe(false)
-    }
   })
 
   it('TOOLKIT_NOVEL_NODE_NAMES excludes SubgraphBlueprint-prefixed nodes', () => {
-    for (const name of TOOLKIT_NOVEL_NODE_NAMES) {
+    for (const name of TOOLKIT_NOVEL_NODE_NAMES)
       expect(name.startsWith('SubgraphBlueprint.')).toBe(false)
-    }
   })
 
   it('ESSENTIALS_NODES keys match ESSENTIALS_CATEGORIES', () => {

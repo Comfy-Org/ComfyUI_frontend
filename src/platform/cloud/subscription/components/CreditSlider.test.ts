@@ -138,9 +138,8 @@ describe('CreditSlider', () => {
     await flush()
 
     const stops = within(screen.getByTestId('credit-slider-stops'))
-    for (const label of ['42.2K', '84.4K', '147.7K', '295.4K', '527.5K']) {
+    for (const label of ['42.2K', '84.4K', '147.7K', '295.4K', '527.5K'])
       expect(stops.getByText(label)).toBeInTheDocument()
-    }
   })
 
   it('renders nothing when stops is empty (defensive for BE-sourced data)', async () => {
@@ -182,8 +181,7 @@ describe('CreditSlider', () => {
   })
 
   it('keeps every credit amount equal to usdToCredits(usd) (guards rate drift)', () => {
-    for (const stop of TEAM_PLAN_CREDIT_STOPS) {
+    for (const stop of TEAM_PLAN_CREDIT_STOPS)
       expect(stop.credits).toBe(usdToCredits(stop.usd))
-    }
   })
 })

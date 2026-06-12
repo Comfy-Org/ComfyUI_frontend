@@ -35,8 +35,7 @@ function isOutputAssetMetadata(
 export function getOutputAssetMetadata(
   userMetadata: Record<string, unknown> | undefined
 ): OutputAssetMetadata | null {
-  if (isOutputAssetMetadata(userMetadata)) {
-    return userMetadata
-  }
+  if (isOutputAssetMetadata(userMetadata)) return userMetadata
+
   return null
 }

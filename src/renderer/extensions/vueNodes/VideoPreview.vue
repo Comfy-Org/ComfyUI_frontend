@@ -171,9 +171,7 @@ watch(
     if (!urlsChanged) return
 
     // Reset current index if it's out of bounds
-    if (currentIndex.value >= newUrls.length) {
-      currentIndex.value = 0
-    }
+    if (currentIndex.value >= newUrls.length) currentIndex.value = 0
 
     // Reset loading and error states when URLs change
     actualDimensions.value = null
@@ -189,9 +187,8 @@ const handleVideoLoad = (event: Event) => {
   const video = event.target
   showLoader.value = false
   videoError.value = false
-  if (video.videoWidth && video.videoHeight) {
+  if (video.videoWidth && video.videoHeight)
     actualDimensions.value = `${video.videoWidth} x ${video.videoHeight}`
-  }
 }
 
 const handleVideoError = () => {
@@ -245,9 +242,8 @@ const handleFocusIn = () => {
 }
 
 const handleFocusOut = (event: FocusEvent) => {
-  if (!videoWrapperEl.value?.contains(event.relatedTarget as Node)) {
+  if (!videoWrapperEl.value?.contains(event.relatedTarget as Node))
     isFocused.value = false
-  }
 }
 
 const getNavigationDotClass = (index: number) =>

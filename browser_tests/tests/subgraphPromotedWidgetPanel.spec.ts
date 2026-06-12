@@ -8,9 +8,9 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 async function ensurePropertiesPanel(comfyPage: ComfyPage) {
   const panel = comfyPage.menu.propertiesPanel.root
-  if (!(await panel.isVisible())) {
+  if (!(await panel.isVisible()))
     await comfyPage.actionbar.propertiesButton.click()
-  }
+
   await expect(panel).toBeVisible()
   return panel
 }
@@ -64,9 +64,8 @@ test.describe(
         await expect(toggleButtons.first()).toBeVisible()
 
         const count = await toggleButtons.count()
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < count; i++)
           await expect(toggleButtons.nth(i)).toBeDisabled()
-        }
       })
 
       test('linked promoted widgets show link icon instead of eye icon', async ({

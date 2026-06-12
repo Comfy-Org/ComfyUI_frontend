@@ -154,9 +154,8 @@ const downloadAllLabel = computed(() => {
 })
 
 function downloadAllModels() {
-  for (const model of downloadableModels.value) {
+  for (const model of downloadableModels.value)
     downloadModel(model, missingModelStore.folderPaths)
-  }
 }
 
 function handleRefreshClick() {

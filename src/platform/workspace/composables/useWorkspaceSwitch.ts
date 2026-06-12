@@ -7,9 +7,7 @@ export function useWorkspaceSwitch() {
   const { activeWorkspace } = storeToRefs(workspaceStore)
 
   async function switchWorkspace(workspaceId: string): Promise<boolean> {
-    if (activeWorkspace.value?.id === workspaceId) {
-      return true
-    }
+    if (activeWorkspace.value?.id === workspaceId) return true
 
     try {
       await workspaceStore.switchWorkspace(workspaceId)

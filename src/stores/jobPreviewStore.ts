@@ -25,9 +25,9 @@ export const useJobPreviewStore = defineStore('jobPreview', () => {
 
   const previewsByPromptId = computed(() => {
     const result: PromptPreviewMap = {}
-    for (const [k, v] of Object.entries(nodePreviewsByPromptId.value)) {
+    for (const [k, v] of Object.entries(nodePreviewsByPromptId.value))
       result[k] = v.url
-    }
+
     return result
   })
 
@@ -58,9 +58,9 @@ export const useJobPreviewStore = defineStore('jobPreview', () => {
   }
 
   function clearAllPreviews() {
-    for (const { url } of Object.values(nodePreviewsByPromptId.value)) {
+    for (const { url } of Object.values(nodePreviewsByPromptId.value))
       releaseSharedObjectUrl(url)
-    }
+
     nodePreviewsByPromptId.value = {}
   }
 

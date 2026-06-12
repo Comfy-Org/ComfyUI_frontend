@@ -181,13 +181,10 @@ const selectedWorkflow = computed<WorkflowOption | null>(() =>
 
 const onWorkflowChange = async (option: WorkflowOption) => {
   // Prevent unselecting the current workflow
-  if (!option) {
-    return
-  }
+  if (!option) return
+
   // Prevent reloading the current workflow
-  if (selectedWorkflow.value?.value === option.value) {
-    return
-  }
+  if (selectedWorkflow.value?.value === option.value) return
 
   await workflowService.openWorkflow(option.workflow)
 }
@@ -236,9 +233,7 @@ const ensureActiveTabVisible = async (
 ) => {
   if (!selectedWorkflow.value) return
 
-  if (options.waitForDom !== false) {
-    await nextTick()
-  }
+  if (options.waitForDom !== false) await nextTick()
 
   const containerElement = containerRef.value
   if (!containerElement) return
@@ -312,9 +307,7 @@ watch(
 )
 
 onUpdated(() => {
-  if (!overflowObserver?.disposed.value) {
-    overflowObserver?.checkOverflow()
-  }
+  if (!overflowObserver?.disposed.value) overflowObserver?.checkOverflow()
 })
 </script>
 

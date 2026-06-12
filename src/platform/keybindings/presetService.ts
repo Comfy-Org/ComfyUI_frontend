@@ -31,9 +31,9 @@ function presetFilePath(name: string): string {
     trimmed.includes('\\') ||
     trimmed.includes('..') ||
     trimmed.startsWith('.')
-  ) {
+  )
     throw new Error(t('g.keybindingPresets.invalidPresetName'))
-  }
+
   return `${PRESETS_DIR}/${trimmed}.json`
 }
 
@@ -98,9 +98,9 @@ export function useKeybindingPresetService() {
 
   async function loadPreset(name: string): Promise<KeybindingPreset> {
     const resp = await api.getUserData(presetFilePath(name))
-    if (!resp.ok) {
+    if (!resp.ok)
       throw new Error(t('g.keybindingPresets.loadPresetFailed', { name }))
-    }
+
     const data = await resp.json()
     const result = zKeybindingPreset.safeParse(data)
     if (!result.success) {
@@ -115,12 +115,12 @@ export function useKeybindingPresetService() {
 
   function applyPreset(preset: KeybindingPreset) {
     keybindingStore.resetAllKeybindings()
-    for (const binding of preset.unsetBindings) {
+    for (const binding of preset.unsetBindings)
       keybindingStore.unsetKeybinding(new KeybindingImpl(binding))
-    }
-    for (const binding of preset.newBindings) {
+
+    for (const binding of preset.newBindings)
       keybindingStore.addUserKeybinding(new KeybindingImpl(binding))
-    }
+
     // Snapshot savedPresetData from the store's actual state after applying,
     // because addUserKeybinding may auto-unset conflicting defaults beyond
     // what the raw preset specifies.
@@ -157,13 +157,11 @@ export function useKeybindingPresetService() {
     if (!confirmed) return
 
     const resp = await api.deleteUserData(presetFilePath(name))
-    if (!resp.ok) {
+    if (!resp.ok)
       throw new Error(t('g.keybindingPresets.deletePresetFailed', { name }))
-    }
 
-    if (keybindingStore.currentPresetName === name) {
+    if (keybindingStore.currentPresetName === name)
       await switchToDefaultPreset()
-    }
 
     toast.add({
       severity: 'info',

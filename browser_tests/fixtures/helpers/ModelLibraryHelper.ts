@@ -97,9 +97,8 @@ export class ModelLibraryHelper {
   async mockFoldersWithFiles(config: Record<string, string[]>): Promise<void> {
     const folderNames = Object.keys(config)
     await this.mockModelFolders(createMockModelFolders(folderNames))
-    for (const [folder, files] of Object.entries(config)) {
+    for (const [folder, files] of Object.entries(config))
       await this.mockModelFiles(folder, createMockModelFiles(files))
-    }
   }
 
   async clearMocks(): Promise<void> {

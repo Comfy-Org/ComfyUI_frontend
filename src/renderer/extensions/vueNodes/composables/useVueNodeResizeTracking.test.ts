@@ -99,9 +99,8 @@ function createResizeEntry(options?: {
 
   const element = document.createElement('div')
   element.dataset.nodeId = nodeId
-  if (collapsed) {
-    element.dataset.collapsed = ''
-  }
+  if (collapsed) element.dataset.collapsed = ''
+
   const rectSpy = vi.fn(() => new DOMRect(left, top, width, height))
   element.getBoundingClientRect = rectSpy
   const boxSizes = [{ inlineSize: width, blockSize: height }]

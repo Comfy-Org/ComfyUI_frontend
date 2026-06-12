@@ -145,9 +145,7 @@ const mocks = vi.hoisted(() => {
     clientId: 'test-client',
     initialClientId: 'test-client',
     addEventListener: vi.fn((event: string, handler: () => void) => {
-      if (event === 'graphChanged') {
-        state.graphChangedHandler = handler
-      }
+      if (event === 'graphChanged') state.graphChangedHandler = handler
     }),
     removeEventListener: vi.fn()
   }
@@ -195,9 +193,7 @@ describe('useWorkflowPersistenceV2', () => {
     mocks.apiMock.initialClientId = 'test-client'
     mocks.apiMock.addEventListener.mockImplementation(
       (event: string, handler: () => void) => {
-        if (event === 'graphChanged') {
-          mocks.state.graphChangedHandler = handler
-        }
+        if (event === 'graphChanged') mocks.state.graphChangedHandler = handler
       }
     )
     mocks.apiMock.removeEventListener.mockImplementation(() => {})
@@ -245,9 +241,8 @@ describe('useWorkflowPersistenceV2', () => {
       throw error
     }
 
-    if (!persistence) {
+    if (!persistence)
       throw new Error('Failed to mount workflow persistence composable')
-    }
 
     return persistence
   }

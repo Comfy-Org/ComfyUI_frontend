@@ -13,9 +13,8 @@ export default {
     }
   },
   mounted() {
-    if (typeof AutoComplete.mounted === 'function') {
+    if (typeof AutoComplete.mounted === 'function')
       AutoComplete.mounted.call(this)
-    }
 
     // Retrieve the actual <input> element and attach IME events
     const inputEl = this.$el.querySelector('input')

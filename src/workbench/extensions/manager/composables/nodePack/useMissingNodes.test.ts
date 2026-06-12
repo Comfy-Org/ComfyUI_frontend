@@ -615,15 +615,11 @@ describe('useMissingNodes', () => {
         for (const node of graph.nodes) {
           if (node.isSubgraphNode?.() && node.subgraph) {
             for (const subNode of node.subgraph.nodes) {
-              if (!filter || filter(subNode)) {
-                allNodes.push(subNode)
-              }
+              if (!filter || filter(subNode)) allNodes.push(subNode)
             }
           }
 
-          if (!filter || filter(node)) {
-            allNodes.push(node)
-          }
+          if (!filter || filter(node)) allNodes.push(node)
         }
 
         return allNodes

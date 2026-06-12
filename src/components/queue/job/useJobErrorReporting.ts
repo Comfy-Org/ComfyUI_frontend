@@ -31,9 +31,7 @@ export const useJobErrorReporting = ({
   const errorMessageValue = computed(() => taskForJob.value?.errorMessage ?? '')
 
   const copyErrorMessage = () => {
-    if (errorMessageValue.value) {
-      void copyToClipboard(errorMessageValue.value)
-    }
+    if (errorMessageValue.value) void copyToClipboard(errorMessageValue.value)
   }
 
   const reportJobError = () => {

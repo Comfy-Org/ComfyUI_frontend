@@ -35,9 +35,8 @@ export const useKeybindingStore = defineStore('keybinding', () => {
     const newBindings = Object.values(userKeybindings.value)
     const unsetBindings = Object.values(userUnsetKeybindings.value)
 
-    if (currentPresetName.value === 'default') {
+    if (currentPresetName.value === 'default')
       return newBindings.length > 0 || unsetBindings.length > 0
-    }
 
     if (!savedPresetSerialized.value) return false
 
@@ -65,9 +64,8 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
     for (const keybinding of Object.values(userUnsetKeybindings.value)) {
       const serializedCombo = keybinding.combo.serialize()
-      if (result[serializedCombo]?.equals(keybinding)) {
+      if (result[serializedCombo]?.equals(keybinding))
         delete result[serializedCombo]
-      }
     }
 
     return {
@@ -142,9 +140,8 @@ export const useKeybindingStore = defineStore('keybinding', () => {
       return
     }
 
-    if (defaultKeybinding && !defaultKeybinding.equals(userUnsetKeybinding)) {
+    if (defaultKeybinding && !defaultKeybinding.equals(userUnsetKeybinding))
       unsetKeybinding(defaultKeybinding)
-    }
 
     addKeybinding(userKeybindings, keybinding, { existOk: true })
   }
@@ -175,12 +172,10 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
   function updateKeybindingOnCommand(keybinding: KeybindingImpl): boolean {
     const currentKeybinding = getKeybindingByCommandId(keybinding.commandId)
-    if (currentKeybinding?.equals(keybinding)) {
-      return false
-    }
-    if (currentKeybinding) {
-      unsetKeybinding(currentKeybinding)
-    }
+    if (currentKeybinding?.equals(keybinding)) return false
+
+    if (currentKeybinding) unsetKeybinding(currentKeybinding)
+
     addUserKeybinding(keybinding)
     return true
   }
@@ -193,9 +188,8 @@ export const useKeybindingStore = defineStore('keybinding', () => {
   function removeAllKeybindingsForCommand(commandId: string): boolean {
     const currentBindings = getKeybindingsByCommandId(commandId)
     if (currentBindings.length === 0) return false
-    for (const binding of currentBindings) {
-      unsetKeybinding(binding)
-    }
+    for (const binding of currentBindings) unsetKeybinding(binding)
+
     return true
   }
 
@@ -213,28 +207,22 @@ export const useKeybindingStore = defineStore('keybinding', () => {
 
     if (defaultBindings.length === 0) {
       if (currentBindings.length > 0) {
-        for (const binding of currentBindings) {
-          unsetKeybinding(binding)
-        }
+        for (const binding of currentBindings) unsetKeybinding(binding)
+
         return true
       }
       return false
     }
 
-    if (!isCommandKeybindingModified(commandId)) {
-      return false
-    }
+    if (!isCommandKeybindingModified(commandId)) return false
 
-    for (const binding of currentBindings) {
-      unsetKeybinding(binding)
-    }
+    for (const binding of currentBindings) unsetKeybinding(binding)
 
     const updatedUnset = { ...userUnsetKeybindings.value }
     for (const defaultBinding of defaultBindings) {
       const serializedCombo = defaultBinding.combo.serialize()
-      if (updatedUnset[serializedCombo]?.equals(defaultBinding)) {
+      if (updatedUnset[serializedCombo]?.equals(defaultBinding))
         delete updatedUnset[serializedCombo]
-      }
     }
     userUnsetKeybindings.value = updatedUnset
 
@@ -266,9 +254,8 @@ export const useKeybindingStore = defineStore('keybinding', () => {
         .map((b) => b.combo.serialize())
         .sort()
 
-      if (sortedCurrent.some((combo, i) => combo !== sortedDefault[i])) {
+      if (sortedCurrent.some((combo, i) => combo !== sortedDefault[i]))
         result.add(commandId)
-      }
     }
 
     return result

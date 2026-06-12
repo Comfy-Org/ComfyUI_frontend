@@ -39,14 +39,10 @@ export function useIntersectionObserver(
   }
 
   const unobserve = () => {
-    if (observer && target.value) {
-      observer.unobserve(target.value)
-    }
+    if (observer && target.value) observer.unobserve(target.value)
   }
 
-  if (immediate) {
-    watch(target, observe, { immediate: true, flush: 'post' })
-  }
+  if (immediate) watch(target, observe, { immediate: true, flush: 'post' })
 
   onBeforeUnmount(cleanup)
 

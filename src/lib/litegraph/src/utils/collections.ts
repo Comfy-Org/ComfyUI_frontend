@@ -14,9 +14,8 @@ export function getAllNestedItems(
   items: ReadonlySet<Positionable>
 ): Set<Positionable> {
   const allItems = new Set<Positionable>()
-  if (items) {
-    for (const item of items) addRecursively(item, allItems)
-  }
+  if (items) for (const item of items) addRecursively(item, allItems)
+
   return allItems
 
   function addRecursively(
@@ -25,9 +24,8 @@ export function getAllNestedItems(
   ): void {
     if (flatSet.has(item) || item.pinned) return
     flatSet.add(item)
-    if (item.children) {
+    if (item.children)
       for (const child of item.children) addRecursively(child, flatSet)
-    }
   }
 }
 
@@ -39,9 +37,7 @@ export function getAllNestedItems(
 export function findFirstNode(
   items: Iterable<Positionable>
 ): LGraphNode | undefined {
-  for (const item of items) {
-    if (item instanceof LGraphNode) return item
-  }
+  for (const item of items) if (item instanceof LGraphNode) return item
 }
 
 type FreeSlotResult<T extends { type: ISlotType }> =
@@ -87,11 +83,8 @@ export function findFreeSlotOfType<T extends { type: ISlotType }>(
           occupiedSlot ??= { index, slot }
         } else if (!wildSlot && (validType === '*' || slotType === '*')) {
           // Save the first free wildcard slot as a fallback
-          if (hasNoLinks(slot)) {
-            wildSlot = { index, slot }
-          } else {
-            occupiedWildSlot ??= { index, slot }
-          }
+          if (hasNoLinks(slot)) wildSlot = { index, slot }
+          else occupiedWildSlot ??= { index, slot }
         }
       }
     }
