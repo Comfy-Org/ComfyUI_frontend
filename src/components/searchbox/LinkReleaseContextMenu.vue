@@ -11,9 +11,11 @@
       <DropdownMenuContent
         side="bottom"
         align="start"
-        :side-offset="4"
-        :collision-padding="8"
+        :side-offset="SIDE_OFFSET"
+        :collision-padding="VIEWPORT_MARGIN"
+        :avoid-collisions="false"
         :class="contentClass"
+        :style="menuMaxHeight ? { maxHeight: `${menuMaxHeight}px` } : undefined"
         @open-auto-focus.prevent="focusSearch"
         @close-auto-focus.prevent
         @entry-focus="onEntryFocus"
@@ -167,6 +169,8 @@ import LinkReleaseNodeSubmenu from './LinkReleaseNodeSubmenu.vue'
 import MiddleTruncate from './MiddleTruncate.vue'
 import {
   buildLinkReleaseNodeCategories,
+  computeContextMenuTop,
+  estimateLinkReleaseMenuHeight,
   getLinkReleaseHeaderLabel,
   getLinkReleaseSuggestions,
   searchLinkReleaseNodes
@@ -191,11 +195,17 @@ const open = ref(false)
 const position = ref({ x: 0, y: 0 })
 const searchInput = ref<HTMLInputElement>()
 const query = ref('')
+const menuMaxHeight = ref<number>()
 let actionTaken = false
 
+const VIEWPORT_MARGIN = 8
+const SIDE_OFFSET = 4
+const MENU_WIDTH = 384
+
 const contentClass =
-  'z-1700 flex max-h-[min(80vh,var(--reka-dropdown-menu-content-available-height))] min-w-[260px] max-w-sm flex-col overflow-hidden rounded-lg border border-interface-menu-stroke bg-interface-menu-surface p-1 shadow-interface'
-const scrollClass = 'overflow-y-auto overflow-x-hidden scrollbar-custom'
+  'z-1700 flex min-w-[260px] max-w-sm flex-col overflow-hidden rounded-lg border border-interface-menu-stroke bg-interface-menu-surface p-1 shadow-interface'
+const scrollClass =
+  'flex-1 min-h-0 overflow-y-auto overflow-x-hidden scrollbar-custom'
 const submenuContentClass =
   'z-1700 flex w-sm flex-col overflow-hidden rounded-lg border border-interface-menu-stroke bg-interface-menu-surface p-1 shadow-interface'
 const submenuScrollClass =
@@ -316,7 +326,26 @@ function onRootSearchKeydown(event: KeyboardEvent) {
 function show(event: MouseEvent) {
   actionTaken = false
   query.value = ''
-  position.value = { x: event.clientX, y: event.clientY }
+  const menuHeight = estimateLinkReleaseMenuHeight({
+    hasHeader: Boolean(headerLabel.value),
+    suggestionCount: suggestions.value.length,
+    categoryCount: categories.value.length,
+    searchResultCount: 0,
+    showReroute: true
+  })
+  const menuTop = computeContextMenuTop({
+    cursorY: event.clientY,
+    menuHeight,
+    viewportHeight: window.innerHeight,
+    margin: VIEWPORT_MARGIN,
+    sideOffset: SIDE_OFFSET
+  })
+  menuMaxHeight.value = window.innerHeight - menuTop - VIEWPORT_MARGIN
+  const maxX = window.innerWidth - MENU_WIDTH - VIEWPORT_MARGIN
+  position.value = {
+    x: Math.min(event.clientX, Math.max(VIEWPORT_MARGIN, maxX)),
+    y: menuTop - SIDE_OFFSET
+  }
   void nextTick(() => {
     open.value = true
   })

@@ -171,3 +171,67 @@ export function computeSubmenuMaxHeight(metrics: {
   const { submenuTop, contextMenuHeight, viewportHeight, margin } = metrics
   return Math.max(contextMenuHeight, viewportHeight - submenuTop - margin)
 }
+
+const CONTENT_PADDING_Y = 8
+const HEADER_HEIGHT = 36
+const SEARCH_HEIGHT = 40
+const SEPARATOR_HEIGHT = 8
+const SECTION_LABEL_HEIGHT = 36
+const MENU_ITEM_HEIGHT = 36
+
+/**
+ * Rough pixel height of the link-release context menu from its Tailwind layout.
+ * Used once on open to bottom-anchor the panel without relying on Reka's 80vh
+ * collision sizing.
+ */
+export function estimateLinkReleaseMenuHeight(layout: {
+  hasHeader: boolean
+  suggestionCount: number
+  categoryCount: number
+  searchResultCount: number
+  showReroute: boolean
+}): number {
+  const {
+    hasHeader,
+    suggestionCount,
+    categoryCount,
+    searchResultCount,
+    showReroute
+  } = layout
+
+  let height = CONTENT_PADDING_Y + SEARCH_HEIGHT + SEPARATOR_HEIGHT
+  if (hasHeader) height += HEADER_HEIGHT
+
+  if (searchResultCount > 0) {
+    height += searchResultCount * MENU_ITEM_HEIGHT
+    return height
+  }
+
+  if (suggestionCount > 0) {
+    height += SECTION_LABEL_HEIGHT + suggestionCount * MENU_ITEM_HEIGHT
+  }
+  if (suggestionCount > 0 && categoryCount > 0) {
+    height += SEPARATOR_HEIGHT
+  }
+  if (categoryCount > 0) {
+    height += SECTION_LABEL_HEIGHT + categoryCount * MENU_ITEM_HEIGHT
+  }
+  if (showReroute) {
+    height += SEPARATOR_HEIGHT + MENU_ITEM_HEIGHT
+  }
+  return height
+}
+
+/** Bottom-anchor the context menu top edge within the viewport. */
+export function computeContextMenuTop(metrics: {
+  cursorY: number
+  menuHeight: number
+  viewportHeight: number
+  margin: number
+  sideOffset: number
+}): number {
+  const { cursorY, menuHeight, viewportHeight, margin, sideOffset } = metrics
+  const menuTopAtCursor = cursorY + sideOffset
+  const maxMenuTop = viewportHeight - margin - menuHeight
+  return Math.min(Math.max(margin, menuTopAtCursor), maxMenuTop)
+}

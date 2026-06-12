@@ -5,8 +5,10 @@ import { NodeSourceType } from '@/types/nodeSource'
 
 import {
   buildLinkReleaseNodeCategories,
+  computeContextMenuTop,
   computeSubmenuAlignOffset,
   computeSubmenuMaxHeight,
+  estimateLinkReleaseMenuHeight,
   filterNodesByName,
   getLinkReleaseHeaderLabel,
   getLinkReleaseSuggestions,
@@ -228,5 +230,53 @@ describe('computeSubmenuMaxHeight', () => {
       margin: 8
     })
     expect(height).toBe(420)
+  })
+})
+
+describe('estimateLinkReleaseMenuHeight', () => {
+  it('estimates a typical default layout with header, suggestions, categories and reroute', () => {
+    const height = estimateLinkReleaseMenuHeight({
+      hasHeader: true,
+      suggestionCount: 4,
+      categoryCount: 3,
+      searchResultCount: 0,
+      showReroute: true
+    })
+    expect(height).toBe(468)
+  })
+
+  it('estimates search results instead of the default sections', () => {
+    const height = estimateLinkReleaseMenuHeight({
+      hasHeader: true,
+      suggestionCount: 4,
+      categoryCount: 3,
+      searchResultCount: 5,
+      showReroute: false
+    })
+    expect(height).toBe(272)
+  })
+})
+
+describe('computeContextMenuTop', () => {
+  const base = {
+    menuHeight: 468,
+    viewportHeight: 1000,
+    margin: 8,
+    sideOffset: 4
+  }
+
+  it('bottom-anchors when the cursor is near the viewport bottom', () => {
+    const top = computeContextMenuTop({ ...base, cursorY: 900 })
+    expect(top).toBe(524)
+  })
+
+  it('opens at the cursor when there is room below', () => {
+    const top = computeContextMenuTop({ ...base, cursorY: 100 })
+    expect(top).toBe(104)
+  })
+
+  it('pins to the top margin when the cursor is above the viewport', () => {
+    const top = computeContextMenuTop({ ...base, cursorY: -10 })
+    expect(top).toBe(8)
   })
 })
