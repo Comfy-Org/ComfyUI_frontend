@@ -223,6 +223,7 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
   test('Bypassing a group bypasses contents', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
     await comfyPage.keyboard.selectAll()
+    await comfyPage.page.keyboard.press('.')
     await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
 
     const toggleBypass = () =>
@@ -251,7 +252,6 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     await ksampler.select()
     await comfyPage.page.keyboard.up('Shift')
 
-    await comfyPage.page.keyboard.press('.')
     await toggleBypass()
     await expect.poll(bypassCount, "won't toggle double selected node").toBe(7)
   })
