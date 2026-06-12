@@ -69,6 +69,90 @@ export function groupAsset(asset: AssetItem): AssetGrouping {
   return { groupIds: [...groupIds], unmappedTags: [...unmappedTags] }
 }
 
+export interface PlacedAsset {
+  asset: AssetItem
+  /** Path below the section root ('' = directly in it). */
+  subpath: string
+}
+
+interface RawPlacement {
+  asset: AssetItem
+  top: string
+  rest: string
+}
+
+// Backends tag both a folder and its parents (`checkpoints/sdxl` plus
+// `checkpoints`); within one bucket only the deepest path counts.
+function dropPrefixPlacements(placements: RawPlacement[]): RawPlacement[] {
+  return placements.filter(
+    (p, index) =>
+      !placements.some(
+        (q, qIndex) =>
+          q.top === p.top &&
+          qIndex !== index &&
+          (q.rest === p.rest
+            ? qIndex < index
+            : q.rest.startsWith(p.rest ? `${p.rest}/` : ''))
+      )
+  )
+}
+
+/**
+ * Places every asset into its curated groups and unmapped-tag buckets,
+ * preserving the user's sub-folder organisation as a subpath. When a group
+ * merges several disk roots (Diffusion models absorbs both `checkpoints`
+ * and `diffusion_models`) the root segment stays as the first subpath level
+ * so distinct disk folders never silently merge.
+ */
+export function placeAssetsInGroups(assets: AssetItem[]): {
+  byGroup: Map<string, PlacedAsset[]>
+  unmappedByTag: Map<string, PlacedAsset[]>
+} {
+  const groupPlacements = new Map<string, RawPlacement[]>()
+  const unmappedPlacements = new Map<string, RawPlacement[]>()
+
+  for (const asset of assets) {
+    const byBucket = new Map<string, RawPlacement[]>()
+    for (const tag of categoryTagsForAsset(asset)) {
+      const top = rawTagTopLevel(tag)
+      const rest = tag.split('/').slice(1).join('/')
+      const groupId = groupIdForRawTag(top)
+      const bucket = groupId ?? `tag:${top}`
+      const list = byBucket.get(bucket) ?? []
+      list.push({ asset, top, rest })
+      byBucket.set(bucket, list)
+    }
+    for (const [bucket, placements] of byBucket) {
+      const deduped = dropPrefixPlacements(placements)
+      const target = bucket.startsWith('tag:')
+        ? unmappedPlacements
+        : groupPlacements
+      const key = bucket.startsWith('tag:') ? bucket.slice(4) : bucket
+      target.set(key, [...(target.get(key) ?? []), ...deduped])
+    }
+  }
+
+  const byGroup = new Map<string, PlacedAsset[]>()
+  for (const [groupId, placements] of groupPlacements) {
+    const roots = new Set(placements.map((p) => p.top))
+    byGroup.set(
+      groupId,
+      placements.map(({ asset, top, rest }) => ({
+        asset,
+        subpath: roots.size > 1 ? (rest ? `${top}/${rest}` : top) : rest
+      }))
+    )
+  }
+  const unmappedByTag = new Map<string, PlacedAsset[]>()
+  for (const [tag, placements] of unmappedPlacements) {
+    unmappedByTag.set(
+      tag,
+      placements.map(({ asset, rest }) => ({ asset, subpath: rest }))
+    )
+  }
+  return { byGroup, unmappedByTag }
+}
+
 export function groupLabelForAsset(asset: AssetItem): string {
   const { groupIds, unmappedTags } = groupAsset(asset)
   if (groupIds.length > 0) {

@@ -11,14 +11,6 @@ type PartnerEntry = { kind: 'partner'; nodeDef: ComfyNodeDefImpl }
 export type SidebarItem = AssetEntry | PartnerEntry
 
 export type ProviderGroup = { provider: string; items: SidebarItem[] }
-export type Section = {
-  id: string
-  label: string
-  providers: ProviderGroup[]
-  totalCount: number
-  /** Unmapped user folder shown verbatim, rendered after curated groups. */
-  isUserFolder?: boolean
-}
 
 export type SortMode =
   | 'recent'

@@ -8,6 +8,7 @@ import {
   groupAsset,
   groupLabelForAsset,
   partnerKind,
+  placeAssetsInGroups,
   rawTagTopLevel
 } from './modelLibraryGrouping'
 
@@ -161,6 +162,66 @@ describe('directoryForAsset', () => {
 
   it('returns null when nothing locates the asset', () => {
     expect(directoryForAsset(makeAsset({ tags: ['models'] }))).toBeNull()
+  })
+})
+
+describe('placeAssetsInGroups', () => {
+  it('preserves sub-folder paths below the group root', () => {
+    const ghibli = makeAsset({
+      id: 'g',
+      tags: ['models', 'loras/anime/ghibli']
+    })
+    const { byGroup } = placeAssetsInGroups([ghibli])
+    expect(byGroup.get('loras')).toEqual([
+      { asset: ghibli, subpath: 'anime/ghibli' }
+    ])
+  })
+
+  it('keeps only the deepest path when a parent folder is also tagged', () => {
+    const asset = makeAsset({
+      id: 'a',
+      tags: ['models', 'checkpoints/sdxl', 'checkpoints']
+    })
+    const { byGroup } = placeAssetsInGroups([asset])
+    expect(byGroup.get('diffusion')).toEqual([{ asset, subpath: 'sdxl' }])
+  })
+
+  it('keeps the disk root as the first level when a group merges several roots', () => {
+    const checkpoint = makeAsset({
+      id: 'c',
+      tags: ['models', 'checkpoints/sdxl']
+    })
+    const diffusion = makeAsset({
+      id: 'd',
+      tags: ['models', 'diffusion_models/sdxl']
+    })
+    const { byGroup } = placeAssetsInGroups([checkpoint, diffusion])
+    expect(byGroup.get('diffusion')).toEqual([
+      { asset: checkpoint, subpath: 'checkpoints/sdxl' },
+      { asset: diffusion, subpath: 'diffusion_models/sdxl' }
+    ])
+  })
+
+  it('places multi-tagged assets in every mapped group with their own subpath', () => {
+    const shared = makeAsset({
+      id: 's',
+      tags: ['models', 'checkpoints', 'loras/shared']
+    })
+    const { byGroup } = placeAssetsInGroups([shared])
+    expect(byGroup.get('diffusion')).toEqual([{ asset: shared, subpath: '' }])
+    expect(byGroup.get('loras')).toEqual([{ asset: shared, subpath: 'shared' }])
+  })
+
+  it('nests unmapped tags under their verbatim top-level folder', () => {
+    const asset = makeAsset({
+      id: 'u',
+      tags: ['models', 'intrinsic_loras/sd15']
+    })
+    const { byGroup, unmappedByTag } = placeAssetsInGroups([asset])
+    expect(byGroup.size).toBe(0)
+    expect(unmappedByTag.get('intrinsic_loras')).toEqual([
+      { asset, subpath: 'sd15' }
+    ])
   })
 })
 

@@ -167,16 +167,17 @@ export function isPartnerNodeCategory(category: string | undefined): boolean {
 
 /**
  * Compact display name for a row:
- *   - Drops anything before the first '/' (provider prefix like "microsoft/").
+ *   - Keeps only the basename — provider prefixes ("microsoft/…") and folder
+ *     paths ("mymodel/v1/…") render as tree structure, not in the row.
  *   - Replaces hyphens between non-space characters with spaces.
  *     "Florence-2-large" -> "Florence 2 large"
  *   - Hyphens with a space on either side (" - ") are preserved.
  *   - Replaces underscores with spaces ("t5gemma_b_b_ul2" -> "t5gemma b b ul2").
  */
 export function formatRowDisplayName(raw: string): string {
-  const slashIdx = raw.indexOf('/')
-  const afterProvider = slashIdx >= 0 ? raw.slice(slashIdx + 1) : raw
-  return afterProvider.replace(/(?<=\S)-(?=\S)/g, ' ').replace(/_/g, ' ')
+  const slashIdx = raw.lastIndexOf('/')
+  const basename = slashIdx >= 0 ? raw.slice(slashIdx + 1) : raw
+  return basename.replace(/(?<=\S)-(?=\S)/g, ' ').replace(/_/g, ' ')
 }
 
 /**

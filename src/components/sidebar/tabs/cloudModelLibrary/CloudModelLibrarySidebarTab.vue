@@ -135,28 +135,16 @@
             class="flex flex-col"
             role="list"
           >
-            <template v-for="pg in section.providers" :key="pg.provider">
-              <div
-                v-if="section.providers.length > 1"
-                class="pt-2 pr-2 pb-0.5 pl-8 text-3xs font-medium tracking-wide text-muted-foreground uppercase"
-              >
-                {{ pg.provider }}
-              </div>
-              <template v-for="item in pg.items" :key="itemKey(item)">
-                <CloudModelLeaf
-                  v-if="item.kind === 'asset'"
-                  :asset="item.asset"
-                  @activate="handleAssetActivate"
-                  @hover-change="handleAssetHoverChange"
-                />
-                <CloudPartnerLeaf
-                  v-else
-                  :node-def="item.nodeDef"
-                  @activate="handlePartnerActivate"
-                  @hover-change="handlePartnerHoverChange"
-                />
-              </template>
-            </template>
+            <ModelFolderTree
+              :node="section.root"
+              :depth="0"
+              :expanded="expanded"
+              @toggle="setExpanded($event, !isExpanded($event))"
+              @asset-activate="handleAssetActivate"
+              @asset-hover-change="handleAssetHoverChange"
+              @partner-activate="handlePartnerActivate"
+              @partner-hover-change="handlePartnerHoverChange"
+            />
           </div>
           <div
             v-if="
@@ -199,8 +187,7 @@ import { useI18n } from 'vue-i18n'
 import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import AssetHoverPreview from '@/components/sidebar/tabs/cloudModelLibrary/AssetHoverPreview.vue'
-import CloudModelLeaf from '@/components/sidebar/tabs/cloudModelLibrary/CloudModelLeaf.vue'
-import CloudPartnerLeaf from '@/components/sidebar/tabs/cloudModelLibrary/CloudPartnerLeaf.vue'
+import ModelFolderTree from '@/components/sidebar/tabs/cloudModelLibrary/ModelFolderTree.vue'
 import PartnerNodeHoverPreview from '@/components/sidebar/tabs/cloudModelLibrary/PartnerNodeHoverPreview.vue'
 import {
   MODEL_GROUPS,
@@ -210,15 +197,19 @@ import {
   isPartnerNodeCategory
 } from '@/components/sidebar/tabs/cloudModelLibrary/modelGroups'
 import { isLikelyModelFile } from '@/components/sidebar/tabs/cloudModelLibrary/modelFileFilter'
-import {
-  directoryForAsset,
-  groupAsset,
-  groupLabelForAsset,
-  partnerKind
-} from '@/components/sidebar/tabs/cloudModelLibrary/modelLibraryGrouping'
-import { buildProviderGroups } from '@/components/sidebar/tabs/cloudModelLibrary/modelLibrarySort'
+import { buildTreeSection } from '@/components/sidebar/tabs/cloudModelLibrary/modelFolderTree'
 import type {
   Section,
+  TreeEntry
+} from '@/components/sidebar/tabs/cloudModelLibrary/modelFolderTree'
+import {
+  directoryForAsset,
+  groupLabelForAsset,
+  partnerKind,
+  placeAssetsInGroups
+} from '@/components/sidebar/tabs/cloudModelLibrary/modelLibraryGrouping'
+import type { PlacedAsset } from '@/components/sidebar/tabs/cloudModelLibrary/modelLibraryGrouping'
+import type {
   SidebarItem,
   SortMode
 } from '@/components/sidebar/tabs/cloudModelLibrary/modelLibrarySort'
@@ -456,12 +447,21 @@ const sections = computed<Section[]>(() => {
     }
     if (merged.length === 0) return []
     merged.sort((a, b) => a.score - b.score)
+    const items = merged.map((m) => m.item)
     return [
       {
         id: 'search-results',
         label: t('assets.searchResults'),
-        providers: [{ provider: '', items: merged.map((m) => m.item) }],
-        totalCount: merged.length
+        totalCount: items.length,
+        // Relevance-ordered flat list — built directly so the tree builder
+        // doesn't re-sort it.
+        root: {
+          id: 'search-results',
+          name: '',
+          providers: [{ provider: '', items }],
+          children: [],
+          totalCount: items.length
+        }
       }
     ]
   }
@@ -469,46 +469,45 @@ const sections = computed<Section[]>(() => {
   const buildAssetSection = (
     id: string,
     label: string,
-    list: AssetItem[]
+    placed: PlacedAsset[]
   ): Section | null => {
-    if (list.length === 0) return null
-    const items: SidebarItem[] = list.map((asset) => ({ kind: 'asset', asset }))
-    return {
-      id,
-      label,
-      providers: buildProviderGroups(items, mode, isSearching),
-      totalCount: items.length
-    }
+    const entries: TreeEntry[] = placed.map(({ asset, subpath }) => ({
+      subpath,
+      item: { kind: 'asset', asset }
+    }))
+    return buildTreeSection(id, label, entries, mode, isSearching)
   }
 
   const buildPartnerSection = (): Section | null => {
-    if (matchedPartners.value.length === 0) return null
-    const items: SidebarItem[] = matchedPartners.value.map((nodeDef) => ({
-      kind: 'partner',
-      nodeDef
+    const entries: TreeEntry[] = matchedPartners.value.map((nodeDef) => ({
+      subpath: '',
+      item: { kind: 'partner', nodeDef }
     }))
-    return {
-      id: PARTNER_NODES_GROUP_ID,
-      label: t('sideToolbar.nodeLibraryTab.sections.partnerNodes'),
-      providers: buildProviderGroups(items, mode, isSearching),
-      totalCount: items.length
-    }
+    return buildTreeSection(
+      PARTNER_NODES_GROUP_ID,
+      t('sideToolbar.nodeLibraryTab.sections.partnerNodes'),
+      entries,
+      mode,
+      isSearching
+    )
   }
 
-  // Disk view: group purely by where the file lives, one verbatim section
-  // per directory. Partner nodes have no disk location and trail at the end.
+  // Disk view: one section per top-level directory, with the user's deeper
+  // organisation nested inside. Partner nodes have no disk location and
+  // trail at the end.
   if (groupBy.value === 'directory') {
-    const byDirectory = new Map<string, AssetItem[]>()
+    const byTop = new Map<string, PlacedAsset[]>()
     for (const asset of matchedAssets.value) {
       const directory = directoryForAsset(asset) ?? ''
-      const list = byDirectory.get(directory) ?? []
-      list.push(asset)
-      byDirectory.set(directory, list)
+      const [top, ...rest] = directory.split('/')
+      const list = byTop.get(top) ?? []
+      list.push({ asset, subpath: rest.join('/') })
+      byTop.set(top, list)
     }
-    const directorySections = Array.from(byDirectory.entries())
-      .map(([directory, list]) => {
-        const id = directory ? `dir:${directory}` : 'dir:uncategorized'
-        const label = directory || t('assets.groupBy.ungrouped')
+    const directorySections = Array.from(byTop.entries())
+      .map(([top, list]) => {
+        const id = top ? `dir:${top}` : 'dir:uncategorized'
+        const label = top || t('assets.groupBy.ungrouped')
         return buildAssetSection(id, label, list)
       })
       .filter((section): section is Section => section !== null)
@@ -522,27 +521,14 @@ const sections = computed<Section[]>(() => {
   const knownGroups = MODEL_GROUPS.filter(
     (g) => g.id !== PARTNER_NODES_GROUP_ID
   )
-  const assetsByGroup = new Map<string, AssetItem[]>()
-  const unmappedByTag = new Map<string, AssetItem[]>()
-
   // An asset may belong to several groups: the backend tags a file with
-  // every model folder it could live in (shared-folder setups), and the
-  // base-model override can pull it into a family bucket. Membership in
-  // multiple sections is intended; tags with no mapping fall through to
-  // the verbatim "Your models" tail.
-  for (const asset of matchedAssets.value) {
-    const { groupIds, unmappedTags } = groupAsset(asset)
-    for (const groupId of groupIds) {
-      const list = assetsByGroup.get(groupId) ?? []
-      list.push(asset)
-      assetsByGroup.set(groupId, list)
-    }
-    for (const tag of unmappedTags) {
-      const list = unmappedByTag.get(tag) ?? []
-      list.push(asset)
-      unmappedByTag.set(tag, list)
-    }
-  }
+  // every model folder it could live in (shared-folder setups). Membership
+  // in multiple sections is intended; tags with no mapping fall through to
+  // the verbatim "Other models" tail. Sub-folder paths below each section
+  // root nest as a tree.
+  const { byGroup: assetsByGroup, unmappedByTag } = placeAssetsInGroups(
+    matchedAssets.value
+  )
 
   const result: Section[] = []
 
@@ -631,10 +617,6 @@ const isExpanded = (id: string) => Boolean(expanded.value[id])
 
 const setExpanded = (id: string, open: boolean) => {
   expanded.value = { ...expanded.value, [id]: open }
-}
-
-function itemKey(item: SidebarItem): string {
-  return item.kind === 'asset' ? `a:${item.asset.id}` : `n:${item.nodeDef.name}`
 }
 
 watch(searchQuery, (next, prev) => {
