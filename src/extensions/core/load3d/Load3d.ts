@@ -366,6 +366,11 @@ class Load3d {
 
     if (DIRECT_EXPORT_FORMATS.has(format)) {
       try {
+        if (this.getSourceFormat() !== format) {
+          throw new Error(
+            `Cannot export ${format} without converting from the loaded ${this.getSourceFormat() ?? 'unknown'} source`
+          )
+        }
         await ModelExporter.exportDirect(originalURL, filename, format)
       } catch (error) {
         console.error(`Error exporting model as ${format}:`, error)

@@ -1181,6 +1181,7 @@ describe('Load3d', () => {
 
     it('downloads the source file directly for direct-export formats', async () => {
       exportDirectMock.mockReset()
+      detectFormatFromURLMock.mockReturnValue('ply')
       const model = new THREE.Object3D()
       setupForExport({
         currentModel: model,
@@ -1198,6 +1199,22 @@ describe('Load3d', () => {
       expect(exportGLBMock).not.toHaveBeenCalled()
       expect(exportOBJMock).not.toHaveBeenCalled()
       expect(cloneSkinnedMock).not.toHaveBeenCalled()
+    })
+
+    it('refuses a direct export when the requested format differs from the source', async () => {
+      exportDirectMock.mockReset()
+      detectFormatFromURLMock.mockReturnValue('spz')
+      vi.spyOn(console, 'error').mockImplementation(() => {})
+      setupForExport({
+        currentModel: new THREE.Object3D(),
+        originalFileName: 'scene',
+        originalURL: 'http://example.com/api/view?filename=scene.spz'
+      })
+
+      await expect(ctx.load3d.exportModel('ply')).rejects.toThrow(
+        'Cannot export ply without converting from the loaded spz source'
+      )
+      expect(exportDirectMock).not.toHaveBeenCalled()
     })
 
     it('getSourceFormat derives the extension from the original URL', () => {

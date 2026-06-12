@@ -358,16 +358,12 @@ describe('ModelExporter', () => {
       vi.unstubAllGlobals()
     })
 
-    it('alerts and rethrows when there is no source URL', async () => {
-      vi.spyOn(console, 'error').mockImplementation(() => {})
-
+    it('throws without toasting when there is no source URL, leaving the alert to the caller', async () => {
       await expect(
         ModelExporter.exportDirect(null, 'out.spz', 'spz')
       ).rejects.toThrow('No source file available to export as spz')
       expect(downloadBlobMock).not.toHaveBeenCalled()
-      expect(addAlertMock).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel:{"format":"SPZ"}'
-      )
+      expect(addAlertMock).not.toHaveBeenCalled()
     })
   })
 

@@ -190,10 +190,6 @@ export class ModelExporter {
     format: string
   ): Promise<void> {
     if (!originalURL) {
-      console.error(`No source file available to export as ${format}`)
-      useToastStore().addAlert(
-        t('toastMessages.failedToExportModel', { format: format.toUpperCase() })
-      )
       throw new Error(`No source file available to export as ${format}`)
     }
 

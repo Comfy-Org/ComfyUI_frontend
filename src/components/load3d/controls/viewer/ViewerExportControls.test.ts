@@ -129,4 +129,20 @@ describe('ViewerExportControls', () => {
 
     expect(onExportModel).toHaveBeenCalledWith('spz')
   })
+
+  it('repairs the selected format when sourceFormat switches to a direct-export type', async () => {
+    const onExportModel = vi.fn()
+    const { user, rerender } = renderComponent(onExportModel, null)
+    const select = screen.getByRole('combobox') as HTMLSelectElement
+
+    expect(select.value).toBe('obj')
+
+    await rerender({ onExportModel, sourceFormat: 'ply' })
+
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['ply'])
+
+    await user.click(screen.getByRole('button', { name: 'Export' }))
+
+    expect(onExportModel).toHaveBeenCalledWith('ply')
+  })
 })
