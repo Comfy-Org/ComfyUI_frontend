@@ -212,6 +212,44 @@ describe('placeAssetsInGroups', () => {
     expect(byGroup.get('loras')).toEqual([{ asset: shared, subpath: 'shared' }])
   })
 
+  it('flattens immutable catalog assets to the section root', () => {
+    const catalog = makeAsset({
+      id: 'c',
+      tags: ['models', 'diffusers/Kolors/text_encoder'],
+      is_immutable: true
+    })
+    const { byGroup } = placeAssetsInGroups([catalog])
+    expect(byGroup.get('diffusion')).toEqual([{ asset: catalog, subpath: '' }])
+  })
+
+  it('does not count immutable assets toward the multi-root rule', () => {
+    const catalogCheckpoint = makeAsset({
+      id: 'c',
+      tags: ['models', 'checkpoints'],
+      is_immutable: true
+    })
+    const catalogDiffusion = makeAsset({
+      id: 'd',
+      tags: ['models', 'diffusion_models'],
+      is_immutable: true
+    })
+    const mine = makeAsset({
+      id: 'm',
+      tags: ['models', 'checkpoints/sdxl'],
+      is_immutable: false
+    })
+    const { byGroup } = placeAssetsInGroups([
+      catalogCheckpoint,
+      catalogDiffusion,
+      mine
+    ])
+    expect(byGroup.get('diffusion')).toEqual([
+      { asset: catalogCheckpoint, subpath: '' },
+      { asset: catalogDiffusion, subpath: '' },
+      { asset: mine, subpath: 'sdxl' }
+    ])
+  })
+
   it('nests unmapped tags under their verbatim top-level folder', () => {
     const asset = makeAsset({
       id: 'u',

@@ -97,6 +97,14 @@ function dropPrefixPlacements(placements: RawPlacement[]): RawPlacement[] {
   )
 }
 
+// Immutable assets are the platform's catalog: their paths are storage
+// layout (HF repo internals, shard folders), not organisation the user
+// chose, so they flatten to the section root. Mutable assets are the
+// user's own and keep their folder tree.
+function isUserOrganised(asset: AssetItem): boolean {
+  return asset.is_immutable !== true
+}
+
 /**
  * Places every asset into its curated groups and unmapped-tag buckets,
  * preserving the user's sub-folder organisation as a subpath. When a group
@@ -115,7 +123,9 @@ export function placeAssetsInGroups(assets: AssetItem[]): {
     const byBucket = new Map<string, RawPlacement[]>()
     for (const tag of categoryTagsForAsset(asset)) {
       const top = rawTagTopLevel(tag)
-      const rest = tag.split('/').slice(1).join('/')
+      const rest = isUserOrganised(asset)
+        ? tag.split('/').slice(1).join('/')
+        : ''
       const groupId = groupIdForRawTag(top)
       const bucket = groupId ?? `tag:${top}`
       const list = byBucket.get(bucket) ?? []
@@ -134,12 +144,19 @@ export function placeAssetsInGroups(assets: AssetItem[]): {
 
   const byGroup = new Map<string, PlacedAsset[]>()
   for (const [groupId, placements] of groupPlacements) {
-    const roots = new Set(placements.map((p) => p.top))
+    const roots = new Set(
+      placements.filter((p) => isUserOrganised(p.asset)).map((p) => p.top)
+    )
     byGroup.set(
       groupId,
       placements.map(({ asset, top, rest }) => ({
         asset,
-        subpath: roots.size > 1 ? (rest ? `${top}/${rest}` : top) : rest
+        subpath:
+          isUserOrganised(asset) && roots.size > 1
+            ? rest
+              ? `${top}/${rest}`
+              : top
+            : rest
       }))
     )
   }
