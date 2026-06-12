@@ -175,22 +175,31 @@ export async function submitOAuthConsentDecision({
   // to the registered URI, so scheme, authority, and path must match
   // exactly. No per-client scheme list lives in the frontend — new native
   // clients need only their backend registration.
-  let target: URL
-  try {
-    target = new URL(redirectUrl, globalThis.location.origin)
-  } catch {
-    throw new Error('OAuth consent redirect_url is not a valid URL')
+  const parseTarget = () => {
+    try {
+      return new URL(redirectUrl, globalThis.location.origin)
+    } catch (err) {
+      throw new Error('OAuth consent redirect_url is not a valid URL', {
+        cause: err
+      })
+    }
   }
+  const target = parseTarget()
   if (EXECUTABLE_SCHEMES.has(target.protocol)) {
     throw new Error('OAuth consent redirect_url has an unsafe scheme')
   }
   if (expectedRedirectUri) {
-    let expected: URL
-    try {
-      expected = new URL(expectedRedirectUri)
-    } catch {
-      throw new Error('OAuth consent challenge redirect_uri is not a valid URL')
+    const parseExpected = () => {
+      try {
+        return new URL(expectedRedirectUri)
+      } catch (err) {
+        throw new Error(
+          'OAuth consent challenge redirect_uri is not a valid URL',
+          { cause: err }
+        )
+      }
     }
+    const expected = parseExpected()
     const matchesRegistration =
       target.protocol === expected.protocol &&
       target.host === expected.host &&

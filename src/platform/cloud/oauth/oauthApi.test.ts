@@ -270,31 +270,44 @@ describe('submitOAuthConsentDecision', () => {
   })
 
   it.for([
-    // Custom scheme with no expectedRedirectUri: unbindable, falls back
-    // to the http(s)-only rule.
-    ['org.comfy.ios://oauth-callback?code=xyz', undefined, 'unsafe scheme'],
-    // Bound challenge, different scheme: wrong-client redirect.
+    [
+      'org.comfy.ios://oauth-callback?code=xyz',
+      undefined,
+      'unsafe scheme',
+      'custom scheme with no expectedRedirectUri is unbindable, falls back to the http(s)-only rule'
+    ],
     [
       'com.evil.app://oauth-callback?code=xyz',
       'org.comfy.ios://oauth-callback',
-      'does not match'
+      'does not match',
+      'bound challenge, different scheme: wrong-client redirect'
     ],
-    // Bound challenge, same scheme but different path.
     [
       'org.comfy.ios://oauth-callback/../steal?code=xyz',
       'org.comfy.ios://oauth-callback',
-      'does not match'
+      'does not match',
+      'bound challenge, same scheme but different path'
     ],
-    // Executable schemes are rejected even if the challenge claims them.
-    ['javascript:alert(1)', 'javascript:alert(1)', 'unsafe scheme'],
+    [
+      'javascript:alert(1)',
+      'javascript:alert(1)',
+      'unsafe scheme',
+      'executable schemes are rejected even if the challenge claims them'
+    ],
     [
       'data:text/html,<script>alert(1)</script>',
       'data:text/html,x',
-      'unsafe scheme'
+      'unsafe scheme',
+      'data: scheme rejected even if the challenge claims it'
     ],
-    ['blob:https://cloud.comfy.org/abc', undefined, 'unsafe scheme']
+    [
+      'blob:https://cloud.comfy.org/abc',
+      undefined,
+      'unsafe scheme',
+      'blob: scheme is unsafe'
+    ]
   ] as const)(
-    'rejects redirect_url %s (expected registration: %s)',
+    'rejects redirect_url %s (registration %s, expects %s): %s',
     async ([redirectUrl, expectedRedirectUri, expectedError]) => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(
         okResponse({ redirect_url: redirectUrl })
