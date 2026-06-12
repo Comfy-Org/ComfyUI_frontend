@@ -27,7 +27,7 @@
             <button
               v-if="hasMultipleNodeTypes"
               type="button"
-              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-1 focus-visible:outline-none"
+              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-1 focus-visible:outline-none"
               :title="group.type"
               :aria-label="titleToggleAriaLabel"
               :aria-expanded="expanded"
@@ -38,7 +38,7 @@
             <button
               v-else-if="primaryLocatableNodeType"
               type="button"
-              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-1 focus-visible:outline-none"
+              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-1 focus-visible:outline-none"
               :title="group.type"
               @click="handleLocateNode(primaryLocatableNodeType)"
             >
@@ -46,7 +46,7 @@
             </button>
             <span
               v-else
-              class="min-w-0 truncate text-sm/relaxed font-normal text-base-foreground"
+              class="min-w-0 truncate text-xs/relaxed font-normal text-base-foreground"
               :title="group.type"
             >
               {{ group.type }}
@@ -55,7 +55,7 @@
               v-if="hasMultipleNodeTypes"
               data-testid="swap-node-group-count"
               role="img"
-              class="flex size-6 shrink-0 items-center justify-center rounded-md bg-secondary-background-selected text-xs font-bold text-muted-foreground"
+              class="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-sm bg-secondary-background-hover px-1 text-2xs font-semibold text-base-foreground"
               :aria-label="t('g.nodesCount', group.nodeTypes.length)"
             >
               {{ group.nodeTypes.length }}
@@ -80,7 +80,7 @@
       <Button
         variant="secondary"
         size="sm"
-        class="h-8 shrink-0 rounded-lg text-sm"
+        class="shrink-0"
         @click="handleReplaceNode"
       >
         <i

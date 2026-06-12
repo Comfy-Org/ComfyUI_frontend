@@ -64,7 +64,7 @@
           </button>
           <span
             v-else
-            class="min-w-0 truncate text-sm/relaxed font-normal"
+            class="min-w-0 truncate text-xs/relaxed font-normal"
             :class="
               isUnknownPack ? 'text-warning-background' : 'text-base-foreground'
             "
@@ -80,7 +80,7 @@
             v-if="showInfoButton && group.packId !== null"
             variant="textonly"
             size="icon-sm"
-            class="size-7 shrink-0 text-muted-foreground hover:bg-transparent hover:text-base-foreground"
+            class="size-6 shrink-0 text-muted-foreground hover:bg-transparent hover:text-base-foreground"
             :aria-label="t('rightSidePanel.missingNodePacks.viewInManager')"
             @click="emit('openManagerInfo', group.packId ?? '')"
           >
@@ -89,7 +89,7 @@
           <span
             v-if="showNodeCount"
             data-testid="missing-node-pack-count"
-            class="flex size-6 shrink-0 items-center justify-center rounded-md bg-secondary-background-selected text-xs font-bold text-muted-foreground"
+            class="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-sm bg-secondary-background-hover px-1 text-2xs font-semibold text-base-foreground"
           >
             {{ group.nodeTypes.length }}
           </span>
@@ -99,7 +99,7 @@
         <Button
           variant="secondary"
           size="sm"
-          class="h-8 shrink-0 rounded-lg text-sm"
+          class="shrink-0"
           :disabled="isPackInstalled || isInstalling"
           @click="handlePackInstallClick"
         >
@@ -122,10 +122,10 @@
       </div>
       <div
         v-else-if="showLoadingAction"
-        class="ml-auto flex h-8 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-lg bg-secondary-background px-2 py-1 text-sm opacity-60 select-none"
+        class="ml-auto flex h-6 shrink-0 cursor-not-allowed items-center justify-center overflow-hidden rounded-sm bg-secondary-background px-2 py-1 text-xs opacity-60 select-none"
       >
         <DotSpinner duration="1s" :size="12" class="mr-1.5 shrink-0" />
-        <span class="text-foreground min-w-0 truncate text-sm">
+        <span class="text-foreground min-w-0 truncate text-xs">
           {{ t('g.loading') }}
         </span>
       </div>
@@ -133,7 +133,7 @@
         <Button
           variant="secondary"
           size="sm"
-          class="h-8 shrink-0 rounded-lg text-sm"
+          class="shrink-0"
           @click="
             openManager({
               initialTab: ManagerTab.All,
@@ -163,7 +163,7 @@
         v-if="showNodeTypeList"
         :class="
           cn(
-            'm-0 list-none space-y-1 p-0',
+            'm-0 list-none p-0',
             (hasMultipleNodeTypes || isUnknownPack) && 'pl-5'
           )
         "
@@ -190,7 +190,7 @@
               </button>
               <span
                 v-else
-                class="text-sm/relaxed wrap-break-word text-muted-foreground"
+                class="text-xs/relaxed wrap-break-word text-muted-foreground"
               >
                 {{ getLabel(nodeType) }}
               </span>
@@ -241,7 +241,7 @@ const { t } = useI18n()
 const expandedOverride = ref<boolean | null>(null)
 
 const packTextButtonClass =
-  'm-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word outline-none focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none'
+  'm-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word outline-none focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none'
 
 const { missingNodePacks, isLoading } = useMissingNodes()
 const comfyManagerStore = useComfyManagerStore()

@@ -27,12 +27,12 @@
       </Button>
 
       <span class="flex min-w-0 flex-1 flex-col gap-0">
-        <span class="block min-w-0 text-sm/tight">
+        <span class="flex min-w-0 items-center gap-1 text-xs/tight">
           <button
             v-if="hasModelLabelControl"
             ref="modelLabelControl"
             type="button"
-            class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
+            class="m-0 min-w-0 cursor-pointer appearance-none border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
             :title="displayModelName"
             @click="handleModelLabelClick"
           >
@@ -40,7 +40,7 @@
           </button>
           <span
             v-else
-            class="font-normal wrap-break-word text-base-foreground"
+            class="min-w-0 font-normal wrap-break-word text-base-foreground"
             :title="displayModelName"
           >
             {{ displayModelName }}
@@ -48,14 +48,14 @@
           <span
             v-if="hasMultipleReferences"
             data-testid="missing-model-reference-count"
-            class="ml-2 inline-flex size-6 shrink-0 items-center justify-center rounded-md bg-secondary-background-selected align-middle text-xs font-bold text-muted-foreground"
+            class="inline-flex h-4 min-w-4 shrink-0 items-center justify-center rounded-sm bg-secondary-background-hover px-1 text-2xs font-semibold text-base-foreground"
           >
             {{ model.referencingNodes.length }}
           </span>
           <Button
             variant="textonly"
             size="icon-sm"
-            class="ml-2 inline-flex size-7 shrink-0 align-middle text-muted-foreground hover:bg-transparent hover:text-base-foreground"
+            class="size-6 shrink-0 text-muted-foreground hover:bg-transparent hover:text-base-foreground"
             :aria-label="linkLabel"
             :title="linkLabel"
             @click="copyModelLink"
@@ -82,7 +82,7 @@
           data-testid="missing-model-import"
           variant="secondary"
           size="sm"
-          class="h-8 shrink-0 rounded-lg text-sm"
+          class="shrink-0"
           @click="showUploadDialog"
         >
           {{ t('g.import') }}
@@ -123,7 +123,7 @@
           data-testid="missing-model-download"
           variant="secondary"
           size="sm"
-          class="h-8 shrink-0 rounded-lg text-sm"
+          class="shrink-0"
           :aria-label="`${t('g.download')} ${model.name}`"
           @click="handleDownload"
         >
@@ -149,7 +149,7 @@
         v-if="showReferenceList"
         :class="
           cn(
-            'm-0 list-none space-y-0.5 p-0',
+            'm-0 list-none p-0',
             (hasMultipleReferences || isUnknownCategory) && 'pl-5'
           )
         "
@@ -159,10 +159,10 @@
           :key="`${String(ref.nodeId)}::${ref.widgetName}`"
           class="min-w-0"
         >
-          <div class="flex min-h-6 min-w-0 items-center gap-2">
+          <div class="flex min-h-8 min-w-0 items-center gap-2">
             <button
               type="button"
-              class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/tight font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
+              class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-xs/tight font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
               @click="emit('locateModel', String(ref.nodeId))"
             >
               {{
@@ -174,7 +174,7 @@
               variant="textonly"
               size="icon-sm"
               :aria-label="t('rightSidePanel.missingModels.locateNode')"
-              class="ml-auto size-6 shrink-0 text-muted-foreground hover:text-base-foreground"
+              class="ml-auto size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
               @click="emit('locateModel', String(ref.nodeId))"
             >
               <i aria-hidden="true" class="icon-[lucide--locate] size-4" />

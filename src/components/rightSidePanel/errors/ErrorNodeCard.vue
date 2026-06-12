@@ -1,20 +1,20 @@
 <template>
-  <div class="flex min-h-0 flex-1 flex-col overflow-hidden">
+  <div class="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
     <div
       v-if="card.nodeId && !compact"
-      class="flex flex-wrap items-center gap-2 py-2"
+      class="flex min-h-8 flex-wrap items-center gap-2"
     >
       <button
         v-if="hasRuntimeError && (card.nodeTitle || card.title)"
         type="button"
-        class="m-0 min-w-0 flex-1 cursor-pointer appearance-none truncate border-0 bg-transparent p-0 text-left text-sm font-medium text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
+        class="m-0 min-w-0 flex-1 cursor-pointer appearance-none truncate border-0 bg-transparent p-0 text-left text-xs font-normal text-base-foreground outline-none focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
         @click="handleLocateNode"
       >
         {{ card.nodeTitle || card.title }}
       </button>
       <span
         v-else-if="card.nodeTitle || card.title"
-        class="flex-1 truncate text-sm font-medium text-muted-foreground"
+        class="flex-1 truncate text-xs font-normal text-base-foreground"
       >
         {{ card.nodeTitle || card.title }}
       </span>
@@ -23,7 +23,7 @@
           v-if="card.isSubgraphNode"
           variant="secondary"
           size="sm"
-          class="h-8 shrink-0 rounded-lg text-sm"
+          class="shrink-0"
           @click.stop="handleEnterSubgraph"
         >
           {{ t('rightSidePanel.enterSubgraph') }}
@@ -59,23 +59,23 @@
     </div>
 
     <div
-      class="flex min-h-0 flex-1 flex-col space-y-4 divide-y divide-interface-stroke/20"
+      class="flex min-h-0 flex-1 flex-col space-y-2 divide-y divide-interface-stroke/20"
     >
       <div
         v-for="(error, idx) in card.errors"
         :key="idx"
-        class="flex min-h-0 flex-col gap-3"
+        class="flex min-h-0 flex-col gap-1"
       >
         <p
           v-if="getInlineMessage(error)"
-          class="m-0 max-h-[4lh] overflow-y-auto px-0.5 text-sm/relaxed wrap-break-word whitespace-pre-wrap"
+          class="m-0 max-h-[4lh] overflow-y-auto px-0.5 text-xs/relaxed wrap-break-word whitespace-pre-wrap"
         >
           {{ getInlineMessage(error) }}
         </p>
 
         <ul
           v-if="getInlineItemLabel(error)"
-          class="m-0 list-disc space-y-1 pl-5 text-sm/relaxed text-muted-foreground marker:text-muted-foreground"
+          class="m-0 list-disc space-y-1 pl-5 text-xs/relaxed text-muted-foreground marker:text-muted-foreground"
         >
           <li class="min-w-0 wrap-break-word">
             <button
@@ -96,13 +96,13 @@
           v-if="!error.isRuntimeError && getInlineDetails(error, idx)"
           :class="
             cn(
-              'overflow-y-auto rounded-lg border border-interface-stroke/30 bg-secondary-background p-2.5',
+              'overflow-y-auto rounded-lg bg-base-foreground/5 p-3',
               'max-h-[6lh]'
             )
           "
         >
           <p
-            class="m-0 font-mono text-xs/relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
+            class="m-0 text-xs/normal wrap-break-word whitespace-pre-wrap text-base-foreground/50"
           >
             {{ getInlineDetails(error, idx) }}
           </p>
@@ -115,60 +115,61 @@
             role="region"
             data-testid="runtime-error-panel"
             :aria-label="t('rightSidePanel.errorLog')"
-            class="flex min-h-0 flex-col gap-3"
+            class="flex min-h-0 flex-col gap-1"
           >
             <div
               v-if="getInlineDetails(error, idx)"
-              class="overflow-hidden rounded-lg border border-interface-stroke/30 bg-secondary-background"
+              class="flex flex-col gap-3 rounded-lg bg-base-foreground/5 p-3"
             >
-              <div
-                class="flex items-center justify-between gap-2 px-3 pt-3 pb-2"
-              >
-                <span
-                  class="text-xs font-semibold tracking-wide text-base-foreground uppercase"
-                >
-                  {{ t('rightSidePanel.errorLog') }}
-                </span>
-                <Button
-                  variant="textonly"
-                  size="icon-sm"
-                  class="size-7 shrink-0 text-muted-foreground hover:text-base-foreground"
-                  :aria-label="t('g.copy')"
-                  data-testid="error-card-copy"
-                  @click="handleCopyError(idx)"
-                >
-                  <i class="icon-[lucide--copy] size-4" />
-                </Button>
-              </div>
-              <div class="max-h-[15lh] overflow-y-auto px-3 pb-3">
-                <p
-                  class="m-0 font-mono text-xs/relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
-                >
-                  {{ getInlineDetails(error, idx) }}
-                </p>
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center justify-between gap-1 py-1">
+                  <span
+                    class="text-xs font-semibold text-base-foreground uppercase"
+                  >
+                    {{ t('rightSidePanel.errorLog') }}
+                  </span>
+                  <Button
+                    variant="textonly"
+                    size="icon-sm"
+                    class="size-7 shrink-0 text-muted-foreground hover:text-base-foreground"
+                    :aria-label="t('g.copy')"
+                    data-testid="error-card-copy"
+                    @click="handleCopyError(idx)"
+                  >
+                    <i class="icon-[lucide--copy] size-4" />
+                  </Button>
+                </div>
+                <div class="max-h-[15lh] overflow-y-auto">
+                  <p
+                    class="m-0 text-xs/normal wrap-break-word whitespace-pre-wrap text-base-foreground/50"
+                  >
+                    {{ getInlineDetails(error, idx) }}
+                  </p>
+                </div>
               </div>
 
-              <div class="mx-3 mt-1 h-px bg-base-foreground/20" />
-              <div class="mx-3 flex items-center justify-between gap-2 py-2">
+              <div aria-hidden="true" class="h-px w-full bg-interface-stroke" />
+
+              <div class="flex items-center justify-between gap-2">
                 <Button
                   v-tooltip.top="t('rightSidePanel.getHelpTooltip')"
                   variant="textonly"
                   size="sm"
-                  class="h-8 justify-start gap-1 rounded-lg px-0 text-sm hover:bg-transparent hover:text-base-foreground"
+                  class="justify-start gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground"
                   @click="handleGetHelp"
                 >
-                  <i class="icon-[lucide--external-link] size-3.5" />
+                  <i class="icon-[lucide--external-link] size-4" />
                   {{ t('g.getHelpAction') }}
                 </Button>
                 <Button
                   v-tooltip.top="t('rightSidePanel.findOnGithubTooltip')"
                   variant="textonly"
                   size="sm"
-                  class="h-8 justify-end gap-1 rounded-lg px-0 text-sm hover:bg-transparent hover:text-base-foreground"
+                  class="justify-end gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground"
                   data-testid="error-card-find-on-github"
                   @click="handleCheckGithub(error)"
                 >
-                  <i class="icon-[lucide--github] size-3.5" />
+                  <i class="icon-[lucide--github] size-4" />
                   {{ t('g.findOnGithub') }}
                 </Button>
               </div>

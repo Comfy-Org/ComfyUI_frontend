@@ -78,6 +78,10 @@ describe('TabErrors.vue', () => {
           rightSidePanel: {
             noErrors: 'No errors',
             noneSearchDesc: 'No results found',
+            errorsDetected: 'Error detected | Errors detected',
+            resolveBeforeRun: 'Resolve before running the workflow',
+            expand: 'Expand',
+            collapse: 'Collapse',
             errorHelp: 'Error help',
             errorLog: 'Error log',
             findOnGithubTooltip: 'Search GitHub issues',
@@ -211,7 +215,13 @@ describe('TabErrors.vue', () => {
     })
 
     expect(screen.getByText('Missing connection')).toBeInTheDocument()
-    expect(screen.getByText('(3)')).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('error-group-execution')).getByText('3')
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('errors-summary-hero')).getByText('3')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Errors detected')).toBeInTheDocument()
     expect(
       screen.getAllByText(
         'Required input slots have no connection feeding them.'
@@ -404,7 +414,7 @@ describe('TabErrors.vue', () => {
     })
     const missingModelStore = useMissingModelStore()
 
-    expect(screen.getByText('Missing Models (1)')).toBeInTheDocument()
+    expect(screen.getByText('Missing Models')).toBeInTheDocument()
     expect(
       screen.queryByTestId('missing-model-actions')
     ).not.toBeInTheDocument()
@@ -431,7 +441,7 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    expect(screen.getByText('Missing Models (1)')).toBeInTheDocument()
+    expect(screen.getByText('Missing Models')).toBeInTheDocument()
     expect(
       screen.getByText('Download a model, or open the node to replace it.')
     ).toBeInTheDocument()
@@ -453,7 +463,7 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    expect(screen.getByText('Missing Inputs (1)')).toBeInTheDocument()
+    expect(screen.getByText('Missing Inputs')).toBeInTheDocument()
     expect(
       screen.getByText('A required media input has no file selected.')
     ).toBeInTheDocument()
@@ -526,7 +536,7 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    expect(screen.getByText('Swap Nodes (1)')).toBeInTheDocument()
+    expect(screen.getByText('Swap Nodes')).toBeInTheDocument()
     expect(
       screen.getByText('Some nodes can be replaced with alternatives')
     ).toBeInTheDocument()

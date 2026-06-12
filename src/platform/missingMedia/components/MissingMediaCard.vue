@@ -1,5 +1,5 @@
 <template>
-  <div class="px-4 pb-2">
+  <div class="px-3">
     <TransitionGroup
       tag="ul"
       name="list-scale"
@@ -15,7 +15,7 @@
           <span class="flex min-w-0 flex-1">
             <button
               type="button"
-              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-1 focus-visible:outline-none"
+              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-1 focus-visible:outline-none"
               @click="emit('locateNode', item.nodeId)"
             >
               {{ item.displayItemLabel }}
