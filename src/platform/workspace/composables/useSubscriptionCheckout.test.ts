@@ -91,10 +91,12 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     previewSubscribe: mockPreviewSubscribe,
     plans: computed(() => mockPlans.value),
     fetchStatus: mockFetchStatus,
-    fetchBalance: mockFetchBalance
+    fetchBalance: mockFetchBalance,
+    resubscribe: mockResubscribe
   })
 }))
 
+// Shields the test from the real workspaceApi → @/scripts/api → app.ts import chain
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: { resubscribe: mockResubscribe }
 }))
