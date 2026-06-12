@@ -30,8 +30,9 @@ import { useAppMode } from '@/composables/useAppMode'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useTelemetry } from '@/platform/telemetry'
 
-const { url } = defineProps<{
+const { url, shareId } = defineProps<{
   url: string
+  shareId: string
 }>()
 
 const { copyToClipboard } = useCopyToClipboard()
@@ -43,7 +44,8 @@ async function handleCopy() {
   copied.value = true
   useTelemetry()?.trackShareFlow({
     step: 'link_copied',
-    source: isAppMode.value ? 'app_mode' : 'graph_mode'
+    source: isAppMode.value ? 'app_mode' : 'graph_mode',
+    share_id: shareId
   })
 }
 </script>

@@ -13,21 +13,24 @@ import type {
   AuthMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
-  ShareFlowMetadata,
   ExecutionContext,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   ExecutionTriggerSource,
+  ShareFlowMetadata,
+  ShareLinkOpenedMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
+  SharedWorkflowRunMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -487,6 +490,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.SHARE_FLOW, metadata)
   }
 
+  trackShareLinkOpened(metadata: ShareLinkOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.SHARE_LINK_OPENED, metadata)
+  }
+
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
     this.trackEvent(TelemetryEvents.PAGE_VISIBILITY_CHANGED, metadata)
   }
@@ -501,6 +508,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackNodeSearchResultSelected(metadata: NodeSearchResultMetadata): void {
     this.trackEvent(TelemetryEvents.NODE_SEARCH_RESULT_SELECTED, metadata)
+  }
+
+  trackSearchQuery(metadata: SearchQueryMetadata): void {
+    this.trackEvent(TelemetryEvents.SEARCH_QUERY, metadata)
   }
 
   trackNodeAdded(metadata: NodeAddedMetadata): void {
@@ -543,6 +554,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
     this.trackEvent(TelemetryEvents.EXECUTION_SUCCESS, metadata)
+  }
+
+  trackSharedWorkflowRun(metadata: SharedWorkflowRunMetadata): void {
+    this.trackEvent(TelemetryEvents.SHARED_WORKFLOW_RUN, metadata)
   }
 
   trackSettingChanged(metadata: SettingChangedMetadata): void {

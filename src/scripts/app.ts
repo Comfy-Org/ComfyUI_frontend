@@ -1138,6 +1138,7 @@ export class ComfyApp {
     options: {
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
+      shareId?: string
       deferWarnings?: boolean
       skipAssetScans?: boolean
       silentAssetErrors?: boolean
@@ -1146,6 +1147,7 @@ export class ComfyApp {
     const {
       checkForRerouteMigration = false,
       openSource,
+      shareId,
       deferWarnings = false,
       skipAssetScans = false,
       silentAssetErrors = false
@@ -1423,19 +1425,24 @@ export class ComfyApp {
         missingNodeTypes
       )
 
+      const effectiveShareId =
+        shareId ??
+        (workflow instanceof ComfyWorkflow ? workflow.shareId : undefined)
       const telemetryPayload = {
         missing_node_count: missingNodeTypes.length,
         missing_node_types: missingNodeTypes.map((node) =>
           typeof node === 'string' ? node : node.type
         ),
         missing_node_packs: groupMissingNodesByPack(missingNodeTypes),
-        open_source: openSource ?? 'unknown'
+        open_source: openSource ?? 'unknown',
+        ...(effectiveShareId ? { share_id: effectiveShareId } : {})
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
       await useWorkflowService().afterLoadNewGraph(
         workflow,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+        effectiveShareId
       )
 
       // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
