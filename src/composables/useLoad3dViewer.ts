@@ -83,6 +83,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   const isStandaloneMode = ref(false)
   const isSplatModel = ref(false)
   const isPlyModel = ref(false)
+  const sourceFormat = ref<string | null>(null)
   const canFitToViewer = ref(true)
   const canUseGizmo = ref(true)
   const canUseLighting = ref(true)
@@ -96,6 +97,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
   const captureAdapterFlags = (source: Load3d) => {
     isSplatModel.value = source.isSplatModel()
     isPlyModel.value = source.isPlyModel()
+    sourceFormat.value = source.getSourceFormat()
     const caps = source.getCurrentModelCapabilities()
     canFitToViewer.value = caps.fitToViewer
     canUseGizmo.value = caps.gizmoTransform
@@ -839,6 +841,7 @@ export const useLoad3dViewer = (node?: LGraphNode) => {
     isStandaloneMode,
     isSplatModel,
     isPlyModel,
+    sourceFormat,
     canFitToViewer,
     canUseGizmo,
     canUseLighting,
