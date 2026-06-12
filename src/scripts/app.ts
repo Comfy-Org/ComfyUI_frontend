@@ -1650,7 +1650,7 @@ export class ComfyApp {
               widget.beforeQueued?.({ isPartialExecution })
             }
           })
-          runWidgetControl(this.rootGraph.id, 'before', { isPartialExecution })
+          runWidgetControl(this.rootGraph, 'before', { isPartialExecution })
 
           // Capture workflow before await — activeWorkflow may change if the
           // user switches tabs while the request is in flight.
@@ -1784,7 +1784,7 @@ export class ComfyApp {
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
           })
-          runWidgetControl(this.rootGraph.id, 'after', { isPartialExecution })
+          runWidgetControl(this.rootGraph, 'after', { isPartialExecution })
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }

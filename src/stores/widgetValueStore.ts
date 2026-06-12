@@ -78,11 +78,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return getGraphWidgetStates(graphId).delete(widgetId)
   }
 
-  function setInputLinked(widgetId: WidgetId, linked: boolean): void {
-    const state = getWidget(widgetId)
-    if (state) state.inputLinked = linked
-  }
-
   function registerWidgetControl(
     targetId: WidgetId,
     control: Omit<WidgetControlState, 'hasExecuted'>
@@ -125,7 +120,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidget,
     setValue,
     deleteWidget,
-    setInputLinked,
     registerWidgetControl,
     getWidgetControls,
     deleteWidgetControl,

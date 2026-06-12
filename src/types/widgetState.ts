@@ -23,8 +23,6 @@ export interface WidgetState<
 > {
   isDOMWidget?: boolean
   nodeId: NodeId
-  /** Whether this widget's input slot is link-fed, suppressing control. */
-  inputLinked?: boolean
 }
 
 export type WidgetStateInit<TValue = unknown> = Omit<

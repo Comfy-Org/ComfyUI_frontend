@@ -2,8 +2,11 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/control/controlWidgetMarker'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
 
 import { runWidgetControl } from './widgetControlSystem'
 
@@ -16,159 +19,154 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-const GRAPH = 'graph'
+function markControl(widget: IBaseWidget): IBaseWidget {
+  ;(widget as IBaseWidget & Record<symbol, unknown>)[IS_CONTROL_WIDGET] = true
+  return widget
+}
 
-function seedSetup(
-  mode: string,
-  { value = 1 }: { value?: number } = {}
-): { targetId: ReturnType<typeof widgetId> } {
+function addSeedNode(
+  graph: LGraph,
+  { mode = 'increment', value = 1 }: { mode?: string; value?: number } = {}
+): LGraphNode {
+  const node = new LGraphNode('SeedNode')
+  node.id = 1
+  const seed = node.addWidget('number', 'seed', value, () => {}, {
+    min: 0,
+    max: 1_000_000,
+    step2: 1
+  })
+  const control = node.addWidget(
+    'combo',
+    'control_after_generate',
+    mode,
+    () => {},
+    { values: ['fixed', 'increment', 'decrement', 'randomize'] }
+  )
+  markControl(control)
+  seed.linkedWidgets = [control]
+  graph.add(node)
+  return node
+}
+
+function seedValue(node: LGraphNode): unknown {
   const store = useWidgetValueStore()
-  const targetId = widgetId(GRAPH, '1', 'seed')
-  const controlId = widgetId(GRAPH, '1', 'control_after_generate')
-  store.registerWidget(targetId, {
-    type: 'number',
-    value,
-    options: { min: 0, max: 1_000_000, step2: 1 }
-  })
-  store.registerWidget(controlId, {
-    type: 'combo',
-    value: mode,
-    options: {}
-  })
-  store.registerWidgetControl(targetId, { controlWidgetId: controlId })
-  return { targetId }
+  return store.getWidget(node.widgets![0].widgetId!)?.value
 }
 
 describe('runWidgetControl', () => {
+  let graph: LGraph
+
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     controlMode.value = 'after'
+    graph = new LGraph()
+    graph.id = 'graph-a'
   })
 
   it('increments a controlled value after queueing', () => {
-    const store = useWidgetValueStore()
-    const { targetId } = seedSetup('increment')
+    const node = addSeedNode(graph, { mode: 'increment' })
 
-    runWidgetControl(GRAPH, 'after')
+    runWidgetControl(graph, 'after')
 
-    expect(store.getWidget(targetId)?.value).toBe(2)
+    expect(seedValue(node)).toBe(2)
   })
 
   it('leaves the value unchanged when the mode is fixed', () => {
-    const store = useWidgetValueStore()
-    const { targetId } = seedSetup('fixed')
+    const node = addSeedNode(graph, { mode: 'fixed' })
 
-    runWidgetControl(GRAPH, 'after')
+    runWidgetControl(graph, 'after')
 
-    expect(store.getWidget(targetId)?.value).toBe(1)
+    expect(seedValue(node)).toBe(1)
   })
 
   it('does not run on a target whose input is link-fed', () => {
-    const store = useWidgetValueStore()
-    const { targetId } = seedSetup('increment')
-    store.setInputLinked(targetId, true)
+    const node = addSeedNode(graph, { mode: 'increment' })
+    node.addInput('seed', 'number', { link: 1, widget: { name: 'seed' } })
 
-    runWidgetControl(GRAPH, 'after')
+    runWidgetControl(graph, 'after')
 
-    expect(store.getWidget(targetId)?.value).toBe(1)
+    expect(seedValue(node)).toBe(1)
   })
 
   it('does not run during partial execution', () => {
-    const store = useWidgetValueStore()
-    const { targetId } = seedSetup('increment')
+    const node = addSeedNode(graph, { mode: 'increment' })
 
-    runWidgetControl(GRAPH, 'after', { isPartialExecution: true })
+    runWidgetControl(graph, 'after', { isPartialExecution: true })
 
-    expect(store.getWidget(targetId)?.value).toBe(1)
+    expect(seedValue(node)).toBe(1)
   })
 
   it('skips the first queue in before mode, then advances', () => {
     controlMode.value = 'before'
-    const store = useWidgetValueStore()
-    const { targetId } = seedSetup('increment')
+    const node = addSeedNode(graph, { mode: 'increment' })
 
-    runWidgetControl(GRAPH, 'before')
-    expect(store.getWidget(targetId)?.value).toBe(1)
+    runWidgetControl(graph, 'before')
+    expect(seedValue(node)).toBe(1)
 
-    runWidgetControl(GRAPH, 'before')
-    expect(store.getWidget(targetId)?.value).toBe(2)
+    runWidgetControl(graph, 'before')
+    expect(seedValue(node)).toBe(2)
   })
 
   it('ignores after-phase work when in before mode', () => {
     controlMode.value = 'before'
-    const store = useWidgetValueStore()
-    const { targetId } = seedSetup('increment')
+    const node = addSeedNode(graph, { mode: 'increment' })
 
-    runWidgetControl(GRAPH, 'after')
+    runWidgetControl(graph, 'after')
 
-    expect(store.getWidget(targetId)?.value).toBe(1)
+    expect(seedValue(node)).toBe(1)
   })
 
   it('applies a combo filter when advancing a combo value', () => {
     const store = useWidgetValueStore()
-    const targetId = widgetId(GRAPH, '1', 'ckpt')
-    const controlId = widgetId(GRAPH, '1', 'control_after_generate')
-    const filterId = widgetId(GRAPH, '1', 'control_filter_list')
-    store.registerWidget(targetId, {
-      type: 'combo',
-      value: 'a.safetensors',
-      options: { values: ['a.safetensors', 'b.ckpt', 'c.safetensors'] }
+    const node = new LGraphNode('CkptNode')
+    node.id = 1
+    const ckpt = node.addWidget('combo', 'ckpt', 'a.safetensors', () => {}, {
+      values: ['a.safetensors', 'b.ckpt', 'c.safetensors']
     })
-    store.registerWidget(controlId, {
-      type: 'combo',
-      value: 'increment',
-      options: {}
-    })
-    store.registerWidget(filterId, {
-      type: 'string',
-      value: 'safetensors',
-      options: {}
-    })
-    store.registerWidgetControl(targetId, {
-      controlWidgetId: controlId,
-      filterWidgetId: filterId
-    })
+    const control = markControl(
+      node.addWidget('combo', 'control_after_generate', 'increment', () => {}, {
+        values: ['fixed', 'increment', 'decrement', 'randomize']
+      })
+    )
+    const filter = node.addWidget(
+      'string',
+      'control_filter_list',
+      'safetensors',
+      () => {},
+      {}
+    )
+    ckpt.linkedWidgets = [control, filter]
+    graph.add(node)
 
-    runWidgetControl(GRAPH, 'after')
+    runWidgetControl(graph, 'after')
 
-    expect(store.getWidget(targetId)?.value).toBe('c.safetensors')
+    expect(store.getWidget(ckpt.widgetId!)?.value).toBe('c.safetensors')
   })
 
   it('only advances controls belonging to the queued graph', () => {
-    const store = useWidgetValueStore()
-    const { targetId } = seedSetup('increment')
-    const otherTarget = widgetId('other-graph', '1', 'seed')
-    const otherControl = widgetId('other-graph', '1', 'control_after_generate')
-    store.registerWidget(otherTarget, {
-      type: 'number',
-      value: 1,
-      options: { min: 0, max: 1_000_000, step2: 1 }
-    })
-    store.registerWidget(otherControl, {
-      type: 'combo',
-      value: 'increment',
-      options: {}
-    })
-    store.registerWidgetControl(otherTarget, { controlWidgetId: otherControl })
+    const node = addSeedNode(graph, { mode: 'increment' })
 
-    runWidgetControl(GRAPH, 'after')
+    const otherGraph = new LGraph()
+    otherGraph.id = 'graph-b'
+    const otherNode = addSeedNode(otherGraph, { mode: 'increment' })
 
-    expect(store.getWidget(targetId)?.value).toBe(2)
-    expect(store.getWidget(otherTarget)?.value).toBe(1)
+    runWidgetControl(graph, 'after')
+
+    expect(seedValue(node)).toBe(2)
+    expect(seedValue(otherNode)).toBe(1)
   })
 
-  it('preserves the before-mode skip across re-registration', () => {
+  it('preserves the before-mode skip when the widget re-registers', () => {
     controlMode.value = 'before'
-    const store = useWidgetValueStore()
-    const { targetId } = seedSetup('increment')
-    const controlId = widgetId(GRAPH, '1', 'control_after_generate')
+    const node = addSeedNode(graph, { mode: 'increment' })
 
-    runWidgetControl(GRAPH, 'before')
-    expect(store.getWidget(targetId)?.value).toBe(1)
+    runWidgetControl(graph, 'before')
+    expect(seedValue(node)).toBe(1)
 
-    store.registerWidgetControl(targetId, { controlWidgetId: controlId })
+    const seed = node.widgets![0]
+    if (isNodeBindable(seed)) seed.setNodeId(node.id)
 
-    runWidgetControl(GRAPH, 'before')
-    expect(store.getWidget(targetId)?.value).toBe(2)
+    runWidgetControl(graph, 'before')
+    expect(seedValue(node)).toBe(2)
   })
 })

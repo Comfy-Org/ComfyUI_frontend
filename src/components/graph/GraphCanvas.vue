@@ -146,7 +146,6 @@ import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import { installWidgetControlHooks } from '@/core/graph/widgets/control/useWidgetControlHooks'
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useNodeBadge } from '@/composables/node/useNodeBadge'
@@ -254,14 +253,11 @@ const vueNodeLifecycle = useVueNodeLifecycle()
 
 // Error-clearing hooks run regardless of rendering mode (Vue or legacy canvas).
 let cleanupErrorHooks: (() => void) | null = null
-let cleanupWidgetControlHooks: (() => void) | null = null
 watch(
   () => canvasStore.currentGraph,
   (graph) => {
     cleanupErrorHooks?.()
     cleanupErrorHooks = graph ? installErrorClearingHooks(graph) : null
-    cleanupWidgetControlHooks?.()
-    cleanupWidgetControlHooks = graph ? installWidgetControlHooks(graph) : null
   }
 )
 
@@ -546,9 +542,6 @@ onMounted(async () => {
     // Install error-clearing hooks on the initial graph
     if (comfyApp.canvas?.graph) {
       cleanupErrorHooks = installErrorClearingHooks(comfyApp.canvas.graph)
-      cleanupWidgetControlHooks = installWidgetControlHooks(
-        comfyApp.canvas.graph
-      )
     }
 
     vueNodeLifecycle.setupEmptyGraphListener()
@@ -602,8 +595,6 @@ onMounted(async () => {
 onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
-  cleanupWidgetControlHooks?.()
-  cleanupWidgetControlHooks = null
   vueNodeLifecycle.cleanup()
 })
 function forwardPointerDownPanEvent(e: PointerEvent) {

@@ -2,12 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/control/controlWidgetMarker'
-
 import {
-  computeNextControlledValue,
+  IS_CONTROL_WIDGET,
   isValueControlWidget
-} from './valueControl'
+} from '@/core/graph/widgets/control/controlWidgetMarker'
+
+import { computeNextControlledValue } from './valueControl'
 
 const makeNumberWidget = (
   value: number,

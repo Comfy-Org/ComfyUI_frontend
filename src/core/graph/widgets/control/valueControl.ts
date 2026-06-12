@@ -1,7 +1,5 @@
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
-
 export type ValueControlMode =
   | 'fixed'
   | 'increment'
@@ -33,10 +31,6 @@ export interface ValueControlTarget {
 
 const SAFE_INTEGER_MAX = 1125899906842624
 const SAFE_INTEGER_MIN = -1125899906842624
-
-export function isValueControlWidget(widget: IBaseWidget): boolean {
-  return (widget as Record<symbol, unknown>)[IS_CONTROL_WIDGET] === true
-}
 
 function buildComboFilter(
   filter: string | undefined,

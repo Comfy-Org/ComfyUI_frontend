@@ -36,6 +36,7 @@ import type {
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import { syncWidgetControl } from '@/core/graph/widgets/control/syncWidgetControl'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
@@ -137,7 +138,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
           const widget = inputNode.getWidgetFromSlot(input)
           if (widget)
-            this._setWidget(subgraphInput, existingInput, widget, input.widget)
+            this._setWidget(
+              subgraphInput,
+              existingInput,
+              inputNode,
+              widget,
+              input.widget
+            )
           return
         }
         const input = this.addInput(name, type, {
@@ -327,6 +334,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         this._setWidget(
           subgraphInput,
           input,
+          e.detail.node,
           e.detail.widget,
           e.detail.input.widget
         )
@@ -594,7 +602,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
       const widget = inputNode.getWidgetFromSlot(targetInput)
       if (widget) {
-        this._setWidget(subgraphInput, input, widget, targetInput.widget)
+        this._setWidget(
+          subgraphInput,
+          input,
+          inputNode,
+          widget,
+          targetInput.widget
+        )
         break
       }
 
@@ -603,7 +617,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       // still receives widget state and a widgetId.
       const nested = this._resolveNestedPromotedSource(inputNode, targetInput)
       if (nested) {
-        this._setWidget(subgraphInput, input, nested.widget, targetInput.widget)
+        this._setWidget(
+          subgraphInput,
+          input,
+          nested.node,
+          nested.widget,
+          targetInput.widget
+        )
         break
       }
     }
@@ -629,6 +649,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
+    interiorNode: Readonly<LGraphNode>,
     interiorWidget: Readonly<IBaseWidget>,
     inputWidget: IWidgetLocator | undefined
   ) {
@@ -655,6 +676,12 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           ? interiorWidget.isDOMWidget
           : undefined
     })
+    syncWidgetControl(
+      id,
+      this.rootGraph.id,
+      interiorNode.id,
+      interiorWidget.linkedWidgets
+    )
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)
