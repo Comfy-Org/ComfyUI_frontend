@@ -72,7 +72,6 @@ catalog:
   astro: ^6.4.2
   axios: ^1.15.2
   class-variance-authority: ^0.7.1
-  clsx: ^2.1.1
   cross-env: ^10.1.0
   cva: 1.0.0-beta.4
   dompurify: ^3.4.5
@@ -118,7 +117,6 @@ catalog:
   rollup-plugin-visualizer: ^6.0.4
   storybook: ^10.2.10
   stylelint: ^16.26.1
-  tailwind-merge: ^2.6.0
   tailwindcss: ^4.3.0
   tailwindcss-primeui: ^0.6.1
   three: ^0.184.0

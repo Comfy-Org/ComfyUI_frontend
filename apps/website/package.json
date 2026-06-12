@@ -33,6 +33,7 @@
     "gsap": "catalog:",
     "lenis": "catalog:",
     "posthog-js": "catalog:",
+    "reka-ui": "catalog:",
     "three": "catalog:",
     "vue": "catalog:",
     "zod": "catalog:"
