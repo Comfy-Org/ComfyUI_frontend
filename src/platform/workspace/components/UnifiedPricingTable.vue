@@ -20,9 +20,9 @@
     <div
       class="flex flex-col gap-6 rounded-2xl border border-border-default bg-base-background p-6"
     >
-      <!-- Billing-cycle toggle (personal tiers only; the team plan is a yearly
-           commitment expressed through the slider). -->
-      <div v-if="planMode === 'personal'" class="flex justify-center">
+      <!-- Billing-cycle toggle: drives both the personal tier cards and the
+           team credit slider (team monthly halves the yearly discount). -->
+      <div class="flex justify-center">
         <SelectButton
           v-model="currentBillingCycle"
           :options="billingCycleOptions"
@@ -81,13 +81,13 @@
                 <span
                   class="font-inter text-[28px] leading-normal font-semibold text-base-foreground"
                 >
+                  ${{ getPrice(tier) }}
                   <span
                     v-show="currentBillingCycle === 'yearly'"
                     class="text-2xl text-muted-foreground line-through"
                   >
                     ${{ getMonthlyPrice(tier) }}
                   </span>
-                  ${{ getPrice(tier) }}
                 </span>
                 <span class="font-inter text-sm/normal text-base-foreground">
                   {{ t('subscription.usdPerMonth') }}
@@ -209,8 +209,13 @@
                 </span>
               </div>
 
-              <!-- Credit slider owns its price/discount/billed-yearly display -->
-              <CreditSlider v-model="teamUsd" @change="onTeamChange" />
+              <!-- Credit slider owns its price/discount/billed display; the
+                   cycle halves the yearly discount when monthly. -->
+              <CreditSlider
+                v-model="teamUsd"
+                :cycle="currentBillingCycle"
+                @change="onTeamChange"
+              />
 
               <!-- Selected credit grant + template-based video estimate -->
               <div class="flex flex-col gap-1">
@@ -244,7 +249,11 @@
                 class="mt-auto h-10 w-full font-bold"
                 @click="handleSubscribeTeam"
               >
-                {{ t('subscription.teamPlan.cta') }}
+                {{
+                  currentBillingCycle === 'yearly'
+                    ? t('subscription.teamPlan.cta')
+                    : t('subscription.teamPlan.ctaMonthly')
+                }}
               </Button>
             </div>
 
@@ -501,8 +510,8 @@ const planScopeButtonPt = {
       class: [
         'h-8 px-4 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
         context.active
-          ? 'bg-secondary-background-selected text-base-foreground'
-          : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
+          ? 'bg-base-background text-base-foreground'
+          : 'bg-transparent text-muted-foreground hover:bg-base-background'
       ]
     }),
     label: { class: 'flex items-center gap-2' }
