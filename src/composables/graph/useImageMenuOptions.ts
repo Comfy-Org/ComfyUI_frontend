@@ -123,6 +123,7 @@ export function useImageMenuOptions() {
         },
         {
           label: t('contextMenu.Open in Mask Editor'),
+          icon: 'icon-[comfy--mask]',
           action: () => openMaskEditor()
         },
         {

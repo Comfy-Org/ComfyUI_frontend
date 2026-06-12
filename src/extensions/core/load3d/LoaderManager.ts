@@ -191,7 +191,11 @@ export class LoaderManager implements LoaderManagerInterface {
       return null
     }
 
-    const loadRootFolder = params.get('type') === 'output' ? 'output' : 'input'
+    const requestedType = params.get('type')
+    const loadRootFolder =
+      requestedType === 'output' || requestedType === 'temp'
+        ? requestedType
+        : 'input'
     const subfolder = params.get('subfolder') ?? ''
     const path =
       'api/view?type=' +

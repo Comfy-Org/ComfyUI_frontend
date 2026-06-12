@@ -190,6 +190,7 @@ import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
   DEFAULT_GROUPING_ID,
@@ -337,6 +338,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
 })
 
 const filteredNodeDefs = ref<ComfyNodeDefImpl[]>([])
+useSearchQueryTracking('node_sidebar', searchQuery, filteredNodeDefs)
 const filters: Ref<
   (SearchFilter & { filter: FuseFilterWithValue<ComfyNodeDefImpl, string> })[]
 > = ref([])

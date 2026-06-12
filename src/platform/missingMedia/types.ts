@@ -27,8 +27,10 @@ export interface MissingMediaCandidate {
 export interface MissingMediaViewModel {
   name: string
   mediaType: MediaType
+  representative: MissingMediaCandidate
   referencingNodes: Array<{
     nodeId: NodeId
+    nodeType?: string
     widgetName: string
   }>
 }

@@ -43,10 +43,10 @@ const sharedWorkflowAsset: AssetInfo = {
   in_library: false
 }
 
-const defaultInputAsset: Asset = {
+const defaultInputAsset: Asset & { hash?: string } = {
   id: 'default-input-asset',
   name: defaultInputFileName,
-  asset_hash: defaultInputFileName,
+  hash: defaultInputFileName,
   size: 1_024,
   mime_type: 'image/png',
   tags: ['input'],
@@ -55,10 +55,10 @@ const defaultInputAsset: Asset = {
   last_access_time: '2026-05-01T00:00:00Z'
 }
 
-const importedInputAsset: Asset = {
+const importedInputAsset: Asset & { hash?: string } = {
   id: 'imported-input-asset',
   name: sharedWorkflowImportScenario.inputFileName,
-  asset_hash: sharedWorkflowImportScenario.inputFileName,
+  hash: sharedWorkflowImportScenario.inputFileName,
   size: 1_024,
   mime_type: 'image/png',
   tags: ['input'],

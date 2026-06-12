@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import {
   resolveMissingErrorMessage,
+  resolveMissingMediaItemLabel,
   resolveRunErrorMessage
 } from './errorMessageResolver'
 import type { NodeValidationError } from './types'
 import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
+import type { MissingMediaGroup } from '@/platform/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/missingModel/types'
+import type { MissingNodeType } from '@/types/comfy'
 import { i18n } from '@/i18n'
 
 function nodeValidationError(
@@ -55,6 +59,59 @@ function executionError(
   }
 }
 
+function missingNodeType(
+  type: string,
+  nodeId: string,
+  cnrId?: string
+): MissingNodeType {
+  return {
+    type,
+    nodeId,
+    cnrId,
+    isReplaceable: false
+  }
+}
+
+function replaceableNodeType(
+  type: string,
+  nodeId: string,
+  replacementNodeType: string
+): MissingNodeType {
+  return {
+    type,
+    nodeId,
+    isReplaceable: true,
+    replacement: {
+      old_node_id: type,
+      new_node_id: replacementNodeType,
+      old_widget_ids: null,
+      input_mapping: null,
+      output_mapping: null
+    }
+  }
+}
+
+function missingModelGroups(...names: string[]): MissingModelGroup[] {
+  return [
+    {
+      directory: 'checkpoints',
+      isAssetSupported: true,
+      models: names.map((name) => ({
+        name,
+        representative: {
+          name,
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          directory: 'checkpoints',
+          isAssetSupported: true,
+          isMissing: true
+        },
+        referencingNodes: []
+      }))
+    }
+  ]
+}
+
 describe('errorMessageResolver', () => {
   it('resolves required_input_missing to missing connection display copy', () => {
     const result = resolveRunErrorMessage({
@@ -85,6 +142,26 @@ describe('errorMessageResolver', () => {
       displayDetails: 'This node is missing a required input: unknown input',
       displayItemLabel: 'This node - unknown input',
       toastMessage: 'This node is missing a required input: unknown input'
+    })
+  })
+
+  it('resolves unknown validation errors to fallback catalog copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError('value_not_valid', undefined, 'some detail'),
+        nodeDisplayName: 'KSampler'
+      })
+    ).toEqual({
+      catalogId: 'unknown_validation_error',
+      displayTitle: 'Validation failed',
+      displayMessage:
+        'A node returned a validation error ComfyUI does not recognize.',
+      displayDetails:
+        'KSampler returned an unrecognized validation error (value_not_valid): some detail',
+      displayItemLabel: 'KSampler',
+      toastTitle: 'Validation failed',
+      toastMessage: 'KSampler returned an unrecognized validation error.'
     })
   })
 
@@ -1307,17 +1384,406 @@ describe('errorMessageResolver', () => {
   })
 
   it('resolves missing error group display copy', () => {
+    const missingNodeTypes = [missingNodeType('FooNode', '7', 'foo-pack')]
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_node',
+        nodeTypes: missingNodeTypes,
+        count: 1,
+        isCloud: false
+      })
+    ).toEqual({
+      catalogId: 'missing_node',
+      displayTitle: 'Missing Node Packs (1)',
+      displayMessage: 'Install missing packs to use this workflow.',
+      toastTitle: 'Missing node: FooNode',
+      toastMessage:
+        "This workflow uses a custom node that isn't installed. Install it from the registry or replace the node."
+    })
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_node',
+        nodeTypes: missingNodeTypes,
+        count: 1,
+        isCloud: true
+      })
+    ).toEqual({
+      catalogId: 'missing_node',
+      displayTitle: 'Unsupported Node Packs (1)',
+      displayMessage:
+        "Required custom nodes aren't supported on Cloud. Replace them with supported nodes.",
+      toastTitle: "FooNode isn't available on Cloud",
+      toastMessage: "This node isn't supported on Cloud."
+    })
+
+    const multipleMissingNodeTypes = [
+      missingNodeType('FooNode', '7', 'foo-pack'),
+      missingNodeType('BarNode', '9', 'bar-pack')
+    ]
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_node',
+        nodeTypes: multipleMissingNodeTypes,
+        count: 2,
+        isCloud: false
+      })
+    ).toMatchObject({
+      toastTitle: 'Missing nodes',
+      toastMessage: '2 nodes require missing node packs.'
+    })
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_node',
+        nodeTypes: multipleMissingNodeTypes,
+        count: 2,
+        isCloud: true
+      })
+    ).toMatchObject({
+      toastTitle: "Nodes aren't available on Cloud",
+      toastMessage: "This workflow uses nodes that aren't supported on Cloud."
+    })
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_node',
+        nodeTypes: [
+          missingNodeType('FooNode', '7', 'foo-pack'),
+          missingNodeType('FooNode', '8', 'foo-pack')
+        ],
+        count: 1,
+        isCloud: false
+      })
+    ).toMatchObject({
+      toastTitle: 'Missing node: FooNode',
+      toastMessage:
+        "This workflow uses a custom node that isn't installed. Install it from the registry or replace the node."
+    })
+
+    const swapNodeTypes = [replaceableNodeType('OldNode', '8', 'NewNode')]
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'swap_nodes',
+        nodeTypes: swapNodeTypes,
+        count: 1,
+        isCloud: false
+      })
+    ).toEqual({
+      catalogId: 'swap_nodes',
+      displayTitle: 'Swap Nodes (1)',
+      displayMessage: 'Some nodes can be replaced with alternatives',
+      toastTitle: 'OldNode can be replaced',
+      toastMessage: 'Replace it with NewNode from the error panel.'
+    })
+
+    const multipleSwapNodeTypes = [
+      replaceableNodeType('OldNodeA', '8', 'NewNodeA'),
+      replaceableNodeType('OldNodeB', '9', 'NewNodeB')
+    ]
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'swap_nodes',
+        nodeTypes: multipleSwapNodeTypes,
+        count: 2,
+        isCloud: false
+      })
+    ).toMatchObject({
+      displayMessage: 'Some nodes can be replaced with alternatives',
+      toastTitle: 'Nodes can be replaced',
+      toastMessage: '2 node types can be replaced with compatible alternatives.'
+    })
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'swap_nodes',
+        nodeTypes: [
+          replaceableNodeType('OldNode', '8', 'NewNode'),
+          replaceableNodeType('OldNode', '9', 'NewNode')
+        ],
+        count: 1,
+        isCloud: false
+      })
+    ).toMatchObject({
+      toastTitle: 'OldNode can be replaced',
+      toastMessage: 'Replace it with NewNode from the error panel.'
+    })
+
+    const groups = missingModelGroups('sdxl.safetensors')
+
     expect(
       resolveMissingErrorMessage({
         kind: 'missing_model',
-        groups: [],
+        groups,
         count: 1,
         isCloud: false
       })
     ).toEqual({
       catalogId: 'missing_model',
       displayTitle: 'Missing Models (1)',
-      displayMessage: '1 required model is missing'
+      displayMessage: 'Download a model, or open the node to replace it.',
+      toastTitle: 'sdxl.safetensors is missing',
+      toastMessage: 'Checkpoint Loader Simple is missing a required model file.'
+    })
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_model',
+        groups,
+        count: 1,
+        isCloud: true
+      })
+    ).toEqual({
+      catalogId: 'missing_model',
+      displayTitle: 'Missing Models (1)',
+      displayMessage: 'Import a model, or open the node to replace it.',
+      toastTitle: "sdxl.safetensors isn't available on Cloud",
+      toastMessage: "This model isn't supported. Choose a different one."
+    })
+  })
+
+  it('resolves missing media group display and toast copy', () => {
+    const groups: MissingMediaGroup[] = [
+      {
+        mediaType: 'image',
+        items: [
+          {
+            name: 'portrait.png',
+            mediaType: 'image',
+            representative: {
+              nodeId: '4',
+              nodeType: 'LoadImage',
+              widgetName: 'image',
+              mediaType: 'image',
+              name: 'portrait.png',
+              isMissing: true
+            },
+            referencingNodes: [{ nodeId: '4', widgetName: 'image' }]
+          }
+        ]
+      }
+    ]
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_media',
+        groups,
+        count: 1,
+        isCloud: false
+      })
+    ).toEqual({
+      catalogId: 'missing_media',
+      displayTitle: 'Missing Inputs (1)',
+      displayMessage: 'A required media input has no file selected.',
+      toastTitle: 'Media input missing',
+      toastMessage: 'Load Image is missing a required media file.'
+    })
+  })
+
+  it.for([
+    {
+      source: { nodeType: 'LoadImage', widgetName: 'image' },
+      displayItemLabel: 'Load Image - image'
+    },
+    {
+      source: {
+        nodeDisplayName: 'Custom Loader',
+        nodeType: 'LoadImage',
+        widgetName: 'image'
+      },
+      displayItemLabel: 'Custom Loader - image'
+    },
+    {
+      source: { nodeType: '', widgetName: '' },
+      displayItemLabel: 'This node - unknown input'
+    }
+  ] as const)(
+    'resolves missing media item labels from $source',
+    ({ source, displayItemLabel }) => {
+      expect(resolveMissingMediaItemLabel(source)).toEqual({
+        displayItemLabel
+      })
+    }
+  )
+
+  it.for([
+    [
+      'image',
+      'LoadImage',
+      'image',
+      'portrait.png',
+      'Media input missing',
+      'Load Image is missing a required media file.'
+    ],
+    [
+      'video',
+      'LoadVideo',
+      'file',
+      'clip.mp4',
+      'Media input missing',
+      'Load Video is missing a required media file.'
+    ],
+    [
+      'audio',
+      'LoadAudio',
+      'audio',
+      'voice.wav',
+      'Media input missing',
+      'Load Audio is missing a required media file.'
+    ]
+  ] as const)(
+    'resolves missing %s toast copy from media type and node type',
+    ([
+      mediaType,
+      nodeType,
+      widgetName,
+      mediaName,
+      toastTitle,
+      toastMessage
+    ]) => {
+      const groups: MissingMediaGroup[] = [
+        {
+          mediaType,
+          items: [
+            {
+              name: mediaName,
+              mediaType,
+              representative: {
+                nodeId: '4',
+                nodeType,
+                widgetName,
+                mediaType,
+                name: mediaName,
+                isMissing: true
+              },
+              referencingNodes: [{ nodeId: '4', widgetName }]
+            }
+          ]
+        }
+      ]
+
+      expect(
+        resolveMissingErrorMessage({
+          kind: 'missing_media',
+          groups,
+          count: 1,
+          isCloud: false
+        })
+      ).toMatchObject({
+        toastTitle,
+        toastMessage
+      })
+    }
+  )
+
+  it('summarizes a shared missing media file by affected node references', () => {
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_media',
+        groups: [
+          {
+            mediaType: 'image',
+            items: [
+              {
+                name: 'shared.png',
+                mediaType: 'image',
+                representative: {
+                  nodeId: '1',
+                  nodeType: 'LoadImage',
+                  widgetName: 'image',
+                  mediaType: 'image',
+                  name: 'shared.png',
+                  isMissing: true
+                },
+                referencingNodes: [
+                  { nodeId: '1', widgetName: 'image' },
+                  { nodeId: '2', widgetName: 'image' }
+                ]
+              }
+            ]
+          }
+        ],
+        count: 2,
+        isCloud: false
+      })
+    ).toMatchObject({
+      displayTitle: 'Missing Inputs (2)',
+      toastTitle: 'Missing media inputs',
+      toastMessage:
+        'Please select the missing media inputs before running this workflow.'
+    })
+  })
+
+  it('summarizes multiple missing model and media items', () => {
+    const modelGroups = missingModelGroups('a.safetensors', 'b.safetensors')
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_model',
+        groups: modelGroups,
+        count: 2,
+        isCloud: false
+      })
+    ).toMatchObject({
+      toastTitle: 'Missing models',
+      toastMessage: '2 model files are missing.'
+    })
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_model',
+        groups: modelGroups,
+        count: 2,
+        isCloud: true
+      })
+    ).toMatchObject({
+      toastTitle: "Models aren't available on Cloud",
+      toastMessage: "Some models aren't supported. Choose different ones."
+    })
+
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_media',
+        groups: [
+          {
+            mediaType: 'image',
+            items: [
+              {
+                name: 'a.png',
+                mediaType: 'image',
+                representative: {
+                  nodeId: '1',
+                  nodeType: 'LoadImage',
+                  widgetName: 'image',
+                  mediaType: 'image',
+                  name: 'a.png',
+                  isMissing: true
+                },
+                referencingNodes: [{ nodeId: '1', widgetName: 'image' }]
+              },
+              {
+                name: 'b.png',
+                mediaType: 'image',
+                representative: {
+                  nodeId: '2',
+                  nodeType: 'LoadImage',
+                  widgetName: 'image',
+                  mediaType: 'image',
+                  name: 'b.png',
+                  isMissing: true
+                },
+                referencingNodes: [{ nodeId: '2', widgetName: 'image' }]
+              }
+            ]
+          }
+        ],
+        count: 2,
+        isCloud: false
+      })
+    ).toMatchObject({
+      toastTitle: 'Missing media inputs',
+      toastMessage:
+        'Please select the missing media inputs before running this workflow.'
     })
   })
 })
