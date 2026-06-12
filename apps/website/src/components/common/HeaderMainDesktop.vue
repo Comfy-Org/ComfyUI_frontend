@@ -116,7 +116,7 @@ const mainNavigation: NavItem[] = [
                 class="flex flex-col space-y-4"
               >
                 <p
-                  class="font-formula text-primary-warm-gray text-sm font-medium"
+                  class="font-formula text-primary-warm-gray pl-2 text-sm font-medium"
                 >
                   {{ column.header }}
                 </p>
