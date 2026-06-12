@@ -20,9 +20,9 @@
     <div
       class="flex flex-col gap-6 rounded-2xl border border-border-default bg-base-background p-6"
     >
-      <!-- Billing-cycle toggle (personal tiers only; the team plan is a yearly
-           commitment expressed through the slider). -->
-      <div v-if="planMode === 'personal'" class="flex justify-center">
+      <!-- Billing-cycle toggle: drives both the personal tier cards and the
+           team credit slider (team monthly halves the yearly discount). -->
+      <div class="flex justify-center">
         <SelectButton
           v-model="currentBillingCycle"
           :options="billingCycleOptions"
@@ -209,8 +209,13 @@
                 </span>
               </div>
 
-              <!-- Credit slider owns its price/discount/billed-yearly display -->
-              <CreditSlider v-model="teamUsd" @change="onTeamChange" />
+              <!-- Credit slider owns its price/discount/billed display; the
+                   cycle halves the yearly discount when monthly. -->
+              <CreditSlider
+                v-model="teamUsd"
+                :cycle="currentBillingCycle"
+                @change="onTeamChange"
+              />
 
               <!-- Selected credit grant + template-based video estimate -->
               <div class="flex flex-col gap-1">
@@ -244,7 +249,11 @@
                 class="mt-auto h-10 w-full font-bold"
                 @click="handleSubscribeTeam"
               >
-                {{ t('subscription.teamPlan.cta') }}
+                {{
+                  currentBillingCycle === 'yearly'
+                    ? t('subscription.teamPlan.cta')
+                    : t('subscription.teamPlan.ctaMonthly')
+                }}
               </Button>
             </div>
 
@@ -429,6 +438,10 @@ const emit = defineEmits<{
   // Team-plan checkout. NOTE: the slider stop -> plan-slug mapping is blocked on
   // the BE discount-breakpoint contract (FE-934 / doc Open Q#2); the host shows
   // the confirm step but stubs the final subscribe until the contract lands.
+  // TODO(FE-934): once the contract lands, also carry `currentBillingCycle`
+  // (yearly | monthly) so checkout subscribes to the selected cycle, not just
+  // the stop. The pricing-table view already toggles cycle; the confirm/checkout
+  // chain still assumes yearly.
   subscribeTeam: [payload: TeamPlanSelection]
 }>()
 

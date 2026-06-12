@@ -21,7 +21,8 @@ const {
   disabled = false,
   class: rootClass,
   stops = TEAM_PLAN_CREDIT_STOPS,
-  defaultStopIndex = DEFAULT_TEAM_PLAN_STOP_INDEX
+  defaultStopIndex = DEFAULT_TEAM_PLAN_STOP_INDEX,
+  cycle = 'yearly'
 } = defineProps<{
   disabled?: boolean
   class?: HTMLAttributes['class']
@@ -37,6 +38,12 @@ const {
    * Maps to `team_credit_stops.default_stop_index`. Defaults to DES-197 ($700).
    */
   defaultStopIndex?: number
+  /**
+   * Billing cycle. Yearly applies the full `discountPercentYearly`; monthly
+   * applies half of it (PRD: GA Team Billing — "for monthly the discount is
+   * halved": yearly 0/5/10/15/20% → monthly 0/2.5/5/7.5/10%).
+   */
+  cycle?: 'monthly' | 'yearly'
 }>()
 
 const emit = defineEmits<{
@@ -66,16 +73,20 @@ const selectedIndex = computed(() => {
 
 const current = computed<CreditStop>(() => stops[selectedIndex.value])
 
-// Yearly commitment (per DES-197): the discount applies to the monthly figure.
-// The card shows the discounted monthly price, the struck pre-discount price,
-// the saving, and the annual total.
+// The discount applies to the monthly figure. Yearly uses the full
+// `discountPercentYearly`; monthly halves it (PRD: GA Team Billing). The card
+// shows the discounted monthly price, the struck pre-discount price, the
+// saving, and — for yearly — the annual total.
+const effectiveDiscountPercent = computed(() =>
+  cycle === 'monthly'
+    ? current.value.discountPercentYearly / 2
+    : current.value.discountPercentYearly
+)
 const discountedMonthly = computed(() =>
-  Math.round(
-    current.value.usd * (1 - current.value.discountPercentYearly / 100)
-  )
+  Math.round(current.value.usd * (1 - effectiveDiscountPercent.value / 100))
 )
 const saveAmount = computed(() => current.value.usd - discountedMonthly.value)
-const hasDiscount = computed(() => current.value.discountPercentYearly > 0)
+const hasDiscount = computed(() => effectiveDiscountPercent.value > 0)
 
 /**
  * Smoothly count the price figures up/down as the slider moves between stops
@@ -157,7 +168,7 @@ const { t } = useI18n()
         >
           {{
             t('subscription.creditSliderSave', {
-              percent: current.discountPercentYearly,
+              percent: effectiveDiscountPercent,
               amount: formatUsd(saveAmount)
             })
           }}
@@ -168,9 +179,11 @@ const { t } = useI18n()
         data-testid="credit-slider-billed-yearly"
       >
         {{
-          t('subscription.billedYearly', {
-            total: formatUsd(displayBilledYearly)
-          })
+          cycle === 'monthly'
+            ? t('subscription.billedMonthly')
+            : t('subscription.billedYearly', {
+                total: formatUsd(displayBilledYearly)
+              })
         }}
       </p>
     </div>

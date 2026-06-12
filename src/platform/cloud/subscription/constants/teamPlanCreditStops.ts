@@ -6,10 +6,11 @@ export interface CreditStop {
   /**
    * Yearly-commitment discount applied to `usd`, as a whole-number percent.
    * Threshold-based per the pricing decision (Slack — Alex Tov, 2026-05-08):
-   * yearly tiers are 0 / 5 / 10 / 15 / 20% with nothing in between (monthly is
-   * halved, but still being iterated). Only the $700 → 10% tier is
-   * design-confirmed (DES-197 shows "Save 10% ($70)"); the rest follow the
-   * agreed 0/5/10/15/20 sequence and should be re-confirmed with design/BE.
+   * yearly tiers are 0 / 5 / 10 / 15 / 20% with nothing in between.
+   * Monthly halves these (0 / 2.5 / 5 / 7.5 / 10%) — confirmed in PRD: GA Team
+   * Billing ("for monthly the discount is halved"). `CreditSlider` derives the
+   * monthly value from this field via its `cycle` prop, so only the yearly
+   * tiers are stored here.
    */
   discountPercentYearly: number
 }
