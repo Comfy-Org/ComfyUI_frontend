@@ -1,6 +1,7 @@
 <template>
   <DropdownMenuSub v-model:open="open">
     <DropdownMenuSubTrigger
+      ref="triggerRef"
       :class="triggerClass"
       @focus="open = true"
       @keydown="onTriggerKeydown"
@@ -18,20 +19,20 @@
     <DropdownMenuPortal>
       <!--
         Opens to the right of the trigger; when there's no room, Floating UI
-        flips it to the LEFT. Because submenus default to prioritize-position
-        (offset -> flip -> shift), the flipped panel lands flush against the
-        parent menu's left edge by its OWN width (no PrimeVue-style overlap that
-        shifts by the parent item width). side-offset is negative so it overlaps
-        the parent edge by 2px to bridge the hover gap, and collision-padding
-        keeps an 8px viewport margin so it flips before touching the edge
-        (mirrors DockFilterMenu's SUB_OVERLAP / M).
+        flips it to the LEFT. align-offset is computed per-open
+        (alignToContextMenu) so the submenu's search field lines up with the
+        root search field instead of the hovered trigger row. The height is also
+        pinned per-open: maxHeight grows into the viewport space below the
+        submenu top but never drops under the context menu height, so the panel
+        scrolls internally instead of letting Floating UI shift it upward.
       -->
       <DropdownMenuSubContent
         :class="contentClass"
+        :style="maxHeight ? { maxHeight: `${maxHeight}px` } : undefined"
         side="right"
         align="start"
         :side-offset="-2"
-        :align-offset="-5"
+        :align-offset="alignOffset"
         :collision-padding="8"
         update-position-strategy="optimized"
         @open-auto-focus.prevent
@@ -100,7 +101,11 @@ import { useI18n } from 'vue-i18n'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 import MiddleTruncate from './MiddleTruncate.vue'
-import { filterNodesByName } from './linkReleaseMenuModel'
+import {
+  computeSubmenuAlignOffset,
+  computeSubmenuMaxHeight,
+  filterNodesByName
+} from './linkReleaseMenuModel'
 import type { LinkReleaseNodeCategory } from './linkReleaseMenuModel'
 
 const { category, itemClass, contentClass, scrollClass } = defineProps<{
@@ -119,6 +124,13 @@ const { t } = useI18n()
 const open = ref(false)
 const query = ref('')
 const searchInput = ref<HTMLInputElement>()
+const triggerRef = ref<InstanceType<typeof DropdownMenuSubTrigger>>()
+// Pin the submenu's search field to the root search field rather than to the
+// hovered trigger row; both recomputed each time the submenu opens.
+const alignOffset = ref(-5)
+const maxHeight = ref<number>()
+
+const VIEWPORT_MARGIN = 8
 
 const triggerClass = computed(() =>
   cn(itemClass, 'data-[state=open]:bg-interface-menu-component-surface-hovered')
@@ -128,8 +140,31 @@ const filteredNodes = computed(() =>
   filterNodesByName(category.nodes, query.value)
 )
 
+function alignToContextMenu() {
+  const triggerEl = triggerRef.value?.$el as HTMLElement | undefined
+  const rootMenu = triggerEl?.closest<HTMLElement>('[role="menu"]')
+  const rootSearch = rootMenu?.querySelector<HTMLElement>('[data-search-field]')
+  if (!triggerEl || !rootMenu || !rootSearch) return
+  const triggerTop = triggerEl.getBoundingClientRect().top
+  const rootRect = rootMenu.getBoundingClientRect()
+  const rootSearchTop = rootSearch.getBoundingClientRect().top
+  const contentPaddingTop = parseFloat(getComputedStyle(rootMenu).paddingTop)
+  alignOffset.value = computeSubmenuAlignOffset({
+    triggerTop,
+    rootSearchTop,
+    contentPaddingTop
+  })
+  maxHeight.value = computeSubmenuMaxHeight({
+    submenuTop: rootSearchTop - contentPaddingTop,
+    contextMenuHeight: rootRect.height,
+    viewportHeight: window.innerHeight,
+    margin: VIEWPORT_MARGIN
+  })
+}
+
 watch(open, (isOpen) => {
-  if (!isOpen) query.value = ''
+  if (isOpen) alignToContextMenu()
+  else query.value = ''
 })
 
 function focusSearch() {
