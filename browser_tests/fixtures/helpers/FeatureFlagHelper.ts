@@ -51,20 +51,6 @@ export class FeatureFlagHelper {
     })
   }
 
-  async setServerFlags(flags: Record<string, unknown>): Promise<void> {
-    await this.page.evaluate((flagMap: Record<string, unknown>) => {
-      const api = window.app!.api
-      api.serverFeatureFlags.value = {
-        ...api.serverFeatureFlags.value,
-        ...flagMap
-      }
-    }, flags)
-  }
-
-  async setServerFlag(name: string, value: unknown): Promise<void> {
-    await this.setServerFlags({ [name]: value })
-  }
-
   /**
    * Mock server feature flags via route interception on /api/features.
    */
