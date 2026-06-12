@@ -81,18 +81,28 @@ describe('defaultSearcher', () => {
 describe('getDefaultSortOptions', () => {
   const sortOptions = getDefaultSortOptions()
 
-  describe('Default sorter', () => {
-    const defaultSorter = sortOptions.find((o) => o.id === 'default')!.sorter
+  describe('Recent sorter', () => {
+    const recentSorter = sortOptions.find((o) => o.id === 'recent')!.sorter
 
-    it('returns items in original order', () => {
+    it('sorts items by created_at descending', () => {
+      const items = [
+        { ...createItem('old'), created_at: '2026-01-01T00:00:00Z' },
+        { ...createItem('new'), created_at: '2026-06-01T00:00:00Z' },
+        { ...createItem('mid'), created_at: '2026-03-01T00:00:00Z' }
+      ]
+      const result = recentSorter({ items })
+      expect(result.map((i) => i.name)).toEqual(['new', 'mid', 'old'])
+    })
+
+    it('preserves original order for items without timestamps', () => {
       const items = [createItem('z'), createItem('a'), createItem('m')]
-      const result = defaultSorter({ items })
+      const result = recentSorter({ items })
       expect(result.map((i) => i.name)).toEqual(['z', 'a', 'm'])
     })
 
     it('does not mutate original array', () => {
       const items = [createItem('z'), createItem('a')]
-      const result = defaultSorter({ items })
+      const result = recentSorter({ items })
       expect(result).not.toBe(items)
     })
   })
