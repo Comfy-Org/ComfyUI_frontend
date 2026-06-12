@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @import '@comfyorg/design-system/css/base.css';
+@import "tw-animate-css";
 
 @font-face {
   font-family: 'PP Formula';
