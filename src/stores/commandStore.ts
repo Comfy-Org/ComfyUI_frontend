@@ -88,6 +88,10 @@ export const useCommandStore = defineStore('command', () => {
     }
   }
 
+  const unregisterCommand = (id: string) => {
+    delete commandsById.value[id]
+  }
+
   const getCommand = (command: string) => {
     return commandsById.value[command]
   }
@@ -139,6 +143,7 @@ export const useCommandStore = defineStore('command', () => {
     getCommand,
     registerCommand,
     registerCommands,
+    unregisterCommand,
     isRegistered,
     loadExtensionCommands,
     formatKeySequence

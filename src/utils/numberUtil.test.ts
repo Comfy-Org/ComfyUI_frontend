@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { clampPercentInt, formatPercent0 } from './numberUtil'
+import { clampPercentInt, formatBadgeCount, formatPercent0 } from './numberUtil'
 
 describe('clampPercentInt', () => {
   it('clamps undefined to 0', () => {
@@ -51,5 +51,24 @@ describe('formatPercent0', () => {
   it('clamps out-of-range values', () => {
     expect(formatPercent0('en-US', 150)).toBe('100%')
     expect(formatPercent0('en-US', -10)).toBe('0%')
+  })
+})
+
+describe('formatBadgeCount', () => {
+  it('returns the count as a string when at or below the default cap', () => {
+    expect(formatBadgeCount(0)).toBe('0')
+    expect(formatBadgeCount(1)).toBe('1')
+    expect(formatBadgeCount(99)).toBe('99')
+  })
+
+  it('returns "99+" when the count exceeds the default cap', () => {
+    expect(formatBadgeCount(100)).toBe('99+')
+    expect(formatBadgeCount(1000)).toBe('99+')
+  })
+
+  it('respects a custom max', () => {
+    expect(formatBadgeCount(9, 9)).toBe('9')
+    expect(formatBadgeCount(10, 9)).toBe('9+')
+    expect(formatBadgeCount(42, 9)).toBe('9+')
   })
 })

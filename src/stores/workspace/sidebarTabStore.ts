@@ -2,6 +2,10 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
+import {
+  DEPRECATION_WARNINGS_TAB_ID,
+  useDeprecationWarningsSidebarTab
+} from '@/composables/sidebarTabs/useDeprecationWarningsSidebarTab'
 import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
 import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
@@ -53,7 +57,8 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
         'model-library': 'sideToolbar.modelLibrary',
         workflows: 'sideToolbar.workflows',
         assets: 'sideToolbar.assets',
-        'job-history': 'queue.jobHistory'
+        'job-history': 'queue.jobHistory',
+        [DEPRECATION_WARNINGS_TAB_ID]: 'deprecationWarnings.title'
       }
 
       const key = menubarLabelKeys[tab.id]
@@ -106,6 +111,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       if (activeSidebarTabId.value === id) {
         activeSidebarTabId.value = null
       }
+      useCommandStore().unregisterCommand(`Workspace.ToggleSidebarTab.${id}`)
     }
   }
 
@@ -114,6 +120,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
    */
   const registerCoreSidebarTabs = () => {
     const settingStore = useSettingStore()
+
     const jobHistoryTabId = 'job-history'
     const syncJobHistoryTab = (enabled: boolean) => {
       const hasJobHistoryTab = sidebarTabs.value.some(
@@ -125,11 +132,26 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
         unregisterSidebarTab(jobHistoryTabId)
       }
     }
-
     syncJobHistoryTab(settingStore.get('Comfy.Queue.QPOV2'))
     watch(
       () => settingStore.get('Comfy.Queue.QPOV2'),
       (enabled) => syncJobHistoryTab(enabled)
+    )
+
+    const syncDeprecationWarningsTab = (enabled: boolean) => {
+      const has = sidebarTabs.value.some(
+        (tab) => tab.id === DEPRECATION_WARNINGS_TAB_ID
+      )
+      if (enabled && !has) {
+        registerSidebarTab(useDeprecationWarningsSidebarTab())
+      } else if (!enabled && has) {
+        unregisterSidebarTab(DEPRECATION_WARNINGS_TAB_ID)
+      }
+    }
+    syncDeprecationWarningsTab(settingStore.get('Comfy.DevMode'))
+    watch(
+      () => settingStore.get('Comfy.DevMode'),
+      (enabled) => syncDeprecationWarningsTab(enabled)
     )
 
     registerSidebarTab(useAssetsSidebarTab())

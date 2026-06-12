@@ -27,6 +27,14 @@ describe('Litegraph module', () => {
     expect(clamp(-1.124, 13, 24)).toStrictEqual(13)
     expect(clamp(Infinity, 18, 29)).toStrictEqual(29)
   })
+
+  test('onDeprecationWarning remains a usable no-op for old extensions', () => {
+    expect(() => LiteGraph.onDeprecationWarning.push(() => {})).not.toThrow()
+    expect(LiteGraph.onDeprecationWarning).toEqual([])
+    expect(() => {
+      LiteGraph.onDeprecationWarning = [() => {}]
+    }).not.toThrow()
+  })
 })
 
 describe('Import order dependency', () => {

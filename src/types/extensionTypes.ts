@@ -13,6 +13,8 @@ interface BaseSidebarTabExtension {
   iconBadge?: string | (() => string | null)
   tooltip?: string
   label?: string
+  /** Render in the top or bottom-anchored group. Defaults to `'top'`. */
+  placement?: 'top' | 'bottom'
 }
 
 interface BaseBottomPanelExtension {

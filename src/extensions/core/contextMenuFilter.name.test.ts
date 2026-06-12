@@ -36,9 +36,9 @@ describe('Context Menu Extension Name in Warnings', () => {
     expect(warnSpy).toHaveBeenCalled()
     const warningMessage = warnSpy.mock.calls[0][0]
 
-    expect(warningMessage).toContain('[DEPRECATED]')
-    expect(warningMessage).toContain('getCanvasMenuOptions')
-    expect(warningMessage).toContain('"MyCustomExtension"')
+    expect(warningMessage).toContain('[DEPRECATED:litegraph]')
+    expect(warningMessage).toContain('detail: getCanvasMenuOptions')
+    expect(warningMessage).toContain('extension: MyCustomExtension')
 
     vi.restoreAllMocks()
   })
@@ -67,9 +67,9 @@ describe('Context Menu Extension Name in Warnings', () => {
     expect(warnSpy).toHaveBeenCalled()
     const warningMessage = warnSpy.mock.calls[0][0]
 
-    expect(warningMessage).toContain('[DEPRECATED]')
-    expect(warningMessage).toContain('getNodeMenuOptions')
-    expect(warningMessage).toContain('"AnotherExtension"')
+    expect(warningMessage).toContain('[DEPRECATED:litegraph]')
+    expect(warningMessage).toContain('detail: getNodeMenuOptions')
+    expect(warningMessage).toContain('extension: AnotherExtension')
 
     vi.restoreAllMocks()
   })
