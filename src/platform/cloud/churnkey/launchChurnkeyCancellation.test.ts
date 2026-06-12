@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const cancelSubscription = vi.fn()
 const fetchStatus = vi.fn()
+const cancelSubscription = vi.fn()
 const trackCancellationFlowOpened = vi.fn()
 const trackCancellationFlowClosed = vi.fn()
 const trackCancellationReconsidered = vi.fn()
@@ -9,6 +9,7 @@ const trackMonthlySubscriptionCancelled = vi.fn()
 const toastAdd = vi.fn()
 const churnkeyShow = vi.fn()
 const isConfiguredRef = { value: true }
+const billingTypeRef: { value: 'legacy' | 'workspace' } = { value: 'workspace' }
 const subscriptionRef: {
   value: {
     tier: string | null
@@ -23,8 +24,13 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
-    cancelSubscription,
+    type: {
+      get value() {
+        return billingTypeRef.value
+      }
+    },
     fetchStatus,
+    cancelSubscription,
     subscription: {
       get value() {
         return subscriptionRef.value
@@ -68,7 +74,7 @@ const { launchChurnkeyCancellation } =
 
 interface CapturedHandlers {
   customerAttributes?: Record<string, string>
-  handleCancel: () => Promise<{ message?: string }>
+  handleCancel?: () => Promise<{ message?: string }>
   onCancel: (surveyResponse: string) => void
   onClose: (results: Record<string, unknown>) => void
 }
@@ -82,13 +88,14 @@ function captureHandlers(): CapturedHandlers {
 describe('launchChurnkeyCancellation', () => {
   beforeEach(() => {
     isConfiguredRef.value = true
+    billingTypeRef.value = 'workspace'
     subscriptionRef.value = null
     churnkeyShow.mockReset()
     churnkeyShow.mockResolvedValue(undefined)
-    cancelSubscription.mockReset()
-    cancelSubscription.mockResolvedValue(undefined)
     fetchStatus.mockReset()
     fetchStatus.mockResolvedValue(undefined)
+    cancelSubscription.mockReset()
+    cancelSubscription.mockResolvedValue(undefined)
     trackCancellationFlowOpened.mockReset()
     trackCancellationFlowClosed.mockReset()
     trackCancellationReconsidered.mockReset()
@@ -104,7 +111,6 @@ describe('launchChurnkeyCancellation', () => {
     await launchChurnkeyCancellation()
     const handlers = captureHandlers()
 
-    await handlers.handleCancel()
     handlers.onCancel('too_expensive')
     handlers.onClose({ status: 'canceled' })
 
@@ -115,6 +121,42 @@ describe('launchChurnkeyCancellation', () => {
     })
     expect(trackMonthlySubscriptionCancelled).toHaveBeenCalledTimes(1)
     expect(trackCancellationReconsidered).not.toHaveBeenCalled()
+  })
+
+  it('passes handleCancel and calls billing.cancelSubscription for workspace billing', async () => {
+    billingTypeRef.value = 'workspace'
+    await launchChurnkeyCancellation()
+    const handlers = captureHandlers()
+
+    expect(handlers.handleCancel).toBeTypeOf('function')
+    await handlers.handleCancel?.()
+    expect(cancelSubscription).toHaveBeenCalledTimes(1)
+  })
+
+  it('omits handleCancel for legacy billing so Churnkey cancels via Stripe', async () => {
+    billingTypeRef.value = 'legacy'
+    await launchChurnkeyCancellation()
+    const handlers = captureHandlers()
+
+    expect(handlers.handleCancel).toBeUndefined()
+    expect(cancelSubscription).not.toHaveBeenCalled()
+  })
+
+  it('refreshes local billing state in onClose after a cancel', async () => {
+    await launchChurnkeyCancellation()
+    const handlers = captureHandlers()
+
+    handlers.onCancel('too_expensive')
+    handlers.onClose({ status: 'canceled' })
+    await vi.waitFor(() => expect(fetchStatus).toHaveBeenCalledTimes(1))
+  })
+
+  it('does not refresh local state when the user closes without canceling', async () => {
+    await launchChurnkeyCancellation()
+    const handlers = captureHandlers()
+
+    handlers.onClose({ status: 'closed' })
+    expect(fetchStatus).not.toHaveBeenCalled()
   })
 
   it('records reconsidered when the user closes without canceling', async () => {
@@ -154,17 +196,17 @@ describe('launchChurnkeyCancellation', () => {
     expect(trackCancellationReconsidered).not.toHaveBeenCalled()
   })
 
-  it('does not abort cancellation success when fetchStatus fails', async () => {
+  it('swallows fetchStatus failures after the cancel', async () => {
     fetchStatus.mockRejectedValue(new Error('network'))
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
 
     await launchChurnkeyCancellation()
     const handlers = captureHandlers()
 
-    const result = await handlers.handleCancel()
-    expect(result).toEqual({ message: 'subscription.cancelSuccess' })
-    expect(trackMonthlySubscriptionCancelled).toHaveBeenCalledTimes(1)
-    expect(warn).toHaveBeenCalled()
+    handlers.onCancel('too_expensive')
+    handlers.onClose({ status: 'canceled' })
+
+    await vi.waitFor(() => expect(warn).toHaveBeenCalled())
   })
 
   it('forwards customerAttributes from billing subscription', async () => {

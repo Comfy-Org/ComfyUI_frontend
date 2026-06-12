@@ -85,39 +85,44 @@ export async function launchChurnkeyCancellation(): Promise<void> {
 
     telemetry?.trackCancellationFlowOpened()
 
+    const useHandleCancel = billing.type.value === 'workspace'
+
     try {
       await churnkey.show({
         customerAttributes: buildCustomerAttributes(billing),
-        handleCancel: async () => {
-          try {
-            await billing.cancelSubscription()
-          } catch (err) {
-            const message =
-              err instanceof Error
-                ? err.message
-                : t('subscription.cancelDialog.failed')
-            const wrapped = new Error(message)
-            if (err instanceof Error) wrapped.cause = err
-            throw wrapped
+        ...(useHandleCancel && {
+          handleCancel: async () => {
+            try {
+              await billing.cancelSubscription()
+            } catch (err) {
+              const message =
+                err instanceof Error
+                  ? err.message
+                  : t('subscription.cancelDialog.failed')
+              const wrapped = new Error(message)
+              if (err instanceof Error) wrapped.cause = err
+              throw wrapped
+            }
+            return { message: t('subscription.cancelSuccess') }
           }
-          canceledThisSession = true
-          telemetry?.trackMonthlySubscriptionCancelled()
-          // Local state refresh is best-effort; failure here must not
-          // surface as a cancellation failure in the Churnkey embed.
-          try {
-            await billing.fetchStatus()
-          } catch (err) {
-            console.warn('[Churnkey] fetchStatus after cancel failed', err)
-          }
-          return { message: t('subscription.cancelSuccess') }
-        },
+        }),
+        // Fires after a successful cancel — whether via handleCancel (team)
+        // or Churnkey's own Stripe cancel (legacy).
         onCancel: (surveyResponse) => {
           canceledThisSession = true
           lastSurveyResponse = surveyResponse
+          telemetry?.trackMonthlySubscriptionCancelled()
         },
         onClose: (results) => {
           const outcome = deriveOutcome(results, canceledThisSession)
           trackClosed(outcome)
+          // Refresh local state so the UI reflects the cancellation. Failure
+          // here is non-blocking; the watcher / next page load will catch up.
+          if (canceledThisSession) {
+            void billing.fetchStatus().catch((err: unknown) => {
+              console.warn('[Churnkey] fetchStatus after cancel failed', err)
+            })
+          }
           // Reset Churnkey's cached session state so the next launch
           // restarts at step 1 (e.g. user visited Stripe but did not cancel).
           window.churnkey?.clearState?.()

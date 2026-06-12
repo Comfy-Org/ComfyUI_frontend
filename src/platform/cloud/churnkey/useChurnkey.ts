@@ -22,7 +22,7 @@ export class ChurnkeyAuthUnavailableError extends Error {
 }
 
 interface ChurnkeyShowOptions {
-  handleCancel: (
+  handleCancel?: (
     surveyResponse: string,
     freeformFeedback?: string
   ) => Promise<ChurnkeyHandlerResult>
@@ -53,16 +53,18 @@ export function useChurnkey() {
       appId,
       authHash: auth.auth_hash,
       customerId: auth.customer_id,
-      subscriptionId: auth.subscription_id,
       provider: 'stripe',
       mode: auth.mode,
       record: true,
       customerAttributes: options.customerAttributes,
-      handleCancel: (_customer, surveyResponse, freeformFeedback) =>
-        options.handleCancel(surveyResponse, freeformFeedback),
       onCancel: (_customer, surveyResponse) =>
         options.onCancel?.(surveyResponse),
       onClose: (results) => options.onClose?.(results)
+    }
+    if (options.handleCancel) {
+      const userHandleCancel = options.handleCancel
+      config.handleCancel = (_customer, surveyResponse, freeformFeedback) =>
+        userHandleCancel(surveyResponse, freeformFeedback)
     }
 
     window.churnkey.init('show', config)

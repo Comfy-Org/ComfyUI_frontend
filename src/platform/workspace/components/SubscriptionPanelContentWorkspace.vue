@@ -129,7 +129,7 @@
                 class="flex flex-wrap gap-2 md:ml-auto"
               >
                 <!-- Cancelled state: show only Resubscribe button -->
-                <template v-if="isCancelled">
+                <template v-if="isCancelled && !isInPersonalWorkspace">
                   <Button
                     size="lg"
                     variant="primary"
@@ -161,7 +161,7 @@
                     {{ $t('subscription.upgradePlan') }}
                   </Button>
                   <Button
-                    v-if="!isFreeTierPlan"
+                    v-if="!isFreeTierPlan && !isCancelled"
                     v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                     variant="secondary"
                     size="lg"
@@ -434,12 +434,7 @@ async function handleResubscribe() {
   }
 }
 
-// Only show cancelled state for team workspaces (workspace billing)
-// Personal workspaces use legacy billing which has different cancellation semantics
-const isCancelled = computed(
-  () =>
-    !isInPersonalWorkspace.value && (subscription.value?.isCancelled ?? false)
-)
+const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 
 // Show subscribe prompt to owners without active subscription
 // Don't show if subscription is cancelled (still active until end date)
@@ -536,8 +531,10 @@ const memberCount = computed(() => members.value.length)
 const nextMonthInvoice = computed(() => memberCount.value * tierPrice.value)
 
 const refillsDate = computed(() => {
-  if (!subscription.value?.renewalDate) return ''
-  const date = new Date(subscription.value.renewalDate)
+  // TODO: should we actually use end date here, or just hide?
+  const source = subscription.value?.renewalDate ?? subscription.value?.endDate
+  if (!source) return ''
+  const date = new Date(source)
   const day = String(date.getDate()).padStart(2, '0')
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const year = String(date.getFullYear()).slice(-2)

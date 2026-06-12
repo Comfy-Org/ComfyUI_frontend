@@ -32,9 +32,7 @@ describe('useChurnkey', () => {
 
   it('throws when the embed script has not loaded', async () => {
     const { show } = useChurnkey()
-    await expect(
-      show({ handleCancel: async () => ({ message: 'ok' }) })
-    ).rejects.toThrow(/embed script has not loaded/)
+    await expect(show({})).rejects.toThrow(/embed script has not loaded/)
   })
 
   it('forwards customer credentials and provider config to churnkey.init', async () => {
@@ -43,17 +41,16 @@ describe('useChurnkey', () => {
 
     vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue({
       customer_id: 'cus_123',
-      subscription_id: 'sub_456',
       auth_hash: 'hash_abc',
       mode: 'test'
     })
 
-    const handleCancel = vi.fn().mockResolvedValue({ message: 'done' })
+    const onCancel = vi.fn()
     const onClose = vi.fn()
 
     const { show } = useChurnkey()
     await show({
-      handleCancel,
+      onCancel,
       onClose,
       customerAttributes: { tier: 'PRO', cycle: 'MONTHLY' }
     })
@@ -65,14 +62,15 @@ describe('useChurnkey', () => {
       appId: 'app-test-123',
       authHash: 'hash_abc',
       customerId: 'cus_123',
-      subscriptionId: 'sub_456',
       provider: 'stripe',
       mode: 'test',
       customerAttributes: { tier: 'PRO', cycle: 'MONTHLY' }
     })
+    // No handleCancel - Churnkey handles the Stripe cancellation itself.
+    expect(config.handleCancel).toBeUndefined()
 
-    await config.handleCancel('cus_123', 'too_expensive', 'feedback')
-    expect(handleCancel).toHaveBeenCalledWith('too_expensive', 'feedback')
+    config.onCancel('cus_123', 'too_expensive')
+    expect(onCancel).toHaveBeenCalledWith('too_expensive')
 
     config.onClose({ status: 'closed' })
     expect(onClose).toHaveBeenCalledWith({ status: 'closed' })
@@ -89,8 +87,6 @@ describe('useChurnkey', () => {
     vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue(null)
 
     const { show } = useChurnkey()
-    await expect(
-      show({ handleCancel: async () => ({ message: 'ok' }) })
-    ).rejects.toBeInstanceOf(ChurnkeyAuthUnavailableError)
+    await expect(show({})).rejects.toBeInstanceOf(ChurnkeyAuthUnavailableError)
   })
 })
