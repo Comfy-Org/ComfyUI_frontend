@@ -46,7 +46,7 @@
       :loading-tier="loadingTier"
       @subscribe="handleSubscribeClick"
       @resubscribe="handleResubscribe"
-      @subscribe-team="handleSubscribeTeam"
+      @subscribe-team="handleSubscribeTeamClick"
     />
 
     <!-- Subscription Preview Step - New Subscription -->
@@ -74,6 +74,15 @@
       :preview-data="previewData"
       :is-loading="isSubscribing || isPolling"
       @confirm="handleConfirmTransition"
+      @back="handleBackToPricing"
+    />
+
+    <!-- Subscription Preview Step - Team (display-only until the BE slider
+         contract lands; the confirm CTA is stubbed below) -->
+    <SubscriptionAddPaymentPreviewWorkspace
+      v-else-if="checkoutStep === 'preview' && selectedTeamStop"
+      :team-plan="selectedTeamStop"
+      @add-credit-card="handleTeamSubscribe"
       @back="handleBackToPricing"
     />
 
@@ -120,9 +129,11 @@ const {
   isResubscribing,
   previewData,
   selectedTierKey,
+  selectedTeamStop,
   selectedBillingCycle,
   isPolling,
   handleSubscribeClick,
+  handleSubscribeTeamClick,
   handleBackToPricing,
   handleSuccessClose,
   handleAddCreditCard,
@@ -131,10 +142,11 @@ const {
 } = useSubscriptionCheckout(emit)
 
 // Personal-tier checkout reuses the full useSubscriptionCheckout flow above.
-// Team-plan checkout is blocked on the BE discount-breakpoint contract
+// Team-plan checkout renders the confirm step from the selected slider stop,
+// but the final subscribe is blocked on the BE discount-breakpoint contract
 // (FE-934 / doc Open Q#2: the slider stop -> plan-slug / subscribe-request shape
-// is undefined), so it is stubbed until that lands.
-function handleSubscribeTeam() {
+// is undefined), so the confirm CTA is stubbed until that lands.
+function handleTeamSubscribe() {
   toast.add({
     severity: 'info',
     summary: t('subscription.teamPlan.name'),

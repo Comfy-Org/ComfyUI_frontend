@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useTelemetry } from '@/platform/telemetry'
@@ -52,6 +53,7 @@ export function useSubscriptionCheckout(emit: {
   const isResubscribing = ref(false)
   const previewData = ref<PreviewSubscribeResponse | null>(null)
   const selectedTierKey = ref<CheckoutTierKey | null>(null)
+  const selectedTeamStop = ref<TeamPlanSelection | null>(null)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const isPolling = computed(() => billingOperationStore.hasPendingOperations)
 
@@ -112,9 +114,22 @@ export function useSubscriptionCheckout(emit: {
     }
   }
 
+  /**
+   * Team-plan checkout entry: show the "Confirm your payment" step rendered
+   * from the selected slider stop. The final subscribe call stays stubbed in
+   * the host until the BE slider contract lands (FE-934 / doc Open Q#2).
+   */
+  function handleSubscribeTeamClick(payload: TeamPlanSelection) {
+    selectedTeamStop.value = payload
+    selectedTierKey.value = null
+    previewData.value = null
+    checkoutStep.value = 'preview'
+  }
+
   function handleBackToPricing() {
     checkoutStep.value = 'pricing'
     previewData.value = null
+    selectedTeamStop.value = null
   }
 
   function handleSuccessClose() {
@@ -202,9 +217,11 @@ export function useSubscriptionCheckout(emit: {
     isResubscribing,
     previewData,
     selectedTierKey,
+    selectedTeamStop,
     selectedBillingCycle,
     isPolling,
     handleSubscribeClick,
+    handleSubscribeTeamClick,
     handleBackToPricing,
     handleSuccessClose,
     handleAddCreditCard: handleSubscription,

@@ -3,6 +3,7 @@ import type { Locale } from '../../../i18n/translations'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
+import type { Platform } from '../../../composables/useDownloadUrl'
 import {
   downloadUrls,
   useDownloadUrl
@@ -18,13 +19,15 @@ const { locale = 'en', class: customClass = '' } = defineProps<{
 
 const { downloadUrl, platform, showFallback } = useDownloadUrl()
 
-const ICONS = {
+const label = computed(() => t('download.hero.downloadLocal', locale))
+
+const ICONS: Record<Platform, string> = {
   windows: '/icons/os/windows.svg',
   mac: '/icons/os/apple.svg'
-} as const
+}
 
 interface ButtonSpec {
-  key: string
+  key: Platform
   href: string
   icon: string
   ariaLabel?: string
@@ -41,19 +44,18 @@ const buttons = computed<ButtonSpec[]>(() => {
     ]
   }
   if (showFallback.value) {
-    const label = t('download.hero.downloadLocal', locale)
     return [
       {
         key: 'windows',
         href: downloadUrls.windows,
         icon: ICONS.windows,
-        ariaLabel: `${label} — Windows`
+        ariaLabel: `${label.value} — Windows`
       },
       {
         key: 'mac',
         href: downloadUrls.macArm,
         icon: ICONS.mac,
-        ariaLabel: `${label} — macOS`
+        ariaLabel: `${label.value} — macOS`
       }
     ]
   }
@@ -77,11 +79,8 @@ const buttons = computed<ButtonSpec[]>(() => {
         :src="btn.icon"
         alt=""
         class="ppformula-text-center size-5 -translate-y-0.75"
-        aria-hidden="true"
       />
-      <span class="ppformula-text-center">{{
-        t('download.hero.downloadLocal', locale)
-      }}</span>
+      <span class="ppformula-text-center">{{ label }}</span>
     </span>
   </BrandButton>
 </template>

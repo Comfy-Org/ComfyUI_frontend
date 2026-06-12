@@ -14,6 +14,9 @@ export interface CreditStop {
   discountPercentYearly: number
 }
 
+/** A selected slider stop, as emitted by the pricing table's team column. */
+export type TeamPlanSelection = Pick<CreditStop, 'usd' | 'credits'>
+
 /**
  * Team-plan credit-subscription slider stops.
  *
