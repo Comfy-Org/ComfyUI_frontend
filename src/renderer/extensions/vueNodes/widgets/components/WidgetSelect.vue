@@ -24,6 +24,7 @@
 import { computed } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
+import { forceModelPickerAssetMode } from '@/platform/assets/forceAssetMode'
 import { isCloud } from '@/platform/distribution/types'
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
@@ -132,6 +133,6 @@ const uploadSubfolder = computed(() => specDescriptor.value.subfolder)
 const defaultLayoutMode = computed<LayoutMode>(() => {
   if (!isAssetMode.value) return 'grid'
   // Local builds use the compact name-only row; cloud uses the standard list.
-  return isCloud ? 'list' : 'list-small'
+  return isCloud || forceModelPickerAssetMode ? 'list' : 'list-small'
 })
 </script>

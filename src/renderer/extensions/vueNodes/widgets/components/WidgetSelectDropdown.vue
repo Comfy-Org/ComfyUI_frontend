@@ -3,6 +3,7 @@ import { computed, provide, ref, toRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useRecentlyUsedModels } from '@/composables/sidebarTabs/useRecentlyUsedModels'
+import { forceModelPickerAssetMode } from '@/platform/assets/forceAssetMode'
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import { useAssetsApi } from '@/platform/assets/composables/media/useAssetsApi'
 import { useFlatOutputAssets } from '@/platform/assets/composables/media/useFlatOutputAssets'
@@ -155,6 +156,7 @@ const acceptTypes = computed(() => {
 const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
 
 const isModel = computed(() => props.assetKind === 'model')
+const modelAssetMode = isCloud || forceModelPickerAssetMode
 
 // Models sort/group by base model; other pickers use the recency/name options.
 // Local builds lack reliable base-model metadata, so they drop the base-model
@@ -162,7 +164,7 @@ const isModel = computed(() => props.assetKind === 'model')
 const sortOptions = computed(() => {
   if (!isModel.value) return getDefaultSortOptions()
   const options = getModelSortOptions()
-  if (isCloud) return options
+  if (modelAssetMode) return options
   return options.filter(
     (option) =>
       option.id !== 'base-model-asc' && option.id !== 'base-model-desc'
@@ -170,7 +172,7 @@ const sortOptions = computed(() => {
 })
 // Cloud models default to base-model grouping; local defaults to A-Z.
 const sortSelected = ref(
-  isModel.value ? (isCloud ? 'base-model-asc' : 'name-asc') : 'recent'
+  isModel.value ? (modelAssetMode ? 'base-model-asc' : 'name-asc') : 'recent'
 )
 
 // Surface recently-picked models at the top of the grouped model picker.
@@ -208,9 +210,9 @@ function handleIsOpenUpdate(isOpen: boolean) {
       :accept="acceptTypes"
       :filter-options
       :sort-options="sortOptions"
-      :show-ownership-filter="isCloud && showOwnershipFilter"
+      :show-ownership-filter="modelAssetMode && showOwnershipFilter"
       :ownership-options
-      :show-base-model-filter="isCloud && showBaseModelFilter"
+      :show-base-model-filter="modelAssetMode && showBaseModelFilter"
       :base-model-options
       :pin-top-names="pinTopNames"
       v-bind="combinedProps"

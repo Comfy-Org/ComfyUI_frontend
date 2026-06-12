@@ -2,6 +2,7 @@ import { computed, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { useLocalModelLibrarySource } from '@/composables/sidebarTabs/useLocalModelLibrarySource'
+import { forceModelPickerAssetMode } from '@/platform/assets/forceAssetMode'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -22,7 +23,7 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 export function useAssetWidgetData(
   nodeType: MaybeRefOrGetter<string | undefined>
 ) {
-  if (isCloud) {
+  if (isCloud || forceModelPickerAssetMode) {
     const assetsStore = useAssetsStore()
     const modelToNodeStore = useModelToNodeStore()
 

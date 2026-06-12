@@ -20,6 +20,7 @@ import type {
   ModelFolder,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
+import { forceModelPickerAssetMode } from '@/platform/assets/forceAssetMode'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -396,6 +397,7 @@ function createAssetService() {
    * Checks if the asset API is enabled (cloud environment + user setting).
    */
   function isAssetAPIEnabled(): boolean {
+    if (forceModelPickerAssetMode) return true
     if (!isCloud) return false
     return !!useSettingStore().get('Comfy.Assets.UseAssetAPI')
   }
