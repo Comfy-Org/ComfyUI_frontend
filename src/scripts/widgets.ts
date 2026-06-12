@@ -5,7 +5,6 @@ import type {
   IComboWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
-import { nextValueForLinkedTarget } from './valueControl'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
@@ -29,7 +28,7 @@ import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 
 import type { ComfyApp } from './app'
-import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/control/controlWidgetMarker'
 import './domWidget'
 import './errorNodeWidgets'
 
@@ -80,8 +79,6 @@ export function updateControlWidgetLabel(widget: IBaseWidget) {
     widget.label = t('g.control_after_generate')
   }
 }
-
-const HAS_EXECUTED = Symbol()
 
 export function addValueControlWidget(
   node: LGraphNode,
@@ -175,43 +172,6 @@ export function addValueControlWidgets(
     })
 
     widgets.push(comboFilter)
-  }
-
-  function applyWidgetControl(isPartialExecution: boolean | undefined) {
-    if (
-      node.inputs?.some(
-        (input) =>
-          input.widget?.name === targetWidget.name && input.link != null
-      )
-    )
-      return
-
-    const next = nextValueForLinkedTarget({
-      target: targetWidget,
-      linkedWidgets: targetWidget.linkedWidgets,
-      nodeId: node.id,
-      isPartialExecution
-    })
-    if (next === undefined) return
-
-    targetWidget.value = next
-    targetWidget.callback?.(next)
-  }
-
-  valueControl.beforeQueued = ({ isPartialExecution } = {}) => {
-    if (controlValueRunBefore()) {
-      // Don't run on first execution
-      if (valueControl[HAS_EXECUTED]) {
-        applyWidgetControl(isPartialExecution)
-      }
-    }
-    valueControl[HAS_EXECUTED] = true
-  }
-
-  valueControl.afterQueued = ({ isPartialExecution } = {}) => {
-    if (!controlValueRunBefore()) {
-      applyWidgetControl(isPartialExecution)
-    }
   }
 
   return widgets

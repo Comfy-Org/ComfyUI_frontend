@@ -4,6 +4,8 @@ import type {
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
 
+import type { WidgetId } from './widgetId'
+
 export interface WidgetState<
   TValue = unknown,
   TType extends string = string,
@@ -21,9 +23,18 @@ export interface WidgetState<
 > {
   isDOMWidget?: boolean
   nodeId: NodeId
+  /** Whether this widget's input slot is link-fed, suppressing control. */
+  inputLinked?: boolean
 }
 
 export type WidgetStateInit<TValue = unknown> = Omit<
   WidgetState<TValue>,
   'nodeId' | 'name' | 'y'
 > & { y?: number }
+
+/** Control component for a target widget, keyed by the target's WidgetId. */
+export interface WidgetControlState {
+  controlWidgetId: WidgetId
+  filterWidgetId?: WidgetId
+  hasExecuted: boolean
+}
