@@ -253,7 +253,8 @@ describe('submitOAuthConsentDecision', () => {
         oauthRequestId: validChallenge.oauth_request_id,
         csrfToken: validChallenge.csrf_token,
         decision: 'allow',
-        workspaceId: 'personal-workspace'
+        workspaceId: 'personal-workspace',
+        expectedRedirectUri: 'org.comfy.ios://oauth-callback'
       })
 
       expect(hrefSetter).toHaveBeenCalledWith(
@@ -269,32 +270,47 @@ describe('submitOAuthConsentDecision', () => {
   })
 
   it.for([
-    // Bare custom scheme — rejected because it is not an allowlisted
-    // native scheme (there is no denylist; absence from the allowlist
-    // is the rejection).
-    'comfy://oauth-callback?code=xyz',
-    // Dotted but unknown scheme — must NOT ride in on a "looks like
-    // reverse-DNS" heuristic; only exact allowlist entries pass.
-    'com.evil.app://oauth-callback?code=xyz',
-    // Dotted executable-adjacent scheme (the heuristic bypass class).
-    'ja.vascript://alert(1)',
-    // Executable schemes that must never reach location.href.
-    'data:text/html,<script>alert(1)</script>',
-    'blob:https://cloud.comfy.org/abc'
-  ])('rejects non-allowlisted redirect_url scheme: %s', async (redirectUrl) => {
-    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      okResponse({ redirect_url: redirectUrl })
-    )
+    // Custom scheme with no expectedRedirectUri: unbindable, falls back
+    // to the http(s)-only rule.
+    ['org.comfy.ios://oauth-callback?code=xyz', undefined, 'unsafe scheme'],
+    // Bound challenge, different scheme: wrong-client redirect.
+    [
+      'com.evil.app://oauth-callback?code=xyz',
+      'org.comfy.ios://oauth-callback',
+      'does not match'
+    ],
+    // Bound challenge, same scheme but different path.
+    [
+      'org.comfy.ios://oauth-callback/../steal?code=xyz',
+      'org.comfy.ios://oauth-callback',
+      'does not match'
+    ],
+    // Executable schemes are rejected even if the challenge claims them.
+    ['javascript:alert(1)', 'javascript:alert(1)', 'unsafe scheme'],
+    [
+      'data:text/html,<script>alert(1)</script>',
+      'data:text/html,x',
+      'unsafe scheme'
+    ],
+    ['blob:https://cloud.comfy.org/abc', undefined, 'unsafe scheme']
+  ] as const)(
+    'rejects redirect_url %s (expected registration: %s)',
+    async ([redirectUrl, expectedRedirectUri, expectedError]) => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        okResponse({ redirect_url: redirectUrl })
+      )
 
-    await expect(
-      submitOAuthConsentDecision({
-        oauthRequestId: validChallenge.oauth_request_id,
-        csrfToken: validChallenge.csrf_token,
-        decision: 'allow',
-        workspaceId: 'personal-workspace'
-      })
-    ).rejects.toThrow('unsafe scheme')
-  })
+      await expect(
+        submitOAuthConsentDecision({
+          oauthRequestId: validChallenge.oauth_request_id,
+          csrfToken: validChallenge.csrf_token,
+          decision: 'allow',
+          workspaceId: 'personal-workspace',
+          expectedRedirectUri
+        })
+      ).rejects.toThrow(expectedError)
+    }
+  )
 
   it('rejects an unsafe redirect_url scheme', async () => {
     // Defense in depth: even though the cloud backend is trusted, never

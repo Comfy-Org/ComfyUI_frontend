@@ -40,20 +40,31 @@ export type OAuthConsentDecisionParams = {
   csrfToken: string
   decision: 'allow' | 'deny'
   workspaceId: string
+  /**
+   * The challenge's registered `redirect_uri`. When present, the
+   * post-consent navigation must match it (scheme, authority, path) —
+   * the server only appends `code`/`state` query params to the
+   * registered URI, so any other destination is rejected. When absent
+   * (challenges from backends that don't surface it yet), only http(s)
+   * redirects are navigable.
+   */
+  expectedRedirectUri?: string
 }
 
 export type OAuthConsentDecision = (
   params: OAuthConsentDecisionParams
 ) => Promise<void>
 
-// Exact allowlist of custom-scheme protocols (URL.protocol form, trailing
-// colon) that the post-consent redirect may navigate to. These are the
-// RFC 8252 reverse-DNS callback schemes of first-party native clients,
-// mirroring their backend OAuth client registrations. Keep this exact —
-// an allowlist of one is a smaller attack surface than any heuristic
-// over "safe-looking" schemes.
-const NATIVE_REDIRECT_SCHEMES: ReadonlySet<string> = new Set([
-  'org.comfy.ios:' // comfy-ios (Comfy iOS app)
+// Schemes that execute in our origin if navigated. Never navigable,
+// regardless of what the backend returns. Everything else is governed
+// by binding to the challenge's registered redirect_uri — no per-client
+// scheme knowledge lives in the frontend.
+const EXECUTABLE_SCHEMES: ReadonlySet<string> = new Set([
+  'javascript:',
+  'data:',
+  'blob:',
+  'vbscript:',
+  'about:'
 ])
 
 export class OAuthApiError extends Error {
@@ -128,7 +139,8 @@ export async function submitOAuthConsentDecision({
   oauthRequestId,
   csrfToken,
   decision,
-  workspaceId
+  workspaceId,
+  expectedRedirectUri
 }: OAuthConsentDecisionParams): Promise<void> {
   const response = await fetch('/oauth/authorize', {
     method: 'POST',
@@ -154,23 +166,43 @@ export async function submitOAuthConsentDecision({
     throw new Error('OAuth consent response did not include redirect_url')
   }
 
-  // Defense in depth: even though the cloud backend already validates the
-  // redirect byte-identically against the client's registration, never hand
-  // the browser off to an unexpected scheme. Two risks at this sink:
-  // schemes that execute in our origin (javascript:/data:/blob:), and the
-  // OS routing the authorization code + state to whichever installed app
-  // claims an arbitrary custom scheme. Allowed: http(s) — the loopback
-  // redirects desktop/CLI register — plus the exact RFC 8252 reverse-DNS
-  // schemes of known first-party native clients. New native clients must
-  // be added here alongside their backend client registration.
+  // Defense in depth at this sink. Two risks: schemes that execute in our
+  // origin (always rejected, below), and the OS routing the authorization
+  // code + state to whichever installed app claims an arbitrary custom
+  // scheme. For the latter we hold the navigation to the redirect the
+  // backend registered for THIS auth request (the challenge's
+  // redirect_uri): the server only ever appends code/state query params
+  // to the registered URI, so scheme, authority, and path must match
+  // exactly. No per-client scheme list lives in the frontend — new native
+  // clients need only their backend registration.
   let target: URL
   try {
     target = new URL(redirectUrl, globalThis.location.origin)
   } catch {
     throw new Error('OAuth consent redirect_url is not a valid URL')
   }
-  const isHttp = target.protocol === 'http:' || target.protocol === 'https:'
-  if (!isHttp && !NATIVE_REDIRECT_SCHEMES.has(target.protocol)) {
+  if (EXECUTABLE_SCHEMES.has(target.protocol)) {
+    throw new Error('OAuth consent redirect_url has an unsafe scheme')
+  }
+  if (expectedRedirectUri) {
+    let expected: URL
+    try {
+      expected = new URL(expectedRedirectUri)
+    } catch {
+      throw new Error('OAuth consent challenge redirect_uri is not a valid URL')
+    }
+    const matchesRegistration =
+      target.protocol === expected.protocol &&
+      target.host === expected.host &&
+      target.pathname === expected.pathname
+    if (!matchesRegistration) {
+      throw new Error(
+        'OAuth consent redirect_url does not match the registered redirect_uri'
+      )
+    }
+  } else if (target.protocol !== 'http:' && target.protocol !== 'https:') {
+    // Challenges that don't surface redirect_uri can't be bound; hold the
+    // pre-existing http(s)-only line for them.
     throw new Error('OAuth consent redirect_url has an unsafe scheme')
   }
 
