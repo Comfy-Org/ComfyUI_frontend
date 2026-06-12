@@ -2,6 +2,11 @@ import { capitalize } from 'es-toolkit'
 import { computed, ref, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
+import {
+  UNKNOWN_PROVIDER,
+  getAssetProvider
+} from '@/components/sidebar/tabs/cloudModelLibrary/modelGroups'
+import { placeholderCategoryForAsset } from '@/composables/sidebarTabs/useCategoryPlaceholder'
 import { t } from '@/i18n'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { useAssetFilterOptions } from '@/platform/assets/composables/useAssetFilterOptions'
@@ -26,6 +31,8 @@ import type { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
+import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
+import { useAssetsStore } from '@/stores/assetsStore'
 import type { IAssetsProvider } from '@/platform/assets/composables/media/IAssetsProvider'
 import type { AssetKind } from '@/types/widgetTypes'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
@@ -46,6 +53,11 @@ function getDisplayLabel(
 
 function assetKindToMediaType(kind: AssetKind): string {
   return kind === 'mesh' ? '3D' : kind
+}
+
+function getAssetAuthorLabel(asset: AssetItem): string | undefined {
+  const provider = getAssetProvider(asset)
+  return provider && provider !== UNKNOWN_PROVIDER ? provider : undefined
 }
 
 function getMediaUrl(
@@ -74,6 +86,7 @@ interface UseWidgetSelectItemsOptions {
 export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
   const { modelValue, outputMediaAssets, assetData } = options
 
+  const assetsStore = useAssetsStore()
   const missingMediaStore = useMissingMediaStore()
   const missingMediaValues = computed<ReadonlySet<string>>(
     () =>
@@ -193,7 +206,9 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
         id: `input-${index}`,
         preview_url: getMediaUrl(String(value), 'input', kind),
         name: String(value),
-        label: getDisplayLabel(String(value), labelFn)
+        label: getDisplayLabel(String(value), labelFn),
+        created_at: assetsStore.inputAssetsByFilename.get(String(value))
+          ?.created_at
       }))
   })
 
@@ -235,7 +250,8 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
             ? ''
             : asset.preview_url || getMediaUrl(filenameForUrl, 'output', kind),
         name: annotatedPath,
-        label: getDisplayLabel(displayLabel, labelFn)
+        label: getDisplayLabel(displayLabel, labelFn),
+        created_at: asset.created_at
       })
     }
 
@@ -292,13 +308,21 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
 
   const assetItems = computed<FormDropdownItem[]>(() => {
     if (!toValue(options.isAssetMode) || !assetData) return []
+    // The category placeholder is a model-type gradient; media assets resolve
+    // to a non-model tag, so leave it unset and let the generic media fallback
+    // render (matching the non-asset-mode media path).
+    const isModelKind = toValue(options.assetKind) === 'model'
     return assetData.assets.value.map((asset) => ({
       id: asset.id,
       name: getAssetFilename(asset),
       label: getAssetDisplayName(asset),
       preview_url: asset.preview_url,
       is_immutable: asset.is_immutable,
-      base_models: getAssetBaseModels(asset)
+      base_models: getAssetBaseModels(asset),
+      author: getAssetAuthorLabel(asset),
+      placeholder_category: isModelKind
+        ? placeholderCategoryForAsset(asset)
+        : undefined
     }))
   })
 
@@ -313,10 +337,16 @@ export function useWidgetSelectItems(options: UseWidgetSelectItemsOptions) {
     if (toValue(options.isAssetMode) && assetData) {
       return filteredAssetItems.value
     }
+    // The "All" tab interleaves imported and generated media by recency rather
+    // than grouping by type, so the newest asset shows first regardless of
+    // origin.
+    const byRecency = sortAssets(
+      [...inputItems.value, ...outputItems.value],
+      'recent'
+    )
     return [
       ...(missingValueItem.value ? [missingValueItem.value] : []),
-      ...inputItems.value,
-      ...outputItems.value
+      ...byRecency
     ]
   })
 

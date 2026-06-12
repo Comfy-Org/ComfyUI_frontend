@@ -1,6 +1,7 @@
 import { computed, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
+import { useLocalModelLibrarySource } from '@/composables/sidebarTabs/useLocalModelLibrarySource'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -11,7 +12,8 @@ import { useModelToNodeStore } from '@/stores/modelToNodeStore'
  * Provides reactive asset data based on node type with automatic category detection.
  * Uses store-based caching to avoid duplicate fetches across multiple instances.
  *
- * Cloud-only composable - returns empty data when not in cloud environment.
+ * Cloud reads from the assets store; desktop/localhost reads from the local
+ * Model Library source (which enumerates /models/<folder>).
  *
  * @param nodeType - ComfyUI node type (ref, getter, or plain value). Can be undefined.
  *   Accepts: ref('CheckpointLoaderSimple'), () => 'CheckpointLoaderSimple', or 'CheckpointLoaderSimple'
@@ -71,10 +73,30 @@ export function useAssetWidgetData(
     }
   }
 
+  // Local mode (desktop / localhost): the unified Model Library source has
+  // already enumerated /models/<folder>. Look up the node's category via the
+  // shared modelToNodeStore and return only the assets in that directory so
+  // each load-node's picker is scoped to the right kind of files.
+  const localSource = useLocalModelLibrarySource()
+  const modelToNodeStore = useModelToNodeStore()
+
+  const category = computed(() => {
+    const resolvedType = toValue(nodeType)
+    return resolvedType
+      ? modelToNodeStore.getCategoryForNodeType(resolvedType)
+      : undefined
+  })
+
+  const assets = computed<AssetItem[]>(() => {
+    const cat = category.value
+    if (!cat) return []
+    return localSource.assets.value.filter((a) => a.metadata?.directory === cat)
+  })
+
   return {
-    category: computed(() => undefined),
-    assets: computed<AssetItem[]>(() => []),
-    isLoading: computed(() => false),
-    error: computed(() => null)
+    category,
+    assets,
+    isLoading: localSource.isLoading,
+    error: computed<Error | null>(() => null)
   }
 }

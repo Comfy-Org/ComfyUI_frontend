@@ -33,7 +33,31 @@ function createSortOption(
 
 export function getDefaultSortOptions(): SortOption<AssetSortOption>[] {
   return [
-    createSortOption('default', t('assetBrowser.sortUnsorted')),
+    createSortOption('recent', t('assetBrowser.sortRecent')),
     createSortOption('name-asc', t('assetBrowser.sortAZ'))
+  ]
+}
+
+// Model picker sort options, matching the Model Library sidebar. FormDropdownMenu
+// buckets items under per-base-model headings and decides bucket ORDER from the
+// asc/desc id, so both base-model options share one sorter that only clamps a
+// stable within-bucket order by name.
+const sortBucketByName: SortOption['sorter'] = ({ items }) =>
+  sortAssets(items, 'name-asc')
+
+export function getModelSortOptions(): SortOption[] {
+  return [
+    {
+      id: 'base-model-asc',
+      name: t('assets.sort.baseModelAsc'),
+      sorter: sortBucketByName
+    },
+    {
+      id: 'base-model-desc',
+      name: t('assets.sort.baseModelDesc'),
+      sorter: sortBucketByName
+    },
+    createSortOption('name-asc', t('assets.sort.nameAsc')),
+    createSortOption('name-desc', t('assets.sort.nameDesc'))
   ]
 }

@@ -428,6 +428,41 @@ describe('useWidgetSelectItems', () => {
         true
       )
     })
+
+    it('maps author and placeholder_category onto cloud asset items', () => {
+      mockAssetsData.items = [
+        {
+          id: 'asset-1',
+          name: 'flux_lora.safetensors',
+          preview_url: '',
+          tags: ['models', 'loras'],
+          metadata: { author: 'Black Forest Labs' }
+        }
+      ]
+
+      const assetData = {
+        category: computed(() => 'loras'),
+        assets: computed(() => mockAssetsData.items),
+        isLoading: computed(() => false),
+        error: computed(() => null)
+      }
+
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => [],
+          modelValue: ref('flux_lora.safetensors'),
+          assetKind: () => 'model',
+          isAssetMode: () => true,
+          assetData
+        })
+      )
+
+      expect(dropdownItems.value[0]).toMatchObject({
+        name: 'flux_lora.safetensors',
+        author: 'Black Forest Labs',
+        placeholder_category: 'loras'
+      })
+    })
   })
 
   describe('multi-output jobs', () => {
@@ -1061,6 +1096,46 @@ describe('useWidgetSelectItems', () => {
       )
       expect(selectedSet.value.size).toBe(1)
       expect(selectedSet.value.has('missing-nonexistent.png')).toBe(true)
+    })
+  })
+
+  describe('All tab recency ordering', () => {
+    it('interleaves imported and generated media by recency, newest first', async () => {
+      const { useAssetsStore } = await import('@/stores/assetsStore')
+      const store = useAssetsStore()
+      store.inputAssets = [
+        {
+          id: 'in-1',
+          name: 'old_import.png',
+          asset_hash: 'old_import.png',
+          tags: ['input'],
+          created_at: '2025-01-01T00:00:00Z'
+        } as AssetItem
+      ]
+
+      mockMediaAssets = createMockMediaAssets()
+      mockMediaAssets.media.value = [
+        {
+          id: 'out-1',
+          name: 'new_output.png',
+          tags: ['output'],
+          created_at: '2025-06-01T00:00:00Z'
+        } as AssetItem
+      ]
+
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => ['old_import.png'],
+          modelValue: ref(undefined),
+          outputMediaAssets: mockMediaAssets
+        })
+      )
+      await nextTick()
+
+      expect(dropdownItems.value.map((i) => i.name)).toEqual([
+        'new_output.png [output]',
+        'old_import.png'
+      ])
     })
   })
 
