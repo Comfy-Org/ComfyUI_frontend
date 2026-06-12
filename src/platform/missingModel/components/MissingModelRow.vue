@@ -29,22 +29,12 @@
       <span class="flex min-w-0 flex-1 flex-col gap-0">
         <span class="block min-w-0 text-sm/tight">
           <button
-            v-if="hasMultipleReferences"
+            v-if="hasModelLabelControl"
             ref="modelLabelControl"
             type="button"
             class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
             :title="displayModelName"
-            @click="handleToggleExpand"
-          >
-            {{ displayModelName }}
-          </button>
-          <button
-            v-else-if="!isUnknownCategory && primaryReference"
-            ref="modelLabelControl"
-            type="button"
-            class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
-            :title="displayModelName"
-            @click="handleLocatePrimary"
+            @click="handleModelLabelClick"
           >
             {{ displayModelName }}
           </button>
@@ -313,6 +303,11 @@ const cloudImportProgressPercent = computed(() =>
 )
 const hasMultipleReferences = computed(() => model.referencingNodes.length > 1)
 const primaryReference = computed(() => model.referencingNodes[0])
+const hasModelLabelControl = computed(
+  () =>
+    hasMultipleReferences.value ||
+    (!isUnknownCategory.value && !!primaryReference.value)
+)
 const linkLabel = computed(() =>
   model.representative.url
     ? t('rightSidePanel.missingModels.copyUrl')
@@ -464,6 +459,15 @@ const {
 
 function handleToggleExpand() {
   store.modelExpandState[modelKey.value] = !expanded.value
+}
+
+function handleModelLabelClick() {
+  if (hasMultipleReferences.value) {
+    handleToggleExpand()
+    return
+  }
+
+  handleLocatePrimary()
 }
 
 watch(
