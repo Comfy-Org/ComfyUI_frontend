@@ -1,8 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
+import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
+
+type PreviewPlanInfo = PreviewSubscribeResponse['new_plan']
 
 /**
  * Checkout steps of the unified subscription dialog (FE-934): the
@@ -17,19 +21,31 @@ const meta: Meta = {
 export default meta
 type Story = StoryObj
 
-const creatorPlan = {
+const creatorPlan: PreviewPlanInfo = {
+  slug: 'creator-annual',
   tier: 'CREATOR',
   duration: 'ANNUAL',
   price_cents: 2800,
   credits_cents: 740000,
+  seat_summary: {
+    seat_count: 1,
+    total_cost_cents: 2800,
+    total_credits_cents: 740000
+  },
   period_end: '2027-07-10T00:00:00Z'
 }
 
-const proPlan = {
+const proPlan: PreviewPlanInfo = {
+  slug: 'pro-annual',
   tier: 'PRO',
   duration: 'ANNUAL',
   price_cents: 8000,
   credits_cents: 2110000,
+  seat_summary: {
+    seat_count: 1,
+    total_cost_cents: 8000,
+    total_credits_cents: 2110000
+  },
   period_end: '2026-07-10T00:00:00Z'
 }
 
@@ -51,7 +67,7 @@ export const ConfirmNewSubscription: Story = {
         credits_today_cents: 740000,
         credits_next_period_cents: 740000,
         new_plan: creatorPlan
-      }
+      } satisfies PreviewSubscribeResponse
     }),
     template: `${shell}<SubscriptionAddPaymentPreviewWorkspace tier-key="creator" billing-cycle="yearly" :preview-data="previewData" /></div>`
   })
@@ -73,7 +89,7 @@ export const ConfirmPlanChange: Story = {
     data: () => ({
       previewData: {
         allowed: true,
-        transition_type: 'tier_change',
+        transition_type: 'downgrade',
         effective_at: '2026-07-10T00:00:00Z',
         is_immediate: false,
         cost_today_cents: 0,
@@ -82,7 +98,7 @@ export const ConfirmPlanChange: Story = {
         credits_next_period_cents: 740000,
         current_plan: proPlan,
         new_plan: creatorPlan
-      }
+      } satisfies PreviewSubscribeResponse
     }),
     template: `${shell}<SubscriptionTransitionPreviewWorkspace :preview-data="previewData" /></div>`
   })
@@ -92,7 +108,19 @@ export const ConfirmPlanChange: Story = {
 export const SuccessAllSet: Story = {
   render: () => ({
     components: { SubscriptionSuccessWorkspace },
-    data: () => ({ previewData: { new_plan: creatorPlan } }),
+    data: () => ({
+      previewData: {
+        allowed: true,
+        transition_type: 'new_subscription',
+        effective_at: '2026-07-10T00:00:00Z',
+        is_immediate: true,
+        cost_today_cents: 2800,
+        cost_next_period_cents: 2800,
+        credits_today_cents: 740000,
+        credits_next_period_cents: 740000,
+        new_plan: creatorPlan
+      } satisfies PreviewSubscribeResponse
+    }),
     template: `${shell}<SubscriptionSuccessWorkspace tier-key="creator" :preview-data="previewData" /></div>`
   })
 }
