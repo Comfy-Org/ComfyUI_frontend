@@ -61,9 +61,8 @@ class QuadNode<T> {
     if (!this.divided && this.depth < this.maxDepth) this.subdivide()
 
     // If divided, insert into children
-    if (this.divided && this.children) 
+    if (this.divided && this.children)
       for (const child of this.children) if (child.insert(item)) return true
-    
 
     // If we can't subdivide further, add to this node anyway
     this.items.push(item)
@@ -77,9 +76,8 @@ class QuadNode<T> {
       return true
     }
 
-    if (this.divided && this.children) 
+    if (this.divided && this.children)
       for (const child of this.children) if (child.remove(item)) return true
-    
 
     return false
   }

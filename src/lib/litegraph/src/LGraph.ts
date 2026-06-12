@@ -656,9 +656,8 @@ export class LGraph
 
       // num of input connections
       let num = 0
-      if (node.inputs) 
+      if (node.inputs)
         for (const input of node.inputs) if (input?.link != null) num += 1
-      
 
       if (num == 0) {
         // is a starting node
