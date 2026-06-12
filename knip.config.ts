@@ -61,13 +61,7 @@ const config: KnipConfig = {
     '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically
     'tools/devtools/web/**',
-    // Model Library foundation — consumers land in stacked PRs (sidebar + picker)
-    'src/components/sidebar/tabs/cloudModelLibrary/baseModelCategoryOverrides.ts',
-    'src/components/sidebar/tabs/cloudModelLibrary/CategoryPlaceholder.vue',
-    'src/components/sidebar/tabs/cloudModelLibrary/useNodePreviewDragImage.ts',
-    'src/composables/sidebarTabs/useCategoryPlaceholder.ts',
-    'src/composables/sidebarTabs/useLocalModelLibrarySource.ts',
-    'src/composables/sidebarTabs/useModelLibrarySource.ts',
+    // Model Library foundation — consumed by the stacked in-node picker PR
     'src/composables/sidebarTabs/useRecentlyUsedModels.ts'
   ],
   vite: {

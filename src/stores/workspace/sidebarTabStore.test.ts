@@ -63,15 +63,6 @@ vi.mock('@/composables/sidebarTabs/useNodeLibrarySidebarTab', () => ({
   })
 }))
 
-vi.mock('@/composables/sidebarTabs/useModelLibrarySidebarTab', () => ({
-  useModelLibrarySidebarTab: () => ({
-    id: 'model-library',
-    title: 'model-library',
-    type: 'vue',
-    component: {}
-  })
-}))
-
 vi.mock(
   '@/platform/workflow/management/composables/useWorkflowsSidebarTab',
   () => ({
@@ -136,6 +127,23 @@ describe('useSidebarTabStore', () => {
       'apps'
     ])
     expect(mockRegisterCommand).toHaveBeenCalledTimes(5)
+  })
+
+  it('toggles the model library tab when the asset API setting is enabled', async () => {
+    mockGetSetting.mockImplementation((key: string) =>
+      key === 'Comfy.Assets.UseAssetAPI' ? true : undefined
+    )
+
+    const store = useSidebarTabStore()
+    store.registerCoreSidebarTabs()
+
+    const command = mockRegisterCommand.mock.calls
+      .map(([registered]) => registered)
+      .find(({ id }) => id === 'Workspace.ToggleSidebarTab.model-library')
+    expect(command).toBeDefined()
+    await command.function()
+
+    expect(store.activeSidebarTab?.id).toBe('model-library')
   })
 
   it('prepends the job history tab when QPO V2 is toggled on', async () => {

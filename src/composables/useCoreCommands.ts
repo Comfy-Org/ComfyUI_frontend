@@ -21,6 +21,7 @@ import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
@@ -53,6 +54,7 @@ import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import {
@@ -1299,6 +1301,11 @@ export function useCoreCommands(): ComfyCommand[] {
           const settingStore = useSettingStore()
           await settingStore.set('Comfy.Assets.UseAssetAPI', true)
           await workflowService.reloadCurrentWorkflow()
+        }
+        if (isCloud) {
+          const sidebarTabStore = useSidebarTabStore()
+          sidebarTabStore.toggleSidebarTab('model-library')
+          return
         }
         const assetBrowserDialog = useAssetBrowserDialog()
         await assetBrowserDialog.browse({

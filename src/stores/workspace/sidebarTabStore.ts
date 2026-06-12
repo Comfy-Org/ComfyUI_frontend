@@ -2,8 +2,8 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { useAssetsSidebarTab } from '@/composables/sidebarTabs/useAssetsSidebarTab'
+import { useCloudModelLibrarySidebarTab } from '@/composables/sidebarTabs/useCloudModelLibrarySidebarTab'
 import { useJobHistorySidebarTab } from '@/composables/sidebarTabs/useJobHistorySidebarTab'
-import { useModelLibrarySidebarTab } from '@/composables/sidebarTabs/useModelLibrarySidebarTab'
 import { useNodeLibrarySidebarTab } from '@/composables/sidebarTabs/useNodeLibrarySidebarTab'
 import { t, te } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -72,20 +72,7 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
       tooltip: tooltipFunction,
       versionAdded: '1.3.9',
       category: 'view-controls' as const,
-      function: async () => {
-        const settingStore = useSettingStore()
-        const commandStore = useCommandStore()
-
-        if (
-          tab.id === 'model-library' &&
-          settingStore.get('Comfy.Assets.UseAssetAPI')
-        ) {
-          await commandStore.commands
-            .find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')
-            ?.function?.()
-          return
-        }
-
+      function: () => {
         toggleSidebarTab(tab.id)
       },
       active: () => activeSidebarTab.value?.id === tab.id,
@@ -134,7 +121,9 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
 
     registerSidebarTab(useAssetsSidebarTab())
     registerSidebarTab(useNodeLibrarySidebarTab())
-    registerSidebarTab(useModelLibrarySidebarTab())
+    // Use the unified Model Library tab everywhere — its data source branches
+    // on isCloud internally.
+    registerSidebarTab(useCloudModelLibrarySidebarTab())
     registerSidebarTab(useWorkflowsSidebarTab())
     registerSidebarTab(useAppsSidebarTab())
 

@@ -20,7 +20,13 @@
         </template>
         <template #end>
           <div
-            class="flex flex-row overflow-hidden transition-all duration-200 motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100 touch:w-auto touch:opacity-100 [&_.p-button]:py-1 2xl:[&_.p-button]:py-2"
+            :class="
+              cn(
+                'flex flex-row overflow-hidden transition-all duration-200 [&_.p-button]:py-1 2xl:[&_.p-button]:py-2',
+                !props.toolButtonsAlwaysVisible &&
+                  'motion-safe:w-0 motion-safe:opacity-0 motion-safe:group-focus-within/sidebar-tab:w-auto motion-safe:group-focus-within/sidebar-tab:opacity-100 motion-safe:group-hover/sidebar-tab:w-auto motion-safe:group-hover/sidebar-tab:opacity-100 touch:w-auto touch:opacity-100'
+              )
+            "
           >
             <slot name="tool-buttons" />
           </div>
@@ -45,6 +51,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 const props = defineProps<{
   title: string
   class?: string
+  toolButtonsAlwaysVisible?: boolean
 }>()
 const sidebarPt = {
   start: 'min-w-0 flex-1 overflow-hidden'

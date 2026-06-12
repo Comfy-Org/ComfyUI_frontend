@@ -3,7 +3,7 @@
     :data-node-id="nodeData.id"
     :class="
       cn(
-        'lg-node flex w-[350px] touch-none flex-col rounded-2xl border border-solid border-node-stroke bg-component-node-background pb-1 outline-2 outline-transparent contain-layout contain-style',
+        'lg-node flex w-[350px] touch-none flex-col rounded-2xl border border-solid border-node-stroke bg-node-component-header-surface outline-2 outline-transparent contain-layout contain-style',
         position
       )
     "
@@ -14,7 +14,7 @@
       <NodeHeader :node-data="nodeData" />
     </div>
     <div
-      class="pointer-events-none flex flex-1 flex-col gap-1 pb-2"
+      class="pointer-events-none flex flex-1 flex-col gap-1 rounded-b-2xl bg-component-node-background pb-2"
       :data-testid="`node-body-${nodeData.id}`"
     >
       <NodeSlots :node-data="nodeData" />
