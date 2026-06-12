@@ -114,6 +114,27 @@ describe('billingOperationStore', () => {
       expect(store.getOperation('op-1')?.type).toBe('subscription')
     })
 
+    it('returns the in-flight terminal promise for duplicate starts', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const first = store.startOperation('op-1', 'cancel')
+      const second = store.startOperation('op-1', 'cancel')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      const [firstOutcome, secondOutcome] = await Promise.all([first, second])
+      expect(firstOutcome.status).toBe('succeeded')
+      expect(secondOutcome.status).toBe('succeeded')
+
+      const afterTerminal = await store.startOperation('op-1', 'cancel')
+      expect(afterTerminal.status).toBe('succeeded')
+    })
+
     it('shows immediate processing toast for subscription operations', () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
@@ -370,6 +391,23 @@ describe('billingOperationStore', () => {
       expect(mockUpdateActiveWorkspace).toHaveBeenCalledWith({
         isSubscribed: false
       })
+    })
+
+    it('resolves the terminal outcome even when the post-success refresh fails', async () => {
+      mockFetchStatus.mockRejectedValueOnce(new Error('refresh failed'))
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'succeeded',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      const terminal = store.startOperation('op-1', 'cancel')
+
+      await vi.advanceTimersByTimeAsync(0)
+      const operation = await terminal
+
+      expect(operation.status).toBe('succeeded')
     })
 
     it('does not open the settings dialog or toast on cancel success', async () => {

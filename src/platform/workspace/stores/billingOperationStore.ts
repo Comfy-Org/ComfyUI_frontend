@@ -35,6 +35,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
   const intervals = new Map<string, number>()
   const receivedToasts = new Map<string, ToastMessageOptions>()
   const terminalResolvers = new Map<string, TerminalResolver>()
+  const terminalPromises = new Map<string, Promise<BillingOperation>>()
 
   const hasPendingOperations = computed(() =>
     [...operations.value.values()].some((op) => op.status === 'pending')
@@ -61,7 +62,9 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     type: OperationType
   ): Promise<BillingOperation> {
     const existing = operations.value.get(opId)
-    if (existing) return Promise.resolve(existing)
+    if (existing) {
+      return terminalPromises.get(opId) ?? Promise.resolve(existing)
+    }
 
     const operation: BillingOperation = {
       opId,
@@ -92,6 +95,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     const terminal = new Promise<BillingOperation>((resolve) => {
       terminalResolvers.set(opId, resolve)
     })
+    terminalPromises.set(opId, terminal)
 
     void poll(opId)
 
@@ -154,7 +158,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     }
 
     const billingContext = useBillingContext()
-    await Promise.all([
+    await Promise.allSettled([
       billingContext.fetchStatus(),
       billingContext.fetchBalance()
     ])
@@ -244,6 +248,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
       resolve(operation)
     }
     terminalResolvers.delete(opId)
+    terminalPromises.delete(opId)
   }
 
   function updateOperationStatus(
@@ -280,6 +285,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     newMap.delete(opId)
     operations.value = newMap
     terminalResolvers.delete(opId)
+    terminalPromises.delete(opId)
   }
 
   return {
