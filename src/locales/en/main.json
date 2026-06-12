@@ -2688,8 +2688,12 @@
     },
     "success": {
       "allSet": "You're all set",
+      "inviteEmailsPlaceholder": "Enter emails separated by commas",
+      "inviteSubtext": "You can also invite people later from Settings",
+      "inviteTitle": "Invite your team",
       "planUpdated": "Your plan has been successfully updated.",
-      "receiptEmailed": "A receipt has been emailed to you."
+      "receiptEmailed": "A receipt has been emailed to you.",
+      "sendInvites": "Send invites"
     }
   },
   "userSettings": {
