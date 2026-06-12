@@ -9,6 +9,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { createAssetWidget } from '@/platform/assets/utils/createAssetWidget'
+import { forceModelPickerAssetMode } from '@/platform/assets/forceAssetMode'
 import { isCloud } from '@/platform/distribution/types'
 import type {
   ComboInputSpec,
@@ -243,18 +244,21 @@ const addComboWidget = (
 ): IBaseWidget => {
   const defaultValue = getDefaultValue(inputSpec)
 
-  if (isCloud) {
-    if (assetService.shouldUseAssetBrowser(node.comfyClass, inputSpec.name)) {
-      // Default from cloud assets, not from server combo options.
-      // Server options list local files that may not exist in the user's
-      // cloud asset library, leading to missing-model errors on undo/reload.
-      const cloudDefault = resolveCloudDefault(
-        node.comfyClass ?? '',
-        inputSpec.default
-      )
-      return createAssetBrowserWidget(node, inputSpec, cloudDefault)
-    }
+  if (
+    (isCloud || forceModelPickerAssetMode) &&
+    assetService.shouldUseAssetBrowser(node.comfyClass, inputSpec.name)
+  ) {
+    // Default from cloud assets, not from server combo options.
+    // Server options list local files that may not exist in the user's
+    // cloud asset library, leading to missing-model errors on undo/reload.
+    const cloudDefault = resolveCloudDefault(
+      node.comfyClass ?? '',
+      inputSpec.default
+    )
+    return createAssetBrowserWidget(node, inputSpec, cloudDefault)
+  }
 
+  if (isCloud) {
     if (NODE_MEDIA_TYPE_MAP[node.comfyClass ?? '']) {
       return createInputMappingWidget(
         node,
