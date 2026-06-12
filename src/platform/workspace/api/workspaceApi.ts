@@ -707,6 +707,10 @@ export const workspaceApi = {
    * Get Churnkey auth credentials (customer ID + HMAC) for the active workspace.
    * GET /api/billing/churnkey/auth
    * Used by the cancellation flow to launch the Churnkey embedded modal.
+   *
+   * Returns `null` when the endpoint 404s, which signals that the backend
+   * hasn't been deployed yet — callers fall back to the legacy cancel dialog.
+   *
    * The HMAC must be signed server-side; never derive it on the client.
    */
   async getChurnkeyAuth(): Promise<ChurnkeyAuthResponse | null> {

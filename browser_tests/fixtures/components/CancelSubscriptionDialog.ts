@@ -21,12 +21,14 @@ export class CancelSubscriptionDialog extends BaseDialog {
     })
   }
 
-  async open(cancelAt?: string) {
+  async open(cancelAt?: string, waitForVisible: boolean = true) {
     await this.page.evaluate((date) => {
       void (
         window.app!.extensionManager as WorkspaceStore
-      ).dialog.showCancelSubscriptionDialog(date)
+      ).dialog.launchCancellationFlow(date)
     }, cancelAt)
-    await this.waitForVisible()
+    if (waitForVisible) {
+      await this.waitForVisible()
+    }
   }
 }

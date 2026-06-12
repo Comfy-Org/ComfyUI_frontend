@@ -454,6 +454,10 @@ interface EcommerceMetadata {
 export interface CancellationFlowClosedMetadata {
   outcome: 'canceled' | 'reconsidered' | 'discounted' | 'paused' | 'unknown'
   survey_response?: string
+  /**
+   * Categorized reason when `outcome === 'unknown'` so PostHog dashboards can
+   * separate "embed failed to load" from "cancel API failed" etc.
+   */
   failure_reason?:
     | 'auth_unavailable'
     | 'embed_not_loaded'

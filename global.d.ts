@@ -42,15 +42,7 @@ interface GtagFunction {
   (...args: unknown[]): void
 }
 
-interface ChurnkeyWindow {
-  created?: boolean
-  init: (action: 'show' | 'restart', config: object) => void
-  hide?: () => void
-  clearState?: () => void
-}
-
 interface Window {
-  churnkey?: ChurnkeyWindow
   __CONFIG__: {
     gtm_container_id?: string
     ga_measurement_id?: string

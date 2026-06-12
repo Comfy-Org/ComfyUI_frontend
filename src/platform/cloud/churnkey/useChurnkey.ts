@@ -8,11 +8,22 @@ import type {
 } from './types'
 
 function readAppId(): string {
-  return __CHURNKEY_APP_ID__
+  // E2e hook: `__CHURNKEY_APP_ID__` is a compile-time define, so a built
+  // bundle can't be reconfigured per test. Playwright sets this global to
+  // exercise the Churnkey routing without a build-time app ID.
+  const override =
+    typeof window !== 'undefined'
+      ? (window as { __CHURNKEY_APP_ID_OVERRIDE__?: string })
+          .__CHURNKEY_APP_ID_OVERRIDE__
+      : undefined
+  return override || __CHURNKEY_APP_ID__
 }
 
 /**
- * Thrown when the backend's `/billing/churnkey/auth` endpoint is missing.
+ * Thrown when the backend's `/billing/churnkey/auth` endpoint is missing
+ * (e.g. backend hasn't been deployed yet). Callers should treat this the
+ * same as Churnkey not being configured at all and fall back to the
+ * legacy cancel dialog rather than surfacing a toast.
  */
 export class ChurnkeyAuthUnavailableError extends Error {
   constructor() {

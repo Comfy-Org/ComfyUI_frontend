@@ -52,6 +52,22 @@ export class FeatureFlagHelper {
   }
 
   /**
+   * Set server feature flags at runtime by mutating the reactive
+   * `api.serverFeatureFlags` ref. Use this when `setFlags()` (localStorage)
+   * won't work — namely in production builds, where the dev-override
+   * reader is gated on `import.meta.env.DEV` and dead-code-eliminated.
+   */
+  async setServerFeatures(features: Record<string, unknown>): Promise<void> {
+    await this.page.evaluate((flagMap: Record<string, unknown>) => {
+      const api = window.app!.api
+      api.serverFeatureFlags.value = {
+        ...api.serverFeatureFlags.value,
+        ...flagMap
+      }
+    }, features)
+  }
+
+  /**
    * Mock server feature flags via route interception on /api/features.
    */
   async mockServerFeatures(features: Record<string, unknown>): Promise<void> {

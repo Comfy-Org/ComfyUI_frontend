@@ -39,3 +39,16 @@ export interface ChurnkeySessionResults {
   status?: 'canceled' | 'discounted' | 'paused' | 'closed'
   [key: string]: unknown
 }
+
+interface ChurnkeyWindow {
+  created?: boolean
+  init: (action: 'show' | 'restart', config: ChurnkeyInitConfig) => void
+  hide?: () => void
+  clearState?: () => void
+}
+
+declare global {
+  interface Window {
+    churnkey?: ChurnkeyWindow
+  }
+}
