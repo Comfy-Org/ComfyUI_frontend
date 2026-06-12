@@ -9,9 +9,6 @@ import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
 const mockGetNodeByExecutionId = vi.fn()
 const mockResolveNodeDisplayName = vi.fn()
-const mockValidateSourceUrl = vi.fn()
-const mockGetAssetMetadata = vi.fn()
-const mockUploadAssetAsync = vi.fn()
 const mockTrackDownload = vi.fn()
 const mockInvalidateModelsForCategory = vi.fn()
 const mockUpdateModelsForNodeType = vi.fn()
@@ -65,33 +62,6 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: () => ({
     getAllNodeProviders: mockGetAllNodeProviders
   })
-}))
-
-vi.mock('@/platform/assets/services/assetService', () => ({
-  assetService: {
-    getAssetMetadata: (...args: unknown[]) => mockGetAssetMetadata(...args),
-    uploadAssetAsync: (...args: unknown[]) => mockUploadAssetAsync(...args)
-  }
-}))
-
-vi.mock('@/platform/assets/importSources/civitaiImportSource', () => ({
-  civitaiImportSource: {
-    type: 'civitai',
-    name: 'Civitai',
-    hostnames: ['civitai.com', 'civitai.red']
-  }
-}))
-
-vi.mock('@/platform/assets/importSources/huggingfaceImportSource', () => ({
-  huggingfaceImportSource: {
-    type: 'huggingface',
-    name: 'Hugging Face',
-    hostnames: ['huggingface.co']
-  }
-}))
-
-vi.mock('@/platform/assets/utils/importSourceUtil', () => ({
-  validateSourceUrl: (...args: unknown[]) => mockValidateSourceUrl(...args)
 }))
 
 import { app } from '@/scripts/app'
@@ -227,59 +197,6 @@ describe('useMissingModelInteractions', () => {
     })
   })
 
-  describe('isSelectionConfirmable', () => {
-    it('returns false when no selection exists', () => {
-      const { isSelectionConfirmable } = setupMissingModelInteractions()
-      expect(isSelectionConfirmable('key1')).toBe(false)
-    })
-
-    it('returns false when download is running', () => {
-      const store = useMissingModelStore()
-      store.selectedLibraryModel['key1'] = 'model.safetensors'
-      store.importTaskIds['key1'] = 'task-123'
-      mockDownloadList.mockReturnValue([
-        { taskId: 'task-123', status: 'running' }
-      ])
-
-      const { isSelectionConfirmable } = setupMissingModelInteractions()
-      expect(isSelectionConfirmable('key1')).toBe(false)
-    })
-
-    it('returns false when importCategoryMismatch exists', () => {
-      const store = useMissingModelStore()
-      store.selectedLibraryModel['key1'] = 'model.safetensors'
-      store.importCategoryMismatch['key1'] = 'loras'
-
-      const { isSelectionConfirmable } = setupMissingModelInteractions()
-      expect(isSelectionConfirmable('key1')).toBe(false)
-    })
-
-    it('returns true when selection is ready with no active download', () => {
-      const store = useMissingModelStore()
-      store.selectedLibraryModel['key1'] = 'model.safetensors'
-      mockDownloadList.mockReturnValue([])
-
-      const { isSelectionConfirmable } = setupMissingModelInteractions()
-      expect(isSelectionConfirmable('key1')).toBe(true)
-    })
-  })
-
-  describe('cancelLibrarySelect', () => {
-    it('clears selectedLibraryModel and importCategoryMismatch', () => {
-      const store = useMissingModelStore()
-      store.selectedLibraryModel['key1'] = 'model.safetensors'
-      store.importCategoryMismatch['key1'] = 'loras'
-      store.importTaskIds['key1'] = 'task-123'
-
-      const { cancelLibrarySelect } = setupMissingModelInteractions()
-      cancelLibrarySelect('key1')
-
-      expect(store.selectedLibraryModel['key1']).toBeUndefined()
-      expect(store.importCategoryMismatch['key1']).toBeUndefined()
-      expect(store.importTaskIds['key1']).toBeUndefined()
-    })
-  })
-
   describe('confirmLibrarySelect', () => {
     it('updates widget values on referencing nodes and removes missing model', () => {
       const mockGraph = {}
@@ -369,110 +286,6 @@ describe('useMissingModelInteractions', () => {
     })
   })
 
-  describe('handleUrlInput', () => {
-    it('clears previous state on new input', () => {
-      const store = useMissingModelStore()
-      store.urlMetadata['key1'] = { name: 'old' } as never
-      store.urlErrors['key1'] = 'old error'
-      store.urlFetching['key1'] = true
-
-      const { handleUrlInput } = setupMissingModelInteractions()
-      handleUrlInput('key1', 'https://civitai.com/models/123')
-
-      expect(store.urlInputs['key1']).toBe('https://civitai.com/models/123')
-      expect(store.urlMetadata['key1']).toBeUndefined()
-      expect(store.urlErrors['key1']).toBeUndefined()
-      expect(store.urlFetching['key1']).toBe(false)
-    })
-
-    it('does not set debounce timer for empty input', () => {
-      const store = useMissingModelStore()
-      const setTimerSpy = vi.spyOn(store, 'setDebounceTimer')
-
-      const { handleUrlInput } = setupMissingModelInteractions()
-      handleUrlInput('key1', '   ')
-
-      expect(setTimerSpy).not.toHaveBeenCalled()
-    })
-
-    it('sets debounce timer for non-empty input', () => {
-      const store = useMissingModelStore()
-      const setTimerSpy = vi.spyOn(store, 'setDebounceTimer')
-
-      const { handleUrlInput } = setupMissingModelInteractions()
-      handleUrlInput('key1', 'https://civitai.com/models/123')
-
-      expect(setTimerSpy).toHaveBeenCalledWith(
-        'key1',
-        expect.any(Function),
-        800
-      )
-    })
-
-    it('clears previous debounce timer', () => {
-      const store = useMissingModelStore()
-      const clearTimerSpy = vi.spyOn(store, 'clearDebounceTimer')
-
-      const { handleUrlInput } = setupMissingModelInteractions()
-      handleUrlInput('key1', 'https://civitai.com/models/123')
-
-      expect(clearTimerSpy).toHaveBeenCalledWith('key1')
-    })
-  })
-
-  describe('getTypeMismatch', () => {
-    it('returns null when groupDirectory is null', () => {
-      const { getTypeMismatch } = setupMissingModelInteractions()
-      expect(getTypeMismatch('key1', null)).toBeNull()
-    })
-
-    it('returns null when no metadata exists', () => {
-      const { getTypeMismatch } = setupMissingModelInteractions()
-      expect(getTypeMismatch('key1', 'checkpoints')).toBeNull()
-    })
-
-    it('returns null when metadata has no tags', () => {
-      const store = useMissingModelStore()
-      store.urlMetadata['key1'] = { name: 'model', tags: [] } as never
-
-      const { getTypeMismatch } = setupMissingModelInteractions()
-      expect(getTypeMismatch('key1', 'checkpoints')).toBeNull()
-    })
-
-    it('returns null when detected type matches directory', () => {
-      const store = useMissingModelStore()
-      store.urlMetadata['key1'] = {
-        name: 'model',
-        tags: ['checkpoints']
-      } as never
-
-      const { getTypeMismatch } = setupMissingModelInteractions()
-      expect(getTypeMismatch('key1', 'checkpoints')).toBeNull()
-    })
-
-    it('returns detected type when it differs from directory', () => {
-      const store = useMissingModelStore()
-      store.urlMetadata['key1'] = {
-        name: 'model',
-        tags: ['loras']
-      } as never
-
-      const { getTypeMismatch } = setupMissingModelInteractions()
-      expect(getTypeMismatch('key1', 'checkpoints')).toBe('loras')
-    })
-
-    it('returns null when tags contain no recognized model type', () => {
-      const store = useMissingModelStore()
-      store.urlMetadata['key1'] = {
-        name: 'model',
-        tags: ['other', 'random']
-      } as never
-
-      const { getTypeMismatch } = setupMissingModelInteractions()
-      expect(getTypeMismatch('key1', 'checkpoints')).toBeNull()
-    })
-  })
-
   describe('getDownloadStatus', () => {
     it('returns null when no taskId is tracked for the key', () => {
       const { getDownloadStatus } = setupMissingModelInteractions()
@@ -495,29 +308,20 @@ describe('useMissingModelInteractions', () => {
     })
   })
 
-  describe('handleImport', () => {
-    const setupImportableState = (key: string) => {
+  describe('handleUploadedModelImport', () => {
+    it('tracks an async-pending result via importTaskIds and trackDownload', () => {
       const store = useMissingModelStore()
-      store.urlInputs[key] = 'https://civitai.com/models/123'
-      store.urlMetadata[key] = {
-        filename: 'model.safetensors',
-        name: 'model'
-      } as never
-      mockValidateSourceUrl.mockReturnValue(true)
-      return store
-    }
 
-    it('tracks an async-pending result via importTaskIds and trackDownload', async () => {
-      const store = setupImportableState('key1')
-      mockUploadAssetAsync.mockResolvedValueOnce({
-        type: 'async',
-        task: { task_id: 'task-99', status: 'created' }
+      const { handleUploadedModelImport } = setupMissingModelInteractions()
+      handleUploadedModelImport('key1', {
+        status: 'processing',
+        taskId: 'task-99',
+        modelType: 'checkpoints',
+        filename: 'model.safetensors'
       })
 
-      const { handleImport } = setupMissingModelInteractions()
-      await handleImport('key1', 'checkpoints')
-
       expect(store.importTaskIds['key1']).toBe('task-99')
+      expect(store.selectedLibraryModel['key1']).toBe('model.safetensors')
       expect(mockTrackDownload).toHaveBeenCalledWith(
         'task-99',
         'checkpoints',
@@ -525,43 +329,17 @@ describe('useMissingModelInteractions', () => {
       )
     })
 
-    it('invalidates model caches when the async result is already completed', async () => {
-      setupImportableState('key1')
-      mockUploadAssetAsync.mockResolvedValueOnce({
-        type: 'async',
-        task: { task_id: 'task-100', status: 'completed' }
+    it('invalidates model caches when the result is already completed', () => {
+      const { handleUploadedModelImport } = setupMissingModelInteractions()
+      handleUploadedModelImport('key1', {
+        status: 'success',
+        modelType: 'checkpoints',
+        filename: 'model.safetensors'
       })
-
-      const { handleImport } = setupMissingModelInteractions()
-      await handleImport('key1', 'checkpoints')
 
       expect(mockInvalidateModelsForCategory).toHaveBeenCalledWith(
         'checkpoints'
       )
-    })
-
-    it('records importCategoryMismatch when sync result tags differ from groupDirectory', async () => {
-      const store = setupImportableState('key1')
-      mockUploadAssetAsync.mockResolvedValueOnce({
-        type: 'sync',
-        asset: { tags: ['models', 'loras'] }
-      })
-
-      const { handleImport } = setupMissingModelInteractions()
-      await handleImport('key1', 'checkpoints')
-
-      expect(store.importCategoryMismatch['key1']).toBe('loras')
-    })
-
-    it('writes the error message to urlErrors when the upload rejects', async () => {
-      const store = setupImportableState('key1')
-      mockUploadAssetAsync.mockRejectedValueOnce(new Error('Upload boom'))
-
-      const { handleImport } = setupMissingModelInteractions()
-      await handleImport('key1', 'checkpoints')
-
-      expect(store.urlErrors['key1']).toBe('Upload boom')
-      expect(store.urlImporting['key1']).toBe(false)
     })
   })
 })

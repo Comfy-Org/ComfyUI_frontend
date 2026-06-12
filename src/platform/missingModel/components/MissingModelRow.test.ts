@@ -366,14 +366,16 @@ describe('MissingModelRow', () => {
     expect(onLocateModel).toHaveBeenCalledWith('1')
   })
 
-  it('does not show the library selector in OSS rows', () => {
+  it('shows no resolution action in OSS rows without a download url', () => {
     mockIsCloud.value = false
 
     renderRow(makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]))
 
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     expect(
-      screen.getByPlaceholderText('Paste Model URL (Civitai or Hugging Face)')
-    ).toBeInTheDocument()
+      screen.queryByTestId('missing-model-download')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByTestId('missing-model-import')).not.toBeInTheDocument()
   })
 
   it('shows model type metadata below the model name', () => {

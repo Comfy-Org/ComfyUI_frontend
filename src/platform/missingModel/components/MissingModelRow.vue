@@ -129,26 +129,6 @@
         >
           {{ t('g.download') }}
         </Button>
-        <Button
-          v-else-if="showConfirmAction"
-          variant="textonly"
-          size="icon-sm"
-          :aria-label="t('rightSidePanel.missingModels.confirmSelection')"
-          :disabled="!canConfirm"
-          :class="
-            cn(
-              'size-8 shrink-0 rounded-lg transition-colors',
-              canConfirm ? 'bg-primary/10 hover:bg-primary/15' : 'opacity-20'
-            )
-          "
-          @click="handleLibrarySelect"
-        >
-          <i
-            aria-hidden="true"
-            class="icon-[lucide--check] size-4"
-            :class="canConfirm ? 'text-primary' : 'text-foreground'"
-          />
-        </Button>
       </template>
 
       <Button
@@ -203,34 +183,6 @@
         </li>
       </ul>
     </TransitionCollapse>
-
-    <template v-if="!isCloud">
-      <TransitionCollapse>
-        <MissingModelStatusCard
-          v-if="selectedLibraryModel[modelKey]"
-          :model-name="selectedLibraryModel[modelKey]"
-          :is-download-active="isDownloadActive"
-          :download-status="downloadStatus"
-          :category-mismatch="importCategoryMismatch[modelKey]"
-          @cancel="cancelLibrarySelect(modelKey)"
-        />
-      </TransitionCollapse>
-
-      <TransitionCollapse>
-        <div
-          v-if="!selectedLibraryModel[modelKey]"
-          class="mt-1 flex flex-col gap-1"
-        >
-          <div v-if="isAssetSupported" class="flex w-full flex-col py-1">
-            <MissingModelUrlInput
-              :model-key="modelKey"
-              :directory="directory"
-              :type-mismatch="typeMismatch"
-            />
-          </div>
-        </div>
-      </TransitionCollapse>
-    </template>
   </div>
 </template>
 
@@ -241,8 +193,6 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
-import MissingModelStatusCard from '@/platform/missingModel/components/MissingModelStatusCard.vue'
-import MissingModelUrlInput from '@/platform/missingModel/components/MissingModelUrlInput.vue'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
 import type { UploadModelDialogContext } from '@/platform/assets/composables/useUploadModelWizard'
 
@@ -287,8 +237,6 @@ const modelKey = computed(() =>
 )
 
 const downloadStatus = computed(() => getDownloadStatus(modelKey.value))
-const canConfirm = computed(() => isSelectionConfirmable(modelKey.value))
-const typeMismatch = computed(() => getTypeMismatch(modelKey.value, directory))
 const isUnknownCategory = computed(() => directory === null)
 const isDownloadActive = computed(
   () =>
@@ -315,7 +263,7 @@ const linkLabel = computed(() =>
 )
 
 const store = useMissingModelStore()
-const { selectedLibraryModel, importCategoryMismatch } = storeToRefs(store)
+const { selectedLibraryModel } = storeToRefs(store)
 const cloudProgress = useTemplateRef<HTMLElement>('cloudProgress')
 const modelLabelControl = useTemplateRef<HTMLButtonElement>('modelLabelControl')
 
@@ -343,7 +291,6 @@ const displayModelName = computed(() => {
 const downloadable = computed(() => {
   const rep = model.representative
   return !!(
-    !isAssetSupported &&
     rep.url &&
     rep.directory &&
     isModelDownloadable({
@@ -354,15 +301,7 @@ const downloadable = computed(() => {
   )
 })
 
-const showDownloadAction = computed(
-  () =>
-    !isCloud &&
-    downloadable.value &&
-    !selectedLibraryModel.value[modelKey.value]
-)
-const showConfirmAction = computed(
-  () => !isCloud && !!selectedLibraryModel.value[modelKey.value]
-)
+const showDownloadAction = computed(() => !isCloud && downloadable.value)
 
 const downloadSizeLabel = computed(() => {
   if (!showDownloadAction.value) return undefined
@@ -448,14 +387,8 @@ function copyModelLink() {
   copyToClipboard(url ? toBrowsableUrl(url) : model.name)
 }
 
-const {
-  isSelectionConfirmable,
-  cancelLibrarySelect,
-  confirmLibrarySelect,
-  getTypeMismatch,
-  getDownloadStatus,
-  handleUploadedModelImport
-} = useMissingModelInteractions()
+const { confirmLibrarySelect, getDownloadStatus, handleUploadedModelImport } =
+  useMissingModelInteractions()
 
 function handleToggleExpand() {
   store.modelExpandState[modelKey.value] = !expanded.value
