@@ -56,25 +56,34 @@
 
         <div :class="scrollClass">
           <template v-if="trimmedQuery">
-            <DropdownMenuItem
-              v-for="match in searchResults"
-              :key="`${match.category.key}:${match.node.name}`"
-              :class="itemClass"
-              @select="selectNode(match.node)"
+            <template
+              v-for="(group, groupIndex) in searchResultGroups"
+              :key="group.category.key"
             >
-              <i
-                :class="cn(match.category.icon, 'size-4 shrink-0 opacity-80')"
+              <DropdownMenuSeparator
+                v-if="groupIndex > 0"
+                class="-mx-1 my-1 h-px shrink-0 bg-border-subtle"
               />
-              <span class="flex min-w-0 flex-1 items-center gap-1">
-                <span class="shrink-0 text-muted-foreground">
-                  {{ t(match.category.labelKey) }}:
-                </span>
-                <MiddleTruncate
-                  :text="match.node.display_name"
-                  class="min-w-0 flex-1"
+              <DropdownMenuItem
+                v-for="node in group.nodes"
+                :key="node.name"
+                :class="itemClass"
+                @select="selectNode(node)"
+              >
+                <i
+                  :class="cn(group.category.icon, 'size-4 shrink-0 opacity-80')"
                 />
-              </span>
-            </DropdownMenuItem>
+                <span class="flex min-w-0 flex-1 items-center gap-1">
+                  <span class="shrink-0 text-muted-foreground">
+                    {{ t(group.category.labelKey) }}:
+                  </span>
+                  <MiddleTruncate
+                    :text="node.display_name"
+                    class="min-w-0 flex-1"
+                  />
+                </span>
+              </DropdownMenuItem>
+            </template>
             <div
               v-if="searchResults.length === 0"
               class="p-2 text-sm text-muted-foreground"
@@ -173,6 +182,7 @@ import {
   estimateLinkReleaseMenuHeight,
   getLinkReleaseHeaderLabel,
   getLinkReleaseSuggestions,
+  groupLinkReleaseSearchResults,
   searchLinkReleaseNodes
 } from './linkReleaseMenuModel'
 import type {
@@ -257,6 +267,9 @@ const categories = computed(() =>
   buildLinkReleaseNodeCategories(compatibleNodes.value)
 )
 
+const searchResultGroups = computed(() =>
+  groupLinkReleaseSearchResults(categories.value, trimmedQuery.value)
+)
 const searchResults = computed<LinkReleaseNodeMatch[]>(() =>
   searchLinkReleaseNodes(categories.value, trimmedQuery.value)
 )

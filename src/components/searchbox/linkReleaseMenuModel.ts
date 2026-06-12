@@ -117,6 +117,32 @@ export interface LinkReleaseNodeMatch {
   node: ComfyNodeDefImpl
 }
 
+export interface LinkReleaseSearchResultGroup {
+  category: LinkReleaseNodeCategory
+  nodes: ComfyNodeDefImpl[]
+}
+
+/**
+ * Group matching nodes by category for the root flat-value search. Empty
+ * categories are omitted; category order and per-category display-name order
+ * are preserved.
+ */
+export function groupLinkReleaseSearchResults(
+  categories: LinkReleaseNodeCategory[],
+  query: string
+): LinkReleaseSearchResultGroup[] {
+  const trimmed = query.trim().toLowerCase()
+  if (!trimmed) return []
+  return categories
+    .map((category) => ({
+      category,
+      nodes: category.nodes.filter((node) =>
+        node.display_name.toLowerCase().includes(trimmed)
+      )
+    }))
+    .filter((group) => group.nodes.length > 0)
+}
+
 /**
  * Flat-value search across every category submenu: when the root search has
  * text we surface matching nodes inline (tagged with their category) so a node
@@ -127,14 +153,10 @@ export function searchLinkReleaseNodes(
   categories: LinkReleaseNodeCategory[],
   query: string
 ): LinkReleaseNodeMatch[] {
-  const trimmed = query.trim().toLowerCase()
-  if (!trimmed) return []
   const matches: LinkReleaseNodeMatch[] = []
-  for (const category of categories) {
-    for (const node of category.nodes) {
-      if (node.display_name.toLowerCase().includes(trimmed)) {
-        matches.push({ category, node })
-      }
+  for (const group of groupLinkReleaseSearchResults(categories, query)) {
+    for (const node of group.nodes) {
+      matches.push({ category: group.category, node })
     }
   }
   return matches
@@ -189,6 +211,7 @@ export function estimateLinkReleaseMenuHeight(layout: {
   suggestionCount: number
   categoryCount: number
   searchResultCount: number
+  searchResultGroupCount?: number
   showReroute: boolean
 }): number {
   const {
@@ -196,6 +219,7 @@ export function estimateLinkReleaseMenuHeight(layout: {
     suggestionCount,
     categoryCount,
     searchResultCount,
+    searchResultGroupCount = 0,
     showReroute
   } = layout
 
@@ -204,6 +228,9 @@ export function estimateLinkReleaseMenuHeight(layout: {
 
   if (searchResultCount > 0) {
     height += searchResultCount * MENU_ITEM_HEIGHT
+    if (searchResultGroupCount > 1) {
+      height += (searchResultGroupCount - 1) * SEPARATOR_HEIGHT
+    }
     return height
   }
 

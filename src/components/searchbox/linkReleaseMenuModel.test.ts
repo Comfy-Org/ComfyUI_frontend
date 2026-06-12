@@ -12,6 +12,7 @@ import {
   filterNodesByName,
   getLinkReleaseHeaderLabel,
   getLinkReleaseSuggestions,
+  groupLinkReleaseSearchResults,
   searchLinkReleaseNodes
 } from './linkReleaseMenuModel'
 import type { LinkReleaseContext } from './linkReleaseMenuModel'
@@ -154,6 +155,39 @@ describe('filterNodesByName', () => {
   })
 })
 
+describe('groupLinkReleaseSearchResults', () => {
+  const categories = buildLinkReleaseNodeCategories([
+    coreNode('LoadImage', 'Load Image'),
+    customNode('ImageBlend', 'Image Blend'),
+    partnerNode('ImageGen', 'Image Gen'),
+    coreNode('KSampler')
+  ])
+
+  it('returns no groups for a blank query', () => {
+    expect(groupLinkReleaseSearchResults(categories, '   ')).toEqual([])
+  })
+
+  it('groups matching nodes by category', () => {
+    const groups = groupLinkReleaseSearchResults(categories, 'image')
+    expect(groups.map((g) => g.category.key)).toEqual([
+      'comfy',
+      'extensions',
+      'partner'
+    ])
+    expect(groups.map((g) => g.nodes.map((n) => n.name))).toEqual([
+      ['LoadImage'],
+      ['ImageBlend'],
+      ['ImageGen']
+    ])
+  })
+
+  it('omits categories with no matches', () => {
+    const groups = groupLinkReleaseSearchResults(categories, 'ksampler')
+    expect(groups.map((g) => g.category.key)).toEqual(['comfy'])
+    expect(groups[0].nodes.map((n) => n.name)).toEqual(['KSampler'])
+  })
+})
+
 describe('searchLinkReleaseNodes', () => {
   const categories = buildLinkReleaseNodeCategories([
     coreNode('LoadImage', 'Load Image'),
@@ -251,9 +285,10 @@ describe('estimateLinkReleaseMenuHeight', () => {
       suggestionCount: 4,
       categoryCount: 3,
       searchResultCount: 5,
+      searchResultGroupCount: 2,
       showReroute: false
     })
-    expect(height).toBe(272)
+    expect(height).toBe(280)
   })
 })
 
