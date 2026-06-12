@@ -5,6 +5,7 @@ import { reactive, unref } from 'vue'
 import { shallowRef } from 'vue'
 
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { getWorkflowMode } from '@/composables/useAppMode'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
@@ -1634,10 +1635,12 @@ export class ComfyApp {
             }
           })
 
-          // Capture workflow before await — activeWorkflow may change if the
-          // user switches tabs while the request is in flight.
+          // Capture workflow and mode before await — both may change if the
+          // user switches tabs or toggles app/graph mode while the request is
+          // in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
+          const queuedMode = getWorkflowMode(queuedWorkflow)
           const p = await this.graphToPrompt(this.rootGraph)
           const queuedNodes = collectAllNodes(this.rootGraph)
           try {
@@ -1661,7 +1664,8 @@ export class ComfyApp {
                   id: res.prompt_id,
                   nodes: Object.keys(p.output),
                   promptOutput: p.output,
-                  workflow: queuedWorkflow
+                  workflow: queuedWorkflow,
+                  mode: queuedMode
                 })
               }
             } catch (error) {
