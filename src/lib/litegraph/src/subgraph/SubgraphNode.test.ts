@@ -1191,27 +1191,31 @@ describe('SubgraphNode promoted widget control', () => {
     return { subgraph, subgraphNode: createTestSubgraphNode(subgraph) }
   }
 
-  it('mints an independent host control component on promotion', () => {
+  it('surfaces the host control as an ordinary widget alongside the target', () => {
     const { subgraphNode } = promoteControllableSeed()
     const store = useWidgetValueStore()
     const hostId = subgraphNode.inputs[0].widgetId
     if (!hostId) throw new Error('Missing widgetId')
+
+    expect(subgraphNode.widgets.map((widget) => widget.name)).toEqual([
+      'seed',
+      'seed:control_after_generate'
+    ])
 
     const control = store.getWidgetControl(hostId)
     expect(control).toBeDefined()
     expect(store.getWidget(control!.controlWidgetId)?.value).toBe('randomize')
   })
 
-  it('round-trips the host control mode through serialize/configure', () => {
+  it('round-trips the host control mode through widgets_values', () => {
     const { subgraph, subgraphNode } = promoteControllableSeed()
     const store = useWidgetValueStore()
     const control = store.getWidgetControl(subgraphNode.inputs[0].widgetId!)!
     store.setValue(control.controlWidgetId, 'fixed')
 
     const serialized = subgraphNode.serialize()
-    expect(serialized.properties?.promotedControls).toEqual([
-      { name: 'seed', mode: 'fixed' }
-    ])
+    expect(serialized.properties?.promotedControls).toBeUndefined()
+    expect(serialized.widgets_values).toEqual([1, 'fixed'])
 
     const reloaded = new SubgraphNode(
       subgraph.rootGraph,

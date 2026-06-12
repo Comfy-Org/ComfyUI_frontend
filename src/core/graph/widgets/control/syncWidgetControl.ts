@@ -7,6 +7,17 @@ import type { UUID } from '@/utils/uuid'
 
 import { isValueControlWidget } from './controlWidgetMarker'
 
+/** The value-control and optional filter widgets among a widget's linked set. */
+export function findControlWidgets(
+  linkedWidgets: readonly IBaseWidget[] | undefined
+): { control?: IBaseWidget; filter?: IBaseWidget } {
+  const control = linkedWidgets?.find(isValueControlWidget)
+  const filter = linkedWidgets?.find(
+    (widget) => widget !== control && widget.type === 'string'
+  )
+  return { control, filter }
+}
+
 /**
  * Registers (or clears) the control component for a target widget, derived from
  * its linked widgets. Called wherever the target's value is registered, so
@@ -19,15 +30,12 @@ export function syncWidgetControl(
   linkedWidgets: readonly IBaseWidget[] | undefined
 ): void {
   const store = useWidgetValueStore()
-  const control = linkedWidgets?.find(isValueControlWidget)
+  const { control, filter } = findControlWidgets(linkedWidgets)
   if (!control) {
     store.deleteWidgetControl(targetId)
     return
   }
 
-  const filter = linkedWidgets?.find(
-    (widget) => widget !== control && widget.type === 'string'
-  )
   store.registerWidgetControl(targetId, {
     controlWidgetId: widgetId(graphId, nodeId, control.name),
     filterWidgetId: filter ? widgetId(graphId, nodeId, filter.name) : undefined
