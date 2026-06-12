@@ -12,7 +12,7 @@ function createMockAssetItem(overrides: Partial<AssetItem> = {}): AssetItem {
   return {
     id: 'test-asset-id',
     name: 'test-image.png',
-    asset_hash: 'hash123',
+    hash: 'hash123',
     size: 1024,
     mime_type: 'image/png',
     tags: ['input'],
@@ -432,7 +432,7 @@ describe('useComboWidget', () => {
           [
             createMockAssetItem({
               name: scenario.assetName,
-              asset_hash: scenario.assetHash
+              hash: scenario.assetHash
             })
           ]
         )
@@ -463,7 +463,7 @@ describe('useComboWidget', () => {
           [
             createMockAssetItem({
               name: scenario.assetName,
-              asset_hash: scenario.assetHash
+              hash: scenario.assetHash
             })
           ]
         )
@@ -483,11 +483,11 @@ describe('useComboWidget', () => {
           [
             createMockAssetItem({
               name: `fallback-${scenario.assetName}`,
-              asset_hash: fallbackHash
+              hash: fallbackHash
             }),
             createMockAssetItem({
               name: scenario.assetName,
-              asset_hash: scenario.assetHash
+              hash: scenario.assetHash
             })
           ]
         )
@@ -507,11 +507,11 @@ describe('useComboWidget', () => {
           [
             createMockAssetItem({
               name: `fallback-${scenario.assetName}`,
-              asset_hash: fallbackHash
+              hash: fallbackHash
             }),
             createMockAssetItem({
               name: scenario.assetName,
-              asset_hash: scenario.assetHash
+              hash: scenario.assetHash
             })
           ]
         )
@@ -531,11 +531,11 @@ describe('useComboWidget', () => {
           [
             createMockAssetItem({
               name: scenario.assetHash,
-              asset_hash: nameMatchHash
+              hash: nameMatchHash
             }),
             createMockAssetItem({
               name: scenario.assetName,
-              asset_hash: scenario.assetHash
+              hash: scenario.assetHash
             })
           ]
         )
@@ -575,15 +575,15 @@ describe('useComboWidget', () => {
           [
             createMockAssetItem({
               name: 'wrong-kind.txt',
-              asset_hash: 'wrong-kind.txt'
+              hash: 'wrong-kind.txt'
             }),
             createMockAssetItem({
               name: scenario.assetName,
-              asset_hash: scenario.assetHash
+              hash: scenario.assetHash
             }),
             createMockAssetItem({
               name: `second-${scenario.assetName}`,
-              asset_hash: `second-${scenario.assetHash}`
+              hash: `second-${scenario.assetHash}`
             })
           ]
         )
@@ -606,7 +606,7 @@ describe('useComboWidget', () => {
           [
             createMockAssetItem({
               name: scenario.assetName,
-              asset_hash: ''
+              hash: ''
             })
           ]
         )
@@ -639,7 +639,7 @@ describe('useComboWidget', () => {
         [
           createMockAssetItem({
             name: scenario.assetName,
-            asset_hash: scenario.assetHash
+            hash: scenario.assetHash
           })
         ]
       )
@@ -667,7 +667,7 @@ describe('useComboWidget', () => {
         [
           createMockAssetItem({
             name: scenario.assetName,
-            asset_hash: scenario.assetHash
+            hash: scenario.assetHash
           })
         ]
       )
@@ -769,7 +769,7 @@ describe('useComboWidget', () => {
         mockAssetsStoreState.inputAssets = [
           createMockAssetItem({
             name: scenario.assetName,
-            asset_hash: scenario.assetHash
+            hash: scenario.assetHash
           })
         ]
       })
@@ -820,7 +820,7 @@ describe('useComboWidget', () => {
         createMockAssetItem({
           id: 'asset-123',
           name: scenario.assetName,
-          asset_hash: scenario.assetHash
+          hash: scenario.assetHash
         })
       ]
       mockAssetsStoreState.inputLoading = false

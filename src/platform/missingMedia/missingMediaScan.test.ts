@@ -16,6 +16,10 @@ import {
   groupCandidatesByName,
   groupCandidatesByMediaType
 } from './missingMediaScan'
+import {
+  countMissingMediaReferences,
+  getMissingMediaReferences
+} from './missingMediaGrouping'
 import type { MissingMediaCandidate } from './types'
 
 const { mockGetInputAssetsIncludingPublic, mockGetAssetsPageByTag } =
@@ -115,7 +119,7 @@ function makeAsset(name: string, assetHash: string | null = null): AssetItem {
   return {
     id: name,
     name,
-    asset_hash: assetHash,
+    hash: assetHash,
     mime_type: null,
     tags: ['input']
   }
@@ -421,7 +425,13 @@ describe('groupCandidatesByName', () => {
 
     const photoGroup = result.find((g) => g.name === 'photo.png')
     expect(photoGroup?.referencingNodes).toHaveLength(2)
+    expect(photoGroup?.referencingNodes[0]).toMatchObject({
+      nodeId: '1',
+      nodeType: 'LoadImage',
+      widgetName: 'image'
+    })
     expect(photoGroup?.mediaType).toBe('image')
+    expect(photoGroup?.representative.nodeType).toBe('LoadImage')
 
     const otherGroup = result.find((g) => g.name === 'other.png')
     expect(otherGroup?.referencingNodes).toHaveLength(1)
@@ -486,6 +496,27 @@ describe('groupCandidatesByMediaType', () => {
   })
 })
 
+describe('missing media references', () => {
+  it('flattens references without deduping shared filenames', () => {
+    const groups = groupCandidatesByMediaType([
+      makeCandidate('1', 'shared.png'),
+      makeCandidate('2', 'shared.png'),
+      makeCandidate('3', 'other.png')
+    ])
+
+    expect(groups).toHaveLength(1)
+    expect(groups[0].items).toHaveLength(2)
+    expect(countMissingMediaReferences(groups)).toBe(3)
+    expect(
+      getMissingMediaReferences(groups).map(({ nodeRef }) => nodeRef)
+    ).toEqual([
+      expect.objectContaining({ nodeId: '1' }),
+      expect.objectContaining({ nodeId: '2' }),
+      expect.objectContaining({ nodeId: '3' })
+    ])
+  })
+})
+
 describe('verifyMediaCandidates', () => {
   const existingHash =
     'blake3:1111111111111111111111111111111111111111111111111111111111111111'
@@ -532,7 +563,7 @@ describe('verifyMediaCandidates', () => {
     })
   })
 
-  it('matches asset names when asset_hash is null', async () => {
+  it('matches asset names when hash is null', async () => {
     const candidates = [
       makeCandidate('1', 'legacy-photo.png', { isMissing: undefined }),
       makeCandidate('2', 'missing-photo.png', { isMissing: undefined })

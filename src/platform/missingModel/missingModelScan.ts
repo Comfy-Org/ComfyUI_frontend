@@ -501,8 +501,7 @@ function isAssetInstalled(
 ): boolean {
   if (candidate.hash && candidate.hashType) {
     const candidateHash = `${candidate.hashType}:${candidate.hash}`
-    if (assets.some((a) => (a.hash ?? a.asset_hash) === candidateHash))
-      return true
+    if (assets.some((a) => a.hash === candidateHash)) return true
   }
 
   const normalizedName = normalizePath(candidate.name)

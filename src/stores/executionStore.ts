@@ -55,6 +55,11 @@ interface QueuedJob {
    * This stays stable even if the user switches workflows or edits the canvas.
    */
   nodeLookup?: Record<string, ExecutionNodeInfo>
+  /**
+   * Share attribution snapshotted at queue time. Read this instead of
+   * `workflow.shareId`, which can gain attribution after the job was queued.
+   */
+  shareId?: string
 }
 
 function buildExecutionNodeLookup(
@@ -295,12 +300,20 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
-    if (isCloud && activeJobId.value) {
-      useTelemetry()?.trackExecutionSuccess({
-        jobId: activeJobId.value
-      })
-    }
     const jobId = e.detail.prompt_id
+    const queuedJob = queuedJobs.value[jobId]
+    if (isCloud && queuedJob) {
+      const telemetry = useTelemetry()
+      telemetry?.trackExecutionSuccess({
+        jobId
+      })
+      if (queuedJob.shareId) {
+        telemetry?.trackSharedWorkflowRun({
+          job_id: jobId,
+          share_id: queuedJob.shareId
+        })
+      }
+    }
     resetExecutionState(jobId)
   }
 
@@ -580,6 +593,7 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     queuedJob.nodeLookup = buildExecutionNodeLookup(promptOutput)
     queuedJob.workflow = workflow
+    queuedJob.shareId = workflow?.shareId
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)

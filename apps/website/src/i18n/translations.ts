@@ -1,6 +1,22 @@
 type Locale = 'en' | 'zh-CN'
 
 const translations = {
+  // Tags (global, reusable across sections)
+  'tags.partnerNodes': {
+    en: 'Partner Nodes',
+    'zh-CN': '合作伙伴节点'
+  },
+  'tags.imageToVideo': {
+    en: 'Image To Video',
+    'zh-CN': '图像生成视频'
+  },
+
+  // CTAs (global, reusable across sections)
+  'cta.tryWorkflow': {
+    en: 'Try Workflow',
+    'zh-CN': '试用工作流'
+  },
+
   // HeroSection
   'hero.title': {
     en: 'Professional Control\nof Visual AI',
@@ -108,8 +124,8 @@ const translations = {
     'zh-CN': '下载或注册'
   },
   'getStarted.step1.downloadLocal': {
-    en: 'Download Local',
-    'zh-CN': '下载本地版'
+    en: 'Download Desktop',
+    'zh-CN': '下载桌面版'
   },
   'getStarted.step1.launchCloud': {
     en: 'Launch Cloud',
@@ -158,16 +174,16 @@ const translations = {
     'zh-CN': '掌控每个模型、每个节点、每个步骤、每个输出。'
   },
   'products.local.title': {
-    en: 'Comfy\nLocal',
-    'zh-CN': 'Comfy\n本地版'
+    en: 'Comfy\nDesktop',
+    'zh-CN': 'Comfy\n桌面版'
   },
   'products.local.description': {
     en: 'Run ComfyUI on your own hardware.',
     'zh-CN': '在您自己的硬件上运行 ComfyUI。'
   },
   'products.local.cta': {
-    en: 'SEE LOCAL FEATURES',
-    'zh-CN': '查看本地版属性'
+    en: 'SEE DESKTOP FEATURES',
+    'zh-CN': '查看桌面版属性'
   },
   'products.cloud.title': {
     en: 'Comfy\nCloud',
@@ -589,8 +605,8 @@ const translations = {
       '是的。基于 GPL-3.0 免费开源。没有功能限制、没有试用期、没有附加条件。'
   },
   'download.faq.4.q': {
-    en: 'Why would I pay for Comfy Cloud if Local is free?',
-    'zh-CN': '既然本地版免费，为什么还要付费使用 Comfy Cloud？'
+    en: 'Why would I pay for Comfy Cloud if Desktop is free?',
+    'zh-CN': '既然桌面版免费，为什么还要付费使用 Comfy Cloud？'
   },
   'download.faq.4.a': {
     en: 'Your machine or ours. Cloud gives you powerful GPUs on demand, pre-loaded models, end-to-end security and infrastructure out of the box and partner models cleared for commercial use.',
@@ -607,8 +623,8 @@ const translations = {
       'Desktop：一键安装，自动更新。Portable：独立构建，可从任意文件夹运行。CLI：从 GitHub 克隆，完全开发者控制，适合想自定义环境或参与上游贡献的开发者。'
   },
   'download.faq.6.q': {
-    en: 'Can I use my local workflows in Comfy Cloud?',
-    'zh-CN': '我可以在 Comfy Cloud 中使用本地工作流吗？'
+    en: 'Can I use my Desktop workflows in Comfy Cloud?',
+    'zh-CN': '我可以在 Comfy Cloud 中使用桌面工作流吗？'
   },
   'download.faq.6.a': {
     en: 'Yes — same file, same results. No conversion, no rework.',
@@ -649,8 +665,8 @@ const translations = {
     'zh-CN': '专业人士为何\n选择'
   },
   'download.reason.headingHighlight': {
-    en: 'Local',
-    'zh-CN': '本地版'
+    en: 'Desktop',
+    'zh-CN': '桌面版'
   },
   'download.reason.1.title': {
     en: 'Unlimited\nCustomization',
@@ -699,8 +715,8 @@ const translations = {
     'zh-CN': '完整的 ComfyUI 引擎——开源、快速、可扩展，随你运行。'
   },
   'download.hero.downloadLocal': {
-    en: 'DOWNLOAD LOCAL',
-    'zh-CN': '下载本地版'
+    en: 'DOWNLOAD DESKTOP',
+    'zh-CN': '下载桌面版'
   },
   'download.hero.installGithub': {
     en: 'INSTALL FROM GITHUB',
@@ -1041,18 +1057,18 @@ const translations = {
     'zh-CN': 'Cloud 与本地运行 ComfyUI 有什么区别？'
   },
   'cloud.faq.2.a': {
-    en: 'Cloud runs on powerful remote GPUs and is accessible from any device. Local runs entirely on your computer, giving you full control and offline use.',
+    en: 'Cloud runs on powerful remote GPUs and is accessible from any device. Comfy Desktop runs entirely on your computer, giving you full control and offline use.',
     'zh-CN':
-      'Cloud 在强大的远程 GPU 上运行，可从任何设备访问。本地版完全在您的电脑上运行，提供完全控制和离线使用。'
+      'Cloud 在强大的远程 GPU 上运行，可从任何设备访问。Comfy 桌面版完全在您的电脑上运行，提供完全控制和离线使用。'
   },
   'cloud.faq.3.q': {
-    en: 'Which version should I choose, Comfy Cloud or local ComfyUI (self-hosted)?',
-    'zh-CN': '我应该选择 Comfy Cloud 还是本地 ComfyUI（自托管）？'
+    en: 'Which version should I choose, Comfy Cloud or Comfy Desktop?',
+    'zh-CN': '我应该选择 Comfy Cloud 还是 Comfy 桌面版？'
   },
   'cloud.faq.3.a': {
-    en: "Comfy Cloud has zero setup, is easy to share with your team, and is faster than most GPUs you can run on a desktop workstation. You can immediately run the best models and workflows from the community on Comfy Cloud.\nLocal ComfyUI is infinitely customizable, works offline, and you don't need to worry about queue times. However, depending on what you want to create, you might need to have a good GPU and some amount of technical knowledge to install community-created custom nodes.",
+    en: "Comfy Cloud has zero setup, is easy to share with your team, and is faster than most GPUs you can run on a desktop workstation. You can immediately run the best models and workflows from the community on Comfy Cloud.\nComfy Desktop is infinitely customizable, works offline, and you don't need to worry about queue times. However, depending on what you want to create, you might need to have a good GPU and some amount of technical knowledge to install community-created custom nodes.",
     'zh-CN':
-      'Comfy Cloud 无需任何设置，方便与团队共享，比大多数桌面工作站 GPU 更快。您可以立即在 Comfy Cloud 上运行社区中最好的模型和工作流。\n本地 ComfyUI 可以无限定制，支持离线工作，无需担心排队时间。但根据您的创作需求，可能需要一块好的 GPU 以及一定的技术知识来安装社区创建的自定义节点。'
+      'Comfy Cloud 无需任何设置，方便与团队共享，比大多数桌面工作站 GPU 更快。您可以立即在 Comfy Cloud 上运行社区中最好的模型和工作流。\nComfy 桌面版可以无限定制，支持离线工作，无需担心排队时间。但根据您的创作需求，可能需要一块好的 GPU 以及一定的技术知识来安装社区创建的自定义节点。'
   },
   'cloud.faq.4.q': {
     en: 'Do I need a GPU or a strong computer to use Comfy Cloud?',
@@ -1075,9 +1091,9 @@ const translations = {
     'zh-CN': '我可以在 Comfy Cloud 上使用现有的工作流吗？'
   },
   'cloud.faq.6.a': {
-    en: 'Yes, your workflows work across Local and Cloud. Just note that only the most popular custom nodes are supported for now, but more will be added soon.',
+    en: 'Yes, your workflows work across Desktop and Cloud. Just note that only the most popular custom nodes are supported for now, but more will be added soon.',
     'zh-CN':
-      '可以，您的工作流在本地和云端都能使用。请注意，目前仅支持最热门的自定义节点，但很快会添加更多。'
+      '可以，您的工作流在桌面版和云端都能使用。请注意，目前仅支持最热门的自定义节点，但很快会添加更多。'
   },
   'cloud.faq.7.q': {
     en: 'Are all ComfyUI extensions and custom nodes supported?',
@@ -1129,9 +1145,9 @@ const translations = {
     'zh-CN': '合作伙伴节点积分和我的 Cloud 订阅有什么区别？'
   },
   'cloud.faq.12.a': {
-    en: 'Comfy Cloud has a credit system that is used for both Partner nodes (formerly API nodes) and running workflows on cloud.\n1. Partner Nodes (Pay-as-you-go): These nodes (formerly called API nodes) run third-party models via API calls and can be used on both Comfy Cloud and Local/Self-Hosted ComfyUI. Each node has its own usage cost, determined by the API provider, and we directly match their pricing.\n2. Running workflows on cloud: Exclusive to Comfy Cloud, you get a set amount of credits per month, with the amount differing based on your plan. More credits can be topped up anytime. Credits are only used up for GPU time while workflows are running — not while editing or building them. No idle costs, no setup, and no infrastructure to manage.',
+    en: 'Comfy Cloud has a credit system that is used for both Partner nodes (formerly API nodes) and running workflows on cloud.\n1. Partner Nodes (Pay-as-you-go): These nodes (formerly called API nodes) run third-party models via API calls and can be used on both Comfy Cloud and Comfy Desktop. Each node has its own usage cost, determined by the API provider, and we directly match their pricing.\n2. Running workflows on cloud: Exclusive to Comfy Cloud, you get a set amount of credits per month, with the amount differing based on your plan. More credits can be topped up anytime. Credits are only used up for GPU time while workflows are running — not while editing or building them. No idle costs, no setup, and no infrastructure to manage.',
     'zh-CN':
-      'Comfy Cloud 有一个积分系统，用于合作伙伴节点（原 API 节点）和在云端运行工作流。\n1. 合作伙伴节点（按需付费）：这些节点（原称 API 节点）通过 API 调用运行第三方模型，可在 Comfy Cloud 和本地/自托管 ComfyUI 上使用。每个节点有其自身的使用成本，由 API 提供商决定，我们直接匹配他们的定价。\n2. 在云端运行工作流：Comfy Cloud 专属，您每月获得一定数量的积分，数量根据您的计划而不同。积分可随时充值。积分仅在工作流运行时用于 GPU 时间——编辑或构建时不消耗。无闲置成本，无需设置，无需管理基础设施。'
+      'Comfy Cloud 有一个积分系统，用于合作伙伴节点（原 API 节点）和在云端运行工作流。\n1. 合作伙伴节点（按需付费）：这些节点（原称 API 节点）通过 API 调用运行第三方模型，可在 Comfy Cloud 和 Comfy 桌面版上使用。每个节点有其自身的使用成本，由 API 提供商决定，我们直接匹配他们的定价。\n2. 在云端运行工作流：Comfy Cloud 专属，您每月获得一定数量的积分，数量根据您的计划而不同。积分可随时充值。积分仅在工作流运行时用于 GPU 时间——编辑或构建时不消耗。无闲置成本，无需设置，无需管理基础设施。'
   },
   'cloud.faq.13.q': {
     en: 'Can I cancel my subscription?',
@@ -1395,9 +1411,9 @@ const translations = {
     'zh-CN': '合作伙伴节点'
   },
   'pricing.included.feature8.description': {
-    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across Comfy Cloud and local ComfyUI. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
+    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across Comfy Cloud and Comfy Desktop. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
     'zh-CN':
-      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 Comfy Cloud 和本地 ComfyUI 间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
+      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 Comfy Cloud 和 Comfy 桌面版间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
   },
   'pricing.included.feature9.title': {
     en: 'Job queue',
@@ -1435,6 +1451,62 @@ const translations = {
   'player.subtitlesOn': { en: 'Subtitles on', 'zh-CN': '开启字幕' },
   'player.subtitlesOff': { en: 'Subtitles off', 'zh-CN': '关闭字幕' },
 
+  // LearningHeroSection
+  'learning.heroTitle.before': { en: 'Learn', 'zh-CN': '学习' },
+  'learning.heroTitle.after': { en: '.', 'zh-CN': '。' },
+  'learning.heroTitle.line2': {
+    en: 'Build what doesn’t exist yet.',
+    'zh-CN': '构建尚未存在之物。'
+  },
+
+  // LearningFeaturedWorkflowSection
+  'learning.featured.title': {
+    en: 'Sky Replacement',
+    'zh-CN': '天空替换'
+  },
+  'learning.featured.author': {
+    en: 'by Doug Hogan',
+    'zh-CN': '作者：Doug Hogan'
+  },
+  'learning.featured.description': {
+    en: 'A sky replacement workflow built on Wan AI models. WanVideoSampler and WanVideoDecode synthesize new sky visuals into existing footage. CLIPVisionLoader and WanVideoClipVisionEncode ensure replacements feel native, not composited.',
+    'zh-CN':
+      '基于 Wan AI 模型构建的天空替换工作流。WanVideoSampler 与 WanVideoDecode 将全新的天空视觉合成到现有素材中。CLIPVisionLoader 与 WanVideoClipVisionEncode 确保替换效果自然融合，而非生硬叠加。'
+  },
+  'learning.featured.watchDemo': {
+    en: 'Watch Demo',
+    'zh-CN': '观看演示'
+  },
+
+  // LearningTutorialsSection
+  'learning.tutorials.heading': {
+    en: 'Featured Demos',
+    'zh-CN': '精选演示'
+  },
+  'learning.tutorials.titlePrefix': {
+    en: 'Learn how to:',
+    'zh-CN': '学习如何：'
+  },
+
+  // LearningCallToActionSection
+  'learning.cta.heading': {
+    en: 'Schedule a demo and see how ComfyUI fits your team’s creative needs.',
+    'zh-CN': '预约演示，了解 ComfyUI 如何契合你的团队创作需求。'
+  },
+  'learning.cta.contactSales': {
+    en: 'Contact Sales',
+    'zh-CN': '联系销售'
+  },
+
+  // LearningEventsSection
+  'learning.events.heading': { en: 'Events', 'zh-CN': '活动' },
+  'learning.events.description': {
+    en: 'Check out our upcoming live streams and community meetings. We’re always open to your questions, ideas, and conversations.',
+    'zh-CN':
+      '查看我们即将举办的直播和社区聚会。我们随时欢迎你的提问、想法和交流。'
+  },
+  'learning.events.getNotified': { en: 'Get Notified', 'zh-CN': '获取通知' },
+
   // GalleryHeroSection
   'gallery.label': { en: 'GALLERY', 'zh-CN': '画廊' },
   'gallery.heroTitle.before': {
@@ -1471,9 +1543,13 @@ const translations = {
   },
   'about.hero.body': {
     en: 'The team behind Comfy is small, intense, and building what we intend to be our life\u2019s work.',
-    'zh-CN': 'Comfy 背后的团队规模虽小，但充满热情，致力于打造我们毕生的事业。'
+    'zh-CN':
+      'Comfy \u80cc\u540e\u7684\u56e2\u961f\u89c4\u6a21\u867d\u5c0f\uff0c\u4f46\u5145\u6ee1\u70ed\u60c5\uff0c\u81f4\u529b\u4e8e\u6253\u9020\u6211\u4eec\u6bd5\u751f\u7684\u4e8b\u4e1a\u3002'
   },
-  'about.hero.cta': { en: 'SEE OPEN ROLES', 'zh-CN': '查看开放职位' },
+  'about.hero.cta': {
+    en: 'SEE OPEN ROLES',
+    'zh-CN': '\u67e5\u770b\u5f00\u653e\u804c\u4f4d'
+  },
 
   // AboutStorySection
   'about.story.label': { en: 'OUR STORY', 'zh-CN': '我们的故事' },
@@ -1734,7 +1810,7 @@ const translations = {
   'nav.community': { en: 'Community', 'zh-CN': '社区' },
   'nav.resources': { en: 'Resources', 'zh-CN': '资源' },
   'nav.company': { en: 'Company', 'zh-CN': '公司' },
-  'nav.comfyLocal': { en: 'Comfy Local', 'zh-CN': 'Comfy 本地版' },
+  'nav.comfyLocal': { en: 'Comfy Desktop', 'zh-CN': 'Comfy 桌面版' },
   'nav.comfyCloud': { en: 'Comfy Cloud', 'zh-CN': 'Comfy Cloud' },
   'nav.comfyApi': { en: 'Comfy API', 'zh-CN': 'Comfy API' },
   'nav.comfyEnterprise': {
@@ -1743,6 +1819,7 @@ const translations = {
   },
   'nav.comfyHub': { en: 'Comfy Hub', 'zh-CN': 'Comfy Hub' },
   'nav.gallery': { en: 'Gallery', 'zh-CN': '画廊' },
+  'nav.learning': { en: 'Learning', 'zh-CN': '学习' },
   'nav.blogs': { en: 'Blog', 'zh-CN': '博客' },
   'nav.github': { en: 'GitHub', 'zh-CN': 'GitHub' },
   'nav.discord': { en: 'Discord', 'zh-CN': 'Discord' },
@@ -1751,7 +1828,7 @@ const translations = {
   'nav.aboutUs': { en: 'About Us', 'zh-CN': '关于我们' },
   'nav.careers': { en: 'Careers', 'zh-CN': '招聘' },
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
-  'nav.downloadLocal': { en: 'DOWNLOAD LOCAL', 'zh-CN': '下载本地版' },
+  'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
   'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
@@ -1802,8 +1879,9 @@ const translations = {
       '如果我们的网站包含指向第三方网站和服务的链接，请注意这些网站和服务有自己的隐私政策。在访问任何第三方内容的链接后，您应阅读其发布的关于如何收集和使用个人信息的隐私政策信息。本隐私政策不适用于您离开我们网站后的任何活动。'
   },
   'privacy.intro.block.3': {
-    en: 'This policy is effective as of April 18, 2025.',
-    'zh-CN': '本政策自 2025 年 4 月 18 日起生效。'
+    en: 'This policy is effective as of April 18, 2025. For information specific to Comfy Desktop (the local install application), including named processors, lawful basis under GDPR/UK GDPR, retention periods, and your rights, see our <a href="/privacy/desktop" class="text-white underline">Desktop Privacy Policy</a>.',
+    'zh-CN':
+      '本政策自 2025 年 4 月 18 日起生效。有关 Comfy Desktop（本地安装应用程序）的具体信息，包括指定的数据处理方、GDPR/UK GDPR 下的合法依据、保留期限以及您的权利，请参阅我们的<a href="/zh-CN/privacy/desktop" class="text-white underline">Desktop 隐私政策</a>。'
   },
   'privacy.information-we-collect.label': {
     en: 'INFORMATION',
@@ -2051,6 +2129,181 @@ const translations = {
     en: '<a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>',
     'zh-CN':
       '<a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>'
+  },
+
+  // ── Desktop Privacy Policy ────────────────────────────────────────
+  'desktop_privacy.intro.label': { en: 'OVERVIEW', 'zh-CN': 'OVERVIEW' },
+  'desktop_privacy.intro.block.0': {
+    en: 'Effective 3 June 2026. Applies to the Comfy Desktop application.',
+    'zh-CN': 'Effective 3 June 2026. Applies to the Comfy Desktop application.'
+  },
+  'desktop_privacy.intro.block.1': {
+    en: 'This Privacy Policy describes the personal data we process when you use Comfy Desktop, the purposes and lawful bases for that processing, the recipients of the data, and the rights available to you. The same policy is shown in the application on first run and is available at any time from Settings → About → Privacy Policy.',
+    'zh-CN':
+      'This Privacy Policy describes the personal data we process when you use Comfy Desktop, the purposes and lawful bases for that processing, the recipients of the data, and the rights available to you. The same policy is shown in the application on first run and is available at any time from Settings → About → Privacy Policy.'
+  },
+
+  'desktop_privacy.controller.label': {
+    en: 'CONTROLLER',
+    'zh-CN': 'CONTROLLER'
+  },
+  'desktop_privacy.controller.title': {
+    en: 'Controller',
+    'zh-CN': 'Controller'
+  },
+  'desktop_privacy.controller.block.0': {
+    en: 'Comfy Organization Inc ("Comfy Org", "we", "us") is the data controller for personal data processed in connection with your use of Comfy Desktop. We are established in San Francisco, USA. For privacy enquiries: <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
+    'zh-CN':
+      'Comfy Organization Inc ("Comfy Org", "we", "us") is the data controller for personal data processed in connection with your use of Comfy Desktop. We are established in San Francisco, USA. For privacy enquiries: <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.'
+  },
+
+  'desktop_privacy.data.label': {
+    en: 'DATA WE PROCESS',
+    'zh-CN': 'DATA WE PROCESS'
+  },
+  'desktop_privacy.data.title': {
+    en: 'Personal data we process',
+    'zh-CN': 'Personal data we process'
+  },
+  'desktop_privacy.data.block.0': {
+    en: 'If you have enabled telemetry, either on the first-run consent screen or at Settings → Telemetry, we process the following categories of data:',
+    'zh-CN':
+      'If you have enabled telemetry, either on the first-run consent screen or at Settings → Telemetry, we process the following categories of data:'
+  },
+  'desktop_privacy.data.block.1': {
+    en: 'Device identifier. A pseudonymous identifier generated locally on first run. Before you sign in to Comfy Cloud it is not linked to your name, email address, or hardware. When you sign in, it is associated with your Comfy account.\nTechnical metadata. Application version, operating system, and processor architecture.\nProduct usage events. Feature interactions, navigation between views, installation and update milestones, and approximate timing.\nCustom node identifiers. Public package names of custom nodes you install through Manager (for example, "comfyui-impact-pack"). The local installation path is not transmitted.\nCrash and error diagnostics. Stack traces, error messages, and short stdout/stderr fragments captured at the moment of failure.',
+    'zh-CN':
+      'Device identifier. A pseudonymous identifier generated locally on first run. Before you sign in to Comfy Cloud it is not linked to your name, email address, or hardware. When you sign in, it is associated with your Comfy account.\nTechnical metadata. Application version, operating system, and processor architecture.\nProduct usage events. Feature interactions, navigation between views, installation and update milestones, and approximate timing.\nCustom node identifiers. Public package names of custom nodes you install through Manager (for example, "comfyui-impact-pack"). The local installation path is not transmitted.\nCrash and error diagnostics. Stack traces, error messages, and short stdout/stderr fragments captured at the moment of failure.'
+  },
+  'desktop_privacy.data.block.2': {
+    en: 'Before crash or error diagnostic data is transmitted, we apply automated redaction to home-directory paths and to well-known credential patterns (Bearer tokens, OpenAI <code>sk-*</code> and Hugging Face <code>hf_*</code> keys, basic-auth URLs, and <code>KEY=</code> / <code>SECRET=</code> environment assignments).',
+    'zh-CN':
+      'Before crash or error diagnostic data is transmitted, we apply automated redaction to home-directory paths and to well-known credential patterns (Bearer tokens, OpenAI <code>sk-*</code> and Hugging Face <code>hf_*</code> keys, basic-auth URLs, and <code>KEY=</code> / <code>SECRET=</code> environment assignments).'
+  },
+  'desktop_privacy.data.block.3': {
+    en: 'We do not process:',
+    'zh-CN': 'We do not process:'
+  },
+  'desktop_privacy.data.block.4': {
+    en: 'Workflow content (the graph, the nodes you connect, their parameters)\nPrompts you write\nGenerated images, video, or audio\nModel weights, or the local filenames under which you save them\nNetwork activity outside the application',
+    'zh-CN':
+      'Workflow content (the graph, the nodes you connect, their parameters)\nPrompts you write\nGenerated images, video, or audio\nModel weights, or the local filenames under which you save them\nNetwork activity outside the application'
+  },
+  'desktop_privacy.data.block.5': {
+    en: 'Your workflow files, your models, the outputs you generate, the list of installations you create, and your local settings remain on your device. They are not transmitted to Comfy Org, and they are not accessible to us.',
+    'zh-CN':
+      'Your workflow files, your models, the outputs you generate, the list of installations you create, and your local settings remain on your device. They are not transmitted to Comfy Org, and they are not accessible to us.'
+  },
+
+  'desktop_privacy.purposes.label': { en: 'PURPOSES', 'zh-CN': 'PURPOSES' },
+  'desktop_privacy.purposes.title': {
+    en: 'Purposes and lawful bases',
+    'zh-CN': 'Purposes and lawful bases'
+  },
+  'desktop_privacy.purposes.block.0': {
+    en: 'We process personal data on the following lawful bases under GDPR and UK GDPR:',
+    'zh-CN':
+      'We process personal data on the following lawful bases under GDPR and UK GDPR:'
+  },
+  'desktop_privacy.purposes.block.1': {
+    en: 'Product usage analytics: consent under Article 6(1)(a).\nCrash and error diagnostics: consent under Article 6(1)(a).\nDelivery of software updates and integrity verification: legitimate interests under Article 6(1)(f).\nAuthentication when you sign in to Comfy Cloud: performance of a contract under Article 6(1)(b).',
+    'zh-CN':
+      'Product usage analytics: consent under Article 6(1)(a).\nCrash and error diagnostics: consent under Article 6(1)(a).\nDelivery of software updates and integrity verification: legitimate interests under Article 6(1)(f).\nAuthentication when you sign in to Comfy Cloud: performance of a contract under Article 6(1)(b).'
+  },
+  'desktop_privacy.purposes.block.2': {
+    en: 'Consent for analytics and crash diagnostics is opt-in, and you may withdraw it at any time at Settings → Telemetry. Withdrawal does not affect the lawfulness of processing carried out before withdrawal. To object to processing on the basis of legitimate interests, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
+    'zh-CN':
+      'Consent for analytics and crash diagnostics is opt-in, and you may withdraw it at any time at Settings → Telemetry. Withdrawal does not affect the lawfulness of processing carried out before withdrawal. To object to processing on the basis of legitimate interests, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.'
+  },
+  'desktop_privacy.purposes.block.3': {
+    en: 'We do not carry out automated decision-making, including profiling, that produces legal or similarly significant effects. We do not sell personal data, and we do not share personal data for cross-context behavioural advertising.',
+    'zh-CN':
+      'We do not carry out automated decision-making, including profiling, that produces legal or similarly significant effects. We do not sell personal data, and we do not share personal data for cross-context behavioural advertising.'
+  },
+
+  'desktop_privacy.processors.label': {
+    en: 'RECIPIENTS',
+    'zh-CN': 'RECIPIENTS'
+  },
+  'desktop_privacy.processors.title': {
+    en: 'Recipients',
+    'zh-CN': 'Recipients'
+  },
+  'desktop_privacy.processors.block.0': {
+    en: 'We engage the following processors under Data Processing Agreements:',
+    'zh-CN':
+      'We engage the following processors under Data Processing Agreements:'
+  },
+  'desktop_privacy.processors.block.1': {
+    en: 'PostHog (product usage analytics)\nDatadog (crash and error diagnostics)\nToDesktop (application distribution and software updates)\nComfy Org analytics warehouse (long-term aggregate analytics, operated by Comfy Org)',
+    'zh-CN':
+      'PostHog (product usage analytics)\nDatadog (crash and error diagnostics)\nToDesktop (application distribution and software updates)\nComfy Org analytics warehouse (long-term aggregate analytics, operated by Comfy Org)'
+  },
+
+  'desktop_privacy.transfers.label': { en: 'TRANSFERS', 'zh-CN': 'TRANSFERS' },
+  'desktop_privacy.transfers.title': {
+    en: 'International transfers',
+    'zh-CN': 'International transfers'
+  },
+  'desktop_privacy.transfers.block.0': {
+    en: 'Comfy Organization Inc is established in the United States. Personal data of users in the EU, UK, EEA, or other jurisdictions outside the United States may be transferred to the United States and to other locations where our processors operate. Where required, we rely on the European Commission Standard Contractual Clauses (and the UK International Data Transfer Addendum where applicable) as the transfer mechanism under Chapter V GDPR.',
+    'zh-CN':
+      'Comfy Organization Inc is established in the United States. Personal data of users in the EU, UK, EEA, or other jurisdictions outside the United States may be transferred to the United States and to other locations where our processors operate. Where required, we rely on the European Commission Standard Contractual Clauses (and the UK International Data Transfer Addendum where applicable) as the transfer mechanism under Chapter V GDPR.'
+  },
+
+  'desktop_privacy.retention.label': { en: 'RETENTION', 'zh-CN': 'RETENTION' },
+  'desktop_privacy.retention.title': { en: 'Retention', 'zh-CN': 'Retention' },
+  'desktop_privacy.retention.block.0': {
+    en: 'Product usage analytics: up to 24 months from the event, then aggregated or deleted.\nCrash and error diagnostics: 15 days at full fidelity, then sampled or aggregated.\nAggregate analytics: up to 36 months in aggregated form.\nUpdate-server logs: 90 days.\nLocal device identifier: stored on your device only, and removed when you uninstall the application.',
+    'zh-CN':
+      'Product usage analytics: up to 24 months from the event, then aggregated or deleted.\nCrash and error diagnostics: 15 days at full fidelity, then sampled or aggregated.\nAggregate analytics: up to 36 months in aggregated form.\nUpdate-server logs: 90 days.\nLocal device identifier: stored on your device only, and removed when you uninstall the application.'
+  },
+
+  'desktop_privacy.rights.label': { en: 'YOUR RIGHTS', 'zh-CN': 'YOUR RIGHTS' },
+  'desktop_privacy.rights.title': { en: 'Your rights', 'zh-CN': 'Your rights' },
+  'desktop_privacy.rights.block.0': {
+    en: 'If you are in the EU, UK, or EEA, you have the following rights under GDPR and UK GDPR: access, rectification, erasure, restriction of processing, objection, portability, and withdrawal of consent.',
+    'zh-CN':
+      'If you are in the EU, UK, or EEA, you have the following rights under GDPR and UK GDPR: access, rectification, erasure, restriction of processing, objection, portability, and withdrawal of consent.'
+  },
+  'desktop_privacy.rights.block.1': {
+    en: 'If you are a California resident, you have rights under CCPA and CPRA: to know what we collect, to delete, to correct, and to limit use of sensitive personal information. We do not sell personal information, and we do not share it for cross-context behavioural advertising.',
+    'zh-CN':
+      'If you are a California resident, you have rights under CCPA and CPRA: to know what we collect, to delete, to correct, and to limit use of sensitive personal information. We do not sell personal information, and we do not share it for cross-context behavioural advertising.'
+  },
+  'desktop_privacy.rights.block.2': {
+    en: "You also have the right to lodge a complaint with your supervisory authority, such as the UK Information Commissioner's Office, your EU member-state data protection authority, or the California Privacy Protection Agency.",
+    'zh-CN':
+      "You also have the right to lodge a complaint with your supervisory authority, such as the UK Information Commissioner's Office, your EU member-state data protection authority, or the California Privacy Protection Agency."
+  },
+  'desktop_privacy.rights.block.3': {
+    en: 'To exercise any of these rights, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>. If you have signed in to Comfy Cloud, your account verifies your identity. If you have not signed in, please tell us your approximate install date, platform, and application version, and we will attempt to match these against our records. We aim to respond within 30 days.',
+    'zh-CN':
+      'To exercise any of these rights, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>. If you have signed in to Comfy Cloud, your account verifies your identity. If you have not signed in, please tell us your approximate install date, platform, and application version, and we will attempt to match these against our records. We aim to respond within 30 days.'
+  },
+
+  'desktop_privacy.children.label': { en: 'CHILDREN', 'zh-CN': 'CHILDREN' },
+  'desktop_privacy.children.title': { en: 'Children', 'zh-CN': 'Children' },
+  'desktop_privacy.children.block.0': {
+    en: 'Comfy Desktop is not intended for, and we do not knowingly collect personal data from, individuals under 13 years of age.',
+    'zh-CN':
+      'Comfy Desktop is not intended for, and we do not knowingly collect personal data from, individuals under 13 years of age.'
+  },
+
+  'desktop_privacy.changes.label': { en: 'CHANGES', 'zh-CN': 'CHANGES' },
+  'desktop_privacy.changes.title': { en: 'Changes', 'zh-CN': 'Changes' },
+  'desktop_privacy.changes.block.0': {
+    en: 'We will revise this Privacy Policy when our processing changes materially. The Effective date at the top of this policy reflects the date of the most recent revision.',
+    'zh-CN':
+      'We will revise this Privacy Policy when our processing changes materially. The Effective date at the top of this policy reflects the date of the most recent revision.'
+  },
+
+  'desktop_privacy.contact.label': { en: 'CONTACT', 'zh-CN': 'CONTACT' },
+  'desktop_privacy.contact.title': { en: 'Contact', 'zh-CN': 'Contact' },
+  'desktop_privacy.contact.block.0': {
+    en: 'For any privacy enquiry, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.',
+    'zh-CN':
+      'For any privacy enquiry, contact <a href="mailto:support@comfy.org" class="text-white underline">support@comfy.org</a>.'
   },
 
   // ── Terms of Service ──────────────────────────────────────────────
@@ -4381,6 +4634,80 @@ const translations = {
     'zh-CN': '支持的模型'
   },
 
+  // Models list page (/models)
+  'models.list.label': { en: 'MODELS', 'zh-CN': '模型' },
+  'models.list.heroCta': {
+    en: 'Try {name} Now',
+    'zh-CN': '立即试用 {name}'
+  },
+  'models.list.creations.title': {
+    en: '{name} Image and Video Creations',
+    'zh-CN': '{name} 图像与视频创作'
+  },
+  'models.list.creations.cta': {
+    en: 'Explore Workflows',
+    'zh-CN': '探索工作流'
+  },
+  'models.list.heroTitle.before': {
+    en: '{name} in',
+    'zh-CN': ''
+  },
+  'models.list.heroTitle.after': {
+    en: '',
+    'zh-CN': ' 中的 {name}'
+  },
+  'models.list.heroSubtitle': {
+    en: 'From open-source diffusion checkpoints to partner APIs — every major model, with community workflow templates ready to run.',
+    'zh-CN':
+      '从开源扩散模型到合作伙伴 API，涵盖每一个主流模型，并附带可直接运行的社区工作流模板。'
+  },
+  'models.list.card.workflows': {
+    en: '{count} workflows',
+    'zh-CN': '{count} 个工作流'
+  },
+  'models.list.contact.label': {
+    en: 'COMFY HUB',
+    'zh-CN': 'COMFY HUB'
+  },
+  'models.showcase.label': { en: 'AI MODELS', 'zh-CN': 'AI 模型' },
+  'models.showcase.heading': {
+    en: 'Run the world’s\nleading AI models',
+    'zh-CN': '运行全球领先的\nAI 模型'
+  },
+  'models.showcase.subtitle': {
+    en: 'New models are added as they launch.',
+    'zh-CN': '新模型发布后会第一时间上线。'
+  },
+  'models.showcase.cta': {
+    en: 'EXPLORE WORKFLOWS',
+    'zh-CN': '探索工作流'
+  },
+  'models.showcase.card.grokImagine': {
+    en: 'Grok Imagine',
+    'zh-CN': 'Grok Imagine'
+  },
+  'models.showcase.card.nanoBananaPro': {
+    en: 'Nano Banana Pro',
+    'zh-CN': 'Nano Banana Pro'
+  },
+  'models.showcase.card.ltx23': {
+    en: 'LTX 2.3',
+    'zh-CN': 'LTX 2.3'
+  },
+  'models.showcase.card.qwenAdvancedEdit': {
+    en: 'Advanced image\nediting with Qwen',
+    'zh-CN': '使用 Qwen 进行\n高级图像编辑'
+  },
+  'models.showcase.card.wan22TextToVideo': {
+    en: 'Wan 2.2\ntext to video',
+    'zh-CN': 'Wan 2.2\n文字转视频'
+  },
+  'models.list.contact.heading': {
+    en: 'Pick a model and explore what the community has built. <a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">Browse Comfy Hub</a> for the newest workflows.',
+    'zh-CN':
+      '选择一个模型，浏览社区的创作成果。<a href="https://comfy.org/workflows" target="_blank" rel="noopener noreferrer" class="text-primary-comfy-yellow underline">访问 Comfy Hub</a> 查看最新工作流。'
+  },
+
   // Payment status pages
   'payment.success.label': {
     en: 'PAYMENT',
@@ -4424,317 +4751,109 @@ const translations = {
     'zh-CN': '查看订阅文档'
   },
 
-  // Affiliate landing page (/affiliates)
-  // English-only copy; zh-CN values mirror en until a localized version lands.
-  'affiliate-landing.page.title': {
-    en: 'Comfy.org Affiliate Program — Become a Partner',
-    'zh-CN': 'Comfy.org Affiliate Program — Become a Partner'
+  // AffiliateHeroSection
+  'affiliate.hero.label': { en: 'AFFILIATE', 'zh-CN': '联盟' },
+  'affiliate.hero.headingHighlight': {
+    en: 'Earn 30%',
+    'zh-CN': '赚取 30%'
   },
-  'affiliate-landing.page.description': {
+  'affiliate.hero.headingMuted': {
+    en: 'recurring commission for 3 months.',
+    'zh-CN': '持续返佣 3 个月。'
+  },
+  'affiliate.hero.feature1': {
+    en: '30% recurring commission for 3 months',
+    'zh-CN': '30% 持续佣金，连续 3 个月'
+  },
+  'affiliate.hero.feature2': {
+    en: '60-day cookie window',
+    'zh-CN': '60 天 Cookie 窗口'
+  },
+  'affiliate.hero.feature3': {
+    en: '$100 minimum payout',
+    'zh-CN': '$100 起付'
+  },
+  'affiliate.hero.feature4': {
+    en: 'Monthly payouts',
+    'zh-CN': '每月结算'
+  },
+  'affiliate.hero.apply': { en: 'APPLY NOW', 'zh-CN': '立即申请' },
+  'affiliate.hero.imageAlt': {
+    en: 'Comfy affiliate program',
+    'zh-CN': 'Comfy 联盟计划'
+  },
+
+  // AffiliateAudienceSection
+  'affiliate.audience.heading': {
+    en: "Who we're looking for",
+    'zh-CN': '我们在寻找谁'
+  },
+  'affiliate.audience.subheading': {
+    en: 'If you are...',
+    'zh-CN': '如果您是……'
+  },
+
+  // AffiliateHowItWorksSection
+  'affiliate.howItWorks.heading': {
+    en: 'How it works',
+    'zh-CN': '运作方式'
+  },
+
+  // AffiliateBenefitsSection
+  'affiliate.benefits.heading': {
+    en: 'Why ComfyUI for affiliate creators',
+    'zh-CN': '为什么联盟创作者选择 ComfyUI'
+  },
+
+  // AffiliateBrandAssetsSection
+  'affiliate.assets.heading': {
+    en: 'Brand logos for your content',
+    'zh-CN': '可用于您内容的品牌 Logo'
+  },
+  'affiliate.assets.subheading': {
+    en: 'Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
+    'zh-CN': '横幅图、截图和宣传文案将在获批后于联盟仪表盘中提供。'
+  },
+  'affiliate.assets.downloadLabel': {
+    en: 'Download zip',
+    'zh-CN': '下载压缩包'
+  },
+
+  // AffiliateFAQSection
+  'affiliate.faq.heading': {
+    en: 'Frequently asked questions',
+    'zh-CN': '常见问题'
+  },
+
+  // Affiliate page (/affiliates) — head metadata
+  'affiliate.page.title': {
+    en: 'Comfy.org Affiliate Program — Become a Partner',
+    'zh-CN': 'Comfy.org 联盟计划 — 成为合作伙伴'
+  },
+  'affiliate.page.description': {
     en: 'Earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer. Apply to become a Comfy Partner.',
     'zh-CN':
-      'Earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer. Apply to become a Comfy Partner.'
-  },
-  'affiliate-landing.cta.apply': {
-    en: 'Apply Now',
-    'zh-CN': 'Apply Now'
-  },
-  'affiliate-landing.cta.applyAriaLabel': {
-    en: 'Apply Now (opens in new tab)',
-    'zh-CN': 'Apply Now (opens in new tab)'
+      '为您推荐的每个 Comfy Cloud 订阅赚取 30% 持续佣金，连续 3 个月。立即申请成为 Comfy 合作伙伴。'
   },
 
-  // Hero
-  'affiliate-landing.hero.heading': {
-    en: 'Become a Comfy Partner',
-    'zh-CN': 'Become a Comfy Partner'
-  },
-  'affiliate-landing.hero.subheading': {
-    en: 'Earn 30% Commission for 3 Months.',
-    'zh-CN': 'Earn 30% Commission for 3 Months.'
-  },
-  'affiliate-landing.hero.body': {
-    en: 'Join the Comfy.org Affiliate Program and earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer:',
-    'zh-CN':
-      'Join the Comfy.org Affiliate Program and earn 30% recurring commission for 3 months on every Comfy Cloud subscription you refer:'
-  },
-  'affiliate-landing.hero.highlight.0': {
-    en: '30% recurring commission for 3 months',
-    'zh-CN': '30% recurring commission for 3 months'
-  },
-  'affiliate-landing.hero.highlight.1': {
-    en: '60-day cookie window',
-    'zh-CN': '60-day cookie window'
-  },
-  'affiliate-landing.hero.highlight.2': {
-    en: '$100 minimum payout',
-    'zh-CN': '$100 minimum payout'
-  },
-  'affiliate-landing.hero.highlight.3': {
-    en: 'Monthly payouts',
-    'zh-CN': 'Monthly payouts'
-  },
-
-  // Trust band
-  'affiliate-landing.trust.label': {
-    en: 'Trusted by 2M+ creators worldwide',
-    'zh-CN': 'Trusted by 2M+ creators worldwide'
-  },
-
-  // How it works
-  'affiliate-landing.how.heading': {
-    en: 'How it works',
-    'zh-CN': 'How it works'
-  },
-  'affiliate-landing.how.step.0.title': {
-    en: 'Apply.',
-    'zh-CN': 'Apply.'
-  },
-  'affiliate-landing.how.step.0.body': {
-    en: 'Submit a quick form. Most applicants approved same day.',
-    'zh-CN': 'Submit a quick form. Most applicants approved same day.'
-  },
-  'affiliate-landing.how.step.1.title': {
-    en: 'Share.',
-    'zh-CN': 'Share.'
-  },
-  'affiliate-landing.how.step.1.body': {
-    en: 'Get your unique tracking link. Share via content, social, email, however you reach your audience.',
-    'zh-CN':
-      'Get your unique tracking link. Share via content, social, email, however you reach your audience.'
-  },
-  'affiliate-landing.how.step.2.title': {
-    en: 'Earn.',
-    'zh-CN': 'Earn.'
-  },
-  'affiliate-landing.how.step.2.body': {
-    en: '30% recurring commission for 3 months on every Comfy Cloud subscriber you refer. Tracked in real-time. Paid monthly.',
-    'zh-CN':
-      '30% recurring commission for 3 months on every Comfy Cloud subscriber you refer. Tracked in real-time. Paid monthly.'
-  },
-
-  // Who we're looking for
-  'affiliate-landing.audience.heading': {
-    en: "Who we're looking for",
-    'zh-CN': "Who we're looking for"
-  },
-  'affiliate-landing.audience.item.0': {
-    en: 'ComfyUI tutorial creators and workflow builders',
-    'zh-CN': 'ComfyUI tutorial creators and workflow builders'
-  },
-  'affiliate-landing.audience.item.1': {
-    en: 'AI tool reviewers on YouTube, TikTok, blogs',
-    'zh-CN': 'AI tool reviewers on YouTube, TikTok, blogs'
-  },
-  'affiliate-landing.audience.item.2': {
-    en: 'Tech bloggers covering AI creative tools',
-    'zh-CN': 'Tech bloggers covering AI creative tools'
-  },
-  'affiliate-landing.audience.item.3': {
-    en: 'Newsletter operators in the AI/creative space',
-    'zh-CN': 'Newsletter operators in the AI/creative space'
-  },
-  'affiliate-landing.audience.item.4': {
-    en: 'Anyone with an audience interested in AI image, video, or 3D generation',
-    'zh-CN':
-      'Anyone with an audience interested in AI image, video, or 3D generation'
-  },
-
-  // Program details
-  'affiliate-landing.details.heading': {
-    en: 'Program details',
-    'zh-CN': 'Program details'
-  },
-  'affiliate-landing.details.headerLabel': {
-    en: 'Detail',
-    'zh-CN': 'Detail'
-  },
-  'affiliate-landing.details.headerValue': {
-    en: 'Value',
-    'zh-CN': 'Value'
-  },
-  'affiliate-landing.details.row.0.label': {
-    en: 'Commission rate',
-    'zh-CN': 'Commission rate'
-  },
-  'affiliate-landing.details.row.0.value': {
-    en: '30% recurring',
-    'zh-CN': '30% recurring'
-  },
-  'affiliate-landing.details.row.1.label': {
-    en: 'Commission duration',
-    'zh-CN': 'Commission duration'
-  },
-  'affiliate-landing.details.row.1.value': {
-    en: '3 months',
-    'zh-CN': '3 months'
-  },
-  'affiliate-landing.details.row.2.label': {
-    en: 'Cookie window',
-    'zh-CN': 'Cookie window'
-  },
-  'affiliate-landing.details.row.2.value': {
-    en: '60 days',
-    'zh-CN': '60 days'
-  },
-  'affiliate-landing.details.row.3.label': {
-    en: 'Eligible products',
-    'zh-CN': 'Eligible products'
-  },
-  'affiliate-landing.details.row.3.value': {
-    en: 'Comfy Cloud paid subscription plans',
-    'zh-CN': 'Comfy Cloud paid subscription plans'
-  },
-  'affiliate-landing.details.row.4.label': {
-    en: 'Payouts',
-    'zh-CN': 'Payouts'
-  },
-  'affiliate-landing.details.row.4.value': {
-    en: 'Monthly, within first 10 business days',
-    'zh-CN': 'Monthly, within first 10 business days'
-  },
-  'affiliate-landing.details.row.5.label': {
-    en: 'Minimum payout',
-    'zh-CN': 'Minimum payout'
-  },
-  'affiliate-landing.details.row.5.value': {
-    en: '$100',
-    'zh-CN': '$100'
-  },
-
-  // Brand assets
-  'affiliate-landing.assets.heading': {
-    en: 'Brand assets',
-    'zh-CN': 'Brand assets'
-  },
-  'affiliate-landing.assets.subheading': {
-    en: 'Approved Comfy logos for your content. Banners, screenshots, and talking points are in your affiliate dashboard after approval.',
-    'zh-CN':
-      'Approved Comfy logos for your content. Banners, screenshots, and talking points are in your affiliate dashboard after approval.'
-  },
-  'affiliate-landing.assets.downloadLabel': {
-    en: 'Download',
-    'zh-CN': 'Download'
-  },
-  'affiliate-landing.assets.tile.logo-horizontal.title': {
-    en: 'Comfy logo (horizontal)',
-    'zh-CN': 'Comfy logo (horizontal)'
-  },
-  'affiliate-landing.assets.tile.logomark.title': {
-    en: 'Comfy logomark',
-    'zh-CN': 'Comfy logomark'
-  },
-  'affiliate-landing.assets.tile.comfy-full-logo-yellow.title': {
-    en: 'Comfy full logo (yellow)',
-    'zh-CN': 'Comfy full logo (yellow)'
-  },
-  'affiliate-landing.assets.tile.comfy-full-logo-ink.title': {
-    en: 'Comfy full logo (ink)',
-    'zh-CN': 'Comfy full logo (ink)'
-  },
-  'affiliate-landing.assets.tile.amplified-logo-mark.title': {
-    en: 'Amplified logo mark',
-    'zh-CN': 'Amplified logo mark'
-  },
-  'affiliate-landing.assets.tile.dimensional-logo-mark.title': {
-    en: 'Dimensional logo mark',
-    'zh-CN': 'Dimensional logo mark'
-  },
-  'affiliate-landing.assets.tile.color-combo-yellow.title': {
-    en: 'Color combo (yellow)',
-    'zh-CN': 'Color combo (yellow)'
-  },
-  'affiliate-landing.assets.tile.color-combo-ink.title': {
-    en: 'Color combo (ink)',
-    'zh-CN': 'Color combo (ink)'
-  },
-
-  // FAQ — keys follow the FAQSection contract: <prefix>.<n>.q / <prefix>.<n>.a, 1-indexed
-  'affiliate-landing.faq.heading': {
-    en: 'Questions',
-    'zh-CN': 'Questions'
-  },
-  'affiliate-landing.faq.1.q': {
-    en: 'How do I track my referrals?',
-    'zh-CN': 'How do I track my referrals?'
-  },
-  'affiliate-landing.faq.1.a': {
-    en: 'Real-time dashboard via our partner portal.',
-    'zh-CN': 'Real-time dashboard via our partner portal.'
-  },
-  'affiliate-landing.faq.2.q': {
-    en: 'What plans qualify?',
-    'zh-CN': 'What plans qualify?'
-  },
-  'affiliate-landing.faq.2.a': {
-    en: 'All Comfy Cloud paid subscription plans (Creator, Pro, Teams).',
-    'zh-CN': 'All Comfy Cloud paid subscription plans (Creator, Pro, Teams).'
-  },
-  'affiliate-landing.faq.3.q': {
-    en: 'How long does approval take?',
-    'zh-CN': 'How long does approval take?'
-  },
-  'affiliate-landing.faq.3.a': {
-    en: 'Most applications approved within 24 hours.',
-    'zh-CN': 'Most applications approved within 24 hours.'
-  },
-  'affiliate-landing.faq.4.q': {
-    en: 'When do I get paid?',
-    'zh-CN': 'When do I get paid?'
-  },
-  'affiliate-landing.faq.4.a': {
-    en: 'Monthly, within the first 10 business days. Minimum balance $100. Paid via Stripe Express or PayPal.',
-    'zh-CN':
-      'Monthly, within the first 10 business days. Minimum balance $100. Paid via Stripe Express or PayPal.'
-  },
-  'affiliate-landing.faq.5.q': {
-    en: 'What happens if my referral upgrades or downgrades?',
-    'zh-CN': 'What happens if my referral upgrades or downgrades?'
-  },
-  'affiliate-landing.faq.5.a': {
-    en: 'If they upgrade, your commission increases. If they downgrade, it adjusts accordingly. Commission is based on actual amounts received by Comfy.org, net of refunds.',
-    'zh-CN':
-      'If they upgrade, your commission increases. If they downgrade, it adjusts accordingly. Commission is based on actual amounts received by Comfy.org, net of refunds.'
-  },
-  'affiliate-landing.faq.6.q': {
-    en: 'Can I use coupon codes?',
-    'zh-CN': 'Can I use coupon codes?'
-  },
-  'affiliate-landing.faq.6.a': {
-    en: 'Yes. We support both tracking links and unique coupon codes.',
-    'zh-CN': 'Yes. We support both tracking links and unique coupon codes.'
-  },
-  'affiliate-landing.faq.7.q': {
-    en: 'What if my referral uses an ad blocker?',
-    'zh-CN': 'What if my referral uses an ad blocker?'
-  },
-  'affiliate-landing.faq.7.a': {
-    en: 'We use server-side tracking, so conversions are tracked regardless.',
-    'zh-CN':
-      'We use server-side tracking, so conversions are tracked regardless.'
-  },
-  'affiliate-landing.faq.8.q': {
-    en: 'What assets do you provide?',
-    'zh-CN': 'What assets do you provide?'
-  },
-  'affiliate-landing.faq.8.a': {
-    en: 'Logos and banners on this page, plus screenshots and talking points in your affiliate dashboard after approval.',
-    'zh-CN':
-      'Logos and banners on this page, plus screenshots and talking points in your affiliate dashboard after approval.'
-  },
-
-  // Footer CTA
-  'affiliate-landing.footerCta.heading': {
+  // AffiliateCtaSection
+  'affiliate.cta.heading': {
     en: 'Ready to start earning?',
-    'zh-CN': 'Ready to start earning?'
+    'zh-CN': '准备好开始赚取佣金了吗？'
   },
-  'affiliate-landing.footerCta.termsLink': {
+  'affiliate.cta.apply': {
+    en: 'APPLY NOW',
+    'zh-CN': '立即申请'
+  },
+  'affiliate.cta.termsLabel': {
     en: 'Read the affiliate program terms',
-    'zh-CN': 'Read the affiliate program terms'
+    'zh-CN': '阅读联盟计划条款'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
 type TranslationKey = keyof typeof translations
+
+type LocalizedText = Record<Locale, string>
 
 export function t(key: TranslationKey, locale: Locale = 'en'): string {
   return translations[key][locale] ?? translations[key].en
@@ -4746,4 +4865,4 @@ export function hasKey(key: string): boolean {
   return key in translations
 }
 
-export type { Locale, TranslationKey }
+export type { Locale, LocalizedText, TranslationKey }

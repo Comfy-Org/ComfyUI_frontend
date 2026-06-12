@@ -11,32 +11,7 @@
       />
     </div>
 
-    <!-- Runtime error: full-height panel outside accordion -->
-    <div
-      v-if="singleRuntimeErrorCard"
-      data-testid="runtime-error-panel"
-      aria-live="polite"
-      class="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3"
-    >
-      <div
-        class="shrink-0 pb-2 text-sm font-semibold text-destructive-background-hover"
-      >
-        {{ singleRuntimeErrorGroup?.displayTitle }}
-      </div>
-      <ErrorNodeCard
-        :key="singleRuntimeErrorCard.id"
-        :card="singleRuntimeErrorCard"
-        :show-node-id-badge="showNodeIdBadge"
-        full-height
-        class="min-h-0 flex-1"
-        @locate-node="handleLocateNode"
-        @enter-subgraph="handleEnterSubgraph"
-        @copy-to-clipboard="copyToClipboard"
-      />
-    </div>
-
-    <!-- Scrollable content (non-runtime or mixed errors) -->
-    <div v-else class="min-w-0 flex-1 overflow-y-auto" aria-live="polite">
+    <div class="min-w-0 flex-1 overflow-y-auto" aria-live="polite">
       <TransitionGroup tag="div" name="list-scale" class="relative">
         <div
           v-if="filteredGroups.length === 0"
@@ -70,10 +45,13 @@
                   {{ group.displayTitle }}
                 </span>
                 <span
-                  v-if="group.type === 'execution' && group.cards.length > 1"
+                  v-if="
+                    group.type === 'execution' &&
+                    getExecutionGroupCount(group) > 1
+                  "
                   class="text-destructive-background-hover"
                 >
-                  ({{ group.cards.length }})
+                  ({{ getExecutionGroupCount(group) }})
                 </span>
               </span>
               <Button
@@ -154,11 +132,22 @@
             </div>
           </template>
 
+          <div
+            v-if="group.displayMessage"
+            data-testid="error-group-display-message"
+            class="px-4 pt-1 pb-3"
+          >
+            <p
+              class="m-0 text-sm/relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
+            >
+              {{ group.displayMessage }}
+            </p>
+          </div>
+
           <!-- Missing Node Packs -->
           <MissingNodeCard
             v-if="group.type === 'missing_node'"
             :show-info-button="shouldShowManagerButtons"
-            :show-node-id-badge="showNodeIdBadge"
             :missing-pack-groups="missingPackGroups"
             @locate-node="handleLocateMissingNode"
             @open-manager-info="handleOpenManagerInfo"
@@ -166,20 +155,86 @@
 
           <!-- Swap Nodes -->
           <SwapNodesCard
-            v-else-if="group.type === 'swap_nodes'"
+            v-if="group.type === 'swap_nodes'"
             :swap-node-groups="swapNodeGroups"
-            :show-node-id-badge="showNodeIdBadge"
             @locate-node="handleLocateMissingNode"
             @replace="handleReplaceGroup"
           />
 
           <!-- Execution Errors -->
+          <div v-if="isExecutionItemListGroup(group)" class="px-4">
+            <ul class="m-0 list-none space-y-1 p-0">
+              <li
+                v-for="item in getExecutionItemList(group)"
+                :key="item.key"
+                class="min-w-0"
+              >
+                <div class="flex min-w-0 items-center gap-2">
+                  <span class="flex min-w-0 flex-1 items-center gap-1">
+                    <button
+                      v-tooltip.top="{
+                        value: item.displayDetails || undefined,
+                        showDelay: 300
+                      }"
+                      type="button"
+                      class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
+                      @click="handleLocateNode(item.nodeId)"
+                    >
+                      {{ item.label }}
+                    </button>
+                    <Button
+                      v-if="item.displayDetails"
+                      variant="textonly"
+                      size="icon-sm"
+                      :class="
+                        cn(
+                          'size-6 shrink-0 text-muted-foreground hover:text-base-foreground',
+                          isExecutionItemDetailExpanded(item.key) &&
+                            'bg-secondary-background-selected text-base-foreground hover:bg-secondary-background-selected'
+                        )
+                      "
+                      :aria-label="
+                        t('rightSidePanel.infoFor', { item: item.label })
+                      "
+                      :aria-controls="getExecutionItemDetailId(item.key)"
+                      :aria-expanded="isExecutionItemDetailExpanded(item.key)"
+                      @click.stop="toggleExecutionItemDetail(item.key)"
+                    >
+                      <i class="icon-[lucide--info] size-3.5" />
+                    </Button>
+                  </span>
+                  <Button
+                    variant="textonly"
+                    size="icon-sm"
+                    class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+                    :aria-label="
+                      t('rightSidePanel.locateNodeFor', { item: item.label })
+                    "
+                    @click.stop="handleLocateNode(item.nodeId)"
+                  >
+                    <i class="icon-[lucide--locate] size-4" />
+                  </Button>
+                </div>
+                <TransitionCollapse>
+                  <p
+                    v-if="
+                      item.displayDetails &&
+                      isExecutionItemDetailExpanded(item.key)
+                    "
+                    :id="getExecutionItemDetailId(item.key)"
+                    class="m-0 mt-0.5 pr-10 text-2xs/relaxed wrap-break-word whitespace-pre-wrap text-muted-foreground"
+                  >
+                    {{ item.displayDetails }}
+                  </p>
+                </TransitionCollapse>
+              </li>
+            </ul>
+          </div>
           <div v-else-if="group.type === 'execution'" class="space-y-3 px-4">
             <ErrorNodeCard
               v-for="card in group.cards"
               :key="card.id"
               :card="card"
-              :show-node-id-badge="showNodeIdBadge"
               :compact="isSingleNodeSelected"
               @locate-node="handleLocateNode"
               @enter-subgraph="handleEnterSubgraph"
@@ -189,7 +244,7 @@
 
           <!-- Missing Models -->
           <MissingModelCard
-            v-else-if="group.type === 'missing_model'"
+            v-if="group.type === 'missing_model'"
             :missing-model-groups="missingModelGroups"
             :show-node-id-badge="showNodeIdBadge"
             @locate-model="handleLocateAssetNode"
@@ -197,9 +252,8 @@
 
           <!-- Missing Media -->
           <MissingMediaCard
-            v-else-if="group.type === 'missing_media'"
+            v-if="group.type === 'missing_media'"
             :missing-media-groups="missingMediaGroups"
-            :show-node-id-badge="showNodeIdBadge"
             @locate-node="handleLocateAssetNode"
           />
         </PropertiesAccordionItem>
@@ -243,6 +297,7 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
@@ -254,6 +309,7 @@ import { NodeBadgeMode } from '@/types/nodeSource'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import CollapseToggleButton from '../layout/CollapseToggleButton.vue'
+import TransitionCollapse from '../layout/TransitionCollapse.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import MissingNodeCard from './MissingNodeCard.vue'
@@ -272,6 +328,13 @@ import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup } from './types'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
+
+interface ExecutionItemListEntry {
+  key: string
+  nodeId: string
+  label: string
+  displayDetails?: string
+}
 
 const ErrorPanelSurveyCta =
   isNightly && !isCloud && !isDesktop
@@ -295,6 +358,7 @@ const { isInstalling: isInstallingAll, installAllPacks: installAll } =
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
 
 const searchQuery = ref('')
+const expandedExecutionItemDetailKeys = ref(new Set<string>())
 const isSearching = computed(() => searchQuery.value.trim() !== '')
 
 const fullSizeGroupTypes = new Set([
@@ -312,6 +376,78 @@ const showNodeIdBadge = computed(
     (settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode) !==
     NodeBadgeMode.None
 )
+
+function isExecutionItemListGroup(group: ErrorGroup) {
+  return (
+    group.type === 'execution' &&
+    group.cards.length > 0 &&
+    group.cards.every(
+      (card) =>
+        card.nodeId &&
+        card.errors.length > 0 &&
+        card.errors.every(
+          (error) => !error.isRuntimeError && Boolean(error.displayItemLabel)
+        )
+    )
+  )
+}
+
+function getExecutionItemList(group: ErrorGroup): ExecutionItemListEntry[] {
+  if (group.type !== 'execution') return []
+
+  const items: ExecutionItemListEntry[] = []
+  for (const card of group.cards) {
+    if (!card.nodeId) continue
+    for (let idx = 0; idx < card.errors.length; idx++) {
+      const error = card.errors[idx]
+      const label = error.displayItemLabel
+      if (!label) continue
+      items.push({
+        key: `${card.id}:${idx}`,
+        nodeId: card.nodeId,
+        label,
+        displayDetails: error.displayDetails
+      })
+    }
+  }
+  return items.sort(compareExecutionItemListEntry)
+}
+
+function compareExecutionItemListEntry(
+  a: ExecutionItemListEntry,
+  b: ExecutionItemListEntry
+) {
+  return (
+    a.nodeId.localeCompare(b.nodeId, undefined, { numeric: true }) ||
+    a.label.localeCompare(b.label)
+  )
+}
+
+function getExecutionGroupCount(group: ErrorGroup) {
+  if (group.type !== 'execution') return 0
+  if (isExecutionItemListGroup(group)) {
+    return group.cards.reduce((count, card) => count + card.errors.length, 0)
+  }
+  return group.cards.length
+}
+
+function isExecutionItemDetailExpanded(key: string) {
+  return expandedExecutionItemDetailKeys.value.has(key)
+}
+
+function toggleExecutionItemDetail(key: string) {
+  const nextKeys = new Set(expandedExecutionItemDetailKeys.value)
+  if (nextKeys.has(key)) {
+    nextKeys.delete(key)
+  } else {
+    nextKeys.add(key)
+  }
+  expandedExecutionItemDetailKeys.value = nextKeys
+}
+
+function getExecutionItemDetailId(key: string) {
+  return `execution-item-detail-${key}`
+}
 
 const {
   allErrorGroups,
@@ -343,20 +479,6 @@ const showMissingModelHeaderRefresh = computed(
 function handleMissingModelRefresh() {
   void missingModelStore.refreshMissingModels()
 }
-
-const singleRuntimeErrorGroup = computed(() => {
-  if (filteredGroups.value.length !== 1) return null
-  const group = filteredGroups.value[0]
-  const isSoleRuntimeError =
-    group.type === 'execution' &&
-    group.cards.length === 1 &&
-    group.cards[0].errors.every((e) => e.isRuntimeError)
-  return isSoleRuntimeError ? group : null
-})
-
-const singleRuntimeErrorCard = computed(
-  () => singleRuntimeErrorGroup.value?.cards[0] ?? null
-)
 
 const isAllCollapsed = computed({
   get() {

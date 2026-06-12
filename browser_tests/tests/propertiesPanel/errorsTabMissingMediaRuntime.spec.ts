@@ -44,10 +44,10 @@ const emptyMediaLoaderNodes = [
   }
 ]
 
-const cloudOutputAsset: Asset = {
+const cloudOutputAsset: Asset & { hash?: string } = {
   id: 'test-output-hash-001',
   name: 'ComfyUI_00001_.png',
-  asset_hash: outputHash,
+  hash: outputHash,
   size: 4_194_304,
   mime_type: 'image/png',
   tags: ['output'],
@@ -56,10 +56,10 @@ const cloudOutputAsset: Asset = {
   last_access_time: '2026-05-01T00:00:00Z'
 }
 
-const cloudUploadedVideoAsset: Asset = {
+const cloudUploadedVideoAsset: Asset & { hash?: string } = {
   id: 'test-uploaded-video-001',
   name: plainVideoFileName,
-  asset_hash: plainVideoFileName,
+  hash: plainVideoFileName,
   size: 1_024,
   mime_type: 'video/mp4',
   tags: ['input'],
@@ -70,10 +70,10 @@ const cloudUploadedVideoAsset: Asset = {
 
 // The Cloud test app starts with a default LoadImage node. Keep that baseline
 // input resolvable so this spec only observes the media it creates.
-const cloudDefaultGraphInputAsset: Asset = {
+const cloudDefaultGraphInputAsset: Asset & { hash?: string } = {
   id: 'test-default-input-001',
   name: '00000000000000000000000Aexample.png',
-  asset_hash: '00000000000000000000000Aexample.png',
+  hash: '00000000000000000000000Aexample.png',
   size: 1_024,
   mime_type: 'image/png',
   tags: ['input'],

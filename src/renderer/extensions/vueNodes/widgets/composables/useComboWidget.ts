@@ -137,7 +137,7 @@ function getCloudInputAssets(nodeType: string | undefined): AssetItem[] {
 }
 
 function getCloudInputAssetValue(asset: AssetItem): string | undefined {
-  return asset.hash ?? asset.asset_hash ?? undefined
+  return asset.hash ?? undefined
 }
 
 function getCloudInputAssetValues(nodeType: string | undefined): string[] {
