@@ -479,7 +479,9 @@ describe('useMembersPanel', () => {
 
   describe('single-member visibility gating', () => {
     it('hides search and view tabs when the owner is alone', async () => {
-      mockMembers.value = [createMember()]
+      mockMembers.value = [
+        createMember({ role: 'owner', email: 'owner@example.com' })
+      ]
       const panel = await setup()
       expect(panel.showSearch.value).toBe(false)
       expect(panel.showViewTabs.value).toBe(false)
@@ -493,7 +495,9 @@ describe('useMembersPanel', () => {
     })
 
     it('shows view tabs for a lone owner with pending invites', async () => {
-      mockMembers.value = [createMember()]
+      mockMembers.value = [
+        createMember({ role: 'owner', email: 'owner@example.com' })
+      ]
       mockPendingInvites.value = [createInvite()]
       const panel = await setup()
       expect(panel.showViewTabs.value).toBe(true)
