@@ -1729,10 +1729,12 @@ export class ComfyApp {
             applyPromotedWidgetControl(node, 'beforeQueued')
           })
 
-          // Capture workflow before await — activeWorkflow may change if the
-          // user switches tabs while the request is in flight.
+          // Capture workflow and mode before await — both may change if the
+          // user switches tabs or toggles app/graph mode while the request is
+          // in flight.
           const queuedWorkflow = useWorkspaceStore().workflow
             .activeWorkflow as ComfyWorkflow
+          const queuedMode = getWorkflowMode(queuedWorkflow)
           const startTime = performance.now()
           const p = await this.graphToPrompt(this.rootGraph).catch(
             (error: unknown) => {
@@ -1752,7 +1754,7 @@ export class ComfyApp {
             workflowContext = toWorkflowExecutionContext(executionContext, {
               executableNodeCount: Object.keys(p.output).length,
               executionScope: isPartialExecution ? 'partial' : 'full',
-              viewMode: getWorkflowMode(queuedWorkflow)
+              viewMode: queuedMode
             })
           }
           if (
@@ -1802,6 +1804,7 @@ export class ComfyApp {
                   startTime,
                   submissionAcceptedAt: responseReceivedAt,
                   workflow: queuedWorkflow,
+                  mode: queuedMode,
                   workflowContext,
                   workflowExecutionIntent
                 })
