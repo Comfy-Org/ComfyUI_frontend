@@ -1,23 +1,23 @@
 {
   "name": "Comfy",
   "short_name": "Comfy",
-  "id": "/",
-  "start_url": "/",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/web-app-manifest-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     }
   ],
   "theme_color": "#211927",
   "background_color": "#211927",
-  "display": "standalone"
+  "display": "standalone",
+  "id": "/",
+  "start_url": "/"
 }

@@ -2982,6 +2982,98 @@
       }
     }
   },
+  "DA3GeometryToMesh": {
+    "description": "將深度圖轉換為三角化的 3D 網格。",
+    "display_name": "將 DA3 幾何轉換為網格",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "要轉換的批次中的哪一張影像。由於每張影像的頂點數不同，批次無法堆疊。"
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "排除每張影像正規化信心值低於此值的像素（0 = 保留全部，1 = 只保留最有信心的像素）。當幾何資料有信心圖時使用（Small/Base 模型）。"
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "頂點間隔。1 = 全解析度，2 = 一半，依此類推。"
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "若三角形的 3x3 深度跨度超過此比例則捨棄。0 = 關閉。"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "使用來源影像作為基礎色彩貼圖。"
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "從網格中排除天空機率像素（sky >= 0.5）。當幾何資料有天空圖時使用（Mono/Metric 模型）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "在影像上執行 Depth Anything 3。多視角模式下，每張影像被視為同一場景的不同視角。",
+    "display_name": "執行 Depth Anything 3",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono：單視角影像（適用於任何模型變體）。\nmultiview：所有影像一起處理以獲得幾何一致性與相機姿態（僅限 Small/Base 模型）。"
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize：縮放至最長邊 = 解析度（限制記憶體，預設）。\nlower_bound_resize：縮放至最短邊 = 解析度（在高/寬影像上保留更多細節，但使用更多記憶體）。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "模型運行的解析度（最長邊，14 的倍數）。\n較低 = 較快 / 較少 VRAM。\n較高 = 更多細節。\n輸出會上採樣回原始大小。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "非正規化 tensor 字典。\n一定包含的鍵：depth、image、mode。\n可選鍵：sky（Mono/Metric）、confidence（Small/Base）、extrinsics + intrinsics（多視角時）。"
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "從 Depth Anything 3 幾何資料渲染深度圖、信心圖或天空 mask。",
+    "display_name": "渲染 Depth Anything 3",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth：正規化灰階深度影像。\n- depth_colored：經 Turbo 色圖映射的深度。\n- sky_mask：天空機率 [0, 1]（僅 Mono/Metric 模型）。\n- confidence：正規化深度信心（僅 Small/Base 模型）。"
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "載入 ControlNet 模型（diff）",
     "inputs": {
@@ -8983,6 +9075,22 @@
     "outputs": {
       "0": {
         "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "載入 Depth Anything 3",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

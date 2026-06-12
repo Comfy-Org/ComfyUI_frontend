@@ -2982,6 +2982,98 @@
       }
     }
   },
+  "DA3GeometryToMesh": {
+    "description": "تحويل خريطة العمق إلى شبكة ثلاثية الأبعاد مثلثة.",
+    "display_name": "تحويل هندسة DA3 إلى شبكة",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "أي صورة من الدفعة سيتم تحويلها. عدد الرؤوس يختلف لكل صورة، لذلك لا يمكن تكديس الدُفعات."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "استبعاد البكسلات التي يكون مستوى الثقة المُطَبَّع لكل صورة أقل من هذه القيمة (٠ = الاحتفاظ بالجميع، ١ = الاحتفاظ بالبكسل الأكثر ثقة فقط). يُستخدم عندما تحتوي الهندسة على خريطة ثقة (نماذج Small/Base)."
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "تخطي الرؤوس. ١ = الدقة الكاملة، ٢ = النصف، وهكذا."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "إسقاط المثلثات التي يتجاوز نطاق العمق ٣×٣ الخاص بها هذا الكسر. ٠ = إيقاف."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "استخدام الصورة الأصلية كخامة لون أساسية."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "استبعاد بكسلات السماء (السماء ≥ ٠٫٥) من الشبكة. يُستخدم عندما تحتوي الهندسة على خريطة سماء (نماذج Mono/Metric)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "تشغيل Depth Anything 3 على صورة. في وضع الرؤية المتعددة، تُعتبر كل صورة منظورًا منفصلًا لنفس المشهد.",
+    "display_name": "تشغيل Depth Anything 3",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: صورة بمنظور واحد (يعمل مع أي نوع من النماذج).\nmultiview: تتم معالجة جميع الصور معًا لتحقيق التناسق الهندسي + وضعية الكاميرا (لنماذج Small/Base فقط)."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: التحجيم بحيث يكون أطول ضلع = الدقة (يحد من الذاكرة، الافتراضي).\nlower_bound_resize: التحجيم بحيث يكون أقصر ضلع = الدقة (يحافظ على مزيد من التفاصيل في الصور الطويلة/العريضة، يستهلك ذاكرة أكثر)."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "الدقة التي يعمل بها النموذج (أطول ضلع، مضاعف للعدد ١٤).\nأقل = أسرع / ذاكرة أقل.\nأعلى = تفاصيل أكثر.\nيتم تكبير الناتج إلى الحجم الأصلي."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "قاموس من التنسورات غير المُطبَّعة.\nدائمًا يحتوي على المفاتيح: depth، image، mode.\nمفاتيح اختيارية: sky (لـ Mono/Metric)، confidence (لـ Small/Base)، extrinsics + intrinsics (للوضع متعدد الرؤية)."
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "عرض خريطة العمق أو خريطة الثقة أو قناع السماء من بيانات هندسة Depth Anything 3.",
+    "display_name": "عرض Depth Anything 3",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: صورة عمق رمادية مُطبَّعة.\n- depth_colored: العمق معروض عبر خريطة ألوان Turbo.\n- sky_mask: احتمالية السماء في النطاق [٠، ١] (لنماذج Mono/Metric فقط).\n- confidence: ثقة العمق المُطبَّعة (لنماذج Small/Base فقط)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "تحميل نموذج ControlNet (فرق)",
     "inputs": {
@@ -8983,6 +9075,22 @@
     "outputs": {
       "0": {
         "name": "نموذج_الخلفية",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "تحميل Depth Anything 3",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

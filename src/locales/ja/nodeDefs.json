@@ -2982,6 +2982,98 @@
       }
     }
   },
+  "DA3GeometryToMesh": {
+    "description": "深度マップを三角形分割された3Dメッシュに変換します。",
+    "display_name": "DA3ジオメトリをメッシュに変換",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "バッチ内のどの画像を変換するか。画像ごとに頂点数が異なるため、バッチを積み重ねることはできません。"
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "画像ごとの正規化信頼度がこの値未満のピクセルを除外します（0 = すべて保持、1 = 最も信頼度の高いピクセルのみ保持）。ジオメトリに信頼度マップがある場合（Small/Baseモデル）に使用されます。"
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "頂点の間引き間隔。1 = フル解像度、2 = 半分、など。"
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "3x3の深度範囲がこの割合を超える三角形を除外します。0 = 無効。"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "元画像をベースカラーテクスチャとして使用します。"
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "空の確率が0.5以上のピクセルをメッシュから除外します。ジオメトリに空マップがある場合（Mono/Metricモデル）に使用されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "画像に対してDepth Anything 3を実行します。マルチビューモードでは各画像が同じシーンの別ビューとして扱われます。",
+    "display_name": "Depth Anything 3を実行",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: 単一ビュー画像（すべてのモデルバリアントで動作）。\nmultiview: すべての画像を幾何学的一貫性＋カメラポーズのためにまとめて処理（Small/Baseモデルのみ）。"
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: 最長辺がresolutionになるようにスケール（メモリ制限、デフォルト）。\nlower_bound_resize: 最短辺がresolutionになるようにスケール（縦長・横長画像の詳細をより保持、メモリ多め）。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "モデルが動作する解像度（最長辺、14の倍数）。\n低いほど高速／VRAM消費が少ない。\n高いほど詳細。\n出力は元のサイズにアップサンプリングされます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "非正規化テンソルのディクショナリ。\n常に含まれるキー: depth, image, mode。\nオプションキー: sky（Mono/Metric用）、confidence（Small/Base用）、extrinsics＋intrinsics（マルチビュー用）。"
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "Depth Anything 3のジオメトリデータから深度マップ、信頼度マップ、または空マスクをレンダリングします。",
+    "display_name": "Depth Anything 3をレンダリング",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: 正規化グレースケール深度画像。\n- depth_colored: Turboカラーマップで変換した深度。\n- sky_mask: 空の確率 [0, 1]（Mono/Metricモデルのみ）。\n- confidence: 正規化深度信頼度（Small/Baseモデルのみ）。"
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "ControlNetモデルを読み込む（diff）",
     "inputs": {
@@ -8983,6 +9075,22 @@
     "outputs": {
       "0": {
         "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "Depth Anything 3を読み込む",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

@@ -157,7 +157,6 @@
           <SwapNodesCard
             v-if="group.type === 'swap_nodes'"
             :swap-node-groups="swapNodeGroups"
-            :show-node-id-badge="showNodeIdBadge"
             @locate-node="handleLocateMissingNode"
             @replace="handleReplaceGroup"
           />
