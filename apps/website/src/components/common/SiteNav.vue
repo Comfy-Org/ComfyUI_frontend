@@ -11,12 +11,9 @@ import { nextTick, onMounted, ref } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { externalLinks, getRoutes } from '../../config/routes'
-import { NavigationMenu, NavigationMenuList } from '../ui/navigation-menu'
 import BrandButton from './BrandButton.vue'
 import GitHubStarBadge from './GitHubStarBadge.vue'
-import MobileMenu from './MobileMenu.vue'
-import NavDesktopLink from './NavDesktopLink.vue'
-import type { NavLink } from './NavDesktopLink.vue'
+import HeaderMainDesktop from './HeaderMainDesktop.vue'
 
 const { locale = 'en', githubStars = '' } = defineProps<{
   locale?: Locale
@@ -24,72 +21,72 @@ const { locale = 'en', githubStars = '' } = defineProps<{
 }>()
 const routes = getRoutes(locale)
 
-const navLinks: NavLink[] = [
-  {
-    label: t('nav.products', locale),
-    items: [
-      { label: t('nav.comfyLocal', locale), href: routes.download },
-      { label: t('nav.comfyCloud', locale), href: routes.cloud },
-      {
-        label: t('nav.comfyApi', locale),
-        href: routes.api,
-        badge: t('nav.badgeNew', locale)
-      },
-      { label: t('nav.comfyEnterprise', locale), href: routes.cloudEnterprise }
-    ]
-  },
-  { label: t('nav.pricing', locale), href: routes.cloudPricing },
-  {
-    label: t('nav.community', locale),
-    items: [
-      {
-        label: t('nav.comfyHub', locale),
-        href: externalLinks.workflows,
-        badge: t('nav.badgeNew', locale)
-      },
-      { label: t('nav.gallery', locale), href: routes.gallery }
-    ]
-  },
-  {
-    label: t('nav.resources', locale),
-    items: [
-      { label: t('nav.learning', locale), href: routes.learning },
-      {
-        label: t('nav.blogs', locale),
-        href: externalLinks.blog,
-        external: true
-      },
-      {
-        label: t('nav.github', locale),
-        href: externalLinks.github,
-        external: true
-      },
-      {
-        label: t('nav.discord', locale),
-        href: externalLinks.discord,
-        external: true
-      },
-      {
-        label: t('nav.docs', locale),
-        href: externalLinks.docs,
-        external: true
-      },
-      {
-        label: t('nav.youtube', locale),
-        href: externalLinks.youtube,
-        external: true
-      }
-    ]
-  },
-  {
-    label: t('nav.company', locale),
-    items: [
-      { label: t('nav.aboutUs', locale), href: routes.about },
-      { label: t('nav.careers', locale), href: routes.careers },
-      { label: t('nav.customerStories', locale), href: routes.customers }
-    ]
-  }
-]
+// const navLinks: NavLink[] = [
+//   {
+//     label: t('nav.products', locale),
+//     items: [
+//       { label: t('nav.comfyLocal', locale), href: routes.download },
+//       { label: t('nav.comfyCloud', locale), href: routes.cloud },
+//       {
+//         label: t('nav.comfyApi', locale),
+//         href: routes.api,
+//         badge: t('nav.badgeNew', locale)
+//       },
+//       { label: t('nav.comfyEnterprise', locale), href: routes.cloudEnterprise }
+//     ]
+//   },
+//   { label: t('nav.pricing', locale), href: routes.cloudPricing },
+//   {
+//     label: t('nav.community', locale),
+//     items: [
+//       {
+//         label: t('nav.comfyHub', locale),
+//         href: externalLinks.workflows,
+//         badge: t('nav.badgeNew', locale)
+//       },
+//       { label: t('nav.gallery', locale), href: routes.gallery }
+//     ]
+//   },
+//   {
+//     label: t('nav.resources', locale),
+//     items: [
+//       { label: t('nav.learning', locale), href: routes.learning },
+//       {
+//         label: t('nav.blogs', locale),
+//         href: externalLinks.blog,
+//         external: true
+//       },
+//       {
+//         label: t('nav.github', locale),
+//         href: externalLinks.github,
+//         external: true
+//       },
+//       {
+//         label: t('nav.discord', locale),
+//         href: externalLinks.discord,
+//         external: true
+//       },
+//       {
+//         label: t('nav.docs', locale),
+//         href: externalLinks.docs,
+//         external: true
+//       },
+//       {
+//         label: t('nav.youtube', locale),
+//         href: externalLinks.youtube,
+//         external: true
+//       }
+//     ]
+//   },
+//   {
+//     label: t('nav.company', locale),
+//     items: [
+//       { label: t('nav.aboutUs', locale), href: routes.about },
+//       { label: t('nav.careers', locale), href: routes.careers },
+//       { label: t('nav.customerStories', locale), href: routes.customers }
+//     ]
+//   }
+// ]
 
 const ctaButtons = [
   {
@@ -148,14 +145,8 @@ onMounted(() => {
 </script>
 
 <template>
-  <MobileMenu
-    :open="mobileMenuOpen"
-    :navigating="isNavigating"
-    :links="navLinks"
-    :cta-links="ctaButtons"
-    :locale="locale"
-    @close="closeMobileMenu"
-  />
+  <!-- <MobileMenu :open="mobileMenuOpen" :navigating="isNavigating" :links="navLinks" :cta-links="ctaButtons"
+    :locale="locale" @close="closeMobileMenu" /> -->
 
   <nav
     class="fixed inset-x-0 top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
@@ -183,20 +174,7 @@ onMounted(() => {
     </a>
 
     <!-- Desktop nav links -->
-    <NavigationMenu
-      data-testid="desktop-nav-links"
-      :viewport="false"
-      class="hidden flex-none lg:flex"
-    >
-      <NavigationMenuList class="items-center gap-[clamp(1rem,2.5vw,2.5rem)]">
-        <NavDesktopLink
-          v-for="link in navLinks"
-          :key="link.label"
-          :link="link"
-          :current-path="currentPath"
-        />
-      </NavigationMenuList>
-    </NavigationMenu>
+    <HeaderMainDesktop />
 
     <!-- Desktop CTA buttons -->
     <div
