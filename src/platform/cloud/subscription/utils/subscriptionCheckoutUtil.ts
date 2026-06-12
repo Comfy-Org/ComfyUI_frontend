@@ -5,6 +5,7 @@ import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import { parseErrorResponse } from '@/utils/errorUtil'
 import type { CheckoutAttributionMetadata } from '@/platform/telemetry/types'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import { recordPendingSubscriptionCheckoutAttempt } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
@@ -80,24 +81,11 @@ export async function performSubscriptionCheckout(
   )
 
   if (!response.ok) {
-    let errorMessage = 'Failed to initiate checkout'
-    try {
-      const errorData = await response.json()
-      errorMessage = errorData.message || errorMessage
-    } catch {
-      // If JSON parsing fails, try to get text response or use HTTP status
-      try {
-        const errorText = await response.text()
-        errorMessage =
-          errorText || `HTTP ${response.status} ${response.statusText}`
-      } catch {
-        errorMessage = `HTTP ${response.status} ${response.statusText}`
-      }
-    }
+    const { message } = await parseErrorResponse(response)
 
     throw new AuthStoreError(
       t('toastMessages.failedToInitiateSubscription', {
-        error: errorMessage
+        error: message
       })
     )
   }

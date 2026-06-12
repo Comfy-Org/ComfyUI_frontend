@@ -11,6 +11,7 @@ import {
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
+import { parseErrorResponse } from '@/utils/errorUtil'
 import type { WorkspaceWithRole } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
@@ -204,8 +205,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const message = errorData.message || response.statusText
+        const { message } = await parseErrorResponse(response)
 
         if (response.status === 401) {
           throw new WorkspaceAuthError(
