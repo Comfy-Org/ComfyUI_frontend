@@ -174,4 +174,25 @@ describe('isExtensionOriginPreloadError', () => {
 
     expect(isExtensionOriginPreloadError(error, info)).toBe(false)
   })
+
+  it('does not flag errors with no stack at all', () => {
+    const error = makeError('Something failed')
+    error.stack = undefined
+    const info = parsePreloadError(error)
+
+    expect(isExtensionOriginPreloadError(error, info)).toBe(false)
+  })
+
+  it('ignores unparseable URLs in the stack', () => {
+    const error = makeError(
+      'Some failure',
+      [
+        'Error: Some failure',
+        '    at https://[invalid/extensions/SomePack/widgets.js:1:1'
+      ].join('\n')
+    )
+    const info = parsePreloadError(error)
+
+    expect(isExtensionOriginPreloadError(error, info)).toBe(false)
+  })
 })
