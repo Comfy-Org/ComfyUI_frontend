@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
   PendingInvite,
@@ -15,7 +15,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useDialogService } from '@/services/dialogService'
 
 type ActiveView = 'active' | 'pending'
-type SortField = 'inviteDate' | 'expiryDate' | 'joinDate'
+type SortField = 'inviteDate' | 'expiryDate' | 'role'
 type SortDirection = 'asc' | 'desc'
 
 export function sortMembers(
@@ -24,8 +24,10 @@ export function sortMembers(
   sortDirection: SortDirection
 ): WorkspaceMember[] {
   return [...members].sort((a, b) => {
-    if (a.role === 'owner' && b.role !== 'owner') return -1
-    if (a.role !== 'owner' && b.role === 'owner') return 1
+    if (a.role !== b.role) {
+      const ownerFirst = a.role === 'owner' ? -1 : 1
+      return sortDirection === 'desc' ? ownerFirst : -ownerFirst
+    }
 
     const aIsCurrent = a.email.toLowerCase() === currentUserEmail?.toLowerCase()
     const bIsCurrent = b.email.toLowerCase() === currentUserEmail?.toLowerCase()
@@ -56,7 +58,7 @@ export function sortPendingInvites(
   sortField: SortField,
   sortDirection: SortDirection
 ): PendingInvite[] {
-  const field = sortField === 'joinDate' ? 'inviteDate' : sortField
+  const field = sortField === 'role' ? 'inviteDate' : sortField
   return [...invites].sort((a, b) => {
     const aDate = a[field]
     const bDate = b[field]
@@ -74,37 +76,70 @@ export function useMembersPanel() {
   const {
     showRemoveMemberDialog,
     showRevokeInviteDialog,
-    showCreateWorkspaceDialog
+    showInviteMemberDialog,
+    showInviteMemberUpsellDialog
   } = useDialogService()
   const workspaceStore = useTeamWorkspaceStore()
   const {
     members,
     pendingInvites,
+    totalMemberSlots,
+    isInviteLimitReached,
     isInPersonalWorkspace: isPersonalWorkspace
   } = storeToRefs(workspaceStore)
-  const { copyInviteLink } = workspaceStore
+  const { resendInvite } = workspaceStore
   const { permissions, uiConfig } = useWorkspaceUI()
-  const {
-    isActiveSubscription,
-    subscription,
-    showSubscriptionDialog,
-    getMaxSeats
-  } = useBillingContext()
+  const { showSubscriptionDialog } = useBillingContext()
+  const { maxSeats: planMaxSeats, isOnTeamPlan } = useTeamPlan()
 
-  const maxSeats = computed(() => {
-    if (isPersonalWorkspace.value) return 1
-    const tier = subscription.value?.tier
-    if (!tier) return 1
-    const tierKey = TIER_TO_KEY[tier]
-    if (!tierKey) return 1
-    return getMaxSeats(tierKey)
+  const maxSeats = computed(() =>
+    isPersonalWorkspace.value ? 1 : planMaxSeats.value
+  )
+
+  const hasMultipleMembers = computed(() => members.value.length > 1)
+
+  const showSearch = computed(
+    () =>
+      uiConfig.value.showSearch &&
+      isOnTeamPlan.value &&
+      hasMultipleMembers.value
+  )
+
+  const showViewTabs = computed(
+    () =>
+      isOnTeamPlan.value &&
+      (hasMultipleMembers.value || pendingInvites.value.length > 0)
+  )
+
+  const showInviteButton = computed(
+    () => permissions.value.canInviteMembers || isPersonalWorkspace.value
+  )
+
+  // Plan seat limit, with the flat backend cap (isInviteLimitReached) as backstop
+  const isMemberLimitReached = computed(
+    () => isInviteLimitReached.value || totalMemberSlots.value >= maxSeats.value
+  )
+
+  const isInviteDisabled = computed(
+    () =>
+      isPersonalWorkspace.value ||
+      (isOnTeamPlan.value && isMemberLimitReached.value)
+  )
+
+  const inviteTooltip = computed(() => {
+    if (!isOnTeamPlan.value) return null
+    if (!isMemberLimitReached.value) return null
+    return t('workspacePanel.inviteLimitReached', { count: maxSeats.value })
   })
 
-  const isSingleSeatPlan = computed(() => {
-    if (isPersonalWorkspace.value) return false
-    if (!isActiveSubscription.value) return true
-    return maxSeats.value <= 1
-  })
+  function handleInviteMember() {
+    if (!isOnTeamPlan.value) {
+      void showInviteMemberUpsellDialog()
+      return
+    }
+    if (isMemberLimitReached.value) return
+    void showInviteMemberDialog()
+  }
 
   const personalWorkspaceMember = computed<WorkspaceMember>(() => ({
     id: 'self',
@@ -160,28 +195,24 @@ export function useMembersPanel() {
     }
   }
 
-  async function handleCopyInviteLink(invite: PendingInvite) {
+  async function handleResendInvite(invite: PendingInvite) {
     try {
-      await copyInviteLink(invite.id)
+      await resendInvite(invite.id)
       toast.add({
         severity: 'success',
-        summary: t('g.copied'),
+        summary: t('workspacePanel.toast.inviteResent'),
         life: 2000
       })
     } catch {
       toast.add({
         severity: 'error',
-        summary: t('g.error')
+        summary: t('workspacePanel.toast.inviteResendFailed')
       })
     }
   }
 
   function handleRevokeInvite(invite: PendingInvite) {
     void showRevokeInviteDialog(invite.id)
-  }
-
-  function handleCreateWorkspace() {
-    void showCreateWorkspaceDialog()
   }
 
   function handleRemoveMember(member: WorkspaceMember) {
@@ -195,7 +226,14 @@ export function useMembersPanel() {
     sortDirection,
     selectedMember,
     maxSeats,
-    isSingleSeatPlan,
+    isOnTeamPlan,
+    hasMultipleMembers,
+    showSearch,
+    showViewTabs,
+    showInviteButton,
+    isInviteDisabled,
+    inviteTooltip,
+    handleInviteMember,
     personalWorkspaceMember,
     filteredMembers,
     filteredPendingInvites,
@@ -205,15 +243,13 @@ export function useMembersPanel() {
     pendingInvites,
     permissions,
     uiConfig,
-    isActiveSubscription,
     userPhotoUrl,
     isCurrentUser,
     selectMember,
     toggleSort,
     showSubscriptionDialog,
-    handleCopyInviteLink,
+    handleResendInvite,
     handleRevokeInvite,
-    handleCreateWorkspace,
     handleRemoveMember
   }
 }
