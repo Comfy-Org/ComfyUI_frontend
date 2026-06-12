@@ -550,11 +550,10 @@ function handleRemoveKeybindingFromMenu(commandData: ICommandData) {
 function ctxChangeKeybinding() {
   if (!contextMenuTarget.value) return
   const target = contextMenuTarget.value
-  if (target.keybindings.length === 1) {
+  if (target.keybindings.length === 1)
     editKeybinding(target, target.keybindings[0])
-  } else if (target.keybindings.length >= 2) {
+  else if (target.keybindings.length >= 2)
     if (!expandedCommandIds.value.has(target.id)) toggleExpanded(target.id)
-  }
 }
 
 function ctxAddKeybinding() {

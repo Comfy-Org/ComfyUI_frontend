@@ -37,9 +37,8 @@ export function getOrderedInputSpecs(
 
   // Add any remaining inputs not specified in input_order
   const processedNames = new Set(orderedInputSpecs.map((spec) => spec.name))
-  for (const inputSpec of Object.values(inputs)) {
+  for (const inputSpec of Object.values(inputs))
     if (!processedNames.has(inputSpec.name)) orderedInputSpecs.push(inputSpec)
-  }
 
   return orderedInputSpecs
 }
@@ -79,9 +78,8 @@ export function sortWidgetValuesByInputOrder(
   }
 
   // Then add any remaining values not in input_order
-  for (const [name, value] of valueMap.entries()) {
+  for (const [name, value] of valueMap.entries())
     if (!usedNames.has(name)) reordered.push(value)
-  }
 
   // If there are extra values not in the map, append them
   if (widgetValues.length > currentWidgetOrder.length) {

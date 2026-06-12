@@ -1008,13 +1008,9 @@ export class LGraphNode
     const { inputs, outputs } = data
 
     // remove links
-    if (inputs) {
-      for (const input of inputs) input.link = null
-    }
+    if (inputs) for (const input of inputs) input.link = null
 
-    if (outputs) {
-      for (const { links } of outputs) if (links) links.length = 0
-    }
+    if (outputs) for (const { links } of outputs) if (links) links.length = 0
 
     // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
     data.id = undefined
@@ -2283,9 +2279,9 @@ export class LGraphNode
     const { inputs } = this
     if (!inputs) return -1
 
-    for (const [i, input] of inputs.entries()) {
+    for (const [i, input] of inputs.entries())
       if (name == input.name) return !returnObj ? i : input
-    }
+
     return -1
   }
 
@@ -2307,9 +2303,9 @@ export class LGraphNode
     const { outputs } = this
     if (!outputs) return -1
 
-    for (const [i, output] of outputs.entries()) {
+    for (const [i, output] of outputs.entries())
       if (name == output.name) return !returnObj ? i : output
-    }
+
     return -1
   }
 
@@ -3060,9 +3056,8 @@ export class LGraphNode
     if (!output) return false
 
     if (output._floatingLinks) {
-      for (const link of output._floatingLinks) {
+      for (const link of output._floatingLinks)
         if (link.hasOrigin(this.id, slot)) this.graph?.removeFloatingLink(link)
-      }
     }
 
     if (!output.links || output.links.length == 0) return false
@@ -3212,9 +3207,8 @@ export class LGraphNode
     if (!graph) throw new NullGraphError()
 
     // Break floating links
-    if (input._floatingLinks?.size) {
+    if (input._floatingLinks?.size)
       for (const link of input._floatingLinks) graph.removeFloatingLink(link)
-    }
 
     const link_id = this.inputs[slot].link
     if (link_id != null) {
@@ -3750,9 +3744,9 @@ export class LGraphNode
       if (this.title_buttons?.length > 0) {
         let buttonsWidth = 0
         const savedFont = ctx.font // Save current font
-        for (const button of this.title_buttons) {
+        for (const button of this.title_buttons)
           if (button.visible) buttonsWidth += button.getWidth(ctx) + 2 // button width + gap
-        }
+
         ctx.font = savedFont // Restore font after button measurements
         if (buttonsWidth > 0) {
           buttonsWidth -= 20 // Reduce by empty padding

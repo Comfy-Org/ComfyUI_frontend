@@ -3503,11 +3503,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const deltaX = delta[0] / this.ds.scale
         const deltaY = delta[1] / this.ds.scale
 
-        if (LiteGraph.vueNodesMode) {
+        if (LiteGraph.vueNodesMode)
           this.moveChildNodesInGroupVueMode(allItems, deltaX, deltaY)
-        } else {
-          for (const item of allItems) item.move(deltaX, deltaY, true)
-        }
+        else for (const item of allItems) item.move(deltaX, deltaY, true)
 
         this._dirty()
       }
@@ -3594,11 +3592,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const selected = this.selectedItems
         const allItems = getAllNestedItems(selected)
 
-        if (LiteGraph.vueNodesMode) {
+        if (LiteGraph.vueNodesMode)
           this.moveChildNodesInGroupVueMode(allItems, panX, panY)
-        } else {
-          for (const item of allItems) item.move(panX, panY, true)
-        }
+        else for (const item of allItems) item.move(panX, panY, true)
 
         this._dirty()
       }
@@ -4002,9 +3998,9 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Add unique subgraph entries
     // NOTE: subgraphs is appended to mid iteration.
     for (const subgraph of subgraphs) {
-      for (const node of subgraph.nodes) {
+      for (const node of subgraph.nodes)
         if (node instanceof SubgraphNode) subgraphs.add(node.subgraph)
-      }
+
       const cloned = subgraph.clone(true).asSerialisable()
       serialisable.subgraphs.push(cloned)
     }
@@ -7553,9 +7549,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       if (that.onSearchBox) {
         const list = that.onSearchBox(helper, str, graphcanvas)
-        if (list) {
-          for (const item of list) addResult(item)
-        }
+        if (list) for (const item of list) addResult(item)
       } else {
         let c = 0
         str = str.toLowerCase()
@@ -8811,9 +8805,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const nodesInGroups = new Set<LGraphNode>()
     for (const item of items) {
       if (item instanceof LGraphGroup) {
-        for (const child of item._children) {
+        for (const child of item._children)
           if (child instanceof LGraphNode) nodesInGroups.add(child)
-        }
       }
     }
     return nodesInGroups

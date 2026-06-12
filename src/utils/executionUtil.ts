@@ -34,9 +34,8 @@ export const graphToPrompt = async (
     const innerNodes = node.getInnerNodes
       ? node.getInnerNodes(new Map())
       : [node]
-    for (const innerNode of innerNodes) {
+    for (const innerNode of innerNodes)
       if (innerNode.isVirtualNode) innerNode.applyToGraph?.()
-    }
   }
 
   const workflow = graph.serialize({ sortNodes })

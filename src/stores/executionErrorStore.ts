@@ -330,9 +330,9 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    */
   const errorAncestorExecutionIds = computed<Set<NodeExecutionId>>(() => {
     const ids = new Set<NodeExecutionId>()
-    for (const executionId of allErrorExecutionIds.value) {
+    for (const executionId of allErrorExecutionIds.value)
       for (const id of getAncestorExecutionIds(executionId)) ids.add(id)
-    }
+
     return ids
   })
 

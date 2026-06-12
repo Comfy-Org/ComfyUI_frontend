@@ -343,9 +343,8 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
   // correctly filter dev-only nodes from the right-click context menu
   watchEffect(() => {
     const devModeEnabled = showDevOnly.value
-    for (const nodeType of Object.values(LiteGraph.registered_node_types)) {
+    for (const nodeType of Object.values(LiteGraph.registered_node_types))
       if (nodeType.nodeData?.dev_only) nodeType.skip_list = !devModeEnabled
-    }
   })
 
   const nodeDefs = computed(() => {

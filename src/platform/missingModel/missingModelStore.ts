@@ -59,9 +59,9 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   const missingModelAncestorExecutionIds = computed<Set<NodeExecutionId>>(
     () => {
       const ids = new Set<NodeExecutionId>()
-      for (const nodeId of missingModelNodeIds.value) {
+      for (const nodeId of missingModelNodeIds.value)
         for (const id of getAncestorExecutionIds(nodeId)) ids.add(id)
-      }
+
       return ids
     }
   )

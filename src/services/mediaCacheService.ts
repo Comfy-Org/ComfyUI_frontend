@@ -173,9 +173,9 @@ class MediaCacheService {
 
   clearCache() {
     // Revoke all object URLs
-    for (const entry of Array.from(this.cache.values())) {
+    for (const entry of Array.from(this.cache.values()))
       if (entry.objectUrl) URL.revokeObjectURL(entry.objectUrl)
-    }
+
     this.cache.clear()
     this.urlRefCount.clear()
   }

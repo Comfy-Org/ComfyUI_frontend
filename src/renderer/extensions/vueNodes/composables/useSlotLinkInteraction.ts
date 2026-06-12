@@ -63,9 +63,8 @@ function createPointerSession(): PointerSession {
   }
 
   const register = (...newStops: Array<Fn | null | undefined>) => {
-    for (const stop of newStops) {
+    for (const stop of newStops)
       if (typeof stop === 'function') stops.push(stop)
-    }
   }
 
   const matches = (event: PointerEvent) =>

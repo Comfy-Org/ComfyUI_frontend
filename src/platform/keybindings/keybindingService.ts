@@ -44,9 +44,8 @@ export function useKeybindingService() {
         !event.ctrlKey &&
         !event.altKey &&
         !event.metaKey
-      ) {
+      )
         if (dialogStore.dialogStack.length > 0) return
-      }
 
       event.preventDefault()
       const runCommandIds = new Set([

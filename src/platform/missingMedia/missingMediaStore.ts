@@ -38,9 +38,9 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
   const missingMediaAncestorExecutionIds = computed<Set<NodeExecutionId>>(
     () => {
       const ids = new Set<NodeExecutionId>()
-      for (const nodeId of missingMediaNodeIds.value) {
+      for (const nodeId of missingMediaNodeIds.value)
         for (const id of getAncestorExecutionIds(nodeId)) ids.add(id)
-      }
+
       return ids
     }
   )

@@ -259,9 +259,8 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  for (const image of formData.value.exampleImages) {
+  for (const image of formData.value.exampleImages)
     if (image.file) URL.revokeObjectURL(image.url)
-  }
 })
 
 provide(OnCloseKey, onClose)

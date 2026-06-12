@@ -93,9 +93,8 @@ const updateWidgets = () => {
     }
   }
 
-  for (const widgetId of overrideTransitionGrace) {
+  for (const widgetId of overrideTransitionGrace)
     if (!seenWidgetIds.has(widgetId)) overrideTransitionGrace.delete(widgetId)
-  }
 }
 
 const canvasStore = useCanvasStore()

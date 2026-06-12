@@ -92,9 +92,8 @@ export function useNodeCustomization() {
         ? null
         : LGraphCanvas.node_colors[colorName]
 
-    for (const item of canvasStore.selectedItems) {
+    for (const item of canvasStore.selectedItems)
       if (isColorable(item)) item.setColorOption(canvasColorOption)
-    }
 
     canvasRefresh.refreshCanvas()
   }

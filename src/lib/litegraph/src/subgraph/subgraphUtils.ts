@@ -435,9 +435,8 @@ export function mapSubgraphOutputsAndLinks(
 export function getDirectSubgraphIds(graph: GraphOrSubgraph): Set<SubgraphId> {
   const subgraphIds = new Set<SubgraphId>()
 
-  for (const node of graph._nodes) {
+  for (const node of graph._nodes)
     if (node.isSubgraphNode()) subgraphIds.add(node.type)
-  }
 
   return subgraphIds
 }
@@ -479,9 +478,8 @@ function* indexedLinks<S>(
   slots: readonly S[],
   resolve: (slot: S) => Iterable<LLink | undefined>
 ): Generator<readonly [number, LLink]> {
-  for (const [index, slot] of slots.entries()) {
+  for (const [index, slot] of slots.entries())
     for (const link of resolve(slot)) if (link) yield [index, link] as const
-  }
 }
 
 export function reorderSubgraphInputs(

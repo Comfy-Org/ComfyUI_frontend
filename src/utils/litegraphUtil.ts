@@ -166,9 +166,8 @@ export function executeWidgetsCallback(
   callbackName: 'onRemove' | 'beforeQueued' | 'afterQueued',
   options?: WidgetCallbackOptions
 ) {
-  for (const node of nodes) {
+  for (const node of nodes)
     for (const widget of node.widgets ?? []) widget[callbackName]?.(options)
-  }
 }
 
 /**

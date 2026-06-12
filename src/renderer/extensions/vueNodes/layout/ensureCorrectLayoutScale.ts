@@ -116,9 +116,8 @@ export function ensureCorrectLayoutScale(
     for (const ioNode of [
       graph.inputNode as SubgraphInputNode,
       graph.outputNode as SubgraphOutputNode
-    ]) {
+    ])
       if (ioNode) unprojectPosSize(ioNode, anchor, graph)
-    }
   }
 
   graph.extra.workflowRendererVersion = 'Vue-corrected'

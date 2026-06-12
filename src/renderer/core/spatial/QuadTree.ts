@@ -61,11 +61,9 @@ class QuadNode<T> {
     if (!this.divided && this.depth < this.maxDepth) this.subdivide()
 
     // If divided, insert into children
-    if (this.divided && this.children) {
-      for (const child of this.children) {
-        if (child.insert(item)) return true
-      }
-    }
+    if (this.divided && this.children) 
+      for (const child of this.children) if (child.insert(item)) return true
+    
 
     // If we can't subdivide further, add to this node anyway
     this.items.push(item)
@@ -79,11 +77,9 @@ class QuadNode<T> {
       return true
     }
 
-    if (this.divided && this.children) {
-      for (const child of this.children) {
-        if (child.remove(item)) return true
-      }
-    }
+    if (this.divided && this.children) 
+      for (const child of this.children) if (child.remove(item)) return true
+    
 
     return false
   }
@@ -96,14 +92,12 @@ class QuadNode<T> {
     if (!this.intersects(searchBounds)) return found
 
     // Add items in this node that intersect with search bounds
-    for (const item of this.items) {
+    for (const item of this.items)
       if (this.boundsIntersect(item.bounds, searchBounds)) found.push(item)
-    }
 
     // Recursively search children
-    if (this.divided && this.children) {
+    if (this.divided && this.children)
       for (const child of this.children) child.query(searchBounds, found)
-    }
 
     return found
   }

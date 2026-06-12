@@ -63,8 +63,8 @@ export function filterWidgetProps<T extends object>(
   if (!props) return {}
 
   const filtered: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(props)) {
+  for (const [key, value] of Object.entries(props))
     if (!excludeList.includes(key)) filtered[key] = value
-  }
+
   return filtered as Partial<T>
 }

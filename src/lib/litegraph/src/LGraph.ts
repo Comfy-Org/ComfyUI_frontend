@@ -631,9 +631,8 @@ export class LGraph
   updateExecutionOrder(): void {
     this._nodes_in_order = this.computeExecutionOrder(false)
     this._nodes_executable = []
-    for (const node of this._nodes_in_order) {
+    for (const node of this._nodes_in_order)
       if (node.onExecute) this._nodes_executable.push(node)
-    }
   }
 
   // This is more internal, it computes the executable nodes in order and returns it
@@ -657,11 +656,9 @@ export class LGraph
 
       // num of input connections
       let num = 0
-      if (node.inputs) {
-        for (const input of node.inputs) {
-          if (input?.link != null) num += 1
-        }
-      }
+      if (node.inputs) 
+        for (const input of node.inputs) if (input?.link != null) num += 1
+      
 
       if (num == 0) {
         // is a starting node
@@ -2456,9 +2453,8 @@ export class LGraph
       }
 
       // Reroutes
-      if (Array.isArray(reroutes)) {
+      if (Array.isArray(reroutes))
         for (const rerouteData of reroutes) this.setReroute(rerouteData)
-      }
 
       const nodesData = data.nodes
 

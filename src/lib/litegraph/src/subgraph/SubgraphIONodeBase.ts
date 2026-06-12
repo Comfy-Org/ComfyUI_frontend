@@ -161,9 +161,8 @@ export abstract class SubgraphIONodeBase<
    * @returns The slot at the given position, otherwise `undefined`.
    */
   getSlotInPosition(x: number, y: number): TSlot | undefined {
-    for (const slot of this.allSlots) {
+    for (const slot of this.allSlots)
       if (slot.boundingRect.containsXy(x, y)) return slot
-    }
   }
 
   /**

@@ -144,9 +144,8 @@ class Load3dService {
   getNodeByLoad3d(load3d: Load3d): LGraphNode | null {
     const map = getNodeToLoad3dMapSync()
     if (!map) return null
-    for (const [node, instance] of map) {
-      if (instance === load3d) return node
-    }
+    for (const [node, instance] of map) if (instance === load3d) return node
+
     return null
   }
 

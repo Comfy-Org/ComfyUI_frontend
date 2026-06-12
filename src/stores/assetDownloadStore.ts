@@ -77,9 +77,8 @@ export const useAssetDownloadStore = defineStore('assetDownload', () => {
   }
 
   function acknowledgeAsset(assetId: string) {
-    for (const download of downloads.value.values()) {
+    for (const download of downloads.value.values())
       if (download.assetId === assetId) download.acknowledged = true
-    }
   }
 
   function trackDownload(taskId: TaskId, modelType: string, assetName: string) {

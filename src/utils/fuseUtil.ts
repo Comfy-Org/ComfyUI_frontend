@@ -41,9 +41,9 @@ export class FuseFilter<T, O = string> {
 
   public getAllNodeOptions(data: T[]): O[] {
     const options = new Set<O>()
-    for (const item of data) {
+    for (const item of data)
       for (const option of this.getItemOptions(item)) options.add(option)
-    }
+
     return Array.from(options)
   }
 
@@ -203,9 +203,9 @@ export class FuseSearch<T> {
   }
 
   public compareAux(a: SearchAuxScore, b: SearchAuxScore) {
-    for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    for (let i = 0; i < Math.min(a.length, b.length); i++)
       if (a[i] !== b[i]) return a[i] - b[i]
-    }
+
     return a.length - b.length
   }
 }

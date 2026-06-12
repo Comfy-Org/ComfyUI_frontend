@@ -119,9 +119,8 @@ export function useAssetSelection() {
     const visibleIds = new Set(assets.map((asset) => asset.id))
     const nextSelectedIds: string[] = []
 
-    for (const id of selectionStore.selectedAssetIds) {
+    for (const id of selectionStore.selectedAssetIds)
       if (visibleIds.has(id)) nextSelectedIds.push(id)
-    }
 
     if (nextSelectedIds.length === selectionStore.selectedAssetIds.size) {
       syncAnchorFromAssets(assets)

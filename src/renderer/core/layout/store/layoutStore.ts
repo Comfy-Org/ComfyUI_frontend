@@ -395,9 +395,8 @@ class LayoutStoreImpl implements LayoutStore {
     // Sort by zIndex (top to bottom)
     nodes.sort(([, a], [, b]) => b.zIndex - a.zIndex)
 
-    for (const [nodeId, layout] of nodes) {
+    for (const [nodeId, layout] of nodes)
       if (pointInBounds(point, layout.bounds)) return nodeId
-    }
 
     return null
   }
@@ -438,9 +437,9 @@ class LayoutStoreImpl implements LayoutStore {
     if (deleted) {
       // Clean up any segment layouts for this link
       const keysToDelete: string[] = []
-      for (const [key] of this.linkSegmentLayouts) {
+      for (const [key] of this.linkSegmentLayouts)
         if (key.startsWith(`${linkId}:`)) keysToDelete.push(key)
-      }
+
       for (const key of keysToDelete) {
         this.linkSegmentLayouts.delete(key)
         this.linkSegmentSpatialIndex.remove(key)
@@ -1305,9 +1304,8 @@ class LayoutStoreImpl implements LayoutStore {
    */
   private cleanupLinkSegments(linkId: LinkId): void {
     const keysToDelete: string[] = []
-    for (const [key] of this.linkSegmentLayouts) {
+    for (const [key] of this.linkSegmentLayouts)
       if (key.startsWith(`${linkId}:`)) keysToDelete.push(key)
-    }
 
     for (const key of keysToDelete) {
       this.linkSegmentLayouts.delete(key)

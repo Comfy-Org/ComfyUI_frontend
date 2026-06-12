@@ -174,9 +174,8 @@ export class SubgraphInputNode
     const { subgraph } = this
 
     // Break floating links
-    if (input._floatingLinks?.size) {
+    if (input._floatingLinks?.size)
       for (const link of input._floatingLinks) subgraph.removeFloatingLink(link)
-    }
 
     input.link = null
     subgraph.setDirtyCanvas(false, true)

@@ -29,9 +29,9 @@ export const useRefreshableSelection = () => {
     selectedNodes.value.flatMap((node) => {
       if (!node.widgets) return []
       const items: RefreshableItem[] = []
-      for (const widget of node.widgets) {
+      for (const widget of node.widgets)
         if (isRefreshableWidget(widget)) items.push(widget)
-      }
+
       return items
     })
   )

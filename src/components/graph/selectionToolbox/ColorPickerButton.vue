@@ -116,9 +116,8 @@ const applyColor = (colorOption: ColorOption | null) => {
       ? null
       : LGraphCanvas.node_colors[colorName]
 
-  for (const item of canvasStore.selectedItems) {
+  for (const item of canvasStore.selectedItems)
     if (isColorable(item)) item.setColorOption(canvasColorOption)
-  }
 
   canvasStore.canvas?.setDirty(true, true)
   currentColorOption.value = canvasColorOption

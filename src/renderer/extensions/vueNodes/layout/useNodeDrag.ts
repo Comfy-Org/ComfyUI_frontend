@@ -121,9 +121,9 @@ function useNodeDragIndividual() {
             pos.y += panY
           }
         }
-        if (selectedGroups) {
+        if (selectedGroups)
           for (const group of selectedGroups) group.move(panX, panY, true)
-        }
+
         updateNodePositions(nodeId)
       }
     })

@@ -32,9 +32,8 @@ export function useSelectedLiteGraphItems() {
     items: Set<Positionable>
   ): Set<Positionable> => {
     const result = new Set<Positionable>()
-    for (const item of items) {
-      if (!isIgnoredItem(item)) result.add(item)
-    }
+    for (const item of items) if (!isIgnoredItem(item)) result.add(item)
+
     return result
   }
 
