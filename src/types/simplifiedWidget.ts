@@ -24,11 +24,11 @@ export const CONTROL_OPTIONS = [
 ] as const
 export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
 
-function isControlOption(val: WidgetValue): val is ControlOptions {
+function isControlOption(val: unknown): val is ControlOptions {
   return CONTROL_OPTIONS.includes(val as ControlOptions)
 }
 
-export function normalizeControlOption(val: WidgetValue): ControlOptions {
+export function normalizeControlOption(val: unknown): ControlOptions {
   if (isControlOption(val)) return val
   return 'randomize'
 }

@@ -36,8 +36,10 @@ import type {
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-import { syncWidgetControl } from '@/core/graph/widgets/control/syncWidgetControl'
+import { promoteWidgetControl } from '@/core/graph/widgets/control/promoteWidgetControl'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
+import type { PromotedControl } from '@/core/schemas/promotedControlSchema'
+import { parsePromotedControls } from '@/core/schemas/promotedControlSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -138,13 +140,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
           const widget = inputNode.getWidgetFromSlot(input)
           if (widget)
-            this._setWidget(
-              subgraphInput,
-              existingInput,
-              inputNode,
-              widget,
-              input.widget
-            )
+            this._setWidget(subgraphInput, existingInput, widget, input.widget)
           return
         }
         const input = this.addInput(name, type, {
@@ -334,7 +330,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         this._setWidget(
           subgraphInput,
           input,
-          e.detail.node,
           e.detail.widget,
           e.detail.input.widget
         )
@@ -494,6 +489,24 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       }
       valueIndex += 1
     }
+    this._applyPromotedControlValues()
+  }
+
+  private _applyPromotedControlValues(): void {
+    const store = useWidgetValueStore()
+    for (const entry of parsePromotedControls(
+      this.properties.promotedControls
+    )) {
+      const input = this.inputs.find((input) => input.name === entry.name)
+      const control = input?.widgetId
+        ? store.getWidgetControl(input.widgetId)
+        : undefined
+      if (!control) continue
+      if (entry.mode !== undefined)
+        store.setValue(control.controlWidgetId, entry.mode)
+      if (entry.filter !== undefined && control.filterWidgetId)
+        store.setValue(control.filterWidgetId, entry.filter)
+    }
   }
 
   private _readQuarantineHostValuesByName(): Map<string, TWidgetValue> {
@@ -602,13 +615,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
       const widget = inputNode.getWidgetFromSlot(targetInput)
       if (widget) {
-        this._setWidget(
-          subgraphInput,
-          input,
-          inputNode,
-          widget,
-          targetInput.widget
-        )
+        this._setWidget(subgraphInput, input, widget, targetInput.widget)
         break
       }
 
@@ -617,13 +624,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       // still receives widget state and a widgetId.
       const nested = this._resolveNestedPromotedSource(inputNode, targetInput)
       if (nested) {
-        this._setWidget(
-          subgraphInput,
-          input,
-          nested.node,
-          nested.widget,
-          targetInput.widget
-        )
+        this._setWidget(subgraphInput, input, nested.widget, targetInput.widget)
         break
       }
     }
@@ -649,7 +650,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
-    interiorNode: Readonly<LGraphNode>,
     interiorWidget: Readonly<IBaseWidget>,
     inputWidget: IWidgetLocator | undefined
   ) {
@@ -676,12 +676,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           ? interiorWidget.isDOMWidget
           : undefined
     })
-    syncWidgetControl(
-      id,
-      this.rootGraph.id,
-      interiorNode.id,
-      interiorWidget.linkedWidgets
-    )
+    promoteWidgetControl(id, interiorWidget)
     input._widget =
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)
@@ -908,6 +903,26 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     ctx.restore()
   }
 
+  private _serializePromotedControls(): PromotedControl[] {
+    const store = useWidgetValueStore()
+    return this.inputs.flatMap((input) => {
+      if (!input.widgetId) return []
+      const control = store.getWidgetControl(input.widgetId)
+      if (!control) return []
+      const mode = store.getWidget(control.controlWidgetId)?.value
+      const filter = control.filterWidgetId
+        ? store.getWidget(control.filterWidgetId)?.value
+        : undefined
+      return [
+        {
+          name: input.name,
+          ...(typeof mode === 'string' && { mode }),
+          ...(typeof filter === 'string' && { filter })
+        }
+      ]
+    })
+  }
+
   override serialize(): ISerialisedNode {
     const serialized = super.serialize()
     const serializedProperties = { ...(serialized.properties ?? {}) }
@@ -931,6 +946,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       serializedProperties.proxyWidgetErrorQuarantine = quarantine.map(
         (entry) => ({ ...entry })
       )
+    }
+
+    const promotedControls = this._serializePromotedControls()
+    if (promotedControls.length) {
+      serializedProperties.promotedControls = promotedControls
+    } else {
+      delete serializedProperties.promotedControls
     }
 
     serialized.properties = serializedProperties

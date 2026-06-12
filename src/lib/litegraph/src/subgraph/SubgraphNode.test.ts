@@ -17,6 +17,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraphInstance } from '@/lib/litegraph/src/types/serialisation'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/control/controlWidgetMarker'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
@@ -1162,5 +1163,66 @@ describe('SubgraphNode label propagation', () => {
 
     expect(subgraphNode.inputs[0].localized_name).toBe('ステップ')
     expect(subgraphNode.outputs[0].localized_name).toBe('結果')
+  })
+})
+
+describe('SubgraphNode promoted widget control', () => {
+  function promoteControllableSeed() {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'seed', type: 'number' }]
+    })
+    const interiorNode = new LGraphNode('Interior')
+    const input = interiorNode.addInput('seed', 'number')
+    input.widget = { name: 'seed' }
+    interiorNode.addOutput('out', 'number')
+    const seed = interiorNode.addWidget('number', 'seed', 1, () => {})
+    seed.linkedWidgets = [
+      {
+        name: 'control_after_generate',
+        type: 'combo',
+        value: 'randomize',
+        options: { values: ['fixed', 'increment', 'randomize'] },
+        [IS_CONTROL_WIDGET]: true
+      } as unknown as NonNullable<typeof seed.linkedWidgets>[number]
+    ]
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+    return { subgraph, subgraphNode: createTestSubgraphNode(subgraph) }
+  }
+
+  it('mints an independent host control component on promotion', () => {
+    const { subgraphNode } = promoteControllableSeed()
+    const store = useWidgetValueStore()
+    const hostId = subgraphNode.inputs[0].widgetId
+    if (!hostId) throw new Error('Missing widgetId')
+
+    const control = store.getWidgetControl(hostId)
+    expect(control).toBeDefined()
+    expect(store.getWidget(control!.controlWidgetId)?.value).toBe('randomize')
+  })
+
+  it('round-trips the host control mode through serialize/configure', () => {
+    const { subgraph, subgraphNode } = promoteControllableSeed()
+    const store = useWidgetValueStore()
+    const control = store.getWidgetControl(subgraphNode.inputs[0].widgetId!)!
+    store.setValue(control.controlWidgetId, 'fixed')
+
+    const serialized = subgraphNode.serialize()
+    expect(serialized.properties?.promotedControls).toEqual([
+      { name: 'seed', mode: 'fixed' }
+    ])
+
+    const reloaded = new SubgraphNode(
+      subgraph.rootGraph,
+      subgraph,
+      serialized as ExportedSubgraphInstance
+    )
+    const reloadedControl = store.getWidgetControl(
+      reloaded.inputs[0].widgetId!
+    )!
+    expect(store.getWidget(reloadedControl.controlWidgetId)?.value).toBe(
+      'fixed'
+    )
   })
 })

@@ -99,6 +99,13 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return [...getGraphWidgetControls(graphId).entries()]
   }
 
+  function getWidgetControl(
+    targetId: WidgetId
+  ): WidgetControlState | undefined {
+    const { graphId } = parseWidgetId(targetId)
+    return getGraphWidgetControls(graphId).get(targetId)
+  }
+
   function deleteWidgetControl(targetId: WidgetId): boolean {
     const { graphId } = parseWidgetId(targetId)
     return getGraphWidgetControls(graphId).delete(targetId)
@@ -122,6 +129,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     deleteWidget,
     registerWidgetControl,
     getWidgetControls,
+    getWidgetControl,
     deleteWidgetControl,
     getNodeWidgets,
     clearGraph

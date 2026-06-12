@@ -24,7 +24,6 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
-import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
@@ -146,11 +145,17 @@ export interface GraphNodeManager {
 export function getControlWidget(
   widget: IBaseWidget
 ): SafeControlWidget | undefined {
-  const cagWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
-  if (!cagWidget) return
+  const targetId = widget.widgetId
+  if (!targetId) return
+  const store = useWidgetValueStore()
+  const control = store.getWidgetControl(targetId)
+  if (!control) return
   return {
-    value: normalizeControlOption(cagWidget.value),
-    update: (value) => (cagWidget.value = normalizeControlOption(value))
+    value: normalizeControlOption(
+      store.getWidget(control.controlWidgetId)?.value
+    ),
+    update: (value) =>
+      store.setValue(control.controlWidgetId, normalizeControlOption(value))
   }
 }
 
@@ -223,7 +228,6 @@ function isDOMBackedWidget(widget: IBaseWidget): boolean {
 }
 
 interface PromotedWidgetMetadata {
-  controlWidget?: SafeControlWidget
   isDOMWidget: boolean
   sourceExecutionId?: string
   sourceWidgetName?: string
@@ -257,7 +261,6 @@ function resolvePromotedMetadata(
   ensurePromotedHostWidgetState(input.widgetId, input, sourceWidget)
 
   return {
-    controlWidget: sourceWidget ? getControlWidget(sourceWidget) : undefined,
     isDOMWidget: sourceWidget ? isDOMBackedWidget(sourceWidget) : false,
     sourceExecutionId:
       sourceNode && app.rootGraph
@@ -301,9 +304,6 @@ function safeWidgetMapper(
         name: widget.name,
         type: widget.type,
         ...getSharedWidgetEnhancements(node, widget),
-        ...(promoted?.controlWidget && {
-          controlWidget: promoted.controlWidget
-        }),
         callback,
         hasLayoutSize: typeof widget.computeLayoutSize === 'function',
         isDOMWidget: promoted?.isDOMWidget ?? isDOMWidget(widget),
