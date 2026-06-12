@@ -20,6 +20,14 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
   })
 }))
 
+const transformState = vi.hoisted(() => ({ camera: { x: 0, y: 0, z: 1 } }))
+
+vi.mock('@/renderer/core/layout/transform/useTransformState', async () => {
+  const { reactive } = await import('vue')
+  transformState.camera = reactive(transformState.camera)
+  return { useTransformState: () => ({ camera: transformState.camera }) }
+})
+
 const MockFormDropdownMenu = {
   name: 'FormDropdownMenu',
   props: [
@@ -71,6 +79,7 @@ interface MountDropdownOptions {
   multiple?: boolean | number
   searchQuery?: string
   onUpdateSelected?: (selected: Set<string>) => void
+  onUpdateIsOpen?: (isOpen: boolean) => void
 }
 
 function flushPromises() {
@@ -88,7 +97,8 @@ function mountDropdown(
       multiple: options.multiple,
       searcher: options.searcher,
       searchQuery: options.searchQuery,
-      'onUpdate:selected': options.onUpdateSelected
+      'onUpdate:selected': options.onUpdateSelected,
+      'onUpdate:isOpen': options.onUpdateIsOpen
     },
     global: {
       plugins: [PrimeVue, i18n],
@@ -360,6 +370,54 @@ describe('FormDropdown', () => {
 
     expect(searcher).toHaveBeenCalledWith('alp', items, expect.any(Function))
     expect(onUpdateSelected).not.toHaveBeenCalled()
+  })
+
+  it('closes on a pointerdown outside the menu and trigger', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const { user } = mountDropdown([createItem('1', 'alpha')], {
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+
+    const outside = document.createElement('div')
+    document.body.appendChild(outside)
+    outside.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await flushPromises()
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
+    outside.remove()
+  })
+
+  it('stays open on a pointerdown inside the menu', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const { user } = mountDropdown([createItem('1', 'alpha')], {
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    screen
+      .getByTestId('dropdown-menu')
+      .dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
+    await flushPromises()
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+  })
+
+  it('closes when the canvas viewport moves', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const { user } = mountDropdown([createItem('1', 'alpha')], {
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+
+    transformState.camera.x += 25
+    await flushPromises()
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
   })
 
   it('does not select a search result from multi-select dropdowns', async () => {

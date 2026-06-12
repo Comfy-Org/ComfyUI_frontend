@@ -1,10 +1,17 @@
 <script setup lang="ts">
-import { computedAsync, refDebounced } from '@vueuse/core'
+import {
+  computedAsync,
+  refDebounced,
+  unrefElement,
+  useEventListener
+} from '@vueuse/core'
 import Popover from 'primevue/popover'
-import { computed, ref, useTemplateRef } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
 import type {
   FilterOption,
@@ -95,6 +102,7 @@ const isOpen = defineModel<boolean>('isOpen', { default: false })
 const toastStore = useToastStore()
 const popoverRef = ref<InstanceType<typeof Popover>>()
 const triggerAnchorRef = useTemplateRef<HTMLElement>('triggerAnchorRef')
+const menuRef = useTemplateRef<ComponentPublicInstance>('menuRef')
 const triggerRef =
   useTemplateRef<InstanceType<typeof FormDropdownInput>>('triggerRef')
 const displayedSearchQuery = ref('')
@@ -197,6 +205,40 @@ const closeDropdown = ({ restoreFocus = false } = {}) => {
   if (restoreFocus) focusTrigger()
 }
 
+/**
+ * Dismiss on `pointerdown` rather than PrimeVue's default `click` (mouseup) so
+ * the dropdown closes the instant the press lands. Closing on mouseup let a
+ * press-and-drag start before dismissal, leaving the body-teleported popover
+ * stranded while its node moved, and made a focused inner scrollbar swallow the
+ * first outside click. The trigger is excluded so its own click still toggles.
+ */
+useEventListener(
+  window,
+  'pointerdown',
+  (event) => {
+    if (!isOpen.value) return
+    const menuEl = unrefElement(menuRef)
+    const triggerEl = triggerAnchorRef.value
+    const path = event.composedPath()
+    if (menuEl && path.includes(menuEl)) return
+    if (triggerEl && path.includes(triggerEl)) return
+    closeDropdown()
+  },
+  { capture: true }
+)
+
+const { camera } = useTransformState()
+
+/**
+ * The popover is teleported to the document body, so it cannot follow the
+ * canvas viewport. Close it whenever the viewport moves — pan or zoom from
+ * any input device (pointer drag, trackpad, wheel) — rather than inferring
+ * a drag from low-level pointer events.
+ */
+watch(camera, () => {
+  if (isOpen.value) closeDropdown()
+})
+
 function handleFileChange(event: Event) {
   if (disabled) return
   const target = event.target
@@ -282,7 +324,7 @@ function handleSearchEnter() {
     />
     <Popover
       ref="popoverRef"
-      :dismissable="true"
+      :dismissable="false"
       :close-on-escape="true"
       unstyled
       :pt="{
@@ -296,6 +338,7 @@ function handleSearchEnter() {
       @hide="isOpen = false"
     >
       <FormDropdownMenu
+        ref="menuRef"
         v-model:filter-selected="filterSelected"
         v-model:layout-mode="layoutMode"
         v-model:sort-selected="sortSelected"
