@@ -30,7 +30,7 @@ type FirebaseRuntimeConfig = {
  * be tweaked without a frontend release. Field types map 1:1 to a component
  * in our internal UI library — see `DynamicSurveyField.vue`.
  */
-export type OnboardingSurveyFieldType = 'single' | 'multi' | 'text'
+type OnboardingSurveyFieldType = 'single' | 'multi' | 'text'
 
 /**
  * A translatable string. Either:
@@ -103,5 +103,6 @@ export type RemoteConfig = {
   workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
+  unified_cloud_auth?: boolean
   sentry_dsn?: string
 }

@@ -131,7 +131,8 @@ const queueModeMenuItemLookup = computed<Record<string, QueueModeMenuItem>>(
         tooltip: t('menu.onChangeTooltip'),
         command: () => {
           useTelemetry()?.trackUiButtonClicked({
-            button_id: 'queue_mode_option_run_on_change_selected'
+            button_id: 'queue_mode_option_run_on_change_selected',
+            element_group: 'queue'
           })
           queueMode.value = 'change'
         }
@@ -145,7 +146,8 @@ const queueModeMenuItemLookup = computed<Record<string, QueueModeMenuItem>>(
         tooltip: t('menu.instantTooltip'),
         command: () => {
           useTelemetry()?.trackUiButtonClicked({
-            button_id: 'queue_mode_option_run_instant_selected'
+            button_id: 'queue_mode_option_run_instant_selected',
+            element_group: 'queue'
           })
           queueMode.value = 'instant-idle'
         }
@@ -237,7 +239,8 @@ const queuePrompt = async (e: Event) => {
 
   if (batchCount.value > 1) {
     useTelemetry()?.trackUiButtonClicked({
-      button_id: 'queue_run_multiple_batches_submitted'
+      button_id: 'queue_run_multiple_batches_submitted',
+      element_group: 'queue'
     })
   }
 

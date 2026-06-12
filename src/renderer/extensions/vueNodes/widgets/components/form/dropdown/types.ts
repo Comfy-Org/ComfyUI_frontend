@@ -44,6 +44,7 @@ export interface FormDropdownInputProps {
 export interface FormDropdownMenuItemProps {
   index: number
   selected: boolean
+  candidate?: boolean
   previewUrl: string
   name: string
   label?: string

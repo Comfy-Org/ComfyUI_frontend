@@ -5,6 +5,7 @@ import { useEventListener } from '@vueuse/core'
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   InputWidgetConfig,
   LinearData,
@@ -17,8 +18,28 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { resolveNode } from '@/utils/litegraphUtil'
+import {
+  getWidgetEntityIdForNode,
+  resolveNode,
+  resolveNodeWidget
+} from '@/utils/litegraphUtil'
+import type { WidgetEntityId } from '@/world/entityIds'
+import { isWidgetEntityId, parseWidgetEntityId } from '@/world/entityIds'
+
+function findWidgetByEntityId(
+  rootGraph: LGraph,
+  entityId: WidgetEntityId
+): IBaseWidget | undefined {
+  for (const node of rootGraph.nodes) {
+    const widget = node.widgets?.find(
+      (w) => getWidgetEntityIdForNode(node, w) === entityId
+    )
+    if (widget) return widget
+  }
+  return undefined
+}
 
 export function nodeTypeValidForApp(type: string) {
   return !['Note', 'MarkdownNote'].includes(type)
@@ -43,20 +64,90 @@ export const useAppModeStore = defineStore('appMode', () => {
     return !!app.rootGraph?.nodes?.length
   })
 
-  // Prune entries referencing nodes deleted in workflow mode.
-  // Only check node existence, not widgets — dynamic widgets can
-  // hide/show other widgets so a missing widget does not mean stale data.
   function pruneLinearData(data: Partial<LinearData> | undefined): LinearData {
     const rawInputs = data?.inputs ?? []
     const rawOutputs = data?.outputs ?? []
-    if (!app.rootGraph || ChangeTracker.isLoadingGraph) {
+    const rootGraph = app.rootGraph
+    if (!rootGraph) {
       return { inputs: rawInputs, outputs: rawOutputs }
     }
-
     return {
-      inputs: rawInputs.filter(([nodeId]) => resolveNode(nodeId)),
-      outputs: rawOutputs.filter((nodeId) => resolveNode(nodeId))
+      inputs: rawInputs
+        .map((input) => upgradeAndValidateInput(input, rootGraph))
+        .filter((entry): entry is LinearInput => entry !== null),
+      outputs: ChangeTracker.isLoadingGraph
+        ? rawOutputs
+        : rawOutputs.filter((nodeId) => resolveNode(nodeId))
     }
+  }
+
+  function buildEntry(
+    entityId: WidgetEntityId,
+    name: string,
+    config: InputWidgetConfig | undefined
+  ): LinearInput {
+    return config === undefined ? [entityId, name] : [entityId, name, config]
+  }
+
+  function upgradeAndValidateInput(
+    input: LinearInput,
+    rootGraph: NonNullable<typeof app.rootGraph>
+  ): LinearInput | null {
+    const [storedId, widgetName, config] = input
+
+    if (typeof storedId === 'string' && isWidgetEntityId(storedId)) {
+      const widget = findWidgetByEntityId(rootGraph, storedId)
+      if (widget) return buildEntry(storedId, widgetName, config)
+      const { nodeId } = parseWidgetEntityId(storedId)
+      if (rootGraph.getNodeById?.(nodeId)) {
+        return buildEntry(storedId, widgetName, config)
+      }
+      return null
+    }
+
+    if (typeof storedId === 'string' && storedId.includes(':')) {
+      const [, widget] = resolveNodeWidget(storedId, widgetName)
+      if (!widget?.entityId) return null
+      return buildEntry(widget.entityId, widgetName, config)
+    }
+
+    const directNode = rootGraph.getNodeById?.(storedId)
+    const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
+    if (directNode && directWidget) {
+      const derivedId = getWidgetEntityIdForNode(directNode, directWidget)
+      if (derivedId) return buildEntry(derivedId, widgetName, config)
+    }
+
+    const matches: LinearInput[] = rootGraph.nodes.flatMap((node) => {
+      if (!(node instanceof SubgraphNode)) return []
+      return node.inputs.flatMap((inputSlot): LinearInput[] => {
+        const widget = inputSlot._widget
+        if (!widget || !isPromotedWidgetView(widget)) return []
+        if (
+          widget.sourceNodeId !== String(storedId) ||
+          widget.sourceWidgetName !== widgetName
+        ) {
+          return []
+        }
+        return widget.entityId
+          ? [buildEntry(widget.entityId, inputSlot.name, config)]
+          : []
+      })
+    })
+    if (matches.length === 1) return matches[0]
+    if (matches.length > 1) {
+      console.warn(
+        '[appModeStore] dropping ambiguous legacy selectedInput tuple',
+        { storedId, widgetName }
+      )
+      return null
+    }
+
+    console.warn(
+      '[appModeStore] dropping legacy selectedInput tuple — no canonical identity available',
+      { storedId, widgetName }
+    )
+    return null
   }
 
   function loadSelections(data: Partial<LinearData> | undefined) {
@@ -138,7 +229,6 @@ export const useAppModeStore = defineStore('appMode', () => {
       return
     }
 
-    // Prune stale references
     resetSelectedToWorkflow()
 
     useSidebarTabStore().activeSidebarTabId = null
@@ -155,27 +245,24 @@ export const useAppModeStore = defineStore('appMode', () => {
     setMode('graph')
   }
 
-  function removeSelectedInput(widget: IBaseWidget, node: { id: NodeId }) {
-    const storeId = isPromotedWidgetView(widget) ? widget.sourceNodeId : node.id
-    const storeName = isPromotedWidgetView(widget)
-      ? widget.sourceWidgetName
-      : widget.name
+  function removeSelectedInput(widget: IBaseWidget) {
+    const targetEntityId = widget.entityId
+    if (!targetEntityId) return
     const index = selectedInputs.value.findIndex(
-      ([id, name]) => storeId == id && storeName === name
+      ([id]) => id === targetEntityId
     )
     if (index !== -1) selectedInputs.value.splice(index, 1)
   }
 
-  function updateInputConfig(
-    nodeId: NodeId,
-    widgetName: string,
-    config: InputWidgetConfig
-  ) {
-    const entry = selectedInputs.value.find(
-      ([id, name]) => nodeId == id && widgetName === name
+  function updateInputConfig(widget: IBaseWidget, config: InputWidgetConfig) {
+    const targetEntityId = widget.entityId
+    if (!targetEntityId) return
+    const index = selectedInputs.value.findIndex(
+      ([id]) => id === targetEntityId
     )
-    if (!entry) return
-    entry[2] = { ...entry[2], ...config }
+    if (index === -1) return
+    const [id, type, options] = selectedInputs.value[index]
+    selectedInputs.value.splice(index, 1, [id, type, { ...options, ...config }])
   }
 
   return {

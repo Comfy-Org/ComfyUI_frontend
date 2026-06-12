@@ -1,19 +1,15 @@
 import { toString } from 'es-toolkit/compat'
 
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/utils/uuid'
+import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import {
-  makePromotionEntryKey,
-  usePromotionStore
-} from '@/stores/promotionStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
@@ -80,6 +76,7 @@ import type {
   LGraphTriggerHandler,
   LGraphTriggerParam
 } from './types/graphTriggers'
+import { LGraphTriggerActions } from './types/graphTriggers'
 import type {
   ExportedSubgraph,
   ExposedWidget,
@@ -99,6 +96,12 @@ export type {
   LGraphTriggerAction,
   LGraphTriggerParam
 } from './types/graphTriggers'
+
+const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
+
+function isLGraphTriggerAction(action: string): action is LGraphTriggerAction {
+  return validTriggerActions.has(action as LGraphTriggerAction)
+}
 
 export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
 
@@ -185,6 +188,15 @@ export class LGraph
 
   static STATUS_STOPPED = 1
   static STATUS_RUNNING = 2
+
+  /** @internal */
+  static proxyWidgetMigrationFlush?: (
+    hostNode: SubgraphNode,
+    nodeData: ISerialisedNode | undefined
+  ) => void
+
+  /** @internal */
+  static autoExposePreviewNodes?: (hostNode: SubgraphNode) => void
 
   /** List of LGraph properties that are manually handled by {@link LGraph.configure}. */
   static readonly ConfigureProperties = new Set([
@@ -373,7 +385,7 @@ export class LGraph
 
     const graphId = this.id
     if (this.isRootGraph && graphId !== zeroUuid) {
-      usePromotionStore().clearGraph(graphId)
+      usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
     }
 
@@ -1337,18 +1349,11 @@ export class LGraph
   ): void
   trigger(action: string, param: unknown): void
   trigger(action: string, param: unknown) {
-    // Convert to discriminated union format for typed handlers
-    const validEventTypes = new Set([
-      'node:slot-links:changed',
-      'node:slot-errors:changed',
-      'node:property:changed',
-      'node:slot-label:changed'
-    ])
+    if (!isLGraphTriggerAction(action)) return
+    if (!param || typeof param !== 'object') return
 
-    if (validEventTypes.has(action) && param && typeof param === 'object') {
-      this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)
-    }
-    // Don't handle unknown events - just ignore them
+    this.onTrigger?.({ type: action, ...param } as LGraphTriggerEvent)
+    this.events.dispatch(action, param as never)
   }
 
   /** @todo Clean up - never implemented. */
@@ -1670,12 +1675,22 @@ export class LGraph
 
     // Record state before conversion for proper undo support
     this.beforeChange()
+    this.canvasAction((c) => c.emitBeforeChange())
 
     try {
-      return this._convertToSubgraphImpl(items)
+      function extractNodes(item: Positionable): Positionable[] {
+        if (!(item instanceof LGraphNode) || !item.convertToNodes) return [item]
+
+        const innerNodes = item.convertToNodes()
+        for (const innerNode of innerNodes) innerNode.updateArea()
+        return innerNodes
+      }
+      const processedItems = new Set([...items].flatMap(extractNodes))
+      return this._convertToSubgraphImpl(processedItems)
     } finally {
       // Mark state change complete for proper undo support
       this.afterChange()
+      this.canvasAction((c) => c.emitAfterChange())
     }
   }
 
@@ -1906,13 +1921,6 @@ export class LGraph
     subgraphNode._setConcreteSlots()
     subgraphNode.arrange()
 
-    // Repair ancestor promotions: when nodes are packed into a nested
-    // subgraph, any host SubgraphNode whose proxyWidgets referenced the
-    // moved nodes must be repointed to chain through the new nested node.
-    if (!this.isRootGraph) {
-      this._repointAncestorPromotions(nodes, subgraphNode as SubgraphNode)
-    }
-
     this.canvasAction((c) =>
       c.canvas.dispatchEvent(
         new CustomEvent('subgraph-converted', {
@@ -1923,75 +1931,6 @@ export class LGraph
     )
 
     return { subgraph, node: subgraphNode as SubgraphNode }
-  }
-
-  /**
-   * After packing nodes into a nested subgraph, repoint any ancestor
-   * SubgraphNode promotions that referenced the moved nodes so they
-   * chain through the newly created nested SubgraphNode.
-   */
-  private _repointAncestorPromotions(
-    movedNodes: Set<LGraphNode>,
-    nestedSubgraphNode: SubgraphNode
-  ): void {
-    const movedNodeIds = new Set([...movedNodes].map((n) => String(n.id)))
-    const store = usePromotionStore()
-    const nestedNodeId = String(nestedSubgraphNode.id)
-    const graphId = this.rootGraph.id
-    const nestedEntries = store.getPromotions(graphId, nestedSubgraphNode.id)
-    const nextNestedEntries = [...nestedEntries]
-    const nestedEntryKeys = new Set(
-      nestedEntries.map((entry) => makePromotionEntryKey(entry))
-    )
-    const hostUpdates: Array<{
-      node: SubgraphNode
-      entries: PromotedWidgetSource[]
-    }> = []
-
-    // Find all SubgraphNode instances that host `this` subgraph.
-    // They live in any graph and have `type === this.id`.
-    const allGraphs: LGraph[] = [
-      this.rootGraph,
-      ...this.rootGraph._subgraphs.values()
-    ]
-    for (const graph of allGraphs) {
-      for (const node of graph._nodes) {
-        if (!node.isSubgraphNode() || node.type !== this.id) continue
-
-        const entries = store.getPromotions(graphId, node.id)
-        const movedEntries = entries.filter((entry) =>
-          movedNodeIds.has(entry.sourceNodeId)
-        )
-        if (movedEntries.length === 0) continue
-
-        for (const entry of movedEntries) {
-          const key = makePromotionEntryKey(entry)
-          if (nestedEntryKeys.has(key)) continue
-          nestedEntryKeys.add(key)
-          nextNestedEntries.push(entry)
-        }
-
-        const nextEntries = entries.map((entry) => {
-          if (!movedNodeIds.has(entry.sourceNodeId)) return entry
-          return {
-            sourceNodeId: nestedNodeId,
-            sourceWidgetName: entry.sourceWidgetName,
-            disambiguatingSourceNodeId:
-              entry.disambiguatingSourceNodeId ?? entry.sourceNodeId
-          }
-        })
-
-        hostUpdates.push({ node, entries: nextEntries })
-      }
-    }
-
-    if (nextNestedEntries.length !== nestedEntries.length)
-      store.setPromotions(graphId, nestedSubgraphNode.id, nextNestedEntries)
-
-    for (const { node, entries } of hostUpdates) {
-      store.setPromotions(graphId, node.id, entries)
-      node.rebuildInputWidgetBindings()
-    }
   }
 
   unpackSubgraph(
@@ -2253,7 +2192,7 @@ export class LGraph
         continue
       }
       let instance: Reroute | LLink | undefined = linkInstance
-      let parentId: RerouteId | undefined = undefined
+      let parentId: RerouteId | undefined
       if (newLink.externalFirst) {
         parentId = newLink.eparent
         //TODO: recursion check/helper method? Probably exists, but wouldn't mesh with the reference tracking used by this implementation
@@ -2713,6 +2652,25 @@ export class LGraph
       }
 
       this.updateExecutionOrder()
+
+      for (const node of this._nodes) {
+        if (!(node instanceof SubgraphNode)) continue
+        if (node.properties?.proxyWidgets !== undefined) {
+          const nodeData = nodeDataMap.get(node.id)
+          if (LGraph.proxyWidgetMigrationFlush) {
+            LGraph.proxyWidgetMigrationFlush(node, nodeData)
+          } else if (import.meta.env.DEV || import.meta.env.MODE === 'test') {
+            console.warn(
+              '[SubgraphNode] Legacy proxyWidgets were not migrated because no migration flush hook is wired',
+              {
+                hostNodeId: node.id,
+                proxyWidgets: node.properties.proxyWidgets
+              }
+            )
+          }
+        }
+        LGraph.autoExposePreviewNodes?.(node)
+      }
 
       this.onConfigure?.(data)
       this.incrementVersion()

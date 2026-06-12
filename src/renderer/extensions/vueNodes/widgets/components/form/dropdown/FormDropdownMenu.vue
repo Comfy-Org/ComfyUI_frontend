@@ -25,6 +25,8 @@ interface Props {
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
+  candidateIndex?: number
+  candidateLabel?: string
 }
 
 const {
@@ -35,10 +37,13 @@ const {
   showOwnershipFilter,
   ownershipOptions,
   showBaseModelFilter,
-  baseModelOptions
+  baseModelOptions,
+  candidateIndex = -1,
+  candidateLabel
 } = defineProps<Props>()
 const emit = defineEmits<{
   (e: 'item-click', item: FormDropdownItem, index: number): void
+  (e: 'search-enter'): void
 }>()
 
 const filterSelected = defineModel<string>('filterSelected')
@@ -130,6 +135,8 @@ const onWheel = (event: WheelEvent) => {
       :ownership-options
       :show-base-model-filter
       :base-model-options
+      :candidate-label
+      @search-enter="emit('search-enter')"
     />
     <div
       v-if="items.length === 0"
@@ -155,6 +162,7 @@ const onWheel = (event: WheelEvent) => {
       <template #item="{ item, index }">
         <FormDropdownMenuItem
           :index
+          :candidate="index === candidateIndex"
           :selected="isSelected(item, index)"
           :preview-url="item.preview_url ?? ''"
           :name="item.name"

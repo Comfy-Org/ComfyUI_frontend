@@ -5,6 +5,8 @@ on:
     workflows: ['CI: Size Data', 'CI: Performance Report', 'CI: E2E Coverage']
     types:
       - completed
+    branches-ignore:
+      - main
 
 permissions:
   contents: read

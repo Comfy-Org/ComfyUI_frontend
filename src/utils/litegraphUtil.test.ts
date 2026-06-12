@@ -3,8 +3,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { WidgetEntityId } from '@/world/entityIds'
+import { widgetEntityId } from '@/world/entityIds'
 
-import { createNode, resolveNode } from './litegraphUtil'
+import {
+  createNode,
+  getWidgetEntityIdForNode,
+  resolveNode
+} from './litegraphUtil'
 
 const mockBringNodeToFront = vi.fn()
 
@@ -140,5 +146,42 @@ describe('createNode', () => {
 
     expect(mockBringNodeToFront).not.toHaveBeenCalled()
     spy.mockRestore()
+  })
+})
+
+describe('getWidgetEntityIdForNode', () => {
+  const graphId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+
+  function fakeNode(id: number, opts: { detached?: boolean } = {}): LGraphNode {
+    return {
+      id,
+      graph: opts.detached ? undefined : { rootGraph: { id: graphId } }
+    } as unknown as LGraphNode
+  }
+
+  it('returns widget.entityId when present', () => {
+    const node = fakeNode(7)
+    const widget = {
+      name: 'seed',
+      entityId: 'precomputed:7:seed' as WidgetEntityId
+    }
+    expect(getWidgetEntityIdForNode(node, widget)).toBe('precomputed:7:seed')
+  })
+
+  it('derives an entityId for plain POJO widgets bound to a node', () => {
+    const node = fakeNode(42)
+    expect(getWidgetEntityIdForNode(node, { name: 'legacy_widget' })).toBe(
+      widgetEntityId(graphId, 42, 'legacy_widget')
+    )
+  })
+
+  it('returns undefined when the node has no graph', () => {
+    const node = fakeNode(1, { detached: true })
+    expect(getWidgetEntityIdForNode(node, { name: 'x' })).toBeUndefined()
+  })
+
+  it('returns undefined for placeholder node id (-1)', () => {
+    const node = fakeNode(-1)
+    expect(getWidgetEntityIdForNode(node, { name: 'x' })).toBeUndefined()
   })
 })

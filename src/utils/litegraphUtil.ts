@@ -27,6 +27,9 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
+import { parseNodeLocatorId } from '@/types/nodeIdentification'
+import type { WidgetEntityId } from '@/world/entityIds'
+import { widgetEntityId } from '@/world/entityIds'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
@@ -337,6 +340,17 @@ export function resolveNodeWidget(
   widgetName?: string,
   graph: LGraph = app.rootGraph
 ): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
+  if (widgetName && typeof nodeId === 'string') {
+    const locator = parseNodeLocatorId(nodeId)
+    if (locator?.subgraphUuid) {
+      const host = graph.getNodeById(locator.localNodeId)
+      if (host?.isSubgraphNode()) {
+        const widget = host.widgets?.find((w) => w.name === widgetName)
+        return widget ? [host, widget] : []
+      }
+    }
+  }
+
   const node = graph.getNodeById(nodeId)
   if (!widgetName) return node ? [node] : []
   if (node) {
@@ -356,6 +370,16 @@ export function resolveNodeWidget(
   }
 
   return []
+}
+
+export function getWidgetEntityIdForNode(
+  node: LGraphNode,
+  widget: Pick<IBaseWidget, 'name' | 'entityId'>
+): WidgetEntityId | undefined {
+  if (widget.entityId) return widget.entityId
+  const graphId = node.graph?.rootGraph.id
+  if (!graphId || node.id === -1) return undefined
+  return widgetEntityId(graphId, node.id, widget.name)
 }
 
 export function isLoad3dNode(node: LGraphNode) {

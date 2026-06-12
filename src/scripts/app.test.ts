@@ -2,12 +2,17 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type {
-  LGraph,
-  LGraphCanvas,
-  LGraphNode
-} from '@/lib/litegraph/src/litegraph'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+  IBaseWidget,
+  IStringComboWidget
+} from '@/lib/litegraph/src/types/widgets'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { ComfyApp } from './app'
 import { createNode } from '@/utils/litegraphUtil'
 import {
@@ -20,14 +25,34 @@ import {
 } from '@/composables/usePaste'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { api } from '@/scripts/api'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import type { NodeError } from '@/schemas/apiSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { widgetEntityId } from '@/world/entityIds'
+import type { WidgetEntityId } from '@/world/entityIds'
+import { ensureWidgetState, getWidgetState } from '@/world/widgetValueIO'
 
 const {
+  mockApiKeyAuthStore,
+  mockAuthStore,
+  mockSettingStore,
   mockToastStore,
   mockExtensionService,
   mockNodeOutputStore,
   mockWorkspaceWorkflow,
   mockRefreshMissingModelPipeline
 } = vi.hoisted(() => ({
+  mockApiKeyAuthStore: {
+    getApiKey: vi.fn()
+  },
+  mockAuthStore: {
+    getAuthToken: vi.fn()
+  },
+  mockSettingStore: {
+    get: vi.fn()
+  },
   mockToastStore: {
     addAlert: vi.fn(),
     add: vi.fn(),
@@ -41,7 +66,7 @@ const {
     refreshNodeOutputs: vi.fn()
   },
   mockWorkspaceWorkflow: {
-    activeWorkflow: null
+    activeWorkflow: null as ComfyWorkflow | null
   },
   mockRefreshMissingModelPipeline: vi.fn()
 }))
@@ -53,6 +78,18 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isAudioNode: vi.fn(),
   executeWidgetsCallback: vi.fn(),
   fixLinkInputSlots: vi.fn()
+}))
+
+vi.mock('@/stores/apiKeyAuthStore', () => ({
+  useApiKeyAuthStore: vi.fn(() => mockApiKeyAuthStore)
+}))
+
+vi.mock('@/stores/authStore', () => ({
+  useAuthStore: vi.fn(() => mockAuthStore)
+}))
+
+vi.mock('@/platform/settings/settingStore', () => ({
+  useSettingStore: vi.fn(() => mockSettingStore)
 }))
 
 vi.mock('@/composables/usePaste', () => ({
@@ -110,6 +147,7 @@ function createMockCanvas(): Partial<LGraphCanvas> {
 
   return {
     graph: mockGraph as LGraph,
+    draw: vi.fn(),
     selectItems: vi.fn()
   }
 }
@@ -131,6 +169,18 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
   }
 }
 
+type PromotedComboWidget = IStringComboWidget & {
+  readonly entityId: WidgetEntityId
+  readonly sourceNodeId: string
+  readonly sourceWidgetName: string
+}
+
+type PromotedNumberWidget = IBaseWidget<number, 'number'> & {
+  readonly entityId: WidgetEntityId
+  readonly sourceNodeId: string
+  readonly sourceWidgetName: string
+}
+
 describe('ComfyApp', () => {
   let app: ComfyApp
   let mockCanvas: LGraphCanvas
@@ -141,8 +191,70 @@ describe('ComfyApp', () => {
     app = new ComfyApp()
     mockCanvas = createMockCanvas() as LGraphCanvas
     app.canvas = mockCanvas as LGraphCanvas
+    mockWorkspaceWorkflow.activeWorkflow = null
+    mockApiKeyAuthStore.getApiKey.mockReturnValue(undefined)
+    mockAuthStore.getAuthToken.mockResolvedValue(undefined)
     mockExtensionService.invokeExtensions.mockReturnValue([])
     mockExtensionService.invokeExtensionsAsync.mockResolvedValue(undefined)
+    mockSettingStore.get.mockImplementation((key: string) =>
+      key === 'Comfy.RightSidePanel.ShowErrorsTab' ? true : undefined
+    )
+  })
+
+  describe('queuePrompt', () => {
+    it('shows the error overlay for successful prompt responses with node errors', async () => {
+      const graph = new LGraph()
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/review.json',
+        modified: 0,
+        size: 0
+      })
+      const promptOutput: ComfyApiWorkflow = {
+        '1': {
+          class_type: 'PreviewAny',
+          inputs: {},
+          _meta: { title: 'PreviewAny' }
+        }
+      }
+      const nodeErrors: Record<string, NodeError> = {
+        '1': {
+          class_type: 'PreviewAny',
+          dependent_outputs: ['1'],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Required input is missing: source',
+              details: '',
+              extra_info: { input_name: 'source' }
+            }
+          ]
+        }
+      }
+      Reflect.set(app, 'rootGraphInternal', graph)
+      mockWorkspaceWorkflow.activeWorkflow = workflow
+      vi.spyOn(app, 'graphToPrompt').mockResolvedValue({
+        output: promptOutput,
+        workflow: createWorkflowGraphData()
+      })
+      vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
+      vi.spyOn(api, 'queuePrompt').mockResolvedValue({
+        prompt_id: 'job-1',
+        node_errors: nodeErrors,
+        error: ''
+      })
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
+      const errorStore = useExecutionErrorStore()
+      const executionStore = useExecutionStore()
+      expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
+      expect(errorStore.isErrorOverlayOpen).toBe(true)
+      expect(executionStore.queuedJobs['job-1']?.nodes).toEqual({ '1': false })
+      expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(
+        'workflows/review.json'
+      )
+      expect(mockCanvas.draw).toHaveBeenCalledWith(true, true)
+    })
   })
 
   describe('refreshComboInNodes', () => {
@@ -175,6 +287,114 @@ describe('ComfyApp', () => {
       )
       expect(mockToastStore.remove).toHaveBeenCalledWith(
         mockToastStore.add.mock.calls[0][0]
+      )
+    })
+  })
+
+  describe('reloadNodeDefs', () => {
+    it('syncs refreshed combo options into promoted widget host state', async () => {
+      const graph = new LGraph()
+      const node = new LGraphNode(
+        'CheckpointLoaderSimple',
+        'CheckpointLoaderSimple'
+      )
+      graph.add(node)
+
+      const initialOptions = ['missing.safetensors']
+      const refreshedOptions = ['missing.safetensors', 'present.safetensors']
+      const promotedEntityId = widgetEntityId(graph.id, node.id, 'ckpt_name')
+      const missingStateEntityId = widgetEntityId(
+        graph.id,
+        node.id,
+        'missing_state_ckpt'
+      )
+      const promotedNumberEntityId = widgetEntityId(graph.id, node.id, 'steps')
+      const plainComboWidget: IStringComboWidget = {
+        name: 'ckpt_name',
+        type: 'combo',
+        value: 'missing.safetensors',
+        options: { values: initialOptions },
+        y: 0
+      }
+      const promotedNumberWidget: PromotedNumberWidget = {
+        name: 'steps',
+        type: 'number',
+        value: 20,
+        options: { min: 1, max: 100 },
+        y: 0,
+        entityId: promotedNumberEntityId,
+        sourceNodeId: '1',
+        sourceWidgetName: 'steps'
+      }
+      const missingStatePromotedWidget: PromotedComboWidget = {
+        name: 'missing_state_ckpt',
+        type: 'combo',
+        value: 'missing.safetensors',
+        options: { values: initialOptions },
+        y: 0,
+        entityId: missingStateEntityId,
+        sourceNodeId: '1',
+        sourceWidgetName: 'missing_state_ckpt'
+      }
+      const promotedWidget: PromotedComboWidget = {
+        name: 'ckpt_name',
+        type: 'combo',
+        value: 'missing.safetensors',
+        options: { values: initialOptions },
+        y: 0,
+        entityId: promotedEntityId,
+        sourceNodeId: '1',
+        sourceWidgetName: 'ckpt_name'
+      }
+      const defs: Record<string, ComfyNodeDef> = {
+        CheckpointLoaderSimple: {
+          name: 'CheckpointLoaderSimple',
+          display_name: 'CheckpointLoaderSimple',
+          category: 'loaders',
+          python_module: 'nodes',
+          description: '',
+          input: {
+            required: {
+              ckpt_name: [refreshedOptions, {}]
+            },
+            optional: {}
+          },
+          output: [],
+          output_name: [],
+          output_tooltips: [],
+          output_node: false,
+          deprecated: false,
+          experimental: false
+        }
+      }
+      node.widgets = [
+        plainComboWidget,
+        promotedNumberWidget,
+        missingStatePromotedWidget,
+        promotedWidget
+      ]
+      Reflect.set(app, 'rootGraphInternal', graph)
+      ensureWidgetState(promotedEntityId, {
+        type: 'combo',
+        value: 'missing.safetensors',
+        options: { values: initialOptions },
+        serialize: false
+      })
+      vi.spyOn(app, 'getNodeDefs').mockResolvedValue(defs)
+      vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
+
+      await app.reloadNodeDefs()
+
+      expect(plainComboWidget.options.values).toEqual(refreshedOptions)
+      expect(promotedWidget.options.values).toEqual(refreshedOptions)
+      expect(getWidgetState(promotedEntityId)?.options.values).toEqual(
+        refreshedOptions
+      )
+      expect(getWidgetState(missingStateEntityId)).toBeUndefined()
+      expect(getWidgetState(promotedNumberEntityId)).toBeUndefined()
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'refreshComboInNodes',
+        defs
       )
     })
   })

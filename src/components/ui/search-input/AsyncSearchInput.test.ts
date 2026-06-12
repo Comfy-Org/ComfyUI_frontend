@@ -25,17 +25,19 @@ type Searcher = NonNullable<ComponentProps<typeof AsyncSearchInput>['searcher']>
 function renderSearch(
   initialQuery: string = '',
   searcher?: Searcher,
-  updateKey?: { value: unknown }
+  updateKey?: { value: unknown },
+  onEnter?: (event: KeyboardEvent) => void
 ) {
   const query = ref(initialQuery)
   const key = updateKey
   const Harness = defineComponent({
     components: { AsyncSearchInput },
-    setup: () => ({ query, searcher, key }),
+    setup: () => ({ query, searcher, key, onEnter }),
     template: `<AsyncSearchInput
       v-model="query"
       :searcher="searcher"
       :update-key="key"
+      @enter="onEnter"
     />`
   })
   const utils = render(Harness, { global: { plugins: [i18n] } })
@@ -62,6 +64,14 @@ describe('AsyncSearchInput', () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
       await user.type(screen.getByRole('textbox'), 'abc')
       expect(query.value).toBe('abc')
+    })
+
+    it('emits enter when the user presses Enter in the textbox', async () => {
+      const onEnter = vi.fn()
+      renderSearch('', undefined, undefined, onEnter)
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      await user.type(screen.getByRole('textbox'), '{Enter}')
+      expect(onEnter).toHaveBeenCalledTimes(1)
     })
   })
 

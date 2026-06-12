@@ -2,16 +2,10 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('App mode usage', () => {
-  test('Drag and Drop', async ({ comfyPage, comfyFiles }) => {
-    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
-    await comfyPage.settings.setSetting(
-      'Comfy.NodeSearchBoxImpl',
-      'v1 (legacy)'
-    )
+  test('Drag and Drop @vue-nodes', async ({ comfyPage, comfyFiles }) => {
     const { centerPanel } = comfyPage.appMode
     await comfyPage.appMode.enterAppModeWithInputs([['3', 'seed']])
     await expect(centerPanel, 'Enter app mode').toBeVisible()
@@ -25,15 +19,12 @@ test.describe('App mode usage', () => {
     //prep a load image
     await test.step('Add a load image node', async () => {
       await comfyPage.workflow.loadWorkflow('default')
-      await comfyPage.page.mouse.dblclick(200, 200, { delay: 5 })
-      await comfyPage.searchBox.fillAndSelectFirstNode('Load Image')
+      await comfyPage.searchBoxV2.addNode('Load Image')
       const loadImage = await comfyPage.vueNodes.getNodeLocator('10')
       await expect(loadImage).toBeVisible()
     })
 
-    const imageInput = new WidgetSelectDropdownFixture(
-      comfyPage.appMode.linearWidgets.locator('.lg-node-widget')
-    )
+    const imageInput = comfyPage.appMode.widgets.getSelectDropdown('10:image')
 
     await test.step('Enter app mode with image input', async () => {
       await comfyPage.appMode.enterAppModeWithInputs([['10', 'image']])
@@ -105,6 +96,45 @@ test.describe('App mode usage', () => {
     await expect(sampler).toHaveText('uni_pc')
 
     //verify values are consistent with litegraph
+  })
+
+  test('FormDropdown search Enter selects the top filtered item', async ({
+    comfyPage
+  }) => {
+    await comfyPage.appMode.enableLinearMode()
+    const loadImageNode = await comfyPage.nodeOps.addNode('LoadImage')
+    await comfyPage.nextFrame()
+
+    const fileComboWidget = await loadImageNode.getWidget(0)
+    const targetImage = String(await fileComboWidget.getValue())
+    const initialImage = 'not-selected.png'
+    await comfyPage.page.evaluate(
+      ([nodeId, value]) => {
+        const node = window.app!.graph!.getNodeById(nodeId)
+        const widget = node?.widgets?.[0]
+        if (!widget) throw new Error(`Image widget not found: ${nodeId}`)
+
+        widget.value = value
+      },
+      [loadImageNode.id, initialImage] as const
+    )
+    await expect.poll(() => fileComboWidget.getValue()).toBe(initialImage)
+
+    await comfyPage.appMode.enterAppModeWithInputs([
+      [String(loadImageNode.id), 'image']
+    ])
+    await expect(comfyPage.appMode.linearWidgets).toBeVisible()
+    const imageInput = comfyPage.appMode.widgets.getSelectDropdown(
+      `${loadImageNode.id}:image`
+    )
+    const popover = comfyPage.appMode.imagePickerPopover
+
+    await expect(imageInput.root).toBeVisible()
+    await imageInput.searchAndSelectTop(popover, targetImage)
+
+    await expect(popover).toBeHidden()
+    await expect(imageInput.selection).toHaveText(targetImage)
+    await expect.poll(() => fileComboWidget.getValue()).toBe(targetImage)
   })
 
   test.describe('Mobile', { tag: ['@mobile'] }, () => {

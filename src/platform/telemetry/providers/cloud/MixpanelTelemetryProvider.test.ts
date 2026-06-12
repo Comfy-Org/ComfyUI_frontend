@@ -19,7 +19,7 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 
 vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({
-    mode: { value: 'workflow' },
+    mode: { value: 'graph' },
     isAppMode: { value: false }
   })
 }))
@@ -59,10 +59,10 @@ import type {
   AuthMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
-  ExecutionErrorMetadata,
-  ExecutionSuccessMetadata,
   ShareFlowMetadata,
+  ShellLayoutMetadata,
   SurveyResponses,
+  TemplateFilterMetadata,
   TemplateLibraryClosedMetadata,
   TemplateLibraryMetadata,
   TemplateMetadata,
@@ -75,6 +75,10 @@ const waitForMixpanelInit = () =>
   vi.waitFor(() => expect(mockMixpanel.init).toHaveBeenCalled())
 
 type ConfigWindow = { __CONFIG__?: { mixpanel_token?: string } }
+
+beforeEach(() => {
+  localStorage.clear()
+})
 
 describe('MixpanelTelemetryProvider — without configured token', () => {
   beforeEach(() => {
@@ -165,6 +169,44 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     provider.trackWorkflowOpened(metadata)
 
     expect(mockMixpanel.track).not.toHaveBeenCalled()
+  })
+
+  it('tracks enabled funnel events by default', async () => {
+    const provider = new MixpanelTelemetryProvider()
+    await waitForMixpanelInit()
+    mockMixpanel.track.mockClear()
+
+    const templateFilterMetadata: TemplateFilterMetadata = {
+      selected_models: [],
+      selected_use_cases: [],
+      selected_runs_on: [],
+      sort_by: 'default',
+      filtered_count: 1,
+      total_count: 2
+    }
+
+    provider.trackSettingChanged({ setting_id: 'theme' })
+    provider.trackTemplateFilterChanged(templateFilterMetadata)
+    provider.trackUiButtonClicked({
+      button_id: 'sidebar_settings_button_clicked',
+      element_group: 'sidebar'
+    })
+
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.SETTING_CHANGED,
+      { setting_id: 'theme' }
+    )
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.TEMPLATE_FILTER_CHANGED,
+      templateFilterMetadata
+    )
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.UI_BUTTON_CLICKED,
+      {
+        button_id: 'sidebar_settings_button_clicked',
+        element_group: 'sidebar'
+      }
+    )
   })
 
   it.for<
@@ -287,9 +329,21 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     default_view: 'graph'
   }
   const enterLinearMetadata: EnterLinearMetadata = {}
-  const shareFlowMetadata: ShareFlowMetadata = { step: 'dialog_opened' }
-  const executionErrorMetadata: ExecutionErrorMetadata = { jobId: 'job-1' }
-  const executionSuccessMetadata: ExecutionSuccessMetadata = { jobId: 'job-1' }
+  const shareFlowMetadata: ShareFlowMetadata = {
+    step: 'dialog_opened',
+    view_mode: 'graph',
+    is_app_mode: false
+  }
+  const shellLayoutMetadata: ShellLayoutMetadata = {
+    view_mode: 'graph',
+    is_app_mode: false,
+    dock_state: 'docked',
+    actionbar_position: 'Top',
+    active_sidebar_tab: null,
+    right_side_panel_open: false,
+    bottom_panel_open: false,
+    open_workflow_tabs: 1
+  }
   const authMetadata: AuthMetadata = {}
 
   it.for<
@@ -356,14 +410,9 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       TelemetryEvents.SHARE_FLOW
     ],
     [
-      'trackExecutionError',
-      (p) => p.trackExecutionError(executionErrorMetadata),
-      TelemetryEvents.EXECUTION_ERROR
-    ],
-    [
-      'trackExecutionSuccess',
-      (p) => p.trackExecutionSuccess(executionSuccessMetadata),
-      TelemetryEvents.EXECUTION_SUCCESS
+      'trackShellLayout',
+      (p) => p.trackShellLayout(shellLayoutMetadata),
+      TelemetryEvents.SHELL_LAYOUT
     ],
     [
       'trackAuth',
@@ -405,6 +454,7 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     const provider = new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
+    localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
 
     provider.trackRunButton({
       subscribe_to_run: true,
@@ -417,30 +467,53 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
         subscribe_to_run: true,
         workflow_type: 'custom',
         trigger_source: 'button',
-        view_mode: 'workflow',
-        is_app_mode: false
+        view_mode: 'graph',
+        is_app_mode: false,
+        dock_state: 'floating'
       })
     )
   })
 
-  it('trackWorkflowExecution forwards the latest trigger_source from trackRunButton', async () => {
+  it('omits share_id from existing Mixpanel events', async () => {
     const provider = new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
 
-    provider.trackRunButton({ trigger_source: 'keybinding' })
-    provider.trackWorkflowExecution()
+    provider.trackAuth({ method: 'google', share_id: 'share-1' })
+    provider.trackWorkflowImported({
+      missing_node_count: 0,
+      missing_node_types: [],
+      open_source: 'shared_url',
+      share_id: 'share-1'
+    })
+    provider.trackShareFlow({
+      step: 'link_copied',
+      source: 'app_mode',
+      view_mode: 'app',
+      is_app_mode: true,
+      share_id: 'share-1'
+    })
 
     expect(mockMixpanel.track).toHaveBeenCalledWith(
-      TelemetryEvents.EXECUTION_START,
-      expect.objectContaining({ trigger_source: 'keybinding' })
+      TelemetryEvents.USER_AUTH_COMPLETED,
+      { method: 'google' }
     )
-
-    mockMixpanel.track.mockClear()
-    provider.trackWorkflowExecution()
     expect(mockMixpanel.track).toHaveBeenCalledWith(
-      TelemetryEvents.EXECUTION_START,
-      expect.objectContaining({ trigger_source: 'unknown' })
+      TelemetryEvents.WORKFLOW_IMPORTED,
+      {
+        missing_node_count: 0,
+        missing_node_types: [],
+        open_source: 'shared_url'
+      }
+    )
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.SHARE_FLOW,
+      {
+        step: 'link_copied',
+        source: 'app_mode',
+        view_mode: 'app',
+        is_app_mode: true
+      }
     )
   })
 })

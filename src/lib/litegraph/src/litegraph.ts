@@ -144,8 +144,8 @@ export type {
 } from './types/serialisation'
 export type { IWidget } from './types/widgets'
 export { isColorable } from './utils/type'
-export { createUuidv4 } from './utils/uuid'
-export type { UUID } from './utils/uuid'
+export { createUuidv4 } from '@/utils/uuid'
+export type { UUID } from '@/utils/uuid'
 export { truncateText } from './utils/textUtils'
 export {
   evaluateInput,

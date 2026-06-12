@@ -10,6 +10,7 @@ import { Markdown as TiptapMarkdown } from 'tiptap-markdown'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { forwardMiddleButtonToCanvas } from '@/renderer/extensions/vueNodes/widgets/utils/forwardMiddleButtonToCanvas'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
@@ -105,29 +106,7 @@ function addMarkdownWidget(
     signal
   })
 
-  inputEl.addEventListener(
-    'pointerdown',
-    (event) => {
-      if (event.button === 1) app.canvas.processMouseDown(event)
-    },
-    { signal }
-  )
-
-  inputEl.addEventListener(
-    'pointermove',
-    (event) => {
-      if ((event.buttons & 4) === 4) app.canvas.processMouseMove(event)
-    },
-    { signal }
-  )
-
-  inputEl.addEventListener(
-    'pointerup',
-    (event) => {
-      if (event.button === 1) app.canvas.processMouseUp(event)
-    },
-    { signal }
-  )
+  forwardMiddleButtonToCanvas(inputEl, signal)
 
   widget.onRemove = useChainCallback(widget.onRemove, () => {
     controller.abort()
