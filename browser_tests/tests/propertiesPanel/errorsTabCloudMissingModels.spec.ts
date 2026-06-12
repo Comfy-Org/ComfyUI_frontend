@@ -1,6 +1,10 @@
 import { expect } from '@playwright/test'
 
-import type { Asset } from '@comfyorg/ingest-types'
+import type {
+  Asset,
+  AssetCreated,
+  ListAssetsResponse
+} from '@comfyorg/ingest-types'
 import {
   countAssetRequestsByTag,
   createCloudAssetsFixture
@@ -8,6 +12,8 @@ import {
 import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+
+import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 
 const WORKFLOW = 'missing/nested_subgraph_installed_model'
 const IMPORT_SECTIONS_WORKFLOW = 'missing/cloud_missing_model_import_sections'
@@ -49,6 +55,28 @@ const EXISTING_CLOUD_IMPORTABLE_MODEL: Asset & { hash?: string } = {
 }
 
 const test = createCloudAssetsFixture([LOTUS_DIFFUSION_MODEL])
+
+function getRequestedIncludeTags(requestUrl: string): string[] {
+  return (
+    new URL(requestUrl).searchParams
+      .get('include_tags')
+      ?.split(',')
+      .map((tag) => tag.trim())
+      .filter(Boolean) ?? []
+  )
+}
+
+function filterAssetsByRequest(
+  assets: ReadonlyArray<Asset>,
+  requestUrl: string
+): Asset[] {
+  const includeTags = getRequestedIncludeTags(requestUrl)
+  return includeTags.length
+    ? assets.filter((asset) =>
+        includeTags.every((tag) => asset.tags?.includes(tag))
+      )
+    : [...assets]
+}
 
 test.describe(
   'Errors tab - Cloud missing models',
@@ -171,20 +199,22 @@ test.describe(
       await comfyPage.modelLibrary.mockModelFolders([
         { name: 'checkpoints', folders: [] }
       ])
-      await comfyPage.page.route('**/assets/remote-metadata?**', (route) =>
-        route.fulfill({
+      await comfyPage.page.route('**/assets/remote-metadata?**', (route) => {
+        const response: AssetMetadata = {
+          content_length: 1024,
+          final_url:
+            'https://huggingface.co/comfy/test/resolve/main/replacement.safetensors',
+          content_type: 'application/octet-stream',
+          filename: 'replacement.safetensors',
+          tags: ['loras']
+        }
+
+        return route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({
-            content_length: 1024,
-            final_url:
-              'https://huggingface.co/comfy/test/resolve/main/replacement.safetensors',
-            content_type: 'application/octet-stream',
-            filename: 'replacement.safetensors',
-            tags: ['loras']
-          })
+          body: JSON.stringify(response)
         })
-      )
+      })
       await loadWorkflowAndOpenErrorsTab(comfyPage, IMPORT_SECTIONS_WORKFLOW)
 
       const missingModelsGroup = comfyPage.page.getByTestId(
@@ -235,37 +265,49 @@ test.describe(
         { name: 'checkpoints', folders: [] }
       ])
       await comfyPage.page.route(/\/api\/assets(?:\?.*)?$/, (route) => {
-        const assets = visibleAssets()
+        const assets = filterAssetsByRequest(
+          visibleAssets(),
+          route.request().url()
+        )
+        const response: ListAssetsResponse = {
+          assets,
+          total: assets.length,
+          has_more: false
+        }
+
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify({
-            assets,
-            total: assets.length,
-            has_more: false
-          })
+          body: JSON.stringify(response)
         })
       })
-      await comfyPage.page.route('**/assets/remote-metadata?**', (route) =>
-        route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify({
-            content_length: 2048,
-            final_url:
-              'https://huggingface.co/comfy/test/resolve/main/cloud_importable_model.safetensors',
-            content_type: 'application/octet-stream',
-            filename: CLOUD_IMPORTABLE_MODEL_NAME,
-            tags: ['checkpoints']
-          })
-        })
-      )
-      await comfyPage.page.route('**/assets/download', (route) => {
-        isImportedAssetAvailable = true
+      await comfyPage.page.route('**/assets/remote-metadata?**', (route) => {
+        const response: AssetMetadata = {
+          content_length: 2048,
+          final_url:
+            'https://huggingface.co/comfy/test/resolve/main/cloud_importable_model.safetensors',
+          content_type: 'application/octet-stream',
+          filename: CLOUD_IMPORTABLE_MODEL_NAME,
+          tags: ['checkpoints']
+        }
+
         return route.fulfill({
           status: 200,
           contentType: 'application/json',
-          body: JSON.stringify(EXISTING_CLOUD_IMPORTABLE_MODEL)
+          body: JSON.stringify(response)
+        })
+      })
+      await comfyPage.page.route('**/assets/download', (route) => {
+        isImportedAssetAvailable = true
+        const response: AssetCreated = {
+          ...EXISTING_CLOUD_IMPORTABLE_MODEL,
+          created_new: false
+        }
+
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(response)
         })
       })
 
