@@ -139,3 +139,35 @@ export function searchLinkReleaseNodes(
   }
   return matches
 }
+
+/**
+ * Vertical `alignOffset` (px) that makes a category submenu open level with the
+ * root menu rather than with the hovered trigger row. Positioning the submenu's
+ * top one content-padding above the root search field lines the submenu's own
+ * search field up with the root search field, since both menus share the same
+ * content padding and search-field markup.
+ */
+export function computeSubmenuAlignOffset(metrics: {
+  triggerTop: number
+  rootSearchTop: number
+  contentPaddingTop: number
+}): number {
+  const { triggerTop, rootSearchTop, contentPaddingTop } = metrics
+  return rootSearchTop - contentPaddingTop - triggerTop
+}
+
+/**
+ * Max height (px) for a category submenu pinned level with the root menu. The
+ * panel grows into the viewport space below its top, but never shrinks below
+ * the root menu's height so it can always be at least as tall as the context
+ * menu even when there is little room beneath it.
+ */
+export function computeSubmenuMaxHeight(metrics: {
+  submenuTop: number
+  contextMenuHeight: number
+  viewportHeight: number
+  margin: number
+}): number {
+  const { submenuTop, contextMenuHeight, viewportHeight, margin } = metrics
+  return Math.max(contextMenuHeight, viewportHeight - submenuTop - margin)
+}

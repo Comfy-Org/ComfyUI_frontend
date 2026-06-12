@@ -5,6 +5,8 @@ import { NodeSourceType } from '@/types/nodeSource'
 
 import {
   buildLinkReleaseNodeCategories,
+  computeSubmenuAlignOffset,
+  computeSubmenuMaxHeight,
   filterNodesByName,
   getLinkReleaseHeaderLabel,
   getLinkReleaseSuggestions,
@@ -184,5 +186,47 @@ describe('searchLinkReleaseNodes', () => {
 
   it('returns an empty list when nothing matches', () => {
     expect(searchLinkReleaseNodes(categories, 'zzz')).toEqual([])
+  })
+})
+
+describe('computeSubmenuAlignOffset', () => {
+  it('lifts the submenu up to the root search field for a trigger below it', () => {
+    const offset = computeSubmenuAlignOffset({
+      triggerTop: 200,
+      rootSearchTop: 48,
+      contentPaddingTop: 4
+    })
+    expect(offset).toBe(-156)
+  })
+
+  it('offsets only by the content padding when the trigger sits at the search field', () => {
+    const offset = computeSubmenuAlignOffset({
+      triggerTop: 48,
+      rootSearchTop: 48,
+      contentPaddingTop: 4
+    })
+    expect(offset).toBe(-4)
+  })
+})
+
+describe('computeSubmenuMaxHeight', () => {
+  it('grows to the space below when there is ample room', () => {
+    const height = computeSubmenuMaxHeight({
+      submenuTop: 100,
+      contextMenuHeight: 420,
+      viewportHeight: 1000,
+      margin: 8
+    })
+    expect(height).toBe(892)
+  })
+
+  it('floors at the context menu height when room below is smaller', () => {
+    const height = computeSubmenuMaxHeight({
+      submenuTop: 600,
+      contextMenuHeight: 420,
+      viewportHeight: 1000,
+      margin: 8
+    })
+    expect(height).toBe(420)
   })
 })
