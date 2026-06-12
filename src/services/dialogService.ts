@@ -10,6 +10,7 @@ import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import type {
   DialogComponentProps,
@@ -617,11 +618,9 @@ export const useDialogService = () => {
   }
 
   /**
-   * Downgrade a team plan to a personal plan (FE-977).
-   *
-   * Shows a type-"I understand" confirm dialog warning that all other members
-   * will be immediately removed. When the workspace has no other members the
-   * dialog is skipped and the downgrade proceeds directly.
+   * Downgrade a team plan to a personal plan (FE-977). Skips the type-"I
+   * understand" confirm dialog when the workspace has no other members;
+   * failures on that path surface as an error toast.
    */
   async function showDowngradeToPersonalDialog(options: {
     planName: string
@@ -629,10 +628,21 @@ export const useDialogService = () => {
   }) {
     const { useDowngradeToPersonal } =
       await import('@/platform/workspace/composables/useDowngradeToPersonal')
-    const { hasOtherMembers, downgradeToPersonal } = useDowngradeToPersonal()
+    const { hasOtherMembers, refreshMembers, downgradeToPersonal } =
+      useDowngradeToPersonal()
 
-    if (!hasOtherMembers.value) {
-      await downgradeToPersonal(options.planSlug)
+    try {
+      await refreshMembers()
+      if (!hasOtherMembers.value) {
+        await downgradeToPersonal(options.planSlug)
+        return
+      }
+    } catch (error) {
+      useToastStore().add({
+        severity: 'error',
+        summary: t('subscription.downgrade.failed'),
+        detail: error instanceof Error ? error.message : t('g.unknownError')
+      })
       return
     }
 
@@ -646,7 +656,11 @@ export const useDialogService = () => {
         planSlug: options.planSlug,
         onConfirm: downgradeToPersonal
       },
-      dialogComponentProps: workspaceDialogPt
+      dialogComponentProps: {
+        ...workspaceDialogPt,
+        closable: false,
+        dismissableMask: false
+      }
     })
   }
 
