@@ -15,7 +15,9 @@ test.describe('Download page @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Download Comfy — Run AI Locally')
+    await expect(page).toHaveTitle(
+      'Download Comfy Desktop — Run AI on Your Hardware'
+    )
   })
 
   test('CloudBannerSection is visible with cloud link', async ({ page }) => {
