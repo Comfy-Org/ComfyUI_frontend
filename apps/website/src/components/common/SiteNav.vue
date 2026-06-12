@@ -11,6 +11,7 @@ import { nextTick, onMounted, ref } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { externalLinks, getRoutes } from '../../config/routes'
+import { NavigationMenu, NavigationMenuList } from '../ui/navigation-menu'
 import BrandButton from './BrandButton.vue'
 import GitHubStarBadge from './GitHubStarBadge.vue'
 import MobileMenu from './MobileMenu.vue'
@@ -108,7 +109,6 @@ const ctaButtons = [
 ]
 
 const currentPath = ref('')
-const openDesktopDropdown = ref<string | null>(null)
 const mobileMenuOpen = ref(false)
 const isNavigating = ref(false)
 const hamburgerRef = ref<HTMLButtonElement | undefined>()
@@ -118,21 +118,15 @@ function closeMobileMenu() {
   hamburgerRef.value?.focus()
 }
 
-function toggleDesktopDropdown(label: string) {
-  openDesktopDropdown.value = openDesktopDropdown.value === label ? null : label
-}
-
 function onKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     closeMobileMenu()
-    openDesktopDropdown.value = null
   }
 }
 
 async function onNavigate() {
   isNavigating.value = true
   closeMobileMenu()
-  openDesktopDropdown.value = null
   currentPath.value = window.location.pathname
   await nextTick()
   isNavigating.value = false
@@ -189,21 +183,20 @@ onMounted(() => {
     </a>
 
     <!-- Desktop nav links -->
-    <div
+    <NavigationMenu
       data-testid="desktop-nav-links"
-      class="hidden items-center gap-[clamp(1rem,2.5vw,2.5rem)] lg:flex"
+      :viewport="false"
+      class="hidden flex-none lg:flex"
     >
-      <NavDesktopLink
-        v-for="link in navLinks"
-        :key="link.label"
-        :link="link"
-        :current-path="currentPath"
-        :is-open="openDesktopDropdown === link.label"
-        @open="openDesktopDropdown = $event"
-        @close="openDesktopDropdown = null"
-        @toggle="toggleDesktopDropdown"
-      />
-    </div>
+      <NavigationMenuList class="items-center gap-[clamp(1rem,2.5vw,2.5rem)]">
+        <NavDesktopLink
+          v-for="link in navLinks"
+          :key="link.label"
+          :link="link"
+          :current-path="currentPath"
+        />
+      </NavigationMenuList>
+    </NavigationMenu>
 
     <!-- Desktop CTA buttons -->
     <div
