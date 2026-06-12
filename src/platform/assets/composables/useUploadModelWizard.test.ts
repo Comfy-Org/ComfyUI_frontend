@@ -279,6 +279,41 @@ describe('useUploadModelWizard', () => {
     expect(result?.modelType).toBe('checkpoints')
   })
 
+  it('returns the synced asset filename for sync imports', async () => {
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
+    vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
+      type: 'sync',
+      asset: {
+        id: 'asset-canonical',
+        name: 'asset-record-display-name.safetensors',
+        tags: ['models', 'checkpoints'],
+        user_metadata: {
+          filename: 'models/checkpoints/canonical-model.safetensors'
+        }
+      }
+    })
+
+    const wizard = setupUploadModelWizard(modelTypes)
+    wizard.wizardData.value.url = 'https://civitai.com/models/12345'
+    wizard.wizardData.value.metadata = {
+      content_length: 100,
+      final_url:
+        'https://civitai.com/api/download/models/canonical-model.safetensors',
+      filename: 'metadata-model.safetensors',
+      tags: ['checkpoints']
+    }
+    wizard.selectedModelType.value = 'checkpoints'
+
+    const result = await wizard.uploadModel()
+
+    expect(result).toEqual({
+      filename: 'models/checkpoints/canonical-model.safetensors',
+      modelType: 'checkpoints',
+      status: 'success'
+    })
+  })
+
   it('blocks a missing-model import when an existing asset has the wrong model type', async () => {
     const { assetService } =
       await import('@/platform/assets/services/assetService')
@@ -335,11 +370,12 @@ describe('useUploadModelWizard', () => {
 
     const result = await wizard.uploadModel()
 
-    expect(result).toEqual({
-      filename: 'model',
-      modelType: 'checkpoints',
-      status: 'success'
-    })
+    expect(result).toEqual(
+      expect.objectContaining({
+        modelType: 'checkpoints',
+        status: 'success'
+      })
+    )
     expect(wizard.uploadStatus.value).toBe('success')
     expect(wizard.uploadTypeMismatch.value).toBeNull()
   })

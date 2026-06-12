@@ -15,6 +15,8 @@ const OUTER_SUBGRAPH_NODE_ID = '205'
 const LOTUS_MODEL_NAME = 'lotus-depth-d-v1-1.safetensors'
 const CLOUD_IMPORTABLE_MODEL_NAME = 'cloud_importable_model.safetensors'
 const CLOUD_UNKNOWN_MODEL_NAME = 'cloud_unknown_model.safetensors'
+const CLOUD_IMPORTED_CANONICAL_MODEL_NAME =
+  'models/checkpoints/cloud_importable_model.safetensors'
 
 const LOTUS_DIFFUSION_MODEL: Asset & { hash?: string } = {
   id: 'test-lotus-depth-d-v1-1',
@@ -28,6 +30,21 @@ const LOTUS_DIFFUSION_MODEL: Asset & { hash?: string } = {
   last_access_time: '2026-05-05T00:00:00Z',
   user_metadata: {
     filename: LOTUS_MODEL_NAME
+  }
+}
+
+const EXISTING_CLOUD_IMPORTABLE_MODEL: Asset & { hash?: string } = {
+  id: 'test-existing-cloud-importable-model',
+  name: 'asset-record-display-name.safetensors',
+  hash: 'blake3:0000000000000000000000000000000000000000000000000000000000000204',
+  size: 2_048,
+  mime_type: 'application/octet-stream',
+  tags: ['models', 'checkpoints'],
+  created_at: '2026-05-05T00:00:00Z',
+  updated_at: '2026-05-05T00:00:00Z',
+  last_access_time: '2026-05-05T00:00:00Z',
+  user_metadata: {
+    filename: CLOUD_IMPORTED_CANONICAL_MODEL_NAME
   }
 }
 
@@ -203,6 +220,95 @@ test.describe(
           /Locked to (Checkpoints|checkpoints) for this missing model/
         )
       ).toBeVisible()
+    })
+
+    test('uses the synced asset filename when applying an already imported cloud model', async ({
+      comfyPage
+    }) => {
+      let isImportedAssetAvailable = false
+      const visibleAssets = () =>
+        isImportedAssetAvailable
+          ? [LOTUS_DIFFUSION_MODEL, EXISTING_CLOUD_IMPORTABLE_MODEL]
+          : [LOTUS_DIFFUSION_MODEL]
+
+      await comfyPage.modelLibrary.mockModelFolders([
+        { name: 'checkpoints', folders: [] }
+      ])
+      await comfyPage.page.route(/\/api\/assets(?:\?.*)?$/, (route) => {
+        const assets = visibleAssets()
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            assets,
+            total: assets.length,
+            has_more: false
+          })
+        })
+      })
+      await comfyPage.page.route('**/assets/remote-metadata?**', (route) =>
+        route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            content_length: 2048,
+            final_url:
+              'https://huggingface.co/comfy/test/resolve/main/cloud_importable_model.safetensors',
+            content_type: 'application/octet-stream',
+            filename: CLOUD_IMPORTABLE_MODEL_NAME,
+            tags: ['checkpoints']
+          })
+        })
+      )
+      await comfyPage.page.route('**/assets/download', (route) => {
+        isImportedAssetAvailable = true
+        return route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify(EXISTING_CLOUD_IMPORTABLE_MODEL)
+        })
+      })
+
+      await loadWorkflowAndOpenErrorsTab(comfyPage, IMPORT_SECTIONS_WORKFLOW)
+
+      const missingModelsGroup = comfyPage.page.getByTestId(
+        TestIds.dialogs.missingModelsGroup
+      )
+      await missingModelsGroup
+        .getByTestId(TestIds.dialogs.missingModelImport)
+        .click()
+
+      const uploadDialog = comfyPage.page.getByRole('dialog', {
+        name: /Import a model/
+      })
+      const urlInput = uploadDialog.locator(
+        '[data-attr="upload-model-step1-url-input"]'
+      )
+      await urlInput.fill(
+        'https://huggingface.co/comfy/test/resolve/main/cloud_importable_model.safetensors'
+      )
+      await uploadDialog
+        .locator('[data-attr="upload-model-step1-continue-button"]')
+        .click()
+      await expect(
+        uploadDialog.getByText(
+          `This import will replace ${CLOUD_IMPORTABLE_MODEL_NAME} in:`
+        )
+      ).toBeVisible()
+
+      await uploadDialog
+        .locator('[data-attr="upload-model-step2-confirm-button"]')
+        .click()
+
+      await expect
+        .poll(() =>
+          comfyPage.page.evaluate(() => {
+            const node = window.app!.graph.getNodeById(1)
+            return node?.widgets?.find((widget) => widget.name === 'ckpt_name')
+              ?.value
+          })
+        )
+        .toBe(CLOUD_IMPORTED_CANONICAL_MODEL_NAME)
     })
   }
 )

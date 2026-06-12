@@ -11,6 +11,7 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ImportSource } from '@/platform/assets/types/importSource'
+import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -403,7 +404,8 @@ export function useUploadModelWizard(
         uploadStatus.value = 'success'
         await refreshModelCaches()
         uploadSuccess = {
-          filename,
+          filename:
+            result.type === 'sync' ? getAssetFilename(result.asset) : filename,
           modelType,
           status: 'success'
         }
