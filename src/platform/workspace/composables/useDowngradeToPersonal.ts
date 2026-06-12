@@ -10,13 +10,9 @@ import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceS
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 /**
- * Identify the member who must never be removed on downgrade.
- *
- * The cloud API exposes no creator field, so this protects every owner plus
- * the acting user. FE-770 infers the creator as the earliest-joined member
- * (`originalOwnerId`); whichever PR lands second must unify both predicates
- * on that single source. BE-1337 will expose an explicit original-owner
- * determination.
+ * The cloud API has no creator field, so protect owners plus the acting user.
+ * Unify with FE-770's `originalOwnerId` when both land (BE-1337 will expose
+ * an explicit determination).
  */
 function isCreator(
   member: WorkspaceMember,
@@ -29,19 +25,10 @@ function isCreator(
 }
 
 /**
- * Orchestrates a team-plan downgrade to a personal plan (FE-977).
- *
- * The transition is validated via `previewSubscribe` before any member is
- * removed; then every member except the creator is removed and the tier
- * change is initiated. `needs_payment_method` / `pending_payment` subscribe
- * outcomes are handled like `useSubscriptionCheckout` (payment-method tab +
- * billing-operation polling).
- *
- * BE seam: the automatic "remove all members on downgrade + send email"
- * side-effect does not exist server-side yet (email is BE-owned). Until a
- * dedicated downgrade endpoint lands (BE-1337), the FE orchestrates
- * `removeMember` calls and initiates the tier change via the existing
- * subscribe path.
+ * Team-plan downgrade to personal (FE-977): validate via `previewSubscribe`,
+ * remove every non-creator member, then initiate the tier change.
+ * BE seam (BE-1337): removal email and an atomic downgrade endpoint are
+ * BE-owned; until then the FE orchestrates the two steps non-atomically.
  */
 export function useDowngradeToPersonal() {
   const workspaceStore = useTeamWorkspaceStore()

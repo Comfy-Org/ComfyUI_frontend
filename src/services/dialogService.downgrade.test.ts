@@ -1,8 +1,7 @@
 /**
- * Regression net for showDowngradeToPersonalDialog (FE-977): the member list
- * must be refreshed before the no-members fast path is decided, the dialog
- * must be non-dismissable (ESC derives from `closable` in dialogStore), and
- * fast-path failures must surface as an error toast.
+ * showDowngradeToPersonalDialog must refresh members before the no-members
+ * fast path and stay non-dismissable (ESC derives from `closable` in
+ * dialogStore); fast-path failures must toast.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 

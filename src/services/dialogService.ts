@@ -602,13 +602,9 @@ export const useDialogService = () => {
   }
 
   /**
-   * Downgrade a team plan to a personal plan (FE-977).
-   *
-   * Refreshes the member list, then shows a type-"I understand" confirm
-   * dialog warning that all other members will be immediately removed. When
-   * the workspace has no other members the dialog is skipped and the
-   * downgrade proceeds directly; failures on that path surface as an error
-   * toast (the dialog path toasts from the dialog itself).
+   * Downgrade a team plan to a personal plan (FE-977). Skips the type-"I
+   * understand" confirm dialog when the workspace has no other members;
+   * failures on that path surface as an error toast.
    */
   async function showDowngradeToPersonalDialog(options: {
     planName: string
