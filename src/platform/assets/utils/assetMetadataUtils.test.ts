@@ -145,10 +145,28 @@ describe('assetMetadataUtils', () => {
         name: 'filters non-string values from array',
         trained_words: ['valid', 123, 'also valid', null],
         expected: ['valid', 'also valid']
+      },
+      {
+        name: 'strips trailing-comma artifacts from each phrase',
+        trained_words: ['freckles,', 'detailed eyes,', 'perfect skin texture'],
+        expected: ['freckles', 'detailed eyes', 'perfect skin texture']
+      },
+      {
+        name: 'splits a comma-joined string into separate phrases',
+        trained_words: 'detailed eyes, perfect eyes, freckles',
+        expected: ['detailed eyes', 'perfect eyes', 'freckles']
       }
     ])('$name', ({ trained_words, expected }) => {
       const asset = { ...mockAsset, user_metadata: { trained_words } }
       expect(getAssetTriggerPhrases(asset)).toEqual(expected)
+    })
+
+    it('falls back to the local trigger_phrase when no trained_words', () => {
+      const asset = {
+        ...mockAsset,
+        metadata: { trigger_phrase: 'magic word' }
+      }
+      expect(getAssetTriggerPhrases(asset)).toEqual(['magic word'])
     })
 
     it('should return empty array when no metadata', () => {
