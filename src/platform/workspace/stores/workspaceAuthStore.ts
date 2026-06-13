@@ -18,7 +18,11 @@ const WorkspaceWithRoleSchema = z.object({
   id: z.string(),
   name: z.string(),
   type: z.enum(['personal', 'team']),
-  role: z.enum(['owner', 'member'])
+  role: z.enum(['owner', 'member']),
+  // ASSUMED FIELD — BE SPEC NOT FINALIZED. REVISIT (FE-770 Q3 / BE-1337).
+  // Pass the original-owner flag through so it isn't stripped on the
+  // auth/session parse path. Optional until the BE signal lands.
+  is_creator: z.boolean().optional()
 })
 
 const WorkspaceTokenResponseSchema = z.object({

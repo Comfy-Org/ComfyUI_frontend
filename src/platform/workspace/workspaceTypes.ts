@@ -20,4 +20,8 @@ export interface WorkspaceWithRole {
   name: string
   type: 'personal' | 'team'
   role: 'owner' | 'member'
+  // ASSUMED FIELD — BE SPEC NOT FINALIZED. REVISIT (FE-770 Q3 / BE-1337).
+  // Mirrors WorkspaceWithRole in api/workspaceApi.ts; kept in sync so the
+  // original-owner flag survives the auth/session schema parse.
+  is_creator?: boolean
 }
