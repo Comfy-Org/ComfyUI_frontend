@@ -215,7 +215,7 @@ describe('useWidgetValueStore', () => {
     it('registerWidgetControl is idempotent and keeps existing state', () => {
       const store = useWidgetValueStore()
       const first = store.registerWidgetControl(seedA, { mode: 'increment' })
-      store.setControlExecuted(seedA, true)
+      store.updateWidgetControl(seedA, { hasExecuted: true })
 
       const second = store.registerWidgetControl(seedA, { mode: 'randomize' })
       expect(second).toBe(first)
@@ -223,24 +223,26 @@ describe('useWidgetValueStore', () => {
       expect(second.hasExecuted).toBe(true)
     })
 
-    it('setControlMode updates a registered control and reports misses', () => {
+    it('updateWidgetControl updates a registered control and reports misses', () => {
       const store = useWidgetValueStore()
       store.registerWidgetControl(seedA, { mode: 'fixed' })
 
-      expect(store.setControlMode(seedA, 'randomize')).toBe(true)
+      expect(store.updateWidgetControl(seedA, { mode: 'randomize' })).toBe(true)
       expect(store.getWidgetControl(seedA)?.mode).toBe('randomize')
-      expect(store.setControlMode(seedB, 'randomize')).toBe(false)
+      expect(store.updateWidgetControl(seedB, { mode: 'randomize' })).toBe(
+        false
+      )
     })
 
-    it('setControlFilter only applies when the control carries a filter slot', () => {
+    it('updateWidgetControl applies filter only when the control carries a filter slot', () => {
       const store = useWidgetValueStore()
       store.registerWidgetControl(seedA, { mode: 'increment' })
       store.registerWidgetControl(seedB, { mode: 'increment', filter: '' })
 
-      expect(store.setControlFilter(seedA, 'ckpt')).toBe(false)
+      store.updateWidgetControl(seedA, { filter: 'ckpt' })
       expect(store.getWidgetControl(seedA)?.filter).toBeUndefined()
 
-      expect(store.setControlFilter(seedB, 'ckpt')).toBe(true)
+      store.updateWidgetControl(seedB, { filter: 'ckpt' })
       expect(store.getWidgetControl(seedB)?.filter).toBe('ckpt')
     })
 

@@ -1225,7 +1225,7 @@ describe('SubgraphNode promoted widget control', () => {
     const { subgraph, subgraphNode } = promoteControllableSeed()
     const store = useWidgetValueStore()
     const hostId = subgraphNode.inputs[0].widgetId!
-    store.setControlMode(hostId, 'fixed')
+    store.updateWidgetControl(hostId, { mode: 'fixed' })
 
     const serialized = subgraphNode.serialize()
     expect(serialized.properties?.promotedControls).toBeUndefined()

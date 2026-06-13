@@ -56,11 +56,11 @@ export function applyControlValues(
   const mode = values[next]
   if (!isValueControlMode(mode)) return next
 
-  store.setControlMode(targetId, mode)
+  store.updateWidgetControl(targetId, { mode })
   next++
   const filter = values[next]
   if (control.filter !== undefined && typeof filter === 'string') {
-    store.setControlFilter(targetId, filter)
+    store.updateWidgetControl(targetId, { filter })
     next++
   }
   return next

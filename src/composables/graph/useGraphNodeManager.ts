@@ -153,7 +153,9 @@ export function getControlWidget(
   return {
     value: normalizeControlOption(control.mode),
     update: (value) =>
-      store.setControlMode(targetId, normalizeControlOption(value))
+      store.updateWidgetControl(targetId, {
+        mode: normalizeControlOption(value)
+      })
   }
 }
 

@@ -5,6 +5,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 
 import { COMBO_CONTROL_MODES, NUMBER_CONTROL_MODES } from './valueControl'
+import type { ValueControlMode } from './valueControl'
 
 const projectionCache = new WeakMap<LGraphNode, Map<string, IBaseWidget>>()
 
@@ -38,7 +39,7 @@ function createModeProjection(
       return store.getWidgetControl(targetId)?.mode ?? 'fixed'
     },
     callback(next) {
-      store.setControlMode(targetId, next as never)
+      store.updateWidgetControl(targetId, { mode: next as ValueControlMode })
     }
   } as IBaseWidget
 }
@@ -55,7 +56,7 @@ function createFilterProjection(targetId: WidgetId): IBaseWidget {
       return store.getWidgetControl(targetId)?.filter ?? ''
     },
     callback(next) {
-      store.setControlFilter(targetId, String(next))
+      store.updateWidgetControl(targetId, { filter: String(next) })
     }
   } as IBaseWidget
 }

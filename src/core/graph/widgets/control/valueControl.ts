@@ -34,7 +34,7 @@ export function isValueControlMode(value: unknown): value is ValueControlMode {
  * The minimal widget shape needed to advance a controlled value. Matches both a
  * litegraph widget and a `WidgetState` row from the widget value store.
  */
-export interface ValueControlTarget {
+interface ValueControlTarget {
   type: IBaseWidget['type']
   value?: unknown
   options: IBaseWidget['options']

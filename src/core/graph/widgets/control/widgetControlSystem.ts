@@ -7,7 +7,7 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { computeNextControlledValue } from './valueControl'
 
-export type WidgetControlPhase = 'before' | 'after'
+type WidgetControlPhase = 'before' | 'after'
 
 /**
  * Widget ids whose input slot is currently link-fed, so their value comes from
@@ -50,11 +50,11 @@ export function runWidgetControl(
     const target = store.getWidget(targetId)
     if (!target || linkFed.has(targetId)) continue
 
-    if (phase === 'before' && !control.hasExecuted) {
-      store.setControlExecuted(targetId, true)
-      continue
+    if (phase === 'before') {
+      const firstRun = !control.hasExecuted
+      store.updateWidgetControl(targetId, { hasExecuted: true })
+      if (firstRun) continue
     }
-    store.setControlExecuted(targetId, true)
 
     const next = computeNextControlledValue(target, control.mode, {
       comboFilter: control.filter,

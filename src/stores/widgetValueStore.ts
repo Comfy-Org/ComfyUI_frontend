@@ -103,30 +103,16 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return getGraphWidgetControls(graphId).get(targetId)
   }
 
-  function setControlMode(
+  function updateWidgetControl(
     targetId: WidgetId,
-    mode: WidgetControlState['mode']
+    patch: Partial<WidgetControlState>
   ): boolean {
     const control = getWidgetControl(targetId)
     if (!control) return false
-    control.mode = mode
-    return true
-  }
-
-  function setControlFilter(targetId: WidgetId, filter: string): boolean {
-    const control = getWidgetControl(targetId)
-    if (!control || control.filter === undefined) return false
-    control.filter = filter
-    return true
-  }
-
-  function setControlExecuted(
-    targetId: WidgetId,
-    hasExecuted: boolean
-  ): boolean {
-    const control = getWidgetControl(targetId)
-    if (!control) return false
-    control.hasExecuted = hasExecuted
+    if (patch.mode !== undefined) control.mode = patch.mode
+    if (patch.filter !== undefined && control.filter !== undefined)
+      control.filter = patch.filter
+    if (patch.hasExecuted !== undefined) control.hasExecuted = patch.hasExecuted
     return true
   }
 
@@ -154,9 +140,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     registerWidgetControl,
     getWidgetControls,
     getWidgetControl,
-    setControlMode,
-    setControlFilter,
-    setControlExecuted,
+    updateWidgetControl,
     deleteWidgetControl,
     getNodeWidgets,
     clearGraph
