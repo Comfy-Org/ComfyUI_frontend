@@ -10,11 +10,18 @@ import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 const mockGetIdToken = vi.fn()
 const mockNotifyTokenRefreshed = vi.fn()
+const mockToastAdd = vi.fn()
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
     getIdToken: mockGetIdToken,
     notifyTokenRefreshed: mockNotifyTokenRefreshed
+  })
+}))
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({
+    add: mockToastAdd
   })
 }))
 
@@ -1220,6 +1227,108 @@ describe('useWorkspaceAuthStore', () => {
       await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
 
       expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('surfaces an error toast and clears the slot when a refresh hits a permanent auth error', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const expiresInMs = 3600 * 1000
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...personalTokenResponse,
+              expires_at: new Date(Date.now() + expiresInMs).toISOString()
+            })
+        })
+        // The scheduled refresh is rejected: workspace access was revoked.
+        .mockResolvedValue({
+          ok: false,
+          status: 403,
+          statusText: 'Forbidden',
+          json: () => Promise.resolve({ message: 'Access denied' })
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+
+      await store.mintAtLogin()
+      expect(unifiedToken.value).toBe('unified-token-1')
+
+      const refreshDelay = expiresInMs - 5 * 60 * 1000
+      await vi.advanceTimersByTimeAsync(refreshDelay)
+
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'workspaceAuth.errors.accessDenied'
+        })
+      )
+      expect(unifiedToken.value).toBeNull()
+    })
+
+    it('does not toast on a transient refresh failure and keeps the slot', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const expiresInMs = 3600 * 1000
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...personalTokenResponse,
+              expires_at: new Date(Date.now() + expiresInMs).toISOString()
+            })
+        })
+        // A transient backend failure must not alarm the user or wipe the slot.
+        .mockResolvedValue({
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+          json: () => Promise.resolve({ message: 'try again' })
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+
+      await store.mintAtLogin()
+
+      const refreshDelay = expiresInMs - 5 * 60 * 1000
+      await vi.advanceTimersByTimeAsync(refreshDelay)
+
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(unifiedToken.value).toBe('unified-token-1')
+    })
+
+    it('surfaces an error toast and resolves false when the login mint hits a permanent auth error', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: () => Promise.resolve({ message: 'Invalid token' })
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+
+      const result = await store.mintAtLogin()
+
+      expect(result).toBe(false)
+      expect(unifiedToken.value).toBeNull()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'workspaceAuth.errors.invalidFirebaseToken'
+        })
+      )
     })
   })
 })
