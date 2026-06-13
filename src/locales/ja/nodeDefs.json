@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "Berniniのインコンテキスト動画/画像コンディショニング用ノードです。以下のタスクに使用できます：t2v（テキストから動画）、v2v（動画から動画）、rv2v（リファレンスガイド付き動画編集）、r2v（リファレンスから動画）、ads2v（画像/動画を動画に挿入）。インコンテキストトークンとして挿入されたリファレンス画像（r2v、rv2v）は、それぞれのネイティブアスペクト比（長辺はref_max_sizeで制限）で個別にエンコードされます。",
+    "display_name": "Berniniコンディショニング",
+    "inputs": {
+      "batch_size": {
+        "name": "バッチサイズ"
+      },
+      "height": {
+        "name": "高さ"
+      },
+      "length": {
+        "name": "長さ"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "ref_max_size",
+        "tooltip": "reference_videoおよびreference_imagesの長辺の最大サイズ。アスペクト比を維持したままリサイズされ、16px単位にスナップされます。"
+      },
+      "reference_images": {
+        "name": "リファレンス画像"
+      },
+      "reference_video": {
+        "name": "リファレンス動画",
+        "tooltip": "ソース動画に挿入する動画（ads2v）。"
+      },
+      "source_video": {
+        "name": "ソース動画",
+        "tooltip": "編集またはリスタイルするソース動画（v2v、rv2v）。幅/高さにリサイズされ、長さにトリミングされます。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "ベータサンプリングスケジューラー",
     "inputs": {
@@ -585,6 +641,87 @@
       },
       "video": {
         "name": "動画"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaTransparentVideoBackground": {
+    "description": "Bria を使用して動画の背景を除去し、切り抜かれたフレームとアルファマスクを返します。両方を合成ノードに接続するか、「Save WEBM」に渡して透明な動画を書き出せます。",
+    "display_name": "Bria 動画背景除去（透明）",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seedはノードの再実行を制御します。seedに関わらず結果は非決定的です。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "画像",
+        "tooltip": null
+      },
+      "1": {
+        "name": "マスク",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoGreenScreen": {
+    "description": "Bria を使用してビデオの背景を単色のクロマキー画面に置き換えます。",
+    "display_name": "Bria ビデオグリーンスクリーン",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "green_shade": {
+        "name": "green_shade",
+        "tooltip": "前景の背後に適用される単色クロマキーの色合い：broadcast_green（#00B140）、chroma_green（#00FF00）、または blue_screen（#0000FF）"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノードを再実行するかどうかを制御するシードです。シードに関係なく結果は非決定的です。"
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoReplaceBackground": {
+    "description": "Bria を使用して、ビデオの背景を指定した画像またはビデオで置き換えます。出力は前景の解像度とフレームレートを維持します。異なるアスペクト比の背景はフィットするように引き伸ばされるため、歪みのない結果を得るにはアスペクト比を合わせてください。",
+    "display_name": "Bria ビデオ背景置換",
+    "inputs": {
+      "background_image": {
+        "name": "背景画像",
+        "tooltip": "前景の後ろに合成する背景画像。背景画像または背景ビデオのいずれか一方のみを指定してください。"
+      },
+      "background_video": {
+        "name": "背景ビデオ",
+        "tooltip": "前景の後ろに合成する背景ビデオ。背景画像または背景ビデオのいずれか一方のみを指定してください。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "背景が置き換えられる前景ビデオ。"
       }
     },
     "outputs": {
@@ -1212,6 +1349,29 @@
       }
     }
   },
+  "CFGOverride": {
+    "description": "ステップの [開始, 終了] パーセント区間で cfg を固定値に上書きします。複数の上書きが重なる場合、サンプラーに最も近いものが優先されます。",
+    "display_name": "CFG 上書き",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "終了パーセント"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "開始パーセント"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CFGZeroStar": {
     "display_name": "CFGZeroStar",
     "inputs": {
@@ -1801,6 +1961,10 @@
     "outputs": {
       "0": {
         "name": "rgb整数値",
+        "tooltip": null
+      },
+      "1": {
+        "name": "16進数",
         "tooltip": null
       }
     }
@@ -2848,6 +3012,98 @@
       }
     }
   },
+  "DA3GeometryToMesh": {
+    "description": "深度マップを三角形分割された3Dメッシュに変換します。",
+    "display_name": "DA3ジオメトリをメッシュに変換",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "バッチ内のどの画像を変換するか。画像ごとに頂点数が異なるため、バッチを積み重ねることはできません。"
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "画像ごとの正規化信頼度がこの値未満のピクセルを除外します（0 = すべて保持、1 = 最も信頼度の高いピクセルのみ保持）。ジオメトリに信頼度マップがある場合（Small/Baseモデル）に使用されます。"
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "頂点の間引き間隔。1 = フル解像度、2 = 半分、など。"
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "3x3の深度範囲がこの割合を超える三角形を除外します。0 = 無効。"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "元画像をベースカラーテクスチャとして使用します。"
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "空の確率が0.5以上のピクセルをメッシュから除外します。ジオメトリに空マップがある場合（Mono/Metricモデル）に使用されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "画像に対してDepth Anything 3を実行します。マルチビューモードでは各画像が同じシーンの別ビューとして扱われます。",
+    "display_name": "Depth Anything 3を実行",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: 単一ビュー画像（すべてのモデルバリアントで動作）。\nmultiview: すべての画像を幾何学的一貫性＋カメラポーズのためにまとめて処理（Small/Baseモデルのみ）。"
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: 最長辺がresolutionになるようにスケール（メモリ制限、デフォルト）。\nlower_bound_resize: 最短辺がresolutionになるようにスケール（縦長・横長画像の詳細をより保持、メモリ多め）。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "モデルが動作する解像度（最長辺、14の倍数）。\n低いほど高速／VRAM消費が少ない。\n高いほど詳細。\n出力は元のサイズにアップサンプリングされます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "非正規化テンソルのディクショナリ。\n常に含まれるキー: depth, image, mode。\nオプションキー: sky（Mono/Metric用）、confidence（Small/Base用）、extrinsics＋intrinsics（マルチビュー用）。"
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "Depth Anything 3のジオメトリデータから深度マップ、信頼度マップ、または空マスクをレンダリングします。",
+    "display_name": "Depth Anything 3をレンダリング",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: 正規化グレースケール深度画像。\n- depth_colored: Turboカラーマップで変換した深度。\n- sky_mask: 空の確率 [0, 1]（Mono/Metricモデルのみ）。\n- confidence: 正規化深度信頼度（Small/Baseモデルのみ）。"
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "ControlNetモデルを読み込む（diff）",
     "inputs": {
@@ -2954,6 +3210,34 @@
       },
       "type": {
         "name": "タイプ"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "デュアルモデル CFG ガイダー",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "ポジティブ（条件付き）パスで使用するモデル。"
+      },
+      "model_negative": {
+        "name": "model_negative",
+        "tooltip": "ネガティブ（無条件）パスで使用するモデル。通常のCFGには同じモデルを使用します。"
+      },
+      "negative": {
+        "name": "ネガティブ",
+        "tooltip": "ネガティブモデルで実行するネガティブコンディショニング。未接続の場合はテキストなし（画像のみ）の無条件パスになります。"
+      },
+      "positive": {
+        "name": "ポジティブ"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3920,6 +4204,9 @@
     "description": "画像からマスクされたオブジェクトを削除し、背景を再構築します。消したい部分にマスクを塗ってください。",
     "display_name": "Flux 消去画像",
     "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
       "dilate_pixels": {
         "name": "膨張ピクセル数",
         "tooltip": "マスクの境界を拡張し、オブジェクトの端をきれいにカバーします。"
@@ -3930,6 +4217,10 @@
       "mask": {
         "name": "マスク",
         "tooltip": "白い部分が削除され、黒い部分が保持されます。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "ノイズ生成に使用されるランダムシード。"
       }
     },
     "outputs": {
@@ -4673,6 +4964,14 @@
       "system_prompt": {
         "name": "システムプロンプト",
         "tooltip": "AI の挙動を指示する基本的な指示文。"
+      },
+      "temperature": {
+        "name": "temperature",
+        "tooltip": "生成時のランダム性を制御します。値が低いほど集中・決定的になります。"
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "Nucleus サンプリングの閾値。値が低いほど集中し、高いほど多様性が増します。"
       }
     },
     "outputs": {
@@ -4726,6 +5025,48 @@
       "video": {
         "name": "動画",
         "tooltip": "モデルのコンテキストとして使用するオプションの動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "Google の Gemini モデルでテキスト応答を生成します。テキストプロンプトと、必要に応じて画像・音声クリップ・ビデオ・ファイルなどのマルチモーダルコンテキストを入力できます。",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "応答生成に使用する Gemini モデル。"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "モデルへのテキスト入力。詳細な指示、質問、またはコンテキストを含めてください。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "サンプリング用のシード。0 に設定するとランダムシードになります。決定的な出力は保証されません。"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "モデルの挙動を指示する基本的な指示文。"
       }
     },
     "outputs": {
@@ -5679,6 +6020,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Ideogram 4 スケジューラー",
+    "inputs": {
+      "height": {
+        "name": "高さ"
+      },
+      "mu": {
+        "name": "μ"
+      },
+      "std": {
+        "name": "σ"
+      },
+      "steps": {
+        "name": "ステップ数"
+      },
+      "width": {
+        "name": "幅"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "Ideogram V1モデルを使用して同期的に画像を生成します。\n\n画像リンクは一定期間のみ有効です。画像を保存したい場合は、ダウンロードしてください。",
     "display_name": "Ideogram V1",
@@ -5815,6 +6181,34 @@
       },
       "seed": {
         "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "Ideogram 4.0 モデルを使い、テキストプロンプトから画像を生成します。",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "画像生成用のテキストプロンプト。"
+      },
+      "rendering_speed": {
+        "name": "レンダリング速度",
+        "tooltip": "生成速度と品質のトレードオフを制御します。"
+      },
+      "resolution": {
+        "name": "解像度"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -8711,6 +9105,22 @@
     "outputs": {
       "0": {
         "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "Depth Anything 3を読み込む",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13595,15 +14005,15 @@
       "height": {
         "name": "高さ"
       },
-      "image": {
-        "name": "image"
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "上流の 3D ノードからの 3D モデルファイル。"
       },
       "model_3d_info": {
         "name": "3Dモデル情報"
       },
-      "model_file": {
-        "name": "model_file",
-        "tooltip": "上流の3Dノードからの3Dモデルファイル。"
+      "viewport_state": {
+        "name": "viewport_state"
       },
       "width": {
         "name": "幅"
@@ -13658,12 +14068,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "スプラットのプレビュー",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "ガウススプラット3Dファイル。"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "description": "入力画像をComfyUI出力ディレクトリに保存します。",
     "display_name": "画像プレビュー",
     "inputs": {
       "images": {
         "name": "画像"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "ポイントクラウドのプレビュー",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "ポイントクラウドファイル（.ply）"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -14914,6 +15416,10 @@
       "megapixels": {
         "name": "メガピクセル",
         "tooltip": "目標とする総メガピクセル数。1.0 MP ≈ 1024×1024（正方形の場合）。"
+      },
+      "multiple": {
+        "name": "倍数",
+        "tooltip": "選択した解像度を設定する際の最も近い倍数です。"
       }
     },
     "outputs": {
@@ -15349,6 +15855,98 @@
       }
     }
   },
+  "RunwayAleph2KeyframeNode": {
+    "description": "ガイダンス画像を入力（ソース）ビデオの特定の瞬間に固定し、その時点で Aleph2 が編集を誘導します。これを Runway Aleph2 Video to Video ノードの「keyframes」入力に接続してください。下のオプション「keyframes」入力を使って最大5つまで連結できます。",
+    "display_name": "Runway Aleph2 キーフレーム",
+    "inputs": {
+      "image": {
+        "name": "画像",
+        "tooltip": "入力ビデオの選択した瞬間に適用するガイダンス画像。"
+      },
+      "keyframes": {
+        "name": "キーフレーム",
+        "tooltip": "このキーフレームと連結するオプションの前のキーフレーム。"
+      },
+      "timing": {
+        "name": "タイミング",
+        "tooltip": "この画像を入力ビデオのタイムライン上に配置する方法。"
+      },
+      "timing_seconds": {
+        "name": "秒"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "キーフレーム",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "ガイダンス画像を出力（結果）ビデオの特定の瞬間に固定し、その時点で編集後のビデオの見た目を誘導します。これを Runway Aleph2 Video to Video ノードの「prompt_images」入力に接続してください。下のオプション「prompt_images」入力を使って最大5つまで連結できます。",
+    "display_name": "Runway Aleph2 プロンプト画像",
+    "inputs": {
+      "image": {
+        "name": "画像",
+        "tooltip": "出力ビデオの選択した瞬間に配置するガイダンス画像。"
+      },
+      "position": {
+        "name": "位置",
+        "tooltip": "この画像を出力ビデオのタイムライン上に配置する方法。"
+      },
+      "position_seconds": {
+        "name": "秒"
+      },
+      "prompt_images": {
+        "name": "プロンプト画像",
+        "tooltip": "このプロンプト画像と連結するオプションの前のプロンプト画像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "プロンプト画像",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "Runway の Aleph2 モデルを使ってテキストプロンプトでビデオを編集します。Aleph2 は元の動きやタイミングを保ちながら、映像のリスタイル、ライティング変更、要素の追加・削除、視点の変更などを行います。出力解像度は入力ビデオと同じで、2～30秒、30fps以下のビデオが必要です。編集の指示にはキーフレーム（入力ビデオに固定）またはプロンプト画像（出力ビデオに固定）のいずれかを使用できます（両方は不可）。",
+    "display_name": "Runway Aleph2 ビデオからビデオへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "keyframes": {
+        "name": "キーフレーム",
+        "tooltip": "Aleph2 Keyframe ノードからの入力ビデオに固定されたガイダンス画像（最大5つ）。キーフレームまたはプロンプト画像のいずれかを使用してください（両方は不可）。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "出力に何を表示するかを記述します（1～1000文字）。"
+      },
+      "prompt_images": {
+        "name": "プロンプト画像",
+        "tooltip": "Aleph2 Prompt Image ノードからの出力ビデオに固定されたガイダンス画像（最大5つ）。キーフレームまたはプロンプト画像のいずれかを使用してください（両方は不可）。"
+      },
+      "public_figure_threshold": {
+        "name": "著名人しきい値",
+        "tooltip": "認識可能な著名人に対するコンテンツモデレーション。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "生成用のランダムシード"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "編集する入力ビデオ。2～30秒、30fps以下である必要があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RunwayFirstLastFrameNode": {
     "description": "最初と最後のキーフレームをアップロードし、プロンプトを作成して動画を生成します。最後のフレームが最初のフレームと完全に異なる場合など、より複雑な遷移では、長い10秒の期間が効果的です。これにより、2つの入力間を滑らかに遷移するための時間がより多く確保されます。始める前に、これらのベストプラクティスを確認して、入力選択が生成を成功に導くようにしてください: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
     "display_name": "Runway 最初-最後フレームから動画生成",
@@ -15588,6 +16186,41 @@
     "outputs": {
       "0": {
         "name": "track_data",
+        "tooltip": null
+      }
+    }
+  },
+  "SCAIL2ColoredMask": {
+    "display_name": "SCAIL-2カラーマスク作成",
+    "inputs": {
+      "driving_track_data": {
+        "name": "ドライビングトラックデータ",
+        "tooltip": "ドライビングポーズ動画のSAM3トラック。pose_video_mask出力としてレンダリングされます。"
+      },
+      "object_indices": {
+        "name": "オブジェクトインデックス",
+        "tooltip": "含める人物インデックスのカンマ区切りリスト（例: '0,2,3'）。リファレンスおよびポーズ動画マスクの両方に適用されます。空欄＝全て。"
+      },
+      "ref_track_data": {
+        "name": "リファレンストラックデータ",
+        "tooltip": "リファレンス画像のSAM3トラック。"
+      },
+      "replacement_mode": {
+        "name": "置換モード",
+        "tooltip": "False＝mask_videoは黒背景（アニメーションモード）。True＝白背景（置換モード）。WanSCAILToVideoで一致するreplacement_modeを設定してください。reference_image_maskは常に黒背景です。"
+      },
+      "sort_by": {
+        "name": "並び順",
+        "tooltip": "パレットカラーがトラッキングされたオブジェクトに割り当てられる順序（リファレンスとポーズ動画の両方に適用され、各IDが同じ色を保持）。left_to_right＝最も左のオブジェクト（最初のフレームの重心）が最初の色を取得；area＝最も大きいオブジェクト（最初のフレームのマスク面積）が最初の色を取得；none＝SAM3の順序を維持。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
         "tooltip": null
       }
     }
@@ -16319,6 +16952,27 @@
       }
     }
   },
+  "SaveAudioAdvanced": {
+    "description": "入力されたオーディオをComfyUIの出力ディレクトリに保存します。",
+    "display_name": "オーディオを保存（詳細）",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "保存するオーディオ。"
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "保存するファイルの接頭辞。%date:yyyy-MM-dd% などのフォーマットトークンを含めることができます。"
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "オーディオを保存するファイル形式。"
+      }
+    }
+  },
   "SaveAudioMP3": {
     "display_name": "オーディオ保存 (MP3)",
     "inputs": {
@@ -16564,7 +17218,8 @@
         "name": "fps"
       },
       "images": {
-        "name": "画像"
+        "name": "画像",
+        "tooltip": "RGBA画像はアルファチャンネルを透明度として保存します（vp9コーデックのみ対応）。"
       }
     }
   },
@@ -22004,7 +22659,8 @@
         "name": "バッチサイズ"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "条件付け用のCLIPビジョン特徴量。モデルはアスペクト比に合わせてストレッチリサイズで学習されています。"
       },
       "height": {
         "name": "高さ"
@@ -22031,14 +22687,39 @@
         "name": "ポーズビデオ",
         "tooltip": "ポーズ条件付けに使用するビデオ。メインビデオの解像度の半分にダウンサンプリングされます。"
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "SCAIL-2専用。同じ解像度のpose_videoに対応する、個別IDごとに色分けされたSAM3マスク動画。"
+      },
       "positive": {
         "name": "positive"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "前のフレームの末尾フレーム数をアンカーとして使用します。SCAIL-2は5（81フレームのチャンク、76フレームのステップ）でトレーニングされています。"
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "SCAIL-2専用。前のチャンクの全デコード出力。最後のprevious_frame_countのみ拡張アンカーとして使用されます。"
+      },
       "reference_image": {
-        "name": "参照画像"
+        "name": "参照画像",
+        "tooltip": "参照画像。複数の参照がある場合は、すべてを1枚の画像に合成してください。"
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "SCAIL-2専用。reference_imageと同じ解像度のカラー参照マスク。"
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "SCAIL-2専用。False＝アニメーションモード（pose_video_maskは黒背景）、True＝置換モード（pose_video_maskは白背景）。"
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "このチャンクが開始する累積出力フレーム。前のチャンクのvideo_frame_offset出力から接続してください。"
       },
       "width": {
         "name": "幅"
@@ -22056,6 +22737,10 @@
       "2": {
         "name": "latent",
         "tooltip": "生成サイズの空のlatent。"
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "調整済みオフセット＋長さ。次のチャンクに接続してください。"
       }
     }
   },

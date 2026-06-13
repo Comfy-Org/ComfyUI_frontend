@@ -33,7 +33,7 @@ describe('assetMetadataUtils', () => {
   const mockAsset: AssetItem = {
     id: 'test-id',
     name: 'test-model',
-    asset_hash: 'hash123',
+    hash: 'hash123',
     size: 1024,
     mime_type: 'application/octet-stream',
     tags: ['models', 'checkpoints'],
@@ -312,24 +312,18 @@ describe('assetMetadataUtils', () => {
       isCloudRef.value = true
     })
 
-    it('returns asset_hash on cloud when present', () => {
+    it('returns the content hash on cloud when present', () => {
       isCloudRef.value = true
       expect(getAssetStoredFilename(mockAsset)).toBe('hash123')
     })
 
-    it('prefers hash over the deprecated asset_hash alias on cloud', () => {
-      isCloudRef.value = true
-      const asset = { ...mockAsset, hash: 'canonical-hash' }
-      expect(getAssetStoredFilename(asset)).toBe('canonical-hash')
-    })
-
     it('falls back to name on cloud when no hash is present', () => {
       isCloudRef.value = true
-      const asset = { ...mockAsset, hash: undefined, asset_hash: undefined }
+      const asset = { ...mockAsset, hash: undefined }
       expect(getAssetStoredFilename(asset)).toBe('test-model')
     })
 
-    it('returns name on OSS regardless of asset_hash', () => {
+    it('returns name on OSS regardless of hash', () => {
       isCloudRef.value = false
       expect(getAssetStoredFilename(mockAsset)).toBe('test-model')
     })

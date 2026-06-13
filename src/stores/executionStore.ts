@@ -2,6 +2,12 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
+import type { AppMode } from '@/composables/useAppMode'
+import {
+  getWorkflowMode,
+  isAppModeValue,
+  useAppMode
+} from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -55,6 +61,17 @@ interface QueuedJob {
    * This stays stable even if the user switches workflows or edits the canvas.
    */
   nodeLookup?: Record<string, ExecutionNodeInfo>
+  /**
+   * Share attribution snapshotted at queue time. Read this instead of
+   * `workflow.shareId`, which can gain attribution after the job was queued.
+   */
+  shareId?: string
+  /**
+   * View-mode attribution snapshotted at queue time, so mode switches during
+   * the run don't misattribute completion events.
+   */
+  viewMode?: AppMode
+  isAppMode?: boolean
 }
 
 function buildExecutionNodeLookup(
@@ -82,6 +99,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
   const executionErrorStore = useExecutionErrorStore()
+  const { mode, isAppMode } = useAppMode()
 
   const clientId = ref<string | null>(null)
   const activeJobId = ref<JobId | null>(null)
@@ -295,12 +313,22 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
-    if (isCloud && activeJobId.value) {
-      useTelemetry()?.trackExecutionSuccess({
-        jobId: activeJobId.value
-      })
-    }
     const jobId = e.detail.prompt_id
+    const queuedJob = queuedJobs.value[jobId]
+    if (isCloud && queuedJob) {
+      const telemetry = useTelemetry()
+      telemetry?.trackExecutionSuccess({
+        jobId
+      })
+      if (queuedJob.shareId) {
+        telemetry?.trackSharedWorkflowRun({
+          job_id: jobId,
+          share_id: queuedJob.shareId,
+          view_mode: queuedJob.viewMode ?? mode.value,
+          is_app_mode: queuedJob.isAppMode ?? isAppMode.value
+        })
+      }
+    }
     resetExecutionState(jobId)
   }
 
@@ -580,6 +608,10 @@ export const useExecutionStore = defineStore('execution', () => {
     }
     queuedJob.nodeLookup = buildExecutionNodeLookup(promptOutput)
     queuedJob.workflow = workflow
+    queuedJob.shareId = workflow?.shareId
+    const queuedMode = getWorkflowMode(workflow)
+    queuedJob.viewMode = queuedMode
+    queuedJob.isAppMode = isAppModeValue(queuedMode)
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)

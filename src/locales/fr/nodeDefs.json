@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "Nœud de conditioning pour Bernini pour le conditioning vidéo/image in-context. Il peut être utilisé pour les tâches suivantes : t2v (texte vers vidéo), v2v (vidéo vers vidéo), rv2v (édition vidéo guidée par référence), r2v (référence vers vidéo), ads2v (insertion d'image/vidéo dans une vidéo). Les images de référence injectées comme tokens in-context (r2v, rv2v) sont encodées indépendamment à leur propre ratio d’aspect natif (bord long limité à ref_max_size).",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "taille_lot"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "length": {
+        "name": "longueur"
+      },
+      "negative": {
+        "name": "négatif"
+      },
+      "positive": {
+        "name": "positif"
+      },
+      "ref_max_size": {
+        "name": "ref_max_size",
+        "tooltip": "Taille maximale pour le bord long de reference_video et reference_images. Redimensionné en conservant le ratio d’aspect et ajusté à 16px."
+      },
+      "reference_images": {
+        "name": "images_de_référence"
+      },
+      "reference_video": {
+        "name": "vidéo_de_référence",
+        "tooltip": "Vidéo à insérer dans la vidéo source (ads2v)."
+      },
+      "source_video": {
+        "name": "vidéo_source",
+        "tooltip": "Vidéo source à éditer ou restyler (v2v, rv2v). Redimensionnée à la largeur/hauteur et coupée à la longueur."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positif",
+        "tooltip": null
+      },
+      "1": {
+        "name": "négatif",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "PlanificateurÉchantillonnageBeta",
     "inputs": {
@@ -585,6 +641,87 @@
       },
       "video": {
         "name": "vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaTransparentVideoBackground": {
+    "description": "Supprimez l’arrière-plan d’une vidéo avec Bria et obtenez les images détourées ainsi qu’un masque alpha. Connectez-les à un nœud de composition ou transmettez-les à Enregistrer WEBM pour créer une vidéo transparente.",
+    "display_name": "Bria Suppression de l’arrière-plan vidéo (Transparent)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoGreenScreen": {
+    "description": "Remplacez l’arrière-plan d’une vidéo par un écran uni de chroma-key à l’aide de Bria.",
+    "display_name": "Bria Video Green Screen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "green_shade": {
+        "name": "teinte verte",
+        "tooltip": "Teinte unie de chroma-key appliquée derrière le premier plan : broadcast_green (#00B140), chroma_green (#00FF00) ou blue_screen (#0000FF)."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoReplaceBackground": {
+    "description": "Remplacez l'arrière-plan d'une vidéo par une image ou une vidéo fournie à l'aide de Bria. La sortie conserve la résolution et la fréquence d'images du premier plan ; un arrière-plan avec un autre format d'image sera étiré pour s'adapter, donc faites correspondre le format pour éviter toute déformation.",
+    "display_name": "Bria Video Remplacer l'arrière-plan",
+    "inputs": {
+      "background_image": {
+        "name": "image d'arrière-plan",
+        "tooltip": "Image d'arrière-plan à placer derrière le premier plan. Fournissez soit une image d'arrière-plan, soit une vidéo d'arrière-plan, mais pas les deux."
+      },
+      "background_video": {
+        "name": "vidéo d'arrière-plan",
+        "tooltip": "Vidéo d'arrière-plan à placer derrière le premier plan. Fournissez soit une image d'arrière-plan, soit une vidéo d'arrière-plan, mais pas les deux."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Vidéo de premier plan dont l'arrière-plan est remplacé."
       }
     },
     "outputs": {
@@ -1212,6 +1349,29 @@
       }
     }
   },
+  "CFGOverride": {
+    "description": "Remplace le cfg par une valeur fixe sur une tranche de pourcentage [début, fin] des étapes. En cas de remplacements multiples, celui le plus proche du sampler prévaut en cas de chevauchement.",
+    "display_name": "Remplacement CFG",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "pourcentage_fin"
+      },
+      "model": {
+        "name": "modèle"
+      },
+      "start_percent": {
+        "name": "pourcentage_début"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CFGZeroStar": {
     "display_name": "CFGZeroStar",
     "inputs": {
@@ -1801,6 +1961,10 @@
     "outputs": {
       "0": {
         "name": "rgb_int",
+        "tooltip": null
+      },
+      "1": {
+        "name": "hex",
         "tooltip": null
       }
     }
@@ -2848,6 +3012,98 @@
       }
     }
   },
+  "DA3GeometryToMesh": {
+    "description": "Convertir une carte de profondeur en un maillage 3D triangulé.",
+    "display_name": "Convertir la géométrie DA3 en maillage",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Quelle image d’un lot convertir. Le nombre de sommets diffère selon l’image, donc les lots ne peuvent pas être empilés."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "Exclure les pixels dont la confiance normalisée par image est inférieure à cette valeur (0 = garder tous, 1 = ne garder que le pixel le plus fiable). Utilisé lorsque la géométrie possède une carte de confiance (modèles Small/Base)."
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Pas de sommets. 1 = pleine résolution, 2 = moitié, etc."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Supprimer les triangles dont l’étendue de profondeur 3x3 dépasse cette fraction. 0 = désactivé."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Utiliser l’image source comme texture de couleur de base."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "Exclure les pixels avec une probabilité de ciel (sky >= 0,5) du maillage. Utilisé lorsque la géométrie possède une carte du ciel (modèles Mono/Metric)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "Exécuter Depth Anything 3 sur une image. En mode multi-vues, chaque image est traitée comme une vue séparée de la même scène.",
+    "display_name": "Exécuter Depth Anything 3",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono : image à vue unique (fonctionne avec toute variante du modèle).\nmultiview : toutes les images sont traitées ensemble pour la cohérence géométrique + pose de la caméra (pour les modèles Small/Base uniquement)."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize : mise à l’échelle pour que le côté le plus long = résolution (limite la mémoire, par défaut).\nlower_bound_resize : mise à l’échelle pour que le côté le plus court = résolution (préserve plus de détails sur les images hautes/longues, utilise plus de mémoire)."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Résolution à laquelle le modèle s’exécute (côté le plus long, multiple de 14).\nPlus bas = plus rapide / moins de VRAM.\nPlus haut = plus de détails.\nLa sortie est rééchantillonnée à la taille d’origine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "Dictionnaire de tenseurs non normalisés.\nContient toujours les clés : depth, image, mode.\nClés optionnelles : sky (pour Mono/Metric), confidence (pour Small/Base), extrinsics + intrinsics (pour multi-vues)."
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "Rendre une carte de profondeur, une carte de confiance ou un masque de ciel à partir des données de géométrie Depth Anything 3.",
+    "display_name": "Rendu Depth Anything 3",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth : image de profondeur normalisée en niveaux de gris.\n- depth_colored : profondeur mappée via la colormap Turbo.\n- sky_mask : probabilité de ciel dans [0, 1] (pour modèles Mono/Metric uniquement).\n- confidence : confiance de profondeur normalisée (pour modèles Small/Base uniquement)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "DiffControlNetLoader": {
     "display_name": "Charger le modèle ControlNet (diff)",
     "inputs": {
@@ -2954,6 +3210,34 @@
       },
       "type": {
         "name": "type"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "Guider CFG Double Modèle",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle utilisé pour le passage positif (conditionnel)."
+      },
+      "model_negative": {
+        "name": "modèle_négatif",
+        "tooltip": "Modèle utilisé pour le passage négatif (inconditionnel). Utilisez le même modèle pour un CFG ordinaire."
+      },
+      "negative": {
+        "name": "négatif",
+        "tooltip": "Conditionnement négatif exécuté sur le modèle négatif. Laissez non connecté pour un passage inconditionnel sans texte (image uniquement)."
+      },
+      "positive": {
+        "name": "positif"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3920,6 +4204,9 @@
     "description": "Supprime l'objet masqué d'une image et reconstruit l'arrière-plan. Peignez le mask sur ce que vous souhaitez effacer.",
     "display_name": "Flux Effacer l'image",
     "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
       "dilate_pixels": {
         "name": "dilate_pixels",
         "tooltip": "Étend les bords du mask pour garantir une couverture propre des contours de l'objet."
@@ -3930,6 +4217,10 @@
       "mask": {
         "name": "mask",
         "tooltip": "Les zones blanches sont supprimées ; les zones noires sont conservées."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine aléatoire utilisée pour créer le bruit."
       }
     },
     "outputs": {
@@ -4673,6 +4964,14 @@
       "system_prompt": {
         "name": "invite système",
         "tooltip": "Instructions fondamentales qui dictent le comportement de l'IA."
+      },
+      "temperature": {
+        "name": "température",
+        "tooltip": "Contrôle l’aléa dans la génération. Plus bas = plus ciblé/déterministe."
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "Seuil d’échantillonnage nucleus. Plus bas = plus ciblé, plus haut = plus diversifié."
       }
     },
     "outputs": {
@@ -4726,6 +5025,48 @@
       "video": {
         "name": "vidéo",
         "tooltip": "Vidéo optionnelle à utiliser comme contexte pour le modèle."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "Générez des réponses textuelles avec les modèles Gemini de Google. Fournissez une invite textuelle et, en option, une ou plusieurs images, clips audio, vidéos ou fichiers comme contexte multimodal.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Le modèle Gemini utilisé pour générer la réponse."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_temperature": {
+        "name": "température"
+      },
+      "model_thinking_level": {
+        "name": "niveau de réflexion"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Texte d’entrée pour le modèle. Incluez des instructions détaillées, des questions ou du contexte."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine pour l’échantillonnage. Mettre à 0 pour une graine aléatoire. Le résultat déterministe n’est pas garanti."
+      },
+      "system_prompt": {
+        "name": "invite système",
+        "tooltip": "Instructions fondamentales qui dictent le comportement du modèle."
       }
     },
     "outputs": {
@@ -5679,6 +6020,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Planificateur Ideogram 4",
+    "inputs": {
+      "height": {
+        "name": "hauteur"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "écart_type"
+      },
+      "steps": {
+        "name": "étapes"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "Génère des images de manière synchrone en utilisant le modèle Ideogram V1.\n\nLes liens des images sont disponibles pour une durée limitée ; si vous souhaitez conserver l'image, vous devez la télécharger.",
     "display_name": "Ideogram V1",
@@ -5815,6 +6181,34 @@
       },
       "seed": {
         "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "Génère des images à l’aide du modèle Ideogram 4.0 à partir d’une invite textuelle.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Invite textuelle pour la génération d’image."
+      },
+      "rendering_speed": {
+        "name": "vitesse_de_rendu",
+        "tooltip": "Contrôle le compromis entre la vitesse de génération et la qualité."
+      },
+      "resolution": {
+        "name": "résolution"
+      },
+      "seed": {
+        "name": "graine"
       }
     },
     "outputs": {
@@ -8711,6 +9105,22 @@
     "outputs": {
       "0": {
         "name": "modèle_bg",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "Charger Depth Anything 3",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13595,15 +14005,15 @@
       "height": {
         "name": "hauteur"
       },
-      "image": {
-        "name": "image"
+      "model_3d": {
+        "name": "modèle 3D",
+        "tooltip": "Fichier de modèle 3D provenant d’un nœud 3D en amont."
       },
       "model_3d_info": {
         "name": "infos_modèle_3d"
       },
-      "model_file": {
-        "name": "fichier_modèle",
-        "tooltip": "Fichier de modèle 3D provenant d'un nœud 3D en amont."
+      "viewport_state": {
+        "name": "état de la vue"
       },
       "width": {
         "name": "largeur"
@@ -13658,12 +14068,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "Aperçu Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "info_caméra"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "model_3d": {
+        "name": "modèle_3d",
+        "tooltip": "Un fichier 3D gaussian splat."
+      },
+      "model_3d_info": {
+        "name": "info_modèle_3d"
+      },
+      "viewport_state": {
+        "name": "état_vue"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modèle_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "info_modèle_3d",
+        "tooltip": null
+      },
+      "2": {
+        "name": "info_caméra",
+        "tooltip": null
+      },
+      "3": {
+        "name": "largeur",
+        "tooltip": null
+      },
+      "4": {
+        "name": "hauteur",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "description": "Enregistre les images d'entrée dans votre répertoire de sortie ComfyUI.",
     "display_name": "Aperçu Image",
     "inputs": {
       "images": {
         "name": "images"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "Aperçu Nuage de Points",
+    "inputs": {
+      "camera_info": {
+        "name": "info_caméra"
+      },
+      "height": {
+        "name": "hauteur"
+      },
+      "model_3d": {
+        "name": "modèle_3d",
+        "tooltip": "Fichier nuage de points (.ply)"
+      },
+      "model_3d_info": {
+        "name": "info_modèle_3d"
+      },
+      "viewport_state": {
+        "name": "état_vue"
+      },
+      "width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modèle_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "info_modèle_3d",
+        "tooltip": null
+      },
+      "2": {
+        "name": "info_caméra",
+        "tooltip": null
+      },
+      "3": {
+        "name": "largeur",
+        "tooltip": null
+      },
+      "4": {
+        "name": "hauteur",
+        "tooltip": null
       }
     }
   },
@@ -14914,6 +15416,10 @@
       "megapixels": {
         "name": "mégapixels",
         "tooltip": "Nombre total de mégapixels visé. 1,0 MP ≈ 1024×1024 pour un carré."
+      },
+      "multiple": {
+        "name": "multiple",
+        "tooltip": "Multiplicateur le plus proche du résultat pour définir la résolution sélectionnée."
       }
     },
     "outputs": {
@@ -15349,6 +15855,98 @@
       }
     }
   },
+  "RunwayAleph2KeyframeNode": {
+    "description": "Ancrez une image de guidage à un moment de la vidéo d'entrée (source), afin qu'Aleph2 oriente l'édition à ce moment précis de votre séquence. Connectez ce nœud à l'entrée 'keyframes' du nœud Runway Aleph2 Vidéo vers Vidéo ; enchaînez-en plusieurs (jusqu'à 5) via l'entrée optionnelle 'keyframes' ci-dessous.",
+    "display_name": "Runway Aleph2 Image-clé",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "L'image de guidage à appliquer au moment choisi de la vidéo d'entrée."
+      },
+      "keyframes": {
+        "name": "images-clés",
+        "tooltip": "Images-clés précédentes optionnelles à enchaîner avec celle-ci."
+      },
+      "timing": {
+        "name": "synchronisation",
+        "tooltip": "Comment placer cette image sur la timeline de la vidéo d'entrée."
+      },
+      "timing_seconds": {
+        "name": "secondes"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images-clés",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "Ancrez une image de guidage à un moment de la vidéo de sortie (résultat), pour guider l'apparence de la vidéo éditée à ce moment. Connectez ce nœud à l'entrée 'prompt_images' du nœud Runway Aleph2 Vidéo vers Vidéo ; enchaînez-en plusieurs (jusqu'à 5) via l'entrée optionnelle 'prompt_images' ci-dessous.",
+    "display_name": "Runway Aleph2 Image de prompt",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "L'image de guidage à placer au moment choisi de la vidéo de sortie."
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "Comment placer cette image sur la timeline de la vidéo de sortie."
+      },
+      "position_seconds": {
+        "name": "secondes"
+      },
+      "prompt_images": {
+        "name": "images de prompt",
+        "tooltip": "Images de prompt précédentes optionnelles à enchaîner avec celle-ci."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images de prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "Modifiez une vidéo à l’aide d’une invite textuelle avec le modèle Aleph2 de Runway. Aleph2 transforme votre séquence (restylisation, rééclairage, ajout ou suppression d’éléments, changement de point de vue) tout en conservant le mouvement et le timing d’origine ; la résolution de sortie correspond à celle de la vidéo d’entrée, qui doit durer entre 2 et 30 secondes à 30 ips ou moins. Vous pouvez orienter la modification à l’aide de keyframes (ancrées à la vidéo d’entrée) ou d’images d’invite (ancrées à la vidéo de sortie) – utilisez l’un ou l’autre, pas les deux.",
+    "display_name": "Runway Aleph2 Vidéo vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Images de guidage ancrées à la vidéo d’entrée, provenant des nœuds Aleph2 Keyframe (jusqu’à 5). Utilisez les keyframes ou les images d’invite, pas les deux."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Décrit ce qui doit apparaître dans la sortie (1 à 1000 caractères)."
+      },
+      "prompt_images": {
+        "name": "images d’invite",
+        "tooltip": "Images de guidage ancrées à la vidéo de sortie, provenant des nœuds Aleph2 Prompt Image (jusqu’à 5). Utilisez les keyframes ou les images d’invite, pas les deux."
+      },
+      "public_figure_threshold": {
+        "name": "seuil de figure publique",
+        "tooltip": "Modération de contenu pour les figures publiques reconnaissables."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine aléatoire pour la génération"
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Vidéo d’entrée à modifier. Doit durer entre 2 et 30 secondes à 30 ips ou moins."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RunwayFirstLastFrameNode": {
     "description": "Téléchargez les premières et dernières images clés, rédigez un prompt et générez une vidéo. Les transitions plus complexes, comme lorsque la dernière image est complètement différente de la première, peuvent bénéficier de la durée plus longue de 10s. Cela donnerait à la génération plus de temps pour effectuer une transition fluide entre les deux entrées. Avant de commencer, consultez ces bonnes pratiques pour vous assurer que vos sélections d'entrée permettront à votre génération de réussir : https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
     "display_name": "Runway Première-Dernière image vers vidéo",
@@ -15588,6 +16186,41 @@
     "outputs": {
       "0": {
         "name": "données_suivi",
+        "tooltip": null
+      }
+    }
+  },
+  "SCAIL2ColoredMask": {
+    "display_name": "Créer un masque coloré SCAIL-2",
+    "inputs": {
+      "driving_track_data": {
+        "name": "données_de_suivi_conduite",
+        "tooltip": "Piste SAM3 de la vidéo de pose de conduite. Sera rendue dans la sortie pose_video_mask."
+      },
+      "object_indices": {
+        "name": "indices_objets",
+        "tooltip": "Liste séparée par des virgules des indices de personnes à inclure (ex : '0,2,3'). Appliqué aux masques vidéo de référence et de pose. Vide = tous."
+      },
+      "ref_track_data": {
+        "name": "données_de_suivi_référence",
+        "tooltip": "Piste SAM3 de l’image de référence."
+      },
+      "replacement_mode": {
+        "name": "mode_remplacement",
+        "tooltip": "Faux = mask_video a un fond noir (Mode Animation). Vrai = fond blanc (Mode Remplacement). Définir le même mode_remplacement sur WanSCAILToVideo. reference_image_mask est toujours sur fond noir."
+      },
+      "sort_by": {
+        "name": "trier_par",
+        "tooltip": "Ordre dans lequel les couleurs de la palette sont attribuées aux objets suivis (appliqué aux vidéos de référence et de pose pour que chaque identité garde la même couleur). left_to_right = l’objet le plus à gauche (par centroïde de la première image) reçoit la première couleur ; area = le plus grand objet (par aire du masque de la première image) reçoit la première couleur ; none = garder l’ordre de SAM3."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
         "tooltip": null
       }
     }
@@ -16319,6 +16952,27 @@
       }
     }
   },
+  "SaveAudioAdvanced": {
+    "description": "Enregistre l’audio d’entrée dans le dossier de sortie ComfyUI.",
+    "display_name": "Enregistrer l’Audio (Avancé)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "L’audio à enregistrer."
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "filename_prefix": {
+        "name": "préfixe_nom_fichier",
+        "tooltip": "Le préfixe du fichier à enregistrer. Peut inclure des jetons de formatage comme %date:yyyy-MM-dd%."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "Le format de fichier dans lequel enregistrer l’audio."
+      }
+    }
+  },
   "SaveAudioMP3": {
     "display_name": "Enregistrer Audio (MP3)",
     "inputs": {
@@ -16564,7 +17218,8 @@
         "name": "fps"
       },
       "images": {
-        "name": "images"
+        "name": "images",
+        "tooltip": "Les images RGBA sont enregistrées avec leur canal alpha comme transparence (codec vp9 uniquement)."
       }
     }
   },
@@ -22004,7 +22659,8 @@
         "name": "taille_du_lot"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "Caractéristiques visuelles CLIP pour le conditionnement. Le modèle est entraîné avec un redimensionnement étiré au ratio d’aspect."
       },
       "height": {
         "name": "hauteur"
@@ -22031,14 +22687,39 @@
         "name": "vidéo_de_pose",
         "tooltip": "Vidéo utilisée pour le conditionnement de pose. Sera réduite à la moitié de la résolution de la vidéo principale."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "SCAIL-2 uniquement. Vidéo de masque SAM3 colorée par identité à la même résolution que pose_video."
+      },
       "positive": {
         "name": "positif"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "Images de fin de previous_frames à utiliser comme ancrage. SCAIL-2 a été entraîné avec 5 (segments de 81 images, pas de 76 images)."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "SCAIL-2 uniquement. Sortie décodée complète du segment précédent. Seuls les derniers previous_frame_count sont utilisés comme ancrage d’extension."
+      },
       "reference_image": {
-        "name": "image_de_référence"
+        "name": "image_de_référence",
+        "tooltip": "Image de référence, pour plusieurs références, composez-les toutes sur une seule image."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "SCAIL-2 uniquement. Masque de référence coloré à la même résolution que reference_image."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "SCAIL-2 uniquement. Faux = Mode Animation (pose_video_mask doit avoir un fond noir). Vrai = Mode Remplacement (pose_video_mask doit avoir un fond blanc)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "Image de sortie cumulative à partir de laquelle commence ce segment. Connectez à la sortie video_frame_offset du segment précédent."
       },
       "width": {
         "name": "largeur"
@@ -22056,6 +22737,10 @@
       "2": {
         "name": "latent",
         "tooltip": "Latent vide de la taille de génération."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "Décalage ajusté + longueur. À connecter au segment suivant."
       }
     }
   },

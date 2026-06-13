@@ -1,4 +1,11 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+vi.mock('@/composables/useAppMode', () => ({
+  useAppMode: () => ({
+    mode: { value: 'app' },
+    isAppMode: { value: true }
+  })
+}))
 
 import { GtmTelemetryProvider } from './GtmTelemetryProvider'
 
@@ -18,6 +25,7 @@ describe('GtmTelemetryProvider', () => {
     window.dataLayer = undefined
     window.gtag = undefined
     document.head.innerHTML = ''
+    localStorage.clear()
   })
 
   it('injects the GTM runtime script', () => {
@@ -184,11 +192,15 @@ describe('GtmTelemetryProvider', () => {
 
     it('pushes run_workflow with trigger_source', () => {
       const provider = createInitializedProvider()
+      localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
       provider.trackRunButton({ trigger_source: 'button' })
       expect(lastDataLayerEntry()).toMatchObject({
         event: 'run_workflow',
         trigger_source: 'button',
-        subscribe_to_run: false
+        subscribe_to_run: false,
+        view_mode: 'app',
+        is_app_mode: true,
+        dock_state: 'floating'
       })
     })
 
@@ -206,6 +218,23 @@ describe('GtmTelemetryProvider', () => {
         node_type: 'KSampler'
       })
       expect(entry!.error as string).toHaveLength(100)
+    })
+
+    it('pushes execution_start', () => {
+      const provider = createInitializedProvider()
+      provider.trackWorkflowExecution()
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'execution_start'
+      })
+    })
+
+    it('pushes execution_success with job_id', () => {
+      const provider = createInitializedProvider()
+      provider.trackExecutionSuccess({ jobId: 'job-1' })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'execution_success',
+        job_id: 'job-1'
+      })
     })
 
     it('pushes select_content for template events', () => {
@@ -305,13 +334,48 @@ describe('GtmTelemetryProvider', () => {
       const provider = createInitializedProvider()
       provider.trackShareFlow({
         step: 'link_copied',
-        source: 'app_mode'
+        source: 'app_mode',
+        view_mode: 'app',
+        is_app_mode: true,
+        share_id: 'share-1'
       })
       expect(lastDataLayerEntry()).toMatchObject({
         event: 'share_flow',
         step: 'link_copied',
-        source: 'app_mode'
+        source: 'app_mode',
+        view_mode: 'app',
+        is_app_mode: true
       })
+      expect(lastDataLayerEntry()).not.toHaveProperty('share_id')
+    })
+
+    it('pushes ui_button_click with element_group', () => {
+      const provider = createInitializedProvider()
+      provider.trackUiButtonClicked({
+        button_id: 'sidebar_settings_button_clicked',
+        element_group: 'sidebar'
+      })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'ui_button_click',
+        button_id: 'sidebar_settings_button_clicked',
+        element_group: 'sidebar'
+      })
+    })
+
+    it('omits share_id from workflow import events', () => {
+      const provider = createInitializedProvider()
+      provider.trackWorkflowImported({
+        missing_node_count: 0,
+        missing_node_types: [],
+        open_source: 'shared_url',
+        share_id: 'share-1'
+      })
+
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'workflow_import',
+        open_source: 'shared_url'
+      })
+      expect(lastDataLayerEntry()).not.toHaveProperty('share_id')
     })
 
     it('pushes normalized email inside the auth event payload', () => {
@@ -321,7 +385,8 @@ describe('GtmTelemetryProvider', () => {
         method: 'email',
         is_new_user: true,
         user_id: 'uid-123',
-        email: '  Test@Example.com  '
+        email: '  Test@Example.com  ',
+        share_id: 'share-1'
       })
 
       const dl = window.dataLayer as Record<string, unknown>[]
@@ -334,6 +399,7 @@ describe('GtmTelemetryProvider', () => {
           email: 'test@example.com'
         }
       })
+      expect(authEvent).not.toHaveProperty('share_id')
       expect(
         dl.some((entry) => 'user_data' in entry && !('event' in entry))
       ).toBe(false)
