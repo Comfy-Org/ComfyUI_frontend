@@ -84,8 +84,7 @@ import Button from '@/components/ui/button/Button.vue'
 import type { PendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const menuItemClass =
-  'flex w-full items-center justify-start gap-2 rounded-sm px-3 py-2 text-sm'
+const menuItemClass = 'w-full justify-start rounded-sm px-3 py-2'
 
 defineProps<{
   invites: PendingInvite[]

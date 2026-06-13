@@ -48,7 +48,6 @@
             variant="secondary"
             size="lg"
             :disabled="isInviteDisabled"
-            :class="isInviteDisabled && 'cursor-not-allowed opacity-50'"
             :aria-label="$t('workspacePanel.inviteMember')"
             @click="handleInviteMember"
           >
