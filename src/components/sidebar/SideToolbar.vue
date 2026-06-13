@@ -2,13 +2,16 @@
   <nav
     ref="sideToolbarRef"
     data-testid="side-toolbar"
-    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent [.floating-sidebar]:-mr-2"
+    class="side-tool-bar-container flex h-full flex-col items-center bg-transparent"
     :class="{
       'small-sidebar': isSmall,
       'connected-sidebar pointer-events-auto': isConnected,
       'floating-sidebar': !isConnected,
       'overflowing-sidebar': isOverflowing,
-      'border-r border-(--interface-stroke) shadow-interface': isConnected
+      'border-(--interface-stroke) shadow-interface': isConnected,
+      'border-r': isConnected && sidebarLocation === 'left',
+      'border-l': isConnected && sidebarLocation === 'right',
+      '-mr-2': !isConnected && sidebarLocation === 'left'
     }"
   >
     <div
@@ -73,6 +76,7 @@ import ComfyMenuButton from '@/components/sidebar/ComfyMenuButton.vue'
 import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPanelToggleButton.vue'
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
+import { useSideToolbarState } from '@/composables/useSideToolbarState'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -112,13 +116,7 @@ const isSmall = computed(
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
 )
-const sidebarStyle = computed(() => settingStore.get('Comfy.Sidebar.Style'))
-const isConnected = computed(
-  () =>
-    selectedTab.value ||
-    isOverflowing.value ||
-    sidebarStyle.value === 'connected'
-)
+const { isConnected, isOverflowing } = useSideToolbarState()
 
 const tabs = computed(() => workspaceStore.getSidebarTabs())
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
@@ -170,7 +168,6 @@ const getTabTooltipSuffix = (tab: SidebarTabExtension) => {
   return shortcut ? t('g.shortcutSuffix', { shortcut }) : ''
 }
 
-const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
     'sidebar-item-group flex shrink-0 flex-col items-center overflow-hidden',
