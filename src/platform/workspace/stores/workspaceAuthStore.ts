@@ -409,10 +409,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   // A parallel mint/refresh lifecycle that writes to the dormant `unifiedToken`
   // slot. The legacy switchWorkspace/refreshToken machinery above is untouched.
 
-  // The mint body the unified session re-mints against. `{}` is the personal
-  // default (the backend resolves the personal workspace from the Firebase
-  // identity); `{ workspace_id }` targets a concrete workspace. `null` means no
-  // active unified session.
+  // Mint body the unified session re-mints against: `{}` = personal (resolved
+  // server-side from the Firebase identity), `{ workspace_id }` = explicit.
   type UnifiedMintBody = Record<string, never> | { workspace_id: string }
   let unifiedTarget: UnifiedMintBody | null = null
 
@@ -548,8 +546,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     workspaceToken.value = null
     error.value = null
     clearSessionStorage()
-    // Drop the unified Cloud JWT and stop its timer on logout. Safe under any
-    // flag state: the slot is null when unified auth is off.
+    // Tear down the unified slot + timer on logout (no-op when the slot is empty).
     clearUnifiedContext()
   }
 
