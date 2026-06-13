@@ -700,6 +700,36 @@
       }
     }
   },
+  "BriaVideoReplaceBackground": {
+    "description": "使用 Bria 将视频的背景替换为提供的图像或视频。输出保持前景的分辨率和帧率；如果背景的宽高比不同，则会被拉伸以适应，因此请匹配宽高比以获得无失真的效果。",
+    "display_name": "Bria 视频更换背景",
+    "inputs": {
+      "background_image": {
+        "name": "background_image",
+        "tooltip": "用于合成在前景后面的背景图像。请只提供背景图像或背景视频中的一个。"
+      },
+      "background_video": {
+        "name": "background_video",
+        "tooltip": "用于合成在前景后面的背景视频。请只提供背景图像或背景视频中的一个。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "需要更换背景的前景视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0 从首帧图像和可选的末帧图像生成视频。",
     "display_name": "ByteDance Seedance 2.0 首帧-末帧生成视频",
@@ -15821,6 +15851,98 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2KeyframeNode": {
+    "description": "将引导图像锚定到输入（源）视频的某一时刻，使 Aleph2 在该时刻引导你的素材编辑。将此节点连接到 Runway Aleph2 视频转视频节点的 'keyframes' 输入；可通过下方可选的 'keyframes' 输入串联多个（最多 5 个）。",
+    "display_name": "Runway Aleph2 关键帧",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "要在输入视频选定时刻应用的引导图像。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "可选的前置关键帧，与此关键帧串联。"
+      },
+      "timing": {
+        "name": "timing",
+        "tooltip": "如何将该图像放置在输入视频的时间线上。"
+      },
+      "timing_seconds": {
+        "name": "秒"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "将引导图像锚定到输出（结果）视频的某一时刻，以引导编辑后视频在该时刻的外观。将此节点连接到 Runway Aleph2 视频转视频节点的 'prompt_images' 输入；可通过下方可选的 'prompt_images' 输入串联多个（最多 5 个）。",
+    "display_name": "Runway Aleph2 提示图像",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "要在输出视频选定时刻放置的引导图像。"
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "如何将该图像放置在输出视频的时间线上。"
+      },
+      "position_seconds": {
+        "name": "秒"
+      },
+      "prompt_images": {
+        "name": "prompt_images",
+        "tooltip": "可选的前置提示图像，与此图像串联。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt_images",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "使用 Runway 的 Aleph2 模型通过文本提示编辑视频。Aleph2 可在保持原始运动和时序的同时，转换您的素材（重新风格化、重新打光、添加或移除元素、更改视角）；输出分辨率与输入视频一致，输入视频需为 2-30 秒，帧率不高于 30 fps。可选地通过关键帧（锚定到输入视频）或提示图像（锚定到输出视频）引导编辑——二者只能选其一，不可同时使用。",
+    "display_name": "Runway Aleph2 视频转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "keyframes": {
+        "name": "关键帧",
+        "tooltip": "锚定到输入视频的引导图像，来自 Aleph2 Keyframe 节点（最多 5 个）。只能使用关键帧或提示图像，不能同时使用。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述输出中应出现的内容（1-1000 字符）。"
+      },
+      "prompt_images": {
+        "name": "提示图像",
+        "tooltip": "锚定到输出视频的引导图像，来自 Aleph2 Prompt Image 节点（最多 5 个）。只能使用关键帧或提示图像，不能同时使用。"
+      },
+      "public_figure_threshold": {
+        "name": "公众人物阈值",
+        "tooltip": "对可识别公众人物的内容进行审核。"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "生成用的随机种子"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "要编辑的输入视频。需为 2-30 秒，帧率不高于 30 fps。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

@@ -700,6 +700,36 @@
       }
     }
   },
+  "BriaVideoReplaceBackground": {
+    "description": "Bir videonun arka planını, Bria kullanarak sağlanan bir görsel veya video ile değiştirin. Çıktı, ön planın çözünürlüğünü ve kare hızını korur; farklı en-boy oranına sahip bir arka plan sığdırmak için uzatılır, bu yüzden bozulmamış sonuçlar için eşleştirin.",
+    "display_name": "Bria Video Arka Plan Değiştir",
+    "inputs": {
+      "background_image": {
+        "name": "background_image",
+        "tooltip": "Ön planın arkasına yerleştirilecek arka plan görseli. Sadece bir arka plan görseli veya bir arka plan videosu sağlayın, ikisini birden değil."
+      },
+      "background_video": {
+        "name": "background_video",
+        "tooltip": "Ön planın arkasına yerleştirilecek arka plan videosu. Sadece bir arka plan görseli veya bir arka plan videosu sağlayın, ikisini birden değil."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Arka planı değiştirilecek ön plan videosu."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0 kullanarak bir ilk kare görseli ve isteğe bağlı son kare görseli ile video oluşturun.",
     "display_name": "ByteDance Seedance 2.0 İlk-Son-Kareden Videoya",
@@ -15821,6 +15851,98 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2KeyframeNode": {
+    "description": "Bir rehber görseli, giriş (kaynak) videosunun bir anına sabitleyin, böylece Aleph2 düzenlemeyi o anda yönlendirir. Bunu Runway Aleph2 Video to Video düğümünün 'keyframes' girişine bağlayın; aşağıdaki isteğe bağlı 'keyframes' girişiyle birkaçını (en fazla 5) zincirleyin.",
+    "display_name": "Runway Aleph2 Anahtar Kare",
+    "inputs": {
+      "image": {
+        "name": "görsel",
+        "tooltip": "Giriş videosunun seçilen anında uygulanacak rehber görsel."
+      },
+      "keyframes": {
+        "name": "anahtar kareler",
+        "tooltip": "Bununla zincirlenebilecek isteğe bağlı önceki anahtar kareler."
+      },
+      "timing": {
+        "name": "zamanlama",
+        "tooltip": "Bu görselin giriş videosunun zaman çizelgesine nasıl yerleştirileceği."
+      },
+      "timing_seconds": {
+        "name": "saniye"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "anahtar kareler",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "Bir rehber görseli, çıktı (sonuç) videosunun bir anına sabitleyin, böylece düzenlenen videonun o anda nasıl görüneceğini yönlendirin. Bunu Runway Aleph2 Video to Video düğümünün 'prompt_images' girişine bağlayın; aşağıdaki isteğe bağlı 'prompt_images' girişiyle birkaçını (en fazla 5) zincirleyin.",
+    "display_name": "Runway Aleph2 Rehber Görsel",
+    "inputs": {
+      "image": {
+        "name": "görsel",
+        "tooltip": "Çıktı videosunun seçilen anına yerleştirilecek rehber görsel."
+      },
+      "position": {
+        "name": "konum",
+        "tooltip": "Bu görselin çıktı videosunun zaman çizelgesine nasıl yerleştirileceği."
+      },
+      "position_seconds": {
+        "name": "saniye"
+      },
+      "prompt_images": {
+        "name": "rehber görseller",
+        "tooltip": "Bununla zincirlenebilecek isteğe bağlı önceki rehber görseller."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rehber görseller",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "Runway'in Aleph2 modeliyle bir metin istemi kullanarak videoyu düzenleyin. Aleph2, orijinal hareketi ve zamanlamayı koruyarak görüntünüzü dönüştürür (yeniden stil verme, yeniden aydınlatma, öğe ekleme veya kaldırma, bakış açısını değiştirme); çıktı çözünürlüğü, giriş videosuyla eşleşir ve video 2-30 saniye uzunluğunda ve en fazla 30 fps olmalıdır. Düzenlemeyi isteğe bağlı olarak anahtar karelerle (giriş videosuna sabitlenmiş) veya istem görselleriyle (çıktı videosuna sabitlenmiş) yönlendirebilirsiniz - ikisinden birini kullanın, ikisini birden değil.",
+    "display_name": "Runway Aleph2 Video'dan Video'ya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "keyframes": {
+        "name": "anahtar kareler",
+        "tooltip": "Aleph2 Anahtar Kare düğümlerinden (en fazla 5) giriş videosuna sabitlenmiş rehber görseller. Anahtar kareleri veya istem görsellerini kullanın, ikisini birden değil."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Çıktıda neyin görünmesi gerektiğini açıklar (1-1000 karakter)."
+      },
+      "prompt_images": {
+        "name": "istem görselleri",
+        "tooltip": "Aleph2 İstem Görseli düğümlerinden (en fazla 5) çıktı videosuna sabitlenmiş rehber görseller. Anahtar kareleri veya istem görsellerini kullanın, ikisini birden değil."
+      },
+      "public_figure_threshold": {
+        "name": "tanınmış kişi eşiği",
+        "tooltip": "Tanıdık kamuya mal olmuş kişiler için içerik denetimi."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için rastgele tohum"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Düzenlenecek giriş videosu. 2-30 saniye uzunluğunda ve en fazla 30 fps olmalıdır."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
