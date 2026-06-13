@@ -15,7 +15,6 @@ import type {
   InputSpec
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
@@ -94,13 +93,7 @@ const addMultiSelectWidget = (
       typeof inputSpec.control_after_generate === 'string'
         ? inputSpec.control_after_generate
         : 'fixed'
-    widget.linkedWidgets = addValueControlWidgets(
-      node,
-      widget,
-      defaultType,
-      undefined,
-      transformInputSpecV2ToV1(inputSpec)
-    )
+    addValueControlWidgets(widget, defaultType)
   }
 
   return widget
@@ -225,13 +218,7 @@ const createInputMappingWidget = (
       typeof inputSpec.control_after_generate === 'string'
         ? inputSpec.control_after_generate
         : 'randomize'
-    widget.linkedWidgets = addValueControlWidgets(
-      node,
-      widget,
-      defaultType,
-      undefined,
-      transformInputSpecV2ToV1(inputSpec)
-    )
+    addValueControlWidgets(widget, defaultType)
   }
 
   return widget
@@ -300,13 +287,7 @@ const addComboWidget = (
       typeof inputSpec.control_after_generate === 'string'
         ? inputSpec.control_after_generate
         : 'randomize'
-    widget.linkedWidgets = addValueControlWidgets(
-      node,
-      widget,
-      defaultType,
-      undefined,
-      transformInputSpecV2ToV1(inputSpec)
-    )
+    addValueControlWidgets(widget, defaultType)
   }
 
   return widget

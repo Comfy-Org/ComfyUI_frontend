@@ -21,8 +21,10 @@ import {
   addValueControlWidgets,
   isValidWidgetType
 } from '@/scripts/widgets'
+import { applyControlValues } from '@/core/graph/widgets/control/widgetControl'
 import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { mergeInputSpec } from '@/utils/nodeDefUtil'
 import { applyTextReplacements } from '@/utils/searchAndReplace'
 
@@ -228,35 +230,18 @@ export class PrimitiveNode extends LGraphNode {
       !inputData?.[1]?.control_after_generate &&
       (widget.type === 'number' || widget.type === 'combo')
     ) {
-      let control_value = this.widgets_values?.[1]
-      if (!control_value) {
-        control_value = 'fixed'
-      }
+      const savedMode = this.widgets_values?.[1]
       addValueControlWidgets(
-        this,
         widget,
-        control_value as string,
-        undefined,
-        inputData
+        typeof savedMode === 'string' ? savedMode : 'fixed'
       )
-      if (this.widgets?.[1]) widget.linkedWidgets = [this.widgets[1]]
-
-      const filter = this.widgets_values?.[2]
-      if (filter && this.widgets && this.widgets.length === 3) {
-        this.widgets[2].value = filter
-      }
+      applyControlValues(widget.widgetId, this.widgets_values ?? [], 1)
     }
 
-    // Restore any saved control values
+    // Restore control state saved when the node was recreated.
     const controlValues = this.controlValues
-    if (
-      this.widgets &&
-      this.lastType === this.widgets[0]?.type &&
-      controlValues?.length === this.widgets.length - 1
-    ) {
-      for (let i = 0; i < controlValues.length; i++) {
-        this.widgets[i + 1].value = controlValues[i]
-      }
+    if (this.lastType === this.widgets?.[0]?.type && controlValues?.length) {
+      applyControlValues(this.widgets?.[0]?.widgetId, controlValues, 0)
     }
 
     this._finalizeWidget(widget, oldWidth, oldHeight, recreating)
@@ -388,13 +373,18 @@ export class PrimitiveNode extends LGraphNode {
         }
       }
 
-      // Temporarily store the current values in case the node is being recreated
+      // Temporarily store control state in case the node is being recreated
       // e.g. by group node conversion
-      this.controlValues = []
       this.lastType = this.widgets[0]?.type
-      for (let i = 1; i < this.widgets.length; i++) {
-        this.controlValues.push(this.widgets[i].value)
-      }
+      const valueId = this.widgets[0]?.widgetId
+      const control = valueId
+        ? useWidgetValueStore().getWidgetControl(valueId)
+        : undefined
+      this.controlValues = control
+        ? control.filter !== undefined
+          ? [control.mode, control.filter]
+          : [control.mode]
+        : []
       setTimeout(() => {
         delete this.lastType
         delete this.controlValues

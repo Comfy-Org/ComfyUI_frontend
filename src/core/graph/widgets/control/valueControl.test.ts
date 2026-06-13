@@ -2,11 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
-import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
-import {
-  computeNextControlledValue,
-  isValueControlWidget
-} from './valueControl'
+import { computeNextControlledValue } from './valueControl'
 
 const makeNumberWidget = (
   value: number,
@@ -26,32 +22,6 @@ const makeComboWidget = (value: string, values: string[]): IBaseWidget =>
     value,
     options: { values }
   }) as unknown as IBaseWidget
-
-describe('isValueControlWidget', () => {
-  it('returns true for a marked widget with both lifecycle hooks', () => {
-    const widget = {
-      [IS_CONTROL_WIDGET]: true,
-      beforeQueued: () => {},
-      afterQueued: () => {}
-    } as unknown as IBaseWidget
-    expect(isValueControlWidget(widget)).toBe(true)
-  })
-
-  it('returns false when the marker symbol is missing', () => {
-    const widget = {
-      beforeQueued: () => {},
-      afterQueued: () => {}
-    } as unknown as IBaseWidget
-    expect(isValueControlWidget(widget)).toBe(false)
-  })
-
-  it('returns false when lifecycle hooks are missing', () => {
-    const widget = {
-      [IS_CONTROL_WIDGET]: true
-    } as unknown as IBaseWidget
-    expect(isValueControlWidget(widget)).toBe(false)
-  })
-})
 
 describe('computeNextControlledValue (number)', () => {
   it('returns undefined for fixed mode', () => {

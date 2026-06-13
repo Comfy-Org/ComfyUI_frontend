@@ -5,7 +5,11 @@ import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { UUID } from '@/utils/uuid'
 import { parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
-import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
+import type {
+  WidgetControlState,
+  WidgetState,
+  WidgetStateInit
+} from '@/types/widgetState'
 
 export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
   return String(scopedId).replace(/^(.*:)+/, '') as NodeId
@@ -13,6 +17,9 @@ export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {
   const graphWidgetStates = ref(new Map<UUID, Map<WidgetId, WidgetState>>())
+  const graphWidgetControls = ref(
+    new Map<UUID, Map<WidgetId, WidgetControlState>>()
+  )
 
   function getGraphWidgetStates(graphId: UUID): Map<WidgetId, WidgetState> {
     const widgetStates = graphWidgetStates.value.get(graphId)
@@ -21,6 +28,17 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     const nextWidgetStates = reactive(new Map<WidgetId, WidgetState>())
     graphWidgetStates.value.set(graphId, nextWidgetStates)
     return nextWidgetStates
+  }
+
+  function getGraphWidgetControls(
+    graphId: UUID
+  ): Map<WidgetId, WidgetControlState> {
+    const controls = graphWidgetControls.value.get(graphId)
+    if (controls) return controls
+
+    const nextControls = reactive(new Map<WidgetId, WidgetControlState>())
+    graphWidgetControls.value.set(graphId, nextControls)
+    return nextControls
   }
 
   function registerWidget<TValue = unknown>(
@@ -56,7 +74,51 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   function deleteWidget(widgetId: WidgetId): boolean {
     const { graphId } = parseWidgetId(widgetId)
+    deleteWidgetControl(widgetId)
     return getGraphWidgetStates(graphId).delete(widgetId)
+  }
+
+  function registerWidgetControl(
+    targetId: WidgetId,
+    init: Omit<WidgetControlState, 'hasExecuted'>
+  ): WidgetControlState {
+    const { graphId } = parseWidgetId(targetId)
+    const controls = getGraphWidgetControls(graphId)
+    const existing = controls.get(targetId)
+    if (existing) return existing
+
+    const state: WidgetControlState = { ...init, hasExecuted: false }
+    controls.set(targetId, state)
+    return controls.get(targetId) as WidgetControlState
+  }
+
+  function getWidgetControls(graphId: UUID): [WidgetId, WidgetControlState][] {
+    return [...getGraphWidgetControls(graphId).entries()]
+  }
+
+  function getWidgetControl(
+    targetId: WidgetId
+  ): WidgetControlState | undefined {
+    const { graphId } = parseWidgetId(targetId)
+    return getGraphWidgetControls(graphId).get(targetId)
+  }
+
+  function updateWidgetControl(
+    targetId: WidgetId,
+    patch: Partial<WidgetControlState>
+  ): boolean {
+    const control = getWidgetControl(targetId)
+    if (!control) return false
+    if (patch.mode !== undefined) control.mode = patch.mode
+    if (patch.filter !== undefined && control.filter !== undefined)
+      control.filter = patch.filter
+    if (patch.hasExecuted !== undefined) control.hasExecuted = patch.hasExecuted
+    return true
+  }
+
+  function deleteWidgetControl(targetId: WidgetId): boolean {
+    const { graphId } = parseWidgetId(targetId)
+    return getGraphWidgetControls(graphId).delete(targetId)
   }
 
   function getNodeWidgets(graphId: UUID, nodeId: NodeId): WidgetState[] {
@@ -67,6 +129,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   function clearGraph(graphId: UUID): void {
     graphWidgetStates.value.delete(graphId)
+    graphWidgetControls.value.delete(graphId)
   }
 
   return {
@@ -74,6 +137,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidget,
     setValue,
     deleteWidget,
+    registerWidgetControl,
+    getWidgetControls,
+    getWidgetControl,
+    updateWidgetControl,
+    deleteWidgetControl,
     getNodeWidgets,
     clearGraph
   }

@@ -1,6 +1,7 @@
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { CurveData } from '@/components/curve/types'
 import type { WidgetId } from '@/types/widgetId'
+import type { WidgetControlConfig } from '@/types/widgetState'
 
 import type {
   CanvasColour,
@@ -398,6 +399,9 @@ export interface IBaseWidget<
   [symbol: symbol]: boolean
 
   linkedWidgets?: IBaseWidget[]
+
+  /** Transient control intent, registered as a control component on bind. */
+  controlConfig?: WidgetControlConfig
 
   readonly widgetId?: WidgetId
 

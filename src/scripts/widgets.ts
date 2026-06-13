@@ -1,12 +1,8 @@
-import { t } from '@/i18n'
 import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IComboWidget,
-  IStringWidget
-} from '@/lib/litegraph/src/types/widgets'
-import { nextValueForLinkedTarget } from './valueControl'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { registerWidgetControlFromConfig } from '@/core/graph/widgets/control/widgetControl'
+import { isValueControlMode } from '@/core/graph/widgets/control/valueControl'
+import type { ValueControlMode } from '@/core/graph/widgets/control/valueControl'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
 import { useBoundingBoxWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBoundingBoxWidget'
@@ -29,11 +25,8 @@ import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 
 import type { ComfyApp } from './app'
-import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
 import './domWidget'
 import './errorNodeWidgets'
-
-export { IS_CONTROL_WIDGET }
 
 export type ComfyWidgetConstructorV2 = (
   node: LGraphNode,
@@ -69,152 +62,33 @@ const transformWidgetConstructorV2ToV1 = (
   }
 }
 
-function controlValueRunBefore() {
-  return useSettingStore().get('Comfy.WidgetControlMode') === 'before'
+function toControlMode(value: string | undefined): ValueControlMode {
+  return isValueControlMode(value) ? value : 'randomize'
 }
 
-export function updateControlWidgetLabel(widget: IBaseWidget) {
-  if (controlValueRunBefore()) {
-    widget.label = t('g.control_before_generate')
-  } else {
-    widget.label = t('g.control_after_generate')
-  }
-}
-
-const HAS_EXECUTED = Symbol()
-
+/** Attaches a value-control component to a target widget (number controls). */
 export function addValueControlWidget(
-  node: LGraphNode,
   targetWidget: IBaseWidget,
-  defaultValue?: string,
-  _values?: unknown,
-  widgetName?: string,
-  inputData?: InputSpec
-): IComboWidget {
-  let name = inputData?.[1]?.control_after_generate
-  if (typeof name !== 'string') {
-    name = widgetName
+  defaultValue?: string
+): void {
+  targetWidget.controlConfig = {
+    mode: toControlMode(defaultValue),
+    hasFilter: false
   }
-  const widgets = addValueControlWidgets(
-    node,
-    targetWidget,
-    defaultValue ?? 'randomize',
-    {
-      addFilterList: false,
-      controlAfterGenerateName: name
-    },
-    inputData
-  )
-  return widgets[0]
+  registerWidgetControlFromConfig(targetWidget)
 }
 
+/** Attaches a value-control component, adding a filter slot for combo targets. */
 export function addValueControlWidgets(
-  node: LGraphNode,
   targetWidget: IBaseWidget,
   defaultValue?: string,
-  options?: Record<string, any>,
-  inputData?: InputSpec
-): [IComboWidget, ...IStringWidget[]] {
-  if (!defaultValue) defaultValue = 'randomize'
-  if (!options) options = {}
-
-  const getName = (defaultName: string, optionName: string) => {
-    let name = defaultName
-    if (options[optionName]) {
-      name = options[optionName]
-    } else if (typeof inputData?.[1]?.[defaultName] === 'string') {
-      name = inputData?.[1]?.[defaultName]
-    } else if (inputData?.[1]?.control_prefix) {
-      name = inputData?.[1]?.control_prefix + ' ' + name
-    }
-    return name
+  { addFilterList = true }: { addFilterList?: boolean } = {}
+): void {
+  targetWidget.controlConfig = {
+    mode: toControlMode(defaultValue),
+    hasFilter: isComboWidget(targetWidget) && addFilterList
   }
-
-  const valueControl = node.addWidget(
-    'combo',
-    getName('control_after_generate', 'controlAfterGenerateName'),
-    defaultValue,
-    function () {},
-    {
-      values: ['fixed', 'increment', 'decrement', 'randomize'],
-      serialize: false, // Don't include this in prompt.
-      canvasOnly: true
-    }
-  ) as IComboWidget
-
-  valueControl.tooltip =
-    'Allows the linked widget to be changed automatically, for example randomizing the noise seed.'
-  valueControl[IS_CONTROL_WIDGET] = true
-  updateControlWidgetLabel(valueControl)
-  Object.defineProperty(valueControl, 'disabled', {
-    get: () => targetWidget.computedDisabled
-  })
-  const widgets: [IComboWidget, ...IStringWidget[]] = [valueControl]
-
-  const isCombo = isComboWidget(targetWidget)
-  let comboFilter: IStringWidget
-  if (isCombo && valueControl.options.values) {
-    // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-    valueControl.options.values.push('increment-wrap')
-  }
-  if (isCombo && options.addFilterList !== false) {
-    comboFilter = node.addWidget(
-      'string',
-      getName('control_filter_list', 'controlFilterListName'),
-      '',
-      function () {},
-      {
-        serialize: false // Don't include this in prompt.
-      }
-    ) as IStringWidget
-    updateControlWidgetLabel(comboFilter)
-    comboFilter.tooltip =
-      "Allows for filtering the list of values when changing the value via the control generate mode. Allows for RegEx matches in the format /abc/ to only filter to values containing 'abc'."
-    Object.defineProperty(comboFilter, 'disabled', {
-      get: () => targetWidget.computedDisabled
-    })
-
-    widgets.push(comboFilter)
-  }
-
-  function applyWidgetControl(isPartialExecution: boolean | undefined) {
-    if (
-      node.inputs?.some(
-        (input) =>
-          input.widget?.name === targetWidget.name && input.link != null
-      )
-    )
-      return
-
-    const next = nextValueForLinkedTarget({
-      target: targetWidget,
-      linkedWidgets: targetWidget.linkedWidgets,
-      nodeId: node.id,
-      isPartialExecution
-    })
-    if (next === undefined) return
-
-    targetWidget.value = next
-    targetWidget.callback?.(next)
-  }
-
-  valueControl.beforeQueued = ({ isPartialExecution } = {}) => {
-    if (controlValueRunBefore()) {
-      // Don't run on first execution
-      if (valueControl[HAS_EXECUTED]) {
-        applyWidgetControl(isPartialExecution)
-      }
-    }
-    valueControl[HAS_EXECUTED] = true
-  }
-
-  valueControl.afterQueued = ({ isPartialExecution } = {}) => {
-    if (!controlValueRunBefore()) {
-      applyWidgetControl(isPartialExecution)
-    }
-  }
-
-  return widgets
+  registerWidgetControlFromConfig(targetWidget)
 }
 
 export const ComfyWidgets = {
