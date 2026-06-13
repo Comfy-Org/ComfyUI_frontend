@@ -893,6 +893,78 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
     })
   })
 
+  describe('cursor walk anomalies (regression)', () => {
+    it('keeps previously cached assets when a refresh hits an empty page with has_more', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+      const cached = [
+        createMockAsset('keep-1'),
+        createMockAsset('keep-2'),
+        createMockAsset('keep-3')
+      ]
+
+      // Initial load: a complete walk populates the cache.
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage(cached)
+      )
+      await store.updateModelsForNodeType(nodeType)
+      expect(store.getAssets(nodeType)).toHaveLength(3)
+
+      // Refresh: the server returns an empty page while still claiming more.
+      // The walk must stop without pruning the still-valid cached assets.
+      vi.mocked(assetService.getAssetsPageForNodeType).mockResolvedValueOnce(
+        makePage([], { has_more: true })
+      )
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(store.getAssets(nodeType).map((a) => a.id)).toEqual([
+        'keep-1',
+        'keep-2',
+        'keep-3'
+      ])
+    })
+
+    it('terminates on a cycling cursor (A->B->A) instead of looping forever', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      vi.mocked(assetService.getAssetsPageForNodeType).mockImplementation(
+        async (_nodeType, opts) => {
+          const after = opts?.after
+          if (after === undefined) {
+            return makePage([createMockAsset('p1')], {
+              has_more: true,
+              next_cursor: 'B'
+            })
+          }
+          if (after === 'B') {
+            return makePage([createMockAsset('p2')], {
+              has_more: true,
+              next_cursor: 'A'
+            })
+          }
+          // after === 'A' returns cursor 'B' again — a cycle the walk must
+          // detect and break out of.
+          return makePage([createMockAsset('p3')], {
+            has_more: true,
+            next_cursor: 'B'
+          })
+        }
+      )
+
+      await store.updateModelsForNodeType(nodeType)
+
+      expect(
+        vi.mocked(assetService.getAssetsPageForNodeType)
+      ).toHaveBeenCalledTimes(3)
+      expect(store.getAssets(nodeType).map((a) => a.id)).toEqual([
+        'p1',
+        'p2',
+        'p3'
+      ])
+    })
+  })
+
   describe('concurrent request handling', () => {
     it('should short-circuit concurrent calls to prevent duplicate work', async () => {
       const store = useAssetsStore()

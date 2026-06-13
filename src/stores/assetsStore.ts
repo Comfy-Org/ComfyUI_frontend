@@ -371,6 +371,12 @@ export const useAssetsStore = defineStore('assets', () => {
 
   const MODEL_BATCH_SIZE = 500
 
+  // Defensive backstop against a server that never signals exhaustion (e.g.
+  // emits an unbounded stream of unique cursors). At MODEL_BATCH_SIZE per
+  // batch this caps a single walk at 500k assets — far beyond any real
+  // category — so it only ever trips on pathological pagination.
+  const MAX_PAGINATION_BATCHES = 1000
+
   interface ModelPaginationState {
     assets: Map<string, AssetItem>
     /**
@@ -532,7 +538,19 @@ export const useAssetsStore = defineStore('assets', () => {
 
         async function loadBatches(): Promise<void> {
           let isFirstBatch = true
+          // Only prune unseen cached ids when the walk reaches a genuine end
+          // of list; bailing out on an anomaly (empty page, cursor cycle,
+          // batch cap) must not delete assets we simply never re-fetched.
+          let walkCompleted = false
+          // Cursors already requested this walk. A repeat means the server is
+          // cycling (immediate A->A or alternating A->B->A...), so we stop.
+          const seenCursors = new Set<string>()
+          let batchCount = 0
           while (state.hasMore) {
+            if (batchCount++ >= MAX_PAGINATION_BATCHES) {
+              state.hasMore = false
+              break
+            }
             try {
               // Keyset cursor walk when the server provides one (stable under
               // concurrent inserts/deletes); offset walk otherwise. The first
@@ -565,18 +583,33 @@ export const useAssetsStore = defineStore('assets', () => {
 
               state.offset += newAssets.length
 
-              if (newAssets.length === 0 || !response.has_more) {
+              if (!response.has_more) {
+                // Server signalled a genuine end of list — safe to prune ids
+                // that no longer exist server-side.
+                state.hasMore = false
+                walkCompleted = true
+              } else if (newAssets.length === 0) {
+                // Anomaly: server claims more but returned an empty page. Stop,
+                // but do not prune — unseen cached assets may still live on a
+                // page we never received.
                 state.hasMore = false
               } else if (response.next_cursor) {
-                // A server that returns a non-advancing cursor would loop
-                // forever, so terminate on repeats.
-                state.hasMore = response.next_cursor !== after
-                state.nextCursor = response.next_cursor
+                if (seenCursors.has(response.next_cursor)) {
+                  // Repeated cursor: the server is cycling. Stop without
+                  // pruning rather than loop forever.
+                  state.hasMore = false
+                } else {
+                  seenCursors.add(response.next_cursor)
+                  state.nextCursor = response.next_cursor
+                }
               } else {
-                // Cursor-less backend: fall back to the legacy offset walk,
-                // terminating when a page comes back short.
+                // Cursor-less backend: legacy offset walk. A short page is the
+                // reliable natural end of the list, so it is safe to prune.
                 state.nextCursor = undefined
-                state.hasMore = newAssets.length === MODEL_BATCH_SIZE
+                if (newAssets.length < MODEL_BATCH_SIZE) {
+                  state.hasMore = false
+                  walkCompleted = true
+                }
               }
 
               if (isFirstBatch) {
@@ -600,11 +633,16 @@ export const useAssetsStore = defineStore('assets', () => {
             }
           }
 
-          const staleIds = [...state.assets.keys()].filter(
-            (id) => !seenIds.has(id)
-          )
-          for (const id of staleIds) {
-            state.assets.delete(id)
+          // Prune ids that vanished server-side, but only after a complete
+          // walk — an early bail-out hasn't seen the whole list, so unseen
+          // cached assets must be kept rather than deleted.
+          if (walkCompleted) {
+            const staleIds = [...state.assets.keys()].filter(
+              (id) => !seenIds.has(id)
+            )
+            for (const id of staleIds) {
+              state.assets.delete(id)
+            }
           }
           assetsArrayCache.delete(category)
           pendingRequestByCategory.delete(category)
