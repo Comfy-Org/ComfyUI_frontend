@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -16,7 +16,6 @@ const mockHandleConfirmTransition = vi.fn()
 const mockHandleResubscribe = vi.fn()
 const mockCheckoutStep = ref<'pricing' | 'preview'>('pricing')
 const mockPreviewData = ref<{ transition_type: string } | null>(null)
-const mockCanManageSubscription = ref(true)
 
 vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
   useSubscriptionCheckout: () => ({
@@ -37,14 +36,6 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => ({
-      canManageSubscription: mockCanManageSubscription.value
-    }))
-  })
-}))
-
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -53,12 +44,7 @@ const i18n = createI18n({
       g: { back: 'Back', close: 'Close' },
       subscription: {
         plansForWorkspace: 'Plans for {workspace}',
-        teamWorkspace: 'Team',
-        inactive: {
-          memberTitle: 'This workspace is paused',
-          memberDescription:
-            'Contact your workspace owner to resubscribe and continue running workflows.'
-        }
+        teamWorkspace: 'Team'
       },
       credits: {
         topUp: {
@@ -119,7 +105,6 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     vi.clearAllMocks()
     mockCheckoutStep.value = 'pricing'
     mockPreviewData.value = null
-    mockCanManageSubscription.value = true
   })
 
   it('shows pricing table on pricing step', () => {
@@ -209,52 +194,5 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     await user.click(screen.getByLabelText('Back'))
 
     expect(mockHandleBackToPricing).toHaveBeenCalled()
-  })
-
-  describe('member (cannot manage subscription)', () => {
-    beforeEach(() => {
-      mockCanManageSubscription.value = false
-    })
-
-    it('shows the contact-owner resubscribe message instead of the pricing table', () => {
-      renderComponent()
-
-      expect(
-        screen.getByTestId('member-resubscribe-message')
-      ).toBeInTheDocument()
-      expect(
-        screen.getByText(
-          'Contact your workspace owner to resubscribe and continue running workflows.'
-        )
-      ).toBeInTheDocument()
-    })
-
-    it('does not expose any subscribe affordance to members', () => {
-      renderComponent()
-
-      expect(screen.queryByTestId('pricing-table')).not.toBeInTheDocument()
-      expect(screen.queryByTestId('subscribe-btn')).not.toBeInTheDocument()
-      expect(screen.queryByTestId('resubscribe-btn')).not.toBeInTheDocument()
-    })
-
-    it('falls back to the credits flow when the reason is out_of_credits', () => {
-      renderComponent({ reason: 'out_of_credits' })
-
-      expect(
-        screen.queryByTestId('member-resubscribe-message')
-      ).not.toBeInTheDocument()
-      expect(screen.getByText('Insufficient Credits')).toBeInTheDocument()
-    })
-  })
-
-  describe('owner (can manage subscription)', () => {
-    it('shows the pricing table and hides the member message', () => {
-      renderComponent()
-
-      expect(screen.getByTestId('pricing-table')).toBeInTheDocument()
-      expect(
-        screen.queryByTestId('member-resubscribe-message')
-      ).not.toBeInTheDocument()
-    })
   })
 })
