@@ -700,6 +700,36 @@
       }
     }
   },
+  "BriaVideoReplaceBackground": {
+    "display_name": "Bria Video Replace Background",
+    "description": "Replace a video's background with a supplied image or video using Bria. The output keeps the foreground's resolution and frame rate; a background with a different aspect ratio is stretched to fit, so match it for undistorted results.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Foreground video whose background is replaced."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "background_image": {
+        "name": "background_image",
+        "tooltip": "Background image to composite behind the foreground. Provide either a background image or a background video, not both."
+      },
+      "background_video": {
+        "name": "background_video",
+        "tooltip": "Background video to composite behind the foreground. Provide either a background image or a background video, not both."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "display_name": "ByteDance Seedance 2.0 First-Last-Frame to Video",
     "description": "Generate video using Seedance 2.0 from a first frame image and optional last frame image.",
@@ -15825,6 +15855,98 @@
       }
     }
   },
+  "RunwayAleph2KeyframeNode": {
+    "display_name": "Runway Aleph2 Keyframe",
+    "description": "Anchor a guidance image to a moment of the input (source) video, so Aleph2 steers the edit at that point of your footage. Connect this to the 'keyframes' input of the Runway Aleph2 Video to Video node; chain several together (up to 5) via the optional 'keyframes' input below.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The guidance image to apply at the chosen moment of the input video."
+      },
+      "timing": {
+        "name": "timing",
+        "tooltip": "How to place this image on the input video's timeline."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Optional earlier keyframes to chain with this one."
+      },
+      "timing_seconds": {
+        "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "display_name": "Runway Aleph2 Prompt Image",
+    "description": "Anchor a guidance image to a moment of the output (result) video, to guide what the edited video looks like at that point. Connect this to the 'prompt_images' input of the Runway Aleph2 Video to Video node; chain several together (up to 5) via the optional 'prompt_images' input below.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The guidance image to place at the chosen moment of the output video."
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "How to place this image on the output video's timeline."
+      },
+      "prompt_images": {
+        "name": "prompt_images",
+        "tooltip": "Optional earlier prompt images to chain with this one."
+      },
+      "position_seconds": {
+        "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt_images",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "display_name": "Runway Aleph2 Video to Video",
+    "description": "Edit a video with a text prompt using Runway's Aleph2 model. Aleph2 transforms your footage (restyle, relight, add or remove elements, change the viewpoint) while keeping the original motion and timing; the output resolution matches the input video, which must be 2-30 seconds at 30 fps or lower. Optionally steer the edit with either keyframes (anchored to the input video) or prompt images (anchored to the output video) - use one or the other, not both.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describes what should appear in the output (1-1000 characters)."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Input video to edit. Must be 2-30 seconds at 30 fps or lower."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed for generation"
+      },
+      "public_figure_threshold": {
+        "name": "public_figure_threshold",
+        "tooltip": "Content moderation for recognizable public figures."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Guidance images anchored to the input video, from Aleph2 Keyframe nodes (up to 5). Use keyframes or prompt images, not both."
+      },
+      "prompt_images": {
+        "name": "prompt_images",
+        "tooltip": "Guidance images anchored to the output video, from Aleph2 Prompt Image nodes (up to 5). Use keyframes or prompt images, not both."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RunwayFirstLastFrameNode": {
     "display_name": "Runway First-Last-Frame to Video",
     "description": "Upload first and last keyframes, draft a prompt, and generate a video. More complex transitions, such as cases where the Last frame is completely different from the First frame, may benefit from the longer 10s duration. This would give the generation more time to smoothly transition between the two inputs. Before diving in, review these best practices to ensure that your input selections will set your generation up for success: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
@@ -16825,7 +16947,7 @@
       },
       "replacement_mode": {
         "name": "replacement_mode",
-        "tooltip": "False = mask_video has black bg (Animation Mode). True = white bg (Replacement Mode). Set the matching replacement_mode on WanSCAILToVideo. reference_image_mask is always black-bg regardless."
+        "tooltip": "False = Animation Mode (pose_video_mask has black background, reference_image_mask has white background). True = Replacement Mode (pose_video_mask has white background, reference_image_mask has black background)."
       },
       "ref_track_data": {
         "name": "ref_track_data",
