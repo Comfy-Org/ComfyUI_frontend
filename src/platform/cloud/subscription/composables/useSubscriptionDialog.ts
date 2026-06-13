@@ -55,7 +55,13 @@ export const useSubscriptionDialog = () => {
             import('@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue')
         ),
         props: { onClose: hide, reason: options?.reason },
-        dialogComponentProps
+        dialogComponentProps: {
+          ...dialogComponentProps,
+          // Fixed height so the dialog stays the same size across the
+          // personal/team toggle and the cards fill it instead of leaving a
+          // gap above the footnote (DES QA 2026-06-13).
+          style: 'width: min(1328px, 95vw); height: min(760px, 90vh);'
+        }
       })
       return
     }
