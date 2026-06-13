@@ -119,7 +119,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(profileBox!.x)
   })
 
-  test('labels creation as a team workspace and shows DES-246 dialog copy', async ({
+  test('opens the create-workspace dialog with DES-246 copy', async ({
     comfyPage
   }) => {
     const page = comfyPage.page
@@ -128,7 +128,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     await page.getByRole('button', { name: 'Current user' }).click()
     await page.getByTestId('workspace-switcher-trigger').click()
 
-    await page.getByText('Create a team workspace').click()
+    await page.getByText('Create a workspace').click()
 
     await expect(
       page.getByText(
