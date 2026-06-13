@@ -6,9 +6,13 @@ import { computed, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
+
+import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 
 import NodeSearchBoxPopover from './NodeSearchBoxPopover.vue'
 
