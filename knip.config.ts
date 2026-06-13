@@ -43,7 +43,6 @@ const config: KnipConfig = {
     '@iconify/json',
     '@primeuix/forms',
     '@primeuix/styled',
-    '@primeuix/utils',
     '@primevue/icons'
   ],
   ignore: [
