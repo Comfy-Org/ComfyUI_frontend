@@ -6,6 +6,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { nextTick, reactive, ref, watchEffect } from 'vue'
 
+import type * as VueUseCore from '@vueuse/core'
+
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import { flattenTree } from '@/utils/treeUtil'
@@ -186,23 +188,42 @@ vi.mock('@/platform/workflow/core/services/workflowService', () => ({
 }))
 
 const dropMock = vi.hoisted(() => ({
-  isDraggingOver: null as { value: boolean } | null,
-  onDrop: null as ((files: File[]) => void | Promise<unknown>) | null
+  isOverDropZone: null as { value: boolean } | null,
+  onOver: null as ((files: File[] | null, event?: DragEvent) => void) | null,
+  onDrop: null as
+    | ((files: File[] | null, event?: DragEvent) => void | Promise<unknown>)
+    | null
 }))
 
-vi.mock('@/composables/usePragmaticDragAndDrop', async () => {
+vi.mock('@vueuse/core', async (importActual) => {
+  const actual = await importActual<typeof VueUseCore>()
   const { ref } = await import('vue')
   return {
-    usePragmaticExternalFileDrop: (
+    ...actual,
+    useDropZone: (
       _el: unknown,
-      opts: { onDrop: (files: File[]) => void | Promise<unknown> }
+      opts: {
+        onOver?: (files: File[] | null, event?: DragEvent) => void
+        onDrop: (
+          files: File[] | null,
+          event?: DragEvent
+        ) => void | Promise<unknown>
+      }
     ) => {
+      dropMock.onOver = opts.onOver ?? null
       dropMock.onDrop = opts.onDrop
-      dropMock.isDraggingOver ??= ref(false)
-      return { isDraggingOver: dropMock.isDraggingOver }
+      dropMock.isOverDropZone ??= ref(false)
+      return { isOverDropZone: dropMock.isOverDropZone, files: ref(null) }
     }
   }
 })
+
+const fileDragEvent = () =>
+  ({ dataTransfer: { types: ['Files'] } }) as unknown as DragEvent
+const internalDragEvent = () =>
+  ({
+    dataTransfer: { types: ['application/x-comfy-node'] }
+  }) as unknown as DragEvent
 
 vi.mock('@/stores/workspaceStore', () => ({
   useWorkspaceStore: () => ({ shiftDown: false })
@@ -360,11 +381,22 @@ describe('BaseWorkflowsSidebarTab', () => {
 
     expect(screen.queryByTestId('workflow-drop-overlay')).toBeNull()
 
-    dropMock.isDraggingOver!.value = true
+    dropMock.isOverDropZone!.value = true
+    dropMock.onOver!(null, fileDragEvent())
     await nextTick()
     expect(screen.getByTestId('workflow-drop-overlay')).toBeInTheDocument()
 
-    dropMock.isDraggingOver!.value = false
+    dropMock.isOverDropZone!.value = false
+    await nextTick()
+    expect(screen.queryByTestId('workflow-drop-overlay')).toBeNull()
+  })
+
+  it('does not show the drop overlay for internal (non-file) drags', async () => {
+    renderComponent()
+    await nextTick()
+
+    dropMock.isOverDropZone!.value = true
+    dropMock.onOver!(null, internalDragEvent())
     await nextTick()
     expect(screen.queryByTestId('workflow-drop-overlay')).toBeNull()
   })
@@ -374,8 +406,22 @@ describe('BaseWorkflowsSidebarTab', () => {
     await nextTick()
 
     const files = [new File(['{}'], 'flow.json')]
-    await dropMock.onDrop!(files)
+    const event = {
+      dataTransfer: { types: ['Files'] },
+      stopPropagation: vi.fn()
+    } as unknown as DragEvent
+    await dropMock.onDrop!(files, event)
 
     expect(mockWorkflowService.importWorkflowFiles).toHaveBeenCalledWith(files)
+    expect(event.stopPropagation).toHaveBeenCalled()
+  })
+
+  it('ignores drops that are not external files', async () => {
+    renderComponent()
+    await nextTick()
+
+    await dropMock.onDrop!([new File(['{}'], 'flow.json')], internalDragEvent())
+
+    expect(mockWorkflowService.importWorkflowFiles).not.toHaveBeenCalled()
   })
 })

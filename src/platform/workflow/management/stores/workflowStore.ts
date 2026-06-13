@@ -565,8 +565,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   /**
    * Persist a workflow from raw JSON to the user's workflow list without
    * loading it into the canvas. The filename is deduped against existing
-   * workflows. Bypasses the changeTracker-based save path, which would
-   * serialize a null activeState for a never-loaded workflow.
+   * workflows.
    */
   const importWorkflowFromJson = async (
     filename: string,
@@ -577,7 +576,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     )
     const workflow = createNewWorkflow(path, data)
     try {
-      await workflow.persist()
+      await workflow.save()
     } catch (e) {
       // createNewWorkflow already registered the workflow; drop it so a failed
       // import does not leave a phantom temporary workflow in the store.

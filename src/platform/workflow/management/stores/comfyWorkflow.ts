@@ -164,7 +164,10 @@ export class ComfyWorkflow extends UserFile {
     const { useWorkflowDraftStoreV2 } =
       await import('@/platform/workflow/persistence/stores/workflowDraftStoreV2')
     const draftStore = useWorkflowDraftStoreV2()
-    this.content = JSON.stringify(this.activeState)
+    // A never-loaded workflow (e.g. one imported from a file) has no
+    // changeTracker, so activeState is null; keep its existing content rather
+    // than overwriting it with "null".
+    if (this.changeTracker) this.content = JSON.stringify(this.activeState)
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
     const ret = await super.save({ force: true })
@@ -172,15 +175,6 @@ export class ComfyWorkflow extends UserFile {
     this.isModified = false
     draftStore.removeDraft(this.path)
     return ret
-  }
-
-  /**
-   * Persist the workflow's current `content` directly, bypassing the
-   * `activeState`/changeTracker serialization that {@link save} performs.
-   * Used to import a workflow file without loading it into the canvas.
-   */
-  async persist(): Promise<UserFile> {
-    return super.save({ force: true })
   }
 
   /**

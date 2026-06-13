@@ -177,7 +177,6 @@ import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import WorkflowTreeLeaf from '@/components/sidebar/tabs/workflows/WorkflowTreeLeaf.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { usePragmaticExternalFileDrop } from '@/composables/usePragmaticDragAndDrop'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
 import { useAppMode } from '@/composables/useAppMode'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -197,6 +196,7 @@ import {
 } from '@/utils/formatUtil'
 import { buildTree, sortedTree } from '@/utils/treeUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useDropZone } from '@vueuse/core'
 
 const { title, filter, searchSubject, dataTestid, hideLeafIcon } = defineProps<{
   title: string
@@ -246,9 +246,26 @@ const workflowService = useWorkflowService()
 const workspaceStore = useWorkspaceStore()
 
 const dropTargetRef = ref<HTMLElement | null>(null)
-const { isDraggingOver } = usePragmaticExternalFileDrop(dropTargetRef, {
-  onDrop: (files) => workflowService.importWorkflowFiles(files)
+const isFileDragOver = ref(false)
+const isExternalFileDrag = (event?: DragEvent) =>
+  event?.dataTransfer?.types.includes('Files') ?? false
+const { isOverDropZone } = useDropZone(dropTargetRef, {
+  onOver: (_files, event) => {
+    isFileDragOver.value = isExternalFileDrag(event)
+  },
+  onLeave: () => {
+    isFileDragOver.value = false
+  },
+  onDrop: (files, event) => {
+    isFileDragOver.value = false
+    if (!isExternalFileDrag(event)) return
+    event?.stopPropagation()
+    if (files?.length) void workflowService.importWorkflowFiles(files)
+  }
 })
+const isDraggingOver = computed(
+  () => isFileDragOver.value && isOverDropZone.value
+)
 const expandedKeys = ref<Record<string, boolean>>({})
 const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 const dummyExpandedKeys = ref<Record<string, boolean>>({})
