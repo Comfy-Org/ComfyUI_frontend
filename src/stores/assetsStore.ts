@@ -8,6 +8,7 @@ import {
 } from '@/platform/assets/composables/media/assetMappers'
 import type {
   AssetItem,
+  AssetResponse,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
 import {
@@ -15,7 +16,7 @@ import {
   OUTPUT_TAG,
   assetService
 } from '@/platform/assets/services/assetService'
-import type { PaginationOptions } from '@/platform/assets/services/assetService'
+import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
@@ -372,7 +373,16 @@ export const useAssetsStore = defineStore('assets', () => {
 
   interface ModelPaginationState {
     assets: Map<string, AssetItem>
+    /**
+     * Count of assets fetched so far. Only drives the request `offset` when
+     * the backend is cursor-less (no `next_cursor` in responses).
+     */
     offset: number
+    /**
+     * Keyset cursor from the latest response's `next_cursor`. When set,
+     * subsequent batches resume with `after` instead of `offset`.
+     */
+    nextCursor?: string
     hasMore: boolean
     isLoading: boolean
     error?: Error
@@ -404,6 +414,7 @@ export const useAssetsStore = defineStore('assets', () => {
         return reactive({
           assets,
           offset: 0,
+          nextCursor: undefined,
           hasMore: true,
           isLoading: true
         })
@@ -499,7 +510,7 @@ export const useAssetsStore = defineStore('assets', () => {
        */
       async function updateModelsForCategory(
         category: string,
-        fetcher: (options: PaginationOptions) => Promise<AssetItem[]>
+        fetcher: (options: AssetPaginationOptions) => Promise<AssetResponse>
       ): Promise<void> {
         if (pendingPromiseByCategory.has(category)) {
           return pendingPromiseByCategory.get(category)!
@@ -520,16 +531,23 @@ export const useAssetsStore = defineStore('assets', () => {
         }
 
         async function loadBatches(): Promise<void> {
+          let isFirstBatch = true
           while (state.hasMore) {
             try {
-              const newAssets = await fetcher({
-                limit: MODEL_BATCH_SIZE,
-                offset: state.offset
-              })
+              // Keyset cursor walk when the server provides one (stable under
+              // concurrent inserts/deletes); offset walk otherwise. The first
+              // batch sends offset 0, which the service omits from the request.
+              const after = state.nextCursor
+              const response = await fetcher(
+                after
+                  ? { limit: MODEL_BATCH_SIZE, after }
+                  : { limit: MODEL_BATCH_SIZE, offset: state.offset }
+              )
 
               if (isStale(category, state)) return
 
-              const isFirstBatch = state.offset === 0
+              const newAssets = response.assets
+
               if (isFirstBatch) {
                 assetsArrayCache.delete(category)
                 if (hasExistingData) {
@@ -546,10 +564,24 @@ export const useAssetsStore = defineStore('assets', () => {
               state.assets = new Map(state.assets)
 
               state.offset += newAssets.length
-              state.hasMore = newAssets.length === MODEL_BATCH_SIZE
+
+              if (newAssets.length === 0 || !response.has_more) {
+                state.hasMore = false
+              } else if (response.next_cursor) {
+                // A server that returns a non-advancing cursor would loop
+                // forever, so terminate on repeats.
+                state.hasMore = response.next_cursor !== after
+                state.nextCursor = response.next_cursor
+              } else {
+                // Cursor-less backend: fall back to the legacy offset walk,
+                // terminating when a page comes back short.
+                state.nextCursor = undefined
+                state.hasMore = newAssets.length === MODEL_BATCH_SIZE
+              }
 
               if (isFirstBatch) {
                 state.isLoading = false
+                isFirstBatch = false
               }
 
               if (state.hasMore) {
@@ -597,7 +629,7 @@ export const useAssetsStore = defineStore('assets', () => {
 
         // Use category as cache key but fetch using nodeType for API compatibility
         await updateModelsForCategory(category, (opts) =>
-          assetService.getAssetsForNodeType(nodeType, opts)
+          assetService.getAssetsPageForNodeType(nodeType, opts)
         )
       }
 
@@ -608,7 +640,7 @@ export const useAssetsStore = defineStore('assets', () => {
       async function updateModelsForTag(tag: string): Promise<void> {
         const category = `tag:${tag}`
         await updateModelsForCategory(category, (opts) =>
-          assetService.getAssetsByTag(tag, true, opts)
+          assetService.getAssetsPageByTag(tag, true, opts)
         )
       }
 

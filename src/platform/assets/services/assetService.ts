@@ -30,7 +30,7 @@ export interface PaginationOptions {
   offset?: number
 }
 
-interface AssetPaginationOptions extends PaginationOptions {
+export interface AssetPaginationOptions extends PaginationOptions {
   /**
    * Opaque keyset cursor from a prior response's `next_cursor`. When set, the
    * server resumes after that cursor and `offset` is ignored.
@@ -427,10 +427,41 @@ function createAssetService() {
    */
   async function getAssetsForNodeType(
     nodeType: string,
-    { limit = DEFAULT_LIMIT, offset = 0 }: PaginationOptions = {}
+    options: PaginationOptions = {}
   ): Promise<AssetItem[]> {
+    const data = await getAssetsPageForNodeType(nodeType, options)
+
+    // Return full AssetItem[] objects (don't strip like getAssetModels does)
+    return data.assets
+  }
+
+  /**
+   * Gets one paginated asset response for a specific node type by finding the
+   * matching category and fetching assets with that category tag.
+   *
+   * Unlike {@link getAssetsForNodeType}, the full response envelope is
+   * returned so callers can drive keyset cursor pagination from
+   * `next_cursor`/`has_more`.
+   *
+   * @param nodeType - The ComfyUI node type (e.g., 'CheckpointLoaderSimple')
+   * @param options - Pagination options
+   * @param options.limit - Maximum number of assets to return (default: 500)
+   * @param options.offset - Number of assets to skip (ignored when `after` is set)
+   * @param options.after - Keyset cursor from a prior response's `next_cursor`
+   * @param options.signal - Optional abort signal for cancelling the request
+   * @returns Promise<AssetResponse> - Page of assets plus pagination metadata
+   */
+  async function getAssetsPageForNodeType(
+    nodeType: string,
+    {
+      limit = DEFAULT_LIMIT,
+      offset = 0,
+      after,
+      signal
+    }: AssetPaginationOptions = {}
+  ): Promise<AssetResponse> {
     if (!nodeType || typeof nodeType !== 'string') {
-      return []
+      return { assets: [], total: 0, has_more: false }
     }
 
     // Find the category for this node type using efficient O(1) lookup
@@ -438,17 +469,14 @@ function createAssetService() {
     const category = modelToNodeStore.getCategoryForNodeType(nodeType)
 
     if (!category) {
-      return []
+      return { assets: [], total: 0, has_more: false }
     }
 
     // Fetch assets for this category using same API pattern as getAssetModels
-    const data = await handleAssetRequest(
-      { includeTags: [MODELS_TAG, category], limit, offset },
+    return await handleAssetRequest(
+      { includeTags: [MODELS_TAG, category], limit, offset, after, signal },
       `assets for ${nodeType}`
     )
-
-    // Return full AssetItem[] objects (don't strip like getAssetModels does)
-    return data.assets
   }
 
   /**
@@ -977,6 +1005,7 @@ function createAssetService() {
     isAssetBrowserEligible,
     shouldUseAssetBrowser,
     getAssetsForNodeType,
+    getAssetsPageForNodeType,
     getAssetDetails,
     getAssetsByTag,
     getAssetsPageByTag,
