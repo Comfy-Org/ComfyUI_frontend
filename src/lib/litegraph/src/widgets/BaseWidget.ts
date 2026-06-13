@@ -17,7 +17,7 @@ import type {
   NodeBindable,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
-import { registerWidgetControlFromConfig } from '@/core/graph/widgets/control/controlRegistration'
+import { registerWidgetControlFromConfig } from '@/core/graph/widgets/control/widgetControl'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'

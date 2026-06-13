@@ -21,7 +21,7 @@ import {
   addValueControlWidgets,
   isValidWidgetType
 } from '@/scripts/widgets'
-import { isValueControlMode } from '@/core/graph/widgets/control/valueControl'
+import { applyControlValues } from '@/core/graph/widgets/control/widgetControl'
 import { isPrimitiveNode } from '@/renderer/utils/nodeTypeGuards'
 import { CONFIG, GET_CONFIG } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -235,31 +235,13 @@ export class PrimitiveNode extends LGraphNode {
         widget,
         typeof savedMode === 'string' ? savedMode : 'fixed'
       )
-      const targetId = widget.widgetId
-      if (targetId) {
-        const store = useWidgetValueStore()
-        if (isValueControlMode(savedMode))
-          store.setControlMode(targetId, savedMode)
-        const filter = this.widgets_values?.[2]
-        if (typeof filter === 'string') store.setControlFilter(targetId, filter)
-      }
+      applyControlValues(widget.widgetId, this.widgets_values ?? [], 1)
     }
 
     // Restore control state saved when the node was recreated.
     const controlValues = this.controlValues
-    const targetId = this.widgets?.[0]?.widgetId
-    if (
-      targetId &&
-      this.lastType === this.widgets?.[0]?.type &&
-      controlValues?.length
-    ) {
-      const store = useWidgetValueStore()
-      if (isValueControlMode(controlValues[0])) {
-        store.setControlMode(targetId, controlValues[0])
-      }
-      if (typeof controlValues[1] === 'string') {
-        store.setControlFilter(targetId, controlValues[1])
-      }
+    if (this.lastType === this.widgets?.[0]?.type && controlValues?.length) {
+      applyControlValues(this.widgets?.[0]?.widgetId, controlValues, 0)
     }
 
     this._finalizeWidget(widget, oldWidth, oldHeight, recreating)

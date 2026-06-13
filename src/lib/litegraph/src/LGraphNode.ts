@@ -5,7 +5,7 @@ import { getControlProjections } from '@/core/graph/widgets/control/controlProje
 import {
   appendControlValues,
   applyControlValues
-} from '@/core/graph/widgets/control/widgetControlSerialization'
+} from '@/core/graph/widgets/control/widgetControl'
 import {
   calculateInputSlotPosFromSlot,
   getSlotPosition

@@ -5,7 +5,7 @@ import type { WidgetId } from '@/types/widgetId'
 import { parseWidgetId, widgetId } from '@/types/widgetId'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
-import { computeNextControlledValue } from './control/valueControl'
+import { computeNextControlledValue } from './valueControl'
 
 export type WidgetControlPhase = 'before' | 'after'
 

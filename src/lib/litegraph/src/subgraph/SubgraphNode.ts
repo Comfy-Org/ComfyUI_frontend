@@ -39,7 +39,7 @@ import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgrap
 import {
   appendControlValues,
   applyControlValues
-} from '@/core/graph/widgets/control/widgetControlSerialization'
+} from '@/core/graph/widgets/control/widgetControl'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'

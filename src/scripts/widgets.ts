@@ -1,6 +1,6 @@
 import { type LGraphNode, isComboWidget } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { registerWidgetControlFromConfig } from '@/core/graph/widgets/control/controlRegistration'
+import { registerWidgetControlFromConfig } from '@/core/graph/widgets/control/widgetControl'
 import { isValueControlMode } from '@/core/graph/widgets/control/valueControl'
 import type { ValueControlMode } from '@/core/graph/widgets/control/valueControl'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
