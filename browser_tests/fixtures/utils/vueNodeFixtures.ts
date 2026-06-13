@@ -46,6 +46,11 @@ export class VueNodeFixture {
   async getTitle(): Promise<string> {
     return (await this.title.textContent()) ?? ''
   }
+  async getId() {
+    const id = await this.locator.getAttribute('data-node-id')
+    if (!id) throw new Error('Failed to get id')
+    return id
+  }
 
   async setTitle(value: string): Promise<void> {
     await this.header.dblclick()
@@ -79,12 +84,12 @@ export class VueNodeFixture {
     return this.locator.boundingBox()
   }
 
-  getSlot(nameOrLocator: string | Locator) {
+  getSlot(nameOrLocator: string | RegExp | Locator = '') {
     const slotLocators = this.root
       .getByTestId('node-widget')
       .or(this.root.locator('.lg-slot'))
     const filteredLocator =
-      typeof nameOrLocator === 'string'
+      typeof nameOrLocator === 'string' || nameOrLocator instanceof RegExp
         ? slotLocators.filter({ hasText: nameOrLocator })
         : slotLocators.filter({ has: nameOrLocator })
     return filteredLocator.getByTestId('slot-dot').locator('..')
@@ -184,5 +189,23 @@ export class VueNodeFixture {
       steps: 5
     })
     await page.mouse.up()
+  }
+
+  async isConnectedTo(target: VueNodeFixture, atSlotIndex?: number) {
+    return await this.locator.page().evaluate(
+      ([originId, targetId, slot]) => {
+        const graph = app!.canvas.graph!
+        const targetNode = graph.getNodeById(targetId)
+        if (!targetNode) return false
+
+        const inputs =
+          slot !== undefined ? [targetNode.inputs[slot]] : targetNode.inputs
+        for (const input of inputs) {
+          if (graph.getLink(input.link)?.origin_id == originId) return true
+        }
+        return false
+      },
+      [await this.getId(), await target.getId(), atSlotIndex] as const
+    )
   }
 }
