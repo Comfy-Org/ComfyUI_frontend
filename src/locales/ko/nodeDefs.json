@@ -700,6 +700,36 @@
       }
     }
   },
+  "BriaVideoReplaceBackground": {
+    "description": "Bria를 사용하여 비디오의 배경을 제공된 이미지 또는 비디오로 교체합니다. 출력은 전경의 해상도와 프레임 속도를 유지하며, 배경의 종횡비가 다를 경우 맞춰 늘어나므로 왜곡 없는 결과를 원한다면 종횡비를 맞추세요.",
+    "display_name": "Bria 비디오 배경 교체",
+    "inputs": {
+      "background_image": {
+        "name": "background_image",
+        "tooltip": "전경 뒤에 합성할 배경 이미지입니다. 배경 이미지 또는 배경 비디오 중 하나만 제공하세요."
+      },
+      "background_video": {
+        "name": "background_video",
+        "tooltip": "전경 뒤에 합성할 배경 비디오입니다. 배경 이미지 또는 배경 비디오 중 하나만 제공하세요."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "배경이 교체될 전경 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0을 사용하여 첫 프레임 이미지와 선택적인 마지막 프레임 이미지로 비디오를 생성합니다.",
     "display_name": "ByteDance Seedance 2.0 첫-마지막 프레임에서 비디오 생성",
@@ -15821,6 +15851,98 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2KeyframeNode": {
+    "description": "가이드 이미지를 입력(소스) 비디오의 특정 순간에 고정하여, Aleph2가 해당 시점에서 편집을 유도하도록 합니다. 이 노드를 Runway Aleph2 Video to Video 노드의 'keyframes' 입력에 연결하세요. 아래의 선택적 'keyframes' 입력을 통해 여러 개(최대 5개)를 연쇄 연결할 수 있습니다.",
+    "display_name": "Runway Aleph2 키프레임",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "입력 비디오의 선택한 순간에 적용할 가이드 이미지입니다."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "이전 키프레임을 이 키프레임과 연쇄 연결할 수 있습니다(선택 사항)."
+      },
+      "timing": {
+        "name": "timing",
+        "tooltip": "이 이미지를 입력 비디오 타임라인에 배치하는 방법입니다."
+      },
+      "timing_seconds": {
+        "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "가이드 이미지를 출력(결과) 비디오의 특정 순간에 고정하여, 해당 시점의 편집된 비디오가 어떻게 보일지 안내합니다. 이 노드를 Runway Aleph2 Video to Video 노드의 'prompt_images' 입력에 연결하세요. 아래의 선택적 'prompt_images' 입력을 통해 여러 개(최대 5개)를 연쇄 연결할 수 있습니다.",
+    "display_name": "Runway Aleph2 프롬프트 이미지",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "출력 비디오의 선택한 순간에 배치할 가이드 이미지입니다."
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "이 이미지를 출력 비디오 타임라인에 배치하는 방법입니다."
+      },
+      "position_seconds": {
+        "name": "seconds"
+      },
+      "prompt_images": {
+        "name": "prompt_images",
+        "tooltip": "이전 프롬프트 이미지를 이 이미지와 연쇄 연결할 수 있습니다(선택 사항)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt_images",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "Runway의 Aleph2 모델을 사용하여 텍스트 프롬프트로 비디오를 편집합니다. Aleph2는 원본의 움직임과 타이밍을 유지하면서 영상의 스타일 변경, 조명 변경, 요소 추가/제거, 시점 변경 등을 수행합니다. 출력 해상도는 입력 비디오와 동일하며, 입력 비디오는 2~30초, 30fps 이하만 지원됩니다. 선택적으로 키프레임(입력 비디오에 고정) 또는 프롬프트 이미지(출력 비디오에 고정) 중 하나로 편집을 조정할 수 있습니다. 두 가지를 동시에 사용할 수 없습니다.",
+    "display_name": "Runway Aleph2 비디오 투 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "keyframes": {
+        "name": "키프레임",
+        "tooltip": "입력 비디오에 고정된 가이드 이미지로, Aleph2 Keyframe 노드에서 가져옵니다(최대 5개). 키프레임 또는 프롬프트 이미지 중 하나만 사용하세요."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "출력에 나타나야 할 내용을 설명합니다. (1~1000자)"
+      },
+      "prompt_images": {
+        "name": "프롬프트 이미지",
+        "tooltip": "출력 비디오에 고정된 가이드 이미지로, Aleph2 Prompt Image 노드에서 가져옵니다(최대 5개). 키프레임 또는 프롬프트 이미지 중 하나만 사용하세요."
+      },
+      "public_figure_threshold": {
+        "name": "공인 임계값",
+        "tooltip": "식별 가능한 공인에 대한 콘텐츠 모더레이션."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "생성에 사용할 랜덤 시드"
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "편집할 입력 비디오입니다. 2~30초, 30fps 이하만 지원됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

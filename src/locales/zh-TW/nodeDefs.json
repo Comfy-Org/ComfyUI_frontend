@@ -700,6 +700,36 @@
       }
     }
   },
+  "BriaVideoReplaceBackground": {
+    "description": "使用 Bria 將影片的背景替換為提供的圖片或影片。輸出會保留前景的解析度與幀率；若背景的長寬比不同，將會被拉伸以符合，因此建議匹配長寬比以避免變形。",
+    "display_name": "Bria 影片更換背景",
+    "inputs": {
+      "background_image": {
+        "name": "背景圖片",
+        "tooltip": "要合成於前景後方的背景圖片。請僅提供背景圖片或背景影片其中之一。"
+      },
+      "background_video": {
+        "name": "背景影片",
+        "tooltip": "要合成於前景後方的背景影片。請僅提供背景圖片或背景影片其中之一。"
+      },
+      "control_after_generate": {
+        "name": "產生後控制"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非確定性。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "要更換背景的前景影片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0，從首幀圖像與可選的末幀圖像產生影片。",
     "display_name": "ByteDance Seedance 2.0 首末幀轉影片",
@@ -15821,6 +15851,98 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2KeyframeNode": {
+    "description": "將引導圖片錨定於輸入（來源）影片的某一時刻，讓 Aleph2 在該時刻引導編輯。請將此節點連接至 Runway Aleph2 影片轉影片節點的「keyframes」輸入；可透過下方的「keyframes」選填輸入串接多個（最多 5 個）。",
+    "display_name": "Runway Aleph2 關鍵影格",
+    "inputs": {
+      "image": {
+        "name": "圖片",
+        "tooltip": "要在輸入影片指定時刻套用的引導圖片。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "可選的前一個關鍵影格，用於串接。"
+      },
+      "timing": {
+        "name": "時機",
+        "tooltip": "如何將此圖片放置於輸入影片的時間軸上。"
+      },
+      "timing_seconds": {
+        "name": "秒數"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "將引導圖片錨定於輸出（結果）影片的某一時刻，以引導該時刻的影片外觀。請將此節點連接至 Runway Aleph2 影片轉影片節點的「prompt_images」輸入；可透過下方的「prompt_images」選填輸入串接多個（最多 5 個）。",
+    "display_name": "Runway Aleph2 提示圖片",
+    "inputs": {
+      "image": {
+        "name": "圖片",
+        "tooltip": "要在輸出影片指定時刻放置的引導圖片。"
+      },
+      "position": {
+        "name": "位置",
+        "tooltip": "如何將此圖片放置於輸出影片的時間軸上。"
+      },
+      "position_seconds": {
+        "name": "秒數"
+      },
+      "prompt_images": {
+        "name": "prompt_images",
+        "tooltip": "可選的前一個提示圖片，用於串接。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt_images",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "使用 Runway 的 Aleph2 模型，透過文字提示編輯影片。Aleph2 可在保留原始動作與時序的同時，轉換您的影片（重新風格化、重新打光、添加或移除元素、改變視角）；輸出解析度與輸入影片相同，輸入影片需為 2-30 秒、30 fps 或更低。可選擇以關鍵影格（錨定於輸入影片）或提示圖像（錨定於輸出影片）引導編輯——請擇一使用，不可同時使用。",
+    "display_name": "Runway Aleph2 影片轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "keyframes": {
+        "name": "關鍵影格",
+        "tooltip": "錨定於輸入影片的引導圖像，來自 Aleph2 Keyframe 節點（最多 5 張）。請擇一使用關鍵影格或提示圖像，不可同時使用。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述輸出中應出現的內容（1-1000 字元）。"
+      },
+      "prompt_images": {
+        "name": "提示圖像",
+        "tooltip": "錨定於輸出影片的引導圖像，來自 Aleph2 Prompt Image 節點（最多 5 張）。請擇一使用關鍵影格或提示圖像，不可同時使用。"
+      },
+      "public_figure_threshold": {
+        "name": "公眾人物辨識門檻",
+        "tooltip": "對可辨識公眾人物進行內容審查。"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "生成用的隨機種子"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "要編輯的輸入影片。必須為 2-30 秒、30 fps 或更低。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
