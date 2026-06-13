@@ -14,6 +14,10 @@ interface WorkspacePermissions {
   canLeaveWorkspace: boolean
   canAccessWorkspaceMenu: boolean
   canManageSubscription: boolean
+  // Creator-only subscription lifecycle: cancel / reactivate / downgrade.
+  // Any owner has `canManageSubscription` (manage payment, top-up, change
+  // commit); only the original owner gets `canManageSubscriptionLifecycle`.
+  canManageSubscriptionLifecycle: boolean
   canTopUp: boolean
 }
 
@@ -34,7 +38,8 @@ interface WorkspaceUIConfig {
 
 function getPermissions(
   type: WorkspaceType,
-  role: WorkspaceRole
+  role: WorkspaceRole,
+  isOriginalOwner: boolean
 ): WorkspacePermissions {
   if (type === 'personal') {
     return {
@@ -46,6 +51,8 @@ function getPermissions(
       canLeaveWorkspace: false,
       canAccessWorkspaceMenu: false,
       canManageSubscription: true,
+      // Personal workspace is single-member: the user is the sole owner/creator.
+      canManageSubscriptionLifecycle: true,
       canTopUp: true
     }
   }
@@ -60,6 +67,7 @@ function getPermissions(
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
       canManageSubscription: true,
+      canManageSubscriptionLifecycle: isOriginalOwner,
       canTopUp: true
     }
   }
@@ -74,6 +82,7 @@ function getPermissions(
     canLeaveWorkspace: true,
     canAccessWorkspaceMenu: true,
     canManageSubscription: false,
+    canManageSubscriptionLifecycle: false,
     canTopUp: false
   }
 }
@@ -145,8 +154,21 @@ function useWorkspaceUIInternal() {
     () => store.activeWorkspace?.role ?? 'owner'
   )
 
+  // ASSUMED SIGNAL — BE SPEC NOT FINALIZED. REVISIT (FE-770 Q3 / BE-1337).
+  // Reads `is_creator` off the active workspace, presumed to come from
+  // /api/workspaces. Until BE ships it the flag is undefined → fails closed
+  // (lifecycle actions hidden for everyone in a team). See "Roles &
+  // Billing-Permission Gating" in the FE SSOT.
+  const isOriginalOwner = computed(
+    () => store.activeWorkspace?.is_creator ?? false
+  )
+
   const permissions = computed<WorkspacePermissions>(() =>
-    getPermissions(workspaceType.value, workspaceRole.value)
+    getPermissions(
+      workspaceType.value,
+      workspaceRole.value,
+      isOriginalOwner.value
+    )
   )
 
   const uiConfig = computed<WorkspaceUIConfig>(() =>

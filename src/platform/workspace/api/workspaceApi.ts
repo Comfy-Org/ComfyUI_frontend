@@ -23,6 +23,14 @@ interface Workspace {
 export interface WorkspaceWithRole extends Workspace {
   role: WorkspaceRole
   subscription_tier?: SubscriptionTier
+  // ASSUMED FIELD — BE SPEC NOT FINALIZED. REVISIT (FE-770 Q3 / BE-1337).
+  // Presumed current-user-relative flag (like `role`): true when the current
+  // user is the workspace's original owner/creator. Gates the creator-only
+  // billing lifecycle actions (cancel / reactivate / downgrade) — see "Roles &
+  // Billing-Permission Gating" in the FE SSOT. The real field name/shape and the
+  // determination method (proposed "by creation date") are still open; until BE
+  // ships this, `is_creator` is undefined and lifecycle gating fails closed.
+  is_creator?: boolean
 }
 
 export interface Member {

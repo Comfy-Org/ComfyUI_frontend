@@ -195,6 +195,41 @@ describe('useWorkspaceUI', () => {
     })
   })
 
+  // ASSUMES /api/workspaces exposes `is_creator` — BE spec not finalized.
+  describe('subscription lifecycle (creator-only)', () => {
+    it('grants lifecycle to the personal-workspace sole owner', async () => {
+      mockActiveWorkspace.value = personalWorkspace
+      const ui = await loadComposable()
+      expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(true)
+    })
+
+    it('grants lifecycle to a team owner flagged as original owner', async () => {
+      mockActiveWorkspace.value = { ...teamOwnerWorkspace, is_creator: true }
+      const ui = await loadComposable()
+      expect(ui.permissions.value.canManageSubscription).toBe(true)
+      expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(true)
+    })
+
+    it('withholds lifecycle from a promoted (non-creator) team owner', async () => {
+      mockActiveWorkspace.value = { ...teamOwnerWorkspace, is_creator: false }
+      const ui = await loadComposable()
+      expect(ui.permissions.value.canManageSubscription).toBe(true)
+      expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(false)
+    })
+
+    it('fails closed when is_creator is absent (BE flag not shipped yet)', async () => {
+      mockActiveWorkspace.value = teamOwnerWorkspace
+      const ui = await loadComposable()
+      expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(false)
+    })
+
+    it('withholds lifecycle from members', async () => {
+      mockActiveWorkspace.value = teamMemberWorkspace
+      const ui = await loadComposable()
+      expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(false)
+    })
+  })
+
   describe('shared instance', () => {
     it('returns the same composable state for multiple callers within a test', async () => {
       mockActiveWorkspace.value = teamOwnerWorkspace
