@@ -17,7 +17,7 @@ import type {
   NodeBindable,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
-import { syncWidgetControl } from '@/core/graph/widgets/control/syncWidgetControl'
+import { registerWidgetControlFromConfig } from '@/core/graph/widgets/control/controlRegistration'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
@@ -153,7 +153,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       ...this._state,
       value: this.value
     })
-    syncWidgetControl(id, graphId, nodeId, this.linkedWidgets)
+    registerWidgetControlFromConfig(this)
   }
 
   constructor(widget: TWidget & { node: LGraphNode })

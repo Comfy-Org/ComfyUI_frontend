@@ -3,9 +3,8 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
-import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/control/controlWidgetMarker'
+import type { ValueControlMode } from '@/core/graph/widgets/control/valueControl'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { runWidgetControl } from './widgetControlSystem'
@@ -19,14 +18,12 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-function markControl(widget: IBaseWidget): IBaseWidget {
-  ;(widget as IBaseWidget & Record<symbol, unknown>)[IS_CONTROL_WIDGET] = true
-  return widget
-}
-
 function addSeedNode(
   graph: LGraph,
-  { mode = 'increment', value = 1 }: { mode?: string; value?: number } = {}
+  {
+    mode = 'increment',
+    value = 1
+  }: { mode?: ValueControlMode; value?: number } = {}
 ): LGraphNode {
   const node = new LGraphNode('SeedNode')
   node.id = 1
@@ -35,16 +32,8 @@ function addSeedNode(
     max: 1_000_000,
     step2: 1
   })
-  const control = node.addWidget(
-    'combo',
-    'control_after_generate',
-    mode,
-    () => {},
-    { values: ['fixed', 'increment', 'decrement', 'randomize'] }
-  )
-  markControl(control)
-  seed.linkedWidgets = [control]
   graph.add(node)
+  useWidgetValueStore().registerWidgetControl(seed.widgetId!, { mode })
   return node
 }
 
@@ -123,20 +112,11 @@ describe('runWidgetControl', () => {
     const ckpt = node.addWidget('combo', 'ckpt', 'a.safetensors', () => {}, {
       values: ['a.safetensors', 'b.ckpt', 'c.safetensors']
     })
-    const control = markControl(
-      node.addWidget('combo', 'control_after_generate', 'increment', () => {}, {
-        values: ['fixed', 'increment', 'decrement', 'randomize']
-      })
-    )
-    const filter = node.addWidget(
-      'string',
-      'control_filter_list',
-      'safetensors',
-      () => {},
-      {}
-    )
-    ckpt.linkedWidgets = [control, filter]
     graph.add(node)
+    store.registerWidgetControl(ckpt.widgetId!, {
+      mode: 'increment',
+      filter: 'safetensors'
+    })
 
     runWidgetControl(graph, 'after')
 

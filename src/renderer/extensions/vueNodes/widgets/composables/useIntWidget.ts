@@ -5,7 +5,6 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isIntInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { addValueControlWidget } from '@/scripts/widgets'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 
 function onValueChange(this: INumericWidget, v: number) {
   // For integers, always round to the nearest step
@@ -76,15 +75,7 @@ export const useIntWidget = () => {
         typeof inputSpec.control_after_generate === 'string'
           ? inputSpec.control_after_generate
           : 'randomize'
-      const controlWidget = addValueControlWidget(
-        node,
-        widget,
-        defaultType,
-        undefined,
-        undefined,
-        transformInputSpecV2ToV1(inputSpec)
-      )
-      widget.linkedWidgets = [controlWidget]
+      addValueControlWidget(widget, defaultType)
     }
 
     return widget

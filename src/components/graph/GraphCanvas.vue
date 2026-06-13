@@ -174,7 +174,6 @@ import { requestSlotLayoutSyncForAllNodes } from '@/renderer/extensions/vueNodes
 import { UnauthorizedError } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
@@ -189,7 +188,6 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 import { isCloud } from '@/platform/distribution/types'
@@ -345,26 +343,6 @@ watchEffect(() => {
     textarea.blur()
   })
 })
-
-watch(
-  () => settingStore.get('Comfy.WidgetControlMode'),
-  () => {
-    if (!canvasStore.canvas) return
-
-    forEachNode(comfyApp.rootGraph, (n) => {
-      if (!n.widgets) return
-      for (const w of n.widgets) {
-        if (!w[IS_CONTROL_WIDGET]) continue
-        updateControlWidgetLabel(w)
-        if (!w.linkedWidgets) continue
-        for (const l of w.linkedWidgets) {
-          updateControlWidgetLabel(l)
-        }
-      }
-    })
-    canvasStore.canvas.setDirty(true)
-  }
-)
 
 watch(
   [() => canvasStore.canvas, () => settingStore.get('Comfy.ColorPalette')],

@@ -1,10 +1,9 @@
+import type { ValueControlMode } from '@/core/graph/widgets/control/valueControl'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
-
-import type { WidgetId } from './widgetId'
 
 export interface WidgetState<
   TValue = unknown,
@@ -32,7 +31,14 @@ export type WidgetStateInit<TValue = unknown> = Omit<
 
 /** Control component for a target widget, keyed by the target's WidgetId. */
 export interface WidgetControlState {
-  controlWidgetId: WidgetId
-  filterWidgetId?: WidgetId
+  mode: ValueControlMode
+  /** Present (even as '') only for combo controls that carry a filter slot. */
+  filter?: string
   hasExecuted: boolean
+}
+
+/** Transient control intent carried by a target widget until it is registered. */
+export interface WidgetControlConfig {
+  mode: ValueControlMode
+  hasFilter: boolean
 }

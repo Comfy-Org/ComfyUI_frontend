@@ -151,11 +151,9 @@ export function getControlWidget(
   const control = store.getWidgetControl(targetId)
   if (!control) return
   return {
-    value: normalizeControlOption(
-      store.getWidget(control.controlWidgetId)?.value
-    ),
+    value: normalizeControlOption(control.mode),
     update: (value) =>
-      store.setValue(control.controlWidgetId, normalizeControlOption(value))
+      store.setControlMode(targetId, normalizeControlOption(value))
   }
 }
 

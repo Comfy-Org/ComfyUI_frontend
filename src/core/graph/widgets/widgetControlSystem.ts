@@ -5,10 +5,7 @@ import type { WidgetId } from '@/types/widgetId'
 import { parseWidgetId, widgetId } from '@/types/widgetId'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
-import {
-  computeNextControlledValue,
-  isValueControlMode
-} from './control/valueControl'
+import { computeNextControlledValue } from './control/valueControl'
 
 export type WidgetControlPhase = 'before' | 'after'
 
@@ -54,20 +51,13 @@ export function runWidgetControl(
     if (!target || linkFed.has(targetId)) continue
 
     if (phase === 'before' && !control.hasExecuted) {
-      control.hasExecuted = true
+      store.setControlExecuted(targetId, true)
       continue
     }
-    control.hasExecuted = true
+    store.setControlExecuted(targetId, true)
 
-    const mode = store.getWidget(control.controlWidgetId)?.value
-    if (!isValueControlMode(mode)) continue
-
-    const filter = control.filterWidgetId
-      ? store.getWidget(control.filterWidgetId)?.value
-      : undefined
-
-    const next = computeNextControlledValue(target, mode, {
-      comboFilter: typeof filter === 'string' ? filter : undefined,
+    const next = computeNextControlledValue(target, control.mode, {
+      comboFilter: control.filter,
       nodeId: parseWidgetId(targetId).nodeId
     })
     if (next === undefined) continue

@@ -2,6 +2,10 @@ import { toValue } from 'vue'
 
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
 import {
+  appendControlValues,
+  applyControlValues
+} from '@/core/graph/widgets/control/widgetControlSerialization'
+import {
   calculateInputSlotPosFromSlot,
   getSlotPosition
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
@@ -920,6 +924,7 @@ export class LGraphNode
           if (widget.serialize === false) continue
           if (i >= info.widgets_values.length) break
           widget.value = info.widgets_values[i++]
+          i = applyControlValues(widget.widgetId, info.widgets_values, i)
         }
       }
     }
@@ -970,16 +975,19 @@ export class LGraphNode
 
     const { widgets } = this
     if (widgets && this.serialize_widgets) {
-      o.widgets_values = []
-      for (const [i, widget] of widgets.entries()) {
+      const values: TWidgetValue[] = []
+      for (const widget of widgets) {
         if (widget.serialize === false) continue
         const val = widget?.value
         // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
-        o.widgets_values[i] =
+        values.push(
           val != null && typeof val === 'object'
             ? JSON.parse(JSON.stringify(val))
             : (val ?? null)
+        )
+        appendControlValues(widget.widgetId, values)
       }
+      o.widgets_values = values
     }
 
     if (!o.type && this.constructor.type) o.type = this.constructor.type

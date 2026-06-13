@@ -202,6 +202,70 @@ describe('useWidgetValueStore', () => {
     })
   })
 
+  describe('widget control component', () => {
+    it('registers a control with hasExecuted defaulting to false', () => {
+      const store = useWidgetValueStore()
+      const control = store.registerWidgetControl(seedA, { mode: 'increment' })
+
+      expect(control.mode).toBe('increment')
+      expect(control.hasExecuted).toBe(false)
+      expect(control.filter).toBeUndefined()
+    })
+
+    it('registerWidgetControl is idempotent and keeps existing state', () => {
+      const store = useWidgetValueStore()
+      const first = store.registerWidgetControl(seedA, { mode: 'increment' })
+      store.setControlExecuted(seedA, true)
+
+      const second = store.registerWidgetControl(seedA, { mode: 'randomize' })
+      expect(second).toBe(first)
+      expect(second.mode).toBe('increment')
+      expect(second.hasExecuted).toBe(true)
+    })
+
+    it('setControlMode updates a registered control and reports misses', () => {
+      const store = useWidgetValueStore()
+      store.registerWidgetControl(seedA, { mode: 'fixed' })
+
+      expect(store.setControlMode(seedA, 'randomize')).toBe(true)
+      expect(store.getWidgetControl(seedA)?.mode).toBe('randomize')
+      expect(store.setControlMode(seedB, 'randomize')).toBe(false)
+    })
+
+    it('setControlFilter only applies when the control carries a filter slot', () => {
+      const store = useWidgetValueStore()
+      store.registerWidgetControl(seedA, { mode: 'increment' })
+      store.registerWidgetControl(seedB, { mode: 'increment', filter: '' })
+
+      expect(store.setControlFilter(seedA, 'ckpt')).toBe(false)
+      expect(store.getWidgetControl(seedA)?.filter).toBeUndefined()
+
+      expect(store.setControlFilter(seedB, 'ckpt')).toBe(true)
+      expect(store.getWidgetControl(seedB)?.filter).toBe('ckpt')
+    })
+
+    it('deleteWidget cascades to the control component', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 1))
+      store.registerWidgetControl(seedA, { mode: 'increment' })
+
+      store.deleteWidget(seedA)
+      expect(store.getWidgetControl(seedA)).toBeUndefined()
+    })
+
+    it('getWidgetControls lists a graph controls and clearGraph removes them', () => {
+      const store = useWidgetValueStore()
+      store.registerWidgetControl(seedA, { mode: 'increment' })
+      store.registerWidgetControl(seedB, { mode: 'randomize' })
+
+      expect(store.getWidgetControls(graphA)).toHaveLength(1)
+
+      store.clearGraph(graphA)
+      expect(store.getWidgetControl(seedA)).toBeUndefined()
+      expect(store.getWidgetControl(seedB)?.mode).toBe('randomize')
+    })
+  })
+
   describe('graph isolation', () => {
     it('isolates widget states by graph', () => {
       const store = useWidgetValueStore()

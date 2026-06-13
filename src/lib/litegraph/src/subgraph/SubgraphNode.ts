@@ -36,11 +36,10 @@ import type {
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-import { IS_CONTROL_WIDGET } from '@/core/graph/widgets/control/controlWidgetMarker'
 import {
-  findControlWidgets,
-  syncWidgetControl
-} from '@/core/graph/widgets/control/syncWidgetControl'
+  appendControlValues,
+  applyControlValues
+} from '@/core/graph/widgets/control/widgetControlSerialization'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
@@ -92,16 +91,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   private _eventAbortController = new AbortController()
 
-  /**
-   * Host-local control/filter widgets for each promoted input, minted on
-   * promotion and surfaced alongside the target so they behave like the
-   * control widgets of any other node.
-   */
-  private readonly _promotedControlWidgets = new WeakMap<
-    INodeInputSlot,
-    { control: IBaseWidget; filter?: IBaseWidget }
-  >()
-
   constructor(
     graph: GraphOrSubgraph,
     readonly subgraph: Subgraph,
@@ -113,13 +102,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     Object.defineProperty(this, 'widgets', {
       get: () =>
         this.inputs.flatMap((input) => {
-          const target = this._projectPromotedWidget(input)
-          if (!target) return []
-          const linked = this._promotedControlWidgets.get(input)
-          if (!linked) return [target]
-          return linked.filter
-            ? [target, linked.control, linked.filter]
-            : [target, linked.control]
+          const widget = this._projectPromotedWidget(input)
+          return widget ? [widget] : []
         }),
       set: () => {
         if (import.meta.env.DEV)
@@ -284,8 +268,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   /**
    * Builds a widget whose reads/writes delegate to the store entry for `id`.
-   * Used for the promoted target and its control/filter widgets alike, so all
-   * host widgets are ordinary store-backed widgets with no special-casing.
    */
   private _createStoreBackedWidget(
     id: WidgetId,
@@ -341,53 +323,26 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   }
 
   /**
-   * Mints host-local control/filter widgets for a promoted input, seeded once
-   * from the interior's linked control widgets. Returns the host target's new
-   * linked widgets so the control component can be registered by name like any
-   * other node's.
+   * Copies the interior target's control component onto the promoted host
+   * target. The copy is taken once at promotion; the host control is an
+   * independent component thereafter.
    */
-  private _promoteControlWidgets(
-    input: INodeInputSlot,
+  private _copyPromotedControl(
+    hostTargetId: WidgetId,
     interiorWidget: Readonly<IBaseWidget>
-  ): IBaseWidget[] {
-    this._promotedControlWidgets.delete(input)
+  ): void {
+    const store = useWidgetValueStore()
+    store.deleteWidgetControl(hostTargetId)
 
-    const { control, filter } = findControlWidgets(interiorWidget.linkedWidgets)
-    if (!control) return []
-
-    const controlWidget = this._registerHostControlWidget(
-      `${input.name}:${control.name}`,
-      control
-    )
-    ;(controlWidget as Record<symbol, unknown>)[IS_CONTROL_WIDGET] = true
-
-    const filterWidget = filter
-      ? this._registerHostControlWidget(`${input.name}:${filter.name}`, filter)
+    const interiorControl = interiorWidget.widgetId
+      ? store.getWidgetControl(interiorWidget.widgetId)
       : undefined
+    if (!interiorControl) return
 
-    this._promotedControlWidgets.set(input, {
-      control: controlWidget,
-      filter: filterWidget
+    store.registerWidgetControl(hostTargetId, {
+      mode: interiorControl.mode,
+      filter: interiorControl.filter
     })
-    return filterWidget ? [controlWidget, filterWidget] : [controlWidget]
-  }
-
-  private _registerHostControlWidget(
-    name: string,
-    source: Readonly<IBaseWidget>
-  ): IBaseWidget {
-    const id = widgetId(this.rootGraph.id, this.id, name)
-    useWidgetValueStore().registerWidget(id, {
-      type: source.type,
-      value: source.value,
-      options: cloneDeep(source.options ?? {}),
-      label: source.label
-    })
-    return this._createStoreBackedWidget(
-      id,
-      () => name,
-      () => source.label ?? name
-    )
   }
 
   private _addSubgraphInputListeners(
@@ -553,8 +508,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       )
     )
 
-    // Host widget values (including control widgets) are restored below in one
-    // ordered pass; hide them so the base class does not apply them twice.
+    // Host widget values and control state are restored below in one ordered
+    // pass; hide them so the base class does not apply them twice.
     super.configure({ ...info, widgets_values: undefined })
     this._applyPromotedWidgetValues(info.widgets_values)
   }
@@ -572,25 +527,20 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       )
     )
 
-    const widgets = this.widgets
-    const targets = widgets.filter(
-      (widget) => widget.widgetId && inputNameByTargetId.has(widget.widgetId)
-    )
-    // Workflows saved before promoted controls had one value per target only.
-    const targetOnly =
-      widgets.length > targets.length && widgetValues.length <= targets.length
-    const ordered = targetOnly ? targets : widgets
-
-    ordered.forEach((widget, index) => {
+    let index = 0
+    for (const widget of this.widgets) {
       const id = widget.widgetId
-      if (!id) return
+      if (!id) continue
+      if (index >= widgetValues.length) break
       const inputName = inputNameByTargetId.get(id)
       const value =
         (inputName !== undefined
           ? quarantineValuesByInputName.get(inputName)
           : undefined) ?? widgetValues[index]
       if (value !== undefined) store.setValue(id, value)
-    })
+      index += 1
+      index = applyControlValues(id, widgetValues, index)
+    }
   }
 
   private _readQuarantineHostValuesByName(): Map<string, TWidgetValue> {
@@ -764,18 +714,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       this.createPromotedHostWidget(input, id, interiorWidget) ??
       this._projectPromotedWidget(input)
     input._widget = hostWidget
-    if (hostWidget) {
-      hostWidget.linkedWidgets = this._promoteControlWidgets(
-        input,
-        interiorWidget
-      )
-      syncWidgetControl(
-        id,
-        this.rootGraph.id,
-        this.id,
-        hostWidget.linkedWidgets
-      )
-    }
+    this._copyPromotedControl(id, interiorWidget)
     this._setConcreteSlots()
 
     this.subgraph.events.dispatch('widget-promoted', {
@@ -804,7 +743,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
   private _clearPromotedWidget(input: INodeInputSlot): void {
     input._widget?.onRemove?.()
     input._widget = undefined
-    this._promotedControlWidgets.delete(input)
+    if (input.widgetId)
+      useWidgetValueStore().deleteWidgetControl(input.widgetId)
   }
 
   override onAdded(_graph: LGraph): void {
@@ -1028,11 +968,13 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     serialized.properties = serializedProperties
 
     const store = useWidgetValueStore()
-    const widgetValues = this.widgets.map((widget) => {
+    const widgetValues: TWidgetValue[] = []
+    for (const widget of this.widgets) {
       const id = widget.widgetId
       const value = id ? store.getWidget(id)?.value : undefined
-      return isWidgetValue(value) ? value : undefined
-    })
+      widgetValues.push(isWidgetValue(value) ? value : undefined)
+      appendControlValues(id, widgetValues)
+    }
 
     if (widgetValues.some((value) => value !== undefined)) {
       serialized.widgets_values = widgetValues

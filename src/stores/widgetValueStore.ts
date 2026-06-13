@@ -80,17 +80,14 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
 
   function registerWidgetControl(
     targetId: WidgetId,
-    control: Omit<WidgetControlState, 'hasExecuted'>
+    init: Omit<WidgetControlState, 'hasExecuted'>
   ): WidgetControlState {
     const { graphId } = parseWidgetId(targetId)
     const controls = getGraphWidgetControls(graphId)
     const existing = controls.get(targetId)
-    const hasExecuted =
-      existing?.controlWidgetId === control.controlWidgetId &&
-      existing?.filterWidgetId === control.filterWidgetId
-        ? existing.hasExecuted
-        : false
-    const state: WidgetControlState = { ...control, hasExecuted }
+    if (existing) return existing
+
+    const state: WidgetControlState = { ...init, hasExecuted: false }
     controls.set(targetId, state)
     return controls.get(targetId) as WidgetControlState
   }
@@ -104,6 +101,33 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   ): WidgetControlState | undefined {
     const { graphId } = parseWidgetId(targetId)
     return getGraphWidgetControls(graphId).get(targetId)
+  }
+
+  function setControlMode(
+    targetId: WidgetId,
+    mode: WidgetControlState['mode']
+  ): boolean {
+    const control = getWidgetControl(targetId)
+    if (!control) return false
+    control.mode = mode
+    return true
+  }
+
+  function setControlFilter(targetId: WidgetId, filter: string): boolean {
+    const control = getWidgetControl(targetId)
+    if (!control || control.filter === undefined) return false
+    control.filter = filter
+    return true
+  }
+
+  function setControlExecuted(
+    targetId: WidgetId,
+    hasExecuted: boolean
+  ): boolean {
+    const control = getWidgetControl(targetId)
+    if (!control) return false
+    control.hasExecuted = hasExecuted
+    return true
   }
 
   function deleteWidgetControl(targetId: WidgetId): boolean {
@@ -130,6 +154,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     registerWidgetControl,
     getWidgetControls,
     getWidgetControl,
+    setControlMode,
+    setControlFilter,
+    setControlExecuted,
     deleteWidgetControl,
     getNodeWidgets,
     clearGraph
