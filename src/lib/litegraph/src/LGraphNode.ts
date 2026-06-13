@@ -973,14 +973,15 @@ export class LGraphNode
     const { widgets } = this
     if (widgets && this.serialize_widgets) {
       o.widgets_values = []
-      for (const [i, widget] of widgets.entries()) {
+      for (const widget of widgets) {
         if (widget.serialize === false) continue
         const val = widget?.value
         // Ensure object values are plain (not reactive proxies) for structuredClone compatibility.
-        o.widgets_values[i] =
+        o.widgets_values.push(
           val != null && typeof val === 'object'
             ? JSON.parse(JSON.stringify(val))
             : (val ?? null)
+        )
       }
     }
 
