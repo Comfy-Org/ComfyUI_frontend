@@ -8,6 +8,7 @@ import {
   TOKEN_REFRESH_BUFFER_MS,
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/workspace/workspaceConstants'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
@@ -51,6 +52,44 @@ interface MintedToken {
   token: string
   expiresAt: number
   workspace: WorkspaceWithRole
+}
+
+const PERMANENT_AUTH_ERROR_CODES = new Set([
+  'ACCESS_DENIED',
+  'WORKSPACE_NOT_FOUND',
+  'INVALID_FIREBASE_TOKEN',
+  'NOT_AUTHENTICATED'
+])
+
+function isPermanentAuthError(err: unknown): err is WorkspaceAuthError {
+  return (
+    err instanceof WorkspaceAuthError &&
+    PERMANENT_AUTH_ERROR_CODES.has(err.code ?? '')
+  )
+}
+
+function permanentAuthErrorMessageKey(code: string | undefined): string {
+  switch (code) {
+    case 'ACCESS_DENIED':
+      return 'workspaceAuth.errors.accessDenied'
+    case 'WORKSPACE_NOT_FOUND':
+      return 'workspaceAuth.errors.workspaceNotFound'
+    case 'INVALID_FIREBASE_TOKEN':
+      return 'workspaceAuth.errors.invalidFirebaseToken'
+    default:
+      return 'workspaceAuth.errors.notAuthenticated'
+  }
+}
+
+// Flag-ON has no Firebase fallback, so surface permanent failures instead of
+// stranding every cloud request on a silently cleared token.
+function surfacePermanentAuthError(err: WorkspaceAuthError): void {
+  console.error('Unified workspace auth revoked or invalid:', err)
+  useToastStore().add({
+    severity: 'error',
+    summary: t('g.error'),
+    detail: t(permanentAuthErrorMessageKey(err.code))
+  })
 }
 
 export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
@@ -448,15 +487,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         useAuthStore().notifyTokenRefreshed()
       }
     } catch (err) {
-      const isPermanentError =
-        err instanceof WorkspaceAuthError &&
-        (err.code === 'ACCESS_DENIED' ||
-          err.code === 'WORKSPACE_NOT_FOUND' ||
-          err.code === 'INVALID_FIREBASE_TOKEN' ||
-          err.code === 'NOT_AUTHENTICATED')
-
-      if (isPermanentError) {
-        console.error('Unified workspace auth revoked or invalid:', err)
+      if (isPermanentAuthError(err)) {
+        surfacePermanentAuthError(err)
         clearUnifiedContext()
       } else {
         console.warn('Unified token refresh failed:', err)
@@ -471,7 +503,16 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (unifiedToken.value) {
       return true
     }
-    return mintUnified(personalWorkspaceTarget())
+    try {
+      return await mintUnified(personalWorkspaceTarget())
+    } catch (err) {
+      if (isPermanentAuthError(err)) {
+        surfacePermanentAuthError(err)
+      } else {
+        console.warn('Unified login mint failed:', err)
+      }
+      return false
+    }
   }
 
   const remintUnifiedOnce = async (): Promise<string | null> => {
