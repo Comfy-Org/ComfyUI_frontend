@@ -4,14 +4,33 @@ https://github.com/rgthree/rgthree-comfy/blob/main/py/display_any.py
 upstream requested in https://github.com/Kosinkadink/rfcs/blob/main/rfcs/0000-corenodes.md#preview-nodes
  */
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { type DOMWidget } from '@/scripts/domWidget'
 import { ComfyWidgets } from '@/scripts/widgets'
 import { useExtensionService } from '@/services/extensionService'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+
+function applyPreviewText(node: LGraphNode, text: NodeExecutionOutput['text']) {
+  const value = Array.isArray(text) ? text.join('\n\n') : (text ?? '')
+  for (const widget of node.widgets ?? []) {
+    if (widget.name.startsWith('preview_')) widget.value = value
+  }
+}
 
 useExtensionService().registerExtension({
   name: 'Comfy.PreviewAny',
+  onNodeOutputsUpdated(
+    nodeOutputs: Record<NodeLocatorId, NodeExecutionOutput>
+  ) {
+    for (const [locatorId, output] of Object.entries(nodeOutputs)) {
+      const node = getNodeByLocatorId(app.rootGraph, locatorId)
+      if (node?.constructor.comfyClass !== 'PreviewAny') continue
+      applyPreviewText(node, output.text)
+    }
+  },
   async beforeRegisterNodeDef(
     nodeType: typeof LGraphNode,
     nodeData: ComfyNodeDef
@@ -82,15 +101,7 @@ useExtensionService().registerExtension({
           ? void 0
           : onExecuted.apply(this, [message])
 
-        const previewWidgets =
-          this.widgets?.filter((w) => w.name.startsWith('preview_')) ?? []
-
-        for (const previewWidget of previewWidgets) {
-          const text = message.text ?? ''
-          previewWidget.value = Array.isArray(text)
-            ? (text?.join('\n\n') ?? '')
-            : text
-        }
+        applyPreviewText(this, message.text)
       }
     }
   }

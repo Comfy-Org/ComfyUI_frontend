@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyExtension } from '@/types/comfy'
+
+const { getNodeByLocatorIdMock } = vi.hoisted(() => ({
+  getNodeByLocatorIdMock: vi.fn()
+}))
 
 const capturedExtensions: ComfyExtension[] = []
 
@@ -13,6 +18,16 @@ vi.mock('@/services/extensionService', () => ({
 }))
 
 vi.mock('@/scripts/app', () => ({ app: {} }))
+
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  getNodeByLocatorId: getNodeByLocatorIdMock
+}))
+
+type PreviewAnyExtension = ComfyExtension & {
+  onNodeOutputsUpdated: (
+    nodeOutputs: Record<string, NodeExecutionOutput>
+  ) => void
+}
 
 interface MockWidget {
   name: string
@@ -62,6 +77,7 @@ describe('PreviewAny extension', () => {
   beforeEach(async () => {
     capturedExtensions.length = 0
     createdWidgets.length = 0
+    getNodeByLocatorIdMock.mockReset()
     vi.resetModules()
     await import('./previewAny')
   })
@@ -83,10 +99,21 @@ describe('PreviewAny extension', () => {
       {} as Parameters<NonNullable<ComfyExtension['beforeRegisterNodeDef']>>[2]
     )
 
-    const node: { widgets?: MockWidget[] } = {}
+    const node: {
+      widgets?: MockWidget[]
+      constructor: { comfyClass: string }
+    } = { constructor: { comfyClass: 'PreviewAny' } }
     const proto = nodeType.prototype as { onNodeCreated?: () => void }
     proto.onNodeCreated!.call(node)
-    return node
+    return { node, nodeType }
+  }
+
+  function getRestoreHook() {
+    const ext = capturedExtensions.find(
+      (e) => e.name === 'Comfy.PreviewAny'
+    ) as PreviewAnyExtension | undefined
+    expect(ext).toBeDefined()
+    return ext!.onNodeOutputsUpdated
   }
 
   it('excludes preview widgets from the API prompt to prevent re-execution', async () => {
@@ -110,5 +137,61 @@ describe('PreviewAny extension', () => {
     expect(previewMarkdown!.options.serialize).toBe(false)
     expect(previewText!.options.serialize).toBe(false)
     expect(previewMode!.options.serialize).toBe(false)
+  })
+
+  it('repopulates preview widgets when outputs are restored on tab switch', async () => {
+    const { node } = await setupNode()
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    getRestoreHook()({ '1': { text: 'restored text' } })
+
+    const previewText = node.widgets!.find((w) => w.name === 'preview_text')
+    const previewMarkdown = node.widgets!.find(
+      (w) => w.name === 'preview_markdown'
+    )
+    const previewMode = node.widgets!.find((w) => w.name === 'previewMode')
+    expect(previewText!.value).toBe('restored text')
+    expect(previewMarkdown!.value).toBe('restored text')
+    expect(previewMode!.value).toBe(false)
+  })
+
+  it('joins array text with blank lines on restore', async () => {
+    const { node } = await setupNode()
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    getRestoreHook()({ '1': { text: ['a', 'b'] } })
+
+    const previewText = node.widgets!.find((w) => w.name === 'preview_text')
+    expect(previewText!.value).toBe('a\n\nb')
+  })
+
+  it('ignores restored outputs for nodes that are not PreviewAny', async () => {
+    const { node } = await setupNode()
+    node.constructor.comfyClass = 'OtherNode'
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    getRestoreHook()({ '1': { text: 'should be ignored' } })
+
+    const previewText = node.widgets!.find((w) => w.name === 'preview_text')
+    expect(previewText!.value).toBe('')
+  })
+
+  it('ignores restored locators that resolve to no node', async () => {
+    await setupNode()
+    getNodeByLocatorIdMock.mockReturnValue(null)
+
+    expect(() => getRestoreHook()({ '1': { text: 'x' } })).not.toThrow()
+  })
+
+  it('still populates preview widgets on live execution via onExecuted', async () => {
+    const { node, nodeType } = await setupNode()
+    const proto = nodeType.prototype as {
+      onExecuted?: (message: NodeExecutionOutput) => void
+    }
+
+    proto.onExecuted!.call(node, { text: 'executed text' })
+
+    const previewText = node.widgets!.find((w) => w.name === 'preview_text')
+    expect(previewText!.value).toBe('executed text')
   })
 })
