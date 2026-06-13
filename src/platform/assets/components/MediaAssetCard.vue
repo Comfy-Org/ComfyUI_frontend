@@ -159,7 +159,7 @@ import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import {
   getAssetDisplayName,
-  getAssetMetadataDimensions
+  resolveDisplayImageDimensions
 } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
 import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
@@ -281,8 +281,8 @@ const formattedDuration = computed(() => {
   return formatDuration(Number(duration))
 })
 
-const displayImageDimensions = computed(
-  () => getAssetMetadataDimensions(asset) ?? imageDimensions.value
+const displayImageDimensions = computed(() =>
+  resolveDisplayImageDimensions(asset, imageDimensions.value)
 )
 
 // Get metadata info based on file kind

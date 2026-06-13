@@ -15,7 +15,8 @@ import {
   getAssetSourceUrl,
   getAssetTriggerPhrases,
   getAssetUserDescription,
-  getSourceName
+  getSourceName,
+  resolveDisplayImageDimensions
 } from '@/platform/assets/utils/assetMetadataUtils'
 
 describe('assetMetadataUtils', () => {
@@ -417,6 +418,66 @@ describe('assetMetadataUtils', () => {
 
     it('returns undefined when asset itself is undefined', () => {
       expect(getAssetMetadataDimensions(undefined)).toBeUndefined()
+    })
+  })
+
+  describe('resolveDisplayImageDimensions', () => {
+    const rendered = { width: 512, height: 288 }
+
+    it('prefers server metadata dimensions over the rendered natural size', () => {
+      const asset = { ...mockAsset, metadata: { width: 1920, height: 1080 } }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toEqual({
+        width: 1920,
+        height: 1080
+      })
+    })
+
+    it('prefers metadata even when a downscaled thumbnail was rendered', () => {
+      const asset = {
+        ...mockAsset,
+        thumbnail_url: 'https://cdn.example/thumb.webp',
+        metadata: { width: 1920, height: 1080 }
+      }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toEqual({
+        width: 1920,
+        height: 1080
+      })
+    })
+
+    it('falls back to the rendered natural size when no thumbnail was shown (original served)', () => {
+      const asset = { ...mockAsset }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toEqual(rendered)
+    })
+
+    it('returns undefined (no label) when metadata is absent and a downscaled thumbnail was rendered', () => {
+      // The guard: the measured natural size is the thumbnail's, not the
+      // asset's — a blank label beats a confidently wrong resolution.
+      const asset = {
+        ...mockAsset,
+        thumbnail_url: 'https://cdn.example/thumb.webp'
+      }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toBeUndefined()
+    })
+
+    it('suppresses the fallback for an invalid metadata shape when a thumbnail was rendered', () => {
+      const asset = {
+        ...mockAsset,
+        thumbnail_url: 'https://cdn.example/thumb.webp',
+        metadata: { width: 0, height: 1080 }
+      }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toBeUndefined()
+    })
+
+    it('returns undefined when neither metadata nor a rendered size is available', () => {
+      expect(
+        resolveDisplayImageDimensions(mockAsset, undefined)
+      ).toBeUndefined()
+    })
+
+    it('returns the rendered size when asset is undefined (no thumbnail to guard against)', () => {
+      expect(resolveDisplayImageDimensions(undefined, rendered)).toEqual(
+        rendered
+      )
     })
   })
 })

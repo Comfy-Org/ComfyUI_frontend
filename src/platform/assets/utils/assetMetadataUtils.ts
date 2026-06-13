@@ -199,6 +199,11 @@ export function getAssetCardTitle(asset: AssetItem): string {
   return getAssetDisplayFilename(asset)
 }
 
+export interface ImageDimensions {
+  width: number
+  height: number
+}
+
 /**
  * Type guard: a pixel dimension is a finite positive integer. `metadata` is
  * typed as `Record<string, unknown>`, so `typeof === 'number'` alone admits
@@ -217,13 +222,38 @@ function isValidDimension(value: unknown): value is number {
  */
 export function getAssetMetadataDimensions(
   asset: AssetItem | undefined
-): { width: number; height: number } | undefined {
+): ImageDimensions | undefined {
   const w = asset?.metadata?.width
   const h = asset?.metadata?.height
   if (isValidDimension(w) && isValidDimension(h)) {
     return { width: w, height: h }
   }
   return undefined
+}
+
+/**
+ * Resolves the image dimensions an asset card should display.
+ *
+ * Prefers the server-provided original dimensions from
+ * {@link getAssetMetadataDimensions}. Only when those are absent does it fall
+ * back to `renderedNaturalSize` — the natural size of the `<img>` the card
+ * actually rendered — and only when that rendered image was the original file.
+ *
+ * When a downscaled thumbnail was rendered (`asset.thumbnail_url` is set, e.g.
+ * on runtimes that serve previews), the measured natural size is the preview's,
+ * not the asset's, so surfacing it would report a wrong resolution (a 512px
+ * thumbnail for a 1920×1080 image). In that case this returns `undefined` so
+ * the card shows no dimensions rather than a misleading one — a blank label is
+ * preferable to a confidently wrong number.
+ */
+export function resolveDisplayImageDimensions(
+  asset: AssetItem | undefined,
+  renderedNaturalSize: ImageDimensions | undefined
+): ImageDimensions | undefined {
+  const fromMetadata = getAssetMetadataDimensions(asset)
+  if (fromMetadata) return fromMetadata
+  if (asset?.thumbnail_url) return undefined
+  return renderedNaturalSize
 }
 
 /**
