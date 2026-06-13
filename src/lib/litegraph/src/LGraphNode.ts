@@ -1,6 +1,7 @@
 import { toValue } from 'vue'
 
 import { LGraphNodeProperties } from '@/lib/litegraph/src/LGraphNodeProperties'
+import { getControlProjections } from '@/core/graph/widgets/control/controlProjection'
 import {
   appendControlValues,
   applyControlValues
@@ -1815,7 +1816,7 @@ export class LGraphNode
     // Get widget height & expand size if necessary
     let widgets_height = 0
     if (widgets?.length) {
-      for (const widget of widgets) {
+      for (const widget of this.getRenderWidgets()) {
         if (!this.isWidgetVisible(widget)) continue
 
         let widget_height = 0
@@ -2260,8 +2261,9 @@ export class LGraphNode
     canvasY: number,
     includeDisabled = false
   ): IBaseWidget | undefined {
-    const { widgets, pos, size } = this
-    if (!widgets?.length) return
+    const { pos, size } = this
+    const widgets = this.getRenderWidgets()
+    if (!widgets.length) return
 
     const x = canvasX - pos[0]
     const y = canvasY - pos[1]
@@ -3939,7 +3941,21 @@ export class LGraphNode
    * Filters out hidden widgets only (not collapsed/advanced).
    */
   getLayoutWidgets(): IBaseWidget[] {
-    return this.widgets?.filter((w) => !w.hidden) ?? []
+    return this.getRenderWidgets().filter((w) => !w.hidden)
+  }
+
+  /**
+   * Widgets to draw/lay out/hit-test on the classic canvas: real widgets with
+   * render-only control rows interleaved. Vue nodes render control separately,
+   * so projections are omitted there.
+   */
+  getRenderWidgets(): IBaseWidget[] {
+    const widgets = this.widgets ?? []
+    if (LiteGraph.vueNodesMode) return [...widgets]
+    return widgets.flatMap((widget) => [
+      widget,
+      ...getControlProjections(this, widget)
+    ])
   }
 
   /**
@@ -3963,7 +3979,7 @@ export class LGraphNode
     if (!this.widgets) return
 
     const nodeWidth = this.size[0]
-    const { widgets } = this
+    const widgets = this.getRenderWidgets()
     const H = LiteGraph.NODE_WIDGET_HEIGHT
     const showText = !lowQuality
     ctx.save()

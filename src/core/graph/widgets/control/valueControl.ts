@@ -7,13 +7,24 @@ export type ValueControlMode =
   | 'decrement'
   | 'randomize'
 
-const VALUE_CONTROL_MODES: ReadonlySet<string> = new Set([
+/** Control modes offered for combo targets (combos add wrap-around). */
+export const COMBO_CONTROL_MODES: readonly ValueControlMode[] = [
   'fixed',
   'increment',
   'increment-wrap',
   'decrement',
   'randomize'
-])
+]
+
+/** Control modes offered for numeric targets. */
+export const NUMBER_CONTROL_MODES: readonly ValueControlMode[] = [
+  'fixed',
+  'increment',
+  'decrement',
+  'randomize'
+]
+
+const VALUE_CONTROL_MODES: ReadonlySet<string> = new Set(COMBO_CONTROL_MODES)
 
 export function isValueControlMode(value: unknown): value is ValueControlMode {
   return typeof value === 'string' && VALUE_CONTROL_MODES.has(value)
