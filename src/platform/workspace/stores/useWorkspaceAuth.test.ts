@@ -1229,13 +1229,72 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
-    it('surfaces an error toast and clears the slot when a refresh hits a permanent auth error', async () => {
+    it.for([
+      {
+        status: 403,
+        statusText: 'Forbidden',
+        detailKey: 'workspaceAuth.errors.accessDenied'
+      },
+      {
+        status: 404,
+        statusText: 'Not Found',
+        detailKey: 'workspaceAuth.errors.workspaceNotFound'
+      },
+      {
+        status: 401,
+        statusText: 'Unauthorized',
+        detailKey: 'workspaceAuth.errors.invalidFirebaseToken'
+      }
+    ])(
+      'surfaces the $status permanent refresh error as a toast and clears the slot',
+      async ({ status, statusText, detailKey }) => {
+        mockUnifiedCloudAuthEnabled.value = true
+        mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+        const expiresInMs = 3600 * 1000
+        const mockFetch = vi
+          .fn()
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                ...personalTokenResponse,
+                expires_at: new Date(Date.now() + expiresInMs).toISOString()
+              })
+          })
+          // The scheduled refresh is rejected with a permanent code.
+          .mockResolvedValue({
+            ok: false,
+            status,
+            statusText,
+            json: () => Promise.resolve({ message: statusText })
+          })
+        vi.stubGlobal('fetch', mockFetch)
+
+        const store = useWorkspaceAuthStore()
+        const { unifiedToken } = storeToRefs(store)
+
+        await store.mintAtLogin()
+        expect(unifiedToken.value).toBe('unified-token-1')
+
+        await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
+
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ severity: 'error', detail: detailKey })
+        )
+        expect(unifiedToken.value).toBeNull()
+      }
+    )
+
+    it('surfaces a NOT_AUTHENTICATED refresh (lost Firebase token) and clears the slot', async () => {
       mockUnifiedCloudAuthEnabled.value = true
-      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
       const expiresInMs = 3600 * 1000
-      const mockFetch = vi
-        .fn()
-        .mockResolvedValueOnce({
+      // Mint succeeds, then the Firebase identity is gone at refresh time.
+      mockGetIdToken
+        .mockResolvedValueOnce('firebase-token-xyz')
+        .mockResolvedValue(null)
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
           ok: true,
           json: () =>
             Promise.resolve({
@@ -1243,31 +1302,44 @@ describe('useWorkspaceAuthStore', () => {
               expires_at: new Date(Date.now() + expiresInMs).toISOString()
             })
         })
-        // The scheduled refresh is rejected: workspace access was revoked.
-        .mockResolvedValue({
-          ok: false,
-          status: 403,
-          statusText: 'Forbidden',
-          json: () => Promise.resolve({ message: 'Access denied' })
-        })
-      vi.stubGlobal('fetch', mockFetch)
+      )
 
       const store = useWorkspaceAuthStore()
       const { unifiedToken } = storeToRefs(store)
 
       await store.mintAtLogin()
-      expect(unifiedToken.value).toBe('unified-token-1')
-
-      const refreshDelay = expiresInMs - 5 * 60 * 1000
-      await vi.advanceTimersByTimeAsync(refreshDelay)
+      await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
 
       expect(mockToastAdd).toHaveBeenCalledWith(
         expect.objectContaining({
           severity: 'error',
-          detail: 'workspaceAuth.errors.accessDenied'
+          detail: 'workspaceAuth.errors.notAuthenticated'
         })
       )
       expect(unifiedToken.value).toBeNull()
+    })
+
+    it('does not toast on a successful refresh re-mint', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const expiresInMs = 3600 * 1000
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...personalTokenResponse,
+              expires_at: new Date(Date.now() + expiresInMs).toISOString()
+            })
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+      await store.mintAtLogin()
+      await vi.advanceTimersByTimeAsync(expiresInMs - 5 * 60 * 1000)
+
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
 
     it('does not toast on a transient refresh failure and keeps the slot', async () => {
@@ -1329,6 +1401,29 @@ describe('useWorkspaceAuthStore', () => {
           detail: 'workspaceAuth.errors.invalidFirebaseToken'
         })
       )
+    })
+
+    it('never toasts from the unified lifecycle when the flag is OFF', async () => {
+      mockUnifiedCloudAuthEnabled.value = false
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      // Even with a backend that would reject, the OFF lifecycle stays inert.
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 403,
+          statusText: 'Forbidden',
+          json: () => Promise.resolve({ message: 'Access denied' })
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+
+      await store.mintAtLogin()
+      await store.remintUnifiedOnce()
+      await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
+
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
   })
 })
