@@ -79,6 +79,28 @@ describe('widget control positional (de)serialization', () => {
     expect(control?.filter).toBe('safetensors')
   })
 
+  it('does not consume a following widget value when a legacy layout omits the control slot', () => {
+    const node = addControlledNode(graph, (n) => {
+      const seed = n.addWidget('number', 'seed', 0, null, {}) as IBaseWidget
+      n.addWidget('text', 'prompt', '', null, {})
+      seed.controlConfig = { mode: 'randomize', hasFilter: false }
+    })
+
+    node.configure({
+      id: 1,
+      type: 'TestNode',
+      pos: [0, 0],
+      size: [200, 100],
+      flags: {},
+      order: 0,
+      mode: 0,
+      widgets_values: [12345, 'a prompt']
+    })
+
+    expect(node.widgets![0].value).toBe(12345)
+    expect(node.widgets![1].value).toBe('a prompt')
+  })
+
   it('round-trips control state through the classic positional layout', () => {
     const node = addControlledNode(graph, (n) => {
       n.serialize_widgets = true

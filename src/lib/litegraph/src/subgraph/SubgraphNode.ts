@@ -537,7 +537,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         (inputName !== undefined
           ? quarantineValuesByInputName.get(inputName)
           : undefined) ?? widgetValues[index]
-      if (value !== undefined) store.setValue(id, value)
+      if (value != null) store.setValue(id, value)
       index += 1
       index = applyControlValues(id, widgetValues, index)
     }

@@ -34,13 +34,15 @@ export function applyControlValues(
   if (!control) return index
 
   let next = index
-  if (next < values.length) {
-    const mode = values[next++]
-    if (isValueControlMode(mode)) store.setControlMode(targetId, mode)
-  }
-  if (control.filter !== undefined && next < values.length) {
-    const filter = values[next++]
-    if (typeof filter === 'string') store.setControlFilter(targetId, filter)
+  const mode = values[next]
+  if (!isValueControlMode(mode)) return next
+
+  store.setControlMode(targetId, mode)
+  next++
+  const filter = values[next]
+  if (control.filter !== undefined && typeof filter === 'string') {
+    store.setControlFilter(targetId, filter)
+    next++
   }
   return next
 }

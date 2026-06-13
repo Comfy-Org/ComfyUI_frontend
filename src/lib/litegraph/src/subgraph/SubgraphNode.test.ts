@@ -1197,6 +1197,30 @@ describe('SubgraphNode promoted widget control', () => {
     expect(control!.mode).toBe('randomize')
   })
 
+  it('falls back to the interior seed value when the host slot is a null hole', () => {
+    const { subgraph } = promoteControllableSeed()
+    const store = useWidgetValueStore()
+    const host = createTestSubgraphNode(subgraph, { id: 16 })
+
+    host.configure({
+      id: 16,
+      type: subgraph.id,
+      pos: [0, 0],
+      size: [210, 210],
+      flags: {},
+      order: 0,
+      mode: 0,
+      inputs: [],
+      outputs: [],
+      properties: {},
+      widgets_values: [null, 'randomize']
+    } as ExportedSubgraphInstance)
+
+    const hostId = host.inputs[0].widgetId!
+    expect(store.getWidget(hostId)?.value).toBe(1)
+    expect(store.getWidgetControl(hostId)?.mode).toBe('randomize')
+  })
+
   it('round-trips the host control mode through widgets_values', () => {
     const { subgraph, subgraphNode } = promoteControllableSeed()
     const store = useWidgetValueStore()
