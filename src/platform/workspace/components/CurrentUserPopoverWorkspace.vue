@@ -112,7 +112,11 @@
         button-variant="gradient"
       />
       <Button
-        v-if="showSubscribeAction && !isPersonalWorkspace"
+        v-if="
+          showSubscribeAction &&
+          !isPersonalWorkspace &&
+          (!isCancelled || permissions.canManageSubscriptionLifecycle)
+        "
         variant="primary"
         size="sm"
         @click="handleOpenPlansAndPricing"
