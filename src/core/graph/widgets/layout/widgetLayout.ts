@@ -1,12 +1,12 @@
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 /**
- * Transient widget layout produced by the canvas arrange pass and read back
- * during draw and hit-testing.
+ * Transient per-frame widget render state produced by the canvas arrange and
+ * draw passes and read back during draw and hit-testing.
  *
  * Held in a non-reactive {@link WeakMap} keyed by the widget object — a
  * frame-stable side cache, deliberately separate from the reactive value store.
- * Keeping this churning per-frame geometry out of the widget instance moves
+ * Keeping this churning per-frame state out of the widget instance moves
  * widgets closer to plain data whose render state lives in a queryable cache,
  * and lets entries be released automatically when a widget is collected.
  */
@@ -17,6 +17,8 @@ export interface WidgetLayout {
   last_y?: number
   /** Height computed during arrange. */
   computedHeight?: number
+  /** Disabled state derived each draw from `disabled` and slot links; dims rendering. */
+  computedDisabled?: boolean
 }
 
 const widgetLayouts = new WeakMap<IBaseWidget, WidgetLayout>()

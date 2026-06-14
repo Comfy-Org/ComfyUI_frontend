@@ -240,10 +240,12 @@ describe('BaseWidget store integration', () => {
       widget.y = 30
       widget.computedHeight = 20
       widget.last_y = 30
+      widget.computedDisabled = true
 
       expect(widget.y).toBe(30)
       expect(widget.computedHeight).toBe(20)
       expect(widget.last_y).toBe(30)
+      expect(widget.computedDisabled).toBe(true)
     })
 
     it('exposes y via the `in` operator for extension compatibility', () => {

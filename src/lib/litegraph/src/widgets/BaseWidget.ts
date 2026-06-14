@@ -81,7 +81,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   options: TWidget['options']
   type: TWidget['type']
   width?: number
-  computedDisabled?: boolean
   tooltip?: string
 
   /** Y offset within the node, set during arrange. Backed by a frame-stable layout cache. */
@@ -106,6 +105,14 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   }
   set computedHeight(value: number | undefined) {
     getWidgetLayout(this).computedHeight = value
+  }
+
+  /** Disabled state derived each draw, read during draw and measurement. */
+  get computedDisabled(): boolean | undefined {
+    return getWidgetLayout(this).computedDisabled
+  }
+  set computedDisabled(value: boolean | undefined) {
+    getWidgetLayout(this).computedDisabled = value
   }
 
   private _state: Omit<WidgetState, 'nodeId'> &
@@ -487,6 +494,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     cloned.y = this.y
     cloned.last_y = this.last_y
     cloned.computedHeight = this.computedHeight
+    cloned.computedDisabled = this.computedDisabled
     return cloned
   }
 }
