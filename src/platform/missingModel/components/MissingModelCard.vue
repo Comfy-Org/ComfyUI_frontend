@@ -10,6 +10,8 @@
         variant="secondary"
         size="sm"
         class="h-8 min-w-0 flex-1 rounded-lg text-sm"
+        :disabled="isDownloadingAll"
+        :aria-busy="isDownloadingAll"
         @click="downloadAllModels"
       >
         <i aria-hidden="true" class="icon-[lucide--download] size-4 shrink-0" />
@@ -114,7 +116,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import { isCloud } from '@/platform/distribution/types'
@@ -144,7 +146,12 @@ const downloadableModels = computed(() => {
   return getDownloadableModels(missingModelGroups)
 })
 
+const isDownloadingAll = ref(false)
+
 const downloadAllLabel = computed(() => {
+  if (isDownloadingAll.value) {
+    return t('rightSidePanel.missingModels.importing')
+  }
   const base = t('rightSidePanel.missingModels.downloadAll')
   const total = downloadableModels.value.reduce(
     (sum, model) => sum + (missingModelStore.fileSizes[model.url] ?? 0),
@@ -153,9 +160,16 @@ const downloadAllLabel = computed(() => {
   return total > 0 ? `${base} (${formatSize(total)})` : base
 })
 
-function downloadAllModels() {
-  for (const model of downloadableModels.value) {
-    downloadModel(model, missingModelStore.folderPaths)
+async function downloadAllModels() {
+  if (isDownloadingAll.value) return
+  isDownloadingAll.value = true
+  try {
+    for (const model of downloadableModels.value) {
+      const stateKey = `unsupported::${model.directory}::${model.name}`
+      await downloadModel(model, missingModelStore.folderPaths, stateKey)
+    }
+  } finally {
+    isDownloadingAll.value = false
   }
 }
 

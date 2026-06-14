@@ -125,8 +125,8 @@
     <!-- Status card -->
     <TransitionCollapse>
       <MissingModelStatusCard
-        v-if="selectedLibraryModel[modelKey]"
-        :model-name="selectedLibraryModel[modelKey]"
+        v-if="selectedLibraryModel[modelKey] || isDownloadActive"
+        :model-name="selectedLibraryModel[modelKey] || model.name"
         :is-download-active="isDownloadActive"
         :download-status="downloadStatus"
         :category-mismatch="importCategoryMismatch[modelKey]"
@@ -157,6 +157,7 @@
             size="md"
             class="flex w-full flex-1"
             :aria-label="`${t('g.download')} ${model.name}`"
+            :disabled="isDownloadActive"
             @click="handleDownload"
           >
             <i
@@ -211,6 +212,7 @@ import {
   toBrowsableUrl
 } from '@/platform/missingModel/missingModelDownload'
 import { formatSize } from '@/utils/formatUtil'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const { model, directory, isAssetSupported } = defineProps<{
   model: MissingModelViewModel
@@ -224,6 +226,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const toastStore = useToastStore()
 const { copyToClipboard } = useCopyToClipboard()
 
 const modelKey = computed(() =>
@@ -284,13 +287,25 @@ const downloadLabel = computed(() => {
   return size ? `${base} (${formatSize(size)})` : base
 })
 
-function handleDownload() {
+async function handleDownload() {
   const rep = model.representative
   if (rep.url && rep.directory) {
-    downloadModel(
-      { name: rep.name, url: rep.url, directory: rep.directory },
-      store.folderPaths
-    )
+    try {
+      await downloadModel(
+        { name: rep.name, url: rep.url, directory: rep.directory },
+        store.folderPaths,
+        modelKey.value
+      )
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn('[MissingModelRow] Download failed:', error)
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: message,
+        life: 8000
+      })
+    }
   } else {
     console.warn('[MissingModelRow] Cannot download: missing url or directory')
   }

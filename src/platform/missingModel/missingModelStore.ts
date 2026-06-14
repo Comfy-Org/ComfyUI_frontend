@@ -90,6 +90,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   const urlImporting = ref<Record<string, boolean>>({})
   const folderPaths = ref<Record<string, string[]>>({})
   const fileSizes = ref<Record<string, number>>({})
+  const directDownloads = ref<Record<string, import('@/stores/assetDownloadStore').AssetDownload>>({})
 
   const _urlDebounceTimers: Record<string, ReturnType<typeof setTimeout>> = {}
 
@@ -251,6 +252,20 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     folderPaths.value = paths
   }
 
+  function setDirectDownload(
+    key: string,
+    download: import('@/stores/assetDownloadStore').AssetDownload
+  ) {
+    directDownloads.value = { ...directDownloads.value, [key]: download }
+  }
+
+  function clearDirectDownload(key: string) {
+    if (!(key in directDownloads.value)) return
+    const next = { ...directDownloads.value }
+    delete next[key]
+    directDownloads.value = next
+  }
+
   function setFileSize(url: string, size: number) {
     fileSizes.value[url] = size
   }
@@ -271,6 +286,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     urlImporting.value = {}
     folderPaths.value = {}
     fileSizes.value = {}
+    directDownloads.value = {}
   }
 
   function isAbortError(error: unknown) {
@@ -331,8 +347,11 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     urlImporting,
     folderPaths,
     fileSizes,
+    directDownloads,
 
     setFolderPaths,
+    setDirectDownload,
+    clearDirectDownload,
     setFileSize,
 
     setDebounceTimer,
