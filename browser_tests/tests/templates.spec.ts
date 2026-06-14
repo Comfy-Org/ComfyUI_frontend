@@ -150,6 +150,19 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     await expect(comfyPage.templates.content).toBeHidden()
   })
 
+  test('dialog should not be shown when first-time user opens a template link', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
+
+    await comfyPage.setup({
+      clearStorage: true,
+      url: '/?template=default'
+    })
+
+    await expect(comfyPage.templates.content).toBeHidden()
+  })
+
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
     await comfyPage.settings.setSetting('Comfy.Locale', 'fr')
 
