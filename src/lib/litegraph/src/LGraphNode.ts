@@ -98,6 +98,7 @@ import { warnDeprecated } from './utils/feedback'
 import { distributeSpace } from './utils/spaceDistribution'
 import { truncateText } from './utils/textUtils'
 import { BaseWidget } from './widgets/BaseWidget'
+import { getWidgetBehavior } from './widgets/widgetBehavior'
 import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
 
@@ -4005,10 +4006,15 @@ export class LGraphNode
       if (typeof widget.draw === 'function') {
         widget.draw(ctx, this, width, y, H, lowQuality)
       } else {
-        toConcreteWidget(widget, this, false)?.drawWidget(ctx, {
-          width,
-          showText
-        })
+        const behavior = getWidgetBehavior(widget.type)
+        if (behavior) {
+          behavior.drawWidget(widget, ctx, { width, showText })
+        } else {
+          toConcreteWidget(widget, this, false)?.drawWidget(ctx, {
+            width,
+            showText
+          })
+        }
       }
       ctx.globalAlpha = editorAlpha
     }
