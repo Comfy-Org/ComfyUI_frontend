@@ -2,7 +2,21 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   IAssetWidget,
   IBaseWidget,
+  IBoundingBoxWidget,
+  IChartWidget,
   IComboWidget,
+  ICurveWidget,
+  IFileUploadWidget,
+  IGalleriaWidget,
+  IImageCompareWidget,
+  IImageCropWidget,
+  IMarkdownWidget,
+  IMultiSelectWidget,
+  IPainterWidget,
+  IRangeWidget,
+  ISelectButtonWidget,
+  ITextareaWidget,
+  ITreeSelectWidget,
   IWidget,
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
@@ -11,29 +25,16 @@ import { toClass } from '@/lib/litegraph/src/utils/type'
 import { AssetWidget } from './AssetWidget'
 import { BaseWidget } from './BaseWidget'
 import { BooleanWidget } from './BooleanWidget'
-import { BoundingBoxWidget } from './BoundingBoxWidget'
 import { ButtonWidget } from './ButtonWidget'
-import { ChartWidget } from './ChartWidget'
 import { ColorWidget } from './ColorWidget'
 import { ComboWidget } from './ComboWidget'
-import { CurveWidget } from './CurveWidget'
-import { FileUploadWidget } from './FileUploadWidget'
-import { GalleriaWidget } from './GalleriaWidget'
 import { GradientSliderWidget } from './GradientSliderWidget'
-import { ImageCompareWidget } from './ImageCompareWidget'
-import { PainterWidget } from './PainterWidget'
-import { RangeWidget } from './RangeWidget'
-import { ImageCropWidget } from './ImageCropWidget'
 import { KnobWidget } from './KnobWidget'
 import { LegacyWidget } from './LegacyWidget'
-import { MarkdownWidget } from './MarkdownWidget'
-import { MultiSelectWidget } from './MultiSelectWidget'
 import { NumberWidget } from './NumberWidget'
-import { SelectButtonWidget } from './SelectButtonWidget'
 import { SliderWidget } from './SliderWidget'
 import { TextWidget } from './TextWidget'
-import { TextareaWidget } from './TextareaWidget'
-import { TreeSelectWidget } from './TreeSelectWidget'
+import { VueOnlyWidget } from './VueOnlyWidget'
 
 export type WidgetTypeMap = {
   button: ButtonWidget
@@ -46,22 +47,22 @@ export type WidgetTypeMap = {
   string: TextWidget
   text: TextWidget
   custom: LegacyWidget
-  fileupload: FileUploadWidget
+  fileupload: VueOnlyWidget<IFileUploadWidget>
   color: ColorWidget
-  markdown: MarkdownWidget
-  treeselect: TreeSelectWidget
-  multiselect: MultiSelectWidget
-  chart: ChartWidget
-  galleria: GalleriaWidget
-  imagecompare: ImageCompareWidget
-  selectbutton: SelectButtonWidget
-  textarea: TextareaWidget
+  markdown: VueOnlyWidget<IMarkdownWidget>
+  treeselect: VueOnlyWidget<ITreeSelectWidget>
+  multiselect: VueOnlyWidget<IMultiSelectWidget>
+  chart: VueOnlyWidget<IChartWidget>
+  galleria: VueOnlyWidget<IGalleriaWidget>
+  imagecompare: VueOnlyWidget<IImageCompareWidget>
+  selectbutton: VueOnlyWidget<ISelectButtonWidget>
+  textarea: VueOnlyWidget<ITextareaWidget>
   asset: AssetWidget
-  imagecrop: ImageCropWidget
-  boundingbox: BoundingBoxWidget
-  curve: CurveWidget
-  painter: PainterWidget
-  range: RangeWidget
+  imagecrop: VueOnlyWidget<IImageCropWidget>
+  boundingbox: VueOnlyWidget<IBoundingBoxWidget>
+  curve: VueOnlyWidget<ICurveWidget>
+  painter: VueOnlyWidget<IPainterWidget>
+  range: VueOnlyWidget<IRangeWidget>
   [key: string]: BaseWidget
 }
 
@@ -112,38 +113,25 @@ export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       return toClass(TextWidget, narrowedWidget, node)
     case 'text':
       return toClass(TextWidget, narrowedWidget, node)
-    case 'fileupload':
-      return toClass(FileUploadWidget, narrowedWidget, node)
     case 'color':
       return toClass(ColorWidget, narrowedWidget, node)
-    case 'markdown':
-      return toClass(MarkdownWidget, narrowedWidget, node)
-    case 'treeselect':
-      return toClass(TreeSelectWidget, narrowedWidget, node)
-    case 'multiselect':
-      return toClass(MultiSelectWidget, narrowedWidget, node)
-    case 'chart':
-      return toClass(ChartWidget, narrowedWidget, node)
-    case 'galleria':
-      return toClass(GalleriaWidget, narrowedWidget, node)
-    case 'imagecompare':
-      return toClass(ImageCompareWidget, narrowedWidget, node)
-    case 'selectbutton':
-      return toClass(SelectButtonWidget, narrowedWidget, node)
-    case 'textarea':
-      return toClass(TextareaWidget, narrowedWidget, node)
     case 'asset':
       return toClass(AssetWidget, narrowedWidget, node)
+    case 'fileupload':
+    case 'markdown':
+    case 'treeselect':
+    case 'multiselect':
+    case 'chart':
+    case 'galleria':
+    case 'imagecompare':
+    case 'selectbutton':
+    case 'textarea':
     case 'imagecrop':
-      return toClass(ImageCropWidget, narrowedWidget, node)
     case 'boundingbox':
-      return toClass(BoundingBoxWidget, narrowedWidget, node)
     case 'curve':
-      return toClass(CurveWidget, narrowedWidget, node)
     case 'painter':
-      return toClass(PainterWidget, narrowedWidget, node)
     case 'range':
-      return toClass(RangeWidget, narrowedWidget, node)
+      return toClass(VueOnlyWidget, narrowedWidget, node)
     default: {
       if (wrapLegacyWidgets) return toClass(LegacyWidget, widget, node)
     }
