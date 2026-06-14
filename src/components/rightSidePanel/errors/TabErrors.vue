@@ -327,6 +327,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { isSubscriptionRequiredCatalogId } from '@/platform/errorCatalog/subscriptionError'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
@@ -349,7 +350,6 @@ import { getDownloadableModels } from '@/platform/missingModel/missingModelViewU
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
-import { hasSubscriptionError } from './errorItemUtil'
 import { useErrorActions } from './useErrorActions'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
@@ -403,7 +403,11 @@ function getGroupSize(group: ErrorGroup) {
 function isSubscriptionGroup(group: ErrorGroup) {
   return (
     group.type === 'execution' &&
-    group.cards.some((card) => hasSubscriptionError(card.errors))
+    group.cards.some((card) =>
+      card.errors.some((error) =>
+        isSubscriptionRequiredCatalogId(error.catalogId)
+      )
+    )
   )
 }
 

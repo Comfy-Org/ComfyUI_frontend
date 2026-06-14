@@ -189,10 +189,9 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { isSubscriptionRequiredCatalogId } from '@/platform/errorCatalog/subscriptionError'
 import { cn } from '@comfyorg/tailwind-utils'
 import TransitionCollapse from '../layout/TransitionCollapse.vue'
-
-import { hasSubscriptionError } from './errorItemUtil'
 
 import type { ErrorCardData, ErrorItem } from './types'
 import { useErrorActions } from './useErrorActions'
@@ -216,7 +215,9 @@ const runtimeDetailsExpanded = ref(true)
 const hasRuntimeError = computed(() =>
   card.errors.some((error) => error.isRuntimeError)
 )
-const isSubscriptionError = computed(() => hasSubscriptionError(card.errors))
+const isSubscriptionError = computed(() =>
+  card.errors.some((error) => isSubscriptionRequiredCatalogId(error.catalogId))
+)
 const isRuntimeDisclosureExpanded = computed(
   () => compact || runtimeDetailsExpanded.value
 )
