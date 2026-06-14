@@ -1,9 +1,9 @@
 import { t } from '@/i18n'
 
-import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 import type { DrawWidgetOptions, WidgetEventOptions } from './BaseWidget'
+import { resolveWidgetVisual } from './widgetDraw'
 
 /**
  * Canvas behavior for a widget type, expressed as pure functions over widget
@@ -18,20 +18,6 @@ export interface WidgetBehavior<TWidget extends IBaseWidget = IBaseWidget> {
   ): void
   onClick(widget: TWidget, options: WidgetEventOptions): void
   onDrag?(widget: TWidget, options: WidgetEventOptions): void
-}
-
-/** Visual values needed to draw a widget, resolved from widget data + theme. */
-function resolveWidgetVisual(widget: IBaseWidget) {
-  const theme = litegraph()
-  return {
-    y: widget.y,
-    height: theme.NODE_WIDGET_HEIGHT,
-    backgroundColor: theme.WIDGET_BGCOLOR,
-    outlineColor: widget.advanced
-      ? theme.WIDGET_ADVANCED_OUTLINE_COLOR
-      : theme.WIDGET_OUTLINE_COLOR,
-    textColor: theme.WIDGET_TEXT_COLOR
-  }
 }
 
 /** Classic-canvas label shown for each Vue-only widget type. */
