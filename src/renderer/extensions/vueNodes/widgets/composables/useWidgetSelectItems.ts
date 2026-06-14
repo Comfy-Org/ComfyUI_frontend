@@ -27,6 +27,7 @@ import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataS
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import type { IAssetsProvider } from '@/platform/assets/composables/media/IAssetsProvider'
+import { api } from '@/scripts/api'
 import type { AssetKind } from '@/types/widgetTypes'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -56,7 +57,7 @@ function getMediaUrl(
   if (!['image', 'video', 'audio'].includes(assetKind ?? '')) return ''
   const params = new URLSearchParams({ filename, type })
   appendCloudResParam(params, filename)
-  return `/api/view?${params}`
+  return api.apiURL(`/view?${params}`)
 }
 
 interface UseWidgetSelectItemsOptions {

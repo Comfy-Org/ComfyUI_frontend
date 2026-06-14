@@ -5,8 +5,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
+import { api } from '@/scripts/api'
 
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
+
+vi.mock('@/i18n', () => ({
+  t: (key: string) => key
+}))
 
 vi.mock(
   '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData',
@@ -138,6 +143,7 @@ describe('useWidgetSelectItems', () => {
     mockMediaAssets = createMockMediaAssets()
     mockResolveOutputAssetItems.mockReset()
     mockAssetsData.items = []
+    api.api_base = ''
   })
 
   describe('dropdownItems', () => {
@@ -291,6 +297,22 @@ describe('useWidgetSelectItems', () => {
         'filename=img_001.png'
       )
       expect(dropdownItems.value[0].preview_url).toContain('type=input')
+    })
+
+    it('prefixes preview URLs with the configured API base', () => {
+      api.api_base = '/comfy'
+
+      const { dropdownItems } = useWidgetSelectItems(
+        createDefaultOptions({
+          values: () => ['img_001.png'],
+          modelValue: ref('img_001.png'),
+          assetKind: () => 'image'
+        })
+      )
+
+      expect(dropdownItems.value[0].preview_url).toBe(
+        '/comfy/api/view?filename=img_001.png&type=input'
+      )
     })
   })
 

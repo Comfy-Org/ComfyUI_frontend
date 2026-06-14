@@ -3,6 +3,8 @@ import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
+
 import type { EventManagerInterface } from './interfaces'
 import Load3dUtils from './Load3dUtils'
 import { SceneManager } from './SceneManager'
@@ -116,6 +118,7 @@ describe('SceneManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    api.api_base = ''
     renderer = makeRenderer()
     camera = new THREE.PerspectiveCamera()
     events = makeMockEventManager()
@@ -261,7 +264,8 @@ describe('SceneManager', () => {
       )
     })
 
-    it('prefixes /api when getResourceURL returns a non-/api URL', async () => {
+    it('prefixes background image URLs with the configured API base', async () => {
+      api.api_base = '/comfy'
       vi.mocked(Load3dUtils.splitFilePath).mockReturnValue(['', 'bg.png'])
       vi.mocked(Load3dUtils.getResourceURL).mockReturnValue('/view?bg.png')
       const captured: string[] = []
@@ -274,7 +278,7 @@ describe('SceneManager', () => {
 
       await manager.setBackgroundImage('bg.png')
 
-      expect(captured[0]).toBe('/api/view?bg.png')
+      expect(captured[0]).toBe('/comfy/api/view?bg.png')
     })
 
     it('in tiled mode, swaps the background mesh material to use the new texture', async () => {

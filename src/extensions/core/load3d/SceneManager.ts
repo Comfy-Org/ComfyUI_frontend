@@ -1,6 +1,8 @@
 import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+
+import { api } from '@/scripts/api'
 
 import Load3dUtils from './Load3dUtils'
 import {
@@ -187,8 +189,8 @@ export class SceneManager implements SceneManagerInterface {
 
     let type = 'input'
     let pathParts = Load3dUtils.splitFilePath(uploadPath)
-    let subfolder = pathParts[0]
-    let filename = pathParts[1]
+    const subfolder = pathParts[0]
+    const filename = pathParts[1]
 
     if (subfolder === 'temp') {
       type = 'temp'
@@ -198,11 +200,7 @@ export class SceneManager implements SceneManagerInterface {
       pathParts = ['', filename]
     }
 
-    let imageUrl = Load3dUtils.getResourceURL(...pathParts, type)
-
-    if (!imageUrl.startsWith('/api')) {
-      imageUrl = '/api' + imageUrl
-    }
+    const imageUrl = api.apiURL(Load3dUtils.getResourceURL(...pathParts, type))
 
     try {
       const textureLoader = new THREE.TextureLoader()
