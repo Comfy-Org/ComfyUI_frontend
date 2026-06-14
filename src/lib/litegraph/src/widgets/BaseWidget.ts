@@ -18,6 +18,7 @@ import type {
   TWidgetType
 } from '@/lib/litegraph/src/types/widgets'
 import { registerWidgetControlFromConfig } from '@/core/graph/widgets/control/widgetControl'
+import { getWidgetLayout } from '@/core/graph/widgets/layout/widgetLayout'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
@@ -61,7 +62,6 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   /** Minimum gap between label and value */
   static labelValueGap = 5
 
-  declare computedHeight?: number
   declare serialize?: boolean
   computeLayoutSize?(node: LGraphNode): {
     minHeight: number
@@ -80,11 +80,33 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
   name: string
   options: TWidget['options']
   type: TWidget['type']
-  y: number = 0
-  last_y?: number
   width?: number
   computedDisabled?: boolean
   tooltip?: string
+
+  /** Y offset within the node, set during arrange. Backed by a frame-stable layout cache. */
+  get y(): number {
+    return getWidgetLayout(this).y
+  }
+  set y(value: number) {
+    getWidgetLayout(this).y = value
+  }
+
+  /** Y offset captured at draw time, read during hit-testing. */
+  get last_y(): number | undefined {
+    return getWidgetLayout(this).last_y
+  }
+  set last_y(value: number | undefined) {
+    getWidgetLayout(this).last_y = value
+  }
+
+  /** Height computed during arrange. */
+  get computedHeight(): number | undefined {
+    return getWidgetLayout(this).computedHeight
+  }
+  set computedHeight(value: number | undefined) {
+    getWidgetLayout(this).computedHeight = value
+  }
 
   private _state: Omit<WidgetState, 'nodeId'> &
     Partial<Pick<WidgetState, 'nodeId'>>
@@ -462,6 +484,9 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     // @ts-expect-error - Constructor type casting for widget cloning
     const cloned: this = new (this.constructor as typeof this)(this, node)
     cloned.value = this.value
+    cloned.y = this.y
+    cloned.last_y = this.last_y
+    cloned.computedHeight = this.computedHeight
     return cloned
   }
 }

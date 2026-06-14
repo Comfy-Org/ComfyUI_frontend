@@ -230,4 +230,38 @@ describe('BaseWidget store integration', () => {
       expect(state?.disabled).toBe(false)
     })
   })
+
+  describe('layout properties', () => {
+    it('defaults y to 0 and persists arrange/draw values', () => {
+      const widget = createTestWidget(node)
+
+      expect(widget.y).toBe(0)
+
+      widget.y = 30
+      widget.computedHeight = 20
+      widget.last_y = 30
+
+      expect(widget.y).toBe(30)
+      expect(widget.computedHeight).toBe(20)
+      expect(widget.last_y).toBe(30)
+    })
+
+    it('exposes y via the `in` operator for extension compatibility', () => {
+      const widget = createTestWidget(node)
+      expect('y' in widget).toBe(true)
+    })
+
+    it('keeps clone layout independent from the source', () => {
+      const widget = createTestWidget(node)
+      widget.y = 40
+      widget.computedHeight = 15
+
+      const clone = widget.createCopyForNode(node)
+      expect(clone.y).toBe(40)
+      expect(clone.computedHeight).toBe(15)
+
+      clone.y = 99
+      expect(widget.y).toBe(40)
+    })
+  })
 })
