@@ -281,6 +281,8 @@ export function useMissingModelInteractions() {
   }
 
   function getDownloadStatus(key: string) {
+    const direct = store.directDownloads[key]
+    if (direct) return direct
     const taskId = store.importTaskIds[key]
     if (!taskId) return null
     return (
