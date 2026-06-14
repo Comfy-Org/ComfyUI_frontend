@@ -168,11 +168,18 @@ export function useWorkflowPersistenceV2() {
     return typeof merged?.share === 'string'
   }
 
+  const hasTemplateUrlIntent = () => {
+    if (typeof route.query.template === 'string') return true
+    hydratePreservedQuery(TEMPLATE_NAMESPACE)
+    const merged = mergePreservedQueryIntoQuery(TEMPLATE_NAMESPACE, route.query)
+    return typeof merged?.template === 'string'
+  }
+
   const loadDefaultWorkflow = async () => {
     if (!settingStore.get('Comfy.TutorialCompleted')) {
       await settingStore.set('Comfy.TutorialCompleted', true)
       await useWorkflowService().loadBlankWorkflow()
-      if (!hasSharedWorkflowIntent()) {
+      if (!hasSharedWorkflowIntent() && !hasTemplateUrlIntent()) {
         await useCommandStore().execute('Comfy.BrowseTemplates')
       }
     } else {
