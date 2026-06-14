@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="relative flex h-full flex-col gap-6 overflow-y-auto p-4 pt-8 md:px-16 md:py-8"
-  >
+  <div class="relative flex h-full flex-col gap-4 overflow-y-auto p-4 pt-6">
     <Button
       v-if="checkoutStep === 'preview'"
       size="icon"
@@ -41,7 +39,7 @@
     <!-- Pricing Table Step (unified: personal/team plan toggle) -->
     <UnifiedPricingTable
       v-if="checkoutStep === 'pricing'"
-      class="flex-1"
+      class="xl:flex-1"
       :is-loading="isLoadingPreview || isResubscribing"
       :loading-tier="loadingTier"
       @subscribe="handleSubscribeClick"

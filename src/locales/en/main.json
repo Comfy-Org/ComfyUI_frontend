@@ -2552,8 +2552,9 @@
       "pollingTimeout": "Timed out waiting for subscription. Please refresh and try again."
     },
     "inactive": {
-      "memberTitle": "This workspace is paused",
-      "memberDescription": "Contact your workspace owner to resubscribe and continue running workflows.",
+      "memberTitle": "This workspace's subscription is inactive",
+      "memberDescription": "Ask your workspace owner to reactivate the workspace's subscription to run workflows.",
+      "memberCta": "Ok, got it",
       "memberRunTooltip": "Contact your workspace owner to resubscribe",
       "runLabel": "Run"
     },
@@ -2578,11 +2579,14 @@
     },
     "teamHeader": "For teams wanting to collaborate. Need more members? {learnMore} about enterprise.",
     "teamHeaderLearnMore": "Learn more",
+    "personalHeader": "Personal plans are for individual use only. {action}",
+    "personalHeaderAction": "To add teammates, subscribe to the team plan.",
     "whatsIncluded": "What's included:",
     "everythingInPlus": "Everything in {plan}, plus:",
     "monthlyCredits": "monthly credits",
     "videoEstimate": "Generates ~{count} 5s videos*",
     "saveYearly": "Save 20%",
+    "saveYearlyUpTo": "Save up to 20%",
     "teamPlan": {
       "name": "Team Plan",
       "tagline": "Choose your own monthly credit subscription. Get a larger discount with a larger credit subscription.",
@@ -2855,7 +2859,7 @@
     "personal": "Personal",
     "roleOwner": "Owner",
     "roleMember": "Member",
-    "createWorkspace": "Create a team workspace",
+    "createWorkspace": "Create a workspace",
     "maxWorkspacesReached": "You can only own 10 workspaces. Delete one to create a new one.",
     "failedToSwitch": "Failed to switch workspace"
   },

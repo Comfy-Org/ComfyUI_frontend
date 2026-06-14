@@ -1,6 +1,7 @@
 <template>
-  <div class="flex h-full flex-col gap-4">
-    <!-- Plan-scope toggle (Gamma-style): personal vs team PLAN on one workspace.
+  <div class="flex flex-col xl:h-full">
+    <!-- Plan-scope toggle (personal vs team PLAN on one workspace): sits directly
+         on top of the content area — outside it, attached with no gap (DES QA).
          Only shown when team plans are available (teamWorkspacesEnabled). -->
     <div v-if="showTeam" class="flex justify-center">
       <SelectButton
@@ -14,12 +15,45 @@
       />
     </div>
 
-    <!-- Cover panel: bordered container holding the billing toggle / intro line
-         and the plan cards. Grows to fill the dialog so the footnote pins to the
-         bottom, and the cards sit toward the top (DES-197 2951:592109). -->
+    <!-- Content well: a borderless base-background area (DES-197 "Personal Plan,
+         Yearly" 2951:584251 — bg base-background, rounded-2xl, NO border, 32px
+         padding) holding the description, billing toggle and plan cards on one
+         uniform surface. "Remove the outline" = drop the border, not the area.
+         Grows to fill the dialog so its height stays constant across the
+         personal/team toggle. -->
     <div
-      class="flex flex-col gap-6 rounded-2xl border border-border-default bg-base-background p-6"
+      class="flex min-h-0 flex-col gap-6 rounded-2xl bg-base-background p-8 xl:flex-1"
     >
+      <!-- Plan-scope description, above the billing toggle (DES-197). -->
+      <I18nT
+        v-if="planMode === 'personal'"
+        keypath="subscription.personalHeader"
+        tag="p"
+        class="m-0 text-center text-sm text-muted-foreground"
+      >
+        <template #action>
+          <span class="text-base-foreground">
+            {{ t('subscription.personalHeaderAction') }}
+          </span>
+        </template>
+      </I18nT>
+      <I18nT
+        v-else
+        keypath="subscription.teamHeader"
+        tag="p"
+        class="m-0 text-center text-sm text-muted-foreground"
+      >
+        <template #learnMore>
+          <button
+            type="button"
+            class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
+            @click="handleViewEnterprise"
+          >
+            {{ t('subscription.teamHeaderLearnMore') }}
+          </button>
+        </template>
+      </I18nT>
+
       <!-- Billing-cycle toggle: drives both the personal tier cards and the
            team credit slider (team monthly halves the yearly discount). -->
       <div class="flex justify-center">
@@ -37,9 +71,13 @@
               <span>{{ option.label }}</span>
               <div
                 v-if="option.value === 'yearly'"
-                class="flex items-center rounded-full bg-primary-background px-2 py-0.5 text-2xs font-bold text-white"
+                class="flex items-center rounded-full bg-primary-background px-2 py-0.5 text-2xs font-bold whitespace-nowrap text-white"
               >
-                {{ t('subscription.saveYearly') }}
+                {{
+                  planMode === 'team'
+                    ? t('subscription.saveYearlyUpTo')
+                    : t('subscription.saveYearly')
+                }}
               </div>
             </div>
           </template>
@@ -50,17 +88,12 @@
          falling back to TIER_PRICING). -->
       <div
         v-if="planMode === 'personal'"
-        class="flex flex-col items-stretch gap-4 xl:flex-row"
+        class="flex flex-col items-stretch gap-6 xl:flex-1 xl:flex-row xl:justify-center"
       >
         <div
           v-for="tier in tiers"
           :key="tier.id"
-          :class="
-            cn(
-              'flex flex-1 flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)]',
-              tier.isPopular ? 'border-emerald-500' : ''
-            )
-          "
+          class="flex flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:w-80"
         >
           <div class="flex flex-1 flex-col gap-4 p-6 pb-0">
             <div class="flex flex-row items-center justify-between gap-2">
@@ -79,7 +112,7 @@
             <div class="flex flex-col gap-2">
               <div class="flex flex-row items-baseline gap-2">
                 <span
-                  class="font-inter text-[28px] leading-normal font-semibold text-base-foreground"
+                  class="font-inter text-[28px] leading-normal font-semibold text-base-foreground tabular-nums"
                 >
                   ${{ getPrice(tier) }}
                   <span
@@ -118,7 +151,7 @@
                 class="flex flex-row items-start gap-2"
               >
                 <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
-                <span class="text-foreground text-sm font-normal">
+                <span class="text-sm font-normal text-muted-foreground">
                   {{ feature }}
                 </span>
               </div>
@@ -133,7 +166,7 @@
                   aria-hidden="true"
                 />
                 <span
-                  class="font-inter text-sm/normal font-bold text-base-foreground"
+                  class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                 >
                   {{ n(tier.pricing.credits) }}
                 </span>
@@ -172,32 +205,17 @@
         </div>
       </div>
 
-      <!-- TEAM PLAN: intro line + [Team Plan | Details] card + Enterprise card -->
-      <div v-else class="flex flex-col gap-6">
-        <!-- Intro line; "Learn more" jumps to enterprise. -->
-        <I18nT
-          keypath="subscription.teamHeader"
-          tag="p"
-          class="m-0 text-center text-sm text-muted-foreground"
+      <!-- TEAM PLAN: [Team Plan | Details] card + Enterprise card -->
+      <div v-else class="flex min-h-0 flex-col gap-6 xl:flex-1">
+        <div
+          class="flex flex-col items-stretch gap-6 xl:flex-1 xl:flex-row xl:justify-center"
         >
-          <template #learnMore>
-            <button
-              type="button"
-              class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground underline hover:text-muted-foreground"
-              @click="handleViewEnterprise"
-            >
-              {{ t('subscription.teamHeaderLearnMore') }}
-            </button>
-          </template>
-        </I18nT>
-
-        <div class="flex flex-col items-stretch gap-4 xl:flex-row">
           <!-- Team Plan + Details share one card, split by a divider. -->
           <div
-            class="flex flex-[2.6] flex-col overflow-hidden rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:flex-row"
+            class="flex flex-[2.6] flex-col rounded-2xl border border-border-default bg-base-background shadow-[0_0_12px_rgba(0,0,0,0.1)] xl:flex-row xl:overflow-hidden"
           >
             <!-- Team Plan column -->
-            <div class="flex flex-[1.6] flex-col gap-4 p-6">
+            <div class="flex flex-[1.6] flex-col gap-6 p-6">
               <div class="flex flex-col gap-1">
                 <span
                   class="font-inter text-base/normal font-bold text-base-foreground"
@@ -225,7 +243,7 @@
                     aria-hidden="true"
                   />
                   <span
-                    class="font-inter text-sm/normal font-bold text-base-foreground"
+                    class="font-inter text-sm/normal font-bold text-base-foreground tabular-nums"
                   >
                     {{ n(teamCredits) }}
                   </span>
@@ -284,7 +302,7 @@
                   class="flex flex-row items-start gap-2"
                 >
                   <i class="pi pi-check mt-0.5 text-xs text-base-foreground" />
-                  <span class="text-foreground text-sm font-normal">
+                  <span class="text-sm font-normal text-muted-foreground">
                     {{ perk }}
                   </span>
                 </div>
@@ -296,7 +314,7 @@
                 </span>
                 <div class="flex flex-row items-start gap-2">
                   <i class="pi pi-clock mt-0.5 text-xs text-muted-foreground" />
-                  <span class="text-foreground text-sm font-normal">
+                  <span class="text-sm font-normal text-muted-foreground">
                     {{ t('subscription.teamPlan.perkProjectAssets') }}
                   </span>
                 </div>
@@ -314,19 +332,19 @@
               {{ t('subscription.enterprise.name') }}
             </span>
             <div class="flex flex-col gap-3">
-              <span class="text-foreground text-sm/relaxed font-normal">
+              <span class="text-sm/relaxed font-normal text-muted-foreground">
                 {{
                   t('subscription.enterprise.needMoreMembers', {
                     count: TEAM_MAX_MEMBERS
                   })
                 }}
               </span>
-              <span class="text-foreground text-sm/relaxed font-normal">
+              <span class="text-sm/relaxed font-normal text-muted-foreground">
                 {{ t('subscription.enterprise.flexibility') }}
               </span>
             </div>
             <div class="h-px w-full bg-border-default" />
-            <span class="text-foreground text-sm/relaxed font-normal">
+            <span class="text-sm/relaxed font-normal text-muted-foreground">
               {{ t('subscription.enterprise.reachOut') }}
             </span>
             <Button
@@ -345,14 +363,14 @@
     <I18nT
       keypath="subscription.pricingBlurb"
       tag="p"
-      class="m-0 mt-auto text-center text-sm text-text-secondary"
+      class="m-0 mt-auto pt-4 text-center text-sm text-text-secondary"
     >
       <template #seeDetails>
         <a
           :href="VIDEO_TEMPLATE_URL"
           target="_blank"
           rel="noopener noreferrer"
-          class="cursor-pointer text-text-secondary underline hover:text-base-foreground"
+          class="cursor-pointer text-base-foreground hover:text-muted-foreground"
         >
           {{ t('subscription.pricingBlurbSeeDetails') }}
         </a>
@@ -360,7 +378,7 @@
       <template #questions>
         <button
           type="button"
-          class="cursor-pointer border-none bg-transparent p-0 text-sm text-text-secondary underline hover:text-base-foreground"
+          class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
           @click="handleContactUs"
         >
           {{ t('subscription.pricingBlurbQuestions') }}
@@ -369,7 +387,7 @@
       <template #enterpriseDiscussions>
         <button
           type="button"
-          class="cursor-pointer border-none bg-transparent p-0 text-sm text-text-secondary underline hover:text-base-foreground"
+          class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
           @click="handleViewEnterprise"
         >
           {{ t('subscription.pricingBlurbEnterprise') }}
@@ -378,7 +396,7 @@
       <template #clickHere>
         <button
           type="button"
-          class="cursor-pointer border-none bg-transparent p-0 text-sm text-text-secondary underline hover:text-base-foreground"
+          class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
           @click="handleViewPricing"
         >
           {{ t('subscription.pricingBlurbClickHere') }}
@@ -489,7 +507,7 @@ const toggleButtonPt = {
   pcToggleButton: {
     root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
       class: [
-        'w-36 h-8 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
+        'h-8 px-5 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
         context.active
           ? 'bg-base-foreground text-base-background'
           : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
@@ -502,13 +520,15 @@ const toggleButtonPt = {
 // Plan-scope toggle (For Personal / For Teams): active is a subtle raised pill,
 // not the solid white of the billing toggle (DES-197 2951:592113).
 const planScopeButtonPt = {
+  // No pill container (DES "Plan Type Tabs" 2812:818371 has no bg) — just the
+  // tabs, so the active base-background tab sits flush on top of the content area.
   root: {
-    class: 'flex gap-1 bg-secondary-background rounded-lg p-1'
+    class: 'flex gap-1'
   },
   pcToggleButton: {
     root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
       class: [
-        'h-8 px-4 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
+        'h-8 px-4 rounded-t-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
         context.active
           ? 'bg-base-background text-base-foreground'
           : 'bg-transparent text-muted-foreground hover:bg-base-background'
