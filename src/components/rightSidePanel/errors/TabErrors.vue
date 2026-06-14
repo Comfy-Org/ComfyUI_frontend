@@ -142,6 +142,30 @@
             >
               {{ group.displayMessage }}
             </p>
+            <div
+              v-if="showUpgradeButton(group)"
+              class="mt-3 flex items-center gap-3"
+            >
+              <Button
+                variant="gradient"
+                size="sm"
+                data-testid="error-group-upgrade"
+                class="h-8 rounded-lg text-sm"
+                @click.stop="handleUpgrade"
+              >
+                {{ t('subscription.subscribeForMore') }}
+              </Button>
+              <Button
+                v-tooltip.top="t('rightSidePanel.getHelpTooltip')"
+                variant="textonly"
+                size="sm"
+                class="h-8 gap-1 rounded-lg px-0 text-sm hover:bg-transparent hover:text-base-foreground"
+                @click.stop="contactSupport"
+              >
+                <i class="icon-[lucide--external-link] size-3.5" />
+                {{ t('g.getHelpAction') }}
+              </Button>
+            </div>
           </div>
 
           <!-- Missing Node Packs -->
@@ -299,8 +323,10 @@ import { computed, defineAsyncComponent, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
@@ -323,6 +349,7 @@ import { getDownloadableModels } from '@/platform/missingModel/missingModelViewU
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import { hasSubscriptionError } from './errorItemUtil'
 import { useErrorActions } from './useErrorActions'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
@@ -356,6 +383,8 @@ const { missingNodePacks } = useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   usePackInstall(() => missingNodePacks.value)
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
+const { isFreeTier } = useBillingContext()
+const subscriptionDialog = useSubscriptionDialog()
 
 const searchQuery = ref('')
 const expandedExecutionItemDetailKeys = ref(new Set<string>())
@@ -369,6 +398,21 @@ const fullSizeGroupTypes = new Set([
 ])
 function getGroupSize(group: ErrorGroup) {
   return fullSizeGroupTypes.has(group.type) ? 'lg' : 'default'
+}
+
+function isSubscriptionGroup(group: ErrorGroup) {
+  return (
+    group.type === 'execution' &&
+    group.cards.some((card) => hasSubscriptionError(card.errors))
+  )
+}
+
+function showUpgradeButton(group: ErrorGroup) {
+  return isCloud && isFreeTier.value && isSubscriptionGroup(group)
+}
+
+function handleUpgrade() {
+  subscriptionDialog.showPricingTable()
 }
 
 const showNodeIdBadge = computed(

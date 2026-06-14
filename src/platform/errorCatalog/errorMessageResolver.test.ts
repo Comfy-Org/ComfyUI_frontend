@@ -1285,6 +1285,24 @@ describe('errorMessageResolver', () => {
     }
   )
 
+  it('resolves PAYMENT_REQUIRED prompt errors to subscription copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'PAYMENT_REQUIRED',
+          message: 'Subscription required to queue workflows',
+          details: ''
+        }
+      })
+    ).toMatchObject({
+      catalogId: 'subscription_required',
+      displayTitle: 'Subscription required',
+      displayMessage: 'Subscribe to a plan to continue running this workflow.'
+    })
+  })
+
   it('resolves timeout copy without credit copy', () => {
     expect(
       resolveRunErrorMessage({

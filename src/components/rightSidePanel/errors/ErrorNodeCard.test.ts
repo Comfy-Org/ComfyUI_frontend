@@ -169,6 +169,27 @@ describe('ErrorNodeCard.vue', () => {
     }
   }
 
+  function makeSubscriptionErrorCard(): ErrorCardData {
+    return {
+      id: `exec-${++cardIdCounter}`,
+      title: 'API Node',
+      nodeId: '10',
+      nodeTitle: 'API Node',
+      errors: [
+        {
+          message: 'Subscription required to queue workflows',
+          details: 'Traceback line 1',
+          isRuntimeError: true,
+          exceptionType: 'PAYMENT_REQUIRED',
+          catalogId: 'subscription_required',
+          displayTitle: 'Subscription required',
+          displayMessage:
+            'Subscribe to a plan to continue running this workflow.'
+        }
+      ]
+    }
+  }
+
   function makePromptErrorCard(): ErrorCardData {
     return {
       id: '__prompt__',
@@ -368,6 +389,24 @@ describe('ErrorNodeCard.vue', () => {
         source: 'error_dialog'
       })
     )
+  })
+
+  it('suppresses the runtime details disclosure and its actions for subscription errors', async () => {
+    renderCard(makeSubscriptionErrorCard())
+
+    expect(screen.queryByText('Error log')).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Details/ })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Find on GitHub/ })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Get Help/ })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: /Copy/ })
+    ).not.toBeInTheDocument()
   })
 
   it('passes exceptionType from error item to report generator', async () => {

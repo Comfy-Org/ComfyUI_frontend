@@ -29,7 +29,7 @@
           {{ t('rightSidePanel.enterSubgraph') }}
         </Button>
         <Button
-          v-if="hasRuntimeError"
+          v-if="hasRuntimeError && !isSubscriptionError"
           variant="textonly"
           size="icon-sm"
           :class="
@@ -110,7 +110,11 @@
 
         <TransitionCollapse>
           <div
-            v-if="error.isRuntimeError && isRuntimeDisclosureExpanded"
+            v-if="
+              error.isRuntimeError &&
+              isRuntimeDisclosureExpanded &&
+              !isSubscriptionError
+            "
             :id="getRuntimeDetailsId(idx)"
             role="region"
             data-testid="runtime-error-panel"
@@ -188,6 +192,8 @@ import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import TransitionCollapse from '../layout/TransitionCollapse.vue'
 
+import { hasSubscriptionError } from './errorItemUtil'
+
 import type { ErrorCardData, ErrorItem } from './types'
 import { useErrorActions } from './useErrorActions'
 import { useErrorReport } from './useErrorReport'
@@ -210,6 +216,7 @@ const runtimeDetailsExpanded = ref(true)
 const hasRuntimeError = computed(() =>
   card.errors.some((error) => error.isRuntimeError)
 )
+const isSubscriptionError = computed(() => hasSubscriptionError(card.errors))
 const isRuntimeDisclosureExpanded = computed(
   () => compact || runtimeDetailsExpanded.value
 )

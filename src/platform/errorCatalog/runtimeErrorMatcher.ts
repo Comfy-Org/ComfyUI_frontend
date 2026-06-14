@@ -37,7 +37,8 @@ const WORKSPACE_INSUFFICIENT_CREDITS_MESSAGES = new Set([
 ])
 const SUBSCRIPTION_REQUIRED_MESSAGES = new Set([
   'Workspace has no active subscription. Please subscribe to a plan to continue.',
-  'User has no active subscription. Please subscribe to a plan to continue.'
+  'User has no active subscription. Please subscribe to a plan to continue.',
+  'Subscription required to queue workflows'
 ])
 const SUBSCRIPTION_UPGRADE_REQUIRED_PREFIX =
   'the following private models require a subscription upgrade:'
@@ -250,6 +251,7 @@ const RUNTIME_MATCH_RULES: RuntimeMatchRule[] = [
   {
     matches: (info, message) =>
       info.exceptionType === 'InactiveSubscriptionError' ||
+      info.exceptionType === 'PAYMENT_REQUIRED' ||
       SUBSCRIPTION_REQUIRED_MESSAGES.has(message),
     resolve: () => catalogMatch(SUBSCRIPTION_REQUIRED_CATALOG_ID)
   },

@@ -5,13 +5,33 @@ import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import TabErrors from './TabErrors.vue'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
 
 const mockFocusNode = vi.hoisted(() => vi.fn())
 const mockEnterSubgraph = vi.hoisted(() => vi.fn())
+const mockShowPricingTable = vi.hoisted(() => vi.fn())
+const mockIsFreeTier = vi.hoisted(() => ({ value: true }))
+
+vi.mock('@/platform/distribution/types', () => ({
+  isCloud: true,
+  isDesktop: false,
+  isNightly: false
+}))
+
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: vi.fn(() => ({ isFreeTier: mockIsFreeTier }))
+}))
+
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: vi.fn(() => ({
+      showPricingTable: mockShowPricingTable
+    }))
+  })
+)
 
 vi.mock('@/scripts/app', () => ({
   app: {
@@ -63,6 +83,7 @@ describe('TabErrors.vue', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockIsFreeTier.value = true
     i18n = createI18n({
       legacy: false,
       locale: 'en',
@@ -74,6 +95,9 @@ describe('TabErrors.vue', () => {
             details: 'Details',
             findOnGithub: 'Find on GitHub',
             getHelpAction: 'Get Help'
+          },
+          subscription: {
+            subscribeForMore: 'Upgrade'
           },
           rightSidePanel: {
             noErrors: 'No errors',
@@ -386,7 +410,81 @@ describe('TabErrors.vue', () => {
     expect(screen.getAllByText('Execution failed')).toHaveLength(1)
   })
 
-  it('shows missing model Refresh in the section header when no model is downloadable', async () => {
+  it('shows an Upgrade button for subscription errors on free-tier cloud and opens the pricing table', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue({
+      title: 'API Node'
+    } as ReturnType<typeof getNodeByExecutionId>)
+
+    const { user } = renderComponent({
+      executionError: {
+        lastExecutionError: {
+          prompt_id: 'abc',
+          node_id: '10',
+          node_type: 'API Node',
+          exception_message: 'Subscription required to queue workflows',
+          exception_type: 'PAYMENT_REQUIRED',
+          traceback: ['Line 1'],
+          timestamp: Date.now()
+        }
+      }
+    })
+
+    const upgradeButton = screen.getByTestId('error-group-upgrade')
+    expect(upgradeButton).toHaveTextContent('Upgrade')
+
+    await user.click(upgradeButton)
+    expect(mockShowPricingTable).toHaveBeenCalledOnce()
+  })
+
+  it('hides the Upgrade button when the user is not on the free tier', async () => {
+    mockIsFreeTier.value = false
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue({
+      title: 'API Node'
+    } as ReturnType<typeof getNodeByExecutionId>)
+
+    renderComponent({
+      executionError: {
+        lastExecutionError: {
+          prompt_id: 'abc',
+          node_id: '10',
+          node_type: 'API Node',
+          exception_message: 'Subscription required to queue workflows',
+          exception_type: 'PAYMENT_REQUIRED',
+          traceback: ['Line 1'],
+          timestamp: Date.now()
+        }
+      }
+    })
+
+    expect(screen.queryByTestId('error-group-upgrade')).not.toBeInTheDocument()
+  })
+
+  it('does not show the Upgrade button for non-subscription execution errors', async () => {
+    const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
+    vi.mocked(getNodeByExecutionId).mockReturnValue({
+      title: 'KSampler'
+    } as ReturnType<typeof getNodeByExecutionId>)
+
+    renderComponent({
+      executionError: {
+        lastExecutionError: {
+          prompt_id: 'abc',
+          node_id: '10',
+          node_type: 'KSampler',
+          exception_message: 'Out of memory',
+          exception_type: 'RuntimeError',
+          traceback: ['Line 1'],
+          timestamp: Date.now()
+        }
+      }
+    })
+
+    expect(screen.queryByTestId('error-group-upgrade')).not.toBeInTheDocument()
+  })
+
+  it('does not show local download/refresh actions for missing models on cloud', () => {
     const missingModel = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
@@ -397,21 +495,19 @@ describe('TabErrors.vue', () => {
       isAssetSupported: true
     } satisfies MissingModelCandidate
 
-    const { user } = renderComponent({
+    renderComponent({
       missingModel: {
         missingModelCandidates: [missingModel]
       }
     })
-    const missingModelStore = useMissingModelStore()
 
     expect(screen.getByText('Missing Models (1)')).toBeInTheDocument()
     expect(
+      screen.queryByTestId('missing-model-header-refresh')
+    ).not.toBeInTheDocument()
+    expect(
       screen.queryByTestId('missing-model-actions')
     ).not.toBeInTheDocument()
-
-    await user.click(screen.getByTestId('missing-model-header-refresh'))
-
-    expect(missingModelStore.refreshMissingModels).toHaveBeenCalled()
   })
 
   it('renders missing model display message below the section title', () => {
@@ -433,7 +529,7 @@ describe('TabErrors.vue', () => {
 
     expect(screen.getByText('Missing Models (1)')).toBeInTheDocument()
     expect(
-      screen.getByText('Download a model, or open the node to replace it.')
+      screen.getByText('Import a model, or open the node to replace it.')
     ).toBeInTheDocument()
   })
 
@@ -539,7 +635,7 @@ describe('TabErrors.vue', () => {
     ).toBeInTheDocument()
   })
 
-  it('keeps missing model Refresh in the card actions when models are downloadable', () => {
+  it('does not surface download-all/refresh card actions for asset-supported models on cloud', () => {
     const missingModel = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
@@ -560,8 +656,7 @@ describe('TabErrors.vue', () => {
     expect(
       screen.queryByTestId('missing-model-header-refresh')
     ).not.toBeInTheDocument()
-    expect(screen.getByTestId('missing-model-actions')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible()
+    expect(screen.queryByRole('button', { name: /Download all/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Refresh' })).toBeNull()
   })
 })
