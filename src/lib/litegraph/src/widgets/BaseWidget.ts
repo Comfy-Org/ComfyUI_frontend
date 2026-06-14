@@ -96,14 +96,25 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
     this._state.label = value
   }
 
-  hidden?: boolean
-  advanced?: boolean
-
   get disabled(): boolean | undefined {
     return this._state.disabled
   }
   set disabled(value: boolean | undefined) {
     this._state.disabled = value ?? false
+  }
+
+  get hidden(): boolean | undefined {
+    return this._state.hidden
+  }
+  set hidden(value: boolean | undefined) {
+    this._state.hidden = value
+  }
+
+  get advanced(): boolean | undefined {
+    return this._state.advanced
+  }
+  set advanced(value: boolean | undefined) {
+    this._state.advanced = value
   }
 
   element?: HTMLElement
@@ -193,6 +204,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       labelBaseline,
       label,
       disabled,
+      hidden,
+      advanced,
       value,
       linkedWidgets,
       ...safeValues
@@ -206,6 +219,8 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
       value,
       label,
       disabled: disabled ?? false,
+      hidden,
+      advanced,
       serialize: this.serialize,
       options: this.options,
       y: this.y

@@ -18,6 +18,8 @@ export interface WidgetState<
   | 'label'
   | 'serialize'
   | 'disabled'
+  | 'hidden'
+  | 'advanced'
   | 'y'
 > {
   isDOMWidget?: boolean

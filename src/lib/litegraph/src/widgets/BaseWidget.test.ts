@@ -99,6 +99,8 @@ describe('BaseWidget store integration', () => {
       const state = store.getWidget(widgetId(graph.id, 1, 'writeWidget'))
       expect(state?.label).toBe('Updated Label')
       expect(state?.disabled).toBe(true)
+      expect(state?.hidden).toBe(true)
+      expect(state?.advanced).toBe(true)
 
       expect(widget.hidden).toBe(true)
       expect(widget.advanced).toBe(true)
@@ -139,6 +141,8 @@ describe('BaseWidget store integration', () => {
       expect(state?.value).toBe(100)
       expect(state?.label).toBe('Auto Label')
       expect(state?.disabled).toBe(true)
+      expect(state?.hidden).toBe(true)
+      expect(state?.advanced).toBe(true)
       expect(state?.options).toEqual({ min: 0, max: 100 })
 
       expect(widget.hidden).toBe(true)
