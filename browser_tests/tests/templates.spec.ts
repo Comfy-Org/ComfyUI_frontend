@@ -161,6 +161,10 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     })
 
     await expect(comfyPage.templates.content).toBeHidden()
+
+    await expect
+      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+      .toBeGreaterThan(0)
   })
 
   test('Uses proper locale files for templates', async ({ comfyPage }) => {
