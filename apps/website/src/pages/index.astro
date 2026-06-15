@@ -11,8 +11,8 @@ import BuildWhatSection from "../components/home/BuildWhatSection.vue";
 import { t } from "../i18n/translations";
 import Badge from "@/components/common/Badge.vue";
 import { Button } from "@/components/ui/button";
-import { PillButton } from "@/components/ui/pill-button";
-import { MaskRevealButton } from "@/components/ui/mask-reveal-button";
+import { ButtonPill } from "@/components/ui/button-pill";
+import { ButtonMask } from "@/components/ui/button-mask";
 ---
 
 <BaseLayout
@@ -35,8 +35,8 @@ import { MaskRevealButton } from "@/components/ui/mask-reveal-button";
     <div>
       <Button size="lg">Button</Button>
       <Button variant="outline">Button</Button>
-      <PillButton variant="ghost" size="lg">Button</PillButton>
-      <MaskRevealButton variant="ghost" size="lg">Button</MaskRevealButton>
+      <ButtonPill variant="ghost" size="lg">Button</ButtonPill>
+      <ButtonMask variant="ghost" size="lg">Button</ButtonMask>
     </div>
   </div>
   <SocialProofBarSection />

@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import PillButton from './PillButton.vue'
+import ButtonMask from './ButtonMask.vue'
 
-const meta: Meta<typeof PillButton> = {
-  title: 'Website/UI/PillButton',
-  component: PillButton,
+const meta: Meta<typeof ButtonMask> = {
+  title: 'Website/UI/ButtonMask',
+  component: ButtonMask,
   tags: ['autodocs'],
   decorators: [
     () => ({
@@ -37,58 +37,58 @@ const meta: Meta<typeof PillButton> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-export const AsAnchor: Story = {
+export const Default: Story = {
   args: { as: 'a', href: '#' },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
-    template: `<PillButton v-bind="args">Let's Collaborate</PillButton>`
-  })
-}
-
-export const AsButton: Story = {
-  args: { as: 'button', type: 'button' },
-  render: (args) => ({
-    components: { PillButton },
-    setup: () => ({ args }),
-    template: '<PillButton v-bind="args">Submit</PillButton>'
+    template: `<ButtonMask v-bind="args">Try Workflow</ButtonMask>`
   })
 }
 
 export const Ghost: Story = {
   args: { as: 'a', href: '#', variant: 'ghost' },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
-    template: '<PillButton v-bind="args">Read More</PillButton>'
+    template: '<ButtonMask v-bind="args">Read More</ButtonMask>'
+  })
+}
+
+export const IconLeft: Story = {
+  args: { as: 'a', href: '#', iconPosition: 'left' },
+  render: (args) => ({
+    components: { ButtonMask },
+    setup: () => ({ args }),
+    template: '<ButtonMask v-bind="args">Go Back</ButtonMask>'
   })
 }
 
 export const DefaultSolid: Story = {
   args: { as: 'a', href: '#', size: 'default' },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
-    template: '<PillButton v-bind="args">Try Workflow</PillButton>'
+    template: '<ButtonMask v-bind="args">Try Workflow</ButtonMask>'
   })
 }
 
 export const LargeSolid: Story = {
   args: { as: 'a', href: '#', size: 'lg' },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
-    template: `<PillButton v-bind="args">Let's Collaborate</PillButton>`
+    template: `<ButtonMask v-bind="args">Let's Collaborate</ButtonMask>`
   })
 }
 
 export const WithCustomIcon: Story = {
   args: { as: 'a', href: '#' },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
     template: `
-      <PillButton v-bind="args">
+      <ButtonMask v-bind="args">
         Next Step
         <template #icon>
           <svg
@@ -103,55 +103,53 @@ export const WithCustomIcon: Story = {
             <polyline points="9 6 15 12 9 18" />
           </svg>
         </template>
-      </PillButton>
+      </ButtonMask>
     `
   })
 }
 
-export const IconLeft: Story = {
-  args: { as: 'a', href: '#', iconPosition: 'left' },
+export const LabelVisible: Story = {
+  args: { as: 'a', href: '#', hideLabel: false },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
-    template: '<PillButton v-bind="args">Go Back</PillButton>'
-  })
-}
-
-export const RevealLabelOnHover: Story = {
-  args: { as: 'a', href: '#', hideLabel: true },
-  render: (args) => ({
-    components: { PillButton },
-    setup: () => ({ args }),
-    template: '<PillButton v-bind="args">Try Workflow</PillButton>'
+    template: '<ButtonMask v-bind="args">Always Visible</ButtonMask>'
   })
 }
 
 export const Disabled: Story = {
   args: { disabled: true },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
-    template: '<PillButton v-bind="args">Unavailable</PillButton>'
+    template: '<ButtonMask v-bind="args">Unavailable</ButtonMask>'
   })
 }
 
 export const AllVariants: Story = {
   render: () => ({
-    components: { PillButton },
+    components: { ButtonMask },
     template: `
       <div class="flex flex-col gap-8">
         <div class="flex flex-col gap-3">
           <span class="text-primary-comfy-canvas text-xs uppercase tracking-wider">Solid</span>
           <div class="flex flex-wrap items-center gap-4">
-            <PillButton as="a" href="#" variant="solid" size="default">Default</PillButton>
-            <PillButton as="a" href="#" variant="solid" size="lg">Large</PillButton>
+            <ButtonMask as="a" href="#" variant="solid" size="default">Default</ButtonMask>
+            <ButtonMask as="a" href="#" variant="solid" size="lg">Large</ButtonMask>
           </div>
         </div>
         <div class="flex flex-col gap-3">
           <span class="text-primary-comfy-canvas text-xs uppercase tracking-wider">Ghost</span>
           <div class="flex flex-wrap items-center gap-4">
-            <PillButton as="a" href="#" variant="ghost" size="default">Default</PillButton>
-            <PillButton as="a" href="#" variant="ghost" size="lg">Large</PillButton>
+            <ButtonMask as="a" href="#" variant="ghost" size="default">Default</ButtonMask>
+            <ButtonMask as="a" href="#" variant="ghost" size="lg">Large</ButtonMask>
+          </div>
+        </div>
+        <div class="flex flex-col gap-3">
+          <span class="text-primary-comfy-canvas text-xs uppercase tracking-wider">Icon Left</span>
+          <div class="flex flex-wrap items-center gap-4">
+            <ButtonMask as="a" href="#" iconPosition="left" size="default">Default</ButtonMask>
+            <ButtonMask as="a" href="#" iconPosition="left" size="lg">Large</ButtonMask>
           </div>
         </div>
       </div>

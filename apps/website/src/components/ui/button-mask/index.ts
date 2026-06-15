@@ -1,10 +1,10 @@
 import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
-export { default as MaskRevealButton } from './MaskRevealButton.vue'
+export { default as ButtonMask } from './ButtonMask.vue'
 
-export const maskRevealButtonVariants = cva({
-  base: 'group/mask-reveal relative inline-flex w-fit uppercase cursor-pointer items-center overflow-hidden rounded-2xl p-1 text-sm font-bold tracking-wider text-nowrap transition-all duration-500 disabled:cursor-not-allowed disabled:opacity-50',
+export const buttonMaskVariants = cva({
+  base: 'group/button-mask relative inline-flex w-fit uppercase cursor-pointer items-center overflow-hidden rounded-2xl p-1 text-sm font-bold tracking-wider text-nowrap transition-all duration-500 disabled:cursor-not-allowed disabled:opacity-50',
   variants: {
     variant: {
       solid: 'bg-primary-comfy-yellow text-primary-comfy-ink',
@@ -33,7 +33,7 @@ export const maskRevealButtonVariants = cva({
   }
 })
 
-export const maskRevealButtonBadgeVariants = cva({
+export const buttonMaskBadgeVariants = cva({
   base: 'absolute z-10 flex items-center justify-center rounded-xl transition-all duration-500',
   variants: {
     variant: {
@@ -54,22 +54,22 @@ export const maskRevealButtonBadgeVariants = cva({
     {
       size: 'default',
       iconPosition: 'right',
-      class: 'right-1 group-hover/mask-reveal:right-[calc(100%-36px)]'
+      class: 'right-1 group-hover/button-mask:right-[calc(100%-36px)]'
     },
     {
       size: 'lg',
       iconPosition: 'right',
-      class: 'right-1 group-hover/mask-reveal:right-[calc(100%-52px)]'
+      class: 'right-1 group-hover/button-mask:right-[calc(100%-52px)]'
     },
     {
       size: 'default',
       iconPosition: 'left',
-      class: 'left-1 group-hover/mask-reveal:left-[calc(100%-36px)]'
+      class: 'left-1 group-hover/button-mask:left-[calc(100%-36px)]'
     },
     {
       size: 'lg',
       iconPosition: 'left',
-      class: 'left-1 group-hover/mask-reveal:left-[calc(100%-52px)]'
+      class: 'left-1 group-hover/button-mask:left-[calc(100%-52px)]'
     }
   ],
   defaultVariants: {
@@ -79,7 +79,7 @@ export const maskRevealButtonBadgeVariants = cva({
   }
 })
 
-export const MASK_REVEAL_LABEL_CLASS = [
+export const BUTTON_MASK_LABEL_CLASS = [
   'relative inline-block align-baseline',
   '[will-change:mask-size,-webkit-mask-size]',
   '[mask-image:linear-gradient(black,black)] [-webkit-mask-image:linear-gradient(black,black)]',
@@ -89,10 +89,8 @@ export const MASK_REVEAL_LABEL_CLASS = [
   'data-[icon-position=left]:[mask-position:0_0] data-[icon-position=left]:[-webkit-mask-position:0_0]',
   'data-[hidden=true]:[mask-size:0%_100%] data-[hidden=true]:[-webkit-mask-size:0%_100%]',
   'data-[hidden=false]:[mask-size:100%_100%] data-[hidden=false]:[-webkit-mask-size:100%_100%]',
-  'group-hover/mask-reveal:data-[hidden=true]:[mask-size:calc(100%_+_1px)_100%] group-hover/mask-reveal:data-[hidden=true]:[-webkit-mask-size:calc(100%_+_1px)_100%]',
-  'group-focus-visible/mask-reveal:data-[hidden=true]:[mask-size:calc(100%_+_1px)_100%] group-focus-visible/mask-reveal:data-[hidden=true]:[-webkit-mask-size:calc(100%_+_1px)_100%]'
+  'group-hover/button-mask:data-[hidden=true]:[mask-size:calc(100%_+_1px)_100%] group-hover/button-mask:data-[hidden=true]:[-webkit-mask-size:calc(100%_+_1px)_100%]',
+  'group-focus-visible/button-mask:data-[hidden=true]:[mask-size:calc(100%_+_1px)_100%] group-focus-visible/button-mask:data-[hidden=true]:[-webkit-mask-size:calc(100%_+_1px)_100%]'
 ].join(' ')
 
-export type MaskRevealButtonVariants = VariantProps<
-  typeof maskRevealButtonVariants
->
+export type ButtonMaskVariants = VariantProps<typeof buttonMaskVariants>

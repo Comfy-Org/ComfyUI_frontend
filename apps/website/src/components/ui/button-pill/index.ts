@@ -1,10 +1,10 @@
 import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
-export { default as PillButton } from './PillButton.vue'
+export { default as ButtonPill } from './ButtonPill.vue'
 
-export const pillButtonVariants = cva({
-  base: 'group relative inline-flex w-fit uppercase cursor-pointer items-center overflow-hidden rounded-2xl p-1 text-sm font-bold tracking-wider text-nowrap transition-all duration-500 disabled:cursor-not-allowed disabled:opacity-50',
+export const buttonPillVariants = cva({
+  base: 'group/button-pill isolate relative inline-flex w-fit uppercase cursor-pointer items-center overflow-hidden rounded-2xl p-1 text-sm font-bold tracking-wider text-nowrap transition-all duration-500 disabled:cursor-not-allowed disabled:opacity-50',
   variants: {
     variant: {
       solid: 'bg-primary-comfy-yellow text-primary-comfy-ink',
@@ -49,7 +49,7 @@ export const pillButtonVariants = cva({
   }
 })
 
-export const pillButtonBadgeVariants = cva({
+export const buttonPillBadgeVariants = cva({
   base: 'absolute z-10 flex items-center justify-center rounded-xl transition-all duration-500',
   variants: {
     variant: {
@@ -70,22 +70,22 @@ export const pillButtonBadgeVariants = cva({
     {
       size: 'default',
       iconPosition: 'right',
-      class: 'right-1 group-hover:right-[calc(100%-36px)]'
+      class: 'right-1 group-hover/button-pill:right-[calc(100%-36px)]'
     },
     {
       size: 'lg',
       iconPosition: 'right',
-      class: 'right-1 group-hover:right-[calc(100%-52px)]'
+      class: 'right-1 group-hover/button-pill:right-[calc(100%-52px)]'
     },
     {
       size: 'default',
       iconPosition: 'left',
-      class: 'left-1 group-hover:left-[calc(100%-36px)]'
+      class: 'left-1 group-hover/button-pill:left-[calc(100%-36px)]'
     },
     {
       size: 'lg',
       iconPosition: 'left',
-      class: 'left-1 group-hover:left-[calc(100%-52px)]'
+      class: 'left-1 group-hover/button-pill:left-[calc(100%-52px)]'
     }
   ],
   defaultVariants: {
@@ -95,4 +95,4 @@ export const pillButtonBadgeVariants = cva({
   }
 })
 
-export type PillButtonVariants = VariantProps<typeof pillButtonVariants>
+export type ButtonPillVariants = VariantProps<typeof buttonPillVariants>

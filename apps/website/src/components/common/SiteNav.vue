@@ -13,7 +13,7 @@ import { t } from '../../i18n/translations'
 import { externalLinks, getRoutes } from '../../config/routes'
 import BrandButton from './BrandButton.vue'
 import GitHubStarBadge from './GitHubStarBadge.vue'
-import HeaderMainDesktop from './HeaderMainDesktop.vue'
+import HeaderMainDesktop from './HeaderMain/HeaderMainDesktop.vue'
 
 const { locale = 'en', githubStars = '' } = defineProps<{
   locale?: Locale

@@ -9,7 +9,7 @@ import {
 } from '../../data/learningTutorials'
 import { t } from '../../i18n/translations'
 import Badge from '../common/Badge.vue'
-import { MaskRevealButton } from '../ui/mask-reveal-button'
+import { ButtonMask } from '../ui/button-mask'
 import TutorialDetailDialog from './TutorialDetailDialog.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -76,7 +76,7 @@ const activeTutorial = () =>
               {{ t('learning.tutorials.titlePrefix', locale) }}<br />
               {{ tutorial.title[locale] }}
             </h3>
-            <MaskRevealButton
+            <ButtonMask
               v-if="tutorial.href"
               as="a"
               :href="tutorial.href"
@@ -99,7 +99,7 @@ const activeTutorial = () =>
                   <polyline points="9 6 15 12 9 18" />
                 </svg>
               </template>
-            </MaskRevealButton>
+            </ButtonMask>
           </div>
 
           <ul class="flex flex-wrap gap-2">

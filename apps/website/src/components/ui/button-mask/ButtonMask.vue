@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { ArrowUpRight } from '@lucide/vue'
-import { Primitive } from 'reka-ui';
-import type { PrimitiveProps } from 'reka-ui';
+import { ChevronRight } from '@lucide/vue'
+import { Primitive } from 'reka-ui'
+import type { PrimitiveProps } from 'reka-ui'
 
 import type { HTMLAttributes } from 'vue'
 
-import type { MaskRevealButtonVariants } from '.'
+import type { ButtonMaskVariants } from '.'
 import {
-  MASK_REVEAL_LABEL_CLASS,
-  maskRevealButtonBadgeVariants,
-  maskRevealButtonVariants
+  BUTTON_MASK_LABEL_CLASS,
+  buttonMaskBadgeVariants,
+  buttonMaskVariants
 } from '.'
 
 interface Props extends PrimitiveProps {
-  variant?: MaskRevealButtonVariants['variant']
-  size?: MaskRevealButtonVariants['size']
-  iconPosition?: MaskRevealButtonVariants['iconPosition']
+  variant?: ButtonMaskVariants['variant']
+  size?: ButtonMaskVariants['size']
+  iconPosition?: ButtonMaskVariants['iconPosition']
   hideLabel?: boolean
   class?: HTMLAttributes['class']
   disabled?: boolean
@@ -30,30 +30,30 @@ const props = withDefaults(defineProps<Props>(), {
 
 <template>
   <Primitive
-    data-slot="mask-reveal-button"
+    data-slot="button-mask"
     :data-variant="variant"
     :data-size="size"
     :as="as"
     :as-child="asChild"
     :disabled="disabled"
     :class="
-      cn(maskRevealButtonVariants({ variant, size, iconPosition }), props.class)
+      cn(buttonMaskVariants({ variant, size, iconPosition }), props.class)
     "
   >
     <span
       :data-icon-position="iconPosition ?? 'right'"
       :data-hidden="hideLabel ? 'true' : 'false'"
-      :class="MASK_REVEAL_LABEL_CLASS"
+      :class="BUTTON_MASK_LABEL_CLASS"
     >
       <slot />
     </span>
     <span
-      :class="maskRevealButtonBadgeVariants({ variant, size, iconPosition })"
+      :class="buttonMaskBadgeVariants({ variant, size, iconPosition })"
       aria-hidden="true"
     >
       <span class="inline-flex transition-transform duration-500">
         <slot name="icon">
-          <ArrowUpRight class="size-4" :stroke-width="2" />
+          <ChevronRight class="size-4" :stroke-width="2" />
         </slot>
       </span>
     </span>
