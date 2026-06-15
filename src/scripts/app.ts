@@ -1170,7 +1170,7 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph()
 
     if (skipAssetScans) {
-      // Only reset candidates; preserve UI state (fileSizes, urlInputs, etc.)
+      // Only reset candidates; preserve UI state (fileSizes, etc.)
       // so cached results restored by showPendingWarnings still display sizes.
       // Abort any in-flight verification from the outgoing workflow so a late
       // result cannot repopulate the store after we've switched workflows.
