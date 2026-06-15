@@ -16,6 +16,10 @@ const translations = {
     en: 'Try Workflow',
     'zh-CN': '试用工作流'
   },
+  'cta.watchNow': {
+    en: 'Watch Now',
+    'zh-CN': '立即观看'
+  },
 
   // HeroSection
   'hero.title': {
@@ -1834,6 +1838,55 @@ const translations = {
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
   'nav.back': { en: 'BACK', 'zh-CN': '返回' },
   'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
+  // Column headers used in HeaderMainDesktop dropdowns
+  'nav.colFeatures': { en: 'Features', 'zh-CN': '功能' },
+  'nav.colPrograms': { en: 'Programs', 'zh-CN': '项目' },
+  'nav.colConnect': { en: 'Connect', 'zh-CN': '联系' },
+  'nav.colSolutions': { en: 'Solutions', 'zh-CN': '解决方案' },
+  'nav.colMore': { en: 'More', 'zh-CN': '更多' },
+  // Dropdown items not yet covered above
+  'nav.reddit': { en: 'Reddit', 'zh-CN': 'Reddit' },
+  'nav.x': { en: 'X', 'zh-CN': 'X' },
+  'nav.instagram': { en: 'Instagram', 'zh-CN': 'Instagram' },
+  'nav.affiliates': { en: 'Affiliates', 'zh-CN': '联盟计划' },
+  'nav.contact': { en: 'Contact', 'zh-CN': '联系我们' },
+  // Featured dropdown cards. TODO(i18n): zh-CN copy not finalized — duplicates en
+  'nav.featuredSeedanceTitle': {
+    en: 'NEW RELEASE: SEEDANCE 2.0',
+    'zh-CN': 'NEW RELEASE: SEEDANCE 2.0'
+  },
+  'nav.featuredSeedanceAlt': {
+    en: 'Moment Factory hero image',
+    'zh-CN': 'Moment Factory hero image'
+  },
+  'nav.featuredSeedanceCtaAria': {
+    en: 'Try the Seedance 2.0 new release Workflow',
+    'zh-CN': 'Try the Seedance 2.0 new release Workflow'
+  },
+  'nav.featuredReleaseDemoTitle': {
+    en: 'LATEST RELEASE DEMO',
+    'zh-CN': 'LATEST RELEASE DEMO'
+  },
+  'nav.featuredReleaseDemoAlt': {
+    en: 'Latest release demo',
+    'zh-CN': 'Latest release demo'
+  },
+  'nav.featuredReleaseDemoCtaAria': {
+    en: 'Watch the latest release demo',
+    'zh-CN': 'Watch the latest release demo'
+  },
+  'nav.featuredBlackMathTitle': {
+    en: 'CUSTOMER STORY: BLACK MATH',
+    'zh-CN': 'CUSTOMER STORY: BLACK MATH'
+  },
+  'nav.featuredBlackMathAlt': {
+    en: 'Meredith Binnet, Creative Director at Black Math',
+    'zh-CN': 'Meredith Binnet, Creative Director at Black Math'
+  },
+  'nav.featuredBlackMathCtaAria': {
+    en: 'Watch the Black Math customer story',
+    'zh-CN': 'Watch the Black Math customer story'
+  },
 
   // SiteFooter
   'footer.tagline': {

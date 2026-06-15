@@ -1,3 +1,7 @@
+import { externalLinks, getRoutes } from '../config/routes'
+import type { Locale } from '../i18n/translations'
+import { t } from '../i18n/translations'
+
 export type NavColumnItem = {
   label: string
   href: string
@@ -30,139 +34,168 @@ export type NavItem =
     }
   | { label: string; href: string; columns?: never; featured?: never }
 
-export const mainNavigation: NavItem[] = [
-  {
-    label: 'Products',
-    featured: {
-      imageSrc:
-        'https://media.comfy.org/website/customers/moment-factory/hero.webp',
-      imageAlt: 'Moment Factory hero image',
-      title: 'NEW RELEASE: SEEDANCE 2.0',
-      cta: {
-        label: 'Try Workflow',
-        ariaLabel: 'Try the Seedance 2.0 new release Workflow',
-        href: '#'
-      }
+const FEATURED_IMAGE_SRC =
+  'https://media.comfy.org/website/customers/moment-factory/hero.webp'
+
+export function getMainNavigation(locale: Locale): NavItem[] {
+  const routes = getRoutes(locale)
+  return [
+    {
+      label: t('nav.products', locale),
+      featured: {
+        imageSrc: FEATURED_IMAGE_SRC,
+        imageAlt: t('nav.featuredSeedanceAlt', locale),
+        title: t('nav.featuredSeedanceTitle', locale),
+        cta: {
+          label: t('cta.tryWorkflow', locale),
+          ariaLabel: t('nav.featuredSeedanceCtaAria', locale),
+          href: '#'
+        }
+      },
+      columns: [
+        {
+          header: t('nav.products', locale),
+          items: [
+            { label: t('nav.comfyLocal', locale), href: routes.download },
+            { label: t('nav.comfyCloud', locale), href: routes.cloud },
+            {
+              label: t('nav.comfyApi', locale),
+              href: routes.api,
+              badge: 'new'
+            },
+            {
+              label: t('nav.comfyEnterprise', locale),
+              href: routes.cloudEnterprise
+            }
+          ]
+        },
+        {
+          header: t('nav.colFeatures', locale),
+          items: [
+            // TODO: no page yet — re-enable when landing pages ship
+            // { label: t('nav.mcpServer', locale), href: '#', badge: 'new' },
+            // { label: t('nav.appMode', locale), href: '#' },
+            // { label: t('nav.agentSkills', locale), href: '#' },
+            {
+              label: t('nav.docs', locale),
+              href: externalLinks.docs,
+              external: true
+            }
+          ]
+        }
+      ]
     },
-    columns: [
-      {
-        header: 'Products',
-        items: [
-          { label: 'Comfy Desktop', href: '/download' },
-          { label: 'Comfy Cloud', href: '/cloud' },
-          { label: 'Comfy API', href: '/api', badge: 'new' },
-          { label: 'Comfy Enterprise', href: '/cloud/enterprise' }
-        ]
+    { label: t('nav.pricing', locale), href: routes.cloudPricing },
+    {
+      label: t('nav.community', locale),
+      featured: {
+        imageSrc: FEATURED_IMAGE_SRC,
+        imageAlt: t('nav.featuredReleaseDemoAlt', locale),
+        title: t('nav.featuredReleaseDemoTitle', locale),
+        cta: {
+          label: t('cta.watchNow', locale),
+          ariaLabel: t('nav.featuredReleaseDemoCtaAria', locale),
+          href: '#'
+        }
       },
-      {
-        header: 'Features',
-        items: [
-          // TODO: no page yet — re-enable when landing pages ship
-          // { label: 'MCP Server', href: '#', badge: 'new' },
-          // { label: 'App Mode', href: '#' },
-          // { label: 'Agent Skills', href: '#' },
-          { label: 'Docs', href: 'https://docs.comfy.org/', external: true }
-        ]
-      }
-    ]
-  },
-  { label: 'Pricing', href: '/pricing' },
-  {
-    label: 'Community',
-    featured: {
-      imageSrc:
-        'https://media.comfy.org/website/customers/moment-factory/hero.webp',
-      imageAlt: 'Latest release demo',
-      title: 'LATEST RELEASE DEMO',
-      cta: {
-        label: 'Watch Now',
-        ariaLabel: 'Watch the latest release demo',
-        href: '#'
-      }
+      columns: [
+        {
+          header: t('nav.colPrograms', locale),
+          items: [
+            { label: t('nav.comfyHub', locale), href: externalLinks.workflows },
+            { label: t('nav.gallery', locale), href: routes.gallery }
+          ]
+        },
+        {
+          header: t('nav.colConnect', locale),
+          items: [
+            {
+              label: t('nav.discord', locale),
+              href: externalLinks.discord,
+              external: true
+            },
+            {
+              label: t('nav.github', locale),
+              href: externalLinks.github,
+              external: true
+            },
+            {
+              label: t('nav.youtube', locale),
+              href: externalLinks.youtube,
+              external: true
+            },
+            {
+              label: t('nav.reddit', locale),
+              href: externalLinks.reddit,
+              external: true
+            },
+            {
+              label: t('nav.x', locale),
+              href: externalLinks.x,
+              external: true
+            },
+            {
+              label: t('nav.instagram', locale),
+              href: externalLinks.instagram,
+              external: true
+            }
+          ]
+        },
+        {
+          header: t('nav.colSolutions', locale),
+          items: [
+            {
+              label: t('nav.affiliates', locale),
+              href: routes.affiliates,
+              badge: 'new'
+            },
+            {
+              label: t('nav.learning', locale),
+              href: routes.learning,
+              badge: 'new'
+            }
+          ]
+        }
+      ]
     },
-    columns: [
-      {
-        header: 'Programs',
-        items: [
-          { label: 'Comfy Hub', href: 'https://comfy.org/workflows' },
-          { label: 'Gallery', href: '/gallery' }
-        ]
+    {
+      label: t('nav.company', locale),
+      featured: {
+        imageSrc: FEATURED_IMAGE_SRC,
+        imageAlt: t('nav.featuredBlackMathAlt', locale),
+        title: t('nav.featuredBlackMathTitle', locale),
+        cta: {
+          label: t('cta.watchNow', locale),
+          ariaLabel: t('nav.featuredBlackMathCtaAria', locale),
+          href: '#'
+        }
       },
-      {
-        header: 'Connect',
-        items: [
-          {
-            label: 'Discord',
-            href: 'https://discord.com/invite/comfyorg',
-            external: true
-          },
-          {
-            label: 'GitHub',
-            href: 'https://github.com/Comfy-Org/ComfyUI',
-            external: true
-          },
-          {
-            label: 'Youtube',
-            href: 'https://www.youtube.com/@ComfyOrg',
-            external: true
-          },
-          {
-            label: 'Reddit',
-            href: 'https://www.reddit.com/r/comfyui/',
-            external: true
-          },
-          { label: 'X', href: 'https://x.com/ComfyUI', external: true },
-          {
-            label: 'Instagram',
-            href: 'https://www.instagram.com/comfyui/',
-            external: true
-          }
-        ]
-      },
-      {
-        header: 'Solutions',
-        items: [
-          { label: 'Affiliates', href: '/affiliates', badge: 'new' },
-          { label: 'Learning', href: '/learning', badge: 'new' }
-        ]
-      }
-    ]
-  },
-  {
-    label: 'Company',
-    featured: {
-      imageSrc:
-        'https://media.comfy.org/website/customers/moment-factory/hero.webp',
-      imageAlt: 'Meredith Binnet, Creative Director at Black Math',
-      title: 'CUSTOMER STORY: BLACK MATH',
-      cta: {
-        label: 'Watch Now',
-        ariaLabel: 'Watch the Black Math customer story',
-        href: '#'
-      }
-    },
-    columns: [
-      {
-        header: 'Company',
-        items: [
-          { label: 'About us', href: '/about' },
-          { label: 'Careers', href: '/careers' }
-        ]
-      },
-      {
-        header: 'More',
-        items: [
-          { label: 'Customer Stories', href: '/customers' },
-          // TODO: no /brand page yet
-          // { label: 'Brand', href: '#' },
-          { label: 'Contact', href: '/contact' },
-          {
-            label: 'Blog',
-            href: 'https://blog.comfy.org/',
-            external: true
-          }
-        ]
-      }
-    ]
-  }
-]
+      columns: [
+        {
+          header: t('nav.company', locale),
+          items: [
+            { label: t('nav.aboutUs', locale), href: routes.about },
+            { label: t('nav.careers', locale), href: routes.careers }
+          ]
+        },
+        {
+          header: t('nav.colMore', locale),
+          items: [
+            {
+              label: t('nav.customerStories', locale),
+              href: routes.customers
+            },
+            // TODO: no /brand page yet
+            // { label: t('nav.brand', locale), href: '#' },
+            { label: t('nav.contact', locale), href: routes.contact },
+            {
+              label: t('nav.blogs', locale),
+              href: externalLinks.blog,
+              external: true
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

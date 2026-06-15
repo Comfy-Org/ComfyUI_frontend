@@ -174,7 +174,7 @@ onMounted(() => {
     </a>
 
     <!-- Desktop nav links -->
-    <HeaderMainDesktop />
+    <HeaderMainDesktop :locale="locale" />
 
     <!-- Desktop CTA buttons -->
     <div

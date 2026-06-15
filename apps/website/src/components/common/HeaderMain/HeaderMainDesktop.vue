@@ -11,7 +11,11 @@ import {
 
 import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
-import { mainNavigation } from '../../../data/mainNavigation'
+import { getMainNavigation } from '../../../data/mainNavigation'
+import type { Locale } from '../../../i18n/translations'
+
+const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const mainNavigation = getMainNavigation(locale)
 </script>
 
 <template>
