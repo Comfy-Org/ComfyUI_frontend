@@ -39,7 +39,7 @@
         @entry-focus="onEntryFocus"
         @keydown.capture="redirectTypingToSearch"
       >
-        <div class="p-.5 shrink-0">
+        <div class="shrink-0 p-0.5">
           <div
             class="flex h-9 items-center gap-2 rounded-lg bg-secondary-background px-2"
           >
