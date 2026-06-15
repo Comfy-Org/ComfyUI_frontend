@@ -2904,6 +2904,10 @@
         "name": "音訊",
         "tooltip": "要加入影片的音訊。"
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "所建立影片的位元深度。10 位元可保持更平滑的漸層並減少色帶現象，但部分播放器及後續節點可能不支援。"
+      },
       "fps": {
         "name": "每秒影格數"
       },
@@ -5219,6 +5223,10 @@
       },
       "2": {
         "name": "每秒影格數",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -19586,6 +19594,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "將外部 3D 模型（例如來自 Rodin、Hunyuan3D 或本機檔案）匯入 Tripo，以搭配 Tripo 的後製節點：材質、骨架、轉換。建議使用 GLB 格式：僅當材質嵌入檔案時，匯入後才會保留材質。請注意，對匯入模型進行材質處理時需提供材質提示詞。",
+    "display_name": "Tripo：匯入模型",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "要匯入的 3D 模型（GLB / FBX / OBJ / STL，最大 150 MB）。OBJ 與 STL 檔案不包含嵌入材質。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo：多視角轉模型",
     "inputs": {
@@ -20053,6 +20077,10 @@
       },
       "texture_alignment": {
         "name": "紋理對齊"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "材質處理的選用文字指引。實際上，對於匯入的模型（Tripo：匯入模型）必須提供，因為這些模型沒有來源圖像可推斷顏色。"
       },
       "texture_quality": {
         "name": "紋理品質"

@@ -2904,6 +2904,10 @@
         "name": "오디오",
         "tooltip": "비디오에 추가할 오디오입니다."
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "생성된 비디오의 비트 깊이입니다. 10비트는 더 부드러운 그라데이션과 적은 밴딩을 유지하지만, 일부 플레이어나 후속 노드에서 지원되지 않을 수 있습니다."
+      },
       "fps": {
         "name": "fps"
       },
@@ -5219,6 +5223,10 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -19586,6 +19594,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "외부 3D 모델(예: Rodin, Hunyuan3D 또는 로컬 파일)을 Tripo로 가져와 Tripo의 후처리 노드(Texture, Rig, Convert)와 함께 사용할 수 있습니다. GLB 형식을 권장합니다: 텍스처가 파일에 임베드되어 있을 때만 가져오기가 가능합니다. 가져온 모델에 텍스처를 적용하려면 텍스처 프롬프트가 필요합니다.",
+    "display_name": "Tripo: Import Model",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "가져올 3D 모델(GLB / FBX / OBJ / STL, 최대 150MB). OBJ와 STL 파일에는 임베드된 텍스처가 없습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: 다중 뷰에서 모델 생성",
     "inputs": {
@@ -20053,6 +20077,10 @@
       },
       "texture_alignment": {
         "name": "텍스처 정렬"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "텍스처링을 위한 선택적 텍스트 가이드입니다. 가져온 모델(Tripo: Import Model)에는 색상을 추론할 소스 이미지가 없으므로 실제로는 필수입니다."
       },
       "texture_quality": {
         "name": "텍스처 품질"
