@@ -2,7 +2,7 @@ import { externalLinks, getRoutes } from '../config/routes'
 import type { Locale } from '../i18n/translations'
 import { t } from '../i18n/translations'
 
-export type NavColumnItem = {
+type NavColumnItem = {
   label: string
   href: string
   badge?: 'new'
