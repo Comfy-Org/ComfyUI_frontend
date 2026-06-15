@@ -2,7 +2,7 @@
 import Badge from '@/components/common/Badge.vue'
 import { NavigationMenuLink } from '@/components/ui/navigation-menu'
 
-import type { NavColumn } from './navigation'
+import type { NavColumn } from '../../../data/mainNavigation'
 
 defineProps<{ column: NavColumn }>()
 </script>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import ButtonPill from '@/components/ui/button-pill/ButtonPill.vue'
 
-import type { NavFeatured } from './navigation'
+import type { NavFeatured } from '../../../data/mainNavigation'
 
 defineProps<{ featured: NavFeatured }>()
 </script>

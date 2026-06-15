@@ -11,7 +11,7 @@ import {
 
 import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
-import { mainNavigation } from './navigation'
+import { mainNavigation } from '../../../data/mainNavigation'
 </script>
 
 <template>
