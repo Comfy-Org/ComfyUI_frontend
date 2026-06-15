@@ -95,7 +95,7 @@ onUnmounted(() => {
     aria-modal="true"
     :inert="!open"
     :aria-label="t('nav.menu', locale)"
-    class="bg-primary-comfy-ink fixed inset-0 z-40 flex flex-col px-6 pt-24 pb-8 lg:hidden"
+    class="fixed inset-0 z-40 flex flex-col bg-primary-comfy-ink px-6 pt-24 pb-8 lg:hidden"
   >
     <!-- Main list -->
     <template v-if="!activeSection">
@@ -103,7 +103,7 @@ onUnmounted(() => {
         <template v-for="link in links" :key="link.label">
           <button
             v-if="link.items"
-            class="text-primary-comfy-canvas text-left text-3xl font-medium"
+            class="text-left text-3xl font-medium text-primary-comfy-canvas"
             @click="activeSection = link.label"
           >
             {{ link.label }}
@@ -111,7 +111,7 @@ onUnmounted(() => {
           <a
             v-else
             :href="link.href"
-            class="text-primary-comfy-canvas text-3xl font-medium"
+            class="text-3xl font-medium text-primary-comfy-canvas"
             @click="onNavigate"
           >
             {{ link.label }}
@@ -159,17 +159,15 @@ onUnmounted(() => {
             v-for="item in activeSectionItems"
             :key="item.href"
             :href="item.href"
-            class="text-primary-comfy-canvas flex items-center gap-3 text-3xl font-medium"
+            class="flex items-center gap-3 text-3xl font-medium text-primary-comfy-canvas"
             @click="onNavigate"
           >
             {{ item.label }}
             <span
               v-if="item.badge"
-              class="bg-primary-comfy-yellow font-formula-narrow text-primary-comfy-ink -skew-x-12 rounded-sm px-1 py-0.5 text-xs font-semibold"
+              class="bg-primary-comfy-yellow font-formula-narrow -skew-x-12 rounded-sm px-1 py-0.5 text-xs font-semibold text-primary-comfy-ink"
             >
-              <span class="ppformula-text-center inline-block skew-x-12">{{
-                item.badge
-              }}</span>
+              <span class="inline-block skew-x-12">{{ item.badge }}</span>
             </span>
             <img
               v-if="item.external"

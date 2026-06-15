@@ -80,6 +80,7 @@
   --color-primary-warm-white: #f0efed;
   --color-primary-warm-gray: #7e7c78;
   --color-secondary-mauve: #4d3762;
+  --color-destructive: #F44336;
   --color-primary-comfy-plum: #49378b;
   --color-secondary-cool-gray: #3c3c3c;
   --color-illustration-forest: #20464c;
@@ -112,17 +113,16 @@
 
 @utility animate-border-spin {
   animation: border-angle-spin 2s linear infinite;
-  background: conic-gradient(
-    from var(--border-angle),
-    color-mix(in srgb, var(--color-primary-comfy-yellow) 4%, transparent) 0%,
-    var(--color-primary-comfy-yellow) 100%
-  );
+  background: conic-gradient(from var(--border-angle),
+      color-mix(in srgb, var(--color-primary-comfy-yellow) 4%, transparent) 0%,
+      var(--color-primary-comfy-yellow) 100%);
 }
 
 @keyframes marquee {
   0% {
     transform: translateX(0);
   }
+
   100% {
     transform: translateX(calc(-100% - var(--marquee-gap, 0px)));
   }
@@ -132,6 +132,7 @@
   0% {
     transform: translateX(calc(-100% - var(--marquee-gap, 0px)));
   }
+
   100% {
     transform: translateX(0);
   }
@@ -154,9 +155,11 @@
     transform: scale(1);
     opacity: 1;
   }
+
   85% {
     opacity: 1;
   }
+
   100% {
     transform: scale(1.75);
     opacity: 0;
@@ -184,6 +187,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -197,6 +201,7 @@
 @utility scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
+
   &::-webkit-scrollbar {
     display: none;
   }
