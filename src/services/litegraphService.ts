@@ -944,11 +944,11 @@ export const useLitegraphService = () => {
     const graph = useWorkflowStore().activeSubgraph ?? app.graph
     if (!graph || !node) return null
 
+    // Finalize placement before the node joins the graph so the only position
+    // assignment happens during construction, not as a post-add mutation.
+    if (!addOptions?.ghost) resolveOverlap(node, graph)
     graph.add(node, addOptions)
-    if (!addOptions?.ghost) {
-      resolveOverlap(node, graph)
-      centerOnNewNode(node)
-    }
+    if (!addOptions?.ghost) centerOnNewNode(node)
     return node
   }
 
