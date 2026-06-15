@@ -91,6 +91,7 @@
 
       <ExportControls
         v-if="showExportControls"
+        :source-format="sourceFormat"
         @export-model="handleExportModel"
       />
 
@@ -134,7 +135,8 @@ const {
   canUseHdri = true,
   canUseBackgroundImage = true,
   materialModes = ['original', 'normal', 'wireframe'],
-  hasSkeleton = false
+  hasSkeleton = false,
+  sourceFormat = null
 } = defineProps<{
   canUseGizmo?: boolean
   canUseLighting?: boolean
@@ -143,6 +145,7 @@ const {
   canUseBackgroundImage?: boolean
   materialModes?: readonly MaterialMode[]
   hasSkeleton?: boolean
+  sourceFormat?: string | null
 }>()
 
 const sceneConfig = defineModel<SceneConfig>('sceneConfig')

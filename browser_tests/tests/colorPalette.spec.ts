@@ -190,6 +190,16 @@ test.describe('Color Palette', { tag: ['@screenshot', '@settings'] }, () => {
       'custom-color-palette-obsidian-dark.png'
     )
   })
+
+  test('Palette can modify @vue-nodes color', async ({ comfyPage }) => {
+    const node = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    const getColor = () =>
+      node.body.evaluate((el) => getComputedStyle(el).backgroundColor)
+
+    const initialColor = await getColor()
+    await comfyPage.settings.setSetting('Comfy.ColorPalette', 'solarized')
+    await expect.poll(getColor).not.toEqual(initialColor)
+  })
 })
 
 test.describe(
