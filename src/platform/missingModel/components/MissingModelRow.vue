@@ -12,17 +12,17 @@
             : t('rightSidePanel.missingModels.expandNodes')
         "
         :aria-expanded="expanded"
-        :class="
-          cn(
-            'h-8 w-4 shrink-0 p-0 transition-transform duration-200 hover:bg-transparent',
-            expanded && 'rotate-90'
-          )
-        "
+        class="h-8 w-4 shrink-0 p-0 hover:bg-transparent"
         @click="handleToggleExpand"
       >
         <i
           aria-hidden="true"
-          class="icon-[lucide--chevron-right] size-4 text-muted-foreground"
+          :class="
+            cn(
+              'icon-[lucide--chevron-right] size-4 text-muted-foreground transition-transform duration-200',
+              expanded && 'rotate-90'
+            )
+          "
         />
       </Button>
 

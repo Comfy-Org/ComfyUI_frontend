@@ -3,7 +3,7 @@
     <div class="flex min-h-8 w-full items-center gap-2 px-3">
       <button
         type="button"
-        class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-left ring-0 outline-0"
+        class="focus-visible:ring-ring flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-sm border-0 bg-transparent p-0 text-left outline-none focus-visible:ring-1"
         :aria-expanded="!collapse"
         @click="collapse = !collapse"
       >
@@ -19,7 +19,7 @@
       <slot name="actions" />
       <button
         type="button"
-        class="flex size-8 shrink-0 cursor-pointer items-center justify-center border-0 bg-transparent p-0 ring-0 outline-0"
+        class="focus-visible:ring-ring flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0 outline-none focus-visible:ring-1"
         :aria-expanded="!collapse"
         :aria-label="
           collapse ? t('rightSidePanel.expand') : t('rightSidePanel.collapse')
