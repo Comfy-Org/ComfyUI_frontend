@@ -92,7 +92,5 @@ declare global {
     __appReadiness?: AppReadiness
 
     __comfyDesktop2?: ComfyDesktop2Bridge
-    /** Set by Desktop 2 when the hosted server is remote, so download routing through the local download manager is skipped. */
-    __comfyDesktop2Remote?: boolean
   }
 }

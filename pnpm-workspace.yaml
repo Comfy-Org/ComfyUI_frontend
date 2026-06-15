@@ -17,7 +17,7 @@ catalog:
   '@astrojs/check': ^0.9.9
   '@astrojs/sitemap': ^3.7.3
   '@astrojs/vue': ^6.0.1
-  '@comfyorg/comfyui-desktop-bridge-types': 0.1.0
+  '@comfyorg/comfyui-desktop-bridge-types': 0.1.1
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@eslint/js': ^10.0.1
   '@formkit/auto-animate': ^0.9.0
