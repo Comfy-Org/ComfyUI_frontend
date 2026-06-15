@@ -25,6 +25,7 @@ concurrency:
 
 jobs:
   cursor-review:
+    if: github.event.action == 'labeled' && github.event.label.name == 'cursor-review'
     # Pinned to github-workflows main HEAD: the reusable cursor-review workflow
     # postdates the v1 tag, so there is no tagged release to pin to yet.
     uses: Comfy-Org/github-workflows/.github/workflows/cursor-review.yml@41d1201821487c80b7752c5a692a53ca0396066b # main
