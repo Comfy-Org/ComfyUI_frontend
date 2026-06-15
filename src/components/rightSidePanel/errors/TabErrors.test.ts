@@ -122,9 +122,6 @@ describe('TabErrors.vue', () => {
             template:
               '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
           },
-          PropertiesAccordionItem: {
-            template: '<div><slot name="label" /><slot /></div>'
-          },
           Button: {
             template: '<button v-bind="$attrs"><slot /></button>'
           }
@@ -422,6 +419,40 @@ describe('TabErrors.vue', () => {
     await user.click(screen.getByTestId('missing-model-header-refresh'))
 
     expect(missingModelStore.refreshMissingModels).toHaveBeenCalled()
+  })
+
+  it('counts missing models per file when several share one directory', () => {
+    renderComponent({
+      missingModel: {
+        missingModelCandidates: [
+          {
+            nodeId: '1',
+            nodeType: 'CheckpointLoaderSimple',
+            widgetName: 'ckpt_name',
+            name: 'model-a.safetensors',
+            directory: 'checkpoints',
+            isMissing: true,
+            isAssetSupported: true
+          },
+          {
+            nodeId: '2',
+            nodeType: 'CheckpointLoaderSimple',
+            widgetName: 'ckpt_name',
+            name: 'model-b.safetensors',
+            directory: 'checkpoints',
+            isMissing: true,
+            isAssetSupported: true
+          }
+        ] satisfies MissingModelCandidate[]
+      }
+    })
+
+    expect(
+      within(screen.getByTestId('error-group-missing-model')).getByText('2')
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('errors-summary-hero')).getByText('2')
+    ).toBeInTheDocument()
   })
 
   it('renders missing model display message below the section title', () => {

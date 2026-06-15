@@ -467,7 +467,10 @@ function getGroupCount(group: ErrorGroup): number {
     case 'swap_nodes':
       return swapNodeGroups.value.length
     case 'missing_model':
-      return missingModelGroups.value.length
+      return missingModelGroups.value.reduce(
+        (total, modelGroup) => total + modelGroup.models.length,
+        0
+      )
     case 'missing_media':
       return countMissingMediaReferences(missingMediaGroups.value)
   }

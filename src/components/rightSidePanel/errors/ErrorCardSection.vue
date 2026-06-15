@@ -5,6 +5,7 @@
         type="button"
         class="focus-visible:ring-ring flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-sm border-0 bg-transparent p-0 text-left outline-none focus-visible:ring-1"
         :aria-expanded="!collapse"
+        :aria-controls="bodyId"
         @click="collapse = !collapse"
       >
         <span
@@ -21,6 +22,7 @@
         type="button"
         class="focus-visible:ring-ring flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent p-0 outline-none focus-visible:ring-1"
         :aria-expanded="!collapse"
+        :aria-controls="bodyId"
         :aria-label="
           collapse ? t('rightSidePanel.expand') : t('rightSidePanel.collapse')
         "
@@ -38,7 +40,7 @@
       </button>
     </div>
     <TransitionCollapse>
-      <div v-if="!collapse">
+      <div v-if="!collapse" :id="bodyId">
         <slot />
       </div>
     </TransitionCollapse>
@@ -46,6 +48,7 @@
 </template>
 
 <script setup lang="ts">
+import { useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -63,5 +66,6 @@ const {
 
 const collapse = defineModel<boolean>('collapse', { default: false })
 
+const bodyId = useId()
 const { t } = useI18n()
 </script>
