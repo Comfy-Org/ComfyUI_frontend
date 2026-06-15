@@ -1,3 +1,4 @@
+import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 import type {
   DeviceStats,
   EmbeddingsResponse,
@@ -25,6 +26,7 @@ import type {
 } from './extensionTypes'
 
 export type { ComfyExtension } from './comfy'
+export type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 export type { ComfyApi } from '@/scripts/api'
 export type { ComfyApp } from '@/scripts/app'
 export type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -88,5 +90,9 @@ declare global {
 
     /** For use in tests to track app initialization state */
     __appReadiness?: AppReadiness
+
+    __comfyDesktop2?: ComfyDesktop2Bridge
+    /** Set by Desktop 2 when the hosted server is remote, so download routing through the local download manager is skipped. */
+    __comfyDesktop2Remote?: boolean
   }
 }
