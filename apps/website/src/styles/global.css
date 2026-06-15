@@ -1,6 +1,11 @@
+
+@import 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
+
 @import 'tailwindcss';
 @import '@comfyorg/design-system/css/base.css';
 @import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
 
 /* PP Formula's native vertical metrics place the baseline too high, so caps
    sit in the upper half of the line box. Overriding ascent/descent re-anchors
@@ -235,4 +240,8 @@ video::-webkit-media-controls-panel {
   --site-bg: var(--color-primary-comfy-ink);
   --site-bg-soft: color-mix(in srgb, var(--site-bg) 88%, black 12%);
   --site-border-subtle: rgb(255 255 255 / 0.1);
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
 }

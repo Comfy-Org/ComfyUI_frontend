@@ -8,85 +8,19 @@ import {
 } from '@vueuse/core'
 import { nextTick, onMounted, ref } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
-import { externalLinks, getRoutes } from '../../config/routes'
-import BrandButton from './BrandButton.vue'
-import GitHubStarBadge from './GitHubStarBadge.vue'
-import HeaderMainDesktop from './HeaderMain/HeaderMainDesktop.vue'
+import type { Locale } from '../../../i18n/translations.ts'
+import { t } from '../../../i18n/translations.ts'
+import { externalLinks, getRoutes } from '../../../config/routes.ts'
+import BreadthumbIcon from '../../icons/BreadthumbIcon.vue'
+import BrandButton from '../BrandButton.vue'
+import GitHubStarBadge from '../GitHubStarBadge.vue'
+import HeaderMainDesktop from "./HeaderMainDesktop.vue"
 
 const { locale = 'en', githubStars = '' } = defineProps<{
   locale?: Locale
   githubStars?: string
 }>()
 const routes = getRoutes(locale)
-
-// const navLinks: NavLink[] = [
-//   {
-//     label: t('nav.products', locale),
-//     items: [
-//       { label: t('nav.comfyLocal', locale), href: routes.download },
-//       { label: t('nav.comfyCloud', locale), href: routes.cloud },
-//       {
-//         label: t('nav.comfyApi', locale),
-//         href: routes.api,
-//         badge: t('nav.badgeNew', locale)
-//       },
-//       { label: t('nav.comfyEnterprise', locale), href: routes.cloudEnterprise }
-//     ]
-//   },
-//   { label: t('nav.pricing', locale), href: routes.cloudPricing },
-//   {
-//     label: t('nav.community', locale),
-//     items: [
-//       {
-//         label: t('nav.comfyHub', locale),
-//         href: externalLinks.workflows,
-//         badge: t('nav.badgeNew', locale)
-//       },
-//       { label: t('nav.gallery', locale), href: routes.gallery }
-//     ]
-//   },
-//   {
-//     label: t('nav.resources', locale),
-//     items: [
-//       { label: t('nav.learning', locale), href: routes.learning },
-//       {
-//         label: t('nav.blogs', locale),
-//         href: externalLinks.blog,
-//         external: true
-//       },
-//       {
-//         label: t('nav.github', locale),
-//         href: externalLinks.github,
-//         external: true
-//       },
-//       {
-//         label: t('nav.discord', locale),
-//         href: externalLinks.discord,
-//         external: true
-//       },
-//       {
-//         label: t('nav.docs', locale),
-//         href: externalLinks.docs,
-//         external: true
-//       },
-//       {
-//         label: t('nav.youtube', locale),
-//         href: externalLinks.youtube,
-//         external: true
-//       }
-//     ]
-//   },
-//   {
-//     label: t('nav.company', locale),
-//     items: [
-//       { label: t('nav.aboutUs', locale), href: routes.about },
-//       { label: t('nav.careers', locale), href: routes.careers },
-//       { label: t('nav.customerStories', locale), href: routes.customers }
-//     ]
-//   }
-// ]
 
 const ctaButtons = [
   {
@@ -214,12 +148,9 @@ onMounted(() => {
       :aria-expanded="mobileMenuOpen"
       @click="mobileMenuOpen = !mobileMenuOpen"
     >
-      <img
+      <BreadthumbIcon
         v-if="!mobileMenuOpen"
-        src="/icons/breadthumb.svg"
-        alt=""
-        class="h-3"
-        aria-hidden="true"
+        class="h-3 w-5 text-primary-comfy-ink"
       />
       <img
         v-else
