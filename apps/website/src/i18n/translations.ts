@@ -1837,6 +1837,10 @@ const translations = {
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
   'nav.close': { en: 'Close', 'zh-CN': '关闭' },
+  'nav.mobileMenuDescription': {
+    en: 'Site navigation and quick links',
+    'zh-CN': '网站导航和快速链接'
+  },
   'nav.back': { en: 'BACK', 'zh-CN': '返回' },
   'nav.badgeNew': { en: 'NEW', 'zh-CN': '新' },
   // Column headers used in HeaderMainDesktop dropdowns

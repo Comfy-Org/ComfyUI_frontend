@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
+import { getRoutes } from '../../../config/routes.ts'
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import {
@@ -12,6 +13,7 @@ import {
 } from '../../ui/sheet/index.ts'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const routes = getRoutes(locale)
 </script>
 
 <template>
@@ -24,15 +26,23 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       </SheetTrigger>
       <SheetContent
         side="right"
-        class="w-full sm:max-w-none"
+        class="w-full px-6 py-5 sm:max-w-none"
         :close-label="t('nav.close', locale)"
       >
-        <SheetHeader>
-          <SheetTitle>Test sheet</SheetTitle>
+        <SheetHeader class="sr-only">
+          <SheetTitle>{{ t('nav.menu', locale) }}</SheetTitle>
           <SheetDescription>
-            Verifies shadcn Sheet renders with the website design-system tokens.
+            {{ t('nav.mobileMenuDescription', locale) }}
           </SheetDescription>
         </SheetHeader>
+
+        <a
+          :href="routes.home"
+          class="inline-block shrink-0"
+          aria-label="Comfy home"
+        >
+          <img src="/icons/logomark.svg" alt="Comfy" class="h-11 w-auto" />
+        </a>
       </SheetContent>
     </Sheet>
   </div>
