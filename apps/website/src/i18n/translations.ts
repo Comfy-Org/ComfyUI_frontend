@@ -174,16 +174,16 @@ const translations = {
     'zh-CN': '掌控每个模型、每个节点、每个步骤、每个输出。'
   },
   'products.local.title': {
-    en: 'Comfy\nLocal',
-    'zh-CN': 'Comfy\n本地版'
+    en: 'Comfy\nDesktop',
+    'zh-CN': 'Comfy\n桌面版'
   },
   'products.local.description': {
     en: 'Run ComfyUI on your own hardware.',
     'zh-CN': '在您自己的硬件上运行 ComfyUI。'
   },
   'products.local.cta': {
-    en: 'SEE LOCAL FEATURES',
-    'zh-CN': '查看本地版属性'
+    en: 'SEE DESKTOP FEATURES',
+    'zh-CN': '查看桌面版属性'
   },
   'products.cloud.title': {
     en: 'Comfy\nCloud',
@@ -1057,18 +1057,18 @@ const translations = {
     'zh-CN': 'Cloud 与本地运行 ComfyUI 有什么区别？'
   },
   'cloud.faq.2.a': {
-    en: 'Cloud runs on powerful remote GPUs and is accessible from any device. Local runs entirely on your computer, giving you full control and offline use.',
+    en: 'Cloud runs on powerful remote GPUs and is accessible from any device. Comfy Desktop runs entirely on your computer, giving you full control and offline use.',
     'zh-CN':
-      'Cloud 在强大的远程 GPU 上运行，可从任何设备访问。本地版完全在您的电脑上运行，提供完全控制和离线使用。'
+      'Cloud 在强大的远程 GPU 上运行，可从任何设备访问。Comfy 桌面版完全在您的电脑上运行，提供完全控制和离线使用。'
   },
   'cloud.faq.3.q': {
-    en: 'Which version should I choose, Comfy Cloud or local ComfyUI (self-hosted)?',
-    'zh-CN': '我应该选择 Comfy Cloud 还是本地 ComfyUI（自托管）？'
+    en: 'Which version should I choose, Comfy Cloud or Comfy Desktop?',
+    'zh-CN': '我应该选择 Comfy Cloud 还是 Comfy 桌面版？'
   },
   'cloud.faq.3.a': {
-    en: "Comfy Cloud has zero setup, is easy to share with your team, and is faster than most GPUs you can run on a desktop workstation. You can immediately run the best models and workflows from the community on Comfy Cloud.\nLocal ComfyUI is infinitely customizable, works offline, and you don't need to worry about queue times. However, depending on what you want to create, you might need to have a good GPU and some amount of technical knowledge to install community-created custom nodes.",
+    en: "Comfy Cloud has zero setup, is easy to share with your team, and is faster than most GPUs you can run on a desktop workstation. You can immediately run the best models and workflows from the community on Comfy Cloud.\nComfy Desktop is infinitely customizable, works offline, and you don't need to worry about queue times. However, depending on what you want to create, you might need to have a good GPU and some amount of technical knowledge to install community-created custom nodes.",
     'zh-CN':
-      'Comfy Cloud 无需任何设置，方便与团队共享，比大多数桌面工作站 GPU 更快。您可以立即在 Comfy Cloud 上运行社区中最好的模型和工作流。\n本地 ComfyUI 可以无限定制，支持离线工作，无需担心排队时间。但根据您的创作需求，可能需要一块好的 GPU 以及一定的技术知识来安装社区创建的自定义节点。'
+      'Comfy Cloud 无需任何设置，方便与团队共享，比大多数桌面工作站 GPU 更快。您可以立即在 Comfy Cloud 上运行社区中最好的模型和工作流。\nComfy 桌面版可以无限定制，支持离线工作，无需担心排队时间。但根据您的创作需求，可能需要一块好的 GPU 以及一定的技术知识来安装社区创建的自定义节点。'
   },
   'cloud.faq.4.q': {
     en: 'Do I need a GPU or a strong computer to use Comfy Cloud?',
@@ -1091,9 +1091,9 @@ const translations = {
     'zh-CN': '我可以在 Comfy Cloud 上使用现有的工作流吗？'
   },
   'cloud.faq.6.a': {
-    en: 'Yes, your workflows work across Local and Cloud. Just note that only the most popular custom nodes are supported for now, but more will be added soon.',
+    en: 'Yes, your workflows work across Desktop and Cloud. Just note that only the most popular custom nodes are supported for now, but more will be added soon.',
     'zh-CN':
-      '可以，您的工作流在本地和云端都能使用。请注意，目前仅支持最热门的自定义节点，但很快会添加更多。'
+      '可以，您的工作流在桌面版和云端都能使用。请注意，目前仅支持最热门的自定义节点，但很快会添加更多。'
   },
   'cloud.faq.7.q': {
     en: 'Are all ComfyUI extensions and custom nodes supported?',
@@ -1145,9 +1145,9 @@ const translations = {
     'zh-CN': '合作伙伴节点积分和我的 Cloud 订阅有什么区别？'
   },
   'cloud.faq.12.a': {
-    en: 'Comfy Cloud has a credit system that is used for both Partner nodes (formerly API nodes) and running workflows on cloud.\n1. Partner Nodes (Pay-as-you-go): These nodes (formerly called API nodes) run third-party models via API calls and can be used on both Comfy Cloud and Local/Self-Hosted ComfyUI. Each node has its own usage cost, determined by the API provider, and we directly match their pricing.\n2. Running workflows on cloud: Exclusive to Comfy Cloud, you get a set amount of credits per month, with the amount differing based on your plan. More credits can be topped up anytime. Credits are only used up for GPU time while workflows are running — not while editing or building them. No idle costs, no setup, and no infrastructure to manage.',
+    en: 'Comfy Cloud has a credit system that is used for both Partner nodes (formerly API nodes) and running workflows on cloud.\n1. Partner Nodes (Pay-as-you-go): These nodes (formerly called API nodes) run third-party models via API calls and can be used on both Comfy Cloud and Comfy Desktop. Each node has its own usage cost, determined by the API provider, and we directly match their pricing.\n2. Running workflows on cloud: Exclusive to Comfy Cloud, you get a set amount of credits per month, with the amount differing based on your plan. More credits can be topped up anytime. Credits are only used up for GPU time while workflows are running — not while editing or building them. No idle costs, no setup, and no infrastructure to manage.',
     'zh-CN':
-      'Comfy Cloud 有一个积分系统，用于合作伙伴节点（原 API 节点）和在云端运行工作流。\n1. 合作伙伴节点（按需付费）：这些节点（原称 API 节点）通过 API 调用运行第三方模型，可在 Comfy Cloud 和本地/自托管 ComfyUI 上使用。每个节点有其自身的使用成本，由 API 提供商决定，我们直接匹配他们的定价。\n2. 在云端运行工作流：Comfy Cloud 专属，您每月获得一定数量的积分，数量根据您的计划而不同。积分可随时充值。积分仅在工作流运行时用于 GPU 时间——编辑或构建时不消耗。无闲置成本，无需设置，无需管理基础设施。'
+      'Comfy Cloud 有一个积分系统，用于合作伙伴节点（原 API 节点）和在云端运行工作流。\n1. 合作伙伴节点（按需付费）：这些节点（原称 API 节点）通过 API 调用运行第三方模型，可在 Comfy Cloud 和 Comfy 桌面版上使用。每个节点有其自身的使用成本，由 API 提供商决定，我们直接匹配他们的定价。\n2. 在云端运行工作流：Comfy Cloud 专属，您每月获得一定数量的积分，数量根据您的计划而不同。积分可随时充值。积分仅在工作流运行时用于 GPU 时间——编辑或构建时不消耗。无闲置成本，无需设置，无需管理基础设施。'
   },
   'cloud.faq.13.q': {
     en: 'Can I cancel my subscription?',
@@ -1411,9 +1411,9 @@ const translations = {
     'zh-CN': '合作伙伴节点'
   },
   'pricing.included.feature8.description': {
-    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across Comfy Cloud and local ComfyUI. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
+    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across Comfy Cloud and Comfy Desktop. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
     'zh-CN':
-      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 Comfy Cloud 和本地 ComfyUI 间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
+      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 Comfy Cloud 和 Comfy 桌面版间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
   },
   'pricing.included.feature9.title': {
     en: 'Job queue',

@@ -885,6 +885,8 @@
     "RECRAFT_V3_STYLE": "سبک Recraft V3",
     "RETARGET_TASK_ID": "شناسه وظیفه Retarget",
     "RIG_TASK_ID": "شناسه وظیفه Rig",
+    "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
+    "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "نمونه‌گیر",
     "SIGMAS": "سیگماها",
