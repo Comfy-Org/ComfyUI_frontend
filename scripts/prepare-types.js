@@ -16,7 +16,10 @@ const typesPackage = {
   homepage: mainPackage.homepage,
   description: `TypeScript definitions for ${mainPackage.name}`,
   license: mainPackage.license,
-  dependencies: {},
+  dependencies: {
+    '@comfyorg/comfyui-desktop-bridge-types':
+      mainPackage.dependencies['@comfyorg/comfyui-desktop-bridge-types']
+  },
   peerDependencies: {
     vue: mainPackage.dependencies.vue,
     zod: mainPackage.dependencies.zod
@@ -34,5 +37,3 @@ fs.writeFileSync(
   path.join(distDir, 'package.json'),
   JSON.stringify(typesPackage, null, 2)
 )
-
-console.log('Types package.json have been prepared in the dist directory')
