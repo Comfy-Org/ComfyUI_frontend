@@ -1,7 +1,7 @@
 export type NavColumnItem = {
   label: string
   href: string
-  badge?: string
+  badge?: 'new'
   external?: boolean
 }
 
@@ -57,10 +57,11 @@ export const mainNavigation: NavItem[] = [
       {
         header: 'Features',
         items: [
-          { label: 'MCP Server', href: '#', badge: 'new' },
-          { label: 'App Mode', href: '#' },
-          { label: 'Agent Skills', href: '#' },
-          { label: 'Docs', href: '#' }
+          // TODO: no page yet — re-enable when landing pages ship
+          // { label: 'MCP Server', href: '#', badge: 'new' },
+          // { label: 'App Mode', href: '#' },
+          // { label: 'Agent Skills', href: '#' },
+          { label: 'Docs', href: 'https://docs.comfy.org/', external: true }
         ]
       }
     ]
@@ -83,28 +84,46 @@ export const mainNavigation: NavItem[] = [
       {
         header: 'Programs',
         items: [
-          { label: 'Comfy Hub', href: '#' },
-          { label: 'Gallery', href: '#' },
-          { label: 'Affiliate Program', href: '#', badge: 'new' },
-          { label: 'Education Program', href: '#', badge: 'new' }
+          { label: 'Comfy Hub', href: 'https://comfy.org/workflows' },
+          { label: 'Gallery', href: '/gallery' }
         ]
       },
       {
         header: 'Connect',
         items: [
-          { label: 'Discord', href: '#', external: true },
-          { label: 'Reddit', href: '#', external: true },
-          { label: 'Youtube', href: '#', external: true },
-          { label: 'X', href: '#', external: true },
-          { label: 'Instagram', href: '#', external: true }
+          {
+            label: 'Discord',
+            href: 'https://discord.com/invite/comfyorg',
+            external: true
+          },
+          {
+            label: 'GitHub',
+            href: 'https://github.com/Comfy-Org/ComfyUI',
+            external: true
+          },
+          {
+            label: 'Youtube',
+            href: 'https://www.youtube.com/@ComfyOrg',
+            external: true
+          },
+          {
+            label: 'Reddit',
+            href: 'https://www.reddit.com/r/comfyui/',
+            external: true
+          },
+          { label: 'X', href: 'https://x.com/ComfyUI', external: true },
+          {
+            label: 'Instagram',
+            href: 'https://www.instagram.com/comfyui/',
+            external: true
+          }
         ]
       },
       {
         header: 'Solutions',
         items: [
-          { label: 'VFX', href: '#', badge: 'new' },
-          { label: 'Advertising', href: '#', badge: 'new' },
-          { label: 'Learning', href: '#', badge: 'new' }
+          { label: 'Affiliates', href: '/affiliates', badge: 'new' },
+          { label: 'Learning', href: '/learning', badge: 'new' }
         ]
       }
     ]
@@ -126,18 +145,22 @@ export const mainNavigation: NavItem[] = [
       {
         header: 'Company',
         items: [
-          { label: 'About us', href: '#' },
-          { label: 'Careers', href: '#' }
+          { label: 'About us', href: '/about' },
+          { label: 'Careers', href: '/careers' }
         ]
       },
       {
         header: 'More',
         items: [
-          { label: 'Customer Stories', href: '#' },
-          { label: 'Brand', href: '#' },
-          { label: 'Contact', href: '#' },
-          { label: 'Drops', href: '#', badge: 'new' },
-          { label: 'News', href: '#', badge: 'new' }
+          { label: 'Customer Stories', href: '/customers' },
+          // TODO: no /brand page yet
+          // { label: 'Brand', href: '#' },
+          { label: 'Contact', href: '/contact' },
+          {
+            label: 'Blog',
+            href: 'https://blog.comfy.org/',
+            external: true
+          }
         ]
       }
     ]

@@ -3,6 +3,7 @@ import Badge from '@/components/common/Badge.vue'
 import { NavigationMenuLink } from '@/components/ui/navigation-menu'
 
 import type { NavColumn } from '../../../data/mainNavigation'
+import { ArrowUpRight } from '@lucide/vue'
 
 defineProps<{ column: NavColumn }>()
 </script>
@@ -23,6 +24,10 @@ defineProps<{ column: NavColumn }>()
             <Badge v-if="item.badge" size="xs" variant="accent">
               {{ item.badge }}
             </Badge>
+            <ArrowUpRight
+              v-if="item.external"
+              class="text-primary-comfy-yellow size-4"
+            />
           </a>
         </NavigationMenuLink>
       </li>
