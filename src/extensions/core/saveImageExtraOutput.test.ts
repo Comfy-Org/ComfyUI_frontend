@@ -69,7 +69,25 @@ describe('Comfy.SaveImageExtraOutput', () => {
     app.graph = graph
   })
 
-  it.each(['SaveImageAdvanced', 'SaveAudioAdvanced'])(
+  it.each([
+    'SaveImage',
+    'SaveImageAdvanced',
+    'SaveSVGNode',
+    'SaveVideo',
+    'SaveAnimatedWEBP',
+    'SaveWEBM',
+    'SaveAudio',
+    'SaveAudioMP3',
+    'SaveAudioOpus',
+    'SaveAudioAdvanced',
+    'SaveGLB',
+    'SaveAnimatedPNG',
+    'CLIPSave',
+    'VAESave',
+    'ModelSave',
+    'LoraSave',
+    'SaveLatent'
+  ])(
     'resolves text replacements in the filename_prefix of %s on serialize',
     async (nodeName) => {
       const widget = await createNodeWithFilenamePrefix(
