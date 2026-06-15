@@ -700,6 +700,36 @@
       }
     }
   },
+  "BriaVideoReplaceBackground": {
+    "description": "Remplacez l'arrière-plan d'une vidéo par une image ou une vidéo fournie à l'aide de Bria. La sortie conserve la résolution et la fréquence d'images du premier plan ; un arrière-plan avec un autre format d'image sera étiré pour s'adapter, donc faites correspondre le format pour éviter toute déformation.",
+    "display_name": "Bria Video Remplacer l'arrière-plan",
+    "inputs": {
+      "background_image": {
+        "name": "image d'arrière-plan",
+        "tooltip": "Image d'arrière-plan à placer derrière le premier plan. Fournissez soit une image d'arrière-plan, soit une vidéo d'arrière-plan, mais pas les deux."
+      },
+      "background_video": {
+        "name": "vidéo d'arrière-plan",
+        "tooltip": "Vidéo d'arrière-plan à placer derrière le premier plan. Fournissez soit une image d'arrière-plan, soit une vidéo d'arrière-plan, mais pas les deux."
+      },
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "La graine contrôle si le nœud doit être relancé ; les résultats restent non déterministes quel que soit la graine."
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Vidéo de premier plan dont l'arrière-plan est remplacé."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Générez une vidéo avec Seedance 2.0 à partir d'une image de première image et, optionnellement, d'une image de dernière image.",
     "display_name": "ByteDance Seedance 2.0 Première-Dernière-Image vers Vidéo",
@@ -15821,6 +15851,98 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2KeyframeNode": {
+    "description": "Ancrez une image de guidage à un moment de la vidéo d'entrée (source), afin qu'Aleph2 oriente l'édition à ce moment précis de votre séquence. Connectez ce nœud à l'entrée 'keyframes' du nœud Runway Aleph2 Vidéo vers Vidéo ; enchaînez-en plusieurs (jusqu'à 5) via l'entrée optionnelle 'keyframes' ci-dessous.",
+    "display_name": "Runway Aleph2 Image-clé",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "L'image de guidage à appliquer au moment choisi de la vidéo d'entrée."
+      },
+      "keyframes": {
+        "name": "images-clés",
+        "tooltip": "Images-clés précédentes optionnelles à enchaîner avec celle-ci."
+      },
+      "timing": {
+        "name": "synchronisation",
+        "tooltip": "Comment placer cette image sur la timeline de la vidéo d'entrée."
+      },
+      "timing_seconds": {
+        "name": "secondes"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images-clés",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "Ancrez une image de guidage à un moment de la vidéo de sortie (résultat), pour guider l'apparence de la vidéo éditée à ce moment. Connectez ce nœud à l'entrée 'prompt_images' du nœud Runway Aleph2 Vidéo vers Vidéo ; enchaînez-en plusieurs (jusqu'à 5) via l'entrée optionnelle 'prompt_images' ci-dessous.",
+    "display_name": "Runway Aleph2 Image de prompt",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "L'image de guidage à placer au moment choisi de la vidéo de sortie."
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "Comment placer cette image sur la timeline de la vidéo de sortie."
+      },
+      "position_seconds": {
+        "name": "secondes"
+      },
+      "prompt_images": {
+        "name": "images de prompt",
+        "tooltip": "Images de prompt précédentes optionnelles à enchaîner avec celle-ci."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images de prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "Modifiez une vidéo à l’aide d’une invite textuelle avec le modèle Aleph2 de Runway. Aleph2 transforme votre séquence (restylisation, rééclairage, ajout ou suppression d’éléments, changement de point de vue) tout en conservant le mouvement et le timing d’origine ; la résolution de sortie correspond à celle de la vidéo d’entrée, qui doit durer entre 2 et 30 secondes à 30 ips ou moins. Vous pouvez orienter la modification à l’aide de keyframes (ancrées à la vidéo d’entrée) ou d’images d’invite (ancrées à la vidéo de sortie) – utilisez l’un ou l’autre, pas les deux.",
+    "display_name": "Runway Aleph2 Vidéo vers Vidéo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après génération"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Images de guidage ancrées à la vidéo d’entrée, provenant des nœuds Aleph2 Keyframe (jusqu’à 5). Utilisez les keyframes ou les images d’invite, pas les deux."
+      },
+      "prompt": {
+        "name": "invite",
+        "tooltip": "Décrit ce qui doit apparaître dans la sortie (1 à 1000 caractères)."
+      },
+      "prompt_images": {
+        "name": "images d’invite",
+        "tooltip": "Images de guidage ancrées à la vidéo de sortie, provenant des nœuds Aleph2 Prompt Image (jusqu’à 5). Utilisez les keyframes ou les images d’invite, pas les deux."
+      },
+      "public_figure_threshold": {
+        "name": "seuil de figure publique",
+        "tooltip": "Modération de contenu pour les figures publiques reconnaissables."
+      },
+      "seed": {
+        "name": "graine",
+        "tooltip": "Graine aléatoire pour la génération"
+      },
+      "video": {
+        "name": "vidéo",
+        "tooltip": "Vidéo d’entrée à modifier. Doit durer entre 2 et 30 secondes à 30 ips ou moins."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

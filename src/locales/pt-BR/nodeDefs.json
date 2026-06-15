@@ -700,6 +700,36 @@
       }
     }
   },
+  "BriaVideoReplaceBackground": {
+    "description": "Substitua o fundo de um vídeo por uma imagem ou vídeo fornecido usando Bria. A saída mantém a resolução e taxa de quadros do primeiro plano; um fundo com proporção diferente será esticado para encaixar, então combine as proporções para evitar distorções.",
+    "display_name": "Bria Video Substituir Fundo",
+    "inputs": {
+      "background_image": {
+        "name": "imagem_de_fundo",
+        "tooltip": "Imagem de fundo para compor atrás do primeiro plano. Forneça uma imagem de fundo ou um vídeo de fundo, não ambos."
+      },
+      "background_video": {
+        "name": "vídeo_de_fundo",
+        "tooltip": "Vídeo de fundo para compor atrás do primeiro plano. Forneça uma imagem de fundo ou um vídeo de fundo, não ambos."
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo de primeiro plano cujo fundo será substituído."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Gere vídeo usando Seedance 2.0 a partir de uma imagem do primeiro frame e, opcionalmente, uma imagem do último frame.",
     "display_name": "ByteDance Seedance 2.0 Primeiro-Último-Frame para Vídeo",
@@ -15821,6 +15851,98 @@
       },
       "1": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2KeyframeNode": {
+    "description": "Ancore uma imagem de referência a um momento do vídeo de entrada (origem), para que Aleph2 direcione a edição nesse ponto do seu vídeo. Conecte este nó à entrada 'keyframes' do nó Runway Aleph2 Vídeo para Vídeo; encadeie vários juntos (até 5) pela entrada opcional 'keyframes' abaixo.",
+    "display_name": "Runway Aleph2 Quadro-chave",
+    "inputs": {
+      "image": {
+        "name": "imagem",
+        "tooltip": "A imagem de referência a ser aplicada no momento escolhido do vídeo de entrada."
+      },
+      "keyframes": {
+        "name": "quadros-chave",
+        "tooltip": "Quadros-chave anteriores opcionais para encadear com este."
+      },
+      "timing": {
+        "name": "tempo",
+        "tooltip": "Como posicionar esta imagem na linha do tempo do vídeo de entrada."
+      },
+      "timing_seconds": {
+        "name": "segundos"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "quadros-chave",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "Ancore uma imagem de referência a um momento do vídeo de saída (resultado), para guiar como o vídeo editado ficará nesse ponto. Conecte este nó à entrada 'prompt_images' do nó Runway Aleph2 Vídeo para Vídeo; encadeie várias juntas (até 5) pela entrada opcional 'prompt_images' abaixo.",
+    "display_name": "Runway Aleph2 Imagem de Prompt",
+    "inputs": {
+      "image": {
+        "name": "imagem",
+        "tooltip": "A imagem de referência a ser posicionada no momento escolhido do vídeo de saída."
+      },
+      "position": {
+        "name": "posição",
+        "tooltip": "Como posicionar esta imagem na linha do tempo do vídeo de saída."
+      },
+      "position_seconds": {
+        "name": "segundos"
+      },
+      "prompt_images": {
+        "name": "imagens_de_prompt",
+        "tooltip": "Imagens de prompt anteriores opcionais para encadear com esta."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagens_de_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "Edite um vídeo com um prompt de texto usando o modelo Aleph2 da Runway. O Aleph2 transforma sua filmagem (restiliza, reluz, adiciona ou remove elementos, altera o ponto de vista) mantendo o movimento e o tempo originais; a resolução de saída corresponde ao vídeo de entrada, que deve ter entre 2 e 30 segundos a 30 fps ou menos. Opcionalmente, direcione a edição com quadros-chave (ancorados ao vídeo de entrada) ou imagens de prompt (ancoradas ao vídeo de saída) – use um ou outro, não ambos.",
+    "display_name": "Runway Aleph2 Vídeo para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "keyframes": {
+        "name": "quadros-chave",
+        "tooltip": "Imagens de orientação ancoradas ao vídeo de entrada, de nós Aleph2 Keyframe (até 5). Use quadros-chave ou imagens de prompt, não ambos."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descreve o que deve aparecer na saída (1-1000 caracteres)."
+      },
+      "prompt_images": {
+        "name": "imagens de prompt",
+        "tooltip": "Imagens de orientação ancoradas ao vídeo de saída, de nós Aleph2 Prompt Image (até 5). Use quadros-chave ou imagens de prompt, não ambos."
+      },
+      "public_figure_threshold": {
+        "name": "limite de figura pública",
+        "tooltip": "Moderação de conteúdo para figuras públicas reconhecíveis."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente aleatória para geração"
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo de entrada para editar. Deve ter entre 2 e 30 segundos a 30 fps ou menos."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }

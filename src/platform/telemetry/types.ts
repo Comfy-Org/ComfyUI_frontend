@@ -12,6 +12,7 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
+import type { AppMode } from '@/composables/useAppMode'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -70,8 +71,9 @@ export interface RunButtonProperties {
   has_toolkit_nodes: boolean
   toolkit_node_names: string[]
   trigger_source?: ExecutionTriggerSource
-  view_mode?: string
-  is_app_mode?: boolean
+  view_mode: AppMode
+  is_app_mode: boolean
+  dock_state: ActionbarDockState
 }
 
 /**
@@ -120,7 +122,11 @@ export interface ExecutionSuccessMetadata {
 export interface SharedWorkflowRunMetadata {
   job_id: string
   share_id: string
+  view_mode: AppMode
+  is_app_mode: boolean
 }
+
+export type ActionbarDockState = 'docked' | 'floating'
 
 /**
  * Template metadata for workflow tracking
@@ -197,11 +203,15 @@ export interface ShareFlowMetadata {
   step: ShareFlowStep
   source?: 'app_mode' | 'graph_mode'
   share_id?: string
+  view_mode: AppMode
+  is_app_mode: boolean
 }
 
 export interface ShareLinkOpenedMetadata {
   share_id: string
   is_authenticated: boolean
+  view_mode: AppMode
+  is_app_mode: boolean
 }
 
 /**
@@ -241,6 +251,20 @@ export interface PageVisibilityMetadata {
  */
 export interface TabCountMetadata {
   tab_count: number
+}
+
+/**
+ * Shell layout snapshot, sent once per session when the app is ready
+ */
+export interface ShellLayoutMetadata {
+  view_mode: AppMode
+  is_app_mode: boolean
+  dock_state: ActionbarDockState
+  actionbar_position: string
+  active_sidebar_tab: string | null
+  right_side_panel_open: boolean
+  bottom_panel_open: boolean
+  open_workflow_tabs: number
 }
 
 /**
@@ -327,8 +351,8 @@ export interface TemplateFilterMetadata {
  * UI button click tracking metadata
  */
 export interface UiButtonClickMetadata {
-  /** Canonical identifier for the button (e.g., "comfy_logo") */
   button_id: string
+  element_group: string
 }
 
 /**
@@ -498,6 +522,9 @@ export interface TelemetryProvider {
   // Tab tracking events
   trackTabCount?(metadata: TabCountMetadata): void
 
+  // Shell layout snapshot events
+  trackShellLayout?(metadata: ShellLayoutMetadata): void
+
   // Node search analytics events
   trackNodeSearch?(metadata: NodeSearchMetadata): void
   trackNodeSearchResultSelected?(metadata: NodeSearchResultMetadata): void
@@ -593,6 +620,9 @@ export const TelemetryEvents = {
   // Tab Tracking
   TAB_COUNT_TRACKING: 'app:tab_count_tracking',
 
+  // Shell Layout
+  SHELL_LAYOUT: 'app:shell_layout',
+
   // Node Search Analytics
   NODE_SEARCH: 'app:node_search',
   NODE_SEARCH_RESULT_SELECTED: 'app:node_search_result_selected',
@@ -655,6 +685,7 @@ export type TelemetryEventProperties =
   | TemplateLibraryClosedMetadata
   | PageVisibilityMetadata
   | TabCountMetadata
+  | ShellLayoutMetadata
   | NodeSearchMetadata
   | NodeSearchResultMetadata
   | SearchQueryMetadata
