@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import type { PromptResponse } from '@/schemas/apiSchema'
+
 import {
   canRoutePreconditionToModal,
   isAccountPreconditionCatalogId,
@@ -138,6 +140,13 @@ describe('resolvePromptResponsePrecondition', () => {
   it('returns undefined for an ordinary string error', () => {
     expect(
       resolvePromptResponsePrecondition('The server exploded')
+    ).toBeUndefined()
+  })
+
+  it('returns undefined when the response has no error field', () => {
+    expect(resolvePromptResponsePrecondition(undefined)).toBeUndefined()
+    expect(
+      resolvePromptResponsePrecondition({} as PromptResponse['error'])
     ).toBeUndefined()
   })
 })

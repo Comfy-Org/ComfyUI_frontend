@@ -69,10 +69,10 @@ export function canRoutePreconditionToModal(
     : true
 }
 
-// Normalizes a /prompt response error, which can be a bare string or a
-// structured payload, into the account precondition it represents.
+// The /prompt body is unvalidated JSON, so the error field may be a string, a
+// structured payload, or absent (e.g. the 403 `{ message }` shape).
 export function resolvePromptResponsePrecondition(
-  responseError: PromptResponse['error']
+  responseError: PromptResponse['error'] | undefined
 ): AccountPrecondition | undefined {
   if (typeof responseError === 'string') {
     return resolveAccountPrecondition({
@@ -80,9 +80,10 @@ export function resolvePromptResponsePrecondition(
       exceptionMessage: responseError
     })
   }
+  if (!responseError || typeof responseError !== 'object') return undefined
   return resolveAccountPrecondition({
-    exceptionType: responseError.type,
-    exceptionMessage: responseError.message
+    exceptionType: responseError.type ?? '',
+    exceptionMessage: responseError.message ?? ''
   })
 }
 
