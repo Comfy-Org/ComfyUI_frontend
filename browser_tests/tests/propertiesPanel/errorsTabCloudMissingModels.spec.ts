@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import type {
   Asset,
@@ -78,15 +79,23 @@ function filterAssetsByRequest(
     : [...assets]
 }
 
+async function enableMissingModelImportFeatures(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const api = window.app!.api
+    api.serverFeatureFlags.value = {
+      ...api.serverFeatureFlags.value,
+      model_upload_button_enabled: true,
+      private_models_enabled: true
+    }
+  })
+}
+
 test.describe(
   'Errors tab - Cloud missing models',
   { tag: ['@cloud', '@vue-nodes'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.featureFlags.setServerFlags({
-        model_upload_button_enabled: true,
-        private_models_enabled: true
-      })
+      await enableMissingModelImportFeatures(comfyPage.page)
       await comfyPage.settings.setSetting(
         'Comfy.RightSidePanel.ShowErrorsTab',
         true
