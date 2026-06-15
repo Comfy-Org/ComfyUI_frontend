@@ -12,7 +12,7 @@
             : t('rightSidePanel.missingModels.expandNodes')
         "
         :aria-expanded="expanded"
-        class="h-8 w-4 shrink-0 p-0 hover:bg-transparent"
+        class="h-8 w-4 shrink-0 p-0 hover:bg-transparent focus-visible:ring-inset"
         @click="handleToggleExpand"
       >
         <i
@@ -32,7 +32,7 @@
             v-if="hasModelLabelControl"
             ref="modelLabelControl"
             type="button"
-            class="m-0 min-w-0 cursor-pointer appearance-none border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
+            class="focus-visible:ring-ring m-0 min-w-0 cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
             :title="displayModelName"
             @click="handleModelLabelClick"
           >
@@ -55,7 +55,7 @@
           <Button
             variant="textonly"
             size="icon-sm"
-            class="size-6 shrink-0 text-muted-foreground hover:bg-transparent hover:text-base-foreground"
+            class="size-6 shrink-0 text-muted-foreground hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
             :aria-label="linkLabel"
             :title="linkLabel"
             @click="copyModelLink"
@@ -82,7 +82,7 @@
           data-testid="missing-model-import"
           variant="secondary"
           size="sm"
-          class="shrink-0"
+          class="shrink-0 focus-visible:ring-inset"
           @click="showUploadDialog"
         >
           {{ t('g.import') }}
@@ -123,7 +123,7 @@
           data-testid="missing-model-download"
           variant="secondary"
           size="sm"
-          class="shrink-0"
+          class="shrink-0 focus-visible:ring-inset"
           :aria-label="`${t('g.download')} ${model.name}`"
           @click="handleDownload"
         >
@@ -137,7 +137,7 @@
         variant="textonly"
         size="icon-sm"
         :aria-label="t('rightSidePanel.missingModels.locateNode')"
-        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
         @click="handleLocatePrimary"
       >
         <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
@@ -162,7 +162,7 @@
           <div class="flex min-h-8 min-w-0 items-center gap-2">
             <button
               type="button"
-              class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-xs/tight font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
+              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/tight font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
               @click="emit('locateModel', String(ref.nodeId))"
             >
               {{
@@ -174,7 +174,7 @@
               variant="textonly"
               size="icon-sm"
               :aria-label="t('rightSidePanel.missingModels.locateNode')"
-              class="ml-auto size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+              class="ml-auto size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
               @click="emit('locateModel', String(ref.nodeId))"
             >
               <i aria-hidden="true" class="icon-[lucide--locate] size-4" />

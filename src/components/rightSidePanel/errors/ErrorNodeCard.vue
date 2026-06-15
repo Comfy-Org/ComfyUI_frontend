@@ -4,26 +4,28 @@
       v-if="card.nodeId && !compact"
       class="flex min-h-8 flex-wrap items-center gap-2"
     >
-      <button
-        v-if="hasRuntimeError && (card.nodeTitle || card.title)"
-        type="button"
-        class="m-0 min-w-0 flex-1 cursor-pointer appearance-none truncate border-0 bg-transparent p-0 text-left text-xs font-normal text-base-foreground outline-none focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
-        @click="handleLocateNode"
-      >
-        {{ card.nodeTitle || card.title }}
-      </button>
-      <span
-        v-else-if="card.nodeTitle || card.title"
-        class="flex-1 truncate text-xs font-normal text-base-foreground"
-      >
-        {{ card.nodeTitle || card.title }}
+      <span class="flex min-w-0 flex-1">
+        <button
+          v-if="hasRuntimeError && (card.nodeTitle || card.title)"
+          type="button"
+          class="focus-visible:ring-ring m-0 max-w-full min-w-0 cursor-pointer appearance-none truncate rounded-sm border-0 bg-transparent p-0 text-left text-xs font-normal text-base-foreground outline-none focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
+          @click="handleLocateNode"
+        >
+          {{ card.nodeTitle || card.title }}
+        </button>
+        <span
+          v-else-if="card.nodeTitle || card.title"
+          class="max-w-full min-w-0 truncate text-xs font-normal text-base-foreground"
+        >
+          {{ card.nodeTitle || card.title }}
+        </span>
       </span>
       <div class="flex shrink-0 items-center">
         <Button
           v-if="card.isSubgraphNode"
           variant="secondary"
           size="sm"
-          class="shrink-0"
+          class="shrink-0 focus-visible:ring-inset"
           @click.stop="handleEnterSubgraph"
         >
           {{ t('rightSidePanel.enterSubgraph') }}
@@ -34,7 +36,7 @@
           size="icon-sm"
           :class="
             cn(
-              'size-8 shrink-0 text-muted-foreground hover:text-base-foreground',
+              'size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset',
               runtimeDetailsExpanded &&
                 'bg-secondary-background-selected text-base-foreground hover:bg-secondary-background-selected'
             )
@@ -49,7 +51,7 @@
         <Button
           variant="textonly"
           size="icon-sm"
-          class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+          class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
           :aria-label="t('rightSidePanel.locateNode')"
           @click.stop="handleLocateNode"
         >
@@ -81,7 +83,7 @@
             <button
               v-if="card.nodeId"
               type="button"
-              class="m-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none"
+              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
               @click="handleLocateNode"
             >
               {{ getInlineItemLabel(error) }}
@@ -131,7 +133,7 @@
                   <Button
                     variant="textonly"
                     size="icon-sm"
-                    class="size-7 shrink-0 text-muted-foreground hover:text-base-foreground"
+                    class="size-7 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
                     :aria-label="t('g.copy')"
                     data-testid="error-card-copy"
                     @click="handleCopyError(idx)"
@@ -155,7 +157,7 @@
                   v-tooltip.top="t('rightSidePanel.getHelpTooltip')"
                   variant="textonly"
                   size="sm"
-                  class="justify-start gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground"
+                  class="justify-start gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
                   @click="handleGetHelp"
                 >
                   <i class="icon-[lucide--external-link] size-4" />
@@ -165,7 +167,7 @@
                   v-tooltip.top="t('rightSidePanel.findOnGithubTooltip')"
                   variant="textonly"
                   size="sm"
-                  class="justify-end gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground"
+                  class="justify-end gap-1 px-0 text-xs hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
                   data-testid="error-card-find-on-github"
                   @click="handleCheckGithub(error)"
                 >

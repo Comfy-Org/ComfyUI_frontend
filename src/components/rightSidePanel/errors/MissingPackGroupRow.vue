@@ -12,7 +12,7 @@
             : t('rightSidePanel.missingNodePacks.expand')
         "
         :aria-expanded="expanded"
-        class="h-8 w-4 shrink-0 p-0 hover:bg-transparent"
+        class="h-8 w-4 shrink-0 p-0 hover:bg-transparent focus-visible:ring-inset"
         @click="toggleExpand"
       >
         <i
@@ -80,7 +80,7 @@
             v-if="showInfoButton && group.packId !== null"
             variant="textonly"
             size="icon-sm"
-            class="size-6 shrink-0 text-muted-foreground hover:bg-transparent hover:text-base-foreground"
+            class="size-6 shrink-0 text-muted-foreground hover:bg-transparent hover:text-base-foreground focus-visible:ring-inset"
             :aria-label="t('rightSidePanel.missingNodePacks.viewInManager')"
             @click="emit('openManagerInfo', group.packId ?? '')"
           >
@@ -99,7 +99,7 @@
         <Button
           variant="secondary"
           size="sm"
-          class="shrink-0"
+          class="shrink-0 focus-visible:ring-inset"
           :disabled="isPackInstalled || isInstalling"
           @click="handlePackInstallClick"
         >
@@ -133,7 +133,7 @@
         <Button
           variant="secondary"
           size="sm"
-          class="shrink-0"
+          class="shrink-0 focus-visible:ring-inset"
           @click="
             openManager({
               initialTab: ManagerTab.All,
@@ -150,7 +150,7 @@
         v-if="primaryLocatableNodeType"
         variant="textonly"
         size="icon-sm"
-        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
         :aria-label="t('rightSidePanel.locateNode')"
         @click="handleLocateNode(primaryLocatableNodeType)"
       >
@@ -199,7 +199,7 @@
               v-if="isLocatableNodeType(nodeType)"
               variant="textonly"
               size="icon-sm"
-              class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+              class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
               :aria-label="t('rightSidePanel.locateNode')"
               @click="handleLocateNode(nodeType)"
             >
@@ -241,7 +241,7 @@ const { t } = useI18n()
 const expandedOverride = ref<boolean | null>(null)
 
 const packTextButtonClass =
-  'm-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word outline-none focus:outline-none focus-visible:underline focus-visible:ring-0 focus-visible:outline-none'
+  'm-0 inline max-w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word outline-none focus:outline-none rounded-sm focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-inset focus-visible:outline-none'
 
 const { missingNodePacks, isLoading } = useMissingNodes()
 const comfyManagerStore = useComfyManagerStore()
