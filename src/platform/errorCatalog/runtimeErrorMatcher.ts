@@ -251,6 +251,7 @@ const RUNTIME_MATCH_RULES: RuntimeMatchRule[] = [
   {
     matches: (info, message) =>
       info.exceptionType === 'InactiveSubscriptionError' ||
+      info.exceptionType === 'PAYMENT_REQUIRED' ||
       SUBSCRIPTION_REQUIRED_MESSAGES.has(message),
     resolve: () => catalogMatch(SUBSCRIPTION_REQUIRED_CATALOG_ID)
   },

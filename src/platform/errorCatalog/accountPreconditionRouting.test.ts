@@ -44,6 +44,15 @@ describe('resolveAccountPrecondition', () => {
     ).toBe('subscription')
   })
 
+  it('classifies a PAYMENT_REQUIRED error by type even when the message changes', () => {
+    expect(
+      resolveAccountPrecondition({
+        exceptionType: 'PAYMENT_REQUIRED',
+        exceptionMessage: 'Some other paywall wording'
+      })
+    ).toBe('subscription')
+  })
+
   it('classifies a subscription-upgrade error as a subscription precondition', () => {
     expect(
       resolveAccountPrecondition({
