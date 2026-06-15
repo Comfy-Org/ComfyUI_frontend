@@ -259,7 +259,11 @@ async function fetchComfyNodesPage(
   const timer = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
-    const url = `${baseUrl}/nodes/${encodeURIComponent(packId)}/versions/${encodeURIComponent(version)}/comfy-nodes?limit=${COMFY_NODES_PAGE_SIZE}&page=${page}`
+    const params = new URLSearchParams({
+      limit: String(COMFY_NODES_PAGE_SIZE),
+      page: String(page)
+    })
+    const url = `${baseUrl}/nodes/${encodeURIComponent(packId)}/versions/${encodeURIComponent(version)}/comfy-nodes?${params.toString()}`
     const res = await fetchImpl(url, {
       method: 'GET',
       headers: { Accept: 'application/json' },

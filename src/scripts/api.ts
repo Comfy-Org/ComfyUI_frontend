@@ -974,8 +974,11 @@ export class ComfyApi extends EventTarget {
    * @returns The metadata for the model
    */
   async viewMetadata(folder: string, model: string) {
+    const params = new URLSearchParams({
+      filename: model
+    })
     const res = await this.fetchApi(
-      `/view_metadata/${folder}?filename=${encodeURIComponent(model)}`
+      `/view_metadata/${folder}?${params.toString()}`
     )
     const rawResponse = await res.text()
     if (!rawResponse) {
@@ -1203,8 +1206,12 @@ export class ComfyApi extends EventTarget {
       full_info: false
     }
   ): Promise<Response> {
+    const params = new URLSearchParams({
+      overwrite: String(options?.overwrite ?? true),
+      full_info: String(options?.full_info ?? false)
+    })
     const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(file)}?overwrite=${options.overwrite}&full_info=${options.full_info}`,
+      `/userdata/${encodeURIComponent(file)}?${params.toString()}`,
       {
         method: 'POST',
         body: options?.stringify ? JSON.stringify(data) : (data as BodyInit),
@@ -1241,8 +1248,11 @@ export class ComfyApi extends EventTarget {
     dest: string,
     options = { overwrite: false }
   ) {
+    const params = new URLSearchParams({
+      overwrite: String(options?.overwrite ?? false)
+    })
     const resp = await this.fetchApi(
-      `/userdata/${encodeURIComponent(source)}/move/${encodeURIComponent(dest)}?overwrite=${options?.overwrite}`,
+      `/userdata/${encodeURIComponent(source)}/move/${encodeURIComponent(dest)}?${params.toString()}`,
       {
         method: 'POST'
       }
@@ -1252,9 +1262,13 @@ export class ComfyApi extends EventTarget {
 
   async listUserDataFullInfo(dir: string): Promise<UserDataFullInfo[]> {
     const trimmedDir = trimEnd(dir, '/')
-    const resp = await this.fetchApi(
-      `/userdata?dir=${encodeURIComponent(trimmedDir)}&recurse=true&split=false&full_info=true`
-    )
+    const params = new URLSearchParams({
+      dir: trimmedDir,
+      recurse: 'true',
+      split: 'false',
+      full_info: 'true'
+    })
+    const resp = await this.fetchApi(`/userdata?${params.toString()}`)
     if (resp.status === 404) return []
     if (resp.status !== 200) {
       throw new Error(

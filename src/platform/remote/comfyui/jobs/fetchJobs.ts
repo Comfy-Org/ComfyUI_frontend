@@ -45,7 +45,12 @@ async function fetchJobsRaw(
   offset: number = 0
 ): Promise<FetchJobsRawResult> {
   const statusParam = statuses.join(',')
-  const url = `/jobs?status=${statusParam}&limit=${maxItems}&offset=${offset}`
+  const params = new URLSearchParams({
+    status: statusParam,
+    limit: String(maxItems),
+    offset: String(offset)
+  })
+  const url = `/jobs?${params.toString()}`
   try {
     const res = await fetchApi(url)
     if (!res.ok) {

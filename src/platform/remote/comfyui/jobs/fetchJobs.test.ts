@@ -61,7 +61,7 @@ describe('fetchJobs', () => {
       const result = await fetchHistory(mockFetch)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=completed,failed,cancelled&limit=200&offset=0'
+        '/jobs?status=completed%2Cfailed%2Ccancelled&limit=200&offset=0'
       )
       expect(result).toHaveLength(2)
       expect(result[0].id).toBe('job1')
@@ -112,7 +112,7 @@ describe('fetchJobs', () => {
       const result = await fetchHistory(mockFetch, 200, 5)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=completed,failed,cancelled&limit=200&offset=5'
+        '/jobs?status=completed%2Cfailed%2Ccancelled&limit=200&offset=5'
       )
       // Priority base is total - offset = 10 - 5 = 5
       expect(result[0].priority).toBe(5) // (total - offset) - 0
@@ -208,7 +208,7 @@ describe('fetchJobs', () => {
       const result = await fetchHistoryPage(mockFetch, 2, 5)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=completed,failed,cancelled&limit=2&offset=5'
+        '/jobs?status=completed%2Cfailed%2Ccancelled&limit=2&offset=5'
       )
       expect(result.jobs).toHaveLength(2)
       expect(result.offset).toBe(5)
@@ -237,7 +237,7 @@ describe('fetchJobs', () => {
       const result = await fetchQueue(mockFetch)
 
       expect(mockFetch).toHaveBeenCalledWith(
-        '/jobs?status=in_progress,pending&limit=200&offset=0'
+        '/jobs?status=in_progress%2Cpending&limit=200&offset=0'
       )
       expect(result.Running).toHaveLength(1)
       expect(result.Pending).toHaveLength(2)
