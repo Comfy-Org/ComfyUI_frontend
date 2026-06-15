@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -10,6 +11,18 @@ import {
   cleanupFakeModel,
   loadWorkflowAndOpenErrorsTab
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+
+const FAKE_MODEL_NAME = 'fake_model.safetensors'
+
+function getModelLabel(group: Locator, modelName: string = FAKE_MODEL_NAME) {
+  return group.getByRole('button', { name: modelName, exact: true })
+}
+
+async function expectReferenceBadge(group: Locator, count: number) {
+  await expect(
+    group.getByTestId(TestIds.dialogs.missingModelReferenceCount)
+  ).toHaveText(String(count))
+}
 
 test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -34,15 +47,14 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
     ).toHaveText(/\S/)
   })
 
-  test('Should display model name with referencing node count', async ({
-    comfyPage
-  }) => {
+  test('Should display model name and metadata', async ({ comfyPage }) => {
     await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
     const modelsGroup = comfyPage.page.getByTestId(
       TestIds.dialogs.missingModelsGroup
     )
-    await expect(modelsGroup).toContainText(/fake_model\.safetensors\s*\(\d+\)/)
+    await expect(getModelLabel(modelsGroup)).toBeVisible()
+    await expect(modelsGroup.getByText('checkpoints')).toBeVisible()
   })
 
   test('Should expand model row to show referencing nodes', async ({
@@ -53,32 +65,33 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
       'missing/missing_models_with_nodes'
     )
 
-    const locateButton = comfyPage.page.getByTestId(
-      TestIds.dialogs.missingModelLocate
+    const modelsGroup = comfyPage.page.getByTestId(
+      TestIds.dialogs.missingModelsGroup
     )
-    await expect(locateButton.first()).toBeHidden()
-
-    const expandButton = comfyPage.page.getByTestId(
+    const expandButton = modelsGroup.getByTestId(
       TestIds.dialogs.missingModelExpand
     )
     await expect(expandButton.first()).toBeVisible()
+    await expectReferenceBadge(modelsGroup, 2)
     await expandButton.first().click()
 
-    await expect(locateButton.first()).toBeVisible()
+    await expect(
+      modelsGroup.getByTestId(TestIds.dialogs.missingModelLocate)
+    ).toHaveCount(2)
   })
 
-  test('Should copy model name to clipboard', async ({ comfyPage }) => {
+  test('Should copy model URL to clipboard', async ({ comfyPage }) => {
     await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
     await interceptClipboardWrite(comfyPage.page)
 
-    const copyButton = comfyPage.page.getByTestId(
-      TestIds.dialogs.missingModelCopyName
-    )
+    const copyButton = comfyPage.page.getByRole('button', {
+      name: 'Copy URL'
+    })
     await expect(copyButton.first()).toBeVisible()
     await copyButton.first().dispatchEvent('click')
 
     const copiedText = await getClipboardText(comfyPage.page)
-    expect(copiedText).toContain('fake_model.safetensors')
+    expect(copiedText).toContain('/api/devtools/')
   })
 
   test.describe('OSS-specific', { tag: '@oss' }, () => {
@@ -87,9 +100,9 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
     }) => {
       await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
 
-      const copyUrlButton = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingModelCopyUrl
-      )
+      const copyUrlButton = comfyPage.page.getByRole('button', {
+        name: 'Copy URL'
+      })
       await expect(copyUrlButton.first()).toBeVisible()
     })
 
@@ -102,6 +115,7 @@ test.describe('Errors tab - Missing models', { tag: '@ui' }, () => {
         TestIds.dialogs.missingModelDownload
       )
       await expect(downloadButton.first()).toBeVisible()
+      await expect(downloadButton.first()).toHaveText('Download')
     })
 
     test('Should render Download all and Refresh actions for one downloadable model', async ({
