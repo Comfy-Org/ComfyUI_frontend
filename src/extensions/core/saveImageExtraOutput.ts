@@ -7,10 +7,13 @@ import { app } from '../../scripts/app'
 const saveNodeTypes = new Set([
   'SaveImage',
   'SaveImageAdvanced',
+  'SaveSVGNode',
   'SaveVideo',
   'SaveAnimatedWEBP',
   'SaveWEBM',
   'SaveAudio',
+  'SaveAudioMP3',
+  'SaveAudioOpus',
   'SaveAudioAdvanced',
   'SaveGLB',
   'SaveAnimatedPNG',
