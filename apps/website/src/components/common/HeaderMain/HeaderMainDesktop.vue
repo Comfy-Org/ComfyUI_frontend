@@ -24,7 +24,7 @@ import { mainNavigation } from '../../../data/mainNavigation'
         <template v-if="navItem.columns?.length">
           <NavigationMenuTrigger>{{ navItem.label }}</NavigationMenuTrigger>
           <NavigationMenuContent class="w-auto">
-            <ul class="flex space-x-16">
+            <ul class="flex w-max gap-16">
               <NavFeaturedCard
                 v-if="navItem.featured"
                 :featured="navItem.featured"
