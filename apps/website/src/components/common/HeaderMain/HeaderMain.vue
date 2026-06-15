@@ -5,10 +5,10 @@ import { nextTick, onMounted, ref } from 'vue'
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
-import BrandButton from '../BrandButton.vue'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
+import Button from '@/components/ui/button/Button.vue'
 
 const { locale = 'en', githubStars = '' } = defineProps<{
   locale?: Locale
@@ -85,20 +85,15 @@ onMounted(() => {
       class="hidden shrink-0 items-center gap-2 lg:flex"
     >
       <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
-      <BrandButton
+      <Button
         v-for="cta in ctaButtons"
         :key="cta.href"
         :href="cta.href"
-        :variant="cta.primary ? 'solid' : 'outline'"
-        size="nav"
+        :variant="cta.primary ? 'default' : 'outline'"
         :aria-label="cta.label"
       >
-        <span
-          class="inline-block max-w-0 overflow-hidden align-bottom transition-[max-width] duration-300 ease-in-out xl:max-w-28"
-          aria-hidden="true"
-          >{{ cta.prefix }}&nbsp;</span
-        >{{ cta.core }}
-      </BrandButton>
+        {{ cta.prefix }}&nbsp;{{ cta.core }}
+      </Button>
     </div>
   </nav>
 </template>

@@ -1,8 +1,6 @@
 import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
-export { default as ButtonPill } from './ButtonPill.vue'
-
 export const buttonPillVariants = cva({
   base: 'group/button-pill isolate relative inline-flex w-fit uppercase cursor-pointer items-center overflow-hidden rounded-2xl p-1 text-sm font-bold tracking-wider text-nowrap transition-all duration-500 disabled:cursor-not-allowed disabled:opacity-50',
   variants: {

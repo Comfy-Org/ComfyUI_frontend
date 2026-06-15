@@ -3,14 +3,10 @@ import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { X } from '@lucide/vue'
 import { reactiveOmit } from '@vueuse/core'
-import {
-  DialogClose,
-  DialogContent,
-  DialogPortal,
-  useForwardPropsEmits
-} from 'reka-ui'
+import { DialogContent, DialogPortal, useForwardPropsEmits } from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
 import SheetOverlay from './SheetOverlay.vue'
+import { SheetClose } from "."
 
 interface SheetContentProps extends DialogContentProps {
   class?: HTMLAttributes['class']
@@ -56,12 +52,12 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
     >
       <slot />
 
-      <DialogClose
+      <SheetClose
         class="focus:ring-primary-comfy-yellow/50 text-primary-comfy-yellow border-primary-comfy-yellow absolute top-4 right-4 rounded-xl border p-2 ring-offset-primary-comfy-ink transition-opacity focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none"
       >
         <X class="size-6" />
         <span class="sr-only">{{ closeLabel }}</span>
-      </DialogClose>
+      </SheetClose>
     </DialogContent>
   </DialogPortal>
 </template>

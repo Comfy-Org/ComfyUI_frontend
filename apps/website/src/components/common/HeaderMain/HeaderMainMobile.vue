@@ -13,6 +13,7 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
+  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger
@@ -169,7 +170,7 @@ onUnmounted(() => {
           </div>
         </div>
 
-        <div class="flex shrink-0 flex-col gap-3 pt-6">
+        <SheetFooter class="gap-3 p-0 pt-6">
           <BrandButton
             v-for="cta in ctaButtons"
             :key="cta.href"
@@ -180,7 +181,7 @@ onUnmounted(() => {
           >
             {{ cta.label }}
           </BrandButton>
-        </div>
+        </SheetFooter>
       </SheetContent>
     </Sheet>
   </div>
