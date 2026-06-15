@@ -35,6 +35,15 @@ describe('resolveAccountPrecondition', () => {
     ).toBe('subscription')
   })
 
+  it('classifies the queue paywall (PAYMENT_REQUIRED) as a subscription precondition', () => {
+    expect(
+      resolveAccountPrecondition({
+        exceptionType: 'PAYMENT_REQUIRED',
+        exceptionMessage: 'Subscription required to queue workflows'
+      })
+    ).toBe('subscription')
+  })
+
   it('classifies a subscription-upgrade error as a subscription precondition', () => {
     expect(
       resolveAccountPrecondition({
