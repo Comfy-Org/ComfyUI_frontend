@@ -149,11 +149,13 @@ const websiteJsonLd = {
       import { initSmoothScroll, cancelScroll } from '../scripts/smoothScroll'
       import { ScrollTrigger } from '../scripts/gsapSetup'
       import { initPostHog, capturePageview } from '../scripts/posthog'
+      import { initSyft } from '../scripts/syft'
 
       initSmoothScroll()
 
       if (import.meta.env.PROD) {
         initPostHog()
+        initSyft()
         document.addEventListener('astro:page-load', capturePageview)
       }
 
