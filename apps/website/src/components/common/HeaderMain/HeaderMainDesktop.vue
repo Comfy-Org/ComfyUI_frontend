@@ -15,7 +15,7 @@ import { mainNavigation } from '../../../data/mainNavigation'
 </script>
 
 <template>
-  <NavigationMenu :viewport="false" data-testid="desktop-nav-links">
+  <NavigationMenu data-testid="desktop-nav-links">
     <NavigationMenuList>
       <NavigationMenuItem
         v-for="navItem in mainNavigation"
