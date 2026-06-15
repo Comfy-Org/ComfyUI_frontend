@@ -2904,6 +2904,10 @@
         "name": "audio",
         "tooltip": "L’audio à ajouter à la vidéo."
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "Profondeur de bits de la vidéo créée. Le 10 bits conserve des dégradés plus doux avec moins de bandes, mais certains lecteurs et nœuds en aval peuvent ne pas le prendre en charge."
+      },
       "fps": {
         "name": "fps"
       },
@@ -5219,6 +5223,10 @@
       },
       "2": {
         "name": "ips",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -19586,6 +19594,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "Importez un modèle 3D externe (par exemple depuis Rodin, Hunyuan3D ou un fichier local) dans Tripo pour l'utiliser avec les nœuds de post-traitement de Tripo : Texture, Rig, Convert. GLB est recommandé : les textures ne sont conservées à l'import que si elles sont intégrées dans le fichier. Notez que le texturage d'un modèle importé nécessite une invite de texture.",
+    "display_name": "Tripo : Importer un modèle",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Modèle 3D à importer (GLB / FBX / OBJ / STL, jusqu'à 150 Mo). Les fichiers OBJ et STL ne contiennent pas de textures intégrées."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo : Multivue vers Modèle",
     "inputs": {
@@ -20053,6 +20077,10 @@
       },
       "texture_alignment": {
         "name": "alignement_texture"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Guidage textuel optionnel pour le texturage. Requis en pratique pour les modèles importés (Tripo : Importer un modèle), qui ne contiennent pas d'image source pour déduire les couleurs."
       },
       "texture_quality": {
         "name": "qualité_texture"
