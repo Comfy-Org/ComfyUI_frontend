@@ -276,25 +276,50 @@ describe('PostHogTelemetryProvider', () => {
 
       provider.trackShareLinkOpened({
         share_id: 'share-1',
-        is_authenticated: true
+        is_authenticated: true,
+        view_mode: 'graph',
+        is_app_mode: false
+      })
+      provider.trackShareFlow({
+        step: 'link_created',
+        source: 'app_mode',
+        share_id: 'share-1',
+        view_mode: 'app',
+        is_app_mode: true
       })
       provider.trackSharedWorkflowRun({
         job_id: 'job-1',
-        share_id: 'share-1'
+        share_id: 'share-1',
+        view_mode: 'app',
+        is_app_mode: true
       })
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.SHARE_LINK_OPENED,
         {
           share_id: 'share-1',
-          is_authenticated: true
+          is_authenticated: true,
+          view_mode: 'graph',
+          is_app_mode: false
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SHARE_FLOW,
+        {
+          step: 'link_created',
+          source: 'app_mode',
+          share_id: 'share-1',
+          view_mode: 'app',
+          is_app_mode: true
         }
       )
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.SHARED_WORKFLOW_RUN,
         {
           job_id: 'job-1',
-          share_id: 'share-1'
+          share_id: 'share-1',
+          view_mode: 'app',
+          is_app_mode: true
         }
       )
     })
@@ -442,6 +467,71 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED,
         {}
+      )
+    })
+
+    it('captures enabled funnel events by default', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackSettingChanged({ setting_id: 'theme' })
+      provider.trackTemplateFilterChanged({
+        selected_models: [],
+        selected_use_cases: [],
+        selected_runs_on: [],
+        sort_by: 'default',
+        filtered_count: 1,
+        total_count: 2
+      })
+      provider.trackUiButtonClicked({
+        button_id: 'sidebar_settings_button_clicked',
+        element_group: 'sidebar'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SETTING_CHANGED,
+        { setting_id: 'theme' }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.TEMPLATE_FILTER_CHANGED,
+        {
+          selected_models: [],
+          selected_use_cases: [],
+          selected_runs_on: [],
+          sort_by: 'default',
+          filtered_count: 1,
+          total_count: 2
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.UI_BUTTON_CLICKED,
+        {
+          button_id: 'sidebar_settings_button_clicked',
+          element_group: 'sidebar'
+        }
+      )
+    })
+
+    it('captures shell layout snapshots', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const shellLayoutMetadata = {
+        view_mode: 'graph',
+        is_app_mode: false,
+        dock_state: 'floating',
+        actionbar_position: 'Top',
+        active_sidebar_tab: 'node-library',
+        right_side_panel_open: true,
+        bottom_panel_open: false,
+        open_workflow_tabs: 2
+      } as const
+
+      provider.trackShellLayout(shellLayoutMetadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SHELL_LAYOUT,
+        shellLayoutMetadata
       )
     })
   })

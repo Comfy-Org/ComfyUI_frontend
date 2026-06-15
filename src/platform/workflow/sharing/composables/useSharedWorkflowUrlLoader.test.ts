@@ -38,6 +38,13 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
+vi.mock('@/composables/useAppMode', () => ({
+  useAppMode: () => ({
+    mode: { value: 'graph' },
+    isAppMode: { value: false }
+  })
+}))
+
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackShareLinkOpened: mockTrackShareLinkOpened
@@ -255,7 +262,9 @@ describe('useSharedWorkflowUrlLoader', () => {
     )
     expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
       share_id: 'share-id-1',
-      is_authenticated: false
+      is_authenticated: false,
+      view_mode: 'graph',
+      is_app_mode: false
     })
     expect(preservedQueryMocks.capturePreservedQuery).toHaveBeenCalledWith(
       'share_auth',
@@ -281,7 +290,9 @@ describe('useSharedWorkflowUrlLoader', () => {
     expect(loaded).toBe('loaded')
     expect(mockTrackShareLinkOpened).toHaveBeenCalledWith({
       share_id: 'share-id-1',
-      is_authenticated: true
+      is_authenticated: true,
+      view_mode: 'graph',
+      is_app_mode: false
     })
     expect(preservedQueryMocks.capturePreservedQuery).not.toHaveBeenCalled()
   })

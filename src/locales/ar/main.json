@@ -885,6 +885,8 @@
     "RECRAFT_V3_STYLE": "نمط Recraft V3",
     "RETARGET_TASK_ID": "معرّف مهمة إعادة الاستهداف",
     "RIG_TASK_ID": "معرّف مهمة الهيكل",
+    "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
+    "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "جهاز تجميع",
     "SIGMAS": "سيجمات",

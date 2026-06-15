@@ -21,6 +21,7 @@ import type {
   PageVisibilityMetadata,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
+  ShellLayoutMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -194,6 +195,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackTabCount(metadata: TabCountMetadata): void {
     this.dispatch((provider) => provider.trackTabCount?.(metadata))
+  }
+
+  trackShellLayout(metadata: ShellLayoutMetadata): void {
+    this.dispatch((provider) => provider.trackShellLayout?.(metadata))
   }
 
   trackNodeSearch(metadata: NodeSearchMetadata): void {
