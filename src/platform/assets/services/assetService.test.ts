@@ -53,6 +53,7 @@ const fetchApiMock = vi.mocked(api.fetchApi)
 type AssetListResponseOptions = {
   hasMore?: AssetResponse['has_more']
   total?: AssetResponse['total']
+  nextCursor?: AssetResponse['next_cursor']
 }
 
 function buildResponse(
@@ -68,9 +69,18 @@ function buildResponse(
 
 function buildAssetListResponse(
   assets: AssetItem[],
-  { hasMore = false, total = assets.length }: AssetListResponseOptions = {}
+  {
+    hasMore = false,
+    total = assets.length,
+    nextCursor
+  }: AssetListResponseOptions = {}
 ): Response {
-  return buildResponse({ assets, total, has_more: hasMore })
+  return buildResponse({
+    assets,
+    total,
+    has_more: hasMore,
+    ...(nextCursor === undefined ? {} : { next_cursor: nextCursor })
+  })
 }
 
 function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
@@ -512,7 +522,7 @@ describe(assetService.getAllAssetsByTag, () => {
     vi.clearAllMocks()
   })
 
-  it('paginates tagged asset requests with include_public=true', async () => {
+  it('walks pages by keyset cursor with include_public=true', async () => {
     fetchApiMock
       .mockResolvedValueOnce(
         buildAssetListResponse(
@@ -520,7 +530,7 @@ describe(assetService.getAllAssetsByTag, () => {
             validAsset({ id: 'a', tags: ['input'] }),
             validAsset({ id: 'b', tags: ['input'] })
           ],
-          { hasMore: true }
+          { hasMore: true, nextCursor: 'cursor-page-2' }
         )
       )
       .mockResolvedValueOnce(
@@ -538,6 +548,8 @@ describe(assetService.getAllAssetsByTag, () => {
     expect(firstParams.get('include_public')).toBe('true')
     expect(firstParams.get('exclude_tags')).toBe(MISSING_TAG)
     expect(firstParams.get('limit')).toBe('2')
+    // First page carries neither a cursor nor an offset.
+    expect(firstParams.has('after')).toBe(false)
     expect(firstParams.has('offset')).toBe(false)
 
     const secondUrl = fetchApiMock.mock.calls[1]?.[0] as string
@@ -545,7 +557,9 @@ describe(assetService.getAllAssetsByTag, () => {
     expect(secondParams.get('include_public')).toBe('true')
     expect(secondParams.get('exclude_tags')).toBe(MISSING_TAG)
     expect(secondParams.get('limit')).toBe('2')
-    expect(secondParams.get('offset')).toBe('2')
+    // Subsequent pages resume from the prior response's next_cursor, never offset.
+    expect(secondParams.get('after')).toBe('cursor-page-2')
+    expect(secondParams.has('offset')).toBe(false)
   })
 
   it('honors has_more when walking tagged asset pages', async () => {
@@ -556,7 +570,7 @@ describe(assetService.getAllAssetsByTag, () => {
             validAsset({ id: 'first', tags: ['input'] }),
             validAsset({ id: 'second', tags: ['input'] })
           ],
-          { hasMore: true }
+          { hasMore: true, nextCursor: 'cursor-next' }
         )
       )
       .mockResolvedValueOnce(
@@ -577,7 +591,45 @@ describe(assetService.getAllAssetsByTag, () => {
       throw new Error('Expected a second asset request URL')
     }
     const secondParams = new URL(secondUrl, 'http://localhost').searchParams
-    expect(secondParams.get('offset')).toBe('2')
+    expect(secondParams.get('after')).toBe('cursor-next')
+  })
+
+  it('stops walking when next_cursor is absent even if has_more is true', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'only', tags: ['input'] })], {
+        hasMore: true
+      })
+    )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 2
+    })
+
+    expect(assets.map((a) => a.id)).toEqual(['only'])
+    expect(fetchApiMock).toHaveBeenCalledOnce()
+  })
+
+  it('stops walking when the server returns a non-advancing cursor', async () => {
+    fetchApiMock
+      .mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'a', tags: ['input'] })], {
+          hasMore: true,
+          nextCursor: 'stuck'
+        })
+      )
+      .mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'b', tags: ['input'] })], {
+          hasMore: true,
+          nextCursor: 'stuck'
+        })
+      )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 1
+    })
+
+    expect(assets.map((a) => a.id)).toEqual(['a', 'b'])
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
   })
 
   it.for([
@@ -636,7 +688,7 @@ describe(assetService.getAllAssetsByTag, () => {
           validAsset({ id: 'a', tags: ['input'] }),
           validAsset({ id: 'b', tags: ['input'] })
         ],
-        { hasMore: true }
+        { hasMore: true, nextCursor: 'cursor-page-2' }
       )
     })
 

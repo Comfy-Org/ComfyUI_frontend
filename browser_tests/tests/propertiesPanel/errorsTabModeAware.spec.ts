@@ -425,6 +425,56 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       }
     )
 
+    test(
+      'Refreshing a resolved promoted missing model clears the combo invalid state',
+      { tag: ['@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+        await loadWorkflowAndOpenErrorsTab(
+          comfyPage,
+          'missing/missing_model_promoted_widget'
+        )
+        await comfyPage.vueNodes.waitForNodes()
+
+        const missingModelGroup = comfyPage.page.getByTestId(
+          TestIds.dialogs.missingModelsGroup
+        )
+        await expect(missingModelGroup).toContainText(
+          /fake_model\.safetensors\s*\(1\)/
+        )
+
+        const promotedModelCombo = comfyPage.vueNodes
+          .getNodeByTitle('Subgraph with Promoted Missing Model')
+          .getByRole('combobox', { name: 'ckpt_name', exact: true })
+        await expect(promotedModelCombo).toHaveAttribute('aria-invalid', 'true')
+
+        const objectInfoRoute = /\/object_info$/
+        try {
+          await comfyPage.page.route(objectInfoRoute, async (route) => {
+            const response = await route.fetch()
+            const objectInfo = await response.json()
+            const ckptName =
+              objectInfo.CheckpointLoaderSimple.input.required.ckpt_name
+            ckptName[0] = [...ckptName[0], 'fake_model.safetensors']
+            await route.fulfill({ response, json: objectInfo })
+          })
+
+          await comfyPage.page
+            .getByTestId(TestIds.dialogs.missingModelRefresh)
+            .click()
+
+          await expect(missingModelGroup).toBeHidden()
+          await expect(promotedModelCombo).toBeVisible()
+          await expect(promotedModelCombo).not.toHaveAttribute(
+            'aria-invalid',
+            'true'
+          )
+        } finally {
+          await comfyPage.page.unroute(objectInfoRoute)
+        }
+      }
+    )
+
     test('Bypassing a subgraph hides interior errors, un-bypassing restores them', async ({
       comfyPage
     }) => {

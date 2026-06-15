@@ -636,6 +636,71 @@ describe('useWorkflowService', () => {
 
       expect(workflowStore.createNewTemporary).toHaveBeenCalled()
     })
+
+    it('stores share attribution on shared temporary workflows', async () => {
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+      const tempWorkflow = createModeTestWorkflow({
+        path: 'workflows/shared.json'
+      })
+      vi.mocked(workflowStore.createNewTemporary).mockReturnValue(tempWorkflow)
+      vi.mocked(workflowStore.openWorkflow).mockResolvedValue(tempWorkflow)
+
+      await useWorkflowService().afterLoadNewGraph(
+        'shared',
+        { nodes: [] } as never,
+        'share-1'
+      )
+
+      expect(tempWorkflow.shareId).toBe('share-1')
+    })
+
+    it('preserves share attribution on repeated same-path loads', async () => {
+      existingWorkflow.shareId = 'share-1'
+
+      await useWorkflowService().afterLoadNewGraph('repeat', {
+        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+      } as never)
+
+      expect(existingWorkflow.shareId).toBe('share-1')
+    })
+
+    it('preserves share attribution on workflow object reloads', async () => {
+      existingWorkflow.shareId = 'share-1'
+
+      await useWorkflowService().afterLoadNewGraph(existingWorkflow, {
+        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+      } as never)
+
+      expect(existingWorkflow.shareId).toBe('share-1')
+    })
+
+    it('overwrites share attribution on repeated same-path loads with a new share id', async () => {
+      existingWorkflow.shareId = 'share-1'
+
+      await useWorkflowService().afterLoadNewGraph(
+        'repeat',
+        {
+          nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+        } as never,
+        'share-2'
+      )
+
+      expect(existingWorkflow.shareId).toBe('share-2')
+    })
+
+    it('overwrites share attribution on workflow object reloads with a new share id', async () => {
+      existingWorkflow.shareId = 'share-1'
+
+      await useWorkflowService().afterLoadNewGraph(
+        existingWorkflow,
+        {
+          nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+        } as never,
+        'share-2'
+      )
+
+      expect(existingWorkflow.shareId).toBe('share-2')
+    })
   })
 
   describe('per-workflow mode switching', () => {

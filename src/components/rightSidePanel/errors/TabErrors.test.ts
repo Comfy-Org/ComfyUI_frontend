@@ -530,7 +530,9 @@ describe('TabErrors.vue', () => {
     expect(
       screen.getByText('Some nodes can be replaced with alternatives')
     ).toBeInTheDocument()
-    expect(screen.getByText('OldSampler (1)')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'OldSampler' })
+    ).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Replace Node/ })

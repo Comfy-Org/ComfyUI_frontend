@@ -228,12 +228,15 @@ describe('useReleaseStore', () => {
 
         await store.initialize()
 
-        expect(releaseService.getReleases).toHaveBeenCalledWith({
-          project: 'comfyui',
-          current_version: '1.0.0',
-          form_factor: 'git-windows',
-          locale: 'en'
-        })
+        expect(releaseService.getReleases).toHaveBeenCalledWith(
+          {
+            project: 'comfyui',
+            current_version: '1.0.0',
+            form_factor: 'git-windows',
+            locale: 'en'
+          },
+          { deployEnvironment: undefined }
+        )
       })
     })
 
@@ -300,12 +303,15 @@ describe('useReleaseStore', () => {
 
       await store.initialize()
 
-      expect(releaseService.getReleases).toHaveBeenCalledWith({
-        project: 'comfyui',
-        current_version: '1.0.0',
-        form_factor: 'git-windows',
-        locale: 'en'
-      })
+      expect(releaseService.getReleases).toHaveBeenCalledWith(
+        {
+          project: 'comfyui',
+          current_version: '1.0.0',
+          form_factor: 'git-windows',
+          locale: 'en'
+        },
+        { deployEnvironment: undefined }
+      )
       expect(store.releases).toEqual([mockRelease])
     })
 
@@ -318,12 +324,30 @@ describe('useReleaseStore', () => {
 
       await store.initialize()
 
-      expect(releaseService.getReleases).toHaveBeenCalledWith({
-        project: 'comfyui',
-        current_version: '1.0.0',
-        form_factor: 'desktop-mac',
-        locale: 'en'
-      })
+      expect(releaseService.getReleases).toHaveBeenCalledWith(
+        {
+          project: 'comfyui',
+          current_version: '1.0.0',
+          form_factor: 'desktop-mac',
+          locale: 'en'
+        },
+        { deployEnvironment: undefined }
+      )
+    })
+
+    it('should pass deploy_environment from system stats', async () => {
+      const store = useReleaseStore()
+      const releaseService = useReleaseService()
+      const systemStatsStore = useSystemStatsStore()
+      systemStatsStore.systemStats!.system.deploy_environment = 'local-desktop'
+      vi.mocked(releaseService.getReleases).mockResolvedValue([mockRelease])
+
+      await store.initialize()
+
+      expect(releaseService.getReleases).toHaveBeenCalledWith(
+        expect.anything(),
+        { deployEnvironment: 'local-desktop' }
+      )
     })
 
     it('should skip fetching when --disable-api-nodes is present', async () => {

@@ -23,6 +23,11 @@ import { useFirebaseAuth } from 'vuefire'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  clearPreservedQuery,
+  getPreservedQueryParam
+} from '@/platform/navigation/preservedQueryManager'
+import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -97,6 +102,15 @@ export const useAuthStore = defineStore('auth', () => {
   const userEmail = computed(() => currentUser.value?.email)
   const userId = computed(() => currentUser.value?.uid)
 
+  function getShareAuthMetadata() {
+    const shareId = getPreservedQueryParam(
+      PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
+      'share'
+    )
+    if (shareId) clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
+    return shareId ? { share_id: shareId } : {}
+  }
+
   // Get auth from VueFire and listen for auth state changes
   // From useFirebaseAuth docs:
   // Retrieves the Firebase Auth instance. Returns `null` on the server.
@@ -111,6 +125,10 @@ export const useAuthStore = defineStore('auth', () => {
     if (user === null) {
       lastTokenUserId.value = null
       useWorkspaceAuthStore().clearWorkspaceContext()
+    } else if (isCloud) {
+      // Mint the single Cloud JWT at login (flag-guarded inside the store; a
+      // no-op when unified_cloud_auth is off).
+      void useWorkspaceAuthStore().mintAtLogin()
     }
 
     // Reset balance when auth state changes
@@ -126,9 +144,24 @@ export const useAuthStore = defineStore('auth', () => {
         lastTokenUserId.value = user.uid
         return
       }
-      tokenRefreshTrigger.value++
+      // Under unified_cloud_auth the Cloud-JWT refresh lifecycle drives session
+      // cookie rotation (workspaceAuthStore.refreshUnified → notifyTokenRefreshed),
+      // so gate this Firebase-driven bump off to avoid a double rotation.
+      if (!flags.unifiedCloudAuthEnabled) {
+        tokenRefreshTrigger.value++
+      }
     }
   })
+
+  /**
+   * Bumps the token-refresh trigger so downstream consumers (e.g. session
+   * cookie rotation via useCurrentUser) react to a fresh Cloud JWT. Called by
+   * the unified refresh lifecycle; under unified_cloud_auth it replaces the
+   * Firebase onIdTokenChanged bump above as the sole rotation driver.
+   */
+  const notifyTokenRefreshed = (): void => {
+    tokenRefreshTrigger.value++
+  }
 
   const getIdToken = async (): Promise<string | undefined> => {
     if (!currentUser.value) return
@@ -333,7 +366,8 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'email',
         is_new_user: false,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        ...getShareAuthMetadata()
       })
     }
 
@@ -355,7 +389,8 @@ export const useAuthStore = defineStore('auth', () => {
         method: 'email',
         is_new_user: true,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        ...getShareAuthMetadata()
       })
     }
 
@@ -377,7 +412,8 @@ export const useAuthStore = defineStore('auth', () => {
         is_new_user:
           options?.isNewUser || additionalUserInfo?.isNewUser || false,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        ...getShareAuthMetadata()
       })
     }
 
@@ -399,7 +435,8 @@ export const useAuthStore = defineStore('auth', () => {
         is_new_user:
           options?.isNewUser || additionalUserInfo?.isNewUser || false,
         user_id: result.user.uid,
-        email: result.user.email ?? undefined
+        email: result.user.email ?? undefined,
+        ...getShareAuthMetadata()
       })
     }
 
@@ -525,6 +562,7 @@ export const useAuthStore = defineStore('auth', () => {
     getAuthHeaderOrThrow,
     getFirebaseAuthHeader,
     getFirebaseAuthHeaderOrThrow,
-    getAuthToken
+    getAuthToken,
+    notifyTokenRefreshed
   }
 })
