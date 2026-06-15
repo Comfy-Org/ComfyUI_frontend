@@ -8,7 +8,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { LGraphNode, NodeId } from './LGraphNode'
-import type { LinkEndpointNodeId } from './utils/nodeId'
+import type { LinkEndpointNodeId } from '@/types/nodeId'
 import type { Reroute, RerouteId } from './Reroute'
 import type {
   CanvasColour,

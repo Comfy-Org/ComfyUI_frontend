@@ -3,7 +3,7 @@ import type {
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
-import type { LinkEndpointNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import type { LinkEndpointNodeId } from '@/types/nodeId'
 
 export interface NodeLike {
   id: LinkEndpointNodeId

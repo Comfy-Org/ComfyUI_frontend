@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
-import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'

@@ -10,7 +10,7 @@ import type {
 import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import type { LGraph, NodeId } from '@/lib/litegraph/src/litegraph'
-import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'

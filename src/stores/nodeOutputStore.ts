@@ -5,7 +5,7 @@ import { ref } from 'vue'
 
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ExecutedWsMessage,

@@ -2,7 +2,7 @@ import { storeToRefs } from 'pinia'
 import { toValue } from 'vue'
 
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'

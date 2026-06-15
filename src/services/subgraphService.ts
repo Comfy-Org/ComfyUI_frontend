@@ -1,4 +1,4 @@
-import { UNASSIGNED_NODE_ID } from '@/lib/litegraph/src/utils/nodeId'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type {
   ExportedSubgraph,
   ExportedSubgraphInstance,

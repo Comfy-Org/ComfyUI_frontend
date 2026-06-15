@@ -1,6 +1,6 @@
 import * as Y from 'yjs'
 
-import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 
 export type NodeLayoutMap = Y.Map<NodeLayout[keyof NodeLayout]>

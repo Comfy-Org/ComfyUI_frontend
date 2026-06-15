@@ -8,7 +8,7 @@ import type {
 } from '../LGraph'
 import type { GroupId, IGraphGroupFlags } from '../LGraphGroup'
 import type { NodeId, NodeProperty } from '../LGraphNode'
-import type { LinkEndpointNodeId } from '../utils/nodeId'
+import type { LinkEndpointNodeId } from '@/types/nodeId'
 import type { LinkId, SerialisedLLinkArray } from '../LLink'
 import type { FloatingRerouteSlot, RerouteId } from '../Reroute'
 import type {

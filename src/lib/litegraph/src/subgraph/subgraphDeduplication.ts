@@ -1,6 +1,6 @@
 import type { LGraphState } from '../LGraph'
 import type { NodeId } from '../LGraphNode'
-import { asNodeId, isNumericNodeId, nodeIdToNumber } from '../utils/nodeId'
+import { asNodeId, isNumericNodeId, nodeIdToNumber } from '@/types/nodeId'
 import type {
   ExportedSubgraph,
   ExposedWidget,

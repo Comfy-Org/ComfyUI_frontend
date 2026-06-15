@@ -3,7 +3,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraphNode } from './LGraphNode'
-import type { LinkEndpointNodeId } from './utils/nodeId'
+import type { LinkEndpointNodeId } from '@/types/nodeId'
 import { LLink } from './LLink'
 import type { LinkId } from './LLink'
 import type {

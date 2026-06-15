@@ -22,8 +22,8 @@ import {
   UNASSIGNED_NODE_ID,
   asNodeId,
   isUnassignedNodeId
-} from '@/lib/litegraph/src/utils/nodeId'
-import type { NodeId } from '@/lib/litegraph/src/utils/nodeId'
+} from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { DragAndScale } from './DragAndScale'
 import type { LGraph } from './LGraph'
 import { BadgePosition, LGraphBadge } from './LGraphBadge'
@@ -104,7 +104,7 @@ import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
 
-export type { NodeId } from './utils/nodeId'
+export type { NodeId } from '@/types/nodeId'
 
 export type NodeProperty = string | number | boolean | object
 

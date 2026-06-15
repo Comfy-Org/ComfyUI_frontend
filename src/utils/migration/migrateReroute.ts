@@ -1,6 +1,6 @@
 import _ from 'es-toolkit/compat'
 
-import { asNodeId, UNASSIGNED_NODE_ID } from '@/lib/litegraph/src/utils/nodeId'
+import { asNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type {
   ComfyLinkObject,
   ComfyNode,

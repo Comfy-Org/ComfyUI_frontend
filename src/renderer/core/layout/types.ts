@@ -6,7 +6,7 @@
  */
 import type { ComputedRef, Ref } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/utils/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 // Enum for layout source types
 export enum LayoutSource {

@@ -1,6 +1,6 @@
 import { computed } from 'vue'
 
-import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { Bounds } from '@/renderer/core/layout/types'

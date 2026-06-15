@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 
-import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import { ResultItemImpl } from '@/stores/queueStore'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'

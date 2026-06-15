@@ -5,7 +5,7 @@ import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 
 import type { ContextMenu } from './ContextMenu'
 import type { LGraphNode, NodeId, NodeProperty } from './LGraphNode'
-import type { LinkEndpointNodeId, NodeIdInput } from './utils/nodeId'
+import type { LinkEndpointNodeId, NodeIdInput } from '@/types/nodeId'
 import type { LLink, LinkId } from './LLink'
 import type { Reroute, RerouteId } from './Reroute'
 import type { SubgraphInput } from './subgraph/SubgraphInput'

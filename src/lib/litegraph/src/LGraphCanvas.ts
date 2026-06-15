@@ -112,13 +112,13 @@ import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
-import type { LinkEndpointNodeId } from './utils/nodeId'
+import type { LinkEndpointNodeId } from '@/types/nodeId'
 import {
   asNodeId,
   isNumericNodeId,
   nodeIdToNumber,
   UNASSIGNED_NODE_ID
-} from './utils/nodeId'
+} from '@/types/nodeId'
 import { resolveConnectingLinkColor } from './utils/linkColors'
 import { createUuidv4 } from '@/utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'

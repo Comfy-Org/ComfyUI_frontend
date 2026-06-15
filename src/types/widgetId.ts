@@ -1,5 +1,5 @@
-import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
-import type { NodeId } from '@/lib/litegraph/src/utils/nodeId'
+import { asNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 type UUID = string
 

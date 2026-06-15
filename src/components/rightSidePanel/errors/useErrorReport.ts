@@ -4,7 +4,7 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import { until } from '@vueuse/core'
 
-import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'

@@ -126,8 +126,8 @@ export {
   isUnassignedNodeId,
   nodeIdToNumber,
   UNASSIGNED_NODE_ID
-} from './utils/nodeId'
-export type { LinkEndpointNodeId, NodeIdInput } from './utils/nodeId'
+} from '@/types/nodeId'
+export type { LinkEndpointNodeId, NodeIdInput } from '@/types/nodeId'
 export { LLink } from './LLink'
 export { createBounds } from './measure'
 export { Reroute, type RerouteId } from './Reroute'

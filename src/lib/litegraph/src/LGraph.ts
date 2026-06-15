@@ -92,8 +92,8 @@ import {
   isNumericNodeId,
   isUnassignedNodeId,
   nodeIdToNumber
-} from './utils/nodeId'
-import type { LinkEndpointNodeId, NodeIdInput } from './utils/nodeId'
+} from '@/types/nodeId'
+import type { LinkEndpointNodeId, NodeIdInput } from '@/types/nodeId'
 import {
   deduplicateSubgraphNodeIds,
   topologicalSortSubgraphs

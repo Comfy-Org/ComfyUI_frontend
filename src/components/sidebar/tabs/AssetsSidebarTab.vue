@@ -225,7 +225,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'

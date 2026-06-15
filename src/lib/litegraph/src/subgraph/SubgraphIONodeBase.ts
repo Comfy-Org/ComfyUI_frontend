@@ -1,4 +1,4 @@
-import type { LinkEndpointNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import type { LinkEndpointNodeId } from '@/types/nodeId'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {

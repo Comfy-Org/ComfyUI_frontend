@@ -7,7 +7,7 @@
 import log from 'loglevel'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type {
   LayoutSource,

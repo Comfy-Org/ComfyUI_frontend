@@ -3,7 +3,7 @@ import { remove } from 'es-toolkit'
 import { computed } from 'vue'
 
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
-import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { cn } from '@comfyorg/tailwind-utils'
 

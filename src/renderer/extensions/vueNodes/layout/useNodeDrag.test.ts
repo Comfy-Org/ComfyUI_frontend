@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { asNodeId } from '@/lib/litegraph/src/utils/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 
 // TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
