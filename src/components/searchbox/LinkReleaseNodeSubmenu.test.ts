@@ -1,7 +1,8 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
+import type { Slots } from 'vue'
+import { computed, h, inject, nextTick, provide } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -18,13 +19,30 @@ const category: LinkReleaseNodeCategory = {
   nodes: [{ name: 'KSampler', display_name: 'KSampler' } as ComfyNodeDefImpl]
 }
 
+const SUB_OPEN = Symbol('subOpen')
+
 const stubs = {
-  DropdownMenuSub: { template: '<div><slot /></div>' },
+  DropdownMenuSub: {
+    props: ['open'],
+    setup(props: { open?: boolean }, { slots }: { slots: Slots }) {
+      provide(
+        SUB_OPEN,
+        computed(() => props.open ?? false)
+      )
+      return () => h('div', slots.default?.())
+    }
+  },
   DropdownMenuSubTrigger: {
     template: '<button data-testid="sub-trigger"><slot /></button>'
   },
   DropdownMenuPortal: { template: '<div><slot /></div>' },
-  DropdownMenuSubContent: { template: '<div role="menu"><slot /></div>' },
+  DropdownMenuSubContent: {
+    setup(_: unknown, { slots }: { slots: Slots }) {
+      const open = inject<{ value: boolean }>(SUB_OPEN)
+      return () =>
+        open?.value ? h('div', { role: 'menu' }, slots.default?.()) : null
+    }
+  },
   DropdownMenuSeparator: { template: '<hr />' },
   DropdownMenuItem: { template: '<div role="menuitem"><slot /></div>' },
   MiddleTruncate: { template: '<span>{{ text }}</span>', props: ['text'] }

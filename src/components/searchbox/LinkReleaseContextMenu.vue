@@ -354,9 +354,12 @@ function show(event: MouseEvent) {
     sideOffset: SIDE_OFFSET
   })
   menuMaxHeight.value = window.innerHeight - menuTop - VIEWPORT_MARGIN
-  const maxX = window.innerWidth - MENU_WIDTH - VIEWPORT_MARGIN
+  const maxX = Math.max(
+    VIEWPORT_MARGIN,
+    window.innerWidth - MENU_WIDTH - VIEWPORT_MARGIN
+  )
   position.value = {
-    x: Math.min(event.clientX, Math.max(VIEWPORT_MARGIN, maxX)),
+    x: Math.min(maxX, Math.max(VIEWPORT_MARGIN, event.clientX)),
     y: menuTop - SIDE_OFFSET
   }
   void nextTick(() => {

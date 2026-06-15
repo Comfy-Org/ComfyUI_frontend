@@ -215,6 +215,9 @@ describe('useSlotLinkInteraction held-session takeover', () => {
 
     expect(cancelLinkRelease).toHaveBeenCalledOnce()
     expect(mockAdapter.beginFromOutput).toHaveBeenCalled()
+    expect(cancelLinkRelease.mock.invocationCallOrder[0]).toBeLessThan(
+      mockAdapter.beginFromOutput.mock.invocationCallOrder[0]
+    )
   })
 
   it('does not cancel when no session is held', () => {

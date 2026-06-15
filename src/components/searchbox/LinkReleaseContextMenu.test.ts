@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -65,6 +65,12 @@ function renderMenu() {
 }
 
 describe('LinkReleaseContextMenu group divider', () => {
+  beforeEach(() => {
+    groups.suggestions = []
+    groups.categories = []
+    groups.searchResultGroups = []
+  })
+
   it('renders a divider between the suggestions and categories groups', () => {
     groups.suggestions = [suggestion('KSampler')]
     groups.categories = [nodeCategory('comfy')]

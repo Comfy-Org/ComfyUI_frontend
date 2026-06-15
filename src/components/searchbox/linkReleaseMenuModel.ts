@@ -259,6 +259,6 @@ export function computeContextMenuTop(metrics: {
 }): number {
   const { cursorY, menuHeight, viewportHeight, margin, sideOffset } = metrics
   const menuTopAtCursor = cursorY + sideOffset
-  const maxMenuTop = viewportHeight - margin - menuHeight
+  const maxMenuTop = Math.max(margin, viewportHeight - margin - menuHeight)
   return Math.min(Math.max(margin, menuTopAtCursor), maxMenuTop)
 }
