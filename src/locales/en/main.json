@@ -640,8 +640,7 @@
     "Horizontal": "Horizontal",
     "Vertical": "Vertical",
     "new": "new",
-    "deprecated": "deprecated",
-    "Extensions": "Extensions"
+    "deprecated": "deprecated"
   },
   "icon": {
     "bookmark": "Bookmark",

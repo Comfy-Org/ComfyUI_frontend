@@ -50,6 +50,9 @@
               ref="searchInput"
               v-model="query"
               type="text"
+              :aria-label="
+                t('g.searchPlaceholder', { subject: t(category.labelKey) })
+              "
               :placeholder="
                 t('g.searchPlaceholder', { subject: t(category.labelKey) })
               "
