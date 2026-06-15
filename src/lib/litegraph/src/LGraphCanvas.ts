@@ -3985,7 +3985,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         if (this._previously_dragging_canvas === null) {
           this._previously_dragging_canvas = this.dragging_canvas
         }
-        this.dragging_canvas = this.pointer.isDown
+        this.dragging_canvas =
+          this.pointer.isDown || !!this.linkConnector.renderLinks.length
         block_default = true
       } else if (e.key === 'Escape') {
         // esc
