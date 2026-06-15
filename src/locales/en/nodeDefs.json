@@ -2910,6 +2910,10 @@
       "audio": {
         "name": "audio",
         "tooltip": "The audio to add to the video."
+      },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "Bit depth of the created video. 10-bit keeps smoother gradients with less banding, but some players and downstream nodes may not support it."
       }
     },
     "outputs": {
@@ -5093,7 +5097,7 @@
   },
   "GetVideoComponents": {
     "display_name": "Get Video Components",
-    "description": "Extracts all components from a video: frames, audio, and framerate.",
+    "description": "Extracts all components from a video: frames, audio, framerate, and bit depth.",
     "inputs": {
       "video": {
         "name": "video",
@@ -5111,6 +5115,10 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -19586,6 +19594,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "display_name": "Tripo: Import Model",
+    "description": "Import an external 3D model (e.g. from Rodin, Hunyuan3D or a local file) into Tripo to use it with Tripo's post-processing nodes: Texture, Rig, Convert. GLB is recommended: textures survive import only when embedded in the file. Note that texturing an imported model requires a texture prompt.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model to import (GLB / FBX / OBJ / STL, up to 150 MB). OBJ and STL files carry no embedded textures."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Multiview to Model",
     "inputs": {
@@ -20059,6 +20083,10 @@
       },
       "texture_alignment": {
         "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Optional text guidance for texturing. Required in practice for imported models (Tripo: Import Model), which carry no source image to infer colors from."
       }
     },
     "outputs": {
