@@ -1,11 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  canRoutePreconditionToModal,
   isAccountPreconditionCatalogId,
   preconditionForCatalogId,
   resolveAccountPrecondition,
+  resolvePromptResponsePrecondition,
   selectHighestPrecedencePrecondition
 } from './accountPreconditionRouting'
+
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
 import {
   EXECUTION_FAILED_CATALOG_ID,
   INSUFFICIENT_CREDITS_CATALOG_ID,
@@ -89,6 +93,51 @@ describe('resolveAccountPrecondition', () => {
         exceptionType: 'RuntimeError',
         exceptionMessage: 'CUDA out of memory'
       })
+    ).toBeUndefined()
+  })
+})
+
+describe('canRoutePreconditionToModal', () => {
+  afterEach(() => {
+    window.__CONFIG__ = {}
+  })
+
+  it('routes a subscription precondition only when subscription mode is enabled', () => {
+    window.__CONFIG__ = { subscription_required: true }
+    expect(canRoutePreconditionToModal('subscription')).toBe(true)
+
+    window.__CONFIG__ = { subscription_required: false }
+    expect(canRoutePreconditionToModal('subscription')).toBe(false)
+  })
+
+  it('always routes sign-in and credit preconditions', () => {
+    expect(canRoutePreconditionToModal('sign_in')).toBe(true)
+    expect(canRoutePreconditionToModal('credits')).toBe(true)
+  })
+})
+
+describe('resolvePromptResponsePrecondition', () => {
+  it('classifies a structured prompt-response paywall error', () => {
+    expect(
+      resolvePromptResponsePrecondition({
+        type: 'PAYMENT_REQUIRED',
+        message: 'Subscription required to queue workflows',
+        details: ''
+      })
+    ).toBe('subscription')
+  })
+
+  it('classifies a string-shaped prompt-response error', () => {
+    expect(
+      resolvePromptResponsePrecondition(
+        'Unauthorized: Please login first to use this node.'
+      )
+    ).toBe('sign_in')
+  })
+
+  it('returns undefined for an ordinary string error', () => {
+    expect(
+      resolvePromptResponsePrecondition('The server exploded')
     ).toBeUndefined()
   })
 })

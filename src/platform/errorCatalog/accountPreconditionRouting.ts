@@ -1,3 +1,6 @@
+import { isCloud } from '@/platform/distribution/types'
+import type { PromptResponse } from '@/schemas/apiSchema'
+
 import {
   INSUFFICIENT_CREDITS_CATALOG_ID,
   SIGN_IN_REQUIRED_CATALOG_ID,
@@ -53,6 +56,34 @@ export function resolveAccountPrecondition(
 ): AccountPrecondition | undefined {
   const match = resolveRuntimeCatalogMatch(info)
   return preconditionForCatalogId(match?.catalogId)
+}
+
+// The subscription modal no-ops unless cloud subscription mode is enabled, so a
+// subscription precondition can only be routed to a modal in that case. Sign-in
+// and credit modals always render, so they can always be routed.
+export function canRoutePreconditionToModal(
+  precondition: AccountPrecondition
+): boolean {
+  return precondition === 'subscription'
+    ? Boolean(isCloud && window.__CONFIG__?.subscription_required)
+    : true
+}
+
+// Normalizes a /prompt response error, which can be a bare string or a
+// structured payload, into the account precondition it represents.
+export function resolvePromptResponsePrecondition(
+  responseError: PromptResponse['error']
+): AccountPrecondition | undefined {
+  if (typeof responseError === 'string') {
+    return resolveAccountPrecondition({
+      exceptionType: '',
+      exceptionMessage: responseError
+    })
+  }
+  return resolveAccountPrecondition({
+    exceptionType: responseError.type,
+    exceptionMessage: responseError.message
+  })
 }
 
 // Resolves the winning precondition when several could co-occur. Ordering

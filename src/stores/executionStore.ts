@@ -9,7 +9,10 @@ import {
   useAppMode
 } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
-import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import {
+  canRoutePreconditionToModal,
+  resolveAccountPrecondition
+} from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -460,7 +463,11 @@ export const useExecutionStore = defineStore('execution', () => {
       exceptionType: detail.exception_type ?? '',
       exceptionMessage: detail.exception_message ?? ''
     })
-    if (!precondition) return false
+    // Keep the error in the panel when no modal can take over, otherwise it would
+    // be dropped from both surfaces and the user would see nothing.
+    if (!precondition || !canRoutePreconditionToModal(precondition)) {
+      return false
+    }
 
     clearInitializationByJobId(detail.prompt_id)
     resetExecutionState(detail.prompt_id)

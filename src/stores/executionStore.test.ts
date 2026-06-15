@@ -6,6 +6,7 @@ import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import type * as AccountPreconditionRouting from '@/platform/errorCatalog/accountPreconditionRouting'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
@@ -79,6 +80,16 @@ vi.mock('@/platform/telemetry', () => ({
     trackExecutionSuccess: mockTrackExecutionSuccess,
     trackSharedWorkflowRun: mockTrackSharedWorkflowRun
   })
+}))
+
+const mockCanRoutePrecondition = vi.hoisted(() =>
+  vi.fn((_precondition: string) => true)
+)
+
+vi.mock('@/platform/errorCatalog/accountPreconditionRouting', async (orig) => ({
+  ...(await orig<typeof AccountPreconditionRouting>()),
+  canRoutePreconditionToModal: (precondition: string) =>
+    mockCanRoutePrecondition(precondition)
 }))
 
 // Remove any previous global types
@@ -975,6 +986,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCanRoutePrecondition.mockReturnValue(true)
     apiEventHandlers.clear()
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
@@ -1351,6 +1363,24 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(errorStore.lastExecutionError).toBeNull()
       expect(errorStore.lastPromptError).toBeNull()
       expect(errorStore.totalErrorCount).toBe(0)
+    })
+
+    it('keeps a subscription precondition in the error panel when its modal cannot open', () => {
+      mockCanRoutePrecondition.mockReturnValue(false)
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: 'n1',
+        node_type: 'KSampler',
+        exception_type: 'InactiveSubscriptionError',
+        exception_message:
+          'User has no active subscription. Please subscribe to a plan to continue.',
+        traceback: []
+      })
+
+      expect(errorStore.lastExecutionError).not.toBeNull()
+      expect(errorStore.totalErrorCount).toBe(1)
     })
 
     it('still routes an ordinary node runtime error to the error panel', () => {

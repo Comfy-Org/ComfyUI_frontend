@@ -61,7 +61,10 @@ import {
   DOMWidgetImpl
 } from '@/scripts/domWidget'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
-import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import {
+  resolveAccountPrecondition,
+  resolvePromptResponsePrecondition
+} from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -776,11 +779,15 @@ export class ComfyApp {
         exceptionType: detail.exception_type ?? '',
         exceptionMessage: detail.exception_message ?? ''
       })
-      if (precondition) {
+      if (
+        precondition &&
         useAccountPreconditionDialog().open(precondition, {
           nodeType: detail.node_type
         })
-      } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
+      ) {
+        return
+      }
+      if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
         useExecutionErrorStore().showErrorOverlay()
       } else {
         useDialogService().showExecutionErrorDialog(detail)
@@ -1672,21 +1679,18 @@ export class ComfyApp {
               this.canvas.draw(true, true)
             }
           } catch (error: unknown) {
-            const preconditionResponseError =
-              error instanceof PromptExecutionError &&
-              typeof error.response.error === 'object'
-                ? error.response.error
+            const promptPrecondition =
+              error instanceof PromptExecutionError
+                ? resolvePromptResponsePrecondition(error.response.error)
                 : undefined
-            const promptPrecondition = preconditionResponseError
-              ? resolveAccountPrecondition({
-                  exceptionType: preconditionResponseError.type,
-                  exceptionMessage: preconditionResponseError.message
-                })
-              : undefined
             // Account preconditions (sign-in, subscription, credits) open their
-            // own modal and must stay out of the error panel and error count.
-            if (promptPrecondition) {
+            // own modal and stay out of the error panel. When the modal cannot
+            // open (subscription mode disabled), fall through so the error still
+            // surfaces in the panel instead of showing nothing.
+            if (
+              promptPrecondition &&
               useAccountPreconditionDialog().open(promptPrecondition)
+            ) {
               console.error(error)
               break
             }

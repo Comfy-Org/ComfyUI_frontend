@@ -1,4 +1,5 @@
 import type { AccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
+import { canRoutePreconditionToModal } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useDialogService } from '@/services/dialogService'
 
 export interface AccountPreconditionContext {
@@ -13,24 +14,27 @@ export interface AccountPreconditionContext {
 export function useAccountPreconditionDialog() {
   const dialogService = useDialogService()
 
+  // Opens the precondition modal and returns whether one was shown, so callers
+  // suppress the error panel only when the modal actually took over.
   function open(
     precondition: AccountPrecondition,
     context: AccountPreconditionContext = {}
-  ): void {
+  ): boolean {
+    if (!canRoutePreconditionToModal(precondition)) return false
     switch (precondition) {
       case 'sign_in':
         void dialogService.showApiNodesSignInDialog(
           context.nodeType ? [context.nodeType] : []
         )
-        return
+        return true
       case 'subscription':
         void dialogService.showSubscriptionRequiredDialog()
-        return
+        return true
       case 'credits':
         void dialogService.showTopUpCreditsDialog({
           isInsufficientCredits: true
         })
-        return
+        return true
     }
   }
 

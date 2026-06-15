@@ -8,13 +8,21 @@ const mockDialogService = {
   showTopUpCreditsDialog: vi.fn()
 }
 
+const mockCanRoute = vi.fn((_precondition: string) => true)
+
 vi.mock('@/services/dialogService', () => ({
   useDialogService: vi.fn(() => mockDialogService)
+}))
+
+vi.mock('@/platform/errorCatalog/accountPreconditionRouting', () => ({
+  canRoutePreconditionToModal: (precondition: string) =>
+    mockCanRoute(precondition)
 }))
 
 describe('useAccountPreconditionDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockCanRoute.mockReturnValue(true)
   })
 
   it('routes a sign-in precondition to the API sign-in dialog with the node type', () => {
@@ -54,5 +62,22 @@ describe('useAccountPreconditionDialog', () => {
     expect(
       mockDialogService.showSubscriptionRequiredDialog
     ).not.toHaveBeenCalled()
+  })
+
+  it('does not open a dialog and returns false when the precondition cannot be routed', () => {
+    mockCanRoute.mockReturnValue(false)
+
+    const shown = useAccountPreconditionDialog().open('subscription')
+
+    expect(shown).toBe(false)
+    expect(
+      mockDialogService.showSubscriptionRequiredDialog
+    ).not.toHaveBeenCalled()
+  })
+
+  it('returns true when a modal is shown', () => {
+    expect(useAccountPreconditionDialog().open('subscription')).toBe(true)
+    expect(useAccountPreconditionDialog().open('sign_in')).toBe(true)
+    expect(useAccountPreconditionDialog().open('credits')).toBe(true)
   })
 })
