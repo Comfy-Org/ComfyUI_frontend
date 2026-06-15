@@ -285,7 +285,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(screen.getByText('$0')).toBeInTheDocument()
     expect(screen.getByText('USD / mo')).toBeInTheDocument()
     expect(screen.getByText("What's included:")).toBeInTheDocument()
-    expect(screen.getByText('30 min max runtime')).toBeInTheDocument()
+    expect(screen.getByText('10 min max runtime')).toBeInTheDocument()
     expect(
       screen.queryByText('RTX 6000 Pro (96GB VRAM)')
     ).not.toBeInTheDocument()
