@@ -127,6 +127,7 @@ describe('ErrorOverlay', () => {
         type: 'execution',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
+        count: 1,
         priority: 0,
         cards: [
           {
@@ -160,6 +161,7 @@ describe('ErrorOverlay', () => {
         type: 'execution',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
+        count: 1,
         priority: 0,
         cards: [
           {

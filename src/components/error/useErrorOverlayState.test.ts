@@ -106,6 +106,7 @@ describe('useErrorOverlayState', () => {
         type: 'execution',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
+        count: 1,
         priority: 0,
         cards: [
           {
@@ -136,6 +137,7 @@ describe('useErrorOverlayState', () => {
         type: 'execution',
         groupKey: 'execution:KSampler',
         displayTitle: 'Required input is missing',
+        count: 1,
         priority: 0,
         cards: [
           {
@@ -175,6 +177,7 @@ describe('useErrorOverlayState', () => {
         type: 'execution',
         groupKey: 'execution:KSampler',
         displayTitle: 'Friendly validation title',
+        count: 1,
         priority: 0,
         cards: [
           {
@@ -220,6 +223,7 @@ describe('useErrorOverlayState', () => {
         type: 'execution',
         groupKey: 'execution:KSampler',
         displayTitle: 'Generation failed',
+        count: 1,
         priority: 0,
         cards: [
           {
@@ -269,6 +273,7 @@ describe('useErrorOverlayState', () => {
         displayMessage: 'A required media input has no file selected.',
         toastTitle: 'Media input missing',
         toastMessage: 'Load Image is missing a required media file.',
+        count: 1,
         priority: 3
       }
     ]
@@ -315,6 +320,7 @@ describe('useErrorOverlayState', () => {
         type: 'execution',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
+        count: 1,
         priority: 0,
         cards: [
           {
