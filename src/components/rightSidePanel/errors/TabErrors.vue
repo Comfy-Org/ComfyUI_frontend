@@ -328,6 +328,7 @@ import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
 import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
+import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
@@ -468,7 +469,7 @@ function getGroupCount(group: ErrorGroup): number {
     case 'missing_model':
       return missingModelGroups.value.length
     case 'missing_media':
-      return missingMediaGroups.value.length
+      return countMissingMediaReferences(missingMediaGroups.value)
   }
 }
 

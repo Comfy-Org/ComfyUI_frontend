@@ -505,6 +505,12 @@ describe('TabErrors.vue', () => {
     })
 
     expect(screen.getAllByTestId('missing-media-row')).toHaveLength(2)
+    expect(
+      within(screen.getByTestId('error-group-missing-media')).getByText('2')
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('errors-summary-hero')).getByText('2')
+    ).toBeInTheDocument()
 
     await user.click(
       screen.getByRole('button', { name: 'Second Loader - image' })
