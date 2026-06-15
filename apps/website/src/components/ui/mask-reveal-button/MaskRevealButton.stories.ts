@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import MaskRevealButton from './MaskRevealButton.vue'
 
 const meta: Meta<typeof MaskRevealButton> = {
-  title: 'Website/Common/MaskRevealButton',
+  title: 'Website/UI/MaskRevealButton',
   component: MaskRevealButton,
   tags: ['autodocs'],
   decorators: [
@@ -12,22 +12,19 @@ const meta: Meta<typeof MaskRevealButton> = {
     })
   ],
   argTypes: {
-    href: { control: 'text' },
-    target: { control: 'text' },
-    rel: { control: 'text' },
-    type: {
+    as: {
       control: { type: 'select' },
-      options: ['button', 'submit', 'reset']
+      options: ['button', 'a']
     },
+    asChild: { control: 'boolean' },
     disabled: { control: 'boolean' },
-    ariaLabel: { control: 'text' },
     variant: {
       control: { type: 'select' },
       options: ['solid', 'ghost']
     },
     size: {
       control: { type: 'select' },
-      options: ['sm', 'md', 'lg']
+      options: ['default', 'lg', 'icon']
     },
     iconPosition: {
       control: { type: 'select' },
@@ -41,7 +38,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  args: { href: '#' },
+  args: { as: 'a', href: '#' },
   render: (args) => ({
     components: { MaskRevealButton },
     setup: () => ({ args }),
@@ -50,7 +47,7 @@ export const Default: Story = {
 }
 
 export const Ghost: Story = {
-  args: { href: '#', variant: 'ghost' },
+  args: { as: 'a', href: '#', variant: 'ghost' },
   render: (args) => ({
     components: { MaskRevealButton },
     setup: () => ({ args }),
@@ -59,7 +56,7 @@ export const Ghost: Story = {
 }
 
 export const IconLeft: Story = {
-  args: { href: '#', iconPosition: 'left' },
+  args: { as: 'a', href: '#', iconPosition: 'left' },
   render: (args) => ({
     components: { MaskRevealButton },
     setup: () => ({ args }),
@@ -67,8 +64,8 @@ export const IconLeft: Story = {
   })
 }
 
-export const SmallSolid: Story = {
-  args: { href: '#', size: 'sm' },
+export const DefaultSolid: Story = {
+  args: { as: 'a', href: '#', size: 'default' },
   render: (args) => ({
     components: { MaskRevealButton },
     setup: () => ({ args }),
@@ -77,7 +74,7 @@ export const SmallSolid: Story = {
 }
 
 export const LargeSolid: Story = {
-  args: { href: '#', size: 'lg' },
+  args: { as: 'a', href: '#', size: 'lg' },
   render: (args) => ({
     components: { MaskRevealButton },
     setup: () => ({ args }),
@@ -86,7 +83,7 @@ export const LargeSolid: Story = {
 }
 
 export const WithCustomIcon: Story = {
-  args: { href: '#' },
+  args: { as: 'a', href: '#' },
   render: (args) => ({
     components: { MaskRevealButton },
     setup: () => ({ args }),
@@ -112,7 +109,7 @@ export const WithCustomIcon: Story = {
 }
 
 export const LabelVisible: Story = {
-  args: { href: '#', hideLabel: false },
+  args: { as: 'a', href: '#', hideLabel: false },
   render: (args) => ({
     components: { MaskRevealButton },
     setup: () => ({ args }),
@@ -138,25 +135,22 @@ export const AllVariants: Story = {
         <div class="flex flex-col gap-3">
           <span class="text-primary-comfy-canvas text-xs uppercase tracking-wider">Solid</span>
           <div class="flex flex-wrap items-center gap-4">
-            <MaskRevealButton href="#" variant="solid" size="sm">Small</MaskRevealButton>
-            <MaskRevealButton href="#" variant="solid" size="md">Medium</MaskRevealButton>
-            <MaskRevealButton href="#" variant="solid" size="lg">Large</MaskRevealButton>
+            <MaskRevealButton as="a" href="#" variant="solid" size="default">Default</MaskRevealButton>
+            <MaskRevealButton as="a" href="#" variant="solid" size="lg">Large</MaskRevealButton>
           </div>
         </div>
         <div class="flex flex-col gap-3">
           <span class="text-primary-comfy-canvas text-xs uppercase tracking-wider">Ghost</span>
           <div class="flex flex-wrap items-center gap-4">
-            <MaskRevealButton href="#" variant="ghost" size="sm">Small</MaskRevealButton>
-            <MaskRevealButton href="#" variant="ghost" size="md">Medium</MaskRevealButton>
-            <MaskRevealButton href="#" variant="ghost" size="lg">Large</MaskRevealButton>
+            <MaskRevealButton as="a" href="#" variant="ghost" size="default">Default</MaskRevealButton>
+            <MaskRevealButton as="a" href="#" variant="ghost" size="lg">Large</MaskRevealButton>
           </div>
         </div>
         <div class="flex flex-col gap-3">
           <span class="text-primary-comfy-canvas text-xs uppercase tracking-wider">Icon Left</span>
           <div class="flex flex-wrap items-center gap-4">
-            <MaskRevealButton href="#" iconPosition="left" size="sm">Small</MaskRevealButton>
-            <MaskRevealButton href="#" iconPosition="left" size="md">Medium</MaskRevealButton>
-            <MaskRevealButton href="#" iconPosition="left" size="lg">Large</MaskRevealButton>
+            <MaskRevealButton as="a" href="#" iconPosition="left" size="default">Default</MaskRevealButton>
+            <MaskRevealButton as="a" href="#" iconPosition="left" size="lg">Large</MaskRevealButton>
           </div>
         </div>
       </div>

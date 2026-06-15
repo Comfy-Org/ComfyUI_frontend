@@ -3,7 +3,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import PillButton from './PillButton.vue'
 
 const meta: Meta<typeof PillButton> = {
-  title: 'Website/Common/PillButton',
+  title: 'Website/UI/PillButton',
   component: PillButton,
   tags: ['autodocs'],
   decorators: [
@@ -12,22 +12,19 @@ const meta: Meta<typeof PillButton> = {
     })
   ],
   argTypes: {
-    href: { control: 'text' },
-    target: { control: 'text' },
-    rel: { control: 'text' },
-    type: {
+    as: {
       control: { type: 'select' },
-      options: ['button', 'submit', 'reset']
+      options: ['button', 'a']
     },
+    asChild: { control: 'boolean' },
     disabled: { control: 'boolean' },
-    ariaLabel: { control: 'text' },
     variant: {
       control: { type: 'select' },
       options: ['solid', 'ghost']
     },
     size: {
       control: { type: 'select' },
-      options: ['sm', 'md', 'lg']
+      options: ['default', 'lg', 'icon']
     },
     iconPosition: {
       control: { type: 'select' },
@@ -41,7 +38,7 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const AsAnchor: Story = {
-  args: { href: '#' },
+  args: { as: 'a', href: '#' },
   render: (args) => ({
     components: { PillButton },
     setup: () => ({ args }),
@@ -50,7 +47,7 @@ export const AsAnchor: Story = {
 }
 
 export const AsButton: Story = {
-  args: { type: 'button' },
+  args: { as: 'button', type: 'button' },
   render: (args) => ({
     components: { PillButton },
     setup: () => ({ args }),
@@ -59,7 +56,7 @@ export const AsButton: Story = {
 }
 
 export const Ghost: Story = {
-  args: { href: '#', variant: 'ghost' },
+  args: { as: 'a', href: '#', variant: 'ghost' },
   render: (args) => ({
     components: { PillButton },
     setup: () => ({ args }),
@@ -67,8 +64,8 @@ export const Ghost: Story = {
   })
 }
 
-export const SmallSolid: Story = {
-  args: { href: '#', size: 'sm' },
+export const DefaultSolid: Story = {
+  args: { as: 'a', href: '#', size: 'default' },
   render: (args) => ({
     components: { PillButton },
     setup: () => ({ args }),
@@ -77,7 +74,7 @@ export const SmallSolid: Story = {
 }
 
 export const LargeSolid: Story = {
-  args: { href: '#', size: 'lg' },
+  args: { as: 'a', href: '#', size: 'lg' },
   render: (args) => ({
     components: { PillButton },
     setup: () => ({ args }),
@@ -86,7 +83,7 @@ export const LargeSolid: Story = {
 }
 
 export const WithCustomIcon: Story = {
-  args: { href: '#' },
+  args: { as: 'a', href: '#' },
   render: (args) => ({
     components: { PillButton },
     setup: () => ({ args }),
@@ -112,7 +109,7 @@ export const WithCustomIcon: Story = {
 }
 
 export const IconLeft: Story = {
-  args: { href: '#', iconPosition: 'left' },
+  args: { as: 'a', href: '#', iconPosition: 'left' },
   render: (args) => ({
     components: { PillButton },
     setup: () => ({ args }),
@@ -121,7 +118,7 @@ export const IconLeft: Story = {
 }
 
 export const RevealLabelOnHover: Story = {
-  args: { href: '#', hideLabel: true },
+  args: { as: 'a', href: '#', hideLabel: true },
   render: (args) => ({
     components: { PillButton },
     setup: () => ({ args }),
@@ -146,17 +143,15 @@ export const AllVariants: Story = {
         <div class="flex flex-col gap-3">
           <span class="text-primary-comfy-canvas text-xs uppercase tracking-wider">Solid</span>
           <div class="flex flex-wrap items-center gap-4">
-            <PillButton href="#" variant="solid" size="sm">Small</PillButton>
-            <PillButton href="#" variant="solid" size="md">Medium</PillButton>
-            <PillButton href="#" variant="solid" size="lg">Large</PillButton>
+            <PillButton as="a" href="#" variant="solid" size="default">Default</PillButton>
+            <PillButton as="a" href="#" variant="solid" size="lg">Large</PillButton>
           </div>
         </div>
         <div class="flex flex-col gap-3">
           <span class="text-primary-comfy-canvas text-xs uppercase tracking-wider">Ghost</span>
           <div class="flex flex-wrap items-center gap-4">
-            <PillButton href="#" variant="ghost" size="sm">Small</PillButton>
-            <PillButton href="#" variant="ghost" size="md">Medium</PillButton>
-            <PillButton href="#" variant="ghost" size="lg">Large</PillButton>
+            <PillButton as="a" href="#" variant="ghost" size="default">Default</PillButton>
+            <PillButton as="a" href="#" variant="ghost" size="lg">Large</PillButton>
           </div>
         </div>
       </div>

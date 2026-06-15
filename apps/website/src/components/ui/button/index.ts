@@ -5,7 +5,7 @@ export { default as Button } from './Button.vue'
 
 export const buttonVariants = cva(
   [
-    "focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl text-sm font-bold tracking-wider whitespace-nowrap uppercase transition-all duration-200 outline-none focus-visible:ring-3 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+    "focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 aria-invalid:bg-destructive aria-invalid:hover:bg-destructive/90 inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-2xl text-sm font-bold tracking-wider whitespace-nowrap uppercase transition-all duration-200 outline-none focus-visible:ring-3 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
   ],
   {
     variants: {
@@ -17,6 +17,7 @@ export const buttonVariants = cva(
       },
       size: {
         default: 'h-10 px-6 py-2.5 has-[>svg]:px-3',
+        lg: 'h-14 px-8 py-4 has-[>svg]:px-5',
         icon: 'size-9'
       }
     },

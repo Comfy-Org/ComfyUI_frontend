@@ -11,6 +11,8 @@ import BuildWhatSection from "../components/home/BuildWhatSection.vue";
 import { t } from "../i18n/translations";
 import Badge from "@/components/common/Badge.vue";
 import { Button } from "@/components/ui/button";
+import { PillButton } from "@/components/ui/pill-button";
+import { MaskRevealButton } from "@/components/ui/mask-reveal-button";
 ---
 
 <BaseLayout
@@ -31,8 +33,10 @@ import { Button } from "@/components/ui/button";
   <HeroSection client:load />
   <div class="h-screen grid place-items-center">
     <div>
-      <Button aria-invalid>Button</Button>
+      <Button size="lg">Button</Button>
       <Button variant="outline">Button</Button>
+      <PillButton variant="ghost" size="lg">Button</PillButton>
+      <MaskRevealButton variant="ghost" size="lg">Button</MaskRevealButton>
     </div>
   </div>
   <SocialProofBarSection />

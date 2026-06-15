@@ -9,7 +9,7 @@ import {
 } from '../../data/learningTutorials'
 import { t } from '../../i18n/translations'
 import Badge from '../common/Badge.vue'
-import MaskRevealButton from '../common/MaskRevealButton.vue'
+import { MaskRevealButton } from '../ui/mask-reveal-button'
 import TutorialDetailDialog from './TutorialDetailDialog.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -78,11 +78,12 @@ const activeTutorial = () =>
             </h3>
             <MaskRevealButton
               v-if="tutorial.href"
+              as="a"
               :href="tutorial.href"
               icon-position="right"
               class="shrink-0"
               variant="ghost"
-              size="sm"
+              size="default"
             >
               {{ t('cta.tryWorkflow', locale) }}
               <template #icon>

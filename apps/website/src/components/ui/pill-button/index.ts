@@ -1,17 +1,19 @@
 import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
+export { default as PillButton } from './PillButton.vue'
+
 export const pillButtonVariants = cva({
-  base: 'group relative inline-flex w-fit cursor-pointer items-center overflow-hidden rounded-lg p-1 font-bold text-nowrap transition-all duration-500 disabled:cursor-not-allowed disabled:opacity-50',
+  base: 'group relative inline-flex w-fit uppercase cursor-pointer items-center overflow-hidden rounded-2xl p-1 text-sm font-bold tracking-wider text-nowrap transition-all duration-500 disabled:cursor-not-allowed disabled:opacity-50',
   variants: {
     variant: {
       solid: 'bg-primary-comfy-yellow text-primary-comfy-ink',
       ghost: 'text-primary-comfy-yellow bg-transparent'
     },
     size: {
-      sm: 'h-10 text-xs',
-      md: 'h-12 text-sm',
-      lg: 'h-14 text-base'
+      default: 'h-10 px-6 py-2.5 has-[>svg]:px-3',
+      lg: 'h-14 px-8 py-4 has-[>svg]:px-5',
+      icon: 'size-9'
     },
     iconPosition: {
       right: '',
@@ -20,12 +22,7 @@ export const pillButtonVariants = cva({
   },
   compoundVariants: [
     {
-      size: 'sm',
-      iconPosition: 'right',
-      class: 'ps-4 pe-12 hover:ps-12 hover:pe-4'
-    },
-    {
-      size: 'md',
+      size: 'default',
       iconPosition: 'right',
       class: 'ps-6 pe-14 hover:ps-14 hover:pe-6'
     },
@@ -35,12 +32,7 @@ export const pillButtonVariants = cva({
       class: 'ps-8 pe-16 hover:ps-16 hover:pe-8'
     },
     {
-      size: 'sm',
-      iconPosition: 'left',
-      class: 'ps-12 pe-4 hover:ps-4 hover:pe-12'
-    },
-    {
-      size: 'md',
+      size: 'default',
       iconPosition: 'left',
       class: 'ps-14 pe-6 hover:ps-6 hover:pe-14'
     },
@@ -52,22 +44,22 @@ export const pillButtonVariants = cva({
   ],
   defaultVariants: {
     variant: 'solid',
-    size: 'md',
+    size: 'default',
     iconPosition: 'right'
   }
 })
 
 export const pillButtonBadgeVariants = cva({
-  base: 'absolute z-10 flex items-center justify-center rounded-lg transition-all duration-500',
+  base: 'absolute z-10 flex items-center justify-center rounded-xl transition-all duration-500',
   variants: {
     variant: {
-      solid: 'bg-primary-comfy-ink text-primary-comfy-yellow',
+      solid: 'text-primary-comfy-yellow bg-primary-comfy-ink',
       ghost: 'bg-primary-comfy-yellow text-primary-comfy-ink'
     },
     size: {
-      sm: 'size-8',
-      md: 'size-10',
-      lg: 'size-12'
+      default: 'size-8',
+      lg: 'size-12',
+      icon: 'size-7'
     },
     iconPosition: {
       right: '',
@@ -76,14 +68,9 @@ export const pillButtonBadgeVariants = cva({
   },
   compoundVariants: [
     {
-      size: 'sm',
+      size: 'default',
       iconPosition: 'right',
       class: 'right-1 group-hover:right-[calc(100%-36px)]'
-    },
-    {
-      size: 'md',
-      iconPosition: 'right',
-      class: 'right-1 group-hover:right-[calc(100%-44px)]'
     },
     {
       size: 'lg',
@@ -91,14 +78,9 @@ export const pillButtonBadgeVariants = cva({
       class: 'right-1 group-hover:right-[calc(100%-52px)]'
     },
     {
-      size: 'sm',
+      size: 'default',
       iconPosition: 'left',
       class: 'left-1 group-hover:left-[calc(100%-36px)]'
-    },
-    {
-      size: 'md',
-      iconPosition: 'left',
-      class: 'left-1 group-hover:left-[calc(100%-44px)]'
     },
     {
       size: 'lg',
@@ -108,7 +90,7 @@ export const pillButtonBadgeVariants = cva({
   ],
   defaultVariants: {
     variant: 'solid',
-    size: 'md',
+    size: 'default',
     iconPosition: 'right'
   }
 })
