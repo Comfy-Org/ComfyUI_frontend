@@ -9,7 +9,7 @@ import {
   navigationMenuTriggerStyle
 } from '@/components/ui/navigation-menu'
 import Badge from '@/components/common/Badge.vue'
-import PillButton from './PillButton.vue'
+import BrandButton from './BrandButton.vue'
 
 type NavColumnItem = {
   label: string
@@ -101,13 +101,12 @@ const mainNavigation: NavItem[] = [
                 <p class="mt-4 font-extrabold uppercase">
                   {{ navItem.featured.title }}
                 </p>
-                <PillButton
+                <BrandButton
                   :href="navItem.featured.cta.href"
                   :aria-label="navItem.featured.cta.ariaLabel"
-                  variant="ghost"
                 >
                   {{ navItem.featured.cta.label }}
-                </PillButton>
+                </BrandButton>
               </li>
 
               <li

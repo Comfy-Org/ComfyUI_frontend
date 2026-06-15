@@ -2,7 +2,7 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const maskRevealButtonVariants = cva({
-  base: 'group relative uppercase inline-flex w-fit cursor-pointer items-center overflow-hidden rounded-lg p-1 font-bold text-nowrap transition-all duration-500 disabled:cursor-not-allowed disabled:opacity-50',
+  base: 'group/mask-reveal relative uppercase inline-flex w-fit cursor-pointer items-center overflow-hidden rounded-lg p-1 font-bold text-nowrap transition-all duration-500 disabled:cursor-not-allowed disabled:opacity-50',
   variants: {
     variant: {
       solid: 'bg-primary-comfy-yellow text-primary-comfy-ink',
@@ -37,7 +37,7 @@ export const maskRevealButtonBadgeVariants = cva({
   base: 'absolute z-10 flex items-center justify-center rounded-lg transition-all duration-500',
   variants: {
     variant: {
-      solid: 'bg-primary-comfy-ink text-primary-comfy-yellow',
+      solid: 'text-primary-comfy-yellow bg-primary-comfy-ink',
       ghost: 'bg-primary-comfy-yellow text-primary-comfy-ink'
     },
     size: {
@@ -54,32 +54,32 @@ export const maskRevealButtonBadgeVariants = cva({
     {
       size: 'sm',
       iconPosition: 'right',
-      class: 'right-1 group-hover:right-[calc(100%-36px)]'
+      class: 'right-1 group-hover/mask-reveal:right-[calc(100%-36px)]'
     },
     {
       size: 'md',
       iconPosition: 'right',
-      class: 'right-1 group-hover:right-[calc(100%-44px)]'
+      class: 'right-1 group-hover/mask-reveal:right-[calc(100%-44px)]'
     },
     {
       size: 'lg',
       iconPosition: 'right',
-      class: 'right-1 group-hover:right-[calc(100%-52px)]'
+      class: 'right-1 group-hover/mask-reveal:right-[calc(100%-52px)]'
     },
     {
       size: 'sm',
       iconPosition: 'left',
-      class: 'left-1 group-hover:left-[calc(100%-36px)]'
+      class: 'left-1 group-hover/mask-reveal:left-[calc(100%-36px)]'
     },
     {
       size: 'md',
       iconPosition: 'left',
-      class: 'left-1 group-hover:left-[calc(100%-44px)]'
+      class: 'left-1 group-hover/mask-reveal:left-[calc(100%-44px)]'
     },
     {
       size: 'lg',
       iconPosition: 'left',
-      class: 'left-1 group-hover:left-[calc(100%-52px)]'
+      class: 'left-1 group-hover/mask-reveal:left-[calc(100%-52px)]'
     }
   ],
   defaultVariants: {
@@ -100,8 +100,8 @@ export const maskRevealLabelVariants = cva({
     'data-[icon-position=left]:[mask-position:0_0] data-[icon-position=left]:[-webkit-mask-position:0_0]',
     'data-[hidden=true]:[mask-size:0%_100%] data-[hidden=true]:[-webkit-mask-size:0%_100%]',
     'data-[hidden=false]:[mask-size:100%_100%] data-[hidden=false]:[-webkit-mask-size:100%_100%]',
-    'group-hover:data-[hidden=true]:[mask-size:calc(100%_+_1px)_100%] group-hover:data-[hidden=true]:[-webkit-mask-size:calc(100%_+_1px)_100%]',
-    'group-focus-visible:data-[hidden=true]:[mask-size:calc(100%_+_1px)_100%] group-focus-visible:data-[hidden=true]:[-webkit-mask-size:calc(100%_+_1px)_100%]'
+    'group-hover/mask-reveal:data-[hidden=true]:[mask-size:calc(100%_+_1px)_100%] group-hover/mask-reveal:data-[hidden=true]:[-webkit-mask-size:calc(100%_+_1px)_100%]',
+    'group-focus-visible/mask-reveal:data-[hidden=true]:[mask-size:calc(100%_+_1px)_100%] group-focus-visible/mask-reveal:data-[hidden=true]:[-webkit-mask-size:calc(100%_+_1px)_100%]'
   ].join(' ')
 })
 
