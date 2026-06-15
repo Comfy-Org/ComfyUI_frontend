@@ -1,20 +1,14 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-import {
-  breakpointsTailwind,
-  useBreakpoints,
-  useEventListener,
-  whenever
-} from '@vueuse/core'
+import { useEventListener } from '@vueuse/core'
 import { nextTick, onMounted, ref } from 'vue'
 
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
-import BreadthumbIcon from '../../icons/BreadthumbIcon.vue'
 import BrandButton from '../BrandButton.vue'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
-import HeaderMainDesktop from "./HeaderMainDesktop.vue"
+import HeaderMainDesktop from './HeaderMainDesktop.vue'
+import HeaderMainMobile from './HeaderMainMobile.vue'
 
 const { locale = 'en', githubStars = '' } = defineProps<{
   locale?: Locale
@@ -40,48 +34,22 @@ const ctaButtons = [
 ]
 
 const currentPath = ref('')
-const mobileMenuOpen = ref(false)
 const isNavigating = ref(false)
-const hamburgerRef = ref<HTMLButtonElement | undefined>()
-
-function closeMobileMenu() {
-  mobileMenuOpen.value = false
-  hamburgerRef.value?.focus()
-}
-
-function onKeydown(e: KeyboardEvent) {
-  if (e.key === 'Escape') {
-    closeMobileMenu()
-  }
-}
 
 async function onNavigate() {
   isNavigating.value = true
-  closeMobileMenu()
   currentPath.value = window.location.pathname
   await nextTick()
   isNavigating.value = false
 }
 
-const breakpoints = useBreakpoints(breakpointsTailwind)
-const isDesktop = breakpoints.greaterOrEqual('lg')
-
-whenever(isDesktop, () => {
-  mobileMenuOpen.value = false
-  // Don't focus hamburger when transitioning to desktop — it's hidden
-})
-
 onMounted(() => {
   currentPath.value = window.location.pathname
-  useEventListener(document, 'keydown', onKeydown)
   useEventListener(document, 'astro:after-swap', onNavigate)
 })
 </script>
 
 <template>
-  <!-- <MobileMenu :open="mobileMenuOpen" :navigating="isNavigating" :links="navLinks" :cta-links="ctaButtons"
-    :locale="locale" @close="closeMobileMenu" /> -->
-
   <nav
     class="fixed inset-x-0 top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
     aria-label="Main navigation"
@@ -108,7 +76,8 @@ onMounted(() => {
     </a>
 
     <!-- Desktop nav links -->
-    <HeaderMainDesktop :locale="locale" />
+    <HeaderMainDesktop :locale="locale" class="hidden lg:block" />
+    <HeaderMainMobile :locale="locale" class="lg:hidden" />
 
     <!-- Desktop CTA buttons -->
     <div
@@ -131,34 +100,5 @@ onMounted(() => {
         >{{ cta.core }}
       </BrandButton>
     </div>
-
-    <!-- Mobile hamburger -->
-    <button
-      ref="hamburgerRef"
-      :class="
-        cn(
-          'flex size-10 items-center justify-center rounded-xl lg:hidden',
-          mobileMenuOpen
-            ? 'border-primary-comfy-yellow border-2 bg-transparent'
-            : 'bg-primary-comfy-yellow'
-        )
-      "
-      :aria-label="t('nav.toggleMenu', locale)"
-      aria-controls="site-mobile-menu"
-      :aria-expanded="mobileMenuOpen"
-      @click="mobileMenuOpen = !mobileMenuOpen"
-    >
-      <BreadthumbIcon
-        v-if="!mobileMenuOpen"
-        class="h-3 w-5 text-primary-comfy-ink"
-      />
-      <img
-        v-else
-        src="/icons/close.svg"
-        alt=""
-        class="size-5"
-        aria-hidden="true"
-      />
-    </button>
   </nav>
 </template>
