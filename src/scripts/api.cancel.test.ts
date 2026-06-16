@@ -13,8 +13,7 @@ import { api } from '@/scripts/api'
  * shape and the throw-on-failure behavior without hitting a server.
  */
 const okResponse = () => ({ ok: true, status: 200 }) as Response
-const errorResponse = (status: number) =>
-  ({ ok: false, status }) as Response
+const errorResponse = (status: number) => ({ ok: false, status }) as Response
 
 describe('api jobs-namespace cancel', () => {
   let fetchApiSpy: ReturnType<typeof vi.spyOn>
