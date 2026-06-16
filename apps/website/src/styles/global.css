@@ -241,7 +241,3 @@ video::-webkit-media-controls-panel {
   --site-bg-soft: color-mix(in srgb, var(--site-bg) 88%, black 12%);
   --site-border-subtle: rgb(255 255 255 / 0.1);
 }
-
-@theme inline {
-  --font-heading: var(--font-sans);
-}
