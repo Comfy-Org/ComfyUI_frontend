@@ -18,9 +18,7 @@ export const customerStories: CustomerStory[] = [
     category: 'customers.story.series-entertainment.category',
     title: 'customers.story.series-entertainment.title',
     body: 'customers.story.series-entertainment.body',
-    detailPrefix: 'customers.detail.series-entertainment',
-    readMoreHref:
-      'https://comfy.org/cloud/enterprise-case-studies/how-series-entertainment-rebuilt-game-and-video-production-with-comfyui'
+    detailPrefix: 'customers.detail.series-entertainment'
   },
   {
     slug: 'open-story-movement',
