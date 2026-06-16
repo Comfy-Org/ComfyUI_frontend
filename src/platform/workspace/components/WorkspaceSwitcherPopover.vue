@@ -183,6 +183,8 @@ function getRoleLabel(role: AvailableWorkspace['role']): string {
 }
 
 function resolveTierLabel(workspace: AvailableWorkspace): string | null {
+  if (workspace.type !== 'personal') return null
+
   if (isCurrentWorkspace(workspace)) {
     return currentSubscriptionTierName.value || null
   }
