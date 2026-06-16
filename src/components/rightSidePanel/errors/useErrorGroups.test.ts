@@ -334,7 +334,7 @@ describe('useErrorGroups', () => {
       )
       expect(missingGroup).toBeDefined()
       expect(missingGroup?.groupKey).toBe('missing_node')
-      expect(missingGroup?.displayTitle).toBe('Missing Node Packs (1)')
+      expect(missingGroup?.displayTitle).toBe('Missing Node Packs')
       expect(missingGroup?.displayMessage).toBe(
         'Install missing packs to use this workflow.'
       )
@@ -982,7 +982,7 @@ describe('useErrorGroups', () => {
       )
       expect(modelGroup).toBeDefined()
       expect(modelGroup?.groupKey).toBe('missing_model')
-      expect(modelGroup?.displayTitle).toBe('Missing Models (1)')
+      expect(modelGroup?.displayTitle).toBe('Missing Models')
     })
   })
 
@@ -1098,7 +1098,7 @@ describe('useErrorGroups', () => {
       const missingMediaGroup = groups.allErrorGroups.value.find(
         (group) => group.type === 'missing_media'
       )
-      expect(missingMediaGroup?.displayTitle).toBe('Missing Inputs (2)')
+      expect(missingMediaGroup?.displayTitle).toBe('Missing Inputs')
     })
   })
 

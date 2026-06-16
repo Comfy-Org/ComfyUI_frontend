@@ -6,10 +6,6 @@ import { normalizeNodeName, translateCatalogMessage } from './catalogI18n'
 import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import { st } from '@/i18n'
 
-function formatCountTitle(title: string, count: number): string {
-  return `${title} (${count})`
-}
-
 function formatNodeTypeName(nodeType: string): string | null {
   const trimmed = nodeType.trim()
   if (!trimmed) return null
@@ -344,15 +340,12 @@ export function resolveMissingErrorMessage(
     case 'missing_node':
       return {
         catalogId: 'missing_node',
-        displayTitle: formatCountTitle(
-          source.isCloud
-            ? st(
-                'rightSidePanel.missingNodePacks.unsupportedTitle',
-                'Unsupported Node Packs'
-              )
-            : st('rightSidePanel.missingNodePacks.title', 'Missing Node Packs'),
-          source.count
-        ),
+        displayTitle: source.isCloud
+          ? st(
+              'rightSidePanel.missingNodePacks.unsupportedTitle',
+              'Unsupported Node Packs'
+            )
+          : st('rightSidePanel.missingNodePacks.title', 'Missing Node Packs'),
         displayMessage: resolveMissingNodeDisplayMessage(source),
         toastTitle: resolveMissingNodeToastTitle(source),
         toastMessage: resolveMissingNodeToastMessage(source)
@@ -360,10 +353,7 @@ export function resolveMissingErrorMessage(
     case 'swap_nodes':
       return {
         catalogId: 'swap_nodes',
-        displayTitle: formatCountTitle(
-          st('nodeReplacement.swapNodesTitle', 'Swap Nodes'),
-          source.count
-        ),
+        displayTitle: st('nodeReplacement.swapNodesTitle', 'Swap Nodes'),
         displayMessage: resolveSwapNodeDisplayMessage(),
         toastTitle: resolveSwapNodeToastTitle(source),
         toastMessage: resolveSwapNodeToastMessage(source)
@@ -371,12 +361,9 @@ export function resolveMissingErrorMessage(
     case 'missing_model':
       return {
         catalogId: 'missing_model',
-        displayTitle: formatCountTitle(
-          st(
-            'rightSidePanel.missingModels.missingModelsTitle',
-            'Missing Models'
-          ),
-          source.count
+        displayTitle: st(
+          'rightSidePanel.missingModels.missingModelsTitle',
+          'Missing Models'
         ),
         displayMessage: resolveMissingModelDisplayMessage(source),
         toastTitle: resolveMissingModelToastTitle(source),
@@ -385,9 +372,9 @@ export function resolveMissingErrorMessage(
     case 'missing_media':
       return {
         catalogId: 'missing_media',
-        displayTitle: formatCountTitle(
-          st('rightSidePanel.missingMedia.missingMediaTitle', 'Missing Inputs'),
-          source.count
+        displayTitle: st(
+          'rightSidePanel.missingMedia.missingMediaTitle',
+          'Missing Inputs'
         ),
         displayMessage: resolveMissingMediaDisplayMessage(),
         toastTitle: resolveMissingMediaToastTitle(source),
