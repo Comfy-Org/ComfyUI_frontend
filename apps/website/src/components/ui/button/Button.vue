@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PrimitiveProps } from 'reka-ui'
-import type { HTMLAttributes } from 'vue'
+import type { Component, HTMLAttributes } from 'vue'
 import type { ButtonVariants } from '.'
 import { Primitive } from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -11,6 +11,8 @@ interface Props extends PrimitiveProps {
   size?: ButtonVariants['size']
   class?: HTMLAttributes['class']
   disabled?: boolean
+  prependIcon?: Component
+  appendIcon?: Component
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -28,6 +30,14 @@ const props = withDefaults(defineProps<Props>(), {
     :disabled="disabled"
     :class="cn(buttonVariants({ variant, size }), props.class)"
   >
-    <slot />
+    <slot name="prepend">
+      <component :is="prependIcon" v-if="prependIcon" />
+    </slot>
+    <span class="ppformula-text-center">
+      <slot />
+    </span>
+    <slot name="append">
+      <component :is="appendIcon" v-if="appendIcon" />
+    </slot>
   </Primitive>
 </template>
