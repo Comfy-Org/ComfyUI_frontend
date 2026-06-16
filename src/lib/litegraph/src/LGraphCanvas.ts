@@ -8931,71 +8931,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
   }
 
-  /**
-   * Collect all nodes that are children of groups in the selection
-   */
-  private collectNodesInGroups(items: Set<Positionable>): Set<LGraphNode> {
-    const nodesInGroups = new Set<LGraphNode>()
-    for (const item of items) {
-      if (item instanceof LGraphGroup) {
-        for (const child of item._children) {
-          if (child instanceof LGraphNode) {
-            nodesInGroups.add(child)
-          }
-        }
-      }
-    }
-    return nodesInGroups
-  }
-
-  /**
-   * Move group children (both nodes and non-nodes)
-   */
-  private moveGroupChildren(
-    group: LGraphGroup,
-    deltaX: number,
-    deltaY: number,
-    nodesToMove: Array<{ node: LGraphNode; newPos: { x: number; y: number } }>
-  ): void {
-    for (const child of group._children) {
-      if (child instanceof LGraphNode) {
-        const node = child as LGraphNode
-        nodesToMove.push({
-          node,
-          newPos: this.calculateNewPosition(node, deltaX, deltaY)
-        })
-      } else if (!(child instanceof LGraphGroup)) {
-        // Non-node, non-group children (reroutes, etc.)
-        // Skip groups here - they're already in allItems and will be
-        // processed in the main loop of moveChildNodesInGroupVueMode
-        child.move(deltaX, deltaY, true)
-      }
-    }
-  }
-
   moveChildNodesInGroupVueMode(
     allItems: Set<Positionable>,
     deltaX: number,
     deltaY: number
   ) {
-    const nodesInMovingGroups = this.collectNodesInGroups(allItems)
     const nodesToMove: NewNodePosition[] = []
 
     // First, collect all the moves we need to make
     for (const item of allItems) {
-      const isNode = item instanceof LGraphNode
-      if (isNode) {
-        const node = item as LGraphNode
-        if (nodesInMovingGroups.has(node)) {
-          continue
-        }
+      if (item instanceof LGraphNode) {
         nodesToMove.push({
-          node,
-          newPos: this.calculateNewPosition(node, deltaX, deltaY)
+          node: item,
+          newPos: this.calculateNewPosition(item, deltaX, deltaY)
         })
-      } else if (item instanceof LGraphGroup) {
-        item.move(deltaX, deltaY, true)
-        this.moveGroupChildren(item, deltaX, deltaY, nodesToMove)
       } else {
         // Other items (reroutes, etc.)
         item.move(deltaX, deltaY, true)

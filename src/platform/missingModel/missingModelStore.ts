@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { computed, onScopeDispose, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import { t } from '@/i18n'
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -7,7 +7,6 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
@@ -77,25 +76,15 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     )
   })
 
-  // Persists across component re-mounts so that download progress,
-  // URL inputs, etc. survive tab switches within the right-side panel.
+  // Persists across component re-mounts so that download progress
+  // survives tab switches within the right-side panel.
   const modelExpandState = ref<Record<string, boolean>>({})
   const selectedLibraryModel = ref<Record<string, string>>({})
-  const importCategoryMismatch = ref<Record<string, string>>({})
   const importTaskIds = ref<Record<string, string>>({})
-  const urlInputs = ref<Record<string, string>>({})
-  const urlMetadata = ref<Record<string, AssetMetadata | null>>({})
-  const urlFetching = ref<Record<string, boolean>>({})
-  const urlErrors = ref<Record<string, string>>({})
-  const urlImporting = ref<Record<string, boolean>>({})
   const folderPaths = ref<Record<string, string[]>>({})
   const fileSizes = ref<Record<string, number>>({})
 
-  const _urlDebounceTimers: Record<string, ReturnType<typeof setTimeout>> = {}
-
   let _verificationAbortController: AbortController | null = null
-
-  onScopeDispose(cancelDebounceTimers)
 
   function createVerificationAbortController(): AbortController {
     _verificationAbortController?.abort()
@@ -134,13 +123,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   function clearInteractionStateForName(name: string) {
     delete modelExpandState.value[name]
     delete selectedLibraryModel.value[name]
-    delete importCategoryMismatch.value[name]
     delete importTaskIds.value[name]
-    delete urlInputs.value[name]
-    delete urlMetadata.value[name]
-    delete urlFetching.value[name]
-    delete urlErrors.value[name]
-    delete urlImporting.value[name]
   }
 
   function removeMissingModelsByNodeId(nodeId: string) {
@@ -222,31 +205,6 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     return activeMissingModelGraphIds.value.has(String(node.id))
   }
 
-  function cancelDebounceTimers() {
-    for (const key of Object.keys(_urlDebounceTimers)) {
-      clearTimeout(_urlDebounceTimers[key])
-      delete _urlDebounceTimers[key]
-    }
-  }
-
-  function setDebounceTimer(
-    key: string,
-    callback: () => void,
-    delayMs: number
-  ) {
-    if (_urlDebounceTimers[key]) {
-      clearTimeout(_urlDebounceTimers[key])
-    }
-    _urlDebounceTimers[key] = setTimeout(callback, delayMs)
-  }
-
-  function clearDebounceTimer(key: string) {
-    if (_urlDebounceTimers[key]) {
-      clearTimeout(_urlDebounceTimers[key])
-      delete _urlDebounceTimers[key]
-    }
-  }
-
   function setFolderPaths(paths: Record<string, string[]>) {
     folderPaths.value = paths
   }
@@ -259,16 +217,9 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     _verificationAbortController?.abort()
     _verificationAbortController = null
     missingModelCandidates.value = null
-    cancelDebounceTimers()
     modelExpandState.value = {}
     selectedLibraryModel.value = {}
-    importCategoryMismatch.value = {}
     importTaskIds.value = {}
-    urlInputs.value = {}
-    urlMetadata.value = {}
-    urlFetching.value = {}
-    urlErrors.value = {}
-    urlImporting.value = {}
     folderPaths.value = {}
     fileSizes.value = {}
   }
@@ -323,19 +274,10 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     modelExpandState,
     selectedLibraryModel,
     importTaskIds,
-    importCategoryMismatch,
-    urlInputs,
-    urlMetadata,
-    urlFetching,
-    urlErrors,
-    urlImporting,
     folderPaths,
     fileSizes,
 
     setFolderPaths,
-    setFileSize,
-
-    setDebounceTimer,
-    clearDebounceTimer
+    setFileSize
   }
 })
