@@ -27,6 +27,8 @@
         <div v-if="useSearchBoxV2" role="search" class="relative">
           <NodeSearchContent
             :filters="nodeFilters"
+            :default-root-filter="defaultRootFilter"
+            :data-default-root-filter="defaultRootFilter"
             @add-filter="addFilter"
             @remove-filter="removeFilter"
             @add-node="addNode"
@@ -92,6 +94,8 @@ import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import LinkReleaseContextMenu from './LinkReleaseContextMenu.vue'
 import type { LinkReleaseContext } from './linkReleaseMenuModel'
 import NodeSearchContent from './v2/NodeSearchContent.vue'
+import { RootCategory } from './v2/rootCategories'
+import type { RootCategoryId } from './v2/rootCategories'
 import NodeSearchBox from './NodeSearchBox.vue'
 
 let triggerEvent: CanvasPointerEvent | null = null
@@ -142,6 +146,13 @@ function closeDialog() {
   visible.value = false
 }
 const canvasStore = useCanvasStore()
+
+// Pre-select the Essentials category when opening search on an empty graph,
+// where new users benefit most from a curated starting set.
+const defaultRootFilter = computed<RootCategoryId | null>(() => {
+  const graph = canvasStore.canvas?.graph
+  return graph && graph.nodes.length > 0 ? null : RootCategory.Essentials
+})
 
 function connectNewNode(
   nodeDef: ComfyNodeDefImpl,
