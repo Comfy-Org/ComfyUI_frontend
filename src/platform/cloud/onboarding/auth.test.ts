@@ -59,6 +59,13 @@ describe('getSurveyCompletedStatus', () => {
     await expect(getSurveyCompletedStatus()).resolves.toBe(false)
   })
 
+  test('200 with missing value key → false', async () => {
+    fetchApi.mockResolvedValueOnce(
+      mockResponse({ ok: true, status: 200, body: {} })
+    )
+    await expect(getSurveyCompletedStatus()).resolves.toBe(false)
+  })
+
   test('404 → true (do not bounce on missing key)', async () => {
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 404 }))
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
