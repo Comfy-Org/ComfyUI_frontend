@@ -378,6 +378,98 @@ describe('useErrorOverlayState', () => {
     )
   })
 
+  it('uses group copy for one execution group with multiple errors', async () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'execution',
+        groupKey: 'execution:required_input_missing',
+        displayTitle: 'Missing connection',
+        displayMessage: 'Required input slots have no connection feeding them.',
+        count: 2,
+        priority: 1,
+        cards: [
+          {
+            id: '1',
+            title: 'KSampler',
+            errors: [
+              { message: 'KSampler is missing model' },
+              { message: 'KSampler is missing positive' }
+            ]
+          }
+        ]
+      }
+    ]
+    mountOverlayState()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.showErrorOverlay()
+    await nextTick()
+
+    expect(screen.getByTestId('title')).toHaveTextContent('Missing connection')
+    expect(screen.getByTestId('message')).toHaveTextContent(
+      'Required input slots have no connection feeding them.'
+    )
+  })
+
+  it('uses aggregate copy for one missing model group with multiple rows', async () => {
+    mockErrorGroups.missingModelGroups.value = [
+      {
+        directory: 'checkpoints',
+        isAssetSupported: true,
+        models: [
+          {
+            name: 'first.safetensors',
+            representative: {
+              nodeId: '1',
+              nodeType: 'CheckpointLoaderSimple',
+              widgetName: 'ckpt_name',
+              name: 'first.safetensors',
+              directory: 'checkpoints',
+              isAssetSupported: true,
+              isMissing: true
+            },
+            referencingNodes: [{ nodeId: '1', widgetName: 'ckpt_name' }]
+          },
+          {
+            name: 'second.safetensors',
+            representative: {
+              nodeId: '2',
+              nodeType: 'CheckpointLoaderSimple',
+              widgetName: 'ckpt_name',
+              name: 'second.safetensors',
+              directory: 'checkpoints',
+              isAssetSupported: true,
+              isMissing: true
+            },
+            referencingNodes: [{ nodeId: '2', widgetName: 'ckpt_name' }]
+          }
+        ]
+      }
+    ]
+    mockAllErrorGroups.value = [
+      {
+        type: 'missing_model',
+        groupKey: 'missing_model',
+        displayTitle: 'Missing Models',
+        displayMessage: 'Import a model, or open the node to replace it.',
+        toastTitle: 'Missing models',
+        toastMessage: '2 model files are missing.',
+        count: 2,
+        priority: 2
+      }
+    ]
+    mountOverlayState()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.showErrorOverlay()
+    await nextTick()
+
+    expect(screen.getByTestId('title')).toHaveTextContent('2 errors found')
+    expect(screen.getByTestId('message')).toHaveTextContent(
+      'Resolve them before running the workflow.'
+    )
+  })
+
   it('does not show when a raw error has no resolved overlay message', async () => {
     mountOverlayState()
 

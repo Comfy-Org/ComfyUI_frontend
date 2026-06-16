@@ -84,6 +84,12 @@ describe('countMissingModels', () => {
 })
 
 describe('groupMissingModelCandidates', () => {
+  it('returns no groups without candidates', () => {
+    expect(groupMissingModelCandidates(null, true)).toEqual([])
+    expect(groupMissingModelCandidates(undefined, true)).toEqual([])
+    expect(groupMissingModelCandidates([], true)).toEqual([])
+  })
+
   it('keeps cloud import-supported candidates grouped by directory', () => {
     expect(
       summarizeGroups(
