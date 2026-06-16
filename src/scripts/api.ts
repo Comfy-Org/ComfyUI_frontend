@@ -5,7 +5,9 @@ import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
+import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import type {
   ModelFile,
@@ -437,6 +439,7 @@ export class ComfyApi extends EventTarget {
 
   async fetchApi(route: string, options?: RequestInit) {
     const headers: HeadersInit = options?.headers ?? {}
+    let unifiedRetryOn401 = false
 
     if (isCloud) {
       await this.waitForAuthInitialization()
@@ -458,15 +461,16 @@ export class ComfyApi extends EventTarget {
         for (const [key, value] of Object.entries(authHeader)) {
           addHeaderEntry(headers, key, value)
         }
+        unifiedRetryOn401 = useFeatureFlags().flags.unifiedCloudAuthEnabled
       }
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
-    return fetch(this.apiURL(route), {
-      cache: 'no-cache',
-      ...options,
-      headers
-    })
+    return fetchWithUnifiedRemint(
+      this.apiURL(route),
+      { cache: 'no-cache', ...options, headers },
+      unifiedRetryOn401
+    )
   }
 
   override addEventListener<TEvent extends keyof ApiEvents>(

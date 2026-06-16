@@ -22,6 +22,7 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
+import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
 import {
   clearPreservedQuery,
@@ -274,12 +275,16 @@ export const useAuthStore = defineStore('auth', () => {
         throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
       }
 
-      const response = await fetch(buildApiUrl('/customers/balance'), {
-        headers: {
-          ...authHeader,
-          'Content-Type': 'application/json'
-        }
-      })
+      const response = await fetchWithUnifiedRemint(
+        buildApiUrl('/customers/balance'),
+        {
+          headers: {
+            ...authHeader,
+            'Content-Type': 'application/json'
+          }
+        },
+        isCloud && flags.unifiedCloudAuthEnabled
+      )
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -310,13 +315,17 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    const createCustomerRes = await fetch(buildApiUrl('/customers'), {
-      method: 'POST',
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json'
-      }
-    })
+    const createCustomerRes = await fetchWithUnifiedRemint(
+      buildApiUrl('/customers'),
+      {
+        method: 'POST',
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/json'
+        }
+      },
+      isCloud && flags.unifiedCloudAuthEnabled
+    )
     if (!createCustomerRes.ok) {
       throw new AuthStoreError(
         t('toastMessages.failedToCreateCustomer', {
@@ -486,14 +495,18 @@ export const useAuthStore = defineStore('auth', () => {
       customerCreated.value = true
     }
 
-    const response = await fetch(buildApiUrl('/customers/credit'), {
-      method: 'POST',
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json'
+    const response = await fetchWithUnifiedRemint(
+      buildApiUrl('/customers/credit'),
+      {
+        method: 'POST',
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(requestBodyContent)
       },
-      body: JSON.stringify(requestBodyContent)
-    })
+      isCloud && flags.unifiedCloudAuthEnabled
+    )
 
     if (!response.ok) {
       const errorData = await response.json()
@@ -520,16 +533,20 @@ export const useAuthStore = defineStore('auth', () => {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
     }
 
-    const response = await fetch(buildApiUrl('/customers/billing'), {
-      method: 'POST',
-      headers: {
-        ...authHeader,
-        'Content-Type': 'application/json'
+    const response = await fetchWithUnifiedRemint(
+      buildApiUrl('/customers/billing'),
+      {
+        method: 'POST',
+        headers: {
+          ...authHeader,
+          'Content-Type': 'application/json'
+        },
+        ...(targetTier && {
+          body: JSON.stringify({ target_tier: targetTier })
+        })
       },
-      ...(targetTier && {
-        body: JSON.stringify({ target_tier: targetTier })
-      })
-    })
+      isCloud && flags.unifiedCloudAuthEnabled
+    )
 
     if (!response.ok) {
       const errorData = await response.json()
