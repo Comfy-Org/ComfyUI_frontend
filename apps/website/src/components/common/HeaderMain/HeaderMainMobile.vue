@@ -64,6 +64,7 @@ onUnmounted(() => {
   <div>
     <Sheet v-model:open="isOpen">
       <SheetTrigger
+        :aria-label="t('nav.toggleMenu', locale)"
         class="bg-primary-comfy-yellow grid size-10 shrink-0 cursor-pointer place-items-center rounded-xl text-primary-comfy-ink hover:opacity-90"
       >
         <BreadthumbIcon class="h-3 w-5 text-primary-comfy-ink" />
