@@ -61,7 +61,7 @@ export const pillButtonBadgeVariants = cva({
   base: 'absolute z-10 flex items-center justify-center rounded-lg transition-all duration-500',
   variants: {
     variant: {
-      solid: 'text-primary-comfy-yellow bg-primary-comfy-ink',
+      solid: 'bg-primary-comfy-ink text-primary-comfy-yellow',
       ghost: 'bg-primary-comfy-yellow text-primary-comfy-ink'
     },
     size: {

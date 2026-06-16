@@ -136,7 +136,7 @@ function listItems(key: TranslationKey): string[] {
           "
         >
           <summary
-            class="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold tracking-wide text-primary-comfy-canvas select-none"
+            class="text-primary-comfy-canvas flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-semibold tracking-wide select-none"
           >
             <span>{{ t(tocLabelKey, locale) }}</span>
             <span
@@ -185,7 +185,7 @@ function listItems(key: TranslationKey): string[] {
               <a
                 :href="`#${item.id}`"
                 :aria-current="activeSection === item.id ? 'true' : undefined"
-                class="block text-sm/snug transition-colors hover:text-primary-comfy-canvas"
+                class="hover:text-primary-comfy-canvas block text-sm/snug transition-colors"
                 :class="
                   activeSection === item.id
                     ? 'text-primary-comfy-yellow font-semibold'
@@ -209,7 +209,7 @@ function listItems(key: TranslationKey): string[] {
           class="mb-16 scroll-mt-24 lg:scroll-mt-36"
         >
           <h2
-            class="mb-6 text-2xl font-light text-primary-comfy-canvas lg:text-3xl"
+            class="text-primary-comfy-canvas mb-6 text-2xl font-light lg:text-3xl"
           >
             {{ section.title }}
           </h2>
@@ -217,7 +217,7 @@ function listItems(key: TranslationKey): string[] {
           <template v-for="block in section.blocks" :key="block.key">
             <p
               v-if="block.type === 'paragraph'"
-              class="mt-4 text-sm/relaxed text-primary-comfy-canvas lg:text-base/relaxed"
+              class="text-primary-comfy-canvas mt-4 text-sm/relaxed lg:text-base/relaxed"
               v-html="t(block.key, locale)"
             />
             <ul
@@ -227,7 +227,7 @@ function listItems(key: TranslationKey): string[] {
               <li
                 v-for="(item, j) in listItems(block.key)"
                 :key="j"
-                class="flex items-start gap-2 text-primary-comfy-canvas"
+                class="text-primary-comfy-canvas flex items-start gap-2"
               >
                 <span
                   class="bg-primary-comfy-yellow mt-2 size-1.5 shrink-0 rounded-full"
