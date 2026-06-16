@@ -7,12 +7,26 @@ import { createI18n } from 'vue-i18n'
 import ErrorOverlay from './ErrorOverlay.vue'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeError } from '@/schemas/apiSchema'
+import type {
+  MissingPackGroup,
+  SwapNodeGroup
+} from '@/components/rightSidePanel/errors/useErrorGroups'
 import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
+import type { MissingMediaGroup } from '@/platform/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/missingModel/types'
 
-const mockAllErrorGroups = vi.hoisted(() => ({ value: [] as ErrorGroup[] }))
+const mockErrorGroups = vi.hoisted(() => ({
+  allErrorGroups: { value: [] as ErrorGroup[] },
+  missingPackGroups: { value: [] as MissingPackGroup[] },
+  missingModelGroups: { value: [] as MissingModelGroup[] },
+  missingMediaGroups: { value: [] as MissingMediaGroup[] },
+  swapNodeGroups: { value: [] as SwapNodeGroup[] }
+}))
+
+const mockAllErrorGroups = mockErrorGroups.allErrorGroups
 
 vi.mock('@/components/rightSidePanel/errors/useErrorGroups', () => ({
-  useErrorGroups: () => ({ allErrorGroups: mockAllErrorGroups })
+  useErrorGroups: () => mockErrorGroups
 }))
 
 vi.mock('@/composables/graph/useNodeErrorFlagSync', () => ({
@@ -108,6 +122,10 @@ function renderOverlay(props: { appMode?: boolean } = {}) {
 describe('ErrorOverlay', () => {
   beforeEach(() => {
     mockAllErrorGroups.value = []
+    mockErrorGroups.missingPackGroups.value = []
+    mockErrorGroups.missingModelGroups.value = []
+    mockErrorGroups.missingMediaGroups.value = []
+    mockErrorGroups.swapNodeGroups.value = []
     mockOpenPanel.mockClear()
     mockCanvasStore.linearMode = false
     mockCanvasStore.canvas = null
@@ -116,12 +134,6 @@ describe('ErrorOverlay', () => {
   })
 
   it('renders a single overlay message without list markup', async () => {
-    renderOverlay()
-
-    const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
-      '1': makeNodeError(['Only error'])
-    }
     mockAllErrorGroups.value = [
       {
         type: 'execution',
@@ -138,6 +150,12 @@ describe('ErrorOverlay', () => {
         ]
       }
     ]
+    renderOverlay()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.lastNodeErrors = {
+      '1': makeNodeError(['Only error'])
+    }
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
@@ -150,12 +168,6 @@ describe('ErrorOverlay', () => {
   })
 
   it('keeps the app mode button label', async () => {
-    renderOverlay({ appMode: true })
-
-    const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
-      '1': makeNodeError(['Only error'])
-    }
     mockAllErrorGroups.value = [
       {
         type: 'execution',
@@ -172,6 +184,12 @@ describe('ErrorOverlay', () => {
         ]
       }
     ]
+    renderOverlay({ appMode: true })
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.lastNodeErrors = {
+      '1': makeNodeError(['Only error'])
+    }
     executionErrorStore.showErrorOverlay()
     await nextTick()
 

@@ -4,11 +4,17 @@ import { storeToRefs } from 'pinia'
 
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
+import type {
+  MissingPackGroup,
+  SwapNodeGroup
+} from '@/components/rightSidePanel/errors/useErrorGroups'
 import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
+import type { MissingMediaGroup } from '@/platform/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/missingModel/types'
 
-function resolveSingleOverlayCopy(
-  group: ErrorGroup
-): { title?: string; message: string } | undefined {
+type OverlayCopy = { title?: string; message: string }
+
+function resolveSingleOverlayCopy(group: ErrorGroup): OverlayCopy | undefined {
   if (group.type === 'execution') {
     const [card] = group.cards
     const [error] = card?.errors ?? []
@@ -37,19 +43,118 @@ function resolveSingleOverlayCopy(
   }
 }
 
+function resolveGroupOverlayCopy(group: ErrorGroup): OverlayCopy | undefined {
+  const message =
+    group.displayMessage ?? group.toastMessage ?? group.displayTitle
+  if (!message) return undefined
+
+  return {
+    title: group.displayTitle,
+    message
+  }
+}
+
+function countMissingNodeReferences(groups: MissingPackGroup[]): number {
+  return groups.reduce((count, group) => count + group.nodeTypes.length, 0)
+}
+
+function countSwapNodeReferences(groups: SwapNodeGroup[]): number {
+  return groups.reduce((count, group) => count + group.nodeTypes.length, 0)
+}
+
+function getMissingModelRows(groups: MissingModelGroup[]) {
+  return groups.flatMap((group) => group.models)
+}
+
+function getMissingMediaRows(groups: MissingMediaGroup[]) {
+  return groups.flatMap((group) => group.items)
+}
+
+interface OverlayGroupContext {
+  missingPackGroups: MissingPackGroup[]
+  missingModelGroups: MissingModelGroup[]
+  missingMediaGroups: MissingMediaGroup[]
+  swapNodeGroups: SwapNodeGroup[]
+}
+
+function isSingleLeafGroup(
+  group: ErrorGroup,
+  context: OverlayGroupContext
+): boolean {
+  if (group.type === 'execution') {
+    return group.cards.length === 1 && group.cards[0]?.errors.length === 1
+  }
+
+  if (group.type === 'missing_node') {
+    return (
+      context.missingPackGroups.length === 1 &&
+      countMissingNodeReferences(context.missingPackGroups) === 1
+    )
+  }
+
+  if (group.type === 'swap_nodes') {
+    return (
+      context.swapNodeGroups.length === 1 &&
+      countSwapNodeReferences(context.swapNodeGroups) === 1
+    )
+  }
+
+  if (group.type === 'missing_model') {
+    const rows = getMissingModelRows(context.missingModelGroups)
+    const model = rows[0]
+    return (
+      rows.length === 1 &&
+      model !== undefined &&
+      model.referencingNodes.length <= 1
+    )
+  }
+
+  const rows = getMissingMediaRows(context.missingMediaGroups)
+  const media = rows[0]
+  return (
+    rows.length === 1 &&
+    media !== undefined &&
+    media.referencingNodes.length === 1
+  )
+}
+
+function shouldUseAggregateCopyForSingleGroup(
+  group: ErrorGroup,
+  context: OverlayGroupContext
+): boolean {
+  if (group.type === 'missing_node') {
+    return context.missingPackGroups.length > 1
+  }
+
+  if (group.type === 'swap_nodes') {
+    return context.swapNodeGroups.length > 1
+  }
+
+  if (group.type === 'missing_model') {
+    return getMissingModelRows(context.missingModelGroups).length > 1
+  }
+
+  if (group.type === 'missing_media') {
+    return getMissingMediaRows(context.missingMediaGroups).length > 1
+  }
+
+  return false
+}
+
 export function useErrorOverlayState() {
   const { t } = useI18n()
   const executionErrorStore = useExecutionErrorStore()
-  const { totalErrorCount, isErrorOverlayOpen } =
-    storeToRefs(executionErrorStore)
-  const { allErrorGroups } = useErrorGroups('')
+  const { isErrorOverlayOpen } = storeToRefs(executionErrorStore)
+  const {
+    allErrorGroups,
+    missingPackGroups,
+    missingModelGroups,
+    missingMediaGroups,
+    swapNodeGroups
+  } = useErrorGroups('')
 
-  const hasExactlyOneError = computed(() => totalErrorCount.value === 1)
-  const hasMultipleErrors = computed(() => totalErrorCount.value > 1)
-  const singleErrorGroup = computed(() =>
-    hasExactlyOneError.value && allErrorGroups.value.length === 1
-      ? allErrorGroups.value[0]
-      : undefined
+  const totalErrorCount = computed(() =>
+    allErrorGroups.value.reduce((sum, group) => sum + group.count, 0)
   )
 
   const errorCountLabel = computed(() =>
@@ -68,24 +173,39 @@ export function useErrorOverlayState() {
     )
   )
 
-  const singleOverlayCopy = computed(() =>
-    singleErrorGroup.value
-      ? resolveSingleOverlayCopy(singleErrorGroup.value)
-      : undefined
-  )
+  const aggregateOverlayCopy = computed<OverlayCopy>(() => ({
+    title: multipleErrorCountLabel.value,
+    message: t('errorOverlay.multipleErrorsMessage')
+  }))
 
-  const overlayMessage = computed(() => {
-    if (hasMultipleErrors.value) {
-      return t('errorOverlay.multipleErrorsMessage')
+  const overlayCopy = computed<OverlayCopy | undefined>(() => {
+    const groups = allErrorGroups.value
+    if (groups.length === 0) return undefined
+    if (groups.length > 1) return aggregateOverlayCopy.value
+
+    const [group] = groups
+    const context = {
+      missingPackGroups: missingPackGroups.value,
+      missingModelGroups: missingModelGroups.value,
+      missingMediaGroups: missingMediaGroups.value,
+      swapNodeGroups: swapNodeGroups.value
     }
 
-    return singleOverlayCopy.value?.message ?? ''
+    if (shouldUseAggregateCopyForSingleGroup(group, context)) {
+      return aggregateOverlayCopy.value
+    }
+
+    if (isSingleLeafGroup(group, context)) {
+      return resolveSingleOverlayCopy(group) ?? resolveGroupOverlayCopy(group)
+    }
+
+    return resolveGroupOverlayCopy(group)
   })
 
-  const overlayTitle = computed(() =>
-    hasMultipleErrors.value
-      ? multipleErrorCountLabel.value
-      : (singleOverlayCopy.value?.title ?? errorCountLabel.value)
+  const overlayMessage = computed(() => overlayCopy.value?.message ?? '')
+
+  const overlayTitle = computed(
+    () => overlayCopy.value?.title ?? errorCountLabel.value
   )
 
   const isVisible = computed(
