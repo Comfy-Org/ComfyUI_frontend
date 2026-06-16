@@ -173,13 +173,14 @@ export function getAssetFilename(asset: AssetItem): string {
 }
 
 /**
- * Resolves the *stored* filename for an asset — the filename used to
- * construct asset paths (for /view URLs and widget values), not the
- * user-facing display string. Cloud uses the content hash (`hash`); OSS
- * uses `name` (filesystem-backed).
+ * Resolves the filename that addresses an asset's *bytes* in storage — use
+ * this to build the path a backend resolves to a real file (the
+ * `createAnnotatedPath` input behind `/view` requests and widget values),
+ * never to show the user. Cloud is content-addressed, so it returns the
+ * content hash (`hash`); OSS is filesystem-backed, so it returns `name`.
  *
- * For display use {@link getAssetDisplayFilename}; for serialized
- * identifiers use {@link getAssetFilename}.
+ * For a human-readable label use {@link getAssetDisplayFilename}; for a
+ * serialized identifier (matching, validation) use {@link getAssetFilename}.
  *
  * TODO(BE-933/934): collapse to `asset.file_path ?? asset.name`.
  */
