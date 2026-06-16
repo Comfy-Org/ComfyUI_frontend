@@ -1111,6 +1111,59 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
+   * Cancels a single job by id, regardless of its state (pending or running).
+   *
+   * Targets the state-agnostic jobs-namespace endpoint
+   * `POST /api/jobs/{job_id}/cancel`. The backend treats a job that is already
+   * terminal (or already cancelling) as a successful no-op, so this call is
+   * idempotent.
+   *
+   * NOTE: This endpoint must be exposed by the runtime serving the API. Until
+   * every runtime exposes `POST /api/jobs/{job_id}/cancel` (and the batch
+   * `POST /api/jobs/cancel`), callers that may run against a runtime without
+   * these endpoints cannot rely on them.
+   *
+   * @param {string} jobId The id of the job to cancel
+   */
+  async cancelJob(jobId: string) {
+    const res = await this.fetchApi(
+      `/jobs/${encodeURIComponent(jobId)}/cancel`,
+      {
+        method: 'POST'
+      }
+    )
+    if (!res.ok) {
+      throw new Error(`Failed to cancel job ${jobId}: ${res.status}`)
+    }
+  }
+
+  /**
+   * Cancels multiple jobs in a single request, regardless of their states.
+   *
+   * Targets the state-agnostic batch jobs-namespace endpoint
+   * `POST /api/jobs/cancel` with body `{ job_ids: [...] }`. Like the single
+   * cancel, already-terminal jobs are treated as no-ops.
+   *
+   * NOTE: See {@link cancelJob} — this batch endpoint must be exposed by the
+   * runtime serving the API.
+   *
+   * @param {string[]} jobIds The ids of the jobs to cancel
+   */
+  async cancelJobs(jobIds: string[]) {
+    if (!jobIds.length) return
+    const res = await this.fetchApi('/jobs/cancel', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ job_ids: jobIds })
+    })
+    if (!res.ok) {
+      throw new Error(`Failed to cancel jobs: ${res.status}`)
+    }
+  }
+
+  /**
    * Gets user configuration data and where data should be stored
    */
   async getUserConfig(): Promise<User> {

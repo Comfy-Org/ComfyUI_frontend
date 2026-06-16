@@ -66,7 +66,6 @@ import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { useResultGallery } from '@/composables/queue/useResultGallery'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
-import { isCloud } from '@/platform/distribution/types'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -195,19 +194,19 @@ const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
   const jobId = item.taskRef?.jobId
   if (!jobId) return
 
-  if (item.state === 'running' || item.state === 'initialization') {
-    // Running/initializing jobs: interrupt execution
-    // Cloud backend uses deleteItem, local uses interrupt
-    if (isCloud) {
-      await api.deleteItem('queue', jobId)
-    } else {
-      await api.interrupt(jobId)
-    }
+  if (
+    item.state === 'running' ||
+    item.state === 'initialization' ||
+    item.state === 'pending'
+  ) {
+    // State-agnostic cancel: the jobs-namespace endpoint cancels a job in any
+    // state, so we no longer branch on runtime or job state here.
+    //
+    // DEPENDS ON RUNTIME PARITY: requires the runtime serving the API to expose
+    // POST /api/jobs/{job_id}/cancel. Not every runtime does yet — see cancelJob
+    // in scripts/api.ts.
+    await api.cancelJob(jobId)
     executionStore.clearInitializationByJobId(jobId)
-    await queueStore.update()
-  } else if (item.state === 'pending') {
-    // Pending jobs: remove from queue
-    await api.deleteItem('queue', jobId)
     await queueStore.update()
   }
 })
@@ -292,17 +291,14 @@ const interruptAll = wrapWithErrorHandlingAsync(async () => {
 
   if (!jobIds.length) return
 
-  // Cloud backend supports cancelling specific jobs via /queue delete,
-  // while /interrupt always targets the "first" job. Use the targeted API
-  // on cloud to ensure we cancel the workflow the user clicked.
-  if (isCloud) {
-    await Promise.all(jobIds.map((id) => api.deleteItem('queue', id)))
-    executionStore.clearInitializationByJobIds(jobIds)
-    await queueStore.update()
-    return
-  }
-
-  await Promise.all(jobIds.map((id) => api.interrupt(id)))
+  // State-agnostic batch cancel: one request cancels every running job by id,
+  // independent of runtime. Replaces the prior per-id fan-out over
+  // /queue delete (cloud) vs /interrupt (local).
+  //
+  // DEPENDS ON RUNTIME PARITY: requires the runtime serving the API to expose
+  // POST /api/jobs/cancel. Not every runtime does yet — see cancelJobs in
+  // scripts/api.ts.
+  await api.cancelJobs(jobIds)
   executionStore.clearInitializationByJobIds(jobIds)
   await queueStore.update()
 })
