@@ -86,6 +86,22 @@ async function bootCloud(page: Page) {
   })
 }
 
+// The CI cloud backend only serves the SPA shell at the app root; a hard
+// navigation to a deep route returns a file download instead of index.html.
+// Re-serve the root shell for the deep route so a fresh load resolves it as a
+// real post-login entry, mirroring how users actually reach user-check.
+async function serveSpaShell(page: Page, path: string) {
+  await page.route(`**${path}`, async (route) => {
+    if (route.request().resourceType() !== 'document') return route.fallback()
+    const shell = await page.request.get(APP_URL)
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/html',
+      body: await shell.text()
+    })
+  })
+}
+
 test.describe(
   'Cloud onboarding survey gate (FE-739)',
   { tag: '@cloud' },
@@ -116,6 +132,7 @@ test.describe(
 
       await mockCloudBoot(page)
       await bootCloud(page)
+      await serveSpaShell(page, '/cloud/user-check')
 
       await page.goto(`${APP_URL}/cloud/user-check`)
 
