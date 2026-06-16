@@ -16248,6 +16248,9 @@
       "draw_hands": {
         "name": "dibujar manos"
       },
+      "draw_head": {
+        "name": "dibujar_cabeza"
+      },
       "face_point_size": {
         "name": "tamaño de punto facial"
       },
