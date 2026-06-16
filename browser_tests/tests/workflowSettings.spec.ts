@@ -1,9 +1,7 @@
 import type { Page, Request } from '@playwright/test'
 
-import type {
-  ComfyApiWorkflow,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
@@ -146,7 +144,7 @@ test.describe('Workflow settings', { tag: '@canvas' }, () => {
       )
     }
 
-    function ascendingById(ids: NodeId[]): NodeId[] {
+    function ascendingById<T extends string | number>(ids: T[]): T[] {
       return [...ids].sort((a, b) => Number(a) - Number(b))
     }
 
@@ -197,9 +195,7 @@ test.describe('Workflow settings', { tag: '@canvas' }, () => {
       // must enumerate the same node set regardless of the sort flag.
       const apiPrompt: ComfyApiWorkflow =
         await comfyPage.workflow.getExportedWorkflow({ api: true })
-      expect(ascendingById(Object.keys(apiPrompt).map(Number))).toEqual(
-        expectedIds
-      )
+      expect(ascendingById(Object.keys(apiPrompt))).toEqual(expectedIds)
     })
   })
 })

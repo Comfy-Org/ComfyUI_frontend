@@ -5,10 +5,9 @@ import type {
   LGraph,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type {
-  ComfyWorkflowJSON,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId, NodeIdInput } from '@/types/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position, Size } from '@e2e/fixtures/types'
@@ -42,11 +41,12 @@ export class NodeOperationsHelper {
   }
 
   async getSelectedNodeIds(): Promise<NodeId[]> {
-    return await this.page.evaluate(() => {
+    const ids = await this.page.evaluate(() => {
       const selected = window.app?.canvas?.selected_nodes
       if (!selected) return []
-      return Object.keys(selected).map(Number)
+      return Object.keys(selected)
     })
+    return ids.map(asNodeId)
   }
 
   /**
@@ -114,7 +114,7 @@ export class NodeOperationsHelper {
     return this.getNodeRefById(id)
   }
 
-  async getNodeRefById(id: NodeId): Promise<NodeReference> {
+  async getNodeRefById(id: NodeIdInput): Promise<NodeReference> {
     return new NodeReference(id, this.comfyPage)
   }
 

@@ -9,6 +9,7 @@ import type {
   JobDetail,
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { asNodeId } from '@/types/nodeId'
 
 // Legacy coverage backed by AssetsHelper's shadow backend. New assets-sidebar
 // browser coverage should use typed route mocks in assetsSidebarTab.spec.ts.
@@ -71,7 +72,7 @@ const SAMPLE_IMPORTED_FILES = [
 const JOB_GAMMA_DETAIL: JobDetail = {
   ...SAMPLE_JOBS[2],
   outputs: {
-    '3': {
+    [asNodeId('3')]: {
       images: [
         {
           filename: 'abstract_art.png',

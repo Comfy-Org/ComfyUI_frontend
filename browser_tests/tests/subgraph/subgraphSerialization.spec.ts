@@ -568,10 +568,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
       const result = await comfyPage.page.evaluate(() => {
         const graph = window.app!.canvas.graph!
         const allGraphs = [graph, ...graph.subgraphs.values()]
-        const allIds = allGraphs
-          .flatMap((g) => g._nodes)
-          .map((n) => n.id)
-          .filter((id): id is number => typeof id === 'number')
+        const allIds = allGraphs.flatMap((g) => g._nodes).map((n) => n.id)
 
         return { allIds, uniqueCount: new Set(allIds).size }
       })
@@ -589,11 +586,10 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
         const graph = window.app!.canvas.graph!
         return graph._nodes
           .map((n) => n.id)
-          .filter((id): id is number => typeof id === 'number')
-          .sort((a, b) => a - b)
+          .sort((a, b) => Number(a) - Number(b))
       })
 
-      expect(rootIds).toEqual([1, 2, 5])
+      expect(rootIds).toEqual(['1', '2', '5'])
     })
 
     test('Promoted widget tuples are stable after full page reload boot path', async ({
@@ -633,9 +629,9 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
           )
         ]
 
-        const SENTINEL_IDS = new Set([-1, -10, -20])
-        const isSentinelNodeId = (id: number | string): id is number =>
-          typeof id === 'number' && SENTINEL_IDS.has(id)
+        const SENTINEL_IDS = new Set(['-1', '-10', '-20'])
+        const isSentinelNodeId = (id: number | string): boolean =>
+          SENTINEL_IDS.has(String(id))
 
         const checkEndpoint = (
           label: string,
@@ -644,7 +640,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
           g: typeof graph
         ): string | null => {
           if (isSentinelNodeId(id)) return null
-          if (typeof id !== 'number' || !g._nodes_by_id[id]) {
+          if (!g.getNodeById(id)) {
             return `${label}: ${kind} ${id} invalid or not found`
           }
           return null

@@ -11,6 +11,7 @@ import type {
   JobDetail,
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { asNodeId } from '@/types/nodeId'
 
 const test = mergeTests(comfyPageFixture, jobsRouteFixture)
 
@@ -72,7 +73,7 @@ const multiOutputJob = createRouteMockJob({
 const multiOutputJobDetail: JobDetail = {
   ...multiOutputJob,
   outputs: {
-    '3': {
+    [asNodeId('3')]: {
       images: [
         {
           filename: 'multi-output-a.png',

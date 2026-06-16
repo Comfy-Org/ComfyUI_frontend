@@ -99,10 +99,10 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
           expect(
             ksampler?.id,
             'Replaced node should keep the original id'
-          ).toBe(1)
+          ).toBe('1')
 
           const linkFromReplacedToDecode = workflow.links?.find(
-            (l) => l[1] === 1 && l[3] === 2
+            (l) => l[1] === '1' && l[3] === '2'
           )
           expect(
             linkFromReplacedToDecode,
