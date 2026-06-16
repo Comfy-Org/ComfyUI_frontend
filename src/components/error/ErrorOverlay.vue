@@ -51,6 +51,7 @@
           variant="muted-textonly"
           size="icon-sm"
           class="absolute top-2 right-2 size-6 rounded-sm"
+          data-testid="error-overlay-dismiss"
           :aria-label="t('g.close')"
           @click="dismiss"
         >

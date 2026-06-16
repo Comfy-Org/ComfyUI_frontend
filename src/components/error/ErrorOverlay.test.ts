@@ -163,6 +163,9 @@ describe('ErrorOverlay', () => {
     expect(screen.getByTestId('error-overlay-see-errors')).toHaveTextContent(
       'View details'
     )
+    expect(screen.getByTestId('error-overlay-dismiss')).toHaveAccessibleName(
+      'Close'
+    )
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
   })
 
