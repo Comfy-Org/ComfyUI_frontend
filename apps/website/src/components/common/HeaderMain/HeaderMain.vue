@@ -3,7 +3,6 @@ import { useEventListener } from '@vueuse/core'
 import { nextTick, onMounted, ref } from 'vue'
 
 import type { Locale } from '../../../i18n/translations.ts'
-import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
@@ -18,14 +17,12 @@ const routes = getRoutes(locale)
 
 const ctaButtons = [
   {
-    label: t('nav.downloadLocal', locale),
     prefix: 'DOWNLOAD',
     core: 'DESKTOP',
     href: routes.download,
     primary: false
   },
   {
-    label: t('nav.launchCloud', locale),
     prefix: 'LAUNCH',
     core: 'CLOUD',
     href: externalLinks.cloud,
@@ -90,7 +87,7 @@ onMounted(() => {
         :key="cta.href"
         :href="cta.href"
         :variant="cta.primary ? 'default' : 'outline'"
-        :aria-label="cta.label"
+        :aria-label="`${cta.prefix} ${cta.core}`"
       >
         <span
           ><span class="hidden xl:inline-block">{{ cta.prefix }}&nbsp;</span
