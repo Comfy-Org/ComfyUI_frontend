@@ -30,7 +30,7 @@ export function asNodeId(value: NodeIdInput): NodeId {
 export const UNASSIGNED_NODE_ID: NodeId = asNodeId('-1')
 
 /** Branded floating-link endpoint sentinel (no node on this side). */
-export const FLOATING_LINK_NODE_ID: NodeId = UNASSIGNED_NODE_ID
+export const FLOATING_LINK_NODE_ID: NodeId = asNodeId('-1')
 
 /** Branded sentinel for the virtual subgraph input node. */
 export const SUBGRAPH_INPUT_NODE_ID: NodeId = asNodeId(SUBGRAPH_INPUT_ID)

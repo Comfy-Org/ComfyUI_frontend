@@ -17,6 +17,7 @@ import {
 
 import { test as baseTest } from '../__fixtures__/testExtensions'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import { FLOATING_LINK_NODE_ID, isFloatingNodeId } from '@/types/nodeId'
 import {
   createMockCanvasPointerEvent,
   createMockCanvasRenderingContext2D
@@ -117,12 +118,12 @@ const test = baseTest.extend<TestContext>({
           const link = graph.floatingLinks.get(linkId)
           expect(link).toBeDefined()
 
-          if (link!.target_id === -1) {
-            expect(link!.origin_id).not.toBe(-1)
+          if (isFloatingNodeId(link!.target_id)) {
+            expect(link!.origin_id).not.toBe(FLOATING_LINK_NODE_ID)
             expect(link!.origin_slot).not.toBe(-1)
             expect(link!.target_slot).toBe(-1)
           } else {
-            expect(link!.origin_id).toBe(-1)
+            expect(link!.origin_id).toBe(FLOATING_LINK_NODE_ID)
             expect(link!.origin_slot).toBe(-1)
             expect(link!.target_slot).not.toBe(-1)
           }
@@ -155,8 +156,8 @@ const test = baseTest.extend<TestContext>({
       }
 
       for (const link of graph.floatingLinks.values()) {
-        if (link.target_id === -1) {
-          expect(link.origin_id).not.toBe(-1)
+        if (isFloatingNodeId(link.target_id)) {
+          expect(link.origin_id).not.toBe(FLOATING_LINK_NODE_ID)
           expect(link.origin_slot).not.toBe(-1)
           expect(link.target_slot).toBe(-1)
           const outputFloatingLinks = graph.getNodeById(link.origin_id)
@@ -164,7 +165,7 @@ const test = baseTest.extend<TestContext>({
           expect(outputFloatingLinks).toBeDefined()
           expect(outputFloatingLinks).toContain(link)
         } else {
-          expect(link.origin_id).toBe(-1)
+          expect(link.origin_id).toBe(FLOATING_LINK_NODE_ID)
           expect(link.origin_slot).toBe(-1)
           expect(link.target_slot).not.toBe(-1)
           const inputFloatingLinks = graph.getNodeById(link.target_id)?.inputs[

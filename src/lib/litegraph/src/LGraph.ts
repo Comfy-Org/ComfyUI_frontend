@@ -88,6 +88,8 @@ import type {
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
 import {
+  SUBGRAPH_INPUT_NODE_ID,
+  SUBGRAPH_OUTPUT_NODE_ID,
   asNodeId,
   isFloatingNodeId,
   isNumericNodeId,
@@ -96,7 +98,7 @@ import {
   isUnassignedNodeId,
   nodeIdToNumber
 } from '@/types/nodeId'
-import type { LinkEndpointNodeId, NodeIdInput } from '@/types/nodeId'
+import type { NodeIdInput } from '@/types/nodeId'
 import {
   deduplicateSubgraphNodeIds,
   topologicalSortSubgraphs
@@ -2064,9 +2066,9 @@ export class LGraph
       }
     }
     const newLinks: {
-      oid: LinkEndpointNodeId
+      oid: NodeId
       oslot: number
-      tid: LinkEndpointNodeId
+      tid: NodeId
       tslot: number
       id: LinkId
       iparent?: RerouteId
@@ -2086,7 +2088,7 @@ export class LGraph
         link.origin_slot = outerLink.origin_slot
         externalParentId = outerLink.parentId
       } else {
-        const origin_id = nodeIdMap.get(link.origin_id as NodeId)
+        const origin_id = nodeIdMap.get(link.origin_id)
         if (!origin_id) {
           console.error('Missing Link ID when unpacking')
           continue
@@ -2111,7 +2113,7 @@ export class LGraph
         }
         continue
       } else {
-        const target_id = nodeIdMap.get(link.target_id as NodeId)
+        const target_id = nodeIdMap.get(link.target_id)
         if (!target_id) {
           console.error('Missing Link ID when unpacking')
           continue
@@ -2149,7 +2151,7 @@ export class LGraph
           console.error('Ignoring link to subgraph outside subgraph')
           continue
         }
-        const tnode = this._nodes_by_id[newLink.tid as NodeId]
+        const tnode = this._nodes_by_id[newLink.tid]
         created = this.inputNode.slots[newLink.oslot].connect(
           tnode.inputs[newLink.tslot],
           tnode
@@ -2159,15 +2161,15 @@ export class LGraph
           console.error('Ignoring link to subgraph outside subgraph')
           continue
         }
-        const tnode = this._nodes_by_id[newLink.oid as NodeId]
+        const tnode = this._nodes_by_id[newLink.oid]
         created = this.outputNode.slots[newLink.tslot].connect(
           tnode.outputs[newLink.oslot],
           tnode
         )
       } else {
-        created = this._nodes_by_id[newLink.oid as NodeId].connect(
+        created = this._nodes_by_id[newLink.oid].connect(
           newLink.oslot,
-          this._nodes_by_id[newLink.tid as NodeId],
+          this._nodes_by_id[newLink.tid],
           newLink.tslot
         )
       }
@@ -2928,16 +2930,16 @@ export class Subgraph
    */
   private _repairIOSlotLinkIds(): void {
     for (const [slotIndex, slot] of this.inputs.entries()) {
-      this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_INPUT_ID, slotIndex)
+      this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_INPUT_NODE_ID, slotIndex)
     }
     for (const [slotIndex, slot] of this.outputs.entries()) {
-      this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_OUTPUT_ID, slotIndex)
+      this._repairSlotLinkIds(slot.linkIds, SUBGRAPH_OUTPUT_NODE_ID, slotIndex)
     }
   }
 
   private _repairSlotLinkIds(
     linkIds: LinkId[],
-    ioNodeId: number,
+    ioNodeId: NodeId,
     slotIndex: number
   ): void {
     const repaired = linkIds.map((id) =>
@@ -2951,7 +2953,7 @@ export class Subgraph
   }
 
   private _findLinkBySlot(
-    nodeId: number,
+    nodeId: NodeId,
     slotIndex: number
   ): LLink | undefined {
     for (const link of this._links.values()) {

@@ -873,6 +873,8 @@ export class LGraphNode
       }
     }
 
+    if (!isUnassignedNodeId(this.id)) this.id = asNodeId(this.id)
+
     if (!info.title) {
       this.title = this.constructor.title
     }

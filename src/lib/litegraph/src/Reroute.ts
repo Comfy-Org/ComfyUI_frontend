@@ -2,8 +2,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
-import type { LGraphNode } from './LGraphNode'
-import type { LinkEndpointNodeId } from '@/types/nodeId'
+import type { LGraphNode, NodeId } from './LGraphNode'
 import { isFloatingNodeId } from '@/types/nodeId'
 import { LLink } from './LLink'
 import type { LinkId } from './LLink'
@@ -184,7 +183,7 @@ export class Reroute
   }
 
   /** @inheritdoc */
-  get origin_id(): LinkEndpointNodeId | undefined {
+  get origin_id(): NodeId | undefined {
     return this.firstLink?.origin_id
   }
 
@@ -374,7 +373,7 @@ export class Reroute
 
     for (const linkId of this.floatingLinkIds) {
       const link = floatingLinks.get(linkId)
-      if (link?.[idProp] === -1) out.push(link)
+      if (link && isFloatingNodeId(link[idProp])) out.push(link)
     }
     return out
   }

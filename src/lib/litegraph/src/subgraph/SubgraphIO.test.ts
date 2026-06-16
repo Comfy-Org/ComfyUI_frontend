@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import { LinkDirection } from '@/lib/litegraph/src//types/globalEnums'
+import { isSubgraphInputNodeId } from '@/types/nodeId'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
@@ -451,7 +452,7 @@ describe('SubgraphIO - Empty Slot Connection', () => {
       expect(link).toBeDefined()
       expect(link.target_id).toBe(internalNode.id)
       expect(link.target_slot).toBe(0)
-      expect(link.origin_id).toBe(subgraph.inputNode.id)
+      expect(isSubgraphInputNodeId(link.origin_id)).toBe(true)
       expect(link.origin_slot).toBe(1) // Should be the second slot
     }
   )
