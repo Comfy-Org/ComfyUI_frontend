@@ -44,23 +44,6 @@ vi.mock('@/scripts/app', () => ({
   }
 }))
 
-vi.mock('@vueuse/core', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...(actual as Record<string, unknown>),
-    useEventListener: vi.fn(
-      (
-        target: EventTarget,
-        event: string,
-        handler: EventListenerOrEventListenerObject
-      ) => {
-        target.addEventListener(event, handler)
-        return () => target.removeEventListener(event, handler)
-      }
-    )
-  }
-})
-
 function createMockCanvas(readOnly = false): LGraphCanvas {
   return {
     read_only: readOnly,
