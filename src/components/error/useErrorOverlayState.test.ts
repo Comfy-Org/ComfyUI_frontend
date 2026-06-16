@@ -58,7 +58,6 @@ function createTestI18n() {
     messages: {
       en: {
         errorOverlay: {
-          errorCount: '{count} ERROR | {count} ERRORS',
           multipleErrorCount: '{count} error found | {count} errors found',
           multipleErrorsMessage: 'Resolve them before running the workflow.'
         }

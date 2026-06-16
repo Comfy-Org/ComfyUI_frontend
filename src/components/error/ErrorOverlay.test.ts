@@ -76,7 +76,6 @@ function createTestI18n() {
           dismiss: 'Dismiss'
         },
         errorOverlay: {
-          errorCount: '{count} ERROR | {count} ERRORS',
           multipleErrorCount: '{count} error found | {count} errors found',
           multipleErrorsMessage: 'Resolve them before running the workflow.',
           viewDetails: 'View details'

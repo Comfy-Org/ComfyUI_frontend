@@ -70,6 +70,15 @@ function getMissingMediaRows(groups: MissingMediaGroup[]) {
   return groups.flatMap((group) => group.items)
 }
 
+function hasSingleRowWithAtMostOneReference(
+  rows: Array<{ referencingNodes: readonly unknown[] }>
+): boolean {
+  const row = rows[0]
+  return (
+    rows.length === 1 && row !== undefined && row.referencingNodes.length <= 1
+  )
+}
+
 interface OverlayGroupContext {
   missingPackGroups: MissingPackGroup[]
   missingModelGroups: MissingModelGroup[]
@@ -100,21 +109,13 @@ function isSingleLeafGroup(
   }
 
   if (group.type === 'missing_model') {
-    const rows = getMissingModelRows(context.missingModelGroups)
-    const model = rows[0]
-    return (
-      rows.length === 1 &&
-      model !== undefined &&
-      model.referencingNodes.length <= 1
+    return hasSingleRowWithAtMostOneReference(
+      getMissingModelRows(context.missingModelGroups)
     )
   }
 
-  const rows = getMissingMediaRows(context.missingMediaGroups)
-  const media = rows[0]
-  return (
-    rows.length === 1 &&
-    media !== undefined &&
-    media.referencingNodes.length === 1
+  return hasSingleRowWithAtMostOneReference(
+    getMissingMediaRows(context.missingMediaGroups)
   )
 }
 
@@ -157,14 +158,6 @@ export function useErrorOverlayState() {
     allErrorGroups.value.reduce((sum, group) => sum + group.count, 0)
   )
 
-  const errorCountLabel = computed(() =>
-    t(
-      'errorOverlay.errorCount',
-      { count: totalErrorCount.value },
-      totalErrorCount.value
-    )
-  )
-
   const multipleErrorCountLabel = computed(() =>
     t(
       'errorOverlay.multipleErrorCount',
@@ -204,9 +197,7 @@ export function useErrorOverlayState() {
 
   const overlayMessage = computed(() => overlayCopy.value?.message ?? '')
 
-  const overlayTitle = computed(
-    () => overlayCopy.value?.title ?? errorCountLabel.value
-  )
+  const overlayTitle = computed(() => overlayCopy.value?.title ?? '')
 
   const isVisible = computed(
     () =>
