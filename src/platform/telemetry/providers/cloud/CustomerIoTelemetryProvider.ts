@@ -1,4 +1,5 @@
 import type { AnalyticsBrowser } from '@customerio/cdp-analytics-browser'
+import { omit } from 'es-toolkit'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
@@ -59,13 +60,21 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
         )
         this.analytics = analytics
 
+        const configuredUserId = userIdOverride || undefined
+        let identifiedUserId = configuredUserId
+        if (identifiedUserId) void analytics.identify(identifiedUserId)
+
         const currentUser = useCurrentUser()
-        if (userIdOverride) {
-          void analytics.identify(userIdOverride)
-        } else {
-          currentUser.onUserResolved((user) => void analytics.identify(user.id))
-        }
-        currentUser.onUserLogout(() => void analytics.reset())
+        currentUser.onUserResolved((user) => {
+          const userId = configuredUserId ?? user.id
+          if (userId === identifiedUserId) return
+          identifiedUserId = userId
+          void analytics.identify(userId)
+        })
+        currentUser.onUserLogout(() => {
+          identifiedUserId = undefined
+          void analytics.reset()
+        })
 
         this.flushQueue()
       })
@@ -101,7 +110,10 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   }
 
   trackAuth(metadata: AuthMetadata): void {
-    this.track(TelemetryEvents.USER_AUTH_COMPLETED, metadata)
+    this.track(
+      TelemetryEvents.USER_AUTH_COMPLETED,
+      omit(metadata, ['email', 'share_id'])
+    )
   }
 
   trackSubscription(
@@ -137,6 +149,6 @@ export class CustomerIoTelemetryProvider implements TelemetryProvider {
   }
 
   trackShareFlow(metadata: ShareFlowMetadata): void {
-    this.track(TelemetryEvents.SHARE_FLOW, metadata)
+    this.track(TelemetryEvents.SHARE_FLOW, omit(metadata, ['share_id']))
   }
 }

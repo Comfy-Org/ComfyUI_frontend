@@ -20,7 +20,11 @@ const hoisted = vi.hoisted(() => {
       logoutCb = cb
     }),
     resolveUser: (id: string) => resolvedCb?.({ id }),
-    logoutUser: () => logoutCb?.()
+    logoutUser: () => logoutCb?.(),
+    resetCallbacks: () => {
+      resolvedCb = undefined
+      logoutCb = undefined
+    }
   }
 })
 
@@ -57,6 +61,7 @@ function createProvider(
 describe('CustomerIoTelemetryProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    hoisted.resetCallbacks()
     hoisted.load.mockReturnValue(hoisted.analytics)
     hoisted.analytics.register.mockResolvedValue(undefined)
     window.__CONFIG__ = {} as typeof window.__CONFIG__
@@ -109,7 +114,25 @@ describe('CustomerIoTelemetryProvider', () => {
     await vi.dynamicImportSettled()
 
     expect(hoisted.analytics.identify).toHaveBeenCalledWith('forced-uid')
-    expect(hoisted.onUserResolved).not.toHaveBeenCalled()
+    expect(hoisted.onUserResolved).toHaveBeenCalledOnce()
+  })
+
+  it('re-identifies with the configured user_id override after logout and re-login', async () => {
+    createProvider({
+      customer_io: {
+        write_key: WRITE_KEY,
+        site_id: SITE_ID,
+        user_id: 'forced-uid'
+      }
+    })
+    await vi.dynamicImportSettled()
+
+    hoisted.logoutUser()
+    hoisted.resolveUser('resolved-uid')
+
+    expect(hoisted.analytics.reset).toHaveBeenCalledOnce()
+    expect(hoisted.analytics.identify).toHaveBeenNthCalledWith(1, 'forced-uid')
+    expect(hoisted.analytics.identify).toHaveBeenNthCalledWith(2, 'forced-uid')
   })
 
   it('identifies before flushing events buffered before the SDK loads', async () => {
@@ -189,6 +212,7 @@ describe('CustomerIoTelemetryProvider', () => {
       invoke: (p) =>
         p.trackShareFlow({
           step: 'dialog_opened',
+          share_id: 'share-1',
           view_mode: 'graph',
           is_app_mode: false
         }),
@@ -212,6 +236,29 @@ describe('CustomerIoTelemetryProvider', () => {
       expect(hoisted.analytics.track).toHaveBeenCalledWith(event, expected)
     }
   )
+
+  it('does not send raw auth email or share id to Customer.io', async () => {
+    const provider = createProvider()
+    await vi.dynamicImportSettled()
+
+    provider.trackAuth({
+      method: 'google',
+      is_new_user: true,
+      user_id: 'uid-1',
+      email: 'person@example.com',
+      share_id: 'share-1'
+    })
+
+    expect(hoisted.analytics.track).toHaveBeenCalledWith(
+      'app:user_auth_completed',
+      {
+        ...SOURCE,
+        method: 'google',
+        is_new_user: true,
+        user_id: 'uid-1'
+      }
+    )
+  })
 
   it('flushes events buffered before load once, in order', async () => {
     const provider = createProvider()
