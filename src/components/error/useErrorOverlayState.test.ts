@@ -429,17 +429,6 @@ describe('useErrorOverlayState', () => {
     mountOverlayState()
 
     const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
-      '1': makeNodeError([
-        'First error',
-        'Second error',
-        'Third error',
-        'Fourth error',
-        'Fifth error',
-        'Sixth error',
-        'Seventh error'
-      ])
-    }
     executionErrorStore.showErrorOverlay()
     await nextTick()
 

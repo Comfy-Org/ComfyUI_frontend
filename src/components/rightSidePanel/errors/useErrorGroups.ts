@@ -810,22 +810,6 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return searchErrorGroups(tabErrorGroups.value, query)
   })
 
-  const groupedErrorMessages = computed<string[]>(() => {
-    const messages = new Set<string>()
-    for (const group of allErrorGroups.value) {
-      if (group.type === 'execution') {
-        for (const card of group.cards) {
-          for (const err of card.errors) {
-            messages.add(err.displayMessage ?? err.message)
-          }
-        }
-      } else {
-        messages.add(group.displayMessage ?? group.displayTitle)
-      }
-    }
-    return Array.from(messages)
-  })
-
   return {
     allErrorGroups,
     tabErrorGroups,
@@ -834,7 +818,6 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     isSingleNodeSelected,
     errorNodeCache,
     missingNodeCache,
-    groupedErrorMessages,
     missingPackGroups,
     missingModelGroups,
     missingMediaGroups,

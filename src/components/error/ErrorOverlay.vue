@@ -7,7 +7,6 @@
     <div v-if="isVisible" class="pointer-events-none flex w-full justify-end">
       <div
         role="status"
-        aria-live="polite"
         data-testid="error-overlay"
         class="pointer-events-auto relative flex w-fit max-w-120 min-w-80 flex-col gap-2 overflow-hidden rounded-lg border border-l-4 border-border-default border-l-destructive-background bg-base-background p-3 shadow-interface transition-colors duration-200 ease-in-out"
       >
