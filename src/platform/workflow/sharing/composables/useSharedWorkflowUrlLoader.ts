@@ -3,6 +3,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
@@ -45,6 +46,7 @@ export function useSharedWorkflowUrlLoader() {
   const dialogStore = useDialogStore()
   const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
   const { isLoggedIn } = useCurrentUser()
+  const { mode, isAppMode } = useAppMode()
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
 
   function isValidParameter(param: string): boolean {
@@ -146,7 +148,9 @@ export function useSharedWorkflowUrlLoader() {
 
     useTelemetry()?.trackShareLinkOpened({
       share_id: shareParam,
-      is_authenticated: isLoggedIn.value
+      is_authenticated: isLoggedIn.value,
+      view_mode: mode.value,
+      is_app_mode: isAppMode.value
     })
     if (!isLoggedIn.value) {
       capturePreservedQuery(
