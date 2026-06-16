@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeId, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   asNodeId,
   LGraph,
@@ -298,7 +298,7 @@ describe('Graph Clearing and Callbacks', () => {
     })
 
     const widgetValueStore = useWidgetValueStore()
-    const seedWidgetId = widgetId(graphId, '10' as NodeId, 'seed')
+    const seedWidgetId = widgetId(graphId, asNodeId('10'), 'seed')
     widgetValueStore.registerWidget(seedWidgetId, {
       type: 'number',
       value: 1,
@@ -562,7 +562,8 @@ describe('ensureGlobalIdUniqueness', () => {
 
     rootGraph.ensureGlobalIdUniqueness([42])
 
-    expect(subNode.id).not.toBe(42)
+    expect(subNode.id).not.toBe(asNodeId(42))
+    expect(subgraph._nodes_by_id[asNodeId(42)]).toBeUndefined()
     expect(subgraph._nodes_by_id[subNode.id]).toBe(subNode)
   })
 

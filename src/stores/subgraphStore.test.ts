@@ -163,7 +163,7 @@ describe('useSubgraphStore', () => {
     first.definitions!.subgraphs![0].id = 'corrupted'
 
     const second = store.getBlueprint(store.typePrefix + 'test')
-    expect(second.nodes[0].id).not.toBe(-1)
+    expect(second.nodes[0].id).not.toBe(asNodeId(-1))
     expect(second.definitions!.subgraphs![0].id).toBe('123')
   })
   it('should identify user blueprints as non-global', async () => {

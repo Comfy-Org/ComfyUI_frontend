@@ -347,7 +347,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function removeNodeOutputs(nodeId: number | string) {
-    const nodeLocatorId = nodeIdToNodeLocatorId(asNodeId(Number(nodeId)))
+    const nodeLocatorId = nodeIdToNodeLocatorId(asNodeId(nodeId))
     if (!nodeLocatorId) return false
     return removeOutputsByLocatorId(nodeLocatorId)
   }
@@ -414,7 +414,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     if (!LiteGraph.vueNodesMode) return
 
-    const node = resolveNode(asNodeId(Number(nodeId)))
+    const node = resolveNode(asNodeId(nodeId))
     if (!node) return
 
     node.imgs = [element]

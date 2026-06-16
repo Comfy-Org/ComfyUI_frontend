@@ -78,7 +78,7 @@ describe('MinimapDataSource', () => {
         LGraphNode,
         'id' | 'pos' | 'size' | 'bgcolor' | 'mode' | 'has_errors' | 'outputs'
       > = {
-        id: 'node1' as NodeId,
+        id: asNodeId('node1'),
         pos: [0, 0],
         size: [100, 50],
         bgcolor: '#fff',
@@ -146,14 +146,14 @@ describe('MinimapDataSource', () => {
       vi.mocked(layoutStore.getAllNodes).mockReturnValue(computedEmpty)
 
       const mockNode1: Pick<LGraphNode, 'id' | 'pos' | 'size' | 'outputs'> = {
-        id: 'node1' as NodeId,
+        id: asNodeId('node1'),
         pos: [0, 0],
         size: [100, 50],
         outputs: []
       }
 
       const mockNode2: Pick<LGraphNode, 'id' | 'pos' | 'size' | 'outputs'> = {
-        id: 'node2' as NodeId,
+        id: asNodeId('node2'),
         pos: [200, 100],
         size: [150, 75],
         outputs: []

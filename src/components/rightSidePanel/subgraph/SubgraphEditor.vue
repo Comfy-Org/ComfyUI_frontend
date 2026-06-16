@@ -317,7 +317,7 @@ function showAll() {
 }
 function hideAll() {
   for (const row of filteredActive.value) {
-    if (String(row.node.id) === '-1') continue
+    if (row.node.id === UNASSIGNED_NODE_ID) continue
     demoteRow(row)
   }
 }

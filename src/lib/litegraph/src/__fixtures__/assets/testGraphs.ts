@@ -1,5 +1,3 @@
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
-
 import type {
   ISerialisedGraph,
   ISerialisedNode,
@@ -22,7 +20,7 @@ export const oldSchemaGraph: ISerialisedGraph = {
       title: 'A group to test with'
     }
   ],
-  nodes: [{ id: asNodeId(1) } as Partial<ISerialisedNode> as ISerialisedNode],
+  nodes: [{ id: 1 } as unknown as ISerialisedNode],
   links: []
 }
 

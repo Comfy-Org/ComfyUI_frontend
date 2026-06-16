@@ -147,7 +147,7 @@ describe('LGraphNode', () => {
     const node = new LGraphNode('TestNode')
     graph.add(node)
     node.configure(getMockISerialisedNode({ id: asNodeId(-1) }))
-    expect(node.id).not.toBe(-1)
+    expect(node.id).not.toBe(asNodeId(-1))
   })
 
   describe('Disconnect I/O Slots', () => {

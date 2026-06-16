@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { NodeId } from '@/types/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import type { WidgetState } from '@/types/widgetState'
 
 import { boundsExtractor, singleValueExtractor } from './useUpstreamValue'
@@ -10,7 +10,7 @@ function widget(name: string, value: unknown): WidgetState {
     name,
     type: 'INPUT',
     value,
-    nodeId: '1' as NodeId,
+    nodeId: asNodeId('1'),
     options: {},
     y: 0
   }

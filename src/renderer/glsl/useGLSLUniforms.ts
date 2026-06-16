@@ -93,7 +93,7 @@ export function extractUniformSources(
     if (link.origin_slot >= sourceNode.widgets.length) continue
     const widget = sourceNode.widgets[link.origin_slot]
     const source: UniformSource = {
-      nodeId: sourceNode.id as NodeId,
+      nodeId: sourceNode.id,
       widgetName: widget.name,
       directValue: () => widget.value
     }
@@ -163,7 +163,7 @@ export function useGLSLUniforms(
       if (!upstreamNode) break
       const upstreamWidgets = widgetValueStore.getNodeWidgets(
         gId,
-        upstreamNode.id as NodeId
+        upstreamNode.id
       )
       if (
         upstreamWidgets.length === 0 ||
@@ -250,7 +250,7 @@ export function useGLSLUniforms(
 
       const upstreamWidgets = widgetValueStore.getNodeWidgets(
         gId,
-        upstreamNode.id as NodeId
+        upstreamNode.id
       )
       const curveWidget = upstreamWidgets.find((w) => isCurveData(w.value))
       if (!curveWidget) break

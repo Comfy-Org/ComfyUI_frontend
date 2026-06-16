@@ -57,8 +57,9 @@ export function isNodeLocatorId(value: unknown): value is NodeLocatorId {
  */
 export function isNodeExecutionId(value: unknown): value is NodeExecutionId {
   if (typeof value !== 'string') return false
-  // Must contain at least one colon to be an execution ID
-  return value.includes(':')
+  // Must contain at least one colon and no empty segments
+  const parts = value.split(':')
+  return parts.length > 1 && parts.every((part) => part.length > 0)
 }
 
 /**
