@@ -1510,7 +1510,8 @@ class LayoutStoreImpl implements LayoutStore {
     const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
     for (const { nodeId, bounds } of updates) {
-      const ynode = this.ynodes.get(nodeId)
+      const normalizedNodeId = asNodeId(nodeId)
+      const ynode = this.ynodes.get(normalizedNodeId)
       if (!ynode) continue
       const currentLayout = yNodeToLayout(ynode)
 
@@ -1521,11 +1522,11 @@ class LayoutStoreImpl implements LayoutStore {
           }
         : bounds
 
-      boundsRecord[nodeId] = {
+      boundsRecord[normalizedNodeId] = {
         bounds: normalizedBounds,
         previousBounds: currentLayout.bounds
       }
-      nodeIds.push(nodeId)
+      nodeIds.push(normalizedNodeId)
     }
 
     if (!nodeIds.length) {

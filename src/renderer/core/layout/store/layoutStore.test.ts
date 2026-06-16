@@ -7,6 +7,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
   LayoutChange,
   LayoutOperation,
+  NodeId,
   NodeLayout,
   SlotLayout
 } from '@/renderer/core/layout/types'
@@ -424,6 +425,29 @@ describe('layoutStore CRDT operations', () => {
     expect(nodeRef.value?.size).toEqual({ width: 220, height: 120 })
 
     unsubscribe()
+  })
+
+  it('applies batch bounds updates for legacy numeric node ids', () => {
+    const nodeId = asNodeId(1)
+    const layout = createTestNode(nodeId)
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    const newBounds = { x: 50, y: 50, width: 400, height: 350 }
+    layoutStore.batchUpdateNodeBounds([
+      { nodeId: 1 as unknown as NodeId, bounds: newBounds }
+    ])
+
+    const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
+    expect(nodeRef.value?.size).toEqual({ width: 400, height: 350 })
   })
 
   it('should query nodes by spatial bounds', () => {
