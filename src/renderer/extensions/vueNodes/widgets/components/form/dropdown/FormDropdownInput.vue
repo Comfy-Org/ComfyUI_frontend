@@ -2,6 +2,7 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from '../../layout'
@@ -63,7 +64,8 @@ defineExpose({ focus })
       :class="
         cn(
           theButtonStyle,
-          'flex h-8 min-w-0 flex-1 items-center justify-between',
+          'flex min-w-0 flex-1 items-center justify-between',
+          useWidgetHeight(),
           {
             'rounded-l-lg': uploadable,
             'rounded-lg': !uploadable
@@ -95,8 +97,8 @@ defineExpose({ focus })
       :class="
         cn(
           theButtonStyle,
-          'relative',
-          'flex size-8 items-center justify-center rounded-r-lg border-l border-node-component-border'
+          'relative flex aspect-square items-center justify-center rounded-r-lg border-l border-node-component-border',
+          useWidgetHeight()
         )
       "
     >

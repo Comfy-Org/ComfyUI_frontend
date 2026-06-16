@@ -1,7 +1,12 @@
 <template>
   <div
     ref="container"
-    class="flex h-6 overflow-hidden rounded-md bg-component-node-widget-background text-xs text-component-node-foreground"
+    :class="
+      cn(
+        'flex overflow-hidden rounded-md bg-component-node-widget-background text-xs text-component-node-foreground',
+        useWidgetHeight()
+      )
+    "
   >
     <slot name="background" />
     <Button
@@ -73,6 +78,7 @@ import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {

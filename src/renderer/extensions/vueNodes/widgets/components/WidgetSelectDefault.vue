@@ -26,7 +26,8 @@
             :class="
               cn(
                 WidgetInputBaseClass,
-                'flex h-6 w-full min-w-0 cursor-pointer items-center overflow-hidden p-0 outline-none hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50 disabled:hover:bg-component-node-widget-background',
+                'flex w-full min-w-0 cursor-pointer items-center overflow-hidden p-0 outline-none hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50 disabled:hover:bg-component-node-widget-background',
+                useWidgetHeight(),
                 isInvalid && 'ring-1 ring-destructive-background'
               )
             "
@@ -163,6 +164,7 @@ import type { CSSProperties } from 'vue'
 
 import { useRestoreFocusOnViewportPointer } from '@/renderer/extensions/vueNodes/widgets/composables/useRestoreFocusOnViewportPointer'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { useWidgetHeight } from '@/types/widgetTypes'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
