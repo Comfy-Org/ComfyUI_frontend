@@ -24,6 +24,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 const INLINE_INPUTS = false
 
@@ -190,7 +191,9 @@ function dynamicComboWidget(
   const getState = () => {
     const graphId = resolveNodeRootGraphId(node)
     if (!graphId) return undefined
-    return useWidgetValueStore().getWidget(graphId, node.id, widget.name)
+    return useWidgetValueStore().getWidget(
+      widgetId(graphId, node.id, widget.name)
+    )
   }
   Object.defineProperty(widget, 'value', {
     get() {
