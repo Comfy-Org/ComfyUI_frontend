@@ -78,6 +78,10 @@ describe('TabErrors.vue', () => {
           rightSidePanel: {
             noErrors: 'No errors',
             noneSearchDesc: 'No results found',
+            errorsDetected: 'Error detected | Errors detected',
+            resolveBeforeRun: 'Resolve before running the workflow',
+            expand: 'Expand',
+            collapse: 'Collapse',
             errorHelp: 'Error help',
             errorLog: 'Error log',
             findOnGithubTooltip: 'Search GitHub issues',
@@ -117,9 +121,6 @@ describe('TabErrors.vue', () => {
           AsyncSearchInput: {
             template:
               '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
-          },
-          PropertiesAccordionItem: {
-            template: '<div><slot name="label" /><slot /></div>'
           },
           Button: {
             template: '<button v-bind="$attrs"><slot /></button>'
@@ -211,7 +212,13 @@ describe('TabErrors.vue', () => {
     })
 
     expect(screen.getByText('Missing connection')).toBeInTheDocument()
-    expect(screen.getByText('(3)')).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('error-group-execution')).getByText('3')
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('errors-summary-hero')).getByText('3')
+    ).toBeInTheDocument()
+    expect(screen.getByText('Errors detected')).toBeInTheDocument()
     expect(
       screen.getAllByText(
         'Required input slots have no connection feeding them.'
@@ -404,7 +411,7 @@ describe('TabErrors.vue', () => {
     })
     const missingModelStore = useMissingModelStore()
 
-    expect(screen.getByText('Missing Models (1)')).toBeInTheDocument()
+    expect(screen.getByText('Missing Models')).toBeInTheDocument()
     expect(
       screen.queryByTestId('missing-model-actions')
     ).not.toBeInTheDocument()
@@ -412,6 +419,40 @@ describe('TabErrors.vue', () => {
     await user.click(screen.getByTestId('missing-model-header-refresh'))
 
     expect(missingModelStore.refreshMissingModels).toHaveBeenCalled()
+  })
+
+  it('counts missing models per file when several share one directory', () => {
+    renderComponent({
+      missingModel: {
+        missingModelCandidates: [
+          {
+            nodeId: '1',
+            nodeType: 'CheckpointLoaderSimple',
+            widgetName: 'ckpt_name',
+            name: 'model-a.safetensors',
+            directory: 'checkpoints',
+            isMissing: true,
+            isAssetSupported: true
+          },
+          {
+            nodeId: '2',
+            nodeType: 'CheckpointLoaderSimple',
+            widgetName: 'ckpt_name',
+            name: 'model-b.safetensors',
+            directory: 'checkpoints',
+            isMissing: true,
+            isAssetSupported: true
+          }
+        ] satisfies MissingModelCandidate[]
+      }
+    })
+
+    expect(
+      within(screen.getByTestId('error-group-missing-model')).getByText('2')
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('errors-summary-hero')).getByText('2')
+    ).toBeInTheDocument()
   })
 
   it('renders missing model display message below the section title', () => {
@@ -431,7 +472,7 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    expect(screen.getByText('Missing Models (1)')).toBeInTheDocument()
+    expect(screen.getByText('Missing Models')).toBeInTheDocument()
     expect(
       screen.getByText('Download a model, or open the node to replace it.')
     ).toBeInTheDocument()
@@ -453,7 +494,7 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    expect(screen.getByText('Missing Inputs (1)')).toBeInTheDocument()
+    expect(screen.getByText('Missing Inputs')).toBeInTheDocument()
     expect(
       screen.getByText('A required media input has no file selected.')
     ).toBeInTheDocument()
@@ -495,6 +536,12 @@ describe('TabErrors.vue', () => {
     })
 
     expect(screen.getAllByTestId('missing-media-row')).toHaveLength(2)
+    expect(
+      within(screen.getByTestId('error-group-missing-media')).getByText('2')
+    ).toBeInTheDocument()
+    expect(
+      within(screen.getByTestId('errors-summary-hero')).getByText('2')
+    ).toBeInTheDocument()
 
     await user.click(
       screen.getByRole('button', { name: 'Second Loader - image' })
@@ -526,7 +573,7 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    expect(screen.getByText('Swap Nodes (1)')).toBeInTheDocument()
+    expect(screen.getByText('Swap Nodes')).toBeInTheDocument()
     expect(
       screen.getByText('Some nodes can be replaced with alternatives')
     ).toBeInTheDocument()
@@ -539,7 +586,7 @@ describe('TabErrors.vue', () => {
     ).toBeInTheDocument()
   })
 
-  it('keeps missing model Refresh in the card actions when models are downloadable', () => {
+  it('renders missing model Refresh in the header and Download all in the card when models are downloadable', () => {
     const missingModel = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
@@ -557,11 +604,8 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    expect(
-      screen.queryByTestId('missing-model-header-refresh')
-    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('missing-model-header-refresh')).toBeVisible()
     expect(screen.getByTestId('missing-model-actions')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible()
   })
 })
