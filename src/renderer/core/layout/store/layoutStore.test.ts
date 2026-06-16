@@ -427,6 +427,25 @@ describe('layoutStore CRDT operations', () => {
     unsubscribe()
   })
 
+  it('resolves node layout refs for legacy numeric node ids', () => {
+    const nodeId = asNodeId(7)
+    const layout = createTestNode(nodeId)
+
+    layoutStore.applyOperation({
+      type: 'createNode',
+      entity: 'node',
+      nodeId,
+      layout,
+      timestamp: Date.now(),
+      source: LayoutSource.External,
+      actor: 'test'
+    })
+
+    const numericRef = layoutStore.getNodeLayoutRef(7 as unknown as NodeId)
+    expect(numericRef.value).toEqual(layout)
+    expect(numericRef).toBe(layoutStore.getNodeLayoutRef(nodeId))
+  })
+
   it('applies batch bounds updates for legacy numeric node ids', () => {
     const nodeId = asNodeId(1)
     const layout = createTestNode(nodeId)

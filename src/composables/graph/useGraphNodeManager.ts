@@ -22,6 +22,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
+import { asNodeId } from '@/types/nodeId'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
@@ -469,7 +470,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   const badges = node.badges
 
   return {
-    id: node.id,
+    id: asNodeId(node.id),
     title: typeof node.title === 'string' ? node.title : '',
     type: nodeType,
     mode: node.mode || 0,
@@ -553,7 +554,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
-    const id = node.id
+    const id = asNodeId(node.id)
 
     // Store non-reactive reference to original node
     nodeRefs.set(id, node)
@@ -615,7 +616,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
-    const id = node.id
+    const id = asNodeId(node.id)
 
     // Remove node from layout store
     setSource(LayoutSource.Canvas)

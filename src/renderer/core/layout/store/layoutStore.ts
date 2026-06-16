@@ -230,7 +230,8 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Get or create a customRef for a node layout
    */
-  getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null> {
+  getNodeLayoutRef(rawNodeId: NodeId): Ref<NodeLayout | null> {
+    const nodeId = asNodeId(rawNodeId)
     let nodeRef = this.nodeRefs.get(nodeId)
 
     if (!nodeRef) {
