@@ -49,6 +49,11 @@ interface Window {
     posthog_project_token?: string
     posthog_api_host?: string
     posthog_config?: Record<string, unknown>
+    customer_io?: {
+      write_key?: string
+      site_id?: string
+      user_id?: string
+    }
     require_whitelist?: boolean
     subscription_required?: boolean
     max_upload_size?: number
