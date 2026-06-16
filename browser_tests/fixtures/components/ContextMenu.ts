@@ -1,10 +1,14 @@
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
+import { TestIds } from '@e2e/fixtures/selectors'
+
 export class ContextMenu {
   public readonly primeVueMenu: Locator
   public readonly litegraphMenu: Locator
   public readonly litegraphContextMenu: Locator
+  public readonly linkReleaseMenu: Locator
+  public readonly linkReleaseMenuSearch: Locator
   public readonly menuItems: Locator
   protected readonly anyMenu: Locator
 
@@ -12,6 +16,10 @@ export class ContextMenu {
     this.primeVueMenu = page.locator('.p-contextmenu, .p-menu')
     this.litegraphMenu = page.locator('.litemenu')
     this.litegraphContextMenu = page.locator('.litecontextmenu')
+    this.linkReleaseMenu = page.getByTestId(TestIds.linkReleaseMenu.root)
+    this.linkReleaseMenuSearch = page.getByTestId(
+      TestIds.linkReleaseMenu.search
+    )
     this.menuItems = page.locator('.p-menuitem, .litemenu-entry')
     this.anyMenu = this.primeVueMenu
       .or(this.litegraphMenu)

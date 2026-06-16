@@ -16,6 +16,7 @@
         :avoid-collisions="false"
         :class="contentClass"
         :style="menuMaxHeight ? { maxHeight: `${menuMaxHeight}px` } : undefined"
+        data-testid="link-release-context-menu"
         @open-auto-focus.prevent="focusSearch"
         @close-auto-focus.prevent
         @entry-focus="onEntryFocus"
@@ -33,7 +34,7 @@
           </span>
           <span class="truncate">{{ headerLabel }}</span>
         </DropdownMenuLabel>
-        <div data-search-field class="p-.5 shrink-0">
+        <div data-search-field class="shrink-0 p-0.5">
           <div
             class="flex h-9 items-center gap-2 rounded-lg bg-secondary-background px-2"
           >
@@ -44,6 +45,7 @@
               ref="searchInput"
               v-model="query"
               type="text"
+              data-testid="link-release-search"
               :placeholder="t('contextMenu.Search')"
               class="size-full min-w-0 appearance-none border-none bg-transparent text-sm text-base-foreground outline-none placeholder:text-muted-foreground"
               @keydown="onRootSearchKeydown"

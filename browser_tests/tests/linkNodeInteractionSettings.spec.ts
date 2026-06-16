@@ -21,7 +21,7 @@ test.describe('Link & node interaction settings', { tag: '@canvas' }, () => {
       await expect(comfyPage.searchBoxV2.input).toBeVisible()
     })
 
-    test('"context menu" opens litegraph connection menu on link release', async ({
+    test('"context menu" opens the link-release context menu on link release', async ({
       comfyPage
     }) => {
       await comfyPage.settings.setSetting(
@@ -29,7 +29,7 @@ test.describe('Link & node interaction settings', { tag: '@canvas' }, () => {
         'context menu'
       )
       await comfyPage.canvasOps.disconnectEdge()
-      await expect(comfyPage.contextMenu.litegraphContextMenu).toBeVisible()
+      await expect(comfyPage.contextMenu.linkReleaseMenu).toBeVisible()
     })
 
     test('"no action" suppresses both search box and context menu', async ({
@@ -41,7 +41,7 @@ test.describe('Link & node interaction settings', { tag: '@canvas' }, () => {
       )
       await comfyPage.canvasOps.disconnectEdge()
       await expect(comfyPage.searchBoxV2.input).toBeHidden()
-      await expect(comfyPage.contextMenu.litegraphContextMenu).toBeHidden()
+      await expect(comfyPage.contextMenu.linkReleaseMenu).toBeHidden()
     })
   })
 
