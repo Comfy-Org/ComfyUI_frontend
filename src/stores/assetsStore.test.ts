@@ -854,6 +854,38 @@ describe('assetsStore - Refactored (Option A)', () => {
         { after: 'cursor-fresh' }
       )
     })
+
+    it('terminates the walk when the backend returns the same cursor it was given (stuck cursor)', async () => {
+      // Page 1: initial load mints cursor-1
+      const firstBatch = Array.from({ length: 10 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(firstBatch, { hasMore: true, nextCursor: 'cursor-1' })
+      )
+      await store.updateHistory()
+      expect(store.hasMoreHistory).toBe(true)
+
+      // Page 2: backend echoes back cursor-1 (same as the requested after),
+      // with has_more:true and a non-empty page — the stuck-cursor shape.
+      // Without the guard, mergeHistoryAssets dedupes every row and
+      // hasMoreHistory stays true, causing an infinite spin.
+      const stuckPage = Array.from(
+        { length: 10 },
+        (_, i) => createMockJobItem(i) // same ids as page 1 → all deduped
+      )
+      vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
+        mockHistoryPage(stuckPage, { hasMore: true, nextCursor: 'cursor-1' })
+      )
+      await store.loadMoreHistory()
+
+      // Guard must have fired: hasMoreHistory forced off, cursor dropped
+      expect(store.hasMoreHistory).toBe(false)
+
+      // A subsequent loadMoreHistory must not issue another fetch
+      await store.loadMoreHistory()
+      expect(fetchHistoryPage).toHaveBeenCalledTimes(2)
+    })
   })
 
   describe('refreshHistoryHead', () => {

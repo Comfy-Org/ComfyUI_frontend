@@ -234,10 +234,8 @@ export const useAssetsStore = defineStore('assets', () => {
     }
 
     const epoch = historyFetchEpoch
-    const page = await fetchHistoryPageWithCursorRecovery(
-      loadMore ? historyNextCursor.value : null,
-      epoch
-    )
+    const requestedAfter = loadMore ? historyNextCursor.value : null
+    const page = await fetchHistoryPageWithCursorRecovery(requestedAfter, epoch)
     if (epoch !== historyFetchEpoch) return allHistoryItems.value
 
     const newAssets = mapHistoryToAssets(page.jobs)
@@ -254,10 +252,19 @@ export const useAssetsStore = defineStore('assets', () => {
     // empty page without a cursor is terminal regardless of has_more —
     // offset paging advances by jobs.length, so it would refetch the same
     // page forever; a minted cursor still makes progress.
+    //
+    // Guard against a non-advancing cursor: if the backend echoes back the
+    // same cursor it was given (with has_more:true and a non-empty page),
+    // deduplication would discard every row and the walk would spin forever.
+    // Treat a stuck cursor as terminal — drop it and force hasMoreHistory off.
+    const cursorStuck =
+      page.nextCursor != null && page.nextCursor === requestedAfter
     historyOffset.value += page.jobs.length
-    historyNextCursor.value = page.nextCursor ?? null
+    historyNextCursor.value = cursorStuck ? null : (page.nextCursor ?? null)
     hasMoreHistory.value =
-      page.hasMore && (page.jobs.length > 0 || page.nextCursor != null)
+      page.hasMore &&
+      !cursorStuck &&
+      (page.jobs.length > 0 || page.nextCursor != null)
 
     trimHistoryToLimit()
 
