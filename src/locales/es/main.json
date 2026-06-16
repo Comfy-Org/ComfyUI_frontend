@@ -115,6 +115,13 @@
       "audioPlaceholder": "Audio",
       "threeDModelPlaceholder": "Modelo 3D"
     },
+    "missingModelImportTypeLocked": "Restringido a {type} para este modelo faltante",
+    "missingModelImportTypeMismatchAlreadyImported": "Este archivo ya está importado como {actual}.",
+    "missingModelImportTypeMismatchNextAction": "Intenta importar un modelo {required} diferente que este nodo pueda usar.",
+    "missingModelImportTypeMismatchRequired": "Este nodo requiere {required}, por lo que esta importación no puede resolver el modelo faltante.",
+    "missingModelImportTypeMismatchTitle": "Este modelo no puede resolver el modelo faltante.",
+    "missingModelImportUnknownType": "otro tipo de modelo",
+    "missingModelImportWillReplace": "Esta importación reemplazará {model} en:",
     "modelAssociatedWithLink": "El modelo asociado con el enlace que proporcionaste:",
     "modelInfo": {
       "addBaseModel": "Agregar modelo base...",
@@ -322,6 +329,8 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "cancelFailed": "No se pudo cancelar la suscripción",
+    "cancelTimeout": "La cancelación de la suscripción excedió el tiempo de espera",
     "subscriptionFailed": "Error al actualizar la suscripción",
     "subscriptionProcessing": "Procesando pago — configurando tu espacio de trabajo...",
     "subscriptionSuccess": "Suscripción actualizada correctamente",
@@ -3059,36 +3068,21 @@
       "missingMediaTitle": "Entradas faltantes"
     },
     "missingModels": {
-      "alreadyExistsInCategory": "Este modelo ya existe en \"{category}\"",
-      "assetLoadTimeout": "El tiempo de detección del modelo se agotó. Intenta recargar el flujo de trabajo.",
-      "cancelSelection": "Cancelar selección",
-      "clearUrl": "Borrar URL",
       "collapseNodes": "Ocultar nodos de referencia",
-      "confirmSelection": "Confirmar selección",
       "copyModelName": "Copiar nombre del modelo",
       "copyUrl": "Copiar URL",
       "customNodeDownloadDisabled": "El entorno en la nube no admite la importación de modelos para nodos personalizados en esta sección. Por favor, utiliza nodos estándar de carga o sustituye con un modelo de la biblioteca de abajo.",
       "downloadAll": "Descargar todo",
       "expandNodes": "Mostrar nodos de referencia",
       "import": "Importar",
-      "importAnyway": "Importar de todos modos",
-      "importFailed": "Error al importar",
       "importNotSupported": "Importación no soportada",
-      "imported": "Importado",
       "importing": "Importando...",
       "locateNode": "Localizar nodo en el lienzo",
-      "metadataFetchFailed": "No se pudo obtener los metadatos. Por favor, revisa el enlace e inténtalo de nuevo.",
       "missingModelsTitle": "Modelos faltantes",
-      "or": "O",
       "refresh": "Actualizar",
       "refreshFailed": "No se pudo actualizar los modelos faltantes. Por favor, inténtalo de nuevo.",
       "refreshing": "Actualizando modelos faltantes.",
-      "typeMismatch": "Este modelo parece ser un \"{detectedType}\". ¿Estás seguro?",
-      "unknownCategory": "Desconocido",
-      "unsupportedUrl": "Solo se admiten URLs de Civitai y Hugging Face.",
-      "urlPlaceholder": "Pega la URL del modelo (Civitai o Hugging Face)",
-      "useFromLibrary": "Usar de la biblioteca",
-      "usingFromLibrary": "Usando de la biblioteca"
+      "unknownCategory": "Desconocido"
     },
     "missingNodePacks": {
       "applyChanges": "Aplicar cambios",

@@ -17450,7 +17450,7 @@
       },
       "duration": {
         "name": "duration",
-        "tooltip": "Target duration in seconds. Set to 0 to let the model infer the duration from the prompt. Maximum: 6 minutes."
+        "tooltip": "Target duration in seconds. Maximum: 6 minutes."
       },
       "seed": {
         "name": "seed",

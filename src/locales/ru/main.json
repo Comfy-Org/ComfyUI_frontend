@@ -115,6 +115,13 @@
       "audioPlaceholder": "Аудио",
       "threeDModelPlaceholder": "3D-модель"
     },
+    "missingModelImportTypeLocked": "Заблокировано на {type} для этой отсутствующей модели",
+    "missingModelImportTypeMismatchAlreadyImported": "Этот файл уже импортирован как {actual}.",
+    "missingModelImportTypeMismatchNextAction": "Попробуйте импортировать другую модель {required}, которую может использовать этот узел.",
+    "missingModelImportTypeMismatchRequired": "Этот узел требует {required}, поэтому этот импорт не может решить проблему отсутствующей модели.",
+    "missingModelImportTypeMismatchTitle": "Эта модель не может решить проблему отсутствующей модели.",
+    "missingModelImportUnknownType": "другой тип модели",
+    "missingModelImportWillReplace": "Этот импорт заменит {model} в:",
     "modelAssociatedWithLink": "Модель, связанная с предоставленной вами ссылкой:",
     "modelInfo": {
       "addBaseModel": "Добавить базовую модель...",
@@ -322,6 +329,8 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "cancelFailed": "Не удалось отменить подписку",
+    "cancelTimeout": "Время ожидания отмены подписки истекло",
     "subscriptionFailed": "Не удалось обновить подписку",
     "subscriptionProcessing": "Обработка платежа — настройка вашего рабочего пространства...",
     "subscriptionSuccess": "Подписка успешно обновлена",
@@ -3059,36 +3068,21 @@
       "missingMediaTitle": "Отсутствующие входные данные"
     },
     "missingModels": {
-      "alreadyExistsInCategory": "Эта модель уже существует в «{category}»",
-      "assetLoadTimeout": "Время ожидания обнаружения модели истекло. Попробуйте перезагрузить рабочий процесс.",
-      "cancelSelection": "Отменить выбор",
-      "clearUrl": "Очистить URL",
       "collapseNodes": "Скрыть ссылающиеся узлы",
-      "confirmSelection": "Подтвердить выбор",
       "copyModelName": "Скопировать имя модели",
       "copyUrl": "Копировать URL",
       "customNodeDownloadDisabled": "В облачной среде импорт моделей для пользовательских узлов в этом разделе не поддерживается. Пожалуйста, используйте стандартные загрузочные узлы или выберите модель из библиотеки ниже.",
       "downloadAll": "Скачать всё",
       "expandNodes": "Показать ссылающиеся узлы",
       "import": "Импортировать",
-      "importAnyway": "Импортировать в любом случае",
-      "importFailed": "Ошибка импорта",
       "importNotSupported": "Импорт не поддерживается",
-      "imported": "Импортировано",
       "importing": "Импортируется...",
       "locateNode": "Найти узел на холсте",
-      "metadataFetchFailed": "Не удалось получить метаданные. Проверьте ссылку и попробуйте снова.",
       "missingModelsTitle": "Отсутствующие модели",
-      "or": "ИЛИ",
       "refresh": "Обновить",
       "refreshFailed": "Не удалось обновить отсутствующие модели. Пожалуйста, попробуйте ещё раз.",
       "refreshing": "Обновление отсутствующих моделей.",
-      "typeMismatch": "Похоже, эта модель — «{detectedType}». Вы уверены?",
-      "unknownCategory": "Неизвестно",
-      "unsupportedUrl": "Поддерживаются только URL Civitai и Hugging Face.",
-      "urlPlaceholder": "Вставьте URL модели (Civitai или Hugging Face)",
-      "useFromLibrary": "Использовать из библиотеки",
-      "usingFromLibrary": "Используется из библиотеки"
+      "unknownCategory": "Неизвестно"
     },
     "missingNodePacks": {
       "applyChanges": "Применить изменения",

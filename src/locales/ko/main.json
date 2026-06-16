@@ -115,6 +115,13 @@
       "audioPlaceholder": "오디오",
       "threeDModelPlaceholder": "3D 모델"
     },
+    "missingModelImportTypeLocked": "이 누락된 모델에 대해 {type}(으)로 잠겨 있습니다",
+    "missingModelImportTypeMismatchAlreadyImported": "이 파일은 이미 {actual}(으)로 가져왔습니다.",
+    "missingModelImportTypeMismatchNextAction": "이 노드에서 사용할 수 있는 다른 {required} 모델을 가져와 보세요.",
+    "missingModelImportTypeMismatchRequired": "이 노드는 {required}(이)가 필요하므로, 이 가져오기로는 누락된 모델을 해결할 수 없습니다.",
+    "missingModelImportTypeMismatchTitle": "이 모델로는 누락된 모델을 해결할 수 없습니다.",
+    "missingModelImportUnknownType": "다른 모델 유형",
+    "missingModelImportWillReplace": "이 가져오기는 다음에서 {model}(을)를 대체합니다:",
     "modelAssociatedWithLink": "제공하신 링크와 연결된 모델:",
     "modelInfo": {
       "addBaseModel": "베이스 모델 추가...",
@@ -322,6 +329,8 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "cancelFailed": "구독 취소에 실패했습니다",
+    "cancelTimeout": "구독 취소가 시간 초과되었습니다",
     "subscriptionFailed": "구독 업데이트에 실패했습니다",
     "subscriptionProcessing": "결제 처리 중 — 워크스페이스를 설정하는 중입니다...",
     "subscriptionSuccess": "구독이 성공적으로 업데이트되었습니다",
@@ -3059,36 +3068,21 @@
       "missingMediaTitle": "입력 누락"
     },
     "missingModels": {
-      "alreadyExistsInCategory": "이 모델은 이미 \"{category}\"에 존재합니다",
-      "assetLoadTimeout": "모델 감지 시간이 초과되었습니다. 워크플로우를 다시 불러와 보세요.",
-      "cancelSelection": "선택 취소",
-      "clearUrl": "URL 지우기",
       "collapseNodes": "참조 노드 숨기기",
-      "confirmSelection": "선택 확인",
       "copyModelName": "모델 이름 복사",
       "copyUrl": "URL 복사",
       "customNodeDownloadDisabled": "클라우드 환경에서는 이 섹션의 커스텀 노드 모델 가져오기를 지원하지 않습니다. 표준 로더 노드를 사용하거나 아래 라이브러리의 모델로 대체해 주세요.",
       "downloadAll": "모두 다운로드",
       "expandNodes": "참조 노드 보기",
       "import": "가져오기",
-      "importAnyway": "그래도 가져오기",
-      "importFailed": "가져오기 실패",
       "importNotSupported": "가져오기 지원되지 않음",
-      "imported": "가져오기 완료",
       "importing": "가져오는 중...",
       "locateNode": "캔버스에서 노드 위치 찾기",
-      "metadataFetchFailed": "메타데이터를 가져오지 못했습니다. 링크를 확인하고 다시 시도하세요.",
       "missingModelsTitle": "누락된 모델",
-      "or": "또는",
       "refresh": "새로고침",
       "refreshFailed": "누락된 모델을 새로고침하지 못했습니다. 다시 시도해 주세요.",
       "refreshing": "누락된 모델을 새로고침하는 중입니다.",
-      "typeMismatch": "이 모델은 \"{detectedType}\"로 보입니다. 계속하시겠습니까?",
-      "unknownCategory": "알 수 없음",
-      "unsupportedUrl": "Civitai와 Hugging Face URL만 지원됩니다.",
-      "urlPlaceholder": "모델 URL 붙여넣기 (Civitai 또는 Hugging Face)",
-      "useFromLibrary": "라이브러리에서 사용",
-      "usingFromLibrary": "라이브러리에서 사용 중"
+      "unknownCategory": "알 수 없음"
     },
     "missingNodePacks": {
       "applyChanges": "변경 사항 적용",

@@ -115,6 +115,13 @@
       "audioPlaceholder": "صوت",
       "threeDModelPlaceholder": "مدل سه‌بعدی"
     },
+    "missingModelImportTypeLocked": "برای این مدل گمشده به {type} محدود شده است",
+    "missingModelImportTypeMismatchAlreadyImported": "این فایل قبلاً به عنوان {actual} وارد شده است.",
+    "missingModelImportTypeMismatchNextAction": "لطفاً یک مدل {required} دیگر وارد کنید که این node بتواند از آن استفاده کند.",
+    "missingModelImportTypeMismatchRequired": "این node به {required} نیاز دارد، بنابراین این واردسازی نمی‌تواند مدل گمشده را رفع کند.",
+    "missingModelImportTypeMismatchTitle": "این مدل نمی‌تواند مدل گمشده را رفع کند.",
+    "missingModelImportUnknownType": "یک نوع مدل دیگر",
+    "missingModelImportWillReplace": "این واردسازی {model} را در موارد زیر جایگزین خواهد کرد:",
     "modelAssociatedWithLink": "مدل مرتبط با لینکی که وارد کردید:",
     "modelInfo": {
       "addBaseModel": "افزودن مدل پایه...",
@@ -322,6 +329,8 @@
     "index": "{current} / {total}"
   },
   "billingOperation": {
+    "cancelFailed": "لغو اشتراک ناموفق بود",
+    "cancelTimeout": "مهلت لغو اشتراک به پایان رسید",
     "subscriptionFailed": "به‌روزرسانی اشتراک ناموفق بود",
     "subscriptionProcessing": "در حال پردازش پرداخت — در حال راه‌اندازی فضای کاری...",
     "subscriptionSuccess": "اشتراک با موفقیت به‌روزرسانی شد",
@@ -3059,36 +3068,21 @@
       "missingMediaTitle": "ورودی‌های گمشده"
     },
     "missingModels": {
-      "alreadyExistsInCategory": "این مدل قبلاً در «{category}» وجود دارد",
-      "assetLoadTimeout": "شناسایی مدل زمان‌بر شد. لطفاً workflow را مجدداً بارگذاری کنید.",
-      "cancelSelection": "لغو انتخاب",
-      "clearUrl": "پاک کردن آدرس",
       "collapseNodes": "مخفی کردن nodeهای مرتبط",
-      "confirmSelection": "تأیید انتخاب",
       "copyModelName": "کپی نام مدل",
       "copyUrl": "کپی نشانی اینترنتی",
       "customNodeDownloadDisabled": "محیط ابری از وارد کردن مدل برای custom nodeها در این بخش پشتیبانی نمی‌کند. لطفاً از nodeهای بارگذار استاندارد استفاده کنید یا مدلی از کتابخانه زیر جایگزین نمایید.",
       "downloadAll": "دانلود همه",
       "expandNodes": "نمایش nodeهای مرتبط",
       "import": "وارد کردن",
-      "importAnyway": "به هر حال وارد کن",
-      "importFailed": "وارد کردن انجام نشد",
       "importNotSupported": "وارد کردن پشتیبانی نمی‌شود",
-      "imported": "وارد شد",
       "importing": "در حال وارد کردن...",
       "locateNode": "یافتن node در بوم",
-      "metadataFetchFailed": "دریافت اطلاعات مدل انجام نشد. لطفاً لینک را بررسی و دوباره تلاش کنید.",
       "missingModelsTitle": "مدل‌های مفقود شده",
-      "or": "یا",
       "refresh": "بازآوری",
       "refreshFailed": "بازآوری مدل‌های مفقود انجام نشد. لطفاً دوباره تلاش کنید.",
       "refreshing": "در حال بازآوری مدل‌های مفقود.",
-      "typeMismatch": "به نظر می‌رسد این مدل از نوع \"{detectedType}\" باشد. مطمئن هستید؟",
-      "unknownCategory": "نامشخص",
-      "unsupportedUrl": "فقط آدرس‌های Civitai و Hugging Face پشتیبانی می‌شوند.",
-      "urlPlaceholder": "آدرس مدل را وارد کنید (Civitai یا Hugging Face)",
-      "useFromLibrary": "استفاده از کتابخانه",
-      "usingFromLibrary": "در حال استفاده از کتابخانه"
+      "unknownCategory": "نامشخص"
     },
     "missingNodePacks": {
       "applyChanges": "اعمال تغییرات",
