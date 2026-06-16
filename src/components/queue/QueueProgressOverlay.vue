@@ -199,12 +199,7 @@ const onCancelItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
     item.state === 'initialization' ||
     item.state === 'pending'
   ) {
-    // State-agnostic cancel: the jobs-namespace endpoint cancels a job in any
-    // state, so we no longer branch on runtime or job state here.
-    //
-    // DEPENDS ON RUNTIME PARITY: requires the runtime serving the API to expose
-    // POST /api/jobs/{job_id}/cancel. Not every runtime does yet — see cancelJob
-    // in scripts/api.ts.
+    // State-agnostic cancel (see api.ts cancelJob for the runtime-parity caveat).
     await api.cancelJob(jobId)
     executionStore.clearInitializationByJobId(jobId)
     await queueStore.update()
@@ -291,13 +286,7 @@ const interruptAll = wrapWithErrorHandlingAsync(async () => {
 
   if (!jobIds.length) return
 
-  // State-agnostic batch cancel: one request cancels every running job by id,
-  // independent of runtime. Replaces the prior per-id fan-out over
-  // /queue delete (cloud) vs /interrupt (local).
-  //
-  // DEPENDS ON RUNTIME PARITY: requires the runtime serving the API to expose
-  // POST /api/jobs/cancel. Not every runtime does yet — see cancelJobs in
-  // scripts/api.ts.
+  // State-agnostic batch cancel (see api.ts cancelJobs for the runtime-parity caveat).
   await api.cancelJobs(jobIds)
   executionStore.clearInitializationByJobIds(jobIds)
   await queueStore.update()

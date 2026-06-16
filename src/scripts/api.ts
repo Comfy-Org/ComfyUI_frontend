@@ -1111,17 +1111,9 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Cancels a single job by id, regardless of its state (pending or running).
-   *
-   * Targets the state-agnostic jobs-namespace endpoint
-   * `POST /api/jobs/{job_id}/cancel`. The backend treats a job that is already
-   * terminal (or already cancelling) as a successful no-op, so this call is
-   * idempotent.
-   *
-   * NOTE: This endpoint must be exposed by the runtime serving the API. Until
-   * every runtime exposes `POST /api/jobs/{job_id}/cancel` (and the batch
-   * `POST /api/jobs/cancel`), callers that may run against a runtime without
-   * these endpoints cannot rely on them.
+   * Cancels a single job by id via `POST /api/jobs/{job_id}/cancel` (idempotent:
+   * already-terminal jobs are a no-op). Requires runtime parity — not every
+   * runtime exposes this endpoint yet; do not merge callers before parity lands.
    *
    * @param {string} jobId The id of the job to cancel
    */
@@ -1138,14 +1130,9 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
-   * Cancels multiple jobs in a single request, regardless of their states.
-   *
-   * Targets the state-agnostic batch jobs-namespace endpoint
-   * `POST /api/jobs/cancel` with body `{ job_ids: [...] }`. Like the single
-   * cancel, already-terminal jobs are treated as no-ops.
-   *
-   * NOTE: See {@link cancelJob} — this batch endpoint must be exposed by the
-   * runtime serving the API.
+   * Cancels multiple jobs in a single request via `POST /api/jobs/cancel` with
+   * body `{ job_ids: [...] }`. Already-terminal jobs are no-ops. Same runtime
+   * parity requirement as {@link cancelJob}.
    *
    * @param {string[]} jobIds The ids of the jobs to cancel
    */

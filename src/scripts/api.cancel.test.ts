@@ -2,16 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
-/**
- * Unit tests for the jobs-namespace cancel client methods.
- *
- * These methods target the state-agnostic cancel endpoints:
- *   - single: POST /api/jobs/{job_id}/cancel
- *   - batch:  POST /api/jobs/cancel with body { job_ids: [...] }
- *
- * `fetchApi` (the network layer) is stubbed so the tests assert the request
- * shape and the throw-on-failure behavior without hitting a server.
- */
+// Tests for api.cancelJob and api.cancelJobs; fetchApi is stubbed.
 const okResponse = () => ({ ok: true, status: 200 }) as Response
 const errorResponse = (status: number) => ({ ok: false, status }) as Response
 

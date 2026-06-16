@@ -87,12 +87,7 @@ export function useJobMenu(
       target.state === 'initialization' ||
       target.state === 'pending'
     ) {
-      // State-agnostic cancel: the jobs-namespace endpoint cancels a job in any
-      // state, so we no longer branch on runtime or job state here.
-      //
-      // DEPENDS ON RUNTIME PARITY: this requires the runtime serving the API to
-      // expose POST /api/jobs/{job_id}/cancel. Not every runtime does yet, so
-      // this must not ship before that endpoint exists everywhere this UI runs.
+      // State-agnostic cancel (see api.ts cancelJob for the runtime-parity caveat).
       await api.cancelJob(target.id)
     }
     executionStore.clearInitializationByJobId(target.id)
