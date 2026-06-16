@@ -233,7 +233,8 @@
       "auth/user-disabled": "Ce compte a été désactivé. Veuillez contacter le support.",
       "auth/user-not-found": "Aucun compte trouvé avec cette adresse e-mail. Souhaitez-vous créer un nouveau compte ?",
       "auth/weak-password": "Le mot de passe est trop faible. Veuillez utiliser un mot de passe plus fort avec au moins 6 caractères.",
-      "auth/wrong-password": "Le mot de passe que vous avez saisi est incorrect. Veuillez réessayer."
+      "auth/wrong-password": "Le mot de passe que vous avez saisi est incorrect. Veuillez réessayer.",
+      "generic": "Une erreur s'est produite lors de votre connexion. Veuillez réessayer."
     },
     "login": {
       "andText": "et",
@@ -407,6 +408,29 @@
   "cloudForgotPassword_passwordResetSent": "Réinitialisation du mot de passe envoyée",
   "cloudForgotPassword_sendResetLink": "Envoyer le lien de réinitialisation",
   "cloudForgotPassword_title": "Mot de passe oublié",
+  "cloudHero": {
+    "nextSlide": "Diapositive suivante",
+    "previousSlide": "Diapositive précédente",
+    "slidePagerLabel": "Aller à la diapositive {index}",
+    "slides": {
+      "cloud": {
+        "description": "Idéal pour la plupart des utilisateurs souhaitant travailler de n'importe où avec des modèles vérifiés pour une licence commerciale.",
+        "title": "Cloud"
+      },
+      "models": {
+        "description": "Modèles sélectionnés et licenciés commercialement, prêts à l’emploi sans configuration.",
+        "title": "Modèles"
+      },
+      "team": {
+        "description": "Intégrez votre équipe dès aujourd'hui. Partagez des workflows et des ressources dans toute votre organisation.",
+        "title": "Équipe"
+      },
+      "workflows": {
+        "description": "De l’idée au résultat en quelques minutes. Générez plusieurs variantes côte à côte.",
+        "title": "Workflows"
+      }
+    }
+  },
   "cloudNotification": {
     "continueLocally": "Continuer localement",
     "exploreCloud": "Essayer le cloud gratuitement",
@@ -798,6 +822,8 @@
     "CONDITIONING": "CONDITIONNEMENT",
     "CONTROL_NET": "RESEAU_DE_CONTROLE",
     "CURVE": "COURBE",
+    "DA3_GEOMETRY": "DA3_GEOMETRY",
+    "DA3_MODEL": "DA3_MODEL",
     "ELEVENLABS_VOICE": "ELEVENLABS_VOICE",
     "FACE_DETECTION_MODEL": "MODÈLE_DE_DÉTECTION_DE_VISAGE",
     "FACE_LANDMARKS": "FACE_LANDMARKS",
@@ -808,7 +834,9 @@
     "FILE_3D_KSPLAT": "FILE_3D_KSPLAT",
     "FILE_3D_OBJ": "FICHIER_3D_OBJ",
     "FILE_3D_PLY": "FILE_3D_PLY",
+    "FILE_3D_POINT_CLOUD_ANY": "FILE_3D_POINT_CLOUD_ANY",
     "FILE_3D_SPLAT": "FILE_3D_SPLAT",
+    "FILE_3D_SPLAT_ANY": "FILE_3D_SPLAT_ANY",
     "FILE_3D_SPZ": "FILE_3D_SPZ",
     "FILE_3D_STL": "FICHIER_3D_STL",
     "FILE_3D_USDZ": "FICHIER_3D_USDZ",
@@ -857,6 +885,8 @@
     "RECRAFT_V3_STYLE": "Style Recraft V3",
     "RETARGET_TASK_ID": "ID_TÂCHE_RETARGET",
     "RIG_TASK_ID": "ID_TÂCHE_RIG",
+    "RUNWAY_ALEPH2_KEYFRAME": "RUNWAY_ALEPH2_KEYFRAME",
+    "RUNWAY_ALEPH2_PROMPT_IMAGE": "RUNWAY_ALEPH2_PROMPT_IMAGE",
     "SAM3_TRACK_DATA": "SAM3_TRACK_DATA",
     "SAMPLER": "ÉCHANTILLONNEUR",
     "SIGMAS": "SIGMAS",
@@ -921,6 +951,47 @@
     "fallbacks": {
       "inputName": "entrée inconnue",
       "nodeName": "Ce nœud"
+    },
+    "missingErrors": {
+      "missing_media": {
+        "displayMessage": "Une entrée média requise n’a pas de fichier sélectionné.",
+        "itemLabel": "{nodeName} - {inputName}",
+        "toastMessageMany": "Veuillez sélectionner les entrées média manquantes avant d’exécuter ce workflow.",
+        "toastMessageWithNode": "{nodeName} nécessite un fichier média requis.",
+        "toastTitleMany": "Entrées média manquantes",
+        "toastTitleOne": "Entrée média manquante"
+      },
+      "missing_model": {
+        "displayMessageCloud": "Importez un modèle ou ouvrez le nœud pour le remplacer.",
+        "displayMessageOss": "Téléchargez un modèle ou ouvrez le nœud pour le remplacer.",
+        "toastMessageManyCloud": "Certains modèles ne sont pas pris en charge. Veuillez en choisir d’autres.",
+        "toastMessageManyOss": "{count} fichiers de modèles sont manquants.",
+        "toastMessageOneCloud": "Ce modèle n’est pas pris en charge. Choisissez-en un autre.",
+        "toastMessageOneOss": "{nodeName} nécessite un fichier modèle manquant.",
+        "toastTitleMany": "Modèles manquants",
+        "toastTitleManyCloud": "Des modèles ne sont pas disponibles sur le Cloud",
+        "toastTitleOneCloud": "{modelName} n’est pas disponible sur le Cloud",
+        "toastTitleOneOss": "{modelName} est manquant"
+      },
+      "missing_node": {
+        "displayMessageCloud": "Les nœuds personnalisés requis ne sont pas pris en charge sur le Cloud. Remplacez-les par des nœuds compatibles.",
+        "displayMessageOss": "Installez les packs manquants pour utiliser ce workflow.",
+        "toastMessageManyCloud": "Ce workflow utilise des nœuds qui ne sont pas pris en charge sur le Cloud.",
+        "toastMessageManyOss": "{count} nœuds nécessitent des packs de nœuds manquants.",
+        "toastMessageOneCloud": "Ce nœud n’est pas pris en charge sur le Cloud.",
+        "toastMessageOneOss": "Ce workflow utilise un nœud personnalisé qui n’est pas installé. Installez-le depuis le registre ou remplacez le nœud.",
+        "toastTitleManyCloud": "Des nœuds ne sont pas disponibles sur le Cloud",
+        "toastTitleManyOss": "Nœuds manquants",
+        "toastTitleOneCloud": "{nodeType} n’est pas disponible sur le Cloud",
+        "toastTitleOneOss": "Nœud manquant : {nodeType}"
+      },
+      "swap_nodes": {
+        "displayMessage": "Certains nœuds peuvent être remplacés par des alternatives",
+        "toastMessageMany": "{count} types de nœuds peuvent être remplacés par des alternatives compatibles.",
+        "toastMessageOne": "Remplacez-le par {replacementNodeType} depuis le panneau d’erreur.",
+        "toastTitleMany": "Des nœuds peuvent être remplacés",
+        "toastTitleOne": "{nodeType} peut être remplacé"
+      }
     },
     "promptErrors": {
       "missing_node_type": {
@@ -1216,6 +1287,15 @@
         "toastMessageWithTypes": "L'entrée {inputName} de {nodeName} attend {expectedType}, mais la sortie connectée est {receivedType}.",
         "toastTitle": "Connexion invalide"
       },
+      "unknown_validation_error": {
+        "details": "{nodeName} a retourné une erreur de validation non reconnue : {errorType}",
+        "detailsWithRawDetails": "{nodeName} a retourné une erreur de validation non reconnue ({errorType}) : {rawDetails}",
+        "itemLabel": "{nodeName}",
+        "message": "Un nœud a retourné une erreur de validation non reconnue par ComfyUI.",
+        "title": "Échec de la validation",
+        "toastMessage": "{nodeName} a retourné une erreur de validation non reconnue.",
+        "toastTitle": "Échec de la validation"
+      },
       "value_bigger_than_max": {
         "details": "{nodeName} a une valeur supérieure au maximum pour {inputName}.",
         "detailsWithValue": "La valeur {receivedValue} pour l'entrée {inputName} de {nodeName} est supérieure au maximum {maxValue}.",
@@ -1263,12 +1343,9 @@
     "missingMedia": "Certains nœuds n'ont pas les entrées requises",
     "missingModels": "{count} modèle requis est manquant | {count} modèles requis sont manquants",
     "missingNodes": "Certains nœuds sont manquants et doivent être installés",
-    "seeErrors": "Voir les erreurs",
-    "showMissingMedia": "Afficher les entrées manquantes",
-    "showMissingModels": "Afficher les modèles manquants",
-    "showMissingNodes": "Afficher les nœuds manquants",
-    "showSwapNodes": "Afficher les nœuds de remplacement",
-    "swapNodes": "Certains nœuds peuvent être remplacés par des alternatives"
+    "multipleErrorCount": "{count} erreur trouvée | {count} erreurs trouvées",
+    "multipleErrorsMessage": "Veuillez les résoudre avant d’exécuter le workflow.",
+    "viewDetails": "Voir les détails"
   },
   "errorPanelSurvey": {
     "ctaButton": "Donner votre avis",
@@ -1352,6 +1429,11 @@
     "amount": "Quantité",
     "apply": "Appliquer",
     "architecture": "Architecture",
+    "arrange": "Organiser",
+    "arrangeAsGrid": "Organiser en grille",
+    "arrangeHorizontally": "Organiser horizontalement",
+    "arrangeSpacing": "Espacement de l’organisation",
+    "arrangeVertically": "Organiser verticalement",
     "asset": "{count} ressource | {count} ressources",
     "audioFailedToLoad": "Échec du chargement de l'audio",
     "audioProgress": "Progression audio",
@@ -1417,6 +1499,7 @@
     "deleteImage": "Supprimer l'image",
     "deprecated": "DEPR",
     "description": "Description",
+    "details": "Détails",
     "devOnly": "DEV",
     "devices": "Appareils",
     "disableAll": "Désactiver tout",
@@ -1506,6 +1589,7 @@
     "jobIdCopied": "ID du travail copié dans le presse-papiers",
     "keybinding": "Raccourci clavier",
     "keybindingAlreadyExists": "Le raccourci clavier existe déjà",
+    "keybindingListAriaLabel": "Raccourcis clavier : {combos}",
     "keybindingPresets": {
       "default": "Préréglage par défaut",
       "deletePreset": "Supprimer le préréglage",
@@ -1556,6 +1640,7 @@
     "mostRelevant": "Les plus pertinents",
     "multiSelectDropdown": "Menu déroulant à sélection multiple",
     "nMoreKeybindings": "+ {count} de plus",
+    "nMoreKeybindingsCompact": "+ {count}",
     "name": "Nom",
     "newFolder": "Nouveau dossier",
     "next": "Suivant",
@@ -2053,7 +2138,6 @@
     "reloadingModel": "Rechargement du modèle...",
     "removeBackgroundImage": "Supprimer l'image de fond",
     "resizeNodeMatchOutput": "Redimensionner le nœud pour correspondre à la sortie",
-    "retainViewOnReload": "Verrouiller la vue de la caméra lors du rechargement du modèle",
     "scene": "Scène",
     "showGrid": "Afficher la grille",
     "showSkeleton": "Afficher le squelette",
@@ -2692,6 +2776,7 @@
     "qwen": "qwen",
     "samplers": "échantillonneurs",
     "sampling": "échantillonnage",
+    "scail": "scail",
     "schedulers": "planificateurs",
     "scheduling": "planification",
     "sd3": "sd3",
@@ -2758,7 +2843,6 @@
     "replacedNode": "Nœud remplacé : {nodeType}",
     "selectAll": "Tout sélectionner",
     "skipForNow": "Ignorer pour l’instant",
-    "swapNodesGuide": "Les nœuds suivants peuvent être automatiquement remplacés par des alternatives compatibles.",
     "swapNodesTitle": "Échanger les nœuds",
     "unknownNode": "Inconnu",
     "willBeReplacedBy": "Ce nœud sera remplacé par :"
@@ -2930,6 +3014,7 @@
     "errorHelp": "Pour plus d'aide, {github} ou {support}",
     "errorHelpGithub": "soumettre un ticket GitHub",
     "errorHelpSupport": "contacter notre support",
+    "errorLog": "Journal des erreurs",
     "errors": "Erreurs",
     "executionErrorOccurred": "Une erreur est survenue lors de l’exécution. Consultez l’onglet Erreurs pour plus de détails.",
     "fallbackGroupTitle": "Groupe",
@@ -2964,26 +3049,14 @@
     "hideAdvancedShort": "Masquer les options avancées",
     "hideInput": "Masquer l’entrée",
     "info": "Infos",
+    "infoFor": "Infos pour {item}",
     "inputs": "ENTRÉES",
     "inputsNone": "AUCUNE ENTRÉE",
     "inputsNoneTooltip": "Le nœud n’a pas d’entrées",
     "locateNode": "Localiser le nœud sur le canevas",
+    "locateNodeFor": "Localiser {item}",
     "missingMedia": {
-      "audio": "Audio",
-      "cancelSelection": "Annuler la sélection",
-      "collapseNodes": "Masquer les nœuds de référence",
-      "confirmSelection": "Confirmer la sélection",
-      "expandNodes": "Afficher les nœuds de référence",
-      "image": "Images",
-      "locateNode": "Localiser le nœud",
-      "missingMediaTitle": "Entrées manquantes",
-      "or": "OU",
-      "selectedFromLibrary": "Sélectionné depuis la bibliothèque",
-      "uploadFile": "Téléverser {type}",
-      "uploaded": "Téléversé",
-      "uploading": "Téléversement en cours...",
-      "useFromLibrary": "Utiliser depuis la bibliothèque",
-      "video": "Vidéos"
+      "missingMediaTitle": "Entrées manquantes"
     },
     "missingModels": {
       "alreadyExistsInCategory": "Ce modèle existe déjà dans « {category} »",
@@ -3019,16 +3092,12 @@
     },
     "missingNodePacks": {
       "applyChanges": "Appliquer les modifications",
-      "cloudMessage": "Ce workflow nécessite des nœuds personnalisés qui ne sont pas encore disponibles sur Comfy Cloud.",
       "collapse": "Réduire",
       "expand": "Développer",
       "installAll": "Tout installer",
-      "installNodePack": "Installer le pack de nœuds",
       "installed": "Installé",
       "installing": "Installation en cours...",
       "ossManagerDisabledHint": "Pour installer les nodes manquants, exécutez d'abord {pipCmd} dans votre environnement Python pour installer le Node Manager, puis redémarrez ComfyUI avec le paramètre {flag}.",
-      "ossMessage": "Ce workflow utilise des nœuds personnalisés que vous n'avez pas encore installés.",
-      "searchInManager": "Rechercher dans le gestionnaire de nœuds",
       "title": "Packs de nœuds manquants",
       "unknownPack": "Pack inconnu",
       "unsupportedTitle": "Packs de nœuds non pris en charge",
@@ -3606,6 +3675,7 @@
     "comfyCloudLogo": "Logo Comfy Cloud",
     "contactOwnerToSubscribe": "Contactez le propriétaire de l’espace de travail pour vous abonner",
     "contactUs": "Contactez-nous",
+    "creditSliderSave": "Économisez {percent}% ({amount})",
     "creditsRemainingThisMonth": "Crédits restants ce mois-ci",
     "creditsRemainingThisYear": "Crédits restants cette année",
     "creditsYouveAdded": "Crédits ajoutés",

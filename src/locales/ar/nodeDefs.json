@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "عقدة التكييف لـ Bernini لتكييف الفيديو/الصورة في السياق. يمكن استخدامها للمهام التالية: t2v (نص إلى فيديو)، v2v (فيديو إلى فيديو)، rv2v (تحرير فيديو موجه بالمرجع)، r2v (مرجع إلى فيديو)، ads2v (إدراج صورة/فيديو في فيديو). يتم ترميز الصور المرجعية المدرجة كرموز في السياق (r2v، rv2v) بشكل مستقل بنسبة العرض إلى الارتفاع الأصلية الخاصة بها (يتم تحديد الحافة الطويلة عند ref_max_size).",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "حجم الدفعة"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "length": {
+        "name": "الطول"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "الحد الأقصى لحجم المرجع",
+        "tooltip": "أقصى حجم للحافة الطويلة لـ reference_video و reference_images. يتم تغيير الحجم مع الحفاظ على نسبة العرض إلى الارتفاع وتثبيته على 16 بكسل."
+      },
+      "reference_images": {
+        "name": "صور مرجعية"
+      },
+      "reference_video": {
+        "name": "فيديو المرجع",
+        "tooltip": "فيديو لإدراجه في فيديو المصدر (ads2v)."
+      },
+      "source_video": {
+        "name": "فيديو المصدر",
+        "tooltip": "فيديو المصدر لتحريره أو إعادة تصميمه (v2v، rv2v). يتم تغيير حجمه إلى العرض/الارتفاع وتقصيره إلى الطول."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "جدولة أخذ عينات بيتا",
     "inputs": {
@@ -585,6 +641,87 @@
       },
       "video": {
         "name": "فيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaTransparentVideoBackground": {
+    "description": "إزالة الخلفية من الفيديو باستخدام Bria وإرجاع الإطارات المقطوعة بالإضافة إلى قناع ألفا. قم بتوصيلهما مع عقدة تركيب، أو مررهما إلى حفظ WEBM لكتابة فيديو شفاف.",
+    "display_name": "Bria إزالة خلفية الفيديو (شفافة)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "video": {
+        "name": "فيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "صور",
+        "tooltip": null
+      },
+      "1": {
+        "name": "قناع",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoGreenScreen": {
+    "description": "استبدل خلفية الفيديو بشاشة كروما صلبة باستخدام Bria.",
+    "display_name": "Bria فيديو الشاشة الخضراء",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "green_shade": {
+        "name": "درجة اللون الأخضر",
+        "tooltip": "درجة كروما صلبة توضع خلف المقدمة: broadcast_green (#00B140)، chroma_green (#00FF00)، أو blue_screen (#0000FF)."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "video": {
+        "name": "فيديو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoReplaceBackground": {
+    "description": "استبدل خلفية الفيديو بصورة أو فيديو محدد باستخدام Bria. يحتفظ الناتج بدقة ومعدل إطارات المقدمة؛ إذا كانت الخلفية بنسبة عرض إلى ارتفاع مختلفة، سيتم تمديدها لتناسب، لذا يُفضل مطابقة النسبة للحصول على نتائج غير مشوهة.",
+    "display_name": "استبدال خلفية الفيديو بواسطة Bria",
+    "inputs": {
+      "background_image": {
+        "name": "صورة الخلفية",
+        "tooltip": "صورة الخلفية التي سيتم تركيبها خلف المقدمة. يرجى تقديم صورة خلفية أو فيديو خلفية، وليس كلاهما."
+      },
+      "background_video": {
+        "name": "فيديو الخلفية",
+        "tooltip": "فيديو الخلفية الذي سيتم تركيبه خلف المقدمة. يرجى تقديم صورة خلفية أو فيديو خلفية، وليس كلاهما."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "video": {
+        "name": "فيديو",
+        "tooltip": "فيديو المقدمة الذي سيتم استبدال خلفيته."
       }
     },
     "outputs": {
@@ -1212,6 +1349,29 @@
       }
     }
   },
+  "CFGOverride": {
+    "description": "تجاوز قيمة cfg إلى قيمة ثابتة خلال شريحة [بداية، نهاية] مئوية من الخطوات. مع وجود عدة تجاوزات، يتم اختيار الأقرب إلى العينة في حالة التداخل.",
+    "display_name": "تجاوز cfg",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "النسبة المئوية للنهاية"
+      },
+      "model": {
+        "name": "نموذج"
+      },
+      "start_percent": {
+        "name": "النسبة المئوية للبداية"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CFGZeroStar": {
     "display_name": "CFGZeroStar",
     "inputs": {
@@ -1721,6 +1881,10 @@
         "name": "end_sigma",
         "tooltip": "آخر قيمة سيجما التي ستكون هذه الخيارات سارية المفعول عندها."
       },
+      "force_sequential_txt_ids": {
+        "name": "فرض استخدام معرفات نصية متسلسلة",
+        "tooltip": "فرض استخدام معرفات رموز نصية متسلسلة بدلاً من الأصفار. يجب استخدام هذا الخيار لنقاط التحقق من ٢٠٢٦-٠٥-٢٢ إلى ٢٠٢٦-٠٦-٠١ التي تم تدريبها بهذه الطريقة ولكن لا تحتوي على المفتاح __sequential__ في قاموس الحالة."
+      },
       "model": {
         "name": "النموذج"
       },
@@ -1797,6 +1961,10 @@
     "outputs": {
       "0": {
         "name": "قيمة RGB عددية",
+        "tooltip": null
+      },
+      "1": {
+        "name": "سداسي عشري",
         "tooltip": null
       }
     }
@@ -2736,6 +2904,10 @@
         "name": "الصوت",
         "tooltip": "الصوت الذي سيتم إضافته للفيديو."
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "عمق البت للفيديو المُنشأ. عمق ١٠ بت يحافظ على تدرجات أكثر سلاسة مع تقليل التدرج اللوني، لكن بعض المشغلات والعُقد اللاحقة قد لا تدعمه."
+      },
       "fps": {
         "name": "الإطارات في الثانية"
       },
@@ -2840,6 +3012,98 @@
       },
       "1": {
         "name": "الفهرس",
+        "tooltip": null
+      }
+    }
+  },
+  "DA3GeometryToMesh": {
+    "description": "تحويل خريطة العمق إلى شبكة ثلاثية الأبعاد مثلثة.",
+    "display_name": "تحويل هندسة DA3 إلى شبكة",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "أي صورة من الدفعة سيتم تحويلها. عدد الرؤوس يختلف لكل صورة، لذلك لا يمكن تكديس الدُفعات."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "استبعاد البكسلات التي يكون مستوى الثقة المُطَبَّع لكل صورة أقل من هذه القيمة (٠ = الاحتفاظ بالجميع، ١ = الاحتفاظ بالبكسل الأكثر ثقة فقط). يُستخدم عندما تحتوي الهندسة على خريطة ثقة (نماذج Small/Base)."
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "تخطي الرؤوس. ١ = الدقة الكاملة، ٢ = النصف، وهكذا."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "إسقاط المثلثات التي يتجاوز نطاق العمق ٣×٣ الخاص بها هذا الكسر. ٠ = إيقاف."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "استخدام الصورة الأصلية كخامة لون أساسية."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "استبعاد بكسلات السماء (السماء ≥ ٠٫٥) من الشبكة. يُستخدم عندما تحتوي الهندسة على خريطة سماء (نماذج Mono/Metric)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "تشغيل Depth Anything 3 على صورة. في وضع الرؤية المتعددة، تُعتبر كل صورة منظورًا منفصلًا لنفس المشهد.",
+    "display_name": "تشغيل Depth Anything 3",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: صورة بمنظور واحد (يعمل مع أي نوع من النماذج).\nmultiview: تتم معالجة جميع الصور معًا لتحقيق التناسق الهندسي + وضعية الكاميرا (لنماذج Small/Base فقط)."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: التحجيم بحيث يكون أطول ضلع = الدقة (يحد من الذاكرة، الافتراضي).\nlower_bound_resize: التحجيم بحيث يكون أقصر ضلع = الدقة (يحافظ على مزيد من التفاصيل في الصور الطويلة/العريضة، يستهلك ذاكرة أكثر)."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "الدقة التي يعمل بها النموذج (أطول ضلع، مضاعف للعدد ١٤).\nأقل = أسرع / ذاكرة أقل.\nأعلى = تفاصيل أكثر.\nيتم تكبير الناتج إلى الحجم الأصلي."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "قاموس من التنسورات غير المُطبَّعة.\nدائمًا يحتوي على المفاتيح: depth، image، mode.\nمفاتيح اختيارية: sky (لـ Mono/Metric)، confidence (لـ Small/Base)، extrinsics + intrinsics (للوضع متعدد الرؤية)."
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "عرض خريطة العمق أو خريطة الثقة أو قناع السماء من بيانات هندسة Depth Anything 3.",
+    "display_name": "عرض Depth Anything 3",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: صورة عمق رمادية مُطبَّعة.\n- depth_colored: العمق معروض عبر خريطة ألوان Turbo.\n- sky_mask: احتمالية السماء في النطاق [٠، ١] (لنماذج Mono/Metric فقط).\n- confidence: ثقة العمق المُطبَّعة (لنماذج Small/Base فقط)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2950,6 +3214,34 @@
       },
       "type": {
         "name": "النوع"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "موجه نموذج مزدوج CFG",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "نموذج",
+        "tooltip": "النموذج المستخدم للتمرير الإيجابي (الشرطي)."
+      },
+      "model_negative": {
+        "name": "نموذج سلبي",
+        "tooltip": "النموذج المستخدم للتمرير السلبي (غير الشرطي). استخدم نفس النموذج لـ CFG العادي."
+      },
+      "negative": {
+        "name": "سلبي",
+        "tooltip": "تشغيل التكييف السلبي على النموذج السلبي. اتركه غير متصل للحصول على تمرير غير شرطي بدون نص (صور فقط)."
+      },
+      "positive": {
+        "name": "إيجابي"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3916,6 +4208,9 @@
     "description": "إزالة الكائن المحدد بالقناع من الصورة وإعادة بناء الخلفية. قم برسم القناع فوق ما تريد مسحه.",
     "display_name": "Flux مسح الصورة",
     "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
       "dilate_pixels": {
         "name": "توسيع_البكسلات",
         "tooltip": "يوسع حدود القناع لضمان تغطية حواف الكائن بشكل نظيف."
@@ -3926,6 +4221,10 @@
       "mask": {
         "name": "mask",
         "tooltip": "المناطق البيضاء تُزال؛ المناطق السوداء تُحفظ."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "البذرة العشوائية المستخدمة لإنشاء الضوضاء."
       }
     },
     "outputs": {
@@ -4669,6 +4968,14 @@
       "system_prompt": {
         "name": "موجه النظام",
         "tooltip": "تعليمات أساسية تحدد سلوك الذكاء الاصطناعي."
+      },
+      "temperature": {
+        "name": "درجة العشوائية",
+        "tooltip": "تتحكم في العشوائية أثناء التوليد. قيمة أقل تعني تركيز/حتمية أكبر."
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "عتبة أخذ العينات النواة. قيمة أقل تعني تركيز أكبر، وقيمة أعلى تعني تنوع أكبر."
       }
     },
     "outputs": {
@@ -4722,6 +5029,48 @@
       "video": {
         "name": "فيديو",
         "tooltip": "فيديو اختياري لاستخدامه كسياق للنموذج."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "توليد ردود نصية باستخدام نماذج Gemini من Google. قدم مطالبة نصية، ويمكنك أيضًا إضافة صورة أو مقطع صوتي أو فيديو أو ملف كمدخل متعدد الوسائط.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "نموذج Gemini المستخدم لتوليد الرد."
+      },
+      "model_max_output_tokens": {
+        "name": "الحد الأقصى للرموز الناتجة"
+      },
+      "model_temperature": {
+        "name": "درجة العشوائية"
+      },
+      "model_thinking_level": {
+        "name": "مستوى التفكير"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "المطالبة",
+        "tooltip": "إدخال نصي للنموذج. أضف تعليمات مفصلة أو أسئلة أو سياق."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة أخذ العينات. ضعها على 0 لبذرة عشوائية. لا يمكن ضمان إخراج حتمي."
+      },
+      "system_prompt": {
+        "name": "تعليمات النظام",
+        "tooltip": "تعليمات أساسية تحدد سلوك النموذج."
       }
     },
     "outputs": {
@@ -4874,6 +5223,10 @@
       },
       "2": {
         "name": "معدل_الإطارات",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -5675,6 +6028,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "مجدول Ideogram 4",
+    "inputs": {
+      "height": {
+        "name": "الارتفاع"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "std"
+      },
+      "steps": {
+        "name": "خطوات"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "ينشئ صورًا تزامنيًا باستخدام نموذج Ideogram V1.\n\nروابط الصور متاحة لفترة محدودة؛ إذا أردت الاحتفاظ بالصورة، يجب تنزيلها.",
     "display_name": "Ideogram V1",
@@ -5808,6 +6186,34 @@
       "resolution": {
         "name": "الدقة",
         "tooltip": "دقة توليد الصورة. إذا لم يتم تعيينها إلى تلقائي، فإنها تتجاوز إعداد نسبة العرض إلى الارتفاع."
+      },
+      "seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "ينتج صورًا باستخدام نموذج Ideogram 4.0 من خلال موجه نصي.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "prompt": {
+        "name": "موجه",
+        "tooltip": "موجه نصي لتوليد الصورة."
+      },
+      "rendering_speed": {
+        "name": "سرعة العرض",
+        "tooltip": "يتحكم في التوازن بين سرعة التوليد والجودة."
+      },
+      "resolution": {
+        "name": "الدقة"
       },
       "seed": {
         "name": "البذرة"
@@ -8707,6 +9113,22 @@
     "outputs": {
       "0": {
         "name": "نموذج_الخلفية",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "تحميل Depth Anything 3",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13591,15 +14013,15 @@
       "height": {
         "name": "height"
       },
-      "image": {
-        "name": "image"
+      "model_3d": {
+        "name": "نموذج ثلاثي الأبعاد",
+        "tooltip": "ملف نموذج ثلاثي الأبعاد من عقدة ثلاثية الأبعاد سابقة."
       },
       "model_3d_info": {
         "name": "model_3d_info"
       },
-      "model_file": {
-        "name": "model_file",
-        "tooltip": "ملف نموذج ثلاثي الأبعاد من عقدة ثلاثية الأبعاد سابقة."
+      "viewport_state": {
+        "name": "حالة نافذة العرض"
       },
       "width": {
         "name": "width"
@@ -13654,12 +14076,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "معاينة Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "معلومات_الكاميرا"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "model_3d": {
+        "name": "نموذج_ثلاثي_الأبعاد",
+        "tooltip": "ملف Gaussian Splat ثلاثي الأبعاد."
+      },
+      "model_3d_info": {
+        "name": "معلومات_النموذج_ثلاثي_الأبعاد"
+      },
+      "viewport_state": {
+        "name": "حالة_منفذ_العرض"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "نموذج_ثلاثي_الأبعاد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "معلومات_النموذج_ثلاثي_الأبعاد",
+        "tooltip": null
+      },
+      "2": {
+        "name": "معلومات_الكاميرا",
+        "tooltip": null
+      },
+      "3": {
+        "name": "العرض",
+        "tooltip": null
+      },
+      "4": {
+        "name": "الارتفاع",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "description": "يحفظ الصور المدخلة في دليل مخرجات ComfyUI الخاص بك.",
     "display_name": "معاينة الصورة",
     "inputs": {
       "images": {
         "name": "الصور"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "معاينة سحابة النقاط",
+    "inputs": {
+      "camera_info": {
+        "name": "معلومات_الكاميرا"
+      },
+      "height": {
+        "name": "الارتفاع"
+      },
+      "model_3d": {
+        "name": "نموذج_ثلاثي_الأبعاد",
+        "tooltip": "ملف سحابة النقاط (.ply)"
+      },
+      "model_3d_info": {
+        "name": "معلومات_النموذج_ثلاثي_الأبعاد"
+      },
+      "viewport_state": {
+        "name": "حالة_منفذ_العرض"
+      },
+      "width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "نموذج_ثلاثي_الأبعاد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "معلومات_النموذج_ثلاثي_الأبعاد",
+        "tooltip": null
+      },
+      "2": {
+        "name": "معلومات_الكاميرا",
+        "tooltip": null
+      },
+      "3": {
+        "name": "العرض",
+        "tooltip": null
+      },
+      "4": {
+        "name": "الارتفاع",
+        "tooltip": null
       }
     }
   },
@@ -14910,6 +15424,10 @@
       "megapixels": {
         "name": "الميغابكسل",
         "tooltip": "إجمالي الميغابكسل المستهدف. ١.٠ ميغابكسل ≈ ١٠٢٤×١٠٢٤ للبُعد المربع."
+      },
+      "multiple": {
+        "name": "مضاعف",
+        "tooltip": "أقرب مضاعف للنتيجة لتعيين الدقة المختارة عليه."
       }
     },
     "outputs": {
@@ -15345,6 +15863,98 @@
       }
     }
   },
+  "RunwayAleph2KeyframeNode": {
+    "description": "ثبت صورة إرشادية في لحظة معينة من فيديو الإدخال (المصدر)، بحيث يوجه Aleph2 التعديل في تلك النقطة من الفيديو. قم بتوصيل هذه العقدة بمدخل 'keyframes' في عقدة Runway Aleph2 Video to Video؛ يمكنك ربط عدة عقد معًا (حتى ٥) عبر مدخل 'keyframes' الاختياري أدناه.",
+    "display_name": "Runway Aleph2 Keyframe",
+    "inputs": {
+      "image": {
+        "name": "الصورة",
+        "tooltip": "الصورة الإرشادية التي سيتم تطبيقها في اللحظة المختارة من فيديو الإدخال."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "إطارات رئيسية سابقة اختيارية لربطها مع هذه."
+      },
+      "timing": {
+        "name": "التوقيت",
+        "tooltip": "كيفية وضع هذه الصورة على الجدول الزمني لفيديو الإدخال."
+      },
+      "timing_seconds": {
+        "name": "ثواني"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "ثبت صورة إرشادية في لحظة معينة من فيديو الإخراج (النتيجة)، لتوجيه شكل الفيديو المعدل في تلك النقطة. قم بتوصيل هذه العقدة بمدخل 'prompt_images' في عقدة Runway Aleph2 Video to Video؛ يمكنك ربط عدة صور معًا (حتى ٥) عبر مدخل 'prompt_images' الاختياري أدناه.",
+    "display_name": "Runway Aleph2 Prompt Image",
+    "inputs": {
+      "image": {
+        "name": "الصورة",
+        "tooltip": "الصورة الإرشادية التي سيتم وضعها في اللحظة المختارة من فيديو الإخراج."
+      },
+      "position": {
+        "name": "الموضع",
+        "tooltip": "كيفية وضع هذه الصورة على الجدول الزمني لفيديو الإخراج."
+      },
+      "position_seconds": {
+        "name": "ثواني"
+      },
+      "prompt_images": {
+        "name": "prompt_images",
+        "tooltip": "صور إرشادية سابقة اختيارية لربطها مع هذه."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt_images",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "حرر فيديو باستخدام نص توجيهي عبر نموذج Aleph2 من Runway. يقوم Aleph2 بتحويل لقطاتك (تغيير الأسلوب، إعادة الإضاءة، إضافة أو إزالة عناصر، تغيير زاوية الرؤية) مع الحفاظ على الحركة والتوقيت الأصليين؛ دقة الإخراج تطابق الفيديو الأصلي، ويجب أن يكون الفيديو المدخل بين ٢ و٣٠ ثانية وبمعدل ٣٠ إطارًا في الثانية أو أقل. يمكنك توجيه التحرير باستخدام إما إطارات رئيسية (مرتبطة بالفيديو الأصلي) أو صور توجيهية (مرتبطة بالفيديو الناتج) - استخدم أحد الخيارين فقط، وليس كليهما.",
+    "display_name": "Runway Aleph2 تحويل الفيديو إلى فيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "keyframes": {
+        "name": "الإطارات الرئيسية",
+        "tooltip": "صور إرشادية مرتبطة بفيديو الإدخال، من عقد Aleph2 Keyframe (حتى ٥). استخدم الإطارات الرئيسية أو الصور التوجيهية، وليس كليهما."
+      },
+      "prompt": {
+        "name": "النص التوجيهي",
+        "tooltip": "يصف ما يجب أن يظهر في النتيجة (١-١٠٠٠ حرف)."
+      },
+      "prompt_images": {
+        "name": "الصور التوجيهية",
+        "tooltip": "صور إرشادية مرتبطة بفيديو الإخراج، من عقد Aleph2 Prompt Image (حتى ٥). استخدم الإطارات الرئيسية أو الصور التوجيهية، وليس كليهما."
+      },
+      "public_figure_threshold": {
+        "name": "عتبة الشخصيات العامة",
+        "tooltip": "مراقبة المحتوى للأشخاص المعروفين من الشخصيات العامة."
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "بذرة عشوائية للتوليد"
+      },
+      "video": {
+        "name": "الفيديو",
+        "tooltip": "فيديو الإدخال للتحرير. يجب أن يكون بين ٢ و٣٠ ثانية وبمعدل ٣٠ إطارًا في الثانية أو أقل."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RunwayFirstLastFrameNode": {
     "description": "قم برفع الإطارات الرئيسية الأولى والأخيرة، واكتب موجهًا، وقم بتوليد فيديو. قد تستفيد التحولات الأكثر تعقيدًا، مثل الحالات التي يختلف فيها الإطار الأخير تمامًا عن الإطار الأول، من المدة الأطول البالغة 10 ثوانٍ. سيمنح هذا التوليد مزيدًا من الوقت للانتقال بسلاسة بين المدخلين. قبل البدء، راجع أفضل الممارسات هذه لضمان أن اختياراتك للمدخلات ستؤدي إلى نجاح التوليد: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
     "display_name": "Runway تحويل الإطار الأول-الأخير إلى فيديو",
@@ -15584,6 +16194,41 @@
     "outputs": {
       "0": {
         "name": "بيانات التتبع",
+        "tooltip": null
+      }
+    }
+  },
+  "SCAIL2ColoredMask": {
+    "display_name": "إنشاء قناع ملون SCAIL-2",
+    "inputs": {
+      "driving_track_data": {
+        "name": "بيانات تتبع القيادة",
+        "tooltip": "مسار SAM3 لفيديو وضعية القيادة. سيتم عرضه في مخرج pose_video_mask."
+      },
+      "object_indices": {
+        "name": "مؤشرات الكائنات",
+        "tooltip": "قائمة مفصولة بفواصل لمؤشرات الأشخاص المطلوب تضمينهم (مثال: '0,2,3'). تطبق على كل من أقنعة الفيديو المرجعي وفيديو الوضعية. فارغ = الكل."
+      },
+      "ref_track_data": {
+        "name": "بيانات تتبع المرجع",
+        "tooltip": "مسار SAM3 للصورة المرجعية."
+      },
+      "replacement_mode": {
+        "name": "وضع الاستبدال",
+        "tooltip": "False = mask_video بخلفية سوداء (وضع التحريك). True = خلفية بيضاء (وضع الاستبدال). قم بتعيين نفس وضع الاستبدال في WanSCAILToVideo. reference_image_mask دائمًا بخلفية سوداء بغض النظر."
+      },
+      "sort_by": {
+        "name": "ترتيب حسب",
+        "tooltip": "ترتيب تخصيص ألوان لوحة الألوان للكائنات المتتبعة (يطبق على كل من الفيديو المرجعي وفيديو الوضعية بحيث يحتفظ كل هوية بنفس اللون). left_to_right = الكائن الأكثر يسارًا (حسب مركز الإطار الأول) يحصل على اللون الأول؛ area = أكبر كائن (حسب مساحة القناع في الإطار الأول) يحصل على اللون الأول؛ none = الاحتفاظ بترتيب SAM3."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
         "tooltip": null
       }
     }
@@ -16315,6 +16960,27 @@
       }
     }
   },
+  "SaveAudioAdvanced": {
+    "description": "يحفظ الصوت المُدخل في مجلد إخراج ComfyUI الخاص بك.",
+    "display_name": "حفظ الصوت (متقدم)",
+    "inputs": {
+      "audio": {
+        "name": "الصوت",
+        "tooltip": "الصوت المراد حفظه."
+      },
+      "audioUI": {
+        "name": "واجهة_الصوت"
+      },
+      "filename_prefix": {
+        "name": "بادئة_اسم_الملف",
+        "tooltip": "بادئة اسم الملف للحفظ. يمكن أن تتضمن رموز تنسيق مثل ‎%date:yyyy-MM-dd%‎."
+      },
+      "format": {
+        "name": "الصيغة",
+        "tooltip": "صيغة الملف التي سيتم حفظ الصوت بها."
+      }
+    }
+  },
   "SaveAudioMP3": {
     "display_name": "حفظ الصوت (MP3)",
     "inputs": {
@@ -16560,7 +17226,8 @@
         "name": "معدل الإطارات في الثانية"
       },
       "images": {
-        "name": "الصور"
+        "name": "الصور",
+        "tooltip": "يتم حفظ صور RGBA مع قناة ألفا الخاصة بها كشفافية (ترميز vp9 فقط)."
       }
     }
   },
@@ -18927,6 +19594,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "استيراد نموذج ثلاثي الأبعاد خارجي (مثلاً من Rodin، Hunyuan3D أو ملف محلي) إلى Tripo لاستخدامه مع عُقد المعالجة اللاحقة في Tripo: الإكساء، التحريك، التحويل. يُوصى باستخدام GLB: تبقى الخامات محفوظة فقط إذا كانت مضمنة داخل الملف. يرجى ملاحظة أن إكساء نموذج مستورد يتطلب مطالبة إكساء.",
+    "display_name": "Tripo: استيراد نموذج",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "نموذج ثلاثي الأبعاد للاستيراد (GLB / FBX / OBJ / STL، حتى ١٥٠ ميجابايت). ملفات OBJ و STL لا تحتوي على خامات مضمنة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: متعدد المناظر إلى نموذج",
     "inputs": {
@@ -19394,6 +20077,10 @@
       },
       "texture_alignment": {
         "name": "محاذاة_الملمس"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "إرشادات نصية اختيارية للإكساء. مطلوبة عملياً للنماذج المستوردة (Tripo: استيراد نموذج)، والتي لا تحتوي على صورة مصدر لاستنتاج الألوان منها."
       },
       "texture_quality": {
         "name": "جودة_الملمس"
@@ -22000,7 +22687,8 @@
         "name": "حجم الدفعة"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "ميزات CLIP للرؤية من أجل التكييف. تم تدريب النموذج مع تغيير الحجم حسب نسبة العرض إلى الارتفاع."
       },
       "height": {
         "name": "الارتفاع"
@@ -22027,14 +22715,39 @@
         "name": "فيديو الوضعية",
         "tooltip": "الفيديو المستخدم لتكييف الوضعية. سيتم تقليل دقته إلى نصف دقة الفيديو الرئيسي."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "خاص بـ SCAIL-2 فقط. فيديو قناع SAM3 ملون لكل هوية بنفس دقة pose_video."
+      },
       "positive": {
         "name": "إيجابي"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "عدد الإطارات النهائية من previous_frames لاستخدامها كمرساة. تم تدريب SCAIL-2 على ٥ (أجزاء من ٨١ إطارًا، خطوة ٧٦ إطارًا)."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "خاص بـ SCAIL-2 فقط. المخرجات الكاملة المفككة للجزء السابق. يتم استخدام فقط آخر previous_frame_count كمرساة للتمديد."
+      },
       "reference_image": {
-        "name": "صورة مرجعية"
+        "name": "صورة مرجعية",
+        "tooltip": "صورة مرجعية، إذا كان هناك عدة مراجع، اجمعها جميعًا في صورة واحدة."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "خاص بـ SCAIL-2 فقط. قناع مرجعي ملون بنفس دقة reference_image."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "خاص بـ SCAIL-2 فقط. خطأ = وضع التحريك (يجب أن يكون pose_video_mask بخلفية سوداء). صحيح = وضع الاستبدال (يجب أن يكون pose_video_mask بخلفية بيضاء)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "إزاحة الإطار التراكمية التي يبدأ منها هذا الجزء من الفيديو. اربطها بمخرج video_frame_offset للجزء السابق."
       },
       "width": {
         "name": "العرض"
@@ -22052,6 +22765,10 @@
       "2": {
         "name": "كامن",
         "tooltip": "فضاء كامن فارغ بحجم التوليد."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "إزاحة معدلة + الطول. اربطها بالجزء التالي."
       }
     }
   },

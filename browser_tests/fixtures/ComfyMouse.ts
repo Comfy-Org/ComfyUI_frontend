@@ -100,10 +100,7 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
     await this.nextFrame()
   }
 
-  async resizeByDragging(
-    element: Locator,
-    { x, y }: { x?: number; y?: number }
-  ) {
+  async dragElementBy(element: Locator, { x, y }: { x?: number; y?: number }) {
     const elementBox = await element.boundingBox()
     if (!elementBox) throw new Error('element should have layout')
 

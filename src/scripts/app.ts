@@ -9,6 +9,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
+import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { st, t } from '@/i18n'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -25,6 +26,8 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
+import { groupMissingNodesByPack } from '@/platform/telemetry/utils/groupMissingNodesByPack'
 import type { WorkflowOpenSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { updatePendingWarnings } from '@/platform/workflow/core/utils/pendingWarnings'
@@ -125,6 +128,7 @@ import {
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
+import { getWidgetState } from '@/world/widgetValueIO'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
@@ -165,6 +169,19 @@ export function sanitizeNodeName(string: string) {
   }
   return String(string).replace(/[&<>"'`=]/g, function fromEntityMap(s) {
     return entityMap[s as keyof typeof entityMap]
+  })
+}
+
+function syncPromotedComboHostOptions(rootGraph: LGraph): void {
+  forEachNode(rootGraph, (node) => {
+    for (const widget of node.widgets ?? []) {
+      if (!isPromotedWidgetView(widget) || widget.type !== 'combo') continue
+
+      const state = getWidgetState(widget.entityId)
+      if (!state) continue
+
+      state.options = { ...(widget.options ?? {}) }
+    }
   })
 }
 
@@ -888,6 +905,7 @@ export class ComfyApp {
     this.addAfterConfigureHandler(graph)
 
     this.rootGraphInternal = graph
+    installNodeAddedTelemetry(graph)
     this.canvas = new LGraphCanvas(canvasEl, graph)
     // Make canvas states reactive so we can observe changes on them.
     this.canvas.state = reactive(this.canvas.state)
@@ -1135,6 +1153,7 @@ export class ComfyApp {
     options: {
       checkForRerouteMigration?: boolean
       openSource?: WorkflowOpenSource
+      shareId?: string
       deferWarnings?: boolean
       skipAssetScans?: boolean
       silentAssetErrors?: boolean
@@ -1143,6 +1162,7 @@ export class ComfyApp {
     const {
       checkForRerouteMigration = false,
       openSource,
+      shareId,
       deferWarnings = false,
       skipAssetScans = false,
       silentAssetErrors = false
@@ -1150,7 +1170,7 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph()
 
     if (skipAssetScans) {
-      // Only reset candidates; preserve UI state (fileSizes, urlInputs, etc.)
+      // Only reset candidates; preserve UI state (fileSizes, etc.)
       // so cached results restored by showPendingWarnings still display sizes.
       // Abort any in-flight verification from the outgoing workflow so a late
       // result cannot repopulate the store after we've switched workflows.
@@ -1420,18 +1440,24 @@ export class ComfyApp {
         missingNodeTypes
       )
 
+      const effectiveShareId =
+        shareId ??
+        (workflow instanceof ComfyWorkflow ? workflow.shareId : undefined)
       const telemetryPayload = {
         missing_node_count: missingNodeTypes.length,
         missing_node_types: missingNodeTypes.map((node) =>
           typeof node === 'string' ? node : node.type
         ),
-        open_source: openSource ?? 'unknown'
+        missing_node_packs: groupMissingNodesByPack(missingNodeTypes),
+        open_source: openSource ?? 'unknown',
+        ...(effectiveShareId ? { share_id: effectiveShareId } : {})
       }
       useTelemetry()?.trackWorkflowOpened(telemetryPayload)
       useTelemetry()?.trackWorkflowImported(telemetryPayload)
       await useWorkflowService().afterLoadNewGraph(
         workflow,
-        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
+        this.rootGraph.serialize() as unknown as ComfyWorkflowJSON,
+        effectiveShareId
       )
 
       // If the canvas was not visible and we're a fresh load, resize the canvas and fit the view
@@ -2132,6 +2158,9 @@ export class ComfyApp {
       'refreshComboInNodes',
       defs
     )
+
+    // Promoted widgets keep hosted option snapshots; sync them after source refresh hooks run.
+    syncPromotedComboHostOptions(this.rootGraph)
 
     if (this.vueAppReady) {
       this.updateVueAppNodeDefs(defs)

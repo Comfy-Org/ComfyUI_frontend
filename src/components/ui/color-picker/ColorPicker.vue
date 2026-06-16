@@ -15,6 +15,7 @@ import ColorPickerPanel from './ColorPickerPanel.vue'
 
 defineProps<{
   class?: string
+  disabled?: boolean
 }>()
 
 const modelValue = defineModel<string>({ default: '#000000' })
@@ -66,9 +67,10 @@ const isOpen = ref(false)
     <PopoverTrigger as-child>
       <button
         type="button"
+        :disabled="$props.disabled"
         :class="
           cn(
-            'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-component-node-widget-background pr-2 outline-none hover:bg-component-node-widget-background-hovered',
+            'flex h-8 w-full items-center overflow-clip rounded-lg border border-transparent bg-component-node-widget-background pr-2 outline-none hover:bg-component-node-widget-background-hovered disabled:cursor-not-allowed disabled:opacity-50',
             isOpen && 'border-node-stroke',
             $props.class
           )

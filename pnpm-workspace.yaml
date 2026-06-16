@@ -2,6 +2,8 @@ packages:
   - apps/**
   - packages/**
 
+nodeOptions: '${NODE_OPTIONS:- } --no-experimental-webstorage --max-old-space-size=8192'
+
 ignoreWorkspaceRootCheck: true
 catalogMode: prefer
 publicHoistPattern:
@@ -77,7 +79,7 @@ catalog:
   eslint-import-resolver-typescript: ^4.4.4
   eslint-plugin-better-tailwindcss: ^4.3.1
   eslint-plugin-import-x: ^4.16.2
-  eslint-plugin-oxlint: 1.59.0
+  eslint-plugin-oxlint: 1.69.0
   eslint-plugin-playwright: ^2.10.1
   eslint-plugin-storybook: ^10.2.10
   eslint-plugin-testing-library: ^7.16.1
@@ -99,9 +101,9 @@ catalog:
   markdown-table: ^3.0.4
   mixpanel-browser: ^2.71.0
   monocart-coverage-reports: ^2.12.9
-  oxfmt: ^0.44.0
-  oxlint: ^1.59.0
-  oxlint-tsgolint: ^0.20.0
+  oxfmt: ^0.54.0
+  oxlint: ^1.69.0
+  oxlint-tsgolint: ^0.23.0
   picocolors: ^1.1.1
   pinia: ^3.0.4
   postcss-html: ^1.8.0
@@ -130,7 +132,7 @@ catalog:
   vite-plugin-dts: ^4.5.4
   vite-plugin-html: ^3.2.2
   vite-plugin-vue-devtools: ^8.0.0
-  vitest: ^4.0.16
+  vitest: ^4.1.0
   vue: ^3.5.34
   vue-component-type-helpers: ^3.2.1
   vue-eslint-parser: ^10.4.0

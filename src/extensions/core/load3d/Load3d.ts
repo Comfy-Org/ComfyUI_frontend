@@ -9,6 +9,7 @@ import type { GizmoManager } from './GizmoManager'
 import type { HDRIManager } from './HDRIManager'
 import type { LightingManager } from './LightingManager'
 import type { LoaderManager } from './LoaderManager'
+import { DIRECT_EXPORT_FORMATS } from './constants'
 import { ModelExporter } from './ModelExporter'
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { AdapterRef, ModelAdapterCapabilities } from './ModelAdapter'
@@ -105,7 +106,6 @@ class Load3d {
   private disposeContextMenuGuard: (() => void) | null = null
   private resizeObserver: ResizeObserver | null = null
   private getZoomScaleCallback: (() => number) | undefined
-  private retainViewOnReload: boolean = false
   private hasLoadedModel: boolean = false
 
   constructor(
@@ -360,6 +360,27 @@ class Load3d {
     const exportMessage = `Exporting as ${format.toUpperCase()}...`
     this.eventManager.emitEvent('exportLoadingStart', exportMessage)
 
+    const originalFileName = this.modelManager.originalFileName || 'model'
+    const filename = `${originalFileName}.${format}`
+    const originalURL = this.modelManager.originalURL
+
+    if (DIRECT_EXPORT_FORMATS.has(format)) {
+      try {
+        if (this.getSourceFormat() !== format) {
+          throw new Error(
+            `Cannot export ${format} without converting from the loaded ${this.getSourceFormat() ?? 'unknown'} source`
+          )
+        }
+        await ModelExporter.exportDirect(originalURL, filename, format)
+      } catch (error) {
+        console.error(`Error exporting model as ${format}:`, error)
+        throw error
+      } finally {
+        this.eventManager.emitEvent('exportLoadingEnd', null)
+      }
+      return
+    }
+
     const source = this.modelManager.currentModel
     const savedPos = source.position.clone()
     const savedRot = source.rotation.clone()
@@ -385,11 +406,6 @@ class Load3d {
           ? Object.assign(cloneSkinned(source), { animations: clips })
           : source.clone()
 
-      const originalFileName = this.modelManager.originalFileName || 'model'
-      const filename = `${originalFileName}.${format}`
-
-      const originalURL = this.modelManager.originalURL
-
       await new Promise((resolve) => setTimeout(resolve, 10))
 
       switch (format) {
@@ -400,7 +416,7 @@ class Load3d {
           await ModelExporter.exportOBJ(model, filename, originalURL)
           break
         case 'stl':
-          ;(await ModelExporter.exportSTL(model, filename), originalURL)
+          await ModelExporter.exportSTL(model, filename, originalURL)
           break
         case 'fbx':
           await ModelExporter.exportFBX(model, filename, originalURL)
@@ -420,6 +436,12 @@ class Load3d {
       source.updateMatrixWorld(true)
       this.eventManager.emitEvent('exportLoadingEnd', null)
     }
+  }
+
+  getSourceFormat(): string | null {
+    const url = this.modelManager.originalURL
+    if (!url) return null
+    return ModelExporter.detectFormatFromURL(url)
   }
 
   setBackgroundColor(color: string): void {
@@ -579,17 +601,14 @@ class Load3d {
     }
   }
 
-  public setRetainViewOnReload(value: boolean): void {
-    this.retainViewOnReload = value
-  }
-
   private async _loadModelInternal(
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
   ): Promise<void> {
-    // First load always uses default framing; retain only applies on reload.
-    const shouldRetainView = this.retainViewOnReload && this.hasLoadedModel
+    // First load always uses default framing; subsequent reloads preserve
+    // the user's framing.
+    const shouldRetainView = this.hasLoadedModel
     const savedCameraState = shouldRetainView
       ? this.cameraManager.getCameraState()
       : null
@@ -916,6 +935,12 @@ class Load3d {
   ): void {
     if (!this.getCurrentModelCapabilities().gizmoTransform) return
     this.gizmoManager.applyTransform(position, rotation, scale)
+    this.forceRender()
+  }
+
+  public applyModelTransform(transform: Model3DTransform): void {
+    if (!this.getCurrentModelCapabilities().gizmoTransform) return
+    this.gizmoManager.applyModelTransform(transform)
     this.forceRender()
   }
 

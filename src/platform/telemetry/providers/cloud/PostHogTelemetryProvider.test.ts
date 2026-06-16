@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TelemetryEvents } from '../../types'
 
@@ -7,6 +7,8 @@ const hoisted = vi.hoisted(() => {
   const mockInit = vi.fn()
   const mockIdentify = vi.fn()
   const mockPeopleSet = vi.fn()
+  const mockPeopleSetOnce = vi.fn()
+  const mockRegister = vi.fn()
   const mockReset = vi.fn()
   const mockOnUserResolved = vi.fn()
   const mockOnUserLogout = vi.fn()
@@ -16,6 +18,8 @@ const hoisted = vi.hoisted(() => {
     mockInit,
     mockIdentify,
     mockPeopleSet,
+    mockPeopleSetOnce,
+    mockRegister,
     mockReset,
     mockOnUserResolved,
     mockOnUserLogout,
@@ -24,7 +28,8 @@ const hoisted = vi.hoisted(() => {
         init: mockInit,
         capture: mockCapture,
         identify: mockIdentify,
-        people: { set: mockPeopleSet },
+        register: mockRegister,
+        people: { set: mockPeopleSet, set_once: mockPeopleSetOnce },
         reset: mockReset
       }
     }
@@ -147,6 +152,99 @@ describe('PostHogTelemetryProvider', () => {
     })
   })
 
+  describe('desktop entry capture', () => {
+    function setLocation(search: string): void {
+      Object.defineProperty(window.location, 'search', {
+        configurable: true,
+        value: search,
+        writable: true
+      })
+    }
+
+    afterEach(() => {
+      setLocation('')
+    })
+
+    it('does not register desktop props when utm_source is absent', async () => {
+      setLocation('')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).not.toHaveBeenCalled()
+    })
+
+    it('does not register desktop props when utm_source is not comfy.desktop', async () => {
+      setLocation('?utm_source=google&desktop_device_id=should-be-ignored')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).not.toHaveBeenCalled()
+    })
+
+    it('registers source_app and desktop_device_id when arriving from desktop', async () => {
+      setLocation(
+        '?utm_source=comfy.desktop&utm_medium=app_feature&desktop_device_id=device-abc'
+      )
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+        source_app: 'desktop',
+        desktop_device_id: 'device-abc'
+      })
+    })
+
+    it('registers source_app alone when desktop_device_id is missing', async () => {
+      setLocation('?utm_source=comfy.desktop')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+        source_app: 'desktop'
+      })
+    })
+
+    it('persists desktop props to the person on identify so backend events inherit them', async () => {
+      setLocation('?utm_source=comfy.desktop&desktop_device_id=device-xyz')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      callback({ id: 'user-456' })
+
+      const setCall = hoisted.mockPeopleSet.mock.calls.find(
+        ([props]) => props && 'desktop_device_id' in props
+      )
+      expect(setCall?.[0]).toEqual(
+        expect.objectContaining({
+          source_app: 'desktop',
+          desktop_device_id: 'device-xyz',
+          last_seen_via_desktop: expect.any(String)
+        })
+      )
+      expect(hoisted.mockPeopleSetOnce).toHaveBeenCalledWith(
+        expect.objectContaining({ first_seen_via_desktop: expect.any(String) })
+      )
+    })
+
+    it('does not touch the person profile on identify for non-desktop visitors', async () => {
+      setLocation('')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const callback = hoisted.mockOnUserResolved.mock.calls[0][0]
+      callback({ id: 'user-789' })
+
+      const desktopSetCall = hoisted.mockPeopleSet.mock.calls.find(
+        ([props]) =>
+          props &&
+          ('desktop_device_id' in props || 'last_seen_via_desktop' in props)
+      )
+      expect(desktopSetCall).toBeUndefined()
+      expect(hoisted.mockPeopleSetOnce).not.toHaveBeenCalled()
+    })
+  })
+
   describe('event tracking', () => {
     it('captures events after initialization', async () => {
       const provider = createProvider()
@@ -169,6 +267,84 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
         { method: 'google' }
+      )
+    })
+
+    it('captures share attribution events', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackShareLinkOpened({
+        share_id: 'share-1',
+        is_authenticated: true,
+        view_mode: 'graph',
+        is_app_mode: false
+      })
+      provider.trackShareFlow({
+        step: 'link_created',
+        source: 'app_mode',
+        share_id: 'share-1',
+        view_mode: 'app',
+        is_app_mode: true
+      })
+      provider.trackSharedWorkflowRun({
+        job_id: 'job-1',
+        share_id: 'share-1',
+        view_mode: 'app',
+        is_app_mode: true
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SHARE_LINK_OPENED,
+        {
+          share_id: 'share-1',
+          is_authenticated: true,
+          view_mode: 'graph',
+          is_app_mode: false
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SHARE_FLOW,
+        {
+          step: 'link_created',
+          source: 'app_mode',
+          share_id: 'share-1',
+          view_mode: 'app',
+          is_app_mode: true
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SHARED_WORKFLOW_RUN,
+        {
+          job_id: 'job-1',
+          share_id: 'share-1',
+          view_mode: 'app',
+          is_app_mode: true
+        }
+      )
+    })
+
+    it('captures search queries with surface, query, length, and result count', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackSearchQuery({
+        surface: 'node_sidebar',
+        query: 'sampler',
+        query_length: 7,
+        result_count: 3,
+        has_results: true
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SEARCH_QUERY,
+        {
+          surface: 'node_sidebar',
+          query: 'sampler',
+          query_length: 7,
+          result_count: 3,
+          has_results: true
+        }
       )
     })
 
@@ -291,6 +467,71 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.MONTHLY_SUBSCRIPTION_SUCCEEDED,
         {}
+      )
+    })
+
+    it('captures enabled funnel events by default', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackSettingChanged({ setting_id: 'theme' })
+      provider.trackTemplateFilterChanged({
+        selected_models: [],
+        selected_use_cases: [],
+        selected_runs_on: [],
+        sort_by: 'default',
+        filtered_count: 1,
+        total_count: 2
+      })
+      provider.trackUiButtonClicked({
+        button_id: 'sidebar_settings_button_clicked',
+        element_group: 'sidebar'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SETTING_CHANGED,
+        { setting_id: 'theme' }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.TEMPLATE_FILTER_CHANGED,
+        {
+          selected_models: [],
+          selected_use_cases: [],
+          selected_runs_on: [],
+          sort_by: 'default',
+          filtered_count: 1,
+          total_count: 2
+        }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.UI_BUTTON_CLICKED,
+        {
+          button_id: 'sidebar_settings_button_clicked',
+          element_group: 'sidebar'
+        }
+      )
+    })
+
+    it('captures shell layout snapshots', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const shellLayoutMetadata = {
+        view_mode: 'graph',
+        is_app_mode: false,
+        dock_state: 'floating',
+        actionbar_position: 'Top',
+        active_sidebar_tab: 'node-library',
+        right_side_panel_open: true,
+        bottom_panel_open: false,
+        open_workflow_tabs: 2
+      } as const
+
+      provider.trackShellLayout(shellLayoutMetadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.SHELL_LAYOUT,
+        shellLayoutMetadata
       )
     })
   })
