@@ -2,7 +2,7 @@
 
 @import 'tailwindcss';
 @import '@comfyorg/design-system/css/base.css';
-@import "tw-animate-css";
+@import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -65,12 +65,12 @@
   --color-site-dropdown: #332b38;
   --color-primary-comfy-yellow: #f2ff59;
   --color-primary-comfy-ink: #211927;
-  --color-primary-comfy-ink-light: #2A2330;
+  --color-primary-comfy-ink-light: #2a2330;
   --color-primary-comfy-canvas: #c2bfb9;
   --color-primary-warm-white: #f0efed;
   --color-primary-warm-gray: #7e7c78;
   --color-secondary-mauve: #4d3762;
-  --color-destructive: #F44336;
+  --color-destructive: #f44336;
   --color-primary-comfy-plum: #49378b;
   --color-secondary-cool-gray: #3c3c3c;
   --color-illustration-forest: #20464c;
@@ -103,9 +103,11 @@
 
 @utility animate-border-spin {
   animation: border-angle-spin 2s linear infinite;
-  background: conic-gradient(from var(--border-angle),
-      color-mix(in srgb, var(--color-primary-comfy-yellow) 4%, transparent) 0%,
-      var(--color-primary-comfy-yellow) 100%);
+  background: conic-gradient(
+    from var(--border-angle),
+    color-mix(in srgb, var(--color-primary-comfy-yellow) 4%, transparent) 0%,
+    var(--color-primary-comfy-yellow) 100%
+  );
 }
 
 @keyframes marquee {
@@ -177,7 +179,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   *,
   *::before,
   *::after {
