@@ -2,11 +2,10 @@
 import type { DialogContentEmits, DialogContentProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { X } from '@lucide/vue'
-import { reactiveOmit } from '@vueuse/core'
 import { DialogContent, DialogPortal, useForwardPropsEmits } from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
 import SheetOverlay from './SheetOverlay.vue'
-import { SheetClose } from "."
+import { SheetClose } from '.'
 
 interface SheetContentProps extends DialogContentProps {
   class?: HTMLAttributes['class']
@@ -18,13 +17,13 @@ defineOptions({
   inheritAttrs: false
 })
 
-const props = withDefaults(defineProps<SheetContentProps>(), {
-  side: 'right',
-  closeLabel: 'Close'
-})
+const {
+  side = 'right',
+  closeLabel = 'Close',
+  class: classProp,
+  ...delegatedProps
+} = defineProps<SheetContentProps>()
 const emits = defineEmits<DialogContentEmits>()
-
-const delegatedProps = reactiveOmit(props, 'class', 'side', 'closeLabel')
 
 const forwarded = useForwardPropsEmits(delegatedProps, emits)
 </script>
@@ -45,7 +44,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits)
             'inset-x-0 top-0 h-auto data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top',
           side === 'bottom' &&
             'inset-x-0 bottom-0 h-auto data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom',
-          props.class
+          classProp
         )
       "
       v-bind="{ ...$attrs, ...forwarded }"
