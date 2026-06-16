@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
+import type { Distribution } from '@/platform/distribution/types'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
@@ -58,7 +59,6 @@ const {
 }))
 
 let scope: ReturnType<typeof effectScope> | undefined
-type Distribution = 'desktop' | 'desktop2' | 'localhost' | 'cloud'
 
 const setDistribution = (distribution: Distribution) => {
   ;(

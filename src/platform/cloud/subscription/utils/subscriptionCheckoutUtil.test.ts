@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, reactive } from 'vue'
 
+import type { Distribution } from '@/platform/distribution/types'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
 
@@ -88,8 +89,6 @@ vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
 }))
 
 global.fetch = vi.fn()
-
-type Distribution = 'desktop' | 'desktop2' | 'localhost' | 'cloud'
 
 const setDistribution = (distribution: Distribution) => {
   ;(

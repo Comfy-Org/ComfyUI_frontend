@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { IFuseOptions } from 'fuse.js'
 
+import type { Distribution } from '@/platform/distribution/types'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
@@ -436,9 +437,8 @@ describe('useTemplateFiltering', () => {
   })
 
   describe('Distribution filtering', () => {
-    const setDistribution = (
-      distribution: 'desktop' | 'desktop2' | 'localhost' | 'cloud'
-    ) => vi.stubGlobal('__DISTRIBUTION__', distribution)
+    const setDistribution = (distribution: Distribution) =>
+      vi.stubGlobal('__DISTRIBUTION__', distribution)
 
     const cloudTemplate: TemplateInfo = {
       name: 'cloud-only',

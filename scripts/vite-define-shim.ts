@@ -3,6 +3,8 @@
  * This file should be imported before any code that uses Vite define variables
  */
 
+import type { Distribution } from '../src/platform/distribution/types'
+
 // Define global constants that Vite would normally replace at build time
 declare global {
   const __COMFYUI_FRONTEND_VERSION__: string
@@ -11,7 +13,7 @@ declare global {
   const __ALGOLIA_APP_ID__: string
   const __ALGOLIA_API_KEY__: string
   const __USE_PROD_CONFIG__: boolean
-  const __DISTRIBUTION__: 'desktop' | 'desktop2' | 'localhost' | 'cloud'
+  const __DISTRIBUTION__: Distribution
   const __IS_NIGHTLY__: boolean
 }
 
@@ -22,7 +24,7 @@ type GlobalWithDefines = typeof globalThis & {
   __ALGOLIA_APP_ID__: string
   __ALGOLIA_API_KEY__: string
   __USE_PROD_CONFIG__: boolean
-  __DISTRIBUTION__: 'desktop' | 'desktop2' | 'localhost' | 'cloud'
+  __DISTRIBUTION__: Distribution
   __IS_NIGHTLY__: boolean
   window?: Record<string, unknown>
 }

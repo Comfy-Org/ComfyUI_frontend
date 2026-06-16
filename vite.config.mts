@@ -18,6 +18,7 @@ import { createHtmlPlugin } from 'vite-plugin-html'
 import vueDevTools from 'vite-plugin-vue-devtools'
 
 import { comfyAPIPlugin } from './build/plugins'
+import type { Distribution } from './src/platform/distribution/types'
 
 dotenvConfig()
 
@@ -42,8 +43,6 @@ const VITE_OG_KEYWORDS = 'ComfyUI, Comfy Cloud, ComfyUI online'
 // Auto-detect cloud mode from DEV_SERVER_COMFYUI_URL
 const DEV_SERVER_COMFYUI_ENV_URL = process.env.DEV_SERVER_COMFYUI_URL
 const IS_CLOUD_URL = DEV_SERVER_COMFYUI_ENV_URL?.includes('.comfy.org')
-
-type Distribution = 'desktop' | 'desktop2' | 'localhost' | 'cloud'
 
 function parseDistribution(
   value: string | undefined
