@@ -9,7 +9,7 @@ import type {
   IBaseWidget,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import type { NodeExecutionOutput } from '@/schemas/apiSchema'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'

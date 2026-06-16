@@ -10,9 +10,9 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  NodeId
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 
 import { ExecutableGroupNodeDTO, isGroupNode } from './executableGroupNodeDto'
 import { compressWidgetInputSlots } from './litegraphUtil'

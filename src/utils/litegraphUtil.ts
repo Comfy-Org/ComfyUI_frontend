@@ -21,7 +21,7 @@ import type {
   IComboWidget,
   WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'

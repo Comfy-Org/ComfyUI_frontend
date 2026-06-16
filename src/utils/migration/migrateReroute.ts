@@ -4,10 +4,10 @@ import { asNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type {
   ComfyLinkObject,
   ComfyNode,
-  NodeId,
   Reroute,
   WorkflowJSON04
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 
 type RerouteNode = ComfyNode & {
   type: 'Reroute'

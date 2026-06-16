@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 import { parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'

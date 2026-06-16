@@ -1,7 +1,8 @@
 import { computed } from 'vue'
 
 import type { ComputedRef } from 'vue'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@/utils/uuid'

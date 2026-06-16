@@ -1,4 +1,4 @@
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import type { NodeError, PromptError } from '@/schemas/apiSchema'
 
 /**

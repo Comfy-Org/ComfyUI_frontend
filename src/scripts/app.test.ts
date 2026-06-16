@@ -236,7 +236,7 @@ describe('ComfyApp', () => {
       const executionStore = useExecutionStore()
       expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
       expect(errorStore.isErrorOverlayOpen).toBe(true)
-      expect(executionStore.queuedJobs[asNodeId('job-1')]?.nodes).toEqual({
+      expect(executionStore.queuedJobs['job-1']?.nodes).toEqual({
         '1': false
       })
       expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(

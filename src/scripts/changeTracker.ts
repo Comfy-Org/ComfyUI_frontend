@@ -2,11 +2,7 @@ import _ from 'es-toolkit/compat'
 
 import { assert } from '@/base/assert'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
-import {
-  asNodeId,
-  LGraphCanvas,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -401,7 +397,7 @@ export class ChangeTracker {
     api.addEventListener('executed', (e: CustomEvent<ExecutedWsMessage>) => {
       const detail = e.detail
       const workflow =
-        useExecutionStore().queuedJobs[asNodeId(detail.prompt_id)]?.workflow
+        useExecutionStore().queuedJobs[detail.prompt_id]?.workflow
       const changeTracker = workflow?.changeTracker
       if (!changeTracker) return
       changeTracker.nodeOutputs ??= {}

@@ -1,5 +1,5 @@
 import { groupBy } from 'es-toolkit'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import type {
   MissingMediaCandidate,
   MissingMediaViewModel,

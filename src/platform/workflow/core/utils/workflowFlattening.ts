@@ -1,5 +1,5 @@
 import { asNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 
 export interface FlattenableWorkflowNode {
   id: NodeId

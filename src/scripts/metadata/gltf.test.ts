@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeId } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 import { ASCII, GltfSizeBytes } from '@/types/metadataTypes'
 
 import {

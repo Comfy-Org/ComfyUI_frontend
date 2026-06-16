@@ -20,7 +20,6 @@ export const zNodeId = z
   .union([z.number().int(), z.string()])
   .transform((value): NodeId => asNodeId(value))
 const zNodeInputName = z.string()
-export type { NodeId }
 
 // Linear-mode selections persist widget ids. Legacy workflows may store a raw
 // node id; accept any string/number and normalise to the canonical `WidgetId`.

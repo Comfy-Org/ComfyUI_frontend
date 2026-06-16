@@ -16,7 +16,7 @@ import type {
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import type { Object3D } from 'three'
 
 // Type for the useLoad3dViewer composable function

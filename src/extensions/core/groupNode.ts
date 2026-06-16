@@ -2,7 +2,7 @@ import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { t } from '@/i18n'
 import type { GroupNodeWorkflowData } from '@/lib/litegraph/src/LGraph'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import {
   type ExecutableLGraphNode,

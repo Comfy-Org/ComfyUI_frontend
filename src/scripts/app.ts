@@ -38,9 +38,9 @@ import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowSto
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  NodeId
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import {
   collectSubgraphDefinitions,
   buildSubgraphExecutionPaths

@@ -514,7 +514,7 @@ describe('useExecutionStore - clearActiveJobIfStale', () => {
   it('clears the active job and progress state when not in the active set', () => {
     store.activeJobId = 'job-1'
     store.queuedJobs = {
-      [asNodeId('job-1')]: { nodes: { [asNodeId('node-1')]: false } }
+      'job-1': { nodes: { [asNodeId('node-1')]: false } }
     }
     store.nodeProgressStates = {
       [asNodeId('node-1')]: {
@@ -530,28 +530,28 @@ describe('useExecutionStore - clearActiveJobIfStale', () => {
     store.clearActiveJobIfStale(new Set(['job-2']))
 
     expect(store.activeJobId).toBeNull()
-    expect(store.queuedJobs[asNodeId('job-1')]).toBeUndefined()
+    expect(store.queuedJobs['job-1']).toBeUndefined()
     expect(store.nodeProgressStates).toEqual({})
   })
 
   it('preserves the active job when present in the active set', () => {
     store.activeJobId = 'job-1'
-    store.queuedJobs = { [asNodeId('job-1')]: { nodes: {} } }
+    store.queuedJobs = { 'job-1': { nodes: {} } }
 
     store.clearActiveJobIfStale(new Set(['job-1', 'job-2']))
 
     expect(store.activeJobId).toBe('job-1')
-    expect(store.queuedJobs[asNodeId('job-1')]).toBeDefined()
+    expect(store.queuedJobs['job-1']).toBeDefined()
   })
 
   it('is a no-op when there is no active job', () => {
     store.activeJobId = null
-    store.queuedJobs = { [asNodeId('other')]: { nodes: {} } }
+    store.queuedJobs = { other: { nodes: {} } }
 
     store.clearActiveJobIfStale(new Set())
 
     expect(store.activeJobId).toBeNull()
-    expect(store.queuedJobs[asNodeId('other')]).toBeDefined()
+    expect(store.queuedJobs.other).toBeDefined()
   })
 })
 
@@ -989,7 +989,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
       expect(store.activeJobId).toBe('job-1')
-      expect(store.queuedJobs[asNodeId('job-1')]).toEqual({ nodes: {} })
+      expect(store.queuedJobs['job-1']).toEqual({ nodes: {} })
     })
 
     it('clears transient errors while preserving validation errors', () => {
@@ -1084,7 +1084,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       })
 
       expect(store.activeJobId).toBeNull()
-      expect(store.queuedJobs[asNodeId('job-1')]).toBeUndefined()
+      expect(store.queuedJobs['job-1']).toBeUndefined()
     })
   })
 
@@ -1127,7 +1127,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
 
       expect(store.activeJobId).toBeNull()
-      expect(store.queuedJobs[asNodeId('job-1')]).toBeUndefined()
+      expect(store.queuedJobs['job-1']).toBeUndefined()
     })
 
     it('tracks shared workflow run when the queued workflow has share attribution', () => {
@@ -1384,18 +1384,16 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
       workflow
     })
 
-    expect(store.queuedJobs[asNodeId('job-1')]?.nodes).toEqual({
+    expect(store.queuedJobs['job-1']?.nodes).toEqual({
       a: false,
       b: false
     })
-    expect(store.queuedJobs[asNodeId('job-1')]?.nodeLookup).toEqual({
+    expect(store.queuedJobs['job-1']?.nodeLookup).toEqual({
       a: { title: 'Node A', type: 'NodeA' },
       b: { title: 'Node B', type: 'NodeB' }
     })
-    expect(store.queuedJobs[asNodeId('job-1')]?.workflow).toStrictEqual(
-      workflow
-    )
-    expect(store.queuedJobs[asNodeId('job-1')]?.shareId).toBeUndefined()
+    expect(store.queuedJobs['job-1']?.workflow).toStrictEqual(workflow)
+    expect(store.queuedJobs['job-1']?.shareId).toBeUndefined()
     expect(store.jobIdToWorkflowId.get('job-1')).toBe('wf-1')
     expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
       '/workflows/foo.json'

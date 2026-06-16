@@ -2,7 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
-import type { NodeId } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 import { asNodeId } from '@/lib/litegraph/src/litegraph'
 
 // Mock dependencies

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'

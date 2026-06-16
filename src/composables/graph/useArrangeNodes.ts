@@ -1,6 +1,7 @@
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'

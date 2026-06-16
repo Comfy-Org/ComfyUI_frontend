@@ -1,5 +1,5 @@
 import { asNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 
 /**
  * A globally unique identifier for nodes that maintains consistency across

@@ -8,7 +8,8 @@
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraph, LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 import {
   LGraphEventMode,
   NodeSlotType

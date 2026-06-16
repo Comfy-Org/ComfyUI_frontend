@@ -24,9 +24,9 @@ import type {
 } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  NodeId
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,

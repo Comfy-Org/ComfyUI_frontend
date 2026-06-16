@@ -15,9 +15,9 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyApiWorkflow,
-  NodeId,
   WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   ExecutedWsMessage,
@@ -110,7 +110,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   const clientId = ref<string | null>(null)
   const activeJobId = ref<JobId | null>(null)
-  const queuedJobs = ref<Record<NodeId, QueuedJob>>({})
+  const queuedJobs = ref<Record<JobId, QueuedJob>>({})
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
   const nodeProgressStatesByJob = ref<
@@ -232,7 +232,7 @@ export const useExecutionStore = defineStore('execution', () => {
   )
 
   const activeJob = computed<QueuedJob | undefined>(
-    () => queuedJobs.value[asNodeId(activeJobId.value ?? '')]
+    () => queuedJobs.value[activeJobId.value ?? '']
   )
 
   const totalNodesToExecute = computed<number>(() => {
@@ -288,13 +288,13 @@ export const useExecutionStore = defineStore('execution', () => {
     executionIdToLocatorCache.clear()
     executionErrorStore.clearExecutionStartErrors()
     activeJobId.value = e.detail.prompt_id
-    queuedJobs.value[asNodeId(activeJobId.value)] ??= { nodes: {} }
+    queuedJobs.value[activeJobId.value] ??= { nodes: {} }
     clearInitializationByJobId(activeJobId.value)
 
     // Ensure path mapping exists — execution_start can arrive via WebSocket
     // before the HTTP response from queuePrompt triggers storeJob.
     if (!jobIdToSessionWorkflowPath.value.has(activeJobId.value)) {
-      const path = queuedJobs.value[asNodeId(activeJobId.value)]?.workflow?.path
+      const path = queuedJobs.value[activeJobId.value]?.workflow?.path
       if (path) ensureSessionWorkflowPath(activeJobId.value, path)
     }
   }
@@ -321,7 +321,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     const jobId = e.detail.prompt_id
-    const queuedJob = queuedJobs.value[asNodeId(jobId)]
+    const queuedJob = queuedJobs.value[jobId]
     if (isCloud && queuedJob) {
       const telemetry = useTelemetry()
       telemetry?.trackExecutionSuccess({
@@ -348,7 +348,7 @@ export const useExecutionStore = defineStore('execution', () => {
     // Update the executing nodes list
     if (typeof e.detail !== 'string') {
       if (activeJobId.value) {
-        delete queuedJobs.value[asNodeId(activeJobId.value)]
+        delete queuedJobs.value[activeJobId.value]
       }
       activeJobId.value = null
     }
@@ -567,7 +567,7 @@ export const useExecutionStore = defineStore('execution', () => {
       useJobPreviewStore().clearPreview(jobId)
     }
     if (activeJobId.value) {
-      delete queuedJobs.value[asNodeId(activeJobId.value)]
+      delete queuedJobs.value[activeJobId.value]
     }
     activeJobId.value = null
     _executingNodeProgress.value = null
@@ -609,8 +609,8 @@ export const useExecutionStore = defineStore('execution', () => {
     promptOutput: ComfyApiWorkflow
     workflow: ComfyWorkflow
   }) {
-    queuedJobs.value[asNodeId(id)] ??= { nodes: {} }
-    const queuedJob = queuedJobs.value[asNodeId(id)]
+    queuedJobs.value[id] ??= { nodes: {} }
+    const queuedJob = queuedJobs.value[id]
     queuedJob.nodes = {
       ...nodes.reduce((p: Record<string, boolean>, n) => {
         p[n] = false

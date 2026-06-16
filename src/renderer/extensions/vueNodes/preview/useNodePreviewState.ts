@@ -2,7 +2,7 @@ import { storeToRefs } from 'pinia'
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 

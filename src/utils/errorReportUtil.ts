@@ -1,5 +1,5 @@
 import type { ISerialisedGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import type { SystemStats } from '@/schemas/apiSchema'
 
 export interface ErrorReportData {

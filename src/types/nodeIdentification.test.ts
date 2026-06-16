@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { asNodeId } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import {
   compareExecutionId,
   createNodeExecutionId,

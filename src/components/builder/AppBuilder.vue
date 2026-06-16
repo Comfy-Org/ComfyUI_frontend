@@ -12,7 +12,8 @@ import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelec
 import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
 import type { WidgetId } from '@/types/widgetId'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import {
   LGraphEventMode,

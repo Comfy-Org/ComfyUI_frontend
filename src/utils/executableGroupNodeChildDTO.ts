@@ -4,9 +4,9 @@ import type {
   ExecutableLGraphNode,
   ExecutionId,
   LGraphNode,
-  NodeId,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 
 export class ExecutableGroupNodeChildDTO extends ExecutableNodeDTO {
   groupNodeHandler?: GroupNodeHandler
