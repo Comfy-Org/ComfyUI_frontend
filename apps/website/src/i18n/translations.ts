@@ -1856,42 +1856,44 @@ const translations = {
   'nav.instagram': { en: 'Instagram', 'zh-CN': 'Instagram' },
   'nav.affiliates': { en: 'Affiliates', 'zh-CN': '联盟计划' },
   'nav.contact': { en: 'Contact', 'zh-CN': '联系我们' },
-  // Featured dropdown cards. TODO(i18n): zh-CN copy not finalized — duplicates en
-  'nav.featuredSeedanceTitle': {
-    en: 'NEW RELEASE: SEEDANCE 2.0',
-    'zh-CN': 'NEW RELEASE: SEEDANCE 2.0'
+  // Featured dropdown cards — keys are keyed by parent nav item, not card content,
+  // so the copy can be swapped without renaming the key.
+  // TODO(i18n): zh-CN copy not finalized — duplicates en
+  'nav.featuredProductsTitle': {
+    en: 'New Release: Seedance 2.0',
+    'zh-CN': '全新发布：Seedance 2.0'
   },
-  'nav.featuredSeedanceAlt': {
-    en: 'Moment Factory hero image',
-    'zh-CN': 'Moment Factory hero image'
+  'nav.featuredProductsAlt': {
+    en: 'Seedance 2.0 release feature image',
+    'zh-CN': 'Seedance 2.0 发布精选图片'
   },
-  'nav.featuredSeedanceCtaAria': {
-    en: 'Try the Seedance 2.0 new release Workflow',
-    'zh-CN': 'Try the Seedance 2.0 new release Workflow'
+  'nav.featuredProductsCtaAria': {
+    en: 'Try the Seedance 2.0 workflow',
+    'zh-CN': '试用 Seedance 2.0 工作流'
   },
-  'nav.featuredReleaseDemoTitle': {
-    en: 'LATEST RELEASE DEMO',
-    'zh-CN': 'LATEST RELEASE DEMO'
+  'nav.featuredCommunityTitle': {
+    en: 'Sky Replacement',
+    'zh-CN': '天空替换'
   },
-  'nav.featuredReleaseDemoAlt': {
-    en: 'Latest release demo',
-    'zh-CN': 'Latest release demo'
+  'nav.featuredCommunityAlt': {
+    en: 'Sky Replacement workflow demo image',
+    'zh-CN': '天空替换工作流演示图片'
   },
-  'nav.featuredReleaseDemoCtaAria': {
-    en: 'Watch the latest release demo',
-    'zh-CN': 'Watch the latest release demo'
+  'nav.featuredCommunityCtaAria': {
+    en: 'Watch the Sky Replacement demo',
+    'zh-CN': '观看天空替换演示'
   },
-  'nav.featuredBlackMathTitle': {
-    en: 'CUSTOMER STORY: BLACK MATH',
-    'zh-CN': 'CUSTOMER STORY: BLACK MATH'
+  'nav.featuredCompanyTitle': {
+    en: 'Customer story: Black math',
+    'zh-CN': '客户故事：Black math'
   },
-  'nav.featuredBlackMathAlt': {
-    en: 'Meredith Binnet, Creative Director at Black Math',
-    'zh-CN': 'Meredith Binnet, Creative Director at Black Math'
+  'nav.featuredCompanyAlt': {
+    en: 'Black math customer story image',
+    'zh-CN': 'Black math 客户故事图片'
   },
-  'nav.featuredBlackMathCtaAria': {
-    en: 'Watch the Black Math customer story',
-    'zh-CN': 'Watch the Black Math customer story'
+  'nav.featuredCompanyCtaAria': {
+    en: 'Watch the Black math customer story',
+    'zh-CN': '观看 Black math 客户故事'
   },
 
   // SiteFooter

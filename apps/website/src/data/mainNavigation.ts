@@ -34,22 +34,19 @@ export type NavItem =
     }
   | { label: string; href: string; columns?: never; featured?: never }
 
-const FEATURED_IMAGE_SRC =
-  'https://media.comfy.org/website/customers/moment-factory/hero.webp'
-
 export function getMainNavigation(locale: Locale): NavItem[] {
   const routes = getRoutes(locale)
   return [
     {
       label: t('nav.products', locale),
       featured: {
-        imageSrc: FEATURED_IMAGE_SRC,
-        imageAlt: t('nav.featuredSeedanceAlt', locale),
-        title: t('nav.featuredSeedanceTitle', locale),
+        imageSrc: 'https://media.comfy.org/website/nav/featured-model-card.jpg',
+        imageAlt: t('nav.featuredProductsAlt', locale),
+        title: t('nav.featuredProductsTitle', locale),
         cta: {
           label: t('cta.tryWorkflow', locale),
-          ariaLabel: t('nav.featuredSeedanceCtaAria', locale),
-          href: '#'
+          ariaLabel: t('nav.featuredProductsCtaAria', locale),
+          href: 'https://comfy.org/workflows/api_seedance2_0_r2v-64f4db9e3e33/'
         }
       },
       columns: [
@@ -89,12 +86,12 @@ export function getMainNavigation(locale: Locale): NavItem[] {
     {
       label: t('nav.community', locale),
       featured: {
-        imageSrc: FEATURED_IMAGE_SRC,
-        imageAlt: t('nav.featuredReleaseDemoAlt', locale),
-        title: t('nav.featuredReleaseDemoTitle', locale),
+        imageSrc: 'https://media.comfy.org/website/nav/featured-demo-card.jpg',
+        imageAlt: t('nav.featuredCommunityAlt', locale),
+        title: t('nav.featuredCommunityTitle', locale),
         cta: {
           label: t('cta.watchNow', locale),
-          ariaLabel: t('nav.featuredReleaseDemoCtaAria', locale),
+          ariaLabel: t('nav.featuredCommunityCtaAria', locale),
           href: '#'
         }
       },
@@ -161,12 +158,12 @@ export function getMainNavigation(locale: Locale): NavItem[] {
     {
       label: t('nav.company', locale),
       featured: {
-        imageSrc: FEATURED_IMAGE_SRC,
-        imageAlt: t('nav.featuredBlackMathAlt', locale),
-        title: t('nav.featuredBlackMathTitle', locale),
+        imageSrc: 'https://media.comfy.org/website/nav/customer-story-card.jpg',
+        imageAlt: t('nav.featuredCompanyAlt', locale),
+        title: t('nav.featuredCompanyTitle', locale),
         cta: {
           label: t('cta.watchNow', locale),
-          ariaLabel: t('nav.featuredBlackMathCtaAria', locale),
+          ariaLabel: t('nav.featuredCompanyCtaAria', locale),
           href: '#'
         }
       },
