@@ -1401,7 +1401,6 @@ export class LGraphNode
 
       default:
         return false
-        break
     }
     this.mode = modeTo
     return true
