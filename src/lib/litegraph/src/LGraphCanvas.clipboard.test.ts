@@ -21,6 +21,7 @@ import type {
   ExportedSubgraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import type { NodeId } from '@/types/nodeId'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -119,6 +120,81 @@ describe('remapClipboardSubgraphNodeIds', () => {
     const remappedNode = parsed.nodes?.[0]
     expect(remappedNode).toBeDefined()
     expect(remappedNode?.properties?.proxyWidgets).toStrictEqual([
+      [String(remappedInteriorId), 'seed']
+    ])
+  })
+
+  it('remaps legacy numeric interior IDs, links, and proxyWidgets references', () => {
+    const rootGraph = new LGraph()
+    const existingNode = new LGraphNode('existing')
+    existingNode.id = asNodeId(1)
+    rootGraph.add(existingNode)
+
+    const subgraphId = createUuidv4()
+    // Legacy clipboard JSON written by a pre-branding frontend: numeric ids.
+    const legacyNumericId = 1 as unknown as NodeId
+    const pastedSubgraph: ExportedSubgraph = {
+      id: subgraphId,
+      version: 1,
+      revision: 0,
+      state: { lastNodeId: 0, lastLinkId: 0, lastGroupId: 0, lastRerouteId: 0 },
+      config: {},
+      name: 'Pasted Subgraph',
+      inputNode: { id: asNodeId(-10), bounding: [0, 0, 10, 10] },
+      outputNode: { id: asNodeId(-20), bounding: [0, 0, 10, 10] },
+      inputs: [],
+      outputs: [],
+      widgets: [],
+      nodes: [
+        {
+          id: legacyNumericId,
+          type: 'test/node',
+          pos: [0, 0],
+          size: [140, 80],
+          flags: {},
+          order: 0,
+          mode: 0,
+          inputs: [],
+          outputs: [],
+          properties: {}
+        }
+      ],
+      links: [
+        {
+          id: 1,
+          type: '*',
+          origin_id: 1 as unknown as NodeId,
+          origin_slot: 0,
+          target_id: 1 as unknown as NodeId,
+          target_slot: 0
+        }
+      ],
+      groups: []
+    }
+
+    const hostInfo = createSerialisedNode(99, subgraphId, [
+      [1 as unknown as string, 'seed']
+    ])
+
+    const parsed: ClipboardItems = {
+      nodes: [hostInfo],
+      groups: [],
+      reroutes: [],
+      links: [],
+      subgraphs: [pastedSubgraph]
+    }
+
+    remapClipboardSubgraphNodeIds(parsed, rootGraph)
+
+    const remappedInteriorId = parsed.subgraphs?.[0]?.nodes?.[0]?.id
+    expect(remappedInteriorId).not.toBe(1)
+    expect(remappedInteriorId).not.toBe('1')
+
+    const remappedLink = parsed.subgraphs?.[0]?.links?.[0]
+    expect(remappedLink?.origin_id).toBe(remappedInteriorId)
+    expect(remappedLink?.target_id).toBe(remappedInteriorId)
+
+    expect(parsed.nodes?.[0]?.properties?.proxyWidgets).toStrictEqual([
       [String(remappedInteriorId), 'seed']
     ])
   })

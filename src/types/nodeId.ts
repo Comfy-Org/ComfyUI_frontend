@@ -58,11 +58,22 @@ export function isSubgraphOutputNodeId(
   return id === SUBGRAPH_OUTPUT_ID || id === SUBGRAPH_OUTPUT_NODE_ID
 }
 
-/** Counter-managed numeric id. UUIDs and composite ids (`"10:3"`) are false. */
+/**
+ * Counter-managed numeric id.
+ * UUIDs,
+ * composite ids (`"10:3"`),
+ * and negative sentinels (`-1`, `-10`, `-20`) are false.
+ */
 export function isNumericNodeId(id: NodeIdInput): boolean {
-  return typeof id === 'number' ? Number.isInteger(id) : /^\d+$/.test(id)
+  return typeof id === 'number'
+    ? Number.isInteger(id) && id >= 0
+    : /^\d+$/.test(id)
 }
 
 export function nodeIdToNumber(id: NodeIdInput): number {
-  return typeof id === 'number' ? id : Number(id)
+  const value = typeof id === 'number' ? id : Number(id)
+  if (!Number.isInteger(value)) {
+    throw new TypeError(`Invalid numeric node id: ${String(id)}`)
+  }
+  return value
 }

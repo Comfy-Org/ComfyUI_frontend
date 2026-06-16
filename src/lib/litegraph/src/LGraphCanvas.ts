@@ -112,7 +112,7 @@ import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
-import type { LinkEndpointNodeId } from '@/types/nodeId'
+import type { LinkEndpointNodeId, NodeIdInput } from '@/types/nodeId'
 import {
   asNodeId,
   isNumericNodeId,
@@ -8997,11 +8997,18 @@ function patchLinkNodeIds(
   }
 }
 
+function isNodeIdValue(value: unknown): value is NodeIdInput {
+  return typeof value === 'string' || typeof value === 'number'
+}
+
+/** Looks up a remap, tolerating legacy numeric ids and skipping sentinels. */
 function remapNodeId(
-  nodeId: string,
+  nodeId: NodeIdInput,
   remappedIds: Map<NodeId, NodeId>
 ): NodeId | undefined {
-  return remappedIds.get(asNodeId(nodeId))
+  const normalized = asNodeId(nodeId)
+  if (normalized === UNASSIGNED_NODE_ID) return undefined
+  return remappedIds.get(normalized)
 }
 
 function remapProxyWidgets(
@@ -9017,21 +9024,21 @@ function remapProxyWidgets(
     if (!Array.isArray(entry)) continue
 
     const [nodeId] = entry
-    if (typeof nodeId !== 'string' || nodeId === '-1') continue
+    if (!isNodeIdValue(nodeId)) continue
 
     const remappedNodeId = remapNodeId(nodeId, remappedIds)
     if (remappedNodeId !== undefined) entry[0] = String(remappedNodeId)
   }
 }
 
-function hasStringSourceNodeId(
+function hasSourceNodeId(
   value: unknown
-): value is { sourceNodeId: string } {
+): value is { sourceNodeId: NodeIdInput } {
   return (
     typeof value === 'object' &&
     value !== null &&
     'sourceNodeId' in value &&
-    typeof value.sourceNodeId === 'string'
+    isNodeIdValue(value.sourceNodeId)
   )
 }
 
@@ -9045,7 +9052,7 @@ function remapPreviewExposures(
   if (!Array.isArray(previewExposures)) return
 
   for (const entry of previewExposures) {
-    if (!hasStringSourceNodeId(entry) || entry.sourceNodeId === '-1') continue
+    if (!hasSourceNodeId(entry)) continue
 
     const remappedNodeId = remapNodeId(entry.sourceNodeId, remappedIds)
     if (remappedNodeId !== undefined)
@@ -9083,7 +9090,7 @@ export function remapClipboardSubgraphNodeIds(
 
       const numericId = nodeIdToNumber(nodeInfo.id)
       if (usedNodeIds.has(numericId)) {
-        const oldId = nodeInfo.id
+        const oldId = asNodeId(nodeInfo.id)
         const newId = nextUniqueNodeId()
         remappedIds.set(oldId, newId)
         nodeInfo.id = newId
