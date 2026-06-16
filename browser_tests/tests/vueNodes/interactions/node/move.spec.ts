@@ -387,9 +387,9 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
         await comfyPage.page.mouse.click(x, y)
         await comfyPage.page.keyboard.up('Alt')
 
-        const rerouteSize = () =>
+        const rerouteCount = () =>
           comfyPage.page.evaluate(() => graph!.reroutes.size)
-        await expect.poll(rerouteSize).toBe(1)
+        await expect.poll(rerouteCount).toBe(1)
       })
 
       await comfyPage.keyboard.selectAll()
@@ -403,7 +403,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
       comfyPage.page.evaluate(() => graph!.groups[0].pos)
     const initialReroutePos = await getReroutePos()
     const initialGroupPos = await getGroupPos()
-    await comfyMouse.dragElementBy(ksampler.root, { x: 100 })
+    await comfyMouse.dragElementBy(ksampler.title, { x: 100 })
 
     await expect.poll(getReroutePos).not.toEqual(initialReroutePos)
     await expect.poll(getGroupPos).not.toEqual(initialGroupPos)
