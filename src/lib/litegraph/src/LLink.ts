@@ -1,7 +1,3 @@
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -9,6 +5,11 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { LGraphNode, NodeId } from './LGraphNode'
 import type { LinkEndpointNodeId } from '@/types/nodeId'
+import {
+  isFloatingNodeId,
+  isSubgraphInputNodeId,
+  isSubgraphOutputNodeId
+} from '@/types/nodeId'
 import type { Reroute, RerouteId } from './Reroute'
 import type {
   CanvasColour,
@@ -131,11 +132,11 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   }
 
   public get isFloatingOutput(): boolean {
-    return this.origin_id === -1 && this.origin_slot === -1
+    return isFloatingNodeId(this.origin_id) && this.origin_slot === -1
   }
 
   public get isFloatingInput(): boolean {
-    return this.target_id === -1 && this.target_slot === -1
+    return isFloatingNodeId(this.target_id) && this.target_slot === -1
   }
 
   public get isFloating(): boolean {
@@ -144,12 +145,12 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
 
   /** `true` if this link is connected to a subgraph input node (the actual origin is in a different graph). */
   get originIsIoNode(): boolean {
-    return this.origin_id === SUBGRAPH_INPUT_ID
+    return isSubgraphInputNodeId(this.origin_id)
   }
 
   /** `true` if this link is connected to a subgraph output node (the actual target is in a different graph). */
   get targetIsIoNode(): boolean {
-    return this.target_id === SUBGRAPH_OUTPUT_ID
+    return isSubgraphOutputNodeId(this.target_id)
   }
 
   constructor(
@@ -308,10 +309,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * it is recommended to use simpler methods where appropriate.
    */
   resolve(network: BasicReadonlyNetwork): ResolvedConnection {
-    const inputNode =
-      this.target_id === -1
-        ? undefined
-        : (network.getNodeById(this.target_id) ?? undefined)
+    const inputNode = isFloatingNodeId(this.target_id)
+      ? undefined
+      : (network.getNodeById(this.target_id) ?? undefined)
     const input = inputNode?.inputs[this.target_slot]
     const subgraphInput = this.originIsIoNode
       ? network.inputNode?.slots[this.origin_slot]
@@ -320,10 +320,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       return { inputNode, input, subgraphInput, link: this }
     }
 
-    const outputNode =
-      this.origin_id === -1
-        ? undefined
-        : (network.getNodeById(this.origin_id) ?? undefined)
+    const outputNode = isFloatingNodeId(this.origin_id)
+      ? undefined
+      : (network.getNodeById(this.origin_id) ?? undefined)
     const output = outputNode?.outputs[this.origin_slot]
     const subgraphOutput = this.targetIsIoNode
       ? network.outputNode?.slots[this.target_slot]

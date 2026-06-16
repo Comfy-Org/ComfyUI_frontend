@@ -16,11 +16,12 @@ import {
   toClass
 } from '@/lib/litegraph/src/utils/type'
 
-import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import {
   UNASSIGNED_NODE_ID,
   asNodeId,
+  isSubgraphInputNodeId,
+  isSubgraphOutputNodeId,
   isUnassignedNodeId
 } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -3171,7 +3172,7 @@ export class LGraphNode
         const link_info = graph._links.get(link_id)
         if (!link_info) continue
         if (
-          link_info.target_id === SUBGRAPH_OUTPUT_ID &&
+          isSubgraphOutputNodeId(link_info.target_id) &&
           graph instanceof Subgraph
         ) {
           const targetSlot = graph.outputNode.slots[link_info.target_slot]
@@ -3281,7 +3282,10 @@ export class LGraphNode
       const link_info = graph._links.get(link_id)
       if (link_info) {
         // Let SubgraphInput do the disconnect.
-        if (link_info.origin_id === -10 && 'inputNode' in graph) {
+        if (
+          isSubgraphInputNodeId(link_info.origin_id) &&
+          'inputNode' in graph
+        ) {
           graph.inputNode._disconnectNodeInput(this, input, link_info)
           return true
         }

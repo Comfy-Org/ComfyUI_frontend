@@ -10,6 +10,7 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import { isSubgraphInputNodeId, isSubgraphOutputNodeId } from '@/types/nodeId'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
@@ -131,7 +132,7 @@ export function getBoundaryLinks(
             } else {
               internalLinks.push(link)
             }
-          } else if (link.origin_id === SUBGRAPH_INPUT_ID) {
+          } else if (isSubgraphInputNodeId(link.origin_id)) {
             // Subgraph input node - always boundary
             boundaryInputLinks.push(link)
           }
@@ -149,7 +150,7 @@ export function getBoundaryLinks(
           for (const { link, inputNode } of many) {
             if (
               // Subgraph output node
-              link.target_id === SUBGRAPH_OUTPUT_ID ||
+              isSubgraphOutputNodeId(link.target_id) ||
               // Input end of this link is outside the items set
               (inputNode && !items.has(inputNode))
             ) {

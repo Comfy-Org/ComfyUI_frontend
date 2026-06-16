@@ -89,7 +89,10 @@ import type {
 import { getAllNestedItems } from './utils/collections'
 import {
   asNodeId,
+  isFloatingNodeId,
   isNumericNodeId,
+  isSubgraphInputNodeId,
+  isSubgraphOutputNodeId,
   isUnassignedNodeId,
   nodeIdToNumber
 } from '@/types/nodeId'
@@ -1425,10 +1428,9 @@ export class LGraph
     }
     this.floatingLinksInternal.set(link.id, link)
 
-    const slot =
-      link.target_id !== -1
-        ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
-        : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
+    const slot = !isFloatingNodeId(link.target_id)
+      ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
+      : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
     if (slot) {
       slot._floatingLinks ??= new Set()
       slot._floatingLinks.add(link)
@@ -1448,10 +1450,9 @@ export class LGraph
   removeFloatingLink(link: LLink): void {
     this.floatingLinksInternal.delete(link.id)
 
-    const slot =
-      link.target_id !== -1
-        ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
-        : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
+    const slot = !isFloatingNodeId(link.target_id)
+      ? this.getNodeById(link.target_id)?.inputs?.[link.target_slot]
+      : this.getNodeById(link.origin_id)?.outputs?.[link.origin_slot]
     if (slot) {
       slot._floatingLinks?.delete(link)
     }
@@ -1860,7 +1861,7 @@ export class LGraph
 
       // Special handling: Subgraph input node
       i++
-      if (link.origin_id === SUBGRAPH_INPUT_ID) {
+      if (isSubgraphInputNodeId(link.origin_id)) {
         link.target_id = subgraphNode.id
         link.target_slot = i - 1
         if (subgraphInput instanceof SubgraphInput) {
@@ -1901,7 +1902,7 @@ export class LGraph
       for (const connection of connections) {
         const { input, inputNode, link, subgraphOutput } = connection
         // Special handling: Subgraph output node
-        if (link.target_id === SUBGRAPH_OUTPUT_ID) {
+        if (isSubgraphOutputNodeId(link.target_id)) {
           link.origin_id = subgraphNode.id
           link.origin_slot = i - 1
           this.links.set(link.id, link)
@@ -2074,7 +2075,7 @@ export class LGraph
     }[] = []
     for (const [, link] of subgraphNode.subgraph._links) {
       let externalParentId: RerouteId | undefined
-      if (link.origin_id === SUBGRAPH_INPUT_ID) {
+      if (isSubgraphInputNodeId(link.origin_id)) {
         const outerLinkId = subgraphNode.inputs[link.origin_slot].link
         if (!outerLinkId) {
           console.error('Missing Link ID when unpacking')
@@ -2092,7 +2093,7 @@ export class LGraph
         }
         link.origin_id = origin_id
       }
-      if (link.target_id === SUBGRAPH_OUTPUT_ID) {
+      if (isSubgraphOutputNodeId(link.target_id)) {
         for (const linkId of subgraphNode.outputs[link.target_slot].links ??
           []) {
           const sublink = this.links[linkId]
@@ -2143,7 +2144,7 @@ export class LGraph
     const linkIdMap = new Map<LinkId, LinkId[]>()
     for (const newLink of dedupedNewLinks) {
       let created: LLink | null | undefined
-      if (newLink.oid == SUBGRAPH_INPUT_ID) {
+      if (isSubgraphInputNodeId(newLink.oid)) {
         if (!(this instanceof Subgraph)) {
           console.error('Ignoring link to subgraph outside subgraph')
           continue
@@ -2153,7 +2154,7 @@ export class LGraph
           tnode.inputs[newLink.tslot],
           tnode
         )
-      } else if (newLink.tid == SUBGRAPH_OUTPUT_ID) {
+      } else if (isSubgraphOutputNodeId(newLink.tid)) {
         if (!(this instanceof Subgraph)) {
           console.error('Ignoring link to subgraph outside subgraph')
           continue

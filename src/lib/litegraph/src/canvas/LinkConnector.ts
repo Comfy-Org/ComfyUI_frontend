@@ -3,10 +3,7 @@ import { remove } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
+import { isSubgraphInputNodeId, isSubgraphOutputNodeId } from '@/types/nodeId'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type {
@@ -183,7 +180,7 @@ export class LinkConnector {
       if (!link) return
 
       // Special handling for links from subgraph input nodes
-      if (link.origin_id === SUBGRAPH_INPUT_ID) {
+      if (isSubgraphInputNodeId(link.origin_id)) {
         // For subgraph input links, we need to handle them differently
         // since they don't have a regular output node
         const subgraphInput = network.inputNode?.slots[link.origin_slot]
@@ -325,7 +322,7 @@ export class LinkConnector {
         this.outputLinks.push(link)
 
         try {
-          if (link.target_id === SUBGRAPH_OUTPUT_ID) {
+          if (isSubgraphOutputNodeId(link.target_id)) {
             if (!(network instanceof Subgraph)) {
               console.warn(
                 'Subgraph output link found in non-subgraph network.'
@@ -482,7 +479,7 @@ export class LinkConnector {
       return
     }
 
-    if (link.origin_id === SUBGRAPH_INPUT_ID) {
+    if (isSubgraphInputNodeId(link.origin_id)) {
       if (!(network instanceof Subgraph)) {
         console.warn('Subgraph input link found in non-subgraph network.')
         return
@@ -546,7 +543,7 @@ export class LinkConnector {
       return
     }
 
-    if (link.target_id === SUBGRAPH_OUTPUT_ID) {
+    if (isSubgraphOutputNodeId(link.target_id)) {
       if (!(network instanceof Subgraph)) {
         console.warn('Subgraph output link found in non-subgraph network.')
         return

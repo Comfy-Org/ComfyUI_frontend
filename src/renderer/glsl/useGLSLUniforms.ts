@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import type { ComputedRef } from 'vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
-import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import { isSubgraphInputNodeId } from '@/types/nodeId'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@/utils/uuid'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -80,7 +80,7 @@ export function extractUniformSources(
     if (input.link == null) continue
 
     const link = subgraph.getLink(input.link)
-    if (!link || link.origin_id === SUBGRAPH_INPUT_ID) continue
+    if (!link || isSubgraphInputNodeId(link.origin_id)) continue
 
     const sourceNode = subgraph.getNodeById(link.origin_id)
     if (!sourceNode?.widgets?.length) continue
