@@ -187,12 +187,13 @@ vi.mock('@/lib/litegraph/src/LLink', () => ({
   LLink: { getReroutes: () => [] }
 }))
 
-vi.mock('@/lib/litegraph/src/types/globalEnums', async (importOriginal) => ({
-  ...(await importOriginal<
-    typeof import('@/lib/litegraph/src/types/globalEnums')
-  >()),
-  LinkDirection: { LEFT: 0, RIGHT: 1, NONE: -1 }
-}))
+vi.mock('@/lib/litegraph/src/types/globalEnums', async (importOriginal) => {
+  const original = await importOriginal()
+  return {
+    ...(original as object),
+    LinkDirection: { LEFT: 0, RIGHT: 1, NONE: -1 }
+  }
+})
 
 vi.mock('@/utils/rafBatch', () => ({
   createRafBatch: (fn: () => void) => ({

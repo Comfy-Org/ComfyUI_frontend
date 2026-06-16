@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -160,7 +160,7 @@ describe('MiddleTruncate', () => {
     await userEvent.hover(el)
     expect(screen.getByRole('tooltip')).toBeInTheDocument()
 
-    await fireEvent.pointerLeave(el, { relatedTarget: null })
+    await userEvent.unhover(el)
     expect(screen.queryByRole('tooltip')).toBeNull()
   })
 
@@ -176,9 +176,7 @@ describe('MiddleTruncate', () => {
     await userEvent.hover(el)
     expect(screen.getByRole('tooltip')).toBeInTheDocument()
 
-    await fireEvent.pointerLeave(el, {
-      relatedTarget: screen.getByTestId('sibling')
-    })
+    await userEvent.pointer({ target: screen.getByTestId('sibling') })
     expect(screen.getByRole('tooltip')).toBeInTheDocument()
   })
 })
