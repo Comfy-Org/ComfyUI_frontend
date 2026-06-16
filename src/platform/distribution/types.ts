@@ -1,9 +1,9 @@
 /**
  * Distribution types and compile-time constants for managing
- * multi-distribution builds (Desktop, Localhost, Cloud)
+ * multi-distribution builds (Desktop, Desktop2, Localhost, Cloud)
  */
 
-type Distribution = 'desktop' | 'localhost' | 'cloud'
+type Distribution = 'desktop' | 'desktop2' | 'localhost' | 'cloud'
 
 declare global {
   const __DISTRIBUTION__: Distribution

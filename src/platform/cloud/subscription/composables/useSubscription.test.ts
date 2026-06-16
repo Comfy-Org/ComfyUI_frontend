@@ -58,7 +58,7 @@ const {
 }))
 
 let scope: ReturnType<typeof effectScope> | undefined
-type Distribution = 'desktop' | 'localhost' | 'cloud'
+type Distribution = 'desktop' | 'desktop2' | 'localhost' | 'cloud'
 
 const setDistribution = (distribution: Distribution) => {
   ;(

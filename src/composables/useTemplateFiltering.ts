@@ -81,6 +81,7 @@ export function useTemplateFiltering(
       case 'localhost':
         return [TemplateIncludeOnDistributionEnum.Local]
       case 'desktop':
+      case 'desktop2':
       default:
         if (systemStatsStore.systemStats?.system.os === 'darwin') {
           return [

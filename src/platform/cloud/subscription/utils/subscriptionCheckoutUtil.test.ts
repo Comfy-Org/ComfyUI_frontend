@@ -89,7 +89,7 @@ vi.mock('@/platform/telemetry/utils/checkoutAttribution', () => ({
 
 global.fetch = vi.fn()
 
-type Distribution = 'desktop' | 'localhost' | 'cloud'
+type Distribution = 'desktop' | 'desktop2' | 'localhost' | 'cloud'
 
 const setDistribution = (distribution: Distribution) => {
   ;(

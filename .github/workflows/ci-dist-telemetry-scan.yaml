@@ -109,3 +109,21 @@ jobs:
             exit 1
           fi
           echo '✅ No PostHog references found'
+
+      - name: Scan dist for Desktop telemetry references
+        run: |
+          set -euo pipefail
+          echo '🔍 Scanning for Desktop telemetry references...'
+          if rg --no-ignore -n \
+            -g '*.html' \
+            -g '*.js' \
+            -e 'DesktopTelemetry' \
+            -e 'initDesktopTelemetry' \
+            -e '__comfyDesktop2\\??\\.Telemetry' \
+            -e 'Telemetry\\??\\.capture' \
+            dist; then
+            echo '❌ ERROR: Desktop telemetry references found in OSS dist assets!'
+            echo 'Desktop telemetry must only ship in the desktop2 distribution.'
+            exit 1
+          fi
+          echo '✅ No Desktop telemetry references found'

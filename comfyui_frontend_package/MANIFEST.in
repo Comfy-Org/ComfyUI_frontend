@@ -1,1 +1,2 @@
 recursive-include comfyui_frontend_package/static *
+recursive-include comfyui_frontend_package/static-desktop2 *

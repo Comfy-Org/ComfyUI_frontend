@@ -43,14 +43,23 @@ const VITE_OG_KEYWORDS = 'ComfyUI, Comfy Cloud, ComfyUI online'
 const DEV_SERVER_COMFYUI_ENV_URL = process.env.DEV_SERVER_COMFYUI_URL
 const IS_CLOUD_URL = DEV_SERVER_COMFYUI_ENV_URL?.includes('.comfy.org')
 
-const DISTRIBUTION: 'desktop' | 'localhost' | 'cloud' =
-  process.env.DISTRIBUTION === 'desktop' ||
-  process.env.DISTRIBUTION === 'localhost' ||
-  process.env.DISTRIBUTION === 'cloud'
-    ? process.env.DISTRIBUTION
-    : IS_CLOUD_URL
-      ? 'cloud'
-      : 'localhost'
+type Distribution = 'desktop' | 'desktop2' | 'localhost' | 'cloud'
+
+function parseDistribution(
+  value: string | undefined
+): Distribution | undefined {
+  switch (value) {
+    case 'desktop':
+    case 'desktop2':
+    case 'localhost':
+    case 'cloud':
+      return value
+  }
+}
+
+const DISTRIBUTION: Distribution =
+  parseDistribution(process.env.DISTRIBUTION) ??
+  (IS_CLOUD_URL ? 'cloud' : 'localhost')
 
 // Nightly builds are from main branch; RC/stable builds are from core/* branches
 // Can be overridden via IS_NIGHTLY env var for testing

@@ -436,8 +436,9 @@ describe('useTemplateFiltering', () => {
   })
 
   describe('Distribution filtering', () => {
-    const setDistribution = (distribution: 'desktop' | 'localhost' | 'cloud') =>
-      vi.stubGlobal('__DISTRIBUTION__', distribution)
+    const setDistribution = (
+      distribution: 'desktop' | 'desktop2' | 'localhost' | 'cloud'
+    ) => vi.stubGlobal('__DISTRIBUTION__', distribution)
 
     const cloudTemplate: TemplateInfo = {
       name: 'cloud-only',
@@ -556,6 +557,18 @@ describe('useTemplateFiltering', () => {
       expect(filteredCount.value).toBe(1)
       expect(totalCount.value).toBe(1)
       expect(filteredTemplates.value[0].name).toBe('local-only')
+    })
+
+    it('shows desktop templates on desktop2 distribution', () => {
+      setDistribution('desktop2')
+      const templates = ref([desktopTemplate, cloudTemplate])
+
+      const { filteredTemplates, filteredCount, totalCount } =
+        useTemplateFiltering(templates)
+
+      expect(filteredCount.value).toBe(1)
+      expect(totalCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('desktop-only')
     })
 
     it('includes templates with multiple distributions when any match', () => {

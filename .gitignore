@@ -21,6 +21,7 @@ node_modules
 .pnpm-store
 .nx
 dist
+dist-desktop2
 dist-ssr
 *.local
 # Claude configuration

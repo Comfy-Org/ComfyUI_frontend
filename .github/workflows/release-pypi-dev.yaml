@@ -38,6 +38,7 @@ jobs:
         run: |
           pnpm install --frozen-lockfile
           pnpm build
+          pnpm build:desktop2
           pnpm zipdist
       - name: Upload dist artifact
         uses: actions/upload-artifact@v6
@@ -45,6 +46,7 @@ jobs:
           name: dist-files
           path: |
             dist/
+            dist-desktop2/
             dist.zip
 
   publish_pypi:
@@ -66,7 +68,9 @@ jobs:
       - name: Setup pypi package
         run: |
           mkdir -p comfyui_frontend_package/comfyui_frontend_package/static/
+          mkdir -p comfyui_frontend_package/comfyui_frontend_package/static-desktop2/
           cp -r dist/* comfyui_frontend_package/comfyui_frontend_package/static/
+          cp -r dist-desktop2/* comfyui_frontend_package/comfyui_frontend_package/static-desktop2/
       - name: Build pypi package
         run: python -m build
         working-directory: comfyui_frontend_package
