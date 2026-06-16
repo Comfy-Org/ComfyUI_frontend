@@ -2904,6 +2904,10 @@
         "name": "オーディオ",
         "tooltip": "動画に追加するオーディオです。"
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "作成される動画のビット深度。10ビットはグラデーションがより滑らかでバンディングが少なくなりますが、一部のプレーヤーや下流ノードではサポートされない場合があります。"
+      },
       "fps": {
         "name": "fps"
       },
@@ -5219,6 +5223,10 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -19586,6 +19594,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "外部の3Dモデル（例：Rodin、Hunyuan3D、またはローカルファイル）をTripoにインポートし、Tripoのポストプロセスノード（Texture、Rig、Convert）で使用します。GLB形式を推奨します：テクスチャはファイルに埋め込まれている場合のみインポート時に保持されます。インポートしたモデルにテクスチャを付与するには、テクスチャプロンプトが必要です。",
+    "display_name": "Tripo: Import Model",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "インポートする3Dモデル（GLB / FBX / OBJ / STL、最大150MB）。OBJおよびSTLファイルには埋め込みテクスチャがありません。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: マルチビューからモデル",
     "inputs": {
@@ -20053,6 +20077,10 @@
       },
       "texture_alignment": {
         "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "テクスチャ付与のためのオプションのテキストガイダンス。インポートしたモデル（Tripo: Import Model）には参照画像がないため、実際には必須です。"
       },
       "texture_quality": {
         "name": "texture_quality"

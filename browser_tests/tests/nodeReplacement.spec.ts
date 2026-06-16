@@ -131,6 +131,14 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
             'normal',
             1
           ])
+
+          if (mode.vueNodesEnabled) {
+            await expect(
+              comfyPage.vueNodes
+                .getWidgetByName('KSampler', 'denoise')
+                .locator('input')
+            ).toHaveValue(/^1(?:\.0+)?$/)
+          }
         })
 
         test('Success toast is shown after replacement', async ({
