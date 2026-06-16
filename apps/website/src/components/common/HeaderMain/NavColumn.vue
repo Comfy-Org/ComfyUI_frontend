@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import Badge from '@/components/common/Badge.vue'
 import { NavigationMenuLink } from '@/components/ui/navigation-menu'
 
 import type { NavColumn } from '../../../data/mainNavigation'
-import { ArrowUpRight } from '@lucide/vue'
+import type { Locale } from '../../../i18n/translations'
+import NavLinkContent from './NavLinkContent.vue'
 
-defineProps<{ column: NavColumn }>()
+defineProps<{ column: NavColumn; locale: Locale }>()
 </script>
 
 <template>
@@ -18,16 +18,11 @@ defineProps<{ column: NavColumn }>()
         <NavigationMenuLink as-child class="hover:bg-transparency-white-t4">
           <a
             :href="item.href"
-            class="flex flex-row items-center gap-2 whitespace-nowrap"
+            :target="item.external ? '_blank' : undefined"
+            :rel="item.external ? 'noopener noreferrer' : undefined"
+            class="whitespace-nowrap"
           >
-            <span>{{ item.label }}</span>
-            <Badge v-if="item.badge" size="xs" variant="accent">
-              {{ item.badge }}
-            </Badge>
-            <ArrowUpRight
-              v-if="item.external"
-              class="text-primary-comfy-yellow size-4"
-            />
+            <NavLinkContent :item="item" :locale="locale" />
           </a>
         </NavigationMenuLink>
       </li>

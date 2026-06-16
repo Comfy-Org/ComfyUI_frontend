@@ -1834,6 +1834,7 @@ const translations = {
   'nav.customerStories': { en: 'Customer Stories', 'zh-CN': '客户故事' },
   'nav.downloadLocal': { en: 'DOWNLOAD DESKTOP', 'zh-CN': '下载桌面版' },
   'nav.launchCloud': { en: 'LAUNCH CLOUD', 'zh-CN': '启动云端' },
+  'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
   'nav.menu': { en: 'Menu', 'zh-CN': '菜单' },
   'nav.toggleMenu': { en: 'Toggle menu', 'zh-CN': '切换菜单' },
   'nav.close': { en: 'Close', 'zh-CN': '关闭' },

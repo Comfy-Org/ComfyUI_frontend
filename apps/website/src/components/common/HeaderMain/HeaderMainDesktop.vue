@@ -37,6 +37,7 @@ const mainNavigation = getMainNavigation(locale)
                 v-for="column in navItem.columns"
                 :key="column.header"
                 :column="column"
+                :locale="locale"
               />
             </ul>
           </NavigationMenuContent>

@@ -92,7 +92,10 @@ onMounted(() => {
         :variant="cta.primary ? 'default' : 'outline'"
         :aria-label="cta.label"
       >
-        {{ cta.prefix }}&nbsp;{{ cta.core }}
+        <span
+          ><span class="hidden xl:inline-block">{{ cta.prefix }}&nbsp;</span
+          >{{ cta.core }}</span
+        >
       </Button>
     </div>
   </nav>

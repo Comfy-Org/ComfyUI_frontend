@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
-import Badge from '@/components/common/Badge.vue'
-import { ArrowUpRight, ChevronLeft, ChevronRight } from '@lucide/vue'
+import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { getMainNavigation } from '../../../data/mainNavigation'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import { lockScroll, unlockScroll } from '../../../composables/scrollLock'
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
-import BrandButton from '../BrandButton.vue'
+import NavLinkContent from './NavLinkContent.vue'
 import {
   Sheet,
   SheetContent,
@@ -18,6 +17,8 @@ import {
   SheetTitle,
   SheetTrigger
 } from '../../ui/sheet/index.ts'
+import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const routes = getRoutes(locale)
@@ -79,40 +80,40 @@ onUnmounted(() => {
           </SheetDescription>
         </SheetHeader>
 
-        <a
-          :href="routes.home"
-          class="inline-block shrink-0"
-          aria-label="Comfy home"
-        >
-          <img src="/icons/logomark.svg" alt="Comfy" class="h-11 w-auto" />
-        </a>
+        <div>
+          <a
+            :href="routes.home"
+            class="focus-visible:border-primary-comfy-yellow focus-visible:ring-primary-comfy-yellow/50 inline-flex w-auto shrink-0 focus-visible:ring-3"
+          >
+            <img src="/icons/logomark.svg" alt="" class="h-11 w-auto" />
+            <span class="sr-only">{{ t('nav.home', locale) }}</span>
+          </a>
+        </div>
 
-        <div class="relative mt-8 flex-1 overflow-hidden">
+        <div class="relative mt-10 flex-1 overflow-hidden">
           <!-- Top-level nav -->
           <nav
-            class="absolute inset-0 overflow-y-auto"
+            :class="
+              cn(
+                'absolute inset-0 overflow-y-auto p-1',
+                activeItem ? 'opacity-0' : ''
+              )
+            "
             :aria-label="t('nav.menu', locale)"
             :inert="activeItem ? true : undefined"
           >
-            <ul class="flex flex-col">
+            <ul class="flex flex-col gap-y-8">
               <li v-for="item in mainNavigation" :key="item.label">
-                <button
-                  v-if="item.columns"
-                  type="button"
-                  class="text-primary-warm-gray hover:text-primary-warm-white flex w-full cursor-pointer items-center justify-between py-4 text-2xl font-medium tracking-wider uppercase"
-                  @click="activeSection = item.label"
+                <Button
+                  :as="item.columns ? 'button' : 'a'"
+                  variant="navMuted"
+                  :type="item.columns ? 'button' : undefined"
+                  :href="item.columns ? undefined : item.href"
+                  @click="item.columns && (activeSection = item.label)"
                 >
                   {{ item.label }}
-                  <ChevronRight class="size-5" />
-                </button>
-                <a
-                  v-else
-                  :href="item.href"
-                  class="text-primary-warm-gray hover:text-primary-warm-white flex items-center justify-between py-4 text-2xl font-medium tracking-wider uppercase"
-                >
-                  {{ item.label }}
-                  <ChevronRight class="size-5" />
-                </a>
+                  <ChevronRight class="size-7" />
+                </Button>
               </li>
             </ul>
           </nav>
@@ -128,59 +129,49 @@ onUnmounted(() => {
             :inert="activeItem ? undefined : true"
             :aria-hidden="!activeItem"
           >
-            <button
-              type="button"
-              class="text-primary-comfy-yellow flex cursor-pointer items-center gap-2 py-2 text-sm font-bold tracking-wider uppercase"
-              @click="activeSection = null"
-            >
-              <ChevronLeft class="size-4" />
+            <Button type="button" variant="link" @click="activeSection = null">
+              <ChevronLeft />
               {{ t('nav.back', locale) }}
-            </button>
+            </Button>
 
-            <div v-if="activeItem" class="mt-6 flex flex-col gap-8">
+            <div v-if="activeItem" class="mt-6 flex flex-col gap-y-12">
               <div
                 v-for="column in activeItem.columns"
                 :key="column.header"
-                class="flex flex-col gap-3"
+                class="flex flex-col gap-y-3"
               >
                 <p
-                  class="text-primary-warm-gray text-xs font-bold tracking-wider uppercase"
+                  class="text-primary-warm-gray text-base font-bold tracking-wider uppercase"
                 >
                   {{ column.header }}
                 </p>
-                <a
+                <Button
                   v-for="link in column.items"
                   :key="link.label"
                   :href="link.href"
+                  variant="nav"
+                  as="a"
                   :target="link.external ? '_blank' : undefined"
                   :rel="link.external ? 'noopener noreferrer' : undefined"
-                  class="text-primary-warm-white hover:text-primary-comfy-yellow flex items-center gap-2 text-2xl font-medium"
                 >
-                  {{ link.label }}
-                  <Badge v-if="link.badge" size="xs" variant="accent">
-                    {{ t('nav.badgeNew', locale) }}
-                  </Badge>
-                  <ArrowUpRight
-                    v-if="link.external"
-                    class="text-primary-comfy-yellow size-4"
-                  />
-                </a>
+                  <NavLinkContent :item="link" :locale="locale" />
+                </Button>
               </div>
             </div>
           </div>
         </div>
 
         <SheetFooter class="gap-3 p-0 pt-6">
-          <BrandButton
+          <Button
             v-for="cta in ctaButtons"
             :key="cta.href"
             :href="cta.href"
-            :variant="cta.primary ? 'solid' : 'outline'"
-            size="nav"
-            class="w-full justify-center text-base"
+            :variant="cta.primary ? 'default' : 'outline'"
+            size="lg"
+            class="w-full"
           >
             {{ cta.label }}
-          </BrandButton>
+          </Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
