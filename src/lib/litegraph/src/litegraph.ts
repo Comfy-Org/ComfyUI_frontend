@@ -129,16 +129,11 @@ export {
   isSubgraphOutputNodeId,
   isUnassignedNodeId,
   nodeIdToNumber,
-  serialiseLinkEndpointNodeId,
   SUBGRAPH_INPUT_NODE_ID,
   SUBGRAPH_OUTPUT_NODE_ID,
   UNASSIGNED_NODE_ID
 } from '@/types/nodeId'
-export type {
-  LinkEndpointNodeId,
-  NodeIdInput,
-  SerialisedLinkEndpointNodeId
-} from '@/types/nodeId'
+export type { LinkEndpointNodeId, NodeIdInput } from '@/types/nodeId'
 export { LLink } from './LLink'
 export { createBounds } from './measure'
 export { Reroute, type RerouteId } from './Reroute'

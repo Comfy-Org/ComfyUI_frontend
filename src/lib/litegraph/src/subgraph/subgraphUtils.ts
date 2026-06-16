@@ -7,10 +7,11 @@ import type { ResolvedConnection } from '@/lib/litegraph/src/LLink'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
-import { isSubgraphInputNodeId, isSubgraphOutputNodeId } from '@/types/nodeId'
+  SUBGRAPH_INPUT_NODE_ID,
+  SUBGRAPH_OUTPUT_NODE_ID,
+  isSubgraphInputNodeId,
+  isSubgraphOutputNodeId
+} from '@/types/nodeId'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
@@ -302,7 +303,7 @@ export function mapSubgraphInputsAndLinks(
 
       const linkData = link.asSerialisable()
       link.parentId = mapReroutes(link, reroutes)
-      linkData.origin_id = SUBGRAPH_INPUT_ID
+      linkData.origin_id = SUBGRAPH_INPUT_NODE_ID
       linkData.origin_slot = inputs.length
 
       links.push(linkData)
@@ -382,7 +383,7 @@ export function mapSubgraphOutputsAndLinks(
 
       const linkData = link.asSerialisable()
       linkData.parentId = mapReroutes(link, reroutes)
-      linkData.target_id = SUBGRAPH_OUTPUT_ID
+      linkData.target_id = SUBGRAPH_OUTPUT_NODE_ID
       linkData.target_slot = outputs.length
 
       links.push(linkData)

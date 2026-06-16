@@ -25,8 +25,8 @@ function makeSubgraph(id: string, nodeTypes: string[] = []): ExportedSubgraph {
       outputs: [],
       properties: {}
     })),
-    inputNode: { id: -10, bounding: [0, 0, 100, 100] },
-    outputNode: { id: -20, bounding: [0, 0, 100, 100] }
+    inputNode: { id: asNodeId(-10), bounding: [0, 0, 100, 100] },
+    outputNode: { id: asNodeId(-20), bounding: [0, 0, 100, 100] }
   } as ExportedSubgraph
 }
 

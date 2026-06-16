@@ -1,4 +1,4 @@
-import type { LinkEndpointNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type {
@@ -40,7 +40,7 @@ export abstract class SubgraphIONodeBase<
 
   private readonly _boundingRect: Rectangle = new Rectangle()
 
-  abstract readonly id: LinkEndpointNodeId
+  abstract readonly id: NodeId
 
   get boundingRect(): Rectangle {
     return this._boundingRect

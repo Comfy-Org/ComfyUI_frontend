@@ -9,23 +9,12 @@ export type NodeId = string & { readonly __brand: 'NodeId' }
 export type NodeIdInput = string | number
 
 /**
- * A `NodeId` or a numeric link-endpoint sentinel (floating links `-1`, subgraph
- * input `-10`, subgraph output `-20`) as found in serialized/wire data. Internal
- * runtime link endpoints are branded `NodeId`; numeric sentinels only appear at
- * the (de)serialization boundary.
- */
-export type SerialisedLinkEndpointNodeId =
-  | NodeId
-  | -1
-  | typeof SUBGRAPH_INPUT_ID
-  | typeof SUBGRAPH_OUTPUT_ID
-
-/**
- * @deprecated Use `NodeId` for runtime link endpoints and
- * `SerialisedLinkEndpointNodeId` at wire boundaries. Retained as a compatibility
+ * @deprecated Use `NodeId`. Link endpoints are branded `NodeId` strings both at
+ * runtime and on the wire; numeric sentinels are only tolerated as legacy input
+ * via `asNodeId` and the tolerant predicates below. Retained as a compatibility
  * alias for external consumers.
  */
-export type LinkEndpointNodeId = SerialisedLinkEndpointNodeId
+export type LinkEndpointNodeId = NodeId
 
 export function asNodeId(value: NodeIdInput): NodeId {
   return String(value) as NodeId
@@ -67,16 +56,6 @@ export function isSubgraphOutputNodeId(
   id: NodeIdInput | null | undefined
 ): boolean {
   return id === SUBGRAPH_OUTPUT_ID || id === SUBGRAPH_OUTPUT_NODE_ID
-}
-
-/** Down-convert branded endpoint sentinels to numeric wire values. */
-export function serialiseLinkEndpointNodeId(
-  id: NodeId
-): SerialisedLinkEndpointNodeId {
-  if (id === FLOATING_LINK_NODE_ID) return -1
-  if (id === SUBGRAPH_INPUT_NODE_ID) return SUBGRAPH_INPUT_ID
-  if (id === SUBGRAPH_OUTPUT_NODE_ID) return SUBGRAPH_OUTPUT_ID
-  return id
 }
 
 /** Counter-managed numeric id. UUIDs and composite ids (`"10:3"`) are false. */

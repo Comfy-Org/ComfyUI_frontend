@@ -52,10 +52,10 @@ describe('LLink', () => {
       expect(link.targetIsIoNode).toBe(true)
     })
 
-    test('serializes sentinels back to numeric wire values', () => {
+    test('serializes sentinels as branded string ids', () => {
       const floating = new LLink(1, 'float', -1, -1, asNodeId(5), 3)
-      expect(floating.asSerialisable().origin_id).toBe(-1)
-      expect(floating.serialize()[1]).toBe(-1)
+      expect(floating.asSerialisable().origin_id).toBe(FLOATING_LINK_NODE_ID)
+      expect(floating.serialize()[1]).toBe(FLOATING_LINK_NODE_ID)
 
       const io = new LLink(
         2,
@@ -66,8 +66,8 @@ describe('LLink', () => {
         0
       )
       const serialised = io.asSerialisable()
-      expect(serialised.origin_id).toBe(SUBGRAPH_INPUT_ID)
-      expect(serialised.target_id).toBe(SUBGRAPH_OUTPUT_ID)
+      expect(serialised.origin_id).toBe(SUBGRAPH_INPUT_NODE_ID)
+      expect(serialised.target_id).toBe(SUBGRAPH_OUTPUT_NODE_ID)
     })
 
     test('serializes real node ids as branded strings (round-trips)', () => {

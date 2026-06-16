@@ -287,11 +287,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       inputs: [{ id: 'input-id', name: 'modern_input', type: 'number' }],
       outputs: [{ id: 'output-id', name: 'modern_output', type: 'string' }],
       inputNode: {
-        id: -10,
+        id: asNodeId(-10),
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: asNodeId(-20),
         bounding: [300, 0, 120, 60]
       },
       widgets: []
@@ -317,11 +317,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       config: {},
       definitions: { subgraphs: [] },
       inputNode: {
-        id: -10,
+        id: asNodeId(-10),
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: asNodeId(-20),
         bounding: [300, 0, 120, 60]
       }
       // Missing optional: inputs, outputs, widgets
@@ -350,11 +350,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       inputs: [],
       outputs: [],
       inputNode: {
-        id: -10,
+        id: asNodeId(-10),
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: asNodeId(-20),
         bounding: [300, 0, 120, 60]
       },
       widgets: [],

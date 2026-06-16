@@ -1,9 +1,5 @@
 import { toString } from 'es-toolkit/compat'
 
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
@@ -1762,11 +1758,11 @@ export class LGraph
       id: createUuidv4(),
       name: 'New Subgraph',
       inputNode: {
-        id: SUBGRAPH_INPUT_ID,
+        id: SUBGRAPH_INPUT_NODE_ID,
         bounding: [0, 0, 75, 100]
       },
       outputNode: {
-        id: SUBGRAPH_OUTPUT_ID,
+        id: SUBGRAPH_OUTPUT_NODE_ID,
         bounding: [0, 0, 75, 100]
       },
       inputs,

@@ -4,14 +4,13 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { LGraphNode, NodeId } from './LGraphNode'
-import type { NodeIdInput, SerialisedLinkEndpointNodeId } from '@/types/nodeId'
+import type { NodeIdInput } from '@/types/nodeId'
 import {
   FLOATING_LINK_NODE_ID,
   asNodeId,
   isFloatingNodeId,
   isSubgraphInputNodeId,
-  isSubgraphOutputNodeId,
-  serialiseLinkEndpointNodeId
+  isSubgraphOutputNodeId
 } from '@/types/nodeId'
 import type { Reroute, RerouteId } from './Reroute'
 import type {
@@ -32,9 +31,9 @@ export type LinkId = number
 
 export type SerialisedLLinkArray = [
   id: LinkId,
-  origin_id: SerialisedLinkEndpointNodeId,
+  origin_id: NodeId,
   origin_slot: number,
-  target_id: SerialisedLinkEndpointNodeId,
+  target_id: NodeId,
   target_slot: number,
   type: ISlotType
 ]
@@ -402,10 +401,10 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     exported.parentId = parentId
 
     if (slotType === 'input') {
-      exported.origin_id = -1
+      exported.origin_id = FLOATING_LINK_NODE_ID
       exported.origin_slot = -1
     } else {
-      exported.target_id = -1
+      exported.target_id = FLOATING_LINK_NODE_ID
       exported.target_slot = -1
     }
 
@@ -471,9 +470,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   serialize(): SerialisedLLinkArray {
     return [
       this.id,
-      serialiseLinkEndpointNodeId(this.origin_id),
+      this.origin_id,
       this.origin_slot,
-      serialiseLinkEndpointNodeId(this.target_id),
+      this.target_id,
       this.target_slot,
       this.type
     ]
@@ -482,9 +481,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   asSerialisable(): SerialisableLLink {
     const copy: SerialisableLLink = {
       id: this.id,
-      origin_id: serialiseLinkEndpointNodeId(this.origin_id),
+      origin_id: this.origin_id,
       origin_slot: this.origin_slot,
-      target_id: serialiseLinkEndpointNodeId(this.target_id),
+      target_id: this.target_id,
       target_slot: this.target_slot,
       type: this.type
     }

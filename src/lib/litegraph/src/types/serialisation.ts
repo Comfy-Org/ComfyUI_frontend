@@ -8,7 +8,6 @@ import type {
 } from '../LGraph'
 import type { GroupId, IGraphGroupFlags } from '../LGraphGroup'
 import type { NodeId, NodeProperty } from '../LGraphNode'
-import type { SerialisedLinkEndpointNodeId } from '@/types/nodeId'
 import type { LinkId, SerialisedLLinkArray } from '../LLink'
 import type { FloatingRerouteSlot, RerouteId } from '../Reroute'
 import type {
@@ -212,11 +211,11 @@ export interface SerialisableLLink {
   /** Link ID */
   id: LinkId
   /** Output node ID */
-  origin_id: SerialisedLinkEndpointNodeId
+  origin_id: NodeId
   /** Output slot index */
   origin_slot: number
   /** Input node ID */
-  target_id: SerialisedLinkEndpointNodeId
+  target_id: NodeId
   /** Input slot index */
   target_slot: number
   /** Data type of the link */
@@ -226,7 +225,7 @@ export interface SerialisableLLink {
 }
 
 export interface ExportedSubgraphIONode {
-  id: SerialisedLinkEndpointNodeId
+  id: NodeId
   bounding: [number, number, number, number]
   pinned?: boolean
 }
