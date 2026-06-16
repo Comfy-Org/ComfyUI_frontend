@@ -38,9 +38,13 @@ const stubs = {
   DropdownMenuRoot: { template: '<div><slot /></div>' },
   DropdownMenuTrigger: { template: '<div><slot /></div>' },
   DropdownMenuPortal: { template: '<div><slot /></div>' },
-  DropdownMenuContent: { template: '<div><slot /></div>' },
+  DropdownMenuContent: { template: '<div role="menu"><slot /></div>' },
   DropdownMenuLabel: { template: '<div><slot /></div>' },
-  DropdownMenuItem: { template: '<div role="menuitem"><slot /></div>' },
+  DropdownMenuItem: {
+    emits: ['select'],
+    template:
+      '<div role="menuitem" tabindex="-1" @click="$emit(\'select\')"><slot /></div>'
+  },
   DropdownMenuSeparator: { template: '<hr data-testid="menu-separator" />' },
   LinkReleaseNodeSubmenu: { template: '<div data-testid="submenu" />' },
   MiddleTruncate: { template: '<span>{{ text }}</span>', props: ['text'] }
@@ -105,5 +109,72 @@ describe('LinkReleaseContextMenu group divider', () => {
     await userEvent.type(screen.getByRole('textbox'), 'na')
 
     expect(screen.getAllByTestId('menu-separator')).toHaveLength(2)
+  })
+})
+
+describe('LinkReleaseContextMenu selection', () => {
+  beforeEach(() => {
+    groups.suggestions = []
+    groups.categories = []
+    groups.searchResultGroups = []
+  })
+
+  function renderMenuWith(handlers: Record<string, unknown>) {
+    return render(LinkReleaseContextMenu, {
+      props: { context: null, ...handlers },
+      global: { plugins: [i18n, createTestingPinia()], stubs }
+    })
+  }
+
+  it('emits selectNode when a suggestion is chosen', async () => {
+    groups.suggestions = [suggestion('KSampler')]
+    const onSelectNode = vi.fn()
+    renderMenuWith({ onSelectNode })
+
+    await userEvent.click(screen.getByText('KSampler'))
+
+    expect(onSelectNode).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'KSampler' })
+    )
+  })
+
+  it('emits addReroute when the reroute item is chosen', async () => {
+    groups.suggestions = [suggestion('KSampler')]
+    const onAddReroute = vi.fn()
+    renderMenuWith({ onAddReroute })
+
+    await userEvent.click(screen.getByText('contextMenu.Add Reroute'))
+
+    expect(onAddReroute).toHaveBeenCalled()
+  })
+
+  it('selects the first search result on Enter in the search field', async () => {
+    groups.searchResultGroups = [
+      {
+        category: nodeCategory('comfy', 'contextMenu.Comfy Nodes'),
+        nodes: [suggestion('Found Node')]
+      }
+    ]
+    const onSelectNode = vi.fn()
+    renderMenuWith({ onSelectNode })
+
+    const search = screen.getByRole('textbox')
+    await userEvent.type(search, 'fo')
+    await userEvent.keyboard('{Enter}')
+
+    expect(onSelectNode).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Found Node' })
+    )
+  })
+
+  it('moves focus to the first item on ArrowDown from the search', async () => {
+    groups.suggestions = [suggestion('KSampler')]
+    renderMenu()
+
+    const search = screen.getByRole('textbox')
+    search.focus()
+    await userEvent.keyboard('{ArrowDown}')
+
+    expect(screen.getAllByRole('menuitem')[0]).toHaveFocus()
   })
 })

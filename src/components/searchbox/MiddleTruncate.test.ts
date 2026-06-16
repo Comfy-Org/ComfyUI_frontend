@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -146,5 +146,39 @@ describe('MiddleTruncate', () => {
     // Anchored to the item's right edge (1024 - 1000), independent of its padding.
     expect(tooltip).toHaveStyle({ right: '24px' })
     expect(tooltip).not.toHaveStyle({ left: '850px' })
+  })
+
+  it('hides the reveal when the pointer leaves the menu item', async () => {
+    vi.spyOn(overflow, 'measureTextWidth').mockReturnValue(500)
+    const nodeName = 'A long truncated node name'
+    render({
+      components: { MiddleTruncate },
+      template: `<div role="menuitem"><MiddleTruncate text="${nodeName}" /></div>`
+    })
+    const el = screen.getByText(nodeName)
+    stubRect(el, { left: 10, top: 20, width: 100, height: 20 })
+    await userEvent.hover(el)
+    expect(screen.getByRole('tooltip')).toBeInTheDocument()
+
+    await fireEvent.pointerLeave(el, { relatedTarget: null })
+    expect(screen.queryByRole('tooltip')).toBeNull()
+  })
+
+  it('keeps the reveal while the pointer moves within the menu item', async () => {
+    vi.spyOn(overflow, 'measureTextWidth').mockReturnValue(500)
+    const nodeName = 'A long truncated node name'
+    render({
+      components: { MiddleTruncate },
+      template: `<div role="menuitem"><MiddleTruncate text="${nodeName}" /><span data-testid="sibling">x</span></div>`
+    })
+    const el = screen.getByText(nodeName)
+    stubRect(el, { left: 10, top: 20, width: 100, height: 20 })
+    await userEvent.hover(el)
+    expect(screen.getByRole('tooltip')).toBeInTheDocument()
+
+    await fireEvent.pointerLeave(el, {
+      relatedTarget: screen.getByTestId('sibling')
+    })
+    expect(screen.getByRole('tooltip')).toBeInTheDocument()
   })
 })

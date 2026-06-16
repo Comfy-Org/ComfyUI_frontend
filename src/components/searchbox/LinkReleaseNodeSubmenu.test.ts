@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
 import { computed, h, inject, nextTick, provide } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -44,7 +44,9 @@ const stubs = {
     }
   },
   DropdownMenuSeparator: { template: '<hr />' },
-  DropdownMenuItem: { template: '<div role="menuitem"><slot /></div>' },
+  DropdownMenuItem: {
+    template: '<div role="menuitem" tabindex="-1"><slot /></div>'
+  },
   MiddleTruncate: { template: '<span>{{ text }}</span>', props: ['text'] }
 }
 
@@ -81,5 +83,44 @@ describe('LinkReleaseNodeSubmenu keyboard handling', () => {
     await nextTick()
 
     expect(screen.getByRole('textbox')).not.toHaveFocus()
+  })
+
+  async function stepIntoSearch() {
+    await userEvent.click(screen.getByTestId('sub-trigger'))
+    await userEvent.keyboard('{ArrowRight}')
+    await nextTick()
+  }
+
+  it('selects the first filtered node on Enter in the search', async () => {
+    const onSelect = vi.fn()
+    render(LinkReleaseNodeSubmenu, {
+      props: { category, itemClass: '', contentClass: '', scrollClass: '', onSelect },
+      global: { plugins: [i18n], stubs }
+    })
+    await stepIntoSearch()
+    expect(screen.getByRole('textbox')).toHaveFocus()
+
+    await userEvent.keyboard('{Enter}')
+    expect(onSelect).toHaveBeenCalledWith(category.nodes[0])
+  })
+
+  it('does not select on Escape in the search', async () => {
+    const onSelect = vi.fn()
+    render(LinkReleaseNodeSubmenu, {
+      props: { category, itemClass: '', contentClass: '', scrollClass: '', onSelect },
+      global: { plugins: [i18n], stubs }
+    })
+    await stepIntoSearch()
+
+    await userEvent.keyboard('{Escape}')
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  it('moves focus to the first node on ArrowDown from the search', async () => {
+    renderSubmenu()
+    await stepIntoSearch()
+
+    await userEvent.keyboard('{ArrowDown}')
+    expect(screen.getByRole('menuitem')).toHaveFocus()
   })
 })
