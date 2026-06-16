@@ -8,14 +8,14 @@
       v-if="!hideButtons"
       :aria-label="t('g.decrement')"
       data-testid="decrement"
-      class="h-full w-6 rounded-none p-0 hover:bg-component-node-widget-background-hovered disabled:opacity-30"
+      class="aspect-square h-full rounded-none p-0 hover:bg-component-node-widget-background-hovered disabled:opacity-30"
       variant="muted-textonly"
       size="unset"
       :disabled="!canDecrement"
       tabindex="-1"
       @click="modelValue = clamp(modelValue - step)"
     >
-      <i class="icon-[lucide--minus] size-4" />
+      <i class="icon-[lucide--minus]" />
     </Button>
     <div class="relative my-0.25 min-w-[4ch] flex-1 py-1.5">
       <input
@@ -55,14 +55,14 @@
       v-if="!hideButtons"
       :aria-label="t('g.increment')"
       data-testid="increment"
-      class="h-full w-6 rounded-none p-0 hover:bg-component-node-widget-background-hovered disabled:opacity-30"
+      class="aspect-square h-full rounded-none p-0 hover:bg-component-node-widget-background-hovered disabled:opacity-30"
       variant="muted-textonly"
       size="unset"
       :disabled="!canIncrement"
       tabindex="-1"
       @click="modelValue = clamp(modelValue + step)"
     >
-      <i class="icon-[lucide--plus] size-4" />
+      <i class="icon-[lucide--plus]" />
     </Button>
   </div>
 </template>
