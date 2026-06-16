@@ -1445,6 +1445,9 @@ export class GroupNodeHandler {
           ;(
             this.node as LGraphNode & { runningInternalNodeId?: number }
           ).runningInternalNodeId = innerNodeIndex
+          // The payload here is an EventDetail, not a NodeId; the cast hides a
+          // real type mismatch in the event contract. GroupNodes are slated for
+          // removal very soon, so it's not worth fixing properly.
           api.dispatchCustomEvent(
             type as 'executing',
             getEvent(detail, `${this.node.id}`, this.node) as unknown as NodeId
