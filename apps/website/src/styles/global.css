@@ -1,4 +1,3 @@
-
 @import 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
 
 @import 'tailwindcss';
@@ -9,16 +8,17 @@
 
 /* PP Formula's native vertical metrics place the baseline too high, so caps
    sit in the upper half of the line box. Overriding ascent/descent re-anchors
-   the baseline so caps render optically centered when line-height is tight. */
+   the baseline so caps render optically centered when line-height is tight. 
+    BUT, IT IS NOT WELL SUPPORTED:
+    ascent-override: 92%;
+    descent-override: 8%;
+    line-gap-override: 0%; */
 @font-face {
   font-family: 'PP Formula';
   src: url('/fonts/PPFormula-Light.woff2') format('woff2');
   font-weight: 300;
   font-style: normal;
   font-display: swap;
-  ascent-override: 92%;
-  descent-override: 8%;
-  line-gap-override: 0%;
 }
 
 @font-face {
@@ -27,9 +27,6 @@
   font-weight: 400;
   font-style: normal;
   font-display: swap;
-  ascent-override: 92%;
-  descent-override: 8%;
-  line-gap-override: 0%;
 }
 
 @font-face {
@@ -38,9 +35,6 @@
   font-weight: 500;
   font-style: normal;
   font-display: swap;
-  ascent-override: 92%;
-  descent-override: 8%;
-  line-gap-override: 0%;
 }
 
 @font-face {
@@ -49,9 +43,6 @@
   font-weight: 600;
   font-style: normal;
   font-display: swap;
-  ascent-override: 92%;
-  descent-override: 8%;
-  line-gap-override: 0%;
 }
 
 @font-face {
@@ -60,9 +51,6 @@
   font-weight: 700;
   font-style: normal;
   font-display: swap;
-  ascent-override: 92%;
-  descent-override: 8%;
-  line-gap-override: 0%;
 }
 
 @font-face {
@@ -71,9 +59,6 @@
   font-weight: 600;
   font-style: normal;
   font-display: swap;
-  ascent-override: 92%;
-  descent-override: 8%;
-  line-gap-override: 0%;
 }
 
 @theme {

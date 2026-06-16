@@ -48,7 +48,7 @@ const nextHref = `${localePrefix}/demos/${nextSlug}`
             <span class="text-lg font-bold">›</span>
           </span>
           <span
-            class="text-sm font-semibold tracking-wider text-primary-comfy-canvas uppercase"
+            class="ppformula-text-center text-sm font-semibold tracking-wider text-primary-comfy-canvas uppercase"
           >
             {{ t('demos.nav.viewDemo' as TranslationKey, locale) }}
           </span>
