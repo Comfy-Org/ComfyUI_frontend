@@ -4,7 +4,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { LayoutSource } from '@/renderer/core/layout/types'
 
 import type { LGraphNode, NodeId } from './LGraphNode'
-import type { SerialisedLinkEndpointNodeId } from '@/types/nodeId'
+import type { NodeIdInput, SerialisedLinkEndpointNodeId } from '@/types/nodeId'
 import {
   FLOATING_LINK_NODE_ID,
   asNodeId,
@@ -159,9 +159,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   constructor(
     id: LinkId,
     type: ISlotType,
-    origin_id: SerialisedLinkEndpointNodeId,
+    origin_id: NodeIdInput,
     origin_slot: number,
-    target_id: SerialisedLinkEndpointNodeId,
+    target_id: NodeIdInput,
     target_slot: number,
     parentId?: RerouteId
   ) {

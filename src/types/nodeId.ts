@@ -8,19 +8,24 @@ export type NodeId = string & { readonly __brand: 'NodeId' }
 /** Raw value at boundaries/legacy load points; normalise with `asNodeId`. */
 export type NodeIdInput = string | number
 
-/** A `NodeId` or a numeric sentinel (floating links `-1`, subgraph IO nodes). */
-export type LinkEndpointNodeId =
-  | NodeId
-  | -1
-  | typeof SUBGRAPH_INPUT_ID
-  | typeof SUBGRAPH_OUTPUT_ID
-
-/** Numeric link-endpoint sentinels preserved on serialization for wire compat. */
+/**
+ * A `NodeId` or a numeric link-endpoint sentinel (floating links `-1`, subgraph
+ * input `-10`, subgraph output `-20`) as found in serialized/wire data. Internal
+ * runtime link endpoints are branded `NodeId`; numeric sentinels only appear at
+ * the (de)serialization boundary.
+ */
 export type SerialisedLinkEndpointNodeId =
   | NodeId
   | -1
   | typeof SUBGRAPH_INPUT_ID
   | typeof SUBGRAPH_OUTPUT_ID
+
+/**
+ * @deprecated Use `NodeId` for runtime link endpoints and
+ * `SerialisedLinkEndpointNodeId` at wire boundaries. Retained as a compatibility
+ * alias for external consumers.
+ */
+export type LinkEndpointNodeId = SerialisedLinkEndpointNodeId
 
 export function asNodeId(value: NodeIdInput): NodeId {
   return String(value) as NodeId
