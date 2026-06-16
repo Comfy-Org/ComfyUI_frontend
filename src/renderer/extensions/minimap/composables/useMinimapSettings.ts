@@ -25,7 +25,7 @@ export function useMinimapSettings() {
     settingStore.get('Comfy.Minimap.RenderErrorState')
   )
 
-  const width = 253
+  const width = 254
   const height = 200
 
   // Theme-aware colors

@@ -11,6 +11,18 @@ import { MinimapDataSourceFactory } from '@/renderer/extensions/minimap/data/Min
 
 import type { MinimapBounds, MinimapCanvas, ViewportTransform } from '../types'
 
+const VIEWPORT_MIN_VISIBLE = 4
+
+function clampViewportSpan(
+  start: number,
+  size: number,
+  max: number
+): [number, number] {
+  const lo = Math.max(0, Math.min(start, max - VIEWPORT_MIN_VISIBLE))
+  const hi = Math.min(max, Math.max(start + size, VIEWPORT_MIN_VISIBLE))
+  return [lo, Math.max(VIEWPORT_MIN_VISIBLE, hi - lo)]
+}
+
 export function useMinimapViewport(
   canvas: Ref<MinimapCanvas | null>,
   graph: Ref<LGraph | null>,
@@ -90,10 +102,13 @@ export function useMinimapViewport(
     const centerOffsetX = (width - bounds.value.width * scale.value) / 2
     const centerOffsetY = (height - bounds.value.height * scale.value) / 2
 
-    const x = (worldX - bounds.value.minX) * scale.value + centerOffsetX
-    const y = (worldY - bounds.value.minY) * scale.value + centerOffsetY
-    const w = viewportWidth * scale.value
-    const h = viewportHeight * scale.value
+    const rawX = (worldX - bounds.value.minX) * scale.value + centerOffsetX
+    const rawY = (worldY - bounds.value.minY) * scale.value + centerOffsetY
+    const rawW = viewportWidth * scale.value
+    const rawH = viewportHeight * scale.value
+
+    const [x, w] = clampViewportSpan(rawX, rawW, width)
+    const [y, h] = clampViewportSpan(rawY, rawH, height)
 
     const curr = viewportTransform.value
     if (curr.x === x && curr.y === y && curr.width === w && curr.height === h)

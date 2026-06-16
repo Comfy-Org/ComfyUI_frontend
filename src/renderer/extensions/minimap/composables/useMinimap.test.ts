@@ -332,8 +332,8 @@ describe('useMinimap', () => {
 
       const minimap = useMinimap()
 
-      expect(minimap.width).toBe(250)
-      expect(minimap.height).toBe(200)
+      expect(minimap.width).toBe(252)
+      expect(minimap.height).toBe(165)
       expect(minimap.visible.value).toBe(true)
       expect(minimap.initialized.value).toBe(false)
 
@@ -920,7 +920,7 @@ describe('useMinimap', () => {
       const minimap = useMinimap()
       const styles = minimap.containerStyles.value
 
-      expect(styles.width).toBe('253px')
+      expect(styles.width).toBe('254px')
       expect(styles.height).toBe('200px')
       expect(styles.border).toBe('1px solid var(--interface-stroke)')
       expect(styles.borderRadius).toBe('8px')

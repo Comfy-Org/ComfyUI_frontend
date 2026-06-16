@@ -22,62 +22,59 @@
     />
 
     <div
-      ref="containerRef"
-      class="litegraph-minimap relative border border-interface-stroke bg-comfy-menu-bg shadow-interface"
-      data-testid="minimap-container"
-      :style="containerStyles"
+      class="flex flex-col overflow-hidden rounded-lg border border-interface-stroke bg-comfy-menu-bg shadow-interface"
+      :style="{ width: containerStyles.width, height: containerStyles.height }"
     >
-      <Button
-        class="absolute top-0 left-0 z-10"
-        size="icon"
-        variant="muted-textonly"
-        :aria-label="$t('g.settings')"
-        @click.stop="toggleOptionsPanel"
-      >
-        <i class="icon-[lucide--settings-2]" />
-      </Button>
-      <Button
-        class="absolute top-0 right-0 z-10"
-        size="icon"
-        variant="muted-textonly"
-        :aria-label="$t('g.close')"
-        data-testid="close-minimap-button"
-        @click.stop="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
-      >
-        <i class="icon-[lucide--x]" />
-      </Button>
-
-      <hr
-        class="absolute top-6 h-px border-0 bg-node-component-border"
-        :style="{
-          width: containerStyles.width
-        }"
-      />
-
-      <canvas
-        ref="canvasRef"
-        :width="width"
-        :height="height"
-        class="minimap-canvas"
-        data-testid="minimap-canvas"
-      />
+      <div class="flex shrink-0 items-center justify-between">
+        <Button
+          size="icon"
+          variant="muted-textonly"
+          :aria-label="$t('g.settings')"
+          @click.stop="toggleOptionsPanel"
+        >
+          <i class="icon-[lucide--settings-2]" />
+        </Button>
+        <Button
+          size="icon"
+          variant="muted-textonly"
+          :aria-label="$t('g.close')"
+          data-testid="close-minimap-button"
+          @click.stop="() => commandStore.execute('Comfy.Canvas.ToggleMinimap')"
+        >
+          <i class="icon-[lucide--x]" />
+        </Button>
+      </div>
 
       <div
-        class="minimap-viewport"
-        :style="viewportStyles"
-        data-testid="minimap-viewport"
-      />
+        ref="containerRef"
+        class="litegraph-minimap relative min-h-0 flex-1 overflow-hidden rounded-t-lg border-t border-node-component-border"
+        data-testid="minimap-container"
+      >
+        <canvas
+          ref="canvasRef"
+          :width="width"
+          :height="height"
+          class="minimap-canvas"
+          data-testid="minimap-canvas"
+        />
 
-      <div
-        class="absolute inset-0 touch-none"
-        data-testid="minimap-interaction-overlay"
-        @pointerdown="handlePointerDown"
-        @pointermove="handlePointerMove"
-        @pointerup="handlePointerUp"
-        @pointerleave="handlePointerUp"
-        @pointercancel="handlePointerCancel"
-        @wheel="handleWheel"
-      />
+        <div
+          class="minimap-viewport rounded-lg"
+          :style="viewportStyles"
+          data-testid="minimap-viewport"
+        />
+
+        <div
+          class="absolute inset-0 touch-none"
+          data-testid="minimap-interaction-overlay"
+          @pointerdown="handlePointerDown"
+          @pointermove="handlePointerMove"
+          @pointerup="handlePointerUp"
+          @pointerleave="handlePointerUp"
+          @pointercancel="handlePointerCancel"
+          @wheel="handleWheel"
+        />
+      </div>
     </div>
   </div>
 </template>
@@ -144,10 +141,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-.litegraph-minimap {
-  overflow: hidden;
-}
-
 .minimap-canvas {
   display: block;
   width: 100%;

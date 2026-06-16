@@ -33,8 +33,8 @@ export function useMinimap({
   const visible = ref(true)
   const initialized = ref(false)
 
-  const width = 250
-  const height = 200
+  const width = 252
+  const height = 165
 
   const canvas = computed(() => canvasStore.canvas as MinimapCanvas | null)
   const graph = computed(() => {
@@ -232,9 +232,6 @@ export function useMinimap({
       height: `${transform.height}px`,
       border: `2px solid ${settings.isLightTheme.value ? '#E0E0E0' : '#FFF'}`,
       backgroundColor: `rgba(255, 255, 255, 0.2)`,
-      willChange: 'transform',
-      backfaceVisibility: 'hidden' as const,
-      perspective: '1000px',
       pointerEvents: 'none' as const
     }
   })

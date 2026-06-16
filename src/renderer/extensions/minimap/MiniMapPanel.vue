@@ -3,7 +3,7 @@
     :class="
       cn(
         'minimap-panel flex flex-col gap-2 bg-comfy-menu-bg p-3 text-sm shadow-interface',
-        isMobile ? 'mb-2' : 'mr-2'
+        isMobile ? 'mb-1' : 'mr-1'
       )
     "
     :style="panelStyles"
