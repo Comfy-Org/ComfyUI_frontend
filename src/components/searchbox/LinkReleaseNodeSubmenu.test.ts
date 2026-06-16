@@ -94,7 +94,13 @@ describe('LinkReleaseNodeSubmenu keyboard handling', () => {
   it('selects the first filtered node on Enter in the search', async () => {
     const onSelect = vi.fn()
     render(LinkReleaseNodeSubmenu, {
-      props: { category, itemClass: '', contentClass: '', scrollClass: '', onSelect },
+      props: {
+        category,
+        itemClass: '',
+        contentClass: '',
+        scrollClass: '',
+        onSelect
+      },
       global: { plugins: [i18n], stubs }
     })
     await stepIntoSearch()
@@ -107,7 +113,13 @@ describe('LinkReleaseNodeSubmenu keyboard handling', () => {
   it('does not select on Escape in the search', async () => {
     const onSelect = vi.fn()
     render(LinkReleaseNodeSubmenu, {
-      props: { category, itemClass: '', contentClass: '', scrollClass: '', onSelect },
+      props: {
+        category,
+        itemClass: '',
+        contentClass: '',
+        scrollClass: '',
+        onSelect
+      },
       global: { plugins: [i18n], stubs }
     })
     await stepIntoSearch()
