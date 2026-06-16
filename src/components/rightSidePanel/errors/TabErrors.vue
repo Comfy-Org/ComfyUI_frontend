@@ -94,9 +94,10 @@
                   showMissingModelHeaderRefresh
                 "
                 data-testid="missing-model-header-refresh"
-                variant="secondary"
-                size="sm"
-                class="mr-2 h-8 shrink-0 rounded-lg text-sm"
+                variant="muted-textonly"
+                size="icon"
+                class="mr-2 shrink-0 rounded-lg hover:bg-transparent hover:text-base-foreground"
+                :aria-label="t('rightSidePanel.missingModels.refresh')"
                 :aria-busy="missingModelStore.isRefreshingMissingModels"
                 :aria-disabled="missingModelStore.isRefreshingMissingModels"
                 @click.stop="handleMissingModelRefresh"
@@ -112,7 +113,6 @@
                   aria-hidden="true"
                   class="icon-[lucide--refresh-cw] size-4 shrink-0"
                 />
-                {{ t('rightSidePanel.missingModels.refresh') }}
               </Button>
               <span
                 v-if="
@@ -148,7 +148,6 @@
           <MissingNodeCard
             v-if="group.type === 'missing_node'"
             :show-info-button="shouldShowManagerButtons"
-            :show-node-id-badge="showNodeIdBadge"
             :missing-pack-groups="missingPackGroups"
             @locate-node="handleLocateMissingNode"
             @open-manager-info="handleOpenManagerInfo"
@@ -158,7 +157,6 @@
           <SwapNodesCard
             v-if="group.type === 'swap_nodes'"
             :swap-node-groups="swapNodeGroups"
-            :show-node-id-badge="showNodeIdBadge"
             @locate-node="handleLocateMissingNode"
             @replace="handleReplaceGroup"
           />
@@ -248,7 +246,6 @@
           <MissingModelCard
             v-if="group.type === 'missing_model'"
             :missing-model-groups="missingModelGroups"
-            :show-node-id-badge="showNodeIdBadge"
             @locate-model="handleLocateAssetNode"
           />
 
@@ -303,11 +300,9 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-import { NodeBadgeMode } from '@/types/nodeSource'
 
 import PropertiesAccordionItem from '../layout/PropertiesAccordionItem.vue'
 import CollapseToggleButton from '../layout/CollapseToggleButton.vue'
@@ -321,7 +316,6 @@ import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCar
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
-import { getDownloadableModels } from '@/platform/missingModel/missingModelViewUtils'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
@@ -349,7 +343,6 @@ const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
 const { focusNode, enterSubgraph } = useFocusNode()
 const { openGitHubIssues, contactSupport } = useErrorActions()
-const settingStore = useSettingStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const missingModelStore = useMissingModelStore()
 const { shouldShowManagerButtons, shouldShowInstallButton, openManager } =
@@ -372,12 +365,6 @@ const fullSizeGroupTypes = new Set([
 function getGroupSize(group: ErrorGroup) {
   return fullSizeGroupTypes.has(group.type) ? 'lg' : 'default'
 }
-
-const showNodeIdBadge = computed(
-  () =>
-    (settingStore.get('Comfy.NodeBadge.NodeIdBadgeMode') as NodeBadgeMode) !==
-    NodeBadgeMode.None
-)
 
 function isExecutionItemListGroup(group: ErrorGroup) {
   return (
@@ -465,20 +452,13 @@ const {
   swapNodeGroups
 } = useErrorGroups(searchQuery)
 
-const missingModelDownloadableModels = computed(() => {
-  if (isCloud) return []
-
-  return getDownloadableModels(missingModelGroups.value)
-})
-
 const showMissingModelHeaderRefresh = computed(
-  () =>
-    !isCloud &&
-    missingModelGroups.value.length > 0 &&
-    missingModelDownloadableModels.value.length === 0
+  () => !isCloud && missingModelGroups.value.length > 0
 )
 
 function handleMissingModelRefresh() {
+  if (missingModelStore.isRefreshingMissingModels) return
+
   void missingModelStore.refreshMissingModels()
 }
 

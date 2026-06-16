@@ -530,14 +530,16 @@ describe('TabErrors.vue', () => {
     expect(
       screen.getByText('Some nodes can be replaced with alternatives')
     ).toBeInTheDocument()
-    expect(screen.getByText('OldSampler (1)')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'OldSampler' })
+    ).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: /Replace Node/ })
     ).toBeInTheDocument()
   })
 
-  it('keeps missing model Refresh in the card actions when models are downloadable', () => {
+  it('renders missing model Refresh in the header and Download all in the card when models are downloadable', () => {
     const missingModel = {
       nodeId: '1',
       nodeType: 'CheckpointLoaderSimple',
@@ -555,11 +557,8 @@ describe('TabErrors.vue', () => {
       }
     })
 
-    expect(
-      screen.queryByTestId('missing-model-header-refresh')
-    ).not.toBeInTheDocument()
+    expect(screen.getByTestId('missing-model-header-refresh')).toBeVisible()
     expect(screen.getByTestId('missing-model-actions')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
-    expect(screen.getByRole('button', { name: 'Refresh' })).toBeVisible()
   })
 })

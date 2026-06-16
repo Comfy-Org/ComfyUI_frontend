@@ -68,6 +68,7 @@ import DesktopCloudNotificationController from '@/platform/cloud/notification/co
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -128,9 +129,9 @@ watch(
   (newTheme) => {
     const DARK_THEME_CLASS = 'dark-theme'
     if (newTheme.light_theme) {
-      document.body.classList.remove(DARK_THEME_CLASS)
+      document.documentElement.classList.remove(DARK_THEME_CLASS)
     } else {
-      document.body.classList.add(DARK_THEME_CLASS)
+      document.documentElement.classList.add(DARK_THEME_CLASS)
     }
     if (isDesktop) {
       electronAPI().changeTheme({
@@ -349,6 +350,11 @@ const onGraphReady = () => {
 
       // Send initial heartbeat
       tabCountChannel.postMessage({ type: 'heartbeat', tabId: currentTabId })
+    }
+
+    // Shell layout snapshot, once per session (cloud only)
+    if (isCloud && telemetry) {
+      telemetry.trackShellLayout(getShellLayoutSnapshot())
     }
 
     // Setting values now available after comfyApp.setup.

@@ -31,6 +31,11 @@ export interface PaginationOptions {
 }
 
 interface AssetPaginationOptions extends PaginationOptions {
+  /**
+   * Opaque keyset cursor from a prior response's `next_cursor`. When set, the
+   * server resumes after that cursor and `offset` is ignored.
+   */
+  after?: string
   signal?: AbortSignal
 }
 
@@ -38,6 +43,7 @@ interface AssetRequestOptions extends PaginationOptions {
   includeTags: string[]
   excludeTags?: string[]
   includePublic?: boolean
+  after?: string
   signal?: AbortSignal
 }
 
@@ -50,6 +56,7 @@ interface AssetExportOptions {
     | 'preserve'
     | 'asset_id'
   job_asset_name_filters?: Record<string, string[]>
+  include_previews?: boolean
 }
 
 /**
@@ -285,6 +292,7 @@ function createAssetService() {
       excludeTags = DEFAULT_EXCLUDED_ASSET_TAGS,
       limit = DEFAULT_LIMIT,
       offset,
+      after,
       includePublic,
       signal
     } = options
@@ -298,7 +306,11 @@ function createAssetService() {
     if (normalizedExcludeTags.length > 0) {
       queryParams.set('exclude_tags', normalizedExcludeTags.join(','))
     }
-    if (offset !== undefined && offset > 0) {
+    // `after` (keyset cursor) takes precedence over `offset`; the server ignores
+    // `offset` when a cursor is supplied, so we avoid sending a redundant param.
+    if (after) {
+      queryParams.set('after', after)
+    } else if (offset !== undefined && offset > 0) {
       queryParams.set('offset', offset.toString())
     }
     if (includePublic !== undefined) {
@@ -480,11 +492,17 @@ function createAssetService() {
   async function getAssetsByTag(
     tag: string,
     includePublic: boolean = true,
-    { limit = DEFAULT_LIMIT, offset = 0, signal }: AssetPaginationOptions = {}
+    {
+      limit = DEFAULT_LIMIT,
+      offset = 0,
+      after,
+      signal
+    }: AssetPaginationOptions = {}
   ): Promise<AssetItem[]> {
     const data = await getAssetsPageByTag(tag, includePublic, {
       limit,
       offset,
+      after,
       signal
     })
 
@@ -497,17 +515,27 @@ function createAssetService() {
   async function getAssetsPageByTag(
     tag: string,
     includePublic: boolean = true,
-    { limit = DEFAULT_LIMIT, offset = 0, signal }: AssetPaginationOptions = {}
+    {
+      limit = DEFAULT_LIMIT,
+      offset = 0,
+      after,
+      signal
+    }: AssetPaginationOptions = {}
   ): Promise<AssetResponse> {
     return await handleAssetRequest(
-      { includeTags: [tag], limit, offset, includePublic, signal },
+      { includeTags: [tag], limit, offset, after, includePublic, signal },
       `assets for tag ${tag}`
     )
   }
 
   /**
    * Gets every asset for a tag by walking paginated asset API responses.
-   * Pagination follows the required server-provided `has_more` flag.
+   *
+   * Uses keyset (cursor) pagination: each page is fetched with the prior
+   * response's `next_cursor`, which is stable under concurrent inserts/deletes
+   * and avoids the duplicate/skip drift that offset paging exhibits when the
+   * underlying set changes mid-walk. Falls back to terminating on `has_more`
+   * when the server omits `next_cursor`.
    *
    * @param tag - The tag to filter by (e.g., 'models', 'input')
    * @param includePublic - Whether to include public assets (default: true)
@@ -519,18 +547,21 @@ function createAssetService() {
   async function getAllAssetsByTag(
     tag: string,
     includePublic: boolean = true,
-    { limit = DEFAULT_LIMIT, signal }: AssetPaginationOptions = {}
+    {
+      limit = DEFAULT_LIMIT,
+      signal
+    }: Pick<AssetPaginationOptions, 'limit' | 'signal'> = {}
   ): Promise<AssetItem[]> {
     const assets: AssetItem[] = []
     const pageSize = limit > 0 ? limit : DEFAULT_LIMIT
-    let offset = 0
+    let after: string | undefined
 
     while (true) {
       if (signal?.aborted) throw createAbortError()
 
       const data = await getAssetsPageByTag(tag, includePublic, {
         limit: pageSize,
-        offset,
+        after,
         signal
       })
       const batch = data.assets
@@ -540,11 +571,12 @@ function createAssetService() {
 
       assets.push(...batch)
 
-      if (!data.has_more) {
+      // A server that returns a non-advancing cursor would loop forever.
+      if (!data.has_more || !data.next_cursor || data.next_cursor === after) {
         return assets
       }
 
-      offset += batch.length
+      after = data.next_cursor
     }
   }
 

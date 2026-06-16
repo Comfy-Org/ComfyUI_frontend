@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "گره Conditioning برای Bernini جهت شرطی‌سازی تصویر/ویدیو در متن. این گره برای وظایف زیر قابل استفاده است: t2v (تبدیل متن به ویدیو)، v2v (تبدیل ویدیو به ویدیو)، rv2v (ویرایش ویدیو با راهنمای مرجع)، r2v (تبدیل مرجع به ویدیو)، ads2v (درج تصویر/ویدیو در ویدیو). تصاویر مرجع که به عنوان توکن‌های in-context (r2v، rv2v) تزریق می‌شوند، به طور مستقل با نسبت تصویر اصلی خود رمزگذاری می‌شوند (لبه بلند با ref_max_size محدود می‌شود).",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "ارتفاع"
+      },
+      "length": {
+        "name": "طول"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "حداکثر اندازه مرجع",
+        "tooltip": "حداکثر اندازه لبه بلند برای reference_video و reference_images. با حفظ نسبت تصویر تغییر اندازه داده می‌شود و به نزدیک‌ترین مضرب ۱۶ پیکسل گرد می‌شود."
+      },
+      "reference_images": {
+        "name": "تصاویر مرجع"
+      },
+      "reference_video": {
+        "name": "ویدیوی مرجع",
+        "tooltip": "ویدیویی که باید در ویدیوی منبع درج شود (ads2v)."
+      },
+      "source_video": {
+        "name": "ویدیوی منبع",
+        "tooltip": "ویدیوی منبع برای ویرایش یا تغییر سبک (v2v، rv2v). به عرض/ارتفاع تغییر اندازه داده می‌شود و به طول مورد نظر برش می‌خورد."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -636,6 +692,36 @@
       },
       "video": {
         "name": "ویدیو"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoReplaceBackground": {
+    "description": "پس‌زمینه یک ویدیو را با تصویر یا ویدیوی ارائه‌شده با استفاده از Bria جایگزین کنید. خروجی، وضوح و نرخ فریم پیش‌زمینه را حفظ می‌کند؛ اگر نسبت تصویر پس‌زمینه متفاوت باشد، برای تطبیق کشیده می‌شود، بنابراین برای جلوگیری از اعوجاج، نسبت تصویر را یکسان انتخاب کنید.",
+    "display_name": "Bria جایگزینی پس‌زمینه ویدیو",
+    "inputs": {
+      "background_image": {
+        "name": "تصویر پس‌زمینه",
+        "tooltip": "تصویر پس‌زمینه برای ترکیب در پشت پیش‌زمینه. فقط یکی از تصویر یا ویدیوی پس‌زمینه را ارائه دهید."
+      },
+      "background_video": {
+        "name": "ویدیوی پس‌زمینه",
+        "tooltip": "ویدیوی پس‌زمینه برای ترکیب در پشت پیش‌زمینه. فقط یکی از تصویر یا ویدیوی پس‌زمینه را ارائه دهید."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed کنترل می‌کند که آیا node باید دوباره اجرا شود؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی پیش‌زمینه که پس‌زمینه آن جایگزین می‌شود."
       }
     },
     "outputs": {
@@ -2818,6 +2904,10 @@
         "name": "صدا",
         "tooltip": "صدایی که به ویدیو اضافه می‌شود."
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "عمق بیت ویدئوی ایجادشده. ۱۰-بیت گرادیان‌های نرم‌تری با بندینگ کمتر ایجاد می‌کند، اما ممکن است برخی پخش‌کننده‌ها و nodeهای بعدی از آن پشتیبانی نکنند."
+      },
       "fps": {
         "name": "فریم بر ثانیه"
       },
@@ -2922,6 +3012,98 @@
       },
       "1": {
         "name": "INDEX",
+        "tooltip": null
+      }
+    }
+  },
+  "DA3GeometryToMesh": {
+    "description": "تبدیل نقشه عمق به یک مش سه‌بعدی مثلثی.",
+    "display_name": "تبدیل هندسه DA3 به Mesh",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "کدام تصویر از یک دسته را تبدیل کند. تعداد رأس‌ها در هر تصویر متفاوت است، بنابراین دسته‌ها قابل انباشته شدن نیستند."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "پیکسل‌هایی که مقدار اطمینان نرمال‌شده آن‌ها کمتر از این مقدار باشد را حذف می‌کند (۰ = همه باقی می‌مانند، ۱ = فقط مطمئن‌ترین پیکسل باقی می‌ماند). زمانی استفاده می‌شود که هندسه دارای نقشه اطمینان باشد (مدل‌های Small/Base)."
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "گام رأس‌ها. ۱ = وضوح کامل، ۲ = نصف، و غیره."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "حذف مثلث‌هایی که گستره عمق ۳x۳ آن‌ها از این نسبت بیشتر باشد. ۰ = غیرفعال."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "استفاده از تصویر منبع به عنوان بافت رنگ پایه."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "پیکسل‌هایی با احتمال آسمان (sky ≥ ۰.۵) را از مش حذف می‌کند. زمانی استفاده می‌شود که هندسه دارای نقشه آسمان باشد (مدل‌های Mono/Metric)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "اجرای Depth Anything 3 روی یک تصویر. در حالت چندنما، هر تصویر به عنوان نمای جداگانه‌ای از یک صحنه در نظر گرفته می‌شود.",
+    "display_name": "اجرای Depth Anything 3",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: تصویر تک‌نما (با هر نوع مدل کار می‌کند).\nmultiview: همه تصاویر با هم برای سازگاری هندسی و موقعیت دوربین پردازش می‌شوند (فقط برای مدل‌های Small/Base)."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: مقیاس‌دهی به طوری که بزرگ‌ترین ضلع = وضوح (محدودیت حافظه، پیش‌فرض).\nlower_bound_resize: مقیاس‌دهی به طوری که کوچک‌ترین ضلع = وضوح (جزئیات بیشتر در تصاویر بلند/عریض، مصرف حافظه بیشتر)."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "وضوحی که مدل روی آن اجرا می‌شود (بزرگ‌ترین ضلع، مضربی از ۱۴).\nکمتر = سریع‌تر / مصرف VRAM کمتر.\nبیشتر = جزئیات بیشتر.\nخروجی به اندازه اصلی بازنمونه‌گیری می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "دیکشنری از تنسورهای نرمال‌نشده.\nهمیشه کلیدهای depth، image، mode را دارد.\nکلیدهای اختیاری: sky (برای Mono/Metric)، confidence (برای Small/Base)، extrinsics و intrinsics (برای چندنما)."
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "رندر نقشه عمق، نقشه اطمینان یا ماسک آسمان از داده‌های هندسه Depth Anything 3.",
+    "display_name": "رندر Depth Anything 3",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: تصویر عمق نرمال‌شده به صورت خاکستری.\n- depth_colored: عمق با نگاشت colormap توربو.\n- sky_mask: احتمال آسمان در بازه [۰، ۱] (فقط برای مدل‌های Mono/Metric).\n- confidence: اطمینان عمق نرمال‌شده (فقط برای مدل‌های Small/Base)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -5041,6 +5223,10 @@
       },
       "2": {
         "name": "نرخ فریم",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -8927,6 +9113,22 @@
     "outputs": {
       "0": {
         "name": "مدل حذف پس‌زمینه",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "بارگذاری Depth Anything 3",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15661,6 +15863,98 @@
       }
     }
   },
+  "RunwayAleph2KeyframeNode": {
+    "description": "یک تصویر راهنما را به یک لحظه از ویدیوی ورودی (منبع) متصل کنید تا Aleph2 ویرایش را در آن نقطه از ویدیوی شما هدایت کند. این node را به ورودی 'keyframes' در Runway Aleph2 Video to Video متصل کنید؛ چندین مورد را (تا ۵ عدد) از طریق ورودی اختیاری 'keyframes' زیر به هم زنجیر کنید.",
+    "display_name": "Runway Aleph2 Keyframe",
+    "inputs": {
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر راهنما که باید در لحظه انتخاب‌شده از ویدیوی ورودی اعمال شود."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "کی‌فریم‌های قبلی اختیاری برای زنجیر شدن با این مورد."
+      },
+      "timing": {
+        "name": "زمان‌بندی",
+        "tooltip": "نحوه قرار دادن این تصویر در جدول زمانی ویدیوی ورودی."
+      },
+      "timing_seconds": {
+        "name": "ثانیه"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "یک تصویر راهنما را به یک لحظه از ویدیوی خروجی (نتیجه) متصل کنید تا ظاهر ویدیوی ویرایش‌شده را در آن نقطه هدایت کند. این node را به ورودی 'prompt_images' در Runway Aleph2 Video to Video متصل کنید؛ چندین مورد را (تا ۵ عدد) از طریق ورودی اختیاری 'prompt_images' زیر به هم زنجیر کنید.",
+    "display_name": "Runway Aleph2 Prompt Image",
+    "inputs": {
+      "image": {
+        "name": "تصویر",
+        "tooltip": "تصویر راهنما که باید در لحظه انتخاب‌شده از ویدیوی خروجی قرار گیرد."
+      },
+      "position": {
+        "name": "موقعیت",
+        "tooltip": "نحوه قرار دادن این تصویر در جدول زمانی ویدیوی خروجی."
+      },
+      "position_seconds": {
+        "name": "ثانیه"
+      },
+      "prompt_images": {
+        "name": "prompt_images",
+        "tooltip": "تصاویر راهنمای قبلی اختیاری برای زنجیر شدن با این مورد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt_images",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "ویرایش ویدیو با یک پرامپت متنی با استفاده از مدل Aleph2 از Runway. Aleph2 ویدیوی شما را تغییر می‌دهد (تغییر سبک، نورپردازی، افزودن یا حذف عناصر، تغییر زاویه دید) در حالی که حرکت و زمان‌بندی اصلی را حفظ می‌کند؛ وضوح خروجی با ویدیوی ورودی یکسان است و ویدیو باید بین ۲ تا ۳۰ ثانیه با حداکثر ۳۰ فریم بر ثانیه باشد. می‌توانید ویرایش را با استفاده از keyframe (متصل به ویدیوی ورودی) یا تصویر پرامپت (متصل به ویدیوی خروجی) هدایت کنید – فقط یکی از این دو را انتخاب کنید.",
+    "display_name": "Runway Aleph2 ویدیو به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "keyframes": {
+        "name": "keyframeها",
+        "tooltip": "تصاویر راهنما متصل به ویدیوی ورودی، از nodeهای Aleph2 Keyframe (تا ۵ عدد). از keyframe یا تصویر پرامپت استفاده کنید، نه هر دو."
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "توضیح می‌دهد چه چیزی باید در خروجی نمایش داده شود (۱ تا ۱۰۰۰ کاراکتر)."
+      },
+      "prompt_images": {
+        "name": "تصاویر پرامپت",
+        "tooltip": "تصاویر راهنما متصل به ویدیوی خروجی، از nodeهای Aleph2 Prompt Image (تا ۵ عدد). از keyframe یا تصویر پرامپت استفاده کنید، نه هر دو."
+      },
+      "public_figure_threshold": {
+        "name": "آستانه شخصیت عمومی",
+        "tooltip": "مدیریت محتوا برای افراد شناخته‌شده."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed تصادفی برای تولید"
+      },
+      "video": {
+        "name": "ویدیو",
+        "tooltip": "ویدیوی ورودی برای ویرایش. باید بین ۲ تا ۳۰ ثانیه با حداکثر ۳۰ فریم بر ثانیه باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RunwayFirstLastFrameNode": {
     "description": "اولین و آخرین فریم کلیدی را بارگذاری کنید، یک پرامپت بنویسید و ویدیو تولید کنید. انتقال‌های پیچیده‌تر، مانند زمانی که فریم آخر کاملاً با فریم اول متفاوت است، ممکن است از مدت زمان طولانی‌تر ۱۰ ثانیه‌ای بهره‌مند شوند. این کار به تولید اجازه می‌دهد تا زمان بیشتری برای انتقال روان بین دو ورودی داشته باشد. پیش از شروع، این نکات کلیدی را مرور کنید تا مطمئن شوید انتخاب‌های ورودی شما باعث موفقیت تولید خواهد شد: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
     "display_name": "Runway تبدیل اولین و آخرین فریم به ویدیو",
@@ -15900,6 +16194,41 @@
     "outputs": {
       "0": {
         "name": "داده ردیابی",
+        "tooltip": null
+      }
+    }
+  },
+  "SCAIL2ColoredMask": {
+    "display_name": "ایجاد ماسک رنگی SCAIL-2",
+    "inputs": {
+      "driving_track_data": {
+        "name": "داده مسیر حرکتی",
+        "tooltip": "مسیر SAM3 از ویدیوی ژست حرکتی. به خروجی pose_video_mask رندر خواهد شد."
+      },
+      "object_indices": {
+        "name": "شاخص‌های اشیاء",
+        "tooltip": "فهرست جداشده با ویرگول از شاخص افراد برای درج (مثلاً '۰,۲,۳'). برای هر دو ماسک ویدیوی مرجع و ژست اعمال می‌شود. خالی = همه."
+      },
+      "ref_track_data": {
+        "name": "داده مسیر مرجع",
+        "tooltip": "مسیر SAM3 از تصویر مرجع."
+      },
+      "replacement_mode": {
+        "name": "حالت جایگزینی",
+        "tooltip": "False = mask_video پس‌زمینه سیاه دارد (حالت انیمیشن). True = پس‌زمینه سفید (حالت جایگزینی). همین حالت را در WanSCAILToVideo تنظیم کنید. reference_image_mask همیشه پس‌زمینه سیاه دارد."
+      },
+      "sort_by": {
+        "name": "مرتب‌سازی بر اساس",
+        "tooltip": "ترتیب اختصاص رنگ‌های پالت به اشیاء دنبال‌شده (برای هر دو ویدیوی مرجع و ژست تا هر هویت رنگ یکسان داشته باشد). left_to_right = چپ‌ترین شیء (بر اساس مرکز فریم اول) اولین رنگ را می‌گیرد؛ area = بزرگ‌ترین شیء (بر اساس مساحت ماسک فریم اول) اولین رنگ را می‌گیرد؛ none = ترتیب SAM3 حفظ می‌شود."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ماسک ویدیوی ژست",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ماسک تصویر مرجع",
         "tooltip": null
       }
     }
@@ -19265,6 +19594,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "یک مدل سه‌بعدی خارجی (مثلاً از Rodin، Hunyuan3D یا یک فایل محلی) را به Tripo وارد کنید تا بتوانید از آن با nodeهای پس‌پردازش Tripo مانند Texture، Rig و Convert استفاده کنید. فرمت GLB توصیه می‌شود: با این فرمت، تکسچرها فقط زمانی پس از وارد کردن باقی می‌مانند که در فایل جاسازی شده باشند. توجه داشته باشید که تکسچر دادن به یک مدل واردشده نیازمند یک texture prompt است.",
+    "display_name": "Tripo: وارد کردن مدل",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "مدل سه‌بعدی برای وارد کردن (GLB / FBX / OBJ / STL، تا سقف ۱۵۰ مگابایت). فایل‌های OBJ و STL فاقد تکسچر جاسازی‌شده هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: چندنما به مدل",
     "inputs": {
@@ -19732,6 +20077,10 @@
       },
       "texture_alignment": {
         "name": "تراز بافت"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "راهنمای متنی اختیاری برای تکسچر دادن. در عمل برای مدل‌های واردشده (Tripo: وارد کردن مدل) که تصویر مرجعی برای استخراج رنگ ندارند، الزامی است."
       },
       "texture_quality": {
         "name": "کیفیت بافت"
@@ -22338,7 +22687,8 @@
         "name": "اندازه دسته"
       },
       "clip_vision_output": {
-        "name": "خروجی clip vision"
+        "name": "خروجی clip vision",
+        "tooltip": "ویژگی‌های بینایی CLIP برای شرطی‌سازی. مدل با تغییر اندازه کشیده به نسبت تصویر آموزش دیده است."
       },
       "height": {
         "name": "ارتفاع"
@@ -22365,14 +22715,39 @@
         "name": "ویدئوی pose",
         "tooltip": "ویدئو برای pose conditioning استفاده می‌شود. به نصف وضوح ویدئوی اصلی کاهش داده می‌شود."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "فقط در SCAIL-2. ویدیوی ماسک SAM3 رنگی برای هر هویت، با همان وضوح pose_video."
+      },
       "positive": {
         "name": "مثبت"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "تعداد فریم‌های انتهایی previous_frames برای لنگر زدن. SCAIL-2 با مقدار ۵ آموزش دیده است (بخش‌های ۸۱ فریمی، گام ۷۶ فریم)."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "فقط در SCAIL-2. خروجی کامل رمزگشایی‌شده بخش قبلی. فقط آخرین previous_frame_count به عنوان لنگر گسترش استفاده می‌شوند."
+      },
       "reference_image": {
-        "name": "تصویر مرجع"
+        "name": "تصویر مرجع",
+        "tooltip": "تصویر مرجع، برای چند مرجع همه را در یک تصویر ترکیب کنید."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "فقط در SCAIL-2. ماسک مرجع رنگی با همان وضوح reference_image."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "فقط در SCAIL-2. مقدار False = حالت انیمیشن (pose_video_mask باید پس‌زمینه سیاه داشته باشد). مقدار True = حالت جایگزینی (pose_video_mask باید پس‌زمینه سفید داشته باشد)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "فریم تجمعی خروجی که این بخش از آن آغاز می‌شود. از خروجی video_frame_offset بخش قبلی استفاده کنید."
       },
       "width": {
         "name": "عرض"
@@ -22390,6 +22765,10 @@
       "2": {
         "name": "latent",
         "tooltip": "latent خالی با اندازه تولید."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "افست تنظیم‌شده به‌علاوه طول. به بخش بعدی متصل کنید."
       }
     }
   },

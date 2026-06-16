@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "用于Bernini上下文视频/图像条件的条件节点。可用于以下任务：t2v（文本转视频）、v2v（视频转视频）、rv2v（参考引导视频编辑）、r2v（参考转视频）、ads2v（将图像/视频插入视频）。作为上下文token注入的参考图像（r2v、rv2v）会以其原生宽高比独立编码（长边最大为ref_max_size）。",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "批量大小"
+      },
+      "height": {
+        "name": "高度"
+      },
+      "length": {
+        "name": "长度"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "参考最大尺寸",
+        "tooltip": "reference_video和reference_images长边的最大尺寸。调整尺寸时保持宽高比，并对齐到16像素。"
+      },
+      "reference_images": {
+        "name": "参考图像"
+      },
+      "reference_video": {
+        "name": "参考视频",
+        "tooltip": "要插入到源视频中的视频（ads2v）。"
+      },
+      "source_video": {
+        "name": "源视频",
+        "tooltip": "要编辑或重绘风格的视频（v2v，rv2v）。会被调整为指定宽高并裁剪到指定长度。"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "宽度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "Beta采样调度器",
     "inputs": {
@@ -636,6 +692,36 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoReplaceBackground": {
+    "description": "使用 Bria 将视频的背景替换为提供的图像或视频。输出保持前景的分辨率和帧率；如果背景的宽高比不同，则会被拉伸以适应，因此请匹配宽高比以获得无失真的效果。",
+    "display_name": "Bria 视频更换背景",
+    "inputs": {
+      "background_image": {
+        "name": "background_image",
+        "tooltip": "用于合成在前景后面的背景图像。请只提供背景图像或背景视频中的一个。"
+      },
+      "background_video": {
+        "name": "background_video",
+        "tooltip": "用于合成在前景后面的背景视频。请只提供背景图像或背景视频中的一个。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "需要更换背景的前景视频。"
       }
     },
     "outputs": {
@@ -2818,6 +2904,10 @@
         "name": "音频",
         "tooltip": "要添加到视频中的音频。"
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "所创建视频的位深度。10位可以保持更平滑的渐变并减少色带，但部分播放器和下游节点可能不支持。"
+      },
       "fps": {
         "name": "帧率"
       },
@@ -2922,6 +3012,98 @@
       },
       "1": {
         "name": "索引",
+        "tooltip": null
+      }
+    }
+  },
+  "DA3GeometryToMesh": {
+    "description": "将深度图转换为三角化的3D网格。",
+    "display_name": "将DA3几何体转换为网格",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "要转换的批次中的哪一张图像。每张图像的顶点数量不同，因此批次无法堆叠。"
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "排除每张图像归一化置信度低于该值的像素（0 = 保留全部，1 = 仅保留置信度最高的像素）。当几何体包含置信度图时使用（Small/Base模型）。"
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "顶点步长。1 = 全分辨率，2 = 一半，依此类推。"
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "如果三角形的3x3深度跨度超过此比例，则丢弃该三角形。0 = 关闭。"
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "使用源图像作为基础颜色纹理。"
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "从网格中排除天空概率像素（sky >= 0.5）。当几何体包含天空图时使用（Mono/Metric模型）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "在图像上运行Depth Anything 3。在多视图模式下，每张图像被视为同一场景的不同视角。",
+    "display_name": "运行Depth Anything 3",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono：单视图图像（适用于所有模型变体）。\nmultiview：所有图像一起处理以保证几何一致性和相机位姿（仅适用于Small/Base模型）。"
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize：缩放至最长边=分辨率（限制内存，默认）。\nlower_bound_resize：缩放至最短边=分辨率（在高宽比极端的图像上保留更多细节，但占用更多内存）。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "模型运行的分辨率（最长边，14的倍数）。\n较低 = 更快 / 更少显存。\n较高 = 更多细节。\n输出会被上采样回原始大小。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "非归一化张量的字典。\n始终包含的键：depth, image, mode。\n可选键：sky（Mono/Metric），confidence（Small/Base），extrinsics + intrinsics（多视图时）。"
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "从Depth Anything 3几何数据渲染深度图、置信度图或天空mask。",
+    "display_name": "渲染Depth Anything 3",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth：归一化灰度深度图。\n- depth_colored：通过Turbo色图映射的深度。\n- sky_mask：天空概率，范围[0, 1]（仅Mono/Metric模型）。\n- confidence：归一化深度置信度（仅Small/Base模型）。"
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -5041,6 +5223,10 @@
       },
       "2": {
         "name": "帧率",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -8927,6 +9113,22 @@
     "outputs": {
       "0": {
         "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "加载Depth Anything 3",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15661,6 +15863,98 @@
       }
     }
   },
+  "RunwayAleph2KeyframeNode": {
+    "description": "将引导图像锚定到输入（源）视频的某一时刻，使 Aleph2 在该时刻引导你的素材编辑。将此节点连接到 Runway Aleph2 视频转视频节点的 'keyframes' 输入；可通过下方可选的 'keyframes' 输入串联多个（最多 5 个）。",
+    "display_name": "Runway Aleph2 关键帧",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "要在输入视频选定时刻应用的引导图像。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "可选的前置关键帧，与此关键帧串联。"
+      },
+      "timing": {
+        "name": "timing",
+        "tooltip": "如何将该图像放置在输入视频的时间线上。"
+      },
+      "timing_seconds": {
+        "name": "秒"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "将引导图像锚定到输出（结果）视频的某一时刻，以引导编辑后视频在该时刻的外观。将此节点连接到 Runway Aleph2 视频转视频节点的 'prompt_images' 输入；可通过下方可选的 'prompt_images' 输入串联多个（最多 5 个）。",
+    "display_name": "Runway Aleph2 提示图像",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "要在输出视频选定时刻放置的引导图像。"
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "如何将该图像放置在输出视频的时间线上。"
+      },
+      "position_seconds": {
+        "name": "秒"
+      },
+      "prompt_images": {
+        "name": "prompt_images",
+        "tooltip": "可选的前置提示图像，与此图像串联。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt_images",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "使用 Runway 的 Aleph2 模型通过文本提示编辑视频。Aleph2 可在保持原始运动和时序的同时，转换您的素材（重新风格化、重新打光、添加或移除元素、更改视角）；输出分辨率与输入视频一致，输入视频需为 2-30 秒，帧率不高于 30 fps。可选地通过关键帧（锚定到输入视频）或提示图像（锚定到输出视频）引导编辑——二者只能选其一，不可同时使用。",
+    "display_name": "Runway Aleph2 视频转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "keyframes": {
+        "name": "关键帧",
+        "tooltip": "锚定到输入视频的引导图像，来自 Aleph2 Keyframe 节点（最多 5 个）。只能使用关键帧或提示图像，不能同时使用。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述输出中应出现的内容（1-1000 字符）。"
+      },
+      "prompt_images": {
+        "name": "提示图像",
+        "tooltip": "锚定到输出视频的引导图像，来自 Aleph2 Prompt Image 节点（最多 5 个）。只能使用关键帧或提示图像，不能同时使用。"
+      },
+      "public_figure_threshold": {
+        "name": "公众人物阈值",
+        "tooltip": "对可识别公众人物的内容进行审核。"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "生成用的随机种子"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "要编辑的输入视频。需为 2-30 秒，帧率不高于 30 fps。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RunwayFirstLastFrameNode": {
     "description": "上传首尾关键帧，草拟提示词，生成视频。对于更复杂的过渡（例如尾帧与首帧完全不同的情况），较长的10秒时长可能更有利，这能为生成过程提供更多时间在两个输入之间平滑过渡。开始前，请查看这些最佳实践以确保您的输入选择能为生成成功奠定基础：https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3。",
     "display_name": "Runway首尾帧转视频",
@@ -15900,6 +16194,41 @@
     "outputs": {
       "0": {
         "name": "跟踪数据",
+        "tooltip": null
+      }
+    }
+  },
+  "SCAIL2ColoredMask": {
+    "display_name": "创建 SCAIL-2 彩色掩码",
+    "inputs": {
+      "driving_track_data": {
+        "name": "驱动轨迹数据",
+        "tooltip": "驱动姿态视频的SAM3轨迹。将渲染到pose_video_mask输出。"
+      },
+      "object_indices": {
+        "name": "对象索引",
+        "tooltip": "要包含的人物索引，逗号分隔（如“0,2,3”）。应用于参考和姿态视频掩码。留空=全部。"
+      },
+      "ref_track_data": {
+        "name": "参考轨迹数据",
+        "tooltip": "参考图像的SAM3轨迹。"
+      },
+      "replacement_mode": {
+        "name": "替换模式",
+        "tooltip": "False=mask_video为黑色背景（动画模式）。True=白色背景（替换模式）。在WanSCAILToVideo上设置匹配的replacement_mode。reference_image_mask始终为黑色背景。"
+      },
+      "sort_by": {
+        "name": "排序方式",
+        "tooltip": "为跟踪对象分配调色板颜色的顺序（应用于参考和姿态视频，每个身份保持相同颜色）。left_to_right=最左侧对象（按首帧质心）获得第一种颜色；area=最大对象（按首帧掩码面积）获得第一种颜色；none=保持SAM3的顺序。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "姿态视频掩码",
+        "tooltip": null
+      },
+      "1": {
+        "name": "参考图像掩码",
         "tooltip": null
       }
     }
@@ -19265,6 +19594,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "将外部3D模型（例如来自Rodin、Hunyuan3D或本地文件）导入Tripo，以便与Tripo的后处理节点（纹理、绑定、转换）一起使用。推荐使用GLB格式：只有嵌入文件的纹理才能在导入时保留。请注意，为导入的模型添加纹理需要提供纹理提示词。",
+    "display_name": "Tripo：导入模型",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "要导入的3D模型（GLB / FBX / OBJ / STL，最大150MB）。OBJ和STL文件不包含嵌入纹理。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo：多视图转模型",
     "inputs": {
@@ -19732,6 +20077,10 @@
       },
       "texture_alignment": {
         "name": "纹理对齐"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "用于纹理生成的可选文本引导。对于导入的模型（Tripo：导入模型），实际操作中需要提供，因为这些模型没有可用于推断颜色的源图像。"
       },
       "texture_quality": {
         "name": "纹理质量"
@@ -22338,7 +22687,8 @@
         "name": "批量大小"
       },
       "clip_vision_output": {
-        "name": "clip视觉输出"
+        "name": "clip视觉输出",
+        "tooltip": "用于条件控制的 CLIP 视觉特征。模型训练时采用拉伸缩放至宽高比。"
       },
       "height": {
         "name": "高度"
@@ -22365,14 +22715,39 @@
         "name": "姿态视频",
         "tooltip": "用于姿态调控的视频。将被缩小到主视频分辨率的一半。"
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "仅限 SCAIL-2。每个身份的彩色 SAM3 mask 视频，分辨率与 pose_video 相同。"
+      },
       "positive": {
         "name": "正向"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "用于锚定的上一帧尾部帧数。SCAIL-2 在 5（81 帧片段，76 帧步长）下训练。"
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "仅限 SCAIL-2。上一个片段的完整解码输出。仅使用最后的 previous_frame_count 作为扩展锚点。"
+      },
       "reference_image": {
-        "name": "参考图像"
+        "name": "参考图像",
+        "tooltip": "参考图像，如有多个参考请合成到一张图像上。"
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "仅限 SCAIL-2。与 reference_image 分辨率相同的彩色参考 mask。"
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "仅限 SCAIL-2。False = 动画模式（pose_video_mask 应为黑色背景）。True = 替换模式（pose_video_mask 应为白色背景）。"
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "本片段开始的累计输出帧数。请从上一个片段的 video_frame_offset 输出连接。"
       },
       "width": {
         "name": "宽度"
@@ -22390,6 +22765,10 @@
       "2": {
         "name": "latent",
         "tooltip": "生成尺寸的空latent。"
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "调整后的偏移量和长度。连接到下一个片段。"
       }
     }
   },
