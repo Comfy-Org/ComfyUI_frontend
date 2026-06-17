@@ -10,7 +10,7 @@ defineProps<{ featured: NavFeatured }>()
   <li class="shrink-0">
     <a
       :href="featured.cta.href"
-      :aria-label="featured.cta.ariaLabel ?? featured.cta.label"
+      :aria-label="featured.cta.ariaLabel"
       class="group/pill-trigger relative block"
     >
       <img
