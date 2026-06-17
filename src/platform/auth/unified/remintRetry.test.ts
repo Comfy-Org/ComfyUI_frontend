@@ -137,29 +137,35 @@ describe('fetchWithUnifiedRemint', () => {
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
 
-  it.each<[string, HeadersInit]>([
-    ['object', { Authorization: 'Bearer tokenA', 'Comfy-User': 'u1' }],
-    [
-      'array of tuples',
-      [
+  it.for([
+    {
+      shape: 'object',
+      headers: { Authorization: 'Bearer tokenA', 'Comfy-User': 'u1' }
+    },
+    {
+      shape: 'array of tuples',
+      headers: [
         ['Authorization', 'Bearer tokenA'],
         ['Comfy-User', 'u1']
       ]
-    ],
-    [
-      'Headers',
-      new Headers({ Authorization: 'Bearer tokenA', 'Comfy-User': 'u1' })
-    ]
-  ])(
-    'preserves method/body and replaces Authorization on a POST retry (%s headers)',
-    async (_shape, headersInit) => {
+    },
+    {
+      shape: 'Headers',
+      headers: new Headers({
+        Authorization: 'Bearer tokenA',
+        'Comfy-User': 'u1'
+      })
+    }
+  ] as { shape: string; headers: HeadersInit }[])(
+    'preserves method/body and replaces Authorization on a POST retry ($shape headers)',
+    async ({ headers }) => {
       mockFetch.mockResolvedValueOnce(unauthorized).mockResolvedValueOnce(ok)
       mockRemint.mockResolvedValue('tokenB')
       const body = JSON.stringify({ amount: 5 })
 
       await fetchWithUnifiedRemint(
         'https://cloud/x',
-        { method: 'POST', body, headers: headersInit },
+        { method: 'POST', body, headers },
         true
       )
 
