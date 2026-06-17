@@ -82,6 +82,11 @@ export type RemoteConfig = {
   posthog_project_token?: string
   posthog_api_host?: string
   posthog_config?: Partial<PostHogConfig>
+  customer_io?: {
+    write_key?: string
+    site_id?: string
+    user_id?: string
+  }
   subscription_required?: boolean
   server_health_alert?: ServerHealthAlert
   max_upload_size?: number
