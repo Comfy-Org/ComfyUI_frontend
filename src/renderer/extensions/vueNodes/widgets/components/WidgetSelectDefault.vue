@@ -11,39 +11,47 @@
       @update:open="handleOpenChange"
     >
       <ComboboxAnchor as-child>
-        <ComboboxTrigger as-child>
-          <button
-            type="button"
-            role="combobox"
-            aria-haspopup="listbox"
-            :aria-label="widget.label || widget.name"
-            :aria-invalid="isInvalid || undefined"
-            :aria-expanded="isOpen"
-            :disabled
-            tabindex="0"
-            data-capture-wheel="true"
-            data-testid="widget-select-default-trigger"
-            :class="
-              cn(
-                WidgetInputBaseClass,
-                'flex w-full min-w-0 cursor-pointer items-center overflow-hidden p-0 outline-none hover:bg-component-node-widget-background-hovered disabled:cursor-default disabled:opacity-50 disabled:hover:bg-component-node-widget-background',
-                useWidgetHeight(),
-                isInvalid && 'ring-1 ring-destructive-background'
-              )
-            "
-          >
-            <span
-              :class="
-                cn(
-                  'min-w-[4ch] flex-1 truncate pr-1 pl-2 text-left text-xs',
-                  $slots.default && 'mr-5'
-                )
-              "
+        <div
+          data-capture-wheel="true"
+          :class="
+            cn(
+              WidgetInputBaseClass,
+              'flex w-full min-w-0 items-center overflow-hidden',
+              useWidgetHeight(),
+              !disabled && 'hover:bg-component-node-widget-background-hovered',
+              disabled && 'opacity-50',
+              isInvalid && 'ring-1 ring-destructive-background'
+            )
+          "
+        >
+          <ComboboxTrigger as-child>
+            <button
+              type="button"
+              role="combobox"
+              aria-haspopup="listbox"
+              :aria-label="widget.label || widget.name"
+              :aria-invalid="isInvalid || undefined"
+              :aria-expanded="isOpen"
+              :disabled
+              tabindex="0"
+              data-testid="widget-select-default-trigger"
+              class="flex min-w-0 flex-1 cursor-pointer items-center overflow-hidden border-none bg-transparent p-0 outline-none disabled:cursor-default"
             >
-              {{ selectedLabel || placeholder || '\u00a0' }}
-            </span>
-            <span
-              class="flex h-full w-6 shrink-0 items-center justify-center rounded-r-md"
+              <span
+                class="min-w-[4ch] flex-1 truncate pr-1 pl-2 text-left text-xs"
+              >
+                {{ selectedLabel || placeholder || '\u00a0' }}
+              </span>
+            </button>
+          </ComboboxTrigger>
+          <slot />
+          <ComboboxTrigger as-child>
+            <button
+              type="button"
+              tabindex="-1"
+              aria-hidden="true"
+              :disabled
+              class="flex h-full w-6 shrink-0 cursor-pointer items-center justify-center border-none bg-transparent outline-none disabled:cursor-default"
             >
               <i
                 :class="
@@ -56,9 +64,9 @@
                 "
                 aria-hidden="true"
               />
-            </span>
-          </button>
-        </ComboboxTrigger>
+            </button>
+          </ComboboxTrigger>
+        </div>
       </ComboboxAnchor>
 
       <ComboboxPortal>
@@ -141,13 +149,6 @@
         </ComboboxContent>
       </ComboboxPortal>
     </ComboboxRoot>
-
-    <div
-      v-if="$slots.default"
-      class="absolute top-5 right-8 flex h-4 w-7 -translate-y-4/5"
-    >
-      <slot />
-    </div>
   </WidgetLayoutField>
 </template>
 
