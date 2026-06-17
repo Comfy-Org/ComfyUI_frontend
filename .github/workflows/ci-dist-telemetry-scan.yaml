@@ -109,3 +109,27 @@ jobs:
             exit 1
           fi
           echo '✅ No PostHog references found'
+
+      - name: Scan dist for Customer.io telemetry references
+        run: |
+          set -euo pipefail
+          echo '🔍 Scanning for Customer.io references...'
+          if rg --no-ignore -n \
+            -g '*.html' \
+            -g '*.js' \
+            -e 'CustomerIoTelemetryProvider' \
+            -e '@customerio/cdp-analytics-browser' \
+            -e 'customerio-gist-web' \
+            -e '(?i)cdp\.customer\.io' \
+            -e 'Comfy\.CustomerIo' \
+            dist; then
+            echo '❌ ERROR: Customer.io references found in dist assets!'
+            echo 'Customer.io must be properly tree-shaken from OSS builds.'
+            echo ''
+            echo 'To fix this:'
+            echo '1. Use the TelemetryProvider pattern (see src/platform/telemetry/)'
+            echo '2. Call telemetry via useTelemetry() hook'
+            echo '3. Use conditional dynamic imports behind isCloud checks'
+            exit 1
+          fi
+          echo '✅ No Customer.io references found'
