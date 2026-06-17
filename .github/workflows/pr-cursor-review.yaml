@@ -1,7 +1,7 @@
 # Description: Team-gated multi-model Cursor review — a thin caller for the
 # reusable workflow in Comfy-Org/github-workflows, which is the single source of
 # truth for the panel, judge, prompts, and scripts. Triggered by the
-#'cursor-review' label.
+# 'cursor-review' label.
 #
 # Access control (team-only, two layers):
 #   1. Only users with triage permission or higher can apply a label in a public
