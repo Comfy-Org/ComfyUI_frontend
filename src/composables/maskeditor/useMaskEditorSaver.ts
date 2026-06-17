@@ -244,7 +244,8 @@ export function useMaskEditorSaver() {
       throw new Error(
         `Invalid upload response for ${layer.ref.filename}: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
+        { cause: error }
       )
     }
 
