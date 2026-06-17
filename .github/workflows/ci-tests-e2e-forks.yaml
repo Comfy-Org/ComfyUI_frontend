@@ -66,6 +66,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_SHA: ${{ github.event.workflow_run.head_sha }}
           SUMMARY_FILE: playwright-section.md
+          BRANCH_NAME: ${{ github.event.workflow_run.head_branch }}
         run: |
           # Rename merged report if exists
           [ -d "reports/playwright-report-chromium-merged" ] && \
@@ -74,7 +75,7 @@ jobs:
           chmod +x scripts/cicd/pr-playwright-deploy-and-comment.sh
           ./scripts/cicd/pr-playwright-deploy-and-comment.sh \
             "${{ steps.pr.outputs.number }}" \
-            "${{ github.event.workflow_run.head_branch }}" \
+            "$BRANCH_NAME" \
             "completed"
 
       - name: Read playwright section
