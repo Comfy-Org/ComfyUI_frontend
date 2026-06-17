@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
 import { getControlWidget } from '@/composables/graph/useGraphNodeManager'
+import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { st } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
@@ -67,6 +68,15 @@ const widgetComponent = computed(() => {
   return component || WidgetLegacy
 })
 
+const isLinked = computed(() => {
+  const safeWidget = useVueNodeLifecycle()
+    .nodeManager.value?.vueNodeData.get(String(node.id))
+    ?.widgets?.find((w) => w.name === widget.name)
+  return safeWidget?.slotMetadata
+    ? !!safeWidget.slotMetadata.linked
+    : !!node.inputs?.find((inp) => inp.widget?.name === widget.name)?.link
+})
+
 const simplifiedWidget = computed((): SimplifiedWidget => {
   const graphId = node.graph?.rootGraph?.id
   const bareNodeId = stripGraphPrefix(String(node.id))
@@ -78,14 +88,13 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
   const widgetName = widgetState?.name ?? widget.name
   const widgetType = widgetState?.type ?? widget.type
 
-  const input = node.inputs.find((inp) => inp.widget?.name === widget.name)
   const baseOptions = widgetState?.options ?? widget.options
   return {
     name: widgetName,
     type: widgetType,
     value: widgetState?.value ?? widget.value,
     label: widgetState?.label ?? widget.label,
-    options: { ...baseOptions, disabled: !!input?.link || widget.disabled },
+    options: { ...baseOptions, disabled: isLinked.value || !!widget.disabled },
     spec: nodeDefStore.getInputSpecForWidget(node, widgetName),
     controlWidget: getControlWidget(widget)
   }

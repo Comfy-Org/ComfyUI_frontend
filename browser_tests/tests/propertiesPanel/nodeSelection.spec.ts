@@ -47,9 +47,6 @@ test.describe('Properties panel - Node selection', () => {
         await ksampler.select()
         await expect(seed).toBeEnabled()
         await intNode.getSlot('INT').dragTo(ksampler.getSlot('seed'))
-        await expect(seed, 'FIXME: links should be reactive').toBeEnabled()
-        await intNode.select()
-        await ksampler.select()
         await expect(seed).toBeDisabled()
       }
     )
