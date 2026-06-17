@@ -12,7 +12,6 @@ import {
   Sheet,
   SheetContent,
   SheetDescription,
-  SheetFooter,
   SheetHeader,
   SheetTitle,
   SheetTrigger
@@ -91,7 +90,7 @@ onUnmounted(() => {
           </a>
         </div>
 
-        <div class="relative mt-10 flex-1 overflow-hidden">
+        <div class="relative mt-4 flex-1 overflow-hidden">
           <!-- Top-level nav -->
           <nav
             :class="
@@ -123,7 +122,7 @@ onUnmounted(() => {
 
           <!-- Drill-down sub-panel -->
           <div
-            class="absolute inset-0 overflow-y-auto bg-primary-comfy-ink transition-transform duration-300 ease-out"
+            class="absolute inset-0 bg-primary-comfy-ink transition-transform duration-300 ease-out"
             :class="
               activeItem
                 ? 'translate-x-0'
@@ -132,52 +131,51 @@ onUnmounted(() => {
             :inert="activeItem ? undefined : true"
             :aria-hidden="!activeItem"
           >
-            <Button type="button" variant="link" @click="activeSection = null">
-              <template #prepend>
-                <ChevronLeft />
-              </template>
-              {{ t('nav.back', locale) }}
-            </Button>
-
-            <div v-if="activeItem" class="mt-6 flex flex-col gap-y-12">
-              <div
-                v-for="column in activeItem.columns"
-                :key="column.header"
-                class="flex flex-col gap-y-3"
+            <div class="size-full overflow-y-auto py-8">
+              <Button
+                type="button"
+                variant="link"
+                @click="activeSection = null"
               >
-                <p
-                  class="text-primary-warm-gray text-base font-bold tracking-wider uppercase"
+                <template #prepend>
+                  <ChevronLeft />
+                </template>
+                {{ t('nav.back', locale) }}
+              </Button>
+
+              <div v-if="activeItem" class="mt-6 flex flex-col gap-y-12">
+                <div
+                  v-for="column in activeItem.columns"
+                  :key="column.header"
+                  class="flex flex-col gap-y-3"
                 >
-                  {{ column.header }}
-                </p>
-                <Button
-                  v-for="link in column.items"
-                  :key="link.label"
-                  :href="link.href"
-                  variant="nav"
-                  as="a"
-                  :target="link.external ? '_blank' : undefined"
-                  :rel="link.external ? 'noopener noreferrer' : undefined"
-                >
-                  <NavLinkContent :item="link" :locale="locale" />
-                </Button>
+                  <p
+                    class="text-primary-warm-gray text-base font-bold tracking-wider uppercase"
+                  >
+                    {{ column.header }}
+                  </p>
+                  <Button
+                    v-for="link in column.items"
+                    :key="link.label"
+                    :href="link.href"
+                    variant="nav"
+                    as="a"
+                    :target="link.external ? '_blank' : undefined"
+                    :rel="link.external ? 'noopener noreferrer' : undefined"
+                  >
+                    <NavLinkContent :item="link" :locale="locale" />
+                  </Button>
+                </div>
               </div>
             </div>
+            <div
+              class="pointer-events-none absolute inset-x-0 top-0 h-8 bg-linear-to-b from-primary-comfy-ink to-transparent"
+            />
+            <div
+              class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-linear-to-t from-primary-comfy-ink to-transparent"
+            />
           </div>
         </div>
-
-        <SheetFooter class="gap-3 p-0 pt-6">
-          <Button
-            v-for="cta in ctaButtons"
-            :key="cta.href"
-            :href="cta.href"
-            :variant="cta.primary ? 'default' : 'outline'"
-            size="lg"
-            class="w-full"
-          >
-            {{ cta.label }}
-          </Button>
-        </SheetFooter>
       </SheetContent>
     </Sheet>
   </div>

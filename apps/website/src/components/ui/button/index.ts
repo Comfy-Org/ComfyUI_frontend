@@ -8,8 +8,8 @@ export const buttonVariants = cva(
   {
     variants: {
       size: {
-        default: 'h-10 px-6 py-2.5 has-[>svg]:px-2',
-        lg: 'h-14 px-8 py-4 text-base has-[>svg]:px-4'
+        default: 'h-10 px-6 py-2.5',
+        lg: 'h-14 px-8 py-4 text-base'
       },
       variant: {
         default:
