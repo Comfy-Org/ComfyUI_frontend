@@ -40,9 +40,7 @@ function resolveTurnstileMode(): TurnstileMode {
  */
 export function useTurnstile() {
   const mode = computed(resolveTurnstileMode)
-  const enabled = computed(
-    () => isTurnstileOrigin() && mode.value !== 'off'
-  )
+  const enabled = computed(() => isTurnstileOrigin() && mode.value !== 'off')
   const enforced = computed(() => enabled.value && mode.value === 'enforce')
 
   return { mode, enabled, enforced }

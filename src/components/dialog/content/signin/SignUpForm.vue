@@ -29,10 +29,7 @@
 
     <PasswordFields />
 
-    <TurnstileWidget
-      v-if="turnstileEnabled"
-      v-model:token="turnstileToken"
-    />
+    <TurnstileWidget v-if="turnstileEnabled" v-model:token="turnstileToken" />
 
     <!-- Submit Button -->
     <ProgressSpinner v-if="loading" class="mx-auto size-8" />
@@ -83,7 +80,11 @@ const emit = defineEmits<{
 
 const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
   if (event.valid && !submitBlockedByTurnstile.value) {
-    emit('submit', event.values as SignUpData, turnstileToken.value || undefined)
+    emit(
+      'submit',
+      event.values as SignUpData,
+      turnstileToken.value || undefined
+    )
   }
 }, 1_500)
 </script>
