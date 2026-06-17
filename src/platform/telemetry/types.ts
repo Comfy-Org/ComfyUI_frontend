@@ -33,6 +33,52 @@ export interface AuthMetadata {
   utm_campaign?: string
 }
 
+export type AuthMethod = 'email' | 'google' | 'github'
+
+/**
+ * `view` distinguishes the sign-in surface from the sign-up surface so the
+ * auth funnel can split the two cohorts that today collapse into one drop.
+ */
+export type AuthView = 'login' | 'signup'
+
+/**
+ * Emitted when the user picks an auth method (email/google/github), before any
+ * Firebase call. Lights the first step of the auth black box: page_view ->
+ * method_selected, which is dark today.
+ */
+export interface AuthMethodSelectedMetadata {
+  method: AuthMethod
+  view: AuthView
+}
+
+export type OAuthProvider = 'google' | 'github'
+
+type OAuthPopupResult = 'success' | 'cancelled' | 'error'
+
+/**
+ * Outcome of an OAuth popup round-trip. Popup cancels and errors are silent
+ * today, so the google/github leg of the auth funnel cannot be debugged.
+ */
+export interface OAuthPopupResultMetadata {
+  provider: OAuthProvider
+  result: OAuthPopupResult
+  error_code?: string
+}
+
+/**
+ * `firebase` covers the credential/popup step; `create_customer` covers the
+ * backend provisioning call that runs after Firebase succeeds. A
+ * `create_customer` failure is the "zombie customer": authenticated in Firebase
+ * but never provisioned, so it emits no auth_completed today.
+ */
+type AuthFailureStage = 'firebase' | 'create_customer'
+
+export interface AuthFailedMetadata {
+  method: AuthMethod
+  stage: AuthFailureStage
+  error_code?: string
+}
+
 /**
  * Survey response data for user profiling
  * Maps 1-to-1 with actual survey fields
@@ -428,6 +474,59 @@ export interface SubscriptionMetadata {
   reason?: SubscriptionDialogReason
 }
 
+/**
+ * `no_url` = the server created no Stripe session (response missing
+ * checkout_url); `server_error` = the checkout request itself failed. Both end
+ * the monetization funnel before the user ever reaches Stripe, and both are a
+ * silent bounce today.
+ */
+type CheckoutInitiateFailureStage = 'no_url' | 'server_error'
+
+export interface CheckoutInitiateFailedMetadata {
+  stage: CheckoutInitiateFailureStage
+  error_code?: string
+}
+
+/**
+ * The browser blocked window.open for the Stripe checkout tab. Distinct from a
+ * server failure: the session existed, the popup never opened.
+ */
+export type CheckoutWindowBlockedMetadata = Record<string, never>
+
+/**
+ * Fired when a completed job's output media first becomes visible. Zero
+ * telemetry today on whether the user actually SAW their result, which is the
+ * activation moment.
+ */
+export interface OutputViewedMetadata {
+  workflow_run_id: string
+  media_type: string
+  is_first_output: boolean
+}
+
+/**
+ * The UserCheckView routing fork after auth. `waitlist` = not yet provisioned
+ * on cloud; `survey` = onboarding survey still required; `onboarded` = sent to
+ * the app. Lights the post-auth void where users vanish before the canvas.
+ */
+type OnboardingDestination = 'waitlist' | 'survey' | 'onboarded'
+
+export interface OnboardingRoutedMetadata {
+  destination: OnboardingDestination
+  survey_completed: boolean
+  has_cloud_status: boolean
+}
+
+/**
+ * Fired once when the graph canvas is interactive. `is_new_user` anchors
+ * new-user activation on the canvas (user_logged_in carries no such flag), and
+ * `ms_since_auth` measures auth -> canvas latency.
+ */
+export interface CanvasReadyMetadata {
+  is_new_user: boolean
+  ms_since_auth?: number
+}
+
 export interface BeginCheckoutMetadata
   extends Record<string, unknown>, CheckoutAttributionMetadata {
   user_id: string
@@ -470,8 +569,13 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
 export interface TelemetryProvider {
   // Authentication flow events
   trackSignupOpened?(): void
+  trackAuthMethodSelected?(metadata: AuthMethodSelectedMetadata): void
+  trackOAuthPopupResult?(metadata: OAuthPopupResultMetadata): void
+  trackAuthFailed?(metadata: AuthFailedMetadata): void
   trackAuth?(metadata: AuthMetadata): void
   trackUserLoggedIn?(): void
+  trackCanvasReady?(metadata: CanvasReadyMetadata): void
+  trackOnboardingRouted?(metadata: OnboardingRoutedMetadata): void
 
   // Subscription flow events
   trackSubscription?(
@@ -479,6 +583,8 @@ export interface TelemetryProvider {
     metadata?: SubscriptionMetadata
   ): void
   trackBeginCheckout?(metadata: BeginCheckoutMetadata): void
+  trackCheckoutInitiateFailed?(metadata: CheckoutInitiateFailedMetadata): void
+  trackCheckoutWindowBlocked?(metadata?: CheckoutWindowBlockedMetadata): void
   trackMonthlySubscriptionSucceeded?(
     metadata?: SubscriptionSuccessMetadata
   ): void
@@ -498,9 +604,6 @@ export interface TelemetryProvider {
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
-
-  // Email verification events
-  trackEmailVerification?(stage: 'opened' | 'requested' | 'completed'): void
 
   // Template workflow events
   trackTemplate?(metadata: TemplateMetadata): void
@@ -550,6 +653,7 @@ export interface TelemetryProvider {
   trackWorkflowExecution?(): void
   trackExecutionError?(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess?(metadata: ExecutionSuccessMetadata): void
+  trackOutputViewed?(metadata: OutputViewedMetadata): void
   trackSharedWorkflowRun?(metadata: SharedWorkflowRunMetadata): void
 
   // Settings events
@@ -579,13 +683,20 @@ export type TelemetryDispatcher = Required<TelemetryProvider>
 export const TelemetryEvents = {
   // Authentication Flow
   USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
+  AUTH_METHOD_SELECTED: 'app:auth_method_selected',
+  OAUTH_POPUP_RESULT: 'app:oauth_popup_result',
+  AUTH_FAILED: 'app:auth_failed',
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
   USER_LOGGED_IN: 'app:user_logged_in',
+  CANVAS_READY: 'app:canvas_ready',
+  ONBOARDING_ROUTED: 'app:onboarding_routed',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
   SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'app:subscription_required_modal_opened',
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
+  CHECKOUT_INITIATE_FAILED: 'app:checkout_initiate_failed',
+  CHECKOUT_WINDOW_BLOCKED: 'app:checkout_window_blocked',
   MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
   MONTHLY_SUBSCRIPTION_CANCELLED: 'app:monthly_subscription_cancelled',
   ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
@@ -596,11 +707,6 @@ export const TelemetryEvents = {
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
-
-  // Email Verification
-  USER_EMAIL_VERIFY_OPENED: 'app:user_email_verify_opened',
-  USER_EMAIL_VERIFY_REQUESTED: 'app:user_email_verify_requested',
-  USER_EMAIL_VERIFY_COMPLETED: 'app:user_email_verify_completed',
 
   // Template Tracking
   TEMPLATE_WORKFLOW_OPENED: 'app:template_workflow_opened',
@@ -649,6 +755,7 @@ export const TelemetryEvents = {
   EXECUTION_START: 'execution_start',
   EXECUTION_ERROR: 'execution_error',
   EXECUTION_SUCCESS: 'execution_success',
+  OUTPUT_VIEWED: 'app:output_viewed',
   SHARED_WORKFLOW_RUN: 'app:shared_workflow_run',
   // Generic UI Button Click
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
@@ -672,6 +779,14 @@ export type ExecutionTriggerSource =
  */
 export type TelemetryEventProperties =
   | AuthMetadata
+  | AuthMethodSelectedMetadata
+  | OAuthPopupResultMetadata
+  | AuthFailedMetadata
+  | CanvasReadyMetadata
+  | OnboardingRoutedMetadata
+  | CheckoutInitiateFailedMetadata
+  | CheckoutWindowBlockedMetadata
+  | OutputViewedMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext

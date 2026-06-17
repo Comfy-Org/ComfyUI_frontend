@@ -29,6 +29,12 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
+import { markAuthForActivation } from '@/platform/telemetry/authActivationMarker'
+import type {
+  AuthMethod,
+  AuthView,
+  OAuthProvider
+} from '@/platform/telemetry/types'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -325,24 +331,92 @@ export const useAuthStore = defineStore('auth', () => {
     return createCustomerResJson
   }
 
+  const errorCodeOf = (error: unknown): string | undefined =>
+    error instanceof FirebaseError ? error.code : undefined
+
+  /**
+   * Telemetry context threaded through every auth action so the auth funnel
+   * can split outcomes by method/view and pinpoint where a sign-in died:
+   * the Firebase credential step, or the backend create_customer step (the
+   * "zombie customer" who is authenticated in Firebase but never provisioned).
+   */
+  interface AuthTelemetryContext {
+    method: AuthMethod
+    view: AuthView
+    oauthProvider?: OAuthProvider
+  }
+
   const executeAuthAction = async <T>(
     action: (auth: Auth) => Promise<T>,
     options: {
       createCustomer?: boolean
+      telemetry?: AuthTelemetryContext
     } = {}
   ): Promise<T> => {
     loading.value = true
 
+    const telemetry = isCloud ? useTelemetry() : undefined
+    const telemetryContext = options.telemetry
+
+    if (telemetryContext) {
+      telemetry?.trackAuthMethodSelected({
+        method: telemetryContext.method,
+        view: telemetryContext.view
+      })
+    }
+
     try {
-      const result = await action(auth)
+      let result: T
+      try {
+        result = await action(auth)
+      } catch (error) {
+        if (telemetryContext?.oauthProvider) {
+          const errorCode = errorCodeOf(error)
+          telemetry?.trackOAuthPopupResult({
+            provider: telemetryContext.oauthProvider,
+            result:
+              errorCode === AuthErrorCodes.POPUP_CLOSED_BY_USER ||
+              errorCode === AuthErrorCodes.EXPIRED_POPUP_REQUEST
+                ? 'cancelled'
+                : 'error',
+            error_code: errorCode
+          })
+        }
+        if (telemetryContext) {
+          telemetry?.trackAuthFailed({
+            method: telemetryContext.method,
+            stage: 'firebase',
+            error_code: errorCodeOf(error)
+          })
+        }
+        throw error
+      }
+
+      if (telemetryContext?.oauthProvider) {
+        telemetry?.trackOAuthPopupResult({
+          provider: telemetryContext.oauthProvider,
+          result: 'success'
+        })
+      }
 
       // Create customer if needed
       if (options?.createCustomer) {
-        const token = await getIdToken()
-        if (!token) {
-          throw new Error('Cannot create customer: User not authenticated')
+        try {
+          const token = await getIdToken()
+          if (!token) {
+            throw new Error('Cannot create customer: User not authenticated')
+          }
+          await createCustomer()
+        } catch (error) {
+          if (telemetryContext) {
+            telemetry?.trackAuthFailed({
+              method: telemetryContext.method,
+              stage: 'create_customer',
+              error_code: errorCodeOf(error)
+            })
+          }
+          throw error
         }
-        await createCustomer()
       }
 
       return result
@@ -358,7 +432,10 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await executeAuthAction(
       (authInstance) =>
         signInWithEmailAndPassword(authInstance, email, password),
-      { createCustomer: true }
+      {
+        createCustomer: true,
+        telemetry: { method: 'email', view: 'login' }
+      }
     )
 
     if (isCloud) {
@@ -369,6 +446,7 @@ export const useAuthStore = defineStore('auth', () => {
         email: result.user.email ?? undefined,
         ...getShareAuthMetadata()
       })
+      markAuthForActivation(false)
     }
 
     return result
@@ -381,7 +459,10 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await executeAuthAction(
       (authInstance) =>
         createUserWithEmailAndPassword(authInstance, email, password),
-      { createCustomer: true }
+      {
+        createCustomer: true,
+        telemetry: { method: 'email', view: 'signup' }
+      }
     )
 
     if (isCloud) {
@@ -392,6 +473,7 @@ export const useAuthStore = defineStore('auth', () => {
         email: result.user.email ?? undefined,
         ...getShareAuthMetadata()
       })
+      markAuthForActivation(true)
     }
 
     return result
@@ -402,19 +484,28 @@ export const useAuthStore = defineStore('auth', () => {
   }): Promise<UserCredential> => {
     const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, googleProvider),
-      { createCustomer: true }
+      {
+        createCustomer: true,
+        telemetry: {
+          method: 'google',
+          view: options?.isNewUser ? 'signup' : 'login',
+          oauthProvider: 'google'
+        }
+      }
     )
 
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
+      const isNewUser =
+        options?.isNewUser || additionalUserInfo?.isNewUser || false
       useTelemetry()?.trackAuth({
         method: 'google',
-        is_new_user:
-          options?.isNewUser || additionalUserInfo?.isNewUser || false,
+        is_new_user: isNewUser,
         user_id: result.user.uid,
         email: result.user.email ?? undefined,
         ...getShareAuthMetadata()
       })
+      markAuthForActivation(isNewUser)
     }
 
     return result
@@ -425,19 +516,28 @@ export const useAuthStore = defineStore('auth', () => {
   }): Promise<UserCredential> => {
     const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, githubProvider),
-      { createCustomer: true }
+      {
+        createCustomer: true,
+        telemetry: {
+          method: 'github',
+          view: options?.isNewUser ? 'signup' : 'login',
+          oauthProvider: 'github'
+        }
+      }
     )
 
     if (isCloud) {
       const additionalUserInfo = getAdditionalUserInfo(result)
+      const isNewUser =
+        options?.isNewUser || additionalUserInfo?.isNewUser || false
       useTelemetry()?.trackAuth({
         method: 'github',
-        is_new_user:
-          options?.isNewUser || additionalUserInfo?.isNewUser || false,
+        is_new_user: isNewUser,
         user_id: result.user.uid,
         email: result.user.email ?? undefined,
         ...getShareAuthMetadata()
       })
+      markAuthForActivation(isNewUser)
     }
 
     return result

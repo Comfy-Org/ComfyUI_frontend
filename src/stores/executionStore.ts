@@ -95,6 +95,33 @@ function buildExecutionNodeLookup(
  */
 export const MAX_PROGRESS_JOBS = 1000
 
+/**
+ * Upper bound on the set of run ids we have already emitted `output_viewed`
+ * for, so a multi-output workflow fires the event once per run (not once per
+ * output node). Bounded to avoid unbounded growth in long sessions.
+ */
+const MAX_TRACKED_OUTPUT_RUNS = 256
+const outputViewedRuns = new Set<string>()
+let sessionHasViewedOutput = false
+
+/**
+ * Classifies a finished node's output into a coarse media type for the
+ * `output_viewed` activation event. Returns null for non-media outputs (e.g.
+ * text-only or metadata), which should not count as a viewed result.
+ */
+function firstOutputMediaType(
+  output: ExecutedWsMessage['output']
+): string | null {
+  if (output.images?.length) return 'image'
+  if (output.video?.length) return 'video'
+  if (output.audio?.length) return 'audio'
+  // `gifs` / `model_file` arrive via the passthrough output schema.
+  const extra = output as Record<string, unknown>
+  if (Array.isArray(extra.gifs) && extra.gifs.length) return 'video'
+  if (Array.isArray(extra.model_file) && extra.model_file.length) return '3d'
+  return null
+}
+
 export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
@@ -310,6 +337,26 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
     if (!activeJob.value) return
     activeJob.value.nodes[e.detail.node] = true
+
+    // First media output of a run is the activation moment (cloud only).
+    if (isCloud) {
+      const runId = e.detail.prompt_id
+      const mediaType = firstOutputMediaType(e.detail.output)
+      if (mediaType && !outputViewedRuns.has(runId)) {
+        outputViewedRuns.add(runId)
+        if (outputViewedRuns.size > MAX_TRACKED_OUTPUT_RUNS) {
+          const oldest = outputViewedRuns.values().next().value
+          if (oldest !== undefined) outputViewedRuns.delete(oldest)
+        }
+        const isFirstOutput = !sessionHasViewedOutput
+        sessionHasViewedOutput = true
+        useTelemetry()?.trackOutputViewed({
+          workflow_run_id: runId,
+          media_type: mediaType,
+          is_first_output: isFirstOutput
+        })
+      }
+    }
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {

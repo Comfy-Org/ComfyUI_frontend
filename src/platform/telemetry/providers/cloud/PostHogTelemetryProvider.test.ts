@@ -450,10 +450,7 @@ describe('PostHogTelemetryProvider', () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
 
-      provider.trackWorkflowOpened({
-        missing_node_count: 0,
-        missing_node_types: []
-      })
+      provider.trackPageVisibilityChanged({ visibility_state: 'hidden' })
 
       expect(hoisted.mockCapture).not.toHaveBeenCalled()
     })

@@ -256,15 +256,6 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     this.pushEvent(ga4EventName, responses ? { ...responses } : undefined)
   }
 
-  trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
-    const eventMap = {
-      opened: 'email_verify_opened',
-      requested: 'email_verify_requested',
-      completed: 'email_verify_completed'
-    } as const
-    this.pushEvent(eventMap[stage])
-  }
-
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {
     this.pushEvent('workflow_opened', {
       missing_node_count: metadata.missing_node_count,

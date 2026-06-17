@@ -1,8 +1,13 @@
 import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
+  AuthFailedMetadata,
+  AuthMethodSelectedMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
+  CanvasReadyMetadata,
+  CheckoutInitiateFailedMetadata,
+  CheckoutWindowBlockedMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -16,6 +21,9 @@ import type {
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OAuthPopupResultMetadata,
+  OnboardingRoutedMetadata,
+  OutputViewedMetadata,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -67,12 +75,32 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackSignupOpened?.())
   }
 
+  trackAuthMethodSelected(metadata: AuthMethodSelectedMetadata): void {
+    this.dispatch((provider) => provider.trackAuthMethodSelected?.(metadata))
+  }
+
+  trackOAuthPopupResult(metadata: OAuthPopupResultMetadata): void {
+    this.dispatch((provider) => provider.trackOAuthPopupResult?.(metadata))
+  }
+
+  trackAuthFailed(metadata: AuthFailedMetadata): void {
+    this.dispatch((provider) => provider.trackAuthFailed?.(metadata))
+  }
+
   trackAuth(metadata: AuthMetadata): void {
     this.dispatch((provider) => provider.trackAuth?.(metadata))
   }
 
   trackUserLoggedIn(): void {
     this.dispatch((provider) => provider.trackUserLoggedIn?.())
+  }
+
+  trackCanvasReady(metadata: CanvasReadyMetadata): void {
+    this.dispatch((provider) => provider.trackCanvasReady?.(metadata))
+  }
+
+  trackOnboardingRouted(metadata: OnboardingRoutedMetadata): void {
+    this.dispatch((provider) => provider.trackOnboardingRouted?.(metadata))
   }
 
   trackSubscription(
@@ -84,6 +112,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
     this.dispatch((provider) => provider.trackBeginCheckout?.(metadata))
+  }
+
+  trackCheckoutInitiateFailed(metadata: CheckoutInitiateFailedMetadata): void {
+    this.dispatch((provider) => provider.trackCheckoutInitiateFailed?.(metadata))
+  }
+
+  trackCheckoutWindowBlocked(metadata?: CheckoutWindowBlockedMetadata): void {
+    this.dispatch((provider) => provider.trackCheckoutWindowBlocked?.(metadata))
   }
 
   trackMonthlySubscriptionSucceeded(
@@ -143,10 +179,6 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     responses?: SurveyResponses
   ): void {
     this.dispatch((provider) => provider.trackSurvey?.(stage, responses))
-  }
-
-  trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
-    this.dispatch((provider) => provider.trackEmailVerification?.(stage))
   }
 
   trackTemplate(metadata: TemplateMetadata): void {
@@ -249,6 +281,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
     this.dispatch((provider) => provider.trackExecutionSuccess?.(metadata))
+  }
+
+  trackOutputViewed(metadata: OutputViewedMetadata): void {
+    this.dispatch((provider) => provider.trackOutputViewed?.(metadata))
   }
 
   trackSharedWorkflowRun(metadata: SharedWorkflowRunMetadata): void {

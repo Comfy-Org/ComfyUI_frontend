@@ -10,7 +10,12 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
+  AuthFailedMetadata,
+  AuthMethodSelectedMetadata,
   AuthMetadata,
+  CanvasReadyMetadata,
+  CheckoutInitiateFailedMetadata,
+  CheckoutWindowBlockedMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -22,6 +27,9 @@ import type {
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OAuthPopupResultMetadata,
+  OnboardingRoutedMetadata,
+  OutputViewedMetadata,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -51,15 +59,13 @@ import { getExecutionContext } from '../../utils/getExecutionContext'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
-  TelemetryEvents.WORKFLOW_OPENED,
   TelemetryEvents.PAGE_VISIBILITY_CHANGED,
   TelemetryEvents.TAB_COUNT_TRACKING,
   TelemetryEvents.NODE_SEARCH,
   TelemetryEvents.NODE_SEARCH_RESULT_SELECTED,
   TelemetryEvents.HELP_CENTER_OPENED,
   TelemetryEvents.HELP_RESOURCE_CLICKED,
-  TelemetryEvents.HELP_CENTER_CLOSED,
-  TelemetryEvents.WORKFLOW_CREATED
+  TelemetryEvents.HELP_CENTER_CLOSED
 ] as const satisfies TelemetryEventName[]
 
 const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
@@ -327,6 +333,26 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.USER_SIGN_UP_OPENED)
   }
 
+  trackAuthMethodSelected(metadata: AuthMethodSelectedMetadata): void {
+    this.trackEvent(TelemetryEvents.AUTH_METHOD_SELECTED, metadata)
+  }
+
+  trackOAuthPopupResult(metadata: OAuthPopupResultMetadata): void {
+    this.trackEvent(TelemetryEvents.OAUTH_POPUP_RESULT, metadata)
+  }
+
+  trackAuthFailed(metadata: AuthFailedMetadata): void {
+    this.trackEvent(TelemetryEvents.AUTH_FAILED, metadata)
+  }
+
+  trackCanvasReady(metadata: CanvasReadyMetadata): void {
+    this.trackEvent(TelemetryEvents.CANVAS_READY, metadata)
+  }
+
+  trackOnboardingRouted(metadata: OnboardingRoutedMetadata): void {
+    this.trackEvent(TelemetryEvents.ONBOARDING_ROUTED, metadata)
+  }
+
   trackAuth(metadata: AuthMetadata): void {
     if (metadata.is_new_user && metadata.user_id) {
       this.setFirstAuthAt(metadata.user_id)
@@ -352,6 +378,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAddApiCreditButtonClicked(): void {
     this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
+  }
+
+  trackCheckoutInitiateFailed(metadata: CheckoutInitiateFailedMetadata): void {
+    this.trackEvent(TelemetryEvents.CHECKOUT_INITIATE_FAILED, metadata)
+  }
+
+  trackCheckoutWindowBlocked(metadata?: CheckoutWindowBlockedMetadata): void {
+    this.trackEvent(TelemetryEvents.CHECKOUT_WINDOW_BLOCKED, metadata)
   }
 
   trackMonthlySubscriptionSucceeded(
@@ -429,24 +463,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         console.error('Failed to set PostHog user properties:', error)
       }
     }
-  }
-
-  trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
-    let eventName: TelemetryEventName
-
-    switch (stage) {
-      case 'opened':
-        eventName = TelemetryEvents.USER_EMAIL_VERIFY_OPENED
-        break
-      case 'requested':
-        eventName = TelemetryEvents.USER_EMAIL_VERIFY_REQUESTED
-        break
-      case 'completed':
-        eventName = TelemetryEvents.USER_EMAIL_VERIFY_COMPLETED
-        break
-    }
-
-    this.trackEvent(eventName)
   }
 
   trackTemplate(metadata: TemplateMetadata): void {
@@ -535,6 +551,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
+  }
+
+  trackOutputViewed(metadata: OutputViewedMetadata): void {
+    this.trackEvent(TelemetryEvents.OUTPUT_VIEWED, metadata)
   }
 
   trackSharedWorkflowRun(metadata: SharedWorkflowRunMetadata): void {

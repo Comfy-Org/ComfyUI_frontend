@@ -204,9 +204,19 @@ function useSubscriptionInternal() {
   )
 
   const subscribe = wrapWithErrorHandlingAsync(async () => {
-    const response = await initiateSubscriptionCheckout()
+    let response: CloudSubscriptionCheckoutResponse
+    try {
+      response = await initiateSubscriptionCheckout()
+    } catch (error) {
+      telemetry?.trackCheckoutInitiateFailed({
+        stage: 'server_error',
+        error_code: error instanceof Error ? error.message : undefined
+      })
+      throw error
+    }
 
     if (!response.checkout_url) {
+      telemetry?.trackCheckoutInitiateFailed({ stage: 'no_url' })
       throw new Error(
         t('toastMessages.failedToInitiateSubscription', {
           error: 'No checkout URL returned'
@@ -216,6 +226,7 @@ function useSubscriptionInternal() {
 
     const checkoutWindow = window.open(response.checkout_url, '_blank')
     if (!checkoutWindow) {
+      telemetry?.trackCheckoutWindowBlocked()
       return
     }
 

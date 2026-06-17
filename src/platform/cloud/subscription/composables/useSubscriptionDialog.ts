@@ -14,6 +14,12 @@ export type SubscriptionDialogReason =
   | 'subscription_required'
   | 'out_of_credits'
   | 'top_up_blocked'
+  // Workspace member-invite upsell. A NON-activation cohort: the activation
+  // funnel must be able to EXCLUDE these so single-user activation is not
+  // diluted by team seat-expansion prompts.
+  | 'member_invite'
+  | 'upload_model'
+  | 'run_workflow'
 
 export const useSubscriptionDialog = () => {
   const { flags } = useFeatureFlags()
