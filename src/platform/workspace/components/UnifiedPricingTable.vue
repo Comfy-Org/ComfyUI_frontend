@@ -534,10 +534,12 @@ const planScopeButtonPt = {
   pcToggleButton: {
     root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
       class: [
-        'h-8 px-4 rounded-t-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
+        'h-8 px-4 rounded-t-md transition cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
+        // Inactive tab is the active tab at half opacity (DES QA) — same fill
+        // and text, faded as one, not a separate muted colour.
         context.active
           ? 'bg-base-background text-base-foreground'
-          : 'bg-base-background/50 text-muted-foreground hover:bg-base-background'
+          : 'bg-base-background text-base-foreground opacity-50 hover:opacity-100'
       ]
     }),
     label: { class: 'flex items-center gap-2' }
