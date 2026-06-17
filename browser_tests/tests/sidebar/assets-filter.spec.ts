@@ -16,12 +16,9 @@ import { createMixedMediaJobs } from '@e2e/fixtures/helpers/AssetsHelper'
 // internal `setup()`, so the page first-loads with mocks already in place.
 // See cloud-asset-default.spec.ts for the same pattern.
 //
-// Readiness waits use `waitForAssets()` (first card visible) rather than
-// `waitForAssets(MIXED_JOBS.length)`. VirtualGrid sizes its render window from
-// a single uniform item height; the taller audio card pushes the 3D card out
-// of the initial window, so it is intermittently virtualized out of the DOM
-// (same cause as #11635). Filtering reads the full asset store regardless of
-// what is mounted, so the per-filter count assertions still provide coverage.
+// Use `waitForAssets()` not `waitForAssets(MIXED_JOBS.length)`: VirtualGrid can
+// virtualize the 3D card out of the initial render (#11635). Filtering reads the
+// full store, so the per-filter count assertions still cover the behavior.
 
 const MIXED_JOBS = createMixedMediaJobs(['images', 'video', 'audio', '3D'])
 
