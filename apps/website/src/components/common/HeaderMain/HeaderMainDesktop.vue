@@ -47,7 +47,9 @@ const mainNavigation = getMainNavigation(locale)
           as-child
           :class="navigationMenuTriggerStyle()"
         >
-          <a :href="navItem.href">{{ navItem.label }}</a>
+          <a :href="navItem.href" class="ppformula-text-center">{{
+            navItem.label
+          }}</a>
         </NavigationMenuLink>
       </NavigationMenuItem>
     </NavigationMenuList>
