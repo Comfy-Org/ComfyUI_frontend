@@ -3,14 +3,13 @@ import { storeToRefs } from 'pinia'
 import { computed, nextTick, ref, shallowRef, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
 import {
   getWidgetName,
   isWidgetPromotedOnSubgraphNode,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
@@ -45,32 +44,6 @@ const isAllCollapsed = computed({
 })
 const advancedInputsSectionRef = useTemplateRef('advancedInputsSectionRef')
 
-function isSamePromotedWidget(a: IBaseWidget, b: IBaseWidget): boolean {
-  return (
-    isPromotedWidgetView(a) &&
-    isPromotedWidgetView(b) &&
-    a.sourceNodeId === b.sourceNodeId &&
-    a.sourceWidgetName === b.sourceWidgetName
-  )
-}
-
-function getPromotedWidgets(): IBaseWidget[] {
-  const inputWidgets = node.inputs
-    .map((input) => input._widget)
-    .filter((widget): widget is IBaseWidget =>
-      Boolean(widget && isPromotedWidgetView(widget))
-    )
-  const extraWidgets = (node.widgets ?? []).filter(
-    (widget) =>
-      isPromotedWidgetView(widget) &&
-      !inputWidgets.some((inputWidget) =>
-        isSamePromotedWidget(inputWidget, widget)
-      )
-  )
-
-  return [...inputWidgets, ...extraWidgets]
-}
-
 watch(
   focusedSection,
   async (section) => {
@@ -93,7 +66,7 @@ watch(
 )
 
 const widgetsList = computed((): NodeWidgetsList => {
-  return getPromotedWidgets().map((widget) => ({ node, widget }))
+  return promotedInputWidgets(node).map((widget) => ({ node, widget }))
 })
 
 const advancedInputsWidgets = computed((): NodeWidgetsList => {

@@ -15836,7 +15836,7 @@
     }
   },
   "RTDETR_detect": {
-    "display_name": "RT-DETR Detect",
+    "display_name": "Run Real-Time Detection (RT-DETR)",
     "inputs": {
       "model": {
         "name": "model"
@@ -16161,7 +16161,7 @@
     }
   },
   "SAM3_VideoTrack": {
-    "display_name": "SAM3 Video Track",
+    "display_name": "Run SAM3 Video Track",
     "inputs": {
       "images": {
         "name": "images",
@@ -17065,6 +17065,9 @@
       },
       "score_threshold": {
         "name": "score_threshold"
+      },
+      "draw_head": {
+        "name": "draw_head"
       }
     },
     "outputs": {
@@ -17442,7 +17445,7 @@
   },
   "SoniloTextToMusic": {
     "display_name": "Sonilo Text to Music",
-    "description": "Generate music from a text prompt using Sonilo's AI model. Leave duration at 0 to let the model infer it from the prompt.",
+    "description": "Generate music from a text prompt using Sonilo's AI model.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -17450,7 +17453,7 @@
       },
       "duration": {
         "name": "duration",
-        "tooltip": "Target duration in seconds. Set to 0 to let the model infer the duration from the prompt. Maximum: 6 minutes."
+        "tooltip": "Target duration in seconds. Maximum: 6 minutes."
       },
       "seed": {
         "name": "seed",

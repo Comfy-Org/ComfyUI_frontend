@@ -1,5 +1,5 @@
 <template>
-  <div class="mt-2 px-4 pb-2">
+  <div class="px-3">
     <SwapNodeGroupRow
       v-for="group in swapNodeGroups"
       :key="group.type"
