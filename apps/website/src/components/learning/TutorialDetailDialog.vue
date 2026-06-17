@@ -64,6 +64,7 @@ onUnmounted(() => {
           :locale
           :src="tutorial.videoSrc"
           :poster="tutorial.poster"
+          :tracks="tutorial.caption"
           autoplay
           class="w-full"
         />
