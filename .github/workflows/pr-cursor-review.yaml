@@ -53,4 +53,3 @@ jobs:
       CURSOR_API_KEY: ${{ secrets.CURSOR_API_KEY }}
       # Optional — enables start/complete Slack DMs to the triggerer.
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-
