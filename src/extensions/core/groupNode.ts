@@ -961,8 +961,11 @@ const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
  */
 function convertLoadedGroupNodes(): number {
   let converted = 0
+  const failed = new Set<LGraphNode>()
   for (;;) {
-    const node = app.rootGraph.nodes.find(GroupNodeHandler.isGroupNode)
+    const node = app.rootGraph.nodes.find(
+      (n) => GroupNodeHandler.isGroupNode(n) && !failed.has(n)
+    )
     if (!node) return converted
     try {
       GroupNodeHandler.getHandler(node)
@@ -970,7 +973,15 @@ function convertLoadedGroupNodes(): number {
       converted++
     } catch (error) {
       console.error('Failed to convert group node to subgraph', error)
-      app.rootGraph.remove(node)
+      failed.add(node)
+      try {
+        app.rootGraph.remove(node)
+      } catch (removeError) {
+        console.error(
+          'Failed to remove group node after conversion failure',
+          removeError
+        )
+      }
     }
   }
 }
@@ -1022,7 +1033,14 @@ const ext: ComfyExtension = {
       queueMicrotask(() => {
         const graph = node.graph
         if (graph && GroupNodeHandler.isGroupNode(node)) {
-          graph.convertToSubgraph(new Set([node]))
+          try {
+            graph.convertToSubgraph(new Set([node]))
+          } catch (error) {
+            console.error(
+              'Failed to convert stray group node to subgraph',
+              error
+            )
+          }
         }
       })
     }

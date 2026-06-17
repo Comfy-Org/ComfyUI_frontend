@@ -379,18 +379,25 @@ const ext: ComfyExtension = {
     })
 
     // Map each template to a menu item
-    const subItems = manage.templates.map((t) => {
+    const subItems = manage.templates.map((template) => {
       return {
-        content: t.name,
+        content: template.name,
         callback: () => {
           clipboardAction(() => {
-            const data = JSON.parse(t.data)
+            let data: { reroutes?: unknown }
+            try {
+              data = JSON.parse(template.data)
+            } catch (error) {
+              console.error('Failed to parse node template data', error)
+              useToastStore().addAlert(t('toastMessages.invalidTemplateData'))
+              return
+            }
 
             // Check for old clipboard format
             if (!data.reroutes) {
-              deserialiseAndCreate(t.data, app.canvas)
+              deserialiseAndCreate(template.data, app.canvas)
             } else {
-              localStorage.setItem('litegrapheditor_clipboard', t.data)
+              localStorage.setItem('litegrapheditor_clipboard', template.data)
               app.canvas.pasteFromClipboard()
             }
           })
