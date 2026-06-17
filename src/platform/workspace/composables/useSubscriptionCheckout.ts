@@ -163,12 +163,12 @@ export function useSubscriptionCheckout(emit: {
         response.payment_method_url
       ) {
         window.open(response.payment_method_url, '_blank')
-        billingOperationStore.startOperation(
+        void billingOperationStore.startOperation(
           response.billing_op_id,
           'subscription'
         )
       } else if (response.status === 'pending_payment') {
-        billingOperationStore.startOperation(
+        void billingOperationStore.startOperation(
           response.billing_op_id,
           'subscription'
         )

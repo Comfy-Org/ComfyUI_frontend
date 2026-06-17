@@ -18,13 +18,19 @@
           :maximized="!!item.dialogComponentProps.maximized"
           :class="item.dialogComponentProps.contentClass"
           :aria-labelledby="item.key"
+          @open-auto-focus="(e) => onRekaOpenAutoFocus(e, item.key)"
           @escape-key-down="
             (e) =>
               item.dialogComponentProps.closeOnEscape === false &&
               e.preventDefault()
           "
           @pointer-down-outside="
-            (e) => onRekaPointerDownOutside(item.dialogComponentProps, e)
+            (e) =>
+              onRekaPointerDownOutside(
+                item.dialogComponentProps,
+                e,
+                dialogStore.activeKey === item.key
+              )
           "
           @focus-outside="onRekaFocusOutside"
           @mousedown="() => dialogStore.riseDialog({ key: item.key })"
@@ -37,7 +43,7 @@
             />
           </template>
           <template v-else>
-            <DialogHeader>
+            <DialogHeader :class="item.dialogComponentProps.headerClass">
               <component
                 :is="item.headerComponent"
                 v-if="item.headerComponent"
@@ -58,14 +64,24 @@
                 />
               </div>
             </DialogHeader>
-            <div class="flex-1 overflow-auto px-4 py-2">
+            <div
+              :class="
+                cn(
+                  'flex-1 overflow-auto px-4 py-2',
+                  item.dialogComponentProps.bodyClass
+                )
+              "
+            >
               <component
                 :is="item.component"
                 v-bind="item.contentProps"
                 :maximized="item.dialogComponentProps.maximized"
               />
             </div>
-            <DialogFooter v-if="item.footerComponent">
+            <DialogFooter
+              v-if="item.footerComponent"
+              :class="item.dialogComponentProps.footerClass"
+            >
               <component :is="item.footerComponent" v-bind="item.footerProps" />
             </DialogFooter>
           </template>
@@ -109,6 +125,8 @@
 <script setup lang="ts">
 import PrimeDialog from 'primevue/dialog'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogClose from '@/components/ui/dialog/DialogClose.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
@@ -134,6 +152,22 @@ function isRekaItem(item: DialogInstance) {
 
 function onRekaOpenChange(key: string, open: boolean) {
   if (!open) dialogStore.closeDialog({ key })
+}
+
+// Reka's FocusScope focuses the first tabbable element on open (often a header
+// or footer button). Dialog content that marks an input with `autofocus` (e.g.
+// the keybinding capture input, the prompt input) relied on PrimeVue honoring
+// that attribute, so honor it here: focus the autofocus target and cancel
+// Reka's default auto-focus when one is present.
+function onRekaOpenAutoFocus(event: Event, key: string) {
+  const content = document.querySelector<HTMLElement>(
+    `[aria-labelledby="${CSS.escape(key)}"]`
+  )
+  const autofocusEl = content?.querySelector<HTMLElement>('[autofocus]')
+  if (autofocusEl) {
+    event.preventDefault()
+    autofocusEl.focus()
+  }
 }
 
 function toggleMaximize(item: DialogInstance) {
