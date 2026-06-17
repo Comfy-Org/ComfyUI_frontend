@@ -41,6 +41,7 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     { tag: ['@smoke', '@screenshot'] },
     async ({ comfyPage, maskEditor }) => {
       const { nodeId } = await maskEditor.loadImageOnNode()
+      await comfyPage.canvasOps.pan({ x: 0, y: 40 }, { x: 300, y: 300 })
 
       const nodeHeader = comfyPage.vueNodes
         .getNodeLocator(nodeId)
