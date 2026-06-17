@@ -859,4 +859,129 @@ describe('useAuthStore', () => {
       await expect(store.createCustomer()).rejects.toThrow()
     })
   })
+
+  describe('Desktop customer provisioning on auth-state change', () => {
+    beforeEach(async () => {
+      vi.resetModules()
+
+      // Switch to Desktop distribution so the onAuthStateChanged handler
+      // reaches the isDesktop branch instead of the isCloud branch
+      mockDistributionTypes.isCloud = false
+      mockDistributionTypes.isDesktop = true
+
+      // Capture the callback without firing it so each test controls timing
+      vi.mocked(firebaseAuth.onAuthStateChanged).mockImplementation(
+        (_, callback) => {
+          authStateCallback = callback as (user: User | null) => void
+          return vi.fn()
+        }
+      )
+
+      vi.mocked(vuefire.useFirebaseAuth).mockReturnValue(
+        mockAuth as Partial<
+          ReturnType<typeof vuefire.useFirebaseAuth>
+        > as ReturnType<typeof vuefire.useFirebaseAuth>
+      )
+
+      setActivePinia(createTestingPinia({ stubActions: false }))
+      const storeModule = await import('@/stores/authStore')
+      store = storeModule.useAuthStore()
+
+      // Clear fetch call history accumulated during store initialization
+      mockFetch.mockClear()
+    })
+
+    afterEach(() => {
+      // Restore defaults so tests outside this describe are unaffected
+      mockDistributionTypes.isCloud = true
+      mockDistributionTypes.isDesktop = true
+    })
+
+    it('calls POST /customers when user signs in via Desktop native auth', async () => {
+      authStateCallback(mockUser)
+
+      await vi.waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringContaining('/customers'),
+          expect.objectContaining({
+            method: 'POST',
+            headers: expect.objectContaining({
+              Authorization: 'Bearer mock-id-token'
+            })
+          })
+        )
+      })
+    })
+
+    it('silently swallows 409 when customer row already exists', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 409 })
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+
+      authStateCallback(mockUser)
+
+      await vi.waitFor(() => {
+        expect(mockFetch).toHaveBeenCalledWith(
+          expect.stringContaining('/customers'),
+          expect.objectContaining({ method: 'POST' })
+        )
+      })
+      expect(consoleWarnSpy).not.toHaveBeenCalledWith(
+        expect.stringContaining('[Desktop]')
+      )
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('logs a warning but does not throw on 5xx server error', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: false, status: 500 })
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+
+      authStateCallback(mockUser)
+
+      await vi.waitFor(() => {
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining(
+            '[Desktop] Failed to provision customer (HTTP 500)'
+          )
+        )
+      })
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('logs a warning but does not throw on network failure', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Network offline'))
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+
+      authStateCallback(mockUser)
+
+      await vi.waitFor(() => {
+        expect(consoleWarnSpy).toHaveBeenCalledWith(
+          expect.stringContaining('[Desktop] Failed to provision customer'),
+          expect.any(Error)
+        )
+      })
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('does not call POST /customers when auth state changes to signed-out', async () => {
+      authStateCallback(null)
+
+      await new Promise<void>((resolve) => setTimeout(resolve, 50))
+
+      const provisionCalls = mockFetch.mock.calls.filter((args) => {
+        const [url, opts] = args as [string, RequestInit]
+        return (
+          typeof url === 'string' &&
+          url.endsWith('/customers') &&
+          opts?.method === 'POST'
+        )
+      })
+      expect(provisionCalls).toHaveLength(0)
+    })
+  })
 })

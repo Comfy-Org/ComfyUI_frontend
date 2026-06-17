@@ -22,7 +22,7 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import { isCloud } from '@/platform/distribution/types'
+import { isCloud, isDesktop } from '@/platform/distribution/types'
 import {
   clearPreservedQuery,
   getPreservedQueryParam
@@ -129,6 +129,15 @@ export const useAuthStore = defineStore('auth', () => {
       // Mint the single Cloud JWT at login (flag-guarded inside the store; a
       // no-op when unified_cloud_auth is off).
       void useWorkspaceAuthStore().mintAtLogin()
+    } else if (isDesktop) {
+      // Desktop native auth (inject.ts) writes Firebase credentials directly to
+      // IndexedDB and calls location.reload(), bypassing the web sign-in form's
+      // executeAuthAction which is the only other call site of createCustomer.
+      // Provision the customer row here so the user is never locked out on their
+      // first API call. The call is idempotent — a 409 means the row already
+      // exists (e.g. sign-in via the in-app web form on Desktop 1, or a second
+      // app launch after the row was created) and is silently swallowed.
+      void provisionDesktopCustomer()
     }
 
     // Reset balance when auth state changes
@@ -288,6 +297,35 @@ export const useAuthStore = defineStore('auth', () => {
       return balanceData
     } finally {
       isFetchingBalance.value = false
+    }
+  }
+
+  /**
+   * Called from onAuthStateChanged for Desktop builds.
+   *
+   * Desktop native auth (inject.ts) injects Firebase credentials into IndexedDB
+   * and reloads the page, so POST /customers is never called by the sign-in form.
+   * This function provisions the customer row idempotently: a 409 (row already
+   * exists) is silently swallowed; any other failure is logged as a warning and
+   * does not surface to the user — the server-side fallback provisioner catches
+   * it on the first authenticated API request.
+   */
+  const provisionDesktopCustomer = async (): Promise<void> => {
+    const authHeader = await getAuthHeader()
+    if (!authHeader) return
+
+    try {
+      const res = await fetch(buildApiUrl('/customers'), {
+        method: 'POST',
+        headers: { ...authHeader, 'Content-Type': 'application/json' }
+      })
+      if (!res.ok && res.status !== 409) {
+        console.warn(
+          `[Desktop] Failed to provision customer (HTTP ${res.status})`
+        )
+      }
+    } catch (err) {
+      console.warn('[Desktop] Failed to provision customer', err)
     }
   }
 
