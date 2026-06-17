@@ -22,7 +22,9 @@ const forwardedProps = useForwardProps(computed(() => ({ ...restProps })))
     v-bind="forwardedProps"
     :class="cn(navigationMenuTriggerStyle(), 'group', className)"
   >
-    <slot />
+    <span class="ppformula-text-center">
+      <slot />
+    </span>
     <ChevronDown
       class="relative ml-1 size-3 transition duration-300 group-data-[state=open]:rotate-180"
       aria-hidden="true"
