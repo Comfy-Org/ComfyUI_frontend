@@ -4,6 +4,9 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { getWorkflowMode, isAppModeValue } from '@/utils/appMode'
 import type { AppMode } from '@/utils/appMode'
 
+export { getWorkflowMode, isAppModeValue } from '@/utils/appMode'
+export type { AppMode } from '@/utils/appMode'
+
 const enableAppBuilder = ref(true)
 
 export function useAppMode() {
