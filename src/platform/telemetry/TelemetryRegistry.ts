@@ -115,7 +115,9 @@ export class TelemetryRegistry implements TelemetryDispatcher {
   }
 
   trackCheckoutInitiateFailed(metadata: CheckoutInitiateFailedMetadata): void {
-    this.dispatch((provider) => provider.trackCheckoutInitiateFailed?.(metadata))
+    this.dispatch((provider) =>
+      provider.trackCheckoutInitiateFailed?.(metadata)
+    )
   }
 
   trackCheckoutWindowBlocked(metadata?: CheckoutWindowBlockedMetadata): void {
