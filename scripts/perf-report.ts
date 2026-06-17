@@ -316,7 +316,7 @@ function renderFullReport(
     lines.push(
       `⚠️ **${flaggedRows.length} regression${flaggedRows.length > 1 ? 's' : ''} detected**`,
       '',
-      `<details><summary>Show regressions</summary>`,
+      '<details><summary>Show regressions</summary>',
       '',
       ...tableHeader,
       ...flaggedRows,
@@ -397,7 +397,7 @@ function renderColdStartReport(
   lines.push(
     `> ℹ️ Collecting baseline variance data (${historicalCount}/15 runs). Significance will appear after 2 main branch runs.`,
     '',
-    `<details><summary>All metrics (cold start)</summary>`,
+    '<details><summary>All metrics (cold start)</summary>',
     '',
     '| Metric | Baseline | PR | Δ |',
     '|--------|----------|-----|---|'
@@ -447,7 +447,7 @@ function renderNoBaselineReport(
   lines.push(
     '> ℹ️ No baseline found — significance unavailable.',
     '',
-    `<details><summary>Absolute values</summary>`,
+    '<details><summary>Absolute values</summary>',
     '',
     '| Metric | Value |',
     '|--------|-------|'
