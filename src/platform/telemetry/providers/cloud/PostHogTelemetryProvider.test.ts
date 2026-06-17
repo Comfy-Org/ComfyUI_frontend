@@ -683,4 +683,128 @@ describe('PostHogTelemetryProvider', () => {
       expect(initConfig.person_profiles).toBe('identified_only')
     })
   })
+
+  describe('funnel events', () => {
+    it('captures canvas_ready with new-user flag and auth latency', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = { is_new_user: true, ms_since_auth: 1234 }
+      provider.trackCanvasReady(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.CANVAS_READY,
+        metadata
+      )
+    })
+
+    it('captures onboarding_routed with destination and provisioning flags', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        destination: 'survey',
+        survey_completed: false,
+        has_cloud_status: true
+      } as const
+      provider.trackOnboardingRouted(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.ONBOARDING_ROUTED,
+        metadata
+      )
+    })
+
+    it('captures output_viewed with run id, media type, and first-output flag', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        workflow_run_id: 'run-1',
+        media_type: 'image',
+        is_first_output: true
+      }
+      provider.trackOutputViewed(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.OUTPUT_VIEWED,
+        metadata
+      )
+    })
+
+    it('captures auth_method_selected with method and view', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = { method: 'google', view: 'signup' } as const
+      provider.trackAuthMethodSelected(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AUTH_METHOD_SELECTED,
+        metadata
+      )
+    })
+
+    it('captures oauth_popup_result with provider, result, and error code', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        provider: 'github',
+        result: 'error',
+        error_code: 'popup_closed_by_user'
+      } as const
+      provider.trackOAuthPopupResult(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.OAUTH_POPUP_RESULT,
+        metadata
+      )
+    })
+
+    it('captures auth_failed with method, stage, and error code', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        method: 'email',
+        stage: 'create_customer',
+        error_code: 'provisioning_timeout'
+      } as const
+      provider.trackAuthFailed(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AUTH_FAILED,
+        metadata
+      )
+    })
+
+    it('captures checkout_initiate_failed with stage and error code', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        stage: 'no_url',
+        error_code: 'missing_checkout_url'
+      } as const
+      provider.trackCheckoutInitiateFailed(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.CHECKOUT_INITIATE_FAILED,
+        metadata
+      )
+    })
+
+    it('captures checkout_window_blocked', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackCheckoutWindowBlocked({})
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.CHECKOUT_WINDOW_BLOCKED,
+        {}
+      )
+    })
+  })
 })
