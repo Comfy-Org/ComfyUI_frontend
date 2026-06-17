@@ -32,9 +32,13 @@
         class="m-0 text-center text-sm text-muted-foreground"
       >
         <template #action>
-          <span class="text-base-foreground">
+          <button
+            type="button"
+            class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
+            @click="planMode = 'team'"
+          >
             {{ t('subscription.personalHeaderAction') }}
-          </span>
+          </button>
         </template>
       </I18nT>
       <I18nT
@@ -370,7 +374,7 @@
           :href="VIDEO_TEMPLATE_URL"
           target="_blank"
           rel="noopener noreferrer"
-          class="cursor-pointer text-base-foreground hover:text-muted-foreground"
+          class="cursor-pointer text-sm text-base-foreground hover:text-muted-foreground"
         >
           {{ t('subscription.pricingBlurbSeeDetails') }}
         </a>
@@ -379,7 +383,7 @@
         <button
           type="button"
           class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
-          @click="handleContactUs"
+          @click="handleQuestions"
         >
           {{ t('subscription.pricingBlurbQuestions') }}
         </button>
@@ -537,7 +541,7 @@ const planScopeButtonPt = {
         'h-8 px-4 rounded-t-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
         context.active
           ? 'bg-base-background text-base-foreground'
-          : 'bg-transparent text-muted-foreground hover:bg-base-background'
+          : 'bg-base-background/50 text-muted-foreground hover:bg-base-background'
       ]
     }),
     label: { class: 'flex items-center gap-2' }
@@ -742,8 +746,8 @@ function handleSubscribeTeam() {
   emit('subscribeTeam', { usd: teamUsd.value, credits: teamCredits.value })
 }
 
-function handleContactUs() {
-  window.open('https://www.comfy.org/discord', '_blank')
+function handleQuestions() {
+  window.open('https://portal.usepylon.com/comfy-org/forms/question', '_blank')
 }
 
 function handleViewEnterprise() {
