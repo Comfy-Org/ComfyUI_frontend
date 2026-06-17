@@ -18,8 +18,11 @@
         {{ $t('subscription.totalCredits') }}
       </div>
       <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
-      <div v-else class="flex items-center gap-1">
-        <i class="icon-[lucide--component] size-4" :style="creditIconStyle" />
+      <div v-else class="flex items-baseline gap-2">
+        <i
+          class="icon-[lucide--component] size-4 self-center"
+          :style="creditIconStyle"
+        />
         <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
         <span class="text-sm text-muted @max-[300px]:hidden">{{
           $t('subscription.remaining')
@@ -30,7 +33,7 @@
     <template v-if="showBreakdown">
       <div
         v-if="emptyStateNotice"
-        class="flex items-start gap-2 rounded-lg border border-interface-stroke bg-base-background p-3 text-sm"
+        class="flex items-start gap-2 rounded-lg bg-base-background p-3 text-sm"
       >
         <i
           class="mt-0.5 icon-[lucide--info] size-4 shrink-0 text-base-foreground"
@@ -144,7 +147,8 @@
       <Button
         v-if="isFreeTier"
         variant="gradient"
-        class="min-h-8 w-full rounded-lg p-2 text-sm font-normal"
+        size="lg"
+        class="w-full font-normal"
         @click="handleUpgradeToAddCredits"
       >
         {{ $t('subscription.upgradeToAddCredits') }}
@@ -152,9 +156,10 @@
       <Button
         v-else
         :variant="isOutOfCredits ? 'inverted' : 'secondary'"
+        size="lg"
         :class="
           cn(
-            'min-h-8 w-full rounded-lg p-2 text-sm font-normal',
+            'w-full font-normal',
             !isOutOfCredits &&
               'bg-interface-menu-component-surface-selected text-text-primary'
           )
