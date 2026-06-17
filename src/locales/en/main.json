@@ -2670,7 +2670,10 @@
     },
     "changeRoleDialog": {
       "promoteTitle": "Make {name} an owner?",
-      "promoteMessage": "They'll have the same access as you — managing members, billing, and workspace settings.",
+      "promoteIntro": "They'll be able to:",
+      "promotePermissionCredits": "Add additional credits",
+      "promotePermissionManage": "Manage members, payment methods, and workspace settings",
+      "promotePermissionRoles": "Promote and demote other owners (except the workspace creator).",
       "promoteConfirm": "Make owner",
       "demoteTitle": "Demote {name} to member?",
       "demoteMessage": "They'll lose admin access.",

@@ -28,12 +28,18 @@
 
     <!-- Body -->
     <div class="p-4">
-      <p class="m-0 text-sm text-muted-foreground">
-        {{
-          isPromotion
-            ? $t('workspacePanel.changeRoleDialog.promoteMessage')
-            : $t('workspacePanel.changeRoleDialog.demoteMessage')
-        }}
+      <template v-if="isPromotion">
+        <p class="m-0 text-sm text-muted-foreground">
+          {{ $t('workspacePanel.changeRoleDialog.promoteIntro') }}
+        </p>
+        <ul class="m-0 mt-1 list-disc ps-5 text-sm text-muted-foreground">
+          <li v-for="permission in promotePermissions" :key="permission">
+            {{ permission }}
+          </li>
+        </ul>
+      </template>
+      <p v-else class="m-0 text-sm text-muted-foreground">
+        {{ $t('workspacePanel.changeRoleDialog.demoteMessage') }}
       </p>
     </div>
 
@@ -76,6 +82,12 @@ const { t } = useI18n()
 const loading = ref(false)
 
 const isPromotion = computed(() => targetRole === 'owner')
+
+const promotePermissions = computed(() => [
+  t('workspacePanel.changeRoleDialog.promotePermissionCredits'),
+  t('workspacePanel.changeRoleDialog.promotePermissionManage'),
+  t('workspacePanel.changeRoleDialog.promotePermissionRoles')
+])
 
 function onCancel() {
   dialogStore.closeDialog({ key: 'change-member-role' })
