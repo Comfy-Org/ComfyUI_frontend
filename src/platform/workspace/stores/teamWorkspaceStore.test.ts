@@ -953,8 +953,8 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.isInviteLimitReached).toBe(false)
     })
 
-    it('isInviteLimitReached enforces the flat 50-member backend cap, independent of plan seats', async () => {
-      const mockMembers = Array.from({ length: 48 }, (_, i) => ({
+    it('isInviteLimitReached enforces the flat 30-member backend cap, independent of plan seats', async () => {
+      const mockMembers = Array.from({ length: 28 }, (_, i) => ({
         id: `user-${i}`,
         name: `User ${i}`,
         email: `user${i}@test.com`,
@@ -978,7 +978,7 @@ describe('useTeamWorkspaceStore', () => {
       ]
       mockWorkspaceApi.listMembers.mockResolvedValue({
         members: mockMembers,
-        pagination: { offset: 0, limit: 50, total: 48 }
+        pagination: { offset: 0, limit: 50, total: 28 }
       })
       mockWorkspaceApi.listInvites.mockResolvedValue({ invites: mockInvites })
       mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
@@ -989,7 +989,7 @@ describe('useTeamWorkspaceStore', () => {
       await store.fetchMembers()
       await store.fetchPendingInvites()
 
-      expect(store.totalMemberSlots).toBe(50)
+      expect(store.totalMemberSlots).toBe(30)
       expect(store.isInviteLimitReached).toBe(true)
     })
   })
