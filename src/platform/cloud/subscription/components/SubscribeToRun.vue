@@ -4,9 +4,9 @@
       value: $t('subscription.subscribeToRunFull'),
       showDelay: 600
     }"
-    class="subscribe-to-run-button whitespace-nowrap"
+    class="subscribe-to-run-button h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
     variant="gradient"
-    size="sm"
+    size="unset"
     data-testid="subscribe-to-run-button"
     @click="handleSubscribeToRun"
   >
