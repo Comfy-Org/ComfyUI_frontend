@@ -10,17 +10,16 @@ import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 /**
  * Cloud onboarding survey gate — FE-739.
  *
- * Regression coverage for the structural half of the fix: the survey is gated
- * post-login only (UserCheckView), never by a mid-session navigation. Both
- * cases run with the survey flag ON and the status endpoint reporting "not
- * completed" (a definitive 200 with empty value — the one signal that still
- * forces the survey), so the only thing that changes the outcome is *where*
- * the gate lives.
+ * getSurveyCompletedStatus fails safe: a transient auth/backend failure on the
+ * survey-status check resolves to "completed" so a working user is never
+ * bounced to /cloud/survey, while a genuine "not completed" (the cloud backend
+ * returns 404 for a survey key that was never stored) still routes to the
+ * survey. Both cases drive the `/` router guard with the survey flag ON.
  *
- * - Landing on `/` (the working app) must NOT bounce to the survey. Before the
- *   fix the router `/` guard ran the gate here and yanked working users out.
- * - Hitting `/cloud/user-check` (the post-login door) must still gate to the
- *   survey, proving the consolidation didn't make onboarding unreachable.
+ * - A transient 401 on the status check must NOT bounce a working user out of
+ *   the app — this is the FE-739 regression.
+ * - A 404 (survey never submitted) must still route a not-completed user to the
+ *   survey, so the fail-safe doesn't make onboarding unreachable.
  *
  * Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
  * against fully mocked endpoints; `comfyPage` would try to reach the OSS
@@ -28,11 +27,13 @@ import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
-const jsonRoute = (body: unknown) => ({
-  status: 200,
-  contentType: 'application/json',
-  body: JSON.stringify(body)
-})
+function jsonRoute(body: unknown) {
+  return {
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify(body)
+  }
+}
 
 async function mockCloudBoot(page: Page) {
   // `/api/features` is the remote-config source: production builds resolve
@@ -55,21 +56,10 @@ async function mockCloudBoot(page: Page) {
       })
     )
   )
-  // Cloud user status (getUserCloudStatus) — an active account so UserCheckView
+  // Cloud user status (getUserCloudStatus) — an active account so the gate
   // proceeds to the survey check instead of bouncing back to login.
   await page.route('**/api/user', (r) =>
     r.fulfill(jsonRoute({ status: 'active' }))
-  )
-  // Survey status (getSurveyCompletedStatus): a 404 = the survey key was never
-  // stored = "not completed". This is what the cloud backend actually returns
-  // for a user who hasn't onboarded, and the response that still routes to the
-  // survey.
-  await page.route('**/api/settings/onboarding_survey', (r) =>
-    r.fulfill({
-      status: 404,
-      contentType: 'application/json',
-      body: JSON.stringify({ code: 'NOT_FOUND', message: 'Setting not found' })
-    })
   )
   await page.route('**/api/settings', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
@@ -83,6 +73,33 @@ async function mockCloudBoot(page: Page) {
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
 }
 
+// Genuine "not completed": the cloud backend returns 404 for a survey key that
+// was never stored. This is the response that must still route to the survey.
+async function mockSurveyNotCompleted(page: Page) {
+  await page.route('**/api/settings/onboarding_survey', (r) =>
+    r.fulfill({
+      status: 404,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 'NOT_FOUND', message: 'Setting not found' })
+    })
+  )
+}
+
+// Transient auth failure: a stale workspace token makes the authenticated
+// survey check 401 — the hiccup that used to bounce working users.
+async function mockSurveyTransient401(page: Page) {
+  await page.route('**/api/settings/onboarding_survey', (r) =>
+    r.fulfill({
+      status: 401,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        code: 'UNAUTHORIZED',
+        message: 'User authentication required'
+      })
+    })
+  )
+}
+
 async function bootCloud(page: Page) {
   const auth = new CloudAuthHelper(page)
   await auth.mockAuth()
@@ -92,55 +109,40 @@ async function bootCloud(page: Page) {
   })
 }
 
-// The CI cloud backend only serves the SPA shell at the app root; a hard
-// navigation to a deep route returns a file download instead of index.html.
-// Re-serve the root shell for the deep route so a fresh load resolves it as a
-// real post-login entry, mirroring how users actually reach user-check.
-async function serveSpaShell(page: Page, path: string) {
-  await page.route(`**${path}`, async (route) => {
-    if (route.request().resourceType() !== 'document') return route.fallback()
-    const shell = await page.request.get(APP_URL)
-    await route.fulfill({
-      status: 200,
-      contentType: 'text/html',
-      body: await shell.text()
-    })
-  })
-}
-
 test.describe(
   'Cloud onboarding survey gate (FE-739)',
   { tag: '@cloud' },
   () => {
-    test('does not bounce a working user on / to the survey', async ({
+    test('a transient 401 on the survey check does not bounce a working user to the survey', async ({
       page
     }) => {
       test.setTimeout(60_000)
 
       await mockCloudBoot(page)
+      await mockSurveyTransient401(page)
       await bootCloud(page)
 
       await page.goto(APP_URL)
 
-      // The full app boots — UserCheckView/CloudSurveyView are standalone
-      // onboarding views, so reaching the extension manager proves we landed on
-      // the working app and were never routed to the survey.
+      // The full app boots — CloudSurveyView is a standalone onboarding view, so
+      // reaching the extension manager proves we landed on the working app and
+      // the transient 401 was treated as "completed", not a bounce.
       await page.waitForFunction(() => !!window.app?.extensionManager, null, {
         timeout: 45_000
       })
       await expect(page).not.toHaveURL(/\/cloud\/survey/)
     })
 
-    test('still gates to the survey from the post-login user-check', async ({
+    test('a not-completed (404) user landing on / is routed to the survey', async ({
       page
     }) => {
       test.setTimeout(60_000)
 
       await mockCloudBoot(page)
+      await mockSurveyNotCompleted(page)
       await bootCloud(page)
-      await serveSpaShell(page, '/cloud/user-check')
 
-      await page.goto(`${APP_URL}/cloud/user-check`)
+      await page.goto(APP_URL)
 
       await expect(page).toHaveURL(/\/cloud\/survey/, { timeout: 45_000 })
     })
