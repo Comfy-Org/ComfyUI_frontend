@@ -113,7 +113,9 @@ onUnmounted(() => {
                   @click="item.columns && (activeSection = item.label)"
                 >
                   {{ item.label }}
-                  <ChevronRight class="size-7" />
+                  <template #append>
+                    <ChevronRight class="size-7" />
+                  </template>
                 </Button>
               </li>
             </ul>
@@ -131,7 +133,9 @@ onUnmounted(() => {
             :aria-hidden="!activeItem"
           >
             <Button type="button" variant="link" @click="activeSection = null">
-              <ChevronLeft />
+              <template #prepend>
+                <ChevronLeft />
+              </template>
               {{ t('nav.back', locale) }}
             </Button>
 
