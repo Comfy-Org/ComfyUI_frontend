@@ -20,6 +20,10 @@ const translations = {
     en: 'Watch Now',
     'zh-CN': '立即观看'
   },
+  'cta.watchDemo': {
+    en: 'Watch Demo',
+    'zh-CN': '观看演示'
+  },
 
   // HeroSection
   'hero.title': {
@@ -1848,7 +1852,6 @@ const translations = {
   'nav.colFeatures': { en: 'Features', 'zh-CN': '功能' },
   'nav.colPrograms': { en: 'Programs', 'zh-CN': '项目' },
   'nav.colConnect': { en: 'Connect', 'zh-CN': '联系' },
-  'nav.colSolutions': { en: 'Solutions', 'zh-CN': '解决方案' },
   'nav.colMore': { en: 'More', 'zh-CN': '更多' },
   // Dropdown items not yet covered above
   'nav.reddit': { en: 'Reddit', 'zh-CN': 'Reddit' },

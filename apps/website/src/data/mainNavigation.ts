@@ -90,7 +90,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         imageAlt: t('nav.featuredCommunityAlt', locale),
         title: t('nav.featuredCommunityTitle', locale),
         cta: {
-          label: t('cta.watchNow', locale),
+          label: t('cta.watchDemo', locale),
           ariaLabel: t('nav.featuredCommunityCtaAria', locale),
           href: 'https://comfy.org/workflows/537cf7f1f745-537cf7f1f745/'
         }
@@ -100,7 +100,17 @@ export function getMainNavigation(locale: Locale): NavItem[] {
           header: t('nav.colPrograms', locale),
           items: [
             { label: t('nav.comfyHub', locale), href: externalLinks.workflows },
-            { label: t('nav.gallery', locale), href: routes.gallery }
+            { label: t('nav.gallery', locale), href: routes.gallery },
+            {
+              label: t('nav.affiliates', locale),
+              href: routes.affiliates,
+              badge: 'new'
+            },
+            {
+              label: t('nav.learning', locale),
+              href: routes.learning,
+              badge: 'new'
+            }
           ]
         },
         {
@@ -137,21 +147,6 @@ export function getMainNavigation(locale: Locale): NavItem[] {
               external: true
             }
           ]
-        },
-        {
-          header: t('nav.colSolutions', locale),
-          items: [
-            {
-              label: t('nav.affiliates', locale),
-              href: routes.affiliates,
-              badge: 'new'
-            },
-            {
-              label: t('nav.learning', locale),
-              href: routes.learning,
-              badge: 'new'
-            }
-          ]
         }
       ]
     },
@@ -172,7 +167,8 @@ export function getMainNavigation(locale: Locale): NavItem[] {
           header: t('nav.company', locale),
           items: [
             { label: t('nav.aboutUs', locale), href: routes.about },
-            { label: t('nav.careers', locale), href: routes.careers }
+            { label: t('nav.careers', locale), href: routes.careers },
+            { label: t('nav.contact', locale), href: routes.contact }
           ]
         },
         {
@@ -184,7 +180,6 @@ export function getMainNavigation(locale: Locale): NavItem[] {
             },
             // TODO: no /brand page yet
             // { label: t('nav.brand', locale), href: '#' },
-            { label: t('nav.contact', locale), href: routes.contact },
             {
               label: t('nav.blogs', locale),
               href: externalLinks.blog,
