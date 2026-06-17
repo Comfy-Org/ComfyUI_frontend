@@ -219,11 +219,24 @@ export const useAssetsStore = defineStore('assets', () => {
   }
 
   /**
-   * Fetch history assets with pagination support
-   * @param loadMore - true for pagination (append), false for initial load (replace)
+   * Fetch one page of history assets and update reactive state.
+   *
+   * Pagination model: the server starts in offset mode and mints a
+   * `next_cursor` on any page that has one; subsequent requests pass that
+   * cursor (keyset mode). The walk upgrades automatically — offset paging is
+   * only used until the first cursor is received.
+   *
+   * An empty page with no cursor is treated as terminal regardless of
+   * `has_more`, because offset paging would refetch the same page forever.
+   * A cursor that hasn't advanced (the server echoed back the value it was
+   * given) is also treated as terminal to prevent an infinite dedup loop.
+   *
+   * @param loadMore - When `true`, appends the next page to the existing list
+   *   (infinite-scroll continuation). When `false` (default), resets all
+   *   pagination state and replaces the list with the first page.
+   * @returns The current accumulated list of history asset items.
    */
   const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
-    // Reset state for initial load
     if (!loadMore) {
       historyFetchEpoch += 1
       historyOffset.value = 0
@@ -247,16 +260,6 @@ export const useAssetsStore = defineStore('assets', () => {
       newAssets.forEach((asset) => loadedIds.add(asset.id))
     }
 
-    // The server mints next_cursor even on offset-mode requests, so the walk
-    // upgrades to keyset paging after the first page that returns one. An
-    // empty page without a cursor is terminal regardless of has_more —
-    // offset paging advances by jobs.length, so it would refetch the same
-    // page forever; a minted cursor still makes progress.
-    //
-    // Guard against a non-advancing cursor: if the backend echoes back the
-    // same cursor it was given (with has_more:true and a non-empty page),
-    // deduplication would discard every row and the walk would spin forever.
-    // Treat a stuck cursor as terminal — drop it and force hasMoreHistory off.
     const cursorStuck =
       page.nextCursor != null && page.nextCursor === requestedAfter
     historyOffset.value += page.jobs.length
