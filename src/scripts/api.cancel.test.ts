@@ -4,7 +4,12 @@ import { api } from '@/scripts/api'
 
 // Tests for api.cancelJob and api.cancelJobs; fetchApi is stubbed.
 const okResponse = () => ({ ok: true, status: 200 }) as Response
-const errorResponse = (status: number) => ({ ok: false, status }) as Response
+const errorResponse = (status: number, body = '') =>
+  ({
+    ok: false,
+    status,
+    text: () => Promise.resolve(body)
+  }) as unknown as Response
 
 describe('api jobs-namespace cancel', () => {
   let fetchApiSpy: ReturnType<typeof vi.spyOn>
@@ -41,6 +46,14 @@ describe('api jobs-namespace cancel', () => {
         'Failed to cancel job abc-123: 500'
       )
     })
+
+    it('includes the response body in the error when present', async () => {
+      fetchApiSpy.mockResolvedValueOnce(errorResponse(404, 'job not found'))
+
+      await expect(api.cancelJob('abc-123')).rejects.toThrow(
+        'Failed to cancel job abc-123: 404 — job not found'
+      )
+    })
   })
 
   describe('cancelJobs (batch)', () => {
@@ -67,6 +80,14 @@ describe('api jobs-namespace cancel', () => {
 
       await expect(api.cancelJobs(['id-1'])).rejects.toThrow(
         'Failed to cancel jobs: 500'
+      )
+    })
+
+    it('includes the response body in the error when present', async () => {
+      fetchApiSpy.mockResolvedValueOnce(errorResponse(422, 'invalid job ids'))
+
+      await expect(api.cancelJobs(['id-1'])).rejects.toThrow(
+        'Failed to cancel jobs: 422 — invalid job ids'
       )
     })
   })

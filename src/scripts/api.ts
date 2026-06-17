@@ -1125,7 +1125,10 @@ export class ComfyApi extends EventTarget {
       }
     )
     if (!res.ok) {
-      throw new Error(`Failed to cancel job ${jobId}: ${res.status}`)
+      const body = await res.text().catch(() => '')
+      throw new Error(
+        `Failed to cancel job ${jobId}: ${res.status}${body ? ` — ${body}` : ''}`
+      )
     }
   }
 
@@ -1146,7 +1149,10 @@ export class ComfyApi extends EventTarget {
       body: JSON.stringify({ job_ids: jobIds })
     })
     if (!res.ok) {
-      throw new Error(`Failed to cancel jobs: ${res.status}`)
+      const body = await res.text().catch(() => '')
+      throw new Error(
+        `Failed to cancel jobs: ${res.status}${body ? ` — ${body}` : ''}`
+      )
     }
   }
 
