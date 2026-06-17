@@ -14,6 +14,8 @@ import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceWithRole } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
+// TODO(this PR): replace with `zWorkspaceWithRole` from `@comfyorg/ingest-types`
+// once the cloud ingest OpenAPI exposes `is_creator` (see workspaceApi.ts).
 const WorkspaceWithRoleSchema = z.object({
   id: z.string(),
   name: z.string(),

@@ -20,6 +20,10 @@ interface Workspace {
   joined_at: string
 }
 
+// TODO(this PR, once the cloud ingest OpenAPI exposes `is_creator`): drop this
+// hand-rolled interface and the `WorkspaceWithRoleSchema` Zod in
+// workspaceAuthStore for the generated `WorkspaceWithRole` + `zWorkspaceWithRole`
+// from `@comfyorg/ingest-types`. Manual only because the spec lacks the field today.
 export interface WorkspaceWithRole extends Workspace {
   role: WorkspaceRole
   subscription_tier?: SubscriptionTier
