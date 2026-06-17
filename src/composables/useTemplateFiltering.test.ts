@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { IFuseOptions } from 'fuse.js'
 
+import type { Distribution } from '@/platform/distribution/types'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
@@ -436,7 +437,7 @@ describe('useTemplateFiltering', () => {
   })
 
   describe('Distribution filtering', () => {
-    const setDistribution = (distribution: 'desktop' | 'localhost' | 'cloud') =>
+    const setDistribution = (distribution: Distribution) =>
       vi.stubGlobal('__DISTRIBUTION__', distribution)
 
     const cloudTemplate: TemplateInfo = {
@@ -455,6 +456,14 @@ describe('useTemplateFiltering', () => {
       mediaSubtype: 'png',
       models: ['Wan 2.2'],
       includeOnDistributions: [TemplateIncludeOnDistributionEnum.Desktop]
+    }
+
+    const localTemplate: TemplateInfo = {
+      name: 'local-only',
+      description: 'Local template',
+      mediaType: 'image',
+      mediaSubtype: 'png',
+      includeOnDistributions: [TemplateIncludeOnDistributionEnum.Local]
     }
 
     const universalTemplate: TemplateInfo = {
@@ -540,14 +549,6 @@ describe('useTemplateFiltering', () => {
 
     it('shows local templates on localhost distribution', () => {
       setDistribution('localhost')
-      const localTemplate: TemplateInfo = {
-        name: 'local-only',
-        description: 'Local template',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Local]
-      }
-
       const templates = ref([localTemplate, cloudTemplate, desktopTemplate])
 
       const { filteredTemplates, filteredCount, totalCount } =
@@ -556,6 +557,219 @@ describe('useTemplateFiltering', () => {
       expect(filteredCount.value).toBe(1)
       expect(totalCount.value).toBe(1)
       expect(filteredTemplates.value[0].name).toBe('local-only')
+    })
+
+    it('shows local templates on desktop2 distribution', () => {
+      setDistribution('desktop2')
+      const templates = ref([localTemplate, desktopTemplate, cloudTemplate])
+
+      const { filteredTemplates, filteredCount, totalCount } =
+        useTemplateFiltering(templates)
+
+      expect(filteredCount.value).toBe(1)
+      expect(totalCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('local-only')
+    })
+
+    it('excludes cloud-only templates on desktop2 distribution', () => {
+      setDistribution('desktop2')
+      const templates = ref([cloudTemplate, universalTemplate])
+
+      const { filteredTemplates, filteredCount, totalCount } =
+        useTemplateFiltering(templates)
+
+      expect(filteredCount.value).toBe(1)
+      expect(totalCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('universal')
+    })
+
+    it('excludes desktop-only templates on desktop2 distribution', () => {
+      setDistribution('desktop2')
+      const templates = ref([desktopTemplate, universalTemplate])
+
+      const { filteredTemplates, filteredCount } = useTemplateFiltering(templates)
+
+      expect(filteredCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('universal')
+    })
+
+    it('shows universal templates (no distribution constraint) on desktop2', () => {
+      setDistribution('desktop2')
+      const templates = ref([universalTemplate])
+
+      const { filteredCount, totalCount } = useTemplateFiltering(templates)
+
+      expect(filteredCount.value).toBe(1)
+      expect(totalCount.value).toBe(1)
+    })
+
+    it('desktop2 and localhost produce identical template filtering results', () => {
+      const templates = ref([
+        localTemplate,
+        cloudTemplate,
+        desktopTemplate,
+        universalTemplate
+      ])
+
+      setDistribution('desktop2')
+      const { filteredTemplates: desktop2Filtered } =
+        useTemplateFiltering(templates)
+
+      setDistribution('localhost')
+      const { filteredTemplates: localhostFiltered } =
+        useTemplateFiltering(templates)
+
+      expect(desktop2Filtered.value.map((t) => t.name)).toEqual(
+        localhostFiltered.value.map((t) => t.name)
+      )
+    })
+
+    it('desktop2 does not include Mac-specific templates', () => {
+      setDistribution('desktop2')
+      const macTemplate: TemplateInfo = {
+        name: 'mac-template',
+        description: 'Mac only',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Mac]
+      }
+
+      const templates = ref([macTemplate, localTemplate])
+
+      const { filteredTemplates, filteredCount } = useTemplateFiltering(templates)
+
+      expect(filteredCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('local-only')
+    })
+
+    it('desktop2 does not include Windows-specific templates', () => {
+      setDistribution('desktop2')
+      const windowsTemplate: TemplateInfo = {
+        name: 'windows-template',
+        description: 'Windows only',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Windows]
+      }
+
+      const templates = ref([windowsTemplate, localTemplate])
+
+      const { filteredTemplates, filteredCount } = useTemplateFiltering(templates)
+
+      expect(filteredCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('local-only')
+    })
+
+    it('desktop2 distribution composes with model filter', () => {
+      setDistribution('desktop2')
+      const localFluxTemplate: TemplateInfo = {
+        name: 'local-flux',
+        description: 'Local Flux template',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        models: ['Flux'],
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Local]
+      }
+      const localSDTemplate: TemplateInfo = {
+        name: 'local-sd',
+        description: 'Local SD template',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        models: ['SD 1.5'],
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Local]
+      }
+      const cloudFluxTemplate: TemplateInfo = {
+        name: 'cloud-flux',
+        description: 'Cloud Flux template',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        models: ['Flux'],
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Cloud]
+      }
+
+      const templates = ref([localFluxTemplate, localSDTemplate, cloudFluxTemplate])
+
+      const { selectedModels, filteredTemplates, filteredCount, totalCount } =
+        useTemplateFiltering(templates)
+
+      expect(totalCount.value).toBe(2)
+
+      selectedModels.value = ['Flux']
+
+      expect(filteredCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('local-flux')
+    })
+
+    it('desktop2 distribution composes with use case filter', () => {
+      setDistribution('desktop2')
+      const localVideoTemplate: TemplateInfo = {
+        name: 'local-video',
+        description: 'Local video template',
+        mediaType: 'video',
+        mediaSubtype: 'mp4',
+        tags: ['Video'],
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Local]
+      }
+      const localImageTemplate: TemplateInfo = {
+        name: 'local-image',
+        description: 'Local image template',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        tags: ['Image Gen'],
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Local]
+      }
+      const cloudVideoTemplate: TemplateInfo = {
+        name: 'cloud-video',
+        description: 'Cloud video template',
+        mediaType: 'video',
+        mediaSubtype: 'mp4',
+        tags: ['Video'],
+        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Cloud]
+      }
+
+      const templates = ref([
+        localVideoTemplate,
+        localImageTemplate,
+        cloudVideoTemplate
+      ])
+
+      const { selectedUseCases, filteredTemplates, filteredCount } =
+        useTemplateFiltering(templates)
+
+      selectedUseCases.value = ['Video']
+
+      expect(filteredCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('local-video')
+    })
+
+    it('desktop2 shows template with Local in multi-distribution list', () => {
+      setDistribution('desktop2')
+      const localAndCloudTemplate: TemplateInfo = {
+        name: 'local-and-cloud',
+        description: 'Available on Local and Cloud',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        includeOnDistributions: [
+          TemplateIncludeOnDistributionEnum.Local,
+          TemplateIncludeOnDistributionEnum.Cloud
+        ]
+      }
+
+      const templates = ref([localAndCloudTemplate, desktopTemplate])
+
+      const { filteredTemplates, filteredCount } = useTemplateFiltering(templates)
+
+      expect(filteredCount.value).toBe(1)
+      expect(filteredTemplates.value[0].name).toBe('local-and-cloud')
+    })
+
+    it('desktop2 excludes template with only Cloud+Desktop multi-distribution', () => {
+      setDistribution('desktop2')
+      const templates = ref([multiDistTemplate])
+
+      const { filteredCount } = useTemplateFiltering(templates)
+
+      expect(filteredCount.value).toBe(0)
     })
 
     it('includes templates with multiple distributions when any match', () => {
