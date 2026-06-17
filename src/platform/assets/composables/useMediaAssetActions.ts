@@ -18,7 +18,10 @@ import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { getAssetDisplayName } from '../utils/assetMetadataUtils'
+import {
+  getAssetDisplayName,
+  getAssetStoredFilename
+} from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
@@ -301,10 +304,7 @@ export function useMediaAssetActions() {
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
     const assetType = getAssetType(targetAsset, 'input')
 
-    // In Cloud mode, use the content hash (the actual stored filename).
-    // In OSS mode, use the original name.
-    const cloudHash = targetAsset.hash
-    const filename = isCloud && cloudHash ? cloudHash : targetAsset.name
+    const filename = getAssetStoredFilename(targetAsset)
 
     // Create annotated path for the asset
     const annotated = createAnnotatedPath(
@@ -445,10 +445,7 @@ export function useMediaAssetActions() {
       const metadata = getOutputAssetMetadata(asset.user_metadata)
       const assetType = getAssetType(asset, 'input')
 
-      // In Cloud mode, use the content hash (the actual stored filename).
-      // In OSS mode, use the original name.
-      const cloudHash = asset.hash
-      const filename = isCloud && cloudHash ? cloudHash : asset.name
+      const filename = getAssetStoredFilename(asset)
 
       const annotated = createAnnotatedPath(
         {

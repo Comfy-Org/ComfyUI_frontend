@@ -4,6 +4,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const DIALOG_KEY = 'subscription-required'
@@ -20,6 +21,7 @@ export const useSubscriptionDialog = () => {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const { permissions } = useWorkspaceUI()
   const { isFreeTier } = useSubscription()
 
   function hide() {
@@ -29,6 +31,35 @@ export const useSubscriptionDialog = () => {
 
   function showPricingTable(options?: { reason?: SubscriptionDialogReason }) {
     if (!isCloud) return
+
+    // Members can't manage the workspace subscription, so a blocked run shows a
+    // small read-only "ask your owner to reactivate" modal instead of the
+    // pricing table. Out-of-credits still routes everyone to the credits flow.
+    if (
+      flags.teamWorkspacesEnabled &&
+      !workspaceStore.isInPersonalWorkspace &&
+      !permissions.value.canManageSubscription &&
+      options?.reason !== 'out_of_credits'
+    ) {
+      dialogService.showLayoutDialog({
+        key: DIALOG_KEY,
+        component: defineAsyncComponent(
+          () =>
+            import('@/platform/workspace/components/SubscriptionInactiveMemberDialog.vue')
+        ),
+        props: { onClose: hide },
+        dialogComponentProps: {
+          style: 'width: min(360px, 95vw);',
+          pt: {
+            root: {
+              class: 'bg-transparent border-none rounded-none shadow-none'
+            },
+            content: { class: '!p-0 bg-transparent border-none shadow-none' }
+          }
+        }
+      })
+      return
+    }
 
     const useWorkspaceVariant =
       flags.teamWorkspacesEnabled && !workspaceStore.isInPersonalWorkspace

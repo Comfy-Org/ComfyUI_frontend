@@ -2511,6 +2511,13 @@
       "pollingFailed": "Subscription activation failed",
       "pollingTimeout": "Timed out waiting for subscription. Please refresh and try again."
     },
+    "inactive": {
+      "memberTitle": "This workspace's subscription is inactive",
+      "memberDescription": "Ask your workspace owner to reactivate the workspace's subscription to run workflows.",
+      "memberCta": "Ok, got it",
+      "memberRunTooltip": "Contact your workspace owner to resubscribe",
+      "runLabel": "Run"
+    },
     "subscribeToRun": "Subscribe",
     "subscribeToRunFull": "Subscribe to Run",
     "subscribeForMore": "Upgrade",
@@ -3627,6 +3634,10 @@
     "hideAdvancedShort": "Hide advanced",
     "errors": "Errors",
     "noErrors": "No errors",
+    "errorsDetected": "Error detected | Errors detected",
+    "resolveBeforeRun": "Resolve before running the workflow",
+    "expand": "Expand",
+    "collapse": "Collapse",
     "executionErrorOccurred": "An error occurred during execution. Check the Errors tab for details.",
     "errorLog": "Error log",
     "findOnGithubTooltip": "Search GitHub issues for related problems",
