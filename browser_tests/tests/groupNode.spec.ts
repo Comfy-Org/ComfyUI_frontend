@@ -30,19 +30,21 @@ test.describe('Group node migration', { tag: '@node' }, () => {
     expect(state.hasGroupNodesExtra).toBe(false)
   })
 
-  test('Loads a legacy ("/") separator group node without error and converts it @vue-nodes', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('groupnodes/legacy_group_node')
+  test(
+    'Loads a legacy ("/") separator group node without error and converts it',
+    { tag: ['@vue-nodes'] },
+    async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('groupnodes/legacy_group_node')
 
-    await expect(
-      comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-    ).toBeHidden()
-    await expect(
-      comfyPage.vueNodes.getNodeByTitle('New Subgraph')
-    ).toBeVisible()
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+      ).toBeHidden()
+      await expect(
+        comfyPage.vueNodes.getNodeByTitle('New Subgraph')
+      ).toBeVisible()
 
-    await comfyPage.vueNodes.enterSubgraph()
-    await expect(comfyPage.vueNodes.getNodeByTitle('')).toHaveCount(2)
-  })
+      await comfyPage.vueNodes.enterSubgraph()
+      await expect(comfyPage.vueNodes.getNodeByTitle('')).toHaveCount(2)
+    }
+  )
 })
