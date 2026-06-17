@@ -39,6 +39,10 @@ runs:
           const sectionContent = process.env.INPUT_SECTION_CONTENT
           const commentMarker = process.env.INPUT_COMMENT_MARKER
 
+          if (!/^[a-z0-9-]+$/.test(sectionName)) {
+            throw new Error(`Invalid section-name: ${sectionName}`)
+          }
+
           const sectionStart = `<!-- section:${sectionName}:start -->`
           const sectionEnd = `<!-- section:${sectionName}:end -->`
           const sectionBlock = `${sectionStart}\n${sectionContent}\n${sectionEnd}`
