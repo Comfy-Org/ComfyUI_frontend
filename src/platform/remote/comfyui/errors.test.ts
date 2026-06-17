@@ -81,16 +81,17 @@ describe('errorResponseFromBody', () => {
 })
 
 describe('parseErrorResponse', () => {
-  const makeResponse = (overrides: {
+  function makeResponse(overrides: {
     json?: () => Promise<unknown>
     status?: number
     statusText?: string
-  }): Response =>
-    ({
+  }): Response {
+    return {
       status: overrides.status ?? 500,
       statusText: overrides.statusText ?? 'Internal Server Error',
       json: overrides.json ?? (async () => ({}))
-    }) as Response
+    } as Response
+  }
 
   it('parses a canonical error body', async () => {
     const response = makeResponse({
