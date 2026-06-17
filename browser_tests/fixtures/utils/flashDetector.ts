@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-const flagAttributeFor = (testId: string) => {
+function flagAttributeFor(testId: string) {
   const encoded = Array.from(testId, (ch) =>
     ch.charCodeAt(0).toString(16)
   ).join('')
