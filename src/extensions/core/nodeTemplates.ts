@@ -10,7 +10,6 @@ import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 import { api } from '../../scripts/api'
 import { app } from '../../scripts/app'
 import { $el, ComfyDialog } from '../../scripts/ui'
-import { GroupNodeConfig, GroupNodeHandler } from './groupNode'
 
 // Adds the ability to save and add multiple nodes as a template
 // To save:
@@ -368,33 +367,11 @@ const ext: ComfyExtension = {
 
         clipboardAction(() => {
           app.canvas.copyToClipboard()
-          let data = localStorage.getItem('litegrapheditor_clipboard')
-          data = JSON.parse(data || '{}')
-          const nodeIds = Object.keys(app.canvas.selected_nodes)
-          for (let i = 0; i < nodeIds.length; i++) {
-            const node = app.canvas.graph?.getNodeById(nodeIds[i])
-            const nodeData = node?.constructor.nodeData
-
-            if (!node) continue
-            const groupConfig = GroupNodeHandler.getGroupData(node)
-            if (groupConfig) {
-              const groupData = groupConfig.nodeData
-              // @ts-expect-error
-              if (!data.groupNodes) {
-                // @ts-expect-error
-                data.groupNodes = {}
-              }
-              if (nodeData == null) throw new TypeError('nodeData is not set')
-              // @ts-expect-error
-              data.groupNodes[nodeData.name] = groupData
-              // @ts-expect-error
-              data.nodes[i].type = nodeData.name
-            }
-          }
+          const data = localStorage.getItem('litegrapheditor_clipboard')
 
           manage.templates.push({
             name,
-            data: JSON.stringify(data)
+            data: data || '{}'
           })
           manage.store()
         })
@@ -406,12 +383,8 @@ const ext: ComfyExtension = {
       return {
         content: t.name,
         callback: () => {
-          clipboardAction(async () => {
+          clipboardAction(() => {
             const data = JSON.parse(t.data)
-            await GroupNodeConfig.registerFromWorkflow(
-              data.groupNodes ?? {},
-              []
-            )
 
             // Check for old clipboard format
             if (!data.reroutes) {

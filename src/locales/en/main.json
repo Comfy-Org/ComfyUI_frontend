@@ -594,7 +594,6 @@
     "Copy (Clipspace)": "Copy (Clipspace)",
     "Add Node": "Add Node",
     "Add Group": "Add Group",
-    "Manage Group Nodes": "Manage Group Nodes",
     "Add Group For Selected Nodes": "Add Group For Selected Nodes",
     "Save Selected as Template": "Save Selected as Template",
     "Node Templates": "Node Templates",
@@ -1161,10 +1160,6 @@
     "showMinimap": "Show Minimap",
     "hideMinimap": "Hide Minimap"
   },
-  "groupNode": {
-    "create": "Create group node",
-    "enterName": "Enter name"
-  },
   "nodeTemplates": {
     "saveAsTemplate": "Save as template",
     "enterName": "Enter name"
@@ -1390,8 +1385,6 @@
     "Group Selected Nodes": "Group Selected Nodes",
     "Toggle promotion of hovered widget": "Toggle promotion of hovered widget",
     "Unpack the selected Subgraph": "Unpack the selected Subgraph",
-    "Manage group nodes": "Manage group nodes",
-    "Ungroup selected group nodes": "Ungroup selected group nodes",
     "About ComfyUI": "About ComfyUI",
     "Comfy-Org Discord": "Comfy-Org Discord",
     "ComfyUI Docs": "ComfyUI Docs",

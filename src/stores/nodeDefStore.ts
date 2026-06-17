@@ -137,8 +137,9 @@ export class ComfyNodeDefImpl
     const obj = ComfyNodeDefImpl._migrateDefaultInput(def)
 
     /**
-     * Assign extra fields to `this` for compatibility with group node feature.
-     * TODO: Remove this once group node feature is removed.
+     * Copy any extra (including symbol-keyed) fields onto `this`. The legacy
+     * group-node → subgraph load migration relies on this to propagate its
+     * marker symbol from the synthesized node definition.
      */
     Object.assign(this, obj)
 

@@ -24,7 +24,6 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import type { RightSidePanelTab } from '@/stores/workspace/rightSidePanelStore'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import { isGroupNode } from '@/utils/executableGroupNodeDto'
 
 import TabInfo from './info/TabInfo.vue'
 import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
@@ -129,7 +128,7 @@ const hasDirectNodeError = computed(() =>
 const hasContainerInternalError = computed(() => {
   if (allErrorExecutionIds.value.length === 0) return false
   return selectedNodes.value.some((node) => {
-    if (!(node instanceof SubgraphNode || isGroupNode(node))) return false
+    if (!(node instanceof SubgraphNode)) return false
     return executionErrorStore.isContainerWithInternalError(node)
   })
 })
