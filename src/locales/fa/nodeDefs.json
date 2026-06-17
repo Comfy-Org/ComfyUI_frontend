@@ -16248,6 +16248,9 @@
       "draw_hands": {
         "name": "ترسیم دست‌ها"
       },
+      "draw_head": {
+        "name": "رسم سر"
+      },
       "face_point_size": {
         "name": "اندازه نقطه صورت"
       },

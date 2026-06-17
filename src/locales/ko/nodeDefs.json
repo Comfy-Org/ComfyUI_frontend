@@ -16248,6 +16248,9 @@
       "draw_hands": {
         "name": "draw_hands"
       },
+      "draw_head": {
+        "name": "머리 그리기"
+      },
       "face_point_size": {
         "name": "face_point_size"
       },

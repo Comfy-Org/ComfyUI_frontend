@@ -1,8 +1,7 @@
 import type { ResolvedPromotedWidget } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
 type PromotedWidgetResolutionFailure =
   | 'invalid-host'
@@ -41,6 +40,17 @@ function traversePromotedWidgetChain(
       return { status: 'failure', failure: 'missing-node' }
     }
 
+    if (sourceNode.isSubgraphNode()) {
+      const target = resolveSubgraphInputTarget(sourceNode, currentWidgetName)
+      if (!target) {
+        return { status: 'failure', failure: 'missing-widget' }
+      }
+      currentHost = sourceNode
+      currentNodeId = target.nodeId
+      currentWidgetName = target.widgetName
+      continue
+    }
+
     const sourceWidget = sourceNode.widgets?.find(
       (entry) => entry.name === currentWidgetName
     )
@@ -48,37 +58,13 @@ function traversePromotedWidgetChain(
       return { status: 'failure', failure: 'missing-widget' }
     }
 
-    if (!isPromotedWidgetView(sourceWidget)) {
-      return {
-        status: 'resolved',
-        resolved: { node: sourceNode, widget: sourceWidget }
-      }
+    return {
+      status: 'resolved',
+      resolved: { node: sourceNode, widget: sourceWidget }
     }
-
-    if (!sourceWidget.node?.isSubgraphNode()) {
-      return { status: 'failure', failure: 'missing-node' }
-    }
-
-    currentHost = sourceWidget.node
-    currentNodeId = sourceWidget.sourceNodeId
-    currentWidgetName = sourceWidget.sourceWidgetName
   }
 
   return { status: 'failure', failure: 'max-depth-exceeded' }
-}
-
-export function resolvePromotedWidgetAtHost(
-  hostNode: SubgraphNode,
-  nodeId: string,
-  widgetName: string
-): ResolvedPromotedWidget | undefined {
-  const node = hostNode.subgraph.getNodeById(nodeId)
-  if (!node) return undefined
-
-  const widget = node.widgets?.find((entry) => entry.name === widgetName)
-  if (!widget) return undefined
-
-  return { node, widget }
 }
 
 export function resolveConcretePromotedWidget(
@@ -90,21 +76,4 @@ export function resolveConcretePromotedWidget(
     return { status: 'failure', failure: 'invalid-host' }
   }
   return traversePromotedWidgetChain(hostNode, nodeId, widgetName)
-}
-
-export function resolvePromotedWidgetSource(
-  hostNode: LGraphNode,
-  widget: IBaseWidget
-): ResolvedPromotedWidget | undefined {
-  if (!isPromotedWidgetView(widget)) return undefined
-  if (!hostNode.isSubgraphNode()) return undefined
-
-  const result = resolveConcretePromotedWidget(
-    hostNode,
-    widget.sourceNodeId,
-    widget.sourceWidgetName
-  )
-  if (result.status === 'resolved') return result.resolved
-
-  return undefined
 }
