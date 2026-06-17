@@ -11,7 +11,7 @@ defineProps<{ item: NavColumnItem; locale: Locale }>()
 
 <template>
   <span class="flex items-center gap-2">
-    <span>{{ item.label }}</span>
+    <span class="ppformula-text-center">{{ item.label }}</span>
     <Badge v-if="item.badge" size="xs" variant="accent">
       {{ t('nav.badgeNew', locale) }}
     </Badge>

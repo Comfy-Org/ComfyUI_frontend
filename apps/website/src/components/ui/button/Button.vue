@@ -15,9 +15,16 @@ interface Props extends PrimitiveProps {
   appendIcon?: Component
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  as: 'button'
-})
+const {
+  as = 'button',
+  asChild,
+  variant,
+  size,
+  class: className,
+  disabled,
+  prependIcon,
+  appendIcon
+} = defineProps<Props>()
 </script>
 
 <template>
@@ -28,7 +35,7 @@ const props = withDefaults(defineProps<Props>(), {
     :as="as"
     :as-child="asChild"
     :disabled="disabled"
-    :class="cn(buttonVariants({ variant, size }), props.class)"
+    :class="cn(buttonVariants({ variant, size }), className)"
   >
     <slot name="prepend">
       <component :is="prependIcon" v-if="prependIcon" />

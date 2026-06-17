@@ -4,8 +4,6 @@
 @import '@comfyorg/design-system/css/base.css';
 @import 'tw-animate-css';
 
-@custom-variant dark (&:is(.dark *));
-
 /* PP Formula's native vertical metrics place the baseline too high, so caps
    sit in the upper half of the line box. Overriding ascent/descent re-anchors
    the baseline so caps render optically centered when line-height is tight. 

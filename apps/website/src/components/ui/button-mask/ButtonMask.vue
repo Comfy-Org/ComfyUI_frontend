@@ -22,10 +22,16 @@ interface Props extends PrimitiveProps {
   disabled?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  as: 'button',
-  hideLabel: true
-})
+const {
+  as = 'button',
+  asChild,
+  variant,
+  size,
+  iconPosition,
+  hideLabel = true,
+  class: className,
+  disabled
+} = defineProps<Props>()
 </script>
 
 <template>
@@ -36,9 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
     :as="as"
     :as-child="asChild"
     :disabled="disabled"
-    :class="
-      cn(buttonMaskVariants({ variant, size, iconPosition }), props.class)
-    "
+    :class="cn(buttonMaskVariants({ variant, size, iconPosition }), className)"
   >
     <span
       :data-icon-position="iconPosition ?? 'right'"

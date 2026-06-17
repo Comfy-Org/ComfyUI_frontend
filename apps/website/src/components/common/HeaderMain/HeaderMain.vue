@@ -1,7 +1,4 @@
 <script setup lang="ts">
-import { useEventListener } from '@vueuse/core'
-import { nextTick, onMounted, ref } from 'vue'
-
 import type { Locale } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
@@ -29,21 +26,6 @@ const ctaButtons = [
     primary: true
   }
 ]
-
-const currentPath = ref('')
-const isNavigating = ref(false)
-
-async function onNavigate() {
-  isNavigating.value = true
-  currentPath.value = window.location.pathname
-  await nextTick()
-  isNavigating.value = false
-}
-
-onMounted(() => {
-  currentPath.value = window.location.pathname
-  useEventListener(document, 'astro:after-swap', onNavigate)
-})
 </script>
 
 <template>

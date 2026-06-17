@@ -7,19 +7,19 @@ export const buttonVariants = cva(
   ],
   {
     variants: {
+      size: {
+        default: 'h-10 px-6 py-2.5 has-[>svg]:px-2',
+        lg: 'h-14 px-8 py-4 text-base has-[>svg]:px-4'
+      },
       variant: {
         default:
           'bg-primary-comfy-yellow hover:bg-primary-comfy-yellow/90 text-primary-comfy-ink uppercase',
         outline:
           'text-primary-comfy-yellow hover:bg-primary-comfy-yellow border uppercase hover:text-primary-comfy-ink',
-        link: "text-primary-comfy-yellow h-auto! justify-between px-0! py-1! text-base uppercase hover:opacity-90 [&_svg:not([class*='size-'])]:size-6",
-        nav: 'text-primary-warm-white hover:text-primary-comfy-yellow h-auto! justify-between px-0! py-1! text-start text-2xl font-medium',
+        link: "text-primary-comfy-yellow h-auto justify-between px-0 py-1 text-base uppercase hover:opacity-90 [&_svg:not([class*='size-'])]:size-6",
+        nav: 'text-primary-warm-white hover:text-primary-comfy-yellow h-auto justify-between px-0 py-1 text-start text-2xl font-medium',
         navMuted:
-          'hover:text-primary-comfy-yellow h-auto! w-full justify-between px-0! py-1! text-start text-2xl font-medium text-primary-comfy-canvas uppercase'
-      },
-      size: {
-        default: 'h-10 px-6 py-2.5 has-[>svg]:px-2',
-        lg: 'h-14 px-8 py-4 text-base has-[>svg]:px-4'
+          'hover:text-primary-comfy-yellow h-auto w-full justify-between px-0 py-1 text-start text-2xl font-medium text-primary-comfy-canvas uppercase'
       }
     },
     defaultVariants: {

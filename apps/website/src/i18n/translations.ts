@@ -1858,7 +1858,6 @@ const translations = {
   'nav.contact': { en: 'Contact', 'zh-CN': '联系我们' },
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
-  // TODO(i18n): zh-CN copy not finalized — duplicates en
   'nav.featuredProductsTitle': {
     en: 'New Release: Seedance 2.0',
     'zh-CN': '全新发布：Seedance 2.0'
@@ -1884,16 +1883,16 @@ const translations = {
     'zh-CN': '观看天空替换演示'
   },
   'nav.featuredCompanyTitle': {
-    en: 'Customer story: Black math',
-    'zh-CN': '客户故事：Black math'
+    en: 'Customer story: Black Math',
+    'zh-CN': '客户故事：Black Math'
   },
   'nav.featuredCompanyAlt': {
-    en: 'Black math customer story image',
-    'zh-CN': 'Black math 客户故事图片'
+    en: 'Black Math customer story image',
+    'zh-CN': 'Black Math 客户故事图片'
   },
   'nav.featuredCompanyCtaAria': {
-    en: 'Watch the Black math customer story',
-    'zh-CN': '观看 Black math 客户故事'
+    en: 'Watch the Black Math customer story',
+    'zh-CN': '观看 Black Math 客户故事'
   },
 
   // SiteFooter

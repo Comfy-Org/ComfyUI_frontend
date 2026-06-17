@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { Component } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { BadgeVariants } from './badge.variants'
@@ -7,16 +8,33 @@ import { badgeVariants } from './badge.variants'
 const {
   variant,
   size,
-  class: className
+  class: className,
+  prependIcon,
+  appendIcon
 } = defineProps<{
   variant?: BadgeVariants['variant']
   size?: BadgeVariants['size']
   class?: string
+  prependIcon?: Component
+  appendIcon?: Component
 }>()
 </script>
 
 <template>
-  <span :class="cn(badgeVariants({ variant, size }), className)">
-    <slot />
+  <span
+    data-slot="badge"
+    :data-variant="variant"
+    :data-size="size"
+    :class="cn(badgeVariants({ variant, size }), className)"
+  >
+    <slot name="prepend">
+      <component :is="prependIcon" v-if="prependIcon" />
+    </slot>
+    <span class="ppformula-text-center">
+      <slot />
+    </span>
+    <slot name="append">
+      <component :is="appendIcon" v-if="appendIcon" />
+    </slot>
   </span>
 </template>
