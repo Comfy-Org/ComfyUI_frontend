@@ -1105,3 +1105,46 @@ test.describe('Assets sidebar - drag and drop', () => {
     await expect.poll(() => fileComboWidget.getValue()).toBe('test.png [temp]')
   })
 })
+
+test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
+  await comfyPage.assets.mockOutputHistory([
+    createMockJob({
+      id: 'job1',
+      preview_output: {
+        filename: `test.png`,
+        type: 'temp',
+        nodeId: '1',
+        mediaType: 'images'
+      }
+    }),
+    createMockJob({
+      id: 'job2',
+      preview_output: {
+        filename: `test.png`,
+        type: 'output',
+        nodeId: '1',
+        mediaType: 'images'
+      }
+    })
+  ])
+  const { assetsTab } = comfyPage.menu
+  await assetsTab.open()
+  await assetsTab.waitForAssets()
+  await expect(assetsTab.assetCards).toHaveCount(2)
+  for (const [index, type] of [
+    [0, 'temp'],
+    [1, 'output']
+  ] as const) {
+    await comfyPage.nodeOps.clearGraph()
+    await assetsTab.assetCards.nth(index).scrollIntoViewIfNeeded()
+    await assetsTab.assetCards.nth(index).click({ button: 'right' })
+
+    await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+    await comfyPage.contextMenu.primeVueMenu.getByText('Insert as node').click()
+
+    await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
+    const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    const fileWidget = await nodes[0].getWidget(0)
+    await expect.poll(() => fileWidget.getValue()).toBe(`test.png [${type}]`)
+  }
+})
