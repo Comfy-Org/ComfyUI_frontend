@@ -140,7 +140,7 @@ if (isCloud) {
     '/cloud/login',
     '/cloud/signup',
     '/cloud/forgot-password',
-    '/cloud/oauth/consent',
+    '/oauth/consent',
     '/cloud/sorry-contact-support'
   ])
 
