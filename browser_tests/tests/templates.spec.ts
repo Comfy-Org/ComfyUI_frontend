@@ -5,6 +5,7 @@ import type { WorkflowTemplates } from '@/platform/workflow/templates/types/temp
 import { getWav } from '@e2e/fixtures/components/AudioPreview'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { trackElementFlash } from '@e2e/fixtures/utils/flashDetector'
 
 async function checkTemplateFileExists(
   page: Page,
@@ -505,3 +506,32 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
     expect(popup.url()).toEqual(tutorialUrl)
   })
 })
+
+test.describe(
+  'Templates deeplink (new user)',
+  { tag: ['@slow', '@workflow'] },
+  () => {
+    test('templates dialog never flashes when first-time user opens a template link', async ({
+      comfyPage
+    }) => {
+      const templatesFlash = await trackElementFlash(
+        comfyPage.page,
+        TestIds.templates.content
+      )
+
+      await comfyPage.settings.setSetting('Comfy.TutorialCompleted', false)
+
+      await comfyPage.setup({
+        clearStorage: true,
+        url: '/?template=default'
+      })
+
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBeGreaterThan(0)
+
+      expect(await templatesFlash.hasFlashed()).toBe(false)
+      await expect(comfyPage.templates.content).toBeHidden()
+    })
+  }
+)
