@@ -111,6 +111,8 @@ deploy_report() {
 # Post or update GitHub comment, or write to SUMMARY_FILE if set.
 # When SUMMARY_FILE is set, the caller (workflow) is responsible for upserting
 # the content into the unified PR report via upsert-comment-section.
+# The gh-api branch below is unused in CI (SUMMARY_FILE is always set there);
+# it is retained for local/standalone runs that post a comment directly.
 post_comment() {
     body="$1"
 
