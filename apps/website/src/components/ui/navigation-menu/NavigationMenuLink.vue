@@ -28,8 +28,6 @@ const forwarded = useForwardPropsEmits(
       )
     "
   >
-    <span class="ppformula-text-center">
-      <slot />
-    </span>
+    <slot />
   </NavigationMenuLink>
 </template>
