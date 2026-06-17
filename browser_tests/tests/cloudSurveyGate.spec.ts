@@ -8,22 +8,11 @@ import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 
 /**
- * Cloud onboarding survey gate — FE-739.
- *
- * getSurveyCompletedStatus fails safe: a transient auth/backend failure on the
- * survey-status check resolves to "completed" so a working user is never
- * bounced to /cloud/survey, while a genuine "not completed" (the cloud backend
- * returns 404 for a survey key that was never stored) still routes to the
- * survey. Both cases drive the `/` router guard with the survey flag ON.
- *
- * - A transient 401 on the status check must NOT bounce a working user out of
- *   the app — this is the FE-739 regression.
- * - A 404 (survey never submitted) must still route a not-completed user to the
- *   survey, so the fail-safe doesn't make onboarding unreachable.
- *
- * Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
- * against fully mocked endpoints; `comfyPage` would try to reach the OSS
- * devtools backend during setup.
+ * getSurveyCompletedStatus fails safe: a transient 401 on `/` must not bounce a
+ * working user to /cloud/survey, while a genuine 404 (survey never submitted)
+ * must still route a not-completed user there. Drives a raw `page` so the cloud
+ * app boots against fully mocked endpoints (`comfyPage` would reach the OSS
+ * devtools backend during setup).
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -109,42 +98,38 @@ async function bootCloud(page: Page) {
   })
 }
 
-test.describe(
-  'Cloud onboarding survey gate (FE-739)',
-  { tag: '@cloud' },
-  () => {
-    test('a transient 401 on the survey check does not bounce a working user to the survey', async ({
-      page
-    }) => {
-      test.setTimeout(60_000)
+test.describe('Cloud onboarding survey gate', { tag: '@cloud' }, () => {
+  test('a transient 401 on the survey check does not bounce a working user to the survey', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
 
-      await mockCloudBoot(page)
-      await mockSurveyTransient401(page)
-      await bootCloud(page)
+    await mockCloudBoot(page)
+    await mockSurveyTransient401(page)
+    await bootCloud(page)
 
-      await page.goto(APP_URL)
+    await page.goto(APP_URL)
 
-      // The full app boots — CloudSurveyView is a standalone onboarding view, so
-      // reaching the extension manager proves we landed on the working app and
-      // the transient 401 was treated as "completed", not a bounce.
-      await page.waitForFunction(() => !!window.app?.extensionManager, null, {
-        timeout: 45_000
-      })
-      await expect(page).not.toHaveURL(/\/cloud\/survey/)
+    // The full app boots — CloudSurveyView is a standalone onboarding view, so
+    // reaching the extension manager proves we landed on the working app and
+    // the transient 401 was treated as "completed", not a bounce.
+    await page.waitForFunction(() => !!window.app?.extensionManager, null, {
+      timeout: 45_000
     })
+    await expect(page).not.toHaveURL(/\/cloud\/survey/)
+  })
 
-    test('a not-completed (404) user landing on / is routed to the survey', async ({
-      page
-    }) => {
-      test.setTimeout(60_000)
+  test('a not-completed (404) user landing on / is routed to the survey', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
 
-      await mockCloudBoot(page)
-      await mockSurveyNotCompleted(page)
-      await bootCloud(page)
+    await mockCloudBoot(page)
+    await mockSurveyNotCompleted(page)
+    await bootCloud(page)
 
-      await page.goto(APP_URL)
+    await page.goto(APP_URL)
 
-      await expect(page).toHaveURL(/\/cloud\/survey/, { timeout: 45_000 })
-    })
-  }
-)
+    await expect(page).toHaveURL(/\/cloud\/survey/, { timeout: 45_000 })
+  })
+})
