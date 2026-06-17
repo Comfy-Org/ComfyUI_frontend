@@ -16248,6 +16248,9 @@
       "draw_hands": {
         "name": "draw_hands"
       },
+      "draw_head": {
+        "name": "dessiner_tête"
+      },
       "face_point_size": {
         "name": "face_point_size"
       },
