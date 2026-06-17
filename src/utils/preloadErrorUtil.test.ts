@@ -183,6 +183,15 @@ describe('isExtensionOriginPreloadError', () => {
     expect(isExtensionOriginPreloadError(error, info)).toBe(false)
   })
 
+  it('does not throw when stack is a truthy non-string', () => {
+    const error = makeError('Something failed')
+    ;(error as unknown as Record<string, unknown>).stack = 42
+    const info = parsePreloadError(error)
+
+    expect(() => isExtensionOriginPreloadError(error, info)).not.toThrow()
+    expect(isExtensionOriginPreloadError(error, info)).toBe(false)
+  })
+
   it('ignores unparseable URLs in the stack', () => {
     const error = makeError(
       'Some failure',

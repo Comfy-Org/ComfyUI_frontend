@@ -43,6 +43,12 @@ describe('extensionStore', () => {
       }
     })
 
+    it('registers an extension named after a built-in property', () => {
+      const store = useExtensionStore()
+      expect(store.registerExtension({ name: 'toString' })).toBe(true)
+      expect(store.isExtensionInstalled('toString')).toBe(true)
+    })
+
     it('warns when registering a disabled extension but still installs it', () => {
       const store = useExtensionStore()
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})

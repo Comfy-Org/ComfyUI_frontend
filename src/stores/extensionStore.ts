@@ -66,7 +66,7 @@ export const useExtensionStore = defineStore('extension', () => {
       throw new Error("Extensions must have a 'name' property.")
     }
 
-    if (extensionByName.value[extension.name]) {
+    if (Object.hasOwn(extensionByName.value, extension.name)) {
       // Duplicate registrations are usually caused by the same extension file
       // being served under two URLs (so the module executes twice) or by two
       // node packs shipping a copy of the same extension file. The first

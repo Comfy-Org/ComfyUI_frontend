@@ -106,7 +106,7 @@ export function isExtensionOriginPreloadError(
   if (info.url && isExtensionFileUrl(info.url)) return true
 
   const stack = error?.stack
-  if (!stack) return false
+  if (typeof stack !== 'string') return false
   const stackUrls = stack.match(/https?:\/\/[^\s)]+/g) ?? []
   return stackUrls.some(isExtensionFileUrl)
 }
