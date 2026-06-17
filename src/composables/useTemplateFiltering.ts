@@ -79,7 +79,6 @@ export function useTemplateFiltering(
       case 'cloud':
         return [TemplateIncludeOnDistributionEnum.Cloud]
       case 'localhost':
-        return [TemplateIncludeOnDistributionEnum.Local]
       case 'desktop2':
         return [TemplateIncludeOnDistributionEnum.Local]
       case 'desktop':
