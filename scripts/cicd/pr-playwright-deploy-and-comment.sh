@@ -115,7 +115,7 @@ post_comment() {
     body="$1"
 
     if [ -n "${SUMMARY_FILE:-}" ]; then
-        printf '%s\n' "$body" > "$SUMMARY_FILE"
+        printf '%s\n' "$body" > "$SUMMARY_FILE" || { echo "Failed to write $SUMMARY_FILE" >&2; exit 1; }
         echo "Wrote playwright section to $SUMMARY_FILE" >&2
         return
     fi
