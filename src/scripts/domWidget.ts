@@ -2,15 +2,16 @@ import _ from 'es-toolkit/compat'
 import { type Component, toRaw } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import {
-  LGraphNode,
-  LegacyWidget,
-  LiteGraph
-} from '@/lib/litegraph/src/litegraph'
+// LegacyWidget is imported from its own module, not the barrel: the barrel
+// exports it after SubgraphNode, so a litegraph-internal importer of this file
+// would hit its TDZ. LGraphNode/LiteGraph must stay barrel-sourced — a direct
+// LGraphNode import re-triggers the LGraph<->Subgraph cycle.
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IWidgetOptions
 } from '@/lib/litegraph/src/types/widgets'
+import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
