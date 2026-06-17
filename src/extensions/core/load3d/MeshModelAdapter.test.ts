@@ -23,6 +23,7 @@ const mtlLoaderStub = {
 const objLoaderStub = {
   setWorkerUrl: vi.fn(),
   setMaterials: vi.fn(),
+  setBaseObject3d: vi.fn(),
   loadAsync: vi.fn<(url: string) => Promise<THREE.Object3D>>()
 }
 
@@ -58,6 +59,7 @@ vi.mock('wwobjloader2', () => ({
   OBJLoader2Parallel: class {
     setWorkerUrl = objLoaderStub.setWorkerUrl
     setMaterials = objLoaderStub.setMaterials
+    setBaseObject3d = objLoaderStub.setBaseObject3d
     loadAsync = objLoaderStub.loadAsync
   },
   MtlObjBridge: {
@@ -246,6 +248,24 @@ describe('MeshModelAdapter', () => {
       await adapter.load(ctx, '/api/view/', 'cube.obj')
 
       expect(ctx.registerOriginalMaterial).toHaveBeenCalledTimes(1)
+    })
+
+    it('resets baseObject3d on every load so meshes do not accumulate across calls', async () => {
+      objLoaderStub.loadAsync.mockResolvedValue(makeFbxLikeGroup())
+
+      const adapter = new MeshModelAdapter()
+      const ctx = makeContext('wireframe')
+      await adapter.load(ctx, '/api/view/', 'first.obj')
+      await adapter.load(ctx, '/api/view/', 'second.obj')
+
+      expect(objLoaderStub.setBaseObject3d).toHaveBeenCalledTimes(2)
+      const bases = objLoaderStub.setBaseObject3d.mock.calls.map(
+        ([base]) => base
+      )
+      expect(bases[0]).toBeInstanceOf(THREE.Object3D)
+      expect(bases[1]).toBeInstanceOf(THREE.Object3D)
+      // Each call should hand the loader a fresh container, not the same one.
+      expect(bases[0]).not.toBe(bases[1])
     })
   })
 

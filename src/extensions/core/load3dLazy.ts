@@ -37,6 +37,7 @@ async function loadLoad3dExtensions(): Promise<ComfyExtension[]> {
     // Import extensions - they self-register via useExtensionService()
     await Promise.all([
       import('./load3d'),
+      import('./load3dAdvanced'),
       import('./load3dPreviewExtensions'),
       import('./saveMesh')
     ])
@@ -65,6 +66,12 @@ useExtensionService().registerExtension({
         if (modelFile?.[1]) {
           modelFile[1].mesh_upload = true
           modelFile[1].upload_subfolder = '3d'
+        }
+      } else if (nodeData.name === 'Load3DAdvanced') {
+        const modelFile = nodeData.input?.required?.model_file
+        if (modelFile?.[1]) {
+          modelFile[1].mesh_upload = true
+          modelFile[1].upload_subfolder = ''
         }
       }
 

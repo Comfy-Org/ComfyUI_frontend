@@ -102,6 +102,8 @@ export class MeshModelAdapter implements ModelAdapter {
     path: string,
     filename: string
   ): Promise<THREE.Object3D> {
+    this.objLoader.setBaseObject3d(new THREE.Object3D())
+
     if (ctx.materialMode === 'original') {
       try {
         this.mtlLoader.setPath(path)
