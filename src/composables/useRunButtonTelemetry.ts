@@ -38,7 +38,14 @@ export function getRunButtonTelemetryProperties(
 
 export function useRunButtonTelemetry() {
   function trackRunButton(options?: RunButtonTelemetryOptions): void {
-    useTelemetry()?.trackRunButton(getRunButtonTelemetryProperties(options))
+    const telemetry = useTelemetry()
+    if (!telemetry) return
+
+    try {
+      telemetry.trackRunButton(getRunButtonTelemetryProperties(options))
+    } catch (error) {
+      console.error('[Telemetry] Run button tracking failed', error)
+    }
   }
 
   return { trackRunButton }

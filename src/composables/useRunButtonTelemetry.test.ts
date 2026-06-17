@@ -16,7 +16,8 @@ const state = vi.hoisted(() => ({
     api_node_names: ['LoadImage'],
     has_toolkit_nodes: false,
     toolkit_node_names: []
-  }
+  },
+  executionContextError: null as Error | null
 }))
 
 vi.mock('@/composables/useAppMode', () => ({
@@ -31,7 +32,10 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
-  getExecutionContext: () => state.executionContext
+  getExecutionContext: () => {
+    if (state.executionContextError) throw state.executionContextError
+    return state.executionContext
+  }
 }))
 
 import {
@@ -45,6 +49,7 @@ describe('useRunButtonTelemetry', () => {
     state.telemetry.trackRunButton.mockClear()
     state.mode.value = 'graph'
     state.isAppMode.value = false
+    state.executionContextError = null
   })
 
   it('builds run button properties from workspace state', () => {
@@ -83,5 +88,25 @@ describe('useRunButtonTelemetry', () => {
         workflow_name: 'Desktop workflow'
       })
     )
+  })
+
+  it('does not throw when run button context collection fails', () => {
+    const error = new Error('Context unavailable')
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    state.executionContextError = error
+
+    try {
+      expect(() =>
+        useRunButtonTelemetry().trackRunButton({ trigger_source: 'linear' })
+      ).not.toThrow()
+
+      expect(state.telemetry.trackRunButton).not.toHaveBeenCalled()
+      expect(consoleError).toHaveBeenCalledExactlyOnceWith(
+        '[Telemetry] Run button tracking failed',
+        error
+      )
+    } finally {
+      consoleError.mockRestore()
+    }
   })
 })
