@@ -89,12 +89,13 @@ const simplifiedWidget = computed((): SimplifiedWidget => {
   const widgetType = widgetState?.type ?? widget.type
 
   const baseOptions = widgetState?.options ?? widget.options
+  const disabled = isLinked.value || !!widget.disabled || undefined
   return {
     name: widgetName,
     type: widgetType,
     value: widgetState?.value ?? widget.value,
     label: widgetState?.label ?? widget.label,
-    options: { ...baseOptions, disabled: isLinked.value || !!widget.disabled },
+    options: { ...baseOptions, disabled },
     spec: nodeDefStore.getInputSpecForWidget(node, widgetName),
     controlWidget: getControlWidget(widget)
   }
