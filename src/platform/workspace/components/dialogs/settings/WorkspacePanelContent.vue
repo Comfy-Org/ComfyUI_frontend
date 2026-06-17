@@ -1,6 +1,6 @@
 <template>
   <div class="flex size-full flex-col">
-    <header class="mb-8 flex items-center gap-4">
+    <header class="mb-6 flex items-center gap-4">
       <WorkspaceProfilePic
         class="size-12 text-3xl!"
         :workspace-name="workspaceName"
@@ -21,7 +21,24 @@
               )
             "
           >
-            {{ $t('workspacePanel.tabs.planCredits') }}
+            <span class="grid">
+              <span
+                :class="
+                  cn(
+                    'col-start-1 row-start-1',
+                    activeTab === 'plan' && 'font-bold'
+                  )
+                "
+              >
+                {{ planTabLabel }}
+              </span>
+              <span
+                class="invisible col-start-1 row-start-1 font-bold"
+                aria-hidden="true"
+              >
+                {{ planTabLabel }}
+              </span>
+            </span>
           </TabsTrigger>
           <TabsTrigger
             value="members"
@@ -32,11 +49,24 @@
               )
             "
           >
-            {{
-              $t('workspacePanel.tabs.membersCount', {
-                count: members.length
-              })
-            }}
+            <span class="grid">
+              <span
+                :class="
+                  cn(
+                    'col-start-1 row-start-1',
+                    activeTab === 'members' && 'font-bold'
+                  )
+                "
+              >
+                {{ membersTabLabel }}
+              </span>
+              <span
+                class="invisible col-start-1 row-start-1 font-bold"
+                aria-hidden="true"
+              >
+                {{ membersTabLabel }}
+              </span>
+            </span>
           </TabsTrigger>
         </TabsList>
         <div class="flex items-center gap-1">
@@ -135,7 +165,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 const tabTriggerBase =
   'flex items-center justify-center shrink-0 px-2.5 py-2 text-sm rounded-lg cursor-pointer transition-all duration-200 outline-hidden border-none'
 const tabTriggerActive =
-  'bg-interface-menu-component-surface-hovered text-text-primary font-bold'
+  'bg-interface-menu-component-surface-hovered text-text-primary'
 const tabTriggerInactive =
   'bg-transparent text-text-secondary hover:bg-button-hover-surface focus:bg-button-hover-surface'
 
@@ -168,6 +198,11 @@ const { fetchMembers, fetchPendingInvites } = workspaceStore
 
 const { workspaceRole, permissions, uiConfig } = useWorkspaceUI()
 const activeTab = ref(defaultTab)
+
+const planTabLabel = computed(() => t('workspacePanel.tabs.planCredits'))
+const membersTabLabel = computed(() =>
+  t('workspacePanel.tabs.membersCount', { count: members.value.length })
+)
 
 const menu = ref<InstanceType<typeof Menu> | null>(null)
 
