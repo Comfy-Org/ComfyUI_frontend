@@ -28,14 +28,14 @@ describe('SearchFilterChip', () => {
     expect(screen.getByText('I')).toBeInTheDocument()
   })
 
-  it.each([
+  it.for([
     ['input type', 'I', 'i-badge', 'bg-green-500'],
     ['output type', 'O', 'o-badge', 'bg-red-500'],
     ['combo type', 'C', 'c-badge', 'bg-blue-500'],
     ['seed type', 'S', 's-badge', 'bg-yellow-500']
   ])(
     'applies semantic badge class for %s',
-    (_, badgeText, badgeClass, color) => {
+    ([, badgeText, badgeClass, color]) => {
       renderChip({ text: 'CLIP', badge: badgeText, badgeClass })
       const badge = screen.getByText(badgeText)
       expect(badge.className).toContain(color)
