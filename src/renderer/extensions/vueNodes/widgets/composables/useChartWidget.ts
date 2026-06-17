@@ -12,12 +12,15 @@ export const useChartWidget = (): ComfyWidgetConstructorV2 => {
 
     const { name, chartType = 'line', data = {} } = inputSpec
 
-    const widgetOptions = { type: chartType }
+    const widgetOptions = { serialize: true, type: chartType }
 
-    const widget = node.addWidget('chart', name, data, () => {}, {
-      serialize: true,
-      ...widgetOptions
-    }) as IChartWidget
+    const widget = node.addWidget(
+      'chart',
+      name,
+      data,
+      () => {},
+      widgetOptions
+    ) as IChartWidget
 
     return widget
   }

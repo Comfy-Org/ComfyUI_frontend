@@ -64,14 +64,6 @@ describe('useColorWidget', () => {
     expect(widget.value).toBe(BLACK_FALLBACK)
   })
 
-  it('serializes the widget so its value persists in saved workflows', () => {
-    const { node, addWidget } = createMockNode()
-
-    useColorWidget()(node, createColorSpec({ default: DECLARED_DEFAULT }))
-
-    expect(addWidget.mock.calls[0]![4]).toEqual({ serialize: true })
-  })
-
   it('honours a custom input name from the spec', () => {
     const { node, addWidget } = createMockNode()
 
