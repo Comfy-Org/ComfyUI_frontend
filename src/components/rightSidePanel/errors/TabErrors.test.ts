@@ -427,7 +427,7 @@ describe('TabErrors.vue', () => {
       missingModel: {
         missingModelCandidates: [
           {
-            nodeId: '1',
+            nodeId: asNodeId('1'),
             nodeType: 'CheckpointLoaderSimple',
             widgetName: 'ckpt_name',
             name: 'model-a.safetensors',
@@ -436,7 +436,7 @@ describe('TabErrors.vue', () => {
             isAssetSupported: true
           },
           {
-            nodeId: '2',
+            nodeId: asNodeId('2'),
             nodeType: 'CheckpointLoaderSimple',
             widgetName: 'ckpt_name',
             name: 'model-b.safetensors',
