@@ -154,11 +154,9 @@ function useWorkspaceUIInternal() {
     () => store.activeWorkspace?.role ?? 'owner'
   )
 
-  // ASSUMED SIGNAL — BE SPEC NOT FINALIZED. REVISIT (FE-770 Q3 / BE-1337).
-  // Reads `is_creator` off the active workspace, presumed to come from
-  // /api/workspaces. Until BE ships it the flag is undefined → fails closed
-  // (lifecycle actions hidden for everyone in a team). See "Roles &
-  // Billing-Permission Gating" in the FE SSOT.
+  // Reads `is_creator` off the active workspace (from /api/workspaces). Shape
+  // confirmed by BE; until the field actually ships the flag is undefined →
+  // fails closed (lifecycle actions hidden for everyone in a team).
   const isOriginalOwner = computed(
     () => store.activeWorkspace?.is_creator ?? false
   )

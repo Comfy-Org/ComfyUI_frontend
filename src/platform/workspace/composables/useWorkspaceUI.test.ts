@@ -195,7 +195,7 @@ describe('useWorkspaceUI', () => {
     })
   })
 
-  // ASSUMES /api/workspaces exposes `is_creator` — BE spec not finalized.
+  // Drives off `is_creator` from /api/workspaces (shape confirmed by BE).
   describe('subscription lifecycle (creator-only)', () => {
     it('grants lifecycle to the personal-workspace sole owner', async () => {
       mockActiveWorkspace.value = personalWorkspace
