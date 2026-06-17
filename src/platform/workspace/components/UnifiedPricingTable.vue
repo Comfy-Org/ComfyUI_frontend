@@ -374,7 +374,7 @@
           :href="VIDEO_TEMPLATE_URL"
           target="_blank"
           rel="noopener noreferrer"
-          class="cursor-pointer text-sm text-base-foreground hover:text-muted-foreground"
+          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
         >
           {{ t('subscription.pricingBlurbSeeDetails') }}
         </a>
