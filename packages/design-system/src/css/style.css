@@ -722,14 +722,14 @@ body {
 /* Shared markdown content styling for consistent rendering across components */
 .comfy-markdown-content {
   /* Typography */
-  font-size: 0.875rem; /* text-sm */
+  font-size: var(--comfy-textarea-font-size);
   line-height: 1.6;
   word-wrap: break-word;
 }
 
 /* Headings */
 .comfy-markdown-content h1 {
-  font-size: 22px; /* text-[22px] */
+  font-size: calc(22 / 14 * var(--comfy-textarea-font-size));
   font-weight: 700; /* font-bold */
   margin-top: 2rem; /* mt-8 */
   margin-bottom: 1rem; /* mb-4 */
@@ -740,7 +740,7 @@ body {
 }
 
 .comfy-markdown-content h2 {
-  font-size: 18px; /* text-[18px] */
+  font-size: calc(18 / 14 * var(--comfy-textarea-font-size));
   font-weight: 700; /* font-bold */
   margin-top: 2rem; /* mt-8 */
   margin-bottom: 1rem; /* mb-4 */
@@ -751,7 +751,7 @@ body {
 }
 
 .comfy-markdown-content h3 {
-  font-size: 16px; /* text-[16px] */
+  font-size: calc(16 / 14 * var(--comfy-textarea-font-size));
   font-weight: 700; /* font-bold */
   margin-top: 2rem; /* mt-8 */
   margin-bottom: 1rem; /* mb-4 */
