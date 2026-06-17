@@ -1,5 +1,5 @@
 <template>
-  <div data-testid="missing-node-card" class="px-4 pb-2">
+  <div data-testid="missing-node-card" class="px-3">
     <!-- Core node version warning (OSS only) -->
     <div
       v-if="!isCloud && hasMissingCoreNodes"
@@ -56,7 +56,7 @@
         >
       </template>
     </i18n-t>
-    <div class="flex flex-col gap-1 overflow-hidden py-2">
+    <div class="flex flex-col gap-1 overflow-hidden">
       <MissingPackGroupRow
         v-for="group in missingPackGroups"
         :key="group.packId ?? '__unknown__'"
@@ -75,7 +75,7 @@
       variant="secondary"
       size="sm"
       :disabled="isRestarting"
-      class="mt-2 h-8 w-full min-w-0 rounded-lg text-sm"
+      class="mt-2 h-8 w-full min-w-0 rounded-md text-xs"
       @click="applyChanges()"
     >
       <DotSpinner v-if="isRestarting" duration="1s" :size="12" />

@@ -25,6 +25,7 @@ import type {
   CreateNodeOptions,
   GraphAddOptions,
   IContextMenuValue,
+  INodeInputSlot,
   Point,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
@@ -39,6 +40,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
 import { resolveSubgraphPseudoWidgetCache } from '@/services/subgraphPseudoWidgetCache'
@@ -51,9 +53,7 @@ import type {
 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { ComfyApp, app } from '@/scripts/app'
-import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { $el } from '@/scripts/ui'
-import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -62,6 +62,7 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 import {
   isAnimatedOutput,
@@ -394,37 +395,12 @@ export const useLitegraphService = () => {
       constructor() {
         super(app.rootGraph, subgraph, instanceData)
 
-        // Set up event listener for promoted widget registration
-        subgraph.events.addEventListener('widget-promoted', (event) => {
+        subgraph.events.addEventListener('widget-promoted', () => {
           invalidateSubgraphPseudoWidgetCache(this)
-          const { widget } = event.detail
-          // Only handle DOM widgets
-          if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
-
-          const domWidgetStore = useDomWidgetStore()
-          if (!domWidgetStore.widgetStates.has(widget.id)) {
-            domWidgetStore.registerWidget(widget)
-            // Set initial visibility based on whether the widget's node is in the current graph
-            const widgetState = domWidgetStore.widgetStates.get(widget.id)
-            if (widgetState) {
-              const currentGraph = canvasStore.getCanvas().graph
-              widgetState.visible =
-                currentGraph?.nodes.includes(widget.node) ?? false
-            }
-          }
         })
 
-        // Set up event listener for promoted widget removal
-        subgraph.events.addEventListener('widget-demoted', (event) => {
+        subgraph.events.addEventListener('widget-demoted', () => {
           invalidateSubgraphPseudoWidgetCache(this)
-          const { widget } = event.detail
-          // Only handle DOM widgets
-          if (!isDOMWidget(widget) && !isComponentWidget(widget)) return
-
-          const domWidgetStore = useDomWidgetStore()
-          if (domWidgetStore.widgetStates.has(widget.id)) {
-            domWidgetStore.unregisterWidget(widget.id)
-          }
         })
 
         setupStrokeStyles(this)
@@ -433,6 +409,19 @@ export const useLitegraphService = () => {
         setInitialSize(this)
         this.serialize_widgets = true
         void extensionService.invokeExtensionsAsync('nodeCreated', this)
+      }
+
+      protected override createPromotedHostWidget(
+        input: INodeInputSlot,
+        widgetId: WidgetId,
+        sourceWidget: Readonly<IBaseWidget>
+      ): IBaseWidget | undefined {
+        return createPromotedMultilineWidget({
+          subgraphNode: this,
+          input,
+          widgetId,
+          sourceWidget
+        })
       }
 
       /**
