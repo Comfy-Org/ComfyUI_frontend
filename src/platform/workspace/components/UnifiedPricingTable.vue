@@ -264,7 +264,7 @@
               <Button
                 variant="inverted"
                 :disabled="isLoading"
-                class="mt-auto h-10 w-full font-bold"
+                class="mt-auto h-10 w-full font-inter text-sm/normal font-bold"
                 @click="handleSubscribeTeam"
               >
                 {{
@@ -507,7 +507,9 @@ const toggleButtonPt = {
   pcToggleButton: {
     root: ({ context }: ToggleButtonPassThroughMethodOptions) => ({
       class: [
-        'h-8 px-5 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
+        // min-w keeps Yearly (with its discount badge) and Monthly the same
+        // width so the active pill doesn't resize when toggling (DES QA).
+        'h-8 min-w-44 px-5 rounded-md transition-colors cursor-pointer border-none outline-none ring-0 text-sm font-medium flex items-center justify-center',
         context.active
           ? 'bg-base-foreground text-base-background'
           : 'bg-transparent text-muted-foreground hover:bg-secondary-background-hover'
@@ -670,7 +672,11 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
       : t('subscription.currentPlan')
   }
 
-  return currentTierKey.value
+  // Free tier is not a paid plan to "change" from — those users subscribe.
+  const hasActivePaidPlan =
+    currentTierKey.value !== null && currentTierKey.value !== 'free'
+
+  return hasActivePaidPlan
     ? t('subscription.changeTo', { plan: planName })
     : t('subscription.subscribeTo', { plan: planName })
 }

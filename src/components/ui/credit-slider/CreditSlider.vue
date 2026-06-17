@@ -140,7 +140,7 @@ const { t } = useI18n()
 <template>
   <div :class="cn('flex w-full flex-col gap-3', rootClass)">
     <!-- Price: discounted monthly + struck pre-discount + save badge -->
-    <div class="flex flex-col gap-1">
+    <div class="flex flex-col gap-2">
       <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
         <span class="flex shrink-0 items-baseline gap-1.5 whitespace-nowrap">
           <span
@@ -160,11 +160,13 @@ const { t } = useI18n()
             {{ t('subscription.usdPerMonth') }}
           </span>
         </span>
-        <!-- Save badge: outlined primary pill, pushed to the right (DES-197) -->
+        <!-- Save badge: outlined primary pill. On wide layouts it's pushed to
+             the right of the price; when the column narrows (mobile) it wraps
+             and aligns left under the price instead (DES QA). -->
         <span
           v-if="hasDiscount"
           data-testid="credit-slider-save"
-          class="ms-auto shrink-0 rounded-full border-2 border-primary-background px-2 py-1 text-sm font-bold whitespace-nowrap text-primary-background"
+          class="shrink-0 rounded-full border-2 border-primary-background px-2 py-1 text-sm font-bold whitespace-nowrap text-primary-background xl:ms-auto"
         >
           {{
             t('subscription.creditSliderSave', {
