@@ -4,7 +4,7 @@
       <Button
         v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
         variant="muted-textonly"
-        size="icon"
+        size="icon-lg"
         :aria-label="$t('g.moreOptions')"
       >
         <i class="pi pi-ellipsis-h" />
