@@ -458,6 +458,14 @@ describe('useTemplateFiltering', () => {
       includeOnDistributions: [TemplateIncludeOnDistributionEnum.Desktop]
     }
 
+    const localTemplate: TemplateInfo = {
+      name: 'local-only',
+      description: 'Local template',
+      mediaType: 'image',
+      mediaSubtype: 'png',
+      includeOnDistributions: [TemplateIncludeOnDistributionEnum.Local]
+    }
+
     const universalTemplate: TemplateInfo = {
       name: 'universal',
       description: 'Universal template',
@@ -541,14 +549,6 @@ describe('useTemplateFiltering', () => {
 
     it('shows local templates on localhost distribution', () => {
       setDistribution('localhost')
-      const localTemplate: TemplateInfo = {
-        name: 'local-only',
-        description: 'Local template',
-        mediaType: 'image',
-        mediaSubtype: 'png',
-        includeOnDistributions: [TemplateIncludeOnDistributionEnum.Local]
-      }
-
       const templates = ref([localTemplate, cloudTemplate, desktopTemplate])
 
       const { filteredTemplates, filteredCount, totalCount } =
@@ -559,16 +559,16 @@ describe('useTemplateFiltering', () => {
       expect(filteredTemplates.value[0].name).toBe('local-only')
     })
 
-    it('shows desktop templates on desktop2 distribution', () => {
+    it('shows local templates on desktop2 distribution', () => {
       setDistribution('desktop2')
-      const templates = ref([desktopTemplate, cloudTemplate])
+      const templates = ref([localTemplate, desktopTemplate, cloudTemplate])
 
       const { filteredTemplates, filteredCount, totalCount } =
         useTemplateFiltering(templates)
 
       expect(filteredCount.value).toBe(1)
       expect(totalCount.value).toBe(1)
-      expect(filteredTemplates.value[0].name).toBe('desktop-only')
+      expect(filteredTemplates.value[0].name).toBe('local-only')
     })
 
     it('includes templates with multiple distributions when any match', () => {

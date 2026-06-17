@@ -80,9 +80,9 @@ export function useTemplateFiltering(
         return [TemplateIncludeOnDistributionEnum.Cloud]
       case 'localhost':
         return [TemplateIncludeOnDistributionEnum.Local]
-      case 'desktop':
       case 'desktop2':
-      default:
+        return [TemplateIncludeOnDistributionEnum.Local]
+      case 'desktop':
         if (systemStatsStore.systemStats?.system.os === 'darwin') {
           return [
             TemplateIncludeOnDistributionEnum.Desktop,
