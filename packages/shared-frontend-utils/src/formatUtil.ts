@@ -591,7 +591,15 @@ const IMAGE_EXTENSIONS = [
 ] as const
 const VIDEO_EXTENSIONS = ['mp4', 'm4v', 'webm', 'mov', 'avi', 'mkv'] as const
 const AUDIO_EXTENSIONS = ['mp3', 'wav', 'ogg', 'flac'] as const
-const THREE_D_EXTENSIONS = ['obj', 'fbx', 'gltf', 'glb', 'usdz', 'ply'] as const
+const THREE_D_EXTENSIONS = [
+  'obj',
+  'fbx',
+  'gltf',
+  'glb',
+  'stl',
+  'usdz',
+  'ply'
+] as const
 const TEXT_EXTENSIONS = [
   'txt',
   'md',
