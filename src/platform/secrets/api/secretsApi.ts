@@ -1,5 +1,5 @@
 import { api } from '@/scripts/api'
-import { parseErrorResponse } from '@/utils/errorUtil'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 
 import type {
   SecretCreateRequest,

@@ -11,7 +11,7 @@ import {
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
-import { parseErrorResponse } from '@/utils/errorUtil'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import type { WorkspaceWithRole } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 

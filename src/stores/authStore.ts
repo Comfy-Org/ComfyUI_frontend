@@ -34,7 +34,7 @@ import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuth
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
-import { parseErrorResponse } from '@/utils/errorUtil'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 type CreditPurchaseResponse =

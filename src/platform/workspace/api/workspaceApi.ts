@@ -8,7 +8,7 @@ import type {
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import type { UserId } from '@/types/authTypes'
-import { errorResponseFromBody } from '@/utils/errorUtil'
+import { errorResponseFromBody } from '@/platform/remote/comfyui/errors'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'

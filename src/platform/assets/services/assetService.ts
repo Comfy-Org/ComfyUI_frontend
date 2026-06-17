@@ -24,7 +24,7 @@ import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { parseErrorResponse } from '@/utils/errorUtil'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 
 export interface PaginationOptions {
   limit?: number
