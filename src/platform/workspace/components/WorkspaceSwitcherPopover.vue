@@ -30,7 +30,7 @@
               "
             >
               <button
-                class="flex flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0"
+                class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0"
                 @click="handleSelectWorkspace(workspace)"
               >
                 <WorkspaceProfilePic
