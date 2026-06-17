@@ -40,6 +40,7 @@
     <UnifiedPricingTable
       v-if="checkoutStep === 'pricing'"
       class="xl:flex-1"
+      :initial-plan-mode="initialPlanMode"
       :is-loading="isLoadingPreview || isResubscribing"
       :loading-tier="loadingTier"
       @subscribe="handleSubscribeClick"
@@ -107,9 +108,10 @@ import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
 
-const { onClose, reason } = defineProps<{
+const { onClose, reason, initialPlanMode } = defineProps<{
   onClose: () => void
   reason?: SubscriptionDialogReason
+  initialPlanMode?: 'personal' | 'team'
 }>()
 
 const emit = defineEmits<{

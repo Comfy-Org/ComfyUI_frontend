@@ -54,7 +54,14 @@ export const useSubscriptionDialog = () => {
           () =>
             import('@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue')
         ),
-        props: { onClose: hide, reason: options?.reason },
+        props: {
+          onClose: hide,
+          reason: options?.reason,
+          // A team workspace lands on the For Teams tab; personal on For Personal.
+          initialPlanMode: workspaceStore.isInPersonalWorkspace
+            ? 'personal'
+            : 'team'
+        },
         dialogComponentProps: {
           ...dialogComponentProps,
           // Fixed height so the dialog stays the same size across the
