@@ -3,8 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   isAccountPreconditionCatalogId,
   preconditionForCatalogId,
-  resolveAccountPrecondition,
-  selectHighestPrecedencePrecondition
+  resolveAccountPrecondition
 } from './accountPreconditionRouting'
 import {
   EXECUTION_FAILED_CATALOG_ID,
@@ -111,31 +110,5 @@ describe('preconditionForCatalogId / isAccountPreconditionCatalogId', () => {
       false
     )
     expect(isAccountPreconditionCatalogId(undefined)).toBe(false)
-  })
-})
-
-describe('selectHighestPrecedencePrecondition', () => {
-  it('prefers sign-in over subscription and credits', () => {
-    expect(
-      selectHighestPrecedencePrecondition([
-        'credits',
-        'subscription',
-        'sign_in'
-      ])
-    ).toBe('sign_in')
-  })
-
-  it('prefers subscription over credits', () => {
-    expect(
-      selectHighestPrecedencePrecondition(['credits', 'subscription'])
-    ).toBe('subscription')
-  })
-
-  it('returns the only precondition present', () => {
-    expect(selectHighestPrecedencePrecondition(['credits'])).toBe('credits')
-  })
-
-  it('returns undefined when none are present', () => {
-    expect(selectHighestPrecedencePrecondition([])).toBeUndefined()
   })
 })
