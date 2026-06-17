@@ -139,11 +139,13 @@
               </div>
 
               <div
-                v-if="isActiveSubscription && permissions.canManageSubscription"
+                v-if="isActiveSubscription"
                 class="flex flex-wrap gap-2 md:ml-auto"
               >
-                <!-- Cancelled state: show only Resubscribe button -->
-                <template v-if="isCancelled">
+                <!-- Cancelled state: owners see Resubscribe only -->
+                <template
+                  v-if="isCancelled && permissions.canManageSubscription"
+                >
                   <Button
                     size="lg"
                     variant="primary"
@@ -155,10 +157,10 @@
                   </Button>
                 </template>
 
-                <!-- Active state: show Manage billing, Change plan, and menu -->
+                <!-- Owners manage the plan; members and non-creator owners can still leave -->
                 <template v-else>
                   <Button
-                    v-if="!isFreeTierPlan"
+                    v-if="!isFreeTierPlan && permissions.canManageSubscription"
                     size="lg"
                     variant="secondary"
                     class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
@@ -167,6 +169,7 @@
                     {{ $t('subscription.manageBilling') }}
                   </Button>
                   <Button
+                    v-if="permissions.canManageSubscription"
                     size="lg"
                     variant="secondary"
                     class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
@@ -179,7 +182,7 @@
                     }}
                   </Button>
                   <Button
-                    v-if="!isFreeTierPlan"
+                    v-if="planMenuItems.length > 0"
                     v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                     variant="secondary"
                     size="icon-lg"
@@ -300,10 +303,12 @@ import Menu from 'primevue/menu'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { MenuItem } from 'primevue/menuitem'
 import { useToast } from 'primevue/usetoast'
 
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
@@ -324,7 +329,25 @@ const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace, members } =
   storeToRefs(workspaceStore)
 const { permissions } = useWorkspaceUI()
+const { userEmail } = useCurrentUser()
 const { t, n, locale } = useI18n()
+
+// The creator (earliest-joined member) can't leave their own workspace.
+const isCurrentUserCreator = computed(() => {
+  const email = userEmail.value?.toLowerCase()
+  if (!email || members.value.length === 0) return false
+  const currentMember = members.value.find(
+    (member) => member.email.toLowerCase() === email
+  )
+  return (
+    !!currentMember &&
+    members.value.every((member) => currentMember.joinDate <= member.joinDate)
+  )
+})
+
+const canLeaveWorkspace = computed(
+  () => !isInPersonalWorkspace.value && !isCurrentUserCreator.value
+)
 const toast = useToast()
 
 const billingOperationStore = useBillingOperationStore()
@@ -341,7 +364,8 @@ const {
   resubscribe
 } = useBillingContext()
 
-const { showCancelSubscriptionDialog } = useDialogService()
+const { showCancelSubscriptionDialog, showLeaveWorkspaceDialog } =
+  useDialogService()
 const { showPricingTable } = useSubscriptionDialog()
 
 const isResubscribing = ref(false)
@@ -465,15 +489,26 @@ const planDisplayName = computed(() =>
 
 const planMenu = ref<InstanceType<typeof Menu> | null>(null)
 
-const planMenuItems = computed(() => [
-  {
-    label: t('subscription.cancelSubscription'),
-    icon: 'pi pi-times',
-    command: () => {
-      showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
-    }
+const planMenuItems = computed<MenuItem[]>(() => {
+  const items: MenuItem[] = []
+  if (permissions.value.canManageSubscription && !isFreeTierPlan.value) {
+    items.push({
+      label: t('subscription.cancelSubscription'),
+      icon: 'pi pi-times',
+      command: () => {
+        showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
+      }
+    })
   }
-])
+  if (canLeaveWorkspace.value) {
+    items.push({
+      label: t('workspacePanel.menu.leaveWorkspace'),
+      icon: 'pi pi-sign-out',
+      command: () => void showLeaveWorkspaceDialog()
+    })
+  }
+  return items
+})
 
 const tierKey = computed(() => {
   const tier = subscriptionTier.value
