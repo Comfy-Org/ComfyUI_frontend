@@ -1,27 +1,12 @@
 import { computed } from 'vue'
 
-import { isCloud } from '@/platform/distribution/types'
+import { getTurnstileSiteKey } from '@/config/turnstile'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { TurnstileMode } from '@/platform/remoteConfig/types'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
-const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]', '::1'])
 const SIGNUP_TURNSTILE_FLAG = 'signup_turnstile'
-
-/**
- * Whether the current origin should host the signup Turnstile widget.
- *
- * Turnstile is a cloud-only protection: it must render on the cloud build/origin
- * (web + desktop Comfy Cloud view) but never on local OSS ComfyUI served from
- * localhost / 127.0.0.1, where signup is not gated and no token is required.
- */
-export function isTurnstileOrigin(
-  cloud: boolean = isCloud,
-  hostname: string = window.location.hostname
-): boolean {
-  return cloud && !LOCAL_HOSTS.has(hostname)
-}
 
 function resolveTurnstileMode(): TurnstileMode {
   const override = getDevOverride<TurnstileMode>(SIGNUP_TURNSTILE_FLAG)
@@ -34,14 +19,29 @@ function resolveTurnstileMode(): TurnstileMode {
 }
 
 /**
+ * Whether the signup Turnstile widget should render. Purely config-driven: the
+ * flag must be shadow/enforce and a sitekey must be configured. Both come only
+ * from cloud remote config, so OSS / local builds get neither and the widget
+ * never renders — no origin or `isCloud` dependency. The local-OSS exemption
+ * lives server-side (loopback-IP check in CreateCustomer).
+ */
+export function isTurnstileEnabled(
+  mode: TurnstileMode,
+  siteKey: string
+): boolean {
+  return mode !== 'off' && siteKey !== ''
+}
+
+/**
  * Reactive Turnstile state for the signup form.
- * - `enabled`: render the widget (correct origin AND mode is shadow/enforce)
+ * - `enabled`: render the widget
  * - `enforced`: block submit until the challenge is solved
  */
 export function useTurnstile() {
   const mode = computed(resolveTurnstileMode)
-  const enabled = computed(() => isTurnstileOrigin() && mode.value !== 'off')
+  const siteKey = computed(getTurnstileSiteKey)
+  const enabled = computed(() => isTurnstileEnabled(mode.value, siteKey.value))
   const enforced = computed(() => enabled.value && mode.value === 'enforce')
 
-  return { mode, enabled, enforced }
+  return { mode, siteKey, enabled, enforced }
 }
