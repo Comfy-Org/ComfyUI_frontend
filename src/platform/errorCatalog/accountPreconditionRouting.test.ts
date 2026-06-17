@@ -7,8 +7,7 @@ import {
   isAccountPreconditionCatalogId,
   preconditionForCatalogId,
   resolveAccountPrecondition,
-  resolvePromptResponsePrecondition,
-  selectHighestPrecedencePrecondition
+  resolvePromptResponsePrecondition
 } from './accountPreconditionRouting'
 
 vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
@@ -178,31 +177,5 @@ describe('preconditionForCatalogId / isAccountPreconditionCatalogId', () => {
       false
     )
     expect(isAccountPreconditionCatalogId(undefined)).toBe(false)
-  })
-})
-
-describe('selectHighestPrecedencePrecondition', () => {
-  it('prefers sign-in over subscription and credits', () => {
-    expect(
-      selectHighestPrecedencePrecondition([
-        'credits',
-        'subscription',
-        'sign_in'
-      ])
-    ).toBe('sign_in')
-  })
-
-  it('prefers subscription over credits', () => {
-    expect(
-      selectHighestPrecedencePrecondition(['credits', 'subscription'])
-    ).toBe('subscription')
-  })
-
-  it('returns the only precondition present', () => {
-    expect(selectHighestPrecedencePrecondition(['credits'])).toBe('credits')
-  })
-
-  it('returns undefined when none are present', () => {
-    expect(selectHighestPrecedencePrecondition([])).toBeUndefined()
   })
 })

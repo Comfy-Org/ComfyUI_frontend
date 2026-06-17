@@ -121,7 +121,7 @@ const PREPROCESSING_FAILED_PREFIXES = [
   'Failed to complete preparation:'
 ]
 
-interface RuntimeErrorInfo {
+export interface RuntimeErrorInfo {
   exceptionType: string
   exceptionMessage: string
 }
