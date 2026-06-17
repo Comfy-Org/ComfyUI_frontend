@@ -12,10 +12,11 @@ import {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { zeroUuid } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/utils/uuid'
+import { zeroUuid } from '@/utils/uuid'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 import {
   createTestSubgraph,
   createTestSubgraphData,
@@ -296,9 +297,8 @@ describe('Graph Clearing and Callbacks', () => {
     })
 
     const widgetValueStore = useWidgetValueStore()
-    widgetValueStore.registerWidget(graphId, {
-      nodeId: '10' as NodeId,
-      name: 'seed',
+    const seedWidgetId = widgetId(graphId, '10' as NodeId, 'seed')
+    widgetValueStore.registerWidget(seedWidgetId, {
       type: 'number',
       value: 1,
       options: {},
@@ -307,7 +307,7 @@ describe('Graph Clearing and Callbacks', () => {
       disabled: undefined
     })
 
-    expect(widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')).toEqual(
+    expect(widgetValueStore.getWidget(seedWidgetId)).toEqual(
       expect.objectContaining({ value: 1 })
     )
     expect(
@@ -316,9 +316,7 @@ describe('Graph Clearing and Callbacks', () => {
 
     graph.clear()
 
-    expect(
-      widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')
-    ).toBeUndefined()
+    expect(widgetValueStore.getWidget(seedWidgetId)).toBeUndefined()
     expect(previewExposureStore.getExposures(graphId, `${graphId}:1`)).toEqual(
       []
     )

@@ -8,7 +8,6 @@ import { useI18n } from 'vue-i18n'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { extractVueNodeData } from '@/composables/graph/useGraphNodeManager'
-import { OverlayAppendToKey } from '@/composables/useTransformCompatOverlayProps'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -50,7 +49,6 @@ const { onPointerDown } = useAppModeWidgetResizing((widget, config) =>
 )
 
 provide(HideLayoutFieldKey, true)
-provide(OverlayAppendToKey, 'body')
 
 const resolvedInputs = useResolvedSelectedInputs()
 
@@ -62,7 +60,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
 
   return resolvedInputs.value.flatMap((entry) => {
     if (entry.status !== 'resolved') return []
-    const { entityId, node, widget, config } = entry
+    const { widgetId, node, widget, config } = entry
     if (node.mode !== LGraphEventMode.ALWAYS) return []
 
     if (!nodeDataByNode.has(node)) {
@@ -72,7 +70,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
 
     const matchingWidget = fullNodeData.widgets?.find((vueWidget) => {
       if (vueWidget.slotMetadata?.linked) return false
-      return vueWidget.entityId === entityId
+      return vueWidget.widgetId === widgetId
     })
     if (!matchingWidget) return []
 
@@ -81,7 +79,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
 
     return [
       {
-        key: entityId,
+        key: widgetId,
         persistedHeight: config?.height,
         nodeData: {
           ...fullNodeData,

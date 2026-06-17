@@ -17,24 +17,24 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
-  getWidgetEntityIdForNode,
+  getWidgetIdForNode,
   resolveNode,
   resolveNodeWidget
 } from '@/utils/litegraphUtil'
-import type { WidgetEntityId } from '@/world/entityIds'
-import { isWidgetEntityId, parseWidgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
+import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 
 function findWidgetByEntityId(
   rootGraph: LGraph,
-  entityId: WidgetEntityId
+  widgetId: WidgetId
 ): IBaseWidget | undefined {
   for (const node of rootGraph.nodes) {
     const widget = node.widgets?.find(
-      (w) => getWidgetEntityIdForNode(node, w) === entityId
+      (w) => getWidgetIdForNode(node, w) === widgetId
     )
     if (widget) return widget
   }
@@ -82,11 +82,11 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function buildEntry(
-    entityId: WidgetEntityId,
+    widgetId: WidgetId,
     name: string,
     config: InputWidgetConfig | undefined
   ): LinearInput {
-    return config === undefined ? [entityId, name] : [entityId, name, config]
+    return config === undefined ? [widgetId, name] : [widgetId, name, config]
   }
 
   function upgradeAndValidateInput(
@@ -95,10 +95,10 @@ export const useAppModeStore = defineStore('appMode', () => {
   ): LinearInput | null {
     const [storedId, widgetName, config] = input
 
-    if (typeof storedId === 'string' && isWidgetEntityId(storedId)) {
+    if (typeof storedId === 'string' && isWidgetId(storedId)) {
       const widget = findWidgetByEntityId(rootGraph, storedId)
       if (widget) return buildEntry(storedId, widgetName, config)
-      const { nodeId } = parseWidgetEntityId(storedId)
+      const { nodeId } = parseWidgetId(storedId)
       if (rootGraph.getNodeById?.(nodeId)) {
         return buildEntry(storedId, widgetName, config)
       }
@@ -107,31 +107,29 @@ export const useAppModeStore = defineStore('appMode', () => {
 
     if (typeof storedId === 'string' && storedId.includes(':')) {
       const [, widget] = resolveNodeWidget(storedId, widgetName)
-      if (!widget?.entityId) return null
-      return buildEntry(widget.entityId, widgetName, config)
+      if (!widget?.widgetId) return null
+      return buildEntry(widget.widgetId, widgetName, config)
     }
 
     const directNode = rootGraph.getNodeById?.(storedId)
     const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
     if (directNode && directWidget) {
-      const derivedId = getWidgetEntityIdForNode(directNode, directWidget)
+      const derivedId = getWidgetIdForNode(directNode, directWidget)
       if (derivedId) return buildEntry(derivedId, widgetName, config)
     }
 
     const matches: LinearInput[] = rootGraph.nodes.flatMap((node) => {
       if (!(node instanceof SubgraphNode)) return []
       return node.inputs.flatMap((inputSlot): LinearInput[] => {
-        const widget = inputSlot._widget
-        if (!widget || !isPromotedWidgetView(widget)) return []
+        if (!inputSlot.widgetId) return []
+        const target = resolveSubgraphInputTarget(node, inputSlot.name)
         if (
-          widget.sourceNodeId !== String(storedId) ||
-          widget.sourceWidgetName !== widgetName
+          target?.nodeId !== String(storedId) ||
+          target.widgetName !== widgetName
         ) {
           return []
         }
-        return widget.entityId
-          ? [buildEntry(widget.entityId, inputSlot.name, config)]
-          : []
+        return [buildEntry(inputSlot.widgetId, inputSlot.name, config)]
       })
     })
     if (matches.length === 1) return matches[0]
@@ -246,7 +244,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function removeSelectedInput(widget: IBaseWidget) {
-    const targetEntityId = widget.entityId
+    const targetEntityId = widget.widgetId
     if (!targetEntityId) return
     const index = selectedInputs.value.findIndex(
       ([id]) => id === targetEntityId
@@ -255,7 +253,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function updateInputConfig(widget: IBaseWidget, config: InputWidgetConfig) {
-    const targetEntityId = widget.entityId
+    const targetEntityId = widget.widgetId
     if (!targetEntityId) return
     const index = selectedInputs.value.findIndex(
       ([id]) => id === targetEntityId

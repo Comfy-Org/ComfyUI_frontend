@@ -1,4 +1,5 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { isCivitaiUrl } from '@/utils/formatUtil'
 
 /**
@@ -172,6 +173,22 @@ export function getAssetFilename(asset: AssetItem): string {
 }
 
 /**
+ * Resolves the filename that addresses an asset's *bytes* in storage — use
+ * this to build the path a backend resolves to a real file (the
+ * `createAnnotatedPath` input behind `/view` requests and widget values),
+ * never to show the user. Cloud is content-addressed, so it returns the
+ * content hash (`hash`); OSS is filesystem-backed, so it returns `name`.
+ *
+ * For a human-readable label use {@link getAssetDisplayFilename}; for a
+ * serialized identifier (matching, validation) use {@link getAssetFilename}.
+ *
+ * TODO(BE-933/934): collapse to `asset.file_path ?? asset.name`.
+ */
+export function getAssetStoredFilename(asset: AssetItem): string {
+  return isCloud && asset.hash ? asset.hash : asset.name
+}
+
+/**
  * Human-readable filename for UI labels.
  * Fallback: user_metadata.filename → metadata.filename → display_name → asset.name.
  * For serialized identifiers use {@link getAssetFilename}.
@@ -197,10 +214,10 @@ export function getAssetCardTitle(asset: AssetItem): string {
 
 /**
  * Returns the filename component the cloud `/api/view` endpoint resolves
- * for this asset — `asset_hash` when present (cloud assets are hash-keyed
+ * for this asset — `hash` when present (cloud assets are hash-keyed
  * in storage), otherwise `asset.name`. Use this when constructing widget
  * values or media URLs that must round-trip through the view endpoint.
  */
 export function getAssetUrlFilename(asset: AssetItem): string {
-  return asset.asset_hash || asset.name
+  return asset.hash ?? asset.name
 }

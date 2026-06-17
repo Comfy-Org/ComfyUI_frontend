@@ -37,7 +37,7 @@ const allCards: (ReturnType<typeof cardDef> & { product: Product })[] = [
   cardDef('local', routes.download, 'bg-primary-warm-gray'),
   cardDef('cloud', routes.cloud, 'bg-secondary-mauve'),
   cardDef('api', routes.api, 'bg-primary-comfy-plum'),
-  cardDef('enterprise', routes.cloudEnterprise, 'bg-illustration-forest')
+  cardDef('enterprise', routes.cloudEnterprise, 'bg-secondary-cool-gray')
 ]
 
 const cards = excludeProduct

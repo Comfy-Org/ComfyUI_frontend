@@ -161,7 +161,6 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -177,7 +176,7 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance } = useBillingContext()
+const { fetchBalance, topup } = useBillingContext()
 
 const billingOperationStore = useBillingOperationStore()
 const isPolling = computed(() => billingOperationStore.hasPendingOperations)
@@ -257,7 +256,8 @@ async function handleBuy() {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
 
     const amountCents = payAmount.value * 100
-    const response = await workspaceApi.createTopup(amountCents)
+    const response = await topup(amountCents)
+    if (!response) return
 
     if (response.status === 'completed') {
       toast.add({

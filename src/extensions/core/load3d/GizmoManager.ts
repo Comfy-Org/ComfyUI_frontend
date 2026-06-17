@@ -3,7 +3,7 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
-import type { GizmoMode, ModelTransform } from './interfaces'
+import type { GizmoMode, Model3DTransform } from './interfaces'
 
 export class GizmoManager {
   private transformControls: TransformControls | null = null
@@ -159,6 +159,27 @@ export class GizmoManager {
     }
   }
 
+  applyModelTransform(transform: Model3DTransform): void {
+    if (!this.targetObject) return
+    this.targetObject.position.set(
+      transform.position.x,
+      transform.position.y,
+      transform.position.z
+    )
+    this.targetObject.quaternion.set(
+      transform.quaternion.x,
+      transform.quaternion.y,
+      transform.quaternion.z,
+      transform.quaternion.w
+    )
+    this.targetObject.scale.set(
+      transform.scale.x,
+      transform.scale.y,
+      transform.scale.z
+    )
+    this.onTransformChange?.()
+  }
+
   getInitialTransform(): {
     position: { x: number; y: number; z: number }
     rotation: { x: number; y: number; z: number }
@@ -215,26 +236,15 @@ export class GizmoManager {
     }
   }
 
-  getModelInfo(): ModelTransform | null {
+  getModelInfo(): Model3DTransform | null {
     const object = this.targetObject
     if (!object) return null
 
-    object.updateMatrix()
-
     return {
-      uuid: object.uuid,
-      name: object.name,
-      type: object.type,
       position: {
         x: object.position.x,
         y: object.position.y,
         z: object.position.z
-      },
-      rotation: {
-        x: object.rotation.x,
-        y: object.rotation.y,
-        z: object.rotation.z,
-        order: object.rotation.order
       },
       quaternion: {
         x: object.quaternion.x,
@@ -246,14 +256,7 @@ export class GizmoManager {
         x: object.scale.x,
         y: object.scale.y,
         z: object.scale.z
-      },
-      up: {
-        x: object.up.x,
-        y: object.up.y,
-        z: object.up.z
-      },
-      visible: object.visible,
-      matrix: object.matrix.toArray()
+      }
     }
   }
 

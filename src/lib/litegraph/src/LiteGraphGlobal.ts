@@ -28,7 +28,7 @@ import {
   RenderShape,
   TitleMode
 } from './types/globalEnums'
-import { createUuidv4 } from './utils/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 
 /**
  * The Global Scope. It contains all the registered node classes.
@@ -479,7 +479,7 @@ export class LiteGraphGlobal {
     // @ts-expect-error Confirm this function no longer supports string types - base_class should always be an instance not a constructor.
     const class_type = base_class.constructor.type
 
-    let allTypes = []
+    let allTypes: string[]
     if (typeof slot_type === 'string') {
       allTypes = slot_type.split(',')
     } else if (slot_type == this.EVENT || slot_type == this.ACTION) {
@@ -539,7 +539,7 @@ export class LiteGraphGlobal {
 
     title = title || base_class.title || type
 
-    let node = null
+    let node: LGraphNode
 
     if (this.catch_exceptions) {
       try {

@@ -58,7 +58,7 @@ const API_PROVIDER_MAP: Record<string, { name: string; slug: string }> = {
   runway: { name: 'Runway', slug: 'runway' },
   vidu: { name: 'Vidu', slug: 'vidu' },
   bfl: { name: 'Flux (API)', slug: 'flux-api' },
-  grok: { name: 'Grok Image', slug: 'grok-image' },
+  grok: { name: 'Grok Imagine', slug: 'grok-imagine' },
   stability: { name: 'Stability AI', slug: 'stability-ai' },
   bytedance: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
   bytedace: { name: 'Seedance (ByteDance)', slug: 'seedance-bytedance' },
@@ -85,6 +85,20 @@ const API_PROVIDER_MAP: Record<string, { name: string; slug: string }> = {
   wavespeed: { name: 'Wavespeed', slug: 'wavespeed' },
   wavespped: { name: 'Wavespeed', slug: 'wavespeed' }
 }
+
+// Stub entries that exist only to issue 301 redirects from old slugs to
+// their new canonical slugs. Keeps renames reproducible across regenerations.
+const LEGACY_SLUG_REDIRECTS: OutputModel[] = [
+  {
+    slug: 'grok-image',
+    canonicalSlug: 'grok-imagine',
+    name: 'Grok Image',
+    displayName: 'Grok Image',
+    directory: 'partner_nodes',
+    huggingFaceUrl: '',
+    workflowCount: 0
+  }
+]
 
 function stripExt(name: string): string {
   return name.replace(/\.(safetensors|ckpt|pt|bin)$/, '')
@@ -299,7 +313,8 @@ function run(): void {
       throw new Error(
         `Failed to parse ${file}: ${
           error instanceof Error ? error.message : String(error)
-        }`
+        }`,
+        { cause: error }
       )
     }
   }
@@ -367,7 +382,7 @@ function run(): void {
       displayName: m.name
     }))
 
-  const combined = [...apiOutput, ...output]
+  const combined = [...apiOutput, ...output, ...LEGACY_SLUG_REDIRECTS]
 
   const withThumbs = combined.filter((m) => m.thumbnailUrl).length
   process.stdout.write(
