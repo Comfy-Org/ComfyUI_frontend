@@ -281,7 +281,7 @@
       <div v-if="permissions.canManageSubscription" class="py-6">
         <Button
           variant="muted-textonly"
-          class="px-0 text-sm text-muted"
+          class="text-sm text-muted"
           @click="handleViewMoreDetails"
         >
           {{ $t('subscription.viewMoreDetailsPlans') }}
