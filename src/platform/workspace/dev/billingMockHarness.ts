@@ -119,20 +119,27 @@ const CANCEL_AT = '2099-03-01T00:00:00Z'
 const slug = (t: Tier) => `${t}-monthly`
 
 function workspaces(): unknown {
+  // created_at/joined_at are required: sortWorkspaces() compares them via
+  // .localeCompare, so omitting them throws once there is >1 workspace (the
+  // real API always sends both).
   const active =
     cfg.ws === 'personal'
       ? {
           id: 'ws-active',
           name: 'Personal Workspace',
           type: 'personal',
-          role: 'owner'
+          role: 'owner',
+          created_at: '2026-01-01T00:00:00Z',
+          joined_at: '2026-01-01T00:00:00Z'
         }
       : {
           id: 'ws-active',
           name: 'My Team',
           type: 'team',
           role: cfg.role,
-          subscription_tier: TIER[cfg.tier]
+          subscription_tier: TIER[cfg.tier],
+          created_at: '2026-01-01T00:00:00Z',
+          joined_at: '2026-01-01T00:00:00Z'
         }
   const list: unknown[] = [active]
   if (cfg.multiWs)
@@ -140,7 +147,9 @@ function workspaces(): unknown {
       id: 'ws-other',
       name: 'Acme Studio Workspace — long name to test truncation',
       type: 'team',
-      role: 'member'
+      role: 'member',
+      created_at: '2026-02-01T00:00:00Z',
+      joined_at: '2026-02-01T00:00:00Z'
     })
   return { workspaces: list }
 }
