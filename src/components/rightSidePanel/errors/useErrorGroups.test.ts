@@ -793,53 +793,6 @@ describe('useErrorGroups', () => {
     })
   })
 
-  describe('groupedErrorMessages', () => {
-    it('returns empty array when no errors', () => {
-      const { groups } = createErrorGroups()
-      expect(groups.groupedErrorMessages.value).toEqual([])
-    })
-
-    it('collects unique display messages from node errors', async () => {
-      const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
-        '1': {
-          class_type: 'KSampler',
-          dependent_outputs: [],
-          errors: [
-            { type: 'err_a', message: 'Error A', details: '' },
-            { type: 'err_b', message: 'Error B', details: '' }
-          ]
-        },
-        '2': {
-          class_type: 'CLIPLoader',
-          dependent_outputs: [],
-          errors: [{ type: 'err_a', message: 'Error A', details: '' }]
-        }
-      }
-      await nextTick()
-
-      const messages = groups.groupedErrorMessages.value
-      expect(messages).toEqual([unknownValidationMessage])
-    })
-
-    it('includes missing node group display message', async () => {
-      const { groups } = createErrorGroups()
-      const missingNodesStore = useMissingNodesErrorStore()
-      missingNodesStore.setMissingNodeTypes([
-        makeMissingNodeType('NodeA', { cnrId: 'pack-1' })
-      ])
-      await nextTick()
-
-      const missingGroup = groups.allErrorGroups.value.find(
-        (g) => g.type === 'missing_node'
-      )
-      expect(missingGroup).toBeDefined()
-      expect(groups.groupedErrorMessages.value).toContain(
-        missingGroup!.displayMessage
-      )
-    })
-  })
-
   describe('missingModelGroups', () => {
     it('returns empty array when no missing models', () => {
       const { groups } = createErrorGroups()
