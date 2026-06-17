@@ -226,6 +226,9 @@ jobs:
     permissions:
       pull-requests: write
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
       - name: Upsert Chromatic section into unified report
         uses: ./.github/actions/upsert-comment-section
         with:
