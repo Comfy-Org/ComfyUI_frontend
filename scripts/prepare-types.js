@@ -2,6 +2,12 @@ import fs from 'fs'
 import path from 'path'
 
 const mainPackage = JSON.parse(fs.readFileSync('./package.json', 'utf8'))
+const desktopBridgeTypesPackage = JSON.parse(
+  fs.readFileSync(
+    './packages/comfyui-desktop-bridge-types/package.json',
+    'utf8'
+  )
+)
 
 // Create the types-only package.json
 const typesPackage = {
@@ -17,8 +23,7 @@ const typesPackage = {
   description: `TypeScript definitions for ${mainPackage.name}`,
   license: mainPackage.license,
   dependencies: {
-    '@comfyorg/comfyui-desktop-bridge-types':
-      mainPackage.dependencies['@comfyorg/comfyui-desktop-bridge-types']
+    '@comfyorg/comfyui-desktop-bridge-types': desktopBridgeTypesPackage.version
   },
   peerDependencies: {
     vue: mainPackage.dependencies.vue,

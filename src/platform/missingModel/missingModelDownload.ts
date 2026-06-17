@@ -37,11 +37,11 @@ export interface ModelWithUrl {
 }
 
 async function startDesktop2ModelDownload(
-  downloadModel: NonNullable<ComfyDesktop2Bridge['downloadModel']>,
+  bridge: ComfyDesktop2Bridge,
   model: ModelWithUrl
 ): Promise<void> {
   try {
-    await downloadModel(model.url, model.name, model.directory)
+    await bridge.downloadModel?.(model.url, model.name, model.directory)
   } catch (error: unknown) {
     console.error('Failed to start Desktop2 model download:', error)
   }
@@ -76,9 +76,8 @@ export function downloadModel(
   paths: Record<string, string[]>
 ): void {
   const desktop2Bridge = window.__comfyDesktop2
-  const desktop2DownloadModel = desktop2Bridge?.downloadModel
-  if (desktop2Bridge && desktop2DownloadModel && !desktop2Bridge.isRemote()) {
-    void startDesktop2ModelDownload(desktop2DownloadModel, model)
+  if (desktop2Bridge?.downloadModel && !desktop2Bridge.isRemote()) {
+    void startDesktop2ModelDownload(desktop2Bridge, model)
     return
   }
 
