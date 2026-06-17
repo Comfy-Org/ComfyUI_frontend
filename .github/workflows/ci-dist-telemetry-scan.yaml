@@ -120,7 +120,7 @@ jobs:
             -e 'DesktopTelemetry' \
             -e 'initDesktopTelemetry' \
             -e '__comfyDesktop2\??\.Telemetry' \
-            -e 'Telemetry\\??\\.capture' \
+            -e 'Telemetry\??\.capture' \
             dist; then
             echo '❌ ERROR: Desktop telemetry references found in OSS dist assets!'
             echo 'Desktop telemetry must only ship in the desktop2 distribution.'
