@@ -99,7 +99,9 @@ function dynamicComboWidget(
     const newSpec = value ? options[value] : undefined
 
     const removedInputs = remove(node.inputs, isInGroup)
-    for (const widget of remove(node.widgets, isInGroup)) widget.onRemove?.()
+
+    const removedWidgets = remove(node.widgets, isInGroup)
+    for (const widget of removedWidgets) widget.onRemove?.()
 
     if (!newSpec) return
 
@@ -177,6 +179,18 @@ function dynamicComboWidget(
           node.inputs[inputIndex]
         )
       }
+    }
+    for (const widget of removedWidgets) {
+      const newMatchingWidget = addedWidgets.find((w) => w.name === widget.name)
+      if (!newMatchingWidget || newMatchingWidget.type !== widget.type) continue
+
+      const nameSegment = widget.name.slice(widget.name.lastIndexOf('.') + 1)
+      const spec =
+        newSpec.required?.[nameSegment] ?? newSpec.optional?.[nameSegment]
+      if (spec?.[1] && 'default' in spec?.[1]) continue
+
+      newMatchingWidget.value = widget.value
+      newMatchingWidget.callback?.(widget.value)
     }
 
     node.size[1] = node.computeSize([...node.size])[1]
