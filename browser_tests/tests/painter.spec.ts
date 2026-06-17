@@ -799,26 +799,34 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('widgets/painter_widget')
     })
 
-    test('Does not expose hidden number widgets as editable canvas controls', async ({
+    test('Does not open editors for backend-hidden number widget rows in legacy LiteGraph', async ({
       comfyPage
     }) => {
       const painterNodes = await comfyPage.nodeOps.getNodeRefsByType('Painter')
       expect(painterNodes).toHaveLength(1)
       const painterNode = painterNodes[0]!
       const maskWidget = await painterNode.getWidgetByName('mask')
-      const maskWidgetPosition = await maskWidget.getPosition()
-      const widgetRowHeight = await comfyPage.page.evaluate(
-        () => window.LiteGraph!.NODE_WIDGET_HEIGHT + 4
+      const maskWidgetClientPosition = await maskWidget.getPosition()
+      const widgetRowClientHeight = await comfyPage.page.evaluate(
+        () =>
+          (window.LiteGraph!.NODE_WIDGET_HEIGHT + 4) *
+          window.app!.canvas.ds.scale
       )
       const legacyPrompt = comfyPage.page.locator('.graphdialog')
       await expect(legacyPrompt).toBeHidden()
 
-      for (const index of HIDDEN_PAINTER_NUMBER_WIDGET_NAMES.keys()) {
-        await comfyPage.canvasOps.click({
-          x: maskWidgetPosition.x,
-          y: maskWidgetPosition.y + widgetRowHeight * (index + 1)
+      for (const [
+        index,
+        widgetName
+      ] of HIDDEN_PAINTER_NUMBER_WIDGET_NAMES.entries()) {
+        await test.step(`Click ${widgetName} row`, async () => {
+          await comfyPage.page.mouse.click(
+            maskWidgetClientPosition.x,
+            maskWidgetClientPosition.y + widgetRowClientHeight * (index + 1)
+          )
+          await comfyPage.nextFrame()
+          await expect(legacyPrompt).toBeHidden()
         })
-        await expect(legacyPrompt).toBeHidden()
       }
     })
   }
