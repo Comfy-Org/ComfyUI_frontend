@@ -1,11 +1,20 @@
 import type { WebSocketRoute } from '@playwright/test'
 
-import type { NodeError, PromptResponse } from '@/schemas/apiSchema'
+import type {
+  NodeError,
+  NodeProgressState,
+  PromptResponse
+} from '@/schemas/apiSchema'
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
+
+type RunOptions = {
+  nodeErrors?: Record<string, NodeError>
+  onPromptRequest?: (requestBody: unknown) => void | Promise<void>
+}
 
 /**
  * Build a `NodeError` describing a single failed input on a KSampler node.
@@ -66,8 +75,9 @@ export class ExecutionHelper {
    * The app receives a valid PromptResponse so storeJob() fires
    * and registers the job against the active workflow path.
    */
-  async run(): Promise<string> {
+  async run(options: RunOptions = {}): Promise<string> {
     const jobId = `test-job-${++this.jobCounter}`
+    const { nodeErrors = {}, onPromptRequest } = options
 
     let fulfilled!: () => void
     const prompted = new Promise<void>((r) => {
@@ -77,12 +87,13 @@ export class ExecutionHelper {
     await this.page.route(
       PROMPT_ROUTE_PATTERN,
       async (route) => {
+        await onPromptRequest?.(route.request().postDataJSON())
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
             prompt_id: jobId,
-            node_errors: {}
+            node_errors: nodeErrors
           })
         })
         fulfilled()
@@ -226,6 +237,16 @@ export class ExecutionHelper {
       JSON.stringify({
         type: 'progress',
         data: { prompt_id: jobId, node: nodeId, value, max }
+      })
+    )
+  }
+
+  /** Send `progress_state` WS event with per-node execution state. */
+  progressState(jobId: string, nodes: Record<string, NodeProgressState>): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'progress_state',
+        data: { prompt_id: jobId, nodes }
       })
     )
   }

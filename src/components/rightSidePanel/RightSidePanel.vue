@@ -14,6 +14,7 @@ import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -106,6 +107,10 @@ const isSingleSubgraphNode = computed(() => {
 })
 
 function closePanel() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_closed',
+    element_group: 'right_side_panel'
+  })
   rightSidePanelStore.closePanel()
 }
 
@@ -370,7 +375,7 @@ function handleTitleCancel() {
     </section>
 
     <!-- Panel Content -->
-    <div class="scrollbar-thin flex-1 overflow-y-auto">
+    <div class="flex-1 scrollbar-thin overflow-y-auto">
       <TabErrors v-if="activeTab === 'errors'" />
       <template v-else-if="!hasSelection">
         <TabGlobalParameters v-if="activeTab === 'parameters'" />

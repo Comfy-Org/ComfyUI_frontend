@@ -21,21 +21,24 @@ describe('mapInputFileToAssetItem', () => {
     expect(asset.preview_url).toBe('/api/view?filename=photo.png&type=input')
   })
 
-  it.each([
+  it.for([
     ['photo.png [input]', 'photo.png'],
     ['photo.png [output]', 'photo.png'],
     ['photo.png [temp]', 'photo.png'],
     ['clip.mp4[input]', 'clip.mp4'],
     ['MyFile.WEBP [Input]', 'MyFile.WEBP']
-  ])('strips ComfyUI directory annotation: %s -> %s', (input, expectedName) => {
-    const asset = mapInputFileToAssetItem(input, 1, 'input')
+  ])(
+    'strips ComfyUI directory annotation: %s -> %s',
+    ([input, expectedName]) => {
+      const asset = mapInputFileToAssetItem(input, 1, 'input')
 
-    expect(asset.name).toBe(expectedName)
-    expect(asset.id).toBe(`input-1-${expectedName}`)
-    expect(asset.preview_url).toBe(
-      `/api/view?filename=${encodeURIComponent(expectedName)}&type=input`
-    )
-  })
+      expect(asset.name).toBe(expectedName)
+      expect(asset.id).toBe(`input-1-${expectedName}`)
+      expect(asset.preview_url).toBe(
+        `/api/view?filename=${encodeURIComponent(expectedName)}&type=input`
+      )
+    }
+  )
 
   it('leaves non-annotation brackets in the filename intact', () => {
     const asset = mapInputFileToAssetItem('my [draft] image.png', 0, 'input')

@@ -256,13 +256,13 @@ describe('maskEditorStore', () => {
   })
 
   describe('canvas → ctx watchers', () => {
-    it.each([
+    it.for([
       ['maskCanvas', 'maskCtx'],
       ['rgbCanvas', 'rgbCtx'],
       ['imgCanvas', 'imgCtx']
     ] as const)(
       'should derive %s using getContext with willReadFrequently',
-      async (canvasKey, ctxKey) => {
+      async ([canvasKey, ctxKey]) => {
         const store = useMaskEditorStore()
         const canvas = makeCanvas()
 
@@ -276,13 +276,13 @@ describe('maskEditorStore', () => {
       }
     )
 
-    it.each([
+    it.for([
       ['maskCanvas', 'maskCtx'],
       ['rgbCanvas', 'rgbCtx'],
       ['imgCanvas', 'imgCtx']
     ] as const)(
       'should leave existing %s ctx untouched when canvas is cleared',
-      async (canvasKey, ctxKey) => {
+      async ([canvasKey, ctxKey]) => {
         const store = useMaskEditorStore()
         const canvas = makeCanvas()
         store[canvasKey] = canvas

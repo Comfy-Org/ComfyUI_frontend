@@ -1,5 +1,5 @@
 import { whenever } from '@vueuse/core'
-import { computed, nextTick, onMounted } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToastStore } from './toastStore'
@@ -41,47 +41,66 @@ export function useFrontendVersionMismatchWarning(
   // Track if we've already shown the warning
   let hasShownWarning = false
 
+  const emitAlert = (detail: string) => {
+    const fullMessage = t('g.versionMismatchWarningMessage', {
+      warning: t('g.versionMismatchWarning'),
+      detail
+    })
+    toastStore.addAlert(fullMessage)
+  }
+
   const showWarning = () => {
     // Prevent showing the warning multiple times
     if (hasShownWarning) return
 
     const message = versionCompatibilityStore.warningMessage
-    if (!message) return
+    const packageMessages = versionCompatibilityStore.packageWarningMessages
+    if (!message && packageMessages.length === 0) return
 
-    const detailMessage = t('g.frontendOutdated', {
-      frontendVersion: message.frontendVersion,
-      requiredVersion: message.requiredVersion
-    })
+    if (message) {
+      emitAlert(
+        t('g.frontendOutdated', {
+          frontendVersion: message.frontendVersion,
+          requiredVersion: message.requiredVersion
+        })
+      )
+    }
 
-    const fullMessage = t('g.versionMismatchWarningMessage', {
-      warning: t('g.versionMismatchWarning'),
-      detail: detailMessage
-    })
+    for (const pkg of packageMessages) {
+      emitAlert(
+        t('g.comfyPackageOutdated', {
+          name: pkg.name,
+          installedVersion: pkg.installedVersion,
+          requiredVersion: pkg.requiredVersion
+        })
+      )
+    }
 
-    toastStore.addAlert(fullMessage)
     hasShownWarning = true
 
     // Automatically dismiss the warning so it won't show again for 7 days
     versionCompatibilityStore.dismissWarning()
   }
 
-  onMounted(async () => {
-    // Only set up the watcher if immediate is true
-    if (immediate) {
-      // Wait for next tick to ensure reactive updates from settings load have propagated
-      await nextTick()
+  let stopWatcher: (() => void) | null = null
 
-      whenever(
-        () => versionCompatibilityStore.shouldShowWarning,
-        () => {
-          showWarning()
-        },
-        {
-          immediate: true,
-          once: true
-        }
-      )
-    }
+  onMounted(async () => {
+    if (!immediate) return
+    // Wait for next tick to ensure reactive updates from settings load have propagated
+    await nextTick()
+
+    stopWatcher = whenever(
+      () => versionCompatibilityStore.shouldShowWarning,
+      () => {
+        showWarning()
+      },
+      { immediate: true }
+    )
+  })
+
+  onUnmounted(() => {
+    stopWatcher?.()
+    stopWatcher = null
   })
 
   return {

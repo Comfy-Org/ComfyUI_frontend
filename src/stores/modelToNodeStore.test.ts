@@ -87,7 +87,8 @@ const MOCK_NODE_NAMES = [
   'IPAdapterModelLoader',
   'LS_LoadSegformerModel',
   'LoadNLFModel',
-  'FlashVSRNode'
+  'FlashVSRNode',
+  'LTXICLoRALoaderModelOnly'
 ] as const
 
 const mockNodeDefsByName = Object.fromEntries(
@@ -253,7 +254,7 @@ describe('useModelToNodeStore', () => {
       expect(provider?.key).toBe('')
     })
 
-    it.each([
+    it.for([
       ['sam2', 'DownloadAndLoadSAM2Model', 'model'],
       ['sams', 'SAMLoader', 'model_name'],
       ['ipadapter', 'IPAdapterModelLoader', 'ipadapter_file'],
@@ -264,7 +265,7 @@ describe('useModelToNodeStore', () => {
       ['segformer_b3_fashion', 'LS_LoadSegformerModel', 'model_name']
     ])(
       'should return correct provider for %s',
-      (modelType, expectedNodeName, expectedKey) => {
+      ([modelType, expectedNodeName, expectedKey]) => {
         const modelToNodeStore = useModelToNodeStore()
         modelToNodeStore.registerDefaults()
 
@@ -274,7 +275,7 @@ describe('useModelToNodeStore', () => {
       }
     )
 
-    it.each([['ultralytics'], ['ultralytics/bbox'], ['ultralytics/segm']])(
+    it.for(['ultralytics', 'ultralytics/bbox', 'ultralytics/segm'])(
       'should not register %s as a default provider, so the node falls back to its static combo (regression for #8468)',
       (modelType) => {
         const modelToNodeStore = useModelToNodeStore()
@@ -307,7 +308,22 @@ describe('useModelToNodeStore', () => {
       )
 
       const loraProviders = modelToNodeStore.getAllNodeProviders('loras')
-      expect(loraProviders).toHaveLength(2)
+      expect(loraProviders).toHaveLength(3)
+      expect(loraProviders).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            nodeDef: expect.objectContaining({ name: 'LoraLoader' })
+          }),
+          expect.objectContaining({
+            nodeDef: expect.objectContaining({ name: 'LoraLoaderModelOnly' })
+          }),
+          expect.objectContaining({
+            nodeDef: expect.objectContaining({
+              name: 'LTXICLoRALoaderModelOnly'
+            })
+          })
+        ])
+      )
     })
 
     it('should return single provider for model type with one node', () => {
@@ -559,6 +575,18 @@ describe('useModelToNodeStore', () => {
         modelToNodeStore.getCategoryForNodeType('NonExistentNode')
       ).toBeUndefined()
       expect(modelToNodeStore.getCategoryForNodeType('')).toBeUndefined()
+    })
+
+    it('maps the IC-LoRA Loader Model Only node to loras so its lora_name dropdown uses the cloud asset browser (FE-838)', () => {
+      const modelToNodeStore = useModelToNodeStore()
+      modelToNodeStore.registerDefaults()
+
+      expect(
+        modelToNodeStore.getCategoryForNodeType('LTXICLoRALoaderModelOnly')
+      ).toBe('loras')
+      expect(
+        modelToNodeStore.getRegisteredNodeTypes()['LTXICLoRALoaderModelOnly']
+      ).toBe('lora_name')
     })
 
     it('should return first category when node type exists in multiple categories', () => {

@@ -8,6 +8,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type * as ModelStoreModule from '@/stores/modelStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 // Mock vue-i18n for useExternalLink
@@ -66,6 +67,15 @@ vi.mock('@/scripts/api', () => ({
     apiURL: vi.fn(() => 'http://localhost:8188')
   }
 }))
+
+const mockModelStoreRefresh = vi.fn().mockResolvedValue(undefined)
+vi.mock('@/stores/modelStore', async (importOriginal) => {
+  const actual = await importOriginal<typeof ModelStoreModule>()
+  return {
+    ...actual,
+    useModelStore: () => ({ refresh: mockModelStoreRefresh })
+  }
+})
 
 vi.mock('@/platform/settings/settingStore')
 
@@ -558,10 +568,11 @@ describe('useCoreCommands', () => {
       expect(app.openClipspace).toHaveBeenCalled()
     })
 
-    it('Comfy.RefreshNodeDefinitions awaits app.refreshComboInNodes', async () => {
+    it('Comfy.RefreshNodeDefinitions refreshes combos and the model library', async () => {
       await findCmd('Comfy.RefreshNodeDefinitions').function()
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
+      expect(mockModelStoreRefresh).toHaveBeenCalled()
     })
   })
 

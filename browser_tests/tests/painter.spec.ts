@@ -549,7 +549,7 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
       expect(uploadCount, 'should upload exactly once').toBe(1)
     })
 
-    test('Empty canvas does not upload on serialization', async ({
+    test('Empty canvas uploads a transparent placeholder on serialization', async ({
       comfyPage
     }) => {
       let uploadCount = 0
@@ -566,7 +566,10 @@ test.describe('Painter', { tag: ['@widget', '@vue-nodes'] }, () => {
 
       await triggerSerialization(comfyPage.page)
 
-      expect(uploadCount, 'empty canvas should not upload').toBe(0)
+      expect(
+        uploadCount,
+        'empty canvas should upload a transparent PNG so the backend receives a valid asset reference (Painter.execute treats painter_alpha=0 as no-mask)'
+      ).toBe(1)
     })
 
     test('Upload failure shows error toast', async ({ comfyPage }) => {

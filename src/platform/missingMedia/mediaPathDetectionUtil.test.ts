@@ -7,21 +7,21 @@ import {
 } from './mediaPathDetectionUtil'
 
 describe('normalizeAnnotatedMediaPathForDetection', () => {
-  it.each([
+  it.for([
     ['photo.png [input]', 'photo.png'],
     ['result.png [output]', 'result.png'],
     ['photo.png   [input]', 'photo.png'],
     ['with spaces.png [output]', 'with spaces.png'],
     ['nested/folder/video.mp4 [output]', 'nested/folder/video.mp4']
-  ])('strips Core-style annotation from %s', (value, expected) => {
+  ])('strips Core-style annotation from %s', ([value, expected]) => {
     expect(normalizeAnnotatedMediaPathForDetection(value)).toBe(expected)
   })
 
-  it.each([
+  it.for([
     ['photo.png[input]', 'photo.png'],
     ['result.png[output]', 'result.png'],
     ['with spaces.png   [output]', 'with spaces.png']
-  ])('strips Cloud compact annotation from %s', (value, expected) => {
+  ])('strips Cloud compact annotation from %s', ([value, expected]) => {
     expect(
       normalizeAnnotatedMediaPathForDetection(value, {
         allowCompactSuffix: true
@@ -35,7 +35,7 @@ describe('normalizeAnnotatedMediaPathForDetection', () => {
     )
   })
 
-  it.each(['photo.png [draft]', 'photo [output] copy.png', 'photo.png', ''])(
+  it.for(['photo.png [draft]', 'photo [output] copy.png', 'photo.png', ''])(
     'leaves non-matching values unchanged: %s',
     (value) => {
       expect(normalizeAnnotatedMediaPathForDetection(value)).toBe(value)
@@ -57,10 +57,10 @@ describe('getMediaPathDetectionNames', () => {
 })
 
 describe('getAnnotatedMediaPathTypeForDetection', () => {
-  it.each([
+  it.for([
     ['photo.png [input]', 'input'],
     ['photo.png [output]', 'output']
-  ])('returns the Core-style annotation type from %s', (value, expected) => {
+  ])('returns the Core-style annotation type from %s', ([value, expected]) => {
     expect(getAnnotatedMediaPathTypeForDetection(value)).toBe(expected)
   })
 

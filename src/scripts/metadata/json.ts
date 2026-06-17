@@ -1,5 +1,7 @@
 import { isObject } from 'es-toolkit/compat'
 
+import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
+
 export function getDataFromJSON(
   file: File
 ): Promise<Record<string, object> | undefined> {
@@ -11,9 +13,11 @@ export function getDataFromJSON(
           resolve(undefined)
           return
         }
-        const jsonContent = JSON.parse(reader.result)
+        const jsonContent = parseJsonWithNonFinite<Record<string, unknown>>(
+          reader.result
+        )
         if (jsonContent?.templates) {
-          resolve({ templates: jsonContent.templates })
+          resolve({ templates: jsonContent.templates as object })
           return
         }
         if (isApiJson(jsonContent)) {

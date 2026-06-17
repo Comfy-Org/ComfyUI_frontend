@@ -2,6 +2,7 @@
   <div
     class="flex flex-col overflow-hidden rounded-lg border border-border-default bg-base-background"
     :style="{ width: `${BASE_WIDTH_PX * (scaleFactor / BASE_SCALE)}px` }"
+    data-testid="node-preview-card"
   >
     <div ref="previewContainerRef" class="overflow-hidden p-3">
       <div

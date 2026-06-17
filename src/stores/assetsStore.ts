@@ -10,7 +10,11 @@ import type {
   AssetItem,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
-import { assetService } from '@/platform/assets/services/assetService'
+import {
+  INPUT_TAG,
+  OUTPUT_TAG,
+  assetService
+} from '@/platform/assets/services/assetService'
 import type { PaginationOptions } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -46,7 +50,7 @@ async function fetchInputFilesFromAPI(): Promise<AssetItem[]> {
  * Fetch input files from cloud service
  */
 async function fetchInputFilesFromCloud(): Promise<AssetItem[]> {
-  return await assetService.getAssetsByTag('input', false, {
+  return await assetService.getAssetsByTag(INPUT_TAG, false, {
     limit: INPUT_LIMIT
   })
 }
@@ -89,6 +93,7 @@ function mapHistoryToAssets(historyItems: JobListItem[]): AssetItem[] {
 
 const BATCH_SIZE = 200
 const MAX_HISTORY_ITEMS = 1000 // Maximum items to keep in memory
+const FLAT_OUTPUT_PAGE_SIZE = 200
 
 export const useAssetsStore = defineStore('assets', () => {
   const assetDownloadStore = useAssetDownloadStore()
@@ -255,6 +260,65 @@ export const useAssetsStore = defineStore('assets', () => {
     }
   }
 
+  const flatOutputAssets = ref<AssetItem[]>([])
+  const flatOutputLoading = ref(false)
+  const flatOutputError = ref<unknown>(null)
+  const flatOutputOffset = ref(0)
+  const flatOutputHasMore = ref(true)
+  const flatOutputIsLoadingMore = ref(false)
+  const flatOutputSeenIds = new Set<string>()
+  let flatOutputInFlight: Promise<AssetItem[]> | null = null
+
+  async function fetchFlatOutputs(loadMore: boolean): Promise<AssetItem[]> {
+    if (flatOutputInFlight) return flatOutputInFlight
+
+    if (loadMore) {
+      if (!flatOutputHasMore.value) return flatOutputAssets.value
+      flatOutputIsLoadingMore.value = true
+    } else {
+      flatOutputLoading.value = true
+      flatOutputOffset.value = 0
+      flatOutputHasMore.value = true
+      flatOutputSeenIds.clear()
+    }
+    flatOutputError.value = null
+
+    flatOutputInFlight = (async () => {
+      try {
+        const page = await assetService.getAssetsByTag(OUTPUT_TAG, true, {
+          limit: FLAT_OUTPUT_PAGE_SIZE,
+          offset: flatOutputOffset.value
+        })
+        const fresh = loadMore
+          ? page.filter((asset) => !flatOutputSeenIds.has(asset.id))
+          : page
+        for (const asset of fresh) flatOutputSeenIds.add(asset.id)
+        flatOutputAssets.value = loadMore
+          ? [...flatOutputAssets.value, ...fresh]
+          : page
+        flatOutputOffset.value += page.length
+        flatOutputHasMore.value = page.length === FLAT_OUTPUT_PAGE_SIZE
+        return flatOutputAssets.value
+      } catch (err) {
+        flatOutputError.value = err
+        console.error('Failed to fetch output assets:', err)
+        return loadMore ? flatOutputAssets.value : []
+      } finally {
+        if (loadMore) flatOutputIsLoadingMore.value = false
+        else flatOutputLoading.value = false
+        flatOutputInFlight = null
+      }
+    })()
+
+    return flatOutputInFlight
+  }
+
+  const updateFlatOutputs = () => fetchFlatOutputs(false)
+  const loadMoreFlatOutputs = async () => {
+    if (flatOutputIsLoadingMore.value) return
+    await fetchFlatOutputs(true)
+  }
+
   /**
    * Patch preview_id/preview_url for a single asset already in memory,
    * matched by name. Used after persistThumbnail succeeds so an open Asset
@@ -283,13 +347,14 @@ export const useAssetsStore = defineStore('assets', () => {
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
-   * Cloud assets use asset_hash for the hash-based filename
+   * Cloud assets use hash for the hash-based filename
    */
   const inputAssetsByFilename = computed(() => {
     const map = new Map<string, AssetItem>()
     for (const asset of inputAssets.value) {
-      if (asset.asset_hash) {
-        map.set(asset.asset_hash, asset)
+      const hash = asset.hash
+      if (hash) {
+        map.set(hash, asset)
       }
     }
     return map
@@ -809,6 +874,15 @@ export const useAssetsStore = defineStore('assets', () => {
     updateHistory,
     loadMoreHistory,
     setAssetPreview,
+
+    // Flat output assets (cloud-only, tag-based)
+    flatOutputAssets,
+    flatOutputLoading,
+    flatOutputError,
+    flatOutputHasMore,
+    flatOutputIsLoadingMore,
+    updateFlatOutputs,
+    loadMoreFlatOutputs,
 
     // Input mapping helpers
     inputAssetsByFilename,

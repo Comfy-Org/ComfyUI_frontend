@@ -1,3 +1,4 @@
+import { SparkRenderer } from '@sparkjsdev/spark'
 import * as THREE from 'three'
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -135,6 +136,13 @@ describe('SceneManager', () => {
       expect(manager.scene).toBeInstanceOf(THREE.Scene)
       expect(manager.gridHelper).toBeInstanceOf(THREE.GridHelper)
       expect(manager.scene.children).toContain(manager.gridHelper)
+    })
+
+    it('adds a SparkRenderer to the scene so SplatMesh instances render', () => {
+      const sparkRenderers = manager.scene.children.filter(
+        (child) => child instanceof SparkRenderer
+      )
+      expect(sparkRenderers).toHaveLength(1)
     })
 
     it('builds a separate background scene with a tiled mesh', () => {

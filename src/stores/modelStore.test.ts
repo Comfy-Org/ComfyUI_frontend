@@ -148,6 +148,69 @@ describe('useModelStore', () => {
     expect(api.getModels).toHaveBeenCalledTimes(1)
   })
 
+  describe('refreshModelFolder', () => {
+    it('re-fetches the contents of a previously loaded folder', async () => {
+      enableMocks()
+      store = useModelStore()
+      await store.loadModelFolders()
+      await store.getLoadedModelFolder('checkpoints')
+      expect(api.getModels).toHaveBeenCalledTimes(1)
+
+      vi.mocked(api.getModels).mockResolvedValueOnce([
+        { name: 'sdxl.safetensors', pathIndex: 0 },
+        { name: 'sdv15.safetensors', pathIndex: 0 },
+        { name: 'noinfo.safetensors', pathIndex: 0 },
+        { name: 'new-upload.safetensors', pathIndex: 0 }
+      ])
+
+      await store.refreshModelFolder('checkpoints')
+
+      expect(api.getModels).toHaveBeenCalledTimes(2)
+      const folder = await store.getLoadedModelFolder('checkpoints')
+      expect(Object.keys(folder!.models)).toHaveLength(4)
+      expect(folder!.models['0/new-upload.safetensors']).toBeDefined()
+    })
+
+    it('falls back to refreshing folder structure when folder is unknown', async () => {
+      enableMocks()
+      store = useModelStore()
+      await store.loadModelFolders()
+      expect(api.getModelFolders).toHaveBeenCalledTimes(1)
+
+      await store.refreshModelFolder('loras')
+
+      expect(api.getModelFolders).toHaveBeenCalledTimes(2)
+      expect(api.getModels).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('refresh', () => {
+    it('re-loads only folders that were previously loaded', async () => {
+      enableMocks()
+      store = useModelStore()
+      await store.loadModelFolders()
+      await store.getLoadedModelFolder('checkpoints')
+      expect(api.getModels).toHaveBeenCalledTimes(1)
+
+      await store.refresh()
+
+      expect(api.getModelFolders).toHaveBeenCalledTimes(2)
+      expect(api.getModels).toHaveBeenCalledTimes(2)
+      expect(api.getModels).toHaveBeenLastCalledWith('checkpoints')
+    })
+
+    it('does not load folders that were never opened', async () => {
+      enableMocks()
+      store = useModelStore()
+      await store.loadModelFolders()
+
+      await store.refresh()
+
+      expect(api.getModelFolders).toHaveBeenCalledTimes(2)
+      expect(api.getModels).not.toHaveBeenCalled()
+    })
+  })
+
   describe('API switching functionality', () => {
     it('should use experimental API for complete workflow when UseAssetAPI setting is false', async () => {
       enableMocks(false) // useAssetAPI = false

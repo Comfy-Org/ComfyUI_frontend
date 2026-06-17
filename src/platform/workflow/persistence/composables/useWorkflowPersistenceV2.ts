@@ -48,6 +48,7 @@ export function useWorkflowPersistenceV2() {
   const sharedWorkflowUrlLoader = useSharedWorkflowUrlLoader()
   const templateUrlLoader = useTemplateUrlLoader()
   const TEMPLATE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.TEMPLATE
+  const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
   const draftStore = useWorkflowDraftStoreV2()
   const tabState = useWorkflowTabState()
   const toast = useToast()
@@ -160,14 +161,35 @@ export function useWorkflowPersistenceV2() {
     })
   }
 
+  const hasSharedWorkflowIntent = () => {
+    if (typeof route.query.share === 'string') return true
+    hydratePreservedQuery(SHARE_NAMESPACE)
+    const merged = mergePreservedQueryIntoQuery(SHARE_NAMESPACE, route.query)
+    return typeof merged?.share === 'string'
+  }
+
   const loadDefaultWorkflow = async () => {
     if (!settingStore.get('Comfy.TutorialCompleted')) {
       await settingStore.set('Comfy.TutorialCompleted', true)
       await useWorkflowService().loadBlankWorkflow()
-      await useCommandStore().execute('Comfy.BrowseTemplates')
+      if (!hasSharedWorkflowIntent()) {
+        await useCommandStore().execute('Comfy.BrowseTemplates')
+      }
     } else {
       await comfyApp.loadGraphData()
     }
+  }
+
+  const getRestorableTabState = () => {
+    const storedTabState = tabState.getOpenPaths()
+    const paths = storedTabState?.paths ?? []
+    const activeIndex = storedTabState?.activeIndex ?? -1
+
+    if (paths.length === 0 || activeIndex < 0 || activeIndex >= paths.length) {
+      return null
+    }
+
+    return { paths, activeIndex }
   }
 
   const initializeWorkflow = async () => {
@@ -177,6 +199,13 @@ export function useWorkflowPersistenceV2() {
     }
 
     try {
+      if (getRestorableTabState()) {
+        // GraphCanvas calls restoreWorkflowTabsState next; skip the single-workflow
+        // fallback here so the saved tab order and active index drive startup.
+        return
+      }
+
+      await workflowStore.loadWorkflows()
       const restored = await loadPreviousWorkflowFromStorage()
       if (!restored) {
         await loadDefaultWorkflow()
@@ -254,23 +283,32 @@ export function useWorkflowPersistenceV2() {
     }
   })
 
+  /**
+   * Restores saved workflow tabs after initializeWorkflow skips the single-workflow fallback.
+   * GraphCanvas must call this during startup when workflow persistence is enabled.
+   */
   const restoreWorkflowTabsState = async () => {
     if (!workflowPersistenceEnabled.value) {
       tabStateRestored = true
       return
     }
 
-    // Read storage fresh at restore time, not at composable init,
-    // to ensure workspace is properly determined
-    const storedTabState = tabState.getOpenPaths()
-    const storedWorkflows = storedTabState?.paths ?? []
-    const storedActiveIndex = storedTabState?.activeIndex ?? -1
-
-    const isRestorable = storedWorkflows.length > 0 && storedActiveIndex >= 0
-    if (!isRestorable) {
+    try {
+      await workflowStore.loadWorkflows()
+    } catch (err) {
+      console.error('Error loading workflows for tab restore', err)
+      await loadDefaultWorkflow()
       tabStateRestored = true
       return
     }
+
+    const restorableTabState = getRestorableTabState()
+    if (!restorableTabState) {
+      tabStateRestored = true
+      return
+    }
+    const { paths: storedWorkflows, activeIndex: storedActiveIndex } =
+      restorableTabState
 
     storedWorkflows.forEach((path: string) => {
       if (workflowStore.getWorkflowByPath(path)) return

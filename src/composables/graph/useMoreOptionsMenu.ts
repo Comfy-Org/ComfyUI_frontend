@@ -1,7 +1,6 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type {
   LGraphGroup,
   LGraphNode,
@@ -33,6 +32,7 @@ export interface MenuOption {
   disabled?: boolean
   source?: 'litegraph' | 'vue'
   isColorPicker?: boolean
+  isShapePicker?: boolean
 }
 
 export interface SubMenuOption {
@@ -44,8 +44,7 @@ export interface SubMenuOption {
 }
 
 export enum BadgeVariant {
-  NEW = 'new',
-  DEPRECATED = 'deprecated'
+  NEW = 'new'
 }
 
 // Global singleton for NodeOptions component reference
@@ -124,8 +123,8 @@ export function useMoreOptionsMenu() {
   const {
     selectedItems,
     selectedNodes,
-    nodeDef,
-    showNodeHelp,
+    canOpenNodeInfo,
+    openNodeInfo,
     hasSubgraphs: hasSubgraphsComputed,
     hasImageNode,
     hasOutputNodesSelected,
@@ -211,7 +210,7 @@ export function useMoreOptionsMenu() {
     }
     if (!groupContext) {
       const pin = getPinOption(states, bump)
-      const bypass = getBypassOption(states, bump)
+      const bypass = getBypassOption(bump)
       options.push(pin)
       options.push(bypass)
     }
@@ -243,8 +242,8 @@ export function useMoreOptionsMenu() {
     options.push({ type: 'divider' })
 
     // Section 4: Node properties (Node Info, Shape, Color)
-    if (nodeDef.value) {
-      options.push(getNodeInfoOption(showNodeHelp))
+    if (canOpenNodeInfo.value) {
+      options.push(getNodeInfoOption(openNodeInfo))
     }
     if (groupContext) {
       options.push(getGroupColorOptions(groupContext, bump))
@@ -265,16 +264,8 @@ export function useMoreOptionsMenu() {
       options.push(...getImageMenuOptions(selectedNodes.value[0]))
       options.push({ type: 'divider' })
     }
-    const [widgetName, nodeId] = hoveredWidget.value ?? []
-    const widget =
-      nodeId !== undefined
-        ? node?.widgets?.find(
-            (w) =>
-              isPromotedWidgetView(w) &&
-              w.sourceWidgetName === widgetName &&
-              w.sourceNodeId === nodeId
-          )
-        : node?.widgets?.find((w) => w.name === widgetName)
+    const [widgetName] = hoveredWidget.value ?? []
+    const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (widget) {
       const widgetOptions = convertContextMenuToOptions(
         getExtraOptionsForWidget(node, widget)

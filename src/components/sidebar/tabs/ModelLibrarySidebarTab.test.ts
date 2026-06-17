@@ -16,7 +16,9 @@ const {
   resetRoot,
   mockAddNodeOnGraph,
   mockGetNodeProvider,
-  mockToggleNodeOnEvent
+  mockToggleNodeOnEvent,
+  mockRefreshModelFolder,
+  downloadStoreState
 } = vi.hoisted(() => {
   let capturedRoot: TreeExplorerNode<unknown> | null = null
   return {
@@ -29,7 +31,9 @@ const {
     },
     mockAddNodeOnGraph: vi.fn(),
     mockGetNodeProvider: vi.fn(),
-    mockToggleNodeOnEvent: vi.fn()
+    mockToggleNodeOnEvent: vi.fn(),
+    mockRefreshModelFolder: vi.fn().mockResolvedValue(undefined),
+    downloadStoreState: { setLastCompleted: (_: unknown) => {} }
   }
 })
 
@@ -59,9 +63,30 @@ vi.mock('@/stores/modelStore', () => ({
     modelFolders: [],
     models: [mockModel],
     loadModels: vi.fn().mockResolvedValue([]),
-    loadModelFolders: vi.fn().mockResolvedValue([])
+    loadModelFolders: vi.fn().mockResolvedValue([]),
+    refresh: vi.fn().mockResolvedValue(undefined),
+    refreshModelFolder: mockRefreshModelFolder
   })
 }))
+
+vi.mock('@/stores/assetDownloadStore', async () => {
+  const { ref } = await import('vue')
+  const lastCompletedDownload = ref<{
+    taskId: string
+    modelType: string
+    timestamp: number
+  } | null>(null)
+  downloadStoreState.setLastCompleted = (value) => {
+    lastCompletedDownload.value = value as typeof lastCompletedDownload.value
+  }
+  return {
+    useAssetDownloadStore: () => ({
+      get lastCompletedDownload() {
+        return lastCompletedDownload.value
+      }
+    })
+  }
+})
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -131,6 +156,7 @@ describe('ModelLibrarySidebarTab', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     resetRoot()
+    downloadStoreState.setLastCompleted(null)
   })
 
   function renderComponent() {
@@ -187,5 +213,28 @@ describe('ModelLibrarySidebarTab', () => {
     await checkpointsFolder?.handleClick?.(mockEvent)
 
     expect(mockToggleNodeOnEvent).toHaveBeenCalled()
+  })
+
+  it('refreshes the affected folder when an asset download completes', async () => {
+    renderComponent()
+    await nextTick()
+
+    expect(mockRefreshModelFolder).not.toHaveBeenCalled()
+
+    downloadStoreState.setLastCompleted({
+      taskId: 'task-1',
+      modelType: 'checkpoints',
+      timestamp: Date.now()
+    })
+    await nextTick()
+
+    expect(mockRefreshModelFolder).toHaveBeenCalledWith('checkpoints')
+  })
+
+  it('does not refresh when no download has completed', async () => {
+    renderComponent()
+    await nextTick()
+
+    expect(mockRefreshModelFolder).not.toHaveBeenCalled()
   })
 })
