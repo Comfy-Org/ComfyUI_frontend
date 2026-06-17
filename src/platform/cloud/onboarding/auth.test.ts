@@ -66,9 +66,9 @@ describe('getSurveyCompletedStatus', () => {
     await expect(getSurveyCompletedStatus()).resolves.toBe(false)
   })
 
-  test('404 → true (do not bounce on missing key)', async () => {
+  test('404 → false (key never stored = genuinely not completed)', async () => {
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 404 }))
-    await expect(getSurveyCompletedStatus()).resolves.toBe(true)
+    await expect(getSurveyCompletedStatus()).resolves.toBe(false)
   })
 
   test('500 → true (do not bounce on transient backend error)', async () => {
@@ -76,11 +76,12 @@ describe('getSurveyCompletedStatus', () => {
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)
   })
 
-  // 401/403 fall under the same "ambiguous => treat as completed" policy.
-  // The dedicated auth layer handles re-authentication on the next API
-  // call; this function deliberately does not try to disambiguate auth
-  // failures from other non-OK responses. Locking with tests so the
-  // policy can't drift back to a "throw on auth error" branch.
+  // 401/403/5xx stay under the "ambiguous => treat as completed" fail-safe;
+  // 404 is the one non-ok we disambiguate, since it's the real not-completed
+  // signal. The dedicated auth layer handles re-authentication on the next API
+  // call; this function deliberately does not try to recover auth failures
+  // itself. Locking with tests so the policy can't drift back to a "throw on
+  // auth error" branch.
   test('401 → true (auth layer handles re-auth on next call)', async () => {
     fetchApi.mockResolvedValueOnce(mockResponse({ ok: false, status: 401 }))
     await expect(getSurveyCompletedStatus()).resolves.toBe(true)

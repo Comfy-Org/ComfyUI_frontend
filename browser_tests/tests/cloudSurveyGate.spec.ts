@@ -60,10 +60,16 @@ async function mockCloudBoot(page: Page) {
   await page.route('**/api/user', (r) =>
     r.fulfill(jsonRoute({ status: 'active' }))
   )
-  // Survey status (getSurveyCompletedStatus): a definitive 200 with empty value
-  // = "not completed", the only response that still routes to the survey.
+  // Survey status (getSurveyCompletedStatus): a 404 = the survey key was never
+  // stored = "not completed". This is what the cloud backend actually returns
+  // for a user who hasn't onboarded, and the response that still routes to the
+  // survey.
   await page.route('**/api/settings/onboarding_survey', (r) =>
-    r.fulfill(jsonRoute({ value: {} }))
+    r.fulfill({
+      status: 404,
+      contentType: 'application/json',
+      body: JSON.stringify({ code: 'NOT_FOUND', message: 'Setting not found' })
+    })
   )
   await page.route('**/api/settings', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
