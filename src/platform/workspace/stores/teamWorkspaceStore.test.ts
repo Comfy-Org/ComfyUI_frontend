@@ -2,6 +2,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
+
 import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
 
 // Mock workspaceAuthStore
@@ -974,5 +976,18 @@ describe('sortWorkspaces', () => {
       'w-team-member',
       'w-team-new-owner'
     ])
+  })
+
+  it('does not crash when a workspace is missing its date fields', () => {
+    // A malformed API response (dates are contractually required) must not throw
+    // and blank the entire account menu via a sort crash.
+    const input = [
+      { id: 'w-owner', name: 'Owner Team', role: 'owner', type: 'team' },
+      { id: 'w-member', name: 'Member Team', role: 'member', type: 'team' },
+      { id: 'w-personal', name: 'Personal', role: 'owner', type: 'personal' }
+    ] as unknown as WorkspaceWithRole[]
+
+    expect(() => sortWorkspaces(input)).not.toThrow()
+    expect(sortWorkspaces(input)[0].id).toBe('w-personal')
   })
 })

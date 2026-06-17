@@ -80,8 +80,10 @@ export function sortWorkspaces<T extends WorkspaceWithRole>(list: T[]): T[] {
   return [...list].sort((a, b) => {
     if (a.type === 'personal') return -1
     if (b.type === 'personal') return 1
-    const dateA = a.role === 'owner' ? a.created_at : a.joined_at
-    const dateB = b.role === 'owner' ? b.created_at : b.joined_at
+    // Fall back to '' if a date is absent so one malformed workspace can't throw
+    // and blank the entire account menu (init aborts when sorting throws).
+    const dateA = (a.role === 'owner' ? a.created_at : a.joined_at) ?? ''
+    const dateB = (b.role === 'owner' ? b.created_at : b.joined_at) ?? ''
     return dateA.localeCompare(dateB)
   })
 }
