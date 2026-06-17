@@ -61,17 +61,11 @@ useExtensionService().registerExtension({
     if (isLoad3dNode(nodeData.name)) {
       // Inject mesh_upload spec flags so WidgetSelect.vue can detect
       // Load3D's model_file as a mesh upload widget without hardcoding.
-      if (nodeData.name === 'Load3D') {
+      if (nodeData.name === 'Load3D' || nodeData.name === 'Load3DAdvanced') {
         const modelFile = nodeData.input?.required?.model_file
         if (modelFile?.[1]) {
           modelFile[1].mesh_upload = true
           modelFile[1].upload_subfolder = '3d'
-        }
-      } else if (nodeData.name === 'Load3DAdvanced') {
-        const modelFile = nodeData.input?.required?.model_file
-        if (modelFile?.[1]) {
-          modelFile[1].mesh_upload = true
-          modelFile[1].upload_subfolder = ''
         }
       }
 

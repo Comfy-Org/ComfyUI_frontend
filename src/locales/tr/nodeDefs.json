@@ -16248,6 +16248,9 @@
       "draw_hands": {
         "name": "elleri_çiz"
       },
+      "draw_head": {
+        "name": "Kafa Çiz"
+      },
       "face_point_size": {
         "name": "yüz_nokta_boyutu"
       },
