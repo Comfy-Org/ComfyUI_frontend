@@ -295,6 +295,9 @@ void nextTick(() => {
 })
 
 const onGraphReady = () => {
+  // Stamp interactivity time before runWhenGlobalIdle defers the body, so
+  // canvas_ready's ms_since_auth measures auth -> canvas, not auth -> idle.
+  const canvasReadyAt = Date.now()
   runWhenGlobalIdle(() => {
     // Track user login when app is ready in graph view (cloud only)
     if (isCloud && authStore.isAuthenticated && !hasTrackedLogin) {
@@ -307,7 +310,7 @@ const onGraphReady = () => {
       const activation = consumeAuthActivation()
       telemetry?.trackCanvasReady({
         is_new_user: activation?.isNewUser ?? false,
-        ms_since_auth: activation ? Date.now() - activation.at : undefined
+        ms_since_auth: activation ? canvasReadyAt - activation.at : undefined
       })
     }
 

@@ -39,6 +39,7 @@ import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
 interface ExecutionNodeInfo {
@@ -96,29 +97,35 @@ function buildExecutionNodeLookup(
 export const MAX_PROGRESS_JOBS = 1000
 
 /**
- * Upper bound on the set of run ids we have already emitted `output_viewed`
- * for, so a multi-output workflow fires the event once per run (not once per
- * output node). Bounded to avoid unbounded growth in long sessions.
+ * Upper bound on the per-session set of run ids we have already emitted
+ * `output_viewed` for, so a multi-output workflow fires the event once per run
+ * (not once per output node). Bounded to avoid unbounded growth.
  */
 const MAX_TRACKED_OUTPUT_RUNS = 256
-const outputViewedRuns = new Set<string>()
-let sessionHasViewedOutput = false
+
+/**
+ * Media types (from {@link getMediaTypeFromFilename}) that count as a viewed
+ * result for the `output_viewed` activation event. `text` / `other` do not.
+ */
+const VIEWED_MEDIA_TYPES = new Set<string>(['image', 'video', 'audio', '3D'])
 
 /**
  * Classifies a finished node's output into a coarse media type for the
- * `output_viewed` activation event. Returns null for non-media outputs (e.g.
- * text-only or metadata), which should not count as a viewed result.
+ * `output_viewed` activation event, by running the canonical filename
+ * classifier over the first result item across the output buckets (handles the
+ * passthrough buckets like `gifs` / `model_file` uniformly via their
+ * filenames). Returns null for non-media outputs (text-only / metadata).
  */
 function firstOutputMediaType(
   output: ExecutedWsMessage['output']
 ): string | null {
-  if (output.images?.length) return 'image'
-  if (output.video?.length) return 'video'
-  if (output.audio?.length) return 'audio'
-  // `gifs` / `model_file` arrive via the passthrough output schema.
-  const extra = output as Record<string, unknown>
-  if (Array.isArray(extra.gifs) && extra.gifs.length) return 'video'
-  if (Array.isArray(extra.model_file) && extra.model_file.length) return '3d'
+  for (const value of Object.values(output)) {
+    if (!Array.isArray(value) || value.length === 0) continue
+    const filename = (value[0] as { filename?: unknown })?.filename
+    if (typeof filename !== 'string') continue
+    const mediaType = getMediaTypeFromFilename(filename)
+    if (VIEWED_MEDIA_TYPES.has(mediaType)) return mediaType
+  }
   return null
 }
 
@@ -127,6 +134,12 @@ export const useExecutionStore = defineStore('execution', () => {
   const canvasStore = useCanvasStore()
   const executionErrorStore = useExecutionErrorStore()
   const { mode, isAppMode } = useAppMode()
+
+  // `output_viewed` dedup state: one event per run, plus a once-per-session
+  // `is_first_output` flag. Held on the store instance (not module scope) so it
+  // resets with the store lifecycle and tests get isolation without resetModules.
+  const outputViewedRuns = new Set<string>()
+  let sessionHasViewedOutput = false
 
   const clientId = ref<string | null>(null)
   const activeJobId = ref<JobId | null>(null)
@@ -343,11 +356,13 @@ export const useExecutionStore = defineStore('execution', () => {
       const runId = e.detail.prompt_id
       const mediaType = firstOutputMediaType(e.detail.output)
       if (mediaType && !outputViewedRuns.has(runId)) {
-        outputViewedRuns.add(runId)
-        if (outputViewedRuns.size > MAX_TRACKED_OUTPUT_RUNS) {
+        // Evict-before-add: keeps the set at or below the bound and never
+        // evicts the run we are about to record.
+        if (outputViewedRuns.size >= MAX_TRACKED_OUTPUT_RUNS) {
           const oldest = outputViewedRuns.values().next().value
           if (oldest !== undefined) outputViewedRuns.delete(oldest)
         }
+        outputViewedRuns.add(runId)
         const isFirstOutput = !sessionHasViewedOutput
         sessionHasViewedOutput = true
         useTelemetry()?.trackOutputViewed({

@@ -27,8 +27,6 @@ describe('authActivationMarker', () => {
 
       const marker = consumeAuthActivation()
       expect(marker).toEqual({ at: expectedAt, isNewUser: true })
-      // at must be a number, never a wall-clock-dependent assertion beyond this
-      expect(typeof marker?.at).toBe('number')
 
       // The marker is single-use: a second consume finds nothing.
       expect(consumeAuthActivation()).toBeNull()

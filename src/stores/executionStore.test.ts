@@ -1423,23 +1423,17 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
 
 describe('useExecutionStore - output_viewed activation telemetry', () => {
   /**
-   * `handleExecuted` dedups via two MODULE-LEVEL globals in executionStore.ts:
-   * `outputViewedRuns` (per-run dedup set) and `sessionHasViewedOutput` (the
-   * once-per-session `is_first_output` flag). They persist across tests unless
-   * the module is reloaded, so each case calls `vi.resetModules()` and imports
-   * a fresh store to start from a clean slate.
+   * `handleExecuted` dedups via per-store-instance state (`outputViewedRuns`
+   * + `sessionHasViewedOutput`), so a fresh pinia + store per test starts from
+   * a clean slate without reloading the module.
    */
   type Store = ReturnType<typeof useExecutionStore>
 
   type ExecutedOutput = Record<string, unknown>
 
   async function freshStore(): Promise<Store> {
-    vi.resetModules()
-    const { useExecutionStore: freshUseExecutionStore } = await import(
-      '@/stores/executionStore'
-    )
     setActivePinia(createTestingPinia({ stubActions: false }))
-    const store = freshUseExecutionStore()
+    const store = useExecutionStore()
     store.bindExecutionEvents()
     return store
   }
@@ -1535,26 +1529,30 @@ describe('useExecutionStore - output_viewed activation telemetry', () => {
     })
   })
 
-  it.each([
-    ['images', { images: [{ filename: 'a.png' }] }, 'image'],
-    ['video', { video: [{ filename: 'a.mp4' }] }, 'video'],
-    ['gifs', { gifs: [{ filename: 'a.gif' }] }, 'video'],
-    ['audio', { audio: [{ filename: 'a.mp3' }] }, 'audio']
-  ] as const)(
-    'maps %s output to media_type %s',
-    async (_label, output, expectedMediaType) => {
+  // media_type is classified by filename via getMediaTypeFromFilename, so the
+  // output bucket name is irrelevant (gif is an image extension; glb is 3D).
+  it.for([
+    { filename: 'a.png', expected: 'image' },
+    { filename: 'a.mp4', expected: 'video' },
+    { filename: 'a.webm', expected: 'video' },
+    { filename: 'a.gif', expected: 'image' },
+    { filename: 'a.mp3', expected: 'audio' },
+    { filename: 'a.glb', expected: '3D' }
+  ])(
+    'classifies $filename as media_type $expected',
+    async ({ filename, expected }, { expect }) => {
       const store = await freshStore()
       startRun(store, 'run-media')
 
       fireExecuted({
         node: 'save-1',
         prompt_id: 'run-media',
-        output: output as ExecutedOutput
+        output: { images: [{ filename }] }
       })
 
       expect(mockTrackOutputViewed).toHaveBeenCalledTimes(1)
       expect(mockTrackOutputViewed).toHaveBeenCalledWith(
-        expect.objectContaining({ media_type: expectedMediaType })
+        expect.objectContaining({ media_type: expected })
       )
     }
   )

@@ -799,7 +799,8 @@ describe('PostHogTelemetryProvider', () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
 
-      provider.trackCheckoutWindowBlocked({})
+      // Matches the real call site (useSubscription) which passes no metadata.
+      provider.trackCheckoutWindowBlocked()
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.CHECKOUT_WINDOW_BLOCKED,
