@@ -92,7 +92,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         cta: {
           label: t('cta.watchNow', locale),
           ariaLabel: t('nav.featuredCommunityCtaAria', locale),
-          href: '#'
+          href: 'https://comfy.org/workflows/537cf7f1f745-537cf7f1f745/'
         }
       },
       columns: [
@@ -164,7 +164,7 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         cta: {
           label: t('cta.watchNow', locale),
           ariaLabel: t('nav.featuredCompanyCtaAria', locale),
-          href: '#'
+          href: '/customers#hero-video'
         }
       },
       columns: [
