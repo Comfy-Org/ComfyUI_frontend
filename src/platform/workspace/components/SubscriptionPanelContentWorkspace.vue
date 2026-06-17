@@ -182,7 +182,8 @@
                     v-if="!isFreeTierPlan"
                     v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                     variant="secondary"
-                    size="lg"
+                    size="icon-lg"
+                    class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
                     :aria-label="$t('g.moreOptions')"
                     @click="planMenu?.toggle($event)"
                   >
@@ -277,19 +278,15 @@
       </div>
 
       <!-- View More Details - Outside main content -->
-      <div
-        v-if="permissions.canManageSubscription"
-        class="flex items-center gap-2 py-6"
-      >
-        <i class="pi pi-external-link text-muted"></i>
-        <a
-          href="https://www.comfy.org/cloud/pricing"
-          target="_blank"
-          rel="noopener noreferrer"
-          class="text-sm text-muted underline hover:opacity-80"
+      <div v-if="permissions.canManageSubscription" class="py-6">
+        <Button
+          variant="muted-textonly"
+          class="px-0 text-sm text-muted"
+          @click="handleViewMoreDetails"
         >
           {{ $t('subscription.viewMoreDetailsPlans') }}
-        </a>
+          <i class="pi pi-external-link text-muted" />
+        </Button>
       </div>
 
       <SubscriptionFooterLinks class="mt-auto pt-6" />
@@ -421,6 +418,10 @@ function handleSubscribeWorkspace() {
 function handleUpgrade() {
   if (isFreeTierPlan.value) showPricingTable()
   else showSubscriptionDialog()
+}
+
+function handleViewMoreDetails() {
+  window.open('https://www.comfy.org/cloud/pricing', '_blank')
 }
 
 const subscriptionTier = computed(() => subscription.value?.tier ?? null)
