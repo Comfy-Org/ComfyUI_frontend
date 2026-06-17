@@ -8,7 +8,7 @@ import {
  * signup flow can be exercised without a real key.
  * @see https://developers.cloudflare.com/turnstile/troubleshooting/testing/
  */
-export const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA'
+const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA'
 
 /**
  * Returns the Cloudflare Turnstile sitekey, delivered per-environment at runtime

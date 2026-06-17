@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-2">
     <div ref="containerRef"></div>
-    <small v-if="errorMessage" class="text-red-500">{{ errorMessage }}</small>
+    <small v-if="errorMessage" class="text-danger">{{ errorMessage }}</small>
   </div>
 </template>
 

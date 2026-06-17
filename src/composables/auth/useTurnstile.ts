@@ -8,14 +8,21 @@ import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
 const SIGNUP_TURNSTILE_FLAG = 'signup_turnstile'
 
-function resolveTurnstileMode(): TurnstileMode {
-  const override = getDevOverride<TurnstileMode>(SIGNUP_TURNSTILE_FLAG)
-  if (override !== undefined) return override
+/**
+ * Clamp an externally-sourced value to a known TurnstileMode. Unknown strings
+ * (typos, stale flag variants) resolve to 'off' so a bad value can never leave
+ * the widget rendered-but-unenforced — mirrors the server-side resolver.
+ */
+export function normalizeTurnstileMode(raw: string | undefined): TurnstileMode {
+  return raw === 'shadow' || raw === 'enforce' ? raw : 'off'
+}
 
-  return (
+function resolveTurnstileMode(): TurnstileMode {
+  const raw =
+    getDevOverride<TurnstileMode>(SIGNUP_TURNSTILE_FLAG) ??
     remoteConfig.value.signup_turnstile ??
     api.getServerFeature<TurnstileMode>(SIGNUP_TURNSTILE_FLAG, 'off')
-  )
+  return normalizeTurnstileMode(raw)
 }
 
 /**

@@ -1,6 +1,23 @@
 import { describe, expect, it } from 'vitest'
 
-import { isTurnstileEnabled } from '@/composables/auth/useTurnstile'
+import {
+  isTurnstileEnabled,
+  normalizeTurnstileMode
+} from '@/composables/auth/useTurnstile'
+
+describe('normalizeTurnstileMode', () => {
+  it('passes through known modes', () => {
+    expect(normalizeTurnstileMode('off')).toBe('off')
+    expect(normalizeTurnstileMode('shadow')).toBe('shadow')
+    expect(normalizeTurnstileMode('enforce')).toBe('enforce')
+  })
+
+  it('clamps unknown or missing values to off', () => {
+    expect(normalizeTurnstileMode('enfroce')).toBe('off')
+    expect(normalizeTurnstileMode('')).toBe('off')
+    expect(normalizeTurnstileMode(undefined)).toBe('off')
+  })
+})
 
 describe('isTurnstileEnabled', () => {
   it('renders when the flag is active and a sitekey is configured', () => {

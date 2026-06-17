@@ -2,7 +2,7 @@ const TURNSTILE_SRC =
   'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
 const SCRIPT_LOAD_TIMEOUT_MS = 10_000
 
-export interface TurnstileRenderOptions {
+interface TurnstileRenderOptions {
   sitekey: string
   theme?: 'light' | 'dark' | 'auto'
   callback?: (token: string) => void
