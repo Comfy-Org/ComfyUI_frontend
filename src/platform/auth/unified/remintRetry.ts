@@ -20,9 +20,10 @@ declare module 'axios' {
  * Re-mints the unified Cloud JWT once from the current Firebase identity and
  * returns the fresh token, or `null` when there is nothing to retry with: the
  * `unified_cloud_auth` flag is OFF, there is no active unified session, or the
- * re-mint failed (a permanent auth error throws inside `remintUnifiedOnce`).
- * Collapsing both `null` and a throw into `null` means every non-success path
- * surfaces the caller's original 401 unchanged.
+ * re-mint failed. A permanent auth failure is surfaced + torn down inside
+ * `remintUnifiedOnce` (error toast + session clear, matching the proactive
+ * refresh path); the `catch` here only guards an unexpected throw. Either way
+ * `null` makes the caller surface its original 401 unchanged.
  */
 async function tryRemintToken(): Promise<string | null> {
   try {

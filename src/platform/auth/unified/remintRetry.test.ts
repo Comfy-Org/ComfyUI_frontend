@@ -136,6 +136,41 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
   })
+
+  it.each<[string, HeadersInit]>([
+    ['object', { Authorization: 'Bearer tokenA', 'Comfy-User': 'u1' }],
+    [
+      'array of tuples',
+      [
+        ['Authorization', 'Bearer tokenA'],
+        ['Comfy-User', 'u1']
+      ]
+    ],
+    [
+      'Headers',
+      new Headers({ Authorization: 'Bearer tokenA', 'Comfy-User': 'u1' })
+    ]
+  ])(
+    'preserves method/body and replaces Authorization on a POST retry (%s headers)',
+    async (_shape, headersInit) => {
+      mockFetch.mockResolvedValueOnce(unauthorized).mockResolvedValueOnce(ok)
+      mockRemint.mockResolvedValue('tokenB')
+      const body = JSON.stringify({ amount: 5 })
+
+      await fetchWithUnifiedRemint(
+        'https://cloud/x',
+        { method: 'POST', body, headers: headersInit },
+        true
+      )
+
+      const retryInit = mockFetch.mock.calls[1][1]
+      expect(retryInit.method).toBe('POST')
+      expect(retryInit.body).toBe(body)
+      const retryHeaders = new Headers(retryInit.headers)
+      expect(retryHeaders.get('Authorization')).toBe('Bearer tokenB')
+      expect(retryHeaders.get('Comfy-User')).toBe('u1')
+    }
+  )
 })
 
 describe('attachUnifiedRemintInterceptor', () => {
@@ -246,5 +281,24 @@ describe('attachUnifiedRemintInterceptor', () => {
     ).rejects.toMatchObject({ response: { status: 500 } })
 
     expect(mockRemint).not.toHaveBeenCalled()
+  })
+
+  it('preserves the POST body and method on a retry, with the fresh token', async () => {
+    const { client, adapter } = makeClient([401, 200])
+    mockRemint.mockResolvedValue('tokenB')
+
+    const res = await client.post(
+      'https://cloud/topup',
+      { amount: 5 },
+      { headers: { Authorization: 'Bearer tokenA' } }
+    )
+
+    expect(res.status).toBe(200)
+    expect(adapter).toHaveBeenCalledTimes(2)
+    const firstConfig = adapter.mock.calls[0][0]
+    const retryConfig = adapter.mock.calls[1][0]
+    expect(retryConfig.method).toBe('post')
+    expect(retryConfig.data).toBe(firstConfig.data)
+    expect(String(retryConfig.headers.Authorization)).toBe('Bearer tokenB')
   })
 })

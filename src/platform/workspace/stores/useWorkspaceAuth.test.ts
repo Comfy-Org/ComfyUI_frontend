@@ -1083,7 +1083,7 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockNotifyTokenRefreshed).toHaveBeenCalledTimes(1)
     })
 
-    it('remintUnifiedOnce re-mints exactly once and surfaces a persistent failure without looping', async () => {
+    it('remintUnifiedOnce re-mints once and, on a permanent failure, surfaces it and tears down without looping', async () => {
       mockUnifiedCloudAuthEnabled.value = true
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
       const mockFetch = vi
@@ -1101,15 +1101,19 @@ describe('useWorkspaceAuthStore', () => {
       vi.stubGlobal('fetch', mockFetch)
 
       const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
       await store.mintAtLogin()
       expect(mockFetch).toHaveBeenCalledTimes(1)
 
-      await expect(store.remintUnifiedOnce()).rejects.toThrow(
-        WorkspaceAuthError
-      )
+      const result = await store.remintUnifiedOnce()
 
       // Exactly one re-mint attempt — the primitive does not retry.
       expect(mockFetch).toHaveBeenCalledTimes(2)
+      // A permanent failure resolves to null (the caller surfaces its 401),
+      // fires the error toast, and clears the dead session.
+      expect(result).toBeNull()
+      expect(mockToastAdd).toHaveBeenCalled()
+      expect(unifiedToken.value).toBeNull()
     })
 
     it('remintUnifiedOnce returns null without minting when the flag is OFF', async () => {

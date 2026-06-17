@@ -521,8 +521,20 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (!target) {
       return null
     }
-    await mintUnified(target)
-    return unifiedToken.value
+    try {
+      await mintUnified(target)
+      return unifiedToken.value
+    } catch (err) {
+      // Mirror refreshUnified: a permanent failure means the identity is dead —
+      // surface it and tear down rather than strand the caller on a stale token.
+      if (isPermanentAuthError(err)) {
+        surfacePermanentAuthError(err)
+        clearUnifiedContext()
+      } else {
+        console.warn('Unified reactive re-mint failed:', err)
+      }
+      return null
+    }
   }
 
   function getWorkspaceAuthHeader(): AuthHeader | null {
