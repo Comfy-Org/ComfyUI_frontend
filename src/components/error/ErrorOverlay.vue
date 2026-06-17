@@ -7,47 +7,35 @@
     <div v-if="isVisible" class="pointer-events-none flex w-full justify-end">
       <div
         role="status"
-        aria-live="polite"
         data-testid="error-overlay"
-        class="pointer-events-auto flex w-fit max-w-120 min-w-80 flex-col overflow-hidden rounded-lg border border-destructive-background bg-comfy-menu-bg shadow-interface transition-colors duration-200 ease-in-out"
+        class="pointer-events-auto relative flex w-fit max-w-120 min-w-80 flex-col gap-2 overflow-hidden rounded-lg border border-l-4 border-border-default border-l-destructive-background bg-base-background p-3 shadow-interface transition-colors duration-200 ease-in-out"
       >
-        <!-- Header -->
-        <div class="flex h-12 items-center gap-2 px-4">
-          <span class="flex-1 text-sm font-bold text-destructive-background">
+        <div class="flex w-full items-start gap-2 pr-8">
+          <i
+            class="mt-0.5 icon-[lucide--circle-x] size-4 shrink-0 text-destructive-background"
+          />
+          <span class="min-w-0 flex-1 truncate text-sm text-base-foreground">
             {{ overlayTitle }}
           </span>
-          <Button
-            variant="muted-textonly"
-            size="icon-sm"
-            :aria-label="t('g.close')"
-            @click="dismiss"
-          >
-            <i class="icon-[lucide--x] block size-5 leading-none" />
-          </Button>
         </div>
 
-        <!-- Body -->
-        <div class="px-4 pb-3" data-testid="error-overlay-messages">
+        <div
+          class="flex w-full items-start gap-2 pr-8"
+          data-testid="error-overlay-messages"
+        >
+          <span class="size-4 shrink-0" aria-hidden="true" />
           <p
-            class="m-0 line-clamp-3 text-sm/snug wrap-break-word whitespace-pre-wrap text-muted-foreground"
+            class="m-0 line-clamp-3 min-w-0 flex-1 text-sm/snug wrap-break-word whitespace-pre-wrap text-muted-foreground"
           >
             {{ overlayMessage }}
           </p>
         </div>
 
-        <!-- Footer -->
-        <div class="flex items-center justify-end gap-4 px-4 py-3">
-          <Button
-            variant="muted-textonly"
-            size="unset"
-            data-testid="error-overlay-dismiss"
-            @click="dismiss"
-          >
-            {{ t('g.dismiss') }}
-          </Button>
+        <div class="flex w-full items-center justify-end pt-2">
           <Button
             variant="secondary"
-            size="lg"
+            size="unset"
+            class="min-h-8 rounded-lg px-3 py-2 text-xs font-normal"
             data-testid="error-overlay-see-errors"
             @click="seeErrors"
           >
@@ -58,6 +46,17 @@
             }}
           </Button>
         </div>
+
+        <Button
+          variant="muted-textonly"
+          size="icon-sm"
+          class="absolute top-2 right-2 size-6 rounded-sm"
+          data-testid="error-overlay-dismiss"
+          :aria-label="t('g.close')"
+          @click="dismiss"
+        >
+          <i class="icon-[lucide--x] block size-4 leading-none" />
+        </Button>
       </div>
     </div>
   </Transition>
