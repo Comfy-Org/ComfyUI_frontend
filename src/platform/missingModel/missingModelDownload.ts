@@ -4,6 +4,10 @@ import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { ComfyDesktop2Bridge } from '@/types'
 
+type Desktop2BridgeWithLegacyRemote = Omit<ComfyDesktop2Bridge, 'isRemote'> & {
+  isRemote?: ComfyDesktop2Bridge['isRemote']
+}
+
 const ALLOWED_SOURCES = [
   'https://civitai.com/',
   'https://civitai.red/',
@@ -37,7 +41,7 @@ export interface ModelWithUrl {
 }
 
 async function startDesktop2ModelDownload(
-  bridge: ComfyDesktop2Bridge,
+  bridge: Desktop2BridgeWithLegacyRemote,
   model: ModelWithUrl
 ): Promise<void> {
   try {
@@ -45,6 +49,12 @@ async function startDesktop2ModelDownload(
   } catch (error: unknown) {
     console.error('Failed to start Desktop2 model download:', error)
   }
+}
+
+function isRemoteDesktop2Bridge(
+  bridge: Desktop2BridgeWithLegacyRemote
+): boolean {
+  return bridge.isRemote?.() ?? window.__comfyDesktop2Remote ?? false
 }
 
 /**
@@ -76,7 +86,10 @@ export function downloadModel(
   paths: Record<string, string[]>
 ): void {
   const desktop2Bridge = window.__comfyDesktop2
-  if (desktop2Bridge?.downloadModel && !desktop2Bridge.isRemote()) {
+  if (
+    desktop2Bridge?.downloadModel &&
+    !isRemoteDesktop2Bridge(desktop2Bridge)
+  ) {
     void startDesktop2ModelDownload(desktop2Bridge, model)
     return
   }

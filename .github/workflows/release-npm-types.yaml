@@ -35,7 +35,7 @@ concurrency:
 
 jobs:
   publish_types_manual:
-    name: Publish @comfyorg/comfyui-frontend-types
+    name: Publish npm types packages
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -88,6 +88,34 @@ jobs:
         run: pnpm install --frozen-lockfile
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+
+      - name: Check if bridge types package version already on npm
+        id: check_bridge_types_npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          NAME=$(node -p "require('./packages/comfyui-desktop-bridge-types/package.json').name")
+          VER=$(node -p "require('./packages/comfyui-desktop-bridge-types/package.json').version")
+          STATUS=0
+          OUTPUT=$(npm view "${NAME}@${VER}" --json 2>&1) || STATUS=$?
+          if [ "$STATUS" -eq 0 ]; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "::warning title=Already published::${NAME}@${VER} already exists on npm. Skipping publish."
+          else
+            if echo "$OUTPUT" | grep -q "E404"; then
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "::error title=Registry lookup failed::$OUTPUT" >&2
+              exit "$STATUS"
+            fi
+          fi
+
+      - name: Publish bridge types package
+        if: steps.check_bridge_types_npm.outputs.exists == 'false'
+        run: pnpm publish --access public --tag "${{ inputs.dist_tag }}" --no-git-checks
+        working-directory: packages/comfyui-desktop-bridge-types
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Build types
         run: pnpm build:types
