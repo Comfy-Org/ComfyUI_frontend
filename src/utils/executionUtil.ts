@@ -5,14 +5,12 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import {
   ExecutableNodeDTO,
-  LGraphEventMode,
-  asNodeId
+  LGraphEventMode
 } from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { NodeId } from '@/types/nodeId'
 
 import { ExecutableGroupNodeDTO, isGroupNode } from './executableGroupNodeDto'
 import { compressWidgetInputSlots } from './litegraphUtil'
@@ -91,7 +89,7 @@ export const graphToPrompt = async (
       continue
     }
 
-    const inputs: NonNullable<ComfyApiWorkflow[NodeId]>['inputs'] = {}
+    const inputs: ComfyApiWorkflow[string]['inputs'] = {}
     const { widgets } = node
 
     // Store all widget values in the API prompt.
@@ -136,7 +134,7 @@ export const graphToPrompt = async (
       ]
     }
 
-    output[asNodeId(node.id)] = {
+    output[node.id] = {
       inputs,
       // TODO(huchenlei): Filter out all nodes that cannot be mapped to a
       // comfyClass.
@@ -149,9 +147,7 @@ export const graphToPrompt = async (
   }
 
   // Remove inputs connected to removed nodes
-  for (const node of Object.values(output)) {
-    if (!node) continue
-    const { inputs } = node
+  for (const { inputs } of Object.values(output)) {
     for (const [i, input] of Object.entries(inputs)) {
       if (Array.isArray(input) && input.length === 2 && !output[input[0]]) {
         delete inputs[i]
@@ -159,5 +155,5 @@ export const graphToPrompt = async (
     }
   }
 
-  return { workflow: workflow as unknown as ComfyWorkflowJSON, output }
+  return { workflow: workflow as ComfyWorkflowJSON, output }
 }

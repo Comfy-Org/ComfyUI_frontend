@@ -327,7 +327,7 @@ export interface LayoutStore {
 
   // Initialization
   initializeFromLiteGraph(
-    nodes: Array<{ id: string; pos: [number, number]; size: [number, number] }>
+    nodes: Array<{ id: NodeId; pos: [number, number]; size: [number, number] }>
   ): void
 
   // Source and actor management

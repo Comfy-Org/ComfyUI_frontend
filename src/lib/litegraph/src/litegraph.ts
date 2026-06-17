@@ -122,7 +122,6 @@ export { LGraphGroup, type GroupId } from './LGraphGroup'
 export { LGraphNode, type NodeId } from './LGraphNode'
 export {
   asNodeId,
-  FLOATING_LINK_NODE_ID,
   isFloatingNodeId,
   isNumericNodeId,
   isSubgraphInputNodeId,
@@ -133,7 +132,7 @@ export {
   SUBGRAPH_OUTPUT_NODE_ID,
   UNASSIGNED_NODE_ID
 } from '@/types/nodeId'
-export type { LinkEndpointNodeId, NodeIdInput } from '@/types/nodeId'
+export type { NodeIdInput } from '@/types/nodeId'
 export { LLink } from './LLink'
 export { createBounds } from './measure'
 export { Reroute, type RerouteId } from './Reroute'

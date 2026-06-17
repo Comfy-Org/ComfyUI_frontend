@@ -11,7 +11,6 @@ import { useAppMode } from '@/composables/useAppMode'
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
-import { asNodeId } from '@/types/nodeId'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -111,8 +110,7 @@ export function hasWidgetError(
   missingModelStore: ReturnType<typeof useMissingModelStore>
 ): boolean {
   const errors = widget.sourceExecutionId
-    ? executionErrorStore.lastNodeErrors?.[asNodeId(widget.sourceExecutionId)]
-        ?.errors
+    ? executionErrorStore.lastNodeErrors?.[widget.sourceExecutionId]?.errors
     : nodeErrors?.errors
   return (
     !!errors?.some((e) => e.extra_info?.input_name === widget.name) ||
@@ -183,7 +181,7 @@ export function computeProcessedWidgets({
       ? getExecutionIdFromNodeData(rootGraph, nodeData)
       : String(nodeData.id ?? '')
 
-  const nodeErrors = executionErrorStore.lastNodeErrors?.[asNodeId(nodeExecId)]
+  const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeExecId]
 
   const nodeId = nodeData.id
   const { widgets } = nodeData

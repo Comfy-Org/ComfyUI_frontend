@@ -1,6 +1,6 @@
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import {
-  FLOATING_LINK_NODE_ID,
+  UNASSIGNED_NODE_ID,
   SUBGRAPH_INPUT_NODE_ID,
   SUBGRAPH_OUTPUT_NODE_ID,
   isFloatingNodeId
@@ -39,13 +39,13 @@ export class FloatingRenderLink implements RenderLink {
   readonly fromDirection: LinkDirection
   readonly fromSlotIndex: SlotIndex
 
-  readonly outputNodeId: NodeId = FLOATING_LINK_NODE_ID
+  readonly outputNodeId: NodeId = UNASSIGNED_NODE_ID
   readonly outputNode?: LGraphNode
   readonly outputSlot?: INodeOutputSlot
   readonly outputIndex: number = -1
   readonly outputPos?: Point
 
-  readonly inputNodeId: NodeId = FLOATING_LINK_NODE_ID
+  readonly inputNodeId: NodeId = UNASSIGNED_NODE_ID
   readonly inputNode?: LGraphNode
   readonly inputSlot?: INodeInputSlot
   readonly inputIndex: number = -1

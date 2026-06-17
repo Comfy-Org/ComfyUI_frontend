@@ -6,7 +6,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import type { LGraphNode, NodeId } from './LGraphNode'
 import type { NodeIdInput } from '@/types/nodeId'
 import {
-  FLOATING_LINK_NODE_ID,
+  UNASSIGNED_NODE_ID,
   asNodeId,
   isFloatingNodeId,
   isSubgraphInputNodeId,
@@ -401,10 +401,10 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     exported.parentId = parentId
 
     if (slotType === 'input') {
-      exported.origin_id = FLOATING_LINK_NODE_ID
+      exported.origin_id = UNASSIGNED_NODE_ID
       exported.origin_slot = -1
     } else {
-      exported.target_id = FLOATING_LINK_NODE_ID
+      exported.target_id = UNASSIGNED_NODE_ID
       exported.target_slot = -1
     }
 
@@ -434,12 +434,12 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
       newLink.id = -1
 
       if (keepReroutes === 'input') {
-        newLink.origin_id = FLOATING_LINK_NODE_ID
+        newLink.origin_id = UNASSIGNED_NODE_ID
         newLink.origin_slot = -1
 
         lastReroute.floating = { slotType: 'input' }
       } else {
-        newLink.target_id = FLOATING_LINK_NODE_ID
+        newLink.target_id = UNASSIGNED_NODE_ID
         newLink.target_slot = -1
 
         lastReroute.floating = { slotType: 'output' }

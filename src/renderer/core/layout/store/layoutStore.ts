@@ -138,7 +138,7 @@ class LayoutStoreImpl implements LayoutStore {
   private rerouteLayouts = new Map<RerouteId, RerouteLayout>()
 
   // Spatial index managers
-  private spatialIndex: SpatialIndexManager // For nodes
+  private spatialIndex: SpatialIndexManager<NodeId> // For nodes
   private linkSegmentSpatialIndex: SpatialIndexManager // For link segments (single index for all link geometry)
   private slotSpatialIndex: SpatialIndexManager // For slots
   private rerouteSpatialIndex: SpatialIndexManager // For reroutes
@@ -174,7 +174,7 @@ class LayoutStoreImpl implements LayoutStore {
     this.yoperations = this.ydoc.getArray('operations')
 
     // Initialize spatial index managers
-    this.spatialIndex = new SpatialIndexManager()
+    this.spatialIndex = new SpatialIndexManager<NodeId>()
     this.linkSegmentSpatialIndex = new SpatialIndexManager() // Single index for all link geometry
     this.slotSpatialIndex = new SpatialIndexManager()
     this.rerouteSpatialIndex = new SpatialIndexManager()
@@ -231,6 +231,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Get or create a customRef for a node layout
    */
   getNodeLayoutRef(rawNodeId: NodeId): Ref<NodeLayout | null> {
+    // Boundary: legacy callers pass numeric ids cast as `NodeId`.
     const nodeId = asNodeId(rawNodeId)
     let nodeRef = this.nodeRefs.get(nodeId)
 
@@ -457,7 +458,7 @@ class LayoutStoreImpl implements LayoutStore {
       }
       for (const key of keysToDelete) {
         this.linkSegmentLayouts.delete(key)
-        this.linkSegmentSpatialIndex.remove(asNodeId(key))
+        this.linkSegmentSpatialIndex.remove(key)
       }
     }
   }
@@ -477,10 +478,10 @@ class LayoutStoreImpl implements LayoutStore {
         return
       }
       // Update spatial index
-      this.slotSpatialIndex.update(asNodeId(key), layout.bounds)
+      this.slotSpatialIndex.update(key, layout.bounds)
     } else {
       // Insert into spatial index
-      this.slotSpatialIndex.insert(asNodeId(key), layout.bounds)
+      this.slotSpatialIndex.insert(key, layout.bounds)
     }
 
     this.slotLayouts.set(key, layout)
@@ -506,9 +507,9 @@ class LayoutStoreImpl implements LayoutStore {
         ) {
           continue
         }
-        this.slotSpatialIndex.update(asNodeId(key), layout.bounds)
+        this.slotSpatialIndex.update(key, layout.bounds)
       } else {
-        this.slotSpatialIndex.insert(asNodeId(key), layout.bounds)
+        this.slotSpatialIndex.insert(key, layout.bounds)
       }
       this.slotLayouts.set(key, layout)
     }
@@ -521,7 +522,7 @@ class LayoutStoreImpl implements LayoutStore {
     const deleted = this.slotLayouts.delete(key)
     if (deleted) {
       // Remove from spatial index
-      this.slotSpatialIndex.remove(asNodeId(key))
+      this.slotSpatialIndex.remove(key)
     }
   }
 
@@ -550,10 +551,10 @@ class LayoutStoreImpl implements LayoutStore {
 
     if (existing) {
       // Update spatial index
-      this.rerouteSpatialIndex.update(asNodeId(rerouteId), layout.bounds) // Spatial index uses strings
+      this.rerouteSpatialIndex.update(String(rerouteId), layout.bounds) // Spatial index uses strings
     } else {
       // Insert into spatial index
-      this.rerouteSpatialIndex.insert(asNodeId(rerouteId), layout.bounds) // Spatial index uses strings
+      this.rerouteSpatialIndex.insert(String(rerouteId), layout.bounds) // Spatial index uses strings
     }
 
     this.rerouteLayouts.set(rerouteId, layout)
@@ -566,7 +567,7 @@ class LayoutStoreImpl implements LayoutStore {
     const deleted = this.rerouteLayouts.delete(rerouteId)
     if (deleted) {
       // Remove from spatial index
-      this.rerouteSpatialIndex.remove(asNodeId(rerouteId)) // Spatial index uses strings
+      this.rerouteSpatialIndex.remove(String(rerouteId)) // Spatial index uses strings
     }
   }
 
@@ -640,10 +641,10 @@ class LayoutStoreImpl implements LayoutStore {
 
     if (existing) {
       // Update spatial index
-      this.linkSegmentSpatialIndex.update(asNodeId(key), layout.bounds)
+      this.linkSegmentSpatialIndex.update(key, layout.bounds)
     } else {
       // Insert into spatial index
-      this.linkSegmentSpatialIndex.insert(asNodeId(key), layout.bounds)
+      this.linkSegmentSpatialIndex.insert(key, layout.bounds)
     }
 
     this.linkSegmentLayouts.set(key, fullLayout)
@@ -657,7 +658,7 @@ class LayoutStoreImpl implements LayoutStore {
     const deleted = this.linkSegmentLayouts.delete(key)
     if (deleted) {
       // Remove from spatial index
-      this.linkSegmentSpatialIndex.remove(asNodeId(key))
+      this.linkSegmentSpatialIndex.remove(key)
     }
   }
 
@@ -999,7 +1000,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Initialize store with existing nodes
    */
   initializeFromLiteGraph(
-    nodes: Array<{ id: string; pos: [number, number]; size: [number, number] }>
+    nodes: Array<{ id: NodeId; pos: [number, number]; size: [number, number] }>
   ): void {
     this.ydoc.transact(() => {
       this.ynodes.clear()
@@ -1021,7 +1022,7 @@ class LayoutStoreImpl implements LayoutStore {
 
       nodes.forEach((node, index) => {
         const layout: NodeLayout = {
-          id: asNodeId(node.id),
+          id: node.id,
           position: { x: node.pos[0], y: node.pos[1] },
           size: { width: node.size[0], height: node.size[1] },
           zIndex: index,
@@ -1160,7 +1161,7 @@ class LayoutStoreImpl implements LayoutStore {
     operation: BatchUpdateBoundsOperation,
     change: LayoutChange
   ): void {
-    const spatialUpdates: Array<{ nodeId: NodeId; bounds: Bounds }> = []
+    const spatialUpdates: Array<{ id: NodeId; bounds: Bounds }> = []
 
     for (const nodeId of operation.nodeIds) {
       const data = operation.bounds[nodeId]
@@ -1174,7 +1175,7 @@ class LayoutStoreImpl implements LayoutStore {
       })
       ynode.set('bounds', data.bounds)
 
-      spatialUpdates.push({ nodeId, bounds: data.bounds })
+      spatialUpdates.push({ id: nodeId, bounds: data.bounds })
       change.nodeIds.push(nodeId)
     }
 
@@ -1244,7 +1245,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     this.yreroutes.delete(String(operation.rerouteId)) // Yjs Map keys are strings
     this.rerouteLayouts.delete(operation.rerouteId) // Layout map uses numeric ID
-    this.rerouteSpatialIndex.remove(asNodeId(operation.rerouteId)) // Spatial index uses strings
+    this.rerouteSpatialIndex.remove(String(operation.rerouteId)) // Spatial index uses strings
 
     change.type = 'delete'
   }
@@ -1342,7 +1343,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     for (const key of keysToDelete) {
       this.linkSegmentLayouts.delete(key)
-      this.linkSegmentSpatialIndex.remove(asNodeId(key))
+      this.linkSegmentSpatialIndex.remove(key)
     }
   }
 
@@ -1367,7 +1368,7 @@ class LayoutStoreImpl implements LayoutStore {
    */
   private handleRerouteDelete(rerouteId: RerouteId): void {
     this.rerouteLayouts.delete(rerouteId)
-    this.rerouteSpatialIndex.remove(asNodeId(rerouteId))
+    this.rerouteSpatialIndex.remove(String(rerouteId))
   }
 
   /**
@@ -1510,9 +1511,10 @@ class LayoutStoreImpl implements LayoutStore {
     const nodeIds: NodeId[] = []
     const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
-    for (const { nodeId, bounds } of updates) {
-      const normalizedNodeId = asNodeId(nodeId)
-      const ynode = this.ynodes.get(normalizedNodeId)
+    for (const { nodeId: rawNodeId, bounds } of updates) {
+      // Boundary: legacy callers pass numeric ids cast as `NodeId`.
+      const nodeId = asNodeId(rawNodeId)
+      const ynode = this.ynodes.get(nodeId)
       if (!ynode) continue
       const currentLayout = yNodeToLayout(ynode)
 
@@ -1523,11 +1525,11 @@ class LayoutStoreImpl implements LayoutStore {
           }
         : bounds
 
-      boundsRecord[normalizedNodeId] = {
+      boundsRecord[nodeId] = {
         bounds: normalizedBounds,
         previousBounds: currentLayout.bounds
       }
-      nodeIds.push(normalizedNodeId)
+      nodeIds.push(nodeId)
     }
 
     if (!nodeIds.length) {

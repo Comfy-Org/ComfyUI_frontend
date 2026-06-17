@@ -10,7 +10,6 @@ import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { CanvasColour, Point } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { asNodeId } from '@/types/nodeId'
 import {
   LinkDirection,
   LinkMarkerShape,
@@ -344,8 +343,8 @@ export class LitegraphLinkAdapter {
             path: path,
             bounds: bounds,
             centerPos: centerPos,
-            sourceNodeId: asNodeId(link.origin_id),
-            targetNodeId: asNodeId(link.target_id),
+            sourceNodeId: link.origin_id,
+            targetNodeId: link.target_id,
             sourceSlot: link.origin_slot,
             targetSlot: link.target_slot
           })

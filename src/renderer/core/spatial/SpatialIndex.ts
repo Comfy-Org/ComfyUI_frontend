@@ -1,83 +1,82 @@
 /**
  * Spatial Index Manager
  *
- * Manages spatial indexing for efficient node queries based on bounds.
- * Uses QuadTree for fast spatial lookups with caching for performance.
+ * Spatial index for entity queries by bounds. QuadTree + cache.
+ *
+ * Generic over key type → indexes nodes, slots, link segments, reroutes
+ * without laundering unrelated keys through `NodeId` brand.
  */
 import {
   PERFORMANCE_CONFIG,
   QUADTREE_CONFIG
 } from '@/renderer/core/layout/constants'
-import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import type { Bounds } from '@/renderer/core/layout/types'
 
 import { QuadTree } from './QuadTree'
 
 /**
  * Cache entry for spatial queries
  */
-interface CacheEntry {
-  result: NodeId[]
+interface CacheEntry<K extends string> {
+  result: K[]
   timestamp: number
 }
 
 /**
  * Spatial index manager using QuadTree
  */
-export class SpatialIndexManager {
-  private quadTree: QuadTree<NodeId>
-  private queryCache: Map<string, CacheEntry>
+export class SpatialIndexManager<K extends string = string> {
+  private quadTree: QuadTree<K>
+  private queryCache: Map<string, CacheEntry<K>>
   private cacheSize = 0
 
   constructor(bounds?: Bounds) {
-    this.quadTree = new QuadTree<NodeId>(
-      bounds ?? QUADTREE_CONFIG.DEFAULT_BOUNDS,
-      {
-        maxDepth: QUADTREE_CONFIG.MAX_DEPTH,
-        maxItemsPerNode: QUADTREE_CONFIG.MAX_ITEMS_PER_NODE
-      }
-    )
+    this.quadTree = new QuadTree<K>(bounds ?? QUADTREE_CONFIG.DEFAULT_BOUNDS, {
+      maxDepth: QUADTREE_CONFIG.MAX_DEPTH,
+      maxItemsPerNode: QUADTREE_CONFIG.MAX_ITEMS_PER_NODE
+    })
     this.queryCache = new Map()
   }
 
   /**
-   * Insert a node into the spatial index
+   * Insert an entity into the spatial index
    */
-  insert(nodeId: NodeId, bounds: Bounds): void {
-    this.quadTree.insert(nodeId, bounds, nodeId)
+  insert(id: K, bounds: Bounds): void {
+    this.quadTree.insert(id, bounds, id)
     this.invalidateCache()
   }
 
   /**
-   * Update a node's bounds in the spatial index
+   * Update an entity's bounds in the spatial index
    */
-  update(nodeId: NodeId, bounds: Bounds): void {
-    this.quadTree.update(nodeId, bounds)
+  update(id: K, bounds: Bounds): void {
+    this.quadTree.update(id, bounds)
     this.invalidateCache()
   }
 
   /**
-   * Batch update multiple nodes' bounds in the spatial index
+   * Batch update multiple entities' bounds in the spatial index
    * More efficient than calling update() multiple times as it only invalidates cache once
    */
-  batchUpdate(updates: Array<{ nodeId: NodeId; bounds: Bounds }>): void {
-    for (const { nodeId, bounds } of updates) {
-      this.quadTree.update(nodeId, bounds)
+  batchUpdate(updates: Array<{ id: K; bounds: Bounds }>): void {
+    for (const { id, bounds } of updates) {
+      this.quadTree.update(id, bounds)
     }
     this.invalidateCache()
   }
 
   /**
-   * Remove a node from the spatial index
+   * Remove an entity from the spatial index
    */
-  remove(nodeId: NodeId): void {
-    this.quadTree.remove(nodeId)
+  remove(id: K): void {
+    this.quadTree.remove(id)
     this.invalidateCache()
   }
 
   /**
-   * Query nodes within the given bounds
+   * Query entities within the given bounds
    */
-  query(bounds: Bounds): NodeId[] {
+  query(bounds: Bounds): K[] {
     const cacheKey = this.getCacheKey(bounds)
     const cached = this.queryCache.get(cacheKey)
 
@@ -137,7 +136,7 @@ export class SpatialIndexManager {
   /**
    * Add result to cache with LRU eviction
    */
-  private addToCache(key: string, result: NodeId[]): void {
+  private addToCache(key: string, result: K[]): void {
     // Evict oldest entries if cache is full
     if (this.cacheSize >= PERFORMANCE_CONFIG.SPATIAL_CACHE_MAX_SIZE) {
       const oldestKey = this.findOldestCacheEntry()

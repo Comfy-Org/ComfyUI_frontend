@@ -112,7 +112,7 @@ import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
-import type { LinkEndpointNodeId, NodeIdInput } from '@/types/nodeId'
+import type { NodeIdInput } from '@/types/nodeId'
 import {
   asNodeId,
   isNumericNodeId,
@@ -230,7 +230,7 @@ interface ClipboardPasteResult {
   /** All successfully created items */
   created: Positionable[]
   /** Map: original node IDs to newly created nodes */
-  nodes: Map<LinkEndpointNodeId, LGraphNode>
+  nodes: Map<NodeId, LGraphNode>
   /** Map: original link IDs to new link IDs */
   links: Map<LinkId, LLink>
   /** Map: original reroute IDs to newly created reroutes */
@@ -4173,7 +4173,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const results: ClipboardPasteResult = {
       created: [],
-      nodes: new Map<LinkEndpointNodeId, LGraphNode>(),
+      nodes: new Map<NodeId, LGraphNode>(),
       links: new Map<LinkId, LLink>(),
       reroutes: new Map<RerouteId, Reroute>(),
       subgraphs: new Map<SubgraphId, Subgraph>()
@@ -8981,9 +8981,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 }
 
 function patchLinkNodeIds(
-  links:
-    | { origin_id: LinkEndpointNodeId; target_id: LinkEndpointNodeId }[]
-    | undefined,
+  links: { origin_id: NodeId; target_id: NodeId }[] | undefined,
   remappedIds: Map<NodeId, NodeId>
 ) {
   if (!links?.length) return

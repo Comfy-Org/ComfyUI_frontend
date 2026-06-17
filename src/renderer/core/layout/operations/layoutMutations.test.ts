@@ -9,8 +9,8 @@ const nid = asNodeId
 
 beforeEach(() => {
   layoutStore.initializeFromLiteGraph([
-    { id: '1', pos: [10, 20], size: [200, 100] },
-    { id: '2', pos: [300, 400], size: [150, 80] }
+    { id: nid('1'), pos: [10, 20], size: [200, 100] },
+    { id: nid('2'), pos: [300, 400], size: [150, 80] }
   ])
 })
 

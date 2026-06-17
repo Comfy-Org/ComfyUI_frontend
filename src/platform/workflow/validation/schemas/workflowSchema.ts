@@ -564,6 +564,8 @@ const zNodeData = z.object({
     title: z.string()
   })
 })
-
-const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
+// Key = execution id string (subgraph composite e.g. `"10:3"`), not node id.
+// Branded key widens record to `Partial<Record<...>>` → forces `asNodeId`
+// casts + undefined guards everywhere. Plain `string` keeps record total.
+const zComfyApiWorkflow = z.record(z.string(), zNodeData)
 export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>

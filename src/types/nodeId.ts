@@ -8,23 +8,16 @@ export type NodeId = string & { readonly __brand: 'NodeId' }
 /** Raw value at boundaries/legacy load points; normalise with `asNodeId`. */
 export type NodeIdInput = string | number
 
-/**
- * @deprecated Use `NodeId`. Link endpoints are branded `NodeId` strings both at
- * runtime and on the wire; numeric sentinels are only tolerated as legacy input
- * via `asNodeId` and the tolerant predicates below. Retained as a compatibility
- * alias for external consumers.
- */
-export type LinkEndpointNodeId = NodeId
-
 export function asNodeId(value: NodeIdInput): NodeId {
   return String(value) as NodeId
 }
 
-/** Sentinel for a node not yet assigned a real id by a graph. */
+/**
+ * Sentinel for a node not yet assigned a real id by a graph. Also used for a
+ * floating link's unbound endpoint, which is definitionally not assigned to a
+ * node.
+ */
 export const UNASSIGNED_NODE_ID: NodeId = asNodeId('-1')
-
-/** Branded floating-link endpoint sentinel (no node on this side). */
-export const FLOATING_LINK_NODE_ID: NodeId = asNodeId('-1')
 
 /** Branded sentinel for the virtual subgraph input node. */
 export const SUBGRAPH_INPUT_NODE_ID: NodeId = asNodeId(SUBGRAPH_INPUT_ID)
@@ -39,9 +32,9 @@ export function isUnassignedNodeId(
   return id == null || id === -1 || id === UNASSIGNED_NODE_ID
 }
 
-/** Floating-link endpoint. Tolerates legacy numeric `-1`. */
+/** Floating-link endpoint: an unbound side carries the unassigned sentinel. */
 export function isFloatingNodeId(id: NodeIdInput | null | undefined): boolean {
-  return id == null || id === -1 || id === FLOATING_LINK_NODE_ID
+  return isUnassignedNodeId(id)
 }
 
 /** Subgraph input boundary endpoint. Tolerates legacy numeric `-10`. */

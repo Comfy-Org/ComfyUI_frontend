@@ -2,7 +2,7 @@ import { describe, expect } from 'vitest'
 
 import {
   asNodeId,
-  FLOATING_LINK_NODE_ID,
+  UNASSIGNED_NODE_ID,
   LLink,
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_INPUT_NODE_ID,
@@ -31,9 +31,9 @@ describe('LLink', () => {
       expect(typeof link.origin_id).toBe('string')
     })
 
-    test('brands the floating sentinel into FLOATING_LINK_NODE_ID', () => {
+    test('brands the floating sentinel into UNASSIGNED_NODE_ID', () => {
       const link = new LLink(1, 'float', -1, -1, asNodeId(5), 3)
-      expect(link.origin_id).toBe(FLOATING_LINK_NODE_ID)
+      expect(link.origin_id).toBe(UNASSIGNED_NODE_ID)
       expect(link.isFloatingOutput).toBe(true)
     })
 
@@ -54,8 +54,8 @@ describe('LLink', () => {
 
     test('serializes sentinels as branded string ids', () => {
       const floating = new LLink(1, 'float', -1, -1, asNodeId(5), 3)
-      expect(floating.asSerialisable().origin_id).toBe(FLOATING_LINK_NODE_ID)
-      expect(floating.serialize()[1]).toBe(FLOATING_LINK_NODE_ID)
+      expect(floating.asSerialisable().origin_id).toBe(UNASSIGNED_NODE_ID)
+      expect(floating.serialize()[1]).toBe(UNASSIGNED_NODE_ID)
 
       const io = new LLink(
         2,

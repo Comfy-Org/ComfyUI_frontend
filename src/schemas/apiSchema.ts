@@ -74,7 +74,9 @@ const zNodeProgressState = z.object({
 
 const zProgressStateWsMessage = z.object({
   prompt_id: zJobId,
-  nodes: z.record(zNodeId, zNodeProgressState)
+  // Key = execution id string, not node id. Branded key widens to
+  // `Partial<Record<...>>` → forces undefined guards + casts downstream.
+  nodes: z.record(z.string(), zNodeProgressState)
 })
 
 const zExecutingWsMessage = z.object({
@@ -192,7 +194,8 @@ export type AssetExportWsMessage = z.infer<typeof zAssetExportWsMessage>
 
 export type NotificationWsMessage = z.infer<typeof zNotificationWsMessage>
 
-export const zTaskOutput = z.record(zNodeId, zOutputs)
+// Key = execution id string; see zProgressStateWsMessage note above.
+export const zTaskOutput = z.record(z.string(), zOutputs)
 export type TaskOutput = z.infer<typeof zTaskOutput>
 
 const zEmbeddingsResponse = z.array(z.string())
@@ -214,7 +217,8 @@ const zNodeError = z.object({
   dependent_outputs: z.array(z.any())
 })
 const zPromptResponse = z.object({
-  node_errors: z.record(zNodeId, zNodeError).optional(),
+  // Key = execution id string; see zProgressStateWsMessage note above.
+  node_errors: z.record(z.string(), zNodeError).optional(),
   prompt_id: z.string().optional(),
   exec_info: z
     .object({

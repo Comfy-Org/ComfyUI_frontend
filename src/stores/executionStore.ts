@@ -79,19 +79,13 @@ function buildExecutionNodeLookup(
   promptOutput: ComfyApiWorkflow
 ): Record<string, ExecutionNodeInfo> {
   return Object.fromEntries(
-    Object.entries(promptOutput).flatMap(([executionId, node]) =>
-      node
-        ? [
-            [
-              executionId,
-              {
-                title: node._meta.title,
-                type: node.class_type
-              }
-            ]
-          ]
-        : []
-    )
+    Object.entries(promptOutput).map(([executionId, node]) => [
+      executionId,
+      {
+        title: node._meta.title,
+        type: node.class_type
+      }
+    ])
   )
 }
 
@@ -383,12 +377,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
-    const { nodes: rawNodes, prompt_id: jobId } = e.detail
-
-    const nodes: Record<string, NodeProgressState> = {}
-    for (const [nodeId, nodeState] of Object.entries(rawNodes)) {
-      if (nodeState) nodes[nodeId] = nodeState
-    }
+    const { nodes, prompt_id: jobId } = e.detail
 
     // Revoke previews for nodes that are starting to execute
     const previousForJob = nodeProgressStatesByJob.value[jobId] || {}
