@@ -557,7 +557,7 @@ export const useAssetsStore = defineStore('assets', () => {
               // batch sends offset 0, which the service omits from the request.
               const after = state.nextCursor
               const response = await fetcher(
-                after
+                after !== undefined
                   ? { limit: MODEL_BATCH_SIZE, after }
                   : { limit: MODEL_BATCH_SIZE, offset: state.offset }
               )
@@ -593,7 +593,7 @@ export const useAssetsStore = defineStore('assets', () => {
                 // but do not prune — unseen cached assets may still live on a
                 // page we never received.
                 state.hasMore = false
-              } else if (response.next_cursor) {
+              } else if (response.next_cursor !== undefined) {
                 if (seenCursors.has(response.next_cursor)) {
                   // Repeated cursor: the server is cycling. Stop without
                   // pruning rather than loop forever.

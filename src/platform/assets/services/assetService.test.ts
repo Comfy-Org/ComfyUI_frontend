@@ -764,6 +764,22 @@ describe(assetService.getAssetsPageForNodeType, () => {
     expect(params.has('offset')).toBe(false)
   })
 
+  it('sends an empty-string cursor as the after param rather than falling back to offset', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'ckpt-4' })])
+    )
+
+    await assetService.getAssetsPageForNodeType('CheckpointLoaderSimple', {
+      offset: 500,
+      after: ''
+    })
+
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('after')).toBe('')
+    expect(params.has('offset')).toBe(false)
+  })
+
   it('sends the offset when paging without a cursor', async () => {
     fetchApiMock.mockResolvedValueOnce(
       buildAssetListResponse([validAsset({ id: 'ckpt-3' })])

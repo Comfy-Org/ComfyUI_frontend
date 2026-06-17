@@ -894,6 +894,30 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 
   describe('cursor walk anomalies (regression)', () => {
+    it('follows an empty-string cursor instead of falling back to offset paging', async () => {
+      const store = useAssetsStore()
+      const nodeType = 'CheckpointLoaderSimple'
+
+      vi.mocked(assetService.getAssetsPageForNodeType).mockImplementation(
+        async (_nodeType, opts) => {
+          if (opts?.after === undefined) {
+            return makePage([createMockAsset('p1')], {
+              has_more: true,
+              next_cursor: ''
+            })
+          }
+          return makePage([createMockAsset('p2')])
+        }
+      )
+
+      await store.updateModelsForNodeType(nodeType)
+
+      const calls = vi.mocked(assetService.getAssetsPageForNodeType).mock.calls
+      expect(calls).toHaveLength(2)
+      expect(calls[1]?.[1]?.after).toBe('')
+      expect(store.getAssets(nodeType).map((a) => a.id)).toEqual(['p1', 'p2'])
+    })
+
     it('keeps previously cached assets when a refresh hits an empty page with has_more', async () => {
       const store = useAssetsStore()
       const nodeType = 'CheckpointLoaderSimple'
