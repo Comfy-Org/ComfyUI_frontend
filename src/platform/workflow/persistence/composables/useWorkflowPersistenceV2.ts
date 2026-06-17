@@ -161,19 +161,18 @@ export function useWorkflowPersistenceV2() {
     })
   }
 
-  const hasSharedWorkflowIntent = () => {
-    if (typeof route.query.share === 'string') return true
-    hydratePreservedQuery(SHARE_NAMESPACE)
-    const merged = mergePreservedQueryIntoQuery(SHARE_NAMESPACE, route.query)
-    return typeof merged?.share === 'string'
+  const hasPreservedIntent = (namespace: string, key: string) => {
+    if (typeof route.query[key] === 'string') return true
+    hydratePreservedQuery(namespace)
+    const merged = mergePreservedQueryIntoQuery(namespace, route.query)
+    return typeof merged?.[key] === 'string'
   }
 
-  const hasTemplateUrlIntent = () => {
-    if (typeof route.query.template === 'string') return true
-    hydratePreservedQuery(TEMPLATE_NAMESPACE)
-    const merged = mergePreservedQueryIntoQuery(TEMPLATE_NAMESPACE, route.query)
-    return typeof merged?.template === 'string'
-  }
+  const hasSharedWorkflowIntent = () =>
+    hasPreservedIntent(SHARE_NAMESPACE, 'share')
+
+  const hasTemplateUrlIntent = () =>
+    hasPreservedIntent(TEMPLATE_NAMESPACE, 'template')
 
   const loadDefaultWorkflow = async () => {
     if (!settingStore.get('Comfy.TutorialCompleted')) {
