@@ -1,24 +1,24 @@
+import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { TIER_TO_KEY } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-/** Seat-based team-plan proxy until BE-1254 exposes per-workspace plan seats. */
+/**
+ * Team-plan state for the active workspace. The team plan is tier-independent
+ * (no standard/creator/pro): "on the team plan" simply means a team workspace
+ * that is subscribed to it.
+ */
 export function useTeamPlan() {
-  const { isActiveSubscription, subscription, getMaxSeats } =
-    useBillingContext()
-
-  const maxSeats = computed(() => {
-    const tier = subscription.value?.tier
-    if (!tier) return 1
-    const tierKey = TIER_TO_KEY[tier]
-    if (!tierKey) return 1
-    return getMaxSeats(tierKey)
-  })
-
-  const isOnTeamPlan = computed(
-    () => isActiveSubscription.value && maxSeats.value > 1
+  const { subscription } = useBillingContext()
+  const { isInPersonalWorkspace, isWorkspaceSubscribed } = storeToRefs(
+    useTeamWorkspaceStore()
   )
 
-  return { maxSeats, isOnTeamPlan }
+  const isOnTeamPlan = computed(
+    () => !isInPersonalWorkspace.value && isWorkspaceSubscribed.value
+  )
+  const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
+
+  return { isOnTeamPlan, isCancelled }
 }

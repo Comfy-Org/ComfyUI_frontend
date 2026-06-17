@@ -101,7 +101,7 @@ function setLastWorkspaceId(workspaceId: string): void {
 }
 
 const MAX_OWNED_WORKSPACES = 10
-const MAX_WORKSPACE_MEMBERS = 50
+export const MAX_WORKSPACE_MEMBERS = 30
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 
