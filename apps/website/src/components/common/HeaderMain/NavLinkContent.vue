@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Badge from '@/components/common/Badge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import { ArrowUpRight } from '@lucide/vue'
 
 import type { NavColumnItem } from '../../../data/mainNavigation'

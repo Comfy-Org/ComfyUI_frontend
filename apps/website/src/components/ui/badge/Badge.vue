@@ -2,8 +2,8 @@
 import type { Component } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { BadgeVariants } from './badge.variants'
-import { badgeVariants } from './badge.variants'
+import type { BadgeVariants } from '.'
+import { badgeVariants } from '.'
 
 const {
   variant,

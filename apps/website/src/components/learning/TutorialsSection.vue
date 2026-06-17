@@ -8,7 +8,7 @@ import {
   learningTutorials
 } from '../../data/learningTutorials'
 import { t } from '../../i18n/translations'
-import Badge from '../common/Badge.vue'
+import Badge from '../ui/badge/Badge.vue'
 import { ButtonMask } from '../ui/button-mask'
 import TutorialDetailDialog from './TutorialDetailDialog.vue'
 
