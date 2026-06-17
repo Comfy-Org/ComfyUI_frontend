@@ -400,7 +400,7 @@ describe('useMembersPanel', () => {
       expect(panel.isOnTeamPlan.value).toBe(true)
     })
 
-    it('clamps maxSeats to 1 regardless of plan seats', async () => {
+    it('clamps maxSeats to 1 in a personal workspace even on a multi-seat plan', async () => {
       mockIsInPersonalWorkspace.value = true
       const panel = await setup()
       expect(panel.maxSeats.value).toBe(1)
