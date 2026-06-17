@@ -4,6 +4,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const DIALOG_KEY = 'subscription-required'
@@ -26,7 +27,24 @@ export const useSubscriptionDialog = () => {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const workspaceStore = useTeamWorkspaceStore()
-  const { isFreeTier } = useSubscription()
+  const { isFreeTier, subscriptionTier } = useSubscription()
+
+  /**
+   * Emit paywall_viewed for a dialog that is about to open. Cloud-only, matching
+   * the isCloud gating used elsewhere in the subscription flow. Emitted at the
+   * point each paywall surface actually opens (FreeTierDialog in show(), the
+   * pricing table in showPricingTable()) so each surface counts exactly once
+   * with the reason that triggered it.
+   */
+  function trackPaywallViewed(reason?: SubscriptionDialogReason) {
+    if (!isCloud) return
+    useTelemetry()?.trackPaywallViewed({
+      reason: reason ?? 'subscription_required',
+      ...(subscriptionTier.value
+        ? { current_tier: subscriptionTier.value.toLowerCase() }
+        : {})
+    })
+  }
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -35,6 +53,8 @@ export const useSubscriptionDialog = () => {
 
   function showPricingTable(options?: { reason?: SubscriptionDialogReason }) {
     if (!isCloud) return
+
+    trackPaywallViewed(options?.reason)
 
     const useWorkspaceVariant =
       flags.teamWorkspacesEnabled && !workspaceStore.isInPersonalWorkspace
@@ -80,6 +100,11 @@ export const useSubscriptionDialog = () => {
 
   function show(options?: { reason?: SubscriptionDialogReason }) {
     if (isFreeTier.value && workspaceStore.isInPersonalWorkspace) {
+      // Emit here (not in showPricingTable) because the free-tier dialog is the
+      // surface actually shown; showPricingTable only fires later if the user
+      // clicks upgrade, which is a separate paywall view.
+      trackPaywallViewed(options?.reason)
+
       const component = defineAsyncComponent(
         () =>
           import('@/platform/cloud/subscription/components/FreeTierDialogContent.vue')

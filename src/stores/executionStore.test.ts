@@ -19,6 +19,7 @@ const {
   mockShowTextPreview,
   mockTrackExecutionError,
   mockTrackExecutionSuccess,
+  mockTrackFirstExecutionCompleted,
   mockTrackOutputViewed,
   mockTrackSharedWorkflowRun
 } = vi.hoisted(() => ({
@@ -28,6 +29,7 @@ const {
   mockShowTextPreview: vi.fn(),
   mockTrackExecutionError: vi.fn(),
   mockTrackExecutionSuccess: vi.fn(),
+  mockTrackFirstExecutionCompleted: vi.fn(),
   mockTrackOutputViewed: vi.fn(),
   mockTrackSharedWorkflowRun: vi.fn()
 }))
@@ -85,6 +87,7 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackExecutionError: mockTrackExecutionError,
     trackExecutionSuccess: mockTrackExecutionSuccess,
+    trackFirstExecutionCompleted: mockTrackFirstExecutionCompleted,
     trackOutputViewed: mockTrackOutputViewed,
     trackSharedWorkflowRun: mockTrackSharedWorkflowRun
   })
@@ -1580,6 +1583,114 @@ describe('useExecutionStore - output_viewed activation telemetry', () => {
       expect(mockTrackOutputViewed).not.toHaveBeenCalled()
       // The node is still marked executed regardless of the cloud gate.
       expect(store.activeJob?.nodes['save-1']).toBe(true)
+    } finally {
+      mockDistribution.isCloud = true
+    }
+  })
+})
+
+describe('useExecutionStore - first_execution_completed activation telemetry', () => {
+  /**
+   * `first_execution_completed` fires once ever per browser profile, guarded by
+   * a durable localStorage key. Tests clear localStorage between cases so each
+   * starts as a "never executed" profile, and a single shared store instance
+   * verifies the within-profile dedup survives across successive runs.
+   */
+  type Store = ReturnType<typeof useExecutionStore>
+
+  const FIRST_EXECUTION_COMPLETED_KEY =
+    'comfy:telemetry:first_execution_completed'
+
+  function freshStore(): Store {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const store = useExecutionStore()
+    store.bindExecutionEvents()
+    return store
+  }
+
+  function queueAndStart(store: Store, jobId: string) {
+    store.storeJob({
+      nodes: ['a'],
+      id: jobId,
+      promptOutput: { a: createPromptNode('Node A', 'NodeA') },
+      workflow: createQueuedWorkflow()
+    })
+    const startHandler = apiEventHandlers.get('execution_start')
+    if (!startHandler) throw new Error('execution_start handler not bound')
+    startHandler(
+      new CustomEvent('execution_start', {
+        detail: { prompt_id: jobId, timestamp: 0 }
+      })
+    )
+  }
+
+  function fireSuccess(jobId: string) {
+    const handler = apiEventHandlers.get('execution_success')
+    if (!handler) throw new Error('execution_success handler not bound')
+    handler(
+      new CustomEvent('execution_success', {
+        detail: { prompt_id: jobId, timestamp: 0 }
+      })
+    )
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    localStorage.removeItem(FIRST_EXECUTION_COMPLETED_KEY)
+    mockTrackFirstExecutionCompleted.mockReset()
+  })
+
+  it('emits trackFirstExecutionCompleted on the first successful execution', () => {
+    const store = freshStore()
+    queueAndStart(store, 'run-1')
+
+    fireSuccess('run-1')
+
+    expect(mockTrackFirstExecutionCompleted).toHaveBeenCalledTimes(1)
+    expect(mockTrackFirstExecutionCompleted).toHaveBeenCalledWith({
+      workflow_run_id: 'run-1'
+    })
+    // The durable guard is now set for this browser profile.
+    expect(localStorage.getItem(FIRST_EXECUTION_COMPLETED_KEY)).toBeTruthy()
+  })
+
+  it('does not re-emit on subsequent successful executions in the same profile', () => {
+    const store = freshStore()
+
+    queueAndStart(store, 'run-1')
+    fireSuccess('run-1')
+
+    queueAndStart(store, 'run-2')
+    fireSuccess('run-2')
+
+    expect(mockTrackFirstExecutionCompleted).toHaveBeenCalledTimes(1)
+    expect(mockTrackFirstExecutionCompleted).toHaveBeenCalledWith({
+      workflow_run_id: 'run-1'
+    })
+  })
+
+  it('does not emit when the durable guard is already set (e.g. after reload)', () => {
+    // Simulate a prior session having already activated this profile.
+    localStorage.setItem(FIRST_EXECUTION_COMPLETED_KEY, '2026-01-01T00:00:00Z')
+
+    const store = freshStore()
+    queueAndStart(store, 'run-1')
+    fireSuccess('run-1')
+
+    expect(mockTrackFirstExecutionCompleted).not.toHaveBeenCalled()
+  })
+
+  it('does not emit when isCloud is false', () => {
+    mockDistribution.isCloud = false
+    try {
+      const store = freshStore()
+      queueAndStart(store, 'run-1')
+      fireSuccess('run-1')
+
+      expect(mockTrackFirstExecutionCompleted).not.toHaveBeenCalled()
+      // Cloud-gated event must not consume the durable first-run guard either.
+      expect(localStorage.getItem(FIRST_EXECUTION_COMPLETED_KEY)).toBeNull()
     } finally {
       mockDistribution.isCloud = true
     }

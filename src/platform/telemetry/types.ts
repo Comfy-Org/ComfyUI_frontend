@@ -563,6 +563,51 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
 }
 
 /**
+ * Fired when a paywall / subscription dialog is shown. The top of the
+ * monetization funnel: today the dialog opens with no signal of WHY it was
+ * triggered, so paywall -> checkout drop cannot be attributed to a reason
+ * (run gate, out of credits, model upload, etc.).
+ */
+export interface PaywallViewedMetadata {
+  reason: SubscriptionDialogReason | string
+  current_tier?: string
+}
+
+/**
+ * Fired when the Stripe checkout window successfully opens.
+ * `checkout_attempt_id` correlates this open with the eventual
+ * checkout_returned, closing the loop on the Stripe round-trip that is a
+ * black box today.
+ */
+export interface CheckoutViewedMetadata {
+  checkout_attempt_id: string
+  tier: string
+  cycle: string
+}
+
+type CheckoutReturnOutcome = 'success' | 'cancelled' | 'unknown'
+
+/**
+ * Fired when the user returns from the Stripe checkout tab. Pairs with
+ * checkout_viewed via `checkout_attempt_id` so abandonment at Stripe can be
+ * measured directly instead of inferred from a missing success event.
+ */
+export interface CheckoutReturnedMetadata {
+  checkout_attempt_id: string
+  outcome: CheckoutReturnOutcome
+}
+
+/**
+ * Fired once per user on their first successful workflow execution. The
+ * core activation moment: the wiring phase guards once-per-user so this
+ * marks the transition from signed-up to activated.
+ */
+export interface FirstExecutionCompletedMetadata {
+  workflow_run_id: string
+  customer_tier?: string
+}
+
+/**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
  */
@@ -582,7 +627,10 @@ export interface TelemetryProvider {
     event: 'modal_opened' | 'subscribe_clicked',
     metadata?: SubscriptionMetadata
   ): void
+  trackPaywallViewed?(metadata: PaywallViewedMetadata): void
   trackBeginCheckout?(metadata: BeginCheckoutMetadata): void
+  trackCheckoutViewed?(metadata: CheckoutViewedMetadata): void
+  trackCheckoutReturned?(metadata: CheckoutReturnedMetadata): void
   trackCheckoutInitiateFailed?(metadata: CheckoutInitiateFailedMetadata): void
   trackCheckoutWindowBlocked?(metadata?: CheckoutWindowBlockedMetadata): void
   trackMonthlySubscriptionSucceeded?(
@@ -653,6 +701,7 @@ export interface TelemetryProvider {
   trackWorkflowExecution?(): void
   trackExecutionError?(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess?(metadata: ExecutionSuccessMetadata): void
+  trackFirstExecutionCompleted?(metadata: FirstExecutionCompletedMetadata): void
   trackOutputViewed?(metadata: OutputViewedMetadata): void
   trackSharedWorkflowRun?(metadata: SharedWorkflowRunMetadata): void
 
@@ -695,6 +744,9 @@ export const TelemetryEvents = {
   RUN_BUTTON_CLICKED: 'app:run_button_click',
   SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'app:subscription_required_modal_opened',
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
+  PAYWALL_VIEWED: 'app:paywall_viewed',
+  CHECKOUT_VIEWED: 'app:checkout_viewed',
+  CHECKOUT_RETURNED: 'app:checkout_returned',
   CHECKOUT_INITIATE_FAILED: 'app:checkout_initiate_failed',
   CHECKOUT_WINDOW_BLOCKED: 'app:checkout_window_blocked',
   MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
@@ -755,6 +807,7 @@ export const TelemetryEvents = {
   EXECUTION_START: 'execution_start',
   EXECUTION_ERROR: 'execution_error',
   EXECUTION_SUCCESS: 'execution_success',
+  FIRST_EXECUTION_COMPLETED: 'app:first_execution_completed',
   OUTPUT_VIEWED: 'app:output_viewed',
   SHARED_WORKFLOW_RUN: 'app:shared_workflow_run',
   // Generic UI Button Click
@@ -818,3 +871,7 @@ export type TelemetryEventProperties =
   | DefaultViewSetMetadata
   | SubscriptionMetadata
   | SubscriptionSuccessMetadata
+  | PaywallViewedMetadata
+  | CheckoutViewedMetadata
+  | CheckoutReturnedMetadata
+  | FirstExecutionCompletedMetadata

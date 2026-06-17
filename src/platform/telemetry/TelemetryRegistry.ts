@@ -7,6 +7,8 @@ import type {
   BeginCheckoutMetadata,
   CanvasReadyMetadata,
   CheckoutInitiateFailedMetadata,
+  CheckoutReturnedMetadata,
+  CheckoutViewedMetadata,
   CheckoutWindowBlockedMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
@@ -15,6 +17,7 @@ import type {
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
   ExecutionTriggerSource,
+  FirstExecutionCompletedMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
@@ -24,6 +27,7 @@ import type {
   OAuthPopupResultMetadata,
   OnboardingRoutedMetadata,
   OutputViewedMetadata,
+  PaywallViewedMetadata,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -110,8 +114,20 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackSubscription?.(event, metadata))
   }
 
+  trackPaywallViewed(metadata: PaywallViewedMetadata): void {
+    this.dispatch((provider) => provider.trackPaywallViewed?.(metadata))
+  }
+
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
     this.dispatch((provider) => provider.trackBeginCheckout?.(metadata))
+  }
+
+  trackCheckoutViewed(metadata: CheckoutViewedMetadata): void {
+    this.dispatch((provider) => provider.trackCheckoutViewed?.(metadata))
+  }
+
+  trackCheckoutReturned(metadata: CheckoutReturnedMetadata): void {
+    this.dispatch((provider) => provider.trackCheckoutReturned?.(metadata))
   }
 
   trackCheckoutInitiateFailed(metadata: CheckoutInitiateFailedMetadata): void {
@@ -283,6 +299,14 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
     this.dispatch((provider) => provider.trackExecutionSuccess?.(metadata))
+  }
+
+  trackFirstExecutionCompleted(
+    metadata: FirstExecutionCompletedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackFirstExecutionCompleted?.(metadata)
+    )
   }
 
   trackOutputViewed(metadata: OutputViewedMetadata): void {

@@ -15,12 +15,15 @@ import type {
   AuthMetadata,
   CanvasReadyMetadata,
   CheckoutInitiateFailedMetadata,
+  CheckoutReturnedMetadata,
+  CheckoutViewedMetadata,
   CheckoutWindowBlockedMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
   ExecutionTriggerSource,
+  FirstExecutionCompletedMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
@@ -30,6 +33,7 @@ import type {
   OAuthPopupResultMetadata,
   OnboardingRoutedMetadata,
   OutputViewedMetadata,
+  PaywallViewedMetadata,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -148,6 +152,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             this.isInitialized = true
             this.flushEventQueue()
             this.registerDesktopEntryProps()
+            this.registerAppModeSuperProperty()
+            this.registerCustomerTierSuperProperty()
+            this.setFirstTouchAttribution()
 
             const currentUser = useCurrentUser()
             currentUser.onUserResolved((user) => {
@@ -329,6 +336,83 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
+  /**
+   * Registers `is_app_mode` as a super-property so it rides every PostHog
+   * event. App vs graph mode flips mid-session, so a watcher re-registers on
+   * change to keep the value current at emit time. register() (not people.set)
+   * because this is event-context, not a stable person trait.
+   */
+  private registerAppModeSuperProperty(): void {
+    // Defensive: useAppMode() pulls in a Pinia store. This runs inside the
+    // posthog-js import .then(), so a throw here would hit the init .catch and
+    // disable the whole provider (and skip identify/logout wiring). Contain it
+    // to "is_app_mode absent" instead.
+    try {
+      const { isAppMode } = useAppMode()
+      watch(
+        isAppMode,
+        (value) => {
+          if (this.posthog) {
+            this.posthog.register({ is_app_mode: value })
+          }
+        },
+        { immediate: true }
+      )
+    } catch (error) {
+      console.error('Failed to register is_app_mode super-property:', error)
+    }
+  }
+
+  /**
+   * Registers `customer_tier` as a super-property so every event carries the
+   * current subscription tier. Sourced from the same useSubscription() ref as
+   * the subscription_tier person property; registered on change once known.
+   * This is the event-level mirror of the subscription_tier person property:
+   * register() attaches it to events at emit time (vs person-on-events).
+   */
+  private registerCustomerTierSuperProperty(): void {
+    // Defensive for the same reason as registerAppModeSuperProperty: a throw
+    // from useSubscription() must not disable the provider at init.
+    try {
+      const { subscriptionTier } = useSubscription()
+      watch(
+        subscriptionTier,
+        (tier) => {
+          if (tier && this.posthog) {
+            this.posthog.register({ customer_tier: tier })
+          }
+        },
+        { immediate: true }
+      )
+    } catch (error) {
+      console.error('Failed to register customer_tier super-property:', error)
+    }
+  }
+
+  /**
+   * First-touch attribution: on provider init, parse the landing URL's UTM
+   * params and $set_once initial_utm_* on the person. set_once never
+   * overwrites, so the very first touch is preserved across sessions. Only
+   * present params are written; absent ones are skipped entirely.
+   */
+  private setFirstTouchAttribution(): void {
+    if (!this.posthog) return
+    const params = new URLSearchParams(window.location.search)
+    const firstTouch: Record<string, string> = {}
+    const source = params.get('utm_source')
+    const medium = params.get('utm_medium')
+    const campaign = params.get('utm_campaign')
+    if (source) firstTouch.initial_utm_source = source
+    if (medium) firstTouch.initial_utm_medium = medium
+    if (campaign) firstTouch.initial_utm_campaign = campaign
+    if (Object.keys(firstTouch).length === 0) return
+    try {
+      this.posthog.people.set_once(firstTouch)
+    } catch (error) {
+      console.error('Failed to set first-touch attribution:', error)
+    }
+  }
+
   trackSignupOpened(): void {
     this.trackEvent(TelemetryEvents.USER_SIGN_UP_OPENED)
   }
@@ -374,6 +458,18 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         : TelemetryEvents.SUBSCRIBE_NOW_BUTTON_CLICKED
 
     this.trackEvent(eventName, metadata)
+  }
+
+  trackPaywallViewed(metadata: PaywallViewedMetadata): void {
+    this.trackEvent(TelemetryEvents.PAYWALL_VIEWED, metadata)
+  }
+
+  trackCheckoutViewed(metadata: CheckoutViewedMetadata): void {
+    this.trackEvent(TelemetryEvents.CHECKOUT_VIEWED, metadata)
+  }
+
+  trackCheckoutReturned(metadata: CheckoutReturnedMetadata): void {
+    this.trackEvent(TelemetryEvents.CHECKOUT_RETURNED, metadata)
   }
 
   trackAddApiCreditButtonClicked(): void {
@@ -551,6 +647,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
+  }
+
+  trackFirstExecutionCompleted(
+    metadata: FirstExecutionCompletedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.FIRST_EXECUTION_COMPLETED, metadata)
   }
 
   trackOutputViewed(metadata: OutputViewedMetadata): void {

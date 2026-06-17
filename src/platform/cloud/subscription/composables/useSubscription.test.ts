@@ -33,7 +33,11 @@ const {
   mockTelemetry: {
     trackSubscription: vi.fn(),
     trackMonthlySubscriptionSucceeded: vi.fn(),
-    trackMonthlySubscriptionCancelled: vi.fn()
+    trackMonthlySubscriptionCancelled: vi.fn(),
+    trackCheckoutWindowBlocked: vi.fn(),
+    trackCheckoutInitiateFailed: vi.fn(),
+    trackCheckoutViewed: vi.fn(),
+    trackCheckoutReturned: vi.fn()
   },
   mockUserId: { value: 'user-123' },
   mockLocalStorage: (() => {
@@ -176,6 +180,10 @@ describe('useSubscription', () => {
     mockTelemetry.trackSubscription.mockReset()
     mockTelemetry.trackMonthlySubscriptionSucceeded.mockReset()
     mockTelemetry.trackMonthlySubscriptionCancelled.mockReset()
+    mockTelemetry.trackCheckoutWindowBlocked.mockReset()
+    mockTelemetry.trackCheckoutInitiateFailed.mockReset()
+    mockTelemetry.trackCheckoutViewed.mockReset()
+    mockTelemetry.trackCheckoutReturned.mockReset()
     mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
     mockUserId.value = 'user-123'
@@ -355,16 +363,41 @@ describe('useSubscription', () => {
       )
 
       expect(windowOpenSpy).toHaveBeenCalledWith(checkoutUrl, '_blank')
-      expect(
-        JSON.parse(
-          localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) ??
-            '{}'
-        )
-      ).toMatchObject({
+      const storedAttempt = JSON.parse(
+        localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) ?? '{}'
+      )
+      expect(storedAttempt).toMatchObject({
         tier: 'standard',
         cycle: 'monthly',
         checkout_type: 'new'
       })
+
+      expect(mockTelemetry.trackCheckoutViewed).toHaveBeenCalledTimes(1)
+      expect(mockTelemetry.trackCheckoutViewed).toHaveBeenCalledWith({
+        checkout_attempt_id: storedAttempt.attempt_id,
+        tier: 'standard',
+        cycle: 'monthly'
+      })
+
+      windowOpenSpy.mockRestore()
+    })
+
+    it('does not emit checkout_viewed when the checkout window is blocked', async () => {
+      vi.mocked(global.fetch).mockResolvedValue({
+        ok: true,
+        json: async () => ({ checkout_url: 'https://checkout.stripe.com/test' })
+      } as Response)
+
+      const windowOpenSpy = vi
+        .spyOn(window, 'open')
+        .mockImplementation(() => null)
+
+      const { subscribe } = useSubscriptionWithScope()
+
+      await subscribe()
+
+      expect(mockTelemetry.trackCheckoutWindowBlocked).toHaveBeenCalledTimes(1)
+      expect(mockTelemetry.trackCheckoutViewed).not.toHaveBeenCalled()
 
       windowOpenSpy.mockRestore()
     })
@@ -426,6 +459,11 @@ describe('useSubscription', () => {
       expect(
         localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
       ).toBeNull()
+
+      expect(mockTelemetry.trackCheckoutReturned).toHaveBeenCalledWith({
+        checkout_attempt_id: 'attempt-123',
+        outcome: 'success'
+      })
     })
 
     it('emits subscription_success when a pending upgrade reaches the target tier', async () => {
@@ -556,6 +594,95 @@ describe('useSubscription', () => {
     })
   })
 
+  describe('checkout_returned', () => {
+    const inactiveStatusResponse = {
+      ok: true,
+      json: async () => ({
+        is_active: false,
+        subscription_id: '',
+        renewal_date: ''
+      })
+    } as Response
+
+    const checkoutUrlResponse = {
+      ok: true,
+      json: async () => ({ checkout_url: 'https://checkout.stripe.com/x' })
+    } as Response
+
+    it('emits an unknown outcome on return while the attempt is still pending', async () => {
+      mockIsLoggedIn.value = true
+      // Bootstrap fetch (logged-in watcher) resolves to an inactive status.
+      vi.mocked(global.fetch).mockResolvedValue(inactiveStatusResponse)
+
+      const windowOpenSpy = vi
+        .spyOn(window, 'open')
+        .mockImplementation(() => window as unknown as Window)
+
+      const { subscribe } = useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalled()
+      })
+
+      // The checkout POST returns a Stripe URL; subsequent status fetches stay
+      // inactive so the attempt remains pending after the user returns.
+      vi.mocked(global.fetch)
+        .mockResolvedValueOnce(checkoutUrlResponse)
+        .mockResolvedValue(inactiveStatusResponse)
+
+      await subscribe()
+
+      const storedAttempt = JSON.parse(
+        localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY) ?? '{}'
+      )
+
+      // Simulate the user returning from the Stripe tab before the
+      // subscription is confirmed active.
+      window.dispatchEvent(new Event('pageshow'))
+
+      await vi.waitFor(() => {
+        expect(mockTelemetry.trackCheckoutReturned).toHaveBeenCalledWith({
+          checkout_attempt_id: storedAttempt.attempt_id,
+          outcome: 'unknown'
+        })
+      })
+
+      windowOpenSpy.mockRestore()
+    })
+
+    it('emits checkout_returned at most once per attempt across repeated returns', async () => {
+      mockIsLoggedIn.value = true
+      vi.mocked(global.fetch).mockResolvedValue(inactiveStatusResponse)
+
+      const windowOpenSpy = vi
+        .spyOn(window, 'open')
+        .mockImplementation(() => window as unknown as Window)
+
+      const { subscribe } = useSubscriptionWithScope()
+
+      await vi.waitFor(() => {
+        expect(global.fetch).toHaveBeenCalled()
+      })
+
+      vi.mocked(global.fetch)
+        .mockResolvedValueOnce(checkoutUrlResponse)
+        .mockResolvedValue(inactiveStatusResponse)
+
+      await subscribe()
+
+      window.dispatchEvent(new Event('pageshow'))
+      document.dispatchEvent(new Event('visibilitychange'))
+      window.dispatchEvent(new Event('pageshow'))
+
+      await vi.waitFor(() => {
+        expect(mockTelemetry.trackCheckoutReturned).toHaveBeenCalled()
+      })
+      expect(mockTelemetry.trackCheckoutReturned).toHaveBeenCalledTimes(1)
+
+      windowOpenSpy.mockRestore()
+    })
+  })
+
   describe('requireActiveSubscription', () => {
     it('should not show dialog when subscription is active', async () => {
       vi.mocked(global.fetch).mockResolvedValue({
@@ -588,7 +715,9 @@ describe('useSubscription', () => {
 
       await requireActiveSubscription()
 
-      expect(mockShowSubscriptionRequiredDialog).toHaveBeenCalled()
+      expect(mockShowSubscriptionRequiredDialog).toHaveBeenCalledWith({
+        reason: 'run_workflow'
+      })
     })
   })
 

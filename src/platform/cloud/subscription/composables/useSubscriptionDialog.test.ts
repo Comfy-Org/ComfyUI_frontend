@@ -7,8 +7,12 @@ const mockShowLayoutDialog = vi.fn()
 const mockShowTeamWorkspacesDialog = vi.fn()
 const mockIsInPersonalWorkspace = vi.hoisted(() => ({ value: true }))
 const mockIsFreeTier = vi.hoisted(() => ({ value: false }))
+const mockSubscriptionTier = vi.hoisted(() => ({
+  value: null as string | null
+}))
 const mockTeamWorkspacesEnabled = vi.hoisted(() => ({ value: false }))
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
+const mockTrackPaywallViewed = vi.hoisted(() => vi.fn())
 
 vi.mock('vue', async (importOriginal) => {
   const actual = await importOriginal()
@@ -43,7 +47,14 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 
 vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   useSubscription: () => ({
-    isFreeTier: mockIsFreeTier
+    isFreeTier: mockIsFreeTier,
+    subscriptionTier: mockSubscriptionTier
+  })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackPaywallViewed: mockTrackPaywallViewed
   })
 }))
 
@@ -67,6 +78,7 @@ describe('useSubscriptionDialog', () => {
     mockIsCloud.value = true
     mockIsInPersonalWorkspace.value = true
     mockIsFreeTier.value = false
+    mockSubscriptionTier.value = null
     mockTeamWorkspacesEnabled.value = false
 
     try {
@@ -93,6 +105,75 @@ describe('useSubscriptionDialog', () => {
       showPricingTable()
 
       expect(mockShowLayoutDialog).toHaveBeenCalled()
+    })
+  })
+
+  describe('paywall_viewed telemetry', () => {
+    it('emits paywall_viewed with the reason when the pricing table opens', () => {
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'run_workflow' })
+
+      expect(mockTrackPaywallViewed).toHaveBeenCalledTimes(1)
+      expect(mockTrackPaywallViewed).toHaveBeenCalledWith({
+        reason: 'run_workflow'
+      })
+    })
+
+    it('defaults the reason to subscription_required when none is given', () => {
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      expect(mockTrackPaywallViewed).toHaveBeenCalledWith({
+        reason: 'subscription_required'
+      })
+    })
+
+    it('includes the lowercased current_tier when a tier is known', () => {
+      mockSubscriptionTier.value = 'CREATOR'
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'upload_model' })
+
+      expect(mockTrackPaywallViewed).toHaveBeenCalledWith({
+        reason: 'upload_model',
+        current_tier: 'creator'
+      })
+    })
+
+    it('does not emit paywall_viewed on non-cloud', () => {
+      mockIsCloud.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ reason: 'member_invite' })
+
+      expect(mockTrackPaywallViewed).not.toHaveBeenCalled()
+    })
+
+    it('emits once for the free-tier dialog and does not double-count showPricingTable', () => {
+      mockIsFreeTier.value = true
+      mockIsInPersonalWorkspace.value = true
+      const { show } = useSubscriptionDialog()
+
+      show({ reason: 'member_invite' })
+
+      expect(mockTrackPaywallViewed).toHaveBeenCalledTimes(1)
+      expect(mockTrackPaywallViewed).toHaveBeenCalledWith({
+        reason: 'member_invite'
+      })
+    })
+
+    it('emits once when show falls through to the pricing table for non-free tier', () => {
+      mockIsFreeTier.value = false
+      const { show } = useSubscriptionDialog()
+
+      show({ reason: 'out_of_credits' })
+
+      expect(mockTrackPaywallViewed).toHaveBeenCalledTimes(1)
+      expect(mockTrackPaywallViewed).toHaveBeenCalledWith({
+        reason: 'out_of_credits'
+      })
     })
   })
 

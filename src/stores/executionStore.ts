@@ -110,6 +110,31 @@ const MAX_TRACKED_OUTPUT_RUNS = 256
 const VIEWED_MEDIA_TYPES = new Set<string>(['image', 'video', 'audio', '3D'])
 
 /**
+ * localStorage key marking that this browser profile has emitted the
+ * once-per-user `first_execution_completed` activation event. Persisted (not
+ * per-session like the `output_viewed` flag) because "first execution ever"
+ * must survive reloads. Provider-side a PostHog person `set_once` is the
+ * authoritative cross-device dedupe; this key is the local fast-path guard.
+ */
+const FIRST_EXECUTION_COMPLETED_KEY = 'comfy:telemetry:first_execution_completed'
+
+/**
+ * Returns true and records the durable flag on the first call ever for this
+ * browser profile; false on every subsequent call. All localStorage access is
+ * wrapped so private-mode / blocked-storage throws degrade gracefully (treated
+ * as "already emitted" so we never spam the event when the flag can't persist).
+ */
+function claimFirstExecutionCompleted(): boolean {
+  try {
+    if (localStorage.getItem(FIRST_EXECUTION_COMPLETED_KEY)) return false
+    localStorage.setItem(FIRST_EXECUTION_COMPLETED_KEY, new Date().toISOString())
+    return true
+  } catch {
+    return false
+  }
+}
+
+/**
  * Classifies a finished node's output into a coarse media type for the
  * `output_viewed` activation event, by running the canonical filename
  * classifier over the first result item across the output buckets (handles the
@@ -382,6 +407,13 @@ export const useExecutionStore = defineStore('execution', () => {
       telemetry?.trackExecutionSuccess({
         jobId
       })
+      // Activation moment: fire once ever per browser profile. Guarded by a
+      // durable localStorage flag so a reload never re-fires it.
+      if (claimFirstExecutionCompleted()) {
+        telemetry?.trackFirstExecutionCompleted({
+          workflow_run_id: jobId
+        })
+      }
       if (queuedJob.shareId) {
         telemetry?.trackSharedWorkflowRun({
           job_id: jobId,
