@@ -42,6 +42,16 @@ type CreditPurchasePayload =
   operations['InitiateCreditPurchase']['requestBody']['content']['application/json']
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
+
+/**
+ * Request body for createCustomer. The Cloudflare Turnstile token captured at
+ * signup is forwarded to the BE as `turnstile_token` (snake_case). The BE
+ * (repo `cloud`) reads this field on the CreateCustomer request; it is omitted
+ * for non-signup flows and on OSS / localhost where Turnstile is not rendered.
+ */
+type CreateCustomerPayload = {
+  turnstile_token?: string
+}
 type GetCustomerBalanceResponse =
   operations['GetCustomerBalance']['responses']['200']['content']['application/json']
 type AccessBillingPortalResponse =
@@ -291,7 +301,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const createCustomer = async (): Promise<CreateCustomerResponse> => {
+  const createCustomer = async (
+    payload?: CreateCustomerPayload
+  ): Promise<CreateCustomerResponse> => {
     const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -302,7 +314,8 @@ export const useAuthStore = defineStore('auth', () => {
       headers: {
         ...authHeader,
         'Content-Type': 'application/json'
-      }
+      },
+      ...(payload && { body: JSON.stringify(payload) })
     })
     if (!createCustomerRes.ok) {
       throw new AuthStoreError(
@@ -329,6 +342,7 @@ export const useAuthStore = defineStore('auth', () => {
     action: (auth: Auth) => Promise<T>,
     options: {
       createCustomer?: boolean
+      customerPayload?: CreateCustomerPayload
     } = {}
   ): Promise<T> => {
     loading.value = true
@@ -342,7 +356,7 @@ export const useAuthStore = defineStore('auth', () => {
         if (!token) {
           throw new Error('Cannot create customer: User not authenticated')
         }
-        await createCustomer()
+        await createCustomer(options.customerPayload)
       }
 
       return result
@@ -376,12 +390,18 @@ export const useAuthStore = defineStore('auth', () => {
 
   const register = async (
     email: string,
-    password: string
+    password: string,
+    turnstileToken?: string
   ): Promise<UserCredential> => {
     const result = await executeAuthAction(
       (authInstance) =>
         createUserWithEmailAndPassword(authInstance, email, password),
-      { createCustomer: true }
+      {
+        createCustomer: true,
+        ...(turnstileToken && {
+          customerPayload: { turnstile_token: turnstileToken }
+        })
+      }
     )
 
     if (isCloud) {

@@ -397,6 +397,35 @@ describe('useAuthStore', () => {
       )
       expect(store.loading).toBe(false)
     })
+
+    it('forwards the turnstile token to createCustomer as turnstile_token', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+
+      await store.register('new@example.com', 'password', 'turnstile-abc')
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/customers'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ turnstile_token: 'turnstile-abc' })
+        })
+      )
+    })
+
+    it('omits the request body when no turnstile token is provided', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+
+      await store.register('new@example.com', 'password')
+
+      const customerCall = mockFetch.mock.calls.find(([url]) =>
+        String(url).endsWith('/customers')
+      )
+      expect(customerCall?.[1]).not.toHaveProperty('body')
+    })
   })
 
   describe('logout', () => {

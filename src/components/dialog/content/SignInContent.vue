@@ -206,8 +206,14 @@ const signInWithEmail = async (values: SignInData) => {
   }
 }
 
-const signUpWithEmail = async (values: SignUpData) => {
-  if (await authActions.signUpWithEmail(values.email, values.password)) {
+const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
+  if (
+    await authActions.signUpWithEmail(
+      values.email,
+      values.password,
+      turnstileToken
+    )
+  ) {
     onSuccess()
   }
 }
