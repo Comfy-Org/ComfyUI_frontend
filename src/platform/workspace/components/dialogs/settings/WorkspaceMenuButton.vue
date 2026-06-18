@@ -21,6 +21,7 @@ import { useI18n } from 'vue-i18n'
 
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
@@ -31,8 +32,22 @@ const {
   showDeleteWorkspaceDialog,
   showEditWorkspaceDialog
 } = useDialogService()
-const { isWorkspaceSubscribed } = storeToRefs(useTeamWorkspaceStore())
+const { isWorkspaceSubscribed, members } = storeToRefs(useTeamWorkspaceStore())
 const { uiConfig } = useWorkspaceUI()
+const { userEmail } = useCurrentUser()
+
+// The creator (earliest-joined member) can't leave their own workspace.
+const isCurrentUserCreator = computed(() => {
+  const email = userEmail.value?.toLowerCase()
+  if (!email || members.value.length === 0) return false
+  const currentMember = members.value.find(
+    (member) => member.email.toLowerCase() === email
+  )
+  return (
+    !!currentMember &&
+    members.value.every((member) => currentMember.joinDate <= member.joinDate)
+  )
+})
 
 // Disable delete when the workspace has an active subscription (prevents
 // accidental deletion); uses the workspace's own status, not the global one.
@@ -71,12 +86,25 @@ const menuItems = computed<MenuItem[]>(() => {
         ? undefined
         : () => showDeleteWorkspaceDialog()
     })
-  } else if (action === 'leave') {
-    items.push({
-      label: t('workspacePanel.menu.leaveWorkspace'),
-      icon: 'pi pi-sign-out',
-      command: () => showLeaveWorkspaceDialog()
-    })
+  }
+
+  // Members and non-creator owners can leave; the creator sees it disabled.
+  if (action === 'leave' || action === 'delete') {
+    items.push(
+      isCurrentUserCreator.value
+        ? {
+            label: t('workspacePanel.menu.leaveWorkspace'),
+            icon: 'pi pi-sign-out',
+            class: 'opacity-50',
+            disabled: true,
+            tooltip: t('workspacePanel.menu.creatorCannotLeave')
+          }
+        : {
+            label: t('workspacePanel.menu.leaveWorkspace'),
+            icon: 'pi pi-sign-out',
+            command: () => showLeaveWorkspaceDialog()
+          }
+    )
   }
 
   return items

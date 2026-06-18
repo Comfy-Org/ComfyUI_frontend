@@ -2643,7 +2643,8 @@
       "editWorkspace": "Edit workspace details",
       "leaveWorkspace": "Leave Workspace",
       "deleteWorkspace": "Delete Workspace",
-      "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first"
+      "deleteWorkspaceDisabledTooltip": "Cancel your workspace's active subscription first",
+      "creatorCannotLeave": "The workspace creator can't leave the workspace they created"
     },
     "editWorkspaceDialog": {
       "title": "Edit workspace details",
