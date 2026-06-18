@@ -80,7 +80,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
       {
         icon: 'icon-[comfy--save-audio]',
         media: 'audio',
-        nodeName: 'SaveAudio'
+        nodeName: 'SaveAudioAdvanced'
       },
       {
         icon: 'icon-s1.5-[lucide--text]',
