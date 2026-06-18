@@ -139,12 +139,6 @@
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.plansAndPricing')
       }}</span>
-      <span
-        v-if="canUpgrade"
-        class="rounded-full bg-base-foreground px-1.5 py-0.5 text-xs font-bold text-base-background"
-      >
-        {{ $t('subscription.upgrade') }}
-      </span>
     </div>
 
     <!-- Manage Plan (PERSONAL and OWNER, only if subscribed) -->
@@ -298,12 +292,6 @@ const displayedCredits = computed(() => {
       maximumFractionDigits: 2
     }
   })
-})
-
-const canUpgrade = computed(() => {
-  // PRO is currently the only/highest tier, so no upgrades available
-  // This will need updating when additional tiers are added
-  return false
 })
 
 const showPlansAndPricing = computed(

@@ -1385,9 +1385,9 @@ const translations = {
     'zh-CN': '随时加购积分'
   },
   'pricing.included.feature5.description': {
-    en: 'Purchase additional credits at any time. Unused top-ups roll over to the next month automatically for up to 1 year.',
+    en: 'Purchase additional credits at any time. Top-up credits are valid for 1 year from the date of purchase and do not roll over with your monthly plan.',
     'zh-CN':
-      '可随时购买额外积分。未使用的充值积分自动结转至下月，最长保留 1 年。'
+      '可随时购买额外积分。充值积分自购买之日起 1 年内有效，且不会随月度计划结转。'
   },
   'pricing.included.feature6.title': {
     en: 'Pre-installed models',
