@@ -1,14 +1,14 @@
-import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
+import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { reactive } from 'vue'
+import { nextTick, reactive } from 'vue'
 
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import type { BaseDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import DomWidget from './DomWidget.vue'
 
 const mockUpdatePosition = vi.fn()
@@ -54,7 +54,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-function createWidgetState(overrideDisabled: boolean): DomWidgetState {
+function createWidgetState(disabled: boolean): DomWidgetState {
   const domWidgetStore = useDomWidgetStore()
   const node = createMockLGraphNode({
     id: 1,
@@ -63,21 +63,17 @@ function createWidgetState(overrideDisabled: boolean): DomWidgetState {
     }
   })
 
-  const widget = {
+  const widget = fromPartial<BaseDOMWidget<object | string>>({
     id: 'dom-widget-id',
     name: 'test_widget',
     type: 'custom',
     value: '',
     options: {},
     node,
-    computedDisabled: false
-  } as unknown as BaseDOMWidget<object | string>
+    computedDisabled: disabled
+  })
 
   domWidgetStore.registerWidget(widget)
-  domWidgetStore.setPositionOverride(widget.id, {
-    node: createMockLGraphNode({ id: 2 }),
-    widget: { computedDisabled: overrideDisabled } as DomWidgetState['widget']
-  })
 
   const state = domWidgetStore.widgetStates.get(widget.id)
   if (!state) throw new Error('Expected registered DomWidgetState')
@@ -98,19 +94,37 @@ describe('DomWidget disabled style', () => {
     vi.clearAllMocks()
   })
 
-  it('uses disabled style when promoted override widget is computedDisabled', async () => {
+  it('uses disabled style when widget is computedDisabled', async () => {
     const widgetState = createWidgetState(true)
-    const wrapper = mount(DomWidget, {
+    const { container } = render(DomWidget, {
       props: {
         widgetState
       }
     })
 
     widgetState.zIndex = 3
-    await wrapper.vm.$nextTick()
+    await nextTick()
 
-    const root = wrapper.get('.dom-widget').element as HTMLElement
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
     expect(root.style.opacity).toBe('0.5')
+  })
+
+  it('disables pointer events when widget is not visible', async () => {
+    const widgetState = createWidgetState(false)
+    widgetState.visible = false
+    const { container } = render(DomWidget, {
+      props: {
+        widgetState
+      }
+    })
+
+    widgetState.zIndex = 3
+    await nextTick()
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const root = container.querySelector('.dom-widget') as HTMLElement
+    expect(root.style.pointerEvents).toBe('none')
   })
 })

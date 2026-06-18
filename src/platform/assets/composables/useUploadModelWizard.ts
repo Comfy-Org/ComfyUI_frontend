@@ -5,9 +5,13 @@ import { useI18n } from 'vue-i18n'
 import { st } from '@/i18n'
 import { civitaiImportSource } from '@/platform/assets/importSources/civitaiImportSource'
 import { huggingfaceImportSource } from '@/platform/assets/importSources/huggingfaceImportSource'
-import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetItem,
+  AssetMetadata
+} from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ImportSource } from '@/platform/assets/types/importSource'
+import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -26,16 +30,55 @@ interface ModelTypeOption {
   value: string
 }
 
-export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
+const MODEL_ROOT_TAG = 'models'
+
+export interface UploadModelSuccess {
+  filename: string
+  modelType?: string
+  taskId?: string
+  status: 'processing' | 'success'
+}
+
+export interface UploadModelTypeMismatch {
+  importedModelType?: string
+  importedModelTypeLabel?: string
+  requiredModelType: string
+  requiredModelTypeLabel: string
+}
+
+interface MissingModelUploadContext {
+  kind: 'missing-model-resolution'
+  missingModelName: string
+  requiredModelType: string
+  replacementTargets: Array<{
+    nodeId: string
+    nodeLabel: string
+    widgetName: string
+  }>
+}
+
+export type UploadModelDialogContext = MissingModelUploadContext
+
+interface UploadModelWizardOptions {
+  requiredModelType?: string
+}
+
+export function useUploadModelWizard(
+  modelTypes: Ref<ModelTypeOption[]>,
+  options: UploadModelWizardOptions = {}
+) {
   const { t } = useI18n()
   const assetsStore = useAssetsStore()
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
+  const requiredModelType = options.requiredModelType
   const currentStep = ref(1)
   const isFetchingMetadata = ref(false)
   const isUploading = ref(false)
   const uploadStatus = ref<'processing' | 'success' | 'error'>()
   const uploadError = ref('')
+  const uploadTypeMismatch = ref<UploadModelTypeMismatch | null>(null)
+  let stopAsyncWatch: (() => void) | undefined
 
   const wizardData = ref<WizardData>({
     url: '',
@@ -43,7 +86,10 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     tags: []
   })
 
-  const selectedModelType = ref<string>()
+  const selectedModelType = ref<string | undefined>(requiredModelType)
+  const resolvedModelType = computed(
+    () => requiredModelType ?? selectedModelType.value
+  )
 
   const importSources: ImportSource[] = [
     civitaiImportSource,
@@ -64,8 +110,21 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     () => wizardData.value.url,
     () => {
       uploadError.value = ''
+      uploadTypeMismatch.value = null
     }
   )
+
+  if (requiredModelType) {
+    watch(
+      selectedModelType,
+      (value) => {
+        if (value !== requiredModelType) {
+          selectedModelType.value = requiredModelType
+        }
+      },
+      { immediate: true }
+    )
+  }
 
   // Validation - only enable Continue when URL matches a supported source
   const canFetchMetadata = computed(() => {
@@ -73,7 +132,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   })
 
   const canUploadModel = computed(() => {
-    return !!selectedModelType.value
+    return !!resolvedModelType.value
   })
 
   async function fetchMetadata() {
@@ -127,7 +186,9 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
       wizardData.value.previewImage = metadata.preview_image
 
       // Pre-fill model type from metadata tags if available
-      if (metadata.tags && metadata.tags.length > 0) {
+      if (requiredModelType) {
+        selectedModelType.value = requiredModelType
+      } else if (metadata.tags && metadata.tags.length > 0) {
         wizardData.value.tags = metadata.tags
         // Try to detect model type from tags
         const typeTag = metadata.tags.find((tag) =>
@@ -182,10 +243,10 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   }
 
   async function refreshModelCaches() {
-    if (!selectedModelType.value) return
+    if (!resolvedModelType.value) return
 
     const providers = modelToNodeStore.getAllNodeProviders(
-      selectedModelType.value
+      resolvedModelType.value
     )
     const results = await Promise.allSettled(
       providers.map((provider) =>
@@ -202,23 +263,61 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     })
   }
 
-  async function uploadModel(): Promise<boolean> {
+  function getModelTypeLabel(modelType: string): string {
+    return (
+      modelTypes.value.find((type) => type.value === modelType)?.name ??
+      modelType
+    )
+  }
+
+  function getImportedModelType(asset: AssetItem): string | undefined {
+    const knownType = asset.tags.find(
+      (tag) =>
+        tag !== MODEL_ROOT_TAG &&
+        modelTypes.value.some((type) => type.value === tag)
+    )
+    return knownType ?? asset.tags.find((tag) => tag !== MODEL_ROOT_TAG)
+  }
+
+  function blockMismatchedImportedModel(
+    asset: AssetItem,
+    requiredType: string
+  ): boolean {
+    if (asset.tags.includes(requiredType)) return false
+
+    const importedType = getImportedModelType(asset)
+    uploadStatus.value = 'error'
+    uploadError.value = ''
+    uploadTypeMismatch.value = {
+      importedModelType: importedType,
+      importedModelTypeLabel: importedType
+        ? getModelTypeLabel(importedType)
+        : undefined,
+      requiredModelType: requiredType,
+      requiredModelTypeLabel: getModelTypeLabel(requiredType)
+    }
+    return true
+  }
+
+  async function uploadModel(): Promise<UploadModelSuccess | null> {
+    if (isUploading.value) return null
     if (!canUploadModel.value) {
-      return false
+      return null
     }
 
     const source = detectedSource.value
     if (!source) {
       uploadError.value = t('assetBrowser.noValidSourceDetected')
-      return false
+      return null
     }
 
     isUploading.value = true
+    uploadTypeMismatch.value = null
+    let uploadSuccess: UploadModelSuccess | null = null
 
     try {
-      const tags = selectedModelType.value
-        ? ['models', selectedModelType.value]
-        : ['models']
+      const modelType = resolvedModelType.value
+      const tags = modelType ? ['models', modelType] : ['models']
       const filename =
         wizardData.value.metadata?.filename ||
         wizardData.value.metadata?.name ||
@@ -228,7 +327,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
       const userMetadata = {
         source: source.type,
         source_url: wizardData.value.url,
-        model_type: selectedModelType.value
+        model_type: modelType
       }
 
       const result = await assetService.uploadAssetAsync({
@@ -239,17 +338,77 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
       })
 
       if (result.type === 'async' && result.task.status !== 'completed') {
-        if (selectedModelType.value) {
+        if (modelType) {
           assetDownloadStore.trackDownload(
             result.task.task_id,
-            selectedModelType.value,
+            modelType,
             filename
           )
         }
         uploadStatus.value = 'processing'
+        uploadSuccess = {
+          filename,
+          modelType,
+          taskId: result.task.task_id,
+          status: 'processing'
+        }
+
+        stopAsyncWatch?.()
+        let resolved = false
+        const stop = watch(
+          () =>
+            assetDownloadStore.downloadList.find(
+              (d) => d.taskId === result.task.task_id
+            )?.status,
+          async (status) => {
+            if (status === 'completed') {
+              resolved = true
+              uploadStatus.value = 'success'
+              await refreshModelCaches()
+              stopAsyncWatch?.()
+              stopAsyncWatch = undefined
+            } else if (status === 'failed') {
+              resolved = true
+              const download = assetDownloadStore.downloadList.find(
+                (d) => d.taskId === result.task.task_id
+              )
+              uploadStatus.value = 'error'
+              uploadError.value =
+                download?.error ||
+                t('assetBrowser.downloadFailed', {
+                  name: download?.assetName || ''
+                })
+              stopAsyncWatch?.()
+              stopAsyncWatch = undefined
+            }
+          },
+          { immediate: true }
+        )
+        if (resolved) {
+          stop()
+          stopAsyncWatch = undefined
+        } else {
+          stopAsyncWatch = stop
+        }
       } else {
+        if (
+          requiredModelType &&
+          result.type === 'sync' &&
+          modelType &&
+          blockMismatchedImportedModel(result.asset, modelType)
+        ) {
+          currentStep.value = 3
+          return null
+        }
+
         uploadStatus.value = 'success'
         await refreshModelCaches()
+        uploadSuccess = {
+          filename:
+            result.type === 'sync' ? getAssetFilename(result.asset) : filename,
+          modelType,
+          status: 'success'
+        }
       }
       currentStep.value = 3
     } catch (error) {
@@ -261,7 +420,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     } finally {
       isUploading.value = false
     }
-    return uploadStatus.value !== 'error'
+    return uploadSuccess
   }
 
   function goToPreviousStep() {
@@ -271,17 +430,20 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
   }
 
   function resetWizard() {
+    stopAsyncWatch?.()
+    stopAsyncWatch = undefined
     currentStep.value = 1
     isFetchingMetadata.value = false
     isUploading.value = false
     uploadStatus.value = undefined
     uploadError.value = ''
+    uploadTypeMismatch.value = null
     wizardData.value = {
       url: '',
       name: '',
       tags: []
     }
-    selectedModelType.value = undefined
+    selectedModelType.value = requiredModelType
   }
 
   return {
@@ -291,6 +453,7 @@ export function useUploadModelWizard(modelTypes: Ref<ModelTypeOption[]>) {
     isUploading,
     uploadStatus,
     uploadError,
+    uploadTypeMismatch,
     wizardData,
     selectedModelType,
 

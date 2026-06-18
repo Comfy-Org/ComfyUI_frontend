@@ -17,7 +17,7 @@ This guide covers patterns and examples for testing Pinia stores in the ComfyUI 
 Basic setup for testing Pinia stores:
 
 ```typescript
-// Example from: tests-ui/tests/store/workflowStore.test.ts
+// Example from a colocated store unit test
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -51,7 +51,7 @@ describe('useWorkflowStore', () => {
 Testing store state changes:
 
 ```typescript
-// Example from: tests-ui/tests/store/workflowStore.test.ts
+// Example from a colocated store unit test
 it('should create a temporary workflow with a unique path', () => {
   const workflow = store.createTemporary()
   expect(workflow.path).toBe('workflows/Unsaved Workflow.json')
@@ -72,7 +72,7 @@ it('should create a temporary workflow not clashing with persisted workflows', a
 Testing store actions:
 
 ```typescript
-// Example from: tests-ui/tests/store/workflowStore.test.ts
+// Example from a colocated store unit test
 describe('openWorkflow', () => {
   it('should load and open a temporary workflow', async () => {
     // Create a test workflow
@@ -115,7 +115,7 @@ describe('openWorkflow', () => {
 Testing store getters:
 
 ```typescript
-// Example from: tests-ui/tests/store/modelStore.test.ts
+// Example from a colocated store unit test
 describe('getters', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -162,7 +162,7 @@ describe('getters', () => {
 Mocking API and other dependencies:
 
 ```typescript
-// Example from: tests-ui/tests/store/workflowStore.test.ts
+// Example from a colocated store unit test
 // Add mock for api at the top of the file
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -205,7 +205,7 @@ describe('syncWorkflows', () => {
 Testing store watchers and reactive behavior:
 
 ```typescript
-// Example from: tests-ui/tests/store/workflowStore.test.ts
+// Example from a colocated store unit test
 import { nextTick } from 'vue'
 
 describe('Subgraphs', () => {
@@ -253,7 +253,7 @@ describe('Subgraphs', () => {
 Testing store integration with other parts of the application:
 
 ```typescript
-// Example from: tests-ui/tests/store/workflowStore.test.ts
+// Example from a colocated store unit test
 describe('renameWorkflow', () => {
   it('should rename workflow and update bookmarks', async () => {
     const workflow = store.createTemporary('dir/test.json')

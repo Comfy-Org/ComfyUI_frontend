@@ -9,10 +9,12 @@ import {
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 const mockGetIdToken = vi.fn()
+const mockNotifyTokenRefreshed = vi.fn()
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
-    getIdToken: mockGetIdToken
+    getIdToken: mockGetIdToken,
+    notifyTokenRefreshed: mockNotifyTokenRefreshed
   })
 }))
 
@@ -27,12 +29,16 @@ vi.mock('@/i18n', () => ({
 }))
 
 const mockTeamWorkspacesEnabled = vi.hoisted(() => ({ value: true }))
+const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({
     flags: {
       get teamWorkspacesEnabled() {
         return mockTeamWorkspacesEnabled.value
+      },
+      get unifiedCloudAuthEnabled() {
+        return mockUnifiedCloudAuthEnabled.value
       }
     }
   })
@@ -63,6 +69,8 @@ describe('useWorkspaceAuthStore', () => {
     vi.clearAllMocks()
     vi.useFakeTimers()
     sessionStorage.clear()
+    mockTeamWorkspacesEnabled.value = true
+    mockUnifiedCloudAuthEnabled.value = false
   })
 
   afterEach(() => {
@@ -667,6 +675,551 @@ describe('useWorkspaceAuthStore', () => {
       expect(currentWorkspace.value).toBeNull()
       expect(workspaceToken.value).toBeNull()
       expect(isLoading.value).toBe(false)
+    })
+  })
+
+  describe('refreshToken retry/race paths', () => {
+    // NOTE: This test documents the CURRENT behavior — exhausted refresh
+    // retries clear the workspace context unconditionally, even when the
+    // existing workspace token is still within its expiry window. That is a
+    // UX gap (transient backend outage manifests as forced logout) and the
+    // store should preserve a still-valid token across transient
+    // TOKEN_EXCHANGE_FAILED errors. Update the assertion alongside any source
+    // change that tracks token expiry to skip the context clear.
+    it('retries up to 3 times with exponential backoff on TOKEN_EXCHANGE_FAILED, then clears context', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+
+      // Initial successful switchWorkspace establishes context.
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace } = storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+      expect(currentWorkspace.value).not.toBeNull()
+
+      // Subsequent refresh attempts all fail with 500 (TOKEN_EXCHANGE_FAILED).
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        statusText: 'Internal Server Error',
+        json: () => Promise.resolve({ message: 'Server error' })
+      })
+
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+
+      const refreshPromise = store.refreshToken()
+
+      // Drain the four attempts (initial + 3 retries) and their backoff delays.
+      await vi.runAllTimersAsync()
+      await refreshPromise
+
+      // 1 initial switchWorkspace + 4 refresh attempts = 5 total fetch calls.
+      expect(mockFetch).toHaveBeenCalledTimes(5)
+      // Backoff: 1s + 2s + 4s = 7s of cumulative warn-logged delays.
+      expect(
+        consoleWarnSpy.mock.calls.some((c) =>
+          /retrying in 1000ms/.test(String(c[0]))
+        )
+      ).toBe(true)
+      expect(
+        consoleWarnSpy.mock.calls.some((c) =>
+          /retrying in 2000ms/.test(String(c[0]))
+        )
+      ).toBe(true)
+      expect(
+        consoleWarnSpy.mock.calls.some((c) =>
+          /retrying in 4000ms/.test(String(c[0]))
+        )
+      ).toBe(true)
+
+      // After the final failure the context is cleared.
+      expect(currentWorkspace.value).toBeNull()
+
+      consoleErrorSpy.mockRestore()
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('clears context immediately on INVALID_FIREBASE_TOKEN without retrying', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace } = storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+      expect(currentWorkspace.value).not.toBeNull()
+
+      // Permanent error: 401 → INVALID_FIREBASE_TOKEN.
+      mockFetch.mockResolvedValue({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        json: () => Promise.resolve({ message: 'Invalid token' })
+      })
+
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+
+      await store.refreshToken()
+
+      // Initial + exactly one refresh attempt; no retries on permanent errors.
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(currentWorkspace.value).toBeNull()
+
+      consoleErrorSpy.mockRestore()
+    })
+
+    // KNOWN BUG (.fails): when an in-flight refresh's switchWorkspace call is
+    // already past its requestId-staleness check and awaiting the token-exchange
+    // fetch, switchWorkspace has no post-await commit guard. If the user
+    // switches workspaces and the stale refresh's fetch resolves AFTER the new
+    // switch has committed, the stale response will overwrite the new
+    // workspace's currentWorkspace/workspaceToken/sessionStorage. Mark this
+    // expected-fail until switchWorkspace gains a commit-time staleness check
+    // (e.g. compare captured requestId or expected workspaceId before
+    // assigning state). Removing `.fails` once fixed will catch regressions.
+    it.fails('the new workspace wins when the stale refresh resolves last', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken } = storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+
+      // Hang the next fetch — this is the refresh's switchWorkspace fetch.
+      let resolveRefreshFetch: (value: unknown) => void = () => {}
+      const refreshFetchPromise = new Promise((resolve) => {
+        resolveRefreshFetch = resolve
+      })
+      mockFetch.mockReturnValueOnce(refreshFetchPromise)
+
+      const refreshPromise = store.refreshToken()
+
+      // User switches workspace AND its fetch resolves first.
+      const newWorkspace = { ...mockWorkspace, id: 'workspace-other' }
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'new-workspace-token',
+            workspace: newWorkspace
+          })
+      })
+      await store.switchWorkspace('workspace-other')
+
+      // New workspace is committed at this point.
+      expect(currentWorkspace.value?.id).toBe('workspace-other')
+      expect(workspaceToken.value).toBe('new-workspace-token')
+
+      // Now resolve the stale refresh fetch — it carries an OLD-workspace
+      // token, and the source has no commit-time staleness check, so it
+      // clobbers the new workspace state.
+      resolveRefreshFetch({
+        ok: true,
+        json: () =>
+          Promise.resolve({ ...mockTokenResponse, token: 'stale-token' })
+      })
+      await refreshPromise
+
+      // Once the source-side guard is added, both of these become true
+      // (the test stops failing) and `.fails` should be dropped.
+      expect(currentWorkspace.value?.id).toBe('workspace-other')
+      expect(workspaceToken.value).toBe('new-workspace-token')
+    })
+  })
+
+  describe('persistToSession resilience', () => {
+    it('updates store state even when sessionStorage.setItem throws', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse)
+        })
+      )
+
+      const setItemSpy = vi
+        .spyOn(sessionStorage, 'setItem')
+        .mockImplementation(() => {
+          throw new Error('QuotaExceededError')
+        })
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+
+      const store = useWorkspaceAuthStore()
+      const { workspaceToken } = storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+
+      expect(workspaceToken.value).toBe('workspace-token-abc')
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        'Failed to persist workspace context to sessionStorage'
+      )
+
+      setItemSpy.mockRestore()
+      consoleWarnSpy.mockRestore()
+    })
+  })
+
+  describe('Zod validation on token response', () => {
+    it('throws TOKEN_EXCHANGE_FAILED when the response is missing required fields', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              token: 'token-only',
+              // missing expires_at, workspace, role, permissions
+              role: 'owner'
+            })
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+      const { error } = storeToRefs(store)
+
+      await expect(store.switchWorkspace('workspace-123')).rejects.toThrow(
+        WorkspaceAuthError
+      )
+      expect((error.value as WorkspaceAuthError).code).toBe(
+        'TOKEN_EXCHANGE_FAILED'
+      )
+    })
+  })
+
+  describe('unified Cloud-JWT lifecycle (unified_cloud_auth)', () => {
+    const personalTokenResponse = {
+      token: 'unified-token-1',
+      expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+      workspace: {
+        id: 'workspace-personal',
+        name: 'Personal',
+        type: 'personal' as const
+      },
+      role: 'owner' as const,
+      permissions: ['owner:*']
+    }
+
+    it('mintAtLogin is a no-op and returns false when the flag is OFF', async () => {
+      mockUnifiedCloudAuthEnabled.value = false
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn()
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+
+      const result = await store.mintAtLogin()
+
+      expect(result).toBe(false)
+      expect(mockFetch).not.toHaveBeenCalled()
+      expect(unifiedToken.value).toBeNull()
+    })
+
+    it('mints the personal default once into the dormant unifiedToken slot when flag ON', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(personalTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken, workspaceToken } = storeToRefs(store)
+
+      const result = await store.mintAtLogin()
+
+      expect(result).toBe(true)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      // Personal default mints with an id-less empty body.
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.example.com/api/auth/token',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({})
+        })
+      )
+      expect(unifiedToken.value).toBe('unified-token-1')
+      // Dormant slot proof: the legacy workspace token is never written.
+      expect(workspaceToken.value).toBeNull()
+    })
+
+    it('does not re-mint when unifiedToken is already populated', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(personalTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+
+      await store.mintAtLogin()
+      const result = await store.mintAtLogin()
+
+      expect(result).toBe(true)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('arms a refresh at expires_at - buffer and re-mints from the parsed expiry (no hardcoded TTL)', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const expiresInMs = 3600 * 1000
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...personalTokenResponse,
+            expires_at: new Date(Date.now() + expiresInMs).toISOString()
+          })
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+
+      await store.mintAtLogin()
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+
+      const refreshDelay = expiresInMs - 5 * 60 * 1000
+
+      vi.advanceTimersByTime(refreshDelay - 1)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not bump the rotation trigger on the initial login mint', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(personalTokenResponse)
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+      await store.mintAtLogin()
+
+      expect(mockNotifyTokenRefreshed).not.toHaveBeenCalled()
+    })
+
+    it('does not bump the rotation trigger on a workspace switch', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse)
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+      await store.switchWorkspace('workspace-123')
+
+      expect(mockNotifyTokenRefreshed).not.toHaveBeenCalled()
+    })
+
+    it('bumps the rotation trigger exactly once on a refresh re-mint', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const expiresInMs = 3600 * 1000
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              ...personalTokenResponse,
+              expires_at: new Date(Date.now() + expiresInMs).toISOString()
+            })
+        })
+      )
+
+      const store = useWorkspaceAuthStore()
+      await store.mintAtLogin()
+
+      const refreshDelay = expiresInMs - 5 * 60 * 1000
+      await vi.advanceTimersByTimeAsync(refreshDelay)
+
+      expect(mockNotifyTokenRefreshed).toHaveBeenCalledTimes(1)
+    })
+
+    it('remintUnifiedOnce re-mints exactly once and surfaces a persistent failure without looping', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(personalTokenResponse)
+        })
+        .mockResolvedValue({
+          ok: false,
+          status: 401,
+          statusText: 'Unauthorized',
+          json: () => Promise.resolve({ message: 'Invalid token' })
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      await store.mintAtLogin()
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+
+      await expect(store.remintUnifiedOnce()).rejects.toThrow(
+        WorkspaceAuthError
+      )
+
+      // Exactly one re-mint attempt — the primitive does not retry.
+      expect(mockFetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('remintUnifiedOnce returns null without minting when the flag is OFF', async () => {
+      mockUnifiedCloudAuthEnabled.value = false
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn()
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+
+      const result = await store.remintUnifiedOnce()
+
+      expect(result).toBeNull()
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('discards a stale concurrent mint so unifiedToken reflects the latest mint', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(personalTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+
+      await store.mintAtLogin()
+
+      // Re-mint A hangs (it will resolve last and must be discarded as stale).
+      let resolveStale: (value: unknown) => void = () => {}
+      mockFetch.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveStale = resolve
+        })
+      )
+      const remintA = store.remintUnifiedOnce()
+
+      // Re-mint B starts later and resolves first with the newest token.
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({ ...personalTokenResponse, token: 'latest-token' })
+      })
+      await store.remintUnifiedOnce()
+
+      expect(unifiedToken.value).toBe('latest-token')
+
+      // The stale re-mint resolves last and must not clobber the latest token.
+      resolveStale({
+        ok: true,
+        json: () =>
+          Promise.resolve({ ...personalTokenResponse, token: 'stale-token' })
+      })
+      await remintA
+
+      expect(unifiedToken.value).toBe('latest-token')
+    })
+
+    it('clears unifiedToken and stops the unified timer on clearWorkspaceContext', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve(personalTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+
+      await store.mintAtLogin()
+      expect(unifiedToken.value).toBe('unified-token-1')
+
+      store.clearWorkspaceContext()
+      expect(unifiedToken.value).toBeNull()
+
+      // Timer stopped: advancing past the refresh window triggers no re-mint.
+      mockFetch.mockClear()
+      await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('is fully dormant under the flag OFF: no unified network, timer, or rotation', async () => {
+      mockUnifiedCloudAuthEnabled.value = false
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn()
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+
+      await store.mintAtLogin()
+      await store.remintUnifiedOnce()
+      await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
+
+      expect(mockFetch).not.toHaveBeenCalled()
+      expect(unifiedToken.value).toBeNull()
+      expect(mockNotifyTokenRefreshed).not.toHaveBeenCalled()
+    })
+
+    it('keeps the legacy refresh path gated: both flags OFF ⇒ no network from any timer', async () => {
+      mockTeamWorkspacesEnabled.value = false
+      mockUnifiedCloudAuthEnabled.value = false
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi.fn()
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+
+      await store.switchWorkspace('workspace-123')
+      await store.mintAtLogin()
+      await store.refreshToken()
+      await vi.advanceTimersByTimeAsync(60 * 60 * 1000)
+
+      expect(mockFetch).not.toHaveBeenCalled()
     })
   })
 })

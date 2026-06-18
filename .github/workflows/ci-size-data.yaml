@@ -16,8 +16,21 @@ permissions:
   contents: read
 
 jobs:
-  collect:
+  changes:
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      should-run: ${{ steps.changes.outputs.should-run }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
+  collect:
+    needs: changes
+    if: ${{ needs.changes.outputs.should-run == 'true' }}
     runs-on: ubuntu-latest
 
     steps:
@@ -31,13 +44,6 @@ jobs:
 
       - name: Collect size data
         run: node scripts/size-collect.js
-
-      - name: Save PR metadata
-        if: ${{ github.event_name == 'pull_request' }}
-        run: |
-          echo ${{ github.event.number }} > ./temp/size/number.txt
-          echo ${{ github.base_ref }} > ./temp/size/base.txt
-          echo ${{ github.event.pull_request.head.sha }} > ./temp/size/head-sha.txt
 
       - name: Upload size data
         uses: actions/upload-artifact@v6

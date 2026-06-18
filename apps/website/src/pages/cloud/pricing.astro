@@ -1,0 +1,10 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import PriceSection from '../../components/pricing/PriceSection.vue'
+import WhatsIncludedSection from '../../components/pricing/WhatsIncludedSection.vue'
+---
+
+<BaseLayout title="Pricing — Comfy Cloud">
+  <PriceSection client:load />
+  <WhatsIncludedSection />
+</BaseLayout>

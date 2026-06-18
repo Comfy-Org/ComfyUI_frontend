@@ -80,6 +80,7 @@
                 size="icon-sm"
                 class="absolute top-4 right-4"
                 :loading="isLoadingBalance"
+                :aria-label="$t('subscription.refreshCredits')"
                 @click="handleRefresh"
               >
                 <i class="pi pi-sync text-sm text-text-secondary" />
@@ -225,7 +226,7 @@ import {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const authActions = useAuthActions()
 const { t, n } = useI18n()

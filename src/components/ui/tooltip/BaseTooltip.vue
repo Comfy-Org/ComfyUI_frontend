@@ -11,7 +11,7 @@ import {
 
 import type { TooltipVariants } from '@/components/ui/tooltip/tooltip.variants'
 import { tooltipVariants } from '@/components/ui/tooltip/tooltip.variants'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   text = '',

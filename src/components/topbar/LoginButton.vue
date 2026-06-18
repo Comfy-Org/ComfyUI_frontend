@@ -1,6 +1,7 @@
 <template>
   <Button
     v-if="!isLoggedIn"
+    data-testid="login-button"
     variant="textonly"
     size="icon"
     :class="cn('group rounded-full p-0 text-base-foreground', className)"
@@ -21,9 +22,10 @@
     @mouseout="hidePopover"
     @mouseover="cancelHidePopover"
   >
-    <div>
+    <div data-testid="login-button-popover">
       <div class="mb-1">{{ t('auth.loginButton.tooltipHelp') }}</div>
       <a
+        data-testid="login-button-popover-learn-more"
         :href="apiNodesOverviewUrl"
         target="_blank"
         class="text-neutral-500 hover:text-primary"
@@ -42,7 +44,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className } = defineProps<{
   class?: HTMLAttributes['class']

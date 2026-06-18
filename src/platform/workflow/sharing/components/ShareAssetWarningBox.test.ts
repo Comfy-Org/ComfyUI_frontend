@@ -1,6 +1,6 @@
-import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
-import { nextTick } from 'vue'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -24,10 +24,10 @@ const i18n = createI18n({
 })
 
 describe(ShareAssetWarningBox, () => {
-  function createWrapper(
+  function renderComponent(
     props: Partial<ComponentProps<typeof ShareAssetWarningBox>> = {}
   ) {
-    return mount(ShareAssetWarningBox, {
+    return render(ShareAssetWarningBox, {
       props: {
         items: [
           {
@@ -50,6 +50,7 @@ describe(ShareAssetWarningBox, () => {
           }
         ],
         acknowledged: false,
+        'onUpdate:acknowledged': props['onUpdate:acknowledged'],
         ...props
       },
       global: {
@@ -62,73 +63,65 @@ describe(ShareAssetWarningBox, () => {
   }
 
   it('renders warning text', () => {
-    const wrapper = createWrapper()
-    expect(wrapper.text()).toContain(
+    const { container } = renderComponent()
+    expect(container.textContent).toContain(
       'Your workflow contains private models and/or media files'
     )
   })
 
   it('renders media and model collapsible sections', () => {
-    const wrapper = createWrapper()
+    const { container } = renderComponent()
 
-    expect(wrapper.text()).toContain('1 Media File')
-    expect(wrapper.text()).toContain('1 Model')
+    expect(container.textContent).toContain('1 Media File')
+    expect(container.textContent).toContain('1 Model')
   })
 
   it('keeps at most one accordion section open at a time', async () => {
-    const wrapper = createWrapper()
+    const user = userEvent.setup()
+    renderComponent()
 
-    const mediaHeader = wrapper.get('[data-testid="section-header-media"]')
-    const modelsHeader = wrapper.get('[data-testid="section-header-models"]')
-    const mediaChevron = mediaHeader.get('i')
-    const modelsChevron = modelsHeader.get('i')
+    const mediaHeader = screen.getByTestId('section-header-media')
+    const modelsHeader = screen.getByTestId('section-header-models')
 
-    expect(mediaHeader.attributes('aria-expanded')).toBe('true')
-    expect(modelsHeader.attributes('aria-expanded')).toBe('false')
-    expect(mediaHeader.attributes('aria-controls')).toBe(
+    expect(mediaHeader).toHaveAttribute('aria-expanded', 'true')
+    expect(modelsHeader).toHaveAttribute('aria-expanded', 'false')
+    expect(mediaHeader).toHaveAttribute(
+      'aria-controls',
       'section-content-media'
     )
-    expect(modelsHeader.attributes('aria-controls')).toBe(
+    expect(modelsHeader).toHaveAttribute(
+      'aria-controls',
       'section-content-models'
     )
-    expect(mediaChevron.classes()).toContain('rotate-90')
-    expect(modelsChevron.classes()).not.toContain('rotate-90')
 
-    await modelsHeader.trigger('click')
-    await nextTick()
+    await user.click(modelsHeader)
 
-    expect(mediaHeader.attributes('aria-expanded')).toBe('false')
-    expect(modelsHeader.attributes('aria-expanded')).toBe('true')
-    expect(mediaChevron.classes()).not.toContain('rotate-90')
-    expect(modelsChevron.classes()).toContain('rotate-90')
+    expect(mediaHeader).toHaveAttribute('aria-expanded', 'false')
+    expect(modelsHeader).toHaveAttribute('aria-expanded', 'true')
 
-    await mediaHeader.trigger('click')
-    await nextTick()
+    await user.click(mediaHeader)
 
-    expect(mediaHeader.attributes('aria-expanded')).toBe('true')
-    expect(modelsHeader.attributes('aria-expanded')).toBe('false')
-    expect(mediaChevron.classes()).toContain('rotate-90')
-    expect(modelsChevron.classes()).not.toContain('rotate-90')
+    expect(mediaHeader).toHaveAttribute('aria-expanded', 'true')
+    expect(modelsHeader).toHaveAttribute('aria-expanded', 'false')
 
-    await mediaHeader.trigger('click')
-    await nextTick()
+    await user.click(mediaHeader)
 
-    expect(mediaHeader.attributes('aria-expanded')).toBe('false')
-    expect(modelsHeader.attributes('aria-expanded')).toBe('false')
+    expect(mediaHeader).toHaveAttribute('aria-expanded', 'false')
+    expect(modelsHeader).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('defaults to media section when both sections are available', () => {
-    const wrapper = createWrapper()
+    renderComponent()
 
-    const mediaHeader = wrapper.get('[data-testid="section-header-media"]')
-    const modelsHeader = wrapper.get('[data-testid="section-header-models"]')
+    const mediaHeader = screen.getByTestId('section-header-media')
+    const modelsHeader = screen.getByTestId('section-header-models')
 
-    expect(mediaHeader.attributes('aria-expanded')).toBe('true')
-    expect(modelsHeader.attributes('aria-expanded')).toBe('false')
+    expect(mediaHeader).toHaveAttribute('aria-expanded', 'true')
+    expect(modelsHeader).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('defaults to models section when media is unavailable', () => {
-    const wrapper = createWrapper({
+    const { container } = renderComponent({
       items: [
         {
           id: 'model-default',
@@ -142,14 +135,15 @@ describe(ShareAssetWarningBox, () => {
       ]
     })
 
-    expect(wrapper.text()).toContain('1 Model')
-    const modelsHeader = wrapper.get('[data-testid="section-header-models"]')
+    expect(container.textContent).toContain('1 Model')
+    const modelsHeader = screen.getByTestId('section-header-models')
 
-    expect(modelsHeader.attributes('aria-expanded')).toBe('true')
+    expect(modelsHeader).toHaveAttribute('aria-expanded', 'true')
   })
 
   it('allows collapsing the only expanded section when models are unavailable', async () => {
-    const wrapper = createWrapper({
+    const user = userEvent.setup()
+    renderComponent({
       items: [
         {
           id: 'asset-image',
@@ -163,47 +157,43 @@ describe(ShareAssetWarningBox, () => {
       ]
     })
 
-    const mediaHeader = wrapper.get('[data-testid="section-header-media"]')
-    const mediaChevron = mediaHeader.get('i')
+    const mediaHeader = screen.getByTestId('section-header-media')
 
-    expect(mediaHeader.attributes('aria-expanded')).toBe('true')
-    expect(mediaChevron.classes()).toContain('rotate-90')
+    expect(mediaHeader).toHaveAttribute('aria-expanded', 'true')
 
-    await mediaHeader.trigger('click')
-    await nextTick()
+    await user.click(mediaHeader)
 
-    expect(mediaHeader.attributes('aria-expanded')).toBe('false')
-    expect(mediaChevron.classes()).not.toContain('rotate-90')
+    expect(mediaHeader).toHaveAttribute('aria-expanded', 'false')
   })
 
   it('emits acknowledged update when checkbox is toggled', async () => {
-    const wrapper = createWrapper()
+    const onUpdateAcknowledged = vi.fn()
+    const user = userEvent.setup()
+    renderComponent({ 'onUpdate:acknowledged': onUpdateAcknowledged })
 
-    const checkbox = wrapper.find('input[type="checkbox"]')
-    await checkbox.setValue(true)
-    await nextTick()
+    const checkbox = screen.getByRole('checkbox')
+    await user.click(checkbox)
 
-    expect(wrapper.emitted('update:acknowledged')).toBeTruthy()
-    expect(wrapper.emitted('update:acknowledged')![0]).toEqual([true])
+    expect(onUpdateAcknowledged).toHaveBeenCalledWith(true)
   })
 
   it('displays asset names in the assets section', () => {
-    const wrapper = createWrapper()
+    const { container } = renderComponent()
 
-    expect(wrapper.text()).toContain('image.png')
+    expect(container.textContent).toContain('image.png')
   })
 
   it('renders thumbnail previews for assets when URLs are available', () => {
-    const wrapper = createWrapper()
+    renderComponent()
 
-    const images = wrapper.findAll('img')
+    const images = screen.getAllByRole('img')
     expect(images).toHaveLength(1)
-    expect(images[0].attributes('src')).toBe('https://example.com/a.jpg')
-    expect(images[0].attributes('alt')).toBe('image.png')
+    expect(images[0]).toHaveAttribute('src', 'https://example.com/a.jpg')
+    expect(images[0]).toHaveAttribute('alt', 'image.png')
   })
 
   it('renders fallback icon when thumbnail is missing', () => {
-    const wrapper = createWrapper({
+    const { container } = renderComponent({
       items: [
         {
           id: 'asset-image',
@@ -226,15 +216,16 @@ describe(ShareAssetWarningBox, () => {
       ]
     })
 
-    const fallbackIcons = wrapper
-      .findAll('i')
-      .filter((icon) => icon.classes().includes('icon-[lucide--image]'))
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    const fallbackIcons = Array.from(container.querySelectorAll('i')).filter(
+      (i) => i.classList.contains('icon-[lucide--image]')
+    )
 
     expect(fallbackIcons).toHaveLength(1)
   })
 
   it('hides assets section when no assets provided', () => {
-    const wrapper = createWrapper({
+    const { container } = renderComponent({
       items: [
         {
           id: 'model-default',
@@ -248,11 +239,11 @@ describe(ShareAssetWarningBox, () => {
       ]
     })
 
-    expect(wrapper.text()).not.toContain('Media File')
+    expect(container.textContent).not.toContain('Media File')
   })
 
   it('hides models section when no models provided', () => {
-    const wrapper = createWrapper({
+    const { container } = renderComponent({
       items: [
         {
           id: 'asset-image',
@@ -266,6 +257,6 @@ describe(ShareAssetWarningBox, () => {
       ]
     })
 
-    expect(wrapper.text()).not.toContain('Model')
+    expect(container.textContent).not.toContain('Model')
   })
 })

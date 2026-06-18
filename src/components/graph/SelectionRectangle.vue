@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="isVisible"
+    v-show="isVisible"
     class="pointer-events-none absolute z-9999 border border-blue-400 bg-blue-500/20"
     :style="rectangleStyle"
   />

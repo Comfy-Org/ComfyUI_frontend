@@ -1,4 +1,5 @@
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -31,11 +32,11 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 const createMockNode = (overrides: Record<string, unknown> = {}): LGraphNode =>
-  ({
+  fromAny<LGraphNode, unknown>({
     id: 1,
     type: 'TestNode',
     ...overrides
-  }) as Partial<LGraphNode> as LGraphNode
+  })
 
 const createMockOutputs = (
   images?: ExecutedWsMessage['output']['images']
@@ -58,6 +59,46 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     vi.clearAllMocks()
     app.nodeOutputs = {}
     app.nodePreviewImages = {}
+  })
+
+  it('keeps execution-keyed outputs distinct from locator-keyed outputs', () => {
+    const store = useNodeOutputStore()
+    const firstOutput = createMockOutputs([{ filename: 'first.png' }])
+    const secondOutput = createMockOutputs([{ filename: 'second.png' }])
+
+    store.setNodeOutputsByExecutionId('11:20:10', firstOutput)
+    store.setNodeOutputsByExecutionId('12:20:10', secondOutput)
+
+    expect(store.getNodeOutputByExecutionId('11:20:10')).toEqual(firstOutput)
+    expect(store.getNodeOutputByExecutionId('12:20:10')).toEqual(secondOutput)
+  })
+
+  it('merges execution-keyed outputs when merge is true', () => {
+    const store = useNodeOutputStore()
+    const initialOutput = createMockOutputs([{ filename: 'first.png' }])
+    const nextOutput = createMockOutputs([{ filename: 'second.png' }])
+
+    store.setNodeOutputsByExecutionId('11:20:10', initialOutput)
+    store.setNodeOutputsByExecutionId('11:20:10', nextOutput, { merge: true })
+
+    expect(store.getNodeOutputByExecutionId('11:20:10')?.images).toEqual([
+      { filename: 'first.png' },
+      { filename: 'second.png' }
+    ])
+  })
+
+  it('keeps execution-keyed previews distinct from locator-keyed previews', () => {
+    const store = useNodeOutputStore()
+
+    store.setNodePreviewsByExecutionId('11:20:10', ['blob:first'])
+    store.setNodePreviewsByExecutionId('12:20:10', ['blob:second'])
+
+    expect(store.getNodePreviewImagesByExecutionId('11:20:10')).toEqual([
+      'blob:first'
+    ])
+    expect(store.getNodePreviewImagesByExecutionId('12:20:10')).toEqual([
+      'blob:second'
+    ])
   })
 
   it('should update reactive nodeOutputs.value when merging outputs', () => {
@@ -296,6 +337,14 @@ describe('nodeOutputStore getPreviewParam', () => {
     const store = useNodeOutputStore()
     const node = createMockNode()
     const outputs = createMockOutputs([])
+    expect(store.getPreviewParam(node, outputs)).toBe('')
+    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+  })
+
+  it('should return empty string if outputs.images only contains null entries', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode()
+    const outputs = createMockOutputs(fromAny([null]))
     expect(store.getPreviewParam(node, outputs)).toBe('')
     expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
   })
@@ -623,7 +672,7 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
   it('should return early for null node', () => {
     const store = useNodeOutputStore()
 
-    store.setNodeOutputs(null as unknown as LGraphNode, 'test.png')
+    store.setNodeOutputs(fromAny<LGraphNode, unknown>(null), 'test.png')
 
     expect(Object.keys(store.nodeOutputs)).toHaveLength(0)
   })

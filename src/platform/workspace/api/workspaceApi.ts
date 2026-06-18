@@ -1,14 +1,19 @@
 import axios from 'axios'
 
-import { t } from '@/i18n'
+import type { SubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import type {
+  WorkspaceId,
+  WorkspaceInviteId
+} from '@/platform/workspace/workspaceTypes'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
+import type { UserId } from '@/types/authTypes'
 
 export type WorkspaceType = 'personal' | 'team'
 export type WorkspaceRole = 'owner' | 'member'
 
 interface Workspace {
-  id: string
+  id: WorkspaceId
   name: string
   type: WorkspaceType
   created_at: string
@@ -21,7 +26,7 @@ export interface WorkspaceWithRole extends Workspace {
 }
 
 export interface Member {
-  id: string
+  id: UserId
   name: string
   email: string
   joined_at: string
@@ -45,7 +50,7 @@ export interface ListMembersParams {
 }
 
 export interface PendingInvite {
-  id: string
+  id: WorkspaceInviteId
   email: string
   token: string
   invited_at: string
@@ -61,7 +66,7 @@ interface CreateInviteRequest {
 }
 
 interface AcceptInviteResponse {
-  workspace_id: string
+  workspace_id: WorkspaceId
   workspace_name: string
 }
 
@@ -77,12 +82,7 @@ interface ListWorkspacesResponse {
   workspaces: WorkspaceWithRole[]
 }
 
-export type SubscriptionTier =
-  | 'FREE'
-  | 'STANDARD'
-  | 'CREATOR'
-  | 'PRO'
-  | 'FOUNDERS_EDITION'
+export type { SubscriptionTier }
 export type SubscriptionDuration = 'MONTHLY' | 'ANNUAL'
 type PlanAvailabilityReason =
   | 'same_plan'
@@ -196,9 +196,13 @@ export interface PreviewSubscribeResponse {
   new_plan: PreviewPlanInfo
 }
 
-type BillingSubscriptionStatus = 'active' | 'scheduled' | 'ended' | 'canceled'
+export type BillingSubscriptionStatus =
+  | 'active'
+  | 'scheduled'
+  | 'ended'
+  | 'canceled'
 
-type BillingStatus =
+export type BillingStatus =
   | 'awaiting_payment_method'
   | 'pending_payment'
   | 'paid'
@@ -233,7 +237,7 @@ interface CreateTopupRequest {
 
 type TopupStatus = 'pending' | 'completed' | 'failed'
 
-interface CreateTopupResponse {
+export interface CreateTopupResponse {
   billing_op_id: string
   topup_id: string
   status: TopupStatus
@@ -288,27 +292,7 @@ const workspaceApiClient = axios.create({
 })
 
 async function getAuthHeaderOrThrow() {
-  const authHeader = await useAuthStore().getAuthHeader()
-  if (!authHeader) {
-    throw new WorkspaceApiError(
-      t('toastMessages.userNotAuthenticated'),
-      401,
-      'NOT_AUTHENTICATED'
-    )
-  }
-  return authHeader
-}
-
-async function getFirebaseHeaderOrThrow() {
-  const authHeader = await useAuthStore().getFirebaseAuthHeader()
-  if (!authHeader) {
-    throw new WorkspaceApiError(
-      t('toastMessages.userNotAuthenticated'),
-      401,
-      'NOT_AUTHENTICATED'
-    )
-  }
-  return authHeader
+  return useAuthStore().getAuthHeaderOrThrow()
 }
 
 function handleAxiosError(err: unknown): never {
@@ -361,7 +345,7 @@ export const workspaceApi = {
    * PATCH /api/workspaces/:id
    */
   async update(
-    workspaceId: string,
+    workspaceId: WorkspaceId,
     payload: UpdateWorkspacePayload
   ): Promise<WorkspaceWithRole> {
     const headers = await getAuthHeaderOrThrow()
@@ -381,7 +365,7 @@ export const workspaceApi = {
    * Delete a workspace (owner only)
    * DELETE /api/workspaces/:id
    */
-  async delete(workspaceId: string): Promise<void> {
+  async delete(workspaceId: WorkspaceId): Promise<void> {
     const headers = await getAuthHeaderOrThrow()
     try {
       await workspaceApiClient.delete(
@@ -431,7 +415,7 @@ export const workspaceApi = {
    * Remove a member from the workspace.
    * DELETE /api/workspace/members/:userId
    */
-  async removeMember(userId: string): Promise<void> {
+  async removeMember(userId: UserId): Promise<void> {
     const headers = await getAuthHeaderOrThrow()
     try {
       await workspaceApiClient.delete(
@@ -482,7 +466,7 @@ export const workspaceApi = {
    * Revoke a pending invite.
    * DELETE /api/workspace/invites/:inviteId
    */
-  async revokeInvite(inviteId: string): Promise<void> {
+  async revokeInvite(inviteId: WorkspaceInviteId): Promise<void> {
     const headers = await getAuthHeaderOrThrow()
     try {
       await workspaceApiClient.delete(
@@ -500,7 +484,7 @@ export const workspaceApi = {
    * Uses Firebase auth (user identity) since the user isn't yet a workspace member.
    */
   async acceptInvite(token: string): Promise<AcceptInviteResponse> {
-    const headers = await getFirebaseHeaderOrThrow()
+    const headers = await useAuthStore().getFirebaseAuthHeaderOrThrow()
     try {
       const response = await workspaceApiClient.post<AcceptInviteResponse>(
         api.apiURL(`/invites/${token}/accept`),

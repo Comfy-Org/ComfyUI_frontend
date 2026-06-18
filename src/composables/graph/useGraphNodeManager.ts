@@ -3,15 +3,16 @@
  * Provides event-driven reactivity with performance optimizations
  */
 import { reactiveComputed } from '@vueuse/core'
+import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { matchPromotedInput } from '@/core/graph/subgraph/matchPromotedInput'
+import {
+  inputForWidget,
+  promotedInputSource,
+  promotedInputWidgets
+} from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -23,9 +24,13 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
+import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
+import { getWidgetIdForNode } from '@/utils/litegraphUtil'
+import type { WidgetId } from '@/types/widgetId'
 
 import type {
   LGraph,
@@ -33,7 +38,8 @@ import type {
   LGraphNode,
   LGraphTriggerAction,
   LGraphTriggerEvent,
-  LGraphTriggerParam
+  LGraphTriggerParam,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
@@ -45,17 +51,19 @@ export interface WidgetSlotMetadata {
   linked: boolean
   originNodeId?: string
   originOutputName?: string
+  type: string
 }
+
+type Badges = (LGraphBadge | (() => LGraphBadge))[]
 
 /**
  * Minimal render-specific widget data extracted from LiteGraph widgets.
  * Value and metadata (label, hidden, disabled, etc.) are accessed via widgetValueStore.
  */
 export interface SafeWidgetData {
+  widgetId?: WidgetId
   nodeId?: NodeId
-  storeNodeId?: NodeId
   name: string
-  storeName?: string
   type: string
   /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
   callback?: ((value: unknown) => void) | undefined
@@ -74,17 +82,12 @@ export interface SafeWidgetData {
     advanced?: boolean
     hidden?: boolean
     read_only?: boolean
+    values?: unknown
   }
   /** Input specification from node definition */
   spec?: InputSpec
   /** Input slot metadata (index and link status) */
   slotMetadata?: WidgetSlotMetadata
-  /**
-   * Original LiteGraph widget name used for slot metadata matching.
-   * For promoted widgets, `name` is `sourceWidgetName` (interior widget name)
-   * which differs from the subgraph node's input slot widget name.
-   */
-  slotName?: string
   /**
    * Execution ID of the interior node that owns the source widget.
    * Only set for promoted widgets where the source node differs from the
@@ -92,10 +95,14 @@ export interface SafeWidgetData {
    * execution ID (e.g. `"65:42"` vs the host node's `"65"`).
    */
   sourceExecutionId?: string
+  /**
+   * Interior source widget name. Only set for promoted widgets, where `name`
+   * is the host input slot name; missing-model lookups key by the interior
+   * widget name, which can differ from the slot name (e.g. after a rename).
+   */
+  sourceWidgetName?: string
   /** Tooltip text from the resolved widget. */
   tooltip?: string
-  /** For promoted widgets, the display label from the subgraph input slot. */
-  promotedLabel?: string
 }
 
 export interface VueNodeData {
@@ -106,7 +113,7 @@ export interface VueNodeData {
   title: string
   type: string
   apiNode?: boolean
-  badges?: (LGraphBadge | (() => LGraphBadge))[]
+  badges?: Badges
   bgcolor?: string
   color?: string
   flags?: {
@@ -136,24 +143,10 @@ export interface GraphNodeManager {
   cleanup(): void
 }
 
-function isPromotedDOMWidget(widget: IBaseWidget): boolean {
-  if (!isPromotedWidgetView(widget)) return false
-  const sourceWidget = resolvePromotedWidgetSource(widget.node, widget)
-  if (!sourceWidget) return false
-
-  const innerWidget = sourceWidget.widget
-  return (
-    ('element' in innerWidget && !!innerWidget.element) ||
-    ('component' in innerWidget && !!innerWidget.component)
-  )
-}
-
 export function getControlWidget(
   widget: IBaseWidget
 ): SafeControlWidget | undefined {
-  const cagWidget = widget.linkedWidgets?.find(
-    (w) => w.name == 'control_after_generate'
-  )
+  const cagWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
   if (!cagWidget) return
   return {
     value: normalizeControlOption(cagWidget.value),
@@ -209,77 +202,83 @@ function normalizeWidgetValue(value: unknown): WidgetValue {
   return undefined
 }
 
+function extractWidgetDisplayOptions(
+  widget: IBaseWidget
+): SafeWidgetData['options'] {
+  if (!widget.options) return undefined
+
+  return {
+    canvasOnly: widget.options.canvasOnly,
+    advanced: widget.options?.advanced ?? widget.advanced,
+    hidden: widget.options.hidden,
+    read_only: widget.options.read_only
+  }
+}
+
+function isDOMBackedWidget(widget: IBaseWidget): boolean {
+  return (
+    ('element' in widget && !!widget.element) ||
+    ('component' in widget && !!widget.component)
+  )
+}
+
+interface PromotedWidgetMetadata {
+  controlWidget?: SafeControlWidget
+  isDOMWidget: boolean
+  sourceExecutionId?: string
+  sourceWidgetName?: string
+}
+
+/**
+ * Resolves the interior source of a promoted subgraph input to derive the
+ * metadata that backend lookups key by (execution ID, interior widget name)
+ * plus the source widget's control + DOM nature. Also seeds host widget state
+ * if it is somehow missing. Returns undefined when the widget is not promoted.
+ */
+function resolvePromotedMetadata(
+  node: SubgraphNode,
+  widget: IBaseWidget
+): PromotedWidgetMetadata | undefined {
+  const input = inputForWidget(node, widget)
+  if (!input?.widgetId) return undefined
+  const source = promotedInputSource(node, input)
+  if (!source) return undefined
+
+  const resolution = resolveConcretePromotedWidget(
+    node,
+    source.nodeId,
+    source.widgetName
+  )
+  const resolved =
+    resolution.status === 'resolved' ? resolution.resolved : undefined
+  const sourceWidget = resolved?.widget
+  const sourceNode = resolved?.node
+
+  ensurePromotedHostWidgetState(input.widgetId, input, sourceWidget)
+
+  return {
+    controlWidget: sourceWidget ? getControlWidget(sourceWidget) : undefined,
+    isDOMWidget: sourceWidget ? isDOMBackedWidget(sourceWidget) : false,
+    sourceExecutionId:
+      sourceNode && app.rootGraph
+        ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
+        : undefined,
+    sourceWidgetName: sourceWidget?.name
+  }
+}
+
 function safeWidgetMapper(
   node: LGraphNode,
   slotMetadata: Map<string, WidgetSlotMetadata>
 ): (widget: IBaseWidget) => SafeWidgetData {
-  function extractWidgetDisplayOptions(
-    widget: IBaseWidget
-  ): SafeWidgetData['options'] {
-    if (!widget.options) return undefined
-
-    return {
-      canvasOnly: widget.options.canvasOnly,
-      advanced: widget.options?.advanced ?? widget.advanced,
-      hidden: widget.options.hidden,
-      read_only: widget.options.read_only
-    }
-  }
-
-  function resolvePromotedSourceByInputName(inputName: string): {
-    sourceNodeId: string
-    sourceWidgetName: string
-    disambiguatingSourceNodeId?: string
-  } | null {
-    const resolvedTarget = resolveSubgraphInputTarget(node, inputName)
-    if (!resolvedTarget) return null
-
-    return {
-      sourceNodeId: resolvedTarget.nodeId,
-      sourceWidgetName: resolvedTarget.widgetName,
-      disambiguatingSourceNodeId: resolvedTarget.sourceNodeId
-    }
-  }
-
-  function resolvePromotedWidgetIdentity(widget: IBaseWidget): {
-    displayName: string
-    promotedSource: PromotedWidgetSource | null
-  } {
-    if (!isPromotedWidgetView(widget)) {
-      return {
-        displayName: widget.name,
-        promotedSource: null
-      }
-    }
-
-    const matchedInput = matchPromotedInput(node.inputs, widget)
-    const promotedInputName = matchedInput?.name
-    const displayName = promotedInputName ?? widget.name
-    const directSource = {
-      sourceNodeId: widget.sourceNodeId,
-      sourceWidgetName: widget.sourceWidgetName,
-      disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
-    }
-    const promotedSource =
-      matchedInput?._widget === widget
-        ? (resolvePromotedSourceByInputName(displayName) ?? directSource)
-        : directSource
-
-    return {
-      displayName,
-      promotedSource
-    }
-  }
+  const duplicateIndexByKey = new Map<string, number>()
 
   return function (widget) {
     try {
-      const { displayName, promotedSource } =
-        resolvePromotedWidgetIdentity(widget)
-
-      // Get shared enhancements (controlWidget, spec, nodeType)
-      const sharedEnhancements = getSharedWidgetEnhancements(node, widget)
-      const slotInfo =
-        slotMetadata.get(displayName) ?? slotMetadata.get(widget.name)
+      const duplicateKey = `${widget.name}:${widget.type}`
+      const duplicateIndex = duplicateIndexByKey.get(duplicateKey) ?? 0
+      duplicateIndexByKey.set(duplicateKey, duplicateIndex + 1)
+      const slotInfo = slotMetadata.get(widget.name)
 
       // Wrapper callback specific to Nodes 2.0 rendering
       const callback = (v: unknown) => {
@@ -293,71 +292,26 @@ function safeWidgetMapper(
         node.widgets?.forEach((w) => w.triggerDraw?.())
       }
 
-      const isPromotedPseudoWidget =
-        isPromotedWidgetView(widget) && widget.sourceWidgetName.startsWith('$$')
-
-      // Extract only render-critical options (canvasOnly, advanced, read_only)
-      const options = extractWidgetDisplayOptions(widget)
-      const subgraphId = node.isSubgraphNode() && node.subgraph.id
-
-      const resolvedSourceResult =
-        isPromotedWidgetView(widget) && promotedSource
-          ? resolveConcretePromotedWidget(
-              node,
-              promotedSource.sourceNodeId,
-              promotedSource.sourceWidgetName,
-              promotedSource.disambiguatingSourceNodeId
-            )
-          : null
-      const resolvedSource =
-        resolvedSourceResult?.status === 'resolved'
-          ? resolvedSourceResult.resolved
-          : undefined
-      const sourceWidget = resolvedSource?.widget
-      const sourceNode = resolvedSource?.node
-
-      const effectiveWidget = sourceWidget ?? widget
-
-      const localId = isPromotedWidgetView(widget)
-        ? String(
-            sourceNode?.id ??
-              promotedSource?.disambiguatingSourceNodeId ??
-              promotedSource?.sourceNodeId
-          )
+      const promoted = node.isSubgraphNode()
+        ? resolvePromotedMetadata(node, widget)
         : undefined
-      const nodeId =
-        subgraphId && localId ? `${subgraphId}:${localId}` : undefined
-      const storeName = isPromotedWidgetView(widget)
-        ? (sourceWidget?.name ?? promotedSource?.sourceWidgetName)
-        : undefined
-      const name = storeName ?? displayName
 
       return {
-        nodeId,
-        storeNodeId: nodeId,
-        name,
-        storeName,
-        type: effectiveWidget.type,
-        ...sharedEnhancements,
+        widgetId: getWidgetIdForNode(node, widget, duplicateIndex),
+        name: widget.name,
+        type: widget.type,
+        ...getSharedWidgetEnhancements(node, widget),
+        ...(promoted?.controlWidget && {
+          controlWidget: promoted.controlWidget
+        }),
         callback,
-        hasLayoutSize: typeof effectiveWidget.computeLayoutSize === 'function',
-        isDOMWidget: isDOMWidget(widget) || isPromotedDOMWidget(widget),
-        options: isPromotedPseudoWidget
-          ? {
-              ...(extractWidgetDisplayOptions(effectiveWidget) ?? options),
-              canvasOnly: true
-            }
-          : (extractWidgetDisplayOptions(effectiveWidget) ?? options),
+        hasLayoutSize: typeof widget.computeLayoutSize === 'function',
+        isDOMWidget: promoted?.isDOMWidget ?? isDOMWidget(widget),
+        options: extractWidgetDisplayOptions(widget),
         slotMetadata: slotInfo,
-        // For promoted widgets, name is sourceWidgetName while widget.name
-        // is the subgraph input slot name — store the slot name for lookups.
-        slotName: name !== widget.name ? widget.name : undefined,
-        sourceExecutionId:
-          sourceNode && app.rootGraph
-            ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
-            : undefined,
-        tooltip: widget.tooltip,
-        promotedLabel: isPromotedWidgetView(widget) ? widget.label : undefined
+        sourceExecutionId: promoted?.sourceExecutionId,
+        sourceWidgetName: promoted?.sourceWidgetName,
+        tooltip: widget.tooltip
       }
     } catch (error) {
       console.warn(
@@ -373,6 +327,24 @@ function safeWidgetMapper(
   }
 }
 
+function ensurePromotedHostWidgetState(
+  id: WidgetId,
+  input: INodeInputSlot,
+  sourceWidget: IBaseWidget | undefined
+): void {
+  if (!sourceWidget) return
+  const store = useWidgetValueStore()
+  if (store.getWidget(id)) return
+  store.registerWidget(id, {
+    type: sourceWidget.type,
+    value: sourceWidget.value,
+    options: cloneDeep(sourceWidget.options ?? {}),
+    label: input.label ?? input.name,
+    serialize: sourceWidget.serialize,
+    disabled: sourceWidget.disabled
+  })
+}
+
 function buildSlotMetadata(
   inputs: INodeInputSlot[] | undefined,
   graphRef: LGraph | null | undefined
@@ -384,10 +356,10 @@ function buildSlotMetadata(
 
     if (input.link != null && graphRef) {
       const link = graphRef.getLink(input.link)
-      if (link) {
+      const originNode = link ? graphRef.getNodeById(link.origin_id) : null
+      if (link && originNode) {
         originNodeId = String(link.origin_id)
-        const originNode = graphRef.getNodeById(link.origin_id)
-        originOutputName = originNode?.outputs?.[link.origin_slot]?.name
+        originOutputName = originNode.outputs?.[link.origin_slot]?.name
       }
     }
 
@@ -395,7 +367,8 @@ function buildSlotMetadata(
       index,
       linked: input.link != null,
       originNodeId,
-      originOutputName
+      originOutputName,
+      type: String(input.type)
     }
     if (input.name) metadata.set(input.name, slotInfo)
     if (input.widget?.name) metadata.set(input.widget.name, slotInfo)
@@ -473,14 +446,16 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   })
 
   const safeWidgets = reactiveComputed<SafeWidgetData[]>(() => {
-    const widgetsSnapshot = node.widgets ?? []
-
     const freshMetadata = buildSlotMetadata(node.inputs, node.graph)
     slotMetadata.clear()
     for (const [key, value] of freshMetadata) {
       slotMetadata.set(key, value)
     }
-    return widgetsSnapshot.map(safeWidgetMapper(node, slotMetadata))
+
+    const widgets = node.isSubgraphNode()
+      ? promotedInputWidgets(node)
+      : (node.widgets ?? [])
+    return widgets.map(safeWidgetMapper(node, slotMetadata))
   })
 
   const nodeType =
@@ -536,7 +511,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Update only widgets with new slot metadata, keeping other widget data intact
     for (const widget of currentData.widgets ?? []) {
-      widget.slotMetadata = slotMetadata.get(widget.slotName ?? widget.name)
+      widget.slotMetadata = slotMetadata.get(widget.name)
     }
   }
 
@@ -784,6 +759,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
                 showAdvanced: Boolean(propertyEvent.newValue)
               })
               break
+            case 'badges':
+              vueNodeData.set(nodeId, {
+                ...currentData,
+                badges: propertyEvent.newValue as Badges
+              })
+              break
           }
         }
       },
@@ -808,7 +789,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         if (slotLabelEvent.slotType !== NodeSlotType.INPUT && nodeRef.outputs) {
           nodeRef.outputs = [...nodeRef.outputs]
         }
-        // Re-extract widget data so promotedLabel reflects the rename
+        // Re-extract widget data so the label reflects the rename
         vueNodeData.set(nodeId, extractVueNodeData(nodeRef))
       }
     }

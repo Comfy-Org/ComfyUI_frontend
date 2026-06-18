@@ -138,6 +138,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { jobSortModes } from '@/composables/queue/useJobList'
 import type { JobSortMode } from '@/composables/queue/useJobList'
 import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
+import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 
 const {
   hideShowAssetsAction = false,
@@ -163,6 +164,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
 const showAssetsAction = computed(() => !hideShowAssetsAction)
 const searchPlaceholderText = computed(
@@ -177,6 +179,7 @@ const onSelectWorkflowFilter = (
   value: 'all' | 'current',
   close: () => void
 ) => {
+  trackFeatureUsed()
   selectWorkflowFilter(value)
   close()
 }
@@ -186,6 +189,7 @@ const selectSortMode = (value: JobSortMode) => {
 }
 
 const onSelectSortMode = (value: JobSortMode, close: () => void) => {
+  trackFeatureUsed()
   selectSortMode(value)
   close()
 }

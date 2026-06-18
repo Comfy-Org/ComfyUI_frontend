@@ -86,7 +86,7 @@
                   variant="secondary"
                   size="icon"
                   :aria-label="t('rightSidePanel.togglePanel')"
-                  @click="rightSidePanelStore.togglePanel"
+                  @click="openRightSidePanel"
                 >
                   <i class="icon-[lucide--panel-right] size-4" />
                 </Button>
@@ -157,6 +157,7 @@ import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
@@ -172,7 +173,7 @@ import {
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
@@ -281,6 +282,14 @@ const showErrorIndicatorOnPanelButton = computed(
 
 // Right side panel toggle
 const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
+
+function openRightSidePanel() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_opened',
+    element_group: 'top_menu'
+  })
+  rightSidePanelStore.togglePanel()
+}
 
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()

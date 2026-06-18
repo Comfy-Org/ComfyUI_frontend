@@ -36,7 +36,7 @@ export function isTransparent(color: string) {
   return false
 }
 
-function rgbToHsl({ r, g, b }: RGB): HSL {
+export function rgbToHsl({ r, g, b }: RGB): HSL {
   r /= 255
   g /= 255
   b /= 255
@@ -82,6 +82,11 @@ export function hexToRgb(hex: string): RGB {
   return { r, g, b }
 }
 
+export function hexToInt(hex: string): number {
+  const { r, g, b } = hexToRgb(hex)
+  return (r << 16) | (g << 8) | b
+}
+
 export function rgbToHex({ r, g, b }: RGB): string {
   const toHex = (n: number) =>
     Math.max(0, Math.min(255, Math.round(n)))
@@ -100,9 +105,7 @@ export function hsbToRgb({ h, s, b }: HSB): RGB {
   const x = c * (1 - Math.abs(((hh / 60) % 2) - 1))
   const m = vv - c
 
-  let rp = 0,
-    gp = 0,
-    bp = 0
+  let rp: number, gp: number, bp: number
 
   if (hh < 60) {
     rp = c
@@ -157,9 +160,7 @@ export function parseToRgb(color: string): RGB {
   const x = c * (1 - Math.abs(((h * 6) % 2) - 1))
   const m = l - c / 2
 
-  let r = 0,
-    g = 0,
-    b = 0
+  let r: number, g: number, b: number
 
   if (h < 1 / 6) {
     r = c

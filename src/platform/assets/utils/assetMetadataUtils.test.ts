@@ -1,24 +1,39 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetAdditionalTags,
   getAssetBaseModel,
   getAssetBaseModels,
+  getAssetCardTitle,
   getAssetDescription,
+  getAssetDisplayFilename,
   getAssetDisplayName,
+  getAssetFilename,
   getAssetModelType,
   getAssetSourceUrl,
+  getAssetStoredFilename,
   getAssetTriggerPhrases,
   getAssetUserDescription,
   getSourceName
 } from '@/platform/assets/utils/assetMetadataUtils'
 
+const { isCloudRef } = vi.hoisted(() => ({
+  isCloudRef: { value: true }
+}))
+
+vi.mock('@/platform/distribution/types', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  get isCloud() {
+    return isCloudRef.value
+  }
+}))
+
 describe('assetMetadataUtils', () => {
   const mockAsset: AssetItem = {
     id: 'test-id',
     name: 'test-model',
-    asset_hash: 'hash123',
+    hash: 'hash123',
     size: 1024,
     mime_type: 'application/octet-stream',
     tags: ['models', 'checkpoints'],
@@ -188,6 +203,11 @@ describe('assetMetadataUtils', () => {
         expected: 'Civitai'
       },
       {
+        name: 'returns Civitai for civitai.red',
+        url: 'https://civitai.red/models/123',
+        expected: 'Civitai'
+      },
+      {
         name: 'returns Hugging Face for huggingface.co',
         url: 'https://huggingface.co/org/model',
         expected: 'Hugging Face'
@@ -284,6 +304,117 @@ describe('assetMetadataUtils', () => {
 
     it('should return empty string when no metadata', () => {
       expect(getAssetUserDescription(mockAsset)).toBe('')
+    })
+  })
+
+  describe('getAssetStoredFilename', () => {
+    afterEach(() => {
+      isCloudRef.value = true
+    })
+
+    it('returns the content hash on cloud when present', () => {
+      isCloudRef.value = true
+      expect(getAssetStoredFilename(mockAsset)).toBe('hash123')
+    })
+
+    it('falls back to name on cloud when no hash is present', () => {
+      isCloudRef.value = true
+      const asset = { ...mockAsset, hash: undefined }
+      expect(getAssetStoredFilename(asset)).toBe('test-model')
+    })
+
+    it('returns name on OSS regardless of hash', () => {
+      isCloudRef.value = false
+      expect(getAssetStoredFilename(mockAsset)).toBe('test-model')
+    })
+  })
+
+  describe('getAssetFilename', () => {
+    it('returns user_metadata.filename when present', () => {
+      const asset = {
+        ...mockAsset,
+        user_metadata: { filename: 'from_user.png' },
+        metadata: { filename: 'from_meta.png' },
+        display_name: 'from_display.png'
+      }
+      expect(getAssetFilename(asset)).toBe('from_user.png')
+    })
+
+    it('falls through to metadata.filename then asset.name (never display_name)', () => {
+      const asset = {
+        ...mockAsset,
+        user_metadata: {},
+        metadata: {},
+        display_name: 'from_display.png'
+      }
+      expect(getAssetFilename(asset)).toBe(mockAsset.name)
+    })
+  })
+
+  describe('getAssetDisplayFilename', () => {
+    it('prefers user_metadata.filename over everything else', () => {
+      const asset = {
+        ...mockAsset,
+        user_metadata: { filename: 'from_user.png' },
+        metadata: { filename: 'from_meta.png' },
+        display_name: 'from_display.png'
+      }
+      expect(getAssetDisplayFilename(asset)).toBe('from_user.png')
+    })
+
+    it('falls back to display_name when filename metadata is absent', () => {
+      const asset = {
+        ...mockAsset,
+        user_metadata: {},
+        metadata: {},
+        display_name: 'ComfyUI_00001_.png'
+      }
+      expect(getAssetDisplayFilename(asset)).toBe('ComfyUI_00001_.png')
+    })
+
+    it('falls back to asset.name when neither filename metadata nor display_name exist', () => {
+      expect(getAssetDisplayFilename(mockAsset)).toBe(mockAsset.name)
+    })
+  })
+
+  describe('getAssetCardTitle', () => {
+    it('returns user_metadata.name when it differs from asset.name', () => {
+      const asset = {
+        ...mockAsset,
+        name: 'lora_v1.safetensors',
+        user_metadata: { name: 'My Favorite LoRA' },
+        metadata: { filename: 'lora_v1.safetensors' }
+      }
+      expect(getAssetCardTitle(asset)).toBe('My Favorite LoRA')
+    })
+
+    it('returns metadata.name when user_metadata.name is absent and it differs from asset.name', () => {
+      const asset = {
+        ...mockAsset,
+        name: 'model_file.safetensors',
+        metadata: { name: 'Curated Model' }
+      }
+      expect(getAssetCardTitle(asset)).toBe('Curated Model')
+    })
+
+    it('falls through to the filename helper when curated name equals asset.name (hash case)', () => {
+      const HASH = 'blake3:abc'
+      const asset = {
+        ...mockAsset,
+        name: HASH,
+        user_metadata: { name: HASH },
+        metadata: { filename: 'sunset.png' }
+      }
+      expect(getAssetCardTitle(asset)).toBe('sunset.png')
+    })
+
+    it('falls through to display_name when neither curated name nor filename metadata exist', () => {
+      const asset = {
+        ...mockAsset,
+        name: 'hash.png',
+        display_name: 'pretty.png'
+      }
+      expect(getAssetCardTitle(asset)).toBe('pretty.png')
     })
   })
 })

@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import SquareChip from '../chip/SquareChip.vue'
+import Tag from '@/components/chip/Tag.vue'
 import CardBottom from './CardBottom.vue'
 import CardContainer from './CardContainer.vue'
 import CardDescription from './CardDescription.vue'
@@ -174,7 +174,7 @@ const createCardTemplate = (args: CardStoryArgs) => ({
     CardTitle,
     CardDescription,
     Button,
-    SquareChip
+    Tag
   },
   setup() {
     const favorited = ref(false)
@@ -218,7 +218,7 @@ const createCardTemplate = (args: CardStoryArgs) => ({
             </template>
             
             <template v-if="args.showTopLeft" #top-left>
-              <SquareChip label="Featured" />
+              <Tag label="Featured" />
             </template>
             
             <template v-if="args.showTopRight" #top-right>
@@ -238,17 +238,17 @@ const createCardTemplate = (args: CardStoryArgs) => ({
             </template>
             
             <template v-if="args.showBottomLeft" #bottom-left>
-              <SquareChip label="New" />
+              <Tag label="New" />
             </template>
             
             <template v-if="args.showBottomRight" #bottom-right>
-              <SquareChip v-if="args.showFileType" :label="args.fileType" />
-              <SquareChip v-if="args.showFileSize" :label="args.fileSize" />
-              <SquareChip v-for="tag in args.tags" :key="tag" :label="tag">
+              <Tag v-if="args.showFileType" :label="args.fileType" />
+              <Tag v-if="args.showFileSize" :label="args.fileSize" />
+              <Tag v-for="tag in args.tags" :key="tag" :label="tag">
                 <template v-if="tag === 'LoRA'" #icon>
                   <i class="icon-[lucide--folder] size-3" />
                 </template>
-              </SquareChip>
+              </Tag>
             </template>
           </CardTop>
         </template>

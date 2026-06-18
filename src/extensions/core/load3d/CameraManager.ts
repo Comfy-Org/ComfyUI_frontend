@@ -144,6 +144,10 @@ export class CameraManager implements CameraManagerInterface {
   }
 
   getCameraState(): CameraState {
+    const { x, y, z, w } = this.activeCamera.quaternion
+    const activeCamera = this.activeCamera as
+      | THREE.PerspectiveCamera
+      | THREE.OrthographicCamera
     return {
       position: this.activeCamera.position.clone(),
       target: this.controls?.target.clone() || new THREE.Vector3(),
@@ -151,7 +155,18 @@ export class CameraManager implements CameraManagerInterface {
         this.activeCamera instanceof THREE.OrthographicCamera
           ? this.activeCamera.zoom
           : (this.activeCamera as THREE.PerspectiveCamera).zoom,
-      cameraType: this.getCurrentCameraType()
+      cameraType: this.getCurrentCameraType(),
+      quaternion: { x, y, z, w },
+      fov: this.perspectiveCamera.fov,
+      aspect: this.perspectiveCamera.aspect,
+      near: activeCamera.near,
+      far: activeCamera.far,
+      frustum: {
+        left: this.orthographicCamera.left,
+        right: this.orthographicCamera.right,
+        top: this.orthographicCamera.top,
+        bottom: this.orthographicCamera.bottom
+      }
     }
   }
 
@@ -190,28 +205,40 @@ export class CameraManager implements CameraManagerInterface {
     }
   }
 
-  setupForModel(size: THREE.Vector3): void {
+  setupForModel(
+    size: THREE.Vector3,
+    center: THREE.Vector3 = new THREE.Vector3(0, size.y / 2, 0)
+  ): void {
+    const maxDim = Math.max(size.x, size.y, size.z)
     const distance = Math.max(size.x, size.z) * 2
-    const height = size.y * 2
+    const height = center.y + maxDim
 
-    this.perspectiveCamera.position.set(distance, height, distance)
-    this.orthographicCamera.position.set(distance, height, distance)
+    this.perspectiveCamera.position.set(
+      center.x + distance,
+      height,
+      center.z + distance
+    )
+    this.orthographicCamera.position.set(
+      center.x + distance,
+      height,
+      center.z + distance
+    )
 
     if (this.activeCamera === this.perspectiveCamera) {
-      this.perspectiveCamera.lookAt(0, size.y / 2, 0)
+      this.perspectiveCamera.lookAt(center)
       this.perspectiveCamera.updateProjectionMatrix()
     } else {
-      const frustumSize = Math.max(size.x, size.y, size.z) * 2
+      const frustumSize = maxDim * 2
       const aspect = this.perspectiveCamera.aspect
       this.orthographicCamera.left = (-frustumSize * aspect) / 2
       this.orthographicCamera.right = (frustumSize * aspect) / 2
       this.orthographicCamera.top = frustumSize / 2
       this.orthographicCamera.bottom = -frustumSize / 2
-      this.orthographicCamera.lookAt(0, size.y / 2, 0)
+      this.orthographicCamera.lookAt(center)
       this.orthographicCamera.updateProjectionMatrix()
     }
 
-    this.controls?.target.set(0, size.y / 2, 0)
+    this.controls?.target.copy(center)
     this.controls?.update()
   }
 

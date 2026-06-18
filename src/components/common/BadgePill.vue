@@ -3,7 +3,7 @@
     data-testid="badge-pill"
     :class="
       cn(
-        'flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-xxs',
+        'flex items-center gap-1 rounded-sm border px-1.5 py-0.5 text-2xs',
         textColorClass
       )
     "
@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { borderStyle, filled } = defineProps<{
   text?: string

@@ -40,7 +40,7 @@
 import ScrollPanel from 'primevue/scrollpanel'
 import Toolbar from 'primevue/toolbar'
 
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const props = defineProps<{
   title: string

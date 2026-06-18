@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeId, Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -8,13 +8,17 @@ import {
   LGraphNode,
   LiteGraph,
   LLink,
-  Reroute
+  Reroute,
+  SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
-import { usePromotionStore } from '@/stores/promotionStore'
+import type { UUID } from '@/utils/uuid'
+import { zeroUuid } from '@/utils/uuid'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 import {
+  createTestSubgraph,
   createTestSubgraphData,
   createTestSubgraphNode
 } from './subgraph/__fixtures__/subgraphHelpers'
@@ -279,23 +283,22 @@ describe('Graph Clearing and Callbacks', () => {
     expect(graph.nodes.length).toBe(0)
   })
 
-  test('clear() removes graph-scoped promotion and widget-value state', () => {
+  test('clear() removes graph-scoped preview and widget-value state', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
 
     const graph = new LGraph()
     const graphId = 'graph-clear-cleanup' as UUID
     graph.id = graphId
 
-    const promotionStore = usePromotionStore()
-    promotionStore.promote(graphId, 1 as NodeId, {
+    const previewExposureStore = usePreviewExposureStore()
+    previewExposureStore.addExposure(graphId, `${graphId}:1`, {
       sourceNodeId: '10',
-      sourceWidgetName: 'seed'
+      sourcePreviewName: '$$canvas-image-preview'
     })
 
     const widgetValueStore = useWidgetValueStore()
-    widgetValueStore.registerWidget(graphId, {
-      nodeId: '10' as NodeId,
-      name: 'seed',
+    const seedWidgetId = widgetId(graphId, '10' as NodeId, 'seed')
+    widgetValueStore.registerWidget(seedWidgetId, {
       type: 'number',
       value: 1,
       options: {},
@@ -304,27 +307,19 @@ describe('Graph Clearing and Callbacks', () => {
       disabled: undefined
     })
 
-    expect(
-      promotionStore.isPromotedByAny(graphId, {
-        sourceNodeId: '10',
-        sourceWidgetName: 'seed'
-      })
-    ).toBe(true)
-    expect(widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')).toEqual(
+    expect(widgetValueStore.getWidget(seedWidgetId)).toEqual(
       expect.objectContaining({ value: 1 })
     )
+    expect(
+      previewExposureStore.getExposures(graphId, `${graphId}:1`)
+    ).toHaveLength(1)
 
     graph.clear()
 
-    expect(
-      promotionStore.isPromotedByAny(graphId, {
-        sourceNodeId: '10',
-        sourceWidgetName: 'seed'
-      })
-    ).toBe(false)
-    expect(
-      widgetValueStore.getWidget(graphId, '10' as NodeId, 'seed')
-    ).toBeUndefined()
+    expect(widgetValueStore.getWidget(seedWidgetId)).toBeUndefined()
+    expect(previewExposureStore.getExposures(graphId, `${graphId}:1`)).toEqual(
+      []
+    )
   })
 })
 
@@ -990,6 +985,48 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     }
   })
 
+  it('warns when configuring a host with legacy proxyWidgets and no migration hook is wired', () => {
+    const subgraph = createTestSubgraph()
+    const sourceHost = createTestSubgraphNode(subgraph)
+    sourceHost.graph!.add(sourceHost)
+    sourceHost.properties.proxyWidgets = [['9999', 'seed']]
+    const serialized = sourceHost.rootGraph.serialize()
+    const instanceData = sourceHost.serialize()
+
+    const previous = LGraph.proxyWidgetMigrationFlush
+    LGraph.proxyWidgetMigrationFlush = undefined
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    LiteGraph.registerNodeType(
+      subgraph.id,
+      class TestSubgraphNode extends SubgraphNode {
+        constructor() {
+          super(new LGraph(), subgraph, instanceData)
+        }
+      }
+    )
+    try {
+      const graph = new LGraph()
+      graph.configure(serialized)
+
+      const migrationCall = warn.mock.calls.find(
+        (call) =>
+          typeof call[0] === 'string' &&
+          call[0].includes('Legacy proxyWidgets were not migrated')
+      )
+      expect(migrationCall).toBeDefined()
+      expect(migrationCall![1]).toEqual(
+        expect.objectContaining({
+          hostNodeId: expect.any(Number),
+          proxyWidgets: expect.anything()
+        })
+      )
+    } finally {
+      LGraph.proxyWidgetMigrationFlush = previous
+      LiteGraph.unregisterNodeType(subgraph.id)
+      warn.mockRestore()
+    }
+  })
+
   it('throws when node ID space is exhausted', () => {
     expect(() => {
       const graph = new LGraph()
@@ -1003,5 +1040,27 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 
     expect(nodeIdSet(graph, SUBGRAPH_A)).toEqual(new Set([10, 11, 12]))
     expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(new Set([20, 21, 22]))
+  })
+})
+
+describe('Zero UUID handling in configure', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia())
+  })
+
+  it('rejects zeroUuid for root graphs and assigns a new ID', () => {
+    const graph = new LGraph()
+    const data = graph.serialize()
+    data.id = zeroUuid
+    graph.configure(data)
+    expect(graph.id).not.toBe(zeroUuid)
+  })
+
+  it('preserves zeroUuid for subgraphs', () => {
+    const graph = new LGraph()
+    const subgraphData = { ...createTestSubgraphData(), id: zeroUuid }
+    const subgraph = graph.createSubgraph(subgraphData)
+    subgraph.configure(subgraphData)
+    expect(subgraph.id).toBe(zeroUuid)
   })
 })

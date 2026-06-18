@@ -189,6 +189,8 @@ import NodeTreeFolder from '@/components/sidebar/tabs/nodeLibrary/NodeTreeFolder
 import NodeTreeLeaf from '@/components/sidebar/tabs/nodeLibrary/NodeTreeLeaf.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useTreeExpansion } from '@/composables/useTreeExpansion'
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
   DEFAULT_GROUPING_ID,
@@ -321,9 +323,11 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
         }
       },
       handleClick(e: MouseEvent) {
-        if (this.leaf) {
-          // @ts-expect-error fixme ts strict error
-          useLitegraphService().addNodeOnGraph(this.data)
+        const nodeDef = this.data
+        if (this.leaf && nodeDef) {
+          withNodeAddSource('sidebar_drag', () =>
+            useLitegraphService().addNodeOnGraph(nodeDef)
+          )
         } else {
           toggleNodeOnEvent(e, this)
         }
@@ -334,6 +338,7 @@ const renderedRoot = computed<TreeExplorerNode<ComfyNodeDefImpl>>(() => {
 })
 
 const filteredNodeDefs = ref<ComfyNodeDefImpl[]>([])
+useSearchQueryTracking('node_sidebar', searchQuery, filteredNodeDefs)
 const filters: Ref<
   (SearchFilter & { filter: FuseFilterWithValue<ComfyNodeDefImpl, string> })[]
 > = ref([])
@@ -379,8 +384,11 @@ const onAddFilter = async (
   await handleSearch(searchQuery.value)
 }
 
-// @ts-expect-error fixme ts strict error
-const onRemoveFilter = async (filterAndValue) => {
+const onRemoveFilter = async (
+  filterAndValue: SearchFilter & {
+    filter: FuseFilterWithValue<ComfyNodeDefImpl, string>
+  }
+) => {
   const index = filters.value.findIndex((f) => f === filterAndValue)
   if (index !== -1) {
     filters.value.splice(index, 1)

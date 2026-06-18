@@ -5,6 +5,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 interface ConfirmDialogOptions {
+  key?: string
   headerProps?: ComponentAttrs<typeof ConfirmHeader>
   props?: ComponentAttrs<typeof ConfirmBody>
   footerProps?: ComponentAttrs<typeof ConfirmFooter>
@@ -12,8 +13,9 @@ interface ConfirmDialogOptions {
 
 export function showConfirmDialog(options: ConfirmDialogOptions = {}) {
   const dialogStore = useDialogStore()
-  const { headerProps, props, footerProps } = options
+  const { key, headerProps, props, footerProps } = options
   return dialogStore.showDialog({
+    key,
     headerComponent: ConfirmHeader,
     component: ConfirmBody,
     footerComponent: ConfirmFooter,

@@ -42,6 +42,7 @@ export function useWorkflowActionsService() {
     defaultFilename: string
   ): Promise<{
     success: boolean
+    cancelled?: boolean
     error?: string
   }> => {
     if (!workflow) {
@@ -59,7 +60,7 @@ export function useWorkflowActionsService() {
           defaultValue: filename
         })
         // User cancelled the prompt
-        if (!input) return { success: false }
+        if (!input) return { success: false, cancelled: true }
         filename = appendJsonExt(input)
       }
 

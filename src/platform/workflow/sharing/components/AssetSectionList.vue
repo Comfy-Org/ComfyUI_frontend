@@ -75,7 +75,7 @@ import type { AssetInfo } from '@/schemas/apiSchema'
 import ShareAssetThumbnail from '@/platform/workflow/sharing/components/ShareAssetThumbnail.vue'
 import { useAssetSections } from '@/platform/workflow/sharing/composables/useAssetSections'
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 import BaseTooltip from '@/components/ui/tooltip/BaseTooltip.vue'
 
 const { items } = defineProps<{

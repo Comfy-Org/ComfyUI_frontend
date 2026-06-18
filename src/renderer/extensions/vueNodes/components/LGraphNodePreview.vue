@@ -43,7 +43,7 @@ import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { nodeDef, position = 'absolute' } = defineProps<{
   nodeDef: ComfyNodeDefV2
