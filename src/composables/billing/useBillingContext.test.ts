@@ -191,6 +191,14 @@ describe('useBillingContext', () => {
     expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
   })
 
+  it('rejects topup amounts that are not positive whole-dollar cents', async () => {
+    const { topup } = useBillingContext()
+    await expect(topup(550)).rejects.toThrow()
+    await expect(topup(0)).rejects.toThrow()
+    await expect(topup(-100)).rejects.toThrow()
+    await expect(topup(99.5)).rejects.toThrow()
+  })
+
   it('provides isActiveSubscription convenience computed', () => {
     const { isActiveSubscription } = useBillingContext()
     expect(isActiveSubscription.value).toBe(true)
