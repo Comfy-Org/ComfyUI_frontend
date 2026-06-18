@@ -74,7 +74,7 @@ describe('EssentialNodesPanel', () => {
         ]),
         createMockFolder('audio', [
           createMockNode('LoadAudio'),
-          createMockNode('SaveAudio')
+          createMockNode('SaveAudioAdvanced')
         ])
       ]
     }

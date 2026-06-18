@@ -101,14 +101,7 @@ app.registerExtension({
     nodeData: ComfyNodeDef
   ) {
     if (
-      [
-        'LoadAudio',
-        'SaveAudio',
-        'PreviewAudio',
-        'SaveAudioMP3',
-        'SaveAudioOpus',
-        'SaveAudioAdvanced'
-      ].includes(
+      ['LoadAudio', 'PreviewAudio', 'SaveAudioAdvanced'].includes(
         // @ts-expect-error fixme ts strict error
         nodeType.prototype.comfyClass
       )

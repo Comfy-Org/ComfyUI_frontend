@@ -78,8 +78,7 @@ export const ESSENTIALS_NODES: Record<EssentialsCategory, readonly string[]> = {
   'video tools': ['GetVideoComponents', 'CreateVideo', 'Video Slice'],
   audio: [
     'LoadAudio',
-    'SaveAudio',
-    'SaveAudioMP3',
+    'SaveAudioAdvanced',
     'StabilityTextToAudio',
     'EmptyLatentAudio'
   ],

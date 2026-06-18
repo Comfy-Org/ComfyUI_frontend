@@ -51,7 +51,7 @@ const EXACT_NAME_MAP: Record<string, string> = {
   // Audio
   StabilityTextToAudio: 'essentials.musicGeneration',
   LoadAudio: 'essentials.loadAudio',
-  SaveAudio: 'essentials.saveAudio'
+  SaveAudioAdvanced: 'essentials.saveAudio'
 }
 
 /**
