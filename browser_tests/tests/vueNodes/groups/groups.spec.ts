@@ -280,3 +280,37 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     await expect.poll(bypassCount, "won't toggle double selected node").toBe(7)
   })
 })
+
+test.describe(
+  'Vue Node Group Context Menu',
+  { tag: ['@vue-nodes', '@canvas'] },
+  () => {
+    test('right-clicking a group opens the Vue context menu instead of the legacy menu', async ({
+      comfyPage
+    }) => {
+      // Group the nodes, then deselect so the right-click selects the group itself.
+      await comfyPage.keyboard.selectAll()
+      await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
+      await expect
+        .poll(() => comfyPage.page.evaluate(() => graph!.groups.length))
+        .toBe(1)
+      await comfyPage.page.mouse.click(100, 100)
+      await comfyPage.nextFrame()
+
+      const groupPos = await getGroupTitlePosition(comfyPage, 'Group')
+      await comfyPage.page.mouse.click(groupPos.x, groupPos.y, {
+        button: 'right'
+      })
+
+      // The new Vue context menu opens; the legacy litegraph menu does not.
+      await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+      await expect(comfyPage.contextMenu.litegraphContextMenu).toBeHidden()
+      await expect(comfyPage.contextMenu.litegraphMenu).toBeHidden()
+
+      // Group-only action confirms it is the group menu.
+      await expect(
+        comfyPage.contextMenu.primeVueMenu.getByText('Fit Group To Nodes')
+      ).toBeVisible()
+    })
+  }
+)
