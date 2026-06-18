@@ -111,6 +111,19 @@ describe('NightlySurveyPopover', () => {
       ).not.toBeInTheDocument()
     })
 
+    it('does not show when typeform id is invalid', async () => {
+      setFeatureUsage('test-feature', 5)
+
+      await renderComponent({ ...defaultConfig, typeformId: 'invalid id!' })
+      await nextTick()
+      await vi.advanceTimersByTimeAsync(1000)
+      await nextTick()
+
+      expect(
+        screen.queryByTestId('nightly-survey-popover')
+      ).not.toBeInTheDocument()
+    })
+
     it('does not show on cloud', async () => {
       mockIsCloud.value = true
       setFeatureUsage('test-feature', 5)

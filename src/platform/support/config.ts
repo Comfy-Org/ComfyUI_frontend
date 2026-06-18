@@ -25,7 +25,17 @@ function getDistribution(): 'ccloud' | 'oss-nightly' | 'oss' {
 }
 
 const SUPPORT_BASE_URL = 'https://support.comfy.org/hc/en-us/requests/new'
-const FEEDBACK_TYPEFORM_BASE_URL = 'https://form.typeform.com/to/q7azbWPi'
+
+export type FeedbackSource = 'topbar' | 'action-bar' | 'help-center'
+
+export const FEEDBACK_TYPEFORM_ID = 'q7azbWPi'
+
+const FEEDBACK_TYPEFORM_BASE_URL = `https://form.typeform.com/to/${FEEDBACK_TYPEFORM_ID}`
+
+/** Shared by the URL and embed builders so their segmentation tags can't drift. */
+function getFeedbackTags(source: FeedbackSource): Record<string, string> {
+  return { distribution: getDistribution(), source }
+}
 
 /**
  * Builds the feedback Typeform URL tagged with the current build distribution
@@ -33,14 +43,15 @@ const FEEDBACK_TYPEFORM_BASE_URL = 'https://form.typeform.com/to/q7azbWPi'
  * (Typeform's hidden-field convention) so survey responses can be segmented
  * by distribution (cloud / oss-nightly / oss) and entry point.
  */
-export function buildFeedbackTypeformUrl(
-  source: 'topbar' | 'action-bar' | 'help-center'
-): string {
-  const params = new URLSearchParams({
-    distribution: getDistribution(),
-    source
-  })
+export function buildFeedbackTypeformUrl(source: FeedbackSource): string {
+  const params = new URLSearchParams(getFeedbackTags(source))
   return `${FEEDBACK_TYPEFORM_BASE_URL}#${params.toString()}`
+}
+
+export function buildFeedbackHiddenFields(source: FeedbackSource): string {
+  return Object.entries(getFeedbackTags(source))
+    .map(([key, value]) => `${key}=${value}`)
+    .join(',')
 }
 
 /**

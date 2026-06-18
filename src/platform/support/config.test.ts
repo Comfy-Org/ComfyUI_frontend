@@ -50,3 +50,28 @@ describe('buildFeedbackTypeformUrl', () => {
     expect(url.hash).toBe('#distribution=ccloud&source=topbar')
   })
 })
+
+describe('buildFeedbackHiddenFields', () => {
+  beforeEach(() => {
+    distribution.isCloud = false
+    distribution.isNightly = false
+  })
+
+  async function build(source: 'topbar' | 'action-bar' | 'help-center') {
+    vi.resetModules()
+    const { buildFeedbackHiddenFields } = await import('./config')
+    return buildFeedbackHiddenFields(source)
+  }
+
+  it('formats tags comma-separated for the Typeform embed data-tf-hidden attribute', async () => {
+    distribution.isCloud = true
+    expect(await build('topbar')).toBe('distribution=ccloud,source=topbar')
+  })
+
+  it('reflects the build distribution', async () => {
+    distribution.isNightly = true
+    expect(await build('action-bar')).toBe(
+      'distribution=oss-nightly,source=action-bar'
+    )
+  })
+})
