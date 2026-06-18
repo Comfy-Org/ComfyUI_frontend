@@ -47,6 +47,8 @@ jobs:
 
       - name: Build cloud frontend
         run: pnpm build:cloud
+        env:
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
 
       - name: Upload cloud frontend
         uses: actions/upload-artifact@v6
