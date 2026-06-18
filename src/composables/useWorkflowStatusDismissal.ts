@@ -10,7 +10,10 @@ export function useWorkflowStatusDismissal() {
   watch(
     () => workflowStore.activeWorkflow,
     (workflow) => {
-      if (workflow && executionStore.getWorkflowStatus(workflow) !== 'running') {
+      if (
+        workflow &&
+        executionStore.getWorkflowStatus(workflow) !== 'running'
+      ) {
         executionStore.clearWorkflowStatus(workflow)
       }
     },
