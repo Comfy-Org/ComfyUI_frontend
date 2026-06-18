@@ -137,9 +137,8 @@ export class ComfyNodeDefImpl
     const obj = ComfyNodeDefImpl._migrateDefaultInput(def)
 
     /**
-     * Copy any extra (including symbol-keyed) fields onto `this`. The legacy
-     * group-node → subgraph load migration relies on this to propagate its
-     * marker symbol from the synthesized node definition.
+     * Copy fields that are declared on this class but not explicitly assigned
+     * below (e.g. `search_aliases`) straight from the source definition.
      */
     Object.assign(this, obj)
 

@@ -1,6 +1,7 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import type { GroupNodeWorkflowData } from '@/lib/litegraph/src/LGraph'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import type { LGraphNodeConstructor } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyNode,
@@ -16,10 +17,24 @@ import { app } from '../../scripts/app'
 import { mergeIfValid } from './widgetInputs'
 
 /**
- * Marker symbol stored on a synthesized group-node {@link ComfyNodeDef} so loaded
- * group-node instances can be detected and migrated to subgraphs.
+ * Marker symbol stamped on a synthesized group-node type's `nodeData` (via
+ * {@link markGroupNodeType}) so loaded group-node instances can be detected and
+ * migrated to subgraphs.
  */
 const GROUP = Symbol()
+
+/**
+ * Stamp the group-node marker onto the registered node type so instances created
+ * during load can be detected by {@link GroupNodeHandler.isGroupNode}. This is
+ * stamped directly on the constructor rather than copied through
+ * {@link ComfyNodeDefImpl} construction, keeping the migration self-contained.
+ */
+function markGroupNodeType(typeName: string, config: GroupNodeConfig): void {
+  const ctor = LiteGraph.registered_node_types[typeName] as
+    | LGraphNodeConstructor
+    | undefined
+  if (ctor?.nodeData) ctor.nodeData[GROUP] = config
+}
 
 type GroupNodeLink = SerialisedLLinkArray
 type LinksFromMap = Record<number, Record<number, GroupNodeLink[]>>
@@ -66,7 +81,7 @@ interface NodeConfigEntry {
   output?: Record<number, { name?: string; visible?: boolean }>
 }
 
-class GroupNodeConfig {
+export class GroupNodeConfig {
   name: string
   nodeData: GroupNodeWorkflowData
   inputCount: number
@@ -83,7 +98,7 @@ class GroupNodeConfig {
   >
   nodeInputs: Record<number, Record<string, string>>
   outputVisibility: boolean[]
-  nodeDef: (ComfyNodeDef & { [GROUP]: GroupNodeConfig }) | undefined
+  nodeDef: ComfyNodeDef | undefined
   inputs!: unknown[]
   linksFrom!: LinksFromMap
   linksTo!: LinksToMap
@@ -120,9 +135,7 @@ class GroupNodeConfig {
       description: `Group node combining ${this.nodeData.nodes
         .map((n) => n.type)
         .join(', ')}`,
-      python_module: 'custom_nodes.' + this.name,
-
-      [GROUP]: this
+      python_module: 'custom_nodes.' + this.name
     }
 
     this.inputs = []
@@ -139,7 +152,9 @@ class GroupNodeConfig {
     }
     this._convertedToProcess = []
     if (!this.nodeDef) return
-    await app.registerNodeDef(`${PREFIX}${SEPARATOR}` + this.name, this.nodeDef)
+    const typeName = `${PREFIX}${SEPARATOR}${this.name}`
+    await app.registerNodeDef(typeName, this.nodeDef)
+    markGroupNodeType(typeName, this)
     useNodeDefStore().addNodeDef(this.nodeDef)
   }
 
@@ -944,7 +959,7 @@ class GroupNodeHandler {
   }
 }
 
-const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
+export const replaceLegacySeparators = (nodes: ComfyNode[]): void => {
   for (const node of nodes) {
     if (typeof node.type === 'string' && node.type.startsWith('workflow/')) {
       node.type = node.type.replace(/^workflow\//, `${PREFIX}${SEPARATOR}`)
