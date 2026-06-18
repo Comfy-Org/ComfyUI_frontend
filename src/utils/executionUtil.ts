@@ -58,8 +58,11 @@ export const graphToPrompt = async (
 
   const nodeDtoMap = new Map<ExecutionId, ExecutableLGraphNode>()
   for (const node of graph.computeExecutionOrder(false)) {
-    const dto: ExecutableLGraphNode =
-      new ExecutableNodeDTO(node,  [], nodeDtoMap)
+    const dto: ExecutableLGraphNode = new ExecutableNodeDTO(
+      node,
+      [],
+      nodeDtoMap
+    )
 
     nodeDtoMap.set(dto.id, dto)
 
