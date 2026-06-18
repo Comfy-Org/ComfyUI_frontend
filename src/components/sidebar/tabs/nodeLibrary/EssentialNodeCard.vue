@@ -15,9 +15,16 @@
     @dragend="handleDragEnd"
   >
     <i :class="cn('size-7 text-muted-foreground', tile.icon)" />
+    <span
+      v-if="tile.partnerLogo"
+      aria-hidden="true"
+      class="absolute top-1.5 right-1.5 flex size-6 items-center justify-center rounded-md bg-base-background"
+    >
+      <i :class="cn('size-4', tile.partnerLogo)" />
+    </span>
     <TextTickerMultiLine
       class="text-foreground @28:h-9 @28:text-sm/4.5 flex h-7.5 w-full shrink-0 flex-col justify-center px-2 text-center text-xs/3.75 font-normal"
-      :text="$t(getLabel(tile))"
+      :text="nodeDef?.display_name ?? $t(getLabel(tile))"
     />
   </div>
 

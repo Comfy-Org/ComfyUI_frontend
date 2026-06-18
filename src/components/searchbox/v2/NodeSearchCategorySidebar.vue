@@ -75,13 +75,15 @@ const {
   hidePresets = false,
   nodeDefs,
   rootLabel,
-  rootKey
+  rootKey,
+  groupBy = 'category'
 } = defineProps<{
   hideChevrons?: boolean
   hidePresets?: boolean
   nodeDefs?: ComfyNodeDefImpl[]
   rootLabel?: string
   rootKey?: string
+  groupBy?: 'category' | 'essentials'
 }>()
 
 const selectedCategory = defineModel<string>('selectedCategory', {
@@ -92,7 +94,7 @@ const emit = defineEmits<{
   autoExpand: [key: string]
 }>()
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const nodeDefStore = useNodeDefStore()
 
 const topCategories = computed(() => [
@@ -101,11 +103,18 @@ const topCategories = computed(() => [
 
 const categoryTree = computed<CategoryNode[]>(() => {
   const defs = nodeDefs ?? nodeDefStore.visibleNodeDefs
-  const tree = nodeOrganizationService.organizeNodes(defs, {
-    groupBy: 'category'
-  })
+  const tree =
+    groupBy === 'essentials'
+      ? nodeOrganizationService.organizeEssentials(defs)
+      : nodeOrganizationService.organizeNodes(defs, { groupBy: 'category' })
 
   const stripRootPrefix = (key: string) => key.replace(/^root\//, '')
+
+  function resolveLabel(rawLabel: string): string {
+    if (groupBy !== 'essentials') return rawLabel
+    const key = `essentials.${rawLabel}`
+    return te(key) ? t(key) : rawLabel
+  }
 
   function mapNode(node: TreeNode): CategoryNode {
     const children = node.children
@@ -113,7 +122,7 @@ const categoryTree = computed<CategoryNode[]>(() => {
       .map(mapNode)
     return {
       key: stripRootPrefix(node.key as string),
-      label: node.label,
+      label: resolveLabel(node.label ?? ''),
       ...(children?.length ? { children } : {})
     }
   }

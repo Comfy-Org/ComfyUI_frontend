@@ -11,6 +11,13 @@ export interface EssentialTile {
   icon?: string
   media?: EssentialsMediaType
   /**
+   * Optional partner/vendor brand glyph rendered as a small badge in the
+   * tile's top-right corner (e.g. `icon-[comfy--gemini]`). Used on partner
+   * nodes so the main icon can describe the action while the badge
+   * communicates the provider.
+   */
+  partnerLogo?: string
+  /**
    * Backing ComfyUI node identifier resolved by the hover popover.
    *   - For NODEs and PARTNER/API nodes: pass the registered
    *     `name` (class key)
@@ -110,15 +117,18 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
         media: 'image',
         tiles: [
           {
-            icon: 'icon-[comfy--gemini]',
+            icon: 'icon-[comfy--text-to-image]',
+            partnerLogo: 'icon-[comfy--gemini]',
             nodeName: 'GeminiImageNode'
           },
           {
-            icon: 'icon-[comfy--grok] text-[#B6B6B6]',
-            nodeName: 'GrokImageEditNode'
+            icon: 'icon-[comfy--image-edit]',
+            partnerLogo: 'icon-[comfy--grok] text-[#B6B6B6]',
+            nodeName: 'GrokImageEditNodeV2'
           },
           {
-            icon: 'icon-[comfy--bytedance]',
+            icon: 'icon-[comfy--text-to-image]',
+            partnerLogo: 'icon-[comfy--bytedance]',
             nodeName: 'ByteDanceSeedreamNode'
           },
           {
@@ -143,6 +153,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           },
           {
             icon: 'icon-[comfy--image-vectorize]',
+            partnerLogo: 'icon-[comfy--recraft] text-[#B6B6B6]',
             nodeName: 'RecraftVectorizeImageNode'
           },
           {
@@ -164,15 +175,18 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
         media: 'video',
         tiles: [
           {
-            icon: 'icon-[comfy--grok] text-[#B6B6B6]',
+            icon: 'icon-[comfy--text-to-video]',
+            partnerLogo: 'icon-[comfy--grok] text-[#B6B6B6]',
             nodeName: 'GrokVideoNode'
           },
           {
-            icon: 'icon-[comfy--kling]',
+            icon: 'icon-[comfy--image-to-video]',
+            partnerLogo: 'icon-[comfy--kling]',
             nodeName: 'KlingImage2VideoNode'
           },
           {
-            icon: 'icon-[comfy--bytedance]',
+            icon: 'icon-[comfy--image-to-video]',
+            partnerLogo: 'icon-[comfy--bytedance]',
             nodeName: 'ByteDance2ReferenceNode'
           },
           {
@@ -189,10 +203,12 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           },
           {
             icon: 'icon-[comfy--video-edit]',
+            partnerLogo: 'icon-[comfy--kling]',
             nodeName: 'KlingOmniProEditVideoNode'
           },
           {
             icon: 'icon-s1.5-[lucide--mic-vocal]',
+            partnerLogo: 'icon-[comfy--kling]',
             nodeName: 'KlingLipSyncAudioToVideoNode'
           },
           {
@@ -218,12 +234,14 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
         media: 'text',
         tiles: [
           {
-            icon: 'icon-[comfy--gemini]',
+            icon: 'icon-[comfy--text-prompt-enhance]',
+            partnerLogo: 'icon-[comfy--gemini]',
             nodeName: 'GeminiNode'
           },
           {
+            icon: 'icon-[comfy--text-prompt-enhance]',
             // FIXME: Don't hard code color here
-            icon: 'icon-[comfy--claude] text-[#D97757]',
+            partnerLogo: 'icon-[comfy--claude] text-[#D97757]',
             nodeName: 'ClaudeNode'
           },
           {
@@ -250,10 +268,12 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           },
           {
             icon: 'icon-s1.5-[lucide--speech]',
+            partnerLogo: 'icon-[comfy--elevenlabs] text-[#B6B6B6]',
             nodeName: 'ElevenLabsTextToSpeech'
           },
           {
             icon: 'icon-[comfy--voice-clone]',
+            partnerLogo: 'icon-[comfy--elevenlabs] text-[#B6B6B6]',
             nodeName: 'ElevenLabsInstantVoiceClone'
           }
         ]
@@ -264,6 +284,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
         tiles: [
           {
             icon: 'icon-[comfy--text-to-3d]',
+            partnerLogo: 'icon-[comfy--tencent]',
             nodeName: 'TencentTextToModelNode'
           },
           {
@@ -422,6 +443,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           },
           {
             icon: 'icon-[comfy--image-remove-background]',
+            partnerLogo: 'icon-[comfy--recraft] text-[#B6B6B6]',
             nodeName: 'RecraftRemoveBackgroundNode'
           }
         ]
@@ -436,6 +458,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           },
           {
             icon: 'icon-[comfy--video-upscale]',
+            partnerLogo: 'icon-[comfy--topaz] text-[#B6B6B6]',
             nodeName: 'TopazVideoEnhanceV2'
           }
         ]
@@ -474,10 +497,12 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
         tiles: [
           {
             icon: 'icon-s1.5-[lucide--package-open]',
+            partnerLogo: 'icon-[comfy--tencent]',
             nodeName: 'TencentModelTo3DUVNode'
           },
           {
             icon: 'icon-[comfy--3d-decomp]',
+            partnerLogo: 'icon-[comfy--tencent]',
             nodeName: 'Tencent3DPartNode'
           }
         ]
@@ -501,10 +526,55 @@ export const NODE_TO_ESSENTIALS_PATH: Record<string, EssentialsPath> =
     )
   )
 
+const NODE_TO_ESSENTIALS_TILE: Record<string, EssentialTile> =
+  Object.fromEntries(
+    ESSENTIAL_SECTIONS.flatMap(
+      (section) =>
+        section.subgroups?.flatMap((sg) =>
+          sg.tiles.map((t) => [t.nodeName, t])
+        ) ??
+        section.tiles?.map((t) => [t.nodeName, t]) ??
+        []
+    )
+  )
+
 export const NODE_TO_ESSENTIALS_CATEGORY: Record<string, string> = mapValues(
   NODE_TO_ESSENTIALS_PATH,
   (v) => v?.subgroup ?? v.section
 )
+
+const BLUEPRINT_PREFIX = 'SubgraphBlueprint.'
+
+/**
+ * Resolve a node def's curated essentials path. Falls back to looking up
+ * blueprints by `SubgraphBlueprint.${display_name}` because global blueprints
+ * may be registered under a dict-key name that doesn't match the curated key.
+ */
+export function resolveEssentialsPath(nodeDef: {
+  name: string
+  display_name?: string
+  python_module?: string
+}): EssentialsPath | undefined {
+  const direct = NODE_TO_ESSENTIALS_PATH[nodeDef.name]
+  if (direct) return direct
+  if (nodeDef.python_module === 'blueprint' && nodeDef.display_name) {
+    return NODE_TO_ESSENTIALS_PATH[BLUEPRINT_PREFIX + nodeDef.display_name]
+  }
+  return undefined
+}
+
+export function resolveEssentialsTile(nodeDef: {
+  name: string
+  display_name?: string
+  python_module?: string
+}): EssentialTile | undefined {
+  const direct = NODE_TO_ESSENTIALS_TILE[nodeDef.name]
+  if (direct) return direct
+  if (nodeDef.python_module === 'blueprint' && nodeDef.display_name) {
+    return NODE_TO_ESSENTIALS_TILE[BLUEPRINT_PREFIX + nodeDef.display_name]
+  }
+  return undefined
+}
 
 const ESSENTIALS_NODE_NAMES = Object.keys(NODE_TO_ESSENTIALS_CATEGORY)
 
