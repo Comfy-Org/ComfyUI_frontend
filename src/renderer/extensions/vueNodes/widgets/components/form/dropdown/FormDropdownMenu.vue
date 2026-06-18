@@ -89,7 +89,8 @@ const gridStyle = computed<CSSProperties>(() => ({
   display: 'grid',
   gap: layoutConfig.value.gap,
   padding: '1rem',
-  width: '100%'
+  width: '100%',
+  gridAutoRows: `${layoutConfig.value.itemHeight}px`
 }))
 
 type VirtualDropdownItem = FormDropdownItem & { key: string }
@@ -158,6 +159,7 @@ const onWheel = (event: WheelEvent) => {
       :default-item-width="layoutConfig.itemWidth"
       :buffer-rows="2"
       class="mt-2 min-h-0 flex-1"
+      data-testid="form-dropdown-list"
     >
       <template #item="{ item, index }">
         <FormDropdownMenuItem

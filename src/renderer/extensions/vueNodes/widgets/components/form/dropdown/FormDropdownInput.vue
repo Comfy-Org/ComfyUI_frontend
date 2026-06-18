@@ -71,6 +71,7 @@ defineExpose({ focus })
           }
         )
       "
+      data-testid="form-dropdown-trigger"
       @click="emit('select-click', $event)"
     >
       <span class="min-w-0 flex-1 truncate px-1 py-2 text-left">
