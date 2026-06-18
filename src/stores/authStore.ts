@@ -329,6 +329,10 @@ export const useAuthStore = defineStore('auth', () => {
     action: (auth: Auth) => Promise<T>,
     options: {
       createCustomer?: boolean
+      authError?: {
+        method: 'email' | 'google' | 'github'
+        isSignUp: boolean
+      }
     } = {}
   ): Promise<T> => {
     loading.value = true
@@ -346,6 +350,18 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       return result
+    } catch (error) {
+      // Surface the auth failure leak that trackAuth (success-only) misses.
+      if (isCloud && options?.authError) {
+        useTelemetry()?.trackAuthError({
+          method: options.authError.method,
+          is_sign_up: options.authError.isSignUp,
+          error_code: (error as { code?: string })?.code,
+          error_message:
+            error instanceof Error ? error.message : String(error)
+        })
+      }
+      throw error
     } finally {
       loading.value = false
     }
@@ -358,7 +374,10 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await executeAuthAction(
       (authInstance) =>
         signInWithEmailAndPassword(authInstance, email, password),
-      { createCustomer: true }
+      {
+        createCustomer: true,
+        authError: { method: 'email', isSignUp: false }
+      }
     )
 
     if (isCloud) {
@@ -381,7 +400,10 @@ export const useAuthStore = defineStore('auth', () => {
     const result = await executeAuthAction(
       (authInstance) =>
         createUserWithEmailAndPassword(authInstance, email, password),
-      { createCustomer: true }
+      {
+        createCustomer: true,
+        authError: { method: 'email', isSignUp: true }
+      }
     )
 
     if (isCloud) {
@@ -402,7 +424,10 @@ export const useAuthStore = defineStore('auth', () => {
   }): Promise<UserCredential> => {
     const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, googleProvider),
-      { createCustomer: true }
+      {
+        createCustomer: true,
+        authError: { method: 'google', isSignUp: options?.isNewUser ?? false }
+      }
     )
 
     if (isCloud) {
@@ -425,7 +450,10 @@ export const useAuthStore = defineStore('auth', () => {
   }): Promise<UserCredential> => {
     const result = await executeAuthAction(
       (authInstance) => signInWithPopup(authInstance, githubProvider),
-      { createCustomer: true }
+      {
+        createCustomer: true,
+        authError: { method: 'github', isSignUp: options?.isNewUser ?? false }
+      }
     )
 
     if (isCloud) {

@@ -453,6 +453,28 @@ export interface BillingCycleToggledMetadata {
   to: BillingCycle
 }
 
+/**
+ * Fired when an authentication attempt fails (sign-in or sign-up). Lets the
+ * signup funnel see the error/bounce leak that `app:user_auth_completed`
+ * (success-only) cannot.
+ */
+export interface AuthErrorMetadata {
+  method: 'email' | 'google' | 'github'
+  is_sign_up: boolean
+  error_code?: string
+  error_message?: string
+}
+
+/**
+ * Fired when the user switches category/tab in the template selector (e.g.
+ * "Getting Started" vs "All"), so we can see which curated entry points get
+ * used before a template is opened.
+ */
+export interface TemplateCategorySelectedMetadata {
+  category_id: string
+  category_label?: string
+}
+
 export interface BeginCheckoutMetadata
   extends Record<string, unknown>, CheckoutAttributionMetadata {
   user_id: string
@@ -505,6 +527,10 @@ export interface TelemetryProvider {
   ): void
   trackBeginCheckout?(metadata: BeginCheckoutMetadata): void
   trackBillingCycleToggled?(metadata: BillingCycleToggledMetadata): void
+  trackAuthError?(metadata: AuthErrorMetadata): void
+  trackTemplateCategorySelected?(
+    metadata: TemplateCategorySelectedMetadata
+  ): void
   trackMonthlySubscriptionSucceeded?(
     metadata?: SubscriptionSuccessMetadata
   ): void
@@ -613,6 +639,8 @@ export const TelemetryEvents = {
   SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'app:subscription_required_modal_opened',
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
   BILLING_CYCLE_TOGGLED: 'app:billing_cycle_toggled',
+  AUTH_ERROR: 'app:auth_error',
+  TEMPLATE_CATEGORY_SELECTED: 'app:template_category_selected',
   MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
   MONTHLY_SUBSCRIPTION_CANCELLED: 'app:monthly_subscription_cancelled',
   ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
@@ -731,3 +759,5 @@ export type TelemetryEventProperties =
   | SubscriptionMetadata
   | SubscriptionSuccessMetadata
   | BillingCycleToggledMetadata
+  | AuthErrorMetadata
+  | TemplateCategorySelectedMetadata

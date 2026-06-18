@@ -12,6 +12,8 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   AuthMetadata,
   BillingCycleToggledMetadata,
+  AuthErrorMetadata,
+  TemplateCategorySelectedMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -127,9 +129,14 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               api_host:
                 window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
               ui_host: 'https://us.posthog.com',
-              autocapture: false,
-              capture_pageview: false,
-              capture_pageleave: false,
+              // Web analytics enabled so cloud.comfy.org gets heatmaps + $pageview
+              // (the login/onboarding pages previously had zero coverage). autocapture
+              // does NOT record input *values* (posthog masks them), and these defaults
+              // remain overridable per-environment via `serverConfig` (spread below).
+              autocapture: true,
+              capture_pageview: true,
+              capture_pageleave: true,
+              heatmaps: true,
               persistence: 'localStorage+cookie',
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
               ...serverConfig,
@@ -353,6 +360,16 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackBillingCycleToggled(metadata: BillingCycleToggledMetadata): void {
     this.trackEvent(TelemetryEvents.BILLING_CYCLE_TOGGLED, metadata)
+  }
+
+  trackAuthError(metadata: AuthErrorMetadata): void {
+    this.trackEvent(TelemetryEvents.AUTH_ERROR, metadata)
+  }
+
+  trackTemplateCategorySelected(
+    metadata: TemplateCategorySelectedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.TEMPLATE_CATEGORY_SELECTED, metadata)
   }
 
   trackAddApiCreditButtonClicked(): void {
