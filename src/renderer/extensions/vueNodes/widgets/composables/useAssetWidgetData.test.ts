@@ -4,10 +4,6 @@ import { nextTick, ref } from 'vue'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 
-vi.mock('@/platform/distribution/types', () => ({
-  isCloud: true
-}))
-
 const mockAssetsByKey = new Map<string, AssetItem[]>()
 const mockLoadingByKey = new Map<string, boolean>()
 const mockErrorByKey = new Map<string, Error | undefined>()
@@ -31,7 +27,7 @@ vi.mock('@/stores/modelToNodeStore', () => ({
   })
 }))
 
-describe('useAssetWidgetData (cloud mode, isCloud=true)', () => {
+describe('useAssetWidgetData', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockAssetsByKey.clear()
