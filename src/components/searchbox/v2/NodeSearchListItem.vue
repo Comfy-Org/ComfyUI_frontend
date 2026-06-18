@@ -54,7 +54,7 @@
               </span>
             </span>
 
-            <span v-if="showSourceBadge && isEssential" :class="badgePillClass">
+            <span v-if="isEssential" :class="badgePillClass">
               <span class="truncate text-2xs">{{ $t('g.essentials') }}</span>
             </span>
 

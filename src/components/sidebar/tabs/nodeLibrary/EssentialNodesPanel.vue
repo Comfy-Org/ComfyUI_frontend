@@ -23,7 +23,7 @@
       </div>
       <div
         v-if="section.tiles?.length"
-        class="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2 p-4"
+        class="grid grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-2 p-4"
       >
         <EssentialNodeCard
           v-for="tile in section.tiles.filter(
@@ -47,7 +47,7 @@
             {{ $t(`essentials.${subgroup.key}`) }}
           </div>
           <div
-            class="mt-4 grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2"
+            class="mt-4 grid grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-2"
           >
             <EssentialNodeCard
               v-for="tile in subgroup.tiles"
