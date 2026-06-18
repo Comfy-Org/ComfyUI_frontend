@@ -471,15 +471,13 @@ describe('useAuthStore', () => {
         vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockClear()
 
         await store.register('evict@example.com', 'password')
-        // Within the retention window: rides the kept promise.
+        // Within the window: rides the kept promise.
         await store.register('evict@example.com', 'password')
         expect(
           firebaseAuth.createUserWithEmailAndPassword
         ).toHaveBeenCalledTimes(1)
 
-        // After the window the entry is evicted, so a later sign-up re-runs the
-        // create instead of returning a stale credential (desktop/localhost sign
-        // out does not reload the app).
+        // After the window: the entry is evicted, so a later sign-up re-runs.
         await vi.advanceTimersByTimeAsync(10_001)
         await store.register('evict@example.com', 'password')
         expect(
@@ -495,8 +493,8 @@ describe('useAuthStore', () => {
       vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
         mockUserCredential as Partial<UserCredential> as UserCredential
       )
-      // POST /customers fails; the server-side provisioner backstops it, so the
-      // sign-up itself must still succeed (best-effort createCustomer).
+      // createCustomer fails, but the sign-up itself must still succeed
+      // (best-effort: the customer is provisioned server-side too).
       mockFetch.mockImplementation((url: string) => {
         if (url.endsWith('/customers')) {
           return Promise.resolve({

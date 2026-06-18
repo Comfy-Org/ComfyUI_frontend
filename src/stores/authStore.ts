@@ -61,8 +61,7 @@ export class AuthStoreError extends Error {
   }
 }
 
-// How long a succeeded register() entry is kept to absorb a post-redirect
-// duplicate submit before it is evicted (see inFlightRegister).
+// Window a succeeded register() is deduped for, covering the post-sign-up redirect.
 const REGISTER_DEDUP_RETENTION_MS = 10_000
 
 export const useAuthStore = defineStore('auth', () => {
@@ -347,8 +346,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const result = await action(auth)
 
-      // Best-effort: a failed/duplicate POST /customers must not fail an otherwise
-      // successful sign-in/up; the server-side provisioner backstops it.
+      // Best-effort: the customer is also provisioned server-side, so a failure
+      // here must not fail an otherwise-successful sign-in.
       if (options?.createCustomer) {
         try {
           const token = await getIdToken()
@@ -392,9 +391,8 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  // Single-flight guard: at most one in-flight createUserWithEmailAndPassword per
-  // email, so a sign-up can't create the account twice (then show the loser
-  // EMAIL_EXISTS). UI throttling is defense-in-depth; this is the contract.
+  // Single-flight per email: one signup creates the account at most once,
+  // however many times the form submits.
   const inFlightRegister = new Map<string, Promise<UserCredential>>()
 
   const register = (
@@ -403,8 +401,6 @@ export const useAuthStore = defineStore('auth', () => {
   ): Promise<UserCredential> => {
     const key = email.trim().toLowerCase()
 
-    // Ride an in-flight attempt for the same email (kept briefly past success,
-    // see below) so a duplicate submit doesn't create a second account.
     const existing = inFlightRegister.get(key)
     if (existing) return existing
 
@@ -429,11 +425,9 @@ export const useAuthStore = defineStore('auth', () => {
     })()
 
     inFlightRegister.set(key, pending)
-    // On failure, drop the entry now so a genuine retry is allowed. On success,
-    // keep it briefly to absorb a duplicate submit during the post-sign-up
-    // redirect, then evict: retaining it for the whole session would return a
-    // stale credential after a sign-out that doesn't reload the app (desktop/
-    // localhost) and would leak map entries.
+    // Drop on failure so a retry is allowed. On success, keep it for the redirect
+    // window then evict, so it can't hand back a stale credential after a sign-out
+    // that doesn't reload the page.
     pending
       .then(() => {
         setTimeout(

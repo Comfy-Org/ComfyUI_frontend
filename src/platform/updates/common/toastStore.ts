@@ -5,8 +5,8 @@ import { defineStore } from 'pinia'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { ref } from 'vue'
 
-// Identical toasts fired within this window are coalesced, so one action can't
-// stack the same error two or three times.
+// Coalesce identical toasts fired within this window so a single action can't
+// stack the same message repeatedly.
 const TOAST_DEDUP_WINDOW_MS = 3000
 
 export const useToastStore = defineStore('toast', () => {
