@@ -40,8 +40,9 @@ function swapImageForVideo(
   image: SVGImageElement,
   href: string
 ): HTMLVideoElement {
-  const width = image.getAttribute('width') ?? '0'
-  const height = image.getAttribute('height') ?? '0'
+  const rect = image.getBoundingClientRect()
+  const width = image.getAttribute('width') ?? String(rect.width || 0)
+  const height = image.getAttribute('height') ?? String(rect.height || 0)
   const fo = document.createElementNS(SVG_NS, 'foreignObject')
   fo.setAttribute('x', '0')
   fo.setAttribute('y', '0')
@@ -54,7 +55,7 @@ function swapImageForVideo(
   v.loop = true
   v.muted = true
   v.playsInline = true
-  v.setAttribute('playsinline', '')
+  v.setAttribute('playsinline', '') // IDL property for modern browsers; attribute for older WebKit
   v.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;'
   fo.appendChild(v)
   image.replaceWith(fo)
@@ -63,9 +64,9 @@ function swapImageForVideo(
 
 function whenLoaded(el: HTMLVideoElement | HTMLImageElement): Promise<void> {
   return new Promise((resolve) => {
-    if (el instanceof HTMLVideoElement && el.readyState >= 2) return resolve()
+    if (el instanceof HTMLVideoElement && el.readyState >= 3) return resolve()
     if (el instanceof HTMLImageElement && el.complete) return resolve()
-    const event = el instanceof HTMLVideoElement ? 'loadeddata' : 'load'
+    const event = el instanceof HTMLVideoElement ? 'canplay' : 'load'
     el.addEventListener(event, () => resolve(), { once: true })
     el.addEventListener('error', () => resolve(), { once: true })
   })
@@ -105,7 +106,7 @@ function prepareAssets(container: HTMLElement): {
 
 watch(
   [lottieContainer, () => src, () => assetsPath],
-  async ([container]) => {
+  async ([container, newSrc, newAssetsPath]) => {
     const gen = ++loadGen
     for (const v of videos) v.pause()
     abortPreloadedImages(images)
@@ -114,7 +115,7 @@ watch(
     anim?.destroy()
     anim = null
     assetsLoaded.value = false
-    if (!container) return
+    if (!container || !newSrc) return
     try {
       const { default: lottie } = await import('lottie-web')
       if (gen !== loadGen) return
@@ -123,13 +124,16 @@ watch(
         renderer: 'svg',
         loop: true,
         autoplay: false,
-        path: src,
-        assetsPath,
+        path: newSrc,
+        assetsPath: newAssetsPath ?? undefined,
         rendererSettings: { preserveAspectRatio: 'xMidYMid slice' }
       })
       anim = created
       created.addEventListener('DOMLoaded', () => {
-        if (gen !== loadGen || anim !== created) return
+        if (gen !== loadGen || anim !== created) {
+          created.destroy()
+          return
+        }
         created.goToAndStop(0, true)
         const {
           videos: loadedVideos,
@@ -147,13 +151,16 @@ watch(
         })
       })
       created.addEventListener('data_failed', () => {
-        if (gen !== loadGen || anim !== created) return
-        console.error('[LottieVideoPlayer] Lottie data failed to load:', src)
+        if (gen !== loadGen || anim !== created) {
+          created.destroy()
+          return
+        }
+        console.error('[LottieVideoPlayer] Lottie data failed to load:', newSrc)
         emit('ready')
       })
     } catch (err) {
       if (gen !== loadGen) return
-      console.error('[LottieVideoPlayer] failed to initialize:', src, err)
+      console.error('[LottieVideoPlayer] failed to initialize:', newSrc, err)
       anim?.destroy()
       anim = null
       assetsLoaded.value = false
@@ -205,13 +212,14 @@ onBeforeUnmount(() => {
   <div class="relative">
     <div ref="lottieContainer" class="size-full" />
     <img
-      v-if="poster && !assetsLoaded"
+      v-if="poster"
+      v-show="!assetsLoaded"
       :src="poster"
       alt=""
       aria-hidden="true"
       :class="
         cn(
-          'pointer-events-none absolute inset-0 size-full object-cover',
+          'pointer-events-none absolute inset-0 size-full object-cover transition-opacity duration-300',
           posterClass
         )
       "

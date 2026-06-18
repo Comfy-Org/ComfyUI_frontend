@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useIntersectionObserver, useMediaQuery } from '@vueuse/core'
-import { ref, useTemplateRef } from 'vue'
+import { onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -53,7 +53,15 @@ const badgeSegments = [
 const activeIndex = ref(0)
 const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
 const isVisible = ref(false)
-const isMobile = useMediaQuery('(max-width: 1023px)')
+// Initialized false until onMounted to avoid SSR/hydration mismatch.
+// useMediaQuery returns false on the server, which would differ from the
+// client's real viewport and cause structural DOM divergence.
+const isMobile = ref(false)
+const _mqMobile = useMediaQuery('(max-width: 1023px)')
+onMounted(() => {
+  isMobile.value = _mqMobile.value
+  watch(_mqMobile, (v) => { isMobile.value = v })
+})
 
 useIntersectionObserver(sectionRef, ([entry]) => {
   isVisible.value = entry?.isIntersecting ?? false
@@ -117,12 +125,16 @@ useIntersectionObserver(sectionRef, ([entry]) => {
         <template v-for="(feature, i) in features" :key="feature.title">
           <!-- Lottie area (mobile, rendered before active item) -->
           <div
-            v-if="isMobile"
-            v-show="activeIndex === i"
+            v-if="isMobile && activeIndex === i"
             :class="cn('aspect-video', i !== 0 && 'mt-4')"
           >
             <div
-              class="animate-border-spin size-full overflow-hidden rounded-4xl p-0.5"
+              :class="
+                cn(
+                  'size-full overflow-hidden rounded-4xl p-0.5',
+                  isVisible && 'animate-border-spin'
+                )
+              "
             >
               <div
                 class="bg-primary-comfy-ink size-full overflow-hidden rounded-[calc(2rem-2px)]"
