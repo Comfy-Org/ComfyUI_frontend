@@ -25,10 +25,22 @@ vi.mock('@/i18n', () => ({
   d: (date: Date) => date.toLocaleDateString()
 }))
 
+const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get supportsModelTypeTags() {
+        return mockSupportsModelTypeTags.value
+      }
+    }
+  })
+}))
+
 describe('useAssetBrowser', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.restoreAllMocks()
+    mockSupportsModelTypeTags.value = false
   })
 
   // Test fixtures - minimal data focused on functionality being tested
@@ -668,7 +680,8 @@ describe('useAssetBrowser', () => {
       ])
     })
 
-    it('groups by model_type:* value and ignores other tags', () => {
+    it('groups by model_type:* value and ignores other tags when the flag is on', () => {
+      mockSupportsModelTypeTags.value = true
       const assets = [
         createApiAsset({ tags: ['models', 'model_type:checkpoints', 'sdxl'] }),
         createApiAsset({ tags: ['models', 'model_type:LLM'] })
@@ -678,6 +691,21 @@ describe('useAssetBrowser', () => {
 
       const typeGroup = navItems.value[2] as { items: { id: string }[] }
       expect(typeGroup.items.map((i) => i.id)).toEqual(['LLM', 'checkpoints'])
+    })
+
+    it('ignores model_type: and groups by bare tags when the flag is off', () => {
+      const assets = [
+        createApiAsset({ tags: ['models', 'model_type:checkpoints'] }),
+        createApiAsset({ tags: ['models', 'model_type:LLM'] })
+      ]
+
+      const { navItems } = useAssetBrowser(ref(assets))
+
+      const typeGroup = navItems.value[2] as { items: { id: string }[] }
+      expect(typeGroup.items.map((i) => i.id)).toEqual([
+        'model_type:LLM',
+        'model_type:checkpoints'
+      ])
     })
 
     it('handles assets with no category tag', () => {

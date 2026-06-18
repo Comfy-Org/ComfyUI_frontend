@@ -30,7 +30,8 @@ export enum ServerFeatureFlag {
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
-  SIGNUP_TURNSTILE = 'signup_turnstile'
+  SIGNUP_TURNSTILE = 'signup_turnstile',
+  SUPPORTS_MODEL_TYPE_TAGS = 'supports_model_type_tags'
 }
 
 /**
@@ -180,6 +181,12 @@ export function useFeatureFlags() {
         ServerFeatureFlag.SIGNUP_TURNSTILE,
         remoteConfig.value.signup_turnstile,
         'off'
+      )
+    },
+    get supportsModelTypeTags() {
+      return api.getServerFeature(
+        ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS,
+        false
       )
     }
   })

@@ -163,21 +163,31 @@ function getModelTypeTagValues(asset: AssetItem): string[] {
     .filter((tag) => tag.length > 0)
 }
 
-/**
- * Resolves the category keys a model asset is grouped under.
- *
- * When the asset carries `model_type:*` tags (the namespaced tag scheme), the
- * `*` values are authoritative and every other tag is disregarded. Otherwise
- * we fall back to treating each non-`models` tag's top-level segment as a
- * category, preserving the pre-namespace behavior.
- */
-export function getAssetCategories(asset: AssetItem): string[] {
-  const modelTypes = getModelTypeTagValues(asset)
-  if (modelTypes.length > 0) return modelTypes
-
+function getBareTagCategories(asset: AssetItem): string[] {
   return asset.tags
     .filter((tag) => tag !== MODELS_TAG && tag.length > 0)
     .map((tag) => tag.split('/')[0])
+}
+
+/**
+ * Resolves the category keys a model asset is grouped under.
+ *
+ * `modelTypeMode` reflects whether the backend declares the `model_type:` tag
+ * scheme (the `supports_model_type_tags` capability). When true, an asset's
+ * `model_type:*` values are authoritative; an asset with no `model_type:` tag
+ * still routes by its bare tags. When false (the default) categories come from
+ * the legacy bare-tag top-level grouping and `model_type:` is ignored.
+ */
+export function getAssetCategories(
+  asset: AssetItem,
+  modelTypeMode = false
+): string[] {
+  if (modelTypeMode) {
+    const modelTypes = getModelTypeTagValues(asset)
+    if (modelTypes.length > 0) return modelTypes
+  }
+
+  return getBareTagCategories(asset)
 }
 
 function pathDepth(tag: string): number {
@@ -189,12 +199,22 @@ function pathDepth(tag: string): number {
  *
  * Unlike {@link getAssetCategories}, this keeps the full (possibly
  * hierarchical) value so `modelToNodeStore`'s `parent/child` fallback still
- * works. Candidates are the stripped `model_type:*` values plus any other
- * non-reserved tags, and the most specific (deepest `parent/child`) candidate
- * wins so a flat `model_type:LLM` never shadows a resolvable
- * `LLM/Qwen-VL/...` tag. `model_type:*` values win ties.
+ * works.
+ *
+ * In `modelTypeMode` (backend declares `supports_model_type_tags`), candidates
+ * are the stripped `model_type:*` values plus any other non-reserved tags, and
+ * the most specific (deepest `parent/child`) candidate wins so a flat
+ * `model_type:LLM` never shadows a resolvable `LLM/Qwen-VL/...` tag. Otherwise
+ * we use the legacy first-non-reserved tag verbatim.
  */
-export function getAssetNodeCategory(asset: AssetItem): string | undefined {
+export function getAssetNodeCategory(
+  asset: AssetItem,
+  modelTypeMode = false
+): string | undefined {
+  if (!modelTypeMode) {
+    return asset.tags.find((tag) => tag !== MODELS_TAG && tag !== MISSING_TAG)
+  }
+
   const otherTags = asset.tags.filter(
     (tag) =>
       tag !== MODELS_TAG &&
