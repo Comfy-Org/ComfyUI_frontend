@@ -158,7 +158,16 @@ export function useLegacyBilling(): BillingState & BillingActions {
       returnUrl,
       cancelUrl
     )
-    await Promise.all([fetchStatus(), fetchBalance()])
+    const [statusResult, balanceResult] = await Promise.allSettled([
+      fetchStatus(),
+      fetchBalance()
+    ])
+    if (
+      statusResult.status === 'rejected' ||
+      balanceResult.status === 'rejected'
+    ) {
+      error.value = 'Subscription succeeded, but billing state refresh failed'
+    }
     return response
   }
 

@@ -169,6 +169,19 @@ describe('useLegacyBilling', () => {
 
       expect(mockSubscription.subscribe).not.toHaveBeenCalled()
     })
+
+    it('returns the successful response when the post-subscribe refresh fails', async () => {
+      mockWorkspaceApi.subscribe.mockResolvedValue(subscribeResponse)
+      mockAuthStore.fetchBalance.mockRejectedValue(new Error('network down'))
+
+      const billing = setupBilling()
+      const result = await billing.subscribe('standard-yearly')
+
+      expect(result).toStrictEqual(subscribeResponse)
+      expect(billing.error.value).toBe(
+        'Subscription succeeded, but billing state refresh failed'
+      )
+    })
   })
 
   describe('plans', () => {
