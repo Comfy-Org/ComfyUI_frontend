@@ -61,8 +61,7 @@ export const useSubscriptionDialog = () => {
       return
     }
 
-    const useWorkspaceVariant =
-      flags.teamWorkspacesEnabled && !workspaceStore.isInPersonalWorkspace
+    const useWorkspaceVariant = flags.teamWorkspacesEnabled
 
     const component = useWorkspaceVariant
       ? defineAsyncComponent(

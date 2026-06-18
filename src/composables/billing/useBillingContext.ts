@@ -21,11 +21,11 @@ import { useLegacyBilling } from './useLegacyBilling'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
 /**
- * Unified billing context that automatically switches between legacy (user-scoped)
- * and workspace billing based on the active workspace type.
+ * Unified billing context that selects the billing implementation by build/flag.
  *
- * - Personal workspaces use legacy billing via /customers/* endpoints
- * - Team workspaces use workspace billing via /billing/* endpoints
+ * - Team workspaces disabled (OSS/Desktop): legacy billing via /customers/*
+ * - Team workspaces enabled: workspace billing via /api/billing/* for both
+ *   personal (single-seat workspace) and team workspaces
  *
  * The context automatically initializes when the workspace changes and provides
  * a unified interface for subscription status, balance, and billing actions.
@@ -86,16 +86,14 @@ function useBillingContextInternal(): BillingContext {
   const error = ref<string | null>(null)
 
   /**
-   * Determines which billing type to use:
-   * - If team workspaces feature is disabled: always use legacy (/customers)
-   * - If team workspaces feature is enabled:
-   *   - Personal workspace: use legacy (/customers)
-   *   - Team workspace: use workspace (/billing)
+   * Determines which billing type to use, keyed only on the build/flag:
+   * - Team workspaces feature disabled (OSS/Desktop): legacy (/customers)
+   * - Team workspaces feature enabled: workspace (/api/billing), for both
+   *   personal (single-seat workspace) and team workspaces
    */
-  const type = computed<BillingType>(() => {
-    if (!flags.teamWorkspacesEnabled) return 'legacy'
-    return store.isInPersonalWorkspace ? 'legacy' : 'workspace'
-  })
+  const type = computed<BillingType>(() =>
+    flags.teamWorkspacesEnabled ? 'workspace' : 'legacy'
+  )
 
   const activeContext = computed(() =>
     type.value === 'legacy' ? getLegacyBilling() : getWorkspaceBilling()
@@ -147,7 +145,7 @@ function useBillingContextInternal(): BillingContext {
   watch(
     subscription,
     (sub) => {
-      if (!sub || store.isInPersonalWorkspace) return
+      if (!sub) return
 
       store.updateActiveWorkspace({
         isSubscribed: sub.isActive && !sub.isCancelled,

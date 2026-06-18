@@ -94,6 +94,28 @@ describe('useSubscriptionDialog', () => {
 
       expect(mockShowLayoutDialog).toHaveBeenCalled()
     })
+
+    it('uses the legacy personal variant when team workspaces are disabled', () => {
+      mockTeamWorkspacesEnabled.value = false
+      mockIsInPersonalWorkspace.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const { props } = mockShowLayoutDialog.mock.calls[0][0]
+      expect(props).toHaveProperty('onChooseTeam')
+    })
+
+    it('uses the workspace variant for personal when team workspaces are enabled', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsInPersonalWorkspace.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const { props } = mockShowLayoutDialog.mock.calls[0][0]
+      expect(props).not.toHaveProperty('onChooseTeam')
+    })
   })
 
   describe('startTeamWorkspaceUpgradeFlow', () => {
