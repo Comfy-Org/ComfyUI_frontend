@@ -172,6 +172,7 @@ export type { TWidgetType, TWidgetValue, IWidgetOptions } from './types/widgets'
 export {
   findUsedSubgraphIds,
   getDirectSubgraphIds,
+  isNodeSlot,
   isSubgraphInput,
   isSubgraphOutput
 } from './subgraph/subgraphUtils'

@@ -296,12 +296,7 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     { tag: '@screenshot' },
     async ({ comfyPage }) => {
       await comfyPage.canvasOps.disconnectEdge()
-      const contextMenu = comfyPage.page.locator('.litecontextmenu')
-      // Wait for context menu with correct title (slot name | slot type)
-      // The title shows the output slot name and type from the disconnected link
-      await expect(contextMenu.locator('.litemenu-title')).toContainText(
-        'CLIP | CLIP'
-      )
+      await expect(comfyPage.contextMenu.linkReleaseMenu).toBeVisible()
       await comfyPage.page.mouse.move(10, 10)
       await comfyPage.expectScreenshot(
         comfyPage.canvas,
@@ -313,14 +308,20 @@ test.describe('Release context menu', { tag: '@node' }, () => {
   test(
     'Can search and add node from context menu',
     { tag: '@screenshot' },
-    async ({ comfyPage, comfyMouse }) => {
+    async ({ comfyPage }) => {
       const initialNodeCount = await comfyPage.nodeOps.getGraphNodesCount()
       await comfyPage.canvasOps.disconnectEdge()
-      await comfyMouse.move({ x: 10, y: 10 })
-      await comfyPage.contextMenu.clickMenuItem('Search')
-      await comfyPage.nextFrame()
-      await comfyPage.searchBox.fillAndSelectFirstNode('CLIP Prompt')
-      await waitForSearchInsertion(comfyPage, initialNodeCount)
+      await expect(comfyPage.contextMenu.linkReleaseMenu).toBeVisible()
+
+      await comfyPage.contextMenu.linkReleaseMenuSearch.fill('CLIP Prompt')
+      await expect(
+        comfyPage.contextMenu.linkReleaseMenu.getByRole('menuitem').first()
+      ).toBeVisible()
+      await comfyPage.page.keyboard.press('Enter')
+
+      await expect
+        .poll(() => comfyPage.nodeOps.getGraphNodesCount())
+        .toBe(initialNodeCount + 1)
       await expect(comfyPage.canvas).toHaveScreenshot(
         'link-context-menu-search.png'
       )
@@ -343,8 +344,7 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     await comfyPage.canvasOps.disconnectEdge()
     // Context menu should appear, search box should not
     await expect(comfyPage.searchBox.input).toHaveCount(0)
-    const contextMenu = comfyPage.page.locator('.litecontextmenu')
-    await expect(contextMenu).toBeVisible()
+    await expect(comfyPage.contextMenu.linkReleaseMenu).toBeVisible()
   })
 
   test('Explicit setting overrides versioned defaults', async ({
@@ -366,7 +366,6 @@ test.describe('Release context menu', { tag: '@node' }, () => {
     await comfyPage.canvasOps.disconnectEdge()
     // Context menu should appear due to explicit setting, not search box
     await expect(comfyPage.searchBox.input).toHaveCount(0)
-    const contextMenu = comfyPage.page.locator('.litecontextmenu')
-    await expect(contextMenu).toBeVisible()
+    await expect(comfyPage.contextMenu.linkReleaseMenu).toBeVisible()
   })
 })

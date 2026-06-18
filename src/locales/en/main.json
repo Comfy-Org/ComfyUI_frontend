@@ -593,6 +593,12 @@
     "Bypass": "Bypass",
     "Copy (Clipspace)": "Copy (Clipspace)",
     "Add Node": "Add Node",
+    "Add Reroute": "Add Reroute",
+    "Most Relevant": "Most Relevant",
+    "Comfy Nodes": "Comfy Nodes",
+    "Extensions": "Extensions",
+    "Partner Nodes": "Partner Nodes",
+    "Compatible Nodes": "Compatible Nodes",
     "Add Group": "Add Group",
     "Manage Group Nodes": "Manage Group Nodes",
     "Add Group For Selected Nodes": "Add Group For Selected Nodes",
@@ -634,8 +640,7 @@
     "Horizontal": "Horizontal",
     "Vertical": "Vertical",
     "new": "new",
-    "deprecated": "deprecated",
-    "Extensions": "Extensions"
+    "deprecated": "deprecated"
   },
   "icon": {
     "bookmark": "Bookmark",

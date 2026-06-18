@@ -118,6 +118,13 @@ export class LinkConnector {
   /** The reroute beneath the pointer, if it is a valid connection target. */
   overReroute?: Reroute
 
+  /**
+   * When `true`, the in-progress dragging links are not rendered even though a
+   * connection is still active. Used to hide the dangling link while a
+   * link-release menu holds the connection open.
+   */
+  renderLinksHidden = false
+
   private readonly _setConnectingLinks: (value: ConnectingLink[]) => void
 
   constructor(setConnectingLinks: (value: ConnectingLink[]) => void) {
@@ -1097,6 +1104,8 @@ export class LinkConnector {
   reset(force = false): void {
     const mayContinue = this.events.dispatch('reset', force)
     if (mayContinue === false) return
+
+    this.renderLinksHidden = false
 
     const {
       state,

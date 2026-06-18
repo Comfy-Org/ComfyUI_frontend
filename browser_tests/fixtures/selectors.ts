@@ -4,6 +4,10 @@
  */
 
 export const TestIds = {
+  linkReleaseMenu: {
+    root: 'link-release-context-menu',
+    search: 'link-release-search'
+  },
   sidebar: {
     toolbar: 'side-toolbar',
     nodeLibrary: 'node-library-tree',

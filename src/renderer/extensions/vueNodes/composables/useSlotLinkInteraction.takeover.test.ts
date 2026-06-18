@@ -1,61 +1,51 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-const {
-  capturedOnPan,
-  capturedAutoPan,
-  capturedHandlers,
-  mockDs,
-  mockSetDirty,
-  mockLinkConnector,
-  mockAdapter
-} = vi.hoisted(() => ({
-  capturedOnPan: { current: null as ((dx: number, dy: number) => void) | null },
-  capturedAutoPan: {
-    current: null as {
-      updatePointer: ReturnType<typeof vi.fn>
-      start: ReturnType<typeof vi.fn>
-      stop: ReturnType<typeof vi.fn>
-    } | null
-  },
-  capturedHandlers: {} as Record<string, (...args: unknown[]) => void>,
-  mockDs: { offset: [0, 0] as [number, number], scale: 1 },
-  mockSetDirty: vi.fn(),
-  mockLinkConnector: {
-    isConnecting: false,
-    state: { snapLinksPos: null as [number, number] | null },
-    events: {}
-  },
-  mockAdapter: {
-    beginFromOutput: vi.fn(),
-    beginFromInput: vi.fn(),
-    reset: vi.fn(),
-    renderLinks: [] as unknown[],
-    linkConnector: null as unknown,
-    isInputValidDrop: vi.fn(() => false),
-    isOutputValidDrop: vi.fn(() => false),
-    dropOnCanvas: vi.fn()
-  }
-}))
+const { capturedHandlers, mockLinkConnector, mockAdapter, cancelLinkRelease } =
+  vi.hoisted(() => ({
+    capturedHandlers: {} as Record<string, (...args: unknown[]) => void>,
+    mockLinkConnector: {
+      isConnecting: false,
+      state: { snapLinksPos: null as [number, number] | null },
+      events: {}
+    },
+    mockAdapter: {
+      beginFromOutput: vi.fn(),
+      beginFromInput: vi.fn(),
+      reset: vi.fn(),
+      renderLinks: [] as unknown[],
+      linkConnector: null as unknown,
+      isInputValidDrop: vi.fn(() => false),
+      isOutputValidDrop: vi.fn(() => false),
+      dropOnCanvas: vi.fn()
+    },
+    cancelLinkRelease: vi.fn()
+  }))
 
 mockAdapter.linkConnector = mockLinkConnector
+
+// Emulate the real teardown: cancelling a held session clears the connector
+// state so the subsequent begin call no longer trips the guard.
+cancelLinkRelease.mockImplementation(() => {
+  mockLinkConnector.isConnecting = false
+})
+
+vi.mock('@/stores/workspace/searchBoxStore', () => ({
+  useSearchBoxStore: () => ({ cancelLinkRelease })
+}))
 
 vi.mock('@/renderer/core/canvas/useAutoPan', () => ({
   AutoPanController: class {
     updatePointer = vi.fn()
     start = vi.fn()
     stop = vi.fn()
-    constructor(opts: { onPan: (dx: number, dy: number) => void }) {
-      capturedOnPan.current = opts.onPan
-      capturedAutoPan.current = this as typeof capturedAutoPan.current
-    }
   }
 }))
 
 vi.mock('@/scripts/app', () => ({
   app: {
     canvas: {
-      ds: mockDs,
+      ds: { offset: [0, 0], scale: 1 },
       graph: {
         getNodeById: (id: string) => ({
           id,
@@ -76,7 +66,7 @@ vi.mock('@/scripts/app', () => ({
           height: 600
         })
       },
-      setDirty: mockSetDirty
+      setDirty: vi.fn()
     }
   }
 }))
@@ -99,17 +89,7 @@ vi.mock('@/renderer/core/canvas/links/slotLinkDragUIState', () => {
       },
       beginDrag: vi.fn(),
       endDrag: vi.fn(),
-      updatePointerPosition: (
-        cx: number,
-        cy: number,
-        canX: number,
-        canY: number
-      ) => {
-        pointer.client.x = cx
-        pointer.client.y = cy
-        pointer.canvas.x = canX
-        pointer.canvas.y = canY
-      },
+      updatePointerPosition: vi.fn(),
       setCandidate: vi.fn(),
       setCompatibleForKey: vi.fn(),
       clearCompatible: vi.fn()
@@ -119,16 +99,13 @@ vi.mock('@/renderer/core/canvas/links/slotLinkDragUIState', () => {
 
 vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
   useSharedCanvasPositionConversion: () => ({
-    clientPosToCanvasPos: (pos: [number, number]): [number, number] => [
-      pos[0] / (mockDs.scale || 1) - mockDs.offset[0],
-      pos[1] / (mockDs.scale || 1) - mockDs.offset[1]
-    ]
+    clientPosToCanvasPos: (pos: [number, number]): [number, number] => pos
   })
 }))
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
-    getSlotLayout: (_key: string) => ({
+    getSlotLayout: () => ({
       nodeId: 'node1',
       index: 0,
       type: 'output',
@@ -153,13 +130,6 @@ vi.mock(
   '@/renderer/extensions/vueNodes/composables/slotLinkDragContext',
   () => ({
     createSlotLinkDragContext: () => ({
-      pendingPointerMove: null,
-      lastPointerEventTarget: null,
-      lastPointerTargetSlotKey: null,
-      lastPointerTargetNodeId: null,
-      lastHoverSlotKey: null,
-      lastHoverNodeId: null,
-      lastCandidateKey: null,
       reset: vi.fn(),
       dispose: vi.fn()
     })
@@ -187,13 +157,9 @@ vi.mock('@/lib/litegraph/src/LLink', () => ({
   LLink: { getReroutes: () => [] }
 }))
 
-vi.mock('@/lib/litegraph/src/types/globalEnums', async (importOriginal) => {
-  const original = await importOriginal()
-  return {
-    ...(original as object),
-    LinkDirection: { LEFT: 0, RIGHT: 1, NONE: -1 }
-  }
-})
+vi.mock('@/lib/litegraph/src/types/globalEnums', () => ({
+  LinkDirection: { LEFT: 0, RIGHT: 1, NONE: -1 }
+}))
 
 vi.mock('@/utils/rafBatch', () => ({
   createRafBatch: (fn: () => void) => ({
@@ -205,14 +171,10 @@ vi.mock('@/utils/rafBatch', () => ({
 
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 
-function pointerEvent(
-  clientX: number,
-  clientY: number,
-  pointerId = 1
-): PointerEvent {
+function pointerEvent(pointerId = 1): PointerEvent {
   return fromPartial<PointerEvent>({
-    clientX,
-    clientY,
+    clientX: 400,
+    clientY: 300,
     button: 0,
     pointerId,
     ctrlKey: false,
@@ -231,63 +193,37 @@ function startDrag() {
     index: 0,
     type: 'output'
   })
-  onPointerDown(pointerEvent(400, 300))
+  onPointerDown(pointerEvent())
 }
 
-describe('useSlotLinkInteraction auto-pan', () => {
+describe('useSlotLinkInteraction held-session takeover', () => {
   beforeEach(() => {
-    capturedOnPan.current = null
-    capturedAutoPan.current = null
-    for (const k of Object.keys(capturedHandlers)) {
-      delete capturedHandlers[k]
-    }
-    mockDs.offset = [0, 0]
-    mockDs.scale = 1
-    mockSetDirty.mockClear()
+    for (const k of Object.keys(capturedHandlers)) delete capturedHandlers[k]
+    mockLinkConnector.isConnecting = false
+    cancelLinkRelease.mockClear()
     mockAdapter.beginFromOutput.mockClear()
-    mockLinkConnector.state.snapLinksPos = null
   })
 
   afterEach(() => {
-    vi.restoreAllMocks()
+    vi.clearAllMocks()
   })
 
-  it('starts auto-pan when link drag begins', () => {
+  it('cancels a held link-release session before starting a new drag', () => {
+    mockLinkConnector.isConnecting = true
+
     startDrag()
 
-    expect(capturedAutoPan.current).not.toBeNull()
-    expect(capturedAutoPan.current!.start).toHaveBeenCalled()
-  })
-
-  it('updates snapLinksPos and marks dirty when onPan fires', () => {
-    startDrag()
-    mockSetDirty.mockClear()
-
-    mockDs.offset = [-10, -5]
-    capturedOnPan.current!(10, 5)
-
-    expect(mockLinkConnector.state.snapLinksPos).toEqual([410, 305])
-    expect(mockSetDirty).toHaveBeenCalledWith(true, true)
-  })
-
-  it('forwards pointer position to auto-pan during drag', () => {
-    startDrag()
-    const moveHandler = capturedHandlers['pointermove']
-
-    moveHandler(pointerEvent(790, 300))
-
-    expect(capturedAutoPan.current!.updatePointer).toHaveBeenCalledWith(
-      790,
-      300
+    expect(cancelLinkRelease).toHaveBeenCalledOnce()
+    expect(mockAdapter.beginFromOutput).toHaveBeenCalled()
+    expect(cancelLinkRelease.mock.invocationCallOrder[0]).toBeLessThan(
+      mockAdapter.beginFromOutput.mock.invocationCallOrder[0]
     )
   })
 
-  it('stops auto-pan on cleanup', () => {
+  it('does not cancel when no session is held', () => {
     startDrag()
-    const upHandler = capturedHandlers['pointerup']
 
-    upHandler(pointerEvent(400, 300))
-
-    expect(capturedAutoPan.current!.stop).toHaveBeenCalled()
+    expect(cancelLinkRelease).not.toHaveBeenCalled()
+    expect(mockAdapter.beginFromOutput).toHaveBeenCalled()
   })
 })

@@ -21,6 +21,7 @@ import {
   SubgraphNode,
   createBounds
 } from '@/lib/litegraph/src/litegraph'
+import { overlapBounding } from '@/lib/litegraph/src/measure'
 import type {
   CreateNodeOptions,
   GraphAddOptions,
@@ -932,8 +933,38 @@ export const useLitegraphService = () => {
     const graph = useWorkflowStore().activeSubgraph ?? app.graph
     if (!graph || !node) return null
 
+    // Finalize placement before the node joins the graph so the only position
+    // assignment happens during construction, not as a post-add mutation.
+    if (!addOptions?.ghost) resolveOverlap(node, graph)
     graph.add(node, addOptions)
+    if (!addOptions?.ghost) centerOnNewNode(node)
     return node
+  }
+
+  const OVERLAP_GAP = 20
+  const OVERLAP_MAX_ITER = 100
+
+  function resolveOverlap(
+    node: LGraphNode,
+    graph: { nodes: LGraphNode[] }
+  ): void {
+    node.updateArea()
+    let iter = 0
+    while (
+      iter++ < OVERLAP_MAX_ITER &&
+      graph.nodes.some(
+        (n) =>
+          n.id !== node.id && overlapBounding(node.boundingRect, n.boundingRect)
+      )
+    ) {
+      node.pos[1] += node.size[1] + OVERLAP_GAP
+      node.updateArea()
+    }
+  }
+
+  function centerOnNewNode(node: LGraphNode): void {
+    node.updateArea()
+    app.canvas?.animateToBounds(node.boundingRect, { zoom: 0 })
   }
 
   function getCanvasCenter(): Point {
