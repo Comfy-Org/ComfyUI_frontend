@@ -79,7 +79,8 @@ function createMember(id: string): WorkspaceMember {
     name: `Member ${id}`,
     email: `member${id}@example.com`,
     joinDate: new Date('2025-01-15'),
-    role: 'member'
+    role: 'member',
+    isOriginalOwner: false
   }
 }
 

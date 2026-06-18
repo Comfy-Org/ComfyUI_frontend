@@ -99,7 +99,8 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
       name: 'Owner User',
       email: 'owner@example.com',
       role: 'owner' as const,
-      joinDate: new Date(0)
+      joinDate: new Date(0),
+      isOriginalOwner: true
     })),
     filteredMembers: mockFilteredMembers,
     filteredPendingInvites: mockFilteredPendingInvites,
@@ -174,6 +175,7 @@ function createMember(
     email: 'member1@example.com',
     joinDate: new Date('2025-01-15'),
     role: 'member',
+    isOriginalOwner: false,
     ...overrides
   }
 }

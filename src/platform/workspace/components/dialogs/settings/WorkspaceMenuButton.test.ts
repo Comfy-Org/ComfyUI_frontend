@@ -14,21 +14,24 @@ const CREATOR = {
   name: 'Creator',
   email: 'creator@test.com',
   joinDate: new Date('2026-01-01T00:00:00Z'),
-  role: 'owner' as const
+  role: 'owner' as const,
+  isOriginalOwner: true
 }
 const LATER_OWNER = {
   id: 'owner-2',
   name: 'Owner Two',
   email: 'owner2@test.com',
   joinDate: new Date('2026-02-01T00:00:00Z'),
-  role: 'owner' as const
+  role: 'owner' as const,
+  isOriginalOwner: false
 }
 const LATER_MEMBER = {
   id: 'member-2',
   name: 'Member Two',
   email: 'member2@test.com',
   joinDate: new Date('2026-02-01T00:00:00Z'),
-  role: 'member' as const
+  role: 'member' as const,
+  isOriginalOwner: false
 }
 
 const ownerConfig = {

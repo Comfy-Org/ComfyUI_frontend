@@ -21,6 +21,7 @@ export interface WorkspaceMember {
   email: string
   joinDate: Date
   role: 'owner' | 'member'
+  isOriginalOwner: boolean
 }
 
 export interface PendingInvite {
@@ -48,7 +49,8 @@ function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
     name: member.name,
     email: member.email,
     joinDate: new Date(member.joined_at),
-    role: member.role
+    role: member.role,
+    isOriginalOwner: member.is_original_owner
   }
 }
 
@@ -148,14 +150,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => activeWorkspace.value?.pendingInvites ?? []
   )
 
-  // Earliest-joined member is the workspace creator ("original owner").
-  // FE inference until the BE exposes an explicit flag (FE-770 BE blocker Q3).
-  const originalOwnerId = computed<string | null>(() => {
-    if (members.value.length === 0) return null
-    return members.value.reduce((earliest, member) =>
-      member.joinDate < earliest.joinDate ? member : earliest
-    ).id
-  })
+  const originalOwnerId = computed<string | null>(
+    () => members.value.find((m) => m.isOriginalOwner)?.id ?? null
+  )
 
   const totalMemberSlots = computed(
     () => members.value.length + pendingInvites.value.length
@@ -537,12 +534,13 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     if (userId === originalOwnerId.value) {
       throw new Error("Cannot change the workspace creator's role")
     }
-    await workspaceApi.updateMemberRole(userId, role)
+    const updated = await workspaceApi.updateMemberRole(userId, role)
+    const updatedMember = mapApiMemberToWorkspaceMember(updated)
     const current = activeWorkspace.value
     if (current) {
       updateActiveWorkspace({
         members: current.members.map((m) =>
-          m.id === userId ? { ...m, role } : m
+          m.id === userId ? updatedMember : m
         )
       })
     }
