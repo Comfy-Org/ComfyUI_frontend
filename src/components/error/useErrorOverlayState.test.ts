@@ -6,6 +6,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useErrorOverlayState } from './useErrorOverlayState'
 import { asNodeId } from '@/lib/litegraph/src/litegraph'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { NodeError } from '@/schemas/apiSchema'
@@ -251,7 +252,7 @@ describe('useErrorOverlayState', () => {
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.lastExecutionError = {
       prompt_id: 'prompt',
-      node_id: asNodeId(1),
+      node_id: asNodeExecutionId(1),
       node_type: 'KSampler',
       executed: [],
       exception_message: 'CUDA out of memory',

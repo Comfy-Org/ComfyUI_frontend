@@ -73,7 +73,8 @@
       :key="nodeData.id"
       :node-data="nodeData"
       :error="
-        executionErrorStore.lastExecutionError?.node_id === nodeData.id
+        executionErrorStore.lastExecutionErrorNodeLocatorId ===
+        getLocatorIdFromNodeData(nodeData)
           ? 'Execution error'
           : null
       "
@@ -189,7 +190,10 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { forEachNode } from '@/utils/graphTraversalUtil'
+import {
+  forEachNode,
+  getLocatorIdFromNodeData
+} from '@/utils/graphTraversalUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 import { isCloud } from '@/platform/distribution/types'

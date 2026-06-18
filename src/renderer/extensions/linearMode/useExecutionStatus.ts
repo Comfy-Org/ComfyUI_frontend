@@ -5,6 +5,7 @@ import { getExecutionStatusMessage } from '@/renderer/extensions/linearMode/getE
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   executionIdToNodeLocatorId,
   getNodeByLocatorId
@@ -13,7 +14,7 @@ import {
 function resolveStatus(
   t: (key: string) => string,
   nodeDefStore: ReturnType<typeof useNodeDefStore>,
-  executionId: string | number
+  executionId: NodeExecutionId
 ): string | null {
   const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
   if (!locatorId) return null

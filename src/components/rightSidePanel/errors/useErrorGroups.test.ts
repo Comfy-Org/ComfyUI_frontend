@@ -4,6 +4,7 @@ import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { asNodeId } from '@/lib/litegraph/src/litegraph'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import type { MissingNodeType } from '@/types/comfy'
 
 vi.mock('@/scripts/app', () => ({
@@ -541,7 +542,7 @@ describe('useErrorGroups', () => {
       store.lastExecutionError = {
         prompt_id: 'test-prompt',
         timestamp: Date.now(),
-        node_id: asNodeId(5),
+        node_id: asNodeExecutionId(5),
         node_type: 'KSampler',
         executed: [],
         exception_type: 'RuntimeError',
@@ -578,7 +579,7 @@ describe('useErrorGroups', () => {
       store.lastExecutionError = {
         prompt_id: 'test-prompt',
         timestamp: Date.now(),
-        node_id: asNodeId(5),
+        node_id: asNodeExecutionId(5),
         node_type: 'KSampler',
         executed: [],
         exception_type: 'torch.OutOfMemoryError',

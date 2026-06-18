@@ -64,6 +64,7 @@ import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { WidgetId } from '@/types/widgetId'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 import {
   isAnimatedOutput,
   isImageNode,
@@ -249,7 +250,8 @@ export const useLitegraphService = () => {
       }
     }
     node.strokeStyles['executionError'] = function (this: LGraphNode) {
-      if (app.lastExecutionError?.node_id == this.id) {
+      const executionId = getExecutionIdByNode(app.rootGraph, this)
+      if (executionId && app.lastExecutionError?.node_id === executionId) {
         return { color: '#f0f', lineWidth: 3 }
       }
     }

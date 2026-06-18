@@ -11,6 +11,7 @@ import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
 import { asNodeId } from '@/lib/litegraph/src/litegraph'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import { i18n } from '@/i18n'
 
 function nodeValidationError(
@@ -49,7 +50,7 @@ function executionError(
   return {
     prompt_id: 'prompt-1',
     timestamp: Date.now(),
-    node_id: asNodeId('1'),
+    node_id: asNodeExecutionId('1'),
     node_type: 'KSampler',
     executed: [],
     exception_type: exceptionType,

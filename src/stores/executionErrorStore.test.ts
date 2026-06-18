@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { asNodeId } from '@/lib/litegraph/src/litegraph'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import type { MissingNodeType } from '@/types/comfy'
 
 // Mock dependencies
@@ -503,7 +504,7 @@ describe('clearAllErrors', () => {
     executionErrorStore.lastExecutionError = {
       prompt_id: 'test',
       timestamp: 0,
-      node_id: asNodeId('1'),
+      node_id: asNodeExecutionId('1'),
       node_type: 'Test',
       executed: [],
       exception_message: 'fail',

@@ -1,7 +1,7 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -267,12 +267,12 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
 
     store.nodeProgressStates = {
       node1: {
-        display_node_id: asNodeId('123:456'),
+        display_node_id: asNodeExecutionId('123:456'),
         state: 'running',
         value: 50,
         max: 100,
         prompt_id: 'test',
-        node_id: asNodeId('node1')
+        node_id: asNodeExecutionId('node1')
       }
     }
 
@@ -296,12 +296,12 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
 
     store.nodeProgressStates = {
       node1: {
-        display_node_id: asNodeId('123:456'),
+        display_node_id: asNodeExecutionId('123:456'),
         state: 'running',
         value: 50,
         max: 100,
         prompt_id: 'test',
-        node_id: asNodeId('node1')
+        node_id: asNodeExecutionId('node1')
       }
     }
 
@@ -313,12 +313,12 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
     // Second update with same execution IDs but different progress
     store.nodeProgressStates = {
       node1: {
-        display_node_id: asNodeId('123:456'),
+        display_node_id: asNodeExecutionId('123:456'),
         state: 'running',
         value: 75,
         max: 100,
         prompt_id: 'test',
-        node_id: asNodeId('node1')
+        node_id: asNodeExecutionId('node1')
       }
     }
 
@@ -345,20 +345,20 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
     // Two sibling nodes in the same subgraph
     store.nodeProgressStates = {
       node1: {
-        display_node_id: asNodeId('123:456'),
+        display_node_id: asNodeExecutionId('123:456'),
         state: 'running',
         value: 50,
         max: 100,
         prompt_id: 'test',
-        node_id: asNodeId('node1')
+        node_id: asNodeExecutionId('node1')
       },
       node2: {
-        display_node_id: asNodeId('123:789'),
+        display_node_id: asNodeExecutionId('123:789'),
         state: 'running',
         value: 30,
         max: 100,
         prompt_id: 'test',
-        node_id: asNodeId('node2')
+        node_id: asNodeExecutionId('node2')
       }
     }
 
@@ -386,9 +386,9 @@ describe('useExecutionStore - nodeProgressStatesByJob eviction', () => {
         value: 5,
         max: 10,
         state: 'running',
-        node_id: asNodeId(nodeId),
+        node_id: asNodeExecutionId(nodeId),
         prompt_id: jobId,
-        display_node_id: asNodeId(nodeId)
+        display_node_id: asNodeExecutionId(nodeId)
       }
     }
   }
@@ -514,15 +514,15 @@ describe('useExecutionStore - clearActiveJobIfStale', () => {
   it('clears the active job and progress state when not in the active set', () => {
     store.activeJobId = 'job-1'
     store.queuedJobs = {
-      'job-1': { nodes: { [asNodeId('node-1')]: false } }
+      'job-1': { nodes: { [asNodeExecutionId('node-1')]: false } }
     }
     store.nodeProgressStates = {
-      [asNodeId('node-1')]: {
+      [asNodeExecutionId('node-1')]: {
         value: 5,
         max: 10,
         state: 'running',
-        node_id: asNodeId('node-1'),
-        display_node_id: asNodeId('node-1'),
+        node_id: asNodeExecutionId('node-1'),
+        display_node_id: asNodeExecutionId('node-1'),
         prompt_id: 'job-1'
       }
     }
@@ -622,7 +622,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
     it('should return node error by locator ID for root graph node', () => {
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'validation_error',
@@ -659,7 +659,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
       vi.mocked(app.rootGraph.getNodeById).mockReturnValue(mockNode)
 
       store.lastNodeErrors = {
-        [asNodeId('123:456')]: {
+        [asNodeExecutionId('123:456')]: {
           errors: [
             {
               type: 'validation_error',
@@ -688,7 +688,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
     it('should return false when node has errors but slot is not mentioned', () => {
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'validation_error',
@@ -708,7 +708,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
     it('should return true when slot has error', () => {
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'validation_error',
@@ -728,7 +728,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
     it('should return true when multiple errors exist for the same slot', () => {
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'validation_error',
@@ -754,7 +754,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
     it('should handle errors without extra_info', () => {
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'validation_error',
@@ -787,20 +787,20 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       id: 'test-prompt',
       nodes: ['123'],
       promptOutput: {
-        [asNodeId('123')]: createPromptNode('Test Node', 'TestNode')
+        [asNodeExecutionId('123')]: createPromptNode('Test Node', 'TestNode')
       },
       workflow: createQueuedWorkflow()
     })
     store.activeJobId = 'test-prompt'
 
     store.nodeProgressStates = {
-      [asNodeId('123')]: {
+      [asNodeExecutionId('123')]: {
         state: 'running',
         value: 0,
         max: 100,
-        display_node_id: asNodeId('123'),
+        display_node_id: asNodeExecutionId('123'),
         prompt_id: 'test-prompt',
-        node_id: asNodeId('123')
+        node_id: asNodeExecutionId('123')
       }
     }
 
@@ -815,20 +815,23 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       id: 'test-prompt',
       nodes: ['456:789'],
       promptOutput: {
-        [asNodeId('456:789')]: createPromptNode('Nested Node', 'NestedNode')
+        [asNodeExecutionId('456:789')]: createPromptNode(
+          'Nested Node',
+          'NestedNode'
+        )
       },
       workflow: createQueuedWorkflow()
     })
     store.activeJobId = 'test-prompt'
 
     store.nodeProgressStates = {
-      [asNodeId('456:789')]: {
+      [asNodeExecutionId('456:789')]: {
         state: 'running',
         value: 0,
         max: 100,
-        display_node_id: asNodeId('456:789'),
+        display_node_id: asNodeExecutionId('456:789'),
         prompt_id: 'test-prompt',
-        node_id: asNodeId('456:789')
+        node_id: asNodeExecutionId('456:789')
       }
     }
 
@@ -849,20 +852,20 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       id: 'test-prompt',
       nodes: ['123'],
       promptOutput: {
-        [asNodeId('123')]: createPromptNode('Test Node', 'TestNode')
+        [asNodeExecutionId('123')]: createPromptNode('Test Node', 'TestNode')
       },
       workflow: createQueuedWorkflow()
     })
     store.activeJobId = 'test-prompt'
 
     store.nodeProgressStates = {
-      [asNodeId('999')]: {
+      [asNodeExecutionId('999')]: {
         state: 'running',
         value: 0,
         max: 100,
-        display_node_id: asNodeId('999'),
+        display_node_id: asNodeExecutionId('999'),
         prompt_id: 'test-prompt',
-        node_id: asNodeId('999')
+        node_id: asNodeExecutionId('999')
       }
     }
 
@@ -995,7 +998,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
     it('clears transient errors while preserving validation errors', () => {
       const errorStore = useExecutionErrorStore()
       const nodeErrors = {
-        [asNodeId('1')]: {
+        [asNodeExecutionId('1')]: {
           class_type: 'Test',
           dependent_outputs: [],
           errors: [
@@ -1011,7 +1014,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       errorStore.lastExecutionError = {
         prompt_id: 'old-job',
         timestamp: 0,
-        node_id: asNodeId('1'),
+        node_id: asNodeExecutionId('1'),
         node_type: 'Test',
         executed: [],
         exception_message: 'boom',
@@ -1077,7 +1080,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       fire('execution_interrupted', {
         prompt_id: 'job-1',
-        node_id: asNodeId('n1'),
+        node_id: asNodeExecutionId('n1'),
         node_type: 't',
         executed: [],
         timestamp: 0
@@ -1104,7 +1107,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         output: {}
       })
 
-      expect(store.activeJob?.nodes[asNodeId('n1')]).toBe(true)
+      expect(store.activeJob?.nodes[asNodeExecutionId('n1')]).toBe(true)
     })
 
     it('is a no-op when no active job exists', () => {
@@ -1137,7 +1140,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         nodes: ['a'],
         id: 'job-1',
         promptOutput: {
-          [asNodeId('a')]: createPromptNode('Node A', 'NodeA')
+          [asNodeExecutionId('a')]: createPromptNode('Node A', 'NodeA')
         },
         workflow
       })
@@ -1163,7 +1166,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         nodes: ['a'],
         id: 'job-1',
         promptOutput: {
-          [asNodeId('a')]: createPromptNode('Node A', 'NodeA')
+          [asNodeExecutionId('a')]: createPromptNode('Node A', 'NodeA')
         },
         workflow
       })
@@ -1185,7 +1188,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         nodes: ['a'],
         id: 'job-1',
         promptOutput: {
-          [asNodeId('a')]: createPromptNode('Node A', 'NodeA')
+          [asNodeExecutionId('a')]: createPromptNode('Node A', 'NodeA')
         },
         workflow
       })
@@ -1210,7 +1213,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         nodes: ['a'],
         id: 'job-1',
         promptOutput: {
-          [asNodeId('a')]: createPromptNode('Node A', 'NodeA')
+          [asNodeExecutionId('a')]: createPromptNode('Node A', 'NodeA')
         },
         workflow
       })
@@ -1233,7 +1236,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         value: 1,
         max: 2,
         prompt_id: 'job-1',
-        node: asNodeId('1')
+        node: asNodeExecutionId('1')
       }
 
       fire('executing', null)
@@ -1289,7 +1292,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       fire('execution_error', {
         prompt_id: 'job-1',
-        node_id: asNodeId('n1'),
+        node_id: asNodeExecutionId('n1'),
         node_type: 'KSampler',
         exception_type: 'RuntimeError',
         exception_message: 'CUDA OOM',
@@ -1298,7 +1301,7 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(errorStore.lastExecutionError).toMatchObject({
         prompt_id: 'job-1',
-        node_id: asNodeId('n1'),
+        node_id: asNodeExecutionId('n1'),
         exception_message: 'CUDA OOM'
       })
     })
@@ -1378,8 +1381,8 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
       nodes: ['a', 'b'],
       id: 'job-1',
       promptOutput: {
-        [asNodeId('a')]: createPromptNode('Node A', 'NodeA'),
-        [asNodeId('b')]: createPromptNode('Node B', 'NodeB')
+        [asNodeExecutionId('a')]: createPromptNode('Node A', 'NodeA'),
+        [asNodeExecutionId('b')]: createPromptNode('Node B', 'NodeB')
       },
       workflow
     })

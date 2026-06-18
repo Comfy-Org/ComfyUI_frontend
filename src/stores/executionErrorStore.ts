@@ -386,6 +386,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     allErrorExecutionIds,
     totalErrorCount,
     lastExecutionErrorNodeId,
+    lastExecutionErrorNodeLocatorId,
     activeGraphErrorNodeIds,
 
     // Clearing (targeted)

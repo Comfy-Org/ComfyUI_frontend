@@ -1,11 +1,11 @@
 import { z } from 'zod'
 
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
-import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { colorPalettesSchema } from '@/schemas/colorPaletteSchema'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { zKeybinding } from '@/platform/keybindings/types'
+import { zNodeExecutionId } from '@/types/nodeIdentification'
 import { NodeBadgeMode } from '@/types/nodeSource'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
@@ -58,18 +58,18 @@ const zProgressWsMessage = z.object({
   value: z.number().int(),
   max: z.number().int(),
   prompt_id: zJobId,
-  node: zNodeId
+  node: zNodeExecutionId
 })
 
 const zNodeProgressState = z.object({
   value: z.number(),
   max: z.number(),
   state: z.enum(['pending', 'running', 'finished', 'error']),
-  node_id: zNodeId,
+  node_id: zNodeExecutionId,
   prompt_id: zJobId,
-  display_node_id: zNodeId.optional(),
-  parent_node_id: zNodeId.optional(),
-  real_node_id: zNodeId.optional()
+  display_node_id: zNodeExecutionId.optional(),
+  parent_node_id: zNodeExecutionId.optional(),
+  real_node_id: zNodeExecutionId.optional()
 })
 
 const zProgressStateWsMessage = z.object({
@@ -80,8 +80,8 @@ const zProgressStateWsMessage = z.object({
 })
 
 const zExecutingWsMessage = z.object({
-  node: zNodeId,
-  display_node: zNodeId,
+  node: zNodeExecutionId,
+  display_node: zNodeExecutionId,
   prompt_id: zJobId
 })
 
@@ -98,17 +98,17 @@ const zExecutionWsMessageBase = z.object({
 const zExecutionStartWsMessage = zExecutionWsMessageBase
 const zExecutionSuccessWsMessage = zExecutionWsMessageBase
 const zExecutionCachedWsMessage = zExecutionWsMessageBase.extend({
-  nodes: z.array(zNodeId)
+  nodes: z.array(zNodeExecutionId)
 })
 const zExecutionInterruptedWsMessage = zExecutionWsMessageBase.extend({
-  node_id: zNodeId,
+  node_id: zNodeExecutionId,
   node_type: zNodeType,
-  executed: z.array(zNodeId)
+  executed: z.array(zNodeExecutionId)
 })
 const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
-  node_id: zNodeId,
+  node_id: zNodeExecutionId,
   node_type: zNodeType,
-  executed: z.array(zNodeId),
+  executed: z.array(zNodeExecutionId),
   exception_message: z.string(),
   exception_type: z.string(),
   traceback: z.array(z.string()),
@@ -117,7 +117,7 @@ const zExecutionErrorWsMessage = zExecutionWsMessageBase.extend({
 })
 
 const zProgressTextWsMessage = z.object({
-  nodeId: zNodeId,
+  nodeId: zNodeExecutionId,
   text: z.string(),
   prompt_id: z.string().optional()
 })

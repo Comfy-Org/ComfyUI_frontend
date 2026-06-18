@@ -35,13 +35,14 @@ const SkeletonStub = defineComponent({
 
 function renderPreview(
   text: string,
-  { nodeId = 'node-1' }: { nodeId?: string | number } = {}
+  { executionId = null }: { executionId?: string | null } = {}
 ) {
   const value = ref(text)
   const Harness = defineComponent({
     components: { TextPreviewWidget },
-    setup: () => ({ value, nodeId }),
-    template: '<TextPreviewWidget v-model="value" :node-id="nodeId" />'
+    setup: () => ({ value, executionId }),
+    template:
+      '<TextPreviewWidget v-model="value" :execution-id="executionId" />'
   })
   return render(Harness, {
     global: {
@@ -167,21 +168,21 @@ describe('TextPreviewWidget', () => {
     it('hides the Skeleton on mount when execution is already idle', () => {
       execState().executingNodeIds = []
       execState().isIdle = true
-      renderPreview('text', { nodeId: 'n1' })
+      renderPreview('text', { executionId: 'n1' })
       expect(screen.queryByTestId('skeleton')).toBeNull()
     })
 
-    it('shows a Skeleton on mount when the parent node is executing', () => {
+    it('shows a Skeleton on mount when the node is executing', () => {
       execState().executingNodeIds = ['n1']
       execState().isIdle = false
-      renderPreview('text', { nodeId: 'n1' })
+      renderPreview('text', { executionId: 'n1' })
       expect(screen.getByTestId('skeleton')).toBeInTheDocument()
     })
 
     it('hides the Skeleton when execution transitions to idle', async () => {
       execState().executingNodeIds = ['n1']
       execState().isIdle = false
-      renderPreview('text', { nodeId: 'n1' })
+      renderPreview('text', { executionId: 'n1' })
       expect(screen.getByTestId('skeleton')).toBeInTheDocument()
 
       execState().executingNodeIds = []
@@ -191,15 +192,36 @@ describe('TextPreviewWidget', () => {
       expect(screen.queryByTestId('skeleton')).toBeNull()
     })
 
-    it('hides the Skeleton when the parent node leaves executingNodeIds', async () => {
+    it('hides the Skeleton when the node leaves executingNodeIds', async () => {
       execState().executingNodeIds = ['n1']
       execState().isIdle = false
-      renderPreview('text', { nodeId: 'n1' })
+      renderPreview('text', { executionId: 'n1' })
 
       execState().executingNodeIds = ['other']
       await nextTick()
 
       expect(screen.queryByTestId('skeleton')).toBeNull()
+    })
+
+    it('matches subgraph execution ids by full path, not local id', () => {
+      execState().executingNodeIds = ['65:18']
+      execState().isIdle = false
+      renderPreview('text', { executionId: '65:18' })
+      expect(screen.getByTestId('skeleton')).toBeInTheDocument()
+    })
+
+    it('does not match when only the local id collides across subgraphs', () => {
+      execState().executingNodeIds = ['18']
+      execState().isIdle = false
+      renderPreview('text', { executionId: '65:18' })
+      expect(screen.queryByTestId('skeleton')).toBeNull()
+    })
+
+    it('falls back to any executing node when executionId is unknown', () => {
+      execState().executingNodeIds = ['anything']
+      execState().isIdle = false
+      renderPreview('text', { executionId: null })
+      expect(screen.getByTestId('skeleton')).toBeInTheDocument()
     })
   })
 })

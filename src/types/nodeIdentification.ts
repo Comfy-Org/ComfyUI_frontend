@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 import { asNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
@@ -42,6 +44,15 @@ export function asNodeExecutionId(
 ): NodeExecutionId {
   return String(value) as NodeExecutionId
 }
+
+/**
+ * Zod schema for execution-path IDs arriving at API/runtime boundaries. The
+ * backend sends a number for root nodes and a colon-separated string for nodes
+ * nested in subgraph instances; both normalise to a branded `NodeExecutionId`.
+ */
+export const zNodeExecutionId = z
+  .union([z.number().int(), z.string()])
+  .transform((value): NodeExecutionId => asNodeExecutionId(value))
 
 /**
  * Type guard to check if a value is a NodeLocatorId

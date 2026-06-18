@@ -8,7 +8,6 @@ import {
   isAppModeValue,
   useAppMode
 } from '@/composables/useAppMode'
-import { asNodeId } from '@/types/nodeId'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -17,7 +16,7 @@ import type {
   ComfyApiWorkflow,
   WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { NodeId } from '@/types/nodeId'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   ExecutedWsMessage,
@@ -38,7 +37,7 @@ import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 
@@ -52,7 +51,7 @@ interface QueuedJob {
    * The nodes that are queued to be executed. The key is the node id and the
    * value is a boolean indicating if the node has been executed.
    */
-  nodes: Record<NodeId, boolean>
+  nodes: Record<NodeExecutionId, boolean>
   /**
    * The workflow that is queued to be executed
    */
@@ -195,14 +194,14 @@ export const useExecutionStore = defineStore('execution', () => {
   })
 
   // Easily access all currently executing node IDs
-  const executingNodeIds = computed<NodeId[]>(() => {
+  const executingNodeIds = computed<NodeExecutionId[]>(() => {
     return Object.entries(nodeProgressStates.value)
       .filter(([_, state]) => state.state === 'running')
-      .map(([nodeId]) => asNodeId(nodeId))
+      .map(([nodeId]) => asNodeExecutionId(nodeId))
   })
 
   // @deprecated For backward compatibility - stores the primary executing node ID
-  const executingNodeId = computed<NodeId | null>(() => {
+  const executingNodeId = computed<NodeExecutionId | null>(() => {
     return executingNodeIds.value[0] ?? null
   })
 
@@ -333,7 +332,7 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(jobId)
   }
 
-  function handleExecuting(e: CustomEvent<NodeId | null>): void {
+  function handleExecuting(e: CustomEvent<NodeExecutionId | null>): void {
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 

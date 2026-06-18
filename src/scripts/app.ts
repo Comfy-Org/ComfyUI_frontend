@@ -314,8 +314,11 @@ export class ComfyApp {
    * @deprecated Use useExecutionStore().executingNodeId instead
    * TODO: Update to support multiple executing nodes. This getter returns only the first executing node.
    * Consider updating consumers to handle multiple nodes or use executingNodeIds array.
+   *
+   * Returns the primary executing node's execution ID (a colon-separated path
+   * for nodes nested in subgraph instances), not a local entity NodeId.
    */
-  get runningNodeId(): NodeId | null {
+  get runningNodeId(): NodeExecutionId | null {
     return useExecutionStore().executingNodeId
   }
 

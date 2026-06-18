@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import { asNodeId } from '@/types/nodeId'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import type {
   JobListItem,
   JobStatus
@@ -155,7 +155,7 @@ export const Queued: Story = {
             value: 1,
             max: 1,
             state: 'running',
-            node_id: asNodeId('1'),
+            node_id: asNodeExecutionId('1'),
             prompt_id: 'p1'
           }
         }
@@ -205,7 +205,7 @@ export const QueuedParallel: Story = {
             value: 1,
             max: 2,
             state: 'running',
-            node_id: asNodeId('1'),
+            node_id: asNodeExecutionId('1'),
             prompt_id: 'p1'
           }
         },
@@ -214,7 +214,7 @@ export const QueuedParallel: Story = {
             value: 1,
             max: 2,
             state: 'running',
-            node_id: asNodeId('2'),
+            node_id: asNodeExecutionId('2'),
             prompt_id: 'p2'
           }
         }
@@ -255,7 +255,7 @@ export const Running: Story = {
             value: 5,
             max: 10,
             state: 'running',
-            node_id: asNodeId('1'),
+            node_id: asNodeExecutionId('1'),
             prompt_id: 'p1'
           }
         }
@@ -300,7 +300,7 @@ export const QueuedZeroAheadSingleRunning: Story = {
             value: 1,
             max: 3,
             state: 'running',
-            node_id: asNodeId('1'),
+            node_id: asNodeExecutionId('1'),
             prompt_id: 'p1'
           }
         }
@@ -348,7 +348,7 @@ export const QueuedZeroAheadMultiRunning: Story = {
             value: 2,
             max: 5,
             state: 'running',
-            node_id: asNodeId('1'),
+            node_id: asNodeExecutionId('1'),
             prompt_id: 'p1'
           }
         },
@@ -357,7 +357,7 @@ export const QueuedZeroAheadMultiRunning: Story = {
             value: 3,
             max: 5,
             state: 'running',
-            node_id: asNodeId('2'),
+            node_id: asNodeExecutionId('2'),
             prompt_id: 'p2'
           }
         }

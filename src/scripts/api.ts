@@ -5,7 +5,7 @@ import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
-import { asNodeId } from '@/types/nodeId'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import type {
@@ -26,7 +26,6 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { NodeId } from '@/types/nodeId'
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
@@ -222,7 +221,7 @@ type ApiToEventType<T = ApiCalls> = {
   [K in keyof T]: K extends 'status'
     ? StatusWsMessageStatus
     : K extends 'executing'
-      ? NodeId
+      ? NodeExecutionId | null
       : T[K]
 }
 
@@ -664,7 +663,7 @@ export class ComfyApi extends EventTarget {
                 const text = decoder3.decode(rawData.slice(offset))
 
                 this.dispatchCustomEvent('progress_text', {
-                  nodeId: asNodeId(nodeId),
+                  nodeId: asNodeExecutionId(nodeId),
                   text,
                   ...(promptId !== undefined && { prompt_id: promptId })
                 })

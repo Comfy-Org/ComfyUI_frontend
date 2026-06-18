@@ -9,6 +9,7 @@ import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
+import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 type TextPreviewCustomProps = Omit<
   InstanceType<typeof TextPreviewWidget>['$props'],
@@ -35,7 +36,7 @@ export function useTextPreviewWidget(
       component: TextPreviewWidget,
       inputSpec,
       props: {
-        nodeId: node.id
+        executionId: getExecutionIdByNode(app.rootGraph, node)
       },
       options: {
         getValue: () =>
