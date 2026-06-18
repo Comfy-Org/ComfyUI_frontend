@@ -458,6 +458,62 @@ describe('useAuthStore', () => {
         2
       )
     })
+
+    it('evicts the dedup entry after the retention window so a later sign-up re-runs', async () => {
+      vi.useFakeTimers()
+      try {
+        const mockUserCredential = { user: mockUser }
+        vi.mocked(
+          firebaseAuth.createUserWithEmailAndPassword
+        ).mockResolvedValue(
+          mockUserCredential as Partial<UserCredential> as UserCredential
+        )
+        vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockClear()
+
+        await store.register('evict@example.com', 'password')
+        // Within the retention window: rides the kept promise.
+        await store.register('evict@example.com', 'password')
+        expect(
+          firebaseAuth.createUserWithEmailAndPassword
+        ).toHaveBeenCalledTimes(1)
+
+        // After the window the entry is evicted, so a later sign-up re-runs the
+        // create instead of returning a stale credential (desktop/localhost sign
+        // out does not reload the app).
+        await vi.advanceTimersByTimeAsync(10_001)
+        await store.register('evict@example.com', 'password')
+        expect(
+          firebaseAuth.createUserWithEmailAndPassword
+        ).toHaveBeenCalledTimes(2)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('keeps a successful sign-up even when createCustomer (POST /customers) fails', async () => {
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+      // POST /customers fails; the server-side provisioner backstops it, so the
+      // sign-up itself must still succeed (best-effort createCustomer).
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/customers')) {
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+            statusText: '',
+            json: () => Promise.resolve({ message: 'provisioning blip' })
+          })
+        }
+        return Promise.resolve(mockFetchBalanceResponse)
+      })
+
+      const result = await store.register('besteffort@example.com', 'password')
+
+      expect(result).toEqual(mockUserCredential)
+      expect(store.loading).toBe(false)
+    })
   })
 
   describe('logout', () => {

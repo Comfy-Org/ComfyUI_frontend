@@ -61,6 +61,10 @@ export class AuthStoreError extends Error {
   }
 }
 
+// How long a succeeded register() entry is kept to absorb a post-redirect
+// duplicate submit before it is evicted (see inFlightRegister).
+const REGISTER_DEDUP_RETENTION_MS = 10_000
+
 export const useAuthStore = defineStore('auth', () => {
   const { flags } = useFeatureFlags()
 
@@ -343,10 +347,8 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const result = await action(auth)
 
-      // Provision the customer up front when requested, but best-effort: a failed
-      // or duplicate POST /customers must not fail an otherwise-successful
-      // sign-in/up. The server-side provisioner backstops it on the next
-      // authenticated request (and customer creation is idempotent server-side).
+      // Best-effort: a failed/duplicate POST /customers must not fail an otherwise
+      // successful sign-in/up; the server-side provisioner backstops it.
       if (options?.createCustomer) {
         try {
           const token = await getIdToken()
@@ -390,11 +392,9 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  // Single-flight guard for account creation: at most one in-flight
-  // createUserWithEmailAndPassword per email, so a single sign-up intent can
-  // never create the account twice (and then show the second caller EMAIL_EXISTS
-  // against the account the first just made). UI throttling/disabled-state is
-  // defense-in-depth; this store-level guard is the actual contract.
+  // Single-flight guard: at most one in-flight createUserWithEmailAndPassword per
+  // email, so a sign-up can't create the account twice (then show the loser
+  // EMAIL_EXISTS). UI throttling is defense-in-depth; this is the contract.
   const inFlightRegister = new Map<string, Promise<UserCredential>>()
 
   const register = (
@@ -403,10 +403,8 @@ export const useAuthStore = defineStore('auth', () => {
   ): Promise<UserCredential> => {
     const key = email.trim().toLowerCase()
 
-    // Ride an existing attempt for the same email. Kept across the success ->
-    // redirect window (see below), so a re-submit while the post-sign-up
-    // navigation is still in flight returns the existing credential instead of
-    // issuing a second createUserWithEmailAndPassword.
+    // Ride an in-flight attempt for the same email (kept briefly past success,
+    // see below) so a duplicate submit doesn't create a second account.
     const existing = inFlightRegister.get(key)
     if (existing) return existing
 
@@ -431,12 +429,16 @@ export const useAuthStore = defineStore('auth', () => {
     })()
 
     inFlightRegister.set(key, pending)
-    // Drop the guard only on FAILURE, so a genuine retry after a real error is
-    // allowed. On success the entry is retained: the account exists, the user is
-    // signed in, and any duplicate submit during the redirect must be a no-op,
-    // not a second account-creation attempt. (Sign-out reloads the app, which
-    // resets this map, so a later legitimate sign-up is unaffected.)
-    pending.catch(() => inFlightRegister.delete(key))
+    // On failure, drop the entry now so a genuine retry is allowed. On success,
+    // keep it briefly to absorb a duplicate submit during the post-sign-up
+    // redirect, then evict: retaining it for the whole session would return a
+    // stale credential after a sign-out that doesn't reload the app (desktop/
+    // localhost) and would leak map entries.
+    pending
+      .then(() => {
+        setTimeout(() => inFlightRegister.delete(key), REGISTER_DEDUP_RETENTION_MS)
+      })
+      .catch(() => inFlightRegister.delete(key))
     return pending
   }
 

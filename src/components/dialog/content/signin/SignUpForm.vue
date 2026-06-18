@@ -67,12 +67,9 @@ const emit = defineEmits<{
   submit: [values: SignUpData]
 }>()
 
-// Leading-edge only (trailing: false). The default throttle replays a second
-// submit fired within the window 1.5s LATER -- so a double-Enter (or Enter then
-// click) created the account twice, the delayed duplicate hitting EMAIL_EXISTS
-// against the account the first call just created. The in-flight guard covers
-// the same intent once a sign-up is already running. A single user action must
-// create the account exactly once.
+// Leading-edge only (trailing: false): the default throttle would replay a
+// double-submit 1.5s later and create the account twice. The loading guard drops
+// submits once a sign-up is already running.
 const onSubmit = useThrottleFn(
   (event: FormSubmitEvent) => {
     if (loading.value) return

@@ -5,9 +5,8 @@ import { defineStore } from 'pinia'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { ref } from 'vue'
 
-// Identical toasts fired within this window are coalesced into one. A single
-// user action (e.g. a throttled double-submit) was rendering the same error two
-// or three times; dedup keeps it to one without affecting intentional repeats.
+// Identical toasts fired within this window are coalesced, so one action can't
+// stack the same error two or three times.
 const TOAST_DEDUP_WINDOW_MS = 3000
 
 export const useToastStore = defineStore('toast', () => {
