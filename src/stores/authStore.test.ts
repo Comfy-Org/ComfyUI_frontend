@@ -411,9 +411,9 @@ describe('useAuthStore', () => {
         store.register('RACE@EXAMPLE.COM', 'password')
       ])
 
-      expect(
-        firebaseAuth.createUserWithEmailAndPassword
-      ).toHaveBeenCalledTimes(1)
+      expect(firebaseAuth.createUserWithEmailAndPassword).toHaveBeenCalledTimes(
+        1
+      )
       expect(results[0]).toBe(results[1])
       expect(results[1]).toBe(results[2])
     })
@@ -430,9 +430,9 @@ describe('useAuthStore', () => {
       await store.register('keep@example.com', 'password')
       await store.register('keep@example.com', 'password')
 
-      expect(
-        firebaseAuth.createUserWithEmailAndPassword
-      ).toHaveBeenCalledTimes(1)
+      expect(firebaseAuth.createUserWithEmailAndPassword).toHaveBeenCalledTimes(
+        1
+      )
     })
 
     it('allows a genuine retry after a failed sign-up', async () => {
@@ -454,9 +454,9 @@ describe('useAuthStore', () => {
 
       await store.register('retry@example.com', 'password')
 
-      expect(
-        firebaseAuth.createUserWithEmailAndPassword
-      ).toHaveBeenCalledTimes(2)
+      expect(firebaseAuth.createUserWithEmailAndPassword).toHaveBeenCalledTimes(
+        2
+      )
     })
   })
 
