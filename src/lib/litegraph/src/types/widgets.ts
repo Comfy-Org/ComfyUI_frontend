@@ -1,6 +1,6 @@
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { CurveData } from '@/components/curve/types'
-import type { WidgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
 
 import type {
   CanvasColour,
@@ -399,7 +399,7 @@ export interface IBaseWidget<
 
   linkedWidgets?: IBaseWidget[]
 
-  readonly entityId?: WidgetEntityId
+  readonly widgetId?: WidgetId
 
   name: string
   options: TOptions

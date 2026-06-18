@@ -7,11 +7,7 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import {
-  getNodeByExecutionId,
-  getRootParentNode
-} from '@/utils/graphTraversalUtil'
-import { isGroupNode } from '@/utils/executableGroupNodeDto'
+import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { useLitegraphService } from '@/services/litegraphService'
 
 async function navigateToGraph(targetGraph: LGraph) {
@@ -43,15 +39,6 @@ export function useFocusNode() {
     executionIdMap?: Map<string, LGraphNode>
   ) {
     if (!canvasStore.canvas) return
-
-    // For group node internals, locate the root parent group node instead
-    const parentNode = getRootParentNode(app.rootGraph, nodeId)
-
-    if (parentNode && isGroupNode(parentNode) && parentNode.graph) {
-      await navigateToGraph(parentNode.graph as LGraph)
-      canvasStore.canvas?.animateToBounds(parentNode.boundingRect)
-      return
-    }
 
     const graphNode = executionIdMap
       ? executionIdMap.get(nodeId)

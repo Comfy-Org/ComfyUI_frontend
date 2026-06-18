@@ -3,21 +3,26 @@
     <div class="flex min-h-8 w-full items-center gap-1">
       <Button
         v-if="hasMultipleNodeTypes"
+        data-testid="swap-node-group-expand"
         variant="textonly"
         size="unset"
-        :class="
-          cn(
-            'h-8 w-4 shrink-0 p-0 transition-transform duration-200 hover:bg-transparent',
-            expanded && 'rotate-90'
-          )
+        :aria-label="
+          expanded
+            ? t('rightSidePanel.missingNodePacks.collapse', 'Collapse')
+            : t('rightSidePanel.missingNodePacks.expand', 'Expand')
         "
-        aria-hidden="true"
-        tabindex="-1"
+        :aria-expanded="expanded"
+        class="h-8 w-4 shrink-0 p-0 hover:bg-transparent focus-visible:ring-inset"
         @click="toggleExpand"
       >
         <i
           aria-hidden="true"
-          class="icon-[lucide--chevron-right] size-4 text-muted-foreground"
+          :class="
+            cn(
+              'icon-[lucide--chevron-right] size-4 text-muted-foreground transition-transform duration-200',
+              expanded && 'rotate-90'
+            )
+          "
         />
       </Button>
 
@@ -27,7 +32,7 @@
             <button
               v-if="hasMultipleNodeTypes"
               type="button"
-              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-1 focus-visible:outline-none"
+              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
               :title="group.type"
               :aria-label="titleToggleAriaLabel"
               :aria-expanded="expanded"
@@ -38,7 +43,7 @@
             <button
               v-else-if="primaryLocatableNodeType"
               type="button"
-              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-1 focus-visible:outline-none"
+              class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-base-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
               :title="group.type"
               @click="handleLocateNode(primaryLocatableNodeType)"
             >
@@ -46,7 +51,7 @@
             </button>
             <span
               v-else
-              class="min-w-0 truncate text-sm/relaxed font-normal text-base-foreground"
+              class="min-w-0 truncate text-xs/relaxed font-normal text-base-foreground"
               :title="group.type"
             >
               {{ group.type }}
@@ -55,7 +60,7 @@
               v-if="hasMultipleNodeTypes"
               data-testid="swap-node-group-count"
               role="img"
-              class="flex size-6 shrink-0 items-center justify-center rounded-md bg-secondary-background-selected text-xs font-bold text-muted-foreground"
+              class="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-sm bg-secondary-background-hover px-1 text-2xs font-semibold text-base-foreground"
               :aria-label="t('g.nodesCount', group.nodeTypes.length)"
             >
               {{ group.nodeTypes.length }}
@@ -80,7 +85,7 @@
       <Button
         variant="secondary"
         size="sm"
-        class="h-8 shrink-0 rounded-lg text-sm"
+        class="shrink-0 focus-visible:ring-inset"
         @click="handleReplaceNode"
       >
         <i
@@ -96,7 +101,7 @@
         v-if="primaryLocatableNodeType"
         variant="textonly"
         size="icon-sm"
-        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+        class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
         :aria-label="locateNodeLabel"
         @click="handleLocateNode(primaryLocatableNodeType)"
       >
@@ -116,14 +121,14 @@
               <button
                 v-if="isLocatableNodeType(nodeType)"
                 type="button"
-                class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-sm/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:underline focus-visible:ring-1 focus-visible:outline-none"
+                class="focus-visible:ring-ring m-0 inline max-w-full cursor-pointer appearance-none rounded-sm border-0 bg-transparent p-0 text-left text-xs/relaxed font-normal wrap-break-word text-muted-foreground outline-none hover:text-base-foreground focus:outline-none focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset"
                 @click="handleLocateNode(nodeType)"
               >
                 {{ getLabel(nodeType) }}
               </button>
               <span
                 v-else
-                class="text-sm/relaxed wrap-break-word text-muted-foreground"
+                class="text-xs/relaxed wrap-break-word text-muted-foreground"
               >
                 {{ getLabel(nodeType) }}
               </span>
@@ -132,7 +137,7 @@
               v-if="isLocatableNodeType(nodeType)"
               variant="textonly"
               size="icon-sm"
-              class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground"
+              class="size-8 shrink-0 text-muted-foreground hover:text-base-foreground focus-visible:ring-inset"
               :aria-label="locateNodeLabel"
               @click="handleLocateNode(nodeType)"
             >

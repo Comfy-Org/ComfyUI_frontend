@@ -2904,6 +2904,10 @@
         "name": "الصوت",
         "tooltip": "الصوت الذي سيتم إضافته للفيديو."
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "عمق البت للفيديو المُنشأ. عمق ١٠ بت يحافظ على تدرجات أكثر سلاسة مع تقليل التدرج اللوني، لكن بعض المشغلات والعُقد اللاحقة قد لا تدعمه."
+      },
       "fps": {
         "name": "الإطارات في الثانية"
       },
@@ -5219,6 +5223,10 @@
       },
       "2": {
         "name": "معدل_الإطارات",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -8026,7 +8034,8 @@
         "name": "التحكم بعد التوليد"
       },
       "generate_audio": {
-        "name": "توليد الصوت"
+        "name": "توليد الصوت",
+        "tooltip": "‏'kling-3.0-turbo' يُولّد دائماً صوتاً أصلياً، لذلك يتم تجاهل تبديل الصوت."
       },
       "model": {
         "name": "النموذج",
@@ -16240,6 +16249,9 @@
       "draw_hands": {
         "name": "رسم اليدين"
       },
+      "draw_head": {
+        "name": "رسم الرأس"
+      },
       "face_point_size": {
         "name": "حجم نقطة الوجه"
       },
@@ -18799,6 +18811,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "صورة مرجعية (أو صور) للتعديل. يركّز Boogu على مرجع واحد لكل عينة؛ يمكن إضافة المزيد."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "ترميز النص لفيديو Hunyuan - من صورة إلى فيديو",
     "inputs": {
@@ -19586,6 +19629,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "استيراد نموذج ثلاثي الأبعاد خارجي (مثلاً من Rodin، Hunyuan3D أو ملف محلي) إلى Tripo لاستخدامه مع عُقد المعالجة اللاحقة في Tripo: الإكساء، التحريك، التحويل. يُوصى باستخدام GLB: تبقى الخامات محفوظة فقط إذا كانت مضمنة داخل الملف. يرجى ملاحظة أن إكساء نموذج مستورد يتطلب مطالبة إكساء.",
+    "display_name": "Tripo: استيراد نموذج",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "نموذج ثلاثي الأبعاد للاستيراد (GLB / FBX / OBJ / STL، حتى ١٥٠ ميجابايت). ملفات OBJ و STL لا تحتوي على خامات مضمنة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: متعدد المناظر إلى نموذج",
     "inputs": {
@@ -20053,6 +20112,10 @@
       },
       "texture_alignment": {
         "name": "محاذاة_الملمس"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "إرشادات نصية اختيارية للإكساء. مطلوبة عملياً للنماذج المستوردة (Tripo: استيراد نموذج)، والتي لا تحتوي على صورة مصدر لاستنتاج الألوان منها."
       },
       "texture_quality": {
         "name": "جودة_الملمس"

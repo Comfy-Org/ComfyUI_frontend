@@ -17,7 +17,9 @@ import { useDialogStore } from '@/stores/dialogStore'
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
-  messages: { en: { g: { close: 'Close' } } },
+  messages: {
+    en: { g: { close: 'Close', maximizeDialog: 'Maximize' } }
+  },
   missingWarn: false,
   fallbackWarn: false
 })
@@ -193,6 +195,68 @@ describe('GlobalDialog Reka parity with PrimeVue', () => {
 
     expect(store.isDialogOpen('reka-esc-blocked')).toBe(true)
   })
+
+  it('applies headerClass and bodyClass on the non-headless path', async () => {
+    mountDialog()
+    const store = useDialogStore()
+
+    store.showDialog({
+      key: 'reka-section-classes',
+      title: 'Section classes',
+      component: Body,
+      dialogComponentProps: {
+        renderer: 'reka',
+        headerClass: 'p-2',
+        bodyClass: 'p-0'
+      }
+    })
+
+    await screen.findByRole('dialog')
+
+    // eslint-disable-next-line testing-library/no-node-access
+    const header = screen.getByText('Section classes').parentElement
+    expect(header?.classList.contains('p-2')).toBe(true)
+    // twMerge drops the default header padding in favor of headerClass
+    expect(header?.classList.contains('px-4')).toBe(false)
+
+    // eslint-disable-next-line testing-library/no-node-access
+    const body = screen.getByTestId('body').parentElement
+    expect(body?.classList.contains('p-0')).toBe(true)
+    expect(body?.classList.contains('px-4')).toBe(false)
+  })
+
+  it('maximize overrides custom dimension classes from contentClass', async () => {
+    mountDialog()
+    const store = useDialogStore()
+    const user = userEvent.setup()
+
+    store.showDialog({
+      key: 'reka-maximize-wins',
+      title: 'Maximize wins',
+      component: Body,
+      dialogComponentProps: {
+        renderer: 'reka',
+        maximizable: true,
+        contentClass:
+          'w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]'
+      }
+    })
+
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog.classList.contains('w-[80vw]')).toBe(true)
+
+    await user.click(screen.getByRole('button', { name: 'Maximize' }))
+
+    // Maximized dimensions win over the caller's fixed dimensions,
+    // mirroring PrimeVue's `.p-dialog-maximized` !important behavior.
+    expect(dialog.classList.contains('size-auto')).toBe(true)
+    expect(dialog.classList.contains('max-h-none')).toBe(true)
+    expect(dialog.classList.contains('w-[80vw]')).toBe(false)
+    expect(dialog.classList.contains('h-[80vh]')).toBe(false)
+    expect(dialog.classList.contains('max-h-[80vh]')).toBe(false)
+    expect(dialog.classList.contains('max-w-[80vw]')).toBe(false)
+    expect(dialog.classList.contains('sm:max-w-[80vw]')).toBe(false)
+  })
 })
 
 describe('shouldPreventRekaDismiss', () => {
@@ -235,6 +299,22 @@ describe('shouldPreventRekaDismiss', () => {
   it('allows dismiss when target is outside any PrimeVue overlay', () => {
     const event = makeEvent(document.body)
     onRekaPointerDownOutside({ dismissableMask: undefined }, event)
+    expect(event.defaultPrevented).toBe(false)
+  })
+
+  it('prevents dismiss when the dialog is not the top-most (stacked)', () => {
+    // A backgrounded dialog must never dismiss on an outside pointer — the
+    // pointer belongs to the dialog stacked above it (e.g. Edit Keybinding
+    // opening over Settings). Target is outside any overlay, so only the
+    // is-active gate can prevent it.
+    const event = makeEvent(document.body)
+    onRekaPointerDownOutside({ dismissableMask: undefined }, event, false)
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('allows the top-most dialog to dismiss on a true outside pointer', () => {
+    const event = makeEvent(document.body)
+    onRekaPointerDownOutside({ dismissableMask: undefined }, event, true)
     expect(event.defaultPrevented).toBe(false)
   })
 

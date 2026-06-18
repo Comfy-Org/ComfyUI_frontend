@@ -2904,6 +2904,10 @@
         "name": "صدا",
         "tooltip": "صدایی که به ویدیو اضافه می‌شود."
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "عمق بیت ویدئوی ایجادشده. ۱۰-بیت گرادیان‌های نرم‌تری با بندینگ کمتر ایجاد می‌کند، اما ممکن است برخی پخش‌کننده‌ها و nodeهای بعدی از آن پشتیبانی نکنند."
+      },
       "fps": {
         "name": "فریم بر ثانیه"
       },
@@ -5219,6 +5223,10 @@
       },
       "2": {
         "name": "نرخ فریم",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -8026,7 +8034,8 @@
         "name": "کنترل پس از تولید"
       },
       "generate_audio": {
-        "name": "تولید صوت"
+        "name": "تولید صوت",
+        "tooltip": "مدل 'kling-3.0-turbo' همواره صدای بومی تولید می‌کند، بنابراین گزینه فعال‌سازی صدا نادیده گرفته می‌شود."
       },
       "model": {
         "name": "مدل",
@@ -16240,6 +16249,9 @@
       "draw_hands": {
         "name": "ترسیم دست‌ها"
       },
+      "draw_head": {
+        "name": "رسم سر"
+      },
       "face_point_size": {
         "name": "اندازه نقطه صورت"
       },
@@ -18799,6 +18811,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصویر(های) مرجع برای ویرایش. Boogu بر یک مرجع برای هر نمونه تمرکز دارد؛ تعداد بیشتر نیز مجاز است."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
     "inputs": {
@@ -19586,6 +19629,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "یک مدل سه‌بعدی خارجی (مثلاً از Rodin، Hunyuan3D یا یک فایل محلی) را به Tripo وارد کنید تا بتوانید از آن با nodeهای پس‌پردازش Tripo مانند Texture، Rig و Convert استفاده کنید. فرمت GLB توصیه می‌شود: با این فرمت، تکسچرها فقط زمانی پس از وارد کردن باقی می‌مانند که در فایل جاسازی شده باشند. توجه داشته باشید که تکسچر دادن به یک مدل واردشده نیازمند یک texture prompt است.",
+    "display_name": "Tripo: وارد کردن مدل",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "مدل سه‌بعدی برای وارد کردن (GLB / FBX / OBJ / STL، تا سقف ۱۵۰ مگابایت). فایل‌های OBJ و STL فاقد تکسچر جاسازی‌شده هستند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: چندنما به مدل",
     "inputs": {
@@ -20053,6 +20112,10 @@
       },
       "texture_alignment": {
         "name": "تراز بافت"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "راهنمای متنی اختیاری برای تکسچر دادن. در عمل برای مدل‌های واردشده (Tripo: وارد کردن مدل) که تصویر مرجعی برای استخراج رنگ ندارند، الزامی است."
       },
       "texture_quality": {
         "name": "کیفیت بافت"
