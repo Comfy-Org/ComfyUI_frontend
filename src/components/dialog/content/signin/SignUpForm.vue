@@ -29,7 +29,11 @@
 
     <PasswordFields />
 
-    <TurnstileWidget v-if="turnstileEnabled" v-model:token="turnstileToken" />
+    <TurnstileWidget
+      v-if="turnstileEnabled"
+      ref="turnstileWidget"
+      v-model:token="turnstileToken"
+    />
 
     <!-- Submit Button -->
     <ProgressSpinner v-if="loading" class="mx-auto size-8" />
@@ -51,7 +55,7 @@ import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -70,6 +74,7 @@ const loading = computed(() => authStore.loading)
 const { enabled: turnstileEnabled, enforced: turnstileEnforced } =
   useTurnstile()
 const turnstileToken = ref('')
+const turnstileWidget = ref<InstanceType<typeof TurnstileWidget> | null>(null)
 const submitBlockedByTurnstile = computed(
   () => turnstileEnforced.value && !turnstileToken.value
 )
@@ -87,4 +92,14 @@ const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
     )
   }
 }, 1_500)
+
+// Turnstile tokens are single-use. When a submit attempt finishes without
+// navigating away (i.e. signup failed and the form is still mounted), the
+// captured token is already spent. Reset the widget so the next attempt sends a
+// fresh token instead of deterministically re-failing with the spent one.
+watch(loading, (isLoading, wasLoading) => {
+  if (wasLoading && !isLoading) {
+    turnstileWidget.value?.reset()
+  }
+})
 </script>

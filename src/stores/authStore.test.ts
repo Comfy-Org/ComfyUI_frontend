@@ -27,8 +27,9 @@ const { mockFeatureFlags } = vi.hoisted(() => ({
   }
 }))
 
-type MockUser = Omit<User, 'getIdToken'> & {
+type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
   getIdToken: Mock
+  delete: Mock
 }
 
 type MockAuth = Record<string, unknown>
@@ -148,7 +149,8 @@ describe('useAuthStore', () => {
   const mockUser: MockUser = {
     uid: 'test-user-id',
     email: 'test@example.com',
-    getIdToken: vi.fn().mockResolvedValue('mock-id-token')
+    getIdToken: vi.fn().mockResolvedValue('mock-id-token'),
+    delete: vi.fn().mockResolvedValue(undefined)
   } as Partial<User> as MockUser
 
   beforeEach(() => {
@@ -425,6 +427,61 @@ describe('useAuthStore', () => {
         String(url).endsWith('/customers')
       )
       expect(customerCall?.[1]).not.toHaveProperty('body')
+    })
+
+    it('rolls back the orphaned Firebase user when customer creation fails', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+      // The server-side customer creation (where Turnstile is validated) fails.
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers')
+          ? Promise.resolve({
+              ok: false,
+              statusText: 'Forbidden',
+              json: () => Promise.resolve({})
+            })
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      await expect(
+        store.register('new@example.com', 'password', 'turnstile-bad')
+      ).rejects.toThrow()
+
+      // The just-created user is deleted so the email is freed for retry.
+      expect(mockUser.delete).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not delete the user on a successful registration', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+
+      await store.register('new@example.com', 'password')
+
+      expect(mockUser.delete).not.toHaveBeenCalled()
+    })
+
+    it('does not delete an existing user when customer creation fails during login', async () => {
+      // Regression guard: the rollback must be scoped to register only — login
+      // signs in an EXISTING user, so a customer hiccup must never delete it.
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({
+        user: mockUser
+      } as Partial<UserCredential> as UserCredential)
+      mockFetch.mockImplementation((url: string) =>
+        url.endsWith('/customers')
+          ? Promise.resolve({
+              ok: false,
+              statusText: 'Forbidden',
+              json: () => Promise.resolve({})
+            })
+          : Promise.reject(new Error('Unexpected API call'))
+      )
+
+      await expect(
+        store.login('test@example.com', 'password')
+      ).rejects.toThrow()
+      expect(mockUser.delete).not.toHaveBeenCalled()
     })
   })
 

@@ -26,6 +26,23 @@ const clearToken = () => {
   token.value = ''
 }
 
+/**
+ * Fetch a fresh challenge and clear the current token.
+ *
+ * Turnstile tokens are single-use, so after a token is consumed by a submit
+ * attempt that did not succeed, the spent token must be discarded and a new
+ * challenge requested. Clearing the model re-blocks submission until the user
+ * solves the fresh challenge.
+ */
+const reset = () => {
+  clearToken()
+  if (widgetId && window.turnstile) {
+    window.turnstile.reset(widgetId)
+  }
+}
+
+defineExpose({ reset })
+
 onMounted(async () => {
   try {
     const turnstile = await loadTurnstile()

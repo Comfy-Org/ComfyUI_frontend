@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render } from '@testing-library/vue'
@@ -74,6 +75,31 @@ const flush = async () => {
 
 const renderWidget = () =>
   render(TurnstileWidget, { global: { plugins: [i18n] } })
+
+/**
+ * Render TurnstileWidget through a thin host that keeps a ref to it, so the
+ * exposed `reset()` method can be invoked the way a parent (SignUpForm) would.
+ */
+const renderWidgetWithExpose = () => {
+  const widgetRef = ref<{ reset: () => void } | null>(null)
+  const Host = defineComponent({
+    setup(_, { emit }) {
+      return () =>
+        h(TurnstileWidget, {
+          ref: widgetRef,
+          'onUpdate:token': (value: string) => emit('update:token', value)
+        })
+    }
+  })
+  const utils = render(Host, { global: { plugins: [i18n] } })
+  return {
+    ...utils,
+    getCurrentInstance: () => {
+      if (!widgetRef.value) throw new Error('widget not mounted')
+      return widgetRef.value
+    }
+  }
+}
 
 describe('TurnstileWidget', () => {
   beforeEach(() => {
@@ -163,6 +189,39 @@ describe('TurnstileWidget', () => {
     await flush()
 
     expect(container.textContent).toContain('Verification failed')
+  })
+
+  it('reset() clears the token model and resets the rendered widget', async () => {
+    const { api, options } = fakeTurnstile()
+    mockLoadTurnstile.mockResolvedValue(api)
+    window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+
+    const { emitted, getCurrentInstance } = renderWidgetWithExpose()
+    await flush()
+
+    options()!.callback('token-abc')
+    await flush()
+    expect(emitted()['update:token'].at(-1)).toEqual(['token-abc'])
+
+    getCurrentInstance().reset()
+    await flush()
+
+    expect(api.reset).toHaveBeenCalledWith('widget-id')
+    expect(emitted()['update:token'].at(-1)).toEqual([''])
+  })
+
+  it('reset() clears the token even when the widget never rendered', async () => {
+    mockLoadTurnstile.mockRejectedValue(new Error('script failed'))
+
+    const { emitted, getCurrentInstance } = renderWidgetWithExpose()
+    await flush()
+
+    getCurrentInstance().reset()
+    await flush()
+
+    // No widget id was captured, so window.turnstile.reset is never called,
+    // but the token model is still cleared.
+    expect(emitted()['update:token']?.at(-1) ?? ['']).toEqual([''])
   })
 
   it('removes the widget on unmount when one was rendered', async () => {

@@ -315,7 +315,8 @@ export const useAuthStore = defineStore('auth', () => {
         ...authHeader,
         'Content-Type': 'application/json'
       },
-      ...(payload && { body: JSON.stringify(payload) })
+      ...(payload &&
+        Object.keys(payload).length > 0 && { body: JSON.stringify(payload) })
     })
     if (!createCustomerRes.ok) {
       throw new AuthStoreError(
@@ -393,16 +394,38 @@ export const useAuthStore = defineStore('auth', () => {
     password: string,
     turnstileToken?: string
   ): Promise<UserCredential> => {
-    const result = await executeAuthAction(
-      (authInstance) =>
-        createUserWithEmailAndPassword(authInstance, email, password),
-      {
-        createCustomer: true,
-        ...(turnstileToken && {
-          customerPayload: { turnstile_token: turnstileToken }
-        })
+    // Drive create + customer inside one action so a failed customer step can
+    // roll back the just-created Firebase user. createCustomer is where the
+    // Turnstile token is validated server-side; if it fails (rejection, 5xx,
+    // network) the Firebase user is already created and, without rollback, the
+    // account is orphaned — every retry then fails "email already in use",
+    // permanently bricking signup. Rollback is scoped to register only; login /
+    // social sign-in must never delete an existing user on a customer hiccup.
+    const result = await executeAuthAction(async (authInstance) => {
+      const credential = await createUserWithEmailAndPassword(
+        authInstance,
+        email,
+        password
+      )
+      try {
+        await createCustomer(
+          turnstileToken ? { turnstile_token: turnstileToken } : undefined
+        )
+      } catch (error) {
+        // Best-effort rollback of the user created in THIS call; never let a
+        // cleanup failure mask the original error.
+        try {
+          await credential.user.delete()
+        } catch (deleteError) {
+          console.warn(
+            'Failed to roll back orphaned Firebase user after customer creation failed',
+            deleteError
+          )
+        }
+        throw error
       }
-    )
+      return credential
+    })
 
     if (isCloud) {
       useTelemetry()?.trackAuth({

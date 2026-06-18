@@ -180,9 +180,15 @@ const signInWithGithub = async () => {
   }
 }
 
-const signUpWithEmail = async (values: SignUpData) => {
+const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
   authError.value = ''
-  if (await authActions.signUpWithEmail(values.email, values.password)) {
+  if (
+    await authActions.signUpWithEmail(
+      values.email,
+      values.password,
+      turnstileToken
+    )
+  ) {
     await onAuthSuccess()
   }
 }

@@ -6,7 +6,7 @@ import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import ProgressSpinner from 'primevue/progressspinner'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -36,9 +36,38 @@ vi.mock('@/stores/authStore', () => ({
   }))
 }))
 
+const mockTurnstileEnabled = ref(false)
+const mockTurnstileEnforced = ref(false)
+const mockReset = vi.fn()
+
+vi.mock('@/composables/auth/useTurnstile', () => ({
+  useTurnstile: () => ({
+    enabled: mockTurnstileEnabled,
+    enforced: mockTurnstileEnforced
+  })
+}))
+
+// Stub the real widget (which loads the external Turnstile script) with a
+// component that exposes a spyable reset() so we can assert SignUpForm wires it.
+vi.mock('./TurnstileWidget.vue', async () => {
+  const { defineComponent } = await import('vue')
+  return {
+    default: defineComponent({
+      name: 'TurnstileWidget',
+      setup(_, { expose }) {
+        expose({ reset: mockReset })
+        return () => null
+      }
+    })
+  }
+})
+
 describe('SignUpForm', () => {
   beforeEach(() => {
     mockLoadingRef.value = false
+    mockTurnstileEnabled.value = false
+    mockTurnstileEnforced.value = false
+    mockReset.mockClear()
   })
 
   afterEach(() => {
@@ -105,6 +134,31 @@ describe('SignUpForm', () => {
         'autocomplete',
         'new-password'
       )
+    })
+  })
+
+  describe('Turnstile single-use token reset', () => {
+    it('resets the widget when loading returns to false (failed submit)', async () => {
+      mockTurnstileEnabled.value = true
+      renderComponent()
+      await nextTick()
+
+      // Simulate a submit that started (loading=true) then failed without
+      // navigating away (loading=false). The spent token must be reset.
+      mockLoadingRef.value = true
+      await nextTick()
+      mockLoadingRef.value = false
+      await nextTick()
+
+      expect(mockReset).toHaveBeenCalledOnce()
+    })
+
+    it('does not reset the widget on the initial render', async () => {
+      mockTurnstileEnabled.value = true
+      renderComponent()
+      await nextTick()
+
+      expect(mockReset).not.toHaveBeenCalled()
     })
   })
 })

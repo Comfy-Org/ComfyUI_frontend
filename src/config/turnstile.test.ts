@@ -5,8 +5,12 @@ import { getTurnstileSiteKey } from '@/config/turnstile'
 const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA'
 
 // Mock remote config with a mutable container + the real merge semantics
-// (`configValue || defaultValue`).
-const mockRemoteConfig: { value: Record<string, unknown> } = { value: {} }
+// (`configValue || defaultValue`). The container goes through vi.hoisted so the
+// hoisted vi.mock factory can reference it without a temporal-dead-zone crash
+// (which surfaces under coverage instrumentation, not a plain run).
+const { mockRemoteConfig } = vi.hoisted(() => ({
+  mockRemoteConfig: { value: {} as Record<string, unknown> }
+}))
 vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
   remoteConfig: mockRemoteConfig,
   configValueOrDefault: (

@@ -117,7 +117,7 @@ describe('loadTurnstile', () => {
     expect(scriptCount()).toBe(1)
   })
 
-  it('rejects and clears the cache when the script loads without the global', async () => {
+  it('rejects, removes the self-appended script, and clears the cache when the script loads without the global', async () => {
     const loadTurnstile = await freshLoadTurnstile()
 
     const promise = loadTurnstile()
@@ -125,8 +125,15 @@ describe('loadTurnstile', () => {
     scriptEl()!.dispatchEvent(new Event('load'))
 
     await expect(promise).rejects.toThrow(/without global/i)
+    // dead tag is removed so a later retry starts clean
+    expect(scriptEl()).toBeNull()
     // cache was reset → a later call starts a brand-new load
-    expect(loadTurnstile()).not.toBe(promise)
+    const retry = loadTurnstile()
+    expect(retry).not.toBe(promise)
+    // settle the throwaway retry so it doesn't leak a 10s timer
+    retry.catch(() => {})
+    scriptEl()!.dispatchEvent(new Event('error'))
+    await expect(retry).rejects.toThrow()
   })
 
   it('rejects, removes the self-appended script, and clears the cache on load error', async () => {
@@ -137,7 +144,13 @@ describe('loadTurnstile', () => {
 
     await expect(promise).rejects.toThrow(/failed to load/i)
     expect(scriptEl()).toBeNull()
-    expect(loadTurnstile()).not.toBe(promise)
+    // cache was reset → a later call starts a brand-new load
+    const retry = loadTurnstile()
+    expect(retry).not.toBe(promise)
+    // settle the throwaway retry so it doesn't leak a 10s timer
+    retry.catch(() => {})
+    scriptEl()!.dispatchEvent(new Event('error'))
+    await expect(retry).rejects.toThrow()
   })
 
   it('rejects, removes the script, and clears the cache on timeout', async () => {
@@ -152,7 +165,8 @@ describe('loadTurnstile', () => {
     expect(scriptEl()).toBeNull()
   })
 
-  it('reuses a pre-existing script tag and leaves it in place on error', async () => {
+  it('reuses a pre-existing script tag and resolves promptly once the global appears (no duplicate, tag left in place)', async () => {
+    vi.useFakeTimers()
     const existing = new FakeScript()
     existing.src = TURNSTILE_SRC
     inserted.push(existing)
@@ -163,9 +177,37 @@ describe('loadTurnstile', () => {
     // no duplicate appended
     expect(scriptCount()).toBe(1)
 
-    existing.dispatchEvent(new Event('error'))
-    await expect(promise).rejects.toThrow()
-    // only self-appended scripts are removed; a pre-existing tag is left alone
+    // The pre-existing tag's load event may have already fired before we
+    // attached listeners, so resolution must come from polling for the global
+    // rather than from a (dead) load event.
+    const api = fakeApi()
+    window.turnstile = api
+    await vi.advanceTimersByTimeAsync(50)
+
+    await expect(promise).resolves.toBe(api)
+    // a pre-existing tag is left alone (never removed by this loader)
     expect(scriptEl()).not.toBeNull()
+  })
+
+  it('reuses a pre-existing script tag and times out (clearing the cache) if the global never appears, leaving the tag in place', async () => {
+    vi.useFakeTimers()
+    const existing = new FakeScript()
+    existing.src = TURNSTILE_SRC
+    inserted.push(existing)
+
+    const loadTurnstile = await freshLoadTurnstile()
+    const promise = loadTurnstile()
+    const assertion = expect(promise).rejects.toThrow(/timed out/i)
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    await assertion
+    // pre-existing tag is never removed by the loader
+    expect(scriptEl()).not.toBeNull()
+    // cache was reset → a later call starts a brand-new load
+    const retry = loadTurnstile()
+    expect(retry).not.toBe(promise)
+    // drain the throwaway retry's timer/promise so nothing leaks
+    retry.catch(() => {})
+    await vi.advanceTimersByTimeAsync(10_000)
   })
 })
