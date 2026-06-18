@@ -262,35 +262,17 @@ async function loadAudioUIWidget() {
   return (widgets as Record<string, AudioUIWidget>).AUDIO_UI
 }
 
-function createAudioUINode(outputNode = false) {
-  const domWidget = {
-    name: 'audioUI',
-    element: document.createElement('audio'),
-    value: '',
-    serialize: true,
-    options: {} as Record<string, unknown>,
-    callback: vi.fn()
-  }
-  const node = fromAny<LGraphNode, unknown>({
-    addDOMWidget: vi.fn(() => domWidget),
-    constructor: { nodeData: { output_node: outputNode } }
-  })
-  return { domWidget, node }
-}
-
 describe('Comfy.AudioWidget AUDIO_UI widget', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  // Regression test: the audio player is a UI-only widget. It must be excluded
-  // from both the workflow (widget.serialize) and the prompt/API payload
-  // (widget.options.serialize). Leaking its `/view?...` URL (which carries a
-  // random cache-busting param) into the prompt changes the backend cache key
-  // every run and forces LoadAudio to always re-execute.
   it('excludes the audio player from workflow and prompt serialization', async () => {
     const AUDIO_UI = await loadAudioUIWidget()
-    const { domWidget, node } = createAudioUINode()
+    const domWidget = {
+      serialize: true,
+      options: {} as Record<string, unknown>
+    }
+    const node = fromAny<LGraphNode, unknown>({
+      addDOMWidget: vi.fn(() => domWidget),
+      constructor: { nodeData: { output_node: false } }
+    })
 
     AUDIO_UI(node, 'audioUI')
 
