@@ -18,7 +18,10 @@ import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { getAssetDisplayName } from '../utils/assetMetadataUtils'
+import {
+  getAssetDisplayName,
+  getAssetStoredFilename
+} from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
@@ -43,8 +46,8 @@ const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
  *
  * Output assets emit `<name> [output]` (and the subfolder-prefixed form when
  * present in metadata). Input/temp assets emit the bare name plus the explicit
- * annotation. `asset_hash` is included whenever present, since cloud-stored
- * assets can be referenced by hash.
+ * annotation. The content `hash` is included whenever present, since
+ * cloud-stored assets can be referenced by hash.
  */
 function widgetValueVariantsForAsset(asset: AssetItem): string[] {
   const variants: string[] = []
@@ -62,7 +65,7 @@ function widgetValueVariantsForAsset(asset: AssetItem): string[] {
       variants.push(`${name} [input]`)
     }
   }
-  const hash = asset.hash ?? asset.asset_hash
+  const hash = asset.hash
   if (hash) variants.push(hash)
   return variants
 }
@@ -201,7 +204,8 @@ export function useMediaAssetActions() {
         ...(Object.keys(jobAssetNameFilters).length > 0
           ? { job_asset_name_filters: jobAssetNameFilters }
           : {}),
-        naming_strategy: namingStrategy
+        naming_strategy: namingStrategy,
+        include_previews: true
       })
 
       assetExportStore.trackExport(result.task_id)
@@ -300,11 +304,7 @@ export function useMediaAssetActions() {
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
     const assetType = getAssetType(targetAsset, 'input')
 
-    // In Cloud mode, use the content hash (the actual stored filename),
-    // preferring hash and falling back to the deprecated asset_hash alias.
-    // In OSS mode, use the original name.
-    const cloudHash = targetAsset.hash ?? targetAsset.asset_hash
-    const filename = isCloud && cloudHash ? cloudHash : targetAsset.name
+    const filename = getAssetStoredFilename(targetAsset)
 
     // Create annotated path for the asset
     const annotated = createAnnotatedPath(
@@ -445,11 +445,7 @@ export function useMediaAssetActions() {
       const metadata = getOutputAssetMetadata(asset.user_metadata)
       const assetType = getAssetType(asset, 'input')
 
-      // In Cloud mode, use the content hash (the actual stored filename),
-      // preferring hash and falling back to the deprecated asset_hash alias.
-      // In OSS mode, use the original name.
-      const cloudHash = asset.hash ?? asset.asset_hash
-      const filename = isCloud && cloudHash ? cloudHash : asset.name
+      const filename = getAssetStoredFilename(asset)
 
       const annotated = createAnnotatedPath(
         {

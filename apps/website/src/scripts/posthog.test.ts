@@ -53,3 +53,28 @@ describe('initPostHog', () => {
     expect(result.$set_once).toHaveProperty('plan', 'free')
   })
 })
+
+describe('captureDownloadClick', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.resetModules()
+  })
+
+  it('captures the download event with the platform', async () => {
+    const { initPostHog, captureDownloadClick } = await import('./posthog')
+    initPostHog()
+    captureDownloadClick('mac')
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith(
+      'website:download_button_clicked',
+      { platform: 'mac' }
+    )
+  })
+
+  it('does not capture before PostHog is initialized', async () => {
+    const { captureDownloadClick } = await import('./posthog')
+    captureDownloadClick('windows')
+
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})

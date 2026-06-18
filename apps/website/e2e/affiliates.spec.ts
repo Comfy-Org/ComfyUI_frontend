@@ -1,38 +1,18 @@
 import { expect } from '@playwright/test'
 
-import {
-  AFFILIATE_FAQ_COUNT,
-  AFFILIATE_FAQ_PREFIX
-} from '../src/components/affiliates/affiliateFaqs'
-import { programDetailRows } from '../src/components/affiliates/programDetails'
-import type { TranslationKey } from '../src/i18n/translations'
+import { affiliateFaqs } from '../src/data/affiliateFaq'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
-const FIRST_FAQ_QUESTION = t(
-  `${AFFILIATE_FAQ_PREFIX}.1.q` as TranslationKey,
-  'en'
-)
-const FIRST_FAQ_ANSWER = t(
-  `${AFFILIATE_FAQ_PREFIX}.1.a` as TranslationKey,
-  'en'
-)
-const FIRST_PROGRAM_DETAIL_LABEL = t(programDetailRows[0].labelKey, 'en')
-const FIRST_PROGRAM_DETAIL_VALUE = t(programDetailRows[0].valueKey, 'en')
-const PROGRAM_DETAIL_TABLE_ROW_COUNT = programDetailRows.length + 1
-
 const PATH = '/affiliates'
 const APPLY_URL = 'https://forms.gle/RS8L2ttcuGap4Q1v6'
-
-const SECTION_TESTIDS = [
-  'affiliate-hero',
-  'affiliate-trust-band',
-  'affiliate-how-it-works',
-  'affiliate-audience',
-  'affiliate-program-details',
-  'affiliate-brand-assets',
-  'affiliate-footer-cta'
-] as const
+const TERMS_PATH = '/affiliates/terms'
+const FAQ_COUNT = affiliateFaqs.length
+const FIRST_FAQ = affiliateFaqs[0]
+const HERO_HEADING_TEXT = `${t('affiliate.hero.headingHighlight', 'en')} ${t('affiliate.hero.headingMuted', 'en')}`
+const CTA_HEADING_TEXT = t('affiliate.cta.heading', 'en')
+const CTA_APPLY_LABEL = t('affiliate.cta.apply', 'en')
+const CTA_TERMS_LABEL = t('affiliate.cta.termsLabel', 'en')
 
 test.describe('Affiliates landing — desktop @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -41,32 +21,38 @@ test.describe('Affiliates landing — desktop @smoke', () => {
 
   test('renders the hero heading and is indexable', async ({ page }) => {
     await expect(
-      page.getByRole('heading', { name: 'Become a Comfy Partner', level: 1 })
+      page.getByRole('heading', { level: 1, name: HERO_HEADING_TEXT })
     ).toBeVisible()
 
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
   })
 
-  test('renders every page section in top-to-bottom order', async ({
-    page
-  }) => {
-    const ys: number[] = []
-    for (const id of SECTION_TESTIDS) {
-      const section = page.getByTestId(id)
-      await expect(section).toBeVisible()
-      const box = await section.boundingBox()
-      expect(box, `${id} bounding box`).not.toBeNull()
-      ys.push(box!.y)
-    }
-    const sortedYs = [...ys].sort((a, b) => a - b)
-    expect(ys).toEqual(sortedYs)
+  test('renders the closing CTA heading and apply button', async ({ page }) => {
+    const ctaSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 2, name: CTA_HEADING_TEXT })
+    })
+    const ctaHeading = ctaSection.getByRole('heading', {
+      level: 2,
+      name: CTA_HEADING_TEXT
+    })
+    await ctaHeading.scrollIntoViewIfNeeded()
+    await expect(ctaHeading).toBeVisible()
+
+    const applyButton = ctaSection.getByRole('link', { name: CTA_APPLY_LABEL })
+    await expect(applyButton).toBeVisible()
+    await expect(applyButton).toHaveAttribute('href', APPLY_URL)
+    await expect(applyButton).toHaveAttribute('target', '_blank')
+    await expect(applyButton).toHaveAttribute('rel', 'noopener noreferrer')
   })
 
-  test('renders the program details table on desktop', async ({ page }) => {
-    const table = page.getByTestId('affiliate-program-details-table')
-    await expect(table).toBeVisible()
-    const rows = table.getByRole('row')
-    await expect(rows).toHaveCount(PROGRAM_DETAIL_TABLE_ROW_COUNT)
+  test('CTA section links to the affiliate terms page in the same tab', async ({
+    page
+  }) => {
+    const termsLink = page.getByRole('link', { name: CTA_TERMS_LABEL })
+    await termsLink.scrollIntoViewIfNeeded()
+    await expect(termsLink).toBeVisible()
+    await expect(termsLink).toHaveAttribute('href', TERMS_PATH)
+    await expect(termsLink).not.toHaveAttribute('target', '_blank')
   })
 })
 
@@ -93,42 +79,21 @@ test.describe('Affiliates landing — desktop interactions', () => {
     const parsed = JSON.parse(faqJsonLd!)
     expect(parsed['@type']).toBe('FAQPage')
     expect(Array.isArray(parsed.mainEntity)).toBe(true)
-    expect(parsed.mainEntity.length).toBe(AFFILIATE_FAQ_COUNT)
-  })
-
-  test('hero and footer CTAs target the application form in a new tab', async ({
-    page
-  }) => {
-    const heroCta = page.getByTestId('affiliate-hero-cta')
-    await expect(heroCta).toBeVisible()
-    await expect(heroCta).toHaveAttribute('href', APPLY_URL)
-    await expect(heroCta).toHaveAttribute('target', '_blank')
-    await expect(heroCta).toHaveAttribute('rel', 'noopener noreferrer')
-
-    const footerCta = page.getByTestId('affiliate-footer-cta-button')
-    await expect(footerCta).toHaveAttribute('href', APPLY_URL)
-    await expect(footerCta).toHaveAttribute('target', '_blank')
-    await expect(footerCta).toHaveAttribute('rel', 'noopener noreferrer')
-  })
-
-  test('footer links to the affiliate terms page as a same-tab navigation', async ({
-    page
-  }) => {
-    const link = page
-      .getByTestId('affiliate-footer-cta')
-      .getByRole('link', { name: /Read the affiliate program terms/i })
-    await expect(link).toBeVisible()
-    await expect(link).toBeEnabled()
-    await expect(link).toHaveAttribute('href', '/affiliates/terms')
-    await expect(link).not.toHaveAttribute('target', '_blank')
+    expect(parsed.mainEntity.length).toBe(FAQ_COUNT)
   })
 
   test('Apply Now CTA opens the application form in a new tab', async ({
     page,
     context
   }) => {
+    const ctaSection = page.locator('section').filter({
+      has: page.getByRole('heading', { level: 2, name: CTA_HEADING_TEXT })
+    })
+    const applyButton = ctaSection.getByRole('link', { name: CTA_APPLY_LABEL })
+    await applyButton.scrollIntoViewIfNeeded()
+
     const popupPromise = context.waitForEvent('page')
-    await page.getByTestId('affiliate-hero-cta').click()
+    await applyButton.click()
     const popup = await popupPromise
     await popup.waitForLoadState('domcontentloaded')
     const popupUrl = popup.url()
@@ -140,12 +105,15 @@ test.describe('Affiliates landing — desktop interactions', () => {
   })
 
   test('FAQ items toggle open and closed on click', async ({ page }) => {
-    const firstQuestion = page.getByRole('button', { name: FIRST_FAQ_QUESTION })
+    const firstQuestion = page.getByRole('button', {
+      name: FIRST_FAQ.question.en
+    })
+    await firstQuestion.scrollIntoViewIfNeeded()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'true')
-    await expect(page.getByText(FIRST_FAQ_ANSWER)).toBeVisible()
+    await expect(page.getByText(FIRST_FAQ.answer.en)).toBeVisible()
 
     await firstQuestion.click()
     await expect(firstQuestion).toHaveAttribute('aria-expanded', 'false')
@@ -157,44 +125,24 @@ test.describe('Affiliates landing — mobile @mobile', () => {
     await page.goto(PATH)
   })
 
-  test('renders the hero heading and primary CTA at narrow viewports', async ({
-    page
-  }) => {
+  test('renders the hero heading at narrow viewports', async ({ page }) => {
     await expect(
-      page.getByRole('heading', { name: 'Become a Comfy Partner', level: 1 })
-    ).toBeVisible()
-    await expect(page.getByTestId('affiliate-hero-cta')).toBeVisible()
-  })
-
-  test('program details collapse to a stacked definition list', async ({
-    page
-  }) => {
-    await expect(
-      page.getByTestId('affiliate-program-details-table')
-    ).toBeHidden()
-    const detailsList = page
-      .getByTestId('affiliate-program-details')
-      .locator('dl')
-    await expect(detailsList).toBeVisible()
-    await expect(
-      detailsList.getByText(FIRST_PROGRAM_DETAIL_LABEL)
-    ).toBeVisible()
-    await expect(
-      detailsList.getByText(FIRST_PROGRAM_DETAIL_VALUE)
+      page.getByRole('heading', { level: 1, name: HERO_HEADING_TEXT })
     ).toBeVisible()
   })
 
-  test('all major sections remain visible without horizontal overflow', async ({
-    page
-  }) => {
-    for (const id of SECTION_TESTIDS) {
-      const section = page.getByTestId(id)
-      await expect(section).toBeVisible()
-      const box = await section.boundingBox()
-      expect(box, `${id} bounding box`).not.toBeNull()
-      expect(box!.x + box!.width).toBeLessThanOrEqual(
-        page.viewportSize()!.width + 1
-      )
-    }
+  test('closing CTA stays within the viewport width', async ({ page }) => {
+    const ctaHeading = page.getByRole('heading', {
+      level: 2,
+      name: CTA_HEADING_TEXT
+    })
+    await ctaHeading.scrollIntoViewIfNeeded()
+    await expect(ctaHeading).toBeVisible()
+
+    const box = await ctaHeading.boundingBox()
+    expect(box, 'CTA heading bounding box').not.toBeNull()
+    expect(box!.x + box!.width).toBeLessThanOrEqual(
+      page.viewportSize()!.width + 1
+    )
   })
 })

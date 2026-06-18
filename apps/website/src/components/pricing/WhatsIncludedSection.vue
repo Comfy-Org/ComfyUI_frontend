@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import CheckIcon from '../icons/CheckIcon.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -94,12 +95,9 @@ const features: IncludedFeature[] = [
               class="mt-0.5 size-4 shrink-0"
               aria-hidden="true"
             />
-            <img
+            <CheckIcon
               v-else
-              src="/icons/check.svg"
-              alt=""
-              class="mt-0.5 size-4 shrink-0"
-              aria-hidden="true"
+              class="text-primary-comfy-yellow mt-0.5 size-4 shrink-0"
             />
             <p class="text-primary-comfy-canvas text-sm font-medium">
               {{ t(feature.titleKey, locale) }}

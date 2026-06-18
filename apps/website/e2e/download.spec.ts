@@ -4,6 +4,10 @@ import { test } from './fixtures/blockExternalMedia'
 
 const WINDOWS_UA =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+const LINUX_UA =
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+const IPHONE_UA =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 
 test.describe('Download page @smoke', () => {
   test.beforeEach(async ({ page }) => {
@@ -11,7 +15,9 @@ test.describe('Download page @smoke', () => {
   })
 
   test('has correct title', async ({ page }) => {
-    await expect(page).toHaveTitle('Download Comfy — Run AI Locally')
+    await expect(page).toHaveTitle(
+      'Download Comfy Desktop — Run AI on Your Hardware'
+    )
   })
 
   test('CloudBannerSection is visible with cloud link', async ({ page }) => {
@@ -38,7 +44,7 @@ test.describe('Download page @smoke', () => {
         level: 1
       })
     })
-    const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD LOCAL/i })
+    const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
     await expect(downloadBtn).toBeVisible()
     await expect(downloadBtn).toHaveAttribute('target', '_blank')
 
@@ -48,6 +54,61 @@ test.describe('Download page @smoke', () => {
       'href',
       'https://github.com/Comfy-Org/ComfyUI#installing'
     )
+
+    await context.close()
+  })
+
+  test('HeroSection falls back to both Windows + Mac when UA is unrecognized', async ({
+    browser
+  }) => {
+    const context = await browser.newContext({ userAgent: LINUX_UA })
+    const page = await context.newPage()
+    await page.goto('/download')
+
+    const hero = page.locator('section', {
+      has: page.getByRole('heading', {
+        name: /Run on your hardware/i,
+        level: 1
+      })
+    })
+
+    const windowsBtn = hero.locator(
+      'a[href="https://download.comfy.org/windows/nsis/x64"]'
+    )
+    await expect(windowsBtn).toBeVisible()
+    await expect(windowsBtn).toHaveText(/DOWNLOAD DESKTOP/i)
+
+    const macBtn = hero.locator(
+      'a[href="https://download.comfy.org/mac/dmg/arm64"]'
+    )
+    await expect(macBtn).toBeVisible()
+    await expect(macBtn).toHaveText(/DOWNLOAD DESKTOP/i)
+
+    await expect(
+      hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+    ).toHaveCount(2)
+
+    await context.close()
+  })
+
+  test('HeroSection hides every desktop CTA on mobile', async ({ browser }) => {
+    const context = await browser.newContext({ userAgent: IPHONE_UA })
+    const page = await context.newPage()
+    await page.goto('/download')
+
+    const hero = page.locator('section', {
+      has: page.getByRole('heading', {
+        name: /Run on your hardware/i,
+        level: 1
+      })
+    })
+
+    await expect(
+      hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+    ).toBeHidden()
+    await expect(
+      hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
+    ).toBeVisible()
 
     await context.close()
   })
@@ -176,7 +237,7 @@ test.describe('Download page mobile @mobile', () => {
         level: 1
       })
     })
-    const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD LOCAL/i })
+    const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
     const githubBtn = hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
 
     await expect(downloadBtn).toBeVisible()

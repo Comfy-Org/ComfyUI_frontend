@@ -7,6 +7,8 @@ import { createI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 import WidgetItem from './WidgetItem.vue'
 
 const { mockGetInputSpecForWidget, StubWidgetComponent } = vi.hoisted(() => ({
@@ -40,10 +42,6 @@ vi.mock('@/stores/workspace/favoritedWidgetsStore', () => ({
 
 vi.mock('@/composables/graph/useGraphNodeManager', () => ({
   getControlWidget: vi.fn(() => undefined)
-}))
-
-vi.mock('@/core/graph/subgraph/resolveConcretePromotedWidget', () => ({
-  resolvePromotedWidgetSource: vi.fn(() => undefined)
 }))
 
 vi.mock(
@@ -96,43 +94,6 @@ function createMockWidget(overrides: Partial<IBaseWidget> = {}): IBaseWidget {
   } as IBaseWidget
 }
 
-/**
- * Creates a mock PromotedWidgetView that mirrors the real class:
- * properties like name, type, value, options are prototype getters,
- * NOT own properties — so object spread loses them.
- */
-function createMockPromotedWidgetView(
-  sourceOptions: IBaseWidget['options'] = {
-    values: ['model_a.safetensors', 'model_b.safetensors']
-  }
-): IBaseWidget {
-  class MockPromotedWidgetView {
-    readonly sourceNodeId = '42'
-    readonly sourceWidgetName = 'ckpt_name'
-    readonly serialize = false
-
-    get name(): string {
-      return 'ckpt_name'
-    }
-    get type(): string {
-      return 'combo'
-    }
-    get value(): unknown {
-      return 'model_a.safetensors'
-    }
-    get options(): IBaseWidget['options'] {
-      return sourceOptions
-    }
-    get label(): string | undefined {
-      return undefined
-    }
-    get y(): number {
-      return 0
-    }
-  }
-  return fromAny<IBaseWidget, unknown>(new MockPromotedWidgetView())
-}
-
 function renderWidgetItem(
   widget: IBaseWidget,
   node: LGraphNode = createMockNode()
@@ -167,7 +128,7 @@ describe('WidgetItem', () => {
     vi.clearAllMocks()
   })
 
-  describe('promoted widget options', () => {
+  describe('widget state rendering', () => {
     it('passes options from a regular widget to the widget component', () => {
       const widget = createMockWidget({
         options: { values: ['a', 'b', 'c'] }
@@ -180,35 +141,63 @@ describe('WidgetItem', () => {
       })
     })
 
-    it('passes options from a PromotedWidgetView to the widget component', () => {
+    it('passes options from widget state to the widget component', () => {
       const expectedOptions = {
         values: ['model_a.safetensors', 'model_b.safetensors']
       }
-      const widget = createMockPromotedWidgetView(expectedOptions)
+      const id = widgetId('test-graph-id', 1, 'ckpt_name')
+      const widget = createMockWidget({ widgetId: id, name: 'ckpt_name' })
+      useWidgetValueStore().registerWidget(id, {
+        type: 'combo',
+        value: 'model_a.safetensors',
+        options: expectedOptions
+      })
+
       const { container } = renderWidgetItem(widget)
       const stub = getStubWidget(container)
 
       expect(stub.options).toEqual(expectedOptions)
     })
 
-    it('passes type from a PromotedWidgetView to the widget component', () => {
-      const widget = createMockPromotedWidgetView()
+    it('passes type from widget state to the widget component', () => {
+      const id = widgetId('test-graph-id', 1, 'ckpt_name')
+      const widget = createMockWidget({ widgetId: id, type: 'string' })
+      useWidgetValueStore().registerWidget(id, {
+        type: 'combo',
+        value: 'model_a.safetensors',
+        options: { values: ['model_a.safetensors'] }
+      })
+
       const { container } = renderWidgetItem(widget)
       const stub = getStubWidget(container)
 
       expect(stub.type).toBe('combo')
     })
 
-    it('passes name from a PromotedWidgetView to the widget component', () => {
-      const widget = createMockPromotedWidgetView()
+    it('passes name from widget state to the widget component', () => {
+      const id = widgetId('test-graph-id', 1, 'ckpt_name')
+      const widget = createMockWidget({ widgetId: id, name: 'source_name' })
+      useWidgetValueStore().registerWidget(id, {
+        type: 'combo',
+        value: 'model_a.safetensors',
+        options: { values: ['model_a.safetensors'] }
+      })
+
       const { container } = renderWidgetItem(widget)
       const stub = getStubWidget(container)
 
       expect(stub.name).toBe('ckpt_name')
     })
 
-    it('passes value from a PromotedWidgetView to the widget component', () => {
-      const widget = createMockPromotedWidgetView()
+    it('passes value from widget state to the widget component', () => {
+      const id = widgetId('test-graph-id', 1, 'ckpt_name')
+      const widget = createMockWidget({ widgetId: id, value: 'source value' })
+      useWidgetValueStore().registerWidget(id, {
+        type: 'combo',
+        value: 'model_a.safetensors',
+        options: { values: ['model_a.safetensors'] }
+      })
+
       const { container } = renderWidgetItem(widget)
       const stub = getStubWidget(container)
 

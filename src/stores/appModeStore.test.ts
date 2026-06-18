@@ -5,8 +5,17 @@ import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphNode as LGraphNodeClass,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { widgetId } from '@/types/widgetId'
 import type {
   InputWidgetConfig,
   LinearInput,
@@ -17,7 +26,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
-import type { WidgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
 
 const mockEmptyWorkflowDialog = vi.hoisted(() => {
   let lastOptions: { onEnterBuilder: () => void; onDismiss: () => void }
@@ -127,16 +136,16 @@ function createWorkflowWithLinearData(
 }
 
 const rootGraphId = '11111111-1111-4111-8111-111111111111'
-const entityPrompt = `${rootGraphId}:1:prompt` as WidgetEntityId
-const entitySeed = `${rootGraphId}:1:seed` as WidgetEntityId
-const entitySteps = `${rootGraphId}:1:steps` as WidgetEntityId
+const entityPrompt = `${rootGraphId}:1:prompt` as WidgetId
+const entitySeed = `${rootGraphId}:1:seed` as WidgetId
+const entitySteps = `${rootGraphId}:1:steps` as WidgetId
 
 function nodeWithWidgets(id: number, widgetNames: string[]) {
   return fromAny<LGraphNode, unknown>({
     id,
     widgets: widgetNames.map((name) => ({
       name,
-      entityId: `${rootGraphId}:${id}:${name}` as WidgetEntityId
+      widgetId: `${rootGraphId}:${id}:${name}` as WidgetId
     }))
   })
 }
@@ -660,10 +669,10 @@ describe('appModeStore', () => {
   })
 
   describe('updateInputConfig', () => {
-    const entity = 'g:1:prompt' as WidgetEntityId
-    const otherEntity = 'g:99:prompt' as WidgetEntityId
-    const widget = fromAny<IBaseWidget, unknown>({ entityId: entity })
-    const otherWidget = fromAny<IBaseWidget, unknown>({ entityId: otherEntity })
+    const entity = 'g:1:prompt' as WidgetId
+    const otherEntity = 'g:99:prompt' as WidgetId
+    const widget = fromAny<IBaseWidget, unknown>({ widgetId: entity })
+    const otherWidget = fromAny<IBaseWidget, unknown>({ widgetId: otherEntity })
 
     it('sets config on an existing input', () => {
       store.selectedInputs.push([entity, 'prompt'])
@@ -681,11 +690,11 @@ describe('appModeStore', () => {
       expect(store.selectedInputs[0][2]).toBeUndefined()
     })
 
-    it('is a no-op when the widget has no entityId', () => {
+    it('is a no-op when the widget has no widgetId', () => {
       store.selectedInputs.push([entity, 'prompt'])
 
       store.updateInputConfig(
-        fromAny<IBaseWidget, unknown>({ entityId: undefined }),
+        fromAny<IBaseWidget, unknown>({ widgetId: undefined }),
         { height: 200 }
       )
 
@@ -721,10 +730,10 @@ describe('appModeStore', () => {
 
   describe('removeSelectedInput', () => {
     it('removes the matching input entry only', () => {
-      const promptEntity = 'g:1:prompt' as WidgetEntityId
-      const stepsEntity = 'g:2:steps' as WidgetEntityId
+      const promptEntity = 'g:1:prompt' as WidgetId
+      const stepsEntity = 'g:2:steps' as WidgetId
       const stepsWidget = fromAny<IBaseWidget, unknown>({
-        entityId: stepsEntity,
+        widgetId: stepsEntity,
         name: 'steps'
       })
       store.selectedInputs.push([promptEntity, 'prompt'])
@@ -804,33 +813,40 @@ describe('appModeStore', () => {
     const rootGraphId = '11111111-1111-4111-8111-111111111111'
 
     it('migrates legacy `(sourceNodeId, sourceWidgetName)` to the host promoted widget entity id', () => {
-      const hostId = 5
-      const sourceNodeId = 42
       const subgraphInputName = 'Prompt'
       const sourceWidgetName = 'text'
-      const promotedEntityId =
-        `${rootGraphId}:${hostId}:${subgraphInputName}` as WidgetEntityId
-      const hostWidget = {
-        name: subgraphInputName,
-        sourceNodeId: String(sourceNodeId),
-        sourceWidgetName,
-        entityId: promotedEntityId
-      }
-      const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
-        id: hostId,
-        inputs: [{ name: subgraphInputName, _widget: hostWidget }],
-        widgets: [hostWidget],
-        isSubgraphNode: () => true
-      }) as SubgraphNode
 
-      vi.mocked(app.rootGraph).id = rootGraphId
-      vi.mocked(app.rootGraph).nodes = [hostNode]
-      vi.mocked(app.rootGraph).getNodeById = vi.fn(
-        (id: NodeId | null | undefined) => (id == hostId ? hostNode : null)
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: subgraphInputName, type: 'STRING' }]
+      })
+      const interior = new LGraphNodeClass('Interior')
+      const interiorInput = interior.addInput(subgraphInputName, 'STRING')
+      interior.addWidget('string', sourceWidgetName, '', () => undefined)
+      interiorInput.widget = { name: sourceWidgetName }
+      subgraph.add(interior)
+      subgraph.inputNode.slots[0].connect(interiorInput, interior)
+
+      const host = createTestSubgraphNode(subgraph, { id: 5 })
+      const rootGraph = host.graph as LGraph
+      rootGraph.add(host)
+      host._internalConfigureAfterSlots()
+
+      const promotedEntityId = widgetId(
+        rootGraph.id,
+        host.id,
+        subgraphInputName
       )
 
+      vi.mocked(app.rootGraph).id = rootGraph.id
+      vi.mocked(app.rootGraph).nodes = rootGraph.nodes
+      vi.mocked(app.rootGraph).getNodeById = vi.fn(
+        (id: NodeId | null | undefined) => rootGraph.getNodeById(id as NodeId)
+      )
+
+      expect(rootGraph.getNodeById(interior.id)).toBeUndefined()
+
       const result = store.pruneLinearData({
-        inputs: [[sourceNodeId, sourceWidgetName, { height: 120 }]],
+        inputs: [[interior.id, sourceWidgetName, { height: 120 }]],
         outputs: []
       })
 
@@ -844,16 +860,16 @@ describe('appModeStore', () => {
       const sourceNodeId = 42
       const sourceWidgetName = 'text'
       const rootEntityId =
-        `${rootGraphId}:${sourceNodeId}:${sourceWidgetName}` as WidgetEntityId
+        `${rootGraphId}:${sourceNodeId}:${sourceWidgetName}` as WidgetId
       const rootNode = fromAny<LGraphNode, unknown>({
         id: sourceNodeId,
-        widgets: [{ name: sourceWidgetName, entityId: rootEntityId }]
+        widgets: [{ name: sourceWidgetName, widgetId: rootEntityId }]
       })
       const hostWidget = {
         name: 'Prompt',
         sourceNodeId: String(sourceNodeId),
         sourceWidgetName,
-        entityId: `${rootGraphId}:${hostId}:Prompt` as WidgetEntityId
+        widgetId: `${rootGraphId}:${hostId}:Prompt` as WidgetId
       }
       const hostNode = Object.assign(Object.create(SubgraphNode.prototype), {
         id: hostId,
@@ -907,11 +923,11 @@ describe('appModeStore', () => {
       const hostId = 5
       const hostLocator = `${rootGraphId}:${hostId}`
       const promotedEntityId =
-        `${rootGraphId}:${hostId}:subgraph_input_name` as WidgetEntityId
+        `${rootGraphId}:${hostId}:subgraph_input_name` as WidgetId
       const hostNode = fromAny<LGraphNode, unknown>({
         id: hostId,
         isSubgraphNode: () => true,
-        widgets: [{ name: 'subgraph_input_name', entityId: promotedEntityId }]
+        widgets: [{ name: 'subgraph_input_name', widgetId: promotedEntityId }]
       })
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [hostNode]
