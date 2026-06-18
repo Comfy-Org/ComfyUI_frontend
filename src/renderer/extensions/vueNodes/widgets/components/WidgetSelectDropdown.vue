@@ -160,6 +160,13 @@ const handleApproachEnd = useDebounceFn(async () => {
     await outputMediaAssets.loadMore()
   }
 }, 300)
+
+const isUploading = ref(false)
+async function updateFiles(files: File[]) {
+  isUploading.value = true
+  await handleFilesUpdate(files)
+  isUploading.value = false
+}
 </script>
 
 <template>
@@ -181,11 +188,12 @@ const handleApproachEnd = useDebounceFn(async () => {
       :ownership-options
       :show-base-model-filter
       :base-model-options
+      :is-uploading
       v-bind="combinedProps"
       :loading-more="outputMediaAssets.isLoadingMore.value"
       class="w-full"
       @update:selected="updateSelectedItems"
-      @update:files="handleFilesUpdate"
+      @update:files="updateFiles"
       @update:is-open="handleIsOpenUpdate"
       @approach-end="handleApproachEnd"
     />

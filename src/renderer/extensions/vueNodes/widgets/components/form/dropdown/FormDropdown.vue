@@ -43,6 +43,7 @@ interface Props {
     item: FormDropdownItem,
     index: number
   ) => boolean
+  isUploading?: boolean
   searcher?: (
     query: string,
     items: FormDropdownItem[],
@@ -283,6 +284,7 @@ function handleSearchEnter() {
       :uploadable
       :disabled
       :accept
+      :is-uploading
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
     />
