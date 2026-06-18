@@ -280,21 +280,24 @@ function members(): unknown {
     name: 'You (creator)',
     email: 'you@comfy.org',
     joined_at: '2026-01-01T00:00:00Z',
-    role: 'owner'
+    role: 'owner',
+    is_original_owner: true
   }
   const m1 = {
     id: 'user-42',
     name: 'Alice',
     email: 'alice@example.com',
     joined_at: '2026-02-15T00:00:00Z',
-    role: 'member'
+    role: 'member',
+    is_original_owner: false
   }
   const m2 = {
     id: 'user-43',
     name: 'Bob',
     email: 'bob@example.com',
     joined_at: '2026-03-20T00:00:00Z',
-    role: 'owner'
+    role: 'owner',
+    is_original_owner: false
   }
   const list = cfg.ws === 'team' ? [creator, m1, m2] : [creator]
   return {
