@@ -1,0 +1,39 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm build:cloud",
+  "outputDirectory": "dist",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": null,
+  "env": {
+    "DISTRIBUTION": "cloud",
+    "USE_PROD_CONFIG": "true",
+    "ALGOLIA_APP_ID": "4E0RO38HS8",
+    "ALGOLIA_API_KEY": "684d998c36b67a9a9fce8fc2d8860579"
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://cloud.comfy.org/api/:path*"
+    },
+    {
+      "source": "/internal/:path*",
+      "destination": "https://cloud.comfy.org/internal/:path*"
+    },
+    {
+      "source": "/extensions/:path*",
+      "destination": "https://cloud.comfy.org/extensions/:path*"
+    },
+    {
+      "source": "/workflow_templates/:path*",
+      "destination": "https://cloud.comfy.org/workflow_templates/:path*"
+    },
+    {
+      "source": "/oauth/:path*",
+      "destination": "https://cloud.comfy.org/oauth/:path*"
+    },
+    {
+      "source": "/((?!api/|assets/|.*\\..*).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
