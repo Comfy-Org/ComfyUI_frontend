@@ -31,6 +31,7 @@ export interface Member {
   email: string
   joined_at: string
   role: WorkspaceRole
+  is_original_owner: boolean
 }
 
 interface PaginationInfo {

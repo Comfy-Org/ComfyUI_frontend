@@ -153,6 +153,7 @@ function createMember(
     email: 'member1@example.com',
     joinDate: new Date('2025-01-15'),
     role: 'member',
+    isOriginalOwner: false,
     ...overrides
   }
 }

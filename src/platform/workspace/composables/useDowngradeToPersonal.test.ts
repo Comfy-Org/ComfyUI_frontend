@@ -7,7 +7,6 @@ import { useDowngradeToPersonal } from './useDowngradeToPersonal'
 const mockMembers = vi.hoisted(() => ({
   value: [] as WorkspaceMember[]
 }))
-const mockUserEmail = vi.hoisted(() => ({ value: '' as string | null }))
 const mockRemoveMember = vi.hoisted(() => vi.fn())
 const mockFetchMembers = vi.hoisted(() => vi.fn())
 const mockSubscribe = vi.hoisted(() => vi.fn())
@@ -36,12 +35,6 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
   })
 }))
 
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({
-    userEmail: mockUserEmail
-  })
-}))
-
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     subscribe: mockSubscribe,
@@ -66,13 +59,19 @@ function createMember(
     email: 'member1@example.com',
     joinDate: new Date('2025-01-15'),
     role: 'member',
+    isOriginalOwner: false,
     ...overrides
   }
 }
 
 function teamWithOwnerAnd(...memberIds: string[]) {
   return [
-    createMember({ id: 'owner', role: 'owner', email: 'owner@example.com' }),
+    createMember({
+      id: 'owner',
+      role: 'owner',
+      email: 'owner@example.com',
+      isOriginalOwner: true
+    }),
     ...memberIds.map((id) => createMember({ id, email: `${id}@example.com` }))
   ]
 }
@@ -83,7 +82,6 @@ describe('useDowngradeToPersonal', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockMembers.value = []
-    mockUserEmail.value = 'owner@example.com'
     mockPreviewSubscribe.mockResolvedValue({ allowed: true })
     mockSubscribe.mockResolvedValue({
       billing_op_id: 'op-1',
@@ -97,24 +95,25 @@ describe('useDowngradeToPersonal', () => {
   })
 
   describe('removableMembers / hasOtherMembers', () => {
-    it('excludes the owner role from removable members', () => {
-      mockMembers.value = teamWithOwnerAnd('m1')
+    it('protects only the original owner, removing promoted owners and members', () => {
+      mockMembers.value = [
+        createMember({ id: 'creator', role: 'owner', isOriginalOwner: true }),
+        createMember({
+          id: 'promoted-owner',
+          role: 'owner',
+          isOriginalOwner: false
+        }),
+        createMember({ id: 'member', role: 'member', isOriginalOwner: false })
+      ]
       const { removableMembers, hasOtherMembers } = useDowngradeToPersonal()
-      expect(removableMembers.value.map((m) => m.id)).toEqual(['m1'])
+      expect(removableMembers.value.map((m) => m.id)).toEqual([
+        'promoted-owner',
+        'member'
+      ])
       expect(hasOtherMembers.value).toBe(true)
     })
 
-    it('excludes the current user even if listed as a plain member', () => {
-      mockUserEmail.value = 'me@example.com'
-      mockMembers.value = [
-        createMember({ id: 'me', role: 'member', email: 'me@example.com' }),
-        createMember({ id: 'm1', email: 'm1@example.com' })
-      ]
-      const { removableMembers } = useDowngradeToPersonal()
-      expect(removableMembers.value.map((m) => m.id)).toEqual(['m1'])
-    })
-
-    it('reports no other members when only the creator is present', () => {
+    it('reports no other members when only the original owner is present', () => {
       mockMembers.value = teamWithOwnerAnd()
       const { removableMembers, hasOtherMembers } = useDowngradeToPersonal()
       expect(removableMembers.value).toEqual([])
@@ -141,10 +140,9 @@ describe('useDowngradeToPersonal', () => {
       expect(mockStartOperation).not.toHaveBeenCalled()
     })
 
-    it('never removes the creator', async () => {
-      mockUserEmail.value = 'me@example.com'
+    it('never removes the original owner', async () => {
       mockMembers.value = [
-        createMember({ id: 'me', role: 'owner', email: 'me@example.com' })
+        createMember({ id: 'me', role: 'owner', isOriginalOwner: true })
       ]
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
