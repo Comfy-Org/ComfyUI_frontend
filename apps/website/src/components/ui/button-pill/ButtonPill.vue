@@ -27,9 +27,9 @@ const props = withDefaults(defineProps<Props>(), {
     data-slot="button-pill"
     :data-variant="variant"
     :data-size="size"
-    :as="as"
-    :as-child="asChild"
-    :disabled="disabled"
+    :as
+    :as-child
+    :disabled
     :class="
       cn(buttonPillVariants({ variant, size, iconPosition }), props.class)
     "
