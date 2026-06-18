@@ -270,12 +270,12 @@ function openFullSettings() {
 <style>
 @media (prefers-reduced-motion: no-preference) {
   .show-advanced-highlight {
-    --highlight-bg: var(--color-button-hover-surface);
+    --highlight-bg: var(--color-secondary-background-selected);
     animation: show-advanced-row-highlight 1s linear;
   }
 
   .dark-theme .show-advanced-highlight {
-    --highlight-bg: var(--color-charcoal-600);
+    --highlight-bg: var(--color-charcoal-200);
   }
 
   .show-advanced-highlight span:first-of-type {
