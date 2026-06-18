@@ -448,6 +448,16 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
     isLoading.value = true
     loadingTier.value = tierKey
 
+    // Fire the subscribe-now click before opening checkout so the funnel
+    // captures intent even if the checkout window is blocked or abandoned.
+    // Covers both the 'change' (existing paid subscriber) and 'new' paths.
+    telemetry?.trackSubscription('subscribe_clicked', {
+      current_tier: subscriptionTier.value?.toLowerCase(),
+      tier: tierKey,
+      cycle: currentBillingCycle.value,
+      source: 'pricing_table'
+    })
+
     try {
       if (hasPaidSubscription.value) {
         const targetPlan = {

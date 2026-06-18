@@ -423,9 +423,24 @@ export interface CheckoutAttributionMetadata {
   wbraid?: string
 }
 
+/**
+ * Surface that triggered a subscribe-now click. Lets us attribute the
+ * `app:subscribe_now_button_clicked` event to the specific CTA the user
+ * actually clicked, rather than only the legacy SubscribeButton.
+ */
+export type SubscribeClickSource =
+  | 'pricing_table'
+  | 'subscribe_to_run'
+  | 'subscribe_button'
+
 export interface SubscriptionMetadata {
   current_tier?: string
   reason?: SubscriptionDialogReason
+  // Populated on subscribe-now clicks so the funnel can split intent by the
+  // tier/cycle selected and the CTA surface that fired the event.
+  tier?: TierKey
+  cycle?: BillingCycle
+  source?: SubscribeClickSource
 }
 
 export interface BeginCheckoutMetadata

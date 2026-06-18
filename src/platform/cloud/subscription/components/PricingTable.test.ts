@@ -30,6 +30,7 @@ const mockIsYearlySubscription = ref(false)
 const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
 const mockTrackBeginCheckout = vi.fn()
+const mockTrackSubscription = vi.fn()
 const mockUserId = ref<string | undefined>('user-123')
 const mockGetAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
@@ -111,7 +112,8 @@ vi.mock('@/stores/authStore', () => ({
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackBeginCheckout: mockTrackBeginCheckout
+    trackBeginCheckout: mockTrackBeginCheckout,
+    trackSubscription: mockTrackSubscription
   })
 }))
 
@@ -222,6 +224,7 @@ describe('PricingTable', () => {
     mockAccessBillingPortal.mockReset()
     mockAccessBillingPortal.mockResolvedValue(true)
     mockTrackBeginCheckout.mockReset()
+    mockTrackSubscription.mockReset()
     mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -437,6 +440,74 @@ describe('PricingTable', () => {
       await userEvent.click(teamLink!)
 
       expect(onChooseTeamWorkspace).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('subscribe-now click telemetry', () => {
+    it('fires subscribe_clicked with tier/cycle/source on the new-subscriber path', async () => {
+      mockIsActiveSubscription.value = false
+
+      const windowOpenSpy = vi
+        .spyOn(window, 'open')
+        .mockImplementation(() => null)
+
+      renderComponent()
+      await flushPromises()
+
+      const creatorButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Creator'))
+
+      await userEvent.click(creatorButton!)
+      await flushPromises()
+
+      expect(mockTrackSubscription).toHaveBeenCalledWith('subscribe_clicked', {
+        current_tier: undefined,
+        tier: 'creator',
+        cycle: 'yearly',
+        source: 'pricing_table'
+      })
+
+      windowOpenSpy.mockRestore()
+    })
+
+    it('fires subscribe_clicked on the change path for an existing subscriber', async () => {
+      mockIsActiveSubscription.value = true
+      mockSubscriptionTier.value = 'STANDARD'
+
+      renderComponent()
+      await flushPromises()
+
+      const proButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Pro'))
+
+      await userEvent.click(proButton!)
+      await flushPromises()
+
+      expect(mockTrackSubscription).toHaveBeenCalledWith('subscribe_clicked', {
+        current_tier: 'standard',
+        tier: 'pro',
+        cycle: 'yearly',
+        source: 'pricing_table'
+      })
+    })
+
+    it('does not fire subscribe_clicked when clicking the current plan', async () => {
+      mockIsActiveSubscription.value = true
+      mockSubscriptionTier.value = 'CREATOR'
+
+      renderComponent()
+      await flushPromises()
+
+      const currentPlanButton = screen
+        .getAllByRole('button')
+        .find((b) => b.textContent?.includes('Current Plan'))
+
+      await userEvent.click(currentPlanButton!)
+      await flushPromises()
+
+      expect(mockTrackSubscription).not.toHaveBeenCalled()
     })
   })
 })
