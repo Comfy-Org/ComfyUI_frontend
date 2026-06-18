@@ -55,8 +55,8 @@ const ctaButtons = [
     </a>
 
     <!-- Desktop nav links -->
-    <HeaderMainDesktop :locale="locale" class="hidden lg:block" />
-    <HeaderMainMobile :locale="locale" class="lg:hidden" />
+    <HeaderMainDesktop :locale class="hidden lg:block" />
+    <HeaderMainMobile :locale class="lg:hidden" />
 
     <!-- Desktop CTA buttons -->
     <div
