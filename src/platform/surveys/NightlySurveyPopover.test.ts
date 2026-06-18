@@ -2,8 +2,11 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 const FEATURE_USAGE_KEY = 'Comfy.FeatureUsage'
+
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 const mockIsNightly = vi.hoisted(() => ({ value: true }))
 const mockIsCloud = vi.hoisted(() => ({ value: false }))
@@ -19,12 +22,6 @@ vi.mock('@/platform/distribution/types', () => ({
   get isDesktop() {
     return mockIsDesktop.value
   }
-}))
-
-vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => ({
-    t: (key: string) => key
-  }))
 }))
 
 describe('NightlySurveyPopover', () => {
@@ -74,6 +71,7 @@ describe('NightlySurveyPopover', () => {
         ...eventHandlers
       },
       global: {
+        plugins: [i18n],
         stubs: {
           Teleport: true
         }
@@ -195,6 +193,7 @@ describe('NightlySurveyPopover', () => {
           open
         },
         global: {
+          plugins: [i18n],
           stubs: {
             Teleport: true
           }

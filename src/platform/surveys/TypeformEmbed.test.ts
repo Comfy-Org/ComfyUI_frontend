@@ -1,12 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
+import { createI18n } from 'vue-i18n'
 
 import TypeformEmbed from './TypeformEmbed.vue'
-
-vi.mock('vue-i18n', () => ({
-  useI18n: vi.fn(() => ({ t: (key: string) => key }))
-}))
 
 const embedState = vi.hoisted(() => ({
   typeformError: false,
@@ -20,6 +18,12 @@ vi.mock('./useTypeformEmbed', () => ({
   }))
 }))
 
+const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
+
+function renderEmbed(props: ComponentProps<typeof TypeformEmbed>) {
+  return render(TypeformEmbed, { props, global: { plugins: [i18n] } })
+}
+
 describe('TypeformEmbed', () => {
   beforeEach(() => {
     embedState.typeformError = false
@@ -27,9 +31,7 @@ describe('TypeformEmbed', () => {
   })
 
   it('forwards hidden fields and leaves redirect target to Typeform by default', () => {
-    render(TypeformEmbed, {
-      props: { typeformId: 'abc123', hiddenFields: 'source=topbar' }
-    })
+    renderEmbed({ typeformId: 'abc123', hiddenFields: 'source=topbar' })
 
     const embed = screen.getByTestId('typeform-embed')
     expect(embed).toHaveAttribute('data-tf-widget', 'abc123')
@@ -39,9 +41,7 @@ describe('TypeformEmbed', () => {
   })
 
   it('keeps redirect-on-completion inside the iframe when requested', () => {
-    render(TypeformEmbed, {
-      props: { typeformId: 'abc123', redirectTarget: '_self' }
-    })
+    renderEmbed({ typeformId: 'abc123', redirectTarget: '_self' })
 
     expect(screen.getByTestId('typeform-embed')).toHaveAttribute(
       'data-tf-redirect-target',
@@ -50,7 +50,7 @@ describe('TypeformEmbed', () => {
   })
 
   it('enables auto-resize when requested', () => {
-    render(TypeformEmbed, { props: { typeformId: 'abc123', autoResize: true } })
+    renderEmbed({ typeformId: 'abc123', autoResize: true })
 
     expect(screen.getByTestId('typeform-embed')).toHaveAttribute(
       'data-tf-auto-resize'
@@ -59,7 +59,7 @@ describe('TypeformEmbed', () => {
 
   it('shows the load-error message instead of the embed when the script fails', () => {
     embedState.typeformError = true
-    render(TypeformEmbed, { props: { typeformId: 'abc123' } })
+    renderEmbed({ typeformId: 'abc123' })
 
     expect(screen.getByText('typeform.loadError')).toBeInTheDocument()
     expect(screen.queryByTestId('typeform-embed')).toBeNull()
@@ -67,7 +67,7 @@ describe('TypeformEmbed', () => {
 
   it('shows the load-error message instead of the embed for an invalid form id', () => {
     embedState.isValidTypeformId = false
-    render(TypeformEmbed, { props: { typeformId: 'bad id!' } })
+    renderEmbed({ typeformId: 'bad id!' })
 
     expect(screen.getByText('typeform.loadError')).toBeInTheDocument()
     expect(screen.queryByTestId('typeform-embed')).toBeNull()
