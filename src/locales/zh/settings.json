@@ -196,13 +196,12 @@
     "tooltip": "设置3D场景允许的最小光照强度值。此值定义在任何3D组件中调整光照时可设置的最小亮度。"
   },
   "Comfy_Load3D_PLYEngine": {
-    "name": "PLY引擎",
+    "name": "点云引擎",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
-    "tooltip": "选择用于加载PLY文件的引擎。\"threejs\" 使用原生Three.js PLYLoader（适合网格PLY文件）。\"fastply\" 用于优化的ASCII点云PLY文件加载。\"sparkjs\" 用于3D高斯斑点PLY文件的Spark.js。"
+    "tooltip": "选择用于加载点云PLY文件的引擎。\"threejs\" 使用原生Three.js PLYLoader（支持二进制和ASCII，可处理网格）。\"fastply\" 使用针对ASCII PLY的优化解析器。3D高斯泼溅PLY会自动识别并始终通过sparkjs渲染，不受此设置影响。"
   },
   "Comfy_Load3D_ShowGrid": {
     "name": "初始网格可见性",

@@ -52,6 +52,7 @@ const navLinks: NavLink[] = [
   {
     label: t('nav.resources', locale),
     items: [
+      { label: t('nav.learning', locale), href: routes.learning },
       {
         label: t('nav.blogs', locale),
         href: externalLinks.blog,
@@ -93,7 +94,7 @@ const ctaButtons = [
   {
     label: t('nav.downloadLocal', locale),
     prefix: 'DOWNLOAD',
-    core: 'LOCAL',
+    core: 'DESKTOP',
     href: routes.download,
     primary: false
   },
@@ -163,7 +164,7 @@ onMounted(() => {
   />
 
   <nav
-    class="bg-primary-comfy-ink fixed inset-x-0 top-0 z-50 flex items-center justify-between gap-4 px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
+    class="fixed inset-x-0 top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
     aria-label="Main navigation"
   >
     <a

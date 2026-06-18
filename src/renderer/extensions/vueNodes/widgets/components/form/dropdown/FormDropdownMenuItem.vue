@@ -98,7 +98,11 @@ function handleVideoLoad(event: Event) {
           // selection
           'ring-2 ring-component-node-widget-background-highlighted':
             layout === 'list' && selected
-        }
+        },
+        candidate &&
+          !selected &&
+          layout !== 'grid' &&
+          'bg-component-node-widget-background-hovered'
       )
     "
     @click="handleClick"
@@ -118,7 +122,7 @@ function handleVideoLoad(event: Event) {
               layout === 'grid',
             // selection
             'ring-2 ring-component-node-widget-background-highlighted':
-              layout === 'grid' && selected
+              layout === 'grid' && (selected || candidate)
           }
         )
       "

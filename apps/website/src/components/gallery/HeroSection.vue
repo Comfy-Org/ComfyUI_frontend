@@ -8,7 +8,9 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 </script>
 
 <template>
-  <section class="flex flex-col items-center px-6 pt-36 pb-16 text-center">
+  <section
+    class="max-w-9xl mx-auto flex flex-col items-center px-6 pt-36 pb-16 text-center"
+  >
     <SectionLabel>
       {{ t('gallery.label', locale) }}
     </SectionLabel>

@@ -130,6 +130,7 @@ describe('useLoad3dViewer', () => {
       hasAnimations: vi.fn().mockReturnValue(false),
       isSplatModel: vi.fn().mockReturnValue(false),
       isPlyModel: vi.fn().mockReturnValue(false),
+      getSourceFormat: vi.fn().mockReturnValue(null),
       getCurrentModelCapabilities: vi.fn().mockReturnValue({
         fitToViewer: true,
         requiresMaterialRebuild: false,
@@ -618,7 +619,7 @@ describe('useLoad3dViewer', () => {
         requiresMaterialRebuild: false,
         gizmoTransform: true,
         lighting: false,
-        exportable: false,
+        exportable: true,
         materialModes: [],
         fitTargetSize: 20
       })
@@ -630,7 +631,7 @@ describe('useLoad3dViewer', () => {
         expect.stringContaining('dropped.splat')
       )
       expect(viewer.canUseLighting.value).toBe(false)
-      expect(viewer.canExport.value).toBe(false)
+      expect(viewer.canExport.value).toBe(true)
       expect(viewer.isSplatModel.value).toBe(true)
       expect([...viewer.materialModes.value]).toEqual([])
     })

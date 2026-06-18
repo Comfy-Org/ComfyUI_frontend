@@ -53,7 +53,6 @@ const sortOptions: SelectOption[] = [
   { name: 'Recommended', value: 'recommended' },
   { name: 'Popular', value: 'popular' },
   { name: 'Newest', value: 'newest' },
-  { name: 'VRAM Usage (Low to High)', value: 'vram-low-to-high' },
   { name: 'Model Size (Low to High)', value: 'model-size-low-to-high' },
   { name: 'Alphabetical (A-Z)', value: 'alphabetical' }
 ]

@@ -260,7 +260,9 @@ export function useMaskEditorLoader() {
         const filename = urlObj.searchParams.get('filename')
 
         if (!filename) {
-          throw new Error('Image URL missing filename parameter')
+          throw new Error('Image URL missing filename parameter', {
+            cause: error
+          })
         }
 
         return {
@@ -269,7 +271,7 @@ export function useMaskEditorLoader() {
           type: urlObj.searchParams.get('type') || undefined
         }
       } catch (e) {
-        throw new Error(`Invalid image URL: ${url}`)
+        throw new Error(`Invalid image URL: ${url}`, { cause: e })
       }
     }
   }

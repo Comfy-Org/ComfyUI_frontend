@@ -41,7 +41,7 @@ function toggle(index: number) {
 </script>
 
 <template>
-  <section class="px-4 py-24 md:px-20 md:py-40">
+  <section class="max-w-9xl mx-auto px-4 py-24 md:px-20 md:py-40">
     <div class="flex flex-col gap-6 md:flex-row md:gap-16">
       <!-- Left heading -->
       <div
