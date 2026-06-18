@@ -216,13 +216,6 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
           >
             {{ t(plan.featureIntroKey, locale) }}
           </p>
-          <p
-            v-else
-            class="mb-2 text-sm font-semibold text-primary-comfy-canvas"
-            aria-hidden="true"
-          >
-            &nbsp;
-          </p>
           <ul class="space-y-2">
             <li
               v-for="feature in plan.features"
