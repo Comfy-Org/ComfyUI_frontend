@@ -23,7 +23,7 @@
       </div>
       <div
         v-if="section.tiles?.length"
-        class="grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2 p-4"
+        class="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2 p-4"
       >
         <EssentialNodeCard
           v-for="tile in section.tiles.filter(
@@ -47,7 +47,7 @@
             {{ $t(`essentials.${subgroup.key}`) }}
           </div>
           <div
-            class="mt-4 grid grid-cols-[repeat(auto-fill,minmax(96px,1fr))] gap-2"
+            class="mt-4 grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2"
           >
             <EssentialNodeCard
               v-for="tile in subgroup.tiles"
@@ -67,15 +67,18 @@ import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
+import { resolveEssentialTileNodeDef } from '@/composables/useEssentialTileNodeDef'
 import type {
   EssentialSection,
   EssentialTile
 } from '@/constants/essentialsNodes'
 import { ESSENTIAL_SECTIONS, getLabel } from '@/constants/essentialsNodes'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import EssentialNodeCard from './EssentialNodeCard.vue'
 
 const { t } = useI18n()
+const nodeDefStore = useNodeDefStore()
 const { searchQuery = '' } = defineProps<{ searchQuery?: string }>()
 const previewPanel = useTemplateRef('previewPanel')
 
@@ -88,8 +91,13 @@ const filteredSections = computed<EssentialSection[]>(() => {
   const query = searchQuery.trim().toLowerCase()
   if (!query) return ESSENTIAL_SECTIONS
 
-  const matchesQuery = (tile: EssentialTile) =>
-    t(getLabel(tile)).toLowerCase().includes(query)
+  const matchesQuery = (tile: EssentialTile) => {
+    const def = resolveEssentialTileNodeDef(tile, nodeDefStore)
+    const haystack = [def?.display_name, t(getLabel(tile))].filter(
+      Boolean
+    ) as string[]
+    return haystack.some((label) => label.toLowerCase().includes(query))
+  }
   return ESSENTIAL_SECTIONS.flatMap<EssentialSection>((section) => {
     if (section.tiles?.length) {
       const tiles = section.tiles.filter(matchesQuery)

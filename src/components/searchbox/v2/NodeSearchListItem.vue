@@ -2,6 +2,19 @@
   <div
     class="option-container flex w-full cursor-pointer items-center justify-between overflow-hidden"
   >
+    <!--
+      Essentials leading icon tile — temporarily hidden.
+      Re-enable by uncommenting both this block and the `leadingIconClass`
+      prop below, then restore `gap-3` on the container above and the row's
+      `pr-4 pl-2` padding in NodeSearchContent.vue.
+      <div
+        v-if="leadingIconClass"
+        aria-hidden="true"
+        class="flex size-10 shrink-0 items-center justify-center rounded-md bg-secondary-background-hover"
+      >
+        <i :class="cn('size-5 text-muted-foreground', leadingIconClass)" />
+      </div>
+    -->
     <div class="flex min-w-0 flex-1 flex-col gap-1 overflow-hidden">
       <!-- Row 1: Name (left) + badges (right) -->
       <div class="text-foreground flex items-center gap-2 text-sm">
@@ -26,12 +39,8 @@
         <template v-if="showDescription">
           <div class="flex-1" />
           <div class="flex shrink-0 items-center gap-1">
-            <span
-              v-if="showSourceBadge && isCore"
-              aria-hidden="true"
-              class="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-secondary-background-hover/80"
-            >
-              <ComfyLogo :size="10" mode="fill" color="currentColor" />
+            <span v-if="showSourceBadge && isCore" :class="badgePillClass">
+              <span class="truncate text-2xs">{{ $t('g.comfy') }}</span>
             </span>
             <span
               v-else-if="
@@ -43,6 +52,10 @@
               <span class="truncate text-2xs">
                 {{ nodeDef.nodeSource.displayText }}
               </span>
+            </span>
+
+            <span v-if="showSourceBadge && isEssential" :class="badgePillClass">
+              <span class="truncate text-2xs">{{ $t('g.essentials') }}</span>
             </span>
 
             <span
@@ -122,9 +135,9 @@
 import { computed } from 'vue'
 
 import TextTicker from '@/components/common/TextTicker.vue'
-import ComfyLogo from '@/components/icons/ComfyLogo.vue'
 import NodePricingBadge from '@/components/node/NodePricingBadge.vue'
 import NodeProviderBadge from '@/components/node/NodeProviderBadge.vue'
+import { resolveEssentialsPath } from '@/constants/essentialsNodes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
@@ -140,12 +153,14 @@ const {
   showDescription = false,
   showSourceBadge = false,
   hideBookmarkIcon = false
+  // leadingIconClass — re-enable alongside the leading icon block in the template
 } = defineProps<{
   nodeDef: ComfyNodeDefImpl
   currentQuery: string
   showDescription?: boolean
   showSourceBadge?: boolean
   hideBookmarkIcon?: boolean
+  // leadingIconClass?: string
 }>()
 
 const badgePillClass =
@@ -174,4 +189,5 @@ const providerName = computed(() => getProviderName(nodeDef.category))
 const isCore = computed(() =>
   CORE_NODE_MODULES.includes(nodeDef.python_module.split('.')[0])
 )
+const isEssential = computed(() => resolveEssentialsPath(nodeDef) !== undefined)
 </script>
