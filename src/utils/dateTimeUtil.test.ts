@@ -227,7 +227,7 @@ describe('formatClockTime', () => {
     expect(result).toBe(expected)
   })
 
-  it('uses app locale with explicit hour-cycle preference', () => {
+  it('uses app locale with explicit 12-hour preference', () => {
     const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
     const options = {
       hour: 'numeric',
@@ -238,5 +238,18 @@ describe('formatClockTime', () => {
     const expected = new Intl.DateTimeFormat('es', options).format(ts)
 
     expect(formatClockTime(ts, 'es', 'en-US')).toBe(expected)
+  })
+
+  it('uses app locale with explicit 24-hour preference', () => {
+    const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
+    const options = {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23'
+    } satisfies Intl.DateTimeFormatOptions
+    const expected = new Intl.DateTimeFormat('es', options).format(ts)
+
+    expect(formatClockTime(ts, 'es', 'en-GB')).toBe(expected)
   })
 })
