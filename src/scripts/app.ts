@@ -1692,6 +1692,24 @@ export class ComfyApp {
               this.canvas.draw(true, true)
             }
           } catch (error: unknown) {
+            const preconditionResponseError =
+              error instanceof PromptExecutionError &&
+              typeof error.response.error === 'object'
+                ? error.response.error
+                : undefined
+            const promptPrecondition = preconditionResponseError
+              ? resolveAccountPrecondition({
+                  exceptionType: preconditionResponseError.type,
+                  exceptionMessage: preconditionResponseError.message
+                })
+              : undefined
+            // Account preconditions (sign-in, subscription, credits) open their
+            // own modal and must stay out of the error panel and error count.
+            if (promptPrecondition) {
+              useAccountPreconditionDialog().open(promptPrecondition)
+              console.error(error)
+              break
+            }
             if (
               error instanceof PromptExecutionError &&
               typeof error.response.error === 'object' &&
