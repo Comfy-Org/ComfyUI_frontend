@@ -1,4 +1,4 @@
-import { asNodeId } from '@/types/nodeId'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeExecutionOutput, ResultItem } from '@/schemas/apiSchema'
 import { resultItemType } from '@/schemas/apiSchema'
 import { ResultItemImpl } from '@/stores/queueStore'
@@ -37,12 +37,14 @@ export function parseNodeOutput(
   return Object.entries(nodeOutput)
     .filter(([key, value]) => !METADATA_KEYS.has(key) && Array.isArray(value))
     .flatMap(([mediaType, items]) =>
-      (items as unknown[])
-        .filter(isResultItem)
-        .map(
-          (item) =>
-            new ResultItemImpl({ ...item, mediaType, nodeId: asNodeId(nodeId) })
-        )
+      (items as unknown[]).filter(isResultItem).map(
+        (item) =>
+          new ResultItemImpl({
+            ...item,
+            mediaType,
+            nodeId: asNodeExecutionId(nodeId)
+          })
+      )
     )
 }
 

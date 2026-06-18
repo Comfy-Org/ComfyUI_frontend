@@ -11,7 +11,7 @@ import type { NodeLayoutMap } from '@/renderer/core/layout/utils/mappers'
 describe('mappers', () => {
   it('yNodeToLayout reads from Yjs-attached map', () => {
     const layout = {
-      id: asNodeId('node-1'),
+      id: asNodeId(1),
       position: { x: 12, y: 34 },
       size: { width: 111, height: 222 },
       zIndex: 5,

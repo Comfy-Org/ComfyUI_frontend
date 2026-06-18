@@ -184,9 +184,9 @@ describe('parseComfyWorkflow', () => {
     workflow.links = [
       [
         1, // Link id
-        '100:1', // Node id of source node
+        1001, // Node id of source node
         '12', // Output slot# of source node
-        '100:2', // Node id of destination node
+        1002, // Node id of destination node
         15, // Input slot# of destination node
         'INT' // Data type
       ]

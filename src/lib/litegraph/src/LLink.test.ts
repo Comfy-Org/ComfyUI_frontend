@@ -28,7 +28,7 @@ describe('LLink', () => {
       const link = new LLink(1, 'float', 4, 2, 5, 3)
       expect(link.origin_id).toBe(asNodeId(4))
       expect(link.target_id).toBe(asNodeId(5))
-      expect(typeof link.origin_id).toBe('string')
+      expect(typeof link.origin_id).toBe('number')
     })
 
     test('brands the floating sentinel into UNASSIGNED_NODE_ID', () => {

@@ -129,7 +129,7 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     getSlotLayout: (_key: string) => ({
-      nodeId: 'node1',
+      nodeId: '1',
       index: 0,
       type: 'output',
       position: { x: 100, y: 200 }
@@ -223,7 +223,7 @@ function pointerEvent(
 
 function startDrag() {
   const { onPointerDown } = useSlotLinkInteraction({
-    nodeId: 'node1',
+    nodeId: '1',
     index: 0,
     type: 'output'
   })

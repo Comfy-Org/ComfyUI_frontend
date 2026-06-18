@@ -70,7 +70,7 @@ const widgetComponent = computed(() => {
 
 const isLinked = computed(() => {
   const safeWidget = useVueNodeLifecycle()
-    .nodeManager.value?.vueNodeData.get(String(node.id))
+    .nodeManager.value?.vueNodeData.get(node.id)
     ?.widgets?.find((w) => w.name === widget.name)
   return safeWidget?.slotMetadata
     ? !!safeWidget.slotMetadata.linked

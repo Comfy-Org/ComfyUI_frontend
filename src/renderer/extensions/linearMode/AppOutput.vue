@@ -15,7 +15,7 @@ const isPromoted = computed(() =>
 )
 
 function matchesThis(nodeId: NodeId) {
-  return id == nodeId
+  return String(nodeId) === id
 }
 function togglePromotion() {
   if (isPromoted.value) remove(appModeStore.selectedOutputs, matchesThis)

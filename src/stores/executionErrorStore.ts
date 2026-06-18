@@ -211,8 +211,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const lastExecutionErrorNodeId = computed(() => {
     const locator = lastExecutionErrorNodeLocatorId.value
     if (!locator) return null
-    const localId = workflowStore.nodeLocatorIdToNodeId(locator)
-    return localId != null ? String(localId) : null
+    return workflowStore.nodeLocatorIdToNodeId(locator)
   })
 
   const hasExecutionError = computed(() => !!lastExecutionError.value)

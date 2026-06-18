@@ -17,14 +17,14 @@ import { widgetId as makeWidgetId } from '@/types/widgetId'
 
 import { createPromotedMultilineWidget } from './multilineTextarea'
 
-const WIDGET_ID = makeWidgetId('graph-1', asNodeId('node-1'), 'prompt')
+const WIDGET_ID = makeWidgetId('graph-1', asNodeId(1), 'prompt')
 
 function subgraphNode(): LGraphNode {
   const node = fromAny<LGraphNode, unknown>({
-    id: 'node-1',
+    id: 1,
     graph: {
       rootGraph: { id: 'graph-1' },
-      getNodeById: (id: string) => (id === 'node-1' ? node : undefined)
+      getNodeById: (id: number) => (id === 1 ? node : undefined)
     }
   })
   return node
@@ -95,7 +95,7 @@ describe('createPromotedMultilineWidget', () => {
 
   it('defers materialization while the host node is not settled in its graph', () => {
     const unsettled = fromAny<LGraphNode, unknown>({
-      id: 'node-1',
+      id: 1,
       graph: { rootGraph: { id: 'graph-1' }, getNodeById: () => undefined }
     })
 

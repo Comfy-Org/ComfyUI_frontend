@@ -14,9 +14,9 @@ const testState = vi.hoisted(() => {
   // (runtime no-op cast) until the test is rewritten to use real stores.
   const placeholder = <T>(v: unknown): T => v as T
   return {
-    selectedNodeIds: placeholder<Ref<Set<string>>>(null),
+    selectedNodeIds: placeholder<Ref<Set<number>>>(null),
     selectedItems: placeholder<Ref<unknown[]>>(null),
-    nodeLayouts: new Map<string, Pick<NodeLayout, 'position' | 'size'>>(),
+    nodeLayouts: new Map<number, Pick<NodeLayout, 'position' | 'size'>>(),
     mutationFns: {
       setSource: vi.fn(),
       moveNode: vi.fn(),
@@ -84,7 +84,7 @@ vi.mock('@/renderer/core/layout/operations/layoutMutations', () => ({
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
-    getNodeLayoutRef: (nodeId: string) =>
+    getNodeLayoutRef: (nodeId: number) =>
       ref(testState.nodeLayouts.get(nodeId) ?? null),
     batchUpdateNodeBounds: testState.batchUpdateNodeBounds
   }
@@ -128,7 +128,7 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
 
 describe('useNodeDrag', () => {
   beforeEach(() => {
-    testState.selectedNodeIds = ref(new Set<string>())
+    testState.selectedNodeIds = ref(new Set<number>())
     testState.selectedItems = ref<unknown[]>([])
     testState.nodeLayouts.clear()
     testState.mutationFns.setSource.mockReset()
@@ -156,53 +156,53 @@ describe('useNodeDrag', () => {
   })
 
   it('batches multi-node drag updates into one mutation call per frame', () => {
-    testState.selectedNodeIds.value = new Set(['1', '2'])
-    testState.nodeLayouts.set('1', {
+    testState.selectedNodeIds.value = new Set([1, 2])
+    testState.nodeLayouts.set(1, {
       position: { x: 100, y: 100 },
       size: { width: 200, height: 120 }
     })
-    testState.nodeLayouts.set('2', {
+    testState.nodeLayouts.set(2, {
       position: { x: 200, y: 180 },
       size: { width: 210, height: 130 }
     })
 
     const { startDrag, handleDrag } = useNodeDrag()
 
-    startDrag(pointerEvent(10, 20), asNodeId('1'))
-    handleDrag(pointerEvent(30, 40), asNodeId('1'))
+    startDrag(pointerEvent(10, 20), asNodeId(1))
+    handleDrag(pointerEvent(30, 40), asNodeId(1))
     testState.requestAnimationFrameCallback?.(0)
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
-      { nodeId: '1', position: { x: 120, y: 120 } },
-      { nodeId: '2', position: { x: 220, y: 200 } }
+      { nodeId: 1, position: { x: 120, y: 120 } },
+      { nodeId: 2, position: { x: 220, y: 200 } }
     ])
     expect(testState.mutationFns.moveNode).not.toHaveBeenCalled()
   })
 
   it('uses the same batched mutation path for single-node drags', () => {
-    testState.selectedNodeIds.value = new Set(['1'])
-    testState.nodeLayouts.set('1', {
+    testState.selectedNodeIds.value = new Set([1])
+    testState.nodeLayouts.set(1, {
       position: { x: 50, y: 80 },
       size: { width: 180, height: 110 }
     })
 
     const { startDrag, handleDrag } = useNodeDrag()
 
-    startDrag(pointerEvent(5, 10), asNodeId('1'))
-    handleDrag(pointerEvent(25, 30), asNodeId('1'))
+    startDrag(pointerEvent(5, 10), asNodeId(1))
+    handleDrag(pointerEvent(25, 30), asNodeId(1))
     testState.requestAnimationFrameCallback?.(0)
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
-      { nodeId: '1', position: { x: 70, y: 100 } }
+      { nodeId: 1, position: { x: 70, y: 100 } }
     ])
     expect(testState.mutationFns.moveNode).not.toHaveBeenCalled()
   })
 
   it('cancels pending RAF and applies snap updates on endDrag', () => {
-    testState.selectedNodeIds.value = new Set(['1'])
-    testState.nodeLayouts.set('1', {
+    testState.selectedNodeIds.value = new Set([1])
+    testState.nodeLayouts.set(1, {
       position: { x: 50, y: 80 },
       size: { width: 180, height: 110 }
     })
@@ -214,16 +214,16 @@ describe('useNodeDrag', () => {
 
     const { startDrag, handleDrag, endDrag } = useNodeDrag()
 
-    startDrag(pointerEvent(5, 10), asNodeId('1'))
-    handleDrag(pointerEvent(25, 30), asNodeId('1'))
-    endDrag({} as PointerEvent, asNodeId('1'))
+    startDrag(pointerEvent(5, 10), asNodeId(1))
+    handleDrag(pointerEvent(25, 30), asNodeId(1))
+    endDrag({} as PointerEvent, asNodeId(1))
 
     expect(testState.cancelAnimationFrame).toHaveBeenCalledTimes(1)
     expect(testState.cancelAnimationFrame).toHaveBeenCalledWith(1)
     expect(testState.batchUpdateNodeBounds).toHaveBeenCalledTimes(1)
     expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith([
       {
-        nodeId: '1',
+        nodeId: 1,
         bounds: {
           x: 55,
           y: 87,
@@ -237,14 +237,14 @@ describe('useNodeDrag', () => {
 
 describe('useNodeDrag auto-pan', () => {
   beforeEach(() => {
-    testState.selectedNodeIds = ref(new Set(['1']))
+    testState.selectedNodeIds = ref(new Set([1]))
     testState.selectedItems = ref<unknown[]>([])
     testState.nodeLayouts.clear()
-    testState.nodeLayouts.set('1', {
+    testState.nodeLayouts.set(1, {
       position: { x: 100, y: 200 },
       size: { width: 200, height: 100 }
     })
-    testState.nodeLayouts.set('2', {
+    testState.nodeLayouts.set(2, {
       position: { x: 300, y: 400 },
       size: { width: 200, height: 100 }
     })
@@ -274,13 +274,13 @@ describe('useNodeDrag auto-pan', () => {
 
   it('moves node when auto-pan shifts the canvas offset', () => {
     const drag = useNodeDrag()
-    drag.startDrag(pointerEvent(750, 300), asNodeId('1'))
+    drag.startDrag(pointerEvent(750, 300), asNodeId(1))
 
-    drag.handleDrag(pointerEvent(760, 300), asNodeId('1'))
+    drag.handleDrag(pointerEvent(760, 300), asNodeId(1))
     testState.requestAnimationFrameCallback?.(0)
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenLastCalledWith([
-      { nodeId: '1', position: { x: 110, y: 200 } }
+      { nodeId: 1, position: { x: 110, y: 200 } }
     ])
 
     testState.mutationFns.batchMoveNodes.mockClear()
@@ -289,16 +289,16 @@ describe('useNodeDrag auto-pan', () => {
     testState.capturedOnPan.current!(5, 0)
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledWith([
-      { nodeId: '1', position: { x: 115, y: 200 } }
+      { nodeId: 1, position: { x: 115, y: 200 } }
     ])
   })
 
   it('moves all selected nodes when auto-pan fires', () => {
-    testState.selectedNodeIds.value = new Set(['1', '2'])
+    testState.selectedNodeIds.value = new Set([1, 2])
     const drag = useNodeDrag()
 
-    drag.startDrag(pointerEvent(750, 300), asNodeId('1'))
-    drag.handleDrag(pointerEvent(760, 300), asNodeId('1'))
+    drag.startDrag(pointerEvent(750, 300), asNodeId(1))
+    drag.handleDrag(pointerEvent(760, 300), asNodeId(1))
     testState.mutationFns.batchMoveNodes.mockClear()
 
     testState.mockDs.offset[0] -= 5
@@ -306,16 +306,16 @@ describe('useNodeDrag auto-pan', () => {
 
     expect(testState.mutationFns.batchMoveNodes).toHaveBeenCalledTimes(1)
     const calls = testState.mutationFns.batchMoveNodes.mock.calls[0][0]
-    const nodeIds = calls.map((u: { nodeId: string }) => u.nodeId)
-    expect(nodeIds).toContain('1')
-    expect(nodeIds).toContain('2')
+    const nodeIds = calls.map((u: { nodeId: number }) => u.nodeId)
+    expect(nodeIds).toContain(1)
+    expect(nodeIds).toContain(2)
   })
 
   it('starts auto-pan on handleDrag', () => {
     const drag = useNodeDrag()
-    drag.startDrag(pointerEvent(400, 300), asNodeId('1'))
+    drag.startDrag(pointerEvent(400, 300), asNodeId(1))
 
-    drag.handleDrag(pointerEvent(790, 300), asNodeId('1'))
+    drag.handleDrag(pointerEvent(790, 300), asNodeId(1))
 
     const autoPan = testState.capturedAutoPanInstance.current
     if (!autoPan) throw new Error('Auto-pan controller was not created')
@@ -325,14 +325,14 @@ describe('useNodeDrag auto-pan', () => {
 
   it('reuses auto-pan controller across handleDrag calls', () => {
     const drag = useNodeDrag()
-    drag.startDrag(pointerEvent(400, 300), asNodeId('1'))
+    drag.startDrag(pointerEvent(400, 300), asNodeId(1))
 
-    drag.handleDrag(pointerEvent(790, 300), asNodeId('1'))
+    drag.handleDrag(pointerEvent(790, 300), asNodeId(1))
     const autoPan = testState.capturedAutoPanInstance.current
     if (!autoPan) throw new Error('Auto-pan controller was not created')
 
     testState.requestAnimationFrameCallback?.(0)
-    drag.handleDrag(pointerEvent(795, 305), asNodeId('1'))
+    drag.handleDrag(pointerEvent(795, 305), asNodeId(1))
 
     expect(testState.capturedAutoPanInstance.current).toBe(autoPan)
     expect(autoPan.start).toHaveBeenCalledTimes(1)
@@ -342,29 +342,29 @@ describe('useNodeDrag auto-pan', () => {
   it('does not start auto-pan before handleDrag', () => {
     const drag = useNodeDrag()
 
-    drag.startDrag(pointerEvent(790, 300), asNodeId('1'))
+    drag.startDrag(pointerEvent(790, 300), asNodeId(1))
 
     expect(testState.capturedAutoPanInstance.current).toBeNull()
   })
 
   it('stops auto-pan on endDrag', () => {
     const drag = useNodeDrag()
-    drag.startDrag(pointerEvent(400, 300), asNodeId('1'))
-    drag.handleDrag(pointerEvent(400, 300), asNodeId('1'))
+    drag.startDrag(pointerEvent(400, 300), asNodeId(1))
+    drag.handleDrag(pointerEvent(400, 300), asNodeId(1))
     expect(testState.capturedAutoPanInstance.current).not.toBeNull()
 
-    drag.endDrag(pointerEvent(400, 300), asNodeId('1'))
+    drag.endDrag(pointerEvent(400, 300), asNodeId(1))
 
     expect(testState.capturedAutoPanInstance.current!.stop).toHaveBeenCalled()
   })
 
   it('does not move nodes if onPan fires after endDrag', () => {
     const drag = useNodeDrag()
-    drag.startDrag(pointerEvent(400, 300), asNodeId('1'))
-    drag.handleDrag(pointerEvent(400, 300), asNodeId('1'))
+    drag.startDrag(pointerEvent(400, 300), asNodeId(1))
+    drag.handleDrag(pointerEvent(400, 300), asNodeId(1))
     const onPan = testState.capturedOnPan.current!
 
-    drag.endDrag(pointerEvent(400, 300), asNodeId('1'))
+    drag.endDrag(pointerEvent(400, 300), asNodeId(1))
     testState.mutationFns.batchMoveNodes.mockClear()
 
     onPan(5, 0)

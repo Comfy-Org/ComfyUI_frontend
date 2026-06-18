@@ -5,9 +5,10 @@
  *
  * @TODO Replace this concatenated string with root cause fix
  */
+import type { NodeId } from '@/types/nodeId'
 
 interface SlotIdentifier {
-  nodeId: string
+  nodeId: NodeId | string
   index: number
   isInput: boolean
 }
@@ -18,12 +19,12 @@ interface SlotIdentifier {
  */
 export function getSlotKey(identifier: SlotIdentifier): string
 export function getSlotKey(
-  nodeId: string,
+  nodeId: NodeId | string,
   index: number,
   isInput: boolean
 ): string
 export function getSlotKey(
-  nodeIdOrIdentifier: string | SlotIdentifier,
+  nodeIdOrIdentifier: NodeId | string | SlotIdentifier,
   index?: number,
   isInput?: boolean
 ): string {

@@ -225,7 +225,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { asNodeId } from '@/types/nodeId'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
 import AssetsSidebarGridView from '@/components/sidebar/tabs/AssetsSidebarGridView.vue'
 import AssetsSidebarListView from '@/components/sidebar/tabs/AssetsSidebarListView.vue'
@@ -473,7 +473,7 @@ const galleryItems = computed(() => {
       filename: asset.name,
       subfolder: '',
       type: 'output',
-      nodeId: asNodeId('0'),
+      nodeId: asNodeExecutionId('0'),
       mediaType: mediaType === 'image' ? 'images' : mediaType
     })
 

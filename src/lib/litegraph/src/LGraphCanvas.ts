@@ -3366,7 +3366,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         let outputId: number = -1
 
         const slotLayout = layoutStore.querySlotAtPoint({ x, y })
-        if (slotLayout && slotLayout.nodeId === String(node.id)) {
+        if (slotLayout && slotLayout.nodeId === node.id) {
           if (slotLayout.type === 'input') {
             inputId = slotLayout.index
             pos[0] = slotLayout.position.x

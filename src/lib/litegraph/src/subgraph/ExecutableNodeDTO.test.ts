@@ -569,7 +569,7 @@ describe('ExecutableNodeDTO Memory Efficiency', () => {
 
     // DTO should be lightweight - only essential properties
     expect(dto.node).toBe(node) // Reference, not copy
-    expect(dto.subgraphNodePath).toEqual(['1']) // Reference to path
+    expect(dto.subgraphNodePath).toEqual([asNodeId(1)]) // Reference to path
     expect(dto.inputs).toHaveLength(2) // Copied input data only
 
     // Should not duplicate heavy node data
@@ -590,7 +590,7 @@ describe('ExecutableNodeDTO Memory Efficiency', () => {
       graph.add(node)
       const dto = new ExecutableNodeDTO(
         node,
-        [asNodeId('parent')],
+        [asNodeId(1)],
         new Map(),
         undefined
       )
@@ -673,7 +673,7 @@ describe('ExecutableNodeDTO Integration', () => {
 
     const dto = new ExecutableNodeDTO(
       originalNode,
-      [asNodeId('parent')],
+      [asNodeId(1)],
       new Map(),
       undefined
     )
@@ -684,7 +684,7 @@ describe('ExecutableNodeDTO Integration', () => {
     expect(dto.node.properties.value).toBe(42)
 
     // But DTO ID should be path-based
-    expect(dto.id).toBe('parent:123')
+    expect(dto.id).toBe('1:123')
   })
 
   it('should handle execution context correctly', () => {
@@ -722,7 +722,7 @@ describe('ExecutableNodeDTO Scale Testing', () => {
 
       const dto = new ExecutableNodeDTO(
         node,
-        [asNodeId('parent')],
+        [asNodeId(1)],
         new Map(),
         undefined
       )
@@ -734,9 +734,9 @@ describe('ExecutableNodeDTO Scale Testing', () => {
 
     expect(dtos).toHaveLength(1000)
     // Test deterministic properties instead of flaky timing
-    expect(dtos[0].id).toBe('parent:0')
-    expect(dtos[999].id).toBe('parent:999')
-    expect(dtos.every((dto, i) => dto.id === `parent:${i}`)).toBe(true)
+    expect(dtos[0].id).toBe('1:0')
+    expect(dtos[999].id).toBe('1:999')
+    expect(dtos.every((dto, i) => dto.id === `1:${i}`)).toBe(true)
 
     console.log(`Created 1000 DTOs in ${duration.toFixed(2)}ms`)
   })

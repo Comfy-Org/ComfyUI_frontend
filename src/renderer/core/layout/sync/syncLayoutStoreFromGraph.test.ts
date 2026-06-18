@@ -46,7 +46,7 @@ describe('syncLayoutStoreNodeBoundsFromGraph', () => {
 
     expect(batchUpdateNodeBounds).toHaveBeenCalledWith([
       {
-        nodeId: '1',
+        nodeId: 1,
         bounds: {
           x: 100,
           y: 200,
@@ -55,7 +55,7 @@ describe('syncLayoutStoreNodeBoundsFromGraph', () => {
         }
       },
       {
-        nodeId: '2',
+        nodeId: 2,
         bounds: {
           x: 450,
           y: 300,

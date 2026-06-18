@@ -43,7 +43,6 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
-import { asNodeId } from '@/types/nodeId'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
 import type { ExecutableLGraphNode, ExecutionId } from './ExecutableNodeDTO'
@@ -733,11 +732,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       return null
     }
 
-    const newLink = LLink.create(innerLink)
-    newLink.origin_id = asNodeId(`${this.id}:${innerLink.origin_id}`)
-    newLink.origin_slot = innerLink.origin_slot
-
-    return newLink
+    return LLink.create(innerLink)
   }
 
   /**

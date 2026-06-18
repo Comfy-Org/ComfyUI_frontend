@@ -12,7 +12,7 @@ const createMockDOMWidget = (id: string) => {
     id,
     element,
     node: {
-      id: 'node-1',
+      id: 1,
       title: 'Test Node',
       pos: [0, 0],
       size: [200, 100]

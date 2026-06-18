@@ -31,10 +31,10 @@ describe('useNodeZIndex', () => {
 
       const { bringNodeToFront } = useNodeZIndex()
 
-      bringNodeToFront(asNodeId('node1'))
+      bringNodeToFront(asNodeId(1))
 
       expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.Vue)
-      expect(mockBringNodeToFront).toHaveBeenCalledWith('node1')
+      expect(mockBringNodeToFront).toHaveBeenCalledWith(1)
     })
 
     it('should bring node to front with custom source', () => {
@@ -50,10 +50,10 @@ describe('useNodeZIndex', () => {
 
       const { bringNodeToFront } = useNodeZIndex()
 
-      bringNodeToFront(asNodeId('node2'), LayoutSource.Canvas)
+      bringNodeToFront(asNodeId(2), LayoutSource.Canvas)
 
       expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.Canvas)
-      expect(mockBringNodeToFront).toHaveBeenCalledWith('node2')
+      expect(mockBringNodeToFront).toHaveBeenCalledWith(2)
     })
 
     it('should use custom layout source from options', () => {
@@ -71,10 +71,10 @@ describe('useNodeZIndex', () => {
         layoutSource: LayoutSource.External
       })
 
-      bringNodeToFront(asNodeId('node3'))
+      bringNodeToFront(asNodeId(3))
 
       expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.External)
-      expect(mockBringNodeToFront).toHaveBeenCalledWith('node3')
+      expect(mockBringNodeToFront).toHaveBeenCalledWith(3)
     })
 
     it('should override layout source with explicit source parameter', () => {
@@ -92,10 +92,10 @@ describe('useNodeZIndex', () => {
         layoutSource: LayoutSource.External
       })
 
-      bringNodeToFront(asNodeId('node4'), LayoutSource.Canvas)
+      bringNodeToFront(asNodeId(4), LayoutSource.Canvas)
 
       expect(mockSetSource).toHaveBeenCalledWith(LayoutSource.Canvas)
-      expect(mockBringNodeToFront).toHaveBeenCalledWith('node4')
+      expect(mockBringNodeToFront).toHaveBeenCalledWith(4)
     })
   })
 })

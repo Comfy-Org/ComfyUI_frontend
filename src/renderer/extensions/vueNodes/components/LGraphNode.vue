@@ -48,7 +48,7 @@
         nodeData.mode === LGraphEventMode.ALWAYS &&
         !nodeData.hasErrors
       "
-      :id="nodeData.id"
+      :id="String(nodeData.id)"
     />
     <div
       v-if="isSelected || executing"

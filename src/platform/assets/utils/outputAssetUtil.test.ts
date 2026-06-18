@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 import { resolveOutputAssetItems } from './outputAssetUtil'
@@ -33,6 +34,9 @@ function createOutput(overrides: OutputOverrides = {}): ResultItemImpl {
   }
   return {
     ...merged,
+    type: 'output',
+    mediaType: 'images',
+    nodeId: asNodeExecutionId(merged.nodeId),
     previewUrl: merged.url,
     display_name: merged.display_name
   } as ResultItemImpl

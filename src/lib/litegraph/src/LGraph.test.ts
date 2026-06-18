@@ -1018,7 +1018,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
       expect(migrationCall).toBeDefined()
       expect(migrationCall![1]).toEqual(
         expect.objectContaining({
-          hostNodeId: expect.any(String),
+          hostNodeId: expect.any(Number),
           proxyWidgets: expect.anything()
         })
       )

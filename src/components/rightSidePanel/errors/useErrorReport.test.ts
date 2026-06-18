@@ -181,7 +181,7 @@ describe('useErrorReport', () => {
       exceptionType: 'RuntimeError',
       exceptionMessage: 'CUDA oom',
       traceback: 'trace-0',
-      nodeId: '42',
+      nodeId: 42,
       nodeType: 'KSampler',
       systemStats: sampleSystemStats,
       serverLogs: 'server logs',

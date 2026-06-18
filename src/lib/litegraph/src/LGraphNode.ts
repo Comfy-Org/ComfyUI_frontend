@@ -1422,17 +1422,14 @@ export class LGraphNode
       options.action_call ||= `${this.id}_exec_${Math.floor(Math.random() * 9999)}`
       if (!this.graph) throw new NullGraphError()
 
-      // @ts-expect-error Technically it works when id is a string. Array gets props.
       this.graph.nodes_executing[this.id] = true
       this.onExecute(param, options)
-      // @ts-expect-error deprecated
       this.graph.nodes_executing[this.id] = false
 
       // save execution/action ref
       this.exec_version = this.graph.iteration
       if (options?.action_call) {
         this.action_call = options.action_call
-        // @ts-expect-error deprecated
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }
@@ -1456,16 +1453,13 @@ export class LGraphNode
       options.action_call ||= `${this.id}_${action || 'action'}_${Math.floor(Math.random() * 9999)}`
       if (!this.graph) throw new NullGraphError()
 
-      // @ts-expect-error deprecated
       this.graph.nodes_actioning[this.id] = action || 'actioning'
       this.onAction(action, param, options)
-      // @ts-expect-error deprecated
       this.graph.nodes_actioning[this.id] = false
 
       // save execution/action ref
       if (options?.action_call) {
         this.action_call = options.action_call
-        // @ts-expect-error deprecated
         this.graph.nodes_executedAction[this.id] = options.action_call
       }
     }

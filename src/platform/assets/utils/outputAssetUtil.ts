@@ -1,6 +1,6 @@
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   getJobDetail,
   getPreviewableOutputsFromJobDetail
@@ -22,7 +22,7 @@ type ResolveOutputAssetItemsOptions = {
 }
 
 type OutputKeyParts = {
-  nodeId?: NodeId | null
+  nodeId?: NodeExecutionId | null
   subfolder?: string | null
   filename?: string | null
 }

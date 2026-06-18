@@ -1090,23 +1090,23 @@ describe('graphTraversalUtil', () => {
     describe('getAllNonIoNodesInSubgraph', () => {
       it('should filter out SubgraphInputNode and SubgraphOutputNode', () => {
         const nodes = [
-          { id: 'input', constructor: { comfyClass: 'SubgraphInputNode' } },
-          { id: 'output', constructor: { comfyClass: 'SubgraphOutputNode' } },
-          { id: 'user1', constructor: { comfyClass: 'CLIPTextEncode' } },
-          { id: 'user2', constructor: { comfyClass: 'KSampler' } }
+          { id: 1, constructor: { comfyClass: 'SubgraphInputNode' } },
+          { id: 2, constructor: { comfyClass: 'SubgraphOutputNode' } },
+          { id: 3, constructor: { comfyClass: 'CLIPTextEncode' } },
+          { id: 4, constructor: { comfyClass: 'KSampler' } }
         ] as LGraphNode[]
 
         const subgraph = createMockSubgraph('sub-uuid', nodes)
         const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
 
         expect(nonIoNodes).toHaveLength(2)
-        expect(nonIoNodes.map((n) => n.id)).toEqual(['user1', 'user2'])
+        expect(nonIoNodes.map((n) => n.id)).toEqual([3, 4])
       })
 
       it('should handle subgraph with only IO nodes', () => {
         const nodes = [
-          { id: 'input', constructor: { comfyClass: 'SubgraphInputNode' } },
-          { id: 'output', constructor: { comfyClass: 'SubgraphOutputNode' } }
+          { id: 1, constructor: { comfyClass: 'SubgraphInputNode' } },
+          { id: 2, constructor: { comfyClass: 'SubgraphOutputNode' } }
         ] as LGraphNode[]
 
         const subgraph = createMockSubgraph('sub-uuid', nodes)
@@ -1117,8 +1117,8 @@ describe('graphTraversalUtil', () => {
 
       it('should handle subgraph with only user nodes', () => {
         const nodes = [
-          { id: 'user1', constructor: { comfyClass: 'CLIPTextEncode' } },
-          { id: 'user2', constructor: { comfyClass: 'KSampler' } }
+          { id: 1, constructor: { comfyClass: 'CLIPTextEncode' } },
+          { id: 2, constructor: { comfyClass: 'KSampler' } }
         ] as LGraphNode[]
 
         const subgraph = createMockSubgraph('sub-uuid', nodes)

@@ -14,9 +14,9 @@ const zRendererType = z.enum([
   'Vue-corrected'
 ]) satisfies z.ZodType<RendererType>
 
-// Legacy workflows may persist numeric node ids. Accept them on load but
-// normalise to the canonical string `NodeId` so runtime ids are uniform.
-// GroupNode composite ids (`${this.node.id}:${i}`) are already strings.
+// Legacy workflows may persist node ids as decimal strings. Accept them on
+// load but normalise to the canonical numeric `NodeId` so runtime ids are
+// uniform.
 const zLocalNodeId = z
   .union([z.number().int(), z.string()])
   .transform((value): NodeId => asNodeId(value))

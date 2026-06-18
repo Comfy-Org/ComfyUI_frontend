@@ -121,11 +121,7 @@ export const useCanvasStore = defineStore('canvas', () => {
   // Provide selection state to all Vue nodes
   const selectedNodeIds = computed(
     () =>
-      new Set(
-        selectedItems.value
-          .filter((item) => item.id !== undefined && isLGraphNode(item))
-          .map((item) => String(item.id))
-      )
+      new Set(selectedItems.value.filter(isLGraphNode).map((node) => node.id))
   )
 
   whenever(

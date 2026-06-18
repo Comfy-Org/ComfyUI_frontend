@@ -74,7 +74,7 @@ describe('Vue Node - Subgraph Functionality', () => {
   })
 
   const createMockNodeData = (
-    id: string,
+    id: number,
     subgraphId?: string
   ): VueNodeData => ({
     id: asNodeId(id),
@@ -108,7 +108,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     await setupMocks(true) // isSubgraph = true
 
     renderComponent({
-      nodeData: createMockNodeData('test-node-1')
+      nodeData: createMockNodeData(1)
     })
 
     await nextTick()
@@ -120,7 +120,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     await setupMocks(false) // isSubgraph = false
 
     renderComponent({
-      nodeData: createMockNodeData('test-node-1')
+      nodeData: createMockNodeData(1)
     })
 
     await nextTick()
@@ -134,7 +134,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     await setupMocks(true) // isSubgraph = true
 
     renderComponent({
-      nodeData: createMockNodeData('test-node-1', 'subgraph-id')
+      nodeData: createMockNodeData(1, '2')
     })
 
     await nextTick()
@@ -142,7 +142,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     // Should call getNodeByLocatorId with correct locator ID
     expect(vi.mocked(getNodeByLocatorId)).toHaveBeenCalledWith(
       expect.anything(),
-      'subgraph-id:test-node-1'
+      '2:1'
     )
 
     expect(screen.getByTestId('subgraph-enter-button')).toBeInTheDocument()
@@ -152,7 +152,7 @@ describe('Vue Node - Subgraph Functionality', () => {
     await setupMocks(true) // isSubgraph = true
 
     const { container } = renderComponent({
-      nodeData: createMockNodeData('test-node-1')
+      nodeData: createMockNodeData(1)
     })
 
     await nextTick()

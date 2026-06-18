@@ -39,7 +39,7 @@ function createHistoryJob(createTime: number, id: string): JobListItem {
 }
 
 const createTaskOutput = (
-  nodeId: string = 'node-1',
+  nodeId: string = '1',
   images: {
     type?: 'output' | 'input' | 'temp'
     filename?: string
@@ -71,7 +71,7 @@ describe('TaskItemImpl', () => {
   it('should exclude animated from flatOutputs', () => {
     const job = createHistoryJob(0, 'job-id')
     const taskItem = new TaskItemImpl(job, {
-      [asNodeId('node-1')]: {
+      [asNodeId(1)]: {
         images: [{ filename: 'test.png', type: 'output', subfolder: '' }],
         animated: [false]
       }
@@ -85,13 +85,13 @@ describe('TaskItemImpl', () => {
   it('should handle outputs without animated property', () => {
     const job = createHistoryJob(0, 'job-id')
     const taskItem = new TaskItemImpl(job, {
-      [asNodeId('node-1')]: {
+      [asNodeId(1)]: {
         images: [{ filename: 'test.png', type: 'output', subfolder: '' }]
       }
     })
 
-    expect(taskItem.outputs[asNodeId('node-1')]?.images).toBeDefined()
-    expect(taskItem.outputs[asNodeId('node-1')]?.images?.[0]?.filename).toBe(
+    expect(taskItem.outputs[asNodeId(1)]?.images).toBeDefined()
+    expect(taskItem.outputs[asNodeId(1)]?.images?.[0]?.filename).toBe(
       'test.png'
     )
   })
@@ -99,7 +99,7 @@ describe('TaskItemImpl', () => {
   it('should recognize webm video from core', () => {
     const job = createHistoryJob(0, 'job-id')
     const taskItem = new TaskItemImpl(job, {
-      [asNodeId('node-1')]: {
+      [asNodeId(1)]: {
         video: [{ filename: 'test.webm', type: 'output', subfolder: '' }]
       }
     })
@@ -116,7 +116,7 @@ describe('TaskItemImpl', () => {
   it('should recognize webm video from VHS', () => {
     const job = createHistoryJob(0, 'job-id')
     const taskItem = new TaskItemImpl(job, {
-      [asNodeId('node-1')]: {
+      [asNodeId(1)]: {
         gifs: [
           {
             filename: 'test.webm',
@@ -140,7 +140,7 @@ describe('TaskItemImpl', () => {
   it('should recognize mp4 video from core', () => {
     const job = createHistoryJob(0, 'job-id')
     const taskItem = new TaskItemImpl(job, {
-      [asNodeId('node-1')]: {
+      [asNodeId(1)]: {
         images: [
           {
             filename: 'test.mp4',
@@ -171,7 +171,7 @@ describe('TaskItemImpl', () => {
       it(`should recognize ${extension} audio`, () => {
         const job = createHistoryJob(0, 'job-id')
         const taskItem = new TaskItemImpl(job, {
-          [asNodeId('node-1')]: {
+          [asNodeId(1)]: {
             audio: [
               {
                 filename: `test.${extension}`,

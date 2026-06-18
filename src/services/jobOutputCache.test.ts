@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { asNodeId } from '@/lib/litegraph/src/litegraph'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { api } from '@/scripts/api'
 import type {
@@ -35,7 +36,7 @@ function createResultItem(url: string, supportsPreview = true): ResultItemImpl {
     filename: url,
     subfolder: '',
     type: 'output',
-    nodeId: asNodeId('node-1'),
+    nodeId: asNodeExecutionId('1'),
     mediaType: supportsPreview ? 'images' : 'unknown'
   })
   Object.defineProperty(item, 'url', { get: () => url })
@@ -222,7 +223,7 @@ describe('jobOutputCache', () => {
         create_time: Date.now(),
         priority: 0,
         outputs: {
-          [asNodeId('node-1')]: {
+          [asNodeId(1)]: {
             images: [
               { filename: 'image.png', subfolder: '', type: 'output' },
               { filename: 'image.webp', subfolder: '', type: 'temp' }
@@ -230,7 +231,7 @@ describe('jobOutputCache', () => {
             animated: [true],
             text: 'hello'
           },
-          [asNodeId('node-2')]: {
+          [asNodeId(2)]: {
             video: [{ filename: 'clip.mp4', subfolder: '', type: 'output' }],
             audio: [{ filename: 'sound.mp3', subfolder: '', type: 'output' }]
           }
@@ -250,9 +251,9 @@ describe('jobOutputCache', () => {
         await import('@/stores/queueStore')
 
       expect(image).toBeInstanceOf(ResultItemImplClass)
-      expect(image?.nodeId).toBe('node-1')
+      expect(image?.nodeId).toBe('1')
       expect(image?.mediaType).toBe('images')
-      expect(video?.nodeId).toBe('node-2')
+      expect(video?.nodeId).toBe('2')
       expect(video?.mediaType).toBe('video')
     })
 
@@ -265,7 +266,7 @@ describe('jobOutputCache', () => {
         create_time: Date.now(),
         priority: 0,
         outputs: {
-          [asNodeId('node-1')]: {
+          [asNodeId(1)]: {
             images: [
               {
                 filename: 'abc123hash.png',
@@ -294,7 +295,7 @@ describe('jobOutputCache', () => {
         create_time: Date.now(),
         priority: 0,
         outputs: {
-          [asNodeId('node-3')]: {
+          [asNodeId(3)]: {
             images: [{ filename: 'valid.png', subfolder: '', type: 'output' }],
             text: ['not-object'],
             unknown: [{ filename: 'data.bin', subfolder: '', type: 'output' }]

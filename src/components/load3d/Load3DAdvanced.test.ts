@@ -26,7 +26,7 @@ import { asNodeId } from '@/lib/litegraph/src/litegraph'
 
 describe('Load3DAdvanced', () => {
   it('renders the inner Load3D with all expressive features disabled', () => {
-    const MOCK_NODE = { id: 'node', type: 'Load3DAdvanced' }
+    const MOCK_NODE = { id: 1, type: 'Load3DAdvanced' }
     render(Load3DAdvanced, {
       props: {
         widget: { node: MOCK_NODE } as never
@@ -40,11 +40,11 @@ describe('Load3DAdvanced', () => {
   })
 
   it('forwards widget and nodeId to the inner Load3D', () => {
-    const widget = { node: { id: 'a', type: 'Load3DAdvanced' } }
+    const widget = { node: { id: 1, type: 'Load3DAdvanced' } }
     render(Load3DAdvanced, {
-      props: { widget: widget as never, nodeId: asNodeId('a') }
+      props: { widget: widget as never, nodeId: asNodeId(1) }
     })
     expect(lastProps.value?.widget).toEqual(widget)
-    expect(lastProps.value?.nodeId).toBe('a')
+    expect(lastProps.value?.nodeId).toBe(1)
   })
 })

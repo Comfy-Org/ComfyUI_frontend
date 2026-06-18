@@ -89,7 +89,7 @@ function createResizeEntry(options?: {
   collapsed?: boolean
 }) {
   const {
-    nodeId = asNodeId('test-node'),
+    nodeId = asNodeId(1),
     width = 240,
     height = 180,
     left = 100,
@@ -98,7 +98,7 @@ function createResizeEntry(options?: {
   } = options ?? {}
 
   const element = document.createElement('div')
-  element.dataset.nodeId = nodeId
+  element.dataset.nodeId = String(nodeId)
   if (collapsed) {
     element.dataset.collapsed = ''
   }
@@ -168,7 +168,7 @@ describe('useVueNodeResizeTracking', () => {
   })
 
   it('skips repeated no-op resize entries after first measurement', () => {
-    const nodeId = asNodeId('test-node')
+    const nodeId = asNodeId(1)
     const width = 240
     const height = 180
     const left = 100
@@ -205,7 +205,7 @@ describe('useVueNodeResizeTracking', () => {
   })
 
   it('preserves layout store position when size matches but DOM position differs', () => {
-    const nodeId = asNodeId('test-node')
+    const nodeId = asNodeId(1)
     const width = 240
     const height = 180
     const { entry, rectSpy } = createResizeEntry({
@@ -233,7 +233,7 @@ describe('useVueNodeResizeTracking', () => {
   })
 
   it('updates node bounds + slot layouts when size changes', () => {
-    const nodeId = asNodeId('test-node')
+    const nodeId = asNodeId(1)
     const { entry } = createResizeEntry({
       nodeId,
       width: 240,
@@ -265,11 +265,13 @@ describe('useVueNodeResizeTracking', () => {
         }
       }
     ])
-    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(
+      String(nodeId)
+    )
   })
 
   it('writes collapsed dimensions through the normal bounds path', () => {
-    const nodeId = asNodeId('test-node')
+    const nodeId = asNodeId(1)
     const collapsedWidth = 200
     const collapsedHeight = 40
     const { entry } = createResizeEntry({
@@ -299,11 +301,13 @@ describe('useVueNodeResizeTracking', () => {
         }
       }
     ])
-    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
+    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(
+      String(nodeId)
+    )
   })
 
   it('updates bounds with expanded dimensions on collapse-to-expand transition', () => {
-    const nodeId = asNodeId('test-node')
+    const nodeId = asNodeId(1)
 
     // Seed with smaller (collapsed) size so expand triggers a real bounds update
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 200, height: 10 })
@@ -322,9 +326,9 @@ describe('useVueNodeResizeTracking', () => {
   })
 
   it('widgets-grid resize schedules a slot resync without writing node bounds', () => {
-    const parentNodeId = asNodeId('parent-node')
+    const parentNodeId = asNodeId(2)
     const element = document.createElement('div')
-    element.dataset.widgetsGridNodeId = parentNodeId
+    element.dataset.widgetsGridNodeId = String(parentNodeId)
     const boxSizes = [{ inlineSize: 200, blockSize: 80 }]
     const entry = {
       target: element,
@@ -336,7 +340,9 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(testState.scheduleSlotLayoutSync).toHaveBeenCalledWith(parentNodeId)
+    expect(testState.scheduleSlotLayoutSync).toHaveBeenCalledWith(
+      String(parentNodeId)
+    )
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
     expect(testState.setSource).not.toHaveBeenCalled()
     expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()

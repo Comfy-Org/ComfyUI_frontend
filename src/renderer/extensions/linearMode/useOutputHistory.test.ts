@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import { asNodeId } from '@/lib/litegraph/src/litegraph'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
@@ -109,7 +110,7 @@ vi.mock('@/renderer/extensions/linearMode/flattenNodeOutput', () => ({
       (img) =>
         new ResultItemImpl({
           ...img,
-          nodeId: asNodeId(nodeId),
+          nodeId: asNodeExecutionId(nodeId),
           mediaType: 'images'
         })
     )
@@ -143,7 +144,7 @@ function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
     filename,
     subfolder: '',
     type: 'output',
-    nodeId: asNodeId(nodeId),
+    nodeId: asNodeExecutionId(nodeId),
     mediaType: 'images'
   })
 }

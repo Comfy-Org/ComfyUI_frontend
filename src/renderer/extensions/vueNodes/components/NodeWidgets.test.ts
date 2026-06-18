@@ -51,7 +51,7 @@ describe('NodeWidgets', () => {
   const createMockWidget = (
     overrides: Partial<SafeWidgetData> = {}
   ): SafeWidgetData => ({
-    nodeId: asNodeId('test_node'),
+    nodeId: asNodeId(1),
     name: 'test_widget',
     type: 'combo',
     options: undefined,
@@ -130,32 +130,24 @@ describe('NodeWidgets', () => {
   })
 
   it('deduplicates widgets with identical render identity while keeping distinct promoted sources', () => {
-    const duplicateEntityId = widgetId(
-      GRAPH_ID,
-      asNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
-      'string_a'
-    )
-    const distinctEntityId = widgetId(
-      GRAPH_ID,
-      asNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:20'),
-      'string_a'
-    )
+    const duplicateEntityId = widgetId(GRAPH_ID, asNodeId(19), 'string_a')
+    const distinctEntityId = widgetId(GRAPH_ID, asNodeId(20), 'string_a')
     const duplicateA = createMockWidget({
       name: 'string_a',
       type: 'text',
-      nodeId: asNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
+      nodeId: asNodeId(19),
       widgetId: duplicateEntityId
     })
     const duplicateB = createMockWidget({
       name: 'string_a',
       type: 'text',
-      nodeId: asNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
+      nodeId: asNodeId(19),
       widgetId: duplicateEntityId
     })
     const distinct = createMockWidget({
       name: 'string_a',
       type: 'text',
-      nodeId: asNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:20'),
+      nodeId: asNodeId(20),
       widgetId: distinctEntityId
     })
     const nodeData = createMockNodeData('SubgraphNode', [
@@ -170,22 +162,18 @@ describe('NodeWidgets', () => {
   })
 
   it('prefers a visible duplicate over a hidden duplicate when identities collide', () => {
-    const sharedEntityId = widgetId(
-      GRAPH_ID,
-      asNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
-      'string_a'
-    )
+    const sharedEntityId = widgetId(GRAPH_ID, asNodeId(19), 'string_a')
     const hiddenDuplicate = createMockWidget({
       name: 'string_a',
       type: 'text',
-      nodeId: asNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
+      nodeId: asNodeId(19),
       widgetId: sharedEntityId,
       options: { hidden: true }
     })
     const visibleDuplicate = createMockWidget({
       name: 'string_a',
       type: 'text',
-      nodeId: asNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
+      nodeId: asNodeId(19),
       widgetId: sharedEntityId,
       options: { hidden: false }
     })
@@ -200,21 +188,17 @@ describe('NodeWidgets', () => {
   })
 
   it('does not deduplicate entries that share names but have different widget types', () => {
-    const sharedEntityId = widgetId(
-      GRAPH_ID,
-      asNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
-      'string_a'
-    )
+    const sharedEntityId = widgetId(GRAPH_ID, asNodeId(19), 'string_a')
     const textWidget = createMockWidget({
       name: 'string_a',
       type: 'text',
-      nodeId: asNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
+      nodeId: asNodeId(19),
       widgetId: sharedEntityId
     })
     const comboWidget = createMockWidget({
       name: 'string_a',
       type: 'combo',
-      nodeId: asNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
+      nodeId: asNodeId(19),
       widgetId: sharedEntityId
     })
     const nodeData = createMockNodeData('SubgraphNode', [
@@ -254,14 +238,14 @@ describe('NodeWidgets', () => {
     const firstPromoted = createMockWidget({
       name: 'text',
       type: 'text',
-      nodeId: asNodeId('outer-subgraph:1'),
-      widgetId: widgetId(GRAPH_ID, asNodeId('outer-subgraph:1'), 'text')
+      nodeId: asNodeId(101),
+      widgetId: widgetId(GRAPH_ID, asNodeId(101), 'text')
     })
     const secondPromoted = createMockWidget({
       name: 'text',
       type: 'text',
-      nodeId: asNodeId('outer-subgraph:2'),
-      widgetId: widgetId(GRAPH_ID, asNodeId('outer-subgraph:2'), 'text')
+      nodeId: asNodeId(102),
+      widgetId: widgetId(GRAPH_ID, asNodeId(102), 'text')
     })
 
     const nodeData = createMockNodeData('SubgraphNode', [
@@ -276,7 +260,7 @@ describe('NodeWidgets', () => {
   it('hides widgets when merged store options mark them hidden', async () => {
     const nodeData = createMockNodeData('TestNode', [
       createMockWidget({
-        nodeId: asNodeId('test_node'),
+        nodeId: asNodeId(1),
         name: 'test_widget',
         options: { hidden: false }
       })
@@ -285,7 +269,7 @@ describe('NodeWidgets', () => {
     const { container } = renderComponent(nodeData)
     const widgetValueStore = useWidgetValueStore()
     widgetValueStore.registerWidget(
-      widgetId('graph-test', asNodeId('test_node'), 'test_widget'),
+      widgetId('graph-test', asNodeId(1), 'test_widget'),
       {
         type: 'combo',
         value: 'value',
@@ -302,17 +286,17 @@ describe('NodeWidgets', () => {
   })
 
   it('forwards canonical widgetId to AppInput for selection', () => {
-    const seedAEntityId = widgetId(GRAPH_ID, asNodeId('test_node'), 'seed_a')
-    const seedBEntityId = widgetId(GRAPH_ID, asNodeId('test_node'), 'seed_b')
+    const seedAEntityId = widgetId(GRAPH_ID, asNodeId(1), 'seed_a')
+    const seedBEntityId = widgetId(GRAPH_ID, asNodeId(1), 'seed_b')
     const nodeData = createMockNodeData('TestNode', [
       createMockWidget({
-        nodeId: asNodeId('test_node'),
+        nodeId: asNodeId(1),
         name: 'seed_a',
         type: 'text',
         widgetId: seedAEntityId
       }),
       createMockWidget({
-        nodeId: asNodeId('test_node'),
+        nodeId: asNodeId(1),
         name: 'seed_b',
         type: 'text',
         widgetId: seedBEntityId

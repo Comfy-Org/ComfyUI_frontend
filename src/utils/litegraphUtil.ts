@@ -27,6 +27,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
@@ -336,7 +337,7 @@ export function resolveNode(
   return undefined
 }
 export function resolveNodeWidget(
-  nodeId: NodeId,
+  nodeId: NodeId | NodeLocatorId,
   widgetName?: string,
   graph: LGraph = app.rootGraph
 ): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {

@@ -37,11 +37,7 @@ import type {
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
-import {
-  RenderShape,
-  UNASSIGNED_NODE_ID,
-  asNodeId
-} from '@/lib/litegraph/src/litegraph'
+import { RenderShape, UNASSIGNED_NODE_ID } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
 import NodeSlots from '@/renderer/extensions/vueNodes/components/NodeSlots.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
@@ -109,7 +105,7 @@ const nodeData = computed<VueNodeData>(() => {
   })
 
   return {
-    id: asNodeId(`preview-${nodeDef.name}`),
+    id: UNASSIGNED_NODE_ID,
     title: nodeDef.display_name || nodeDef.name,
     type: nodeDef.name,
     mode: 0, // Normal mode

@@ -74,6 +74,11 @@ function asLinkId(id: string | number): LinkId {
   return Number(id)
 }
 
+/** Yjs `Y.Map` keys are strings; node layout is stored keyed by node id. */
+function nodeIdToYKey(nodeId: NodeId): string {
+  return String(nodeId)
+}
+
 interface LinkData {
   id: LinkId
   sourceNodeId: NodeId
@@ -243,14 +248,14 @@ class LayoutStoreImpl implements LayoutStore {
         return {
           get: () => {
             track()
-            const ynode = this.ynodes.get(nodeId)
+            const ynode = this.ynodes.get(nodeIdToYKey(nodeId))
             const layout = ynode ? yNodeToLayout(ynode) : null
             return layout
           },
           set: (newLayout: NodeLayout | null) => {
             if (newLayout === null) {
               // Delete operation
-              const existing = this.ynodes.get(nodeId)
+              const existing = this.ynodes.get(nodeIdToYKey(nodeId))
               if (existing) {
                 this.applyOperation({
                   type: 'deleteNode',
@@ -264,7 +269,7 @@ class LayoutStoreImpl implements LayoutStore {
               }
             } else {
               // Update operation - detect what changed
-              const existing = this.ynodes.get(nodeId)
+              const existing = this.ynodes.get(nodeIdToYKey(nodeId))
               if (!existing) {
                 // Create operation
                 this.applyOperation({
@@ -1035,7 +1040,7 @@ class LayoutStoreImpl implements LayoutStore {
           }
         }
 
-        this.ynodes.set(layout.id, layoutToYNode(layout))
+        this.ynodes.set(nodeIdToYKey(layout.id), layoutToYNode(layout))
 
         // Add to spatial index
         this.spatialIndex.insert(layout.id, layout.bounds)
@@ -1051,7 +1056,7 @@ class LayoutStoreImpl implements LayoutStore {
     operation: MoveNodeOperation,
     change: LayoutChange
   ): void {
-    const ynode = this.ynodes.get(operation.nodeId)
+    const ynode = this.ynodes.get(nodeIdToYKey(operation.nodeId))
     if (!ynode) {
       return
     }
@@ -1079,7 +1084,7 @@ class LayoutStoreImpl implements LayoutStore {
     operation: ResizeNodeOperation,
     change: LayoutChange
   ): void {
-    const ynode = this.ynodes.get(operation.nodeId)
+    const ynode = this.ynodes.get(nodeIdToYKey(operation.nodeId))
     if (!ynode) return
 
     const position = yNodeToLayout(ynode).position
@@ -1105,7 +1110,7 @@ class LayoutStoreImpl implements LayoutStore {
     operation: SetNodeZIndexOperation,
     change: LayoutChange
   ): void {
-    const ynode = this.ynodes.get(operation.nodeId)
+    const ynode = this.ynodes.get(nodeIdToYKey(operation.nodeId))
     if (!ynode) return
 
     ynode.set('zIndex', operation.zIndex)
@@ -1117,7 +1122,7 @@ class LayoutStoreImpl implements LayoutStore {
     change: LayoutChange
   ): void {
     const ynode = layoutToYNode(operation.layout)
-    this.ynodes.set(operation.nodeId, ynode)
+    this.ynodes.set(nodeIdToYKey(operation.nodeId), ynode)
 
     // Add to spatial index
     this.spatialIndex.insert(operation.nodeId, operation.layout.bounds)
@@ -1130,9 +1135,9 @@ class LayoutStoreImpl implements LayoutStore {
     operation: DeleteNodeOperation,
     change: LayoutChange
   ): void {
-    if (!this.ynodes.has(operation.nodeId)) return
+    if (!this.ynodes.has(nodeIdToYKey(operation.nodeId))) return
 
-    this.ynodes.delete(operation.nodeId)
+    this.ynodes.delete(nodeIdToYKey(operation.nodeId))
     // Note: We intentionally do NOT delete nodeRefs and nodeTriggers here.
     // During undo/redo, Vue components may still hold references to the old ref.
     // If we delete the trigger, Vue won't be notified when the node is re-created.
@@ -1165,7 +1170,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     for (const nodeId of operation.nodeIds) {
       const data = operation.bounds[nodeId]
-      const ynode = this.ynodes.get(nodeId)
+      const ynode = this.ynodes.get(nodeIdToYKey(nodeId))
       if (!ynode || !data) continue
 
       ynode.set('position', { x: data.bounds.x, y: data.bounds.y })
@@ -1514,7 +1519,7 @@ class LayoutStoreImpl implements LayoutStore {
     for (const { nodeId: rawNodeId, bounds } of updates) {
       // Boundary: legacy callers pass numeric ids cast as `NodeId`.
       const nodeId = asNodeId(rawNodeId)
-      const ynode = this.ynodes.get(nodeId)
+      const ynode = this.ynodes.get(nodeIdToYKey(nodeId))
       if (!ynode) continue
       const currentLayout = yNodeToLayout(ynode)
 

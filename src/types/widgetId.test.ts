@@ -26,9 +26,9 @@ describe('widgetId', () => {
     expect(widgetId(otherGraph, asNodeId(42), 'seed')).not.toBe(baseline)
   })
 
-  it('accepts string node ids', () => {
-    const id = widgetId(graphId, asNodeId('node-7'), 'value')
-    expect(id).toBe(`${graphId}:node-7:value`)
+  it('accepts decimal string node ids', () => {
+    const id = widgetId(graphId, asNodeId('7'), 'value')
+    expect(id).toBe(`${graphId}:7:value`)
   })
 })
 
@@ -39,7 +39,7 @@ describe('parseWidgetId', () => {
     const id = widgetId(graphId, asNodeId(42), 'seed')
     expect(parseWidgetId(id)).toEqual({
       graphId,
-      nodeId: '42',
+      nodeId: asNodeId(42),
       name: 'seed'
     })
   })
@@ -48,7 +48,7 @@ describe('parseWidgetId', () => {
     const rawName = 'nested:label:with:colons'
     expect(parseWidgetId(widgetId(graphId, asNodeId(42), rawName))).toEqual({
       graphId,
-      nodeId: '42',
+      nodeId: asNodeId(42),
       name: rawName
     })
   })

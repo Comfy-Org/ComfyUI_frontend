@@ -7,7 +7,7 @@ import type {
   JobListItem,
   TaskType
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type {
   ResultItem,
   StatusWsMessageStatus,
@@ -33,7 +33,7 @@ enum TaskItemDisplayStatus {
 }
 
 interface ResultItemInit extends ResultItem {
-  nodeId: NodeId
+  nodeId: NodeExecutionId
   mediaType: string
   format?: string
   frame_rate?: number
@@ -46,7 +46,7 @@ export class ResultItemImpl {
   subfolder: string
   type: string
 
-  nodeId: NodeId
+  nodeId: NodeExecutionId
   // 'audio' | 'images' | ...
   mediaType: string
 

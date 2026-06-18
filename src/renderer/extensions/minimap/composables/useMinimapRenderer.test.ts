@@ -30,7 +30,7 @@ describe('useMinimapRenderer', () => {
     } as Partial<HTMLCanvasElement> as HTMLCanvasElement
 
     mockGraph = {
-      _nodes: [{ id: '1', pos: [0, 0], size: [100, 100] }]
+      _nodes: [{ id: 1, pos: [0, 0], size: [100, 100] }]
     } as Partial<LGraph> as LGraph
   })
 

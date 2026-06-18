@@ -70,7 +70,7 @@ class MockNode implements Positionable {
   ) {
     this.pos = pos
     this.size = size
-    this.id = asNodeId('mock-node')
+    this.id = asNodeId(100)
     this.boundingRect = [0, 0, 0, 0]
   }
 

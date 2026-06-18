@@ -8,17 +8,17 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 
 interface MockNode {
-  id: string
+  id: number
   pos: number[]
   size: number[]
   color?: string
   constructor?: { color: string }
-  outputs?: { links: string[] }[] | null
+  outputs?: { links: number[] }[] | null
 }
 
 interface MockGraph {
   _nodes: MockNode[]
-  links: Record<string, { id: string; target_id: string }>
+  links: Record<number, { id: number; origin_id: number; target_id: number }>
   getNodeById: Mock
   setDirtyCanvas: Mock
   onNodeAdded: ((node: MockNode) => void) | null
@@ -96,19 +96,19 @@ let moduleMockGraph: MockGraph = null!
 const setupMocks = () => {
   const mockNodes = [
     {
-      id: 'node1',
+      id: 1,
       pos: [0, 0],
       size: [100, 50],
       color: '#ff0000',
       constructor: { color: '#666' },
       outputs: [
         {
-          links: ['link1']
+          links: [1]
         }
       ]
     },
     {
-      id: 'node2',
+      id: 2,
       pos: [200, 100],
       size: [150, 75],
       constructor: { color: '#666' },
@@ -119,9 +119,10 @@ const setupMocks = () => {
   moduleMockGraph = {
     _nodes: mockNodes,
     links: {
-      link1: {
-        id: 'link1',
-        target_id: 'node2'
+      1: {
+        id: 1,
+        origin_id: 1,
+        target_id: 2
       }
     },
     getNodeById: vi.fn((id) => mockNodes.find((n) => n.id === id)),
@@ -260,19 +261,19 @@ describe('useMinimap', () => {
 
     const mockNodes = [
       {
-        id: 'node1',
+        id: 1,
         pos: [0, 0],
         size: [100, 50],
         color: '#ff0000',
         constructor: { color: '#666' },
         outputs: [
           {
-            links: ['link1']
+            links: [1]
           }
         ]
       },
       {
-        id: 'node2',
+        id: 2,
         pos: [200, 100],
         size: [150, 75],
         constructor: { color: '#666' },
@@ -283,9 +284,10 @@ describe('useMinimap', () => {
     moduleMockGraph = {
       _nodes: mockNodes,
       links: {
-        link1: {
-          id: 'link1',
-          target_id: 'node2'
+        1: {
+          id: 1,
+          origin_id: 1,
+          target_id: 2
         }
       },
       getNodeById: vi.fn((id) => mockNodes.find((n) => n.id === id)),
@@ -471,7 +473,7 @@ describe('useMinimap', () => {
 
       // Force a render by triggering a graph change
       moduleMockGraph._nodes.push({
-        id: 'new-node',
+        id: 3,
         pos: [150, 150],
         size: [100, 50],
         constructor: { color: '#666' },
@@ -872,7 +874,7 @@ describe('useMinimap', () => {
       await minimap.init()
 
       const newNode = {
-        id: 'node3',
+        id: 3,
         pos: [300, 200],
         size: [100, 100],
         constructor: { color: '#666' },
@@ -937,7 +939,7 @@ describe('useMinimap', () => {
     })
 
     it('should handle invalid link references', async () => {
-      moduleMockGraph.links.link1.target_id = 'invalid-node'
+      moduleMockGraph.links[1].target_id = 999
       moduleMockGraph.getNodeById.mockReturnValue(null)
 
       const minimap = await createAndInitializeMinimap()

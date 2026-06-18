@@ -60,7 +60,7 @@ describe('minimapCanvasRenderer', () => {
     mockGraph = createMockLGraph({
       _nodes: [
         createMockLGraphNode({
-          id: '1',
+          id: asNodeId(1),
           pos: [100, 100],
           size: [150, 80],
           bgcolor: '#FF0000',
@@ -69,7 +69,7 @@ describe('minimapCanvasRenderer', () => {
           outputs: []
         }),
         createMockLGraphNode({
-          id: '2',
+          id: asNodeId(2),
           pos: [300, 200],
           size: [120, 60],
           bgcolor: '#00FF00',
@@ -252,7 +252,7 @@ describe('minimapCanvasRenderer', () => {
 
   it('should render connections when enabled', () => {
     const targetNode = {
-      id: '2',
+      id: 2,
       pos: [300, 200],
       size: [120, 60]
     }
@@ -269,6 +269,7 @@ describe('minimapCanvasRenderer', () => {
     mockGraph.links = createMockLinks([
       createMockLLink({
         id: 1,
+        origin_id: asNodeId(1),
         target_id: asNodeId(2),
         origin_slot: 0,
         target_slot: 0

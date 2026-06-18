@@ -35,9 +35,9 @@ describe('MinimapDataSource', () => {
       // Arrange
       const mockNodes = new Map<NodeId, NodeLayout>([
         [
-          asNodeId('node1'),
+          asNodeId(1),
           {
-            id: asNodeId('node1'),
+            id: asNodeId(1),
             position: { x: 0, y: 0 },
             size: { width: 100, height: 50 },
             zIndex: 0,
@@ -78,7 +78,7 @@ describe('MinimapDataSource', () => {
         LGraphNode,
         'id' | 'pos' | 'size' | 'bgcolor' | 'mode' | 'has_errors' | 'outputs'
       > = {
-        id: asNodeId('node1'),
+        id: asNodeId(1),
         pos: [0, 0],
         size: [100, 50],
         bgcolor: '#fff',
@@ -104,7 +104,7 @@ describe('MinimapDataSource', () => {
       const nodes = dataSource.getNodes()
       expect(nodes).toHaveLength(1)
       expect(nodes[0]).toMatchObject({
-        id: 'node1',
+        id: 1,
         x: 0,
         y: 0,
         width: 100,
@@ -146,14 +146,14 @@ describe('MinimapDataSource', () => {
       vi.mocked(layoutStore.getAllNodes).mockReturnValue(computedEmpty)
 
       const mockNode1: Pick<LGraphNode, 'id' | 'pos' | 'size' | 'outputs'> = {
-        id: asNodeId('node1'),
+        id: asNodeId(1),
         pos: [0, 0],
         size: [100, 50],
         outputs: []
       }
 
       const mockNode2: Pick<LGraphNode, 'id' | 'pos' | 'size' | 'outputs'> = {
-        id: asNodeId('node2'),
+        id: asNodeId(2),
         pos: [200, 100],
         size: [150, 75],
         outputs: []

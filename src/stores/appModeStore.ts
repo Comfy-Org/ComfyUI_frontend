@@ -5,6 +5,7 @@ import { useEventListener } from '@vueuse/core'
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
 import type { NodeId } from '@/types/nodeId'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type {
   InputWidgetConfig,
@@ -90,7 +91,7 @@ export const useAppModeStore = defineStore('appMode', () => {
   }
 
   function upgradeAndValidateInput(
-    input: [WidgetId | NodeId, string, InputWidgetConfig?],
+    input: [WidgetId | NodeId | NodeLocatorId, string, InputWidgetConfig?],
     rootGraph: NonNullable<typeof app.rootGraph>
   ): LinearInput | null {
     const [storedId, widgetName, config] = input

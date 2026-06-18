@@ -33,7 +33,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 const createMockWidget = (
   overrides: Partial<SafeWidgetData> = {}
 ): SafeWidgetData => ({
-  nodeId: asNodeId('test_node'),
+  nodeId: asNodeId(1),
   name: 'test_widget',
   type: 'combo',
   options: undefined,
@@ -46,7 +46,7 @@ const createMockWidget = (
 
 describe('getWidgetIdentity', () => {
   it('keys dedupeIdentity by widgetId and widget type', () => {
-    const id = widgetId(GRAPH_ID, asNodeId('subgraph:19'), 'text')
+    const id = widgetId(GRAPH_ID, asNodeId(19), 'text')
     const widget = createMockWidget({
       widgetId: id,
       name: 'text',
@@ -162,7 +162,7 @@ describe('hasWidgetError', () => {
       sourceExecutionId: '65:18'
     })
     executionErrorStore.lastNodeErrors = {
-      [asNodeId('65:18')]: {
+      ['65:18']: {
         errors: [
           {
             type: 'required_input_missing',
@@ -252,7 +252,7 @@ describe('computeProcessedWidgets borderStyle', () => {
   })
 
   it('does not apply border styling to promoted widgets', () => {
-    const id = widgetId(GRAPH_ID, asNodeId('inner-subgraph:1'), 'text')
+    const id = widgetId(GRAPH_ID, asNodeId(101), 'text')
     useWidgetValueStore().registerWidget(id, {
       type: 'combo',
       value: 'a',
@@ -262,7 +262,7 @@ describe('computeProcessedWidgets borderStyle', () => {
     const promotedWidget = createMockWidget({
       name: 'text',
       type: 'combo',
-      nodeId: asNodeId('inner-subgraph:1'),
+      nodeId: asNodeId(101),
       widgetId: id
     })
 
@@ -293,8 +293,8 @@ describe('computeProcessedWidgets borderStyle', () => {
     const widget = createMockWidget({
       name: 'text',
       type: 'combo',
-      nodeId: asNodeId('inner-subgraph:1'),
-      widgetId: widgetId(GRAPH_ID, asNodeId('inner-subgraph:1'), 'text')
+      nodeId: asNodeId(101),
+      widgetId: widgetId(GRAPH_ID, asNodeId(101), 'text')
     })
 
     const result = computeProcessedWidgets({
@@ -353,9 +353,9 @@ describe('computeProcessedWidgets borderStyle', () => {
   })
 
   it('reads widget identity, value, label, and options from widgetId state', () => {
-    const id = widgetId(GRAPH_ID, asNodeId('host'), 'text')
+    const id = widgetId(GRAPH_ID, asNodeId(5), 'text')
     useWidgetValueStore().registerWidget(
-      widgetId(GRAPH_ID, asNodeId('host'), 'text'),
+      widgetId(GRAPH_ID, asNodeId(5), 'text'),
       {
         type: 'combo',
         value: 'state value',
@@ -365,7 +365,7 @@ describe('computeProcessedWidgets borderStyle', () => {
     )
     const widget = createMockWidget({
       widgetId: id,
-      nodeId: asNodeId('host'),
+      nodeId: asNodeId(5),
       name: 'stale name',
       type: 'combo',
       options: { values: ['stale value'] }

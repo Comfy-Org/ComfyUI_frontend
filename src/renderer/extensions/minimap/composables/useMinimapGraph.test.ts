@@ -40,8 +40,8 @@ describe('useMinimapGraph', () => {
     mockGraph = createMockLGraph({
       id: 'test-graph-123',
       _nodes: [
-        createMockLGraphNode({ id: '1', pos: [100, 100], size: [150, 80] }),
-        createMockLGraphNode({ id: '2', pos: [300, 200], size: [120, 60] })
+        createMockLGraphNode({ id: 1, pos: [100, 100], size: [150, 80] }),
+        createMockLGraphNode({ id: 2, pos: [300, 200], size: [120, 60] })
       ],
       links: createMockLinks([createMockLLink({ id: 1 })]),
       onNodeAdded: vi.fn(),
@@ -96,7 +96,7 @@ describe('useMinimapGraph', () => {
     expect(mockGraph.onConnectionChange).not.toBe(originalOnConnectionChange)
 
     // Test wrapped callbacks
-    const testNode = { id: '3' } as LGraphNode
+    const testNode = { id: 3 } as LGraphNode
     mockGraph.onNodeAdded!(testNode)
 
     expect(originalOnNodeAdded).toHaveBeenCalledWith(testNode)
@@ -188,7 +188,7 @@ describe('useMinimapGraph', () => {
 
     // Add a node
     mockGraph._nodes.push({
-      id: '3',
+      id: 3,
       pos: [400, 300],
       size: [100, 50]
     } as Partial<LGraphNode> as LGraphNode)
@@ -226,7 +226,7 @@ describe('useMinimapGraph', () => {
 
     graphManager.setupEventListeners()
 
-    const removedNode = { id: '2' } as LGraphNode
+    const removedNode = { id: 2 } as LGraphNode
     mockGraph.onNodeRemoved!(removedNode)
 
     expect(originalOnNodeRemoved).toHaveBeenCalledWith(removedNode)
@@ -279,7 +279,7 @@ describe('useMinimapGraph', () => {
     graphManager.checkForChanges()
 
     // Remove a node
-    mockGraph._nodes = mockGraph._nodes.filter((n) => n.id !== '2')
+    mockGraph._nodes = mockGraph._nodes.filter((n) => n.id !== 2)
 
     const hasChanges = graphManager.checkForChanges()
     expect(hasChanges).toBe(true)
@@ -296,9 +296,9 @@ describe('useMinimapGraph', () => {
     graphManager.setupEventListeners()
 
     // Trigger multiple changes rapidly
-    mockGraph.onNodeAdded!({ id: '3' } as LGraphNode)
-    mockGraph.onNodeAdded!({ id: '4' } as LGraphNode)
-    mockGraph.onNodeAdded!({ id: '5' } as LGraphNode)
+    mockGraph.onNodeAdded!({ id: 3 } as LGraphNode)
+    mockGraph.onNodeAdded!({ id: 4 } as LGraphNode)
+    mockGraph.onNodeAdded!({ id: 5 } as LGraphNode)
 
     // Should be throttled
     expect(throttledFn).toHaveBeenCalledTimes(3)

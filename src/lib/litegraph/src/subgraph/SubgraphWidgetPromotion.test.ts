@@ -21,9 +21,12 @@ import type { SerializedProxyWidgetTuple } from '@/core/schemas/promotionSchema'
 import { IS_CONTROL_WIDGET } from '@/scripts/controlWidgetMarker'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import {
+  asNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 
 import {
@@ -902,7 +905,8 @@ describe('SubgraphWidgetPromotion', () => {
           for (const [iStr, value] of Object.entries(c.promptByIndex)) {
             const i = Number(iStr)
             expect(
-              output[asNodeId(`${host.id}:${sources[i].node.id}`)]!.inputs.value
+              output[asNodeExecutionId(`${host.id}:${sources[i].node.id}`)]!
+                .inputs.value
             ).toBe(value)
           }
         }
@@ -972,7 +976,8 @@ describe('SubgraphWidgetPromotion', () => {
         if (c.expect.promptSeed !== undefined) {
           const { output } = await graphToPrompt(host.rootGraph)
           expect(
-            output[asNodeId(`${host.id}:${seed.node.id}`)]!.inputs.value
+            output[asNodeExecutionId(`${host.id}:${seed.node.id}`)]!.inputs
+              .value
           ).toBe(c.expect.promptSeed)
         }
         if (c.expect.sourceSeed !== undefined) {

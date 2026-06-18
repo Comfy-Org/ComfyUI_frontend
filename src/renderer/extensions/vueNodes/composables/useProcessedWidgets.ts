@@ -44,6 +44,7 @@ import {
   getExecutionIdFromNodeData,
   getLocatorIdFromNodeData
 } from '@/utils/graphTraversalUtil'
+import { asNodeLocatorId } from '@/types/nodeIdentification'
 
 interface ProcessedWidget {
   advanced: boolean
@@ -198,7 +199,7 @@ export function computeProcessedWidgets({
   for (const [index, widget] of widgets.entries()) {
     if (!shouldRenderAsVue(widget)) continue
 
-    const identity = getWidgetIdentity(widget, nodeId, index)
+    const identity = getWidgetIdentity(widget, String(nodeId), index)
     const widgetState = widget.widgetId
       ? widgetValueStore.getWidget(widget.widgetId)
       : graphId
@@ -290,7 +291,7 @@ export function computeProcessedWidgets({
         : undefined
 
     const nodeLocatorId = widget.nodeId
-      ? widget.nodeId
+      ? asNodeLocatorId(widget.nodeId)
       : nodeData
         ? getLocatorIdFromNodeData(nodeData)
         : undefined

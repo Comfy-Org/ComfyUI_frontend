@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 
-import { asNodeId } from '@/types/nodeId'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import { ResultItemImpl } from '@/stores/queueStore'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
@@ -22,7 +22,7 @@ export const useMediaAssetGalleryStore = defineStore(
         filename: asset.name,
         subfolder: '',
         type: 'output',
-        nodeId: asNodeId('0'),
+        nodeId: asNodeExecutionId('0'),
         mediaType: asset.kind === 'image' ? 'images' : asset.kind
       })
 

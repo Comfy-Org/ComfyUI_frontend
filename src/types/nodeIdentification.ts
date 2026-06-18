@@ -1,7 +1,11 @@
 import { z } from 'zod'
 
-import { asNodeId } from '@/types/nodeId'
+import { asNodeId, isNumericNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+
+/** UUID v-agnostic 8-4-4-4-12 hex format used as a subgraph-definition prefix. */
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * A globally unique identifier for nodes that maintains consistency across
@@ -78,20 +82,15 @@ export function isNodeLocatorId(value: unknown): value is NodeLocatorId {
   // Check if it's a simple node ID (root graph node)
   const parts = value.split(':')
   if (parts.length === 1) {
-    // Simple node ID - must be non-empty
-    return value.length > 0
+    // Simple node ID - must be a numeric local id
+    return isNumericNodeId(value)
   }
 
   // Check for UUID:nodeId format
   if (parts.length !== 2) return false
 
-  // Check that node ID part is not empty
-  if (!parts[1]) return false
-
-  // Basic UUID format check (8-4-4-4-12 hex characters)
-  const uuidPattern =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-  return uuidPattern.test(parts[0])
+  const [subgraphUuid, localNodeId] = parts
+  return UUID_PATTERN.test(subgraphUuid) && isNumericNodeId(localNodeId)
 }
 
 /**
@@ -99,9 +98,9 @@ export function isNodeLocatorId(value: unknown): value is NodeLocatorId {
  */
 export function isNodeExecutionId(value: unknown): value is NodeExecutionId {
   if (typeof value !== 'string') return false
-  // Must contain at least one colon and no empty segments
+  // Must contain at least one colon; every segment is a numeric local id
   const parts = value.split(':')
-  return parts.length > 1 && parts.every((part) => part.length > 0)
+  return parts.length > 1 && parts.every((part) => isNumericNodeId(part))
 }
 
 /**

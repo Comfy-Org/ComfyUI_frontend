@@ -17,7 +17,7 @@ import { QuadTree } from './QuadTree'
 /**
  * Cache entry for spatial queries
  */
-interface CacheEntry<K extends string> {
+interface CacheEntry<K extends string | number> {
   result: K[]
   timestamp: number
 }
@@ -25,7 +25,7 @@ interface CacheEntry<K extends string> {
 /**
  * Spatial index manager using QuadTree
  */
-export class SpatialIndexManager<K extends string = string> {
+export class SpatialIndexManager<K extends string | number = string> {
   private quadTree: QuadTree<K>
   private queryCache: Map<string, CacheEntry<K>>
   private cacheSize = 0
@@ -42,7 +42,7 @@ export class SpatialIndexManager<K extends string = string> {
    * Insert an entity into the spatial index
    */
   insert(id: K, bounds: Bounds): void {
-    this.quadTree.insert(id, bounds, id)
+    this.quadTree.insert(String(id), bounds, id)
     this.invalidateCache()
   }
 
@@ -50,7 +50,7 @@ export class SpatialIndexManager<K extends string = string> {
    * Update an entity's bounds in the spatial index
    */
   update(id: K, bounds: Bounds): void {
-    this.quadTree.update(id, bounds)
+    this.quadTree.update(String(id), bounds)
     this.invalidateCache()
   }
 
@@ -60,7 +60,7 @@ export class SpatialIndexManager<K extends string = string> {
    */
   batchUpdate(updates: Array<{ id: K; bounds: Bounds }>): void {
     for (const { id, bounds } of updates) {
-      this.quadTree.update(id, bounds)
+      this.quadTree.update(String(id), bounds)
     }
     this.invalidateCache()
   }
@@ -69,7 +69,7 @@ export class SpatialIndexManager<K extends string = string> {
    * Remove an entity from the spatial index
    */
   remove(id: K): void {
-    this.quadTree.remove(id)
+    this.quadTree.remove(String(id))
     this.invalidateCache()
   }
 

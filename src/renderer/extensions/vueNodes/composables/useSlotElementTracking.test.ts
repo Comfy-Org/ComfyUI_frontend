@@ -40,7 +40,8 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
   })
 }))
 
-const NODE_ID = asNodeId('test-node')
+const NODE_ID = asNodeId(1)
+const NODE_ID_STRING = String(NODE_ID)
 const SLOT_INDEX = 0
 
 function createTestSetup(type: 'input' | 'output') {
@@ -48,7 +49,7 @@ function createTestSetup(type: 'input' | 'output') {
   const TestComponent = defineComponent({
     setup() {
       useSlotElementTracking({
-        nodeId: NODE_ID,
+        nodeId: NODE_ID_STRING,
         index: SLOT_INDEX,
         type,
         element: el
@@ -62,7 +63,7 @@ function createTestSetup(type: 'input' | 'output') {
 
 function createSlotElement(collapsed = false): HTMLElement {
   const container = document.createElement('div')
-  container.dataset.nodeId = NODE_ID
+  container.dataset.nodeId = NODE_ID_STRING
   if (collapsed) container.dataset.collapsed = ''
   container.getBoundingClientRect = () =>
     ({
@@ -142,13 +143,13 @@ describe('useSlotElementTracking', () => {
 
     const slotKey = getSlotKey(NODE_ID, SLOT_INDEX, isInput)
     const registryStore = useNodeSlotRegistryStore()
-    expect(registryStore.getNode(NODE_ID)?.slots.has(slotKey)).toBe(true)
+    expect(registryStore.getNode(NODE_ID_STRING)?.slots.has(slotKey)).toBe(true)
     expect(layoutStore.getSlotLayout(slotKey)).not.toBeNull()
 
     unmount()
 
     expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
-    expect(registryStore.getNode(NODE_ID)).toBeUndefined()
+    expect(registryStore.getNode(NODE_ID_STRING)).toBeUndefined()
   })
 
   it('clears pendingSlotSync when slot layouts already exist', () => {
@@ -189,7 +190,7 @@ describe('useSlotElementTracking', () => {
     const hiddenSlot = document.createElement('div')
 
     const registryStore = useNodeSlotRegistryStore()
-    const node = registryStore.ensureNode(NODE_ID)
+    const node = registryStore.ensureNode(NODE_ID_STRING)
     node.slots.set(slotKey, {
       el: hiddenSlot,
       index: SLOT_INDEX,
@@ -217,14 +218,14 @@ describe('useSlotElementTracking', () => {
     layoutStore.batchUpdateSlotLayouts([{ key: slotKey, layout: staleLayout }])
 
     const registryStore = useNodeSlotRegistryStore()
-    const node = registryStore.ensureNode(NODE_ID)
+    const node = registryStore.ensureNode(NODE_ID_STRING)
     node.slots.set(slotKey, {
       el: hiddenSlot,
       index: SLOT_INDEX,
       type: 'input'
     })
 
-    syncNodeSlotLayoutsFromDOM(NODE_ID)
+    syncNodeSlotLayoutsFromDOM(NODE_ID_STRING)
 
     expect(layoutStore.getSlotLayout(slotKey)).toBeNull()
   })
@@ -234,7 +235,7 @@ describe('useSlotElementTracking', () => {
     const slotEl = createSlotElement()
 
     const registryStore = useNodeSlotRegistryStore()
-    const node = registryStore.ensureNode(NODE_ID)
+    const node = registryStore.ensureNode(NODE_ID_STRING)
 
     const expectedX = 15
     const expectedY = 35 - LiteGraph.NODE_TITLE_HEIGHT
@@ -266,7 +267,7 @@ describe('useSlotElementTracking', () => {
 
     const batchUpdateSpy = vi.spyOn(layoutStore, 'batchUpdateSlotLayouts')
 
-    syncNodeSlotLayoutsFromDOM(NODE_ID)
+    syncNodeSlotLayoutsFromDOM(NODE_ID_STRING)
 
     expect(batchUpdateSpy).not.toHaveBeenCalled()
   })
@@ -277,7 +278,7 @@ describe('useSlotElementTracking', () => {
       const slotEl = createSlotElement(true)
 
       const registryStore = useNodeSlotRegistryStore()
-      const node = registryStore.ensureNode(NODE_ID)
+      const node = registryStore.ensureNode(NODE_ID_STRING)
       node.slots.set(slotKey, {
         el: slotEl,
         index: SLOT_INDEX,
@@ -291,7 +292,7 @@ describe('useSlotElementTracking', () => {
     it('uses clientPosToCanvasPos for collapsed nodes', () => {
       const { slotKey } = registerCollapsedSlot()
 
-      syncNodeSlotLayoutsFromDOM(NODE_ID)
+      syncNodeSlotLayoutsFromDOM(NODE_ID_STRING)
 
       // Slot element center: (10 + 10/2, 30 + 10/2) = (15, 35)
       const screenCenter: [number, number] = [15, 35]
@@ -309,7 +310,7 @@ describe('useSlotElementTracking', () => {
       const entry = node.slots.get(slotKey)!
       expect(entry.cachedOffset).toBeDefined()
 
-      syncNodeSlotLayoutsFromDOM(NODE_ID)
+      syncNodeSlotLayoutsFromDOM(NODE_ID_STRING)
 
       expect(entry.cachedOffset).toBeUndefined()
     })
@@ -318,7 +319,7 @@ describe('useSlotElementTracking', () => {
       mockCanvasState.canvas = null
       registerCollapsedSlot()
 
-      syncNodeSlotLayoutsFromDOM(NODE_ID)
+      syncNodeSlotLayoutsFromDOM(NODE_ID_STRING)
 
       expect(mockClientPosToCanvasPos).not.toHaveBeenCalled()
     })

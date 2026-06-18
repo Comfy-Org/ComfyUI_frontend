@@ -4,8 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { asNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 import MediaLightbox from './MediaLightbox.vue'
@@ -29,7 +29,7 @@ type MockResultItem = Partial<ResultItemImpl> & {
   filename: string
   subfolder: string
   type: string
-  nodeId: NodeId
+  nodeId: NodeExecutionId
   mediaType: string
   id?: string
   url?: string
@@ -64,7 +64,7 @@ describe('MediaLightbox', () => {
       filename: 'image1.jpg',
       subfolder: 'outputs',
       type: 'output',
-      nodeId: asNodeId('123'),
+      nodeId: asNodeExecutionId('123'),
       mediaType: 'images',
       isImage: true,
       isVideo: false,
@@ -76,7 +76,7 @@ describe('MediaLightbox', () => {
       filename: 'image2.jpg',
       subfolder: 'outputs',
       type: 'output',
-      nodeId: asNodeId('456'),
+      nodeId: asNodeExecutionId('456'),
       mediaType: 'images',
       isImage: true,
       isVideo: false,
@@ -88,7 +88,7 @@ describe('MediaLightbox', () => {
       filename: 'image3.jpg',
       subfolder: 'outputs',
       type: 'output',
-      nodeId: asNodeId('789'),
+      nodeId: asNodeExecutionId('789'),
       mediaType: 'images',
       isImage: true,
       isVideo: false,

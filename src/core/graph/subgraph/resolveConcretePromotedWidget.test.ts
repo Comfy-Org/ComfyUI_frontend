@@ -162,7 +162,7 @@ describe('resolveConcretePromotedWidget', () => {
   test('returns missing-node when source node does not exist in host subgraph', () => {
     const host = createHostNode(100)
 
-    const result = resolveConcretePromotedWidget(host, 'missing-node', 'seed')
+    const result = resolveConcretePromotedWidget(host, '999', 'seed')
 
     expect(result).toEqual({
       status: 'failure',

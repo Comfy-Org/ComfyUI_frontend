@@ -89,7 +89,7 @@ type RenderOptions = {
   enable3DViewer?: boolean
 }
 
-const MOCK_NODE = { id: 'node', type: 'Load3D' }
+const MOCK_NODE = { id: 1, type: 'Load3D' }
 
 function renderLoad3D(options: RenderOptions = {}) {
   const stub = buildLoad3dStub()
@@ -170,7 +170,7 @@ describe('Load3D', () => {
       resolveNodeMock.mockReturnValue(MOCK_NODE)
       renderLoad3D({ widget: {}, nodeId: 42 })
 
-      expect(resolveNodeMock).toHaveBeenCalledWith('42')
+      expect(resolveNodeMock).toHaveBeenCalledWith(42)
       expect(await screen.findByTestId('load3d-scene')).toBeInTheDocument()
     })
 

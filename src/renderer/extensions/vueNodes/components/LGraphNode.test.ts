@@ -24,7 +24,7 @@ vi.mock('@/utils/graphTraversalUtil', async (importOriginal) => {
   const actual = (await importOriginal()) as Record<string, unknown>
   return {
     ...actual,
-    getLocatorIdFromNodeData: vi.fn(() => 'test-node-123'),
+    getLocatorIdFromNodeData: vi.fn(() => '123'),
     getNodeByLocatorId: vi.fn(
       () => mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
     )
@@ -153,7 +153,7 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
   })
 }
 const mockNodeData: VueNodeData = {
-  id: asNodeId('test-node-123'),
+  id: asNodeId(123),
   title: 'Test Node',
   type: 'TestNode',
   mode: 0,
@@ -167,7 +167,7 @@ const mockNodeData: VueNodeData = {
 
 const mockRerouteNodeData: VueNodeData = {
   ...mockNodeData,
-  id: asNodeId('reroute-node-1'),
+  id: asNodeId(456),
   title: '',
   type: 'Reroute',
   titleMode: TitleMode.NO_TITLE
@@ -192,15 +192,13 @@ describe('LGraphNode', () => {
   it('should call resize tracking composable with node ID', () => {
     renderLGraphNode({ nodeData: mockNodeData })
 
-    expect(useVueElementTracking).toHaveBeenCalledWith('test-node-123', 'node')
+    expect(useVueElementTracking).toHaveBeenCalledWith('123', 'node')
   })
 
   it('should render with data-node-id attribute', () => {
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
 
-    expect(getNodeRoot(container).getAttribute('data-node-id')).toBe(
-      'test-node-123'
-    )
+    expect(getNodeRoot(container).getAttribute('data-node-id')).toBe('123')
   })
 
   it('should render node title', () => {
@@ -223,7 +221,7 @@ describe('LGraphNode', () => {
   it('should apply selected styling when selected prop is true', async () => {
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
-    canvasStore.selectedNodeIds.add('test-node-123')
+    canvasStore.selectedNodeIds.add(asNodeId(123))
 
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
     const root = getNodeRoot(container)

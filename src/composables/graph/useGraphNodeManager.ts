@@ -134,10 +134,10 @@ export interface VueNodeData {
 
 export interface GraphNodeManager {
   // Reactive state - safe data extracted from LiteGraph nodes
-  vueNodeData: ReadonlyMap<string, VueNodeData>
+  vueNodeData: ReadonlyMap<NodeId, VueNodeData>
 
   // Access to original LiteGraph nodes (non-reactive)
-  getNode(id: string): LGraphNode | undefined
+  getNode(id: NodeId): LGraphNode | undefined
 
   // Lifecycle methods
   cleanup(): void
@@ -496,12 +496,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Get layout mutations composable
   const { createNode, deleteNode, setSource } = useLayoutMutations()
   // Safe reactive data extracted from LiteGraph nodes
-  const vueNodeData = reactive(new Map<string, VueNodeData>())
+  const vueNodeData = reactive(new Map<NodeId, VueNodeData>())
 
   // Non-reactive storage for original LiteGraph nodes
-  const nodeRefs = new Map<string, LGraphNode>()
+  const nodeRefs = new Map<NodeId, LGraphNode>()
 
-  const refreshNodeSlots = (nodeId: string) => {
+  const refreshNodeSlots = (nodeId: NodeId) => {
     const nodeRef = nodeRefs.get(nodeId)
     const currentData = vueNodeData.get(nodeId)
 
@@ -516,14 +516,14 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   }
 
   // Get access to original LiteGraph node (non-reactive)
-  const getNode = (id: string): LGraphNode | undefined => {
+  const getNode = (id: NodeId): LGraphNode | undefined => {
     return nodeRefs.get(id)
   }
 
   const syncWithGraph = () => {
     if (!graph?._nodes) return
 
-    const currentNodes = new Set(graph._nodes.map((n) => String(n.id)))
+    const currentNodes = new Set(graph._nodes.map((n) => n.id))
 
     // Remove deleted nodes
     for (const id of Array.from(vueNodeData.keys())) {
@@ -535,7 +535,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Add/update existing nodes
     graph._nodes.forEach((node) => {
-      const id = String(node.id)
+      const id = node.id
 
       // Store non-reactive reference
       nodeRefs.set(id, node)
@@ -673,7 +673,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       [K in LGraphTriggerAction]: (event: LGraphTriggerParam<K>) => void
     } = {
       'node:property:changed': (propertyEvent) => {
-        const nodeId = String(propertyEvent.nodeId)
+        const nodeId = propertyEvent.nodeId
         const currentData = vueNodeData.get(nodeId)
 
         if (currentData) {
@@ -769,15 +769,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         }
       },
       'node:slot-errors:changed': (slotErrorsEvent) => {
-        refreshNodeSlots(String(slotErrorsEvent.nodeId))
+        refreshNodeSlots(slotErrorsEvent.nodeId)
       },
       'node:slot-links:changed': (slotLinksEvent) => {
         if (slotLinksEvent.slotType === NodeSlotType.INPUT) {
-          refreshNodeSlots(String(slotLinksEvent.nodeId))
+          refreshNodeSlots(slotLinksEvent.nodeId)
         }
       },
       'node:slot-label:changed': (slotLabelEvent) => {
-        const nodeId = String(slotLabelEvent.nodeId)
+        const nodeId = slotLabelEvent.nodeId
         const nodeRef = nodeRefs.get(nodeId)
         if (!nodeRef) return
 

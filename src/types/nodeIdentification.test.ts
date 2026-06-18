@@ -25,14 +25,14 @@ describe('nodeIdentification', () => {
       it('should return true for valid NodeLocatorId', () => {
         expect(isNodeLocatorId(validNodeLocatorId)).toBe(true)
         expect(isNodeLocatorId(`${validUuid}:456`)).toBe(true)
-        expect(isNodeLocatorId(`${validUuid}:node_1`)).toBe(true)
         // Simple node IDs (root graph)
         expect(isNodeLocatorId('123')).toBe(true)
-        expect(isNodeLocatorId('node_1')).toBe(true)
         expect(isNodeLocatorId('5')).toBe(true)
       })
 
       it('should return false for invalid formats', () => {
+        expect(isNodeLocatorId(`${validUuid}:node_1`)).toBe(false) // Non-numeric local id
+        expect(isNodeLocatorId('node_1')).toBe(false) // Non-numeric local id
         expect(isNodeLocatorId('123:456')).toBe(false) // No UUID in first part
         expect(isNodeLocatorId('not-a-uuid:123')).toBe(false)
         expect(isNodeLocatorId('')).toBe(false) // Empty string
@@ -78,13 +78,9 @@ describe('nodeIdentification', () => {
         })
       })
 
-      it('should handle string node IDs', () => {
-        const stringNodeId = `${validUuid}:node_1`
-        const result = parseNodeLocatorId(stringNodeId)
-        expect(result).toEqual({
-          subgraphUuid: validUuid,
-          localNodeId: 'node_1'
-        })
+      it('should return null for non-numeric local node IDs', () => {
+        expect(parseNodeLocatorId(`${validUuid}:node_1`)).toBeNull()
+        expect(parseNodeLocatorId('node_1')).toBeNull()
       })
 
       it('should handle simple node IDs (root graph)', () => {
@@ -92,12 +88,6 @@ describe('nodeIdentification', () => {
         expect(result).toEqual({
           subgraphUuid: null,
           localNodeId: asNodeId(123)
-        })
-
-        const stringResult = parseNodeLocatorId('node_1')
-        expect(stringResult).toEqual({
-          subgraphUuid: null,
-          localNodeId: 'node_1'
         })
       })
 
@@ -113,12 +103,6 @@ describe('nodeIdentification', () => {
         expect(result).toBe(validNodeLocatorId)
         expect(isNodeLocatorId(result)).toBe(true)
       })
-
-      it('should handle string node IDs', () => {
-        const result = createNodeLocatorId(validUuid, asNodeId('node_1'))
-        expect(result).toBe(`${validUuid}:node_1`)
-        expect(isNodeLocatorId(result)).toBe(true)
-      })
     })
   })
 
@@ -127,12 +111,12 @@ describe('nodeIdentification', () => {
       it('should return true for execution IDs', () => {
         expect(isNodeExecutionId('123:456')).toBe(true)
         expect(isNodeExecutionId('123:456:789')).toBe(true)
-        expect(isNodeExecutionId('node_1:node_2')).toBe(true)
       })
 
       it('should return false for non-execution IDs', () => {
         expect(isNodeExecutionId('123')).toBe(false)
         expect(isNodeExecutionId('node_1')).toBe(false)
+        expect(isNodeExecutionId('node_1:node_2')).toBe(false) // Non-numeric segments
         expect(isNodeExecutionId('')).toBe(false)
         expect(isNodeExecutionId(123)).toBe(false)
         expect(isNodeExecutionId(null)).toBe(false)
@@ -151,20 +135,13 @@ describe('nodeIdentification', () => {
           asNodeId(456),
           asNodeId(789)
         ])
-        expect(parseNodeExecutionId('node_1:node_2')).toEqual([
-          'node_1',
-          'node_2'
-        ])
-        expect(parseNodeExecutionId('123:node_2:456')).toEqual([
-          asNodeId(123),
-          'node_2',
-          asNodeId(456)
-        ])
       })
 
       it('should return null for non-execution IDs', () => {
         expect(parseNodeExecutionId('123')).toBeNull()
         expect(parseNodeExecutionId('')).toBeNull()
+        expect(parseNodeExecutionId('node_1:node_2')).toBeNull() // Non-numeric
+        expect(parseNodeExecutionId('123:node_2:456')).toBeNull() // Non-numeric
       })
     })
 
@@ -176,16 +153,6 @@ describe('nodeIdentification', () => {
         expect(
           createNodeExecutionId([asNodeId(123), asNodeId(456), asNodeId(789)])
         ).toBe('123:456:789')
-        expect(
-          createNodeExecutionId([asNodeId('node_1'), asNodeId('node_2')])
-        ).toBe('node_1:node_2')
-        expect(
-          createNodeExecutionId([
-            asNodeId(123),
-            asNodeId('node_2'),
-            asNodeId(456)
-          ])
-        ).toBe('123:node_2:456')
       })
 
       it('should handle single node ID', () => {
@@ -215,11 +182,7 @@ describe('nodeIdentification', () => {
     })
 
     it('should round-trip NodeExecutionId correctly', () => {
-      const nodeIds: NodeId[] = [
-        asNodeId(123),
-        asNodeId('node_2'),
-        asNodeId(456)
-      ]
+      const nodeIds: NodeId[] = [asNodeId(123), asNodeId(789), asNodeId(456)]
 
       const executionId = createNodeExecutionId(nodeIds)
       const parsed = parseNodeExecutionId(executionId)
