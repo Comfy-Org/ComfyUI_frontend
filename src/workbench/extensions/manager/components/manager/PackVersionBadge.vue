@@ -111,7 +111,6 @@ const fixPopoverIntoViewport = async () => {
 
   requestAnimationFrame(() => {
     const boundaryEl =
-      targetEl.closest('.p-dialog') ??
       targetEl.closest('.manager-dialog') ??
       targetEl.closest('[role="dialog"]') ??
       document.documentElement

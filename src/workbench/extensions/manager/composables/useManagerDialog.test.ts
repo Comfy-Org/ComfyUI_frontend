@@ -26,7 +26,6 @@ describe('useManagerDialog', () => {
     useManagerDialog().show()
     const [args] = showDialog.mock.calls[0]
     expect(args.key).toBe('global-manager')
-    expect(args.dialogComponentProps.renderer).toBe('reka')
     expect(args.dialogComponentProps.size).toBe('full')
     expect(args.dialogComponentProps.contentClass).toContain('max-w-[1724px]')
     expect(args.dialogComponentProps.contentClass).toContain('h-[80vh]')

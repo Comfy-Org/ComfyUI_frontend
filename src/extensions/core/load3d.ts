@@ -271,7 +271,6 @@ useExtensionService().registerExtension({
           component: Load3DViewerContent,
           props: props,
           dialogComponentProps: {
-            renderer: 'reka',
             size: 'full',
             contentClass:
               'w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',

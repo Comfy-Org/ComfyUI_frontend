@@ -3,6 +3,10 @@
 // elements as outside its dialog and would auto-dismiss on the first
 // interaction, tearing the overlay down mid-interaction. Treat any
 // PrimeVue overlay click as inside.
+// `.p-dialog` stays until NodeSearchBox(Popover) — the last standalone
+// PrimeVue `Dialog` consumers in src/ — are migrated; otherwise interacting
+// with one of those dialogs while a non-modal Reka dialog is open would
+// dismiss the Reka dialog.
 const PRIMEVUE_OVERLAY_SELECTORS =
   '.p-select-overlay, .p-colorpicker-panel, .p-popover, .p-autocomplete-overlay, .p-overlay, .p-overlay-mask, .p-dialog'
 
