@@ -5,7 +5,7 @@
         class="size-12 text-3xl!"
         :workspace-name="workspaceName"
       />
-      <h1 class="text-3xl text-base-foreground">
+      <h1 class="text-3xl font-semibold text-base-foreground">
         {{ workspaceName }}
       </h1>
     </header>
