@@ -150,6 +150,12 @@ function handleIsOpenUpdate(isOpen: boolean) {
     void outputMediaAssets.refresh()
   }
 }
+const isUploading = ref(false)
+async function updateFiles(files: File[]) {
+  isUploading.value = true
+  await handleFilesUpdate(files)
+  isUploading.value = false
+}
 </script>
 
 <template>
@@ -171,10 +177,11 @@ function handleIsOpenUpdate(isOpen: boolean) {
       :ownership-options
       :show-base-model-filter
       :base-model-options
+      :is-uploading
       v-bind="combinedProps"
       class="w-full"
       @update:selected="updateSelectedItems"
-      @update:files="handleFilesUpdate"
+      @update:files="updateFiles"
       @update:is-open="handleIsOpenUpdate"
     />
   </WidgetLayoutField>
