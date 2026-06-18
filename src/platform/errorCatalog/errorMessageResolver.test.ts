@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import {
   resolveMissingErrorMessage,
+  resolveMissingMediaItemLabel,
   resolveRunErrorMessage
 } from './errorMessageResolver'
 import type { NodeValidationError } from './types'
@@ -141,6 +142,26 @@ describe('errorMessageResolver', () => {
       displayDetails: 'This node is missing a required input: unknown input',
       displayItemLabel: 'This node - unknown input',
       toastMessage: 'This node is missing a required input: unknown input'
+    })
+  })
+
+  it('resolves unknown validation errors to fallback catalog copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError('value_not_valid', undefined, 'some detail'),
+        nodeDisplayName: 'KSampler'
+      })
+    ).toEqual({
+      catalogId: 'unknown_validation_error',
+      displayTitle: 'Validation failed',
+      displayMessage:
+        'A node returned a validation error ComfyUI does not recognize.',
+      displayDetails:
+        'KSampler returned an unrecognized validation error (value_not_valid): some detail',
+      displayItemLabel: 'KSampler',
+      toastTitle: 'Validation failed',
+      toastMessage: 'KSampler returned an unrecognized validation error.'
     })
   })
 
@@ -1373,7 +1394,7 @@ describe('errorMessageResolver', () => {
       })
     ).toEqual({
       catalogId: 'missing_node',
-      displayTitle: 'Missing Node Packs (1)',
+      displayTitle: 'Missing Node Packs',
       displayMessage: 'Install missing packs to use this workflow.',
       toastTitle: 'Missing node: FooNode',
       toastMessage:
@@ -1389,7 +1410,7 @@ describe('errorMessageResolver', () => {
       })
     ).toEqual({
       catalogId: 'missing_node',
-      displayTitle: 'Unsupported Node Packs (1)',
+      displayTitle: 'Unsupported Node Packs',
       displayMessage:
         "Required custom nodes aren't supported on Cloud. Replace them with supported nodes.",
       toastTitle: "FooNode isn't available on Cloud",
@@ -1450,7 +1471,7 @@ describe('errorMessageResolver', () => {
       })
     ).toEqual({
       catalogId: 'swap_nodes',
-      displayTitle: 'Swap Nodes (1)',
+      displayTitle: 'Swap Nodes',
       displayMessage: 'Some nodes can be replaced with alternatives',
       toastTitle: 'OldNode can be replaced',
       toastMessage: 'Replace it with NewNode from the error panel.'
@@ -1499,7 +1520,7 @@ describe('errorMessageResolver', () => {
       })
     ).toEqual({
       catalogId: 'missing_model',
-      displayTitle: 'Missing Models (1)',
+      displayTitle: 'Missing Models',
       displayMessage: 'Download a model, or open the node to replace it.',
       toastTitle: 'sdxl.safetensors is missing',
       toastMessage: 'Checkpoint Loader Simple is missing a required model file.'
@@ -1514,7 +1535,7 @@ describe('errorMessageResolver', () => {
       })
     ).toEqual({
       catalogId: 'missing_model',
-      displayTitle: 'Missing Models (1)',
+      displayTitle: 'Missing Models',
       displayMessage: 'Import a model, or open the node to replace it.',
       toastTitle: "sdxl.safetensors isn't available on Cloud",
       toastMessage: "This model isn't supported. Choose a different one."
@@ -1552,12 +1573,38 @@ describe('errorMessageResolver', () => {
       })
     ).toEqual({
       catalogId: 'missing_media',
-      displayTitle: 'Missing Inputs (1)',
+      displayTitle: 'Missing Inputs',
       displayMessage: 'A required media input has no file selected.',
       toastTitle: 'Media input missing',
       toastMessage: 'Load Image is missing a required media file.'
     })
   })
+
+  it.for([
+    {
+      source: { nodeType: 'LoadImage', widgetName: 'image' },
+      displayItemLabel: 'Load Image - image'
+    },
+    {
+      source: {
+        nodeDisplayName: 'Custom Loader',
+        nodeType: 'LoadImage',
+        widgetName: 'image'
+      },
+      displayItemLabel: 'Custom Loader - image'
+    },
+    {
+      source: { nodeType: '', widgetName: '' },
+      displayItemLabel: 'This node - unknown input'
+    }
+  ] as const)(
+    'resolves missing media item labels from $source',
+    ({ source, displayItemLabel }) => {
+      expect(resolveMissingMediaItemLabel(source)).toEqual({
+        displayItemLabel
+      })
+    }
+  )
 
   it.for([
     [
@@ -1628,6 +1675,44 @@ describe('errorMessageResolver', () => {
       })
     }
   )
+
+  it('summarizes a shared missing media file by affected node references', () => {
+    expect(
+      resolveMissingErrorMessage({
+        kind: 'missing_media',
+        groups: [
+          {
+            mediaType: 'image',
+            items: [
+              {
+                name: 'shared.png',
+                mediaType: 'image',
+                representative: {
+                  nodeId: '1',
+                  nodeType: 'LoadImage',
+                  widgetName: 'image',
+                  mediaType: 'image',
+                  name: 'shared.png',
+                  isMissing: true
+                },
+                referencingNodes: [
+                  { nodeId: '1', widgetName: 'image' },
+                  { nodeId: '2', widgetName: 'image' }
+                ]
+              }
+            ]
+          }
+        ],
+        count: 2,
+        isCloud: false
+      })
+    ).toMatchObject({
+      displayTitle: 'Missing Inputs',
+      toastTitle: 'Missing media inputs',
+      toastMessage:
+        'Please select the missing media inputs before running this workflow.'
+    })
+  })
 
   it('summarizes multiple missing model and media items', () => {
     const modelGroups = missingModelGroups('a.safetensors', 'b.safetensors')

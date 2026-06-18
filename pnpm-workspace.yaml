@@ -15,6 +15,7 @@ catalog:
   '@astrojs/sitemap': ^3.7.3
   '@astrojs/vue': ^6.0.1
   '@comfyorg/comfyui-electron-types': 0.6.2
+  '@customerio/cdp-analytics-browser': ^0.5.3
   '@eslint/js': ^10.0.1
   '@formkit/auto-animate': ^0.9.0
   '@iconify-json/lucide': ^1.1.178
@@ -79,7 +80,7 @@ catalog:
   eslint-import-resolver-typescript: ^4.4.4
   eslint-plugin-better-tailwindcss: ^4.3.1
   eslint-plugin-import-x: ^4.16.2
-  eslint-plugin-oxlint: 1.59.0
+  eslint-plugin-oxlint: 1.69.0
   eslint-plugin-playwright: ^2.10.1
   eslint-plugin-storybook: ^10.2.10
   eslint-plugin-testing-library: ^7.16.1
@@ -101,9 +102,9 @@ catalog:
   markdown-table: ^3.0.4
   mixpanel-browser: ^2.71.0
   monocart-coverage-reports: ^2.12.9
-  oxfmt: ^0.44.0
-  oxlint: ^1.59.0
-  oxlint-tsgolint: ^0.20.0
+  oxfmt: ^0.54.0
+  oxlint: ^1.69.0
+  oxlint-tsgolint: ^0.23.0
   picocolors: ^1.1.1
   pinia: ^3.0.4
   postcss-html: ^1.8.0

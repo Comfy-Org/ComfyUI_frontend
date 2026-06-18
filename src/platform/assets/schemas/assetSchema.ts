@@ -22,7 +22,7 @@ const zAsset = z.object({
 })
 
 const zAssetResponse = zListAssetsResponse
-  .pick({ total: true, has_more: true })
+  .pick({ total: true, has_more: true, next_cursor: true })
   .extend({
     assets: z.array(zAsset)
   })

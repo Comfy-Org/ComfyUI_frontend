@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "display_name": "Bernini Conditioning",
+    "description": "Conditioning node for Bernini in-context video/image conditioning. It can be used for the following tasks: t2v (text-to-video), v2v (video-to-video), rv2v (reference-guided video editing), r2v (reference-to-video), ads2v (insert image/video into video).Reference images injected as in-context tokens (r2v, rv2v) are encoded independently at their own native aspect ratio (long edge capped at ref_max_size)",
+    "inputs": {
+      "positive": {
+        "name": "positive"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "Source video to edit or restyle (v2v, rv2v). Resized to width/height and trimmed to length."
+      },
+      "reference_video": {
+        "name": "reference_video",
+        "tooltip": "Video to insert into the source video (ads2v)."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "ref_max_size": {
+        "name": "ref_max_size",
+        "tooltip": "Max size for the long edge of reference_video and reference_images. Resized with preserved aspect ratio and snapped to 16px."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "BetaSamplingScheduler",
     "inputs": {
@@ -615,6 +671,61 @@
       },
       "1": {
         "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoGreenScreen": {
+    "display_name": "Bria Video Green Screen",
+    "description": "Replace a video's background with a solid chroma-key screen using Bria.",
+    "inputs": {
+      "video": {
+        "name": "video"
+      },
+      "green_shade": {
+        "name": "green_shade",
+        "tooltip": "Solid chroma-key shade applied behind the foreground: broadcast_green (#00B140), chroma_green (#00FF00), or blue_screen (#0000FF)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoReplaceBackground": {
+    "display_name": "Bria Video Replace Background",
+    "description": "Replace a video's background with a supplied image or video using Bria. The output keeps the foreground's resolution and frame rate; a background with a different aspect ratio is stretched to fit, so match it for undistorted results.",
+    "inputs": {
+      "video": {
+        "name": "video",
+        "tooltip": "Foreground video whose background is replaced."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed controls whether the node should re-run; results are non-deterministic regardless of seed."
+      },
+      "background_image": {
+        "name": "background_image",
+        "tooltip": "Background image to composite behind the foreground. Provide either a background image or a background video, not both."
+      },
+      "background_video": {
+        "name": "background_video",
+        "tooltip": "Background video to composite behind the foreground. Provide either a background image or a background video, not both."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -1299,7 +1410,7 @@
   },
   "CFGOverride": {
     "display_name": "CFG Override",
-    "description": "Override cfg to a fixed value over a [start, end] percent slice of the steps. With multiple overrides, the one nearest the sampler wins on overlap.",
+    "description": "Override cfg to a fixed value over a [start, end] percent (sigma) range. With multiple overrides, the one nearest the sampler wins on overlap.",
     "inputs": {
       "model": {
         "name": "model"
@@ -1840,8 +1951,8 @@
     }
   },
   "ColorToRGBInt": {
-    "display_name": "Color to RGB Int",
-    "description": "Convert a color to a RGB integer value.",
+    "display_name": "Color Picker",
+    "description": "Return a color RGB integer value and hexadecimal representation.",
     "inputs": {
       "color": {
         "name": "color"
@@ -1850,6 +1961,10 @@
     "outputs": {
       "0": {
         "name": "rgb_int",
+        "tooltip": null
+      },
+      "1": {
+        "name": "hex",
         "tooltip": null
       }
     }
@@ -2795,6 +2910,10 @@
       "audio": {
         "name": "audio",
         "tooltip": "The audio to add to the video."
+      },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "Bit depth of the created video. 10-bit keeps smoother gradients with less banding, but some players and downstream nodes may not support it."
       }
     },
     "outputs": {
@@ -2893,6 +3012,98 @@
       },
       "1": {
         "name": "INDEX",
+        "tooltip": null
+      }
+    }
+  },
+  "DA3GeometryToMesh": {
+    "display_name": "Convert DA3 Geometry to Mesh",
+    "description": "Convert a depth map into a triangulated 3D mesh.",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Which image of a batch to convert. Per-image vertex counts differ so batches cannot be stacked."
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Vertex stride. 1 = full resolution, 2 = half, etc."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Drop triangles whose 3x3 depth span exceeds this fraction. 0 = off."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "Exclude pixels whose per-image normalised confidence is below this value (0 = keep all, 1 = keep only the single most confident pixel). Used when the geometry has a confidence map (Small/Base models)."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "Exclude sky-probability pixels (sky >= 0.5) from the mesh. Used when the geometry has a sky map (Mono/Metric models)."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Use the source image as a base color texture."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "display_name": "Run Depth Anything 3",
+    "description": "Run Depth Anything 3 on an image. In multi-view mode each image is treated as a separate view of the same scene.",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Resolution the model runs at (longest side, multiple of 14).\nLower = faster / less VRAM.\nHigher = more detail.\nOutput is upsampled back to the original size."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: scale so the longest side = resolution (caps memory, default).\nlower_bound_resize: scale so the shortest side = resolution (preserves more detail on tall/wide images, uses more memory)."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: single view image (works with any model variant).\nmultiview: all images processed together for geometric consistency + camera pose (for Small/Base models only)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "Dictionary of non-normalized tensors.\nAlways has the keys: depth, image, mode.\nOptional keys: sky (for Mono/Metric), confidence (for Small/Base), extrinsics + intrinsics (for multi-view)."
+      }
+    }
+  },
+  "DA3Render": {
+    "display_name": "Render Depth Anything 3",
+    "description": "Render a depth map, confidence map, or sky mask from Depth Anything 3 geometry data.",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: normalised greyscale depth image.\n- depth_colored: depth mapped through the Turbo colormap.\n- sky_mask: sky probability in [0, 1] (for Mono/Metric models only).\n- confidence: normalised depth confidence (for Small/Base models only)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -4007,6 +4218,13 @@
       "dilate_pixels": {
         "name": "dilate_pixels",
         "tooltip": "Expands the mask boundaries to ensure clean coverage of the object's edges."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "The random seed used for creating the noise."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
       }
     },
     "outputs": {
@@ -4631,6 +4849,14 @@
         "name": "system_prompt",
         "tooltip": "Foundational instructions that dictate an AI's behavior."
       },
+      "temperature": {
+        "name": "temperature",
+        "tooltip": "Controls randomness in generation. Lower is more focused/deterministic."
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "Nucleus sampling threshold. Lower is more focused, higher more diverse."
+      },
       "control_after_generate": {
         "name": "control after generate"
       },
@@ -4695,6 +4921,48 @@
       },
       "control_after_generate": {
         "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "display_name": "Google Gemini",
+    "description": "Generate text responses with Google's Gemini models. Provide a text prompt and, optionally, one or more images, audio clips, videos, or files as multimodal context.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Text input to the model. Include detailed instructions, questions, or context."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "The Gemini model used to generate the response."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed for sampling. Set to 0 for a random seed. Deterministic output isn't guaranteed."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Foundational instructions that dictate the model's behavior."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -4829,7 +5097,7 @@
   },
   "GetVideoComponents": {
     "display_name": "Get Video Components",
-    "description": "Extracts all components from a video: frames, audio, and framerate.",
+    "description": "Extracts all components from a video: frames, audio, framerate, and bit depth.",
     "inputs": {
       "video": {
         "name": "video",
@@ -4847,6 +5115,10 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -8415,6 +8687,22 @@
     "outputs": {
       "0": {
         "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "Load Depth Anything 3",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13719,12 +14007,12 @@
   "Preview3DAdvanced": {
     "display_name": "Preview 3D (Advanced)",
     "inputs": {
-      "model_file": {
-        "name": "model_file",
+      "model_3d": {
+        "name": "model_3d",
         "tooltip": "3D model file from an upstream 3D node."
       },
-      "image": {
-        "name": "image"
+      "viewport_state": {
+        "name": "viewport_state"
       },
       "width": {
         "name": "width"
@@ -13732,24 +14020,24 @@
       "height": {
         "name": "height"
       },
-      "camera_info": {
-        "name": "camera_info"
-      },
       "model_3d_info": {
         "name": "model_3d_info"
+      },
+      "camera_info": {
+        "name": "camera_info"
       }
     },
     "outputs": {
       "0": {
-        "name": "model_file",
+        "name": "model_3d",
         "tooltip": null
       },
       "1": {
-        "name": "camera_info",
+        "name": "model_3d_info",
         "tooltip": null
       },
       "2": {
-        "name": "model_3d_info",
+        "name": "camera_info",
         "tooltip": null
       },
       "3": {
@@ -13788,12 +14076,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "Preview Splat",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "A gaussian splat 3D file."
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "camera_info": {
+        "name": "camera_info"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "display_name": "Preview Image",
     "description": "Saves the input images to your ComfyUI output directory.",
     "inputs": {
       "images": {
         "name": "images"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "Preview Point Cloud",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Point cloud file (.ply)"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "camera_info": {
+        "name": "camera_info"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -14706,13 +15086,13 @@
     "display_name": "Remove Background",
     "description": "Generates a foreground mask to remove the background from an image using a background removal model.",
     "inputs": {
-      "image": {
-        "name": "image",
-        "tooltip": "Input image to remove the background from"
-      },
       "bg_removal_model": {
         "name": "bg_removal_model",
         "tooltip": "Background removal model used to generate the mask"
+      },
+      "image": {
+        "name": "image",
+        "tooltip": "Input image to remove the background from"
       }
     },
     "outputs": {
@@ -15015,17 +15395,21 @@
       },
       "megapixels": {
         "name": "megapixels",
-        "tooltip": "Target total megapixels. 1.0 MP ≈ 1024×1024 for square."
+        "tooltip": "Target total megapixels. 1.0 MP ≈ 1024x1024 for square."
+      },
+      "multiple": {
+        "name": "multiple",
+        "tooltip": "Nearest multiple of the result to set the selected resolution to."
       }
     },
     "outputs": {
       "0": {
         "name": "width",
-        "tooltip": "Calculated width in pixels (multiple of 8)."
+        "tooltip": "Calculated width in pixels multiplied by the selected multiple."
       },
       "1": {
         "name": "height",
-        "tooltip": "Calculated height in pixels (multiple of 8)."
+        "tooltip": "Calculated height in pixels multiplied by the selected multiple."
       }
     }
   },
@@ -15452,7 +15836,7 @@
     }
   },
   "RTDETR_detect": {
-    "display_name": "RT-DETR Detect",
+    "display_name": "Run Real-Time Detection (RT-DETR)",
     "inputs": {
       "model": {
         "name": "model"
@@ -15475,6 +15859,98 @@
     "outputs": {
       "0": {
         "name": "bboxes",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2KeyframeNode": {
+    "display_name": "Runway Aleph2 Keyframe",
+    "description": "Anchor a guidance image to a moment of the input (source) video, so Aleph2 steers the edit at that point of your footage. Connect this to the 'keyframes' input of the Runway Aleph2 Video to Video node; chain several together (up to 5) via the optional 'keyframes' input below.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The guidance image to apply at the chosen moment of the input video."
+      },
+      "timing": {
+        "name": "timing",
+        "tooltip": "How to place this image on the input video's timeline."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Optional earlier keyframes to chain with this one."
+      },
+      "timing_seconds": {
+        "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "display_name": "Runway Aleph2 Prompt Image",
+    "description": "Anchor a guidance image to a moment of the output (result) video, to guide what the edited video looks like at that point. Connect this to the 'prompt_images' input of the Runway Aleph2 Video to Video node; chain several together (up to 5) via the optional 'prompt_images' input below.",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "The guidance image to place at the chosen moment of the output video."
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "How to place this image on the output video's timeline."
+      },
+      "prompt_images": {
+        "name": "prompt_images",
+        "tooltip": "Optional earlier prompt images to chain with this one."
+      },
+      "position_seconds": {
+        "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt_images",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "display_name": "Runway Aleph2 Video to Video",
+    "description": "Edit a video with a text prompt using Runway's Aleph2 model. Aleph2 transforms your footage (restyle, relight, add or remove elements, change the viewpoint) while keeping the original motion and timing; the output resolution matches the input video, which must be 2-30 seconds at 30 fps or lower. Optionally steer the edit with either keyframes (anchored to the input video) or prompt images (anchored to the output video) - use one or the other, not both.",
+    "inputs": {
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Describes what should appear in the output (1-1000 characters)."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Input video to edit. Must be 2-30 seconds at 30 fps or lower."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Random seed for generation"
+      },
+      "public_figure_threshold": {
+        "name": "public_figure_threshold",
+        "tooltip": "Content moderation for recognizable public figures."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Guidance images anchored to the input video, from Aleph2 Keyframe nodes (up to 5). Use keyframes or prompt images, not both."
+      },
+      "prompt_images": {
+        "name": "prompt_images",
+        "tooltip": "Guidance images anchored to the output video, from Aleph2 Prompt Image nodes (up to 5). Use keyframes or prompt images, not both."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15685,7 +16161,7 @@
     }
   },
   "SAM3_VideoTrack": {
-    "display_name": "SAM3 Video Track",
+    "display_name": "Run SAM3 Video Track",
     "inputs": {
       "images": {
         "name": "images",
@@ -16178,7 +16654,7 @@
     }
   },
   "SaveAudio": {
-    "display_name": "Save Audio (FLAC)",
+    "display_name": "Save Audio (FLAC) (Deprecated)",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -16191,8 +16667,29 @@
       }
     }
   },
+  "SaveAudioAdvanced": {
+    "display_name": "Save Audio (Advanced)",
+    "description": "Saves the input audio to your ComfyUI output directory.",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "The audio to save."
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "The prefix for the file to save. May include formatting tokens such as %date:yyyy-MM-dd%."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "The file format in which to save the audio."
+      },
+      "audioUI": {
+        "name": "audioUI"
+      }
+    }
+  },
   "SaveAudioMP3": {
-    "display_name": "Save Audio (MP3)",
+    "display_name": "Save Audio (MP3) (Deprecated)",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -16209,7 +16706,7 @@
     }
   },
   "SaveAudioOpus": {
-    "display_name": "Save Audio (Opus)",
+    "display_name": "Save Audio (Opus) (Deprecated)",
     "inputs": {
       "audio": {
         "name": "audio"
@@ -16441,6 +16938,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "Create SCAIL-2 Colored Mask",
+    "inputs": {
+      "driving_track_data": {
+        "name": "driving_track_data",
+        "tooltip": "SAM3 track of the driving pose video. Will be rendered into the pose_video_mask output."
+      },
+      "object_indices": {
+        "name": "object_indices",
+        "tooltip": "Comma-separated list of person indices to include (e.g. '0,2,3'). Applied to both reference and pose video masks. Empty = all."
+      },
+      "sort_by": {
+        "name": "sort_by",
+        "tooltip": "Order in which palette colors are assigned to the tracked objects (applied to both reference and pose video so each identity keeps the same color). left_to_right = leftmost object (by first-frame centroid) gets the first color; area = biggest object (by first-frame mask area) gets the first color; none = keep SAM3's order."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "False = Animation Mode (pose_video_mask has black background, reference_image_mask has white background). True = Replacement Mode (pose_video_mask has white background, reference_image_mask has black background)."
+      },
+      "ref_track_data": {
+        "name": "ref_track_data",
+        "tooltip": "SAM3 track of the reference image."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
+        "tooltip": null
+      }
+    }
+  },
   "ScaleROPE": {
     "display_name": "ScaleROPE",
     "description": "Scale and shift the ROPE of the model.",
@@ -16533,6 +17065,9 @@
       },
       "score_threshold": {
         "name": "score_threshold"
+      },
+      "draw_head": {
+        "name": "draw_head"
       }
     },
     "outputs": {
@@ -16910,7 +17445,7 @@
   },
   "SoniloTextToMusic": {
     "display_name": "Sonilo Text to Music",
-    "description": "Generate music from a text prompt using Sonilo's AI model. Leave duration at 0 to let the model infer it from the prompt.",
+    "description": "Generate music from a text prompt using Sonilo's AI model.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -16918,7 +17453,7 @@
       },
       "duration": {
         "name": "duration",
-        "tooltip": "Target duration in seconds. Set to 0 to let the model infer the duration from the prompt. Maximum: 6 minutes."
+        "tooltip": "Target duration in seconds. Maximum: 6 minutes."
       },
       "seed": {
         "name": "seed",
@@ -19062,6 +19597,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "display_name": "Tripo: Import Model",
+    "description": "Import an external 3D model (e.g. from Rodin, Hunyuan3D or a local file) into Tripo to use it with Tripo's post-processing nodes: Texture, Rig, Convert. GLB is recommended: textures survive import only when embedded in the file. Note that texturing an imported model requires a texture prompt.",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D model to import (GLB / FBX / OBJ / STL, up to 150 MB). OBJ and STL files carry no embedded textures."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Multiview to Model",
     "inputs": {
@@ -19535,6 +20086,10 @@
       },
       "texture_alignment": {
         "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Optional text guidance for texturing. Required in practice for imported models (Tripo: Import Model), which carry no source image to infer colors from."
       }
     },
     "outputs": {
@@ -22197,21 +22752,47 @@
       },
       "pose_start": {
         "name": "pose_start",
-        "tooltip": "Start step to use pose conditioning."
+        "tooltip": "Start step of the pose conditioning."
       },
       "pose_end": {
         "name": "pose_end",
-        "tooltip": "End step to use pose conditioning."
+        "tooltip": "End step of the pose conditioning."
       },
-      "clip_vision_output": {
-        "name": "clip_vision_output"
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "Cumulative output frame this chunk begins at. Wire from the previous chunk's video_frame_offset output."
       },
-      "reference_image": {
-        "name": "reference_image"
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "Tail frames of previous_frames to anchor. SCAIL-2 trained at 5 (81-frame chunks, 76-frame step)."
       },
       "pose_video": {
         "name": "pose_video",
         "tooltip": "Video used for pose conditioning. Will be downscaled to half the resolution of the main video."
+      },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "SCAIL-2 only. Colored per-identity SAM3 mask video at the same resolution as pose_video."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "SCAIL-2 only. False = Animation Mode (pose_video_mask should have black background). True = Replacement Mode (pose_video_mask should have white background)."
+      },
+      "reference_image": {
+        "name": "reference_image",
+        "tooltip": "Reference image, for multiple references composite all on single image."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "SCAIL-2 only. Colored reference mask at the same resolution as reference_image."
+      },
+      "clip_vision_output": {
+        "name": "clip_vision_output",
+        "tooltip": "CLIP vision features for conditioning. Model is trained with stretch resize to aspect ratio."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "SCAIL-2 only. Full decoded output of the previous chunk. Only the last previous_frame_count are used as the extension anchor."
       }
     },
     "outputs": {
@@ -22226,6 +22807,10 @@
       "2": {
         "name": "latent",
         "tooltip": "Empty latent of the generation size."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "Adjusted offset + length. Wire into the next chunk."
       }
     }
   },

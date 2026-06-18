@@ -52,6 +52,22 @@ interface CustomDialogComponentProps {
    * PrimeVue path — use `pt.mask` for that renderer.
    */
   overlayClass?: HTMLAttributes['class']
+  /**
+   * Class applied to the Reka-UI `DialogHeader` element on the non-headless
+   * path. Ignored on the PrimeVue path — use `pt.header` for that renderer.
+   */
+  headerClass?: HTMLAttributes['class']
+  /**
+   * Class applied to the wrapper around the content component on the Reka-UI
+   * non-headless path. Ignored on the PrimeVue path — use `pt.content` for
+   * that renderer.
+   */
+  bodyClass?: HTMLAttributes['class']
+  /**
+   * Class applied to the Reka-UI `DialogFooter` element on the non-headless
+   * path. Ignored on the PrimeVue path — use `pt.footer` for that renderer.
+   */
+  footerClass?: HTMLAttributes['class']
 }
 
 export type DialogComponentProps = Record<string, unknown> &

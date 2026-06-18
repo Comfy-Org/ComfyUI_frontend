@@ -4,6 +4,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
@@ -250,59 +251,6 @@ describe('Widget change error clearing via onWidgetChanged', () => {
 
     expect(store.lastNodeErrors).toBeNull()
     expect(mediaStore.missingMediaCandidates).toBeNull()
-  })
-
-  it('uses interior node execution ID for promoted widget error clearing', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'ckpt_input', type: '*' }]
-    })
-    const interiorNode = new LGraphNode('CheckpointLoaderSimple')
-    const interiorInput = interiorNode.addInput('ckpt_input', '*')
-    interiorNode.addWidget(
-      'combo',
-      'ckpt_name',
-      'model.safetensors',
-      () => undefined,
-      { values: ['model.safetensors'] }
-    )
-    interiorInput.widget = { name: 'ckpt_name' }
-    subgraph.add(interiorNode)
-    subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
-
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
-    subgraphNode._internalConfigureAfterSlots()
-    const graph = subgraphNode.graph as LGraph
-    graph.add(subgraphNode)
-
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    installErrorClearingHooks(graph)
-
-    const store = useExecutionErrorStore()
-    const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
-
-    const promotedWidget = subgraphNode.widgets?.find(
-      (w) => 'sourceWidgetName' in w && w.sourceWidgetName === 'ckpt_name'
-    )
-    expect(promotedWidget).toBeDefined()
-
-    // PromotedWidgetView.name returns displayName ("ckpt_input"), which is
-    // passed as errorInputName to clearSimpleNodeErrors. Seed the error
-    // with that name so the slot-name filter matches.
-    seedRequiredInputMissingNodeError(
-      store,
-      interiorExecId,
-      promotedWidget!.name
-    )
-
-    subgraphNode.onWidgetChanged!.call(
-      subgraphNode,
-      'ckpt_name',
-      'other_model.safetensors',
-      'model.safetensors',
-      promotedWidget!
-    )
-
-    expect(store.lastNodeErrors).toBeNull()
   })
 })
 
@@ -1029,5 +977,55 @@ describe('clearWidgetRelatedErrors parameter routing', () => {
     )
 
     clearSpy.mockRestore()
+  })
+
+  it('clears promoted widget errors by interior execution id', () => {
+    const subgraph = createTestSubgraph()
+    const graph = subgraph.rootGraph
+    const host = createTestSubgraphNode(subgraph, { id: 2 })
+    graph.add(host)
+
+    const interiorNode = new LGraphNode('CheckpointLoaderSimple')
+    interiorNode.id = 1
+    subgraph.add(interiorNode)
+    const input = interiorNode.addInput('ckpt_name', 'COMBO')
+    const widget = interiorNode.addWidget(
+      'combo',
+      'ckpt_name',
+      'fake_model.safetensors',
+      () => undefined,
+      { values: ['fake_model.safetensors', 'real_model.safetensors'] }
+    )
+    input.widget = { name: widget.name }
+
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, interiorNode, widget).ok
+    ).toBe(true)
+    installErrorClearingHooks(graph)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const missingModelStore = useMissingModelStore()
+    missingModelStore.setMissingModels([
+      {
+        nodeId: '2:1',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'fake_model.safetensors',
+        directory: 'checkpoints',
+        isMissing: true
+      }
+    ])
+
+    const promotedWidget = host.widgets[0]
+    host.onWidgetChanged!.call(
+      host,
+      promotedWidget.name,
+      'real_model.safetensors',
+      'fake_model.safetensors',
+      promotedWidget
+    )
+
+    expect(missingModelStore.hasMissingModels).toBe(false)
   })
 })
