@@ -981,9 +981,7 @@ export class LGraph
       console.warn(
         'LiteGraph: there is already a node with this ID, changing it'
       )
-      node.id = LiteGraph.use_uuids
-        ? asNodeId(LiteGraph.uuidv4())
-        : asNodeId(++state.lastNodeId)
+      node.id = asNodeId(++state.lastNodeId)
     }
 
     if (this._nodes.length >= LiteGraph.MAX_NUMBER_OF_NODES) {
@@ -991,17 +989,13 @@ export class LGraph
     }
 
     // give him an id
-    if (LiteGraph.use_uuids) {
-      if (isUnassignedNodeId(node.id)) node.id = asNodeId(LiteGraph.uuidv4())
-    } else {
-      if (isUnassignedNodeId(node.id)) {
-        node.id = asNodeId(++state.lastNodeId)
-      } else if (
-        isNumericNodeId(node.id) &&
-        state.lastNodeId < nodeIdToNumber(node.id)
-      ) {
-        state.lastNodeId = nodeIdToNumber(node.id)
-      }
+    if (isUnassignedNodeId(node.id)) {
+      node.id = asNodeId(++state.lastNodeId)
+    } else if (
+      isNumericNodeId(node.id) &&
+      state.lastNodeId < nodeIdToNumber(node.id)
+    ) {
+      state.lastNodeId = nodeIdToNumber(node.id)
     }
 
     // Set ghost flag before registration so VueNodeData picks it up
@@ -2371,11 +2365,9 @@ export class LGraph
     Required<Pick<SerialisableGraph, 'nodes' | 'groups' | 'extra'>> {
     const { id, revision, config, state } = this
 
-    const nodeList =
-      !LiteGraph.use_uuids && options?.sortNodes
-        ? // @ts-expect-error If LiteGraph.use_uuids is false, ids are numbers.
-          [...this._nodes].sort((a, b) => a.id - b.id)
-        : this._nodes
+    const nodeList = options?.sortNodes
+      ? [...this._nodes].sort((a, b) => Number(a.id) - Number(b.id))
+      : this._nodes
 
     const nodes = nodeList.map((node) => node.serialize())
     const groups = this._groups.map((x) => x.serialize())

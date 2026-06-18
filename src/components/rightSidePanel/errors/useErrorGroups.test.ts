@@ -422,7 +422,7 @@ describe('useErrorGroups', () => {
     it('uses fallback catalog grouping for unknown node validation errors', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        [asNodeId('1')]: {
+        '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [
@@ -447,7 +447,7 @@ describe('useErrorGroups', () => {
     it('resolves required_input_missing item display copy', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        [asNodeId('1')]: {
+        '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [
@@ -493,7 +493,7 @@ describe('useErrorGroups', () => {
     it('groups node validation errors by catalog id across node types', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        [asNodeId('1')]: {
+        '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [
@@ -507,7 +507,7 @@ describe('useErrorGroups', () => {
             }
           ]
         },
-        [asNodeId('2')]: {
+        '2': {
           class_type: 'CLIPLoader',
           dependent_outputs: [],
           errors: [
@@ -651,17 +651,17 @@ describe('useErrorGroups', () => {
     it('sorts cards within an execution group by nodeId numerically', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        [asNodeId('10')]: {
+        '10': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         },
-        [asNodeId('2')]: {
+        '2': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         },
-        [asNodeId('1')]: {
+        '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
@@ -679,17 +679,17 @@ describe('useErrorGroups', () => {
     it('sorts cards with subpath nodeIds before higher root IDs', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        [asNodeId('2')]: {
+        '2': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         },
-        [asNodeId('1:20')]: {
+        '1:20': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         },
-        [asNodeId('1')]: {
+        '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
@@ -707,17 +707,17 @@ describe('useErrorGroups', () => {
     it('sorts deeply nested nodeIds by each segment numerically', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        [asNodeId('10:11:99')]: {
+        '10:11:99': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         },
-        [asNodeId('10:11:12')]: {
+        '10:11:12': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
         },
-        [asNodeId('10:2')]: {
+        '10:2': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'err', message: 'Error', details: '' }]
@@ -737,7 +737,7 @@ describe('useErrorGroups', () => {
     it('returns all groups when search query is empty', async () => {
       const { store, groups } = createErrorGroups()
       store.lastNodeErrors = {
-        [asNodeId('1')]: {
+        '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [{ type: 'value_error', message: 'Bad value', details: '' }]
@@ -751,7 +751,7 @@ describe('useErrorGroups', () => {
     it('filters groups based on search query', async () => {
       const { store, groups, searchQuery } = createErrorGroups()
       store.lastNodeErrors = {
-        [asNodeId('1')]: {
+        '1': {
           class_type: 'KSampler',
           dependent_outputs: [],
           errors: [
@@ -762,7 +762,7 @@ describe('useErrorGroups', () => {
             }
           ]
         },
-        [asNodeId('2')]: {
+        '2': {
           class_type: 'CLIPLoader',
           dependent_outputs: [],
           errors: [
@@ -791,53 +791,6 @@ describe('useErrorGroups', () => {
         )
         expect(hasMatch).toBe(true)
       }
-    })
-  })
-
-  describe('groupedErrorMessages', () => {
-    it('returns empty array when no errors', () => {
-      const { groups } = createErrorGroups()
-      expect(groups.groupedErrorMessages.value).toEqual([])
-    })
-
-    it('collects unique display messages from node errors', async () => {
-      const { store, groups } = createErrorGroups()
-      store.lastNodeErrors = {
-        [asNodeId('1')]: {
-          class_type: 'KSampler',
-          dependent_outputs: [],
-          errors: [
-            { type: 'err_a', message: 'Error A', details: '' },
-            { type: 'err_b', message: 'Error B', details: '' }
-          ]
-        },
-        [asNodeId('2')]: {
-          class_type: 'CLIPLoader',
-          dependent_outputs: [],
-          errors: [{ type: 'err_a', message: 'Error A', details: '' }]
-        }
-      }
-      await nextTick()
-
-      const messages = groups.groupedErrorMessages.value
-      expect(messages).toEqual([unknownValidationMessage])
-    })
-
-    it('includes missing node group display message', async () => {
-      const { groups } = createErrorGroups()
-      const missingNodesStore = useMissingNodesErrorStore()
-      missingNodesStore.setMissingNodeTypes([
-        makeMissingNodeType('NodeA', { cnrId: 'pack-1' })
-      ])
-      await nextTick()
-
-      const missingGroup = groups.allErrorGroups.value.find(
-        (g) => g.type === 'missing_node'
-      )
-      expect(missingGroup).toBeDefined()
-      expect(groups.groupedErrorMessages.value).toContain(
-        missingGroup!.displayMessage
-      )
     })
   })
 

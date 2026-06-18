@@ -817,9 +817,7 @@ export class LGraphNode
   }
 
   constructor(title: string, type?: string) {
-    this.id = LiteGraph.use_uuids
-      ? asNodeId(LiteGraph.uuidv4())
-      : UNASSIGNED_NODE_ID
+    this.id = UNASSIGNED_NODE_ID
     this.title = title || 'Unnamed'
     this.type = type ?? ''
     this.size = [LiteGraph.NODE_WIDTH, 60]
@@ -1035,7 +1033,6 @@ export class LGraphNode
 
     node.id = this.id
     node.configure(data)
-    if (LiteGraph.use_uuids) node.id = asNodeId(LiteGraph.uuidv4())
 
     return node
   }
