@@ -68,7 +68,8 @@ const plans: PricingPlan[] = [
       : undefined,
     features: [
       { text: 'pricing.plan.standard.feature1' },
-      { text: 'pricing.plan.standard.feature2' }
+      { text: 'pricing.plan.standard.feature2' },
+      { text: 'pricing.plan.standard.feature3' }
     ]
   },
   {
@@ -214,13 +215,6 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
             class="mb-2 text-sm font-semibold text-primary-comfy-canvas"
           >
             {{ t(plan.featureIntroKey, locale) }}
-          </p>
-          <p
-            v-else
-            class="mb-2 text-sm font-semibold text-primary-comfy-canvas"
-            aria-hidden="true"
-          >
-            &nbsp;
           </p>
           <ul class="space-y-2">
             <li

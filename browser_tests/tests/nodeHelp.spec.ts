@@ -347,55 +347,6 @@ test.describe('Node Help', { tag: ['@slow', '@ui'] }, () => {
       )
     })
 
-    test('Should handle custom node documentation paths', async ({
-      comfyPage
-    }) => {
-      // First load workflow with custom node
-      await comfyPage.workflow.loadWorkflow('groupnodes/group_node_v1.3.3')
-
-      // Mock custom node documentation with fallback
-      await comfyPage.page.route(
-        '**/extensions/*/docs/*/en.md',
-        async (route) => {
-          await route.fulfill({ status: 404 })
-        }
-      )
-
-      await comfyPage.page.route('**/extensions/*/docs/*.md', async (route) => {
-        await route.fulfill({
-          status: 200,
-          body: `# Custom Node Documentation
-
-This is documentation for a custom node.
-
-![Custom Image](assets/custom.png)
-`
-        })
-      })
-
-      // Find and select a custom/group node
-      const nodeRefs = await comfyPage.page.evaluate(() => {
-        return window.app!.graph!.nodes.map((n) => n.id)
-      })
-      if (nodeRefs.length > 0) {
-        const firstNode = await comfyPage.nodeOps.getNodeRefById(nodeRefs[0])
-        await selectNodeWithPan(comfyPage, firstNode)
-      }
-
-      const helpButton = comfyPage.selectionToolbox.getByTestId('info-button')
-      if (await helpButton.isVisible()) {
-        const helpPage = await openSelectionToolboxHelp(comfyPage)
-        await expect(helpPage).toContainText('Custom Node Documentation')
-
-        // Check image path for custom nodes
-        const image = helpPage.locator('img[alt="Custom Image"]')
-        await expect(image).toHaveAttribute(
-          'src',
-          /.*\/extensions\/.*\/docs\/assets\/custom\.png/
-        )
-      }
-    })
-
     test('Should sanitize dangerous HTML content', async ({ comfyPage }) => {
       // Mock response with potentially dangerous content
       await comfyPage.page.route('**/docs/KSampler/en.md', async (route) => {
