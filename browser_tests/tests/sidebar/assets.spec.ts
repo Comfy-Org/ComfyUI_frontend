@@ -1111,7 +1111,7 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
     createMockJob({
       id: 'job1',
       preview_output: {
-        filename: `test.png`,
+        filename: `1.png`,
         type: 'temp',
         nodeId: '1',
         mediaType: 'images'
@@ -1120,8 +1120,17 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
     createMockJob({
       id: 'job2',
       preview_output: {
-        filename: `test.png`,
+        filename: `2.png`,
         type: 'output',
+        nodeId: '1',
+        mediaType: 'images'
+      }
+    }),
+    createMockJob({
+      id: 'job2',
+      preview_output: {
+        filename: `3.png`,
+        type: 'input',
         nodeId: '1',
         mediaType: 'images'
       }
@@ -1130,10 +1139,11 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
   const { assetsTab } = comfyPage.menu
   await assetsTab.open()
   await assetsTab.waitForAssets()
-  await expect(assetsTab.assetCards).toHaveCount(2)
-  for (const [index, type] of [
-    [0, 'temp'],
-    [1, 'output']
+  await expect(assetsTab.assetCards).toHaveCount(3)
+  for (const [index, expectedName] of [
+    [0, '1.png [temp]'],
+    [1, '2.png [output]'],
+    [2, '3.png']
   ] as const) {
     await comfyPage.nodeOps.clearGraph()
     await assetsTab.assetCards.nth(index).scrollIntoViewIfNeeded()
@@ -1145,6 +1155,6 @@ test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
     await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
     const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
     const fileWidget = await nodes[0].getWidget(0)
-    await expect.poll(() => fileWidget.getValue()).toBe(`test.png [${type}]`)
+    await expect.poll(() => fileWidget.getValue()).toBe(expectedName)
   }
 })

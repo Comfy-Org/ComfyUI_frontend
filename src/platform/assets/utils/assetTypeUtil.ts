@@ -20,9 +20,8 @@ export function getAssetType(
   asset: AssetItem,
   defaultType: 'input' | 'output' = 'output'
 ): string {
-  const urlType = new URL(
-    asset.preview_url ?? '',
-    window.location.origin
-  ).searchParams.get('type')
+  const urlType = new URLSearchParams(
+    (asset.preview_url ?? '').split('?')[1] ?? ''
+  ).get('type')
   return urlType || asset.tags?.[0] || defaultType
 }
