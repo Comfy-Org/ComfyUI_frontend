@@ -82,7 +82,7 @@
               >
                 <i class="icon-[lucide--panel-right] size-4" />
               </Button>
-              <StatusBadge
+              <Badge
                 v-if="showErrorIndicatorOnPanelButton"
                 variant="dot"
                 severity="danger"
@@ -141,7 +141,7 @@ import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import ActionBarButtons from '@/components/topbar/ActionBarButtons.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
 import LoginButton from '@/components/topbar/LoginButton.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/common/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'

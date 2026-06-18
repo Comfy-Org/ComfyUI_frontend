@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import Badge from 'primevue/badge'
+import Badge from '@/components/common/Badge.vue'
 import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'

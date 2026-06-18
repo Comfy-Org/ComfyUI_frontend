@@ -59,7 +59,7 @@
           <span class="text-sm font-normal tabular-nums">
             {{ activeJobsLabel }}
           </span>
-          <StatusBadge
+          <Badge
             v-if="activeJobsCount > 0"
             data-testid="active-jobs-indicator"
             variant="dot"
@@ -104,7 +104,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/common/Badge.vue'
 import QueueInlineProgress from '@/components/queue/QueueInlineProgress.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'

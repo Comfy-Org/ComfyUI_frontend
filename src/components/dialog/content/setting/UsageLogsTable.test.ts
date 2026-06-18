@@ -136,13 +136,13 @@ describe('UsageLogsTable', () => {
       (type: string) => {
         switch (type) {
           case EventType.CREDIT_ADDED:
-            return 'success'
+            return 'default'
           case EventType.ACCOUNT_CREATED:
-            return 'info'
+            return 'secondary'
           case EventType.API_USAGE_COMPLETED:
-            return 'warning'
+            return 'warn'
           default:
-            return 'info'
+            return 'secondary'
         }
       }
     )

@@ -82,7 +82,7 @@ function renderCard(asset: AssetDisplayItem) {
         AssetBadgeGroup: true,
         IconGroup: true,
         MoreButton: true,
-        StatusBadge: true,
+        Badge: true,
         Button: { template: '<button><slot /></button>' }
       },
       directives: {

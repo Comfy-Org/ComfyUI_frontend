@@ -80,7 +80,7 @@
                   <span class="text-sm font-bold text-text-primary">
                     {{ subscriptionTierName }}
                   </span>
-                  <StatusBadge
+                  <Badge
                     v-if="isCancelled"
                     :label="$t('subscription.canceled')"
                     severity="warn"
@@ -365,7 +365,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useToast } from 'primevue/usetoast'
 
-import StatusBadge from '@/components/common/StatusBadge.vue'
+import Badge from '@/components/common/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
