@@ -1,46 +1,26 @@
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 /**
- * The cloud API has no creator field, so protect owners plus the acting user.
- * Unify with FE-770's `originalOwnerId` when both land (BE-1337 will expose
- * an explicit determination).
- */
-function isCreator(
-  member: WorkspaceMember,
-  currentUserEmail: string | null
-): boolean {
-  return (
-    member.role === 'owner' ||
-    member.email.toLowerCase() === currentUserEmail?.toLowerCase()
-  )
-}
-
-/**
- * Team-plan downgrade to personal (FE-977): validate via `previewSubscribe`,
- * remove every non-creator member, then initiate the tier change.
+ * Team-plan downgrade to personal: validate via `previewSubscribe`, remove
+ * every member except the original owner, then initiate the tier change.
  * BE seam (BE-1337): removal email and an atomic downgrade endpoint are
  * BE-owned; until then the FE orchestrates the two steps non-atomically.
  */
 export function useDowngradeToPersonal() {
   const workspaceStore = useTeamWorkspaceStore()
   const { members } = storeToRefs(workspaceStore)
-  const { userEmail } = useCurrentUser()
   const { subscribe, previewSubscribe } = useBillingContext()
   const billingOperationStore = useBillingOperationStore()
 
   const removableMembers = computed(() =>
-    members.value.filter(
-      (member) => !isCreator(member, userEmail.value ?? null)
-    )
+    members.value.filter((member) => !member.isOriginalOwner)
   )
 
   const hasOtherMembers = computed(() => removableMembers.value.length > 0)
