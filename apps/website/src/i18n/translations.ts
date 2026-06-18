@@ -1441,9 +1441,9 @@ const translations = {
     'zh-CN': '通过 API 运行工作流'
   },
   'pricing.included.feature11.description': {
-    en: 'Run Comfy workflows programmatically via API, with concurrency limits based on your plan. Perfect for integrating ComfyUI into your applications, automating batch processing, or building production pipelines.',
+    en: 'Run Comfy workflows programmatically via API, with concurrency limits based on your plan. Perfect for integrating ComfyUI into your applications, automating batch processing, or building production pipelines. For higher rate limits, reach out to <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>.',
     'zh-CN':
-      '通过 API 以编程方式运行 Comfy 工作流，并发上限由您的计划决定。非常适合将 ComfyUI 集成到您的应用、自动化批量处理或构建生产级流水线。'
+      '通过 API 以编程方式运行 Comfy 工作流，并发上限由您的计划决定。非常适合将 ComfyUI 集成到您的应用、自动化批量处理或构建生产级流水线。如需更高的速率限制，请联系 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>。'
   },
   'pricing.included.feature12.title': {
     en: 'Parallel job execution',
