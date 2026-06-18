@@ -1,6 +1,6 @@
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
-const legacyDefaultGraph: ComfyWorkflowJSON = {
+const testDefaultGraph: ComfyWorkflowJSON = {
   last_node_id: 9,
   last_link_id: 9,
   nodes: [
@@ -149,7 +149,7 @@ const legacyDefaultGraph: ComfyWorkflowJSON = {
   version: 0.4
 }
 
-const newDefaultGraph: ComfyWorkflowJSON = {
+const prodDefaultGraph: ComfyWorkflowJSON = {
   last_node_id: 71,
   last_link_id: 82,
   nodes: [
@@ -558,8 +558,8 @@ const newDefaultGraph: ComfyWorkflowJSON = {
 
 export const defaultGraph: ComfyWorkflowJSON =
   import.meta.env.VITE_USE_LEGACY_DEFAULT_GRAPH === 'true'
-    ? legacyDefaultGraph
-    : newDefaultGraph
+    ? testDefaultGraph
+    : prodDefaultGraph
 
 export const defaultGraphJSON = JSON.stringify(defaultGraph)
 
