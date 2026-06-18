@@ -7,6 +7,9 @@ import { useDowngradeToPersonal } from './useDowngradeToPersonal'
 const mockMembers = vi.hoisted(() => ({
   value: [] as WorkspaceMember[]
 }))
+const mockUserEmail = vi.hoisted(() => ({
+  value: null as string | null
+}))
 const mockRemoveMember = vi.hoisted(() => vi.fn())
 const mockFetchMembers = vi.hoisted(() => vi.fn())
 const mockSubscribe = vi.hoisted(() => vi.fn())
@@ -39,6 +42,12 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     subscribe: mockSubscribe,
     previewSubscribe: mockPreviewSubscribe
+  })
+}))
+
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    userEmail: mockUserEmail
   })
 }))
 
@@ -82,6 +91,7 @@ describe('useDowngradeToPersonal', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockMembers.value = []
+    mockUserEmail.value = null
     mockPreviewSubscribe.mockResolvedValue({ allowed: true })
     mockSubscribe.mockResolvedValue({
       billing_op_id: 'op-1',
@@ -118,6 +128,32 @@ describe('useDowngradeToPersonal', () => {
       const { removableMembers, hasOtherMembers } = useDowngradeToPersonal()
       expect(removableMembers.value).toEqual([])
       expect(hasOtherMembers.value).toBe(false)
+    })
+
+    it('falls back to protecting owners and the current user when the flag is absent', () => {
+      mockUserEmail.value = 'me@example.com'
+      mockMembers.value = [
+        createMember({
+          id: 'owner',
+          role: 'owner',
+          email: 'owner@example.com',
+          isOriginalOwner: false
+        }),
+        createMember({
+          id: 'me',
+          role: 'member',
+          email: 'me@example.com',
+          isOriginalOwner: false
+        }),
+        createMember({
+          id: 'plain',
+          role: 'member',
+          email: 'plain@example.com',
+          isOriginalOwner: false
+        })
+      ]
+      const { removableMembers } = useDowngradeToPersonal()
+      expect(removableMembers.value.map((m) => m.id)).toEqual(['plain'])
     })
   })
 

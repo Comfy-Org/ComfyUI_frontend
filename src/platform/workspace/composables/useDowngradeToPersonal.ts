@@ -1,6 +1,7 @@
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
@@ -18,10 +19,16 @@ export function useDowngradeToPersonal() {
   const { members } = storeToRefs(workspaceStore)
   const { subscribe, previewSubscribe } = useBillingContext()
   const billingOperationStore = useBillingOperationStore()
+  const { userEmail } = useCurrentUser()
 
-  const removableMembers = computed(() =>
-    members.value.filter((member) => !member.isOriginalOwner)
-  )
+  const removableMembers = computed(() => {
+    const hasFlag = members.value.some((m) => m.isOriginalOwner)
+    if (hasFlag) return members.value.filter((m) => !m.isOriginalOwner)
+    const email = userEmail.value?.toLowerCase() ?? null
+    return members.value.filter(
+      (m) => m.role !== 'owner' && m.email.toLowerCase() !== email
+    )
+  })
 
   const hasOtherMembers = computed(() => removableMembers.value.length > 0)
 
@@ -56,7 +63,7 @@ export function useDowngradeToPersonal() {
       if (!paymentTab) {
         throw new Error(t('subscription.downgrade.paymentPageBlocked'))
       }
-      billingOperationStore.startOperation(
+      void billingOperationStore.startOperation(
         response.billing_op_id,
         'subscription'
       )
@@ -64,7 +71,7 @@ export function useDowngradeToPersonal() {
     }
 
     if (response.status === 'pending_payment') {
-      billingOperationStore.startOperation(
+      void billingOperationStore.startOperation(
         response.billing_op_id,
         'subscription'
       )
