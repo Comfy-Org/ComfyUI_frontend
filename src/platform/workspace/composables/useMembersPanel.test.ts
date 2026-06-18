@@ -259,6 +259,7 @@ const {
   mockPendingInvites,
   mockOriginalOwnerId,
   mockIsInPersonalWorkspace,
+  mockIsWorkspaceSubscribed,
   mockTotalMemberSlots,
   mockIsInviteLimitReached,
   mockPermissions,
@@ -274,6 +275,7 @@ const {
     mockPendingInvites: ref<PendingInvite[]>([]),
     mockOriginalOwnerId: ref<string | null>(null),
     mockIsInPersonalWorkspace: ref(false),
+    mockIsWorkspaceSubscribed: ref(true),
     mockTotalMemberSlots: ref(0),
     mockIsInviteLimitReached: ref(false),
     mockPermissions: ref({
@@ -300,7 +302,10 @@ const {
       workspaceMenuDisabledTooltip: null as string | null
     }),
     mockIsActiveSubscription: ref(true),
-    mockSubscription: ref<{ tier: string } | null>({ tier: 'PRO' })
+    mockSubscription: ref<{ tier: string; isCancelled?: boolean } | null>({
+      tier: 'PRO',
+      isCancelled: false
+    })
   }
 })
 
@@ -321,6 +326,7 @@ vi.mock('pinia', async (importOriginal) => {
 })
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  MAX_WORKSPACE_MEMBERS: 30,
   useTeamWorkspaceStore: () => ({
     members: mockMembers,
     pendingInvites: mockPendingInvites,
@@ -328,6 +334,7 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
     totalMemberSlots: mockTotalMemberSlots,
     isInviteLimitReached: mockIsInviteLimitReached,
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
+    isWorkspaceSubscribed: mockIsWorkspaceSubscribed,
     resendInvite: mockResendInvite
   })
 }))
@@ -381,10 +388,11 @@ describe('useMembersPanel', () => {
     mockPendingInvites.value = []
     mockOriginalOwnerId.value = null
     mockIsInPersonalWorkspace.value = false
+    mockIsWorkspaceSubscribed.value = true
     mockTotalMemberSlots.value = 0
     mockIsInviteLimitReached.value = false
     mockIsActiveSubscription.value = true
-    mockSubscription.value = { tier: 'PRO' }
+    mockSubscription.value = { tier: 'PRO', isCancelled: false }
   })
 
   // Lazy import so mocks are in place
@@ -393,23 +401,28 @@ describe('useMembersPanel', () => {
     return useMembersPanel()
   }
 
-  describe('personal workspace plan overlay', () => {
-    it('keeps isOnTeamPlan true with a multi-seat subscription', async () => {
-      mockIsInPersonalWorkspace.value = true
+  describe('team plan detection', () => {
+    it('is on the team plan for a subscribed team workspace', async () => {
       const panel = await setup()
       expect(panel.isOnTeamPlan.value).toBe(true)
     })
 
-    it('clamps maxSeats to 1 regardless of plan seats', async () => {
+    it('is off the team plan in a personal workspace', async () => {
       mockIsInPersonalWorkspace.value = true
       const panel = await setup()
-      expect(panel.maxSeats.value).toBe(1)
+      expect(panel.isOnTeamPlan.value).toBe(false)
     })
 
-    it('passes plan seats through for team workspaces', async () => {
-      mockSubscription.value = { tier: 'CREATOR' }
+    it('is off the team plan when the team workspace is not subscribed', async () => {
+      mockIsWorkspaceSubscribed.value = false
       const panel = await setup()
-      expect(panel.maxSeats.value).toBe(5)
+      expect(panel.isOnTeamPlan.value).toBe(false)
+    })
+
+    it('caps members at the flat team maximum regardless of tier', async () => {
+      mockSubscription.value = { tier: 'CREATOR', isCancelled: false }
+      const panel = await setup()
+      expect(panel.maxSeats.value).toBe(30)
     })
   })
 
@@ -621,7 +634,9 @@ describe('useMembersPanel', () => {
 
   describe('single-member visibility gating', () => {
     it('hides search and view tabs when the owner is alone', async () => {
-      mockMembers.value = [createMember()]
+      mockMembers.value = [
+        createMember({ role: 'owner', email: 'owner@example.com' })
+      ]
       const panel = await setup()
       expect(panel.showSearch.value).toBe(false)
       expect(panel.showViewTabs.value).toBe(false)
@@ -635,19 +650,29 @@ describe('useMembersPanel', () => {
     })
 
     it('shows view tabs for a lone owner with pending invites', async () => {
-      mockMembers.value = [createMember()]
+      mockMembers.value = [
+        createMember({ role: 'owner', email: 'owner@example.com' })
+      ]
       mockPendingInvites.value = [createInvite()]
       const panel = await setup()
       expect(panel.showViewTabs.value).toBe(true)
       expect(panel.showSearch.value).toBe(false)
     })
 
-    it('hides search and view tabs off the team plan', async () => {
-      mockSubscription.value = { tier: 'STANDARD' }
+    it('shows search for >1 member regardless of tier', async () => {
+      mockSubscription.value = { tier: 'STANDARD', isCancelled: false }
       mockMembers.value = [createMember(), createMember({ id: '2' })]
       const panel = await setup()
-      expect(panel.showSearch.value).toBe(false)
+      expect(panel.showSearch.value).toBe(true)
+      expect(panel.showViewTabs.value).toBe(true)
+    })
+
+    it('hides view tabs when the team workspace is not subscribed', async () => {
+      mockIsWorkspaceSubscribed.value = false
+      mockMembers.value = [createMember(), createMember({ id: '2' })]
+      const panel = await setup()
       expect(panel.showViewTabs.value).toBe(false)
+      expect(panel.showSearch.value).toBe(true)
     })
   })
 
@@ -660,15 +685,15 @@ describe('useMembersPanel', () => {
     })
 
     it('opens the upsell dialog when not on a team plan', async () => {
-      mockSubscription.value = { tier: 'STANDARD' }
+      mockIsWorkspaceSubscribed.value = false
       const panel = await setup()
       panel.handleInviteMember()
       expect(mockShowInviteMemberUpsellDialog).toHaveBeenCalled()
       expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
     })
 
-    it('disables the invite button when plan seats are filled', async () => {
-      mockTotalMemberSlots.value = 20
+    it('disables the invite button at the member cap (30)', async () => {
+      mockTotalMemberSlots.value = 30
       const panel = await setup()
       expect(panel.isInviteDisabled.value).toBe(true)
       expect(panel.inviteTooltip.value).toBe(
@@ -678,8 +703,8 @@ describe('useMembersPanel', () => {
       expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
     })
 
-    it('keeps the invite button enabled below the plan seat count', async () => {
-      mockTotalMemberSlots.value = 19
+    it('keeps the invite button enabled below the member cap', async () => {
+      mockTotalMemberSlots.value = 29
       const panel = await setup()
       expect(panel.isInviteDisabled.value).toBe(false)
       expect(panel.inviteTooltip.value).toBeNull()
@@ -691,13 +716,18 @@ describe('useMembersPanel', () => {
       expect(panel.isInviteDisabled.value).toBe(true)
     })
 
-    it('keeps the invite clickable for upsell when off team plan at the limit', async () => {
-      mockSubscription.value = { tier: 'STANDARD' }
-      mockIsInviteLimitReached.value = true
+    it('disables the invite button when not on a team plan', async () => {
+      mockIsWorkspaceSubscribed.value = false
       const panel = await setup()
-      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.isInviteDisabled.value).toBe(true)
+    })
+
+    it('disables the invite button when the team plan is cancelled', async () => {
+      mockSubscription.value = { tier: 'PRO', isCancelled: true }
+      const panel = await setup()
+      expect(panel.isInviteDisabled.value).toBe(true)
       panel.handleInviteMember()
-      expect(mockShowInviteMemberUpsellDialog).toHaveBeenCalled()
+      expect(mockShowInviteMemberDialog).not.toHaveBeenCalled()
     })
 
     it('shows a disabled invite button in a personal workspace', async () => {

@@ -13,7 +13,10 @@ import type {
   PendingInvite,
   WorkspaceMember
 } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  MAX_WORKSPACE_MEMBERS,
+  useTeamWorkspaceStore
+} from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 
 type ActiveView = 'active' | 'pending'
@@ -98,19 +101,16 @@ export function useMembersPanel() {
   const { resendInvite } = workspaceStore
   const { permissions, uiConfig } = useWorkspaceUI()
   const { showSubscriptionDialog } = useBillingContext()
-  const { maxSeats: planMaxSeats, isOnTeamPlan } = useTeamPlan()
+  const { isOnTeamPlan, isCancelled } = useTeamPlan()
 
-  const maxSeats = computed(() =>
-    isPersonalWorkspace.value ? 1 : planMaxSeats.value
-  )
+  // The team plan caps members at a flat MAX_WORKSPACE_MEMBERS, independent of
+  // the subscription tier.
+  const maxSeats = computed(() => MAX_WORKSPACE_MEMBERS)
 
   const hasMultipleMembers = computed(() => members.value.length > 1)
 
   const showSearch = computed(
-    () =>
-      uiConfig.value.showSearch &&
-      isOnTeamPlan.value &&
-      hasMultipleMembers.value
+    () => uiConfig.value.showSearch && hasMultipleMembers.value
   )
 
   const showViewTabs = computed(
@@ -128,10 +128,10 @@ export function useMembersPanel() {
     () => isInviteLimitReached.value || totalMemberSlots.value >= maxSeats.value
   )
 
+  // Invite is allowed only on an active (non-cancelled) team plan that is under
+  // the member cap.
   const isInviteDisabled = computed(
-    () =>
-      isPersonalWorkspace.value ||
-      (isOnTeamPlan.value && isMemberLimitReached.value)
+    () => !isOnTeamPlan.value || isCancelled.value || isMemberLimitReached.value
   )
 
   const inviteTooltip = computed(() => {
@@ -145,7 +145,7 @@ export function useMembersPanel() {
       void showInviteMemberUpsellDialog()
       return
     }
-    if (isMemberLimitReached.value) return
+    if (isCancelled.value || isMemberLimitReached.value) return
     void showInviteMemberDialog()
   }
 

@@ -1,55 +1,30 @@
 <template>
-  <Button
-    v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-    variant="muted-textonly"
-    size="icon"
-    :aria-label="$t('g.moreOptions')"
-    @click="menu?.toggle($event)"
-  >
-    <i class="pi pi-ellipsis-h" />
-  </Button>
-  <Menu ref="menu" :model="menuItems" :popup="true">
-    <template #item="{ item }">
-      <button
-        v-tooltip="
-          item.disabled && deleteTooltip
-            ? { value: deleteTooltip, showDelay: 0 }
-            : null
-        "
-        type="button"
-        :disabled="!!item.disabled"
-        :class="
-          cn(
-            'flex w-full cursor-pointer items-center gap-2 border-none bg-transparent px-3 py-2',
-            item.class,
-            item.disabled && 'pointer-events-auto cursor-not-allowed'
-          )
-        "
-        @click="
-          item.command?.({
-            originalEvent: $event,
-            item
-          })
-        "
+  <DropdownMenu :entries="menuItems">
+    <template #button>
+      <Button
+        v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+        variant="muted-textonly"
+        size="icon-lg"
+        :aria-label="$t('g.moreOptions')"
       >
-        <i :class="item.icon" />
-        <span>{{ item.label }}</span>
-      </button>
+        <i class="pi pi-ellipsis-h" />
+      </Button>
     </template>
-  </Menu>
+  </DropdownMenu>
 </template>
 
 <script setup lang="ts">
+import type { MenuItem } from 'primevue/menuitem'
 import { storeToRefs } from 'pinia'
-import Menu from 'primevue/menu'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const {
@@ -57,13 +32,25 @@ const {
   showDeleteWorkspaceDialog,
   showEditWorkspaceDialog
 } = useDialogService()
-const { isWorkspaceSubscribed } = storeToRefs(useTeamWorkspaceStore())
+const { isWorkspaceSubscribed, members } = storeToRefs(useTeamWorkspaceStore())
 const { uiConfig } = useWorkspaceUI()
+const { userEmail } = useCurrentUser()
 
-const menu = ref<InstanceType<typeof Menu> | null>(null)
+// The creator (earliest-joined member) can't leave their own workspace.
+const isCurrentUserCreator = computed(() => {
+  const email = userEmail.value?.toLowerCase()
+  if (!email || members.value.length === 0) return false
+  const currentMember = members.value.find(
+    (member) => member.email.toLowerCase() === email
+  )
+  return (
+    !!currentMember &&
+    members.value.every((member) => currentMember.joinDate <= member.joinDate)
+  )
+})
 
-// Disable delete when workspace has an active subscription (to prevent accidental deletion)
-// Use workspace's own subscription status, not the global isActiveSubscription
+// Disable delete when the workspace has an active subscription (prevents
+// accidental deletion); uses the workspace's own status, not the global one.
 const isDeleteDisabled = computed(
   () =>
     uiConfig.value.workspaceMenuAction === 'delete' &&
@@ -71,15 +58,14 @@ const isDeleteDisabled = computed(
 )
 
 const deleteTooltip = computed(() => {
-  if (!isDeleteDisabled.value) return null
+  if (!isDeleteDisabled.value) return undefined
   const tooltipKey = uiConfig.value.workspaceMenuDisabledTooltip
-  return tooltipKey ? t(tooltipKey) : null
+  return tooltipKey ? t(tooltipKey) : undefined
 })
 
-const menuItems = computed(() => {
-  const items = []
+const menuItems = computed<MenuItem[]>(() => {
+  const items: MenuItem[] = []
 
-  // Add edit option for owners
   if (uiConfig.value.showEditWorkspaceMenuItem) {
     items.push({
       label: t('workspacePanel.menu.editWorkspace'),
@@ -93,20 +79,32 @@ const menuItems = computed(() => {
     items.push({
       label: t('workspacePanel.menu.deleteWorkspace'),
       icon: 'pi pi-trash',
-      class: isDeleteDisabled.value
-        ? 'text-danger/50 cursor-not-allowed'
-        : 'text-danger',
+      class: isDeleteDisabled.value ? 'text-danger/50' : 'text-danger',
       disabled: isDeleteDisabled.value,
+      tooltip: deleteTooltip.value,
       command: isDeleteDisabled.value
         ? undefined
         : () => showDeleteWorkspaceDialog()
     })
-  } else if (action === 'leave') {
-    items.push({
-      label: t('workspacePanel.menu.leaveWorkspace'),
-      icon: 'pi pi-sign-out',
-      command: () => showLeaveWorkspaceDialog()
-    })
+  }
+
+  // Members and non-creator owners can leave; the creator sees it disabled.
+  if (action === 'leave' || action === 'delete') {
+    items.push(
+      isCurrentUserCreator.value
+        ? {
+            label: t('workspacePanel.menu.leaveWorkspace'),
+            icon: 'pi pi-sign-out',
+            class: 'opacity-50',
+            disabled: true,
+            tooltip: t('workspacePanel.menu.creatorCannotLeave')
+          }
+        : {
+            label: t('workspacePanel.menu.leaveWorkspace'),
+            icon: 'pi pi-sign-out',
+            command: () => showLeaveWorkspaceDialog()
+          }
+    )
   }
 
   return items

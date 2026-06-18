@@ -1,31 +1,40 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { mockIsActiveSubscription, mockSubscription, mockGetMaxSeats } =
-  vi.hoisted(() => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-    const { ref } = require('vue') as typeof import('vue')
+const {
+  mockIsInPersonalWorkspace,
+  mockIsWorkspaceSubscribed,
+  mockSubscription
+} = vi.hoisted(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+  const { ref } = require('vue') as typeof import('vue')
 
-    return {
-      mockIsActiveSubscription: ref(true),
-      mockSubscription: ref<{ tier: string } | null>({ tier: 'PRO' }),
-      mockGetMaxSeats: vi.fn()
-    }
-  })
+  return {
+    mockIsInPersonalWorkspace: ref(false),
+    mockIsWorkspaceSubscribed: ref(true),
+    mockSubscription: ref<{ isCancelled?: boolean } | null>({
+      isCancelled: false
+    })
+  }
+})
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    isActiveSubscription: mockIsActiveSubscription,
-    subscription: mockSubscription,
-    getMaxSeats: mockGetMaxSeats
+vi.mock('pinia', async (importOriginal) => {
+  const actual = await importOriginal()
+  return {
+    ...(actual as object),
+    storeToRefs: (store: Record<string, unknown>) => store
+  }
+})
+
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  useTeamWorkspaceStore: () => ({
+    isInPersonalWorkspace: mockIsInPersonalWorkspace,
+    isWorkspaceSubscribed: mockIsWorkspaceSubscribed
   })
 }))
 
-const SEATS_BY_KEY: Record<string, number> = {
-  free: 1,
-  standard: 1,
-  creator: 5,
-  pro: 20
-}
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({ subscription: mockSubscription })
+}))
 
 async function setup() {
   const { useTeamPlan } = await import('./useTeamPlan')
@@ -35,54 +44,38 @@ async function setup() {
 describe('useTeamPlan', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockIsActiveSubscription.value = true
-    mockSubscription.value = { tier: 'PRO' }
-    mockGetMaxSeats.mockImplementation(
-      (tierKey: string) => SEATS_BY_KEY[tierKey] ?? 1
-    )
+    mockIsInPersonalWorkspace.value = false
+    mockIsWorkspaceSubscribed.value = true
+    mockSubscription.value = { isCancelled: false }
   })
 
-  it('is off team plan when no active subscription', async () => {
-    mockIsActiveSubscription.value = false
-    const plan = await setup()
-    expect(plan.isOnTeamPlan.value).toBe(false)
-  })
-
-  it('is off team plan for single-seat standard tier', async () => {
-    mockSubscription.value = { tier: 'STANDARD' }
-    const plan = await setup()
-    expect(plan.isOnTeamPlan.value).toBe(false)
-    expect(mockGetMaxSeats).toHaveBeenCalledWith('standard')
-  })
-
-  it('is on team plan for multi-seat tiers with active subscription', async () => {
-    mockSubscription.value = { tier: 'CREATOR' }
+  it('is on the team plan for a subscribed team workspace', async () => {
     const plan = await setup()
     expect(plan.isOnTeamPlan.value).toBe(true)
-    expect(plan.maxSeats.value).toBe(5)
-    expect(mockGetMaxSeats).toHaveBeenCalledWith('creator')
   })
 
-  it('falls back to one seat without a subscription tier', async () => {
+  it('is off the team plan in a personal workspace', async () => {
+    mockIsInPersonalWorkspace.value = true
+    const plan = await setup()
+    expect(plan.isOnTeamPlan.value).toBe(false)
+  })
+
+  it('is off the team plan when the team workspace is not subscribed', async () => {
+    mockIsWorkspaceSubscribed.value = false
+    const plan = await setup()
+    expect(plan.isOnTeamPlan.value).toBe(false)
+  })
+
+  it('reflects the cancelled state of the subscription', async () => {
+    const plan = await setup()
+    expect(plan.isCancelled.value).toBe(false)
+    mockSubscription.value = { isCancelled: true }
+    expect(plan.isCancelled.value).toBe(true)
+  })
+
+  it('treats a missing subscription as not cancelled', async () => {
     mockSubscription.value = null
     const plan = await setup()
-    expect(plan.maxSeats.value).toBe(1)
-    expect(plan.isOnTeamPlan.value).toBe(false)
-    expect(mockGetMaxSeats).not.toHaveBeenCalled()
-  })
-
-  it('falls back to one seat for tiers missing from TIER_TO_KEY', async () => {
-    mockSubscription.value = { tier: 'ENTERPRISE' }
-    const plan = await setup()
-    expect(plan.maxSeats.value).toBe(1)
-    expect(plan.isOnTeamPlan.value).toBe(false)
-    expect(mockGetMaxSeats).not.toHaveBeenCalled()
-  })
-
-  it('returns tier-mapped max seats', async () => {
-    mockSubscription.value = { tier: 'PRO' }
-    const plan = await setup()
-    expect(plan.maxSeats.value).toBe(20)
-    expect(mockGetMaxSeats).toHaveBeenCalledWith('pro')
+    expect(plan.isCancelled.value).toBe(false)
   })
 })
