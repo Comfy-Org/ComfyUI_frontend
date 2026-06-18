@@ -38,7 +38,10 @@ vi.mock('@/scripts/api', () => ({
   api: {
     fetchApi: vi.fn(),
     addEventListener: vi.fn(),
-    apiURL: vi.fn((path: string) => path)
+    apiURL: vi.fn((path: string) => path),
+    getServerFeature: vi.fn(
+      (_name: string, defaultValue?: unknown) => defaultValue
+    )
   }
 }))
 
@@ -277,6 +280,45 @@ describe('useUploadModelWizard', () => {
       })
     )
     expect(result?.modelType).toBe('checkpoints')
+  })
+
+  it('writes the namespaced model_type: tag when the backend supports it', async () => {
+    const { assetService } =
+      await import('@/platform/assets/services/assetService')
+    const { api } = await import('@/scripts/api')
+    vi.mocked(assetService.uploadAssetAsync).mockResolvedValue({
+      type: 'sync',
+      asset: {
+        id: 'asset-1',
+        name: 'model.safetensors',
+        tags: ['models', 'model_type:checkpoints']
+      }
+    })
+    vi.mocked(api.getServerFeature).mockImplementation((name, defaultValue) =>
+      name === 'supports_model_type_tags' ? true : defaultValue
+    )
+
+    try {
+      const wizard = setupUploadModelWizard(modelTypes, {
+        requiredModelType: 'checkpoints'
+      })
+      wizard.wizardData.value.url = 'https://civitai.com/models/12345'
+
+      await wizard.uploadModel()
+
+      expect(assetService.uploadAssetAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tags: ['models', 'model_type:checkpoints'],
+          user_metadata: expect.objectContaining({
+            model_type: 'checkpoints'
+          })
+        })
+      )
+    } finally {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_name, defaultValue) => defaultValue
+      )
+    }
   })
 
   it('returns the synced asset filename for sync imports', async () => {
