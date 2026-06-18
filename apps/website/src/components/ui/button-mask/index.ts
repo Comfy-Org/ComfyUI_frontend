@@ -12,8 +12,7 @@ export const buttonMaskVariants = cva({
     },
     size: {
       default: 'h-10 px-6 py-2.5 has-[>svg]:px-3',
-      lg: 'h-14 px-8 py-4 has-[>svg]:px-5',
-      icon: 'size-9'
+      lg: 'h-14 px-8 py-4 has-[>svg]:px-5'
     },
     iconPosition: {
       right: '',
@@ -42,8 +41,7 @@ export const buttonMaskBadgeVariants = cva({
     },
     size: {
       default: 'size-8',
-      lg: 'size-12',
-      icon: 'size-7'
+      lg: 'size-12'
     },
     iconPosition: {
       right: '',
@@ -80,7 +78,7 @@ export const buttonMaskBadgeVariants = cva({
 })
 
 export const BUTTON_MASK_LABEL_CLASS = [
-  'relative inline-block align-baseline',
+  'ppformula-text-center relative inline-block align-baseline',
   '[will-change:mask-size,-webkit-mask-size]',
   '[mask-image:linear-gradient(black,black)] [-webkit-mask-image:linear-gradient(black,black)]',
   'mask-no-repeat [-webkit-mask-repeat:no-repeat]',

@@ -34,7 +34,13 @@ const props = withDefaults(defineProps<Props>(), {
       cn(buttonPillVariants({ variant, size, iconPosition }), props.class)
     "
   >
-    <span :class="cn('relative leading-none transition-all duration-500')">
+    <span
+      :class="
+        cn(
+          'ppformula-text-center relative leading-none transition-all duration-500'
+        )
+      "
+    >
       <slot />
     </span>
     <span

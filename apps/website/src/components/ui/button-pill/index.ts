@@ -10,8 +10,7 @@ export const buttonPillVariants = cva({
     },
     size: {
       default: 'h-10 px-6 py-2.5 has-[>svg]:px-3',
-      lg: 'h-14 px-8 py-4 has-[>svg]:px-5',
-      icon: 'size-9'
+      lg: 'h-14 px-8 py-4 has-[>svg]:px-5'
     },
     iconPosition: {
       right: '',
@@ -60,8 +59,7 @@ export const buttonPillBadgeVariants = cva({
     },
     size: {
       default: 'size-8',
-      lg: 'size-12',
-      icon: 'size-7'
+      lg: 'size-12'
     },
     iconPosition: {
       right: '',
