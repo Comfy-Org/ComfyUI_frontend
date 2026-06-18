@@ -51,7 +51,7 @@ function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
     email: member.email,
     joinDate: new Date(member.joined_at),
     role: member.role,
-    isOriginalOwner: member.is_original_owner
+    isOriginalOwner: member.is_original_owner ?? false
   }
 }
 
@@ -163,9 +163,14 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     () => activeWorkspace.value?.pendingInvites ?? []
   )
 
-  const originalOwnerId = computed<string | null>(
-    () => members.value.find((m) => m.isOriginalOwner)?.id ?? null
-  )
+  const originalOwnerId = computed<string | null>(() => {
+    if (members.value.length === 0) return null
+    const flagged = members.value.find((m) => m.isOriginalOwner)
+    if (flagged) return flagged.id
+    return members.value.reduce((earliest, m) =>
+      m.joinDate < earliest.joinDate ? m : earliest
+    ).id
+  })
 
   const totalMemberSlots = computed(
     () => members.value.length + pendingInvites.value.length

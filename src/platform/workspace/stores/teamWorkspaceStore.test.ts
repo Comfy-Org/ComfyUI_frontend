@@ -834,6 +834,41 @@ describe('useTeamWorkspaceStore', () => {
 
       expect(store.originalOwnerId).toBe('creator')
     })
+
+    it('originalOwnerId falls back to the earliest-joined member when no flag is present', async () => {
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members: [
+          {
+            id: 'later-joiner',
+            name: 'Later Joiner',
+            email: 'later@test.com',
+            joined_at: '2024-03-01T00:00:00Z',
+            role: 'owner'
+          },
+          {
+            id: 'founder',
+            name: 'Founder',
+            email: 'founder@test.com',
+            joined_at: '2024-01-01T00:00:00Z',
+            role: 'owner'
+          }
+        ],
+        pagination: { offset: 0, limit: 50, total: 2 }
+      })
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      await store.fetchMembers()
+
+      expect(store.originalOwnerId).toBe('founder')
+
+      await expect(
+        store.changeMemberRole('founder', 'member')
+      ).rejects.toThrow()
+      expect(mockWorkspaceApi.updateMemberRole).not.toHaveBeenCalled()
+    })
   })
 
   describe('isCurrentUserOriginalOwner', () => {
