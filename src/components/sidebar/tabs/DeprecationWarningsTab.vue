@@ -6,11 +6,11 @@
     <template #tool-buttons>
       <Button
         v-if="store.warnings.length > 0"
-        variant="textonly"
-        size="sm"
+        variant="muted-textonly"
+        size="md"
+        class="text-sm"
         @click="clearWarnings"
       >
-        <i class="icon-[lucide--trash-2] size-4" />
         <span>{{ t('deprecationWarnings.clearAll') }}</span>
       </Button>
     </template>
@@ -30,7 +30,7 @@
             v-model="selectedExtensions"
             :options="extensionOptions"
             :label="t('deprecationWarnings.filterByExtension')"
-            size="md"
+            size="lg"
             show-search-box
             show-clear-button
             class="w-fit"
@@ -50,16 +50,47 @@
           <li
             v-for="warning in filteredWarnings"
             :key="warning.key"
-            class="flex flex-col gap-0.5 rounded-sm border border-interface-stroke p-4"
+            class="relative flex flex-col gap-2 rounded-md border border-interface-stroke p-4"
           >
-            <div class="flex items-start justify-between gap-2">
+            <div class="absolute top-2 right-2">
+              <Popover :show-arrow="false">
+                <template #button>
+                  <Button
+                    variant="muted-textonly"
+                    size="md"
+                    :aria-label="t('deprecationWarnings.moreOptions')"
+                  >
+                    <i class="icon-[lucide--more-horizontal] size-4" />
+                  </Button>
+                </template>
+                <template #default="{ close }">
+                  <div class="flex min-w-32 flex-col items-stretch">
+                    <Button
+                      variant="textonly"
+                      size="md"
+                      class="w-full justify-start text-sm font-light"
+                      @click="
+                        () => {
+                          store.remove(warning.key)
+                          close()
+                        }
+                      "
+                    >
+                      <i class="icon-[lucide--trash-2] size-4" />
+                      <span>{{ t('deprecationWarnings.clear') }}</span>
+                    </Button>
+                  </div>
+                </template>
+              </Popover>
+            </div>
+            <div class="flex items-start justify-between gap-2 pr-8">
               <div
-                class="min-w-0 flex-1 text-base wrap-break-word text-text-primary"
+                class="min-w-0 flex-1 text-sm wrap-break-word text-text-primary"
               >
                 {{ warning.message }}
               </div>
               <div
-                class="flex shrink-0 items-center gap-1.5 text-xs text-text-secondary"
+                class="flex shrink-0 items-center gap-2 text-sm text-text-secondary"
               >
                 <span
                   :title="new Date(warning.lastSeenAt).toLocaleString(locale)"
@@ -68,14 +99,15 @@
                     formatRelativeTime(t, Math.max(0, now - warning.lastSeenAt))
                   }}
                 </span>
-                <span
+                <Badge
                   v-if="warning.count > 1"
                   v-bind="occurrenceAttrs(warning.count)"
                   data-testid="deprecation-warning-badge"
-                  class="inline-flex min-w-5 items-center justify-center rounded-full bg-primary-background px-1.5 py-0.5 font-medium text-base-foreground"
-                >
-                  {{ formatBadgeCount(warning.count, 9) }}
-                </span>
+                  severity="contrast"
+                  variant="circle"
+                  :label="formatBadgeCount(warning.count, 9)"
+                  class="size-auto min-w-5 px-1.5 py-0.5 text-xs font-medium"
+                />
               </div>
             </div>
             <div
@@ -91,29 +123,29 @@
             </div>
             <div
               v-if="warning.suggestion || warning.docsUrl"
-              class="my-1 flex flex-col gap-1 rounded-sm bg-node-component-surface px-2 py-1.5 text-sm"
+              class="my-1 flex flex-col gap-2 rounded-md bg-node-component-surface p-3 text-sm"
             >
-              <div
-                v-if="warning.suggestion"
-                class="flex flex-wrap gap-x-1 wrap-break-word"
-              >
-                <span class="font-medium text-text-primary">
-                  {{ t('deprecationWarnings.suggestionLabel') }}
-                </span>
-                <span class="text-text-secondary">{{
+              <div v-if="warning.suggestion" class="wrap-break-word">
+                <span class="font-medium text-text-primary">{{
+                  t('deprecationWarnings.suggestionLabel')
+                }}</span>
+                <span class="ml-1 text-text-secondary">{{
                   warning.suggestion
                 }}</span>
               </div>
-              <a
+              <Button
                 v-if="warning.docsUrl"
+                as="a"
+                variant="link"
+                size="sm"
                 :href="warning.docsUrl"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="inline-flex w-fit items-center gap-1 text-text-primary underline"
+                class="w-fit gap-2 px-0 text-sm underline"
               >
-                <i class="icon-[lucide--book-open] size-3.5" />
+                <i class="icon-[lucide--book-open] size-4" />
                 <span>{{ t('deprecationWarnings.learnMore') }}</span>
-              </a>
+              </Button>
             </div>
           </li>
         </ul>
@@ -127,7 +159,9 @@ import { useIntervalFn } from '@vueuse/core'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Badge from '@/components/common/Badge.vue'
 import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import Popover from '@/components/ui/Popover.vue'
 import SidebarTabTemplate from '@/components/sidebar/tabs/SidebarTabTemplate.vue'
 import Button from '@/components/ui/button/Button.vue'
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
