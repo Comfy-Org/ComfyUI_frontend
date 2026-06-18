@@ -741,6 +741,40 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.members[0].role).toBe('member')
     })
 
+    it('changeMemberRole refuses to change the creator and never calls the API', async () => {
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members: [
+          {
+            id: 'creator',
+            name: 'Creator',
+            email: 'creator@test.com',
+            joined_at: '2024-01-01T00:00:00Z',
+            role: 'owner'
+          },
+          {
+            id: 'user-2',
+            name: 'User Two',
+            email: 'two@test.com',
+            joined_at: '2024-01-02T00:00:00Z',
+            role: 'member'
+          }
+        ],
+        pagination: { offset: 0, limit: 50, total: 2 }
+      })
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      await store.fetchMembers()
+
+      await expect(
+        store.changeMemberRole('creator', 'member')
+      ).rejects.toThrow()
+      expect(mockWorkspaceApi.updateMemberRole).not.toHaveBeenCalled()
+      expect(store.members.find((m) => m.id === 'creator')?.role).toBe('owner')
+    })
+
     it('originalOwnerId is the earliest joined member', async () => {
       mockWorkspaceApi.listMembers.mockResolvedValue({
         members: [

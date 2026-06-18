@@ -534,6 +534,9 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     userId: string,
     role: WorkspaceMember['role']
   ): Promise<void> {
+    if (userId === originalOwnerId.value) {
+      throw new Error("Cannot change the workspace creator's role")
+    }
     await workspaceApi.updateMemberRole(userId, role)
     const current = activeWorkspace.value
     if (current) {
