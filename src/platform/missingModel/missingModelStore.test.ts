@@ -214,7 +214,7 @@ describe('missingModelStore', () => {
       store.setMissingModels([
         makeModelCandidate('model_a.safetensors', { nodeId: '1' })
       ])
-      store.urlInputs['test-key'] = 'https://example.com'
+      store.modelExpandState['test-key'] = true
       store.selectedLibraryModel['test-key'] = 'some-model'
       expect(store.missingModelCandidates).not.toBeNull()
 
@@ -222,7 +222,7 @@ describe('missingModelStore', () => {
 
       expect(store.missingModelCandidates).toBeNull()
       expect(store.hasMissingModels).toBe(false)
-      expect(store.urlInputs).toEqual({})
+      expect(store.modelExpandState).toEqual({})
       expect(store.selectedLibraryModel).toEqual({})
     })
   })
@@ -515,17 +515,19 @@ describe('missingModelStore', () => {
         makeModelCandidate('shared.safetensors', { nodeId: '65:80:5' }),
         makeModelCandidate('only-interior.safetensors', { nodeId: '65:70:64' })
       ])
-      store.urlInputs['shared.safetensors'] = 'https://example.com/shared'
-      store.urlInputs['only-interior.safetensors'] =
-        'https://example.com/interior'
+      store.selectedLibraryModel['shared.safetensors'] = 'shared-replacement'
+      store.selectedLibraryModel['only-interior.safetensors'] =
+        'interior-replacement'
 
       store.removeMissingModelsByPrefix('65:70:')
 
       // 'only-interior' fully removed → interaction state cleared.
       // 'shared' still referenced by 65:80:5 → interaction state preserved.
-      expect(store.urlInputs['only-interior.safetensors']).toBeUndefined()
-      expect(store.urlInputs['shared.safetensors']).toBe(
-        'https://example.com/shared'
+      expect(
+        store.selectedLibraryModel['only-interior.safetensors']
+      ).toBeUndefined()
+      expect(store.selectedLibraryModel['shared.safetensors']).toBe(
+        'shared-replacement'
       )
     })
   })

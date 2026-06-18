@@ -5,11 +5,5 @@
   "type": "module",
   "exports": {
     ".": "./src/comfyRegistryTypes.ts"
-  },
-  "nx": {
-    "tags": [
-      "scope:shared",
-      "type:types"
-    ]
   }
 }

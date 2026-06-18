@@ -1445,13 +1445,13 @@ describe('verifyAssetSupportedCandidates', () => {
       {
         id: '1',
         name: 'my_model.safetensors',
-        asset_hash: null,
+        hash: null,
         metadata: { filename: 'my_model.safetensors' }
       },
       {
         id: '2',
         name: 'other_model.safetensors',
-        asset_hash: null,
+        hash: null,
         metadata: { filename: 'other_model.safetensors' }
       }
     ])
@@ -1465,7 +1465,7 @@ describe('verifyAssetSupportedCandidates', () => {
     )
   })
 
-  it('should resolve isMissing=false when asset with matching asset_hash exists', async () => {
+  it('should resolve isMissing=false when asset with matching hash exists', async () => {
     const candidates = [
       makeAssetCandidate('model.safetensors', {
         hash: 'abc123',
@@ -1473,7 +1473,7 @@ describe('verifyAssetSupportedCandidates', () => {
       })
     ]
     mockGetAssets.mockReturnValue([
-      { id: '1', name: 'model.safetensors', asset_hash: 'sha256:abc123' }
+      { id: '1', name: 'model.safetensors', hash: 'sha256:abc123' }
     ])
 
     await verifyAssetSupportedCandidates(candidates)
@@ -1487,7 +1487,7 @@ describe('verifyAssetSupportedCandidates', () => {
       {
         id: '1',
         name: 'my_model.safetensors',
-        asset_hash: null,
+        hash: null,
         metadata: { filename: 'my_model.safetensors' }
       }
     ])
@@ -1578,7 +1578,7 @@ describe('verifyAssetSupportedCandidates', () => {
             {
               id: '1',
               name: 'checkpoint.safetensors',
-              asset_hash: null,
+              hash: null,
               metadata: { filename: 'checkpoint.safetensors' }
             }
           ]
@@ -1601,7 +1601,7 @@ describe('verifyAssetSupportedCandidates', () => {
       {
         id: '1',
         name: 'model.safetensors',
-        asset_hash: null,
+        hash: null,
         metadata: { filename: 'model.safetensors' }
       }
     ])
@@ -1617,7 +1617,7 @@ describe('verifyAssetSupportedCandidates', () => {
       {
         id: '1',
         name: 'my_model.safetensors',
-        asset_hash: null,
+        hash: null,
         metadata: { filename: 'subfolder/my_model.safetensors' }
       }
     ])

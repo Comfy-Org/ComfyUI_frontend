@@ -88,7 +88,7 @@ test.describe(
         {
           id: 'fe746-asset-1',
           name: WORKFLOW_WIDGET_VALUE,
-          asset_hash: 'blake3:fe7460000000000000000000000000000',
+          hash: 'blake3:fe7460000000000000000000000000000',
           file_path: 'input/sub/fe746_photo.png',
           size: 1024,
           mime_type: 'image/png',
@@ -119,7 +119,7 @@ test.describe(
         {
           id: 'fe746-asset-hash-only',
           name: WORKFLOW_WIDGET_VALUE,
-          asset_hash: 'blake3:fe7460000000000000000000000000001',
+          hash: 'blake3:fe7460000000000000000000000000001',
           file_path: null,
           display_name: null,
           size: 1024,
@@ -145,14 +145,14 @@ test.describe(
       comfyPage
     }) => {
       // Sanity: with the union still in place, an asset listing that does not
-      // include the widget value via any key (file_path / asset_hash / name)
+      // include the widget value via any key (file_path / hash / name)
       // must still report missing. Guards against accidental "match
       // everything" regressions when the early-return was removed.
       await mockAssetListing(comfyPage.page, [
         {
           id: 'fe746-unrelated-asset',
           name: 'unrelated.png',
-          asset_hash: 'blake3:fe7460000000000000000000000000002',
+          hash: 'blake3:fe7460000000000000000000000000002',
           file_path: 'input/unrelated.png',
           size: 1024,
           mime_type: 'image/png',

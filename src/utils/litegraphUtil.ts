@@ -1,6 +1,5 @@
 import _ from 'es-toolkit/compat'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import {
@@ -27,6 +26,9 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
+import { parseNodeLocatorId } from '@/types/nodeIdentification'
+import type { WidgetId } from '@/types/widgetId'
+import { widgetId } from '@/types/widgetId'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
@@ -337,6 +339,17 @@ export function resolveNodeWidget(
   widgetName?: string,
   graph: LGraph = app.rootGraph
 ): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
+  if (widgetName && typeof nodeId === 'string') {
+    const locator = parseNodeLocatorId(nodeId)
+    if (locator?.subgraphUuid) {
+      const host = graph.getNodeById(locator.localNodeId)
+      if (host?.isSubgraphNode()) {
+        const widget = host.widgets?.find((w) => w.name === widgetName)
+        return widget ? [host, widget] : []
+      }
+    }
+  }
+
   const node = graph.getNodeById(nodeId)
   if (!widgetName) return node ? [node] : []
   if (node) {
@@ -344,18 +357,20 @@ export function resolveNodeWidget(
     return widget ? [node, widget] : []
   }
 
-  for (const node of graph.nodes) {
-    if (!node.isSubgraphNode()) continue
-    const widget = node.widgets?.find(
-      (w) =>
-        isPromotedWidgetView(w) &&
-        w.sourceWidgetName === widgetName &&
-        w.sourceNodeId === nodeId
-    )
-    if (widget) return [node, widget]
-  }
-
   return []
+}
+
+export function getWidgetIdForNode(
+  node: LGraphNode,
+  widget: Pick<IBaseWidget, 'name' | 'widgetId'>,
+  duplicateIndex = 0
+): WidgetId | undefined {
+  if (widget.widgetId) return widget.widgetId
+  const graphId = node.graph?.rootGraph.id
+  if (!graphId || node.id === -1) return undefined
+  const name =
+    duplicateIndex > 0 ? `${widget.name}#${duplicateIndex}` : widget.name
+  return widgetId(graphId, node.id, name)
 }
 
 export function isLoad3dNode(node: LGraphNode) {

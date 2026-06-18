@@ -127,12 +127,13 @@ interface MediaVerificationOptions {
  * Verify media candidates against the unified asset listing.
  *
  * A candidate's `name` is the widget-value string (filename or annotated
- * path). It is matched against each asset's `file_path` (canonical key
- * per RFC BE-808 v2) and, for assets where `file_path` is null
- * (hash-only Core registrations, tagless Cloud rows, legacy data), the
- * legacy union of `asset_hash` / `name` / `subfolder + name`. Output
- * candidates match against generated assets; everything else against
- * input assets.
+ * path). It is matched against each asset's `file_path` (canonical key) and,
+ * for assets where `file_path` is null, the legacy union of `hash` / `name` /
+ * `subfolder + name`. Output candidates are matched against Cloud output assets
+ * or Core generated-history assets because Core resolves those annotations
+ * against output folders, not input files; everything else against input assets.
+ * Cloud accepts compact annotated media paths, so only Cloud verification
+ * normalizes compact suffixes.
  */
 export async function verifyMediaCandidates(
   candidates: MissingMediaCandidate[],
@@ -239,13 +240,17 @@ export function groupCandidatesByName(
     if (existing) {
       existing.referencingNodes.push({
         nodeId: c.nodeId,
+        nodeType: c.nodeType,
         widgetName: c.widgetName
       })
     } else {
       map.set(c.name, {
         name: c.name,
         mediaType: c.mediaType,
-        referencingNodes: [{ nodeId: c.nodeId, widgetName: c.widgetName }]
+        representative: c,
+        referencingNodes: [
+          { nodeId: c.nodeId, nodeType: c.nodeType, widgetName: c.widgetName }
+        ]
       })
     }
   }

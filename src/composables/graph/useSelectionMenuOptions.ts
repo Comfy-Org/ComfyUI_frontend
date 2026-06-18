@@ -1,8 +1,6 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useCommandStore } from '@/stores/commandStore'
-
 import { useFrameNodes } from './useFrameNodes'
 import { BadgeVariant } from './useMoreOptionsMenu'
 import type { MenuOption } from './useMoreOptionsMenu'
@@ -102,28 +100,13 @@ export function useSelectionMenuOptions() {
     return options
   }
 
-  const getMultipleNodesOptions = (): MenuOption[] => {
-    const convertToGroupNodes = () => {
-      const commandStore = useCommandStore()
-      void commandStore.execute(
-        'Comfy.GroupNode.ConvertSelectedNodesToGroupNode'
-      )
+  const getMultipleNodesOptions = (): MenuOption[] => [
+    {
+      label: t('g.frameNodes'),
+      icon: 'icon-[lucide--frame]',
+      action: frameNodes
     }
-
-    return [
-      {
-        label: t('contextMenu.Convert to Group Node'),
-        icon: 'icon-[lucide--group]',
-        action: convertToGroupNodes,
-        badge: BadgeVariant.DEPRECATED
-      },
-      {
-        label: t('g.frameNodes'),
-        icon: 'icon-[lucide--frame]',
-        action: frameNodes
-      }
-    ]
-  }
+  ]
 
   const getAlignmentOptions = (): MenuOption[] => [
     {

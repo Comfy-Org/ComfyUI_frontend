@@ -6,6 +6,7 @@ import type { Ref } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -220,17 +221,6 @@ export function useTemplateFiltering(
     })
   })
 
-  const getVramMetric = (template: TemplateInfo) => {
-    if (
-      typeof template.vram === 'number' &&
-      Number.isFinite(template.vram) &&
-      template.vram > 0
-    ) {
-      return template.vram
-    }
-    return Number.POSITIVE_INFINITY
-  }
-
   watch(
     filteredByRunsOn,
     (templates) => {
@@ -279,22 +269,6 @@ export function useTemplateFiltering(
           const dateB = new Date(b.date || '1970-01-01')
           return dateB.getTime() - dateA.getTime()
         })
-      case 'vram-low-to-high':
-        return templates.sort((a, b) => {
-          const vramA = getVramMetric(a)
-          const vramB = getVramMetric(b)
-
-          if (vramA === vramB) {
-            const nameA = a.title || a.name || ''
-            const nameB = b.title || b.name || ''
-            return nameA.localeCompare(nameB)
-          }
-
-          if (vramA === Number.POSITIVE_INFINITY) return 1
-          if (vramB === Number.POSITIVE_INFINITY) return -1
-
-          return vramA - vramB
-        })
       case 'model-size-low-to-high':
         return templates.sort((a, b) => {
           const sizeA =
@@ -334,6 +308,7 @@ export function useTemplateFiltering(
 
   const filteredCount = computed(() => filteredTemplates.value.length)
   const totalCount = computed(() => visibleTemplates.value.length)
+  useSearchQueryTracking('templates', searchQuery, filteredTemplates)
 
   // Template filter tracking (debounced to avoid excessive events)
   const debouncedTrackFilterChange = debounce(() => {

@@ -62,7 +62,7 @@ function makeAsset(name: string, assetHash: string | null = null): AssetItem {
   return {
     id: name,
     name,
-    asset_hash: assetHash,
+    hash: assetHash,
     mime_type: null,
     tags: ['input']
   }
@@ -316,7 +316,7 @@ describe('getAssetDetectionNames', () => {
       {
         id: 'a1',
         name: 'legacy.png',
-        asset_hash: 'blake3:abc',
+        hash: 'blake3:abc',
         file_path: 'input/sub/photo.png',
         mime_type: null,
         tags: ['input'],
@@ -326,8 +326,8 @@ describe('getAssetDetectionNames', () => {
     )
 
     // A widget value in any of these legacy shapes (or the new file_path
-    // shape) must match — BE-808 RFC §4 says file_path is a locator, not the
-    // identity, and workflow widget values do not auto-upgrade.
+    // shape) must match; file_path is a locator, not the identity, and
+    // workflow widget values do not auto-upgrade.
     expect(names).toEqual(
       expect.arrayContaining([
         'input/sub/photo.png',
@@ -343,7 +343,7 @@ describe('getAssetDetectionNames', () => {
       {
         id: 'a1',
         name: 'legacy.png',
-        asset_hash: 'blake3:abc',
+        hash: 'blake3:abc',
         file_path: null,
         mime_type: null,
         tags: ['input']
@@ -354,12 +354,12 @@ describe('getAssetDetectionNames', () => {
     expect(names).toEqual(expect.arrayContaining(['legacy.png', 'blake3:abc']))
   })
 
-  it('returns an empty list when file_path, asset_hash, and name are all absent', () => {
+  it('returns an empty list when file_path, hash, and name are all absent', () => {
     const names = getAssetDetectionNames(
       {
         id: 'a1',
         name: '',
-        asset_hash: null,
+        hash: null,
         file_path: null,
         mime_type: null,
         tags: []

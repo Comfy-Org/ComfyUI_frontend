@@ -98,15 +98,12 @@ interface FetchGeneratedAssetsOptions {
 /**
  * Derive comparison keys for matching workflow widget values against an asset.
  *
- * Per RFC BE-808 v2 (Asset Identity Semantics), `id` is the identity field;
- * `file_path` is a namespace-rooted locator/display string emitted on a
- * BEST EFFORT basis by BE-933 / BE-934. Workflow widget values predate the
- * `file_path` rollout and may still be bare filenames, hashes, or annotated
- * paths, so detection keys union `file_path`, `asset_hash`, `name`, and
- * `subfolder + name` variants — a widget value in any of those legacy
- * shapes must keep matching once an asset starts emitting `file_path`.
- * Both backends round-trip `name` through the BE-792 deprecation window,
- * so the legacy keys stay valid.
+ * `id` is the identity field; `file_path` is a namespace-rooted locator emitted
+ * on a best-effort basis. Workflow widget values predate the `file_path` rollout
+ * and may still be bare filenames, hashes, or annotated paths, so detection keys
+ * union `file_path`, `hash`, `name`, and `subfolder + name` variants — a widget
+ * value in any of those shapes must keep matching once an asset starts emitting
+ * `file_path`.
  */
 export function getAssetDetectionNames(
   asset: AssetItem,
@@ -114,8 +111,10 @@ export function getAssetDetectionNames(
 ): string[] {
   const names = new Set<string>()
 
+  // Treat file_path, hashes, and names as opaque match keys because widget
+  // values may carry any of them.
   addPathDetectionNames(names, asset.file_path, options)
-  addPathDetectionNames(names, asset.asset_hash, options)
+  addPathDetectionNames(names, asset.hash, options)
   addPathDetectionNames(names, asset.name, options)
 
   const subfolder = asset.user_metadata?.subfolder

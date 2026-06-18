@@ -35,7 +35,14 @@ export type LGraphTriggerEvent =
   | NodeSlotLinksChangedEvent
   | NodeSlotLabelChangedEvent
 
-export type LGraphTriggerAction = LGraphTriggerEvent['type']
+export const LGraphTriggerActions = [
+  'node:property:changed',
+  'node:slot-errors:changed',
+  'node:slot-links:changed',
+  'node:slot-label:changed'
+] as const satisfies readonly LGraphTriggerEvent['type'][]
+
+export type LGraphTriggerAction = (typeof LGraphTriggerActions)[number]
 
 export type LGraphTriggerParam<A extends LGraphTriggerAction> = Extract<
   LGraphTriggerEvent,

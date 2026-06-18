@@ -435,6 +435,11 @@ export class SceneModelManager implements ModelManagerInterface {
     )
   }
 
+  getCurrentBounds(): THREE.Box3 | null {
+    if (!this.currentModel) return null
+    return this.computeWorldBounds(this.currentModel)
+  }
+
   async setupModel(model: THREE.Object3D): Promise<void> {
     this.currentModel = model
     model.name = 'MainModel'
@@ -454,6 +459,12 @@ export class SceneModelManager implements ModelManagerInterface {
 
     if (pendingMaterialMode !== 'original') {
       this.setMaterialMode(pendingMaterialMode)
+    }
+
+    const validModes = this.getCurrentCapabilities().materialModes
+    if (validModes.length > 0 && !validModes.includes(this.materialMode)) {
+      this.materialMode = validModes[0]
+      this.eventManager.emitEvent('materialModeChange', this.materialMode)
     }
 
     if (this.currentUpDirection !== 'original') {

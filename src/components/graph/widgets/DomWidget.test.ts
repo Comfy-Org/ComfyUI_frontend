@@ -54,7 +54,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
-function createWidgetState(overrideDisabled: boolean): DomWidgetState {
+function createWidgetState(disabled: boolean): DomWidgetState {
   const domWidgetStore = useDomWidgetStore()
   const node = createMockLGraphNode({
     id: 1,
@@ -70,14 +70,10 @@ function createWidgetState(overrideDisabled: boolean): DomWidgetState {
     value: '',
     options: {},
     node,
-    computedDisabled: false
+    computedDisabled: disabled
   })
 
   domWidgetStore.registerWidget(widget)
-  domWidgetStore.setPositionOverride(widget.id, {
-    node: createMockLGraphNode({ id: 2 }),
-    widget: { computedDisabled: overrideDisabled } as DomWidgetState['widget']
-  })
 
   const state = domWidgetStore.widgetStates.get(widget.id)
   if (!state) throw new Error('Expected registered DomWidgetState')
@@ -98,7 +94,7 @@ describe('DomWidget disabled style', () => {
     vi.clearAllMocks()
   })
 
-  it('uses disabled style when promoted override widget is computedDisabled', async () => {
+  it('uses disabled style when widget is computedDisabled', async () => {
     const widgetState = createWidgetState(true)
     const { container } = render(DomWidget, {
       props: {

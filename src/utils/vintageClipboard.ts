@@ -4,6 +4,7 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 
 /**
  * Serialises an array of nodes using a modified version of the old Litegraph copy (& paste) function
@@ -106,7 +107,7 @@ export function deserialiseAndCreate(data: string, canvas: LGraphCanvas): void {
       node.pos[1] += graph_mouse[1] - topLeft[1]
 
       // @ts-expect-error fixme ts strict error
-      graph.add(node, true)
+      withNodeAddSource('paste', () => graph.add(node, true))
       nodes.push(node)
     }
 
