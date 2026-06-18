@@ -10,12 +10,6 @@ export interface EssentialsPath {
 export interface EssentialTile {
   icon?: string
   media?: EssentialsMediaType
-  /**
-   * Optional partner/vendor brand glyph rendered as a small badge in the
-   * tile's top-right corner (e.g. `icon-[comfy--gemini]`). Used on partner
-   * nodes so the main icon can describe the action while the badge
-   * communicates the provider.
-   */
   partnerLogo?: string
   /**
    * Backing ComfyUI node identifier resolved by the hover popover.
@@ -42,10 +36,6 @@ export interface EssentialSection {
 
 function blueprint(name: string) {
   return `SubgraphBlueprint.${name}`
-}
-export function getLabel(tile: EssentialTile) {
-  const trimmed = tile.nodeName.replace(/^SubgraphBlueprint./, '')
-  return `essentials.${trimmed.replaceAll('.', '')}`
 }
 
 export const ESSENTIAL_SECTIONS: EssentialSection[] = [
@@ -240,7 +230,6 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
           },
           {
             icon: 'icon-[comfy--text-prompt-enhance]',
-            // FIXME: Don't hard code color here
             partnerLogo: 'icon-[comfy--claude] text-[#D97757]',
             nodeName: 'ClaudeNode'
           },
@@ -526,55 +515,10 @@ export const NODE_TO_ESSENTIALS_PATH: Record<string, EssentialsPath> =
     )
   )
 
-const NODE_TO_ESSENTIALS_TILE: Record<string, EssentialTile> =
-  Object.fromEntries(
-    ESSENTIAL_SECTIONS.flatMap(
-      (section) =>
-        section.subgroups?.flatMap((sg) =>
-          sg.tiles.map((t) => [t.nodeName, t])
-        ) ??
-        section.tiles?.map((t) => [t.nodeName, t]) ??
-        []
-    )
-  )
-
 export const NODE_TO_ESSENTIALS_CATEGORY: Record<string, string> = mapValues(
   NODE_TO_ESSENTIALS_PATH,
   (v) => v?.subgroup ?? v.section
 )
-
-const BLUEPRINT_PREFIX = 'SubgraphBlueprint.'
-
-/**
- * Resolve a node def's curated essentials path. Falls back to looking up
- * blueprints by `SubgraphBlueprint.${display_name}` because global blueprints
- * may be registered under a dict-key name that doesn't match the curated key.
- */
-export function resolveEssentialsPath(nodeDef: {
-  name: string
-  display_name?: string
-  python_module?: string
-}): EssentialsPath | undefined {
-  const direct = NODE_TO_ESSENTIALS_PATH[nodeDef.name]
-  if (direct) return direct
-  if (nodeDef.python_module === 'blueprint' && nodeDef.display_name) {
-    return NODE_TO_ESSENTIALS_PATH[BLUEPRINT_PREFIX + nodeDef.display_name]
-  }
-  return undefined
-}
-
-export function resolveEssentialsTile(nodeDef: {
-  name: string
-  display_name?: string
-  python_module?: string
-}): EssentialTile | undefined {
-  const direct = NODE_TO_ESSENTIALS_TILE[nodeDef.name]
-  if (direct) return direct
-  if (nodeDef.python_module === 'blueprint' && nodeDef.display_name) {
-    return NODE_TO_ESSENTIALS_TILE[BLUEPRINT_PREFIX + nodeDef.display_name]
-  }
-  return undefined
-}
 
 const ESSENTIALS_NODE_NAMES = Object.keys(NODE_TO_ESSENTIALS_CATEGORY)
 

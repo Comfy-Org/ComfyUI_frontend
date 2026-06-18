@@ -46,10 +46,10 @@ const i18n = createI18n({
   }
 })
 
-function createNodeDef(name: string, displayName?: string): ComfyNodeDefV1 {
+function createNodeDef(name: string): ComfyNodeDefV1 {
   return {
     name,
-    display_name: displayName ?? name,
+    display_name: name,
     category: 'test',
     python_module: 'nodes',
     description: '',
@@ -76,7 +76,7 @@ describe('EssentialNodeCard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     setActivePinia(createPinia())
-    useNodeDefStore().updateNodeDefs([createNodeDef('LoadImage', 'Load image')])
+    useNodeDefStore().updateNodeDefs([createNodeDef('LoadImage')])
   })
 
   function renderComponent(tile: EssentialTile = REGISTERED_TILE) {
@@ -100,22 +100,8 @@ describe('EssentialNodeCard', () => {
   }
 
   describe('rendering', () => {
-    it('should display the resolved node display_name as the label', () => {
+    it('should display the tile label', () => {
       renderComponent()
-      expect(screen.getAllByText('Load image').length).toBeGreaterThan(0)
-    })
-
-    it('should fall back to the curated i18n label when the tile does not resolve', () => {
-      const tile: EssentialTile = {
-        icon: 'icon-s1.5-[lucide--image-up]',
-        media: 'image',
-        nodeName: 'LoadImage'
-      }
-      useNodeDefStore().updateNodeDefs([])
-      render(EssentialNodeCard, {
-        props: { tile },
-        global: { plugins: [i18n], stubs: { Teleport: true } }
-      })
       expect(screen.getAllByText('Load Image').length).toBeGreaterThan(0)
     })
 

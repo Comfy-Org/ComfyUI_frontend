@@ -48,9 +48,6 @@
           :node-defs="rootFilteredNodeDefs"
           :root-label="rootFilterLabel"
           :root-key="rootFilter ?? undefined"
-          :group-by="
-            rootFilter === RootCategory.Essentials ? 'essentials' : 'category'
-          "
           @auto-expand="selectedCategory = $event"
         />
 
@@ -130,59 +127,17 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore, useNodeFrequencyStore } from '@/stores/nodeDefStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
-  ESSENTIALS_NODE_RANK,
-  ESSENTIALS_SECTION_RANK,
-  ESSENTIALS_SUBGROUP_RANK,
-  resolveEssentialsPath,
-  resolveEssentialsTile
-} from '@/constants/essentialsNodes'
-import {
   BLUEPRINT_CATEGORY,
   isCustomNode,
+  isEssentialNode,
   NodeSourceType
 } from '@/types/nodeSource'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const isCuratedEssentialNode = (n: ComfyNodeDefImpl): boolean =>
-  resolveEssentialsPath(n) !== undefined
-
-// Essentials leading-icon helper — temporarily disabled.
-// Re-enable alongside the leading icon block in NodeSearchListItem.vue and
-// pass `:leading-icon-class="essentialsIconFor(node)"` on the list item.
-// function essentialsIconFor(n: ComfyNodeDefImpl): string | undefined {
-//   if (rootFilter.value !== RootCategory.Essentials) return undefined
-//   return resolveEssentialsTile(n)?.icon
-// }
-
-function curatedOrder(n: ComfyNodeDefImpl): [number, number, number] {
-  const tile = resolveEssentialsTile(n)
-  const path = resolveEssentialsPath(n)
-  if (!tile || !path) return [Infinity, Infinity, Infinity]
-  const sectionRank = ESSENTIALS_SECTION_RANK.get(path.section) ?? Infinity
-  const subgroupRank = path.subgroup
-    ? (ESSENTIALS_SUBGROUP_RANK.get(path.section)?.get(path.subgroup) ??
-      Infinity)
-    : -1
-  const nodeRank = ESSENTIALS_NODE_RANK.get(tile.nodeName) ?? Infinity
-  return [sectionRank, subgroupRank, nodeRank]
-}
-
-function compareCurated(a: ComfyNodeDefImpl, b: ComfyNodeDefImpl): number {
-  const oa = curatedOrder(a)
-  const ob = curatedOrder(b)
-  return oa[0] - ob[0] || oa[1] - ob[1] || oa[2] - ob[2]
-}
-
-function sortByCuratedIfNeeded(nodes: ComfyNodeDefImpl[]): ComfyNodeDefImpl[] {
-  if (rootFilter.value !== RootCategory.Essentials) return nodes
-  if (searchQuery.value || filters.length > 0) return nodes
-  return [...nodes].sort(compareCurated)
-}
-
 const sourceCategoryFilters: Record<string, (n: ComfyNodeDefImpl) => boolean> =
   {
-    [RootCategory.Essentials]: isCuratedEssentialNode,
+    [RootCategory.Essentials]: isEssentialNode,
     [RootCategory.Comfy]: (n) => n.nodeSource.type === NodeSourceType.Core,
     [RootCategory.Custom]: isCustomNode
   }
@@ -211,11 +166,7 @@ const nodeAvailability = computed(() => {
   let partner = false
   let custom = false
   for (const n of nodeDefStore.visibleNodeDefs) {
-    if (
-      !essential &&
-      flags.nodeLibraryEssentialsEnabled &&
-      isCuratedEssentialNode(n)
-    )
+    if (!essential && flags.nodeLibraryEssentialsEnabled && isEssentialNode(n))
       essential = true
     if (!blueprint && n.category.startsWith(BLUEPRINT_CATEGORY))
       blueprint = true
@@ -334,14 +285,9 @@ const sidebarCategory = computed({
 })
 
 // Check if any tree category has children (for chevron visibility)
-const anyTreeCategoryHasChildren = computed(() => {
-  if (rootFilter.value === RootCategory.Essentials) {
-    return rootFilteredNodeDefs.value.some(
-      (n) => resolveEssentialsPath(n)?.subgroup != null
-    )
-  }
-  return rootFilteredNodeDefs.value.some((n) => n.category.includes('/'))
-})
+const anyTreeCategoryHasChildren = computed(() =>
+  rootFilteredNodeDefs.value.some((n) => n.category.includes('/'))
+)
 
 function getMostRelevantResults(baseNodes: ComfyNodeDefImpl[]) {
   if (searchQuery.value || filters.length > 0) {
@@ -359,16 +305,6 @@ function getCategoryResults(baseNodes: ComfyNodeDefImpl[], category: string) {
   const categoryPath = category.startsWith(rootPrefix)
     ? category.slice(rootPrefix.length)
     : category
-
-  if (rootFilter.value === RootCategory.Essentials) {
-    const [section, subgroup] = categoryPath.split('/')
-    return baseNodes.filter((n) => {
-      const path = resolveEssentialsPath(n)
-      if (!path || path.section !== section) return false
-      return subgroup ? path.subgroup === subgroup : true
-    })
-  }
-
   return baseNodes.filter((n) => {
     const nodeCategory = n.category.startsWith(rootPrefix)
       ? n.category.slice(rootPrefix.length)
@@ -384,8 +320,7 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
   const baseNodes = rootFilteredNodeDefs.value
   const category = selectedCategory.value
 
-  if (category === DEFAULT_CATEGORY)
-    return sortByCuratedIfNeeded(getMostRelevantResults(baseNodes))
+  if (category === DEFAULT_CATEGORY) return getMostRelevantResults(baseNodes)
 
   const hasSearch = searchQuery.value || filters.length > 0
   let source: ComfyNodeDefImpl[]
@@ -402,8 +337,8 @@ const displayedResults = computed<ComfyNodeDefImpl[]>(() => {
   }
 
   const sourceFilter = sourceCategoryFilters[category]
-  if (sourceFilter) return sortByCuratedIfNeeded(source.filter(sourceFilter))
-  return sortByCuratedIfNeeded(getCategoryResults(source, category))
+  if (sourceFilter) return source.filter(sourceFilter)
+  return getCategoryResults(source, category)
 })
 
 const hoveredNodeDef = computed(

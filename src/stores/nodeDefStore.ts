@@ -3,7 +3,7 @@ import _ from 'es-toolkit/compat'
 import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
-import { t, te } from '@/i18n'
+import { t } from '@/i18n'
 import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveInputType } from '@/core/graph/widgets/dynamicTypes'
@@ -24,36 +24,12 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { NodeSearchService } from '@/services/nodeSearchService'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import {
-  NODE_TO_ESSENTIALS_CATEGORY,
-  NODE_TO_ESSENTIALS_PATH,
-  getLabel
-} from '@/constants/essentialsNodes'
+import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
 import { CORE_NODE_MODULES, getNodeSource } from '@/types/nodeSource'
 import type { NodeSource } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 import type { FuseSearchable, SearchAuxScore } from '@/utils/fuseUtil'
 import { buildTree } from '@/utils/treeUtil'
-
-function resolveCuratedTileName(obj: ComfyNodeDefV1): string | undefined {
-  if (obj.name in NODE_TO_ESSENTIALS_PATH) return obj.name
-  if (obj.python_module === 'blueprint' && obj.display_name) {
-    const candidate = `SubgraphBlueprint.${obj.display_name}`
-    if (candidate in NODE_TO_ESSENTIALS_PATH) return candidate
-  }
-  return undefined
-}
-
-function buildSearchAliases(obj: ComfyNodeDefV1): string[] | undefined {
-  const baseAliases = obj.search_aliases ?? []
-  const tileName = resolveCuratedTileName(obj)
-  if (!tileName) return obj.search_aliases
-  const labelKey = getLabel({ nodeName: tileName })
-  if (!te(labelKey)) return baseAliases.length ? baseAliases : undefined
-  const curatedLabel = t(labelKey)
-  if (baseAliases.includes(curatedLabel)) return baseAliases
-  return [...baseAliases, curatedLabel]
-}
 
 export class ComfyNodeDefImpl
   implements ComfyNodeDefV1, ComfyNodeDefV2, FuseSearchable
@@ -189,7 +165,6 @@ export class ComfyNodeDefImpl
     this.price_badge = obj.price_badge
     this.essentials_category =
       NODE_TO_ESSENTIALS_CATEGORY[obj.name] ?? obj.essentials_category
-    this.search_aliases = buildSearchAliases(obj)
     this.isGlobal = obj.isGlobal
     this.isCoreNode = CORE_NODE_MODULES.includes(
       this.python_module.split('.')[0]
