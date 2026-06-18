@@ -306,7 +306,6 @@ const sortingOptions = computed(() =>
 
 const filterableCategories: NodeCategoryId[] = [
   'blueprints',
-  'essentialNodes',
   'comfyNodes',
   'partnerNodes',
   'extensions'

@@ -2,7 +2,7 @@ import { mapValues } from 'es-toolkit'
 
 import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
 
-export interface EssentialsPath {
+interface EssentialsPath {
   section: string
   subgroup?: string
 }
@@ -500,7 +500,7 @@ export const ESSENTIAL_SECTIONS: EssentialSection[] = [
   }
 ]
 
-export const NODE_TO_ESSENTIALS_PATH: Record<string, EssentialsPath> =
+const NODE_TO_ESSENTIALS_PATH: Record<string, EssentialsPath> =
   Object.fromEntries(
     ESSENTIAL_SECTIONS.flatMap(
       (section) =>
@@ -518,23 +518,4 @@ export const NODE_TO_ESSENTIALS_PATH: Record<string, EssentialsPath> =
 export const NODE_TO_ESSENTIALS_CATEGORY: Record<string, string> = mapValues(
   NODE_TO_ESSENTIALS_PATH,
   (v) => v?.subgroup ?? v.section
-)
-
-const ESSENTIALS_NODE_NAMES = Object.keys(NODE_TO_ESSENTIALS_CATEGORY)
-
-// Deprecated, used for sorting old node library
-export const ESSENTIALS_NODE_RANK: ReadonlyMap<string, number> = new Map(
-  ESSENTIALS_NODE_NAMES.map((name, index) => [name, index])
-)
-export const ESSENTIALS_SECTION_RANK: ReadonlyMap<string, number> = new Map(
-  ESSENTIAL_SECTIONS.map((section, index) => [section.key, index])
-)
-export const ESSENTIALS_SUBGROUP_RANK: ReadonlyMap<
-  string,
-  ReadonlyMap<string, number>
-> = new Map(
-  ESSENTIAL_SECTIONS.filter((section) => section.subgroups).map((section) => [
-    section.key,
-    new Map(section.subgroups!.map((subgroup, index) => [subgroup.key, index]))
-  ])
 )

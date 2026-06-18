@@ -1,10 +1,3 @@
-import type { EssentialsPath } from '@/constants/essentialsNodes'
-import {
-  NODE_TO_ESSENTIALS_PATH,
-  ESSENTIALS_NODE_RANK,
-  ESSENTIALS_SECTION_RANK,
-  ESSENTIALS_SUBGROUP_RANK
-} from '@/constants/essentialsNodes'
 import { t } from '@/i18n'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { buildNodeDefTree } from '@/stores/nodeDefStore'
@@ -20,25 +13,6 @@ import type { TreeNode } from '@/types/treeExplorerTypes'
 import { sortedTree, unwrapTreeRoot } from '@/utils/treeUtil'
 
 const DEFAULT_ICON = 'pi pi-sort'
-const UNKNOWN_RANK = Number.MAX_SAFE_INTEGER
-
-function resolveEssentialsPath(
-  nodeDef: ComfyNodeDefImpl
-): EssentialsPath | undefined {
-  return NODE_TO_ESSENTIALS_PATH[nodeDef.name]
-}
-
-function sortByKnownOrder<T>(
-  items: T[],
-  getKey: (item: T) => string | undefined,
-  rankMap: ReadonlyMap<string, number>
-): void {
-  items.sort(
-    (a, b) =>
-      (rankMap.get(getKey(a) ?? '') ?? UNKNOWN_RANK) -
-      (rankMap.get(getKey(b) ?? '') ?? UNKNOWN_RANK)
-  )
-}
 
 function categoryPathExtractor(nodeDef: ComfyNodeDefImpl): string[] {
   const category = nodeDef.category || ''
@@ -162,65 +136,12 @@ class NodeOrganizationService {
     }
   }
 
-  private buildEssentialsTree(nodes: ComfyNodeDefImpl[]): TreeNode {
-    const pathByNode = new Map<ComfyNodeDefImpl, EssentialsPath>()
-    const essentialNodes = nodes.filter((node) => {
-      const path = resolveEssentialsPath(node)
-      if (!path) return false
-      pathByNode.set(node, path)
-      return true
-    })
-
-    const tree = buildNodeDefTree(essentialNodes, {
-      pathExtractor: (node) => {
-        const { section, subgroup } = pathByNode.get(node)!
-        return subgroup ? [section, subgroup, node.name] : [section, node.name]
-      }
-    })
-    this.sortEssentialsTree(tree)
-    return tree
-  }
-
-  private sortEssentialsTree(tree: TreeNode): void {
-    if (!tree.children) return
-
-    sortByKnownOrder(
-      tree.children,
-      (node) => node.label,
-      ESSENTIALS_SECTION_RANK
-    )
-
-    const nodeToLabel = (node: TreeNode) => node.data?.name ?? node.label
-    for (const sectionNode of tree.children) {
-      if (!sectionNode.children) continue
-      const subgroupRank = ESSENTIALS_SUBGROUP_RANK.get(sectionNode.label ?? '')
-
-      sortByKnownOrder(
-        sectionNode.children,
-        (node) => (node.children ? node.label : undefined),
-        subgroupRank ?? new Map()
-      )
-
-      for (const child of sectionNode.children) {
-        if (child.children)
-          sortByKnownOrder(child.children, nodeToLabel, ESSENTIALS_NODE_RANK)
-      }
-
-      sortByKnownOrder(
-        sectionNode.children,
-        (node) => (node.children ? undefined : (node.data?.name ?? node.label)),
-        ESSENTIALS_NODE_RANK
-      )
-    }
-  }
-
   private organizeAll(nodes: ComfyNodeDefImpl[]): NodeSection[] {
     const {
       myBlueprints,
       comfyBlueprints,
       partnerNodes,
       comfyNodes,
-      essentialNodes,
       extensions
     } = this.classifyNodes(nodes)
 
@@ -234,12 +155,6 @@ class NodeOrganizationService {
 
     if (blueprintTree.children?.length) {
       sections.push({ category: 'blueprints', tree: blueprintTree })
-    }
-    if (essentialNodes.length > 0) {
-      const essentialsTree = this.buildEssentialsTree(essentialNodes)
-      if (essentialsTree.children?.length) {
-        sections.push({ category: 'essentialNodes', tree: essentialsTree })
-      }
     }
     if (comfyNodes.length > 0) {
       sections.push({
@@ -276,14 +191,12 @@ class NodeOrganizationService {
     comfyBlueprints: ComfyNodeDefImpl[]
     partnerNodes: ComfyNodeDefImpl[]
     comfyNodes: ComfyNodeDefImpl[]
-    essentialNodes: ComfyNodeDefImpl[]
     extensions: ComfyNodeDefImpl[]
   } {
     const myBlueprints: ComfyNodeDefImpl[] = []
     const comfyBlueprints: ComfyNodeDefImpl[] = []
     const partnerNodes: ComfyNodeDefImpl[] = []
     const comfyNodes: ComfyNodeDefImpl[] = []
-    const essentialNodes: ComfyNodeDefImpl[] = []
     const extensions: ComfyNodeDefImpl[] = []
 
     for (const node of nodes) {
@@ -296,11 +209,7 @@ class NodeOrganizationService {
         node.nodeSource.type === NodeSourceType.Core ||
         node.nodeSource.type === NodeSourceType.Essentials
       ) {
-        if (resolveEssentialsPath(node)) {
-          essentialNodes.push(node)
-        } else {
-          comfyNodes.push(node)
-        }
+        comfyNodes.push(node)
       } else {
         extensions.push(node)
       }
@@ -311,7 +220,6 @@ class NodeOrganizationService {
       comfyBlueprints,
       partnerNodes,
       comfyNodes,
-      essentialNodes,
       extensions
     }
   }
