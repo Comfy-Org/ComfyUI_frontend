@@ -700,6 +700,36 @@
       }
     }
   },
+  "BriaVideoReplaceBackground": {
+    "description": "使用 Bria 将视频的背景替换为提供的图像或视频。输出保持前景的分辨率和帧率；如果背景的宽高比不同，则会被拉伸以适应，因此请匹配宽高比以获得无失真的效果。",
+    "display_name": "Bria 视频更换背景",
+    "inputs": {
+      "background_image": {
+        "name": "background_image",
+        "tooltip": "用于合成在前景后面的背景图像。请只提供背景图像或背景视频中的一个。"
+      },
+      "background_video": {
+        "name": "background_video",
+        "tooltip": "用于合成在前景后面的背景视频。请只提供背景图像或背景视频中的一个。"
+      },
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed 控制节点是否重新运行；无论 seed 如何，结果都是非确定性的。"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "需要更换背景的前景视频。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "使用 Seedance 2.0 从首帧图像和可选的末帧图像生成视频。",
     "display_name": "ByteDance Seedance 2.0 首帧-末帧生成视频",
@@ -2873,6 +2903,10 @@
       "audio": {
         "name": "音频",
         "tooltip": "要添加到视频中的音频。"
+      },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "所创建视频的位深度。10位可以保持更平滑的渐变并减少色带，但部分播放器和下游节点可能不支持。"
       },
       "fps": {
         "name": "帧率"
@@ -5189,6 +5223,10 @@
       },
       "2": {
         "name": "帧率",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -7996,7 +8034,8 @@
         "name": "生成后控制"
       },
       "generate_audio": {
-        "name": "生成音频"
+        "name": "生成音频",
+        "tooltip": "“kling-3.0-turbo”始终生成原生音频，因此音频开关将被忽略。"
       },
       "model": {
         "name": "模型",
@@ -15825,6 +15864,98 @@
       }
     }
   },
+  "RunwayAleph2KeyframeNode": {
+    "description": "将引导图像锚定到输入（源）视频的某一时刻，使 Aleph2 在该时刻引导你的素材编辑。将此节点连接到 Runway Aleph2 视频转视频节点的 'keyframes' 输入；可通过下方可选的 'keyframes' 输入串联多个（最多 5 个）。",
+    "display_name": "Runway Aleph2 关键帧",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "要在输入视频选定时刻应用的引导图像。"
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "可选的前置关键帧，与此关键帧串联。"
+      },
+      "timing": {
+        "name": "timing",
+        "tooltip": "如何将该图像放置在输入视频的时间线上。"
+      },
+      "timing_seconds": {
+        "name": "秒"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "将引导图像锚定到输出（结果）视频的某一时刻，以引导编辑后视频在该时刻的外观。将此节点连接到 Runway Aleph2 视频转视频节点的 'prompt_images' 输入；可通过下方可选的 'prompt_images' 输入串联多个（最多 5 个）。",
+    "display_name": "Runway Aleph2 提示图像",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "要在输出视频选定时刻放置的引导图像。"
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "如何将该图像放置在输出视频的时间线上。"
+      },
+      "position_seconds": {
+        "name": "秒"
+      },
+      "prompt_images": {
+        "name": "prompt_images",
+        "tooltip": "可选的前置提示图像，与此图像串联。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt_images",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "使用 Runway 的 Aleph2 模型通过文本提示编辑视频。Aleph2 可在保持原始运动和时序的同时，转换您的素材（重新风格化、重新打光、添加或移除元素、更改视角）；输出分辨率与输入视频一致，输入视频需为 2-30 秒，帧率不高于 30 fps。可选地通过关键帧（锚定到输入视频）或提示图像（锚定到输出视频）引导编辑——二者只能选其一，不可同时使用。",
+    "display_name": "Runway Aleph2 视频转视频",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成后控制"
+      },
+      "keyframes": {
+        "name": "关键帧",
+        "tooltip": "锚定到输入视频的引导图像，来自 Aleph2 Keyframe 节点（最多 5 个）。只能使用关键帧或提示图像，不能同时使用。"
+      },
+      "prompt": {
+        "name": "提示词",
+        "tooltip": "描述输出中应出现的内容（1-1000 字符）。"
+      },
+      "prompt_images": {
+        "name": "提示图像",
+        "tooltip": "锚定到输出视频的引导图像，来自 Aleph2 Prompt Image 节点（最多 5 个）。只能使用关键帧或提示图像，不能同时使用。"
+      },
+      "public_figure_threshold": {
+        "name": "公众人物阈值",
+        "tooltip": "对可识别公众人物的内容进行审核。"
+      },
+      "seed": {
+        "name": "随机种子",
+        "tooltip": "生成用的随机种子"
+      },
+      "video": {
+        "name": "视频",
+        "tooltip": "要编辑的输入视频。需为 2-30 秒，帧率不高于 30 fps。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RunwayFirstLastFrameNode": {
     "description": "上传首尾关键帧，草拟提示词，生成视频。对于更复杂的过渡（例如尾帧与首帧完全不同的情况），较长的10秒时长可能更有利，这能为生成过程提供更多时间在两个输入之间平滑过渡。开始前，请查看这些最佳实践以确保您的输入选择能为生成成功奠定基础：https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3。",
     "display_name": "Runway首尾帧转视频",
@@ -16117,6 +16248,9 @@
       },
       "draw_hands": {
         "name": "draw_hands"
+      },
+      "draw_head": {
+        "name": "绘制头部"
       },
       "face_point_size": {
         "name": "face_point_size"
@@ -18677,6 +18811,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "用于编辑的参考图像。Boogu 每个样本专注于一个参考图像；也允许添加更多。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "文本编码（Hunyuan视频_图像到视频）",
     "inputs": {
@@ -19464,6 +19629,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "将外部3D模型（例如来自Rodin、Hunyuan3D或本地文件）导入Tripo，以便与Tripo的后处理节点（纹理、绑定、转换）一起使用。推荐使用GLB格式：只有嵌入文件的纹理才能在导入时保留。请注意，为导入的模型添加纹理需要提供纹理提示词。",
+    "display_name": "Tripo：导入模型",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "要导入的3D模型（GLB / FBX / OBJ / STL，最大150MB）。OBJ和STL文件不包含嵌入纹理。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo：多视图转模型",
     "inputs": {
@@ -19931,6 +20112,10 @@
       },
       "texture_alignment": {
         "name": "纹理对齐"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "用于纹理生成的可选文本引导。对于导入的模型（Tripo：导入模型），实际操作中需要提供，因为这些模型没有可用于推断颜色的源图像。"
       },
       "texture_quality": {
         "name": "纹理质量"

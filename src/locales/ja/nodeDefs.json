@@ -700,6 +700,36 @@
       }
     }
   },
+  "BriaVideoReplaceBackground": {
+    "description": "Bria を使用して、ビデオの背景を指定した画像またはビデオで置き換えます。出力は前景の解像度とフレームレートを維持します。異なるアスペクト比の背景はフィットするように引き伸ばされるため、歪みのない結果を得るにはアスペクト比を合わせてください。",
+    "display_name": "Bria ビデオ背景置換",
+    "inputs": {
+      "background_image": {
+        "name": "背景画像",
+        "tooltip": "前景の後ろに合成する背景画像。背景画像または背景ビデオのいずれか一方のみを指定してください。"
+      },
+      "background_video": {
+        "name": "背景ビデオ",
+        "tooltip": "前景の後ろに合成する背景ビデオ。背景画像または背景ビデオのいずれか一方のみを指定してください。"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関係なく結果は非決定的です。"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "背景が置き換えられる前景ビデオ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0 を使用して、最初のフレーム画像とオプションの最後のフレーム画像から動画を生成します。",
     "display_name": "ByteDance Seedance 2.0 ファースト・ラストフレームから動画生成",
@@ -2873,6 +2903,10 @@
       "audio": {
         "name": "オーディオ",
         "tooltip": "動画に追加するオーディオです。"
+      },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "作成される動画のビット深度。10ビットはグラデーションがより滑らかでバンディングが少なくなりますが、一部のプレーヤーや下流ノードではサポートされない場合があります。"
       },
       "fps": {
         "name": "fps"
@@ -5189,6 +5223,10 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -7996,7 +8034,8 @@
         "name": "生成後のコントロール"
       },
       "generate_audio": {
-        "name": "オーディオ生成"
+        "name": "オーディオ生成",
+        "tooltip": "「kling-3.0-turbo」は常にネイティブオーディオを生成するため、オーディオの切り替えは無視されます。"
       },
       "model": {
         "name": "モデル",
@@ -15825,6 +15864,98 @@
       }
     }
   },
+  "RunwayAleph2KeyframeNode": {
+    "description": "ガイダンス画像を入力（ソース）ビデオの特定の瞬間に固定し、その時点で Aleph2 が編集を誘導します。これを Runway Aleph2 Video to Video ノードの「keyframes」入力に接続してください。下のオプション「keyframes」入力を使って最大5つまで連結できます。",
+    "display_name": "Runway Aleph2 キーフレーム",
+    "inputs": {
+      "image": {
+        "name": "画像",
+        "tooltip": "入力ビデオの選択した瞬間に適用するガイダンス画像。"
+      },
+      "keyframes": {
+        "name": "キーフレーム",
+        "tooltip": "このキーフレームと連結するオプションの前のキーフレーム。"
+      },
+      "timing": {
+        "name": "タイミング",
+        "tooltip": "この画像を入力ビデオのタイムライン上に配置する方法。"
+      },
+      "timing_seconds": {
+        "name": "秒"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "キーフレーム",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "ガイダンス画像を出力（結果）ビデオの特定の瞬間に固定し、その時点で編集後のビデオの見た目を誘導します。これを Runway Aleph2 Video to Video ノードの「prompt_images」入力に接続してください。下のオプション「prompt_images」入力を使って最大5つまで連結できます。",
+    "display_name": "Runway Aleph2 プロンプト画像",
+    "inputs": {
+      "image": {
+        "name": "画像",
+        "tooltip": "出力ビデオの選択した瞬間に配置するガイダンス画像。"
+      },
+      "position": {
+        "name": "位置",
+        "tooltip": "この画像を出力ビデオのタイムライン上に配置する方法。"
+      },
+      "position_seconds": {
+        "name": "秒"
+      },
+      "prompt_images": {
+        "name": "プロンプト画像",
+        "tooltip": "このプロンプト画像と連結するオプションの前のプロンプト画像。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "プロンプト画像",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "Runway の Aleph2 モデルを使ってテキストプロンプトでビデオを編集します。Aleph2 は元の動きやタイミングを保ちながら、映像のリスタイル、ライティング変更、要素の追加・削除、視点の変更などを行います。出力解像度は入力ビデオと同じで、2～30秒、30fps以下のビデオが必要です。編集の指示にはキーフレーム（入力ビデオに固定）またはプロンプト画像（出力ビデオに固定）のいずれかを使用できます（両方は不可）。",
+    "display_name": "Runway Aleph2 ビデオからビデオへ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後のコントロール"
+      },
+      "keyframes": {
+        "name": "キーフレーム",
+        "tooltip": "Aleph2 Keyframe ノードからの入力ビデオに固定されたガイダンス画像（最大5つ）。キーフレームまたはプロンプト画像のいずれかを使用してください（両方は不可）。"
+      },
+      "prompt": {
+        "name": "プロンプト",
+        "tooltip": "出力に何を表示するかを記述します（1～1000文字）。"
+      },
+      "prompt_images": {
+        "name": "プロンプト画像",
+        "tooltip": "Aleph2 Prompt Image ノードからの出力ビデオに固定されたガイダンス画像（最大5つ）。キーフレームまたはプロンプト画像のいずれかを使用してください（両方は不可）。"
+      },
+      "public_figure_threshold": {
+        "name": "著名人しきい値",
+        "tooltip": "認識可能な著名人に対するコンテンツモデレーション。"
+      },
+      "seed": {
+        "name": "シード",
+        "tooltip": "生成用のランダムシード"
+      },
+      "video": {
+        "name": "ビデオ",
+        "tooltip": "編集する入力ビデオ。2～30秒、30fps以下である必要があります。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RunwayFirstLastFrameNode": {
     "description": "最初と最後のキーフレームをアップロードし、プロンプトを作成して動画を生成します。最後のフレームが最初のフレームと完全に異なる場合など、より複雑な遷移では、長い10秒の期間が効果的です。これにより、2つの入力間を滑らかに遷移するための時間がより多く確保されます。始める前に、これらのベストプラクティスを確認して、入力選択が生成を成功に導くようにしてください: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
     "display_name": "Runway 最初-最後フレームから動画生成",
@@ -16117,6 +16248,9 @@
       },
       "draw_hands": {
         "name": "手を描画"
+      },
+      "draw_head": {
+        "name": "頭部を描く"
       },
       "face_point_size": {
         "name": "顔ポイントサイズ"
@@ -18677,6 +18811,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "編集する参照画像。Booguはサンプルごとに1つの参照画像に重点を置きますが、複数も可能です。"
+      },
+      "negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
     "inputs": {
@@ -19464,6 +19629,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "外部の3Dモデル（例：Rodin、Hunyuan3D、またはローカルファイル）をTripoにインポートし、Tripoのポストプロセスノード（Texture、Rig、Convert）で使用します。GLB形式を推奨します：テクスチャはファイルに埋め込まれている場合のみインポート時に保持されます。インポートしたモデルにテクスチャを付与するには、テクスチャプロンプトが必要です。",
+    "display_name": "Tripo: Import Model",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "インポートする3Dモデル（GLB / FBX / OBJ / STL、最大150MB）。OBJおよびSTLファイルには埋め込みテクスチャがありません。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: マルチビューからモデル",
     "inputs": {
@@ -19931,6 +20112,10 @@
       },
       "texture_alignment": {
         "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "テクスチャ付与のためのオプションのテキストガイダンス。インポートしたモデル（Tripo: Import Model）には参照画像がないため、実際には必須です。"
       },
       "texture_quality": {
         "name": "texture_quality"

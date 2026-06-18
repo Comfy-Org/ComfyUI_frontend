@@ -1,12 +1,13 @@
 import { createTestingPinia } from '@pinia/testing'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
-import type { WidgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
 
 import { useResolvedSelectedInputs } from './useResolvedSelectedInputs'
 
@@ -22,15 +23,26 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 const rootGraphId = '11111111-1111-4111-8111-111111111111'
-const entitySeed = `${rootGraphId}:1:seed` as WidgetEntityId
+const entitySeed = `${rootGraphId}:1:seed` as WidgetId
 
 function makeNode(id: number, widgetNames: string[]): LGraphNode {
   return fromAny<LGraphNode, unknown>({
     id,
+    inputs: [],
+    isSubgraphNode: () => false,
     widgets: widgetNames.map((name) => ({
       name,
-      entityId: `${rootGraphId}:${id}:${name}` as WidgetEntityId
+      widgetId: `${rootGraphId}:${id}:${name}` as WidgetId
     }))
+  })
+}
+
+function makeSubgraphNode(id: number, inputs: INodeInputSlot[]): LGraphNode {
+  return fromAny<LGraphNode, unknown>({
+    id,
+    inputs,
+    isSubgraphNode: () => true,
+    widgets: []
   })
 }
 
@@ -87,5 +99,28 @@ describe('useResolvedSelectedInputs', () => {
     dispatchRootGraphEvent('subgraph-created')
 
     expect(resolved.value[0]?.status).toBe('unknown')
+  })
+
+  it('resolves promoted subgraph inputs from their host input widgetId', () => {
+    const node = makeSubgraphNode(1, [
+      fromPartial<INodeInputSlot>({
+        name: 'seed',
+        label: 'renamed_seed',
+        widgetId: entitySeed
+      })
+    ])
+    setRootGraphNodes([node])
+
+    const appModeStore = useAppModeStore()
+    appModeStore.selectedInputs = [[entitySeed, 'seed']]
+
+    const resolved = useResolvedSelectedInputs()
+
+    expect(resolved.value[0]).toMatchObject({
+      status: 'resolved',
+      node,
+      displayName: 'seed',
+      widget: { name: 'seed', label: 'renamed_seed', widgetId: entitySeed }
+    })
   })
 })

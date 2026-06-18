@@ -1,6 +1,6 @@
 {
   "name": "@comfyorg/comfyui-frontend",
-  "version": "1.46.13",
+  "version": "1.47.2",
   "private": true,
   "description": "Official front-end implementation of ComfyUI",
   "homepage": "https://comfy.org",
@@ -66,6 +66,7 @@
     "@comfyorg/registry-types": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
+    "@customerio/cdp-analytics-browser": "catalog:",
     "@formkit/auto-animate": "catalog:",
     "@iconify/json": "catalog:",
     "@primeuix/forms": "catalog:",
@@ -206,7 +207,7 @@
     "zod-to-json-schema": "catalog:"
   },
   "engines": {
-    "node": ">=25",
+    "node": ">=25 <26",
     "pnpm": ">=11.3"
   },
   "packageManager": "pnpm@11.3.0"
