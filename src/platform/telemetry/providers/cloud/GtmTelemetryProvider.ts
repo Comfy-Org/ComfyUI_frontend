@@ -30,6 +30,8 @@ import type {
   WorkflowSavedMetadata,
   WorkspaceInviteMetadata
 } from '../../types'
+import { useAppMode } from '@/composables/useAppMode'
+import { getActionbarDockState } from '../../utils/getActionbarDockState'
 
 /**
  * Google Tag Manager telemetry provider.
@@ -190,9 +192,14 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     subscribe_to_run?: boolean
     trigger_source?: ExecutionTriggerSource
   }): void {
+    const { mode, isAppMode } = useAppMode()
+
     this.pushEvent('run_workflow', {
       subscribe_to_run: options?.subscribe_to_run ?? false,
-      trigger_source: options?.trigger_source ?? 'unknown'
+      trigger_source: options?.trigger_source ?? 'unknown',
+      view_mode: mode.value,
+      is_app_mode: isAppMode.value,
+      dock_state: getActionbarDockState()
     })
   }
 
@@ -292,7 +299,9 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   trackShareFlow(metadata: ShareFlowMetadata): void {
     this.pushEvent('share_flow', {
       step: metadata.step,
-      source: metadata.source
+      source: metadata.source,
+      view_mode: metadata.view_mode,
+      is_app_mode: metadata.is_app_mode
     })
   }
 
@@ -338,7 +347,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.pushEvent('ui_button_click', {
-      button_id: metadata.button_id
+      button_id: metadata.button_id,
+      element_group: metadata.element_group
     })
   }
 

@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
@@ -14,6 +14,10 @@ interface WorkspacePermissions {
   canLeaveWorkspace: boolean
   canAccessWorkspaceMenu: boolean
   canManageSubscription: boolean
+  // Creator-only subscription lifecycle: cancel / reactivate / downgrade.
+  // Any owner has `canManageSubscription` (manage payment, top-up, change
+  // commit); only the original owner gets `canManageSubscriptionLifecycle`.
+  canManageSubscriptionLifecycle: boolean
   canTopUp: boolean
 }
 
@@ -33,7 +37,8 @@ interface WorkspaceUIConfig {
 
 function getPermissions(
   type: WorkspaceType,
-  role: WorkspaceRole
+  role: WorkspaceRole,
+  isOriginalOwner: boolean
 ): WorkspacePermissions {
   if (type === 'personal') {
     return {
@@ -45,6 +50,8 @@ function getPermissions(
       canLeaveWorkspace: false,
       canAccessWorkspaceMenu: false,
       canManageSubscription: true,
+      // Personal workspace is single-member: the user is the sole owner/creator.
+      canManageSubscriptionLifecycle: true,
       canTopUp: true
     }
   }
@@ -59,6 +66,7 @@ function getPermissions(
       canLeaveWorkspace: true,
       canAccessWorkspaceMenu: true,
       canManageSubscription: true,
+      canManageSubscriptionLifecycle: isOriginalOwner,
       canTopUp: true
     }
   }
@@ -73,6 +81,7 @@ function getPermissions(
     canLeaveWorkspace: true,
     canAccessWorkspaceMenu: true,
     canManageSubscription: false,
+    canManageSubscriptionLifecycle: false,
     canTopUp: false
   }
 }
@@ -141,8 +150,31 @@ function useWorkspaceUIInternal() {
     () => store.activeWorkspace?.role ?? 'owner'
   )
 
+  // The original-owner signal lives on the members-list self-row, so the
+  // members list must be loaded before the team gate resolves. Trigger a fetch
+  // for team workspaces whose members aren't loaded yet; until they arrive the
+  // store getter fails closed, hiding lifecycle actions during the load window.
+  // Watch the workspace id (not the object) so a fetch-induced identity change
+  // can't retrigger the watch; an empty members response then can't loop.
+  watch(
+    () => store.activeWorkspace?.id,
+    () => {
+      const workspace = store.activeWorkspace
+      if (workspace?.type === 'team' && store.members.length === 0) {
+        void store.fetchMembers()
+      }
+    },
+    { immediate: true }
+  )
+
+  const isOriginalOwner = computed(() => store.isCurrentUserOriginalOwner)
+
   const permissions = computed<WorkspacePermissions>(() =>
-    getPermissions(workspaceType.value, workspaceRole.value)
+    getPermissions(
+      workspaceType.value,
+      workspaceRole.value,
+      isOriginalOwner.value
+    )
   )
 
   const uiConfig = computed<WorkspaceUIConfig>(() =>

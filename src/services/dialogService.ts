@@ -105,7 +105,8 @@ export const useDialogService = () => {
         size: 'lg',
         onClose: () => {
           useTelemetry()?.trackUiButtonClicked({
-            button_id: 'error_dialog_closed'
+            button_id: 'error_dialog_closed',
+            element_group: 'error_dialog'
           })
         }
       }
@@ -171,7 +172,8 @@ export const useDialogService = () => {
         size: 'lg',
         onClose: () => {
           useTelemetry()?.trackUiButtonClicked({
-            button_id: 'error_dialog_closed'
+            button_id: 'error_dialog_closed',
+            element_group: 'error_dialog'
           })
         }
       }

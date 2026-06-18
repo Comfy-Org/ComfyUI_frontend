@@ -283,7 +283,8 @@ async function submit(decision: 'allow' | 'deny') {
       oauthRequestId: challenge.value.oauth_request_id,
       csrfToken: challenge.value.csrf_token,
       decision,
-      workspaceId
+      workspaceId,
+      expectedRedirectUri: challenge.value.redirect_uri
     })
     clearOAuthRequestId()
   } catch (error) {

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
@@ -145,6 +146,18 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const members = computed<WorkspaceMember[]>(
     () => activeWorkspace.value?.members ?? []
   )
+
+  // True when the current user is the active workspace's original owner,
+  // resolved from the self-row of the loaded members list. Matches by email
+  // (the stable current-user join key; member.id is a cloud user id, not the
+  // Firebase uid). Fails closed when members are not loaded or no self-row
+  // matches, so lifecycle gating stays hidden until the real signal arrives.
+  const isCurrentUserOriginalOwner = computed(() => {
+    const email = useCurrentUser().userEmail.value?.toLowerCase()
+    if (!email) return false
+    const selfRow = members.value.find((m) => m.email.toLowerCase() === email)
+    return selfRow?.isOriginalOwner ?? false
+  })
 
   const pendingInvites = computed<PendingInvite[]>(
     () => activeWorkspace.value?.pendingInvites ?? []
@@ -660,6 +673,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     ownedWorkspacesCount,
     canCreateWorkspace,
     members,
+    isCurrentUserOriginalOwner,
     pendingInvites,
     originalOwnerId,
     totalMemberSlots,

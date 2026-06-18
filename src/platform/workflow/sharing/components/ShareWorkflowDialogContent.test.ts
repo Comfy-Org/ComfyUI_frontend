@@ -387,6 +387,8 @@ describe('ShareWorkflowDialogContent', () => {
     expect(mockTrackShareFlow).toHaveBeenCalledWith({
       step: 'link_created',
       source: 'graph_mode',
+      view_mode: 'graph',
+      is_app_mode: false,
       share_id: 'test-123'
     })
   })
@@ -407,6 +409,8 @@ describe('ShareWorkflowDialogContent', () => {
     expect(mockTrackShareFlow).toHaveBeenCalledWith({
       step: 'link_copied',
       source: 'graph_mode',
+      view_mode: 'graph',
+      is_app_mode: false,
       share_id: 'copy-123'
     })
   })

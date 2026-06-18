@@ -5,12 +5,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { Settings } from '@/schemas/apiSchema'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
-import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodeSearchBoxPopover from './NodeSearchBoxPopover.vue'
@@ -74,8 +71,7 @@ describe('NodeSearchBoxPopover', () => {
     const NodeSearchContentStub = defineComponent({
       name: 'NodeSearchContent',
       props: {
-        filters: { type: Array, default: () => [] },
-        defaultRootFilter: { type: String, default: null }
+        filters: { type: Array, default: () => [] }
       },
       emits: ['addFilter', 'removeFilter', 'addNode', 'hoverNode'],
       setup(_, { emit }) {
@@ -83,8 +79,7 @@ describe('NodeSearchBoxPopover', () => {
           emit('addNode', nodeDef, dragEvent)
         return {}
       },
-      template:
-        '<div data-testid="search-content-v2" :data-default-root-filter="defaultRootFilter"></div>'
+      template: '<div data-testid="search-content-v2"></div>'
     })
 
     const pinia = createTestingPinia({
@@ -278,77 +273,6 @@ describe('NodeSearchBoxPopover', () => {
         nodeDef,
         expect.objectContaining({ pos: expect.any(Array) }),
         expect.objectContaining({ ghost: true, dragEvent })
-      )
-    })
-  })
-
-  describe('defaultRootFilter on dialog open', () => {
-    function setGraphNodes(nodes: unknown[]) {
-      const canvasStore = useCanvasStore()
-      canvasStore.canvas = {
-        graph: { nodes },
-        allow_searchbox: false,
-        setDirty: vi.fn(),
-        linkConnector: {
-          events: new EventTarget(),
-          reset: vi.fn(),
-          disconnectLinks: vi.fn()
-        }
-      } as unknown as ReturnType<typeof useCanvasStore>['canvas']
-    }
-
-    async function openSearch() {
-      useSearchBoxStore().visible = true
-      await nextTick()
-    }
-
-    it('defaults to Essentials when the graph is empty', async () => {
-      renderComponent({ 'Comfy.NodeSearchBoxImpl': 'default' })
-      setGraphNodes([])
-      await openSearch()
-
-      expect(screen.getByTestId('search-content-v2')).toHaveAttribute(
-        'data-default-root-filter',
-        RootCategory.Essentials
-      )
-    })
-
-    it('defaults to Essentials when the canvas is not yet available', async () => {
-      renderComponent({ 'Comfy.NodeSearchBoxImpl': 'default' })
-      await openSearch()
-
-      expect(screen.getByTestId('search-content-v2')).toHaveAttribute(
-        'data-default-root-filter',
-        RootCategory.Essentials
-      )
-    })
-
-    it('defaults to null when the graph has nodes', async () => {
-      renderComponent({ 'Comfy.NodeSearchBoxImpl': 'default' })
-      setGraphNodes([{ id: 1 }])
-      await openSearch()
-
-      expect(screen.getByTestId('search-content-v2')).not.toHaveAttribute(
-        'data-default-root-filter'
-      )
-    })
-
-    it('re-evaluates each time the dialog opens', async () => {
-      renderComponent({ 'Comfy.NodeSearchBoxImpl': 'default' })
-
-      setGraphNodes([])
-      await openSearch()
-      expect(screen.getByTestId('search-content-v2')).toHaveAttribute(
-        'data-default-root-filter',
-        RootCategory.Essentials
-      )
-
-      useSearchBoxStore().visible = false
-      await nextTick()
-      setGraphNodes([{ id: 1 }])
-      await openSearch()
-      expect(screen.getByTestId('search-content-v2')).not.toHaveAttribute(
-        'data-default-root-filter'
       )
     })
   })
