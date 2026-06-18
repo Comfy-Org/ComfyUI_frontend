@@ -590,22 +590,31 @@ describe('getAssetCategories', () => {
     tags
   })
 
-  it('uses model_type:* values as the group and disregards other tags', () => {
+  it('uses model_type:* values as the group and disregards other tags in model_type mode', () => {
     expect(
-      getAssetCategories(asset(['models', 'model_type:checkpoints', 'sdxl']))
+      getAssetCategories(
+        asset(['models', 'model_type:checkpoints', 'sdxl']),
+        true
+      )
     ).toEqual(['checkpoints'])
   })
 
   it('preserves the model_type value casing', () => {
-    expect(getAssetCategories(asset(['models', 'model_type:LLM']))).toEqual([
-      'LLM'
+    expect(
+      getAssetCategories(asset(['models', 'model_type:LLM']), true)
+    ).toEqual(['LLM'])
+  })
+
+  it('routes an uncovered asset by its bare tags in model_type mode', () => {
+    expect(getAssetCategories(asset(['models', 'checkpoints']), true)).toEqual([
+      'checkpoints'
     ])
   })
 
-  it('falls back to non-model tags when no model_type tag is present', () => {
-    expect(getAssetCategories(asset(['models', 'checkpoints']))).toEqual([
-      'checkpoints'
-    ])
+  it('ignores model_type: and uses bare-tag grouping when mode is off (default)', () => {
+    expect(
+      getAssetCategories(asset(['models', 'model_type:checkpoints', 'sdxl']))
+    ).toEqual(['model_type:checkpoints', 'sdxl'])
   })
 })
 
@@ -619,30 +628,45 @@ describe('getAssetNodeCategory', () => {
   it('prefers the most specific (deepest) tag over a flat model_type value', () => {
     expect(
       getAssetNodeCategory(
-        asset(['models', 'model_type:LLM', 'LLM/Qwen-VL/Qwen3-0.6B'])
+        asset(['models', 'model_type:LLM', 'LLM/Qwen-VL/Qwen3-0.6B']),
+        true
       )
     ).toBe('LLM/Qwen-VL/Qwen3-0.6B')
   })
 
   it('strips the model_type: prefix when it is the only candidate', () => {
-    expect(getAssetNodeCategory(asset(['models', 'model_type:vae']))).toBe(
-      'vae'
-    )
+    expect(
+      getAssetNodeCategory(asset(['models', 'model_type:vae']), true)
+    ).toBe('vae')
   })
 
   it('lets a model_type value win ties against a bare tag', () => {
     expect(
-      getAssetNodeCategory(asset(['models', 'model_type:checkpoints', 'sdxl']))
+      getAssetNodeCategory(
+        asset(['models', 'model_type:checkpoints', 'sdxl']),
+        true
+      )
     ).toBe('checkpoints')
   })
 
-  it('keeps a hierarchical legacy tag intact', () => {
+  it('keeps a hierarchical tag intact', () => {
     expect(
-      getAssetNodeCategory(asset(['models', 'chatterbox/chatterbox_vc']))
+      getAssetNodeCategory(asset(['models', 'chatterbox/chatterbox_vc']), true)
     ).toBe('chatterbox/chatterbox_vc')
   })
 
   it('returns undefined when only reserved tags are present', () => {
-    expect(getAssetNodeCategory(asset(['models', 'missing']))).toBeUndefined()
+    expect(
+      getAssetNodeCategory(asset(['models', 'missing']), true)
+    ).toBeUndefined()
+  })
+
+  it('uses the first non-reserved tag verbatim when mode is off (default)', () => {
+    expect(getAssetNodeCategory(asset(['models', 'model_type:vae']))).toBe(
+      'model_type:vae'
+    )
+    expect(getAssetNodeCategory(asset(['models', 'checkpoints']))).toBe(
+      'checkpoints'
+    )
   })
 })

@@ -24,6 +24,7 @@ import {
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { MODELS_TAG } from '@/platform/assets/services/assetService'
 import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 
@@ -94,6 +95,7 @@ export function useAssetBrowser(
   const assets = computed<AssetItem[]>(() => assetsSource.value ?? [])
   const assetDownloadStore = useAssetDownloadStore()
   const { sessionDownloadCount } = storeToRefs(assetDownloadStore)
+  const { flags } = useFeatureFlags()
 
   // State
   const searchQuery = ref('')
@@ -125,7 +127,9 @@ export function useAssetBrowser(
   const typeCategories = computed<NavItemData[]>(() => {
     const categories = assets.value
       .filter((asset) => asset.tags.includes(MODELS_TAG))
-      .flatMap(getAssetCategories)
+      .flatMap((asset) =>
+        getAssetCategories(asset, flags.supportsModelTypeTags)
+      )
 
     return Array.from(new Set(categories))
       .sort()
@@ -189,7 +193,9 @@ export function useAssetBrowser(
 
   // Category-filtered assets for filter options (before search/format/base model filters)
   const categoryFilteredAssets = computed(() => {
-    return assets.value.filter(filterByCategory(selectedCategory.value))
+    return assets.value.filter(
+      filterByCategory(selectedCategory.value, flags.supportsModelTypeTags)
+    )
   })
 
   const { availableFileFormats, availableBaseModels } = useAssetFilterOptions(
