@@ -7,6 +7,11 @@ const mockAuthFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
 const mockShowTopUpCreditsDialog = vi.fn()
 const mockExecute = vi.fn()
+const mockToastAdd = vi.fn()
+
+vi.mock('@/platform/updates/common/toastStore', () => ({
+  useToastStore: () => ({ add: mockToastAdd })
+}))
 
 vi.mock('@/composables/auth/useAuthActions', () => ({
   useAuthActions: () => ({
@@ -88,11 +93,12 @@ describe('useSubscriptionActions', () => {
       expect(mockAuthFetchBalance).not.toHaveBeenCalled()
     })
 
-    it('should handle errors gracefully', async () => {
+    it('swallows refresh failures without surfacing a toast', async () => {
       mockBillingFetchBalance.mockRejectedValueOnce(new Error('Fetch failed'))
       const { handleRefresh } = useSubscriptionActions()
 
       await expect(handleRefresh()).resolves.toBeUndefined()
+      expect(mockToastAdd).not.toHaveBeenCalled()
     })
   })
 

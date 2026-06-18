@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { watch } from 'vue'
+import type * as VueModule from 'vue'
+import type { Ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 import { TelemetryEvents } from '../../types'
 
@@ -13,7 +15,10 @@ const hoisted = vi.hoisted(() => {
   const mockReset = vi.fn()
   const mockOnUserResolved = vi.fn()
   const mockOnUserLogout = vi.fn()
-  const mockTier = { value: null as string | null }
+  const refs = {
+    tier: null as unknown as Ref<string | null>,
+    remoteConfig: null as unknown as Ref<Record<string, unknown> | null>
+  }
 
   return {
     mockCapture,
@@ -25,7 +30,7 @@ const hoisted = vi.hoisted(() => {
     mockReset,
     mockOnUserResolved,
     mockOnUserLogout,
-    mockTier,
+    refs,
     mockPosthog: {
       default: {
         init: mockInit,
@@ -39,14 +44,6 @@ const hoisted = vi.hoisted(() => {
   }
 })
 
-vi.mock('vue', async () => {
-  const actual = await vi.importActual('vue')
-  return {
-    ...actual,
-    watch: vi.fn()
-  }
-})
-
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({
     onUserResolved: hoisted.mockOnUserResolved,
@@ -54,25 +51,21 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   })
 }))
 
-const mockRemoteConfig = vi.hoisted(
-  () => ({ value: null }) as { value: Record<string, unknown> | null }
-)
-
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfig: mockRemoteConfig
-}))
+vi.mock('@/platform/remoteConfig/remoteConfig', async () => {
+  const { ref } = await vi.importActual<typeof VueModule>('vue')
+  hoisted.refs.remoteConfig = ref<Record<string, unknown> | null>(null)
+  return { remoteConfig: hoisted.refs.remoteConfig }
+})
 
 vi.mock('posthog-js', () => hoisted.mockPosthog)
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    tier: hoisted.mockTier
-  })
-}))
+vi.mock('@/composables/billing/useBillingContext', async () => {
+  const { ref } = await vi.importActual<typeof VueModule>('vue')
+  hoisted.refs.tier = ref<string | null>(null)
+  return { useBillingContext: () => ({ tier: hoisted.refs.tier }) }
+})
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
-
-const watchMock = vi.mocked(watch)
 
 function createProvider(
   config: Partial<typeof window.__CONFIG__> = {}
@@ -87,7 +80,10 @@ function createProvider(
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockRemoteConfig.value = null
+    hoisted.refs.remoteConfig.value = null
+    // Fresh tier ref per test: each provider registers an undisposed tier
+    // watch, so a shared ref would leak watchers across tests.
+    hoisted.refs.tier = ref<string | null>(null)
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
     } as typeof window.__CONFIG__
@@ -121,7 +117,7 @@ describe('PostHogTelemetryProvider', () => {
     })
 
     it('applies posthog_config overrides from remote config', async () => {
-      mockRemoteConfig.value = {
+      hoisted.refs.remoteConfig.value = {
         posthog_config: {
           debug: true,
           api_host: 'https://custom.host.com'
@@ -156,28 +152,46 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockIdentify).toHaveBeenCalledWith('user-123')
     })
 
-    it('sets the subscription_tier person property from the facade tier', async () => {
+    function tierPropertySets(): unknown[] {
+      return hoisted.mockPeopleSet.mock.calls
+        .map(([props]) => props)
+        .filter((props) => props && 'subscription_tier' in props)
+    }
+
+    it('sets subscription_tier reactively when the facade tier resolves', async () => {
       createProvider()
       await vi.dynamicImportSettled()
 
       const onResolved = hoisted.mockOnUserResolved.mock.calls[0][0]
       onResolved({ id: 'user-123' })
 
-      const tierWatch = watchMock.mock.calls.find(
-        ([source]) => source === hoisted.mockTier
-      )
-      expect(tierWatch).toBeDefined()
+      // Unresolved tier (null) does not set the property
+      expect(tierPropertySets()).toHaveLength(0)
 
-      const handler = tierWatch?.[1] as unknown as (
-        value: string | null
-      ) => void
-      handler('PRO')
+      hoisted.refs.tier.value = 'PRO'
+      await nextTick()
       expect(hoisted.mockPeopleSet).toHaveBeenCalledWith({
         subscription_tier: 'PRO'
       })
 
-      handler(null)
-      expect(hoisted.mockPeopleSet).toHaveBeenCalledOnce()
+      hoisted.refs.tier.value = null
+      await nextTick()
+      expect(tierPropertySets()).toHaveLength(1)
+    })
+
+    it('keeps a single tier watcher across repeated user resolutions', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const onResolved = hoisted.mockOnUserResolved.mock.calls[0][0]
+      onResolved({ id: 'user-1' })
+      onResolved({ id: 'user-1' })
+      onResolved({ id: 'user-2' })
+
+      hoisted.refs.tier.value = 'PRO'
+      await nextTick()
+
+      expect(tierPropertySets()).toHaveLength(1)
     })
   })
 
@@ -609,7 +623,7 @@ describe('PostHogTelemetryProvider', () => {
 
     it('remoteConfig.posthog_config cannot override before_send or person_profiles', async () => {
       const remoteBefore_send = vi.fn()
-      mockRemoteConfig.value = {
+      hoisted.refs.remoteConfig.value = {
         posthog_config: {
           before_send: remoteBefore_send,
           person_profiles: 'always'

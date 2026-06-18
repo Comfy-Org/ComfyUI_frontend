@@ -1,5 +1,6 @@
 import type { PostHog } from 'posthog-js'
 import { watch } from 'vue'
+import type { WatchStopHandle } from 'vue'
 
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
@@ -103,6 +104,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private isInitialized = false
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
   private desktopEntryProps: DesktopEntryProps | null = null
+  private stopSubscriptionTierWatch: WatchStopHandle | null = null
 
   constructor() {
     this.configureDisabledEvents(
@@ -312,8 +314,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   private setSubscriptionProperties(): void {
+    if (this.stopSubscriptionTierWatch) return
     const { tier } = useBillingContext()
-    watch(
+    this.stopSubscriptionTierWatch = watch(
       tier,
       (value) => {
         if (value && this.posthog) {
