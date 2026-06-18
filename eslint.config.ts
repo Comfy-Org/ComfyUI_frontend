@@ -420,15 +420,6 @@ export default defineConfig([
       '@intlify/vue-i18n/no-raw-text': 'off'
     }
   },
-  // shadcn-vue primitives forward props via useForwardPropsEmits / v-bind,
-  // which vue/no-unused-properties cannot see through.
-  {
-    files: ['apps/website/src/components/ui/**/*.vue'],
-    rules: {
-      'vue/no-unused-properties': 'off'
-    }
-  },
-
   // i18n import enforcement
   // Vue components must use the useI18n() composable, not the global t/d/st/te
   {
