@@ -668,6 +668,18 @@ describe('useAssetBrowser', () => {
       ])
     })
 
+    it('groups by model_type:* value and ignores other tags', () => {
+      const assets = [
+        createApiAsset({ tags: ['models', 'model_type:checkpoints', 'sdxl'] }),
+        createApiAsset({ tags: ['models', 'model_type:LLM'] })
+      ]
+
+      const { navItems } = useAssetBrowser(ref(assets))
+
+      const typeGroup = navItems.value[2] as { items: { id: string }[] }
+      expect(typeGroup.items.map((i) => i.id)).toEqual(['LLM', 'checkpoints'])
+    })
+
     it('handles assets with no category tag', () => {
       const assets = [
         createApiAsset({ tags: ['models'] }), // No second tag
