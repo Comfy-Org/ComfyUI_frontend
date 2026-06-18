@@ -106,7 +106,7 @@ export const formatClockTime = (
     minute: '2-digit',
     second: '2-digit'
   }
-  if (hourCycle) {
+  if (hourCycle !== undefined) {
     options.hourCycle = hourCycle
   }
   return new Intl.DateTimeFormat(locale, options).format(d)

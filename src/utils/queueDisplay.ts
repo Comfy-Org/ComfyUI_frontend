@@ -3,10 +3,17 @@ import type { JobState } from '@/types/queue'
 import { formatDuration } from '@/utils/formatUtil'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 
+type FormatClockTimeFn = (
+  ts: number,
+  locale: string,
+  clockPreferenceLocale?: string
+) => string
+
 export type BuildJobDisplayCtx = {
   t: (k: string, v?: Record<string, unknown>) => string
   locale: string
-  formatClockTimeFn: (ts: number, locale: string) => string
+  clockPreferenceLocale?: string
+  formatClockTimeFn: FormatClockTimeFn
   isActive: boolean
   totalPercent?: number
   currentNodePercent?: number
@@ -53,10 +60,13 @@ const buildTitle = (task: TaskItemImpl, t: (k: string) => string): string => {
 const buildQueuedTime = (
   task: TaskItemImpl,
   locale: string,
-  formatClockTimeFn: (ts: number, locale: string) => string
+  formatClockTimeFn: FormatClockTimeFn,
+  clockPreferenceLocale?: string
 ): string => {
   const ts = task.createTime
-  return ts !== undefined ? formatClockTimeFn(ts, locale) : ''
+  return ts !== undefined
+    ? formatClockTimeFn(ts, locale, clockPreferenceLocale)
+    : ''
 }
 
 export const buildJobDisplay = (
@@ -69,14 +79,24 @@ export const buildJobDisplay = (
       return {
         iconName: 'icon-[lucide--check]',
         primary: ctx.t('queue.jobAddedToQueue'),
-        secondary: buildQueuedTime(task, ctx.locale, ctx.formatClockTimeFn),
+        secondary: buildQueuedTime(
+          task,
+          ctx.locale,
+          ctx.formatClockTimeFn,
+          ctx.clockPreferenceLocale
+        ),
         showClear: true
       }
     }
     return {
       iconName: iconForJobState(state),
       primary: ctx.t('queue.inQueue'),
-      secondary: buildQueuedTime(task, ctx.locale, ctx.formatClockTimeFn),
+      secondary: buildQueuedTime(
+        task,
+        ctx.locale,
+        ctx.formatClockTimeFn,
+        ctx.clockPreferenceLocale
+      ),
       showClear: true
     }
   }
@@ -84,7 +104,12 @@ export const buildJobDisplay = (
     return {
       iconName: iconForJobState(state),
       primary: ctx.t('queue.initializingAlmostReady'),
-      secondary: buildQueuedTime(task, ctx.locale, ctx.formatClockTimeFn),
+      secondary: buildQueuedTime(
+        task,
+        ctx.locale,
+        ctx.formatClockTimeFn,
+        ctx.clockPreferenceLocale
+      ),
       showClear: true
     }
   }

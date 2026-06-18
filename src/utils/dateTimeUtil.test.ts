@@ -212,13 +212,6 @@ describe('formatShortMonthDay', () => {
 describe('formatClockTime', () => {
   it('formats time with hours, minutes, and seconds', () => {
     const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
-    const result = formatClockTime(ts, 'en-GB', 'en-GB')
-    // en-GB uses 24-hour format
-    expect(result).toBe('14:05:06')
-  })
-
-  it('uses app locale with browser/system hour-cycle preference', () => {
-    const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
     const hourCycle = new Intl.DateTimeFormat(undefined, {
       hour: 'numeric'
     }).resolvedOptions().hourCycle
@@ -228,8 +221,22 @@ describe('formatClockTime', () => {
       second: '2-digit',
       hourCycle
     } satisfies Intl.DateTimeFormatOptions
+    const expected = new Intl.DateTimeFormat('en-GB', options).format(ts)
+    const result = formatClockTime(ts, 'en-GB')
+
+    expect(result).toBe(expected)
+  })
+
+  it('uses app locale with explicit hour-cycle preference', () => {
+    const ts = new Date(2024, 5, 15, 14, 5, 6).getTime()
+    const options = {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h12'
+    } satisfies Intl.DateTimeFormatOptions
     const expected = new Intl.DateTimeFormat('es', options).format(ts)
 
-    expect(formatClockTime(ts, 'es')).toBe(expected)
+    expect(formatClockTime(ts, 'es', 'en-US')).toBe(expected)
   })
 })
