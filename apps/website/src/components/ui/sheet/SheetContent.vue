@@ -10,7 +10,7 @@ import SheetOverlay from './SheetOverlay.vue'
 interface SheetContentProps extends DialogContentProps {
   class?: HTMLAttributes['class']
   side?: 'top' | 'right' | 'bottom' | 'left'
-  closeLabel?: string
+  closeLabel: string
 }
 
 defineOptions({
@@ -19,7 +19,7 @@ defineOptions({
 
 const {
   side = 'right',
-  closeLabel = 'Close',
+  closeLabel,
   class: classProp,
   ...delegatedProps
 } = defineProps<SheetContentProps>()

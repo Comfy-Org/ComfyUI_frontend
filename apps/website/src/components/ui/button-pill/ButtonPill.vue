@@ -17,9 +17,15 @@ interface Props extends PrimitiveProps {
   disabled?: boolean
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  as: 'button'
-})
+const {
+  as = 'button',
+  asChild,
+  variant,
+  size,
+  iconPosition,
+  class: className,
+  disabled
+} = defineProps<Props>()
 </script>
 
 <template>
@@ -30,9 +36,7 @@ const props = withDefaults(defineProps<Props>(), {
     :as
     :as-child
     :disabled
-    :class="
-      cn(buttonPillVariants({ variant, size, iconPosition }), props.class)
-    "
+    :class="cn(buttonPillVariants({ variant, size, iconPosition }), className)"
   >
     <span
       :class="

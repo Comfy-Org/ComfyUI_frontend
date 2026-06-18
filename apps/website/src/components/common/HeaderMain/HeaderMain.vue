@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Locale } from '../../../i18n/translations.ts'
+import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
@@ -14,14 +15,16 @@ const routes = getRoutes(locale)
 
 const ctaButtons = [
   {
-    prefix: 'DOWNLOAD',
-    core: 'DESKTOP',
+    prefix: t('nav.ctaDesktopPrefix', locale),
+    core: t('nav.ctaDesktopCore', locale),
+    ariaLabel: t('nav.downloadLocal', locale),
     href: routes.download,
     primary: false
   },
   {
-    prefix: 'LAUNCH',
-    core: 'CLOUD',
+    prefix: t('nav.ctaCloudPrefix', locale),
+    core: t('nav.ctaCloudCore', locale),
+    ariaLabel: t('nav.launchCloud', locale),
     href: externalLinks.cloud,
     primary: true
   }
@@ -69,7 +72,7 @@ const ctaButtons = [
         :key="cta.href"
         :href="cta.href"
         :variant="cta.primary ? 'default' : 'outline'"
-        :aria-label="`${cta.prefix} ${cta.core}`"
+        :aria-label="cta.ariaLabel"
       >
         <span
           ><span class="hidden xl:inline-block">{{ cta.prefix }}&nbsp;</span
