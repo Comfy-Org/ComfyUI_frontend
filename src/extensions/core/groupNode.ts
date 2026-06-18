@@ -544,15 +544,21 @@ export class GroupNodeConfig {
     }
     seenInputs[key] = (seenInputs[key] ?? 1) + 1
 
-    if (inputName === 'seed' || inputName === 'noise_seed') {
-      if (!extra) extra = {}
-      extra.control_after_generate = `${prefix}control_after_generate`
+    const configOptions =
+      typeof config[1] === 'object' && config[1] !== null ? config[1] : {}
+    if (
+      'control_after_generate' in configOptions &&
+      configOptions.control_after_generate
+    ) {
+      const controlPrefix = prefix.trimEnd()
+      if (controlPrefix) {
+        if (!extra) extra = {}
+        extra.control_prefix = controlPrefix
+      }
     }
     if (config[0] === 'IMAGEUPLOAD') {
       if (!extra) extra = {}
       const nodeIndex = node.index ?? -1
-      const configOptions =
-        typeof config[1] === 'object' && config[1] !== null ? config[1] : {}
       const widgetKey =
         'widget' in configOptions && typeof configOptions.widget === 'string'
           ? configOptions.widget
@@ -561,9 +567,7 @@ export class GroupNodeConfig {
     }
 
     if (extra) {
-      const configObj =
-        typeof config[1] === 'object' && config[1] ? config[1] : {}
-      config = [config[0], { ...configObj, ...extra }]
+      config = [config[0], { ...configOptions, ...extra }]
     }
 
     return { name, config, customConfig }

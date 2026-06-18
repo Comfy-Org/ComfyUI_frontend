@@ -15,7 +15,7 @@
       "properties": {
         "Node name for S&R": "DevToolsNodeWithSeedInput"
       },
-      "widgets_values": [0, "randomize"]
+      "widgets_values": [0]
     }
   ],
   "links": [],
