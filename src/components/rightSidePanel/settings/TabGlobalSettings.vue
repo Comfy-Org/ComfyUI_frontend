@@ -49,7 +49,7 @@ watch(
     clearHighlightTimer = setTimeout(() => {
       showAdvancedHighlighted.value = false
       clearHighlightTimer = null
-    }, 1300)
+    }, 1100)
   },
   { immediate: true }
 )
@@ -258,29 +258,116 @@ function openFullSettings() {
 
 <style>
 @media (prefers-reduced-motion: no-preference) {
+  .show-advanced-highlight {
+    animation: show-advanced-row-highlight 1s linear;
+  }
+
   .show-advanced-highlight span:first-of-type {
-    animation: show-advanced-label-highlight 1.2s ease-in-out;
+    animation: show-advanced-label-color 1s linear;
+    /* Word-wrap (commented out — keep for revert):
     border-radius: 0.25rem;
     padding: 0 0.25rem;
     margin: -0.125rem -0.25rem;
     flex: none;
+    */
+  }
+
+  .dark-theme .show-advanced-highlight span:first-of-type {
+    animation-name: show-advanced-label-color-dark;
+  }
+
+  .show-advanced-highlight .p-toggleswitch-handle {
+    animation:
+      show-advanced-toggle-flip 1s linear,
+      show-advanced-toggle-handle-color 1s linear;
+  }
+
+  .show-advanced-highlight .p-toggleswitch-slider {
+    animation: show-advanced-toggle-slider-color 1s linear;
   }
 }
 
-@keyframes show-advanced-label-highlight {
-  0%,
+@keyframes show-advanced-toggle-slider-color {
+  0% {
+    background: var(--p-toggleswitch-background);
+    border-color: var(--p-toggleswitch-border-color);
+  }
+  10%,
+  80% {
+    background: var(--p-toggleswitch-checked-background);
+    border-color: var(--p-toggleswitch-checked-border-color);
+  }
+  100% {
+    background: var(--p-toggleswitch-background);
+    border-color: var(--p-toggleswitch-border-color);
+  }
+}
+
+@keyframes show-advanced-toggle-handle-color {
+  0% {
+    background: var(--p-toggleswitch-handle-background);
+  }
+  10%,
+  80% {
+    background: var(--p-toggleswitch-handle-checked-background);
+  }
+  100% {
+    background: var(--p-toggleswitch-handle-background);
+  }
+}
+
+@keyframes show-advanced-row-highlight {
+  0% {
+    background-color: transparent;
+  }
+  10%,
+  80% {
+    background-color: color-mix(in srgb, gray 25%, transparent);
+  }
   100% {
     background-color: transparent;
+  }
+}
+
+@keyframes show-advanced-label-color {
+  0% {
     color: var(--color-muted-foreground);
   }
-  20%,
+  10%,
   80% {
-    background-color: color-mix(
-      in srgb,
-      var(--color-warning-background) 80%,
-      transparent
-    );
     color: black;
+  }
+  100% {
+    color: var(--color-muted-foreground);
+  }
+}
+
+@keyframes show-advanced-label-color-dark {
+  0% {
+    color: var(--color-muted-foreground);
+  }
+  10%,
+  80% {
+    color: white;
+  }
+  100% {
+    color: var(--color-muted-foreground);
+  }
+}
+
+@keyframes show-advanced-toggle-flip {
+  0% {
+    inset-inline-start: var(--p-toggleswitch-gap);
+  }
+  10%,
+  80% {
+    inset-inline-start: calc(
+      var(--p-toggleswitch-width) -
+        calc(var(--p-toggleswitch-handle-size) + var(--p-toggleswitch-gap))
+    );
+  }
+  100% {
+    inset-inline-start: var(--p-toggleswitch-gap);
   }
 }
 </style>
