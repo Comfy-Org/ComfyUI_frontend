@@ -1245,8 +1245,8 @@ const translations = {
     'zh-CN': '可随时增加积分'
   },
   'pricing.plan.standard.feature3': {
-    en: '1 workflow via API',
-    'zh-CN': '通过 API 调用 1 个工作流'
+    en: 'Run 1 workflow concurrently (via API)',
+    'zh-CN': '通过 API 并发运行 1 个工作流'
   },
 
   'pricing.plan.creator.label': { en: 'CREATOR', 'zh-CN': '创作者版' },
@@ -1276,8 +1276,8 @@ const translations = {
     'zh-CN': '导入你自己的 LoRA'
   },
   'pricing.plan.creator.feature2': {
-    en: '3 workflows via API',
-    'zh-CN': '通过 API 调用 3 个工作流'
+    en: 'Run up to 3 workflows concurrently (via API)',
+    'zh-CN': '通过 API 最多并发运行 3 个工作流'
   },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
@@ -1304,8 +1304,8 @@ const translations = {
     'zh-CN': '更长工作流运行时长（最长 1 小时）'
   },
   'pricing.plan.pro.feature2': {
-    en: '5 workflows via API',
-    'zh-CN': '通过 API 调用 5 个工作流'
+    en: 'Run up to 5 workflows concurrently (via API)',
+    'zh-CN': '通过 API 最多并发运行 5 个工作流'
   },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
