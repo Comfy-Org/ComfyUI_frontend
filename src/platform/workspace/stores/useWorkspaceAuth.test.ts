@@ -1099,6 +1099,73 @@ describe('useWorkspaceAuthStore', () => {
       )
     })
 
+    it('blocks a stale refresh that resolves after switch-away-and-back to same workspace', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(mockTokenResponse)
+      })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken } = storeToRefs(store)
+
+      await store.switchWorkspace('workspace-123')
+
+      // Hang the refresh fetch so it resolves after both switches below.
+      let resolveRefreshFetch: (value: unknown) => void = () => {}
+      mockFetch.mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveRefreshFetch = resolve
+        })
+      )
+      const refreshPromise = store.refreshToken()
+
+      // Switch away to a different workspace...
+      const otherExpiry = new Date(Date.now() + 7200 * 1000).toISOString()
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'other-workspace-token',
+            expires_at: otherExpiry,
+            workspace: { ...mockTokenResponse.workspace, id: 'workspace-other' }
+          })
+      })
+      await store.switchWorkspace('workspace-other')
+      expect(workspaceToken.value).toBe('other-workspace-token')
+
+      // ...and back to the original workspace.
+      const backExpiry = new Date(Date.now() + 7200 * 1000).toISOString()
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...mockTokenResponse,
+            token: 'back-workspace-token',
+            expires_at: backExpiry
+          })
+      })
+      await store.switchWorkspace('workspace-123')
+      expect(workspaceToken.value).toBe('back-workspace-token')
+
+      // Stale refresh resolves with an old token — must not clobber state.
+      resolveRefreshFetch({
+        ok: true,
+        json: () =>
+          Promise.resolve({ ...mockTokenResponse, token: 'stale-token' })
+      })
+      await refreshPromise
+
+      expect(currentWorkspace.value?.id).toBe('workspace-123')
+      expect(workspaceToken.value).toBe('back-workspace-token')
+      expect(sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.TOKEN)).toBe(
+        'back-workspace-token'
+      )
+    })
+
     it('the new workspace keeps clean error state when a stale refresh fails last', async () => {
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
 
