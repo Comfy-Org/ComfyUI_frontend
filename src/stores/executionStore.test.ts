@@ -786,7 +786,8 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       promptOutput: {
         '123': createPromptNode('Test Node', 'TestNode')
       },
-      workflow: createQueuedWorkflow()
+      workflow: createQueuedWorkflow(),
+      mode: 'graph'
     })
     store.activeJobId = 'test-prompt'
 
@@ -814,7 +815,8 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       promptOutput: {
         '456:789': createPromptNode('Nested Node', 'NestedNode')
       },
-      workflow: createQueuedWorkflow()
+      workflow: createQueuedWorkflow(),
+      mode: 'graph'
     })
     store.activeJobId = 'test-prompt'
 
@@ -848,7 +850,8 @@ describe('useExecutionStore - executingNode with subgraphs', () => {
       promptOutput: {
         '123': createPromptNode('Test Node', 'TestNode')
       },
-      workflow: createQueuedWorkflow()
+      workflow: createQueuedWorkflow(),
+      mode: 'graph'
     })
     store.activeJobId = 'test-prompt'
 
@@ -1136,7 +1139,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         promptOutput: {
           a: createPromptNode('Node A', 'NodeA')
         },
-        workflow
+        workflow,
+        mode: 'graph'
       })
       fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
 
@@ -1162,7 +1166,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         promptOutput: {
           a: createPromptNode('Node A', 'NodeA')
         },
-        workflow
+        workflow,
+        mode: 'graph'
       })
 
       fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
@@ -1184,7 +1189,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         promptOutput: {
           a: createPromptNode('Node A', 'NodeA')
         },
-        workflow
+        workflow,
+        mode: 'graph'
       })
 
       mockAppModeState.mode.value = 'app'
@@ -1199,17 +1205,18 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       })
     })
 
-    it('attributes shared workflow run to the queued workflow, not the active one', () => {
+    it('attributes shared workflow run to the passed mode, not the workflow current mode', () => {
       const workflow = createQueuedWorkflow()
       workflow.shareId = 'share-1'
-      workflow.activeMode = 'app'
+      workflow.activeMode = 'graph'
       store.storeJob({
         nodes: ['a'],
         id: 'job-1',
         promptOutput: {
           a: createPromptNode('Node A', 'NodeA')
         },
-        workflow
+        workflow,
+        mode: 'app'
       })
 
       fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
@@ -1378,7 +1385,8 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
         a: createPromptNode('Node A', 'NodeA'),
         b: createPromptNode('Node B', 'NodeB')
       },
-      workflow
+      workflow,
+      mode: 'graph'
     })
 
     expect(store.queuedJobs['job-1']?.nodes).toEqual({ a: false, b: false })
