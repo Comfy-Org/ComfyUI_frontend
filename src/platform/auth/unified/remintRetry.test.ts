@@ -26,6 +26,10 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   })
 }))
 
+// The axios interceptor gates on shouldRemintCloudRequest(), which is a no-op
+// off-cloud; the unit env is not a cloud build, so force it on.
+vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+
 describe('fetchWithUnifiedRemint', () => {
   const ok = { status: 200 } as Response
   const unauthorized = { status: 401 } as Response
@@ -135,6 +139,7 @@ describe('fetchWithUnifiedRemint', () => {
 
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(mockRemint).toHaveBeenCalledTimes(1)
   })
 
   it.for([
@@ -306,5 +311,48 @@ describe('attachUnifiedRemintInterceptor', () => {
     expect(retryConfig.method).toBe('post')
     expect(retryConfig.data).toBe(firstConfig.data)
     expect(String(retryConfig.headers.Authorization)).toBe('Bearer tokenB')
+  })
+
+  it('latches per request — a second request still retries once (no shared latch)', async () => {
+    // Per-URL: first call 401, second (the retry) 200. The latch lives on each
+    // request's config, so a second request must retry independently.
+    const callsByUrl = new Map<string, number>()
+    const adapter = vi.fn<AxiosAdapter>(async (config) => {
+      const url = config.url ?? ''
+      const nth = (callsByUrl.get(url) ?? 0) + 1
+      callsByUrl.set(url, nth)
+      const okStatus = nth >= 2
+      const response = {
+        data: okStatus ? { ok: true } : { message: 'unauthorized' },
+        status: okStatus ? 200 : 401,
+        statusText: okStatus ? '200' : '401',
+        headers: {},
+        config
+      }
+      if (okStatus) return response
+      throw new AxiosError(
+        'Request failed with status code 401',
+        AxiosError.ERR_BAD_REQUEST,
+        config,
+        null,
+        response
+      )
+    })
+    const client = axios.create({ adapter: adapter as unknown as AxiosAdapter })
+    attachUnifiedRemintInterceptor(client)
+    mockRemint.mockResolvedValue('tokenB')
+
+    const a = await client.get('https://cloud/a', {
+      headers: { Authorization: 'Bearer tokenA' }
+    })
+    const b = await client.get('https://cloud/b', {
+      headers: { Authorization: 'Bearer tokenA' }
+    })
+
+    expect(a.status).toBe(200)
+    expect(b.status).toBe(200)
+    // Each request: initial 401 + one retry = 4 adapter calls, one re-mint each.
+    expect(adapter).toHaveBeenCalledTimes(4)
+    expect(mockRemint).toHaveBeenCalledTimes(2)
   })
 })

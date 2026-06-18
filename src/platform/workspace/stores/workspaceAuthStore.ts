@@ -486,7 +486,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       }
     } catch (err) {
       if (isPermanentAuthError(err)) {
-        surfacePermanentAuthError(err)
+        if (unifiedToken.value) surfacePermanentAuthError(err)
         clearUnifiedContext()
       } else {
         console.warn('Unified token refresh failed:', err)
@@ -522,13 +522,16 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       return null
     }
     try {
-      await mintUnified(target)
-      return unifiedToken.value
+      // A mint discarded by the stale-guard (concurrent burst) returns false;
+      // surface null so the caller's original 401 stands instead of replaying a
+      // stale token.
+      const minted = await mintUnified(target)
+      return minted ? unifiedToken.value : null
     } catch (err) {
-      // Mirror refreshUnified: a permanent failure means the identity is dead —
-      // surface it and tear down rather than strand the caller on a stale token.
+      // Mirror refreshUnified: a permanent failure tears down the session;
+      // guard the toast on a live token so a concurrent burst surfaces it once.
       if (isPermanentAuthError(err)) {
-        surfacePermanentAuthError(err)
+        if (unifiedToken.value) surfacePermanentAuthError(err)
         clearUnifiedContext()
       } else {
         console.warn('Unified reactive re-mint failed:', err)

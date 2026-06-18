@@ -6,7 +6,10 @@ import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
-import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
+import {
+  fetchWithUnifiedRemint,
+  shouldRemintCloudRequest
+} from '@/platform/auth/unified/remintRetry'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 import type {
   ModelFile,
@@ -460,10 +463,7 @@ export class ComfyApi extends EventTarget {
         for (const [key, value] of Object.entries(authHeader)) {
           addHeaderEntry(headers, key, value)
         }
-        // Dynamic import avoids a static api.ts <-> useFeatureFlags cycle.
-        const { useFeatureFlags } =
-          await import('@/composables/useFeatureFlags')
-        unifiedRetryOn401 = useFeatureFlags().flags.unifiedCloudAuthEnabled
+        unifiedRetryOn401 = await shouldRemintCloudRequest()
       }
     }
 

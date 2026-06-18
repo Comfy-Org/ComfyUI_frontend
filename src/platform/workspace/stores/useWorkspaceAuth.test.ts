@@ -1163,14 +1163,15 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(unifiedToken.value).toBe('latest-token')
 
-      // The stale re-mint resolves last and must not clobber the latest token.
+      // The stale re-mint resolves last and must not clobber the latest token,
+      // and surfaces null so the caller's 401 stands instead of a stale retry.
       resolveStale({
         ok: true,
         json: () =>
           Promise.resolve({ ...personalTokenResponse, token: 'stale-token' })
       })
-      await remintA
 
+      expect(await remintA).toBeNull()
       expect(unifiedToken.value).toBe('latest-token')
     })
 
