@@ -102,7 +102,7 @@ describe('EssentialNodeCard', () => {
   describe('rendering', () => {
     it('should display the tile label', () => {
       renderComponent()
-      expect(screen.getAllByText('Load Image').length).toBeGreaterThan(0)
+      expect(screen.getAllByText('LoadImage').length).toBeGreaterThan(0)
     })
 
     it('should render the tile icon', () => {

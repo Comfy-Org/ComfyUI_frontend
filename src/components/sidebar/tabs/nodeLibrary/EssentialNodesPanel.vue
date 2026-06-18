@@ -91,10 +91,12 @@ const filteredSections = computed<EssentialSection[]>(() => {
   const query = searchQuery.trim().toLowerCase()
   if (!query) return ESSENTIAL_SECTIONS
 
-  const matchesQuery = (tile: EssentialTile) =>
-    resolveEssentialTileNodeDef(tile, nodeDefStore)
-      ?.display_name?.toLowerCase()
-      .includes(query)
+  const matchesQuery = (tile: EssentialTile) => {
+    const name =
+      resolveEssentialTileNodeDef(tile, nodeDefStore)?.display_name ??
+      tile.nodeName
+    return name.toLowerCase().includes(query)
+  }
   return ESSENTIAL_SECTIONS.flatMap<EssentialSection>((section) => {
     if (section.tiles?.length) {
       const tiles = section.tiles.filter(matchesQuery)

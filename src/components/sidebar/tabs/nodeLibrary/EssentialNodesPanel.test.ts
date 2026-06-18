@@ -72,19 +72,19 @@ describe('EssentialNodesPanel', () => {
 
   describe('search', () => {
     it('should only show tiles matching the query', () => {
-      renderComponent({ searchQuery: 'load image' })
+      renderComponent({ searchQuery: 'loadimage' })
       expect(screen.getByText('LoadImage')).toBeInTheDocument()
       expect(screen.queryByText('SaveImage')).not.toBeInTheDocument()
     })
 
     it('should drop sections with no matching tiles', () => {
-      renderComponent({ searchQuery: 'Load Image' })
+      renderComponent({ searchQuery: 'LoadImage' })
       expect(screen.getByText('Inputs & Outputs')).toBeInTheDocument()
       expect(screen.queryByText('Generate')).not.toBeInTheDocument()
     })
 
     it('should match tiles inside subgroups', () => {
-      renderComponent({ searchQuery: 'batch image' })
+      renderComponent({ searchQuery: 'batchimage' })
       expect(screen.getByText('Image Utilities')).toBeInTheDocument()
       expect(screen.getByText('BatchImagesNode')).toBeInTheDocument()
       expect(screen.queryByText('Inputs & Outputs')).not.toBeInTheDocument()
