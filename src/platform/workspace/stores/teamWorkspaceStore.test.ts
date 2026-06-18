@@ -878,7 +878,7 @@ describe('useTeamWorkspaceStore', () => {
         name: string
         email: string
         joined_at: string
-        is_original_owner: boolean
+        is_original_owner?: boolean
       }>
     ) {
       mockWorkspaceApi.listMembers.mockResolvedValue({
@@ -919,6 +919,13 @@ describe('useTeamWorkspaceStore', () => {
     it('is false when the self-row is a promoted (non-creator) owner', async () => {
       mockCurrentUser.userEmail.value = 'owner@test.com'
       const store = await loadTeamWithMembers([promotedSelf])
+      expect(store.isCurrentUserOriginalOwner).toBe(false)
+    })
+
+    it('fails closed when the self-row omits is_original_owner', async () => {
+      mockCurrentUser.userEmail.value = 'owner@test.com'
+      const { is_original_owner: _omitted, ...selfWithoutFlag } = ownerSelf
+      const store = await loadTeamWithMembers([selfWithoutFlag])
       expect(store.isCurrentUserOriginalOwner).toBe(false)
     })
 
