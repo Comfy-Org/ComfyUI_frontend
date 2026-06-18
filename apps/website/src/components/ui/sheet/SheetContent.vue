@@ -4,8 +4,8 @@ import type { HTMLAttributes } from 'vue'
 import { X } from '@lucide/vue'
 import { DialogContent, DialogPortal, useForwardPropsEmits } from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
+import SheetClose from './SheetClose.vue'
 import SheetOverlay from './SheetOverlay.vue'
-import { SheetClose } from '.'
 
 interface SheetContentProps extends DialogContentProps {
   class?: HTMLAttributes['class']
