@@ -16,12 +16,9 @@ import type { ChartData } from 'chart.js'
 import Chart from 'primevue/chart'
 import { computed } from 'vue'
 
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-type ChartWidgetOptions = IWidgetOptions & {
-  type?: 'bar' | 'line'
-}
+import type { ChartWidgetOptions } from './WidgetChart.types'
 
 const value = defineModel<ChartData>({ required: true })
 

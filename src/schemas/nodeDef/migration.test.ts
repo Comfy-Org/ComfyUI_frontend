@@ -199,6 +199,32 @@ describe('NodeDef Migration', () => {
     expect(result.inputs['customInput'].default).toBe('custom value')
   })
 
+  it('should map CHART option type to chartType', () => {
+    const plainObject = {
+      optional: {
+        chartInput: ['CHART', { type: 'bar', data: { labels: [] } }]
+      }
+    } as ComfyNodeDefV1['input']
+
+    const nodeDef: ComfyNodeDefV1 = {
+      name: 'TestNode',
+      display_name: 'Test Node',
+      category: 'Testing',
+      python_module: 'test_module',
+      description: 'A test node',
+      input: plainObject,
+      output: [],
+      output_is_list: [],
+      output_name: [],
+      output_node: false
+    }
+
+    const result = transformNodeDefV1ToV2(nodeDef)
+    const chartInput = result.inputs['chartInput']
+    expect(chartInput.type).toBe('CHART')
+    expect(chartInput).toMatchObject({ chartType: 'bar', data: { labels: [] } })
+  })
+
   it('should not transform hidden fields', () => {
     const plainObject = {
       hidden: {
