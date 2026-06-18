@@ -11,6 +11,8 @@ import { nextTick, onMounted, ref } from 'vue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { externalLinks, getRoutes } from '../../config/routes'
+import type { CtaButton } from '../../scripts/posthog'
+import { captureCtaClick } from '../../scripts/posthog'
 import BrandButton from './BrandButton.vue'
 import GitHubStarBadge from './GitHubStarBadge.vue'
 import MobileMenu from './MobileMenu.vue'
@@ -27,8 +29,16 @@ const navLinks: NavLink[] = [
   {
     label: t('nav.products', locale),
     items: [
-      { label: t('nav.comfyLocal', locale), href: routes.download },
-      { label: t('nav.comfyCloud', locale), href: routes.cloud },
+      {
+        label: t('nav.comfyLocal', locale),
+        href: routes.download,
+        ctaButton: 'comfy_desktop'
+      },
+      {
+        label: t('nav.comfyCloud', locale),
+        href: routes.cloud,
+        ctaButton: 'comfy_cloud'
+      },
       {
         label: t('nav.comfyApi', locale),
         href: routes.api,
@@ -37,7 +47,11 @@ const navLinks: NavLink[] = [
       { label: t('nav.comfyEnterprise', locale), href: routes.cloudEnterprise }
     ]
   },
-  { label: t('nav.pricing', locale), href: routes.cloudPricing },
+  {
+    label: t('nav.pricing', locale),
+    href: routes.cloudPricing,
+    ctaButton: 'pricing'
+  },
   {
     label: t('nav.community', locale),
     items: [
@@ -90,20 +104,29 @@ const navLinks: NavLink[] = [
   }
 ]
 
-const ctaButtons = [
+const ctaButtons: {
+  label: string
+  prefix: string
+  core: string
+  href: string
+  primary: boolean
+  ctaButton: CtaButton
+}[] = [
   {
     label: t('nav.downloadLocal', locale),
     prefix: 'DOWNLOAD',
     core: 'DESKTOP',
     href: routes.download,
-    primary: false
+    primary: false,
+    ctaButton: 'download_desktop'
   },
   {
     label: t('nav.launchCloud', locale),
     prefix: 'LAUNCH',
     core: 'CLOUD',
     href: externalLinks.cloud,
-    primary: true
+    primary: true,
+    ctaButton: 'launch_cloud'
   }
 ]
 
@@ -218,6 +241,7 @@ onMounted(() => {
         :variant="cta.primary ? 'solid' : 'outline'"
         size="nav"
         :aria-label="cta.label"
+        @click="captureCtaClick(cta.ctaButton, 'nav')"
       >
         <span
           class="inline-block max-w-0 overflow-hidden align-bottom transition-[max-width] duration-300 ease-in-out xl:max-w-28"

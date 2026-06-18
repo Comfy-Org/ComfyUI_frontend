@@ -49,3 +49,23 @@ export function captureDownloadClick(platform: Platform) {
     console.error('PostHog download click capture failed', error)
   }
 }
+
+export type CtaButton =
+  | 'launch_cloud'
+  | 'download_desktop'
+  | 'pricing'
+  | 'run_first_workflow'
+  | 'products'
+  | 'comfy_desktop'
+  | 'comfy_cloud'
+
+export type CtaLocation = 'nav' | 'hero' | 'products_section'
+
+export function captureCtaClick(button: CtaButton, location: CtaLocation) {
+  if (!initialized) return
+  try {
+    posthog.capture('website:cta_clicked', { button, location })
+  } catch (error) {
+    console.error('PostHog CTA click capture failed', error)
+  }
+}
