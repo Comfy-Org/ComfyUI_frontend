@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
@@ -71,6 +72,11 @@ const test = comfyPageFixture.extend({
   }
 })
 
+async function openSwitcherPanel(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'Current user' }).click()
+  await page.getByTestId('workspace-switcher-trigger').click()
+}
+
 test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
   test('token is persisted to sessionStorage after switching workspace', async ({
     comfyPage
@@ -88,13 +94,15 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     )
 
     await comfyPage.toast.closeToasts()
-    await page.getByRole('button', { name: 'Current user' }).click()
+    await openSwitcherPanel(page)
     await page.getByText('Personal Workspace').click()
 
-    const token = await page.evaluate(() =>
-      sessionStorage.getItem('Comfy.Workspace.Token')
-    )
-    expect(token).toBe('initial-token')
+    await expect
+      .poll(
+        () => page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
+        { timeout: 5000 }
+      )
+      .toBe('initial-token')
 
     const expiresAt = await page.evaluate(() =>
       sessionStorage.getItem('Comfy.Workspace.ExpiresAt')
@@ -122,15 +130,17 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     })
 
     await comfyPage.toast.closeToasts()
-    await page.getByRole('button', { name: 'Current user' }).click()
+    await openSwitcherPanel(page)
     await page.getByText('Personal Workspace').click()
 
-    expect(
-      await page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token'))
-    ).toBe('personal-token')
+    await expect
+      .poll(
+        () => page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
+        { timeout: 5000 }
+      )
+      .toBe('personal-token')
 
-    await page.getByRole('button', { name: 'Current user' }).click()
-    await page.getByTestId('workspace-switcher-trigger').click()
+    await openSwitcherPanel(page)
     await page.getByText('Team Workspace').click()
 
     await expect
@@ -181,12 +191,15 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     })
 
     await comfyPage.toast.closeToasts()
-    await page.getByRole('button', { name: 'Current user' }).click()
+    await openSwitcherPanel(page)
     await page.getByText('Personal Workspace').click()
 
-    expect(
-      await page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token'))
-    ).toBe('original-token')
+    await expect
+      .poll(
+        () => page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
+        { timeout: 5000 }
+      )
+      .toBe('original-token')
 
     // The scheduled refresh fires immediately (token expires within buffer window).
     // Wait for the second route call (the failing refresh) to complete, then verify
@@ -231,12 +244,15 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     })
 
     await comfyPage.toast.closeToasts()
-    await page.getByRole('button', { name: 'Current user' }).click()
+    await openSwitcherPanel(page)
     await page.getByText('Personal Workspace').click()
 
-    expect(
-      await page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token'))
-    ).toBe('original-token')
+    await expect
+      .poll(
+        () => page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
+        { timeout: 5000 }
+      )
+      .toBe('original-token')
 
     // The scheduled refresh fires immediately (token expires within buffer window).
     // A 403 ACCESS_DENIED response must clear the workspace session entirely.
