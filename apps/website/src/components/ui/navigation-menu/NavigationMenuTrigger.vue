@@ -7,7 +7,7 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { navigationMenuTriggerStyle } from '.'
+import { navigationMenuTriggerStyle } from './navigationMenuTriggerStyle'
 
 const {
   class: className,

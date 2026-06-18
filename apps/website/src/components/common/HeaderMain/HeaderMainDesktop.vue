@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle
-} from '@/components/ui/navigation-menu'
+import NavigationMenu from '@/components/ui/navigation-menu/NavigationMenu.vue'
+import NavigationMenuContent from '@/components/ui/navigation-menu/NavigationMenuContent.vue'
+import NavigationMenuItem from '@/components/ui/navigation-menu/NavigationMenuItem.vue'
+import NavigationMenuLink from '@/components/ui/navigation-menu/NavigationMenuLink.vue'
+import NavigationMenuList from '@/components/ui/navigation-menu/NavigationMenuList.vue'
+import NavigationMenuTrigger from '@/components/ui/navigation-menu/NavigationMenuTrigger.vue'
+import { navigationMenuTriggerStyle } from '@/components/ui/navigation-menu/navigationMenuTriggerStyle'
 
 import {
   isHrefActive,

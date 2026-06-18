@@ -1,12 +1,5 @@
 import { cva } from 'class-variance-authority'
 
-export { default as NavigationMenu } from './NavigationMenu.vue'
-export { default as NavigationMenuContent } from './NavigationMenuContent.vue'
-export { default as NavigationMenuItem } from './NavigationMenuItem.vue'
-export { default as NavigationMenuLink } from './NavigationMenuLink.vue'
-export { default as NavigationMenuList } from './NavigationMenuList.vue'
-export { default as NavigationMenuTrigger } from './NavigationMenuTrigger.vue'
-
 export const navigationMenuTriggerStyle = cva([
   'group font-formula inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-2xl px-4 py-3 text-sm font-extrabold tracking-wider text-primary-comfy-canvas uppercase transition-[color,box-shadow] outline-none',
   'hover:text-primary-warm-gray',
