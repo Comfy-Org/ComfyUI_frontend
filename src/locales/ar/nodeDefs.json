@@ -16248,6 +16248,9 @@
       "draw_hands": {
         "name": "رسم اليدين"
       },
+      "draw_head": {
+        "name": "رسم الرأس"
+      },
       "face_point_size": {
         "name": "حجم نقطة الوجه"
       },

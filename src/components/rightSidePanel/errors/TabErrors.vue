@@ -61,7 +61,7 @@
             :key="group.groupKey"
             :data-testid="'error-group-' + group.type.replaceAll('_', '-')"
             :title="group.displayTitle"
-            :count="getGroupCount(group)"
+            :count="group.count"
             :collapse="isSectionCollapsed(group.groupKey) && !isSearching"
             class="border-t border-secondary-background first:border-t-0"
             @update:collapse="setSectionCollapsed(group.groupKey, $event)"
@@ -328,7 +328,6 @@ import MissingNodeCard from './MissingNodeCard.vue'
 import SwapNodesCard from '@/platform/nodeReplacement/components/SwapNodesCard.vue'
 import MissingModelCard from '@/platform/missingModel/components/MissingModelCard.vue'
 import MissingMediaCard from '@/platform/missingMedia/components/MissingMediaCard.vue'
-import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
@@ -339,6 +338,7 @@ import { useErrorActions } from './useErrorActions'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup } from './types'
+import { isExecutionItemListGroup } from './executionItemList'
 import { useNodeReplacement } from '@/platform/nodeReplacement/useNodeReplacement'
 
 interface ExecutionItemListEntry {
@@ -372,21 +372,6 @@ const searchQuery = ref('')
 const expandedExecutionItemDetailKeys = ref(new Set<string>())
 const isSearching = computed(() => searchQuery.value.trim() !== '')
 
-function isExecutionItemListGroup(group: ErrorGroup) {
-  return (
-    group.type === 'execution' &&
-    group.cards.length > 0 &&
-    group.cards.every(
-      (card) =>
-        card.nodeId &&
-        card.errors.length > 0 &&
-        card.errors.every(
-          (error) => !error.isRuntimeError && Boolean(error.displayItemLabel)
-        )
-    )
-  )
-}
-
 function getExecutionItemList(group: ErrorGroup): ExecutionItemListEntry[] {
   if (group.type !== 'execution') return []
 
@@ -416,14 +401,6 @@ function compareExecutionItemListEntry(
     a.nodeId.localeCompare(b.nodeId, undefined, { numeric: true }) ||
     a.label.localeCompare(b.label)
   )
-}
-
-function getExecutionGroupCount(group: ErrorGroup) {
-  if (group.type !== 'execution') return 0
-  if (isExecutionItemListGroup(group)) {
-    return group.cards.reduce((count, card) => count + card.errors.length, 0)
-  }
-  return group.cards.length
 }
 
 function isExecutionItemDetailExpanded(key: string) {
@@ -458,26 +435,8 @@ const {
   swapNodeGroups
 } = useErrorGroups(searchQuery)
 
-function getGroupCount(group: ErrorGroup): number {
-  switch (group.type) {
-    case 'execution':
-      return getExecutionGroupCount(group)
-    case 'missing_node':
-      return missingPackGroups.value.length
-    case 'swap_nodes':
-      return swapNodeGroups.value.length
-    case 'missing_model':
-      return missingModelGroups.value.reduce(
-        (total, modelGroup) => total + modelGroup.models.length,
-        0
-      )
-    case 'missing_media':
-      return countMissingMediaReferences(missingMediaGroups.value)
-  }
-}
-
 const totalErrorCount = computed(() =>
-  filteredGroups.value.reduce((sum, group) => sum + getGroupCount(group), 0)
+  filteredGroups.value.reduce((sum, group) => sum + group.count, 0)
 )
 
 const showMissingModelHeaderRefresh = computed(

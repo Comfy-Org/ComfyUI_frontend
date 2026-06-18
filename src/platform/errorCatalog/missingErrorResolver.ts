@@ -4,6 +4,7 @@ import type {
 } from './types'
 import { normalizeNodeName, translateCatalogMessage } from './catalogI18n'
 import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
+import { countMissingModels } from '@/platform/missingModel/missingModelGrouping'
 import { st } from '@/i18n'
 
 function formatNodeTypeName(nodeType: string): string | null {
@@ -167,11 +168,7 @@ type MissingModelSource = Extract<
 >
 
 function getMissingModelCount(source: MissingModelSource): number {
-  const count = source.groups.reduce(
-    (total, group) => total + group.models.length,
-    0
-  )
-  return count || source.count
+  return countMissingModels(source.groups) || source.count
 }
 
 function resolveMissingModelDisplayMessage(source: MissingModelSource): string {
