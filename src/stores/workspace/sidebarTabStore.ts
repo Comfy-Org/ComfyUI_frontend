@@ -76,10 +76,13 @@ export const useSidebarTabStore = defineStore('sidebarTab', () => {
         const commandStore = useCommandStore()
 
         if (tab.id === 'model-library') {
-          await commandStore.commands
-            .find((cmd) => cmd.id === 'Comfy.BrowseModelAssets')
-            ?.function?.()
-          return
+          const browseModelAssets = commandStore.commands.find(
+            (cmd) => cmd.id === 'Comfy.BrowseModelAssets'
+          )
+          if (browseModelAssets) {
+            await browseModelAssets.function()
+            return
+          }
         }
 
         toggleSidebarTab(tab.id)

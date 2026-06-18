@@ -5,12 +5,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-const { mockGetSetting, mockRegisterCommand, mockRegisterCommands } =
-  vi.hoisted(() => ({
-    mockGetSetting: vi.fn(),
-    mockRegisterCommand: vi.fn(),
-    mockRegisterCommands: vi.fn()
-  }))
+const {
+  mockGetSetting,
+  mockRegisterCommand,
+  mockRegisterCommands,
+  mockCommands
+} = vi.hoisted(() => ({
+  mockGetSetting: vi.fn(),
+  mockRegisterCommand: vi.fn(),
+  mockRegisterCommands: vi.fn(),
+  mockCommands: [] as { id: string; function: () => unknown }[]
+}))
 
 vi.mock('@/platform/settings/settingStore', () => ({
   useSettingStore: () => ({
@@ -21,7 +26,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({
     registerCommand: mockRegisterCommand,
-    commands: []
+    commands: mockCommands
   })
 }))
 
@@ -99,6 +104,7 @@ describe('useSidebarTabStore', () => {
     mockGetSetting.mockReset()
     mockRegisterCommand.mockClear()
     mockRegisterCommands.mockClear()
+    mockCommands.length = 0
   })
 
   it('registers the job history tab when QPO V2 is enabled', () => {
@@ -159,5 +165,39 @@ describe('useSidebarTabStore', () => {
       'apps'
     ])
     expect(mockRegisterCommand).toHaveBeenCalledTimes(6)
+  })
+
+  describe('model-library tab activation', () => {
+    const getModelLibraryToggle = () =>
+      mockRegisterCommand.mock.calls
+        .map(([command]) => command)
+        .find(
+          (command) => command.id === 'Workspace.ToggleSidebarTab.model-library'
+        )
+
+    it('opens the asset browser when Comfy.BrowseModelAssets is registered', async () => {
+      const browseModelAssets = vi.fn()
+      mockCommands.push({
+        id: 'Comfy.BrowseModelAssets',
+        function: browseModelAssets
+      })
+
+      const store = useSidebarTabStore()
+      store.registerCoreSidebarTabs()
+
+      await getModelLibraryToggle().function()
+
+      expect(browseModelAssets).toHaveBeenCalledTimes(1)
+      expect(store.activeSidebarTabId).toBeNull()
+    })
+
+    it('falls back to toggling the sidebar tab when the command is unavailable', async () => {
+      const store = useSidebarTabStore()
+      store.registerCoreSidebarTabs()
+
+      await getModelLibraryToggle().function()
+
+      expect(store.activeSidebarTabId).toBe('model-library')
+    })
   })
 })
