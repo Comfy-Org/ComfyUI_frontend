@@ -208,6 +208,29 @@ describe(assetService.getAssetMetadata, () => {
   })
 })
 
+describe(assetService.getInputAssetsIncludingPublic, () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    assetService.invalidateInputAssetsIncludingPublic()
+  })
+
+  it('keeps hash-only assets whose display_name comes back null (BE-933)', async () => {
+    const hashOnlyAsset = validAsset({
+      id: 'hash-only-input',
+      name: 'fe746_photo.png',
+      tags: ['input'],
+      hash: 'blake3:fe746',
+      file_path: null,
+      display_name: null
+    })
+    fetchApiMock.mockResolvedValueOnce(buildAssetListResponse([hashOnlyAsset]))
+
+    const assets = await assetService.getInputAssetsIncludingPublic()
+
+    expect(assets).toEqual([hashOnlyAsset])
+  })
+})
+
 describe(assetService.uploadAssetFromUrl, () => {
   beforeEach(() => {
     vi.clearAllMocks()
