@@ -421,6 +421,15 @@ export default defineConfig([
     }
   },
 
+  // Astro virtual modules (astro:content, astro:assets, etc.) are not
+  // resolvable by the TS resolver — they are injected by the Astro build.
+  {
+    files: ['apps/website/**/*.{ts,vue,astro}'],
+    rules: {
+      'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
+    }
+  },
+
   // i18n import enforcement
   // Vue components must use the useI18n() composable, not the global t/d/st/te
   {

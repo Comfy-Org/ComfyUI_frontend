@@ -4,6 +4,17 @@ import ModelsHeroSection from '../../components/models/ModelsHeroSection.vue'
 import ModelCreationsSection from '../../components/models/ModelCreationsSection.vue'
 import AIModelsSection from '../../components/product/shared/AIModelsSection.vue'
 import ProductShowcaseSection from '../../components/home/ProductShowcaseSection.vue'
+import { getGalleryByIds } from '../../content/queries'
+
+const featuredCreationSlugs = [
+  'subway-swan',
+  'milos-little-wonder',
+  'amber-passage',
+  'neon-revenant',
+  'midnight-umami'
+]
+const featuredEntries = await getGalleryByIds(featuredCreationSlugs, 'en')
+const featuredItems = featuredEntries.map((entry) => entry.data)
 ---
 
 <BaseLayout
@@ -17,7 +28,7 @@ import ProductShowcaseSection from '../../components/home/ProductShowcaseSection
     videoSrc="https://media.comfy.org/website/models/video_ComfdyUI_00001_.mp4"
     videoAriaLabel="使用 ComfyUI 创建的 Grok Imagine 作品"
   />
-  <ModelCreationsSection client:load locale="zh-CN" />
+  <ModelCreationsSection items={featuredItems} client:load locale="zh-CN" />
   <AIModelsSection client:load locale="zh-CN" />
   <ProductShowcaseSection client:load locale="zh-CN" />
 </BaseLayout>

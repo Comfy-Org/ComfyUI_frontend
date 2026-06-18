@@ -2,13 +2,15 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
-import { visibleGalleryItems as items } from '../../data/gallery'
-import type { GalleryItem } from '../../data/gallery'
+import type { GalleryItem } from '../../content.config'
 import type { Locale } from '../../i18n/translations'
 import GalleryCard from './GalleryCard.vue'
 import GalleryDetailModal from './GalleryDetailModal.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const { items, locale = 'en' } = defineProps<{
+  items: GalleryItem[]
+  locale?: Locale
+}>()
 
 const modalOpen = ref(false)
 const modalIndex = ref(0)

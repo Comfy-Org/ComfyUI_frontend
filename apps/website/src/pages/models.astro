@@ -3,7 +3,18 @@ import BaseLayout from '../layouts/BaseLayout.astro'
 import ModelsHeroSection from '../components/models/ModelsHeroSection.vue'
 import ModelCreationsSection from '../components/models/ModelCreationsSection.vue'
 import AIModelsSection from '../components/product/shared/AIModelsSection.vue'
-import ProductShowcaseSection from '../components/home/ProductShowcaseSection.vue' 
+import ProductShowcaseSection from '../components/home/ProductShowcaseSection.vue'
+import { getGalleryByIds } from '../content/queries'
+
+const featuredCreationSlugs = [
+  'subway-swan',
+  'milos-little-wonder',
+  'amber-passage',
+  'neon-revenant',
+  'midnight-umami'
+]
+const featuredEntries = await getGalleryByIds(featuredCreationSlugs, 'en')
+const featuredItems = featuredEntries.map((entry) => entry.data)
 ---
 
 <BaseLayout
@@ -16,7 +27,7 @@ import ProductShowcaseSection from '../components/home/ProductShowcaseSection.vu
     videoSrc="https://media.comfy.org/website/models/video_ComfdyUI_00001_.mp4"
     videoAriaLabel="Grok Imagine output created with ComfyUI"
   />
-  <ModelCreationsSection client:load />
+  <ModelCreationsSection items={featuredItems} client:load />
   <AIModelsSection client:load />
   <ProductShowcaseSection client:load />
 </BaseLayout>
