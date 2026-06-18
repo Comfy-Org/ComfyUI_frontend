@@ -63,8 +63,9 @@ describe('ChangeMemberRoleDialogContent', () => {
       screen.getByText('workspacePanel.changeRoleDialog.promoteTitle')
     ).toBeInTheDocument()
     expect(
-      screen.getByText('workspacePanel.changeRoleDialog.promoteMessage')
+      screen.getByText('workspacePanel.changeRoleDialog.promoteIntro')
     ).toBeInTheDocument()
+    expect(screen.getAllByRole('listitem')).toHaveLength(3)
 
     await user.click(
       screen.getByRole('button', {
