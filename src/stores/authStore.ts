@@ -22,10 +22,7 @@ import { useFirebaseAuth } from 'vuefire'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import {
-  fetchWithUnifiedRemint,
-  shouldRemintCloudRequest
-} from '@/platform/auth/unified/remintRetry'
+import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
 import {
   clearPreservedQuery,
@@ -286,7 +283,7 @@ export const useAuthStore = defineStore('auth', () => {
             'Content-Type': 'application/json'
           }
         },
-        await shouldRemintCloudRequest()
+        isCloud && flags.unifiedCloudAuthEnabled
       )
 
       if (!response.ok) {
@@ -327,7 +324,7 @@ export const useAuthStore = defineStore('auth', () => {
           'Content-Type': 'application/json'
         }
       },
-      await shouldRemintCloudRequest()
+      isCloud && flags.unifiedCloudAuthEnabled
     )
     if (!createCustomerRes.ok) {
       throw new AuthStoreError(
@@ -508,7 +505,7 @@ export const useAuthStore = defineStore('auth', () => {
         },
         body: JSON.stringify(requestBodyContent)
       },
-      await shouldRemintCloudRequest()
+      isCloud && flags.unifiedCloudAuthEnabled
     )
 
     if (!response.ok) {
@@ -548,7 +545,7 @@ export const useAuthStore = defineStore('auth', () => {
           body: JSON.stringify({ target_tier: targetTier })
         })
       },
-      await shouldRemintCloudRequest()
+      isCloud && flags.unifiedCloudAuthEnabled
     )
 
     if (!response.ok) {

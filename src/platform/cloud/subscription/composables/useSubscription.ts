@@ -9,12 +9,10 @@ import {
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyApiBaseUrl, getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
-import {
-  fetchWithUnifiedRemint,
-  shouldRemintCloudRequest
-} from '@/platform/auth/unified/remintRetry'
+import { fetchWithUnifiedRemint } from '@/platform/auth/unified/remintRetry'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -58,6 +56,7 @@ function useSubscriptionInternal() {
 
   const authStore = useAuthStore()
   const { getAuthHeader } = authStore
+  const { flags } = useFeatureFlags()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   const { isLoggedIn } = useCurrentUser()
@@ -335,7 +334,7 @@ function useSubscriptionInternal() {
       {
         headers
       },
-      await shouldRemintCloudRequest()
+      isCloud && flags.unifiedCloudAuthEnabled
     )
 
     if (!response.ok) {
@@ -428,7 +427,7 @@ function useSubscriptionInternal() {
           headers,
           body: JSON.stringify(checkoutAttribution)
         },
-        await shouldRemintCloudRequest()
+        isCloud && flags.unifiedCloudAuthEnabled
       )
 
       if (!response.ok) {
