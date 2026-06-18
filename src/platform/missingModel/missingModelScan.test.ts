@@ -43,7 +43,7 @@ function makeComboWidget(
 }
 
 /** Helper: create an asset widget mock (Cloud combo replacement) */
-function makeAssetWidget(name: string, value: string): IBaseWidget {
+function makeAssetWidget(name: string, value: unknown): IBaseWidget {
   return fromAny<IBaseWidget, unknown>({
     type: 'asset',
     name,
@@ -544,6 +544,16 @@ describe('scanAllModelCandidates', () => {
   it('should skip asset widgets with non-model values', () => {
     const graph = makeGraph([
       makeNode(1, 'SomeNode', [makeAssetWidget('mode', 'not_a_model')])
+    ])
+
+    const result = scanAllModelCandidates(graph, noAssetSupport)
+
+    expect(result).toEqual([])
+  })
+
+  it('should skip asset widgets with non-string values', () => {
+    const graph = makeGraph([
+      makeNode(1, 'SomeNode', [makeAssetWidget('ckpt_name', 123)])
     ])
 
     const result = scanAllModelCandidates(graph, noAssetSupport)
@@ -1362,23 +1372,14 @@ describe('OSS missing model detection (non-Cloud path)', () => {
   })
 })
 
-const {
-  mockUpdateModelsForNodeType,
-  mockIsModelLoading,
-  mockHasMore,
-  mockGetAssets
-} = vi.hoisted(() => ({
+const { mockUpdateModelsForNodeType, mockGetAssets } = vi.hoisted(() => ({
   mockUpdateModelsForNodeType: vi.fn().mockResolvedValue(undefined),
-  mockIsModelLoading: vi.fn().mockReturnValue(false),
-  mockHasMore: vi.fn().mockReturnValue(false),
   mockGetAssets: vi.fn().mockReturnValue([])
 }))
 
 vi.mock('@/stores/assetsStore', () => ({
   useAssetsStore: () => ({
     updateModelsForNodeType: mockUpdateModelsForNodeType,
-    isModelLoading: mockIsModelLoading,
-    hasMore: mockHasMore,
     getAssets: mockGetAssets
   })
 }))
@@ -1411,8 +1412,7 @@ function makeAssetCandidate(
 describe('verifyAssetSupportedCandidates', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockIsModelLoading.mockReturnValue(false)
-    mockHasMore.mockReturnValue(false)
+    mockUpdateModelsForNodeType.mockResolvedValue(undefined)
     mockGetAssets.mockReturnValue([])
   })
 
@@ -1428,6 +1428,43 @@ describe('verifyAssetSupportedCandidates', () => {
     )
   })
 
+  it('should match filenames regardless of hash metadata shape', async () => {
+    const hash =
+      '2222222222222222222222222222222222222222222222222222222222222222'
+    const candidates = [
+      makeAssetCandidate('my_model.safetensors', {
+        hash,
+        hashType: 'blake3'
+      }),
+      makeAssetCandidate('other_model.safetensors', {
+        hash: 'abc123',
+        hashType: 'blake3'
+      })
+    ]
+    mockGetAssets.mockReturnValue([
+      {
+        id: '1',
+        name: 'my_model.safetensors',
+        hash: null,
+        metadata: { filename: 'my_model.safetensors' }
+      },
+      {
+        id: '2',
+        name: 'other_model.safetensors',
+        hash: null,
+        metadata: { filename: 'other_model.safetensors' }
+      }
+    ])
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBe(false)
+    expect(candidates[1].isMissing).toBe(false)
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith(
+      'CheckpointLoaderSimple'
+    )
+  })
+
   it('should resolve isMissing=false when asset with matching hash exists', async () => {
     const candidates = [
       makeAssetCandidate('model.safetensors', {
@@ -1436,7 +1473,7 @@ describe('verifyAssetSupportedCandidates', () => {
       })
     ]
     mockGetAssets.mockReturnValue([
-      { id: '1', name: 'model.safetensors', asset_hash: 'sha256:abc123' }
+      { id: '1', name: 'model.safetensors', hash: 'sha256:abc123' }
     ])
 
     await verifyAssetSupportedCandidates(candidates)
@@ -1450,7 +1487,7 @@ describe('verifyAssetSupportedCandidates', () => {
       {
         id: '1',
         name: 'my_model.safetensors',
-        asset_hash: null,
+        hash: null,
         metadata: { filename: 'my_model.safetensors' }
       }
     ])
@@ -1525,13 +1562,62 @@ describe('verifyAssetSupportedCandidates', () => {
     expect(mockUpdateModelsForNodeType).toHaveBeenCalledWith('LoraLoader')
   })
 
+  it('should leave candidates unresolved when their node type fails to load', async () => {
+    const candidates = [
+      makeAssetCandidate('checkpoint.safetensors', {
+        nodeType: 'CheckpointLoaderSimple'
+      }),
+      makeAssetCandidate('lora.safetensors', { nodeType: 'LoraLoader' })
+    ]
+    mockUpdateModelsForNodeType.mockImplementation(async (nodeType: string) => {
+      if (nodeType === 'LoraLoader') throw new Error('load failed')
+    })
+    mockGetAssets.mockImplementation((nodeType: string) =>
+      nodeType === 'CheckpointLoaderSimple'
+        ? [
+            {
+              id: '1',
+              name: 'checkpoint.safetensors',
+              hash: null,
+              metadata: { filename: 'checkpoint.safetensors' }
+            }
+          ]
+        : []
+    )
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(candidates[0].isMissing).toBe(false)
+    expect(candidates[1].isMissing).toBeUndefined()
+  })
+
+  it('should leave candidates unresolved when aborted after asset loads settle', async () => {
+    const controller = new AbortController()
+    const candidates = [makeAssetCandidate('model.safetensors')]
+    mockUpdateModelsForNodeType.mockImplementation(async () => {
+      controller.abort()
+    })
+    mockGetAssets.mockReturnValue([
+      {
+        id: '1',
+        name: 'model.safetensors',
+        hash: null,
+        metadata: { filename: 'model.safetensors' }
+      }
+    ])
+
+    await verifyAssetSupportedCandidates(candidates, controller.signal)
+
+    expect(candidates[0].isMissing).toBeUndefined()
+  })
+
   it('should match filename with path prefix normalization', async () => {
     const candidates = [makeAssetCandidate('subfolder/my_model.safetensors')]
     mockGetAssets.mockReturnValue([
       {
         id: '1',
         name: 'my_model.safetensors',
-        asset_hash: null,
+        hash: null,
         metadata: { filename: 'subfolder/my_model.safetensors' }
       }
     ])

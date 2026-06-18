@@ -3,9 +3,10 @@ import { test as base } from '@playwright/test'
 import { config as dotenvConfig } from 'dotenv'
 import MCR from 'monocart-coverage-reports'
 
+import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { ComfyActionbar } from '@e2e/helpers/actionbar'
-import { ComfyTemplates } from '@e2e/helpers/templates'
+import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
+import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
@@ -21,6 +22,7 @@ import { MediaLightbox } from '@e2e/fixtures/components/MediaLightbox'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
 import { TemplatesDialog } from '@e2e/fixtures/components/TemplatesDialog'
+import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import {
   AssetsSidebarTab,
   ModelLibrarySidebarTab,
@@ -53,11 +55,13 @@ class ComfyPropertiesPanel {
   readonly root: Locator
   readonly panelTitle: Locator
   readonly searchBox: Locator
+  readonly titleEditor: TitleEditor
 
   constructor(readonly page: Page) {
     this.root = page.getByTestId(TestIds.propertiesPanel.root)
     this.panelTitle = this.root.locator('h3')
     this.searchBox = this.root.getByPlaceholder(/^Search/)
+    this.titleEditor = new TitleEditor(this.root)
   }
 }
 
@@ -136,6 +140,7 @@ class ComfyMenu {
 
 export class ComfyPage {
   public readonly url: string
+  public readonly apiUrl: string
   // All canvas position operations are based on default view of canvas.
   public readonly canvas: Locator
   public readonly selectionToolbox: Locator
@@ -158,6 +163,7 @@ export class ComfyPage {
   public readonly settingDialog: SettingDialog
   public readonly confirmDialog: ConfirmDialog
   public readonly templatesDialog: TemplatesDialog
+  public readonly titleEditor: TitleEditor
   public readonly mediaLightbox: MediaLightbox
   public readonly vueNodes: VueNodeHelpers
   public readonly appMode: AppModeHelper
@@ -184,6 +190,9 @@ export class ComfyPage {
   /** Worker index to test user ID */
   public readonly userIds: string[] = []
 
+  /** Whether the current test runs in Vue Nodes mode (initialized from `@vue-nodes` tag). */
+  public isVueNodes = false
+
   /** Test user ID for the current context */
   get id() {
     return this.userIds[comfyPageFixture.info().parallelIndex]
@@ -194,6 +203,7 @@ export class ComfyPage {
     public readonly request: APIRequestContext
   ) {
     this.url = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
+    this.apiUrl = process.env.PLAYWRIGHT_SETUP_API_URL || this.url
     this.canvas = page.locator('#graph-canvas')
     this.selectionToolbox = page.getByTestId(TestIds.selectionToolbox.root)
     this.widgetTextBox = page.getByPlaceholder('text').nth(1)
@@ -203,13 +213,14 @@ export class ComfyPage {
     this.workflowUploadInput = page.locator('#comfy-file-input')
 
     this.searchBox = new ComfyNodeSearchBox(page)
-    this.searchBoxV2 = new ComfyNodeSearchBoxV2(page)
+    this.searchBoxV2 = new ComfyNodeSearchBoxV2(this)
     this.menu = new ComfyMenu(page)
     this.actionbar = new ComfyActionbar(page)
     this.templates = new ComfyTemplates(page)
     this.settingDialog = new SettingDialog(page, this)
     this.confirmDialog = new ConfirmDialog(page)
     this.templatesDialog = new TemplatesDialog(page)
+    this.titleEditor = new TitleEditor(page)
     this.mediaLightbox = new MediaLightbox(page)
     this.vueNodes = new VueNodeHelpers(page)
     this.appMode = new AppModeHelper(this)
@@ -235,7 +246,7 @@ export class ComfyPage {
   }
 
   async setupUser(username: string) {
-    const res = await this.request.get(`${this.url}/api/users`)
+    const res = await this.request.get(`${this.apiUrl}/api/users`)
     if (res.status() !== 200)
       throw new Error(`Failed to retrieve users: ${await res.text()}`)
 
@@ -249,7 +260,7 @@ export class ComfyPage {
   }
 
   async createUser(username: string) {
-    const resp = await this.request.post(`${this.url}/api/users`, {
+    const resp = await this.request.post(`${this.apiUrl}/api/users`, {
       data: { username }
     })
 
@@ -261,7 +272,7 @@ export class ComfyPage {
 
   async setupSettings(settings: Record<string, unknown>) {
     const resp = await this.request.post(
-      `${this.url}/api/devtools/set_settings`,
+      `${this.apiUrl}/api/devtools/set_settings`,
       {
         data: settings
       }
@@ -274,10 +285,12 @@ export class ComfyPage {
 
   async setup({
     clearStorage = true,
-    mockReleases = true
+    mockReleases = true,
+    url
   }: {
     clearStorage?: boolean
     mockReleases?: boolean
+    url?: string
   } = {}) {
     // Mock release endpoint to prevent changelog popups (before navigation)
     if (mockReleases) {
@@ -309,14 +322,23 @@ export class ComfyPage {
       }, this.id)
     }
 
-    await this.goto()
+    await this.goto({ url })
 
     await this.page.waitForFunction(() => document.fonts.ready)
+    await this.waitForAppReady()
+  }
+
+  /**
+   * Wait for the app to finish initializing after navigation/reload:
+   * `window.app.extensionManager` is present, the PrimeVue block-UI mask is
+   * hidden, and one animation frame has elapsed. Shared by `setup()` and
+   * `WorkflowHelper.reloadAndWaitForApp()`.
+   */
+  async waitForAppReady() {
     await this.page.waitForFunction(
-      () =>
-        // window.app => GraphCanvas ready
-        // window.app.extensionManager => GraphView ready
-        window.app && window.app.extensionManager
+      // window.app => GraphCanvas ready
+      // window.app.extensionManager => GraphView ready
+      () => window.app?.extensionManager
     )
     await this.page.locator('.p-blockui-mask').waitFor({ state: 'hidden' })
     await this.nextFrame()
@@ -327,12 +349,18 @@ export class ComfyPage {
     return assetPath(fileName)
   }
 
-  async goto() {
-    await this.page.goto(this.url)
+  async goto({ url }: { url?: string } = {}) {
+    await this.page.goto(url ? new URL(url, this.url).toString() : this.url)
   }
 
   async nextFrame() {
     await nextFrame(this.page)
+  }
+
+  async idleFrames(count: number) {
+    for (let i = 0; i < count; i++) {
+      await this.nextFrame()
+    }
   }
 
   async delay(ms: number) {
@@ -416,14 +444,47 @@ export class ComfyPage {
   }
 }
 
+class ComfyFiles {
+  protected teardownCallbacks: (() => Promise<unknown>)[] = []
+
+  constructor(protected readonly comfyPage: ComfyPage) {}
+
+  async teardown() {
+    await Promise.all(this.teardownCallbacks.map((cb) => cb()))
+  }
+
+  deleteAfterTest(file: {
+    filename: string
+    subfolder?: string
+    type?: string
+  }) {
+    this.teardownCallbacks.push(() =>
+      this.comfyPage.request.delete(
+        `${this.comfyPage.url}/api/devtools/view?${new URLSearchParams(file)}`
+      )
+    )
+  }
+}
+
 export const testComfySnapToGridGridSize = 50
 
 const COLLECT_COVERAGE = process.env.COLLECT_COVERAGE === 'true'
 
 export const comfyPageFixture = base.extend<{
+  initialFeatureFlags: Record<string, unknown>
+  initialSettings: Record<string, unknown>
   comfyPage: ComfyPage
   comfyMouse: ComfyMouse
+  comfyFiles: ComfyFiles
 }>({
+  // Allows configuring feature flags for tests with before initial setup:
+  // `test.use({ initialFeatureFlags: { my_flag: true } })`.
+  initialFeatureFlags: [{}, { option: true }],
+  // Allows seeding user settings before initial page load:
+  // `test.use({ initialSettings: { 'Comfy.Locale': 'zh' } })`. Merged on top of
+  // the fixture's defaults so per-test values win.
+  initialSettings: [{}, { option: true }],
+
   page: async ({ page, browserName }, use) => {
     if (browserName !== 'chromium' || !COLLECT_COVERAGE) {
       return use(page)
@@ -434,13 +495,17 @@ export const comfyPageFixture = base.extend<{
     const coverage = await page.coverage.stopJSCoverage()
 
     const mcr = MCR({
-      outputDir: './coverage/playwright',
+      outputDir: COVERAGE_OUTPUT_DIR,
       reports: []
     })
     await mcr.add(coverage)
   },
 
-  comfyPage: async ({ page, request }, use, testInfo) => {
+  comfyPage: async (
+    { page, request, initialFeatureFlags, initialSettings },
+    use,
+    testInfo
+  ) => {
     const comfyPage = new ComfyPage(page, request)
 
     const { parallelIndex } = testInfo
@@ -449,6 +514,7 @@ export const comfyPageFixture = base.extend<{
     comfyPage.userIds[parallelIndex] = userId
 
     const isVueNodes = testInfo.tags.includes('@vue-nodes')
+    comfyPage.isVueNodes = isVueNodes
 
     try {
       await comfyPage.setupSettings({
@@ -465,6 +531,7 @@ export const comfyPageFixture = base.extend<{
         'Comfy.userId': userId,
         // Set tutorial completed to true to avoid loading the tutorial workflow.
         'Comfy.TutorialCompleted': true,
+        'Comfy.Queue.MaxHistoryItems': 64,
         'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
         'Comfy.VueNodes.AutoScaleLayout': false,
         // Disable toast warning about version compatibility, as they may or
@@ -473,7 +540,8 @@ export const comfyPageFixture = base.extend<{
         // Disable errors tab to prevent missing model detection from
         // rendering error indicators on nodes during unrelated tests.
         'Comfy.RightSidePanel.ShowErrorsTab': false,
-        ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true })
+        ...(isVueNodes && { 'Comfy.VueNodes.Enabled': true }),
+        ...initialSettings
       })
     } catch (e) {
       console.error(e)
@@ -481,6 +549,10 @@ export const comfyPageFixture = base.extend<{
 
     if (testInfo.tags.includes('@cloud')) {
       await comfyPage.cloudAuth.mockAuth()
+    }
+
+    if (Object.keys(initialFeatureFlags).length > 0) {
+      await comfyPage.featureFlags.seedFlags(initialFeatureFlags)
     }
 
     await comfyPage.setup()
@@ -500,6 +572,11 @@ export const comfyPageFixture = base.extend<{
   comfyMouse: async ({ comfyPage }, use) => {
     const comfyMouse = new ComfyMouse(comfyPage)
     await use(comfyMouse)
+  },
+  comfyFiles: async ({ comfyPage }, use) => {
+    const comfyFiles = new ComfyFiles(comfyPage)
+    await use(comfyFiles)
+    await comfyFiles.teardown()
   }
 })
 

@@ -43,7 +43,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { useTerminal } from '@/composables/bottomPanelTabs/useTerminal'
 import { electronAPI } from '@/utils/envUtil'
 import { isDesktop } from '@/platform/distribution/types'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 

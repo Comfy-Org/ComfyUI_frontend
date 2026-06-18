@@ -15,6 +15,15 @@ const zRendererType = z.enum([
 export const zNodeId = z.union([z.number().int(), z.string()])
 const zNodeInputName = z.string()
 export type NodeId = z.infer<typeof zNodeId>
+
+/**
+ * UUID identifier for a saved workflow.
+ *
+ * Workflow files persist their identity as `id: z.string().uuid()` on the
+ * graph schema. This alias names that primitive at use sites (services,
+ * stores, share types) without changing structural typing.
+ */
+export type WorkflowId = string
 const zSlotIndex = z.union([
   z.number().int(),
   z
@@ -495,24 +504,6 @@ export type WorkflowJSON04 = z.infer<typeof zComfyWorkflow>
 export type ComfyWorkflowJSON = z.infer<
   typeof zComfyWorkflow | typeof zComfyWorkflow1
 >
-type SubgraphDefinition = z.infer<typeof zSubgraphDefinition>
-
-/**
- * Type guard to check if an object is a SubgraphDefinition.
- * This helps TypeScript understand the type when z.lazy() breaks inference.
- */
-export function isSubgraphDefinition(obj: unknown): obj is SubgraphDefinition {
-  return (
-    obj !== null &&
-    typeof obj === 'object' &&
-    'id' in obj &&
-    'name' in obj &&
-    'nodes' in obj &&
-    Array.isArray((obj as SubgraphDefinition).nodes) &&
-    'inputNode' in obj &&
-    'outputNode' in obj
-  )
-}
 
 const zWorkflowVersion = z.object({
   version: z.number()
@@ -565,99 +556,3 @@ const zNodeData = z.object({
 
 const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
 export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>
-
-/**
- * Builds a map from subgraph definition ID to all execution path prefixes
- * where that definition is instantiated in the workflow.
- *
- * "def-A" → ["5", "10"] for each container node instantiating that subgraph definition.
- */
-export function buildSubgraphExecutionPaths(
-  rootNodes: ComfyNode[],
-  allSubgraphDefs: unknown[]
-): Map<string, string[]> {
-  const subgraphDefMap = new Map(
-    allSubgraphDefs.filter(isSubgraphDefinition).map((s) => [s.id, s])
-  )
-  const pathMap = new Map<string, string[]>()
-  const visited = new Set<string>()
-
-  const build = (nodes: ComfyNode[], parentPrefix: string) => {
-    for (const n of nodes ?? []) {
-      if (typeof n.type !== 'string' || !subgraphDefMap.has(n.type)) continue
-      const path = parentPrefix ? `${parentPrefix}:${n.id}` : String(n.id)
-      const existing = pathMap.get(n.type)
-      if (existing) {
-        existing.push(path)
-      } else {
-        pathMap.set(n.type, [path])
-      }
-
-      if (visited.has(n.type)) continue
-      visited.add(n.type)
-
-      const innerDef = subgraphDefMap.get(n.type)
-      if (innerDef) {
-        build(innerDef.nodes, path)
-      }
-
-      visited.delete(n.type)
-    }
-  }
-
-  build(rootNodes, '')
-  return pathMap
-}
-
-/**
- * Recursively collect all subgraph definitions from root and nested levels.
- */
-function collectAllSubgraphDefs(rootDefs: unknown[]): SubgraphDefinition[] {
-  const result: SubgraphDefinition[] = []
-  const seen = new Set<string>()
-
-  function collect(defs: unknown[]) {
-    for (const def of defs) {
-      if (!isSubgraphDefinition(def)) continue
-      if (seen.has(def.id)) continue
-      seen.add(def.id)
-      result.push(def)
-      if (def.definitions?.subgraphs?.length) {
-        collect(def.definitions.subgraphs)
-      }
-    }
-  }
-
-  collect(rootDefs)
-  return result
-}
-
-/**
- * Flatten all workflow nodes (root + subgraphs) into a single array.
- * Each node's `id` is prefixed with its execution path (e.g. node "3" inside container "11" → "11:3").
- */
-export function flattenWorkflowNodes(
-  graphData: ComfyWorkflowJSON
-): Readonly<ComfyNode>[] {
-  const rootNodes = graphData.nodes ?? []
-  const allDefs = collectAllSubgraphDefs(graphData.definitions?.subgraphs ?? [])
-  const pathMap = buildSubgraphExecutionPaths(rootNodes, allDefs)
-
-  const allNodes: ComfyNode[] = [...rootNodes]
-
-  const subgraphDefMap = new Map(allDefs.map((s) => [s.id, s]))
-  for (const [defId, paths] of pathMap.entries()) {
-    const def = subgraphDefMap.get(defId)
-    if (!def?.nodes) continue
-    for (const prefix of paths) {
-      for (const node of def.nodes) {
-        allNodes.push({
-          ...node,
-          id: `${prefix}:${node.id}`
-        })
-      }
-    }
-  }
-
-  return allNodes
-}

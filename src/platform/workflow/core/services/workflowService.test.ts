@@ -21,6 +21,7 @@ import { useAppMode } from '@/composables/useAppMode'
 import type { AppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import { t } from '@/i18n'
 
 function createModeTestWorkflow(
   options: {
@@ -65,6 +66,13 @@ const { mockConfirm, mockTrackWorkflowSaved } = vi.hoisted(() => ({
   mockTrackWorkflowSaved: vi.fn()
 }))
 
+const draftStoreMocks = vi.hoisted(() => ({
+  saveDraft: vi.fn(() => true),
+  getDraft: vi.fn(),
+  removeDraft: vi.fn(),
+  markDraftUsed: vi.fn()
+}))
+
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
     prompt: vi.fn(),
@@ -104,13 +112,8 @@ vi.mock('@/platform/telemetry', () => ({
   })
 }))
 
-vi.mock('@/platform/workflow/persistence/stores/workflowDraftStore', () => ({
-  useWorkflowDraftStore: () => ({
-    saveDraft: vi.fn(),
-    getDraft: vi.fn(),
-    removeDraft: vi.fn(),
-    markDraftUsed: vi.fn()
-  })
+vi.mock('@/platform/workflow/persistence/stores/workflowDraftStoreV2', () => ({
+  useWorkflowDraftStoreV2: () => draftStoreMocks
 }))
 
 vi.mock('@/stores/domWidgetStore', () => ({
@@ -162,6 +165,7 @@ describe('useWorkflowService', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
+    draftStoreMocks.saveDraft.mockReturnValue(true)
   })
 
   describe('showPendingWarnings', () => {
@@ -311,6 +315,85 @@ describe('useWorkflowService', () => {
         })
       )
     })
+
+    it('should save active workflow state through the V2 draft store', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return key === 'Comfy.Workflow.Persist'
+      })
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(draftStoreMocks.saveDraft).toHaveBeenCalledWith(
+        activeWorkflow.path,
+        JSON.stringify(activeWorkflow.activeState),
+        {
+          name: activeWorkflow.key,
+          isTemporary: activeWorkflow.isTemporary
+        }
+      )
+    })
+
+    it('should show an error toast when the V2 draft store cannot save', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return key === 'Comfy.Workflow.Persist'
+      })
+      const addToastSpy = vi.spyOn(useToastStore(), 'add')
+      draftStoreMocks.saveDraft.mockReturnValue(false)
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(addToastSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          summary: t('g.error'),
+          detail: t('toastMessages.failedToSaveDraft')
+        })
+      )
+    })
+
+    it('should log and show an error toast when the V2 draft store throws', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return key === 'Comfy.Workflow.Persist'
+      })
+      const addToastSpy = vi.spyOn(useToastStore(), 'add')
+      const consoleErrorSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      const error = new Error('storage unavailable')
+      draftStoreMocks.saveDraft.mockImplementation(() => {
+        throw error
+      })
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      try {
+        useWorkflowService().beforeLoadNewGraph()
+
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          'Failed to persist active workflow draft',
+          error
+        )
+        expect(addToastSpy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            severity: 'error',
+            summary: t('g.error'),
+            detail: t('toastMessages.failedToSaveDraft')
+          })
+        )
+      } finally {
+        consoleErrorSpy.mockRestore()
+      }
+    })
   })
 
   describe('openWorkflow deferred warnings', () => {
@@ -418,21 +501,48 @@ describe('useWorkflowService', () => {
       })
       vi.mocked(workflowStore.saveWorkflow).mockResolvedValue()
 
-      await useWorkflowService().saveWorkflow(workflow)
+      const result = await useWorkflowService().saveWorkflow(workflow)
 
+      expect(result).toBe(true)
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
 
-    it('should call saveWorkflowAs for temporary workflows', async () => {
+    it('should return false when temporary workflow save is cancelled', async () => {
       const workflow = createModeTestWorkflow({
         path: 'workflows/Unsaved Workflow.json'
       })
       Object.defineProperty(workflow, 'isTemporary', { get: () => true })
       vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
 
-      await useWorkflowService().saveWorkflow(workflow)
+      const result = await useWorkflowService().saveWorkflow(workflow)
 
+      expect(result).toBe(false)
       expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('closeWorkflow', () => {
+    let workflowStore: ReturnType<typeof useWorkflowStore>
+    let service: ReturnType<typeof useWorkflowService>
+
+    beforeEach(() => {
+      workflowStore = useWorkflowStore()
+      service = useWorkflowService()
+    })
+
+    it('keeps a temporary workflow open when Save As is cancelled', async () => {
+      const workflow = createModeTestWorkflow({
+        path: 'workflows/Unsaved Workflow.json'
+      })
+      workflow.isModified = true
+      Object.defineProperty(workflow, 'isTemporary', { get: () => true })
+      vi.spyOn(workflow, 'promptSave').mockResolvedValue(null)
+      mockConfirm.mockResolvedValue(true)
+
+      const closed = await service.closeWorkflow(workflow)
+
+      expect(closed).toBe(false)
+      expect(workflowStore.closeWorkflow).not.toHaveBeenCalled()
     })
   })
 
@@ -525,6 +635,71 @@ describe('useWorkflowService', () => {
       } as never)
 
       expect(workflowStore.createNewTemporary).toHaveBeenCalled()
+    })
+
+    it('stores share attribution on shared temporary workflows', async () => {
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(null)
+      const tempWorkflow = createModeTestWorkflow({
+        path: 'workflows/shared.json'
+      })
+      vi.mocked(workflowStore.createNewTemporary).mockReturnValue(tempWorkflow)
+      vi.mocked(workflowStore.openWorkflow).mockResolvedValue(tempWorkflow)
+
+      await useWorkflowService().afterLoadNewGraph(
+        'shared',
+        { nodes: [] } as never,
+        'share-1'
+      )
+
+      expect(tempWorkflow.shareId).toBe('share-1')
+    })
+
+    it('preserves share attribution on repeated same-path loads', async () => {
+      existingWorkflow.shareId = 'share-1'
+
+      await useWorkflowService().afterLoadNewGraph('repeat', {
+        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+      } as never)
+
+      expect(existingWorkflow.shareId).toBe('share-1')
+    })
+
+    it('preserves share attribution on workflow object reloads', async () => {
+      existingWorkflow.shareId = 'share-1'
+
+      await useWorkflowService().afterLoadNewGraph(existingWorkflow, {
+        nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+      } as never)
+
+      expect(existingWorkflow.shareId).toBe('share-1')
+    })
+
+    it('overwrites share attribution on repeated same-path loads with a new share id', async () => {
+      existingWorkflow.shareId = 'share-1'
+
+      await useWorkflowService().afterLoadNewGraph(
+        'repeat',
+        {
+          nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+        } as never,
+        'share-2'
+      )
+
+      expect(existingWorkflow.shareId).toBe('share-2')
+    })
+
+    it('overwrites share attribution on workflow object reloads with a new share id', async () => {
+      existingWorkflow.shareId = 'share-1'
+
+      await useWorkflowService().afterLoadNewGraph(
+        existingWorkflow,
+        {
+          nodes: [{ id: 1, type: 'TestNode', pos: [0, 0], size: [100, 100] }]
+        } as never,
+        'share-2'
+      )
+
+      expect(existingWorkflow.shareId).toBe('share-2')
     })
   })
 

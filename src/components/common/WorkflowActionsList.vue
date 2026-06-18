@@ -4,7 +4,7 @@ import type { Component } from 'vue'
 
 import OverlayIcon from '@/components/common/OverlayIcon.vue'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   items,

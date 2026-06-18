@@ -50,7 +50,7 @@
         position="popper"
         :side-offset="8"
         align="start"
-        :style="popoverStyle"
+        :style="[popoverStyle, contentStyle]"
         :class="selectContentClass"
         @keydown="onContentKeydown"
         @focus-outside="preventFocusDismiss"
@@ -152,9 +152,11 @@ import {
   ComboboxViewport
 } from 'reka-ui'
 import { computed, ref } from 'vue'
+import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+
 import {
   selectContentClass,
   selectDropdownClass,
@@ -165,7 +167,7 @@ import {
 } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 defineOptions({
   inheritAttrs: false
@@ -182,7 +184,8 @@ const {
   searchPlaceholder,
   listMaxHeight = '28rem',
   popoverMinWidth,
-  popoverMaxWidth
+  popoverMaxWidth,
+  contentStyle
 } = defineProps<{
   /** Input label shown on the trigger button */
   label?: string
@@ -206,6 +209,7 @@ const {
   popoverMinWidth?: string
   /** Maximum width of the popover (default: auto) */
   popoverMaxWidth?: string
+  contentStyle?: StyleValue
 }>()
 
 const selectedItems = defineModel<SelectOption[]>({

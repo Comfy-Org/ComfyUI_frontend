@@ -35,7 +35,7 @@
         <div
           v-for="(bar, index) in waveformBars"
           :key="index"
-          class="max-h-8 min-h-1 w-0.75 rounded-[1.5px] bg-slate-100 transition-all duration-100"
+          class="max-h-8 min-h-1 w-0.75 rounded-[1.5px] bg-text-secondary transition-all duration-100"
           :style="{ height: bar.height + 'px' }"
           :title="`Bar ${index + 1}: ${bar.height}px`"
         />

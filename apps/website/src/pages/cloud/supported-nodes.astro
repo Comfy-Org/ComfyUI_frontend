@@ -1,0 +1,42 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import HeroSection from '../../components/cloud-nodes/HeroSection.vue'
+import PackGridSection from '../../components/cloud-nodes/PackGridSection.vue'
+import { t } from '../../i18n/translations'
+import { loadPacksForBuild } from '../../utils/cloudNodes.build'
+import { escapeJsonLd } from '../../utils/escapeJsonLd'
+
+const packs = await loadPacksForBuild()
+
+const siteBase = Astro.site ?? new URL('https://comfy.org')
+const pageUrl = new URL('/cloud/supported-nodes', siteBase).href
+
+const itemListJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  name: 'Custom-node packs supported on Comfy Cloud',
+  url: pageUrl,
+  numberOfItems: packs.length,
+  itemListElement: packs.map((pack, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    url: new URL(`/cloud/supported-nodes/${pack.id}`, siteBase).href,
+    name: pack.displayName,
+    image: pack.bannerUrl || pack.iconUrl
+  }))
+}
+---
+
+<BaseLayout
+  title={t('cloudNodes.meta.title', 'en')}
+  description={t('cloudNodes.meta.description', 'en')}
+>
+  <script
+    is:inline
+    slot="head"
+    type="application/ld+json"
+    set:html={escapeJsonLd(itemListJsonLd)}
+  />
+  <HeroSection client:visible />
+  <PackGridSection packs={packs} client:visible />
+</BaseLayout>

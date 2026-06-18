@@ -179,8 +179,12 @@ export function createMockNodeInputSlot(
   overrides: Partial<INodeInputSlot> = {}
 ): INodeInputSlot {
   return {
+    name: 'input',
+    type: '*',
+    boundingRect: [0, 0, 0, 0],
+    link: null,
     ...overrides
-  } as INodeInputSlot
+  }
 }
 
 /**
@@ -190,8 +194,12 @@ export function createMockNodeOutputSlot(
   overrides: Partial<INodeOutputSlot> = {}
 ): INodeOutputSlot {
   return {
+    name: 'output',
+    type: '*',
+    boundingRect: [0, 0, 0, 0],
+    links: null,
     ...overrides
-  } as INodeOutputSlot
+  }
 }
 
 /**

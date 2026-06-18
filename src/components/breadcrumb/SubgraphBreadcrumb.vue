@@ -18,6 +18,7 @@
     <Button
       v-if="isInSubgraph"
       class="back-button pointer-events-auto ml-1.5 size-8 shrink-0 border border-transparent bg-transparent p-0 transition-all hover:rounded-lg hover:border-interface-stroke hover:bg-comfy-menu-bg"
+      data-testid="subgraph-breadcrumb-back"
       text
       severity="secondary"
       size="small"
@@ -87,7 +88,8 @@ const home = computed(() => ({
   isBlueprint: isBlueprint.value,
   command: () => {
     useTelemetry()?.trackUiButtonClicked({
-      button_id: 'breadcrumb_subgraph_root_selected'
+      button_id: 'breadcrumb_subgraph_root_selected',
+      element_group: 'breadcrumb'
     })
     const canvas = useCanvasStore().getCanvas()
     if (!canvas.graph) throw new TypeError('Canvas has no graph')
@@ -102,7 +104,8 @@ const items = computed(() => {
     key: `subgraph-${subgraph.id}`,
     command: () => {
       useTelemetry()?.trackUiButtonClicked({
-        button_id: 'breadcrumb_subgraph_item_selected'
+        button_id: 'breadcrumb_subgraph_item_selected',
+        element_group: 'breadcrumb'
       })
       const canvas = useCanvasStore().getCanvas()
       if (!canvas.graph) throw new TypeError('Canvas has no graph')

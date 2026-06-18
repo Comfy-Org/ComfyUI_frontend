@@ -2,6 +2,7 @@ import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
+import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { t } from '@/i18n'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -159,6 +160,7 @@ function replaceWithMapping(
   nodeGraph: LGraph,
   idx: number
 ): void {
+  node.onRemoved?.()
   newNode.id = node.id
   newNode.pos = [...node.pos]
   newNode.size = [...node.size]
@@ -169,6 +171,9 @@ function replaceWithMapping(
   nodeGraph._nodes[idx] = newNode
   newNode.graph = nodeGraph
   nodeGraph._nodes_by_id[newNode.id] = newNode
+  for (const widget of newNode.widgets ?? []) {
+    if (isNodeBindable(widget)) widget.setNodeId(newNode.id)
+  }
 
   const serialized = node.last_serialization ?? node.serialize()
 

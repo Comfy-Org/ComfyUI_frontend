@@ -4,10 +4,11 @@ import { computed, effectScope, onScopeDispose, ref, toValue, watch } from 'vue'
 import type { ComputedRef, EffectScope, MaybeRefOrGetter, Ref } from 'vue'
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { UUID } from '@/lib/litegraph/src/utils/uuid'
+import type { UUID } from '@/utils/uuid'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 import { curveDataToFloatLUT } from '@/components/curve/curveUtils'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
@@ -194,17 +195,14 @@ function createInnerPreview(
     if (isGLSLNode.value) {
       const nId = nodeId.value
       if (nId == null) return undefined
-      return widgetValueStore.getWidget(gId, nId, 'fragment_shader')?.value as
-        | string
-        | undefined
+      return widgetValueStore.getWidget(widgetId(gId, nId, 'fragment_shader'))
+        ?.value as string | undefined
     }
 
     const inner = innerGLSLNode
     if (inner) {
       return widgetValueStore.getWidget(
-        gId,
-        inner.id as NodeId,
-        'fragment_shader'
+        widgetId(gId, inner.id as NodeId, 'fragment_shader')
       )?.value as string | undefined
     }
 
@@ -282,7 +280,7 @@ function createInnerPreview(
     }
   }
 
-  function getCustomResolution(): [number, number] | null {
+  const customResolution = computed((): [number, number] | null => {
     const gId = graphId.value
     if (!gId) return null
 
@@ -292,21 +290,15 @@ function createInnerPreview(
     if (sizeModeNodeId == null) return null
 
     const sizeMode = widgetValueStore.getWidget(
-      gId,
-      sizeModeNodeId,
-      'size_mode'
+      widgetId(gId, sizeModeNodeId, 'size_mode')
     )
     if (sizeMode?.value !== 'custom') return null
 
     const widthWidget = widgetValueStore.getWidget(
-      gId,
-      sizeModeNodeId,
-      'size_mode.width'
+      widgetId(gId, sizeModeNodeId, 'size_mode.width')
     )
     const heightWidget = widgetValueStore.getWidget(
-      gId,
-      sizeModeNodeId,
-      'size_mode.height'
+      widgetId(gId, sizeModeNodeId, 'size_mode.height')
     )
     if (!widthWidget || !heightWidget) return null
 
@@ -314,10 +306,10 @@ function createInnerPreview(
       normalizeDimension(widthWidget.value),
       normalizeDimension(heightWidget.value)
     )
-  }
+  })
 
   function getResolution(): [number, number] {
-    const custom = getCustomResolution()
+    const custom = customResolution.value
     if (custom) return custom
 
     const node = nodeRef.value
@@ -410,6 +402,7 @@ function createInnerPreview(
       const result = r.compileFragment(source)
       if (!result.success) {
         lastError.value = result.log
+        console.warn('[GLSL] shader compilation failed:', result.log)
         return
       }
       lastError.value = null
@@ -481,7 +474,8 @@ function createInnerPreview(
         floatValues.value,
         intValues.value,
         boolValues.value,
-        curveValues.value
+        curveValues.value,
+        customResolution.value
       ] as const,
     () => {
       if (shouldRender.value) debouncedRender()

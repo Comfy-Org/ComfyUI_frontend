@@ -2,7 +2,11 @@
   <div class="inline-flex items-center">
     <Popover>
       <template #button>
-        <Button variant="secondary" size="icon">
+        <Button
+          variant="secondary"
+          size="icon"
+          :aria-label="$t('assetBrowser.filterBy')"
+        >
           <i class="icon-[lucide--list-filter]" />
         </Button>
       </template>

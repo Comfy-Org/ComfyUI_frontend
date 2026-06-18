@@ -62,5 +62,5 @@ When translating Figma design tokens into code:
 ## Integration with Codebase
 
 - Map Figma color values to Tailwind 4 semantic tokens — never hardcode hex values
-- Use `cn()` from `@/utils/tailwindUtil` for conditional class merging
+- Use `cn()` from `@comfyorg/tailwind-utils` for conditional class merging
 - Use the `dark:` avoidance rule from AGENTS.md — semantic tokens handle both themes

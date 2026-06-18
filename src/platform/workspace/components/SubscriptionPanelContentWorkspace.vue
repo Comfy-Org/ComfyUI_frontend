@@ -371,7 +371,6 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDialogService } from '@/services/dialogService'
 import {
   DEFAULT_TIER_KEY,
@@ -384,7 +383,7 @@ import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefi
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const workspaceStore = useTeamWorkspaceStore()
 const { isWorkspaceSubscribed, isInPersonalWorkspace, members } =
@@ -404,7 +403,8 @@ const {
   manageSubscription,
   fetchStatus,
   fetchBalance,
-  getMaxSeats
+  getMaxSeats,
+  resubscribe
 } = useBillingContext()
 
 const { showCancelSubscriptionDialog } = useDialogService()
@@ -415,13 +415,12 @@ const isResubscribing = ref(false)
 async function handleResubscribe() {
   isResubscribing.value = true
   try {
-    await workspaceApi.resubscribe()
+    await resubscribe()
     toast.add({
       severity: 'success',
       summary: t('subscription.resubscribeSuccess'),
       life: 5000
     })
-    await Promise.all([fetchStatus(), fetchBalance()])
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Failed to resubscribe'

@@ -7,11 +7,6 @@ on:
     types:
       - completed
 
-permissions:
-  contents: read
-  pull-requests: write
-  actions: read
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
   cancel-in-progress: true
@@ -19,6 +14,16 @@ concurrency:
 jobs:
   comment:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      actions: read
+    # Uses head_branch as proxy for PR number (unavailable at job-level in workflow_run).
+    # Preview and E2E comment writes are NOT mutually serialized — the race window is
+    # small and self-healing on next push.
+    concurrency:
+      group: website-pr-comment-${{ github.event.workflow_run.head_branch }}
+      cancel-in-progress: false
     if: >
       github.repository == 'Comfy-Org/ComfyUI_frontend' &&
       github.event.workflow_run.event == 'pull_request' &&
@@ -37,28 +42,29 @@ jobs:
         id: pr-meta
         uses: ./.github/actions/resolve-pr-from-workflow-run
 
-      - name: Write report
+      - name: Read preview URLs
         if: steps.pr-meta.outputs.skip != 'true'
-        env:
-          DEPLOYED_AT: ${{ github.event.workflow_run.updated_at }}
-          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+        id: urls
         run: |
-          STABLE_URL=$(cat temp/vercel-preview/stable-url.txt)
-          UNIQUE_URL=$(cat temp/vercel-preview/url.txt)
-          SHORT_SHA="${HEAD_SHA:0:7}"
-          cat > preview-report.md <<EOF
-          **Website Preview:** $STABLE_URL
+          echo "stable-url=$(cat temp/vercel-preview/stable-url.txt)" >> "$GITHUB_OUTPUT"
+          echo "unique-url=$(cat temp/vercel-preview/url.txt)" >> "$GITHUB_OUTPUT"
+          echo "short-sha=${HEAD_SHA:0:7}" >> "$GITHUB_OUTPUT"
+        env:
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
 
-          <sub>This commit: $UNIQUE_URL</sub>
-
-          <sub>Last updated: $DEPLOYED_AT for \`$SHORT_SHA\`</sub>
-          EOF
-
-      - name: Post PR comment
+      - name: Post preview comment
         if: steps.pr-meta.outputs.skip != 'true'
-        uses: ./.github/actions/post-pr-report-comment
+        uses: ./.github/actions/upsert-comment-section
         with:
           pr-number: ${{ steps.pr-meta.outputs.number }}
-          report-file: ./preview-report.md
-          comment-marker: '<!-- VERCEL_WEBSITE_PREVIEW -->'
+          section-name: preview
+          comment-marker: '<!-- WEBSITE_CI_REPORT -->'
           token: ${{ secrets.GITHUB_TOKEN }}
+          section-content: |-
+            ## 🔗 Website Preview
+
+            **Website Preview:** ${{ steps.urls.outputs.stable-url }}
+
+            <sub>This commit: ${{ steps.urls.outputs.unique-url }}</sub>
+
+            <sub>Last updated: ${{ github.event.workflow_run.updated_at }} for `${{ steps.urls.outputs.short-sha }}`</sub>

@@ -1,12 +1,12 @@
 <template>
   <Button
     v-tooltip.bottom="{
-      value: $t('subscription.subscribeToRunFull'),
+      value: buttonTooltip,
       showDelay: 600
     }"
-    class="subscribe-to-run-button whitespace-nowrap"
+    class="subscribe-to-run-button h-8 gap-1.5 rounded-lg px-4 whitespace-nowrap"
     variant="gradient"
-    size="sm"
+    size="unset"
     data-testid="subscribe-to-run-button"
     @click="handleSubscribeToRun"
   >
@@ -24,20 +24,31 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 const { t } = useI18n()
 const breakpoints = useBreakpoints(breakpointsTailwind)
 const isMdOrLarger = breakpoints.greaterOrEqual('md')
 
-const buttonLabel = computed(() =>
-  isMdOrLarger.value
-    ? t('subscription.subscribeToRunFull')
-    : t('subscription.subscribeToRun')
-)
-
+const { permissions } = useWorkspaceUI()
 const { showSubscriptionDialog } = useBillingContext()
 
-const handleSubscribeToRun = () => {
+const canResubscribe = computed(() => permissions.value.canManageSubscription)
+
+const buttonLabel = computed(() => {
+  if (!canResubscribe.value) return t('subscription.inactive.runLabel')
+  return isMdOrLarger.value
+    ? t('subscription.subscribeToRunFull')
+    : t('subscription.subscribeToRun')
+})
+
+const buttonTooltip = computed(() =>
+  canResubscribe.value
+    ? t('subscription.subscribeToRunFull')
+    : t('subscription.inactive.memberRunTooltip')
+)
+
+function handleSubscribeToRun() {
   if (isCloud) {
     useTelemetry()?.trackRunButton({ subscribe_to_run: true })
   }

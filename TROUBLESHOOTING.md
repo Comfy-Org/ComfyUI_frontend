@@ -7,7 +7,7 @@ This guide helps you resolve common issues when developing ComfyUI Frontend.
 ```mermaid
 flowchart TD
     A[Having Issues?] --> B{What's the problem?}
-    B -->|Dev server stuck| C[nx serve hangs]
+    B -->|Dev server stuck| C[pnpm dev hangs]
     B -->|Build errors| D[Check build issues]
     B -->|Lint errors| Q[Check linting issues]
     B -->|Dependency issues| E[Package problems]
@@ -23,7 +23,7 @@ flowchart TD
     G -->|No| H[Run: pnpm i]
     G -->|Still stuck| I[Run: pnpm clean]
     I --> J{Still stuck?}
-    J -->|Yes| K[Nuclear option:<br/>pnpm dlx rimraf node_modules<br/>&& pnpm i]
+    J -->|Yes| K[Nuclear option:<br/>pnpm clean:all<br/>&& pnpm i]
     J -->|No| L[Fixed!]
     H --> L
 
@@ -41,11 +41,11 @@ flowchart TD
 
 ### Development Server Issues
 
-#### Q: `pnpm dev` or `nx serve` gets stuck and won't start
+#### Q: `pnpm dev` gets stuck and won't start
 
 **Symptoms:**
 
-- Command hangs on "nx serve"
+- Command hangs during Vite startup
 - Dev server doesn't respond
 - Terminal appears frozen
 
@@ -65,7 +65,7 @@ flowchart TD
 
 3. **Last resort - Full node_modules reset:**
    ```bash
-   pnpm dlx rimraf node_modules && pnpm i
+   pnpm clean:all && pnpm i
    ```
 
 **Why this happens:**
@@ -73,7 +73,7 @@ flowchart TD
 - Corrupted dependency cache
 - Outdated lock files after branch switching
 - Incomplete previous installations
-- NX cache corruption
+- stale local build cache
 
 ---
 

@@ -36,6 +36,7 @@ const settings = {
       alwaysTryTypes: true,
       project: [
         './tsconfig.json',
+        './browser_tests/tsconfig.json',
         './apps/*/tsconfig.json',
         './packages/*/tsconfig.json'
       ],
@@ -75,7 +76,6 @@ export default defineConfig([
   {
     ignores: [
       '.i18nrc.cjs',
-      '.nx/*',
       '**/vite.config.*.timestamp*',
       '**/vitest.config.*.timestamp*',
       'components.d.ts',
@@ -145,9 +145,7 @@ export default defineConfig([
   eslintConfigPrettier,
   // @ts-expect-error Type incompatibility between storybook plugin and ESLint config types
   storybookConfigs['flat/recommended'],
-  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.recommended,
-  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.typescript,
   {
     plugins: {
@@ -231,6 +229,37 @@ export default defineConfig([
     }
   },
   {
+    name: 'comfy/no-unsafe-error-assertion',
+    files: [
+      'src/**/*.ts',
+      'src/**/*.tsx',
+      'src/**/*.vue',
+      'apps/*/src/**/*.ts',
+      'apps/*/src/**/*.tsx',
+      'apps/*/src/**/*.vue'
+    ],
+    ignores: ['**/*.test.ts', '**/*.spec.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          // Bans `value as Error` and `value as Error & { ... }`.
+          // Use `error instanceof Error` narrowing or `toError()` from
+          // @/utils/errorUtil instead — see issue #11429.
+          selector: "TSAsExpression TSTypeReference[typeName.name='Error']",
+          message:
+            'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+        },
+        {
+          // Bans `<Error>value` and `<Error & { ... }>value`.
+          selector: "TSTypeAssertion TSTypeReference[typeName.name='Error']",
+          message:
+            'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
+        }
+      ]
+    }
+  },
+  {
     files: ['**/*.spec.ts'],
     ignores: ['browser_tests/tests/**/*.spec.ts', 'apps/*/e2e/**/*.spec.ts'],
     rules: {
@@ -284,7 +313,13 @@ export default defineConfig([
           message:
             'Use vi.mock() with vi.hoisted() instead of vi.doMock(). See docs/testing/vitest-patterns.md'
         }
-      ]
+      ],
+      // Tests routinely define stub and harness components side-by-side with
+      // the system under test and stub emits for documentation only — these
+      // production-SFC rules are noise in a test file.
+      'vue/one-component-per-file': 'off',
+      'vue/no-reserved-component-names': 'off',
+      'vue/no-unused-emit-declarations': 'off'
     }
   },
   {
@@ -336,7 +371,8 @@ export default defineConfig([
     files: [
       'src/base/**/*.{ts,vue}',
       'src/platform/**/*.{ts,vue}',
-      'src/workbench/**/*.{ts,vue}'
+      'src/workbench/**/*.{ts,vue}',
+      'src/world/**/*.{ts,vue}'
     ],
     rules: {
       'import-x/no-restricted-paths': [
@@ -364,6 +400,12 @@ export default defineConfig([
               from: './src/renderer/**',
               message:
                 'workbench/ cannot import from renderer/ (violates layer architecture: base → platform → workbench → renderer)'
+            },
+            {
+              target: './src/world/**',
+              from: './src/lib/litegraph/**',
+              message:
+                'src/world/ must remain free of litegraph dependencies. The world layer owns canonical entity identity and must not depend on litegraph types or values.'
             }
           ]
         }
@@ -469,6 +511,11 @@ export default defineConfig([
             {
               group: ['./**', '../**'],
               message: 'Use the @e2e/ path alias instead of relative imports.'
+            },
+            {
+              group: ['@e2e/helpers', '@e2e/helpers/*'],
+              message:
+                'browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead.'
             }
           ]
         }
@@ -487,6 +534,11 @@ export default defineConfig([
             {
               group: ['./**', '../**'],
               message: 'Use the @e2e/ path alias instead of relative imports.'
+            },
+            {
+              group: ['@e2e/helpers', '@e2e/helpers/*'],
+              message:
+                'browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead.'
             }
           ]
         }

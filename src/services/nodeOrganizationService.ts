@@ -51,7 +51,7 @@ function sortByKnownOrder<T>(
 
 function categoryPathExtractor(nodeDef: ComfyNodeDefImpl): string[] {
   const category = nodeDef.category || ''
-  const categoryParts = category ? category.split('/') : []
+  const categoryParts = category ? category.split('/').filter(Boolean) : []
   return [...categoryParts, nodeDef.name]
 }
 

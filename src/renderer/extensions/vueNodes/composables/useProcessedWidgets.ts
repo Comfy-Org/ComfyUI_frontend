@@ -25,14 +25,15 @@ import {
   shouldRenderAsVue
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
-import type { WidgetState } from '@/stores/widgetValueStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { usePromotionStore } from '@/stores/promotionStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { WidgetId } from '@/types/widgetId'
+import { widgetId } from '@/types/widgetId'
+import type { WidgetState } from '@/types/widgetState'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   LinkedUpstreamInfo,
@@ -51,6 +52,7 @@ interface ProcessedWidget {
   hasError: boolean
   hidden: boolean
   id: string
+  widgetId?: WidgetId
   name: string
   renderKey: string
   simplified: SimplifiedWidget
@@ -58,6 +60,7 @@ interface ProcessedWidget {
   type: string
   updateHandler: (value: WidgetValue) => void
   value: WidgetValue
+  visible: boolean
   vueComponent: Component
   slotMetadata?: WidgetSlotMetadata
 }
@@ -89,8 +92,8 @@ function createWidgetUpdateHandler(
     const effectiveExecId = widget.sourceExecutionId ?? nodeExecId
     executionErrorStore.clearWidgetRelatedErrors(
       effectiveExecId,
-      widget.slotName ?? widget.name,
       widget.name,
+      widget.sourceWidgetName ?? widget.name,
       newValue,
       { min: widgetOptions?.min, max: widgetOptions?.max }
     )
@@ -109,12 +112,11 @@ export function hasWidgetError(
   const errors = widget.sourceExecutionId
     ? executionErrorStore.lastNodeErrors?.[widget.sourceExecutionId]?.errors
     : nodeErrors?.errors
-  const inputName = widget.slotName ?? widget.name
   return (
-    !!errors?.some((e) => e.extra_info?.input_name === inputName) ||
+    !!errors?.some((e) => e.extra_info?.input_name === widget.name) ||
     missingModelStore.isWidgetMissingModel(
       widget.sourceExecutionId ?? nodeExecId,
-      widget.name
+      widget.sourceWidgetName ?? widget.name
     )
   )
 }
@@ -127,35 +129,37 @@ export function getWidgetIdentity(
   dedupeIdentity?: string
   renderKey: string
 } {
-  const rawWidgetId = widget.storeNodeId ?? widget.nodeId
-  const storeWidgetName = widget.storeName ?? widget.name
-  const slotNameForIdentity = widget.slotName ?? widget.name
-  const stableIdentityRoot = rawWidgetId
-    ? `node:${String(stripGraphPrefix(rawWidgetId))}`
+  if (widget.widgetId) {
+    const dedupeIdentity = `${widget.widgetId}:${widget.type}`
+    return { dedupeIdentity, renderKey: dedupeIdentity }
+  }
+  const hostNodeIdRoot =
+    nodeId !== undefined && nodeId !== ''
+      ? `node:${String(stripGraphPrefix(nodeId))}`
+      : undefined
+  const stableIdentityRoot = widget.nodeId
+    ? `node:${String(stripGraphPrefix(widget.nodeId))}`
     : widget.sourceExecutionId
       ? `exec:${widget.sourceExecutionId}`
-      : undefined
+      : hostNodeIdRoot
 
   const dedupeIdentity = stableIdentityRoot
-    ? `${stableIdentityRoot}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}`
+    ? `${stableIdentityRoot}:${widget.name}:${widget.type}`
     : undefined
   const renderKey =
     dedupeIdentity ??
-    `transient:${String(nodeId ?? '')}:${storeWidgetName}:${slotNameForIdentity}:${widget.type}:${index}`
-
-  return {
-    dedupeIdentity,
-    renderKey
-  }
+    `transient:${String(nodeId ?? '')}:${widget.name}:${widget.type}:${index}`
+  return { dedupeIdentity, renderKey }
 }
 
 export function isWidgetVisible(
   options: IWidgetOptions,
-  showAdvanced: boolean
+  showAdvanced: boolean,
+  linked = false
 ): boolean {
   const hidden = options.hidden ?? false
   const advanced = options.advanced ?? false
-  return !hidden && (!advanced || showAdvanced)
+  return !hidden && (!advanced || showAdvanced || linked)
 }
 
 export function computeProcessedWidgets({
@@ -168,7 +172,6 @@ export function computeProcessedWidgets({
 }: ComputeProcessedWidgetsOptions): ProcessedWidget[] {
   if (!nodeData?.widgets) return []
 
-  const promotionStore = usePromotionStore()
   const executionErrorStore = useExecutionErrorStore()
   const missingModelStore = useMissingModelStore()
   const widgetValueStore = useWidgetValueStore()
@@ -196,18 +199,26 @@ export function computeProcessedWidgets({
     if (!shouldRenderAsVue(widget)) continue
 
     const identity = getWidgetIdentity(widget, nodeId, index)
-    const storeWidgetName = widget.storeName ?? widget.name
-    const bareWidgetId = String(
-      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
-    )
-    const widgetState = graphId
-      ? widgetValueStore.getWidget(graphId, bareWidgetId, storeWidgetName)
-      : undefined
+    const widgetState = widget.widgetId
+      ? widgetValueStore.getWidget(widget.widgetId)
+      : graphId
+        ? widgetValueStore.getWidget(
+            widgetId(
+              graphId,
+              String(stripGraphPrefix(widget.nodeId ?? nodeId ?? '')),
+              widget.name
+            )
+          )
+        : undefined
     const mergedOptions: IWidgetOptions = {
       ...(widget.options ?? {}),
       ...(widgetState?.options ?? {})
     }
-    const visible = isWidgetVisible(mergedOptions, showAdvanced)
+    const visible = isWidgetVisible(
+      mergedOptions,
+      showAdvanced,
+      widget.slotMetadata?.linked
+    )
     if (!identity.dedupeIdentity) {
       uniqueWidgets.push({
         widget,
@@ -248,15 +259,10 @@ export function computeProcessedWidgets({
     widget,
     mergedOptions,
     widgetState,
+    isVisible: visible,
     identity: { renderKey }
   } of uniqueWidgets) {
-    const hostNodeId = String(nodeId ?? '')
-    const bareWidgetId = String(
-      stripGraphPrefix(widget.storeNodeId ?? widget.nodeId ?? nodeId ?? '')
-    )
-    const promotionSourceNodeId = widget.storeName
-      ? String(bareWidgetId)
-      : undefined
+    const bareWidgetId = String(stripGraphPrefix(widget.nodeId ?? nodeId ?? ''))
 
     const vueComponent =
       getComponent(widget.type) ||
@@ -275,17 +281,9 @@ export function computeProcessedWidgets({
       ? { ...mergedOptions, disabled: true }
       : mergedOptions
 
-    const borderStyle =
-      graphId &&
-      promotionStore.isPromotedByAny(graphId, {
-        sourceNodeId: hostNodeId,
-        sourceWidgetName: widget.storeName ?? widget.name,
-        disambiguatingSourceNodeId: promotionSourceNodeId
-      })
-        ? 'ring ring-component-node-widget-promoted'
-        : mergedOptions.advanced
-          ? 'ring ring-component-node-widget-advanced'
-          : undefined
+    const borderStyle = mergedOptions.advanced
+      ? 'ring ring-component-node-widget-advanced'
+      : undefined
 
     const linkedUpstream: LinkedUpstreamInfo | undefined =
       slotMetadata?.linked && slotMetadata.originNodeId
@@ -302,13 +300,13 @@ export function computeProcessedWidgets({
         : undefined
 
     const simplified: SimplifiedWidget = {
-      name: widget.name,
+      name: widgetState?.name ?? widget.name,
       type: widget.type,
       value,
       borderStyle,
       callback: widget.callback,
       controlWidget: widget.controlWidget,
-      label: widget.promotedLabel ?? widgetState?.label,
+      label: widgetState?.label,
       linkedUpstream,
       nodeLocatorId,
       options: widgetOptions,
@@ -350,12 +348,14 @@ export function computeProcessedWidgets({
       ),
       hidden: mergedOptions.hidden ?? false,
       id: String(bareWidgetId),
+      widgetId: widget.widgetId,
       name: widget.name,
       renderKey,
       type: widget.type,
       vueComponent,
       simplified,
       value,
+      visible,
       updateHandler,
       tooltipConfig,
       slotMetadata
@@ -409,12 +409,7 @@ export function useProcessedWidgets(
   )
 
   const visibleWidgets = computed(() =>
-    processedWidgets.value.filter((w) =>
-      isWidgetVisible(
-        { hidden: w.hidden, advanced: w.advanced },
-        showAdvanced.value
-      )
-    )
+    processedWidgets.value.filter((w) => w.visible)
   )
 
   const gridTemplateRows = computed((): string =>
@@ -430,7 +425,6 @@ export function useProcessedWidgets(
     gridTemplateRows,
     nodeType,
     processedWidgets,
-    showAdvanced,
     visibleWidgets
   }
 }

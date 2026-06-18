@@ -58,22 +58,20 @@
         :existing-providers="existingProviders"
         @saved="fetchSecrets"
       />
-
-      <ConfirmDialog group="secrets" />
     </div>
   </TabPanel>
 </template>
 
 <script setup lang="ts">
-import ConfirmDialog from 'primevue/confirmdialog'
 import Divider from 'primevue/divider'
 import ProgressSpinner from 'primevue/progressspinner'
 import TabPanel from 'primevue/tabpanel'
-import { useConfirm } from 'primevue/useconfirm'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import { useSecrets } from '../composables/useSecrets'
 import type { SecretMetadata } from '../types'
@@ -81,7 +79,7 @@ import SecretFormDialog from './SecretFormDialog.vue'
 import SecretListItem from './SecretListItem.vue'
 
 const { t } = useI18n()
-const confirm = useConfirm()
+const dialogStore = useDialogStore()
 
 const {
   loading,
@@ -106,12 +104,20 @@ function openEditDialog(secret: SecretMetadata) {
 }
 
 function confirmDelete(secret: SecretMetadata) {
-  confirm.require({
-    group: 'secrets',
-    header: t('secrets.deleteConfirmTitle'),
-    message: t('secrets.deleteConfirmMessage', { name: secret.name }),
-    acceptClass: 'p-button-danger',
-    accept: () => deleteSecret(secret)
+  const dialog = showConfirmDialog({
+    headerProps: { title: t('secrets.deleteConfirmTitle') },
+    props: {
+      promptText: t('secrets.deleteConfirmMessage', { name: secret.name })
+    },
+    footerProps: {
+      confirmText: t('g.delete'),
+      confirmVariant: 'destructive',
+      onCancel: () => dialogStore.closeDialog(dialog),
+      onConfirm: async () => {
+        dialogStore.closeDialog(dialog)
+        await deleteSecret(secret)
+      }
+    }
   })
 }
 

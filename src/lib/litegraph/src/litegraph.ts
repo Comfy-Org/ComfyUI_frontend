@@ -7,6 +7,7 @@ import type {
   Point,
   Size
 } from './interfaces'
+import { registerLiteGraphInstance } from './litegraphInstance'
 import { loadPolyfills } from './polyfills'
 import type { CanvasEventDetail } from './types/events'
 import type { RenderShape, TitleMode } from './types/globalEnums'
@@ -15,6 +16,7 @@ import type { RenderShape, TitleMode } from './types/globalEnums'
 export { Subgraph } from './subgraph/Subgraph'
 
 export const LiteGraph = new LiteGraphGlobal()
+registerLiteGraphInstance(LiteGraph)
 
 // Load legacy polyfills
 loadPolyfills()
@@ -101,7 +103,8 @@ export type {
   LinkNetwork,
   Point,
   Positionable,
-  Size
+  Size,
+  SlotIndex
 } from './interfaces'
 export {
   LGraph,
@@ -109,12 +112,13 @@ export {
   type GroupNodeWorkflowData,
   type LGraphTriggerAction,
   type LGraphTriggerParam,
-  type GraphAddOptions
+  type GraphAddOptions,
+  type SubgraphId
 } from './LGraph'
 export type { LGraphTriggerEvent } from './types/graphTriggers'
 export { BadgePosition, LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
-export { LGraphGroup } from './LGraphGroup'
+export { LGraphGroup, type GroupId } from './LGraphGroup'
 export { LGraphNode, type NodeId } from './LGraphNode'
 export { LLink } from './LLink'
 export { createBounds } from './measure'
@@ -142,8 +146,8 @@ export type {
 } from './types/serialisation'
 export type { IWidget } from './types/widgets'
 export { isColorable } from './utils/type'
-export { createUuidv4 } from './utils/uuid'
-export type { UUID } from './utils/uuid'
+export { createUuidv4 } from '@/utils/uuid'
+export type { UUID } from '@/utils/uuid'
 export { truncateText } from './utils/textUtils'
 export {
   evaluateInput,

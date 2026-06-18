@@ -115,7 +115,7 @@ import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { cn } from '@/utils/tailwindUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import ComfyRunButton from './ComfyRunButton'
 
@@ -222,7 +222,8 @@ watch(visible, async (newVisible) => {
  */
 useEventListener(dragHandleRef, 'mousedown', () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'actionbar_run_handle_drag_start'
+    button_id: 'actionbar_run_handle_drag_start',
+    element_group: 'actionbar'
   })
 })
 

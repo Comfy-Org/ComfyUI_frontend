@@ -8,6 +8,7 @@ import { app } from '@/scripts/app'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
 
 type TextPreviewCustomProps = Omit<
   InstanceType<typeof TextPreviewWidget>['$props'],
@@ -39,16 +40,16 @@ export function useTextPreviewWidget(
       options: {
         getValue: () =>
           useWidgetValueStore().getWidget(
-            resolveNodeRootGraphId(node, app.rootGraph.id),
-            node.id,
-            inputSpec.name
+            widgetId(
+              resolveNodeRootGraphId(node, app.rootGraph.id),
+              node.id,
+              inputSpec.name
+            )
           )?.value ?? '',
         setValue: (value: string | object) => {
           const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
           const widgetState = useWidgetValueStore().getWidget(
-            graphId,
-            node.id,
-            inputSpec.name
+            widgetId(graphId, node.id, inputSpec.name)
           )
           if (widgetState)
             widgetState.value =

@@ -1,6 +1,7 @@
-/* eslint-disable vue/one-component-per-file */
 import { render } from '@testing-library/vue'
+import type { MenuItem } from 'primevue/menuitem'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { PropType } from 'vue'
 import { defineComponent, nextTick, onMounted, ref } from 'vue'
 
 import MediaAssetContextMenu from '@/platform/assets/components/MediaAssetContextMenu.vue'
@@ -30,7 +31,7 @@ vi.mock('@/utils/loaderNodeUtil', () => ({
 
 const mediaAssetActions = {
   addWorkflow: vi.fn(),
-  downloadAsset: vi.fn(),
+  downloadAssets: vi.fn(),
   openWorkflow: vi.fn(),
   exportWorkflow: vi.fn(),
   copyJobId: vi.fn(),
@@ -41,18 +42,32 @@ vi.mock('../composables/useMediaAssetActions', () => ({
   useMediaAssetActions: () => mediaAssetActions
 }))
 
+const capturedMenu = vi.hoisted(() => ({ model: [] as MenuItem[] }))
+
 const contextMenuStub = defineComponent({
   name: 'ContextMenu',
   props: {
     pt: {
       type: Object,
       default: undefined
+    },
+    model: {
+      type: Array as PropType<MenuItem[]>,
+      default: () => []
     }
   },
   emits: ['hide'],
   data() {
     return {
       visible: false
+    }
+  },
+  watch: {
+    model: {
+      immediate: true,
+      handler(items: MenuItem[]) {
+        capturedMenu.model = items
+      }
     }
   },
   methods: {
@@ -128,8 +143,23 @@ async function showMenu(container: Element): Promise<HTMLElement> {
 afterEach(() => {
   vi.clearAllMocks()
   capturedRef = null
+  capturedMenu.model = []
   document.body.innerHTML = ''
 })
+
+type MenuItemWithCommand = MenuItem & {
+  command: NonNullable<MenuItem['command']>
+}
+
+function findDownloadMenuItem(): MenuItemWithCommand {
+  const downloadItem = capturedMenu.model.find(
+    (item) => item.label === 'mediaAsset.actions.download'
+  )
+  if (!downloadItem?.command) {
+    throw new Error('Download menu item or command was not registered')
+  }
+  return downloadItem as MenuItemWithCommand
+}
 
 describe('MediaAssetContextMenu', () => {
   it('dismisses outside pointerdown using the rendered root id', async () => {
@@ -150,6 +180,21 @@ describe('MediaAssetContextMenu', () => {
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.context-menu-stub')).toBeNull()
     expect(onHide).toHaveBeenCalledOnce()
+
+    unmount()
+  })
+
+  it('routes Download through downloadAssets so multi-output jobs zip', async () => {
+    const { container, unmount } = mountComponent()
+    await showMenu(container)
+
+    const downloadItem = findDownloadMenuItem()
+    downloadItem.command({
+      originalEvent: new MouseEvent('click'),
+      item: downloadItem
+    })
+
+    expect(mediaAssetActions.downloadAssets).toHaveBeenCalledWith([asset])
 
     unmount()
   })

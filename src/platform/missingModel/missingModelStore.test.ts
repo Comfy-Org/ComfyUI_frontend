@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
 vi.mock('@/i18n', () => ({
+  t: vi.fn((key: string) => `translated:${key}`),
   st: vi.fn((_key: string, fallback: string) => fallback)
 }))
 
@@ -12,6 +13,8 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 import { useMissingModelStore } from './missingModelStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { app } from '@/scripts/app'
 
 function makeModelCandidate(
   name: string,
@@ -35,6 +38,7 @@ function makeModelCandidate(
 describe('missingModelStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    vi.restoreAllMocks()
   })
 
   describe('setMissingModels', () => {
@@ -65,6 +69,73 @@ describe('missingModelStore', () => {
       ])
 
       expect(store.missingModelCount).toBe(2)
+    })
+  })
+
+  describe('refreshMissingModels', () => {
+    it('delegates to the app missing model refresh pipeline', async () => {
+      const store = useMissingModelStore()
+      const refreshSpy = vi
+        .spyOn(app, 'refreshMissingModels')
+        .mockResolvedValue({
+          missingModels: [],
+          confirmedCandidates: []
+        })
+
+      await store.refreshMissingModels()
+
+      expect(refreshSpy).toHaveBeenCalledWith({ silent: true })
+      expect(store.isRefreshingMissingModels).toBe(false)
+    })
+
+    it('ignores overlapping refresh requests', async () => {
+      const store = useMissingModelStore()
+      let resolveRefresh: () => void = () => {}
+      const refreshSpy = vi.spyOn(app, 'refreshMissingModels').mockReturnValue(
+        new Promise((resolve) => {
+          resolveRefresh = () =>
+            resolve({ missingModels: [], confirmedCandidates: [] })
+        })
+      )
+
+      const firstRefresh = store.refreshMissingModels()
+      const secondRefresh = store.refreshMissingModels()
+      resolveRefresh()
+      await Promise.all([firstRefresh, secondRefresh])
+
+      expect(refreshSpy).toHaveBeenCalledTimes(1)
+      expect(store.isRefreshingMissingModels).toBe(false)
+    })
+
+    it('shows a toast when the refresh pipeline fails', async () => {
+      const store = useMissingModelStore()
+      vi.spyOn(app, 'refreshMissingModels').mockRejectedValue(
+        new Error('object_info failed')
+      )
+      const toastStore = useToastStore()
+      const addSpy = vi.spyOn(toastStore, 'add')
+
+      await store.refreshMissingModels()
+
+      expect(addSpy).toHaveBeenCalledWith({
+        severity: 'error',
+        summary: 'translated:g.error',
+        detail: 'translated:rightSidePanel.missingModels.refreshFailed'
+      })
+      expect(store.isRefreshingMissingModels).toBe(false)
+    })
+
+    it('does not show a toast when the refresh is aborted', async () => {
+      const store = useMissingModelStore()
+      const abortError = new DOMException('Refresh aborted', 'AbortError')
+      vi.spyOn(app, 'refreshMissingModels').mockRejectedValue(abortError)
+      const toastStore = useToastStore()
+      const addSpy = vi.spyOn(toastStore, 'add')
+
+      await store.refreshMissingModels()
+
+      expect(addSpy).not.toHaveBeenCalled()
+      expect(store.isRefreshingMissingModels).toBe(false)
     })
   })
 
@@ -143,7 +214,7 @@ describe('missingModelStore', () => {
       store.setMissingModels([
         makeModelCandidate('model_a.safetensors', { nodeId: '1' })
       ])
-      store.urlInputs['test-key'] = 'https://example.com'
+      store.modelExpandState['test-key'] = true
       store.selectedLibraryModel['test-key'] = 'some-model'
       expect(store.missingModelCandidates).not.toBeNull()
 
@@ -151,7 +222,7 @@ describe('missingModelStore', () => {
 
       expect(store.missingModelCandidates).toBeNull()
       expect(store.hasMissingModels).toBe(false)
-      expect(store.urlInputs).toEqual({})
+      expect(store.modelExpandState).toEqual({})
       expect(store.selectedLibraryModel).toEqual({})
     })
   })
@@ -444,17 +515,19 @@ describe('missingModelStore', () => {
         makeModelCandidate('shared.safetensors', { nodeId: '65:80:5' }),
         makeModelCandidate('only-interior.safetensors', { nodeId: '65:70:64' })
       ])
-      store.urlInputs['shared.safetensors'] = 'https://example.com/shared'
-      store.urlInputs['only-interior.safetensors'] =
-        'https://example.com/interior'
+      store.selectedLibraryModel['shared.safetensors'] = 'shared-replacement'
+      store.selectedLibraryModel['only-interior.safetensors'] =
+        'interior-replacement'
 
       store.removeMissingModelsByPrefix('65:70:')
 
       // 'only-interior' fully removed → interaction state cleared.
       // 'shared' still referenced by 65:80:5 → interaction state preserved.
-      expect(store.urlInputs['only-interior.safetensors']).toBeUndefined()
-      expect(store.urlInputs['shared.safetensors']).toBe(
-        'https://example.com/shared'
+      expect(
+        store.selectedLibraryModel['only-interior.safetensors']
+      ).toBeUndefined()
+      expect(store.selectedLibraryModel['shared.safetensors']).toBe(
+        'shared-replacement'
       )
     })
   })

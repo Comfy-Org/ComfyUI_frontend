@@ -15,11 +15,15 @@ browser_tests/
 │   ├── VueNodeHelpers.ts - Vue Nodes 2.0 helpers
 │   ├── selectors.ts      - Centralized TestIds
 │   ├── data/             - Static test data (mock API responses, workflow JSONs, node definitions)
-│   ├── components/       - Page object components (locators, user interactions)
+│   ├── components/       - Page object classes (locators, user interactions)
+│   │   ├── Actionbar.ts
 │   │   ├── ContextMenu.ts
+│   │   ├── ManageGroupNode.ts
 │   │   ├── SettingDialog.ts
 │   │   ├── SidebarTab.ts
-│   │   └── Topbar.ts
+│   │   ├── Templates.ts
+│   │   ├── Topbar.ts
+│   │   └── ...
 │   ├── helpers/          - Focused helper classes (domain-specific actions)
 │   │   ├── CanvasHelper.ts
 │   │   ├── CommandHelper.ts
@@ -28,17 +32,36 @@ browser_tests/
 │   │   ├── SettingsHelper.ts
 │   │   ├── WorkflowHelper.ts
 │   │   └── ...
-│   └── utils/            - Pure utility functions (no page dependency)
-├── helpers/          - Test-specific utilities
+│   └── utils/            - Standalone utility functions (used by tests or fixtures)
+│       ├── builderTestUtils.ts
+│       ├── clipboardSpy.ts
+│       ├── fitToView.ts
+│       ├── perfReporter.ts
+│       └── ...
 └── tests/            - Test files (*.spec.ts)
 ```
 
 ### Architectural Separation
 
 - **`fixtures/data/`** — Static test data only. Mock API responses, workflow JSONs, node definitions. No code, no imports from Playwright.
-- **`fixtures/components/`** — Page object components. Encapsulate locators and user interactions for a specific UI area.
-- **`fixtures/helpers/`** — Focused helper classes. Domain-specific actions that coordinate multiple page objects (e.g. canvas operations, workflow loading).
-- **`fixtures/utils/`** — Pure utility functions. No `Page` dependency; stateless helpers that can be used anywhere.
+- **`fixtures/components/`** — Page object components. Classes that own locators for a specific UI region (e.g. `Actionbar`, `ContextMenu`, `ManageGroupNode`).
+- **`fixtures/helpers/`** — Helper classes that coordinate actions across multiple regions without owning a locator surface of their own (e.g. `CanvasHelper`, `WorkflowHelper`, `NodeOperationsHelper`).
+- **`fixtures/utils/`** — Standalone utility functions. Exported functions (not classes) used by tests or fixtures (e.g. `fitToView`, `clipboardSpy`, `builderTestUtils`).
+
+### Placement Rule
+
+When adding a new file, use this decision tree:
+
+```mermaid
+flowchart TD
+    A[New file in browser_tests/fixtures/] --> B{Has any code?}
+    B -- No, JSON/data only --> D[fixtures/data/]
+    B -- Yes --> C{Is it a class?}
+    C -- No, exported functions --> U[fixtures/utils/]
+    C -- Yes --> E{Owns locators for a<br/>specific UI region?}
+    E -- Yes --> P[fixtures/components/]
+    E -- No, coordinates actions<br/>across the app --> H[fixtures/helpers/]
+```
 
 ## Page Object Locator Style
 

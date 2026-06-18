@@ -1,4 +1,6 @@
+import { createTestingPinia } from '@pinia/testing'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -6,14 +8,8 @@ import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { getWidgetDefaultValue, renameWidget } from '@/utils/widgetUtil'
-
-vi.mock('@/core/graph/subgraph/resolvePromotedWidgetSource', () => ({
-  resolvePromotedWidgetSource: vi.fn()
-}))
-
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
-
-const mockedResolve = vi.mocked(resolvePromotedWidgetSource)
+import type { WidgetId } from '@/types/widgetId'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 describe('getWidgetDefaultValue', () => {
   it('returns undefined for undefined spec', () => {
@@ -76,12 +72,33 @@ function makeNode({
 
 describe('renameWidget', () => {
   beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
   })
 
-  it('renames a regular widget and its matching input', () => {
+  it('writes the label to the widget and the input matched by widgetId', () => {
+    const id = 'graph-id:1:seed' as WidgetId
+    const widget = makeWidget({ name: 'seed', widgetId: id })
+    const input = {
+      name: 'seed',
+      widgetId: id,
+      widget: { name: 'seed' }
+    } as INodeInputSlot
+    const node = makeNode({ inputs: [input] })
+
+    const result = renameWidget(widget, node, 'My Seed')
+
+    expect(result).toBe(true)
+    expect(widget.label).toBe('My Seed')
+    expect(input.label).toBe('My Seed')
+  })
+
+  it('writes the label to a legacy input matched by widget name', () => {
     const widget = makeWidget({ name: 'seed' })
-    const input = { name: 'seed', widget: { name: 'seed' } } as INodeInputSlot
+    const input = {
+      name: 'seed',
+      widget: { name: 'seed' }
+    } as INodeInputSlot
     const node = makeNode({ inputs: [input] })
 
     const result = renameWidget(widget, node, 'My Seed')
@@ -100,61 +117,45 @@ describe('renameWidget', () => {
     expect(widget.label).toBeUndefined()
   })
 
-  it('renames promoted widget source when node is a subgraph without explicit parents', () => {
-    const sourceWidget = makeWidget({ name: 'innerSeed' })
-    const interiorInput = {
-      name: 'innerSeed',
-      widget: { name: 'innerSeed' }
+  it('writes the label to host widget state for a promoted subgraph input', () => {
+    const hostWidgetId = 'graph-id:7:seed' as WidgetId
+    useWidgetValueStore().registerWidget(hostWidgetId, {
+      type: 'number',
+      value: 12,
+      options: {},
+      label: undefined
+    })
+    const widget = makeWidget({ name: 'seed', widgetId: hostWidgetId })
+    const input = {
+      name: 'seed',
+      widgetId: hostWidgetId,
+      widget: { name: 'seed' }
     } as INodeInputSlot
-    const interiorNode = makeNode({ inputs: [interiorInput] })
+    const subgraphNode = makeNode({ isSubgraph: true, inputs: [input] })
 
-    mockedResolve.mockReturnValue({
-      widget: sourceWidget,
-      node: interiorNode
-    })
-
-    const promotedWidget = makeWidget({
-      name: 'seed',
-      sourceNodeId: '5',
-      sourceWidgetName: 'innerSeed'
-    })
-    const subgraphNode = makeNode({ isSubgraph: true })
-
-    const result = renameWidget(promotedWidget, subgraphNode, 'Renamed')
+    const result = renameWidget(widget, subgraphNode, 'Renamed')
 
     expect(result).toBe(true)
-    expect(sourceWidget.label).toBe('Renamed')
-    expect(interiorInput.label).toBe('Renamed')
-    expect(promotedWidget.label).toBe('Renamed')
+    expect(useWidgetValueStore().getWidget(hostWidgetId)?.label).toBe('Renamed')
+    expect(input.label).toBe('Renamed')
+    expect(widget.label).toBe('Renamed')
   })
 
-  it('updates _subgraphSlot.label when input has a subgraph slot', () => {
-    const widget = makeWidget({ name: 'seed' })
-    const subgraphSlot = { label: undefined as string | undefined }
-    const input = fromAny<INodeInputSlot, unknown>({
+  it('never mutates the widget or input name/widgetId (label-only)', () => {
+    const id = 'graph-id:7:seed' as WidgetId
+    const widget = makeWidget({ name: 'seed', widgetId: id })
+    const input = {
       name: 'seed',
-      widget: { name: 'seed' },
-      _subgraphSlot: subgraphSlot
-    })
-    const node = makeNode({ inputs: [input] })
+      widgetId: id,
+      widget: { name: 'seed' }
+    } as INodeInputSlot
+    const subgraphNode = makeNode({ isSubgraph: true, inputs: [input] })
 
-    renameWidget(widget, node, 'New Label')
+    renameWidget(widget, subgraphNode, 'Display Only')
 
-    expect(subgraphSlot.label).toBe('New Label')
-  })
-
-  it('does not resolve promoted widget source for non-subgraph node without parents', () => {
-    const promotedWidget = makeWidget({
-      name: 'seed',
-      sourceNodeId: '5',
-      sourceWidgetName: 'innerSeed'
-    })
-    const node = makeNode({ isSubgraph: false })
-
-    const result = renameWidget(promotedWidget, node, 'Renamed')
-
-    expect(result).toBe(true)
-    expect(mockedResolve).not.toHaveBeenCalled()
-    expect(promotedWidget.label).toBe('Renamed')
+    expect(widget.name).toBe('seed')
+    expect(widget.widgetId).toBe(id)
+    expect(input.name).toBe('seed')
+    expect(input.widgetId).toBe(id)
   })
 })

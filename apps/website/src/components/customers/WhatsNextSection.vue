@@ -2,6 +2,7 @@
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
+import GlassCard from '../common/GlassCard.vue'
 
 const {
   title,
@@ -22,8 +23,8 @@ const {
       {{ t('customers.story.whatsNext' as TranslationKey, locale) }}
     </h2>
 
-    <div
-      class="bg-transparency-white-t4 rounded-5xl mx-auto flex flex-col gap-8 p-2 lg:max-w-237.5 lg:flex-row lg:items-center"
+    <GlassCard
+      class="mx-auto flex flex-col gap-8 lg:max-w-237.5 lg:flex-row lg:items-center"
     >
       <a :href="href" class="shrink-0 lg:w-1/2">
         <img
@@ -51,6 +52,6 @@ const {
           </span>
         </a>
       </div>
-    </div>
+    </GlassCard>
   </section>
 </template>
