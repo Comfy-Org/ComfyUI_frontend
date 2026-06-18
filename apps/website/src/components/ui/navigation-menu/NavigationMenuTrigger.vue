@@ -9,8 +9,15 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { navigationMenuTriggerStyle } from '.'
 
-const { class: className, ...restProps } = defineProps<
-  NavigationMenuTriggerProps & { class?: HTMLAttributes['class'] }
+const {
+  class: className,
+  active,
+  ...restProps
+} = defineProps<
+  NavigationMenuTriggerProps & {
+    class?: HTMLAttributes['class']
+    active?: boolean
+  }
 >()
 
 const forwardedProps = useForwardProps(computed(() => ({ ...restProps })))
@@ -20,6 +27,7 @@ const forwardedProps = useForwardProps(computed(() => ({ ...restProps })))
   <NavigationMenuTrigger
     data-slot="navigation-menu-trigger"
     v-bind="forwardedProps"
+    :data-active="active ? '' : undefined"
     :class="cn(navigationMenuTriggerStyle(), 'group', className)"
   >
     <span class="ppformula-text-center">
