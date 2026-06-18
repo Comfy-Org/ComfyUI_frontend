@@ -101,6 +101,7 @@ export type RemoteConfig = {
   onboarding_survey?: OnboardingSurvey
   linear_toggle_enabled?: boolean
   team_workspaces_enabled?: boolean
+  personal_workspace_billing_ready?: boolean
   user_secrets_enabled?: boolean
   node_library_essentials_enabled?: boolean
   free_tier_credits?: number
