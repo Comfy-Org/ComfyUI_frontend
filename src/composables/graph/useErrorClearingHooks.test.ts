@@ -241,7 +241,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     )
     mediaStore.setMissingMedia([
       {
-        nodeId: node.id,
+        nodeId: asNodeExecutionId(node.id),
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
@@ -384,7 +384,7 @@ describe('installErrorClearingHooks lifecycle', () => {
       .spyOn(missingModelScan, 'scanNodeModelCandidates')
       .mockImplementation((_rootGraph, node) => [
         {
-          nodeId: node.id,
+          nodeId: asNodeExecutionId(node.id),
           nodeType: node.type,
           widgetName: 'ckpt_name',
           isAssetSupported: false,
@@ -461,7 +461,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
         Parameters<typeof modelStore.setMissingModels>[0][number],
         unknown
       >({
-        nodeId: node.id,
+        nodeId: asNodeExecutionId(node.id),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
@@ -494,7 +494,9 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     // graph whose onNodeRemoved fires for interior deletions.
     installErrorClearingHooks(subgraph)
 
-    const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
+    const interiorExecId = asNodeExecutionId(
+      `${subgraphNode.id}:${interiorNode.id}`
+    )
     const modelStore = useMissingModelStore()
     modelStore.setMissingModels([
       fromAny<
@@ -527,7 +529,9 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
     installErrorClearingHooks(subgraph)
 
-    const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
+    const interiorExecId = asNodeExecutionId(
+      `${subgraphNode.id}:${interiorNode.id}`
+    )
 
     const mediaStore = useMissingMediaStore()
     mediaStore.setMissingMedia([
@@ -578,7 +582,7 @@ describe('realtime scan verifies pending cloud candidates', () => {
     // verifyAssetSupportedCandidates resolves them against the assets store.
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       {
-        nodeId: node.id,
+        nodeId: asNodeExecutionId(node.id),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: true,
@@ -626,7 +630,7 @@ describe('realtime scan verifies pending cloud candidates', () => {
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
     vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([
       {
-        nodeId: node.id,
+        nodeId: asNodeExecutionId(node.id),
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
@@ -669,7 +673,7 @@ describe('realtime scan verifies pending cloud candidates', () => {
 
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       {
-        nodeId: node.id,
+        nodeId: asNodeExecutionId(node.id),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: true,
@@ -715,7 +719,7 @@ describe('realtime verification staleness guards', () => {
 
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       {
-        nodeId: node.id,
+        nodeId: asNodeExecutionId(node.id),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: true,
@@ -766,7 +770,7 @@ describe('realtime verification staleness guards', () => {
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
     vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([
       {
-        nodeId: node.id,
+        nodeId: asNodeExecutionId(node.id),
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
@@ -815,7 +819,7 @@ describe('realtime verification staleness guards', () => {
 
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       {
-        nodeId: nodeA.id,
+        nodeId: asNodeExecutionId(nodeA.id),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: true,
@@ -886,7 +890,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     // didn't short-circuit first — return a concrete missing candidate.
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       {
-        nodeId: asNodeId(`${subgraphNode.id}:${interiorNode.id}`),
+        nodeId: asNodeExecutionId(`${subgraphNode.id}:${interiorNode.id}`),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
@@ -1020,7 +1024,7 @@ describe('clearWidgetRelatedErrors parameter routing', () => {
     const missingModelStore = useMissingModelStore()
     missingModelStore.setMissingModels([
       {
-        nodeId: asNodeId('2:1'),
+        nodeId: asNodeExecutionId('2:1'),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: false,

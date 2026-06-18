@@ -1,5 +1,6 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -662,7 +663,7 @@ function makeCandidate(
   opts: Partial<MissingModelCandidate> = {}
 ): MissingModelCandidate {
   return {
-    nodeId: asNodeId(opts.nodeId ?? 1),
+    nodeId: asNodeExecutionId(opts.nodeId ?? 1),
     nodeType: opts.nodeType ?? 'CheckpointLoaderSimple',
     widgetName: opts.widgetName ?? 'ckpt_name',
     isAssetSupported: opts.isAssetSupported ?? false,
@@ -982,7 +983,9 @@ describe('enrichWithEmbeddedMetadata', () => {
     // the workflow-level filter. This ensures the simplification does not
     // over-filter legitimate per-node missing models.
     const candidates = [
-      makeCandidate('node_model.safetensors', { nodeId: asNodeId('1') })
+      makeCandidate('node_model.safetensors', {
+        nodeId: asNodeExecutionId('1')
+      })
     ]
     const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
@@ -1400,7 +1403,7 @@ function makeAssetCandidate(
   opts: Partial<MissingModelCandidate> = {}
 ): MissingModelCandidate {
   return {
-    nodeId: asNodeId(opts.nodeId ?? 1),
+    nodeId: asNodeExecutionId(opts.nodeId ?? 1),
     nodeType: opts.nodeType ?? 'CheckpointLoaderSimple',
     widgetName: opts.widgetName ?? 'ckpt_name',
     isAssetSupported: opts.isAssetSupported ?? true,

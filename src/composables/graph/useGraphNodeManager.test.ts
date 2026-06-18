@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, watch } from 'vue'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import {
@@ -143,7 +144,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
 
     // Fire the trigger event that LiteGraph fires on disconnect
     graph.trigger('node:slot-links:changed', {
-      nodeId: node.id,
+      nodeId: asNodeExecutionId(node.id),
       slotType: NodeSlotType.INPUT,
       slotIndex: 0,
       connected: false,
@@ -180,7 +181,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     // Simulate disconnect
     node.inputs[0].link = null
     graph.trigger('node:slot-links:changed', {
-      nodeId: node.id,
+      nodeId: asNodeExecutionId(node.id),
       slotType: NodeSlotType.INPUT,
       slotIndex: 0,
       connected: false,
@@ -257,7 +258,7 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     node.inputs[0].link = null
 
     graph.trigger('node:slot-links:changed', {
-      nodeId: node.id,
+      nodeId: asNodeExecutionId(node.id),
       slotType: NodeSlotType.INPUT,
       slotIndex: 0,
       connected: false,
@@ -293,7 +294,7 @@ describe('Subgraph output slot label reactivity', () => {
     // Simulate what SubgraphNode does: set the label, then fire the trigger
     node.outputs[0].label = 'custom_label'
     graph.trigger('node:slot-label:changed', {
-      nodeId: node.id,
+      nodeId: asNodeExecutionId(node.id),
       slotType: NodeSlotType.OUTPUT
     })
 
@@ -319,7 +320,7 @@ describe('Subgraph output slot label reactivity', () => {
 
     node.inputs[0].label = 'custom_label'
     graph.trigger('node:slot-label:changed', {
-      nodeId: node.id,
+      nodeId: asNodeExecutionId(node.id),
       slotType: NodeSlotType.INPUT
     })
 
@@ -611,7 +612,9 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
     const store = useExecutionErrorStore()
 
     // Error on interior node: execution ID = "50:<interiorNodeId>"
-    const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
+    const interiorExecId = asNodeExecutionId(
+      `${subgraphNode.id}:${interiorNode.id}`
+    )
     store.lastNodeErrors = {
       [interiorExecId]: {
         errors: [
@@ -641,7 +644,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     missingModelStore.setMissingModels([
       {
-        nodeId: nodeA.id,
+        nodeId: asNodeExecutionId(nodeA.id),
         nodeType: 'CheckpointLoader',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
@@ -661,7 +664,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     missingModelStore.setMissingModels([
       {
-        nodeId: nodeA.id,
+        nodeId: asNodeExecutionId(nodeA.id),
         nodeType: 'CheckpointLoader',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
@@ -698,7 +701,7 @@ describe('reconcileNodeErrorFlags (via lastNodeErrors watcher)', () => {
 
     missingModelStore.setMissingModels([
       {
-        nodeId: asNodeId(`${subgraphNode.id}:${interiorNode.id}`),
+        nodeId: asNodeExecutionId(`${subgraphNode.id}:${interiorNode.id}`),
         nodeType: 'CheckpointLoader',
         widgetName: 'ckpt_name',
         isAssetSupported: false,

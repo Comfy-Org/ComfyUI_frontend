@@ -5,11 +5,11 @@ import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import TabErrors from './TabErrors.vue'
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 
 const mockFocusNode = vi.hoisted(() => vi.fn())
 const mockEnterSubgraph = vi.hoisted(() => vi.fn())
@@ -399,7 +399,7 @@ describe('TabErrors.vue', () => {
 
   it('shows missing model Refresh in the section header when no model is downloadable', async () => {
     const missingModel = {
-      nodeId: asNodeId('1'),
+      nodeId: asNodeExecutionId('1'),
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'local-only.safetensors',
@@ -430,7 +430,7 @@ describe('TabErrors.vue', () => {
       missingModel: {
         missingModelCandidates: [
           {
-            nodeId: asNodeId('1'),
+            nodeId: asNodeExecutionId('1'),
             nodeType: 'CheckpointLoaderSimple',
             widgetName: 'ckpt_name',
             name: 'model-a.safetensors',
@@ -439,7 +439,7 @@ describe('TabErrors.vue', () => {
             isAssetSupported: true
           },
           {
-            nodeId: asNodeId('2'),
+            nodeId: asNodeExecutionId('2'),
             nodeType: 'CheckpointLoaderSimple',
             widgetName: 'ckpt_name',
             name: 'model-b.safetensors',
@@ -461,7 +461,7 @@ describe('TabErrors.vue', () => {
 
   it('renders missing model display message below the section title', () => {
     const missingModel = {
-      nodeId: asNodeId('1'),
+      nodeId: asNodeExecutionId('1'),
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'local-only.safetensors',
@@ -484,7 +484,7 @@ describe('TabErrors.vue', () => {
 
   it('renders missing media display message below the section title', () => {
     const missingMedia = {
-      nodeId: asNodeId('3'),
+      nodeId: asNodeExecutionId('3'),
       nodeType: 'LoadImage',
       widgetName: 'image',
       mediaType: 'image',
@@ -520,7 +520,7 @@ describe('TabErrors.vue', () => {
       missingMedia: {
         missingMediaCandidates: [
           {
-            nodeId: asNodeId('3'),
+            nodeId: asNodeExecutionId('3'),
             nodeType: 'LoadImage',
             widgetName: 'image',
             mediaType: 'image',
@@ -528,7 +528,7 @@ describe('TabErrors.vue', () => {
             isMissing: true
           },
           {
-            nodeId: asNodeId('4'),
+            nodeId: asNodeExecutionId('4'),
             nodeType: 'PreviewImage',
             widgetName: 'image',
             mediaType: 'image',
@@ -596,7 +596,7 @@ describe('TabErrors.vue', () => {
       missingMedia: {
         missingMediaCandidates: [
           {
-            nodeId: asNodeId('3'),
+            nodeId: asNodeExecutionId('3'),
             nodeType: 'LoadImage',
             widgetName: 'image',
             mediaType: 'image',
@@ -604,7 +604,7 @@ describe('TabErrors.vue', () => {
             isMissing: true
           },
           {
-            nodeId: asNodeId('4'),
+            nodeId: asNodeExecutionId('4'),
             nodeType: 'LoadImage',
             widgetName: 'image',
             mediaType: 'image',
@@ -659,7 +659,7 @@ describe('TabErrors.vue', () => {
 
   it('renders missing model Refresh in the header and Download all in the card when models are downloadable', () => {
     const missingModel = {
-      nodeId: asNodeId('1'),
+      nodeId: asNodeExecutionId('1'),
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       name: 'downloadable.safetensors',

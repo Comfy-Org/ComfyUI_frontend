@@ -2,8 +2,8 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
-import type { NodeId } from '@/types/nodeId'
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 // Mock dependencies
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -28,7 +28,7 @@ function makeCandidate(
   mediaType: 'image' | 'video' | 'audio' = 'image'
 ): MissingMediaCandidate {
   return {
-    nodeId: asNodeId(nodeId),
+    nodeId: asNodeExecutionId(nodeId),
     nodeType: 'LoadImage',
     widgetName: 'image',
     mediaType,
@@ -301,7 +301,7 @@ describe('useMissingMediaStore', () => {
     it('preserves candidates with a nullish nodeId (defensive)', () => {
       const store = useMissingMediaStore()
       const orphan = {
-        nodeId: undefined as unknown as NodeId,
+        nodeId: undefined as unknown as NodeExecutionId,
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image' as const,

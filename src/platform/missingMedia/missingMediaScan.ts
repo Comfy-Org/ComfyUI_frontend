@@ -1,5 +1,4 @@
 import { groupBy } from 'es-toolkit'
-import { asNodeId } from '@/types/nodeId'
 import type {
   MissingMediaCandidate,
   MissingMediaViewModel,
@@ -118,7 +117,7 @@ export function scanNodeMediaCandidates(
     }
 
     candidates.push({
-      nodeId: asNodeId(executionId),
+      nodeId: executionId,
       nodeType: node.type,
       widgetName: widget.name,
       mediaType: mediaInfo.mediaType,

@@ -5,7 +5,6 @@ import { defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useErrorOverlayState } from './useErrorOverlayState'
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import { asNodeExecutionId } from '@/types/nodeIdentification'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
@@ -278,7 +277,7 @@ describe('useErrorOverlayState', () => {
             name: 'image.png',
             mediaType: 'image',
             representative: {
-              nodeId: asNodeId('1'),
+              nodeId: asNodeExecutionId('1'),
               nodeType: 'LoadImage',
               widgetName: 'image',
               mediaType: 'image',
@@ -287,7 +286,7 @@ describe('useErrorOverlayState', () => {
             },
             referencingNodes: [
               {
-                nodeId: asNodeId('1'),
+                nodeId: asNodeExecutionId('1'),
                 nodeType: 'LoadImage',
                 widgetName: 'image'
               }
@@ -314,7 +313,7 @@ describe('useErrorOverlayState', () => {
     const missingMediaStore = useMissingMediaStore()
     missingMediaStore.setMissingMedia([
       {
-        nodeId: asNodeId('1'),
+        nodeId: asNodeExecutionId('1'),
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
@@ -340,7 +339,7 @@ describe('useErrorOverlayState', () => {
           {
             name: 'missing.safetensors',
             representative: {
-              nodeId: asNodeId('1'),
+              nodeId: asNodeExecutionId('1'),
               nodeType: 'CheckpointLoaderSimple',
               widgetName: 'ckpt_name',
               name: 'missing.safetensors',
@@ -349,8 +348,8 @@ describe('useErrorOverlayState', () => {
               isMissing: true
             },
             referencingNodes: [
-              { nodeId: asNodeId('1'), widgetName: 'ckpt_name' },
-              { nodeId: asNodeId('2'), widgetName: 'ckpt_name' }
+              { nodeId: asNodeExecutionId('1'), widgetName: 'ckpt_name' },
+              { nodeId: asNodeExecutionId('2'), widgetName: 'ckpt_name' }
             ]
           }
         ]
@@ -422,7 +421,7 @@ describe('useErrorOverlayState', () => {
           {
             name: 'first.safetensors',
             representative: {
-              nodeId: asNodeId('1'),
+              nodeId: asNodeExecutionId('1'),
               nodeType: 'CheckpointLoaderSimple',
               widgetName: 'ckpt_name',
               name: 'first.safetensors',
@@ -431,13 +430,13 @@ describe('useErrorOverlayState', () => {
               isMissing: true
             },
             referencingNodes: [
-              { nodeId: asNodeId('1'), widgetName: 'ckpt_name' }
+              { nodeId: asNodeExecutionId('1'), widgetName: 'ckpt_name' }
             ]
           },
           {
             name: 'second.safetensors',
             representative: {
-              nodeId: asNodeId('2'),
+              nodeId: asNodeExecutionId('2'),
               nodeType: 'CheckpointLoaderSimple',
               widgetName: 'ckpt_name',
               name: 'second.safetensors',
@@ -446,7 +445,7 @@ describe('useErrorOverlayState', () => {
               isMissing: true
             },
             referencingNodes: [
-              { nodeId: asNodeId('2'), widgetName: 'ckpt_name' }
+              { nodeId: asNodeExecutionId('2'), widgetName: 'ckpt_name' }
             ]
           }
         ]

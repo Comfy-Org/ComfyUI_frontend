@@ -1,5 +1,6 @@
-import { asNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 export interface FlattenableWorkflowNode {
   id: NodeId
@@ -7,6 +8,13 @@ export interface FlattenableWorkflowNode {
   mode?: number
   widgets_values?: readonly unknown[] | Record<string, unknown>
   properties?: Record<string, unknown>
+}
+
+export interface FlattenedWorkflowNode extends Omit<
+  FlattenableWorkflowNode,
+  'id'
+> {
+  id: NodeExecutionId
 }
 
 export interface FlattenableWorkflowGraph {
@@ -140,14 +148,17 @@ export function collectSubgraphDefinitions(
  */
 export function flattenWorkflowNodes(
   graphData: FlattenableWorkflowGraph
-): Readonly<FlattenableWorkflowNode>[] {
+): Readonly<FlattenedWorkflowNode>[] {
   const rootNodes = graphData.nodes ?? []
   const allDefs = collectSubgraphDefinitions(
     graphData.definitions?.subgraphs ?? []
   )
   const pathMap = buildSubgraphExecutionPaths(rootNodes, allDefs)
 
-  const allNodes: FlattenableWorkflowNode[] = [...rootNodes]
+  const allNodes: FlattenedWorkflowNode[] = rootNodes.map((n) => ({
+    ...n,
+    id: asNodeExecutionId(n.id)
+  }))
 
   const subgraphDefMap = new Map(allDefs.map((s) => [s.id, s]))
   for (const [defId, paths] of pathMap.entries()) {
@@ -157,7 +168,7 @@ export function flattenWorkflowNodes(
       for (const node of def.nodes) {
         allNodes.push({
           ...node,
-          id: asNodeId(`${prefix}:${node.id}`)
+          id: asNodeExecutionId(`${prefix}:${node.id}`)
         })
       }
     }

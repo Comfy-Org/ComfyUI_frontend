@@ -10,7 +10,6 @@ import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
-import { asNodeId } from '@/types/nodeId'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
@@ -19,6 +18,7 @@ import type {
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { getParentExecutionIds } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   collectAllNodes,
   getExecutionIdByNode
@@ -174,7 +174,7 @@ export function scanNodeModelCandidates(
 function scanAssetWidget(
   node: { type: string },
   widget: IAssetWidget,
-  executionId: string,
+  executionId: NodeExecutionId,
   getDirectory: ((nodeType: string) => string | undefined) | undefined
 ): MissingModelCandidate | null {
   const value = widget.value
@@ -182,7 +182,7 @@ function scanAssetWidget(
   if (!isModelFileName(value)) return null
 
   return {
-    nodeId: asNodeId(executionId),
+    nodeId: executionId,
     nodeType: node.type,
     widgetName: widget.name,
     isAssetSupported: true,
@@ -195,7 +195,7 @@ function scanAssetWidget(
 function scanComboWidget(
   node: { type: string },
   widget: IComboWidget,
-  executionId: string,
+  executionId: NodeExecutionId,
   isAssetSupported: (nodeType: string, widgetName: string) => boolean,
   getDirectory: ((nodeType: string) => string | undefined) | undefined
 ): MissingModelCandidate | null {
@@ -208,7 +208,7 @@ function scanComboWidget(
   const inOptions = options.includes(value)
 
   return {
-    nodeId: asNodeId(executionId),
+    nodeId: executionId,
     nodeType: node.type,
     widgetName: widget.name,
     isAssetSupported: nodeIsAssetSupported,

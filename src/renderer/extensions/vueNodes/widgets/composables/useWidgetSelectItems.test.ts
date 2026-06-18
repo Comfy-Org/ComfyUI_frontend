@@ -2,8 +2,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { computed, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
 
@@ -1072,7 +1072,7 @@ describe('useWidgetSelectItems', () => {
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
-          nodeId: asNodeId('1'),
+          nodeId: asNodeExecutionId('1'),
           nodeType: 'LoadImage',
           widgetName: 'image',
           mediaType: 'image',
@@ -1111,7 +1111,7 @@ describe('useWidgetSelectItems', () => {
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
-          nodeId: asNodeId('7'),
+          nodeId: asNodeExecutionId('7'),
           nodeType: 'LoadImage',
           widgetName: 'image',
           mediaType: 'image',
@@ -1150,7 +1150,7 @@ describe('useWidgetSelectItems', () => {
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
-          nodeId: asNodeId('1'),
+          nodeId: asNodeExecutionId('1'),
           nodeType: 'LoadImage',
           widgetName: 'image',
           mediaType: 'image',
@@ -1177,7 +1177,7 @@ describe('useWidgetSelectItems', () => {
       const store = useMissingMediaStore()
       store.setMissingMedia([
         {
-          nodeId: asNodeId('7'),
+          nodeId: asNodeExecutionId('7'),
           nodeType: 'LoadImage',
           widgetName: 'image',
           mediaType: 'image',

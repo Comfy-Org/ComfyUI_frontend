@@ -3,7 +3,6 @@ import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import { asNodeExecutionId } from '@/types/nodeIdentification'
 import type { MissingNodeType } from '@/types/comfy'
 
@@ -168,7 +167,7 @@ function makeModel(
 ) {
   return {
     name,
-    nodeId: asNodeId(opts.nodeId ?? '1'),
+    nodeId: asNodeExecutionId(opts.nodeId ?? '1'),
     nodeType: 'CheckpointLoaderSimple',
     widgetName: opts.widgetName ?? 'ckpt_name',
     isAssetSupported: opts.isAssetSupported ?? false,
@@ -187,7 +186,7 @@ function makeMedia(
 ): MissingMediaCandidate {
   return {
     name,
-    nodeId: asNodeId(opts.nodeId),
+    nodeId: asNodeExecutionId(opts.nodeId),
     nodeType: opts.nodeType ?? 'LoadImage',
     widgetName: opts.widgetName ?? 'image',
     mediaType: 'image',

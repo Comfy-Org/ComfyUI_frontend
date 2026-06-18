@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
 import {
   normalizePendingWarnings,
@@ -26,7 +26,7 @@ describe('pendingWarnings utils', () => {
       missingModelCandidates: [],
       missingMediaCandidates: [
         {
-          nodeId: asNodeId('1'),
+          nodeId: asNodeExecutionId('1'),
           nodeType: 'LoadImage',
           widgetName: 'image',
           mediaType: 'image' as const,
@@ -49,7 +49,7 @@ describe('pendingWarnings utils', () => {
         missingNodeTypes: ['CustomNode'],
         missingModelCandidates: [
           {
-            nodeId: asNodeId('1'),
+            nodeId: asNodeExecutionId('1'),
             nodeType: 'CheckpointLoaderSimple',
             widgetName: 'ckpt_name',
             name: 'missing.safetensors',

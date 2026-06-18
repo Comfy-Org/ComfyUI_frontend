@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type {
   MissingModelGroup,
   MissingModelViewModel
@@ -21,7 +21,7 @@ function makeViewModel(
     name,
     representative: {
       name,
-      nodeId: asNodeId('1'),
+      nodeId: asNodeExecutionId('1'),
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       isAssetSupported: true,
@@ -29,7 +29,9 @@ function makeViewModel(
       url: opts.url,
       directory: opts.directory
     },
-    referencingNodes: [{ nodeId: asNodeId('1'), widgetName: 'ckpt_name' }]
+    referencingNodes: [
+      { nodeId: asNodeExecutionId('1'), widgetName: 'ckpt_name' }
+    ]
   }
 }
 

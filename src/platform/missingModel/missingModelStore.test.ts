@@ -1,7 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
 vi.mock('@/i18n', () => ({
@@ -28,7 +28,7 @@ function makeModelCandidate(
 ): MissingModelCandidate {
   return {
     name,
-    nodeId: asNodeId(opts.nodeId ?? '1'),
+    nodeId: asNodeExecutionId(opts.nodeId ?? '1'),
     nodeType: opts.nodeType ?? 'CheckpointLoaderSimple',
     widgetName: opts.widgetName ?? 'ckpt_name',
     isAssetSupported: opts.isAssetSupported ?? false,

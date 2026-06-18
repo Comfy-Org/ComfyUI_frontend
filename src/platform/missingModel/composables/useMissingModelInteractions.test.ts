@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp } from 'vue'
 import type { App } from 'vue'
 import { createI18n } from 'vue-i18n'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
@@ -78,7 +78,7 @@ function makeCandidate(
 ): MissingModelCandidate {
   return {
     name: 'model.safetensors',
-    nodeId: asNodeId('1'),
+    nodeId: asNodeExecutionId('1'),
     nodeType: 'CheckpointLoaderSimple',
     widgetName: 'ckpt_name',
     isAssetSupported: false,
@@ -222,9 +222,12 @@ describe('useMissingModelInteractions', () => {
       store.setMissingModels([
         makeCandidate({
           name: 'old_model.safetensors',
-          nodeId: asNodeId('10')
+          nodeId: asNodeExecutionId('10')
         }),
-        makeCandidate({ name: 'old_model.safetensors', nodeId: asNodeId('20') })
+        makeCandidate({
+          name: 'old_model.safetensors',
+          nodeId: asNodeExecutionId('20')
+        })
       ])
 
       const removeSpy = vi.spyOn(store, 'removeMissingModelByNameOnNodes')
@@ -234,8 +237,8 @@ describe('useMissingModelInteractions', () => {
         'key1',
         'old_model.safetensors',
         [
-          { nodeId: asNodeId('10'), widgetName: 'ckpt_name' },
-          { nodeId: asNodeId('20'), widgetName: 'ckpt_name' }
+          { nodeId: asNodeExecutionId('10'), widgetName: 'ckpt_name' },
+          { nodeId: asNodeExecutionId('20'), widgetName: 'ckpt_name' }
         ],
         null
       )
