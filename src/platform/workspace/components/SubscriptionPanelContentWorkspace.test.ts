@@ -44,7 +44,11 @@ const mockHasSubscription = ref(true)
 const mockIsActiveSubscription = ref(true)
 const mockIsInPersonalWorkspace = ref(false)
 const mockIsWorkspaceSubscribed = ref(true)
+// canManageSubscription = any owner (billing, change plan);
+// canManageSubscriptionLifecycle = original owner only (cancel, resubscribe).
 const mockCanManageSubscription = ref(true)
+const mockCanManageSubscriptionLifecycle = ref(true)
+const mockIsCurrentUserOriginalOwner = ref(true)
 const mockMembers = ref([{ id: 'member-1' }, { id: 'member-2' }])
 const mockPlans = ref<Plan[]>([teamPlan])
 const mockCurrentPlanSlug = ref<string | null>('team-monthly')
@@ -52,6 +56,7 @@ const mockCurrentPlanSlug = ref<string | null>('team-monthly')
 const mockManageSubscription = vi.fn()
 const mockShowSubscriptionDialog = vi.fn()
 const mockResubscribe = vi.fn()
+const mockShowLeaveWorkspaceDialog = vi.fn()
 
 const mockSubscription = computed<SubscriptionInfo | null>(() =>
   mockHasSubscription.value
@@ -85,14 +90,16 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
     isInPersonalWorkspace: mockIsInPersonalWorkspace,
     isWorkspaceSubscribed: mockIsWorkspaceSubscribed,
-    members: mockMembers
+    members: mockMembers,
+    isCurrentUserOriginalOwner: mockIsCurrentUserOriginalOwner
   })
 }))
 
 vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({
     permissions: computed(() => ({
-      canManageSubscription: mockCanManageSubscription.value
+      canManageSubscription: mockCanManageSubscription.value,
+      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value
     }))
   })
 }))
@@ -102,7 +109,10 @@ vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
 }))
 
 vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({ showCancelSubscriptionDialog: vi.fn() })
+  useDialogService: () => ({
+    showCancelSubscriptionDialog: vi.fn(),
+    showLeaveWorkspaceDialog: mockShowLeaveWorkspaceDialog
+  })
 }))
 
 vi.mock(
@@ -139,6 +149,12 @@ const SubscriptionFooterLinksStub = {
   template: '<div data-testid="subscription-footer-links" />'
 }
 
+const MenuStub = {
+  props: ['model'],
+  template:
+    '<ul data-testid="plan-menu"><li v-for="item in model" :key="item.label"><button type="button" :disabled="item.disabled" @click="item.command?.({})">{{ item.label }}</button></li></ul>'
+}
+
 function renderComponent() {
   return render(SubscriptionPanelContentWorkspace, {
     global: {
@@ -149,7 +165,7 @@ function renderComponent() {
         Button: ButtonStub,
         SubscriptionFooterLinks: SubscriptionFooterLinksStub,
         StatusBadge: true,
-        Menu: true
+        Menu: MenuStub
       }
     }
   })
@@ -164,6 +180,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockIsInPersonalWorkspace.value = false
     mockIsWorkspaceSubscribed.value = true
     mockCanManageSubscription.value = true
+    mockCanManageSubscriptionLifecycle.value = true
+    mockIsCurrentUserOriginalOwner.value = true
+    mockMembers.value = [{ id: 'member-1' }, { id: 'member-2' }]
     mockPlans.value = [teamPlan]
     mockCurrentPlanSlug.value = 'team-monthly'
   })
@@ -206,6 +225,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
   it('hides plan management actions from members without permission', () => {
     mockCanManageSubscription.value = false
+    mockCanManageSubscriptionLifecycle.value = false
+    mockIsCurrentUserOriginalOwner.value = false
     renderComponent()
 
     expect(
@@ -234,6 +255,17 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     await user.click(screen.getByRole('button', { name: 'Resubscribe' }))
     expect(mockResubscribe).toHaveBeenCalledOnce()
+  })
+
+  it('hides Resubscribe from a non-creator owner on a cancelled subscription', () => {
+    mockSubscriptionStatus.value = 'canceled'
+    mockCanManageSubscriptionLifecycle.value = false
+    mockIsCurrentUserOriginalOwner.value = false
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: 'Resubscribe' })
+    ).not.toBeInTheDocument()
   })
 
   it('shows the zero-state subscribe prompt to unsubscribed team owners', () => {
@@ -285,7 +317,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(screen.getByText('$0')).toBeInTheDocument()
     expect(screen.getByText('USD / mo')).toBeInTheDocument()
     expect(screen.getByText("What's included:")).toBeInTheDocument()
-    expect(screen.getByText('30 min max runtime')).toBeInTheDocument()
+    expect(screen.getByText('10 min max runtime')).toBeInTheDocument()
     expect(
       screen.queryByText('RTX 6000 Pro (96GB VRAM)')
     ).not.toBeInTheDocument()
@@ -316,5 +348,54 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(
       screen.queryByText('RTX 6000 Pro (96GB VRAM)')
     ).not.toBeInTheDocument()
+  })
+
+  it('offers Leave Workspace (not Cancel Subscription) to members', () => {
+    mockCanManageSubscription.value = false
+    mockCanManageSubscriptionLifecycle.value = false
+    mockIsCurrentUserOriginalOwner.value = false
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Leave Workspace' })
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Cancel Subscription' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('lets a non-creator owner leave but not cancel the subscription', () => {
+    mockCanManageSubscriptionLifecycle.value = false
+    mockIsCurrentUserOriginalOwner.value = false
+    renderComponent()
+
+    expect(
+      screen.queryByRole('button', { name: 'Cancel Subscription' })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Leave Workspace' })
+    ).toBeInTheDocument()
+  })
+
+  it('shows the workspace creator Cancel and a disabled Leave option', () => {
+    renderComponent()
+
+    expect(
+      screen.getByRole('button', { name: 'Cancel Subscription' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Leave Workspace' })
+    ).toBeDisabled()
+  })
+
+  it('opens the leave-workspace dialog from the menu', async () => {
+    const user = userEvent.setup()
+    mockCanManageSubscription.value = false
+    mockCanManageSubscriptionLifecycle.value = false
+    mockIsCurrentUserOriginalOwner.value = false
+    renderComponent()
+
+    await user.click(screen.getByRole('button', { name: 'Leave Workspace' }))
+    expect(mockShowLeaveWorkspaceDialog).toHaveBeenCalledOnce()
   })
 })

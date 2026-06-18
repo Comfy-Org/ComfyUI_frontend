@@ -139,7 +139,7 @@
               </div>
 
               <div
-                v-if="isActiveSubscription && permissions.canManageSubscription"
+                v-if="isActiveSubscription"
                 class="flex flex-wrap gap-2 md:ml-auto"
               >
                 <!-- Cancelled state: reactivation is original-owner-only. -->
@@ -156,10 +156,10 @@
                   </Button>
                 </template>
 
-                <!-- Active state: show Manage billing, Change plan, and menu -->
+                <!-- Owners manage the plan; members and non-creator owners can still leave -->
                 <template v-else>
                   <Button
-                    v-if="!isFreeTierPlan"
+                    v-if="!isFreeTierPlan && permissions.canManageSubscription"
                     size="lg"
                     variant="secondary"
                     class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
@@ -168,6 +168,7 @@
                     {{ $t('subscription.manageBilling') }}
                   </Button>
                   <Button
+                    v-if="permissions.canManageSubscription"
                     size="lg"
                     variant="secondary"
                     class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
@@ -180,7 +181,7 @@
                     }}
                   </Button>
                   <Button
-                    v-if="!isFreeTierPlan && planMenuItems.length > 0"
+                    v-if="planMenuItems.length > 0"
                     v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                     variant="secondary"
                     size="icon-lg"
@@ -301,6 +302,7 @@ import Menu from 'primevue/menu'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { MenuItem } from 'primevue/menuitem'
 import { useToast } from 'primevue/usetoast'
 
 import StatusBadge from '@/components/common/StatusBadge.vue'
@@ -322,8 +324,12 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const workspaceStore = useTeamWorkspaceStore()
-const { isWorkspaceSubscribed, isInPersonalWorkspace, members } =
-  storeToRefs(workspaceStore)
+const {
+  isWorkspaceSubscribed,
+  isInPersonalWorkspace,
+  members,
+  isCurrentUserOriginalOwner
+} = storeToRefs(workspaceStore)
 const { permissions } = useWorkspaceUI()
 const { t, n, locale } = useI18n()
 const toast = useToast()
@@ -342,7 +348,8 @@ const {
   resubscribe
 } = useBillingContext()
 
-const { showCancelSubscriptionDialog } = useDialogService()
+const { showCancelSubscriptionDialog, showLeaveWorkspaceDialog } =
+  useDialogService()
 const { showPricingTable } = useSubscriptionDialog()
 
 const isResubscribing = ref(false)
@@ -465,23 +472,39 @@ const planDisplayName = computed(() =>
 
 const planMenu = ref<InstanceType<typeof Menu> | null>(null)
 
-// Cancel is original-owner-only (creator); a promoted owner gets no menu items
-// and the "more options" button is hidden (see template).
-const planMenuItems = computed(() =>
-  permissions.value.canManageSubscriptionLifecycle
-    ? [
-        {
-          label: t('subscription.cancelSubscription'),
-          icon: 'pi pi-times',
-          command: () => {
-            showCancelSubscriptionDialog(
-              subscription.value?.endDate ?? undefined
-            )
+const planMenuItems = computed<MenuItem[]>(() => {
+  const items: MenuItem[] = []
+  // Cancel is original-owner-only (creator); promoted owners get no cancel item.
+  if (
+    permissions.value.canManageSubscriptionLifecycle &&
+    !isFreeTierPlan.value
+  ) {
+    items.push({
+      label: t('subscription.cancelSubscription'),
+      icon: 'pi pi-times',
+      command: () => {
+        showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
+      }
+    })
+  }
+  // Members and non-creator owners can leave; the creator sees it disabled.
+  if (!isInPersonalWorkspace.value) {
+    items.push(
+      isCurrentUserOriginalOwner.value
+        ? {
+            label: t('workspacePanel.menu.leaveWorkspace'),
+            icon: 'pi pi-sign-out',
+            disabled: true
           }
-        }
-      ]
-    : []
-)
+        : {
+            label: t('workspacePanel.menu.leaveWorkspace'),
+            icon: 'pi pi-sign-out',
+            command: () => void showLeaveWorkspaceDialog()
+          }
+    )
+  }
+  return items
+})
 
 const tierKey = computed(() => {
   const tier = subscriptionTier.value
