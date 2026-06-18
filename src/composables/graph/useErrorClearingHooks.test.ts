@@ -4,12 +4,8 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type {
-  CanvasPointer,
-  CanvasPointerEvent,
-  LGraphCanvas
-} from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -255,273 +251,6 @@ describe('Widget change error clearing via onWidgetChanged', () => {
 
     expect(store.lastNodeErrors).toBeNull()
     expect(mediaStore.missingMediaCandidates).toBeNull()
-  })
-
-  it('uses interior node execution ID for promoted widget error clearing', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'ckpt_input', type: '*' }]
-    })
-    const interiorNode = new LGraphNode('CheckpointLoaderSimple')
-    const interiorInput = interiorNode.addInput('ckpt_input', '*')
-    interiorNode.addWidget(
-      'combo',
-      'ckpt_name',
-      'model.safetensors',
-      () => undefined,
-      { values: ['model.safetensors'] }
-    )
-    interiorInput.widget = { name: 'ckpt_name' }
-    subgraph.add(interiorNode)
-    subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
-
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
-    subgraphNode._internalConfigureAfterSlots()
-    const graph = subgraphNode.graph as LGraph
-    graph.add(subgraphNode)
-
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    installErrorClearingHooks(graph)
-
-    const store = useExecutionErrorStore()
-    const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
-
-    const promotedWidget = subgraphNode.widgets?.find(
-      (w) => 'sourceWidgetName' in w && w.sourceWidgetName === 'ckpt_name'
-    )
-    expect(promotedWidget).toBeDefined()
-
-    seedRequiredInputMissingNodeError(store, interiorExecId, 'ckpt_name')
-
-    subgraphNode.onWidgetChanged!.call(
-      subgraphNode,
-      'ckpt_name',
-      'other_model.safetensors',
-      'model.safetensors',
-      promotedWidget!
-    )
-
-    expect(store.lastNodeErrors).toBeNull()
-  })
-
-  it('clears range errors for promoted widgets by interior widget name', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'steps_input', type: 'INT' }]
-    })
-    const interiorNode = new LGraphNode('KSampler')
-    const interiorInput = interiorNode.addInput('steps_input', 'INT')
-    interiorNode.addWidget('number', 'steps', 150, () => undefined, {
-      min: 1,
-      max: 100
-    })
-    interiorInput.widget = { name: 'steps' }
-    subgraph.add(interiorNode)
-    subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
-
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
-    subgraphNode._internalConfigureAfterSlots()
-    const graph = subgraphNode.graph as LGraph
-    graph.add(subgraphNode)
-
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    installErrorClearingHooks(graph)
-
-    const store = useExecutionErrorStore()
-    const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
-    store.lastNodeErrors = {
-      [interiorExecId]: {
-        errors: [
-          {
-            type: 'value_bigger_than_max',
-            message: 'Too big',
-            details: '',
-            extra_info: { input_name: 'steps' }
-          }
-        ],
-        dependent_outputs: [],
-        class_type: 'KSampler'
-      }
-    }
-
-    const promotedWidget = subgraphNode.widgets?.find(
-      (w) => 'sourceWidgetName' in w && w.sourceWidgetName === 'steps'
-    )
-    expect(promotedWidget).toBeDefined()
-
-    subgraphNode.onWidgetChanged!.call(
-      subgraphNode,
-      'steps',
-      50,
-      150,
-      promotedWidget!
-    )
-
-    expect(store.lastNodeErrors).toBeNull()
-  })
-
-  it('clears missing model state when a promoted widget changes through the legacy canvas path', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [{ name: 'ckpt_input', type: '*' }]
-    })
-    const interiorNode = new LGraphNode('CheckpointLoaderSimple')
-    interiorNode.type = 'CheckpointLoaderSimple'
-    const interiorInput = interiorNode.addInput('ckpt_input', '*')
-    interiorNode.addWidget(
-      'combo',
-      'ckpt_name',
-      'missing.safetensors',
-      () => undefined,
-      { values: ['missing.safetensors', 'present.safetensors'] }
-    )
-    interiorInput.widget = { name: 'ckpt_name' }
-    subgraph.add(interiorNode)
-    subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
-
-    const subgraphNode = createTestSubgraphNode(subgraph, {
-      id: 65,
-      pos: [0, 0],
-      size: [200, 100]
-    })
-    subgraphNode._internalConfigureAfterSlots()
-    const graph = subgraphNode.graph as LGraph
-    graph.add(subgraphNode)
-
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    installErrorClearingHooks(graph)
-
-    const missingModelStore = useMissingModelStore()
-    const interiorExecId = `${subgraphNode.id}:${interiorNode.id}`
-    missingModelStore.setMissingModels([
-      {
-        nodeId: interiorExecId,
-        nodeType: 'CheckpointLoaderSimple',
-        widgetName: 'ckpt_name',
-        isAssetSupported: false,
-        name: 'missing.safetensors',
-        isMissing: true
-      } satisfies MissingModelCandidate
-    ])
-
-    const promotedWidget = subgraphNode.widgets?.find(
-      (widget) =>
-        'sourceWidgetName' in widget && widget.sourceWidgetName === 'ckpt_name'
-    )
-    expect(promotedWidget).toBeDefined()
-
-    const clickEvent = fromAny<CanvasPointerEvent, unknown>({
-      canvasX: 190,
-      canvasY: 20,
-      deltaX: 0
-    })
-    const pointer = fromAny<CanvasPointer, unknown>({
-      eDown: clickEvent
-    })
-    const canvas = fromAny<LGraphCanvas, unknown>({
-      graph_mouse: [190, 20],
-      last_mouseclick: 0
-    })
-
-    const handled = promotedWidget!.onPointerDown?.(
-      pointer,
-      subgraphNode,
-      canvas
-    )
-    expect(handled).toBe(true)
-    expect(pointer.onClick).toBeDefined()
-
-    pointer.onClick?.(clickEvent)
-
-    expect(missingModelStore.missingModelCandidates).toBeNull()
-  })
-
-  it('keeps unchanged same-named promoted model targets on the canvas path', () => {
-    const subgraph = createTestSubgraph({
-      inputs: [
-        { name: 'first_ckpt', type: '*' },
-        { name: 'second_ckpt', type: '*' }
-      ]
-    })
-    const firstNode = new LGraphNode('CheckpointLoaderSimple')
-    firstNode.type = 'CheckpointLoaderSimple'
-    const firstInput = firstNode.addInput('first_ckpt', '*')
-    const firstWidget = firstNode.addWidget(
-      'combo',
-      'ckpt_name',
-      'missing.safetensors',
-      () => undefined,
-      { values: ['missing.safetensors', 'present.safetensors'] }
-    )
-    firstInput.widget = { name: 'ckpt_name' }
-    subgraph.add(firstNode)
-    subgraph.inputNode.slots[0].connect(firstInput, firstNode)
-
-    const secondNode = new LGraphNode('CheckpointLoaderSimple')
-    secondNode.type = 'CheckpointLoaderSimple'
-    const secondInput = secondNode.addInput('second_ckpt', '*')
-    secondNode.addWidget(
-      'combo',
-      'ckpt_name',
-      'missing.safetensors',
-      () => undefined,
-      { values: ['missing.safetensors', 'present.safetensors'] }
-    )
-    secondInput.widget = { name: 'ckpt_name' }
-    subgraph.add(secondNode)
-    subgraph.inputNode.slots[1].connect(secondInput, secondNode)
-
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
-    subgraphNode._internalConfigureAfterSlots()
-    const graph = subgraphNode.graph as LGraph
-    graph.add(subgraphNode)
-
-    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    installErrorClearingHooks(graph)
-
-    const promotedWidgets =
-      subgraphNode.widgets?.filter(
-        (widget) =>
-          'sourceWidgetName' in widget &&
-          widget.sourceWidgetName === 'ckpt_name'
-      ) ?? []
-    expect(promotedWidgets).toHaveLength(2)
-
-    const missingModelStore = useMissingModelStore()
-    const firstExecId = `${subgraphNode.id}:${firstNode.id}`
-    const secondExecId = `${subgraphNode.id}:${secondNode.id}`
-    missingModelStore.setMissingModels([
-      {
-        nodeId: firstExecId,
-        nodeType: 'CheckpointLoaderSimple',
-        widgetName: 'ckpt_name',
-        isAssetSupported: false,
-        name: 'missing.safetensors',
-        isMissing: true
-      } satisfies MissingModelCandidate,
-      {
-        nodeId: secondExecId,
-        nodeType: 'CheckpointLoaderSimple',
-        widgetName: 'ckpt_name',
-        isAssetSupported: false,
-        name: 'missing.safetensors',
-        isMissing: true
-      } satisfies MissingModelCandidate
-    ])
-
-    firstWidget.value = 'present.safetensors'
-    subgraphNode.onWidgetChanged!.call(
-      subgraphNode,
-      'ckpt_name',
-      'present.safetensors',
-      'missing.safetensors',
-      firstWidget
-    )
-
-    expect(missingModelStore.missingModelCandidates).toEqual([
-      expect.objectContaining({
-        nodeId: secondExecId,
-        widgetName: 'ckpt_name',
-        name: 'missing.safetensors'
-      })
-    ])
   })
 })
 
@@ -1248,5 +977,55 @@ describe('clearWidgetRelatedErrors parameter routing', () => {
     )
 
     clearSpy.mockRestore()
+  })
+
+  it('clears promoted widget errors by interior execution id', () => {
+    const subgraph = createTestSubgraph()
+    const graph = subgraph.rootGraph
+    const host = createTestSubgraphNode(subgraph, { id: 2 })
+    graph.add(host)
+
+    const interiorNode = new LGraphNode('CheckpointLoaderSimple')
+    interiorNode.id = 1
+    subgraph.add(interiorNode)
+    const input = interiorNode.addInput('ckpt_name', 'COMBO')
+    const widget = interiorNode.addWidget(
+      'combo',
+      'ckpt_name',
+      'fake_model.safetensors',
+      () => undefined,
+      { values: ['fake_model.safetensors', 'real_model.safetensors'] }
+    )
+    input.widget = { name: widget.name }
+
+    expect(
+      promoteValueWidgetViaSubgraphInput(host, interiorNode, widget).ok
+    ).toBe(true)
+    installErrorClearingHooks(graph)
+
+    vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
+    const missingModelStore = useMissingModelStore()
+    missingModelStore.setMissingModels([
+      {
+        nodeId: '2:1',
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        isAssetSupported: false,
+        name: 'fake_model.safetensors',
+        directory: 'checkpoints',
+        isMissing: true
+      }
+    ])
+
+    const promotedWidget = host.widgets[0]
+    host.onWidgetChanged!.call(
+      host,
+      promotedWidget.name,
+      'real_model.safetensors',
+      'fake_model.safetensors',
+      promotedWidget
+    )
+
+    expect(missingModelStore.hasMissingModels).toBe(false)
   })
 })

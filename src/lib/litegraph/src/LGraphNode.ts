@@ -96,11 +96,9 @@ import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
 
-import type { NodeId } from '@/world/entityIds'
-
 // #region Types
 
-export type { NodeId }
+export type NodeId = number | string
 
 export type NodeProperty = string | number | boolean | object
 
@@ -1401,7 +1399,6 @@ export class LGraphNode
 
       default:
         return false
-        break
     }
     this.mode = modeTo
     return true
@@ -4241,7 +4238,9 @@ export class LGraphNode
       if (!widget) continue
 
       const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      slot.pos = [offset, widget.y + offset]
+      const pos: [number, number] = [offset, widget.y + offset]
+      slot.pos = pos
+      this.inputs[i].pos = pos
       this._measureSlot(slot, i, true)
     }
   }

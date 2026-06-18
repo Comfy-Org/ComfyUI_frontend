@@ -7,6 +7,7 @@ import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import type * as DistributionTypes from '@/platform/distribution/types'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeProgressState } from '@/schemas/apiSchema'
@@ -17,7 +18,10 @@ const {
   mockNodeLocatorIdToNodeExecutionId,
   mockActiveWorkflow,
   mockOpenWorkflows,
-  mockShowTextPreview
+  mockShowTextPreview,
+  mockTrackExecutionError,
+  mockTrackExecutionSuccess,
+  mockTrackSharedWorkflowRun
 } = await vi.hoisted(async () => {
   const { shallowRef } = await import('vue')
   return {
@@ -26,8 +30,29 @@ const {
     mockNodeLocatorIdToNodeExecutionId: vi.fn(),
     mockActiveWorkflow: shallowRef<{ path?: string } | null>(null),
     mockOpenWorkflows: shallowRef<{ path: string }[]>([]),
-    mockShowTextPreview: vi.fn()
+    mockShowTextPreview: vi.fn(),
+    mockTrackExecutionError: vi.fn(),
+    mockTrackExecutionSuccess: vi.fn(),
+    mockTrackSharedWorkflowRun: vi.fn()
   }
+})
+
+const mockAppModeState = vi.hoisted(() => ({
+  mode: { value: 'graph' },
+  isAppMode: { value: false }
+}))
+
+vi.mock('@/composables/useAppMode', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+  return {
+    ...actual,
+    useAppMode: () => mockAppModeState
+  }
+})
+
+beforeEach(() => {
+  mockAppModeState.mode.value = 'graph'
+  mockAppModeState.isAppMode.value = false
 })
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
@@ -54,6 +79,21 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
     }))
   }
 })
+
+vi.mock('@/platform/distribution/types', async () => ({
+  ...(await vi.importActual<typeof DistributionTypes>(
+    '@/platform/distribution/types'
+  )),
+  isCloud: true
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackExecutionError: mockTrackExecutionError,
+    trackExecutionSuccess: mockTrackExecutionSuccess,
+    trackSharedWorkflowRun: mockTrackSharedWorkflowRun
+  })
+}))
 
 // Remove any previous global types
 declare global {
@@ -1353,6 +1393,101 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.activeJobId).toBeNull()
       expect(store.queuedJobs['job-1']).toBeUndefined()
     })
+
+    it('tracks shared workflow run when the queued workflow has share attribution', () => {
+      const workflow = createQueuedWorkflow()
+      workflow.shareId = 'share-1'
+      store.storeJob({
+        nodes: ['a'],
+        id: 'job-1',
+        promptOutput: {
+          a: createPromptNode('Node A', 'NodeA')
+        },
+        workflow
+      })
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(mockTrackExecutionSuccess).toHaveBeenCalledWith({
+        jobId: 'job-1'
+      })
+      expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
+        job_id: 'job-1',
+        share_id: 'share-1',
+        view_mode: 'graph',
+        is_app_mode: false
+      })
+    })
+
+    it('tracks shared workflow run from the success event job', () => {
+      const workflow = createQueuedWorkflow()
+      workflow.shareId = 'share-1'
+      store.storeJob({
+        nodes: ['a'],
+        id: 'job-1',
+        promptOutput: {
+          a: createPromptNode('Node A', 'NodeA')
+        },
+        workflow
+      })
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
+        job_id: 'job-1',
+        share_id: 'share-1',
+        view_mode: 'graph',
+        is_app_mode: false
+      })
+    })
+
+    it('attributes shared workflow run to queue-time mode, not completion-time mode', () => {
+      const workflow = createQueuedWorkflow()
+      workflow.shareId = 'share-1'
+      store.storeJob({
+        nodes: ['a'],
+        id: 'job-1',
+        promptOutput: {
+          a: createPromptNode('Node A', 'NodeA')
+        },
+        workflow
+      })
+
+      mockAppModeState.mode.value = 'app'
+      mockAppModeState.isAppMode.value = true
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
+        job_id: 'job-1',
+        share_id: 'share-1',
+        view_mode: 'graph',
+        is_app_mode: false
+      })
+    })
+
+    it('attributes shared workflow run to the queued workflow, not the active one', () => {
+      const workflow = createQueuedWorkflow()
+      workflow.shareId = 'share-1'
+      workflow.activeMode = 'app'
+      store.storeJob({
+        nodes: ['a'],
+        id: 'job-1',
+        promptOutput: {
+          a: createPromptNode('Node A', 'NodeA')
+        },
+        workflow
+      })
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
+        job_id: 'job-1',
+        share_id: 'share-1',
+        view_mode: 'app',
+        is_app_mode: true
+      })
+    })
   })
 
   describe('executing', () => {
@@ -1519,6 +1654,7 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
       b: { title: 'Node B', type: 'NodeB' }
     })
     expect(store.queuedJobs['job-1']?.workflow).toStrictEqual(workflow)
+    expect(store.queuedJobs['job-1']?.shareId).toBeUndefined()
     expect(store.jobIdToWorkflowId.get('job-1')).toBe('wf-1')
     expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
       '/workflows/foo.json'

@@ -22,6 +22,7 @@ import {
   LOAD3D_NONE_MODEL,
   SUPPORTED_EXTENSIONS_ACCEPT
 } from '@/extensions/core/load3d/constants'
+import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -270,7 +271,10 @@ useExtensionService().registerExtension({
           component: Load3DViewerContent,
           props: props,
           dialogComponentProps: {
-            style: 'width: 80vw; height: 80vh;',
+            renderer: 'reka',
+            size: 'full',
+            contentClass:
+              'w-[80vw] max-w-[80vw] sm:max-w-[80vw] h-[80vh] max-h-[80vh]',
             maximizable: true,
             onClose: async () => {
               await useLoad3dService().handleViewerClose(props.node)
@@ -413,16 +417,10 @@ useExtensionService().registerExtension({
             if (cached) return cached
           }
 
-          const cameraConfig: CameraConfig = (node.properties[
-            'Camera Config'
-          ] as CameraConfig | undefined) || {
-            cameraType: currentLoad3d.getCurrentCameraType(),
-            fov: currentLoad3d.cameraManager.perspectiveCamera.fov
-          }
-          cameraConfig.state = currentLoad3d.getCameraState()
-          node.properties['Camera Config'] = cameraConfig
-
-          currentLoad3d.stopRecording()
+          const { camera_info, model_3d_info } = snapshotLoad3dState(
+            node,
+            currentLoad3d
+          )
 
           const {
             scene: imageData,
@@ -441,16 +439,11 @@ useExtensionService().registerExtension({
 
           currentLoad3d.handleResize()
 
-          const modelInfo = currentLoad3d.getModelInfo()
-          const model_3d_info: Model3DInfo = modelInfo ? [modelInfo] : []
-
           const returnVal: Load3dCachedOutput = {
             image: `threed/${data.name} [temp]`,
             mask: `threed/${dataMask.name} [temp]`,
             normal: `threed/${dataNormal.name} [temp]`,
-            camera_info:
-              (node.properties['Camera Config'] as CameraConfig | undefined)
-                ?.state || null,
+            camera_info,
             recording: '',
             model_3d_info
           }

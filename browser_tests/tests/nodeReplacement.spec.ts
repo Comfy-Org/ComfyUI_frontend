@@ -48,6 +48,36 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
           ).toBeVisible()
         })
 
+        test('Shows direct row label and locate action for a single replacement group', async ({
+          comfyPage
+        }) => {
+          const swapGroup = getSwapNodesGroup(comfyPage.page)
+          const rowLabel = swapGroup.getByRole('button', {
+            name: 'E2E_OldSampler',
+            exact: true
+          })
+
+          await expect(rowLabel).toBeVisible()
+          await expect(
+            swapGroup.getByRole('button', {
+              name: 'Locate node on canvas',
+              exact: true
+            })
+          ).toBeVisible()
+          await expect(
+            swapGroup.getByTestId(TestIds.dialogs.swapNodeGroupCount)
+          ).toHaveCount(0)
+
+          await comfyPage.canvasOps.pan({ x: -800, y: -800 })
+          const offsetBeforeLocate = await comfyPage.canvasOps.getOffset()
+
+          await rowLabel.click()
+
+          await expect
+            .poll(() => comfyPage.canvasOps.getOffset())
+            .not.toEqual(offsetBeforeLocate)
+        })
+
         test('Replace Node replaces a single group in-place', async ({
           comfyPage
         }) => {
@@ -101,6 +131,14 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
             'normal',
             1
           ])
+
+          if (mode.vueNodesEnabled) {
+            await expect(
+              comfyPage.vueNodes
+                .getWidgetByName('KSampler', 'denoise')
+                .locator('input')
+            ).toHaveValue(/^1(?:\.0+)?$/)
+          }
         })
 
         test('Success toast is shown after replacement', async ({
@@ -113,6 +151,55 @@ test.describe('Node replacement', { tag: ['@node', '@ui'] }, () => {
           await expect(comfyPage.visibleToasts.first()).toContainText(
             /replaced|swapped/i
           )
+        })
+      })
+
+      test.describe('Same-type replacement group', () => {
+        test.beforeEach(async ({ comfyPage }) => {
+          await comfyPage.settings.setSetting(
+            'Comfy.VueNodes.Enabled',
+            mode.vueNodesEnabled
+          )
+          await setupNodeReplacement(comfyPage, mockNodeReplacementsSingle)
+          await loadWorkflowAndOpenErrorsTab(
+            comfyPage,
+            'missing/node_replacement_same_type'
+          )
+        })
+
+        test('Groups same-type replacement rows behind the title disclosure', async ({
+          comfyPage
+        }) => {
+          const swapGroup = getSwapNodesGroup(comfyPage.page)
+          const countBadge = swapGroup.getByTestId(
+            TestIds.dialogs.swapNodeGroupCount
+          )
+          const childRows = swapGroup.getByRole('listitem')
+          const expandButton = swapGroup.getByRole('button', {
+            name: 'Expand E2E_OldSampler',
+            exact: true
+          })
+
+          await expect(expandButton).toBeVisible()
+          await expect(countBadge).toHaveText('2')
+          await expect(childRows).toHaveCount(0)
+
+          await expandButton.click()
+          await expect(childRows).toHaveCount(2)
+          await expect(
+            swapGroup.getByRole('button', {
+              name: 'E2E_OldSampler',
+              exact: true
+            })
+          ).toHaveCount(2)
+
+          await swapGroup
+            .getByRole('button', {
+              name: 'Collapse E2E_OldSampler',
+              exact: true
+            })
+            .click()
+          await expect(childRows).toHaveCount(0)
         })
       })
 
