@@ -39,7 +39,7 @@ const {
     data-slot="button-mask"
     :data-variant="variant"
     :data-size="size"
-    :as="as"
+    :as
     :as-child="asChild"
     :disabled="disabled"
     :class="cn(buttonMaskVariants({ variant, size, iconPosition }), className)"
