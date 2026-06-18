@@ -11,6 +11,7 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 
 import { compressWidgetInputSlots } from './litegraphUtil'
 
@@ -129,7 +130,7 @@ export const graphToPrompt = async (
       }
 
       inputs[input.name] = [
-        String(resolvedInput.origin_id),
+        asNodeExecutionId(resolvedInput.origin_id),
         // @ts-expect-error link.origin_slot is already number.
         parseInt(resolvedInput.origin_slot)
       ]

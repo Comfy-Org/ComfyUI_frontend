@@ -2063,7 +2063,8 @@ export class ComfyApp {
         const value = data.inputs[input]
         if (value instanceof Array) {
           const [fromId, fromSlot] = value
-          const fromNode = app.rootGraph.getNodeById(fromId)
+          // Flat loader: API prompt execution ids are local node ids here.
+          const fromNode = app.rootGraph.getNodeById(asNodeId(fromId))
           if (!fromNode) continue
 
           let toSlot = node.inputs?.findIndex((inp) => inp.name === input) ?? -1

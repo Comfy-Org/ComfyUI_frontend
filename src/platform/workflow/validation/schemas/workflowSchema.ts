@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 import type { RendererType } from '@/lib/litegraph/src/LGraph'
+import { zNodeExecutionId } from '@/types/nodeIdentification'
 import { asNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { asWidgetId } from '@/types/widgetId'
@@ -16,7 +17,7 @@ const zRendererType = z.enum([
 // Legacy workflows may persist numeric node ids. Accept them on load but
 // normalise to the canonical string `NodeId` so runtime ids are uniform.
 // GroupNode composite ids (`${this.node.id}:${i}`) are already strings.
-const zNodeId = z
+const zLocalNodeId = z
   .union([z.number().int(), z.string()])
   .transform((value): NodeId => asNodeId(value))
 const zNodeInputName = z.string()
@@ -78,9 +79,9 @@ const zGraphState = z
 
 const zComfyLink = z.tuple([
   z.number(), // Link id
-  zNodeId, // Node id of source node
+  zLocalNodeId, // Node id of source node
   zSlotIndex, // Output slot# of source node
-  zNodeId, // Node id of destination node
+  zLocalNodeId, // Node id of destination node
   zSlotIndex, // Input slot# of destination node
   zDataType // Data type
 ])
@@ -96,9 +97,9 @@ const zComfyLinkExtension = z
 const zComfyLinkObject = z
   .object({
     id: z.number(),
-    origin_id: zNodeId,
+    origin_id: zLocalNodeId,
     origin_slot: zSlotIndex,
-    target_id: zNodeId,
+    target_id: zLocalNodeId,
     target_slot: zSlotIndex,
     type: zDataType,
     parentId: z.number().optional()
@@ -226,7 +227,7 @@ const zWidgetValues = z.union([z.array(z.any()), z.record(z.any())])
 
 const zComfyNode = z
   .object({
-    id: zNodeId,
+    id: zLocalNodeId,
     type: z.string(),
     pos: zVector2,
     size: zVector2,
@@ -253,7 +254,7 @@ const zSubgraphIO = zNodeInput.extend({
 
 const zSubgraphInstance = z
   .object({
-    id: zNodeId,
+    id: zLocalNodeId,
     type: z.string().uuid(),
     pos: zVector2,
     size: zVector2,
@@ -317,7 +318,7 @@ const zExtra = z
             ])
           )
           .optional(),
-        outputs: z.array(zNodeId).optional()
+        outputs: z.array(zLocalNodeId).optional()
       })
       .optional()
   })
@@ -421,7 +422,7 @@ export const zComfyWorkflow1 = zBaseExportableGraph
   .passthrough()
 
 const zExportedSubgraphIONode = z.object({
-  id: zNodeId,
+  id: zLocalNodeId,
   bounding: z.tuple([z.number(), z.number(), z.number(), z.number()]),
   pinned: z.boolean().optional()
 })
@@ -553,8 +554,8 @@ const zNodeInputValue = z.union([
   // For widget values (can be any type)
 
   z.any(),
-  // For node links [nodeId, slotIndex]
-  z.tuple([zNodeId, zSlotIndex])
+  // For node links [nodeExecutionId, slotIndex]
+  z.tuple([zNodeExecutionId, zSlotIndex])
 ])
 
 const zNodeData = z.object({
