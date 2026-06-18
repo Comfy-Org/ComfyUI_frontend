@@ -104,12 +104,14 @@ const mockTrackAuth = vi.fn()
 const mockTrackAuthMethodSelected = vi.fn()
 const mockTrackOAuthPopupResult = vi.fn()
 const mockTrackAuthFailed = vi.fn()
+const mockTrackAuthError = vi.fn()
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackAuth: mockTrackAuth,
     trackAuthMethodSelected: mockTrackAuthMethodSelected,
     trackOAuthPopupResult: mockTrackOAuthPopupResult,
-    trackAuthFailed: mockTrackAuthFailed
+    trackAuthFailed: mockTrackAuthFailed,
+    trackAuthError: mockTrackAuthError
   })
 }))
 

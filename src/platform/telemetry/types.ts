@@ -469,9 +469,56 @@ export interface CheckoutAttributionMetadata {
   wbraid?: string
 }
 
+/**
+ * Surface that triggered a subscribe-now click. Lets us attribute the
+ * `app:subscribe_now_button_clicked` event to the specific CTA the user
+ * actually clicked, rather than only the legacy SubscribeButton.
+ */
+export type SubscribeClickSource =
+  | 'pricing_table'
+  | 'subscribe_to_run'
+  | 'subscribe_button'
+
 export interface SubscriptionMetadata {
   current_tier?: string
   reason?: SubscriptionDialogReason
+  // Populated on subscribe-now clicks so the funnel can split intent by the
+  // tier/cycle selected and the CTA surface that fired the event.
+  tier?: TierKey
+  cycle?: BillingCycle
+  source?: SubscribeClickSource
+}
+
+/**
+ * Fired when the user toggles the monthly/yearly billing cycle on the
+ * pricing table. Lets us see whether the annual-discount nudge actually
+ * moves the cycle selection before checkout.
+ */
+export interface BillingCycleToggledMetadata {
+  from: BillingCycle
+  to: BillingCycle
+}
+
+/**
+ * Fired when an authentication attempt fails (sign-in or sign-up). Lets the
+ * signup funnel see the error/bounce leak that `app:user_auth_completed`
+ * (success-only) cannot.
+ */
+export interface AuthErrorMetadata {
+  method: 'email' | 'google' | 'github'
+  is_sign_up: boolean
+  error_code?: string
+  error_message?: string
+}
+
+/**
+ * Fired when the user switches category/tab in the template selector (e.g.
+ * "Getting Started" vs "All"), so we can see which curated entry points get
+ * used before a template is opened.
+ */
+export interface TemplateCategorySelectedMetadata {
+  category_id: string
+  category_label?: string
 }
 
 /**
@@ -633,6 +680,11 @@ export interface TelemetryProvider {
   trackCheckoutReturned?(metadata: CheckoutReturnedMetadata): void
   trackCheckoutInitiateFailed?(metadata: CheckoutInitiateFailedMetadata): void
   trackCheckoutWindowBlocked?(metadata?: CheckoutWindowBlockedMetadata): void
+  trackBillingCycleToggled?(metadata: BillingCycleToggledMetadata): void
+  trackAuthError?(metadata: AuthErrorMetadata): void
+  trackTemplateCategorySelected?(
+    metadata: TemplateCategorySelectedMetadata
+  ): void
   trackMonthlySubscriptionSucceeded?(
     metadata?: SubscriptionSuccessMetadata
   ): void
@@ -749,6 +801,9 @@ export const TelemetryEvents = {
   CHECKOUT_RETURNED: 'app:checkout_returned',
   CHECKOUT_INITIATE_FAILED: 'app:checkout_initiate_failed',
   CHECKOUT_WINDOW_BLOCKED: 'app:checkout_window_blocked',
+  BILLING_CYCLE_TOGGLED: 'app:billing_cycle_toggled',
+  AUTH_ERROR: 'app:auth_error',
+  TEMPLATE_CATEGORY_SELECTED: 'app:template_category_selected',
   MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
   MONTHLY_SUBSCRIPTION_CANCELLED: 'app:monthly_subscription_cancelled',
   ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
@@ -875,3 +930,6 @@ export type TelemetryEventProperties =
   | CheckoutViewedMetadata
   | CheckoutReturnedMetadata
   | FirstExecutionCompletedMetadata
+  | BillingCycleToggledMetadata
+  | AuthErrorMetadata
+  | TemplateCategorySelectedMetadata

@@ -50,7 +50,14 @@ const buttonTooltip = computed(() =>
 
 function handleSubscribeToRun() {
   if (isCloud) {
-    useTelemetry()?.trackRunButton({ subscribe_to_run: true })
+    const telemetry = useTelemetry()
+    telemetry?.trackRunButton({ subscribe_to_run: true })
+    // Also count this as a subscribe-now click so the lock-button CTA shows up
+    // in the subscribe-click funnel alongside the pricing table and the
+    // legacy SubscribeButton (previously the only fired surface).
+    telemetry?.trackSubscription('subscribe_clicked', {
+      source: 'subscribe_to_run'
+    })
   }
 
   showSubscriptionDialog()

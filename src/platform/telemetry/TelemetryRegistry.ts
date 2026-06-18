@@ -10,6 +10,9 @@ import type {
   CheckoutReturnedMetadata,
   CheckoutViewedMetadata,
   CheckoutWindowBlockedMetadata,
+  BillingCycleToggledMetadata,
+  AuthErrorMetadata,
+  TemplateCategorySelectedMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -138,6 +141,22 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackCheckoutWindowBlocked(metadata?: CheckoutWindowBlockedMetadata): void {
     this.dispatch((provider) => provider.trackCheckoutWindowBlocked?.(metadata))
+  }
+
+  trackBillingCycleToggled(metadata: BillingCycleToggledMetadata): void {
+    this.dispatch((provider) => provider.trackBillingCycleToggled?.(metadata))
+  }
+
+  trackAuthError(metadata: AuthErrorMetadata): void {
+    this.dispatch((provider) => provider.trackAuthError?.(metadata))
+  }
+
+  trackTemplateCategorySelected(
+    metadata: TemplateCategorySelectedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackTemplateCategorySelected?.(metadata)
+    )
   }
 
   trackMonthlySubscriptionSucceeded(

@@ -18,6 +18,9 @@ import type {
   CheckoutReturnedMetadata,
   CheckoutViewedMetadata,
   CheckoutWindowBlockedMetadata,
+  BillingCycleToggledMetadata,
+  AuthErrorMetadata,
+  TemplateCategorySelectedMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -136,9 +139,15 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               api_host:
                 window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
               ui_host: 'https://us.posthog.com',
-              autocapture: false,
-              capture_pageview: false,
-              capture_pageleave: false,
+              // Web analytics enabled so cloud.comfy.org gets $pageview / $pageleave
+              // (the login/onboarding pages previously had zero coverage). autocapture
+              // does NOT record input *values* (posthog masks them), and these defaults
+              // remain overridable per-environment via `serverConfig` (spread below).
+              // Heatmaps are toggled via PostHog project settings (RemoteConfig), not a
+              // client init option in this posthog-js version.
+              autocapture: true,
+              capture_pageview: true,
+              capture_pageleave: true,
               persistence: 'localStorage+cookie',
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
               ...serverConfig,
@@ -470,6 +479,20 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackCheckoutReturned(metadata: CheckoutReturnedMetadata): void {
     this.trackEvent(TelemetryEvents.CHECKOUT_RETURNED, metadata)
+  }
+
+  trackBillingCycleToggled(metadata: BillingCycleToggledMetadata): void {
+    this.trackEvent(TelemetryEvents.BILLING_CYCLE_TOGGLED, metadata)
+  }
+
+  trackAuthError(metadata: AuthErrorMetadata): void {
+    this.trackEvent(TelemetryEvents.AUTH_ERROR, metadata)
+  }
+
+  trackTemplateCategorySelected(
+    metadata: TemplateCategorySelectedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.TEMPLATE_CATEGORY_SELECTED, metadata)
   }
 
   trackAddApiCreditButtonClicked(): void {

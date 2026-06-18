@@ -10,6 +10,8 @@ import SubscribeToRun from './SubscribeToRun.vue'
 const mockShowSubscriptionDialog = vi.fn()
 const mockCanManageSubscription = ref(true)
 const mockIsMdOrLarger = ref(true)
+const mockTrackRunButton = vi.fn()
+const mockTrackSubscription = vi.fn()
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -30,7 +32,10 @@ vi.mock('@/platform/distribution/types', () => ({
 }))
 
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => null
+  useTelemetry: () => ({
+    trackRunButton: mockTrackRunButton,
+    trackSubscription: mockTrackSubscription
+  })
 }))
 
 vi.mock('@vueuse/core', async (importOriginal) => {
@@ -110,5 +115,16 @@ describe('SubscribeToRun', () => {
     await user.click(screen.getByTestId('subscribe-to-run-button'))
 
     expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
+  })
+
+  it('tracks both the run button and a subscribe-now click on click', async () => {
+    const { user } = renderButton()
+
+    await user.click(screen.getByTestId('subscribe-to-run-button'))
+
+    expect(mockTrackRunButton).toHaveBeenCalledWith({ subscribe_to_run: true })
+    expect(mockTrackSubscription).toHaveBeenCalledWith('subscribe_clicked', {
+      source: 'subscribe_to_run'
+    })
   })
 })

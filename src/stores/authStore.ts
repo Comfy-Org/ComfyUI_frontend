@@ -351,6 +351,10 @@ export const useAuthStore = defineStore('auth', () => {
     options: {
       createCustomer?: boolean
       telemetry?: AuthTelemetryContext
+      authError?: {
+        method: 'email' | 'google' | 'github'
+        isSignUp: boolean
+      }
     } = {}
   ): Promise<T> => {
     loading.value = true
@@ -420,6 +424,17 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       return result
+    } catch (error) {
+      // Surface the auth failure leak that trackAuth (success-only) misses.
+      if (isCloud && options?.authError) {
+        useTelemetry()?.trackAuthError({
+          method: options.authError.method,
+          is_sign_up: options.authError.isSignUp,
+          error_code: (error as { code?: string })?.code,
+          error_message: error instanceof Error ? error.message : String(error)
+        })
+      }
+      throw error
     } finally {
       loading.value = false
     }
@@ -434,7 +449,8 @@ export const useAuthStore = defineStore('auth', () => {
         signInWithEmailAndPassword(authInstance, email, password),
       {
         createCustomer: true,
-        telemetry: { method: 'email', view: 'login' }
+        telemetry: { method: 'email', view: 'login' },
+        authError: { method: 'email', isSignUp: false }
       }
     )
 
@@ -461,7 +477,8 @@ export const useAuthStore = defineStore('auth', () => {
         createUserWithEmailAndPassword(authInstance, email, password),
       {
         createCustomer: true,
-        telemetry: { method: 'email', view: 'signup' }
+        telemetry: { method: 'email', view: 'signup' },
+        authError: { method: 'email', isSignUp: true }
       }
     )
 
@@ -490,7 +507,8 @@ export const useAuthStore = defineStore('auth', () => {
           method: 'google',
           view: options?.isNewUser ? 'signup' : 'login',
           oauthProvider: 'google'
-        }
+        },
+        authError: { method: 'google', isSignUp: options?.isNewUser ?? false }
       }
     )
 
@@ -522,7 +540,8 @@ export const useAuthStore = defineStore('auth', () => {
           method: 'github',
           view: options?.isNewUser ? 'signup' : 'login',
           oauthProvider: 'github'
-        }
+        },
+        authError: { method: 'github', isSignUp: options?.isNewUser ?? false }
       }
     )
 

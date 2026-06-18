@@ -114,9 +114,9 @@ describe('PostHogTelemetryProvider', () => {
         expect.objectContaining({
           api_host: 'https://t.comfy.org',
           ui_host: 'https://us.posthog.com',
-          autocapture: false,
-          capture_pageview: false,
-          capture_pageleave: false,
+          autocapture: true,
+          capture_pageview: true,
+          capture_pageleave: true,
           persistence: 'localStorage+cookie'
         })
       )
@@ -328,6 +328,18 @@ describe('PostHogTelemetryProvider', () => {
           view_mode: 'app',
           is_app_mode: true
         }
+      )
+    })
+
+    it('captures billing cycle toggles with from/to', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackBillingCycleToggled({ from: 'yearly', to: 'monthly' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.BILLING_CYCLE_TOGGLED,
+        { from: 'yearly', to: 'monthly' }
       )
     })
 
