@@ -34,7 +34,8 @@ export interface Member {
   // True when this member is the workspace's original owner/creator
   // (member.id == workspace.created_by_user_id). Gates the creator-only
   // billing lifecycle actions (cancel / reactivate / downgrade).
-  is_original_owner: boolean
+  // Optional: the cloud OpenAPI does not carry this field yet.
+  is_original_owner?: boolean
 }
 
 interface PaginationInfo {
