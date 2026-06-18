@@ -6,6 +6,7 @@ import {
   MODELS_TAG
 } from '@/platform/assets/services/assetService'
 import {
+  buildModelTypeTagUpdate,
   getAssetAdditionalTags,
   getAssetBaseModel,
   getAssetBaseModels,
@@ -24,9 +25,11 @@ import {
   getAssetTriggerPhrases,
   getAssetTypeBadges,
   getAssetUserDescription,
+  getEditableModelType,
   getSourceName,
   resolveDisplayImageDimensions,
-  stripModelTypePrefix
+  stripModelTypePrefix,
+  toModelTypeTag
 } from '@/platform/assets/utils/assetMetadataUtils'
 
 const { isCloudRef } = vi.hoisted(() => ({
@@ -851,5 +854,106 @@ describe('reserved tag mirrors', () => {
     ).toEqual(['x'])
     expect(getAssetTypeBadges(asset([MODELS_TAG, 'x']), false)).toEqual(['x'])
     expect(getAssetModelType(asset([MODELS_TAG]))).toBeNull()
+  })
+})
+
+describe('toModelTypeTag', () => {
+  it('prefixes a folder_name with the model_type namespace', () => {
+    expect(toModelTypeTag('checkpoints')).toBe('model_type:checkpoints')
+    expect(toModelTypeTag('ultralytics_bbox')).toBe(
+      'model_type:ultralytics_bbox'
+    )
+  })
+})
+
+describe('getEditableModelType', () => {
+  const asset = (tags: string[]): AssetItem => ({
+    id: 'a',
+    name: 'model.safetensors',
+    tags
+  })
+
+  it('returns the stripped model_type value in model_type mode', () => {
+    expect(
+      getEditableModelType(
+        asset(['models', 'checkpoints', 'model_type:checkpoints']),
+        true
+      )
+    ).toBe('checkpoints')
+  })
+
+  it('falls back to the bare tag for an uncovered asset in model_type mode', () => {
+    expect(getEditableModelType(asset(['models', 'sam2']), true)).toBe('sam2')
+  })
+
+  it('uses the legacy first-non-models tag when mode is off (default)', () => {
+    expect(getEditableModelType(asset(['models', 'checkpoints', 'sdxl']))).toBe(
+      'checkpoints'
+    )
+  })
+
+  it('returns null when only the models tag is present', () => {
+    expect(getEditableModelType(asset(['models']), true)).toBeNull()
+  })
+})
+
+describe('buildModelTypeTagUpdate', () => {
+  const asset = (tags: string[]): AssetItem => ({
+    id: 'a',
+    name: 'model.safetensors',
+    tags
+  })
+
+  it('swaps the bare subtype tag when mode is off (default)', () => {
+    expect(
+      buildModelTypeTagUpdate(asset(['models', 'checkpoints']), 'loras')
+    ).toEqual(['models', 'loras'])
+  })
+
+  it('preserves user labels and swaps only the subtype tag when mode is off', () => {
+    expect(
+      buildModelTypeTagUpdate(asset(['models', 'checkpoints', 'sdxl']), 'loras')
+    ).toEqual(['models', 'sdxl', 'loras'])
+  })
+
+  it('writes only the model_type form for a covered asset, leaving the bare twin for the backend', () => {
+    expect(
+      buildModelTypeTagUpdate(
+        asset(['models', 'checkpoints', 'model_type:checkpoints']),
+        'loras',
+        true
+      )
+    ).toEqual(['models', 'checkpoints', 'model_type:loras'])
+  })
+
+  it('replaces every existing model_type form for a shared-path dual-tagged asset', () => {
+    expect(
+      buildModelTypeTagUpdate(
+        asset([
+          'models',
+          'diffusion_models',
+          'model_type:diffusion_models',
+          'model_type:unet_gguf'
+        ]),
+        'loras',
+        true
+      )
+    ).toEqual(['models', 'diffusion_models', 'model_type:loras'])
+  })
+
+  it('drops the bare current type for an uncovered asset in model_type mode', () => {
+    expect(
+      buildModelTypeTagUpdate(asset(['models', 'sam2']), 'loras', true)
+    ).toEqual(['models', 'model_type:loras'])
+  })
+
+  it('keeps user labels untouched in model_type mode', () => {
+    expect(
+      buildModelTypeTagUpdate(
+        asset(['models', 'checkpoints', 'model_type:checkpoints', 'sdxl']),
+        'loras',
+        true
+      )
+    ).toEqual(['models', 'checkpoints', 'sdxl', 'model_type:loras'])
   })
 })

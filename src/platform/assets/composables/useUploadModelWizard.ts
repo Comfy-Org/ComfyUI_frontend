@@ -2,6 +2,7 @@ import type { Ref } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { st } from '@/i18n'
 import { civitaiImportSource } from '@/platform/assets/importSources/civitaiImportSource'
 import { huggingfaceImportSource } from '@/platform/assets/importSources/huggingfaceImportSource'
@@ -11,7 +12,10 @@ import type {
 } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ImportSource } from '@/platform/assets/types/importSource'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import {
+  getAssetFilename,
+  toModelTypeTag
+} from '@/platform/assets/utils/assetMetadataUtils'
 import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -68,6 +72,7 @@ export function useUploadModelWizard(
   options: UploadModelWizardOptions = {}
 ) {
   const { t } = useI18n()
+  const { flags } = useFeatureFlags()
   const assetsStore = useAssetsStore()
   const assetDownloadStore = useAssetDownloadStore()
   const modelToNodeStore = useModelToNodeStore()
@@ -317,7 +322,11 @@ export function useUploadModelWizard(
 
     try {
       const modelType = resolvedModelType.value
-      const tags = modelType ? ['models', modelType] : ['models']
+      const subtypeTag =
+        modelType && flags.supportsModelTypeTags
+          ? toModelTypeTag(modelType)
+          : modelType
+      const tags = subtypeTag ? [MODEL_ROOT_TAG, subtypeTag] : [MODEL_ROOT_TAG]
       const filename =
         wizardData.value.metadata?.filename ||
         wizardData.value.metadata?.name ||
