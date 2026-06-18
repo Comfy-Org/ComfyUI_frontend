@@ -8,12 +8,14 @@ import { useBillingContext } from './useBillingContext'
 
 const {
   mockTeamWorkspacesEnabled,
+  mockPersonalWorkspaceBillingReady,
   mockIsPersonal,
   mockPlans,
   mockPurchaseCredits,
   mockUpdateActiveWorkspace
 } = vi.hoisted(() => ({
   mockTeamWorkspacesEnabled: { value: false },
+  mockPersonalWorkspaceBillingReady: { value: false },
   mockIsPersonal: { value: true },
   mockPlans: { value: [] as Plan[] },
   mockPurchaseCredits: vi.fn(),
@@ -33,6 +35,9 @@ vi.mock('@/composables/useFeatureFlags', () => ({
     flags: {
       get teamWorkspacesEnabled() {
         return mockTeamWorkspacesEnabled.value
+      },
+      get personalWorkspaceBillingReady() {
+        return mockPersonalWorkspaceBillingReady.value
       }
     }
   })
@@ -126,6 +131,7 @@ describe('useBillingContext', () => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
     mockTeamWorkspacesEnabled.value = false
+    mockPersonalWorkspaceBillingReady.value = false
     mockIsPersonal.value = true
     mockPlans.value = []
   })
@@ -136,16 +142,27 @@ describe('useBillingContext', () => {
     expect(type.value).toBe('legacy')
   })
 
-  it('selects workspace type for personal when team workspaces are enabled', () => {
+  it('keeps personal on legacy when team workspaces are enabled but personal billing is not ready', () => {
     mockTeamWorkspacesEnabled.value = true
+    mockPersonalWorkspaceBillingReady.value = false
+    mockIsPersonal.value = true
+
+    const { type } = useBillingContext()
+    expect(type.value).toBe('legacy')
+  })
+
+  it('selects workspace type for personal once personal billing is ready', () => {
+    mockTeamWorkspacesEnabled.value = true
+    mockPersonalWorkspaceBillingReady.value = true
     mockIsPersonal.value = true
 
     const { type } = useBillingContext()
     expect(type.value).toBe('workspace')
   })
 
-  it('selects workspace type for team when team workspaces are enabled', () => {
+  it('selects workspace type for team when team workspaces are enabled regardless of personal billing readiness', () => {
     mockTeamWorkspacesEnabled.value = true
+    mockPersonalWorkspaceBillingReady.value = false
     mockIsPersonal.value = false
 
     const { type } = useBillingContext()
@@ -227,9 +244,37 @@ describe('useBillingContext', () => {
   })
 
   describe('subscription mirror to workspace store', () => {
-    it('mirrors subscription for personal workspaces when team workspaces are enabled', async () => {
+    it('mirrors personal subscription once personal billing is ready', async () => {
       mockTeamWorkspacesEnabled.value = true
+      mockPersonalWorkspaceBillingReady.value = true
       mockIsPersonal.value = true
+
+      const { initialize } = useBillingContext()
+      await initialize()
+      await nextTick()
+
+      expect(mockUpdateActiveWorkspace).toHaveBeenCalledWith({
+        isSubscribed: true,
+        subscriptionPlan: null
+      })
+    })
+
+    it('does not mirror personal subscription while personal billing is not ready', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockPersonalWorkspaceBillingReady.value = false
+      mockIsPersonal.value = true
+
+      const { initialize } = useBillingContext()
+      await initialize()
+      await nextTick()
+
+      expect(mockUpdateActiveWorkspace).not.toHaveBeenCalled()
+    })
+
+    it('mirrors team subscription regardless of personal billing readiness', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockPersonalWorkspaceBillingReady.value = false
+      mockIsPersonal.value = false
 
       const { initialize } = useBillingContext()
       await initialize()
