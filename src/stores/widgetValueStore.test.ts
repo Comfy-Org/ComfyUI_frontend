@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { UUID } from '@/utils/uuid'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
@@ -19,8 +20,8 @@ function state<T>(
 describe('useWidgetValueStore', () => {
   const graphA = 'graph-a' as UUID
   const graphB = 'graph-b' as UUID
-  const seedA = widgetId(graphA, 'node-1', 'seed')
-  const seedB = widgetId(graphB, 'node-1', 'seed')
+  const seedA = widgetId(graphA, asNodeId('node-1'), 'seed')
+  const seedB = widgetId(graphB, asNodeId('node-1'), 'seed')
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -44,33 +45,33 @@ describe('useWidgetValueStore', () => {
     it('stores different value types', () => {
       const store = useWidgetValueStore()
       store.registerWidget(
-        widgetId(graphA, 'node-1', 'text'),
+        widgetId(graphA, asNodeId('node-1'), 'text'),
         state('string', 'hello')
       )
       store.registerWidget(
-        widgetId(graphA, 'node-1', 'number'),
+        widgetId(graphA, asNodeId('node-1'), 'number'),
         state('number', 42)
       )
       store.registerWidget(
-        widgetId(graphA, 'node-1', 'boolean'),
+        widgetId(graphA, asNodeId('node-1'), 'boolean'),
         state('toggle', true)
       )
       store.registerWidget(
-        widgetId(graphA, 'node-1', 'array'),
+        widgetId(graphA, asNodeId('node-1'), 'array'),
         state('combo', [1, 2, 3])
       )
 
-      expect(store.getWidget(widgetId(graphA, 'node-1', 'text'))?.value).toBe(
-        'hello'
-      )
-      expect(store.getWidget(widgetId(graphA, 'node-1', 'number'))?.value).toBe(
-        42
-      )
       expect(
-        store.getWidget(widgetId(graphA, 'node-1', 'boolean'))?.value
+        store.getWidget(widgetId(graphA, asNodeId('node-1'), 'text'))?.value
+      ).toBe('hello')
+      expect(
+        store.getWidget(widgetId(graphA, asNodeId('node-1'), 'number'))?.value
+      ).toBe(42)
+      expect(
+        store.getWidget(widgetId(graphA, asNodeId('node-1'), 'boolean'))?.value
       ).toBe(true)
       expect(
-        store.getWidget(widgetId(graphA, 'node-1', 'array'))?.value
+        store.getWidget(widgetId(graphA, asNodeId('node-1'), 'array'))?.value
       ).toEqual([1, 2, 3])
     })
   })
@@ -143,19 +144,19 @@ describe('useWidgetValueStore', () => {
     it('getNodeWidgets returns all widgets for a node', () => {
       const store = useWidgetValueStore()
       store.registerWidget(
-        widgetId(graphA, 'node-1', 'seed'),
+        widgetId(graphA, asNodeId('node-1'), 'seed'),
         state('number', 1)
       )
       store.registerWidget(
-        widgetId(graphA, 'node-1', 'steps'),
+        widgetId(graphA, asNodeId('node-1'), 'steps'),
         state('number', 20)
       )
       store.registerWidget(
-        widgetId(graphA, 'node-2', 'cfg'),
+        widgetId(graphA, asNodeId('node-2'), 'cfg'),
         state('number', 7)
       )
 
-      const widgets = store.getNodeWidgets(graphA, 'node-1')
+      const widgets = store.getNodeWidgets(graphA, asNodeId('node-1'))
       expect(widgets).toHaveLength(2)
       expect(widgets.map((w) => w.name).sort()).toEqual(['seed', 'steps'])
     })
@@ -168,7 +169,9 @@ describe('useWidgetValueStore', () => {
 
       expect(store.setValue(seedA, 200)).toBe(true)
       expect(store.getWidget(seedA)?.value).toBe(200)
-      expect(store.setValue(widgetId(graphA, 'missing', 'seed'), 1)).toBe(false)
+      expect(
+        store.setValue(widgetId(graphA, asNodeId('missing'), 'seed'), 1)
+      ).toBe(false)
     })
 
     it('deleteWidget removes registered widgets', () => {

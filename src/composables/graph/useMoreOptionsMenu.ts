@@ -1,11 +1,8 @@
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type {
-  LGraphGroup,
-  LGraphNode,
-  NodeId
-} from '@/lib/litegraph/src/litegraph'
+import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
 import { isLGraphGroup } from '@/utils/litegraphUtil'

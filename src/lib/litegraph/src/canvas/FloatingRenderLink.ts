@@ -1,10 +1,12 @@
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import {
+  UNASSIGNED_NODE_ID,
+  SUBGRAPH_INPUT_NODE_ID,
+  SUBGRAPH_OUTPUT_NODE_ID,
+  isFloatingNodeId
+} from '@/types/nodeId'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
 import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import type {
@@ -37,13 +39,13 @@ export class FloatingRenderLink implements RenderLink {
   readonly fromDirection: LinkDirection
   readonly fromSlotIndex: SlotIndex
 
-  readonly outputNodeId: NodeId = -1
+  readonly outputNodeId: NodeId = UNASSIGNED_NODE_ID
   readonly outputNode?: LGraphNode
   readonly outputSlot?: INodeOutputSlot
   readonly outputIndex: number = -1
   readonly outputPos?: Point
 
-  readonly inputNodeId: NodeId = -1
+  readonly inputNodeId: NodeId = UNASSIGNED_NODE_ID
   readonly inputNode?: LGraphNode
   readonly inputSlot?: INodeInputSlot
   readonly inputIndex: number = -1
@@ -63,7 +65,7 @@ export class FloatingRenderLink implements RenderLink {
       target_slot: inputIndex
     } = link
 
-    if (outputNodeId !== -1) {
+    if (!isFloatingNodeId(outputNodeId)) {
       // Output connected
       const outputNode = network.getNodeById(outputNodeId) ?? undefined
       if (!outputNode)
@@ -175,7 +177,7 @@ export class FloatingRenderLink implements RenderLink {
     _events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
     const floatingLink = this.link
-    floatingLink.origin_id = SUBGRAPH_INPUT_ID
+    floatingLink.origin_id = SUBGRAPH_INPUT_NODE_ID
     floatingLink.origin_slot = input.parent.slots.indexOf(input)
 
     this.fromSlot._floatingLinks?.delete(floatingLink)
@@ -188,7 +190,7 @@ export class FloatingRenderLink implements RenderLink {
     _events?: CustomEventTarget<LinkConnectorEventMap>
   ): void {
     const floatingLink = this.link
-    floatingLink.origin_id = SUBGRAPH_OUTPUT_ID
+    floatingLink.origin_id = SUBGRAPH_OUTPUT_NODE_ID
     floatingLink.origin_slot = output.parent.slots.indexOf(output)
 
     this.fromSlot._floatingLinks?.delete(floatingLink)

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisedGraph,
   ISerialisedNode
@@ -37,7 +38,7 @@ function createNode({
   outputs?: SerialisedOutput[]
 }): ISerialisedNode {
   return {
-    id,
+    id: asNodeId(id),
     type: 'TestNode',
     pos: [0, 0],
     size: [100, 100],
@@ -75,7 +76,7 @@ describe('fixBadLinks', () => {
         createNode({ id: 1, outputs: [createOutput([1])] }),
         createNode({ id: 2, inputs: [createInput(1)] })
       ],
-      links: [[1, 1, 0, 2, 0, '*']]
+      links: [[1, asNodeId(1), 0, asNodeId(2), 0, '*']]
     })
     const logger = { log: vi.fn() }
 
@@ -98,7 +99,7 @@ describe('fixBadLinks', () => {
         createNode({ id: 1, outputs: [createOutput([])] }),
         createNode({ id: 2, inputs: [createInput(1)] })
       ],
-      links: [[1, 1, 0, 2, 0, '*']]
+      links: [[1, asNodeId(1), 0, asNodeId(2), 0, '*']]
     })
     const logger = { log: vi.fn() }
 
@@ -121,7 +122,7 @@ describe('fixBadLinks', () => {
         createNode({ id: 1, outputs: [createOutput([])] }),
         createNode({ id: 2, inputs: [createInput(1)] })
       ],
-      links: [[1, 1, 0, 2, 0, '*']]
+      links: [[1, asNodeId(1), 0, asNodeId(2), 0, '*']]
     })
 
     const result = fixBadLinks(graph, { fix: true })
@@ -142,7 +143,7 @@ describe('fixBadLinks', () => {
         createNode({ id: 1, outputs: [createOutput([1])] }),
         createNode({ id: 2, inputs: [createInput(null)] })
       ],
-      links: [[1, 1, 0, 2, 0, '*']]
+      links: [[1, asNodeId(1), 0, asNodeId(2), 0, '*']]
     })
 
     const result = fixBadLinks(graph, { fix: true })
@@ -163,7 +164,7 @@ describe('fixBadLinks', () => {
         createNode({ id: 1, outputs: [createOutput([1])] }),
         createNode({ id: 2 })
       ],
-      links: [[1, 1, 0, 2, 0, '*']]
+      links: [[1, asNodeId(1), 0, asNodeId(2), 0, '*']]
     })
 
     const result = fixBadLinks(graph, { fix: true })
@@ -185,7 +186,7 @@ describe('fixBadLinks', () => {
         createNode({ id: 1, outputs: [createOutput([1])] }),
         createNode({ id: 2, inputs: [createInput(2)] })
       ],
-      links: [[1, 1, 0, 2, 0, '*']]
+      links: [[1, asNodeId(1), 0, asNodeId(2), 0, '*']]
     })
 
     const result = fixBadLinks(graph, { fix: true })
@@ -204,7 +205,7 @@ describe('fixBadLinks', () => {
   it('cleans dangling references when a linked node is missing', () => {
     const graph = createGraph({
       nodes: [createNode({ id: 2, inputs: [createInput(1)] })],
-      links: [[1, 1, 0, 2, 0, '*']]
+      links: [[1, asNodeId(1), 0, asNodeId(2), 0, '*']]
     })
 
     const result = fixBadLinks(graph, { fix: true })
@@ -222,7 +223,7 @@ describe('fixBadLinks', () => {
   it('cleans dangling origin references when the target node is missing', () => {
     const graph = createGraph({
       nodes: [createNode({ id: 1, outputs: [createOutput([1])] })],
-      links: [[1, 1, 0, 2, 0, '*']]
+      links: [[1, asNodeId(1), 0, asNodeId(2), 0, '*']]
     })
 
     const result = fixBadLinks(graph, { fix: true })
@@ -243,7 +244,7 @@ describe('fixBadLinks', () => {
         createNode({ id: 1, outputs: [createOutput([])] }),
         createNode({ id: 2, inputs: [createInput(null)] })
       ],
-      links: [[1, 1, 0, 2, 0, '*']]
+      links: [[1, asNodeId(1), 0, asNodeId(2), 0, '*']]
     })
 
     const result = fixBadLinks(graph, { fix: true })
@@ -263,7 +264,7 @@ describe('fixBadLinks', () => {
         createNode({ id: 1, outputs: [createOutput([])] }),
         createNode({ id: 2, inputs: [createInput(1)] })
       ],
-      links: [[1, 1, 0, 2, 0, '*']]
+      links: [[1, asNodeId(1), 0, asNodeId(2), 0, '*']]
     })
     const logger = { log: vi.fn() }
 

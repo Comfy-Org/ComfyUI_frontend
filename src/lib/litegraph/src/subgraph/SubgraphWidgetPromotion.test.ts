@@ -9,7 +9,7 @@ import type {
   Subgraph,
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
-import { BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { asNodeId, BaseWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { NumberWidget } from '@/lib/litegraph/src/widgets/NumberWidget'
 import {
   appendQuarantine,
@@ -902,7 +902,7 @@ describe('SubgraphWidgetPromotion', () => {
           for (const [iStr, value] of Object.entries(c.promptByIndex)) {
             const i = Number(iStr)
             expect(
-              output[`${host.id}:${sources[i].node.id}`].inputs.value
+              output[asNodeId(`${host.id}:${sources[i].node.id}`)]!.inputs.value
             ).toBe(value)
           }
         }
@@ -971,9 +971,9 @@ describe('SubgraphWidgetPromotion', () => {
 
         if (c.expect.promptSeed !== undefined) {
           const { output } = await graphToPrompt(host.rootGraph)
-          expect(output[`${host.id}:${seed.node.id}`].inputs.value).toBe(
-            c.expect.promptSeed
-          )
+          expect(
+            output[asNodeId(`${host.id}:${seed.node.id}`)]!.inputs.value
+          ).toBe(c.expect.promptSeed)
         }
         if (c.expect.sourceSeed !== undefined) {
           expect(seed.widget.value).toBe(c.expect.sourceSeed)
@@ -992,8 +992,12 @@ describe('SubgraphWidgetPromotion', () => {
           interiorNode
         )
 
-        const firstHost = createTestSubgraphNode(subgraph, { id: 101 })
-        const secondHost = createTestSubgraphNode(subgraph, { id: 102 })
+        const firstHost = createTestSubgraphNode(subgraph, {
+          id: asNodeId(101)
+        })
+        const secondHost = createTestSubgraphNode(subgraph, {
+          id: asNodeId(102)
+        })
         subgraph.rootGraph.add(firstHost)
         subgraph.rootGraph.add(secondHost)
 
@@ -1035,7 +1039,7 @@ describe('SubgraphWidgetPromotion', () => {
           interiorNode
         )
 
-        const host = createTestSubgraphNode(subgraph, { id: 101 })
+        const host = createTestSubgraphNode(subgraph, { id: asNodeId(101) })
         const widgetStore = useWidgetValueStore()
         widgetStore.registerWidget(
           widgetId(host.rootGraph.id, interiorNode.id, interiorWidget.name),
@@ -1049,7 +1053,7 @@ describe('SubgraphWidgetPromotion', () => {
         expect(serialized.widgets_values).toEqual([''])
 
         widgetStore.clearGraph(host.rootGraph.id)
-        const reloaded = createTestSubgraphNode(subgraph, { id: 101 })
+        const reloaded = createTestSubgraphNode(subgraph, { id: asNodeId(101) })
         reloaded.configure(serialized)
 
         expect(
@@ -1062,14 +1066,14 @@ describe('SubgraphWidgetPromotion', () => {
         const subgraph = createTestSubgraph()
         buildSources(subgraph, TEXT_PAIR)
 
-        const host = createTestSubgraphNode(subgraph, { id: 101 })
+        const host = createTestSubgraphNode(subgraph, { id: asNodeId(101) })
         writePromotedWidgetValue(host, 1, 'second host value')
         const serialized = host.serialize()
         expect(serialized.widgets_values).toEqual(['', 'second host value'])
 
         const widgetStore = useWidgetValueStore()
         widgetStore.clearGraph(host.rootGraph.id)
-        const reloaded = createTestSubgraphNode(subgraph, { id: 101 })
+        const reloaded = createTestSubgraphNode(subgraph, { id: asNodeId(101) })
         reloaded.configure(serialized)
 
         expect(reloaded.widgets).toHaveLength(promotedInputs(reloaded).length)
@@ -1222,8 +1226,12 @@ describe('SubgraphWidgetPromotion', () => {
 
       it('serializes preview exposures per host instance', () => {
         const subgraph = createTestSubgraph()
-        const firstHost = createTestSubgraphNode(subgraph, { id: 101 })
-        const secondHost = createTestSubgraphNode(subgraph, { id: 102 })
+        const firstHost = createTestSubgraphNode(subgraph, {
+          id: asNodeId(101)
+        })
+        const secondHost = createTestSubgraphNode(subgraph, {
+          id: asNodeId(102)
+        })
         subgraph.rootGraph.add(firstHost)
         subgraph.rootGraph.add(secondHost)
 

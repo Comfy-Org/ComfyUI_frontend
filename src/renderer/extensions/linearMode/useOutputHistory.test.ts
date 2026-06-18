@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { InProgressItem } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
@@ -108,7 +109,7 @@ vi.mock('@/renderer/extensions/linearMode/flattenNodeOutput', () => ({
       (img) =>
         new ResultItemImpl({
           ...img,
-          nodeId: String(nodeId),
+          nodeId: asNodeId(nodeId),
           mediaType: 'images'
         })
     )
@@ -142,7 +143,7 @@ function makeResult(filename: string, nodeId: string = '1'): ResultItemImpl {
     filename,
     subfolder: '',
     type: 'output',
-    nodeId,
+    nodeId: asNodeId(nodeId),
     mediaType: 'images'
   })
 }
@@ -220,7 +221,7 @@ describe(useOutputHistory, () => {
     })
 
     it('returns outputs from metadata allOutputs when count matches', () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(asNodeId('1'))
       const results = [makeResult('a.png'), makeResult('b.png')]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
@@ -248,7 +249,7 @@ describe(useOutputHistory, () => {
       })
 
       const appModeStore = useAppModeStore()
-      appModeStore.selectedOutputs.push('2')
+      appModeStore.selectedOutputs.push(asNodeId('2'))
 
       const { allOutputs } = useOutputHistory()
       const outputs = allOutputs(asset)
@@ -278,7 +279,7 @@ describe(useOutputHistory, () => {
       })
 
       const appModeStore = useAppModeStore()
-      appModeStore.selectedOutputs.push('2')
+      appModeStore.selectedOutputs.push(asNodeId('2'))
 
       const { allOutputs } = useOutputHistory()
       const first = allOutputs(asset)
@@ -290,7 +291,7 @@ describe(useOutputHistory, () => {
     })
 
     it('returns in-progress outputs for pending resolve jobs', () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(asNodeId('1'))
       pendingResolveRef.value = new Set(['job-1'])
       inProgressItemsRef.value = [
         {
@@ -317,7 +318,7 @@ describe(useOutputHistory, () => {
     })
 
     it('fetches full job detail for multi-output jobs', async () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(asNodeId('1'))
       jobDetailResults.set('job-1', {
         outputs: {
           '1': {
@@ -346,7 +347,7 @@ describe(useOutputHistory, () => {
 
   describe('watchEffect resolve loop', () => {
     it('resolves pending jobs when history outputs load', async () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(asNodeId('1'))
       const results = [makeResult('a.png')]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,
@@ -365,7 +366,7 @@ describe(useOutputHistory, () => {
     })
 
     it('does not select first history when a selection exists', async () => {
-      useAppModeStore().selectedOutputs.push('1')
+      useAppModeStore().selectedOutputs.push(asNodeId('1'))
       const results = [makeResult('a.png')]
       const asset = makeAsset('a1', 'job-1', {
         allOutputs: results,

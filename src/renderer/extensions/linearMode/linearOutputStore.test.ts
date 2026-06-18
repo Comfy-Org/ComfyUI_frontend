@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { ResultItemImpl } from '@/stores/queueStore'
@@ -74,7 +75,7 @@ vi.mock('@/renderer/extensions/linearMode/flattenNodeOutput', () => ({
       (img) =>
         new ResultItemImpl({
           ...img,
-          nodeId: String(nodeId),
+          nodeId: asNodeId(nodeId),
           mediaType: 'images'
         })
     )

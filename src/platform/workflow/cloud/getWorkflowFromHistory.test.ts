@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
@@ -33,7 +34,7 @@ const mockJobDetailResponse: JobDetail = {
     }
   },
   outputs: {
-    '20': {
+    [asNodeId('20')]: {
       images: [
         { filename: 'test.png', subfolder: '', type: 'output' },
         { filename: 'test2.png', subfolder: '', type: 'output' }

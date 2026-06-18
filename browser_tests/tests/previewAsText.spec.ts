@@ -31,7 +31,7 @@ test.describe('Preview as Text node', () => {
     })
 
     const previewEntry = Object.values(apiWorkflow).find(
-      (n) => n.class_type === 'PreviewAny'
+      (n) => n?.class_type === 'PreviewAny'
     )
     expect(previewEntry).toBeDefined()
 

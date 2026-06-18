@@ -1,7 +1,7 @@
 import type { Component } from 'vue'
 
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import type { ExecutionErrorWsMessage, NodeError } from '@/schemas/apiSchema'
 import type { useDialogService } from '@/services/dialogService'
 import type { ComfyCommand } from '@/stores/commandStore'

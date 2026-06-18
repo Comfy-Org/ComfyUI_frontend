@@ -3,6 +3,7 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraphNode, NodeId } from './LGraphNode'
+import { isFloatingNodeId } from '@/types/nodeId'
 import { LLink } from './LLink'
 import type { LinkId } from './LLink'
 import type {
@@ -372,7 +373,7 @@ export class Reroute
 
     for (const linkId of this.floatingLinkIds) {
       const link = floatingLinks.get(linkId)
-      if (link?.[idProp] === -1) out.push(link)
+      if (link && isFloatingNodeId(link[idProp])) out.push(link)
     }
     return out
   }
@@ -807,7 +808,7 @@ function getNextPos(
   if (linkPos) return linkPos
 
   // Floating link with no input to find
-  if (link.target_id === -1 || link.target_slot === -1) return
+  if (isFloatingNodeId(link.target_id) || link.target_slot === -1) return
 
   return network.getNodeById(link.target_id)?.getInputPos(link.target_slot)
 }

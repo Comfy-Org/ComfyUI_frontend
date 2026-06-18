@@ -7,6 +7,7 @@ vi.mock('@/scripts/app', () => ({
   app: { canvas: { processMouseWheel: vi.fn() } }
 }))
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { DOMWidget } from '@/scripts/domWidget'
@@ -16,7 +17,7 @@ import { widgetId as makeWidgetId } from '@/types/widgetId'
 
 import { createPromotedMultilineWidget } from './multilineTextarea'
 
-const WIDGET_ID = makeWidgetId('graph-1', 'node-1', 'prompt')
+const WIDGET_ID = makeWidgetId('graph-1', asNodeId('node-1'), 'prompt')
 
 function subgraphNode(): LGraphNode {
   const node = fromAny<LGraphNode, unknown>({

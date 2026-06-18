@@ -4,8 +4,10 @@ import type { Fn } from '@vueuse/core'
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import { LLink } from '@/lib/litegraph/src/LLink'
+import { asNodeId } from '@/types/nodeId'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type {
@@ -335,7 +337,9 @@ export function useSlotLinkInteraction({
         ?.querySelector<HTMLElement>('[data-slot-key]')
       const elWithNode = target.closest<HTMLElement>('[data-node-id]')
       hoveredSlotKey = elWithSlot?.dataset['slotKey'] ?? null
-      hoveredNodeId = elWithNode?.dataset['nodeId'] ?? null
+      const hoveredNodeIdAttr = elWithNode?.dataset['nodeId']
+      hoveredNodeId =
+        hoveredNodeIdAttr != null ? asNodeId(hoveredNodeIdAttr) : null
       dragContext.lastPointerEventTarget = target
       dragContext.lastPointerTargetSlotKey = hoveredSlotKey
       dragContext.lastPointerTargetNodeId = hoveredNodeId
@@ -615,7 +619,7 @@ export function useSlotLinkInteraction({
     )
     if (!layout) return
 
-    const localNodeId: NodeId = nodeId
+    const localNodeId: NodeId = asNodeId(nodeId)
     const isInputSlot = type === 'input'
     const isOutputSlot = type === 'output'
 

@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type {
   ComfyApiWorkflow,
@@ -197,7 +197,7 @@ describe('ComfyApp', () => {
         size: 0
       })
       const promptOutput: ComfyApiWorkflow = {
-        '1': {
+        [asNodeId('1')]: {
           class_type: 'PreviewAny',
           inputs: {},
           _meta: { title: 'PreviewAny' }
@@ -236,7 +236,9 @@ describe('ComfyApp', () => {
       const executionStore = useExecutionStore()
       expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
       expect(errorStore.isErrorOverlayOpen).toBe(true)
-      expect(executionStore.queuedJobs['job-1']?.nodes).toEqual({ '1': false })
+      expect(executionStore.queuedJobs['job-1']?.nodes).toEqual({
+        '1': false
+      })
       expect(executionStore.jobIdToSessionWorkflowPath.get('job-1')).toBe(
         'workflows/review.json'
       )

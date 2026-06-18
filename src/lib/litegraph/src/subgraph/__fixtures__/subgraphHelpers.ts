@@ -15,11 +15,14 @@ import type {
   UUID
 } from '@/lib/litegraph/src/litegraph'
 import {
+  asNodeId,
   LGraph,
   LGraphNode,
   LiteGraph,
   SubgraphNode,
-  Subgraph
+  Subgraph,
+  SUBGRAPH_INPUT_NODE_ID,
+  SUBGRAPH_OUTPUT_NODE_ID
 } from '@/lib/litegraph/src/litegraph'
 
 import { subgraphComplexPromotion1 } from './subgraphComplexPromotion1'
@@ -176,12 +179,12 @@ export function createTestSubgraph(
     name: options.name || 'Test Subgraph',
 
     inputNode: {
-      id: -10,
+      id: asNodeId(-10),
       bounding: [10, 100, 150, 126],
       pinned: false
     },
     outputNode: {
-      id: -20,
+      id: asNodeId(-20),
       bounding: [400, 100, 140, 126],
       pinned: false
     },
@@ -250,7 +253,7 @@ export function createTestSubgraphNode(
   const parentGraph = options.parentGraph ?? subgraph.rootGraph
 
   const instanceData: ExportedSubgraphInstance = {
-    id: options.id ?? parentGraph.state.lastNodeId + 1,
+    id: options.id ?? asNodeId(parentGraph.state.lastNodeId + 1),
     type: subgraph.id,
     pos: options.pos || [100, 100],
     size: options.size || [200, 100],
@@ -286,7 +289,9 @@ export function setupComplexPromotionFixture(): {
       node.type = FIXTURE_STRING_CONCAT_TYPE
   }
 
-  const hostNodeData = fixture.nodes.find((node) => node.id === 21)
+  const hostNodeData = fixture.nodes.find(
+    (node) => asNodeId(node.id) === asNodeId(21)
+  )
   if (!hostNodeData)
     throw new Error('Expected fixture to contain subgraph instance node id 21')
 
@@ -400,12 +405,12 @@ export function assertSubgraphStructure(
 
   if (expected.hasInputNode !== false) {
     expect(subgraph.inputNode).toBeDefined()
-    expect(subgraph.inputNode.id).toBe(-10)
+    expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_NODE_ID)
   }
 
   if (expected.hasOutputNode !== false) {
     expect(subgraph.outputNode).toBeDefined()
-    expect(subgraph.outputNode.id).toBe(-20)
+    expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_NODE_ID)
   }
 }
 
@@ -470,12 +475,12 @@ export function createTestSubgraphData(
     name: 'Test Data Subgraph',
 
     inputNode: {
-      id: -10,
+      id: asNodeId(-10),
       bounding: [10, 100, 150, 126],
       pinned: false
     },
     outputNode: {
-      id: -20,
+      id: asNodeId(-20),
       bounding: [400, 100, 140, 126],
       pinned: false
     },

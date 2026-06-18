@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { MissingNodeType } from '@/types/comfy'
 
 vi.mock('@/scripts/app', () => ({
@@ -166,7 +167,7 @@ function makeModel(
 ) {
   return {
     name,
-    nodeId: opts.nodeId ?? '1',
+    nodeId: asNodeId(opts.nodeId ?? '1'),
     nodeType: 'CheckpointLoaderSimple',
     widgetName: opts.widgetName ?? 'ckpt_name',
     isAssetSupported: opts.isAssetSupported ?? false,
@@ -185,7 +186,7 @@ function makeMedia(
 ): MissingMediaCandidate {
   return {
     name,
-    nodeId: opts.nodeId,
+    nodeId: asNodeId(opts.nodeId),
     nodeType: opts.nodeType ?? 'LoadImage',
     widgetName: opts.widgetName ?? 'image',
     mediaType: 'image',
@@ -540,7 +541,7 @@ describe('useErrorGroups', () => {
       store.lastExecutionError = {
         prompt_id: 'test-prompt',
         timestamp: Date.now(),
-        node_id: 5,
+        node_id: asNodeId(5),
         node_type: 'KSampler',
         executed: [],
         exception_type: 'RuntimeError',
@@ -577,7 +578,7 @@ describe('useErrorGroups', () => {
       store.lastExecutionError = {
         prompt_id: 'test-prompt',
         timestamp: Date.now(),
-        node_id: 5,
+        node_id: asNodeId(5),
         node_type: 'KSampler',
         executed: [],
         exception_type: 'torch.OutOfMemoryError',

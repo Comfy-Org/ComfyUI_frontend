@@ -7,7 +7,8 @@ import type { Positionable } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphEventMode,
   LGraphNode,
-  Reroute
+  Reroute,
+  asNodeId
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/renderer/core/layout/types'
@@ -38,7 +39,7 @@ vi.mock('@/lib/litegraph/src/litegraph', async (importOriginal) => {
 // unmodified — the node accessors filter selectedItems with the real predicate.
 const makeNode = (mode: LGraphEventMode, id = 1): LGraphNode => {
   const node = new LGraphNode('Test')
-  node.id = id
+  node.id = asNodeId(id)
   node.mode = mode
   return node
 }
@@ -69,7 +70,7 @@ class MockNode implements Positionable {
   ) {
     this.pos = pos
     this.size = size
-    this.id = 'mock-node'
+    this.id = asNodeId('mock-node')
     this.boundingRect = [0, 0, 0, 0]
   }
 

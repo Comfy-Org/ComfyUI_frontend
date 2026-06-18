@@ -294,7 +294,7 @@ class ComfyList {
                     if ('outputs' in job && job.outputs) {
                       app.nodeOutputs = {}
                       for (const [key, value] of Object.entries(job.outputs)) {
-                        app.nodeOutputs[key] = value
+                        if (value) app.nodeOutputs[key] = value
                       }
                     }
                   }

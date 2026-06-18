@@ -1,7 +1,8 @@
 import { expect } from '@playwright/test'
 
 import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId, NodeIdInput } from '@/types/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
@@ -298,10 +299,13 @@ class NodeWidgetReference {
   }
 }
 export class NodeReference {
+  readonly id: NodeId
   constructor(
-    readonly id: NodeId,
+    id: NodeIdInput,
     readonly comfyPage: ComfyPage
-  ) {}
+  ) {
+    this.id = asNodeId(id)
+  }
   async exists(): Promise<boolean> {
     return await this.comfyPage.page.evaluate((id) => {
       const node = window.app!.canvas.graph!.getNodeById(id)

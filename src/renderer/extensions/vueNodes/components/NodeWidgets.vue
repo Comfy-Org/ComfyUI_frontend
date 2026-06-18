@@ -113,7 +113,7 @@ function handleWidgetPointerEvent(event: PointerEvent) {
 
 function handleBringToFront() {
   if (nodeData?.id != null) {
-    bringNodeToFront(String(nodeData.id))
+    bringNodeToFront(nodeData.id)
   }
 }
 

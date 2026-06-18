@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { asNodeId } from '@/types/nodeId'
 
 import type { GroupNodeWorkflowData } from './groupNode'
 
@@ -15,7 +16,7 @@ import { GroupNodeConfig, replaceLegacySeparators } from './groupNode'
 
 function makeNode(type: string): ComfyNode {
   return {
-    id: 1,
+    id: asNodeId(1),
     type,
     pos: [0, 0],
     size: [1, 1],
@@ -66,8 +67,22 @@ describe('GroupNodeConfig.getLinks', () => {
   }
 
   it('indexes outgoing links by [origin index][origin slot]', () => {
-    const clip = [1, 1, 2, 0, 4, 'CLIP'] satisfies SerialisedLLinkArray
-    const model = [1, 0, 4, 0, 4, 'MODEL'] satisfies SerialisedLLinkArray
+    const clip = [
+      1,
+      asNodeId(1),
+      2,
+      asNodeId(0),
+      4,
+      'CLIP'
+    ] satisfies SerialisedLLinkArray
+    const model = [
+      1,
+      asNodeId(0),
+      4,
+      asNodeId(0),
+      4,
+      'MODEL'
+    ] satisfies SerialisedLLinkArray
     const config = configFrom([clip, model])
 
     expect(config.linksFrom[1][1]).toEqual([clip])
@@ -75,8 +90,22 @@ describe('GroupNodeConfig.getLinks', () => {
   })
 
   it('indexes incoming links by [target index][target slot]', () => {
-    const clip = [1, 1, 2, 0, 4, 'CLIP'] satisfies SerialisedLLinkArray
-    const cond = [2, 0, 4, 1, 6, 'CONDITIONING'] satisfies SerialisedLLinkArray
+    const clip = [
+      1,
+      asNodeId(1),
+      2,
+      asNodeId(0),
+      4,
+      'CLIP'
+    ] satisfies SerialisedLLinkArray
+    const cond = [
+      2,
+      asNodeId(0),
+      4,
+      asNodeId(1),
+      6,
+      'CONDITIONING'
+    ] satisfies SerialisedLLinkArray
     const config = configFrom([clip, cond])
 
     expect(config.linksTo[2][0]).toEqual(clip)
@@ -84,15 +113,36 @@ describe('GroupNodeConfig.getLinks', () => {
   })
 
   it('accumulates multiple fan-out links from the same origin slot', () => {
-    const toPos = [1, 1, 2, 0, 4, 'CLIP'] satisfies SerialisedLLinkArray
-    const toNeg = [1, 1, 3, 0, 5, 'CLIP'] satisfies SerialisedLLinkArray
+    const toPos = [
+      1,
+      asNodeId(1),
+      2,
+      asNodeId(0),
+      4,
+      'CLIP'
+    ] satisfies SerialisedLLinkArray
+    const toNeg = [
+      1,
+      asNodeId(1),
+      3,
+      asNodeId(0),
+      5,
+      'CLIP'
+    ] satisfies SerialisedLLinkArray
     const config = configFrom([toPos, toNeg])
 
     expect(config.linksFrom[1][1]).toEqual([toPos, toNeg])
   })
 
   it('skips links that have a null endpoint', () => {
-    const valid = [1, 1, 2, 0, 4, 'CLIP'] satisfies SerialisedLLinkArray
+    const valid = [
+      1,
+      asNodeId(1),
+      2,
+      asNodeId(0),
+      4,
+      'CLIP'
+    ] satisfies SerialisedLLinkArray
     const broken = [null, 1, 2, 0, 4, 'CLIP'] as unknown as SerialisedLLinkArray
     const config = configFrom([valid, broken])
 

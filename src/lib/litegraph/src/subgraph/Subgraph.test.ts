@@ -11,7 +11,12 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { createUuidv4, Subgraph } from '@/lib/litegraph/src/litegraph'
+import {
+  createUuidv4,
+  Subgraph,
+  SUBGRAPH_INPUT_NODE_ID,
+  SUBGRAPH_OUTPUT_NODE_ID
+} from '@/lib/litegraph/src/litegraph'
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
   assertSubgraphStructure,
@@ -41,8 +46,8 @@ describe('Subgraph Construction', () => {
     )
     expect(subgraph.inputNode).toBeDefined()
     expect(subgraph.outputNode).toBeDefined()
-    expect(subgraph.inputNode.id).toBe(-10)
-    expect(subgraph.outputNode.id).toBe(-20)
+    expect(subgraph.inputNode.id).toBe(SUBGRAPH_INPUT_NODE_ID)
+    expect(subgraph.outputNode.id).toBe(SUBGRAPH_OUTPUT_NODE_ID)
   })
 
   it('should require a root graph', () => {

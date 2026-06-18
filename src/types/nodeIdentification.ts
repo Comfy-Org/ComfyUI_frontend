@@ -1,4 +1,5 @@
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { asNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 /**
  * A globally unique identifier for nodes that maintains consistency across
@@ -56,8 +57,9 @@ export function isNodeLocatorId(value: unknown): value is NodeLocatorId {
  */
 export function isNodeExecutionId(value: unknown): value is NodeExecutionId {
   if (typeof value !== 'string') return false
-  // Must contain at least one colon to be an execution ID
-  return value.includes(':')
+  // Must contain at least one colon and no empty segments
+  const parts = value.split(':')
+  return parts.length > 1 && parts.every((part) => part.length > 0)
 }
 
 /**
@@ -76,14 +78,14 @@ export function parseNodeLocatorId(
     // Simple node ID (root graph)
     return {
       subgraphUuid: null,
-      localNodeId: isNaN(Number(id)) ? id : Number(id)
+      localNodeId: asNodeId(id)
     }
   }
 
   const [subgraphUuid, localNodeId] = parts
   return {
     subgraphUuid,
-    localNodeId: isNaN(Number(localNodeId)) ? localNodeId : Number(localNodeId)
+    localNodeId: asNodeId(localNodeId)
   }
 }
 
@@ -108,9 +110,7 @@ export function createNodeLocatorId(
 export function parseNodeExecutionId(id: string): NodeId[] | null {
   if (!isNodeExecutionId(id)) return null
 
-  return id
-    .split(':')
-    .map((part) => (isNaN(Number(part)) ? part : Number(part)))
+  return id.split(':').map((part) => asNodeId(part))
 }
 
 /**

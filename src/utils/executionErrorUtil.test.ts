@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import {
   isCloudValidationError,
   tryExtractValidationError,
@@ -104,7 +105,9 @@ describe('executionErrorUtil', () => {
       expect(result).not.toBeNull()
       expect(result?.kind).toBe('nodeErrors')
       if (result?.kind === 'nodeErrors') {
-        expect(result.nodeErrors['11:1'].class_type).toBe('CLIPTextEncode')
+        expect(result.nodeErrors[asNodeId('11:1')].class_type).toBe(
+          'CLIPTextEncode'
+        )
       }
     })
 

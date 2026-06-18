@@ -8,10 +8,16 @@ import type {
   CanvasPointerEvent,
   RerouteId
 } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode, LLink, LinkConnector } from '@/lib/litegraph/src/litegraph'
+import {
+  asNodeId,
+  LGraphNode,
+  LLink,
+  LinkConnector
+} from '@/lib/litegraph/src/litegraph'
 
 import { test as baseTest } from '../__fixtures__/testExtensions'
 import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
+import { UNASSIGNED_NODE_ID, isFloatingNodeId } from '@/types/nodeId'
 import {
   createMockCanvasPointerEvent,
   createMockCanvasRenderingContext2D
@@ -59,7 +65,7 @@ const test = baseTest.extend<TestContext>({
   createTestNode: async ({ graph }, use) => {
     await use((id): LGraphNode => {
       const node = new LGraphNode('test')
-      node.id = id
+      node.id = asNodeId(id)
       graph.add(node)
       return node
     })
@@ -112,12 +118,12 @@ const test = baseTest.extend<TestContext>({
           const link = graph.floatingLinks.get(linkId)
           expect(link).toBeDefined()
 
-          if (link!.target_id === -1) {
-            expect(link!.origin_id).not.toBe(-1)
+          if (isFloatingNodeId(link!.target_id)) {
+            expect(link!.origin_id).not.toBe(UNASSIGNED_NODE_ID)
             expect(link!.origin_slot).not.toBe(-1)
             expect(link!.target_slot).toBe(-1)
           } else {
-            expect(link!.origin_id).toBe(-1)
+            expect(link!.origin_id).toBe(UNASSIGNED_NODE_ID)
             expect(link!.origin_slot).toBe(-1)
             expect(link!.target_slot).not.toBe(-1)
           }
@@ -150,8 +156,8 @@ const test = baseTest.extend<TestContext>({
       }
 
       for (const link of graph.floatingLinks.values()) {
-        if (link.target_id === -1) {
-          expect(link.origin_id).not.toBe(-1)
+        if (isFloatingNodeId(link.target_id)) {
+          expect(link.origin_id).not.toBe(UNASSIGNED_NODE_ID)
           expect(link.origin_slot).not.toBe(-1)
           expect(link.target_slot).toBe(-1)
           const outputFloatingLinks = graph.getNodeById(link.origin_id)
@@ -159,7 +165,7 @@ const test = baseTest.extend<TestContext>({
           expect(outputFloatingLinks).toBeDefined()
           expect(outputFloatingLinks).toContain(link)
         } else {
-          expect(link.origin_id).toBe(-1)
+          expect(link.origin_id).toBe(UNASSIGNED_NODE_ID)
           expect(link.origin_slot).toBe(-1)
           expect(link.target_slot).not.toBe(-1)
           const inputFloatingLinks = graph.getNodeById(link.target_id)?.inputs[

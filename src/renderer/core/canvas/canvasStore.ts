@@ -6,7 +6,7 @@ import type { Raw } from 'vue'
 import { useAppMode } from '@/composables/useAppMode'
 
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import type {
   LGraph,
   LGraphCanvas,
@@ -159,7 +159,7 @@ export const useCanvasStore = defineStore('canvas', () => {
           isGhostPlacing.value = e.detail.active
           if (e.detail.active) {
             const mutations = useLayoutMutations()
-            mutations.bringNodeToFront(String(e.detail.nodeId))
+            mutations.bringNodeToFront(e.detail.nodeId)
           }
         }
       )

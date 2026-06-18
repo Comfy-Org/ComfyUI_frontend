@@ -135,7 +135,7 @@ export const graphToPrompt = async (
       ]
     }
 
-    output[String(node.id)] = {
+    output[node.id] = {
       inputs,
       // TODO(huchenlei): Filter out all nodes that cannot be mapped to a
       // comfyClass.

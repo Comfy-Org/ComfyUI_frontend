@@ -1,6 +1,7 @@
 import { mergeTests } from '@playwright/test'
 
 import type { NodeError } from '@/schemas/apiSchema'
+import { asNodeId } from '@/types/nodeId'
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -12,7 +13,7 @@ import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
-const VALIDATION_ERROR_NODE_ID = '1'
+const VALIDATION_ERROR_NODE_ID = asNodeId('1')
 const VALIDATION_ERROR_MESSAGE = 'Required input is missing: source'
 const PARTIAL_EXECUTION_ROOT_NODE_IDS = ['1', '4']
 

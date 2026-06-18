@@ -16,7 +16,7 @@ import { default as DOMPurify } from 'dompurify'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, watch } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 import { useExecutionStore } from '@/stores/executionStore'
 import { linkifyHtml, nl2br } from '@/utils/formatUtil'
 

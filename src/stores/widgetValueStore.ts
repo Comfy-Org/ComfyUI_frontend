@@ -1,14 +1,15 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import { asNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 import { parseWidgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
 
 export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
-  return String(scopedId).replace(/^(.*:)+/, '') as NodeId
+  return asNodeId(String(scopedId).replace(/^(.*:)+/, ''))
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {

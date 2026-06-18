@@ -2,6 +2,10 @@ import { z } from 'zod'
 import type { SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 import type { RendererType } from '@/lib/litegraph/src/LGraph'
+import { asNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+import { asWidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@/types/widgetId'
 
 const zRendererType = z.enum([
   'LG',
@@ -9,12 +13,19 @@ const zRendererType = z.enum([
   'Vue-corrected'
 ]) satisfies z.ZodType<RendererType>
 
-// GroupNode is hacking node id to be a string, so we need to allow that.
-// innerNode.id = `${this.node.id}:${i}`
-// Remove it after GroupNode is redesigned.
-export const zNodeId = z.union([z.number().int(), z.string()])
+// Legacy workflows may persist numeric node ids. Accept them on load but
+// normalise to the canonical string `NodeId` so runtime ids are uniform.
+// GroupNode composite ids (`${this.node.id}:${i}`) are already strings.
+export const zNodeId = z
+  .union([z.number().int(), z.string()])
+  .transform((value): NodeId => asNodeId(value))
 const zNodeInputName = z.string()
-export type NodeId = z.infer<typeof zNodeId>
+
+// Linear-mode selections persist widget ids. Legacy workflows may store a raw
+// node id; accept any string/number and normalise to the canonical `WidgetId`.
+const zWidgetId = z
+  .union([z.number().int(), z.string()])
+  .transform((value): WidgetId => asWidgetId(value))
 
 /**
  * UUID identifier for a saved workflow.
@@ -298,11 +309,11 @@ const zExtra = z
           .array(
             z.union([
               z.tuple([
-                zNodeId,
+                zWidgetId,
                 z.string(),
                 z.object({ height: z.number().optional() }).passthrough()
               ]),
-              z.tuple([zNodeId, z.string()])
+              z.tuple([zWidgetId, z.string()])
             ])
           )
           .optional(),
@@ -330,7 +341,7 @@ export const zComfyWorkflow = zBaseExportableGraph
   .extend({
     id: z.string().uuid().optional(),
     revision: z.number().optional(),
-    last_node_id: zNodeId,
+    last_node_id: z.number(),
     last_link_id: z.number(),
     nodes: z.array(zComfyNode),
     links: z.array(zComfyLink),
@@ -553,6 +564,8 @@ const zNodeData = z.object({
     title: z.string()
   })
 })
-
-const zComfyApiWorkflow = z.record(zNodeId, zNodeData)
+// Key = execution id string (subgraph composite e.g. `"10:3"`), not node id.
+// Branded key widens record to `Partial<Record<...>>` → forces `asNodeId`
+// casts + undefined guards everywhere. Plain `string` keeps record total.
+const zComfyApiWorkflow = z.record(z.string(), zNodeData)
 export type ComfyApiWorkflow = z.infer<typeof zComfyApiWorkflow>

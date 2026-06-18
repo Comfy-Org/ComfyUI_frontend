@@ -1,3 +1,4 @@
+import { asNodeId } from '@/types/nodeId'
 import type { NodeExecutionOutput, ResultItem } from '@/schemas/apiSchema'
 import { resultItemType } from '@/schemas/apiSchema'
 import { ResultItemImpl } from '@/stores/queueStore'
@@ -38,7 +39,10 @@ export function parseNodeOutput(
     .flatMap(([mediaType, items]) =>
       (items as unknown[])
         .filter(isResultItem)
-        .map((item) => new ResultItemImpl({ ...item, mediaType, nodeId }))
+        .map(
+          (item) =>
+            new ResultItemImpl({ ...item, mediaType, nodeId: asNodeId(nodeId) })
+        )
     )
 }
 

@@ -1,9 +1,9 @@
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
-import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import { SUBGRAPH_INPUT_NODE_ID } from '@/types/nodeId'
 import type {
   DefaultConnectionColors,
   INodeInputSlot,
@@ -26,7 +26,7 @@ export class SubgraphInputNode
   extends SubgraphIONodeBase<SubgraphInput>
   implements Positionable
 {
-  readonly id: NodeId = SUBGRAPH_INPUT_ID
+  readonly id = SUBGRAPH_INPUT_NODE_ID
 
   readonly emptySlot: EmptySubgraphInput = new EmptySubgraphInput(this)
 

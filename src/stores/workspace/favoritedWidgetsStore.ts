@@ -3,7 +3,8 @@ import { computed, ref, watch } from 'vue'
 
 import { st } from '@/i18n'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { asNodeId } from '@/types/nodeId'
 import { app } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
@@ -110,7 +111,9 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
 
     if ('nodeId' in id && id.nodeId !== undefined) {
       return {
-        nodeLocatorId: workflowStore.nodeIdToNodeLocatorId(id.nodeId as NodeId),
+        nodeLocatorId: workflowStore.nodeIdToNodeLocatorId(
+          asNodeId(String(id.nodeId))
+        ),
         widgetName: String(id.widgetName)
       }
     }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import {
   countMissingModels,
   groupMissingModelCandidates
@@ -20,7 +21,7 @@ function makeModel(name: string): MissingModelViewModel {
       isAssetSupported: false,
       isMissing: true
     },
-    referencingNodes: [{ nodeId: '1', widgetName: 'ckpt_name' }]
+    referencingNodes: [{ nodeId: asNodeId('1'), widgetName: 'ckpt_name' }]
   }
 }
 
@@ -41,7 +42,7 @@ function makeCandidate(
   isAssetSupported: boolean
 ): MissingModelCandidate {
   return {
-    nodeId: '1',
+    nodeId: asNodeId('1'),
     nodeType: 'CheckpointLoaderSimple',
     widgetName: 'ckpt_name',
     name,

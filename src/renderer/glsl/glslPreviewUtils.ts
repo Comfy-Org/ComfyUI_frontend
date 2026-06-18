@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import { isSubgraphInputNodeId } from '@/types/nodeId'
 
 export const GLSL_NODE_TYPE = 'GLSLShader'
 export const DEBOUNCE_MS = 50
@@ -31,7 +31,7 @@ export function getImageThroughSubgraphBoundary(
   if (input?.link == null) return undefined
 
   const link = graph._links.get(input.link)
-  if (!link || link.origin_id !== SUBGRAPH_INPUT_ID) return undefined
+  if (!link || !isSubgraphInputNodeId(link.origin_id)) return undefined
 
   const outerUpstream = ownerSubgraphNode.getInputNode(link.origin_slot)
   if (!outerUpstream?.imgs?.length) return undefined

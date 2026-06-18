@@ -1,5 +1,6 @@
 import type { LGraphState } from '../LGraph'
 import type { NodeId } from '../LGraphNode'
+import { asNodeId, isNumericNodeId, nodeIdToNumber } from '@/types/nodeId'
 import type {
   ExportedSubgraph,
   ExposedWidget,
@@ -68,20 +69,21 @@ function remapNodeIds(
   const remappedIds = new Map<NodeId, NodeId>()
 
   for (const node of nodes) {
-    const id = node.id
-    if (typeof id !== 'number') continue
+    const id = asNodeId(node.id)
+    if (!isNumericNodeId(id)) continue
 
-    if (usedNodeIds.has(id)) {
+    const numericId = nodeIdToNumber(id)
+    if (usedNodeIds.has(numericId)) {
       const newId = findNextAvailableId(usedNodeIds, state)
       remappedIds.set(id, newId)
       node.id = newId
-      usedNodeIds.add(newId as number)
+      usedNodeIds.add(nodeIdToNumber(newId))
       console.warn(
         `LiteGraph: duplicate subgraph node ID ${id} remapped to ${newId}`
       )
     } else {
-      usedNodeIds.add(id)
-      if (id > state.lastNodeId) state.lastNodeId = id
+      usedNodeIds.add(numericId)
+      if (numericId > state.lastNodeId) state.lastNodeId = numericId
     }
   }
 
@@ -102,7 +104,7 @@ function findNextAvailableId(
       throw new Error('Node ID space exhausted')
     }
     state.lastNodeId = nextId
-    if (!usedNodeIds.has(nextId)) return nextId as NodeId
+    if (!usedNodeIds.has(nextId)) return asNodeId(nextId)
   }
 }
 
@@ -112,10 +114,10 @@ function patchSerialisedLinks(
   remappedIds: Map<NodeId, NodeId>
 ): void {
   for (const link of links) {
-    const newOrigin = remappedIds.get(link.origin_id)
+    const newOrigin = remappedIds.get(asNodeId(link.origin_id))
     if (newOrigin !== undefined) link.origin_id = newOrigin
 
-    const newTarget = remappedIds.get(link.target_id)
+    const newTarget = remappedIds.get(asNodeId(link.target_id))
     if (newTarget !== undefined) link.target_id = newTarget
   }
 }
@@ -126,7 +128,7 @@ function patchPromotedWidgets(
   remappedIds: Map<NodeId, NodeId>
 ): void {
   for (const widget of widgets) {
-    const newId = remappedIds.get(widget.id)
+    const newId = remappedIds.get(asNodeId(widget.id))
     if (newId !== undefined) widget.id = newId
   }
 }
@@ -204,7 +206,7 @@ function patchProxyWidgets(
 
     for (const entry of proxyWidgets) {
       if (!Array.isArray(entry)) continue
-      const oldId = Number(entry[0]) as NodeId
+      const oldId = asNodeId(String(entry[0]))
       const newId = remappedIds.get(oldId)
       if (newId !== undefined) entry[0] = String(newId)
     }

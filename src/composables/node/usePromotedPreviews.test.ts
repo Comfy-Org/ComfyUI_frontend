@@ -3,7 +3,7 @@ import { setActivePinia } from 'pinia'
 import { reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, asNodeId } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -58,7 +58,7 @@ function addInteriorNode(
   } = { id: 10 }
 ): LGraphNode {
   const node = new LGraphNode('test')
-  node.id = options.id
+  node.id = asNodeId(options.id)
   if (options.previewMediaType) {
     node.previewMediaType = options.previewMediaType
   }
@@ -69,7 +69,7 @@ function addInteriorNode(
 function seedOutputs(subgraphId: string, nodeIds: Array<number | string>) {
   const store = useNodeOutputStore()
   for (const nodeId of nodeIds) {
-    const locatorId = createNodeLocatorId(subgraphId, nodeId)
+    const locatorId = createNodeLocatorId(subgraphId, asNodeId(nodeId))
     store.nodeOutputs[locatorId] = {
       images: [{ filename: 'output.png' }]
     }
@@ -82,7 +82,7 @@ function seedPreviewImages(
 ) {
   const store = useNodeOutputStore()
   for (const { nodeId, urls } of entries) {
-    const locatorId = createNodeLocatorId(subgraphId, nodeId)
+    const locatorId = createNodeLocatorId(subgraphId, asNodeId(nodeId))
     store.nodePreviewImages[locatorId] = urls
   }
 }
@@ -281,7 +281,9 @@ describe(usePromotedPreviews, () => {
     })
 
     const outerSetup = createSetup()
-    const innerHost = createTestSubgraphNode(innerSetup.subgraph, { id: 20 })
+    const innerHost = createTestSubgraphNode(innerSetup.subgraph, {
+      id: asNodeId(20)
+    })
     outerSetup.subgraph.add(innerHost)
 
     const store = usePreviewExposureStore()
@@ -329,10 +331,16 @@ describe(usePromotedPreviews, () => {
     })
 
     const outerSetup = createSetup()
-    const innerHost = createTestSubgraphNode(innerSetup.subgraph, { id: 20 })
+    const innerHost = createTestSubgraphNode(innerSetup.subgraph, {
+      id: asNodeId(20)
+    })
     outerSetup.subgraph.add(innerHost)
-    const firstHost = createTestSubgraphNode(outerSetup.subgraph, { id: 11 })
-    const secondHost = createTestSubgraphNode(outerSetup.subgraph, { id: 12 })
+    const firstHost = createTestSubgraphNode(outerSetup.subgraph, {
+      id: asNodeId(11)
+    })
+    const secondHost = createTestSubgraphNode(outerSetup.subgraph, {
+      id: asNodeId(12)
+    })
     const firstHostLocator = String(firstHost.id)
     const secondHostLocator = String(secondHost.id)
     const firstNestedLocator = `${firstHostLocator}:${innerHost.id}`

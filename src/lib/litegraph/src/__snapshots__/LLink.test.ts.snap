@@ -3,9 +3,9 @@
 exports[`LLink > matches previous snapshot > Basic 1`] = `
 [
   1,
-  4,
+  "4",
   2,
-  5,
+  "5",
   3,
   "float",
 ]
@@ -14,9 +14,9 @@ exports[`LLink > matches previous snapshot > Basic 1`] = `
 exports[`LLink > serializes to the previous snapshot > Basic 1`] = `
 [
   1,
-  4,
+  "4",
   2,
-  5,
+  "5",
   3,
   "float",
 ]

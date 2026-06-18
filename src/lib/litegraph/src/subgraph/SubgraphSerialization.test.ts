@@ -10,9 +10,12 @@ import { setActivePinia } from 'pinia'
 
 import { duplicateSubgraphNodeIds } from '@/lib/litegraph/src/__fixtures__/duplicateSubgraphNodeIds'
 import {
+  asNodeId,
+  isNumericNodeId,
   LGraph,
   LGraphNode,
   LiteGraph,
+  nodeIdToNumber,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import type { ISlotType } from '@/lib/litegraph/src/litegraph'
@@ -189,7 +192,9 @@ describe('SubgraphSerialization - Complex Serialization', () => {
     })
 
     // Add child to parent
-    const childInstance = createTestSubgraphNode(childSubgraph, { id: 100 })
+    const childInstance = createTestSubgraphNode(childSubgraph, {
+      id: asNodeId(100)
+    })
     parentSubgraph.add(childInstance)
 
     // Serialize both
@@ -282,11 +287,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       inputs: [{ id: 'input-id', name: 'modern_input', type: 'number' }],
       outputs: [{ id: 'output-id', name: 'modern_output', type: 'string' }],
       inputNode: {
-        id: -10,
+        id: asNodeId(-10),
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: asNodeId(-20),
         bounding: [300, 0, 120, 60]
       },
       widgets: []
@@ -312,11 +317,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       config: {},
       definitions: { subgraphs: [] },
       inputNode: {
-        id: -10,
+        id: asNodeId(-10),
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: asNodeId(-20),
         bounding: [300, 0, 120, 60]
       }
       // Missing optional: inputs, outputs, widgets
@@ -345,11 +350,11 @@ describe('SubgraphSerialization - Version Compatibility', () => {
       inputs: [],
       outputs: [],
       inputNode: {
-        id: -10,
+        id: asNodeId(-10),
         bounding: [0, 0, 120, 60]
       },
       outputNode: {
-        id: -20,
+        id: asNodeId(-20),
         bounding: [300, 0, 120, 60]
       },
       widgets: [],
@@ -493,9 +498,9 @@ describe('SubgraphSerialization - Data Integrity', () => {
 
     const rootIds = graph.nodes
       .map((node) => node.id)
-      .filter((id): id is number => typeof id === 'number')
-      .sort((a, b) => a - b)
-    expect(rootIds).toEqual([102, 103])
+      .filter((id) => isNumericNodeId(id))
+      .sort((a, b) => nodeIdToNumber(a) - nodeIdToNumber(b))
+    expect(rootIds).toEqual([asNodeId(102), asNodeId(103)])
 
     const subgraphAIds = new Set(
       graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_A)!.nodes.map((node) => node.id)
@@ -504,7 +509,9 @@ describe('SubgraphSerialization - Data Integrity', () => {
       graph.subgraphs.get(DUPLICATE_ID_SUBGRAPH_B)!.nodes.map((node) => node.id)
     )
 
-    expect(subgraphAIds).toEqual(new Set([3, 8, 37]))
+    expect(subgraphAIds).toEqual(
+      new Set([asNodeId(3), asNodeId(8), asNodeId(37)])
+    )
     for (const id of subgraphAIds) {
       expect(subgraphBIds.has(id)).toBe(false)
     }

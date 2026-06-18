@@ -4,6 +4,7 @@ import { shallowRef, watch } from 'vue'
 import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
+import { asNodeId } from '@/types/nodeId'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -29,7 +30,7 @@ function useVueNodeLifecycleIndividual() {
 
     // Initialize layout system with existing nodes from active graph
     const nodes = activeGraph._nodes.map((node: LGraphNode) => ({
-      id: node.id.toString(),
+      id: node.id,
       pos: [node.pos[0], node.pos[1]] as [number, number],
       size: [node.size[0], node.size[1]] as [number, number]
     }))
@@ -47,9 +48,9 @@ function useVueNodeLifecycleIndividual() {
     for (const link of activeGraph._links.values()) {
       layoutMutations.createLink(
         link.id,
-        link.origin_id,
+        asNodeId(link.origin_id),
         link.origin_slot,
-        link.target_id,
+        asNodeId(link.target_id),
         link.target_slot
       )
     }

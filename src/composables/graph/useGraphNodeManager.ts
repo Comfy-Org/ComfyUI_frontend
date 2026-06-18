@@ -469,7 +469,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   const badges = node.badges
 
   return {
-    id: String(node.id),
+    id: node.id,
     title: typeof node.title === 'string' ? node.title : '',
     type: nodeType,
     mode: node.mode || 0,
@@ -553,7 +553,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
-    const id = String(node.id)
+    const id = node.id
 
     // Store non-reactive reference to original node
     nodeRefs.set(id, node)
@@ -615,7 +615,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
-    const id = String(node.id)
+    const id = node.id
 
     // Remove node from layout store
     setSource(LayoutSource.Canvas)

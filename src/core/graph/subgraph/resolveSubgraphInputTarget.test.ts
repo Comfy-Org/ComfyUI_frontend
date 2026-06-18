@@ -3,7 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, asNodeId } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -28,7 +28,9 @@ function createOuterSubgraphSetup(inputNames: string[]): {
   const outerSubgraph = createTestSubgraph({
     inputs: inputNames.map((name) => ({ name, type: '*' }))
   })
-  const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, { id: 1 })
+  const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, {
+    id: asNodeId(1)
+  })
   return { outerSubgraph, outerSubgraphNode }
 }
 
@@ -41,7 +43,9 @@ function addLinkedNestedSubgraphNode(
   const innerSubgraph = createTestSubgraph({
     inputs: [{ name: linkedInputName, type: '*' }]
   })
-  const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, { id: 819 })
+  const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
+    id: asNodeId(819)
+  })
   outerSubgraph.add(innerSubgraphNode)
 
   const inputSlot = outerSubgraph.inputNode.slots.find(
@@ -139,7 +143,7 @@ describe('resolveSubgraphInputTarget', () => {
       (slot) => slot.name === 'seed'
     )!
     const node = new LGraphNode('Interior-seed')
-    node.id = 42
+    node.id = asNodeId(42)
     const input = node.addInput('seed_input', '*')
     node.addWidget('number', 'seed', 0, () => undefined)
     input.widget = { name: 'seed' }
@@ -185,7 +189,7 @@ describe('resolveSubgraphInputTarget', () => {
       ]
     })
     const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
-      id: 820
+      id: asNodeId(820)
     })
     outerSubgraph.add(innerSubgraphNode)
 
@@ -224,7 +228,7 @@ describe('resolveSubgraphInputTarget', () => {
       inputs: [{ name: 'seed', type: '*' }]
     })
     const concreteNode = new LGraphNode('ConcreteNode')
-    concreteNode.id = 900
+    concreteNode.id = asNodeId(900)
     const concreteInput = concreteNode.addInput('seed_input', '*')
     concreteNode.addWidget('number', 'seed', 0, () => undefined)
     concreteInput.widget = { name: 'seed' }
@@ -235,7 +239,7 @@ describe('resolveSubgraphInputTarget', () => {
       inputs: [{ name: 'seed', type: '*' }]
     })
     const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
-      id: 901
+      id: asNodeId(901)
     })
     middleSubgraph.add(innerSubgraphNode)
     const middleInput = innerSubgraphNode.addInput('seed', '*')
@@ -247,7 +251,7 @@ describe('resolveSubgraphInputTarget', () => {
       'seed'
     ])
     const middleSubgraphNode = createTestSubgraphNode(middleSubgraph, {
-      id: 902
+      id: asNodeId(902)
     })
     outerSubgraph.add(middleSubgraphNode)
     const outerInput = middleSubgraphNode.addInput('seed', '*')

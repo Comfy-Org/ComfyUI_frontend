@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import {
   REROUTE_RADIUS,
@@ -57,7 +58,7 @@ describe('layoutMath utils', () => {
       width: number,
       height: number
     ): NodeLayout => ({
-      id,
+      id: asNodeId(id),
       position: { x, y },
       size: { width, height },
       zIndex: 0,

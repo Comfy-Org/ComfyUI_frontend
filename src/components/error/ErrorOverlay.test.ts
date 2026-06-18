@@ -5,6 +5,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import ErrorOverlay from './ErrorOverlay.vue'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeError } from '@/schemas/apiSchema'
 import type {
@@ -153,7 +154,7 @@ describe('ErrorOverlay', () => {
 
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.lastNodeErrors = {
-      '1': makeNodeError(['Only error'])
+      [asNodeId('1')]: makeNodeError(['Only error'])
     }
     executionErrorStore.showErrorOverlay()
     await nextTick()
@@ -190,7 +191,7 @@ describe('ErrorOverlay', () => {
 
     const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.lastNodeErrors = {
-      '1': makeNodeError(['Only error'])
+      [asNodeId('1')]: makeNodeError(['Only error'])
     }
     executionErrorStore.showErrorOverlay()
     await nextTick()

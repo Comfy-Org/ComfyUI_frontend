@@ -20,7 +20,7 @@ export const oldSchemaGraph: ISerialisedGraph = {
       title: 'A group to test with'
     }
   ],
-  nodes: [{ id: 1 } as Partial<ISerialisedNode> as ISerialisedNode],
+  nodes: [{ id: 1 } as unknown as ISerialisedNode],
   links: []
 }
 

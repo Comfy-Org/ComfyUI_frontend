@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  LiteGraph,
+  asNodeId
+} from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
@@ -20,11 +25,11 @@ vi.mock('@/platform/updates/common/toastStore', () => ({
 
 describe('resolveNode', () => {
   it('returns undefined when graph is null', () => {
-    expect(resolveNode(1, null)).toBeUndefined()
+    expect(resolveNode(asNodeId(1), null)).toBeUndefined()
   })
 
   it('returns undefined when graph is undefined', () => {
-    expect(resolveNode(1, undefined)).toBeUndefined()
+    expect(resolveNode(asNodeId(1), undefined)).toBeUndefined()
   })
 
   it('finds a node in the root graph', () => {
@@ -38,7 +43,7 @@ describe('resolveNode', () => {
   it('returns undefined when node does not exist anywhere', () => {
     const graph = new LGraph()
 
-    expect(resolveNode(999, graph)).toBeUndefined()
+    expect(resolveNode(asNodeId(999), graph)).toBeUndefined()
   })
 
   it('finds a node inside a subgraph', () => {
@@ -167,14 +172,14 @@ describe('getWidgetIdForNode', () => {
   it('derives an widgetId for plain POJO widgets bound to a node', () => {
     const node = fakeNode(42)
     expect(getWidgetIdForNode(node, { name: 'legacy_widget' })).toBe(
-      widgetId(graphId, 42, 'legacy_widget')
+      widgetId(graphId, asNodeId(42), 'legacy_widget')
     )
   })
 
   it('can distinguish duplicate widget names on one node without changing the displayed name', () => {
     const node = fakeNode(42)
     expect(getWidgetIdForNode(node, { name: 'UNKNOWN' }, 1)).toBe(
-      widgetId(graphId, 42, 'UNKNOWN#1')
+      widgetId(graphId, asNodeId(42), 'UNKNOWN#1')
     )
   })
 

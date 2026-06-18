@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LiteGraph, asNodeId } from '@/lib/litegraph/src/litegraph'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId, NodeLayout } from '@/renderer/core/layout/types'
 
@@ -89,7 +89,7 @@ function createResizeEntry(options?: {
   collapsed?: boolean
 }) {
   const {
-    nodeId = 'test-node',
+    nodeId = asNodeId('test-node'),
     width = 240,
     height = 180,
     left = 100,
@@ -168,7 +168,7 @@ describe('useVueNodeResizeTracking', () => {
   })
 
   it('skips repeated no-op resize entries after first measurement', () => {
-    const nodeId = 'test-node'
+    const nodeId = asNodeId('test-node')
     const width = 240
     const height = 180
     const left = 100
@@ -205,7 +205,7 @@ describe('useVueNodeResizeTracking', () => {
   })
 
   it('preserves layout store position when size matches but DOM position differs', () => {
-    const nodeId = 'test-node'
+    const nodeId = asNodeId('test-node')
     const width = 240
     const height = 180
     const { entry, rectSpy } = createResizeEntry({
@@ -233,7 +233,7 @@ describe('useVueNodeResizeTracking', () => {
   })
 
   it('updates node bounds + slot layouts when size changes', () => {
-    const nodeId = 'test-node'
+    const nodeId = asNodeId('test-node')
     const { entry } = createResizeEntry({
       nodeId,
       width: 240,
@@ -269,7 +269,7 @@ describe('useVueNodeResizeTracking', () => {
   })
 
   it('writes collapsed dimensions through the normal bounds path', () => {
-    const nodeId = 'test-node'
+    const nodeId = asNodeId('test-node')
     const collapsedWidth = 200
     const collapsedHeight = 40
     const { entry } = createResizeEntry({
@@ -303,7 +303,7 @@ describe('useVueNodeResizeTracking', () => {
   })
 
   it('updates bounds with expanded dimensions on collapse-to-expand transition', () => {
-    const nodeId = 'test-node'
+    const nodeId = asNodeId('test-node')
 
     // Seed with smaller (collapsed) size so expand triggers a real bounds update
     seedNodeLayout({ nodeId, left: 100, top: 200, width: 200, height: 10 })
@@ -322,7 +322,7 @@ describe('useVueNodeResizeTracking', () => {
   })
 
   it('widgets-grid resize schedules a slot resync without writing node bounds', () => {
-    const parentNodeId: NodeId = 'parent-node'
+    const parentNodeId = asNodeId('parent-node')
     const element = document.createElement('div')
     element.dataset.widgetsGridNodeId = parentNodeId
     const boxSizes = [{ inlineSize: 200, blockSize: 80 }]

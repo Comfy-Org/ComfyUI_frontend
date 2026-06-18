@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { asNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { ResultItemImpl } from '@/stores/queueStore'
 
 import MediaLightbox from './MediaLightbox.vue'
@@ -63,7 +64,7 @@ describe('MediaLightbox', () => {
       filename: 'image1.jpg',
       subfolder: 'outputs',
       type: 'output',
-      nodeId: '123' as NodeId,
+      nodeId: asNodeId('123'),
       mediaType: 'images',
       isImage: true,
       isVideo: false,
@@ -75,7 +76,7 @@ describe('MediaLightbox', () => {
       filename: 'image2.jpg',
       subfolder: 'outputs',
       type: 'output',
-      nodeId: '456' as NodeId,
+      nodeId: asNodeId('456'),
       mediaType: 'images',
       isImage: true,
       isVideo: false,
@@ -87,7 +88,7 @@ describe('MediaLightbox', () => {
       filename: 'image3.jpg',
       subfolder: 'outputs',
       type: 'output',
-      nodeId: '789' as NodeId,
+      nodeId: asNodeId('789'),
       mediaType: 'images',
       isImage: true,
       isVideo: false,

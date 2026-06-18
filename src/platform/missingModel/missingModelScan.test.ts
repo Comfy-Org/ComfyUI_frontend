@@ -7,6 +7,7 @@ import type {
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import {
   scanAllModelCandidates,
   scanNodeModelCandidates,
@@ -661,7 +662,7 @@ function makeCandidate(
   opts: Partial<MissingModelCandidate> = {}
 ): MissingModelCandidate {
   return {
-    nodeId: opts.nodeId ?? 1,
+    nodeId: asNodeId(opts.nodeId ?? 1),
     nodeType: opts.nodeType ?? 'CheckpointLoaderSimple',
     widgetName: opts.widgetName ?? 'ckpt_name',
     isAssetSupported: opts.isAssetSupported ?? false,
@@ -682,7 +683,7 @@ describe('enrichWithEmbeddedMetadata', () => {
       last_link_id: 0,
       nodes: [
         {
-          id: 1,
+          id: asNodeId(1),
           type: 'CheckpointLoaderSimple',
           pos: [0, 0],
           size: [100, 100],
@@ -732,7 +733,7 @@ describe('enrichWithEmbeddedMetadata', () => {
       last_link_id: 0,
       nodes: [
         {
-          id: 1,
+          id: asNodeId(1),
           type: 'CheckpointLoaderSimple',
           pos: [0, 0],
           size: [100, 100],
@@ -775,7 +776,7 @@ describe('enrichWithEmbeddedMetadata', () => {
       last_link_id: 0,
       nodes: [
         {
-          id: 1,
+          id: asNodeId(1),
           type: 'CheckpointLoaderSimple',
           pos: [0, 0],
           size: [100, 100],
@@ -813,7 +814,7 @@ describe('enrichWithEmbeddedMetadata', () => {
       last_link_id: 0,
       nodes: [
         {
-          id: 1,
+          id: asNodeId(1),
           type: 'CheckpointLoaderSimple',
           pos: [0, 0],
           size: [100, 100],
@@ -885,7 +886,7 @@ describe('enrichWithEmbeddedMetadata', () => {
       last_link_id: 0,
       nodes: [
         {
-          id: 1,
+          id: asNodeId(1),
           type: 'CheckpointLoaderSimple',
           pos: [0, 0],
           size: [100, 100],
@@ -931,7 +932,7 @@ describe('enrichWithEmbeddedMetadata', () => {
       last_link_id: 0,
       nodes: [
         {
-          id: 1,
+          id: asNodeId(1),
           type: 'CheckpointLoaderSimple',
           pos: [0, 0],
           size: [100, 100],
@@ -942,7 +943,7 @@ describe('enrichWithEmbeddedMetadata', () => {
           widgets_values: { ckpt_name: 'model.safetensors' }
         },
         {
-          id: 2,
+          id: asNodeId(2),
           type: 'KSampler',
           pos: [200, 0],
           size: [100, 100],
@@ -981,14 +982,14 @@ describe('enrichWithEmbeddedMetadata', () => {
     // the workflow-level filter. This ensures the simplification does not
     // over-filter legitimate per-node missing models.
     const candidates = [
-      makeCandidate('node_model.safetensors', { nodeId: '1' })
+      makeCandidate('node_model.safetensors', { nodeId: asNodeId('1') })
     ]
     const graphData = fromPartial<ComfyWorkflowJSON>({
       last_node_id: 1,
       last_link_id: 0,
       nodes: [
         {
-          id: 1,
+          id: asNodeId(1),
           type: 'CheckpointLoaderSimple',
           pos: [0, 0],
           size: [100, 100],
@@ -1032,7 +1033,7 @@ describe('enrichWithEmbeddedMetadata', () => {
       last_link_id: 0,
       nodes: [
         {
-          id: 1,
+          id: asNodeId(1),
           type: 'CheckpointLoaderSimple',
           pos: [0, 0],
           size: [100, 100],
@@ -1105,7 +1106,7 @@ describe('enrichWithEmbeddedMetadata', () => {
       last_link_id: 0,
       nodes: [
         {
-          id: 1,
+          id: asNodeId(1),
           type: 'CheckpointLoaderSimple',
           pos: [0, 0],
           size: [100, 100],
@@ -1175,7 +1176,7 @@ describe('OSS missing model detection (non-Cloud path)', () => {
       last_link_id: 0,
       nodes: [
         {
-          id: 1,
+          id: asNodeId(1),
           type: 'CheckpointLoaderSimple',
           pos: [0, 0],
           size: [100, 100],
@@ -1186,7 +1187,7 @@ describe('OSS missing model detection (non-Cloud path)', () => {
           widgets_values: { ckpt_name: 'sd_xl_base_1.0.safetensors' }
         },
         {
-          id: 2,
+          id: asNodeId(2),
           type: 'LoraLoader',
           pos: [200, 0],
           size: [100, 100],
@@ -1239,7 +1240,7 @@ describe('OSS missing model detection (non-Cloud path)', () => {
       last_link_id: 0,
       nodes: [
         {
-          id: 1,
+          id: asNodeId(1),
           type: 'CheckpointLoaderSimple',
           pos: [0, 0],
           size: [100, 100],
@@ -1282,7 +1283,7 @@ describe('OSS missing model detection (non-Cloud path)', () => {
       last_link_id: 0,
       nodes: [
         {
-          id: 1,
+          id: asNodeId(1),
           type: 'CheckpointLoaderSimple',
           pos: [0, 0],
           size: [100, 100],
@@ -1334,7 +1335,7 @@ describe('OSS missing model detection (non-Cloud path)', () => {
       last_link_id: 0,
       nodes: [
         {
-          id: 1,
+          id: asNodeId(1),
           type: 'CheckpointLoaderSimple',
           pos: [0, 0],
           size: [100, 100],
@@ -1399,7 +1400,7 @@ function makeAssetCandidate(
   opts: Partial<MissingModelCandidate> = {}
 ): MissingModelCandidate {
   return {
-    nodeId: opts.nodeId ?? 1,
+    nodeId: asNodeId(opts.nodeId ?? 1),
     nodeType: opts.nodeType ?? 'CheckpointLoaderSimple',
     widgetName: opts.widgetName ?? 'ckpt_name',
     isAssetSupported: opts.isAssetSupported ?? true,

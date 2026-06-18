@@ -13,12 +13,13 @@ import type {
   RawJobListItem,
   zJobsListResponse
 } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { asNodeId } from '@/types/nodeId'
 
 type JobsListResponse = z.infer<typeof zJobsListResponse>
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 
-const KSAMPLER_NODE = '3'
+const KSAMPLER_NODE = asNodeId('3')
 const EXECUTING_CLASS = /outline-node-stroke-executing/
 
 const QUEUE_ROUTE = /\/api\/jobs\?[^/]*status=in_progress,pending/

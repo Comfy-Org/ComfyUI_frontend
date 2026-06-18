@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
@@ -76,7 +77,7 @@ describe('FE-230 regression — workflow-load missing-media flagging must not wi
 
     missingMediaStore.setMissingMedia([
       {
-        nodeId: '42',
+        nodeId: asNodeId('42'),
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',

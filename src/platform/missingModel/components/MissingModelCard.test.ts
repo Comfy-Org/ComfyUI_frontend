@@ -5,6 +5,7 @@ import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
   MissingModelGroup,
@@ -65,7 +66,7 @@ function makeViewModel(
     name,
     representative: {
       name,
-      nodeId,
+      nodeId: asNodeId(nodeId),
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'ckpt_name',
       isAssetSupported: true,
@@ -73,7 +74,7 @@ function makeViewModel(
       url: opts.url,
       directory: opts.directory
     },
-    referencingNodes: [{ nodeId, widgetName: 'ckpt_name' }]
+    referencingNodes: [{ nodeId: asNodeId(nodeId), widgetName: 'ckpt_name' }]
   }
 }
 

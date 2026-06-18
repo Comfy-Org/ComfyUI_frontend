@@ -6,6 +6,7 @@ import type {
   INodeOutputSlot,
   LLink
 } from '@/lib/litegraph/src/litegraph'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
@@ -39,7 +40,7 @@ function createTargetNode(
   id = 7
 ): Pick<LGraphNode, 'id' | 'inputs' | 'widgets'> {
   return fromPartial<Pick<LGraphNode, 'id' | 'inputs' | 'widgets'>>({
-    id,
+    id: asNodeId(id),
     inputs: [
       fromPartial<INodeInputSlot>({
         widget: { name: widget.name }

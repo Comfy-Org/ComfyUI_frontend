@@ -36,34 +36,34 @@ Adopt an Entity Component System architecture for the graph domain model. This A
 
 Six entity kinds, each with a branded ID type:
 
-| Entity Kind | Current Class(es)                                 | Current ID                  | Branded ID        |
-| ----------- | ------------------------------------------------- | --------------------------- | ----------------- |
-| Node        | `LGraphNode`                                      | `NodeId = number \| string` | `NodeEntityId`    |
-| Link        | `LLink`                                           | `LinkId = number`           | `LinkEntityId`    |
-| Widget      | `BaseWidget` subclasses (25+)                     | name + parent node          | `WidgetEntityId`  |
-| Slot        | `SlotBase` / `INodeInputSlot` / `INodeOutputSlot` | index on parent node        | `SlotEntityId`    |
-| Reroute     | `Reroute`                                         | `RerouteId = number`        | `RerouteEntityId` |
-| Group       | `LGraphGroup`                                     | `number`                    | `GroupEntityId`   |
+| Entity Kind | Current Class(es)                                 | Current ID                  | Branded ID  |
+| ----------- | ------------------------------------------------- | --------------------------- | ----------- |
+| Node        | `LGraphNode`                                      | `NodeId = number \| string` | `NodeId`    |
+| Link        | `LLink`                                           | `LinkId = number`           | `LinkId`    |
+| Widget      | `BaseWidget` subclasses (25+)                     | name + parent node          | `WidgetId`  |
+| Slot        | `SlotBase` / `INodeInputSlot` / `INodeOutputSlot` | index on parent node        | `SlotId`    |
+| Reroute     | `Reroute`                                         | `RerouteId = number`        | `RerouteId` |
+| Group       | `LGraphGroup`                                     | `number`                    | `GroupId`   |
 
 Subgraphs are not a separate entity kind. A subgraph is a node with a `SubgraphStructure` component. See [Subgraph Boundaries and Widget Promotion](../architecture/subgraph-boundaries-and-promotion.md) for the full design rationale.
 
 ### Branded ID Design
 
-Each entity kind gets a nominal/branded type wrapping its underlying primitive. The brand prevents accidental cross-kind usage at compile time while remaining structurally compatible with existing ID types:
+Each entity kind gets a nominal/branded type wrapping its underlying primitive, and the brand prevents accidental cross-kind usage at compile time. `NodeId` and `WidgetId` are branded `string`: node ids are canonicalized from legacy `number | string` values to `string` at load/serialization boundaries (via `asNodeId`), and widget ids are composite path strings. The remaining ids keep `number` as their underlying primitive:
 
 ```ts
-type NodeEntityId = number & { readonly __brand: 'NodeEntityId' }
-type LinkEntityId = number & { readonly __brand: 'LinkEntityId' }
-type WidgetEntityId = number & { readonly __brand: 'WidgetEntityId' }
-type SlotEntityId = number & { readonly __brand: 'SlotEntityId' }
-type RerouteEntityId = number & { readonly __brand: 'RerouteEntityId' }
-type GroupEntityId = number & { readonly __brand: 'GroupEntityId' }
+type NodeId = string & { readonly __brand: 'NodeId' }
+type LinkId = number & { readonly __brand: 'LinkId' }
+type WidgetId = string & { readonly __brand: 'WidgetId' }
+type SlotId = number & { readonly __brand: 'SlotId' }
+type RerouteId = number & { readonly __brand: 'RerouteId' }
+type GroupId = number & { readonly __brand: 'GroupId' }
 
 // Scope identifier, not an entity ID
 type GraphId = string & { readonly __brand: 'GraphId' }
 ```
 
-Widgets and Slots currently lack independent IDs. The ECS will assign synthetic IDs at entity creation time via an auto-incrementing counter (matching the pattern used by `lastNodeId`, `lastLinkId`, etc. in `LGraphState`).
+Widgets and Slots currently lack independent IDs. A `WidgetId` is a composite path string derived from its `graphId`, parent `NodeId`, and widget name (stable across instances of the same node). Slots get synthetic IDs assigned at entity creation time via an auto-incrementing counter (matching the pattern used by `lastNodeId`, `lastLinkId`, etc. in `LGraphState`).
 
 ### Component Decomposition
 

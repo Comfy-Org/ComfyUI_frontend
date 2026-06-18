@@ -20,15 +20,18 @@ export function useWorkflowValidation() {
     // Collect all logs in an array
     const logs: string[] = []
     // Then validate and fix links if schema validation passed
-    const linkValidation = fixBadLinks(graphData as ISerialisedGraph, {
-      fix: true,
-      silent,
-      logger: {
-        log: (...args: unknown[]) => {
-          logs.push(args.join(' '))
+    const linkValidation = fixBadLinks(
+      graphData as unknown as ISerialisedGraph,
+      {
+        fix: true,
+        silent,
+        logger: {
+          log: (...args: unknown[]) => {
+            logs.push(args.join(' '))
+          }
         }
       }
-    })
+    )
 
     if (!silent && logs.length > 0) {
       toastStore.add({
@@ -79,7 +82,7 @@ export function useWorkflowValidation() {
       try {
         validatedData = tryFixLinks(validatedGraphData, {
           silent
-        }) as ComfyWorkflowJSON
+        }) as unknown as ComfyWorkflowJSON
       } catch (err) {
         // Link fixer itself is throwing an error
         console.error(err)

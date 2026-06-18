@@ -9,6 +9,7 @@ import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 import {
   LGraphEventMode,
   NodeSlotType
@@ -308,7 +309,7 @@ function scheduleAddedNodeScan(node: LGraphNode): void {
 
 function handleNodeModeChange(
   localGraph: LGraph,
-  nodeId: number,
+  nodeId: NodeId,
   oldMode: number,
   newMode: number
 ): void {
@@ -407,7 +408,7 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     if (event.type === 'node:property:changed' && event.property === 'mode') {
       handleNodeModeChange(
         graph,
-        event.nodeId as number,
+        event.nodeId,
         event.oldValue as number,
         event.newValue as number
       )

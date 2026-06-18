@@ -125,7 +125,7 @@ export interface ExportedSubgraphInstance extends NodeSubgraphSharedProps {
  * Maintained for backwards compat
  */
 export interface ISerialisedGraph extends BaseExportedGraph {
-  last_node_id: NodeId
+  last_node_id: number
   last_link_id: LinkId
   nodes: ISerialisedNode[]
   links: SerialisedLLinkArray[]

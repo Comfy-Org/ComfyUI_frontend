@@ -3,13 +3,14 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 
 import {
-  SUBGRAPH_INPUT_ID,
+  asNodeId,
   LinkConnector,
   ToInputFromIoNodeLink,
   LGraphNode,
   isSubgraphInput,
   isSubgraphOutput
 } from '@/lib/litegraph/src/litegraph'
+import { isSubgraphInputNodeId } from '@/types/nodeId'
 import type {
   LinkNetwork,
   NodeInputSlot,
@@ -132,7 +133,7 @@ describe('Subgraph slot connections', () => {
 
       // Create a node inside the subgraph
       const internalNode = new LGraphNode('InternalNode')
-      internalNode.id = 100
+      internalNode.id = asNodeId(100)
       internalNode.addInput('in', 'number')
       subgraph.add(internalNode)
 
@@ -142,7 +143,7 @@ describe('Subgraph slot connections', () => {
         internalNode
       )
       expect(link).toBeDefined()
-      expect(link!.origin_id).toBe(SUBGRAPH_INPUT_ID)
+      expect(isSubgraphInputNodeId(link!.origin_id)).toBe(true)
       expect(link!.target_id).toBe(internalNode.id)
 
       // Verify the input slot has the link

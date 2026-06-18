@@ -8,15 +8,16 @@ import {
   isAppModeValue,
   useAppMode
 } from '@/composables/useAppMode'
+import { asNodeId } from '@/types/nodeId'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyApiWorkflow,
-  NodeId,
   WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   ExecutedWsMessage,
@@ -103,7 +104,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   const clientId = ref<string | null>(null)
   const activeJobId = ref<JobId | null>(null)
-  const queuedJobs = ref<Record<NodeId, QueuedJob>>({})
+  const queuedJobs = ref<Record<JobId, QueuedJob>>({})
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
   const nodeProgressStatesByJob = ref<
@@ -197,7 +198,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const executingNodeIds = computed<NodeId[]>(() => {
     return Object.entries(nodeProgressStates.value)
       .filter(([_, state]) => state.state === 'running')
-      .map(([nodeId, _]) => nodeId)
+      .map(([nodeId]) => asNodeId(nodeId))
   })
 
   // @deprecated For backward compatibility - stores the primary executing node ID

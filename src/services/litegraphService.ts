@@ -39,7 +39,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useDialogService } from '@/services/dialogService'
@@ -235,7 +235,7 @@ export const useLitegraphService = () => {
    */
   function setupStrokeStyles(node: LGraphNode) {
     node.strokeStyles['running'] = function (this: LGraphNode) {
-      const nodeId = String(this.id)
+      const nodeId = this.id
       const nodeLocatorId = useWorkflowStore().nodeIdToNodeLocatorId(nodeId)
       const state =
         useExecutionStore().nodeLocationProgressStates[nodeLocatorId]?.state

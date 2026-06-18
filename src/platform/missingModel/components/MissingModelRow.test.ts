@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type {
   UploadModelDialogContext,
@@ -187,7 +188,7 @@ describe('MissingModelRow', () => {
 
   it('opens the model import dialog from the cloud row', async () => {
     const user = userEvent.setup()
-    renderRow(makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]))
+    renderRow(makeModel([{ nodeId: asNodeId('1'), widgetName: 'ckpt_name' }]))
 
     await user.click(screen.getByRole('button', { name: 'Import' }))
 
@@ -208,7 +209,7 @@ describe('MissingModelRow', () => {
 
   it('keeps unsupported cloud rows as reference-only rows', () => {
     renderRow(
-      makeModel([{ nodeId: '1', widgetName: 'model_name' }]),
+      makeModel([{ nodeId: asNodeId('1'), widgetName: 'model_name' }]),
       vi.fn(),
       true,
       null,
@@ -224,7 +225,7 @@ describe('MissingModelRow', () => {
   })
 
   it('shows row progress as soon as the model import starts', async () => {
-    renderRow(makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]))
+    renderRow(makeModel([{ nodeId: asNodeId('1'), widgetName: 'ckpt_name' }]))
     const store = useMissingModelStore()
 
     await mockUploadCallbacks.onUploadSuccess?.({
@@ -279,8 +280,8 @@ describe('MissingModelRow', () => {
 
     renderRow(
       makeModel([
-        { nodeId: '1', widgetName: 'ckpt_name' },
-        { nodeId: '2', widgetName: 'ckpt_name' }
+        { nodeId: asNodeId('1'), widgetName: 'ckpt_name' },
+        { nodeId: asNodeId('2'), widgetName: 'ckpt_name' }
       ])
     )
 
@@ -322,7 +323,7 @@ describe('MissingModelRow', () => {
   it('locates the parent row directly when a cloud model has one reference', async () => {
     const user = userEvent.setup()
     const { onLocateModel } = renderRow(
-      makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+      makeModel([{ nodeId: asNodeId('1'), widgetName: 'ckpt_name' }])
     )
 
     await user.click(screen.getByRole('button', { name: 'model.safetensors' }))
@@ -334,8 +335,8 @@ describe('MissingModelRow', () => {
     const user = userEvent.setup()
     const { onLocateModel } = renderRow(
       makeModel([
-        { nodeId: '1', widgetName: 'ckpt_name' },
-        { nodeId: '2', widgetName: 'ckpt_name' }
+        { nodeId: asNodeId('1'), widgetName: 'ckpt_name' },
+        { nodeId: asNodeId('2'), widgetName: 'ckpt_name' }
       ])
     )
 
@@ -358,7 +359,7 @@ describe('MissingModelRow', () => {
     mockIsCloud.value = false
     const user = userEvent.setup()
     const { onLocateModel } = renderRow(
-      makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+      makeModel([{ nodeId: asNodeId('1'), widgetName: 'ckpt_name' }])
     )
 
     await user.click(screen.getByRole('button', { name: 'model.safetensors' }))
@@ -369,7 +370,7 @@ describe('MissingModelRow', () => {
   it('shows no resolution action in OSS rows without a download url', () => {
     mockIsCloud.value = false
 
-    renderRow(makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]))
+    renderRow(makeModel([{ nodeId: asNodeId('1'), widgetName: 'ckpt_name' }]))
 
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     expect(
@@ -379,14 +380,16 @@ describe('MissingModelRow', () => {
   })
 
   it('shows model type metadata below the model name', () => {
-    renderRow(makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]))
+    renderRow(makeModel([{ nodeId: asNodeId('1'), widgetName: 'ckpt_name' }]))
 
     expect(screen.getByText('checkpoints')).toBeInTheDocument()
   })
 
   it('shows downloadable model size beside the model type metadata', async () => {
     mockIsCloud.value = false
-    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    const model = makeModel([
+      { nodeId: asNodeId('1'), widgetName: 'ckpt_name' }
+    ])
     model.representative.url =
       'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
 
@@ -403,7 +406,7 @@ describe('MissingModelRow', () => {
 
   it('shows unknown category metadata for models without a directory', () => {
     renderRow(
-      makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }]),
+      makeModel([{ nodeId: asNodeId('1'), widgetName: 'ckpt_name' }]),
       vi.fn(),
       true,
       null
@@ -417,8 +420,8 @@ describe('MissingModelRow', () => {
     const user = userEvent.setup()
     const { onLocateModel } = renderRow(
       makeModel([
-        { nodeId: '1', widgetName: 'ckpt_name' },
-        { nodeId: '2', widgetName: 'ckpt_name' }
+        { nodeId: asNodeId('1'), widgetName: 'ckpt_name' },
+        { nodeId: asNodeId('2'), widgetName: 'ckpt_name' }
       ])
     )
 
@@ -440,7 +443,9 @@ describe('MissingModelRow', () => {
   it('shows the OSS download action in the row for downloadable models', async () => {
     mockIsCloud.value = false
     const user = userEvent.setup()
-    const model = makeModel([{ nodeId: '1', widgetName: 'ckpt_name' }])
+    const model = makeModel([
+      { nodeId: asNodeId('1'), widgetName: 'ckpt_name' }
+    ])
     model.representative.url =
       'https://huggingface.co/comfy/test/resolve/main/model.safetensors'
 

@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import type { EditorOutputData } from '@/stores/maskEditorDataStore'
@@ -40,7 +41,7 @@ describe('maskEditorDataStore', () => {
         baseLayer: { image: createImage(), url: 'base' },
         maskLayer: { image: createImage(), url: 'mask' },
         sourceRef: { filename: 'src.png' },
-        nodeId: 1
+        nodeId: asNodeId(1)
       }
 
       expect(store.hasValidInput).toBe(true)
@@ -77,7 +78,7 @@ describe('maskEditorDataStore', () => {
         baseLayer: { image: createImage(), url: 'base' },
         maskLayer: { image: createImage(), url: 'mask' },
         sourceRef: { filename: 'src.png' },
-        nodeId: 1
+        nodeId: asNodeId(1)
       }
 
       expect(store.isReady).toBe(true)
@@ -90,7 +91,7 @@ describe('maskEditorDataStore', () => {
         baseLayer: { image: createImage(), url: 'base' },
         maskLayer: { image: createImage(), url: 'mask' },
         sourceRef: { filename: 'src.png' },
-        nodeId: 1
+        nodeId: asNodeId(1)
       }
       store.isLoading = true
 
@@ -137,10 +138,10 @@ describe('maskEditorDataStore', () => {
         maskLayer: { image: createImage(), url: 'mask' },
         paintLayer: { image: createImage(), url: 'paint' },
         sourceRef: { filename: 'src.png', subfolder: 'sub', type: 'input' },
-        nodeId: 42
+        nodeId: asNodeId(42)
       }
       store.outputData = createOutputData()
-      store.sourceNode = { id: 42 } as LGraphNode
+      store.sourceNode = { id: asNodeId(42) } as LGraphNode
       store.isLoading = true
       store.loadError = 'something broke'
 

@@ -6,6 +6,8 @@
  */
 import type { ComputedRef, Ref } from 'vue'
 
+import type { NodeId } from '@/types/nodeId'
+
 // Enum for layout source types
 export enum LayoutSource {
   Canvas = 'canvas',
@@ -37,7 +39,7 @@ export interface NodeBoundsUpdate {
   bounds: Bounds
 }
 
-export type NodeId = string
+export type { NodeId }
 export type LinkId = number
 export type RerouteId = number
 
@@ -325,7 +327,7 @@ export interface LayoutStore {
 
   // Initialization
   initializeFromLiteGraph(
-    nodes: Array<{ id: string; pos: [number, number]; size: [number, number] }>
+    nodes: Array<{ id: NodeId; pos: [number, number]; size: [number, number] }>
   ): void
 
   // Source and actor management

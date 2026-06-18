@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, asNodeId } from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -232,7 +232,7 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     seedRequiredInputMissingNodeError(store, String(node.id), 'image')
     mediaStore.setMissingMedia([
       {
-        nodeId: String(node.id),
+        nodeId: node.id,
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
@@ -371,7 +371,7 @@ describe('installErrorClearingHooks lifecycle', () => {
       .spyOn(missingModelScan, 'scanNodeModelCandidates')
       .mockImplementation((_rootGraph, node) => [
         {
-          nodeId: String(node.id),
+          nodeId: node.id,
           nodeType: node.type,
           widgetName: 'ckpt_name',
           isAssetSupported: false,
@@ -448,7 +448,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
         Parameters<typeof modelStore.setMissingModels>[0][number],
         unknown
       >({
-        nodeId: String(node.id),
+        nodeId: node.id,
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
@@ -471,7 +471,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     const interiorNode = new LGraphNode('CheckpointLoaderSimple')
     subgraph.add(interiorNode)
 
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: asNodeId(65) })
     const rootGraph = subgraphNode.graph as LGraph
     rootGraph.add(subgraphNode)
 
@@ -507,7 +507,7 @@ describe('onNodeRemoved clears missing asset errors by execution ID', () => {
     const interiorNode = new LGraphNode('LoadImage')
     subgraph.add(interiorNode)
 
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: asNodeId(65) })
     const rootGraph = subgraphNode.graph as LGraph
     rootGraph.add(subgraphNode)
 
@@ -565,7 +565,7 @@ describe('realtime scan verifies pending cloud candidates', () => {
     // verifyAssetSupportedCandidates resolves them against the assets store.
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       {
-        nodeId: String(node.id),
+        nodeId: node.id,
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: true,
@@ -613,7 +613,7 @@ describe('realtime scan verifies pending cloud candidates', () => {
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
     vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([
       {
-        nodeId: String(node.id),
+        nodeId: node.id,
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
@@ -656,7 +656,7 @@ describe('realtime scan verifies pending cloud candidates', () => {
 
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       {
-        nodeId: String(node.id),
+        nodeId: node.id,
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: true,
@@ -702,7 +702,7 @@ describe('realtime verification staleness guards', () => {
 
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       {
-        nodeId: String(node.id),
+        nodeId: node.id,
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: true,
@@ -753,7 +753,7 @@ describe('realtime verification staleness guards', () => {
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([])
     vi.spyOn(missingMediaScan, 'scanNodeMediaCandidates').mockReturnValue([
       {
-        nodeId: String(node.id),
+        nodeId: node.id,
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image',
@@ -802,7 +802,7 @@ describe('realtime verification staleness guards', () => {
 
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       {
-        nodeId: String(nodeA.id),
+        nodeId: nodeA.id,
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: true,
@@ -863,7 +863,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     const interiorNode = new LGraphNode('CheckpointLoaderSimple')
     subgraph.add(interiorNode)
 
-    const subgraphNode = createTestSubgraphNode(subgraph, { id: 65 })
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: asNodeId(65) })
     subgraphNode.mode = LGraphEventMode.BYPASS
     const rootGraph = subgraphNode.graph as LGraph
     rootGraph.add(subgraphNode)
@@ -873,7 +873,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     // didn't short-circuit first — return a concrete missing candidate.
     vi.spyOn(missingModelScan, 'scanNodeModelCandidates').mockReturnValue([
       {
-        nodeId: `${subgraphNode.id}:${interiorNode.id}`,
+        nodeId: asNodeId(`${subgraphNode.id}:${interiorNode.id}`),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: false,
@@ -902,13 +902,13 @@ describe('scan skips interior of bypassed subgraph containers', () => {
 
     const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
       parentGraph: outerSubgraph,
-      id: 76
+      id: asNodeId(76)
     })
     outerSubgraph.add(innerSubgraphNode)
 
     const outerSubgraphNode = createTestSubgraphNode(outerSubgraph, {
       parentGraph: rootGraph,
-      id: 205
+      id: asNodeId(205)
     })
     rootGraph.add(outerSubgraphNode)
 
@@ -982,11 +982,11 @@ describe('clearWidgetRelatedErrors parameter routing', () => {
   it('clears promoted widget errors by interior execution id', () => {
     const subgraph = createTestSubgraph()
     const graph = subgraph.rootGraph
-    const host = createTestSubgraphNode(subgraph, { id: 2 })
+    const host = createTestSubgraphNode(subgraph, { id: asNodeId(2) })
     graph.add(host)
 
     const interiorNode = new LGraphNode('CheckpointLoaderSimple')
-    interiorNode.id = 1
+    interiorNode.id = asNodeId(1)
     subgraph.add(interiorNode)
     const input = interiorNode.addInput('ckpt_name', 'COMBO')
     const widget = interiorNode.addWidget(
@@ -1007,7 +1007,7 @@ describe('clearWidgetRelatedErrors parameter routing', () => {
     const missingModelStore = useMissingModelStore()
     missingModelStore.setMissingModels([
       {
-        nodeId: '2:1',
+        nodeId: asNodeId('2:1'),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'ckpt_name',
         isAssetSupported: false,

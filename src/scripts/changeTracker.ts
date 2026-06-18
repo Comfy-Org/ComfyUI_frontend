@@ -196,7 +196,9 @@ export class ChangeTracker {
       return
     }
 
-    const currentState = clone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+    const currentState = clone(
+      app.rootGraph.serialize()
+    ) as unknown as ComfyWorkflowJSON
     if (!this.activeState) {
       this.activeState = currentState
       return

@@ -1,8 +1,9 @@
 import { computed } from 'vue'
 
 import type { ComputedRef } from 'vue'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
-import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
+import { isSubgraphInputNodeId } from '@/types/nodeId'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@/utils/uuid'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -79,7 +80,7 @@ export function extractUniformSources(
     if (input.link == null) continue
 
     const link = subgraph.getLink(input.link)
-    if (!link || link.origin_id === SUBGRAPH_INPUT_ID) continue
+    if (!link || isSubgraphInputNodeId(link.origin_id)) continue
 
     const sourceNode = subgraph.getNodeById(link.origin_id)
     if (!sourceNode?.widgets?.length) continue
@@ -92,7 +93,7 @@ export function extractUniformSources(
     if (link.origin_slot >= sourceNode.widgets.length) continue
     const widget = sourceNode.widgets[link.origin_slot]
     const source: UniformSource = {
-      nodeId: sourceNode.id as NodeId,
+      nodeId: sourceNode.id,
       widgetName: widget.name,
       directValue: () => widget.value
     }
@@ -162,7 +163,7 @@ export function useGLSLUniforms(
       if (!upstreamNode) break
       const upstreamWidgets = widgetValueStore.getNodeWidgets(
         gId,
-        upstreamNode.id as NodeId
+        upstreamNode.id
       )
       if (
         upstreamWidgets.length === 0 ||
@@ -249,7 +250,7 @@ export function useGLSLUniforms(
 
       const upstreamWidgets = widgetValueStore.getNodeWidgets(
         gId,
-        upstreamNode.id as NodeId
+        upstreamNode.id
       )
       const curveWidget = upstreamWidgets.find((w) => isCurveData(w.value))
       if (!curveWidget) break

@@ -48,7 +48,7 @@ describe(flattenNodeOutput, () => {
 
     expect(result).toHaveLength(1)
     expect(result[0].mediaType).toBe('audio')
-    expect(result[0].nodeId).toBe(7)
+    expect(result[0].nodeId).toBe('7')
   })
 
   it('flattens multiple media types in a single output', () => {

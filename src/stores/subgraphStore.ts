@@ -11,9 +11,9 @@ import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyNode,
-  ComfyWorkflowJSON,
-  NodeId
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeError } from '@/schemas/apiSchema'
 import type {

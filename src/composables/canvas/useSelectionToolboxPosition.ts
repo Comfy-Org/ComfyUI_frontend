@@ -100,14 +100,16 @@ export function useSelectionToolboxPosition(
       if (item.id == null) continue
 
       if (shouldRenderVueNodes.value && typeof item.id === 'string') {
-        // Use layout store for Vue nodes (only works with string IDs)
+        // Use layout store for Vue nodes (only works with string IDs).
+        // Stored bounds.y excludes the header, so expand upward by the title
+        // height to reach the visual node top (matching the fallback below).
         const layout = layoutStore.getNodeLayoutRef(item.id).value
         if (layout) {
           allBounds.push([
             layout.bounds.x,
-            layout.bounds.y,
+            layout.bounds.y - LiteGraph.NODE_TITLE_HEIGHT,
             layout.bounds.width,
-            layout.bounds.height
+            layout.bounds.height + LiteGraph.NODE_TITLE_HEIGHT
           ])
         }
       } else {

@@ -66,7 +66,7 @@ describe('parseComfyWorkflow', () => {
       }
       const result = await validateComfyWorkflow(workflow)
       expect(result).not.toBeNull()
-      expect(result!.extra!.linearData!.inputs).toEqual([[1, 'prompt']])
+      expect(result!.extra!.linearData!.inputs).toEqual([['1', 'prompt']])
     })
 
     it('validates 3-tuple format with config', async () => {
@@ -77,7 +77,7 @@ describe('parseComfyWorkflow', () => {
       const result = await validateComfyWorkflow(workflow)
       expect(result).not.toBeNull()
       expect(result!.extra!.linearData!.inputs![0]).toEqual([
-        1,
+        '1',
         'prompt',
         { height: 200 }
       ])
@@ -106,8 +106,8 @@ describe('parseComfyWorkflow', () => {
       const result = await validateComfyWorkflow(workflow)
       expect(result).not.toBeNull()
       expect(result!.extra!.linearData!.inputs).toEqual([
-        [1, 'prompt'],
-        [2, 'seed', { height: 100 }]
+        ['1', 'prompt'],
+        ['2', 'seed', { height: 100 }]
       ])
     })
 

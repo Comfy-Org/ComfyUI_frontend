@@ -5,6 +5,7 @@ import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -74,7 +75,7 @@ describe('useNodeEventHandlers', () => {
   const mockNode = mockNodeManager.value!.getNode('fake_id')
   const mockLayoutMutations = useLayoutMutations()
 
-  const testNodeId = 'node-1'
+  const testNodeId = asNodeId('node-1')
 
   beforeEach(async () => {
     vi.resetAllMocks()
@@ -251,7 +252,7 @@ describe('useNodeEventHandlers', () => {
 
       mockNode!.selected = true
 
-      toggleNodeSelectionAfterPointerUp('node-1', true)
+      toggleNodeSelectionAfterPointerUp(asNodeId('node-1'), true)
 
       expect(canvas?.deselect).toHaveBeenCalledWith(mockNode)
       expect(updateSelectedItems).toHaveBeenCalledOnce()
@@ -263,7 +264,7 @@ describe('useNodeEventHandlers', () => {
 
       mockNode!.selected = true
 
-      toggleNodeSelectionAfterPointerUp('node-1', true)
+      toggleNodeSelectionAfterPointerUp(asNodeId('node-1'), true)
 
       expect(canvas?.select).not.toHaveBeenCalled()
       expect(updateSelectedItems).toHaveBeenCalled()
@@ -276,7 +277,7 @@ describe('useNodeEventHandlers', () => {
       mockNode!.selected = true
       canvasSelectedItems.push({ id: 'node-1' }, { id: 'node-2' })
 
-      toggleNodeSelectionAfterPointerUp('node-1', false)
+      toggleNodeSelectionAfterPointerUp(asNodeId('node-1'), false)
 
       expect(canvas?.deselectAll).toHaveBeenCalledOnce()
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
@@ -290,7 +291,7 @@ describe('useNodeEventHandlers', () => {
       mockNode!.selected = true
       canvasSelectedItems.push({ id: 'node-1' })
 
-      toggleNodeSelectionAfterPointerUp('node-1', false)
+      toggleNodeSelectionAfterPointerUp(asNodeId('node-1'), false)
 
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
       expect(updateSelectedItems).toHaveBeenCalled()

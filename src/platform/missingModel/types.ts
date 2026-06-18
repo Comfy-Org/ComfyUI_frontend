@@ -1,7 +1,5 @@
-import type {
-  ModelFile,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 
 /**
  * A single (node, widget, model) binding detected by the missing model pipeline.

@@ -83,7 +83,7 @@ export { LinkConnector } from './canvas/LinkConnector'
 export { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 export { CanvasPointer } from './CanvasPointer'
 export * as Constants from './constants'
-export { SUBGRAPH_INPUT_ID } from './constants'
+export { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from './constants'
 export { ContextMenu } from './ContextMenu'
 
 export { DragAndScale } from './DragAndScale'
@@ -118,6 +118,19 @@ export { BadgePosition, LGraphBadge } from './LGraphBadge'
 export { LGraphCanvas } from './LGraphCanvas'
 export { LGraphGroup, type GroupId } from './LGraphGroup'
 export { LGraphNode, type NodeId } from './LGraphNode'
+export {
+  asNodeId,
+  isFloatingNodeId,
+  isNumericNodeId,
+  isSubgraphInputNodeId,
+  isSubgraphOutputNodeId,
+  isUnassignedNodeId,
+  nodeIdToNumber,
+  SUBGRAPH_INPUT_NODE_ID,
+  SUBGRAPH_OUTPUT_NODE_ID,
+  UNASSIGNED_NODE_ID
+} from '@/types/nodeId'
+export type { NodeIdInput } from '@/types/nodeId'
 export { LLink } from './LLink'
 export { createBounds } from './measure'
 export { Reroute, type RerouteId } from './Reroute'

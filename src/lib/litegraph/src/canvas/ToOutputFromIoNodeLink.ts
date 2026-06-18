@@ -14,6 +14,8 @@ import type { NodeLike } from '@/lib/litegraph/src/types/NodeLike'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import type { SubgraphIO } from '@/lib/litegraph/src/types/serialisation'
 
+import { isSubgraphOutputNodeId } from '@/types/nodeId'
+
 import type { RenderLink } from './RenderLink'
 
 /** Connecting TO an output slot. */
@@ -55,7 +57,7 @@ export class ToOutputFromIoNodeLink implements RenderLink {
   }
 
   canConnectToReroute(reroute: Reroute): boolean {
-    if (reroute.origin_id === this.node.id) return false
+    if (isSubgraphOutputNodeId(reroute.origin_id)) return false
     return true
   }
 

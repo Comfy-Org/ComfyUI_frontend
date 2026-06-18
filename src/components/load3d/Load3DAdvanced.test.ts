@@ -22,6 +22,7 @@ vi.mock('@/components/load3d/Load3D.vue', () => ({
 }))
 
 import Load3DAdvanced from '@/components/load3d/Load3DAdvanced.vue'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 
 describe('Load3DAdvanced', () => {
   it('renders the inner Load3D with all expressive features disabled', () => {
@@ -40,7 +41,9 @@ describe('Load3DAdvanced', () => {
 
   it('forwards widget and nodeId to the inner Load3D', () => {
     const widget = { node: { id: 'a', type: 'Load3DAdvanced' } }
-    render(Load3DAdvanced, { props: { widget: widget as never, nodeId: 'a' } })
+    render(Load3DAdvanced, {
+      props: { widget: widget as never, nodeId: asNodeId('a') }
+    })
     expect(lastProps.value?.widget).toEqual(widget)
     expect(lastProps.value?.nodeId).toBe('a')
   })

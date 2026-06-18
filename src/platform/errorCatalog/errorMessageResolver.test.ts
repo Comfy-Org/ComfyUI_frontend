@@ -10,6 +10,7 @@ import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import { i18n } from '@/i18n'
 
 function nodeValidationError(
@@ -48,7 +49,7 @@ function executionError(
   return {
     prompt_id: 'prompt-1',
     timestamp: Date.now(),
-    node_id: '1',
+    node_id: asNodeId('1'),
     node_type: 'KSampler',
     executed: [],
     exception_type: exceptionType,
@@ -1551,14 +1552,14 @@ describe('errorMessageResolver', () => {
             name: 'portrait.png',
             mediaType: 'image',
             representative: {
-              nodeId: '4',
+              nodeId: asNodeId('4'),
               nodeType: 'LoadImage',
               widgetName: 'image',
               mediaType: 'image',
               name: 'portrait.png',
               isMissing: true
             },
-            referencingNodes: [{ nodeId: '4', widgetName: 'image' }]
+            referencingNodes: [{ nodeId: asNodeId('4'), widgetName: 'image' }]
           }
         ]
       }
@@ -1649,14 +1650,14 @@ describe('errorMessageResolver', () => {
               name: mediaName,
               mediaType,
               representative: {
-                nodeId: '4',
+                nodeId: asNodeId('4'),
                 nodeType,
                 widgetName,
                 mediaType,
                 name: mediaName,
                 isMissing: true
               },
-              referencingNodes: [{ nodeId: '4', widgetName }]
+              referencingNodes: [{ nodeId: asNodeId('4'), widgetName }]
             }
           ]
         }
@@ -1688,7 +1689,7 @@ describe('errorMessageResolver', () => {
                 name: 'shared.png',
                 mediaType: 'image',
                 representative: {
-                  nodeId: '1',
+                  nodeId: asNodeId('1'),
                   nodeType: 'LoadImage',
                   widgetName: 'image',
                   mediaType: 'image',
@@ -1696,8 +1697,8 @@ describe('errorMessageResolver', () => {
                   isMissing: true
                 },
                 referencingNodes: [
-                  { nodeId: '1', widgetName: 'image' },
-                  { nodeId: '2', widgetName: 'image' }
+                  { nodeId: asNodeId('1'), widgetName: 'image' },
+                  { nodeId: asNodeId('2'), widgetName: 'image' }
                 ]
               }
             ]
@@ -1752,27 +1753,31 @@ describe('errorMessageResolver', () => {
                 name: 'a.png',
                 mediaType: 'image',
                 representative: {
-                  nodeId: '1',
+                  nodeId: asNodeId('1'),
                   nodeType: 'LoadImage',
                   widgetName: 'image',
                   mediaType: 'image',
                   name: 'a.png',
                   isMissing: true
                 },
-                referencingNodes: [{ nodeId: '1', widgetName: 'image' }]
+                referencingNodes: [
+                  { nodeId: asNodeId('1'), widgetName: 'image' }
+                ]
               },
               {
                 name: 'b.png',
                 mediaType: 'image',
                 representative: {
-                  nodeId: '2',
+                  nodeId: asNodeId('2'),
                   nodeType: 'LoadImage',
                   widgetName: 'image',
                   mediaType: 'image',
                   name: 'b.png',
                   isMissing: true
                 },
-                referencingNodes: [{ nodeId: '2', widgetName: 'image' }]
+                referencingNodes: [
+                  { nodeId: asNodeId('2'), widgetName: 'image' }
+                ]
               }
             ]
           }

@@ -1,4 +1,4 @@
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeId } from '@/types/nodeId'
 import type {
   IBaseWidget,
   IWidgetOptions

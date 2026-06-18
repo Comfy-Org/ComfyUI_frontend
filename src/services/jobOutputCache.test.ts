@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import { api } from '@/scripts/api'
 import type {
@@ -34,7 +35,7 @@ function createResultItem(url: string, supportsPreview = true): ResultItemImpl {
     filename: url,
     subfolder: '',
     type: 'output',
-    nodeId: 'node-1',
+    nodeId: asNodeId('node-1'),
     mediaType: supportsPreview ? 'images' : 'unknown'
   })
   Object.defineProperty(item, 'url', { get: () => url })
@@ -221,7 +222,7 @@ describe('jobOutputCache', () => {
         create_time: Date.now(),
         priority: 0,
         outputs: {
-          'node-1': {
+          [asNodeId('node-1')]: {
             images: [
               { filename: 'image.png', subfolder: '', type: 'output' },
               { filename: 'image.webp', subfolder: '', type: 'temp' }
@@ -229,7 +230,7 @@ describe('jobOutputCache', () => {
             animated: [true],
             text: 'hello'
           },
-          'node-2': {
+          [asNodeId('node-2')]: {
             video: [{ filename: 'clip.mp4', subfolder: '', type: 'output' }],
             audio: [{ filename: 'sound.mp3', subfolder: '', type: 'output' }]
           }
@@ -264,7 +265,7 @@ describe('jobOutputCache', () => {
         create_time: Date.now(),
         priority: 0,
         outputs: {
-          'node-1': {
+          [asNodeId('node-1')]: {
             images: [
               {
                 filename: 'abc123hash.png',
@@ -293,7 +294,7 @@ describe('jobOutputCache', () => {
         create_time: Date.now(),
         priority: 0,
         outputs: {
-          'node-3': {
+          [asNodeId('node-3')]: {
             images: [{ filename: 'valid.png', subfolder: '', type: 'output' }],
             text: ['not-object'],
             unknown: [{ filename: 'data.bin', subfolder: '', type: 'output' }]

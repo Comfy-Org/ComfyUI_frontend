@@ -9,6 +9,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import type { VueNodeData } from '@/composables/graph/useGraphNodeManager'
+import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/schemas/apiSchema'
@@ -18,7 +19,7 @@ import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import NodeHeader from './NodeHeader.vue'
 
 const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
-  id: '1',
+  id: asNodeId('1'),
   title: 'KSampler',
   type: 'KSampler',
   mode: 0,

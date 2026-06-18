@@ -1,7 +1,7 @@
 import type { Locator, Page } from '@playwright/test'
 
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import type { NodeId } from '@/types/nodeId'
 import {
   comfyExpect as expect,
   comfyPageFixture as test

@@ -337,14 +337,14 @@ export class LitegraphLinkAdapter {
         }
 
         // Update whole link layout (only if not a reroute segment)
-        if (!extras.reroute) {
+        if (!extras.reroute && !link.isFloating) {
           layoutStore.updateLinkLayout(link.id, {
             id: link.id,
             path: path,
             bounds: bounds,
             centerPos: centerPos,
-            sourceNodeId: String(link.origin_id),
-            targetNodeId: String(link.target_id),
+            sourceNodeId: link.origin_id,
+            targetNodeId: link.target_id,
             sourceSlot: link.origin_slot,
             targetSlot: link.target_slot
           })

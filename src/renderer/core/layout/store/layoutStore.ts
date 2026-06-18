@@ -9,6 +9,7 @@ import { computed, customRef, ref } from 'vue'
 import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
+import { asNodeId } from '@/types/nodeId'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
@@ -137,7 +138,7 @@ class LayoutStoreImpl implements LayoutStore {
   private rerouteLayouts = new Map<RerouteId, RerouteLayout>()
 
   // Spatial index managers
-  private spatialIndex: SpatialIndexManager // For nodes
+  private spatialIndex: SpatialIndexManager<NodeId> // For nodes
   private linkSegmentSpatialIndex: SpatialIndexManager // For link segments (single index for all link geometry)
   private slotSpatialIndex: SpatialIndexManager // For slots
   private rerouteSpatialIndex: SpatialIndexManager // For reroutes
@@ -173,7 +174,7 @@ class LayoutStoreImpl implements LayoutStore {
     this.yoperations = this.ydoc.getArray('operations')
 
     // Initialize spatial index managers
-    this.spatialIndex = new SpatialIndexManager()
+    this.spatialIndex = new SpatialIndexManager<NodeId>()
     this.linkSegmentSpatialIndex = new SpatialIndexManager() // Single index for all link geometry
     this.slotSpatialIndex = new SpatialIndexManager()
     this.rerouteSpatialIndex = new SpatialIndexManager()
@@ -184,7 +185,7 @@ class LayoutStoreImpl implements LayoutStore {
 
       // Trigger all affected node refs
       event.changes.keys.forEach((_change: YEventChange, key: string) => {
-        const trigger = this.nodeTriggers.get(key)
+        const trigger = this.nodeTriggers.get(asNodeId(key))
         if (trigger) {
           trigger()
         }
@@ -229,7 +230,9 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Get or create a customRef for a node layout
    */
-  getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null> {
+  getNodeLayoutRef(rawNodeId: NodeId): Ref<NodeLayout | null> {
+    // Boundary: legacy callers pass numeric ids cast as `NodeId`.
+    const nodeId = asNodeId(rawNodeId)
     let nodeRef = this.nodeRefs.get(nodeId)
 
     if (!nodeRef) {
@@ -346,7 +349,7 @@ class LayoutStoreImpl implements LayoutStore {
         if (ynode) {
           const layout = yNodeToLayout(ynode)
           if (layout && boundsIntersect(layout.bounds, bounds)) {
-            result.push(nodeId)
+            result.push(asNodeId(nodeId))
           }
         }
       }
@@ -368,7 +371,7 @@ class LayoutStoreImpl implements LayoutStore {
         if (ynode) {
           const layout = yNodeToLayout(ynode)
           if (layout) {
-            result.set(nodeId, layout)
+            result.set(asNodeId(nodeId), layout)
           }
         }
       }
@@ -394,7 +397,7 @@ class LayoutStoreImpl implements LayoutStore {
       if (ynode) {
         const layout = yNodeToLayout(ynode)
         if (layout) {
-          nodes.push([nodeId, layout])
+          nodes.push([asNodeId(nodeId), layout])
         }
       }
     }
@@ -997,7 +1000,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Initialize store with existing nodes
    */
   initializeFromLiteGraph(
-    nodes: Array<{ id: string; pos: [number, number]; size: [number, number] }>
+    nodes: Array<{ id: NodeId; pos: [number, number]; size: [number, number] }>
   ): void {
     this.ydoc.transact(() => {
       this.ynodes.clear()
@@ -1019,7 +1022,7 @@ class LayoutStoreImpl implements LayoutStore {
 
       nodes.forEach((node, index) => {
         const layout: NodeLayout = {
-          id: node.id.toString(),
+          id: node.id,
           position: { x: node.pos[0], y: node.pos[1] },
           size: { width: node.size[0], height: node.size[1] },
           zIndex: index,
@@ -1158,7 +1161,7 @@ class LayoutStoreImpl implements LayoutStore {
     operation: BatchUpdateBoundsOperation,
     change: LayoutChange
   ): void {
-    const spatialUpdates: Array<{ nodeId: NodeId; bounds: Bounds }> = []
+    const spatialUpdates: Array<{ id: NodeId; bounds: Bounds }> = []
 
     for (const nodeId of operation.nodeIds) {
       const data = operation.bounds[nodeId]
@@ -1172,7 +1175,7 @@ class LayoutStoreImpl implements LayoutStore {
       })
       ynode.set('bounds', data.bounds)
 
-      spatialUpdates.push({ nodeId, bounds: data.bounds })
+      spatialUpdates.push({ id: nodeId, bounds: data.bounds })
       change.nodeIds.push(nodeId)
     }
 
@@ -1508,7 +1511,9 @@ class LayoutStoreImpl implements LayoutStore {
     const nodeIds: NodeId[] = []
     const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
-    for (const { nodeId, bounds } of updates) {
+    for (const { nodeId: rawNodeId, bounds } of updates) {
+      // Boundary: legacy callers pass numeric ids cast as `NodeId`.
+      const nodeId = asNodeId(rawNodeId)
       const ynode = this.ynodes.get(nodeId)
       if (!ynode) continue
       const currentLayout = yNodeToLayout(ynode)

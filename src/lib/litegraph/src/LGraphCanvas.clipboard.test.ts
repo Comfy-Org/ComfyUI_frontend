@@ -6,11 +6,13 @@ import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxy
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
+  asNodeId,
   LGraph,
   LGraphCanvas,
   LGraphNode,
   LiteGraph,
   SubgraphNode,
+  UNASSIGNED_NODE_ID,
   createUuidv4
 } from '@/lib/litegraph/src/litegraph'
 import { remapClipboardSubgraphNodeIds } from '@/lib/litegraph/src/LGraphCanvas'
@@ -19,6 +21,7 @@ import type {
   ExportedSubgraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import type { NodeId } from '@/types/nodeId'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -35,7 +38,7 @@ function createSerialisedNode(
   proxyWidgets?: Array<[string, string]>
 ): ISerialisedNode {
   return {
-    id,
+    id: asNodeId(id),
     type,
     pos: [0, 0],
     size: [140, 80],
@@ -52,7 +55,7 @@ describe('remapClipboardSubgraphNodeIds', () => {
   it('remaps pasted subgraph interior IDs and proxyWidgets references', () => {
     const rootGraph = new LGraph()
     const existingNode = new LGraphNode('existing')
-    existingNode.id = 1
+    existingNode.id = asNodeId(1)
     rootGraph.add(existingNode)
 
     const subgraphId = createUuidv4()
@@ -69,11 +72,11 @@ describe('remapClipboardSubgraphNodeIds', () => {
       config: {},
       name: 'Pasted Subgraph',
       inputNode: {
-        id: -10,
+        id: asNodeId(-10),
         bounding: [0, 0, 10, 10]
       },
       outputNode: {
-        id: -20,
+        id: asNodeId(-20),
         bounding: [0, 0, 10, 10]
       },
       inputs: [],
@@ -84,9 +87,9 @@ describe('remapClipboardSubgraphNodeIds', () => {
         {
           id: 1,
           type: '*',
-          origin_id: 1,
+          origin_id: asNodeId(1),
           origin_slot: 0,
-          target_id: 1,
+          target_id: asNodeId(1),
           target_slot: 0
         }
       ],
@@ -121,10 +124,85 @@ describe('remapClipboardSubgraphNodeIds', () => {
     ])
   })
 
+  it('remaps legacy numeric interior IDs, links, and proxyWidgets references', () => {
+    const rootGraph = new LGraph()
+    const existingNode = new LGraphNode('existing')
+    existingNode.id = asNodeId(1)
+    rootGraph.add(existingNode)
+
+    const subgraphId = createUuidv4()
+    // Legacy clipboard JSON written by a pre-branding frontend: numeric ids.
+    const legacyNumericId = 1 as unknown as NodeId
+    const pastedSubgraph: ExportedSubgraph = {
+      id: subgraphId,
+      version: 1,
+      revision: 0,
+      state: { lastNodeId: 0, lastLinkId: 0, lastGroupId: 0, lastRerouteId: 0 },
+      config: {},
+      name: 'Pasted Subgraph',
+      inputNode: { id: asNodeId(-10), bounding: [0, 0, 10, 10] },
+      outputNode: { id: asNodeId(-20), bounding: [0, 0, 10, 10] },
+      inputs: [],
+      outputs: [],
+      widgets: [],
+      nodes: [
+        {
+          id: legacyNumericId,
+          type: 'test/node',
+          pos: [0, 0],
+          size: [140, 80],
+          flags: {},
+          order: 0,
+          mode: 0,
+          inputs: [],
+          outputs: [],
+          properties: {}
+        }
+      ],
+      links: [
+        {
+          id: 1,
+          type: '*',
+          origin_id: 1 as unknown as NodeId,
+          origin_slot: 0,
+          target_id: 1 as unknown as NodeId,
+          target_slot: 0
+        }
+      ],
+      groups: []
+    }
+
+    const hostInfo = createSerialisedNode(99, subgraphId, [
+      [1 as unknown as string, 'seed']
+    ])
+
+    const parsed: ClipboardItems = {
+      nodes: [hostInfo],
+      groups: [],
+      reroutes: [],
+      links: [],
+      subgraphs: [pastedSubgraph]
+    }
+
+    remapClipboardSubgraphNodeIds(parsed, rootGraph)
+
+    const remappedInteriorId = parsed.subgraphs?.[0]?.nodes?.[0]?.id
+    expect(remappedInteriorId).not.toBe(1)
+    expect(remappedInteriorId).not.toBe('1')
+
+    const remappedLink = parsed.subgraphs?.[0]?.links?.[0]
+    expect(remappedLink?.origin_id).toBe(remappedInteriorId)
+    expect(remappedLink?.target_id).toBe(remappedInteriorId)
+
+    expect(parsed.nodes?.[0]?.properties?.proxyWidgets).toStrictEqual([
+      [String(remappedInteriorId), 'seed']
+    ])
+  })
+
   it('remaps pasted SubgraphNode previewExposures sourceNodeId references', () => {
     const rootGraph = new LGraph()
     const existingNode = new LGraphNode('existing')
-    existingNode.id = 1
+    existingNode.id = asNodeId(1)
     rootGraph.add(existingNode)
 
     const subgraphId = createUuidv4()
@@ -140,8 +218,8 @@ describe('remapClipboardSubgraphNodeIds', () => {
       },
       config: {},
       name: 'Pasted Subgraph',
-      inputNode: { id: -10, bounding: [0, 0, 10, 10] },
-      outputNode: { id: -20, bounding: [0, 0, 10, 10] },
+      inputNode: { id: asNodeId(-10), bounding: [0, 0, 10, 10] },
+      outputNode: { id: asNodeId(-20), bounding: [0, 0, 10, 10] },
       inputs: [],
       outputs: [],
       widgets: [],
@@ -209,7 +287,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       class TestSubgraphNode extends SubgraphNode {
         constructor() {
           super(rootGraph, subgraph as Subgraph, {
-            id: -1,
+            id: UNASSIGNED_NODE_ID,
             type: subgraph.id,
             pos: [0, 0],
             size: [100, 100],
@@ -264,14 +342,14 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       },
       config: {},
       name: 'Pasted Subgraph',
-      inputNode: { id: -10, bounding: [0, 0, 10, 10] },
-      outputNode: { id: -20, bounding: [0, 0, 10, 10] },
+      inputNode: { id: asNodeId(-10), bounding: [0, 0, 10, 10] },
+      outputNode: { id: asNodeId(-20), bounding: [0, 0, 10, 10] },
       inputs: [],
       outputs: [],
       widgets: [],
       nodes: [
         {
-          id: interiorId,
+          id: asNodeId(interiorId),
           type: 'test/inner',
           pos: [0, 0],
           size: [140, 80],
@@ -288,7 +366,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
     }
 
     const hostInfo: ISerialisedNode = {
-      id: 99,
+      id: asNodeId(99),
       type: subgraphId,
       pos: [0, 0],
       size: [140, 80],
@@ -340,14 +418,14 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
       },
       config: {},
       name: 'Pasted Subgraph',
-      inputNode: { id: -10, bounding: [0, 0, 10, 10] },
-      outputNode: { id: -20, bounding: [0, 0, 10, 10] },
+      inputNode: { id: asNodeId(-10), bounding: [0, 0, 10, 10] },
+      outputNode: { id: asNodeId(-20), bounding: [0, 0, 10, 10] },
       inputs: [],
       outputs: [],
       widgets: [],
       nodes: [
         {
-          id: interiorPreviewId,
+          id: asNodeId(interiorPreviewId),
           type: 'PreviewImage',
           pos: [0, 0],
           size: [140, 80],
@@ -364,7 +442,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
     }
 
     const hostInfo: ISerialisedNode = {
-      id: 99,
+      id: asNodeId(99),
       type: subgraphId,
       pos: [0, 0],
       size: [140, 80],

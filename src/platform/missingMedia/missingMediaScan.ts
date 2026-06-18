@@ -1,5 +1,5 @@
 import { groupBy } from 'es-toolkit'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { asNodeId } from '@/types/nodeId'
 import type {
   MissingMediaCandidate,
   MissingMediaViewModel,
@@ -118,7 +118,7 @@ export function scanNodeMediaCandidates(
     }
 
     candidates.push({
-      nodeId: executionId as NodeId,
+      nodeId: asNodeId(executionId),
       nodeType: node.type,
       widgetName: widget.name,
       mediaType: mediaInfo.mediaType,

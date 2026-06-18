@@ -3,6 +3,7 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
+  asNodeId,
   LGraph,
   findUsedSubgraphIds,
   getDirectSubgraphIds
@@ -60,8 +61,8 @@ describe('subgraphUtils', () => {
       const graph = new LGraph()
       const subgraph = createTestSubgraph()
 
-      const node1 = createTestSubgraphNode(subgraph, { id: 1 })
-      const node2 = createTestSubgraphNode(subgraph, { id: 2 })
+      const node1 = createTestSubgraphNode(subgraph, { id: asNodeId(1) })
+      const node2 = createTestSubgraphNode(subgraph, { id: asNodeId(2) })
 
       graph.add(node1)
       graph.add(node2)
@@ -120,7 +121,7 @@ describe('subgraphUtils', () => {
 
       // Add subgraph1 to subgraph2 (circular reference)
       // Note: add() itself throws RangeError due to recursive forEachNode
-      const node3 = createTestSubgraphNode(subgraph1, { id: 3 })
+      const node3 = createTestSubgraphNode(subgraph1, { id: asNodeId(3) })
       expect(() => subgraph2.add(node3)).toThrow(RangeError)
     })
 

@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  asNodeId,
   LinkConnector,
   MovingOutputLink,
   ToOutputRenderLink,
@@ -197,7 +198,7 @@ describe('LinkConnector SubgraphInput connection validation', () => {
       // Create a minimal valid setup
       const subgraph = createTestSubgraph()
       const node = new LGraphNode('TestNode')
-      node.id = 1
+      node.id = asNodeId(1)
       node.addInput('test_in', 'number')
       subgraph.add(node)
 

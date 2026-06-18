@@ -18,7 +18,8 @@ import {
   LGraph,
   LGraphCanvas,
   LGraphNode,
-  LiteGraph
+  LiteGraph,
+  asNodeId
 } from '@/lib/litegraph/src/litegraph'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import type { Vector2 } from '@/lib/litegraph/src/litegraph'
@@ -37,9 +38,9 @@ import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowSto
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  NodeId
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/types/nodeId'
 import {
   collectSubgraphDefinitions,
   buildSubgraphExecutionPaths
@@ -1673,7 +1674,7 @@ export class ComfyApp {
             const hasNodeErrors =
               nodeErrors && Object.keys(nodeErrors).length > 0
             executionErrorStore.lastNodeErrors = hasNodeErrors
-              ? nodeErrors
+              ? (nodeErrors as Record<NodeId, NodeError>)
               : null
             try {
               if (res.prompt_id) {
@@ -1745,7 +1746,9 @@ export class ComfyApp {
 
             if (error instanceof PromptExecutionError) {
               executionErrorStore.lastNodeErrors =
-                error.response.node_errors ?? null
+                (error.response.node_errors as
+                  | Record<NodeId, NodeError>
+                  | undefined) ?? null
 
               // Store prompt-level error separately only when no node-specific errors exist,
               // because node errors already carry the full context. Prompt-level errors
@@ -2028,7 +2031,8 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph()
 
     const missingNodeTypes = Object.values(apiData).filter(
-      (n) => !LiteGraph.registered_node_types[n.class_type]
+      (n): n is NonNullable<typeof n> =>
+        n !== undefined && !LiteGraph.registered_node_types[n.class_type]
     )
     if (missingNodeTypes.length) {
       this.showMissingNodesError(missingNodeTypes.map((t) => t.class_type))
@@ -2037,16 +2041,18 @@ export class ComfyApp {
     const ids = Object.keys(apiData)
     app.rootGraph.clear()
     for (const id of ids) {
-      const data = apiData[id]
+      const data = apiData[asNodeId(id)]
+      if (!data) continue
       const node = LiteGraph.createNode(data.class_type)
       if (!node) continue
-      node.id = isNaN(+id) ? id : +id
+      node.id = asNodeId(id)
       node.title = data._meta?.title ?? node.title
       app.rootGraph.add(node)
     }
 
     const processNodeInputs = (id: string) => {
-      const data = apiData[id]
+      const data = apiData[asNodeId(id)]
+      if (!data) return
       const node = app.rootGraph.getNodeById(id)
       if (!node) return
 
