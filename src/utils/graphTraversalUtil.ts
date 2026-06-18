@@ -7,6 +7,7 @@ import type {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
+  asNodeExecutionId,
   createNodeLocatorId,
   getParentExecutionIds,
   parseNodeLocatorId
@@ -353,7 +354,7 @@ export function getExecutionIdByNode(
   if (!node.graph) return null
 
   if (node.graph === rootGraph || node.graph.isRootGraph) {
-    return String(node.id)
+    return asNodeExecutionId(node.id)
   }
 
   const parentPath = findPartialExecutionPathToGraph(
@@ -362,7 +363,7 @@ export function getExecutionIdByNode(
   )
   if (parentPath === undefined) return null
 
-  return `${parentPath}:${node.id}`
+  return asNodeExecutionId(`${parentPath}:${node.id}`)
 }
 
 /**
@@ -735,7 +736,9 @@ export function getExecutionIdsForSelectedNodes(
 
   const buildExecId = (node: LGraphNode, parentExecutionId: string) => {
     const nodeId = String(node.id)
-    return parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
+    return asNodeExecutionId(
+      parentExecutionId ? `${parentExecutionId}:${nodeId}` : nodeId
+    )
   }
   return collectFromNodes<NodeExecutionId, string>(selectedNodes, {
     collector: buildExecId,

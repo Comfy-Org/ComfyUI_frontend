@@ -21,6 +21,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
@@ -50,7 +51,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    seedRequiredInputMissingNodeError(store, String(node.id), 'clip')
+    seedRequiredInputMissingNodeError(store, asNodeExecutionId(node.id), 'clip')
 
     node.onConnectionsChange!(NodeSlotType.INPUT, 0, true, null, node.inputs[0])
 
@@ -62,7 +63,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
     installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
-    seedRequiredInputMissingNodeError(store, String(node.id), 'clip')
+    seedRequiredInputMissingNodeError(store, asNodeExecutionId(node.id), 'clip')
 
     node.onConnectionsChange!(
       NodeSlotType.INPUT,
@@ -81,7 +82,7 @@ describe('Connection error clearing via onConnectionsChange', () => {
     installErrorClearingHooks(graph)
 
     const store = useExecutionErrorStore()
-    seedRequiredInputMissingNodeError(store, String(node.id), 'clip')
+    seedRequiredInputMissingNodeError(store, asNodeExecutionId(node.id), 'clip')
 
     node.onConnectionsChange!(
       NodeSlotType.OUTPUT,
@@ -103,7 +104,11 @@ describe('Connection error clearing via onConnectionsChange', () => {
 
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    seedRequiredInputMissingNodeError(store, String(node.id), 'model')
+    seedRequiredInputMissingNodeError(
+      store,
+      asNodeExecutionId(node.id),
+      'model'
+    )
 
     node.onConnectionsChange!(NodeSlotType.INPUT, 0, true, null, node.inputs[0])
 
@@ -229,7 +234,11 @@ describe('Widget change error clearing via onWidgetChanged', () => {
     const store = useExecutionErrorStore()
     const mediaStore = useMissingMediaStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    seedRequiredInputMissingNodeError(store, String(node.id), 'image')
+    seedRequiredInputMissingNodeError(
+      store,
+      asNodeExecutionId(node.id),
+      'image'
+    )
     mediaStore.setMissingMedia([
       {
         nodeId: node.id,
@@ -279,7 +288,11 @@ describe('installErrorClearingHooks lifecycle', () => {
     // Verify the hooks actually work
     const store = useExecutionErrorStore()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(graph)
-    seedRequiredInputMissingNodeError(store, String(lateNode.id), 'value')
+    seedRequiredInputMissingNodeError(
+      store,
+      asNodeExecutionId(lateNode.id),
+      'value'
+    )
 
     lateNode.onConnectionsChange!(
       NodeSlotType.INPUT,

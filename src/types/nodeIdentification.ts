@@ -24,8 +24,24 @@ export type NodeLocatorId = string
  *
  * Format: Colon-separated path of node IDs
  * Example: "123:456:789" (node 789 in subgraph 456 in subgraph 123)
+ *
+ * This is a derived *address* (a path through subgraph instances), NOT an ECS
+ * Entity ID. It must never be branded as or stored where a `NodeId` is expected.
  */
-export type NodeExecutionId = string
+export type NodeExecutionId = string & { readonly __brand: 'NodeExecutionId' }
+
+/** Raw value at API/runtime boundaries; normalise with `asNodeExecutionId`. */
+export type NodeExecutionIdInput = string | number
+
+/**
+ * Brand a raw boundary value as a `NodeExecutionId`. Lenient (string-cast) like
+ * `asNodeId`; it does not validate path shape.
+ */
+export function asNodeExecutionId(
+  value: NodeExecutionIdInput
+): NodeExecutionId {
+  return String(value) as NodeExecutionId
+}
 
 /**
  * Type guard to check if a value is a NodeLocatorId
@@ -119,7 +135,7 @@ export function parseNodeExecutionId(id: string): NodeId[] | null {
  * @returns A properly formatted NodeExecutionId
  */
 export function createNodeExecutionId(nodeIds: NodeId[]): NodeExecutionId {
-  return nodeIds.join(':')
+  return asNodeExecutionId(nodeIds.join(':'))
 }
 
 /**
@@ -132,7 +148,7 @@ export function getAncestorExecutionIds(
 ): NodeExecutionId[] {
   const parts = executionId.split(':')
   return Array.from({ length: parts.length }, (_, i) =>
-    parts.slice(0, i + 1).join(':')
+    asNodeExecutionId(parts.slice(0, i + 1).join(':'))
   )
 }
 

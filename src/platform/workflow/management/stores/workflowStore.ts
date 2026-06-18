@@ -19,6 +19,7 @@ import { app as comfyApp } from '@/scripts/app'
 import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
+  asNodeExecutionId,
   createNodeExecutionId,
   createNodeLocatorId,
   parseNodeExecutionId,
@@ -712,7 +713,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     // If no subgraph UUID, this is a root graph node
     if (!subgraphUuid) {
-      return String(localNodeId)
+      return asNodeExecutionId(localNodeId)
     }
 
     // Find the path from root to the subgraph with this UUID
