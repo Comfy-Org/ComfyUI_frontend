@@ -49,13 +49,9 @@ export const useSubscriptionDialog = () => {
         ),
         props: { onClose: hide },
         dialogComponentProps: {
-          style: 'width: min(360px, 95vw);',
-          pt: {
-            root: {
-              class: 'bg-transparent border-none rounded-none shadow-none'
-            },
-            content: { class: '!p-0 bg-transparent border-none shadow-none' }
-          }
+          renderer: 'reka',
+          contentClass:
+            'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
         }
       })
       return
