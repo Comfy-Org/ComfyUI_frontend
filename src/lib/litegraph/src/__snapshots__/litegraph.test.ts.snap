@@ -193,7 +193,6 @@ LiteGraphGlobal {
   "throw_errors": true,
   "truncateWidgetTextEvenly": false,
   "truncateWidgetValuesFirst": false,
-  "use_uuids": false,
   "uuidv4": [Function],
   "vueNodesMode": false,
 }
