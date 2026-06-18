@@ -246,3 +246,55 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     expect(mockFetchApi).not.toHaveBeenCalled()
   })
 })
+
+type AudioUIWidget = (node: LGraphNode, inputName: string) => unknown
+
+async function loadAudioUIWidget() {
+  vi.resetModules()
+  mockRegisterExtension.mockClear()
+  await import('./uploadAudio')
+  const extension = mockRegisterExtension.mock.calls
+    .map(([extension]) => extension as ComfyExtension)
+    .find((extension) => extension.name === 'Comfy.AudioWidget')
+  if (!extension)
+    throw new Error('Comfy.AudioWidget extension was not registered')
+  const widgets = await extension.getCustomWidgets!(fromAny({}))
+  return (widgets as Record<string, AudioUIWidget>).AUDIO_UI
+}
+
+function createAudioUINode(outputNode = false) {
+  const domWidget = {
+    name: 'audioUI',
+    element: document.createElement('audio'),
+    value: '',
+    serialize: true,
+    options: {} as Record<string, unknown>,
+    callback: vi.fn()
+  }
+  const node = fromAny<LGraphNode, unknown>({
+    addDOMWidget: vi.fn(() => domWidget),
+    constructor: { nodeData: { output_node: outputNode } }
+  })
+  return { domWidget, node }
+}
+
+describe('Comfy.AudioWidget AUDIO_UI widget', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  // Regression test: the audio player is a UI-only widget. It must be excluded
+  // from both the workflow (widget.serialize) and the prompt/API payload
+  // (widget.options.serialize). Leaking its `/view?...` URL (which carries a
+  // random cache-busting param) into the prompt changes the backend cache key
+  // every run and forces LoadAudio to always re-execute.
+  it('excludes the audio player from workflow and prompt serialization', async () => {
+    const AUDIO_UI = await loadAudioUIWidget()
+    const { domWidget, node } = createAudioUINode()
+
+    AUDIO_UI(node, 'audioUI')
+
+    expect(domWidget.serialize).toBe(false)
+    expect(domWidget.options.serialize).toBe(false)
+  })
+})

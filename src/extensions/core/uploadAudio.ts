@@ -127,7 +127,14 @@ app.registerExtension({
 
         const audioUIWidget: DOMWidget<HTMLAudioElement, string> =
           node.addDOMWidget(inputName, /* name=*/ 'audioUI', audio)
+        // serialize = false keeps the player out of the workflow's
+        // widgets_values. options.serialize = false keeps it out of the
+        // prompt/API payload. Without the latter, the player's `/view?...`
+        // URL (which carries a random cache-busting param from
+        // getResourceURL) is sent as a node input, changing the backend
+        // cache key on every run and forcing LoadAudio to always re-execute.
         audioUIWidget.serialize = false
+        audioUIWidget.options.serialize = false
         const { nodeData } = node.constructor
         if (nodeData == null) throw new TypeError('nodeData is null')
 
