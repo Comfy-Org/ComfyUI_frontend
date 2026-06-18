@@ -32,9 +32,9 @@ const {
     data-slot="button"
     :data-variant="variant"
     :data-size="size"
-    :as="as"
-    :as-child="asChild"
-    :disabled="disabled"
+    :as
+    :as-child
+    :disabled
     :class="cn(buttonVariants({ variant, size }), className)"
   >
     <slot name="prepend">
