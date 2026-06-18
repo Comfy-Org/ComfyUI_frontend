@@ -220,6 +220,111 @@ describe('submitOAuthConsentDecision', () => {
     ).rejects.toThrow('redirect_url')
   })
 
+  it('navigates to a reverse-DNS custom-scheme redirect_url (native clients)', async () => {
+    // RFC 8252 native-app callback — the comfy-ios client returns the
+    // authorization code via org.comfy.ios://oauth-callback. The backend
+    // has already validated the URL byte-identically against the client's
+    // registered redirect_uris.
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      okResponse({
+        redirect_url: 'org.comfy.ios://oauth-callback?code=xyz&state=s'
+      })
+    )
+    const originalLocation = globalThis.location
+    const hrefSetter = vi.fn()
+    Object.defineProperty(globalThis, 'location', {
+      configurable: true,
+      value: new Proxy(originalLocation, {
+        set(_target, prop, value) {
+          if (prop === 'href') {
+            hrefSetter(value)
+            return true
+          }
+          return Reflect.set(originalLocation, prop, value)
+        },
+        get(_target, prop) {
+          return Reflect.get(originalLocation, prop)
+        }
+      })
+    })
+
+    try {
+      await submitOAuthConsentDecision({
+        oauthRequestId: validChallenge.oauth_request_id,
+        csrfToken: validChallenge.csrf_token,
+        decision: 'allow',
+        workspaceId: 'personal-workspace',
+        expectedRedirectUri: 'org.comfy.ios://oauth-callback'
+      })
+
+      expect(hrefSetter).toHaveBeenCalledWith(
+        'org.comfy.ios://oauth-callback?code=xyz&state=s'
+      )
+      expect(hrefSetter).toHaveBeenCalledTimes(1)
+    } finally {
+      Object.defineProperty(globalThis, 'location', {
+        configurable: true,
+        value: originalLocation
+      })
+    }
+  })
+
+  it.for([
+    [
+      'org.comfy.ios://oauth-callback?code=xyz',
+      undefined,
+      'unsafe scheme',
+      'custom scheme with no expectedRedirectUri is unbindable, falls back to the http(s)-only rule'
+    ],
+    [
+      'com.evil.app://oauth-callback?code=xyz',
+      'org.comfy.ios://oauth-callback',
+      'does not match',
+      'bound challenge, different scheme: wrong-client redirect'
+    ],
+    [
+      'org.comfy.ios://oauth-callback/../steal?code=xyz',
+      'org.comfy.ios://oauth-callback',
+      'does not match',
+      'bound challenge, same scheme but different path'
+    ],
+    [
+      'javascript:alert(1)',
+      'javascript:alert(1)',
+      'unsafe scheme',
+      'executable schemes are rejected even if the challenge claims them'
+    ],
+    [
+      'data:text/html,<script>alert(1)</script>',
+      'data:text/html,x',
+      'unsafe scheme',
+      'data: scheme rejected even if the challenge claims it'
+    ],
+    [
+      'blob:https://cloud.comfy.org/abc',
+      undefined,
+      'unsafe scheme',
+      'blob: scheme is unsafe'
+    ]
+  ] as const)(
+    'rejects redirect_url %s (registration %s, expects %s): %s',
+    async ([redirectUrl, expectedRedirectUri, expectedError]) => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+        okResponse({ redirect_url: redirectUrl })
+      )
+
+      await expect(
+        submitOAuthConsentDecision({
+          oauthRequestId: validChallenge.oauth_request_id,
+          csrfToken: validChallenge.csrf_token,
+          decision: 'allow',
+          workspaceId: 'personal-workspace',
+          expectedRedirectUri
+        })
+      ).rejects.toThrow(expectedError)
+    }
+  )
+
   it('rejects an unsafe redirect_url scheme', async () => {
     // Defense in depth: even though the cloud backend is trusted, never
     // hand the browser off to a non-http(s) URL.

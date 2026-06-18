@@ -2,6 +2,7 @@ import { computed, reactive, readonly } from 'vue'
 
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
+  cachedTeamWorkspacesEnabled,
   isAuthenticatedConfigLoaded,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
@@ -28,7 +29,8 @@ export enum ServerFeatureFlag {
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
-  ASSET_BULK_EXPORT_ENABLED = 'asset_bulk_export_enabled'
+  ASSET_BULK_EXPORT_ENABLED = 'asset_bulk_export_enabled',
+  UNIFIED_CLOUD_AUTH = 'unified_cloud_auth'
 }
 
 /**
@@ -108,7 +110,8 @@ export function useFeatureFlags() {
       if (override !== undefined) return override
 
       if (!isCloud) return false
-      if (!isAuthenticatedConfigLoaded.value) return false
+      if (!isAuthenticatedConfigLoaded.value)
+        return cachedTeamWorkspacesEnabled.value ?? false
 
       return (
         remoteConfig.value.team_workspaces_enabled ??
@@ -177,6 +180,13 @@ export function useFeatureFlags() {
         ServerFeatureFlag.ASSET_BULK_EXPORT_ENABLED,
         remoteConfig.value.asset_bulk_export_enabled,
         isCloud
+      )
+    },
+    get unifiedCloudAuthEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
+        remoteConfig.value.unified_cloud_auth,
+        false
       )
     }
   })

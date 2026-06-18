@@ -76,6 +76,34 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     await maskEditor.drawStrokeAndExpectPixels(dialog)
   })
 
+  test(
+    'Middle-click drag should pan the mask editor canvas',
+    { tag: ['@canvas'] },
+    async ({ comfyPage, comfyMouse, maskEditor }) => {
+      const dialog = await maskEditor.openDialog()
+      const pointerZone = dialog.getByTestId('pointer-zone')
+      const getCanvasPosition = () =>
+        comfyPage.page.evaluate(() => {
+          const container = document.querySelector('#maskEditorCanvasContainer')
+          if (!(container instanceof HTMLElement)) return null
+
+          return {
+            left: container.style.left,
+            top: container.style.top
+          }
+        })
+      const canvasPositionBefore = await getCanvasPosition()
+
+      await comfyMouse.middleDragFromCenter(
+        pointerZone,
+        { x: 140, y: 90 },
+        { steps: 10 }
+      )
+
+      await expect.poll(getCanvasPosition).not.toEqual(canvasPositionBefore)
+    }
+  )
+
   test('undo reverts a brush stroke', async ({ maskEditor }) => {
     const dialog = await maskEditor.openDialog()
 

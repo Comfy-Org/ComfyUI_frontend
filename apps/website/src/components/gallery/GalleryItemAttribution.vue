@@ -1,8 +1,7 @@
 <script setup lang="ts">
+import type { GalleryItem } from '../../data/gallery'
 import type { Locale } from '../../i18n/translations'
-
 import { t } from '../../i18n/translations'
-import type { GalleryItem } from './GallerySection.vue'
 
 const {
   item,

@@ -30,7 +30,7 @@ type FirebaseRuntimeConfig = {
  * be tweaked without a frontend release. Field types map 1:1 to a component
  * in our internal UI library — see `DynamicSurveyField.vue`.
  */
-export type OnboardingSurveyFieldType = 'single' | 'multi' | 'text'
+type OnboardingSurveyFieldType = 'single' | 'multi' | 'text'
 
 /**
  * A translatable string. Either:
@@ -82,6 +82,11 @@ export type RemoteConfig = {
   posthog_project_token?: string
   posthog_api_host?: string
   posthog_config?: Partial<PostHogConfig>
+  customer_io?: {
+    write_key?: string
+    site_id?: string
+    user_id?: string
+  }
   subscription_required?: boolean
   server_health_alert?: ServerHealthAlert
   max_upload_size?: number
@@ -104,5 +109,6 @@ export type RemoteConfig = {
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
   asset_bulk_export_enabled?: boolean
+  unified_cloud_auth?: boolean
   sentry_dsn?: string
 }

@@ -202,7 +202,7 @@ class NodeSlotReference {
   }
 }
 
-export class NodeWidgetReference {
+class NodeWidgetReference {
   constructor(
     readonly index: number,
     readonly node: NodeReference
@@ -511,8 +511,7 @@ export class NodeReference {
   }
   async clickContextMenuOption(optionText: string) {
     await this.click('title', { button: 'right' })
-    const ctx = this.comfyPage.page.locator('.litecontextmenu')
-    await ctx.getByText(optionText).click()
+    await this.comfyPage.contextMenu.clickMenuItem(optionText)
   }
   async convertToSubgraph() {
     await this.clickContextMenuOption('Convert to Subgraph')

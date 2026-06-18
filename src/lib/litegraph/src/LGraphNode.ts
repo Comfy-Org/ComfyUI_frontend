@@ -810,7 +810,7 @@ export class LGraphNode
   }
 
   constructor(title: string, type?: string) {
-    this.id = LiteGraph.use_uuids ? LiteGraph.uuidv4() : -1
+    this.id = -1
     this.title = title || 'Unnamed'
     this.type = type ?? ''
     this.size = [LiteGraph.NODE_WIDTH, 60]
@@ -997,7 +997,6 @@ export class LGraphNode
     return o
   }
 
-  /* Creates a clone of this node */
   clone(): LGraphNode | null {
     if (this.type == null) return null
     const node = LiteGraph.createNode(this.type)
@@ -1023,8 +1022,7 @@ export class LGraphNode
     // @ts-expect-error Exceptional case: id is removed so that the graph can assign a new one on add.
     data.id = undefined
 
-    if (LiteGraph.use_uuids) data.id = LiteGraph.uuidv4()
-
+    node.id = this.id
     node.configure(data)
 
     return node
@@ -1400,7 +1398,6 @@ export class LGraphNode
 
       default:
         return false
-        break
     }
     this.mode = modeTo
     return true
@@ -4240,7 +4237,9 @@ export class LGraphNode
       if (!widget) continue
 
       const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-      slot.pos = [offset, widget.y + offset]
+      const pos: [number, number] = [offset, widget.y + offset]
+      slot.pos = pos
+      this.inputs[i].pos = pos
       this._measureSlot(slot, i, true)
     }
   }
