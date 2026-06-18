@@ -474,7 +474,7 @@ export interface CheckoutAttributionMetadata {
  * `app:subscribe_now_button_clicked` event to the specific CTA the user
  * actually clicked, rather than only the legacy SubscribeButton.
  */
-export type SubscribeClickSource =
+type SubscribeClickSource =
   | 'pricing_table'
   | 'subscribe_to_run'
   | 'subscribe_button'
