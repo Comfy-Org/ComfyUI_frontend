@@ -135,7 +135,8 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
 
     await expect
       .poll(
-        () => page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
+        () =>
+          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
         { timeout: 5000 }
       )
       .toBe('team-token')
@@ -164,7 +165,11 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify(
-            makeTokenResponse(mockPersonalWorkspace, 'original-token', expiresInMs)
+            makeTokenResponse(
+              mockPersonalWorkspace,
+              'original-token',
+              expiresInMs
+            )
           )
         })
       }
@@ -210,7 +215,11 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify(
-            makeTokenResponse(mockPersonalWorkspace, 'original-token', expiresInMs)
+            makeTokenResponse(
+              mockPersonalWorkspace,
+              'original-token',
+              expiresInMs
+            )
           )
         })
       }
@@ -233,7 +242,8 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     // A 403 ACCESS_DENIED response must clear the workspace session entirely.
     await expect
       .poll(
-        () => page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
+        () =>
+          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
         { timeout: 5000 }
       )
       .toBeNull()
