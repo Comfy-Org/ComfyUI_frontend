@@ -121,7 +121,8 @@ const i18n = createI18n({
       },
       rightSidePanel: {
         showAdvancedShort: 'Show Advanced',
-        showAdvancedInputsButton: 'Show Advanced Inputs'
+        showAdvancedInputsButton: 'Show Advanced Inputs',
+        hideAdvancedInputsButton: 'Hide Advanced Inputs'
       },
       'Node Render Error': 'Node Render Error'
     }
@@ -176,6 +177,7 @@ describe('LGraphNode', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     mockData.mockExecuting = false
+    mockData.mockLgraphNode = null
 
     setActivePinia(pinia)
     const canvasStore = useCanvasStore()
@@ -310,6 +312,31 @@ describe('LGraphNode', () => {
     expect(screen.getByRole('button', { name: 'Error' })).toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: /show advanced/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('should hide the "hide advanced inputs" footer button while the node is collapsed', () => {
+    mockData.mockLgraphNode = {
+      showAdvanced: true,
+      isSubgraphNode: () => false
+    }
+
+    renderLGraphNode({
+      nodeData: {
+        ...mockNodeData,
+        flags: { collapsed: true },
+        widgets: [
+          {
+            name: 'advancedWidget',
+            type: 'number',
+            options: { advanced: true }
+          }
+        ]
+      }
+    })
+
+    expect(
+      screen.queryByRole('button', { name: /hide advanced/i })
     ).not.toBeInTheDocument()
   })
 

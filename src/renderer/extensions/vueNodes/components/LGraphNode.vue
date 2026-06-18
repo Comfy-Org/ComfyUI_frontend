@@ -193,7 +193,7 @@
       :has-any-error="hasAnyError"
       :show-errors-tab-enabled="showErrorsTabEnabled"
       :show-advanced-inputs-button="showAdvancedInputsButton"
-      :show-advanced-state="showAdvancedState"
+      :show-advanced-state="!isCollapsed && showAdvancedState"
       :header-color="applyLightThemeColor(nodeData?.color)"
       :shape="nodeData.shape"
       @enter-subgraph="handleEnterSubgraph"
