@@ -3,7 +3,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 export function useCurrentPath() {
   const currentPath = ref('')
 
-  const update = () => {
+  function update() {
     currentPath.value = window.location.pathname
   }
 
@@ -25,6 +25,8 @@ export function isHrefActive(href: string, currentPath: string): boolean {
   if (!href || !currentPath || href.startsWith('http')) return false
   const path = href.split('#')[0].split('?')[0]
   if (!path) return false
-  const norm = (s: string) => (s.length > 1 ? s.replace(/\/$/, '') : s)
+  function norm(s: string) {
+    return s.length > 1 ? s.replace(/\/$/, '') : s
+  }
   return norm(path) === norm(currentPath)
 }
