@@ -71,6 +71,8 @@ type MenuProps = {
   sortSelected?: string
   ownershipSelected?: OwnershipOption
   baseModelSelected?: Set<string>
+  candidateLabel?: string
+  onSearchEnter?: () => void
 }
 
 function renderMenu(props: MenuProps = {}) {
@@ -98,7 +100,9 @@ function renderMenu(props: MenuProps = {}) {
       ownershipOptions: ownershipOptionsProp,
       baseModelOptions: baseModelOptionsProp,
       showOwnershipFilter: props.showOwnershipFilter ?? false,
-      showBaseModelFilter: props.showBaseModelFilter ?? false
+      showBaseModelFilter: props.showBaseModelFilter ?? false,
+      candidateLabel: props.candidateLabel,
+      onSearchEnter: () => props.onSearchEnter?.()
     }),
     template: `
       <FormDropdownMenuActions
@@ -112,6 +116,8 @@ function renderMenu(props: MenuProps = {}) {
         :ownership-options
         :show-base-model-filter
         :base-model-options
+        :candidate-label
+        @search-enter="onSearchEnter"
       />
     `
   })
@@ -162,6 +168,20 @@ describe('FormDropdownMenuActions', () => {
       const { searchQuery, user } = renderMenu({ searchQuery: 'seed' })
       await user.clear(screen.getByRole('textbox'))
       expect(searchQuery.value).toBe('')
+    })
+
+    it('emits search-enter when Enter is pressed in the textbox', async () => {
+      const onSearchEnter = vi.fn()
+      const { user } = renderMenu({ onSearchEnter })
+      await user.type(screen.getByRole('textbox'), '{Enter}')
+      expect(onSearchEnter).toHaveBeenCalledTimes(1)
+    })
+
+    it('announces the current top result to screen readers', () => {
+      renderMenu({ candidateLabel: 'alpha.ckpt' })
+      const status = screen.getByRole('status')
+      expect(status).toHaveAttribute('aria-live', 'polite')
+      expect(status).toHaveTextContent('Top result: alpha.ckpt')
     })
   })
 

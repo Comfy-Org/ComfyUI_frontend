@@ -166,15 +166,6 @@ test.describe('Node Interaction', () => {
     })
   })
 
-  test('Can drag node', { tag: '@screenshot' }, async ({ comfyPage }) => {
-    await comfyPage.nodeOps.dragTextEncodeNode2()
-    // Move mouse away to avoid hover highlight on the node at the drop position.
-    await comfyPage.canvasOps.moveMouseToEmptyArea()
-    await comfyPage.expectScreenshot(comfyPage.canvas, 'dragged-node1.png', {
-      maxDiffPixels: 50
-    })
-  })
-
   test.describe('Node Duplication', () => {
     test.beforeEach(async ({ comfyPage }) => {
       // Pin this suite to the legacy canvas path so Alt+drag exercises

@@ -26,7 +26,7 @@ const historyRoutePattern = /\/api\/history$/
  * The sidebar filter ultimately matches on the filename extension, so the
  * fixture also picks an extension-appropriate filename for each kind.
  */
-export type MediaKindFixture = 'images' | 'video' | 'audio' | '3D'
+type MediaKindFixture = 'images' | 'video' | 'audio' | '3D'
 
 const DEFAULT_EXTENSION: Record<MediaKindFixture, string> = {
   images: 'png',
@@ -131,16 +131,6 @@ export function createJobsWithExecutionTimes(
       execution_start_time: spec.createTime,
       execution_end_time: spec.createTime + spec.durationMs
     })
-  )
-}
-
-/** Create mock imported file names with various media types. */
-export function createMockImportedFiles(count: number): string[] {
-  const extensions = ['png', 'jpg', 'mp4', 'wav', 'glb', 'txt']
-  return Array.from(
-    { length: count },
-    (_, i) =>
-      `imported_${String(i + 1).padStart(3, '0')}.${extensions[i % extensions.length]}`
   )
 }
 

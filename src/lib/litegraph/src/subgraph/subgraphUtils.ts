@@ -1,3 +1,4 @@
+import { isEqual } from 'es-toolkit'
 import type { LGraph, SubgraphId } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -25,6 +26,7 @@ import type {
 import type { GraphOrSubgraph } from './Subgraph'
 import type { SubgraphInput } from './SubgraphInput'
 import { SubgraphInputNode } from './SubgraphInputNode'
+import type { SubgraphNode } from './SubgraphNode'
 import type { SubgraphOutput } from './SubgraphOutput'
 import { SubgraphOutputNode } from './SubgraphOutputNode'
 
@@ -478,6 +480,71 @@ export function findUsedSubgraphIds(
   }
 
   return usedSubgraphIds
+}
+
+function reorderInPlace<T>(arr: T[], indices: readonly number[]): void {
+  arr.splice(0, arr.length, ...indices.flatMap((i) => arr[i] ?? []))
+}
+
+function* indexedLinks<S>(
+  slots: readonly S[],
+  resolve: (slot: S) => Iterable<LLink | undefined>
+): Generator<readonly [number, LLink]> {
+  for (const [index, slot] of slots.entries()) {
+    for (const link of resolve(slot)) {
+      if (link) yield [index, link] as const
+    }
+  }
+}
+
+export function reorderSubgraphInputs(
+  subgraphNode: SubgraphNode,
+  orderedIndices: readonly number[]
+): void {
+  const subgraph = subgraphNode.subgraph
+  if (!subgraph) return
+
+  const n = subgraph.inputs.length
+  if (
+    orderedIndices.length !== n ||
+    new Set(orderedIndices).size !== orderedIndices.length ||
+    orderedIndices.some((i) => i < 0 || i >= n)
+  ) {
+    console.error(
+      `reorderSubgraphInputs: orderedIndices must be a permutation of 0..${n - 1}`,
+      orderedIndices
+    )
+    return
+  }
+
+  const oldOrder = subgraph.inputs.map((i) => i.id)
+
+  reorderInPlace(subgraph.inputs, orderedIndices)
+  reorderInPlace(subgraphNode.inputs, orderedIndices)
+  subgraphNode.invalidatePromotedViews()
+
+  function* innerLinks(input: SubgraphInput): Generator<LLink | undefined> {
+    for (const id of input.linkIds) yield subgraph.getLink(id)
+  }
+  for (const [slot, link] of indexedLinks(subgraph.inputs, innerLinks)) {
+    link.origin_slot = slot
+  }
+
+  function* outerLink(input: INodeInputSlot): Generator<LLink | undefined> {
+    if (input.link != null) yield subgraphNode.graph?.getLink(input.link)
+  }
+  for (const [slot, link] of indexedLinks(subgraphNode.inputs, outerLink)) {
+    link.target_slot = slot
+  }
+
+  const newOrder = subgraph.inputs.map((i) => i.id)
+  if (!isEqual(oldOrder, newOrder)) {
+    subgraph.events.dispatch('inputs-reordered', {
+      subgraph,
+      oldOrder,
+      newOrder
+    })
+  }
 }
 
 /**
