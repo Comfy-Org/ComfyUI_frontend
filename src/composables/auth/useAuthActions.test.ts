@@ -251,9 +251,7 @@ describe('useAuthActions.reportError', () => {
   it('shows the friendly "account exists" message for a Firebase email-already-in-use code', () => {
     const { reportError } = useAuthActions()
 
-    reportError(
-      new FirebaseError('auth/email-already-in-use', 'raw firebase')
-    )
+    reportError(new FirebaseError('auth/email-already-in-use', 'raw firebase'))
 
     expect(mockToastStore.add).toHaveBeenCalledWith({
       severity: 'error',
