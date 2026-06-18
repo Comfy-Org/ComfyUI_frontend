@@ -436,7 +436,10 @@ export const useAuthStore = defineStore('auth', () => {
     // localhost) and would leak map entries.
     pending
       .then(() => {
-        setTimeout(() => inFlightRegister.delete(key), REGISTER_DEDUP_RETENTION_MS)
+        setTimeout(
+          () => inFlightRegister.delete(key),
+          REGISTER_DEDUP_RETENTION_MS
+        )
       })
       .catch(() => inFlightRegister.delete(key))
     return pending
