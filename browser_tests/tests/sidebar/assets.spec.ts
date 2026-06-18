@@ -1,5 +1,9 @@
 import { expect } from '@playwright/test'
 
+import {
+  STABLE_INPUT_IMAGE,
+  STABLE_INPUT_IMAGE_2
+} from '@e2e/fixtures/data/assetFixtures'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   createMockJob,
@@ -705,6 +709,30 @@ test.describe('Assets sidebar - bulk actions', () => {
     await tab.assetCards.first().click()
 
     // Delete button in footer should be visible
+    await expect(tab.deleteSelectedButton).toBeVisible()
+  })
+
+  test('Footer shows delete button when input assets selected (FE-732)', async ({
+    comfyPage
+  }) => {
+    // Pre-FE-732 the input-tab Delete footer button was gated by isCloud and
+    // hidden on OSS builds. Post-FE-732 it must render in both modes. This
+    // test runs on the default chromium project — i.e. the OSS build — and
+    // asserts the gate is gone.
+    await comfyPage.assets.mockCloudAssets({
+      assets: [STABLE_INPUT_IMAGE, STABLE_INPUT_IMAGE_2],
+      total: 2,
+      has_more: false
+    })
+    await comfyPage.assets.mockInputFiles(SAMPLE_IMPORTED_FILES)
+
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+    await tab.switchToImported()
+    await expect.poll(() => tab.assetCards.count()).toBeGreaterThanOrEqual(1)
+
+    await tab.assetCards.first().click()
+
     await expect(tab.deleteSelectedButton).toBeVisible()
   })
 

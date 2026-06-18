@@ -14,6 +14,9 @@ import { createMockWidget } from './widgetTestUtils'
 
 const mockCheckState = vi.hoisted(() => vi.fn())
 const mockAssetsData = vi.hoisted(() => ({ items: [] as AssetItem[] }))
+const mockAssetDataRefresh = vi.hoisted(() =>
+  vi.fn().mockResolvedValue(undefined)
+)
 
 vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   const actual = await vi.importActual(
@@ -47,7 +50,8 @@ vi.mock(
       category: computed(() => 'checkpoints'),
       assets: computed(() => mockAssetsData.items),
       isLoading: computed(() => false),
-      error: computed(() => null)
+      error: computed(() => null),
+      refresh: mockAssetDataRefresh
     })
   })
 )
@@ -76,6 +80,26 @@ vi.mock('@/platform/assets/composables/media/useAssetsApi', () => ({
 vi.mock('@/platform/assets/utils/outputAssetUtil', () => ({
   resolveOutputAssetItems: vi.fn().mockResolvedValue([])
 }))
+
+vi.mock(
+  '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue',
+  () => ({
+    default: {
+      name: 'FormDropdownStub',
+      props: ['items', 'displayItems', 'selected', 'placeholder'],
+      emits: ['update:is-open', 'update:selected', 'update:files'],
+      template: `
+        <div>
+          <button type="button" data-testid="fd-open" @click="$emit('update:is-open', true)">open</button>
+          <button type="button" data-testid="fd-close" @click="$emit('update:is-open', false)">close</button>
+          <span v-for="item in (displayItems || items || [])" :key="item.id">
+            <span v-if="(selected || new Set()).has(item.id)">{{ item.name }}</span>
+          </span>
+        </div>
+      `
+    }
+  })
+)
 
 const mockUpdateSelectedItems = vi.hoisted(() => vi.fn())
 const mockHandleFilesUpdate = vi.hoisted(() => vi.fn())
@@ -144,6 +168,8 @@ describe('WidgetSelectDropdown', () => {
     mockFilterSelectedRef.value = 'all'
     mockUpdateSelectedItems.mockClear()
     mockHandleFilesUpdate.mockClear()
+    mockMediaAssets.refresh.mockClear()
+    mockAssetDataRefresh.mockClear()
   })
 
   function renderComponent(
@@ -255,6 +281,74 @@ describe('WidgetSelectDropdown', () => {
 
       expect(screen.getByText('dog.png')).toBeDefined()
       expect(screen.queryByText('cat.png')).toBeNull()
+    })
+  })
+
+  describe('handleIsOpenUpdate', () => {
+    function renderAssetMode() {
+      const widget = createMockWidget<string | undefined>({
+        value: 'model_a.safetensors',
+        name: 'ckpt_name',
+        type: 'combo',
+        options: { values: [], nodeType: 'CheckpointLoaderSimple' }
+      })
+      return renderComponent(widget, 'model_a.safetensors', {
+        assetKind: 'model',
+        isAssetMode: true,
+        nodeType: 'CheckpointLoaderSimple'
+      })
+    }
+
+    function renderNonAssetMode() {
+      const widget = createMockWidget<string | undefined>({
+        value: 'cat.png',
+        name: 'image',
+        type: 'combo',
+        options: { values: ['cat.png', 'dog.png'] }
+      })
+      return renderComponent(widget, 'cat.png')
+    }
+
+    async function fireOpen() {
+      const { default: userEvent } = await import('@testing-library/user-event')
+      const user = userEvent.setup()
+      await user.click(screen.getByTestId('fd-open'))
+    }
+
+    async function fireClose() {
+      const { default: userEvent } = await import('@testing-library/user-event')
+      const user = userEvent.setup()
+      await user.click(screen.getByTestId('fd-close'))
+    }
+
+    it('skips outputMediaAssets refresh and triggers assetData refresh when asset-mode dropdown opens', async () => {
+      renderAssetMode()
+      await fireOpen()
+      expect(mockMediaAssets.refresh).not.toHaveBeenCalled()
+      expect(mockAssetDataRefresh).toHaveBeenCalledTimes(1)
+    })
+
+    it('refetches model assets on every asset-mode dropdown reopen (no stale cache)', async () => {
+      renderAssetMode()
+      await fireOpen()
+      await fireClose()
+      await fireOpen()
+      expect(mockAssetDataRefresh).toHaveBeenCalledTimes(2)
+      expect(mockMediaAssets.refresh).not.toHaveBeenCalled()
+    })
+
+    it('refreshes outputMediaAssets when non-asset-mode dropdown opens (preserved behavior)', async () => {
+      renderNonAssetMode()
+      await fireOpen()
+      expect(mockMediaAssets.refresh).toHaveBeenCalledTimes(1)
+      expect(mockAssetDataRefresh).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when the dropdown is closed', async () => {
+      renderNonAssetMode()
+      await fireClose()
+      expect(mockMediaAssets.refresh).not.toHaveBeenCalled()
+      expect(mockAssetDataRefresh).not.toHaveBeenCalled()
     })
   })
 })

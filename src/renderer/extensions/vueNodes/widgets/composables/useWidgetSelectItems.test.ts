@@ -319,7 +319,8 @@ describe('useWidgetSelectItems', () => {
         category: computed(() => 'checkpoints'),
         assets: computed(() => mockAssetsData.items),
         isLoading: computed(() => false),
-        error: computed(() => null)
+        error: computed(() => null),
+        refresh: async () => {}
       }
 
       const { dropdownItems } = useWidgetSelectItems(
@@ -354,7 +355,8 @@ describe('useWidgetSelectItems', () => {
         category: computed(() => 'checkpoints'),
         assets: computed(() => mockAssetsData.items),
         isLoading: computed(() => false),
-        error: computed(() => null)
+        error: computed(() => null),
+        refresh: async () => {}
       }
 
       const { dropdownItems } = useWidgetSelectItems(
@@ -379,7 +381,8 @@ describe('useWidgetSelectItems', () => {
         category: computed(() => 'checkpoints'),
         assets: computed(() => [] as AssetItem[]),
         isLoading: computed(() => false),
-        error: computed(() => null)
+        error: computed(() => null),
+        refresh: async () => {}
       }
 
       const { dropdownItems } = useWidgetSelectItems(
@@ -408,7 +411,8 @@ describe('useWidgetSelectItems', () => {
         category: computed(() => 'checkpoints'),
         assets: computed(() => mockAssetsData.items),
         isLoading: computed(() => false),
-        error: computed(() => null)
+        error: computed(() => null),
+        refresh: async () => {}
       }
 
       const { displayItems, selectedSet } = useWidgetSelectItems(

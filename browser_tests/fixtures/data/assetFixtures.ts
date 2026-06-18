@@ -99,6 +99,16 @@ export const STABLE_INPUT_IMAGE: Asset = createInputAsset({
   updated_at: '2025-03-01T09:00:00Z'
 })
 
+export const STABLE_INPUT_IMAGE_2: Asset = createInputAsset({
+  id: 'test-input-002',
+  name: 'second_reference_photo.png',
+  size: 1_572_864,
+  mime_type: 'image/png',
+  tags: ['input'],
+  created_at: '2025-03-02T09:00:00Z',
+  updated_at: '2025-03-02T09:00:00Z'
+})
+
 export const STABLE_OUTPUT: Asset = createOutputAsset({
   id: 'test-output-001',
   name: 'ComfyUI_00001_.png',
