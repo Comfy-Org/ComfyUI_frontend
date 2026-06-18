@@ -70,6 +70,7 @@ const ctaButtons = [
       <Button
         v-for="cta in ctaButtons"
         :key="cta.href"
+        as="a"
         :href="cta.href"
         :variant="cta.primary ? 'default' : 'outline'"
         :aria-label="cta.ariaLabel"

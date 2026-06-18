@@ -44,7 +44,7 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           >
             {{ navItem.label }}
           </NavigationMenuTrigger>
-          <NavigationMenuContent class="w-auto">
+          <NavigationMenuContent class="w-auto" data-testid="nav-dropdown">
             <ul class="flex w-max gap-16">
               <NavFeaturedCard
                 v-if="navItem.featured"

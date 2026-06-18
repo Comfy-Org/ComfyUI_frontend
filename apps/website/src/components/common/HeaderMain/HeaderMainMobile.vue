@@ -3,7 +3,7 @@ import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { getMainNavigation } from '../../../data/mainNavigation'
-import { externalLinks, getRoutes } from '../../../config/routes.ts'
+import { getRoutes } from '../../../config/routes.ts'
 import { lockScroll, unlockScroll } from '../../../composables/scrollLock'
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
@@ -20,19 +20,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 const routes = getRoutes(locale)
 const mainNavigation = getMainNavigation(locale)
-
-const ctaButtons = [
-  {
-    label: t('nav.downloadLocal', locale),
-    href: routes.download,
-    primary: false
-  },
-  {
-    label: t('nav.launchCloud', locale),
-    href: externalLinks.cloud,
-    primary: true
-  }
-]
 
 const isOpen = ref(false)
 const activeSection = ref<string | null>(null)
