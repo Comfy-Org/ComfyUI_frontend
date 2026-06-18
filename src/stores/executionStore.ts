@@ -116,7 +116,8 @@ const VIEWED_MEDIA_TYPES = new Set<string>(['image', 'video', 'audio', '3D'])
  * must survive reloads. Provider-side a PostHog person `set_once` is the
  * authoritative cross-device dedupe; this key is the local fast-path guard.
  */
-const FIRST_EXECUTION_COMPLETED_KEY = 'comfy:telemetry:first_execution_completed'
+const FIRST_EXECUTION_COMPLETED_KEY =
+  'comfy:telemetry:first_execution_completed'
 
 /**
  * Returns true and records the durable flag on the first call ever for this
@@ -127,7 +128,10 @@ const FIRST_EXECUTION_COMPLETED_KEY = 'comfy:telemetry:first_execution_completed
 function claimFirstExecutionCompleted(): boolean {
   try {
     if (localStorage.getItem(FIRST_EXECUTION_COMPLETED_KEY)) return false
-    localStorage.setItem(FIRST_EXECUTION_COMPLETED_KEY, new Date().toISOString())
+    localStorage.setItem(
+      FIRST_EXECUTION_COMPLETED_KEY,
+      new Date().toISOString()
+    )
     return true
   } catch {
     return false
