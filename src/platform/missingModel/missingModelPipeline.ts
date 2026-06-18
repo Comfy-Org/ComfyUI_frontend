@@ -23,6 +23,26 @@ import {
   isAncestorPathActive,
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
+import { isAbortError } from '@/utils/typeGuardUtil'
+
+type ModelStore = ReturnType<typeof useModelStore>
+
+/**
+ * Load model folders without letting an asset-listing failure abort graph
+ * load. A failed `/api/assets` oracle degrades to no enumerated folders so
+ * the rest of the asset-scan phase (including missing media) still runs.
+ */
+async function loadModelFoldersSoftly(modelStore: ModelStore): Promise<void> {
+  try {
+    await modelStore.loadModelFolders()
+  } catch (err) {
+    if (isAbortError(err)) throw err
+    console.warn(
+      '[Missing Model Pipeline] Failed to load model folders; degrading to empty.',
+      err
+    )
+  }
+}
 
 export interface MissingModelPipelineResult {
   missingModels: ModelFile[]
@@ -122,7 +142,7 @@ export async function runMissingModelPipeline({
   )
 
   const modelStore = useModelStore()
-  await modelStore.loadModelFolders()
+  await loadModelFoldersSoftly(modelStore)
   const enrichedAll = await enrichWithEmbeddedMetadata(
     candidates,
     graphData,
