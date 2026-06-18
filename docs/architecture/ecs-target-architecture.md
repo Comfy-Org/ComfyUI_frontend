@@ -212,7 +212,6 @@ graph LR
         B3["computedHeight, margin"]
         B4["drawWidget(), onClick()"]
         B5["useWidgetValueStore()"]
-        B6["usePromotionStore()"]
     end
 
     subgraph After["WidgetEntityId + Components"]
@@ -367,7 +366,6 @@ graph TD
     Canvas["LGraphCanvas"] -->|"node.graph._version++"| Graph
     Canvas -->|"node.graph.remove(node)"| Graph
     Widget["BaseWidget"] -->|"useWidgetValueStore()"| Store1["Pinia Store"]
-    Widget -->|"usePromotionStore()"| Store2["Pinia Store"]
     Node -->|"useLayoutMutations()"| Store3["Layout Store"]
     Graph -->|"useLayoutMutations()"| Store3
     LLink["LLink"] -->|"useLayoutMutations()"| Store3

@@ -2,7 +2,6 @@
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
-import { ref } from 'vue'
 
 import BrandButton from '../common/BrandButton.vue'
 import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
@@ -116,8 +115,6 @@ const plans: PricingPlan[] = [
 
 const standardPlans = plans.filter((p) => !p.isEnterprise)
 const enterprisePlan = plans.find((p) => p.isEnterprise)!
-
-const activePlanIndex = ref(0)
 </script>
 
 <template>
@@ -134,28 +131,7 @@ const activePlanIndex = ref(0)
       </p>
     </div>
 
-    <!-- Mobile plan tabs -->
-    <div class="mb-6 flex scrollbar-none gap-2 overflow-x-auto lg:hidden">
-      <button
-        v-for="(plan, index) in plans"
-        :key="plan.id"
-        :class="
-          cn(
-            'shrink-0 rounded-full px-4 py-2 text-xs font-bold tracking-wider transition-colors',
-            activePlanIndex === index
-              ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-              : 'bg-transparency-white-t4 text-primary-comfy-canvas'
-          )
-        "
-        @click="activePlanIndex = index"
-      >
-        <span class="ppformula-text-center">
-          {{ t(plan.labelKey, locale) }}
-        </span>
-      </button>
-    </div>
-
-    <!-- Desktop: dynamic grid (3 or 4 columns) / Mobile: single card -->
+    <!-- Desktop: dynamic grid (3 or 4 columns) / Mobile: stacked cards -->
     <div
       :class="
         cn(
@@ -273,13 +249,9 @@ const activePlanIndex = ref(0)
       </PricingTierCard>
     </div>
 
-    <!-- Mobile: single plan view -->
-    <div class="lg:hidden">
-      <div
-        v-for="(plan, index) in plans"
-        :key="plan.id"
-        :class="cn('flex-col', activePlanIndex !== index ? 'hidden' : 'flex')"
-      >
+    <!-- Mobile: stacked plans -->
+    <div class="flex flex-col gap-8 lg:hidden">
+      <div v-for="plan in plans" :key="plan.id" class="flex flex-col">
         <!-- Main info card -->
         <div class="bg-transparency-white-t4 rounded-3xl p-6">
           <!-- Label + badge -->

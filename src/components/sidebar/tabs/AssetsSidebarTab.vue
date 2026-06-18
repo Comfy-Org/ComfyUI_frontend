@@ -586,7 +586,9 @@ const handleZoomClick = (asset: AssetItem) => {
         modelUrl: asset.preview_url || getAssetUrl(asset)
       },
       dialogComponentProps: {
-        style: 'width: 80vw; height: 80vh;',
+        renderer: 'reka',
+        size: 'full',
+        contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
         maximizable: true
       }
     })

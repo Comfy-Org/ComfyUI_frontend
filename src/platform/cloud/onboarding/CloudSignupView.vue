@@ -1,92 +1,81 @@
 <template>
-  <div class="flex h-full items-center justify-center p-8">
-    <div class="max-w-screen p-2 lg:w-96">
-      <!-- Header -->
-      <div class="mb-8 flex flex-col gap-4">
-        <h1 class="my-0 text-xl/normal font-medium">
+  <div
+    class="flex size-full items-center justify-center px-4 py-8 sm:px-6 md:px-8 lg:py-12"
+  >
+    <div class="flex w-full max-w-md flex-col items-start">
+      <div class="flex w-full flex-col gap-4">
+        <h1
+          class="my-0 font-inter text-xl/8 font-extrabold tracking-wide text-primary-comfy-canvas sm:text-2xl/8"
+        >
           {{ t('auth.signup.title') }}
         </h1>
-        <p class="my-0 text-base">
-          <span class="text-muted">{{
+        <p
+          class="my-0 text-base/6 tracking-[-0.02em] text-primary-comfy-canvas"
+        >
+          <span class="text-primary-comfy-canvas/70">{{
             t('auth.signup.alreadyHaveAccount')
           }}</span>
           <span
-            class="ml-1 cursor-pointer text-blue-500"
+            class="ml-1 cursor-pointer text-azure-600"
             @click="navigateToLogin"
             >{{ t('auth.signup.signIn') }}</span
           >
         </p>
       </div>
 
-      <Message v-if="!isSecureContext" severity="warn" class="mb-4">
+      <Message v-if="!isSecureContext" severity="warn" class="mt-4 w-full">
         {{ t('auth.login.insecureContextWarning') }}
       </Message>
 
-      <template v-if="!showEmailForm">
-        <p
-          v-if="isFreeTierEnabled && !googleSsoBlockedReason"
-          class="mb-4 text-sm text-muted-foreground"
-        >
-          {{
-            freeTierCredits
-              ? t('auth.login.freeTierDescription', {
-                  credits: freeTierCredits
-                })
-              : t('auth.login.freeTierDescriptionGeneric')
-          }}
-        </p>
-
-        <!-- OAuth Buttons (primary) -->
-        <div class="flex flex-col gap-4">
-          <div v-if="!googleSsoBlockedReason" class="relative">
-            <Button type="button" class="h-10 w-full" @click="signInWithGoogle">
-              <i class="pi pi-google mr-2"></i>
-              {{ t('auth.signup.signUpWithGoogle') }}
-            </Button>
-            <span
-              v-if="isFreeTierEnabled"
-              class="absolute -top-2.5 -right-2.5 rounded-full bg-yellow-400 px-2 py-0.5 text-2xs font-bold whitespace-nowrap text-gray-900"
-            >
-              {{ t('auth.login.freeTierBadge') }}
-            </span>
-          </div>
+      <div class="flex w-full flex-col gap-4 pt-5 pb-2">
+        <template v-if="!showEmailForm">
+          <Button
+            v-if="!googleSsoBlockedReason"
+            type="button"
+            variant="secondary"
+            class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 text-sm/4 font-medium text-primary-comfy-canvas shadow-inset-highlight hover:bg-sand-300/20"
+            @click="signInWithGoogle"
+          >
+            <i class="pi pi-google text-base" />
+            {{ t('auth.signup.signUpWithGoogle') }}
+          </Button>
 
           <Button
             type="button"
-            class="h-10 bg-charcoal-500"
             variant="secondary"
+            class="relative h-10 w-full gap-4 rounded-md border border-solid border-smoke-800/10 bg-smoke-800/10 font-inter text-sm/4 font-medium text-primary-comfy-canvas shadow-inset-highlight hover:bg-sand-300/20"
             @click="signInWithGithub"
           >
-            <i class="pi pi-github mr-2"></i>
+            <i class="pi pi-github text-base" />
             {{ t('auth.signup.signUpWithGithub') }}
           </Button>
-        </div>
 
-        <div class="mt-6 text-center">
           <Button
-            variant="muted-textonly"
-            class="text-sm underline"
+            variant="link"
+            class="text-sm/4 text-primary-comfy-canvas/70 hover:text-primary-comfy-canvas"
             @click="switchToEmailForm"
           >
             {{ t('auth.login.useEmailInstead') }}
           </Button>
-        </div>
-      </template>
+        </template>
 
-      <template v-else>
-        <Message v-if="isFreeTierEnabled" severity="warn" class="mb-4">
-          {{ t('auth.signup.emailNotEligibleForFreeTier') }}
-        </Message>
+        <template v-else>
+          <Message v-if="isFreeTierEnabled" severity="warn" class="w-full">
+            {{ t('auth.signup.emailNotEligibleForFreeTier') }}
+          </Message>
 
-        <Message v-if="userIsInChina" severity="warn" class="mb-4">
-          {{ t('auth.signup.regionRestrictionChina') }}
-        </Message>
-        <SignUpForm v-else :auth-error="authError" @submit="signUpWithEmail" />
+          <Message v-if="userIsInChina" severity="warn" class="w-full">
+            {{ t('auth.signup.regionRestrictionChina') }}
+          </Message>
+          <SignUpForm
+            v-else
+            :auth-error="authError"
+            @submit="signUpWithEmail"
+          />
 
-        <div class="mt-4 text-center">
           <Button
-            variant="muted-textonly"
-            class="text-sm underline"
+            variant="secondary"
+            class="mt-1 h-10 w-full rounded-md border-none bg-smoke-800/5 text-sm/5 font-normal tracking-[-0.011em] text-primary-comfy-canvas/55 hover:bg-sand-300/10"
             @click="switchToSocialLogin"
           >
             {{
@@ -95,16 +84,17 @@
                 : t('auth.login.backToSocialLogin')
             }}
           </Button>
-        </div>
-      </template>
+        </template>
+      </div>
 
-      <!-- Terms & Contact -->
-      <p class="mt-5 text-sm text-gray-600">
+      <p
+        class="mx-auto my-0 flex w-full max-w-10/12 flex-wrap items-center justify-center gap-x-1 py-4 text-center text-sm/5 tracking-[-0.011em] text-primary-comfy-canvas"
+      >
         {{ t('auth.login.termsText') }}
         <a
           href="https://www.comfy.org/terms-of-service"
           target="_blank"
-          class="cursor-pointer text-blue-400 no-underline"
+          class="cursor-pointer text-azure-600 no-underline"
         >
           {{ t('auth.login.termsLink') }}
         </a>
@@ -112,16 +102,18 @@
         <a
           href="https://www.comfy.org/privacy-policy"
           target="_blank"
-          class="cursor-pointer text-blue-400 no-underline"
+          class="cursor-pointer text-azure-600 no-underline"
         >
           {{ t('auth.login.privacyLink') }} </a
         >.
       </p>
-      <p class="mt-2 text-sm text-gray-600">
+      <p
+        class="mx-auto mt-2 mb-0 flex w-full max-w-10/12 flex-wrap items-center justify-center gap-x-1 text-center text-sm/5 tracking-[-0.011em] text-primary-comfy-canvas"
+      >
         {{ t('cloudWaitlist_questionsText') }}
         <a
           href="https://support.comfy.org"
-          class="cursor-pointer text-blue-400 no-underline"
+          class="cursor-pointer text-azure-600 no-underline"
           target="_blank"
           rel="noopener noreferrer"
         >
@@ -159,7 +151,6 @@ const userIsInChina = ref(false)
 const telemetry = useTelemetry()
 const {
   showEmailForm,
-  freeTierCredits,
   isFreeTierEnabled,
   switchToEmailForm,
   switchToSocialLogin
@@ -197,7 +188,6 @@ const signUpWithEmail = async (values: SignUpData) => {
 }
 
 onMounted(async () => {
-  // Track signup screen opened
   if (isCloud) {
     telemetry?.trackSignupOpened()
   }
@@ -210,11 +200,21 @@ onMounted(async () => {
   border: none !important;
   box-shadow: none !important;
   background: #2d2e32 !important;
+  color: var(--color-primary-comfy-canvas) !important;
+  caret-color: var(--color-primary-comfy-canvas);
+}
+
+:deep(.p-inputtext::placeholder) {
+  color: rgb(from var(--color-primary-comfy-canvas) r g b / 0.5);
 }
 
 :deep(.p-password input) {
   border: none !important;
   box-shadow: none !important;
+}
+
+:deep(.p-password-toggle-mask-icon) {
+  cursor: pointer;
 }
 :deep(.p-checkbox-checked .p-checkbox-box) {
   background-color: #f0ff41 !important;

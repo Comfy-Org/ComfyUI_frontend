@@ -139,6 +139,7 @@ export class WorkflowsSidebarTab extends SidebarTab {
   public readonly root: Locator
   public readonly activeWorkflowLabel: Locator
   public readonly searchInput: Locator
+  public readonly refreshButton: Locator
 
   constructor(public override readonly page: Page) {
     super(page, 'workflows')
@@ -147,6 +148,9 @@ export class WorkflowsSidebarTab extends SidebarTab {
       '.comfyui-workflows-open .p-tree-node-selected .node-label'
     )
     this.searchInput = this.root.getByRole('combobox').first()
+    this.refreshButton = this.root.getByTestId(
+      TestIds.sidebar.workflowsRefreshButton
+    )
   }
 
   async getOpenedWorkflowNames() {

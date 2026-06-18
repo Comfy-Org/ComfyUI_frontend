@@ -145,9 +145,7 @@ export default defineConfig([
   eslintConfigPrettier,
   // @ts-expect-error Type incompatibility between storybook plugin and ESLint config types
   storybookConfigs['flat/recommended'],
-  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.recommended,
-  // @ts-expect-error Type incompatibility between import-x plugin and ESLint config types
   importX.flatConfigs.typescript,
   {
     plugins: {
@@ -373,7 +371,8 @@ export default defineConfig([
     files: [
       'src/base/**/*.{ts,vue}',
       'src/platform/**/*.{ts,vue}',
-      'src/workbench/**/*.{ts,vue}'
+      'src/workbench/**/*.{ts,vue}',
+      'src/world/**/*.{ts,vue}'
     ],
     rules: {
       'import-x/no-restricted-paths': [
@@ -401,6 +400,12 @@ export default defineConfig([
               from: './src/renderer/**',
               message:
                 'workbench/ cannot import from renderer/ (violates layer architecture: base → platform → workbench → renderer)'
+            },
+            {
+              target: './src/world/**',
+              from: './src/lib/litegraph/**',
+              message:
+                'src/world/ must remain free of litegraph dependencies. The world layer owns canonical entity identity and must not depend on litegraph types or values.'
             }
           ]
         }

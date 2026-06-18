@@ -3,10 +3,7 @@ import type {
   NodeError,
   PromptError
 } from '@/schemas/apiSchema'
-import type {
-  MissingMediaGroup,
-  MediaType
-} from '@/platform/missingMedia/types'
+import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import type { MissingModelGroup } from '@/platform/missingModel/types'
 import type { MissingNodeType } from '@/types/comfy'
 
@@ -28,6 +25,10 @@ export interface ResolvedErrorMessage {
   toastMessage?: string
 }
 
+export type ResolvedCatalogErrorMessage = ResolvedErrorMessage & {
+  catalogId: string
+}
+
 export type ResolvedMissingErrorMessage = ResolvedErrorMessage & {
   displayTitle: string
   displayMessage: string
@@ -40,15 +41,14 @@ export type RunErrorMessageSource =
       nodeDisplayName: string
     }
   | {
-      kind: 'execution'
-      error: ExecutionErrorWsMessage
-      nodeDisplayName?: string
-      isCloud: boolean
-    }
-  | {
       kind: 'prompt'
       error: PromptError
       isCloud: boolean
+    }
+  | {
+      kind: 'execution'
+      error: ExecutionErrorWsMessage
+      nodeDisplayName: string
     }
 
 export type MissingErrorMessageSource =
@@ -74,6 +74,5 @@ export type MissingErrorMessageSource =
       kind: 'missing_media'
       groups: MissingMediaGroup[]
       count: number
-      mediaTypes: MediaType[]
       isCloud: boolean
     }
