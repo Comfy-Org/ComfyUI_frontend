@@ -78,7 +78,7 @@
                 variant="secondary"
                 size="icon"
                 :aria-label="t('rightSidePanel.togglePanel')"
-                @click="rightSidePanelStore.togglePanel"
+                @click="openRightSidePanel"
               >
                 <i class="icon-[lucide--panel-right] size-4" />
               </Button>
@@ -148,6 +148,7 @@ import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
@@ -281,6 +282,14 @@ const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
 const rightSidePanelTooltipConfig = computed(() =>
   buildTooltipConfig(t('rightSidePanel.togglePanel'))
 )
+
+function openRightSidePanel() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_opened',
+    element_group: 'top_menu'
+  })
+  rightSidePanelStore.togglePanel()
+}
 
 // Maintain support for legacy topbar elements attached by custom scripts
 const legacyCommandsContainerRef = ref<HTMLElement>()

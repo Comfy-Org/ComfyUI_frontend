@@ -28,6 +28,7 @@ import type {
   RunButtonProperties,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
+  ShellLayoutMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -45,6 +46,7 @@ import type {
   WorkflowSavedMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
+import { getActionbarDockState } from '../../utils/getActionbarDockState'
 import { getExecutionContext } from '../../utils/getExecutionContext'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
@@ -54,13 +56,10 @@ const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.TAB_COUNT_TRACKING,
   TelemetryEvents.NODE_SEARCH,
   TelemetryEvents.NODE_SEARCH_RESULT_SELECTED,
-  TelemetryEvents.TEMPLATE_FILTER_CHANGED,
-  TelemetryEvents.SETTING_CHANGED,
   TelemetryEvents.HELP_CENTER_OPENED,
   TelemetryEvents.HELP_RESOURCE_CLICKED,
   TelemetryEvents.HELP_CENTER_CLOSED,
-  TelemetryEvents.WORKFLOW_CREATED,
-  TelemetryEvents.UI_BUTTON_CLICKED
+  TelemetryEvents.WORKFLOW_CREATED
 ] as const satisfies TelemetryEventName[]
 
 const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
@@ -395,7 +394,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
       toolkit_node_names: executionContext.toolkit_node_names,
       trigger_source: options?.trigger_source,
       view_mode: mode.value,
-      is_app_mode: isAppMode.value
+      is_app_mode: isAppMode.value,
+      dock_state: getActionbarDockState()
     }
 
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
@@ -495,6 +495,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackTabCount(metadata: TabCountMetadata): void {
     this.trackEvent(TelemetryEvents.TAB_COUNT_TRACKING, metadata)
+  }
+
+  trackShellLayout(metadata: ShellLayoutMetadata): void {
+    this.trackEvent(TelemetryEvents.SHELL_LAYOUT, metadata)
   }
 
   trackNodeSearch(metadata: NodeSearchMetadata): void {
