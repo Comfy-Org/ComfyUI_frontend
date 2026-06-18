@@ -1,5 +1,4 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
-import type { GroupNodeWorkflowData } from '@/lib/litegraph/src/LGraph'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { LGraphNodeConstructor } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -54,6 +53,25 @@ interface GroupNodeOutput {
   label?: string
   widget?: { name: string }
   links?: number[]
+}
+
+interface GroupNodeConfigEntry {
+  input?: Record<string, { name?: string; visible?: boolean }>
+  output?: Record<number, { name?: string; visible?: boolean }>
+}
+
+export interface GroupNodeWorkflowData {
+  external: (number | string)[][]
+  links: SerialisedLLinkArray[]
+  nodes: {
+    index?: number
+    type?: string
+    title?: string
+    inputs?: unknown[]
+    outputs?: unknown[]
+    widgets_values?: unknown[]
+  }[]
+  config?: Record<number, GroupNodeConfigEntry>
 }
 
 interface GroupNodeData extends Omit<

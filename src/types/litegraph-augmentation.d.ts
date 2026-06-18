@@ -118,8 +118,6 @@ declare module '@/lib/litegraph/src/litegraph' {
     ): ExecutableLGraphNode[]
     recreate?(): Promise<LGraphNode>
     refreshComboInNode?(defs: Record<string, ComfyNodeDef>)
-    /** @deprecated groupNode */
-    updateLink?(link: LLink): LLink | null
     /**
      * @deprecated primitive node.
      * Used by virtual nodes (primitives) to insert their values into the graph prior to queueing.

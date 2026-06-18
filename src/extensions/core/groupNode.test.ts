@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { GroupNodeWorkflowData } from '@/lib/litegraph/src/LGraph'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
+
+import type { GroupNodeWorkflowData } from './groupNode'
 
 vi.mock('@/scripts/app', () => ({
   app: {
