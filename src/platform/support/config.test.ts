@@ -57,10 +57,13 @@ describe('buildFeedbackHiddenFields', () => {
     distribution.isNightly = false
   })
 
-  async function build(source: 'topbar' | 'action-bar' | 'help-center') {
+  async function build(
+    source: 'topbar' | 'action-bar' | 'help-center',
+    extraTags?: Record<string, string>
+  ) {
     vi.resetModules()
     const { buildFeedbackHiddenFields } = await import('./config')
-    return buildFeedbackHiddenFields(source)
+    return buildFeedbackHiddenFields(source, extraTags)
   }
 
   it('formats tags comma-separated for the Typeform embed data-tf-hidden attribute', async () => {
@@ -72,6 +75,13 @@ describe('buildFeedbackHiddenFields', () => {
     distribution.isNightly = true
     expect(await build('action-bar')).toBe(
       'distribution=oss-nightly,source=action-bar'
+    )
+  })
+
+  it('appends extra tags after the base segmentation tags', async () => {
+    distribution.isCloud = true
+    expect(await build('topbar', { email: 'user@example.com' })).toBe(
+      'distribution=ccloud,source=topbar,email=user@example.com'
     )
   })
 })

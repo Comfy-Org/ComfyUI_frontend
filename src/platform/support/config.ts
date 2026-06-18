@@ -48,8 +48,11 @@ export function buildFeedbackTypeformUrl(source: FeedbackSource): string {
   return `${FEEDBACK_TYPEFORM_BASE_URL}#${params.toString()}`
 }
 
-export function buildFeedbackHiddenFields(source: FeedbackSource): string {
-  return Object.entries(getFeedbackTags(source))
+export function buildFeedbackHiddenFields(
+  source: FeedbackSource,
+  extraTags: Record<string, string> = {}
+): string {
+  return Object.entries({ ...getFeedbackTags(source), ...extraTags })
     .map(([key, value]) => `${key}=${value}`)
     .join(',')
 }
