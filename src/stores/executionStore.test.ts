@@ -1,7 +1,7 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { asNodeExecutionId } from '@/types/nodeIdentification'
+import { asNodeExecutionId, asNodeLocatorId } from '@/types/nodeIdentification'
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -278,8 +278,10 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
 
     const result = store.nodeLocationProgressStates
 
-    expect(result['123']).toBeDefined()
-    expect(result['a1b2c3d4-e5f6-7890-abcd-ef1234567890:456']).toBeDefined()
+    expect(result[asNodeLocatorId('123')]).toBeDefined()
+    expect(
+      result[asNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')]
+    ).toBeDefined()
   })
 
   it('should not re-traverse graph for same execution IDs across progress updates', () => {
@@ -306,7 +308,9 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
     }
 
     // First evaluation triggers graph traversal
-    expect(store.nodeLocationProgressStates['123']).toBeDefined()
+    expect(
+      store.nodeLocationProgressStates[asNodeLocatorId('123')]
+    ).toBeDefined()
     const callCountAfterFirst = vi.mocked(app.rootGraph.getNodeById).mock.calls
       .length
 
@@ -322,7 +326,9 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
       }
     }
 
-    expect(store.nodeLocationProgressStates['123']).toBeDefined()
+    expect(
+      store.nodeLocationProgressStates[asNodeLocatorId('123')]
+    ).toBeDefined()
 
     // getNodeById should NOT be called again for the same execution ID
     expect(vi.mocked(app.rootGraph.getNodeById).mock.calls.length).toBe(
@@ -365,12 +371,16 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
     const result = store.nodeLocationProgressStates
 
     // Both sibling nodes should be resolved with the correct subgraph UUID
-    expect(result['a1b2c3d4-e5f6-7890-abcd-ef1234567890:456']).toBeDefined()
-    expect(result['a1b2c3d4-e5f6-7890-abcd-ef1234567890:789']).toBeDefined()
+    expect(
+      result[asNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')]
+    ).toBeDefined()
+    expect(
+      result[asNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890:789')]
+    ).toBeDefined()
 
     // The shared parent "123" should also have a merged state
-    expect(result['123']).toBeDefined()
-    expect(result['123'].state).toBe('running')
+    expect(result[asNodeLocatorId('123')]).toBeDefined()
+    expect(result[asNodeLocatorId('123')].state).toBe('running')
   })
 })
 
@@ -616,7 +626,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
   describe('getNodeErrors', () => {
     it('should return undefined when no errors exist', () => {
-      const result = store.getNodeErrors('123')
+      const result = store.getNodeErrors(asNodeLocatorId('123'))
       expect(result).toBeUndefined()
     })
 
@@ -636,7 +646,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
         }
       }
 
-      const result = store.getNodeErrors('123')
+      const result = store.getNodeErrors(asNodeLocatorId('123'))
       expect(result).toBeDefined()
       expect(result?.errors).toHaveLength(1)
       expect(result?.errors[0].message).toBe('Invalid input')
@@ -673,7 +683,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
         }
       }
 
-      const locatorId = `${subgraphUuid}:456`
+      const locatorId = asNodeLocatorId(`${subgraphUuid}:456`)
       const result = store.getNodeErrors(locatorId)
       expect(result).toBeDefined()
       expect(result?.errors[0].message).toBe('Invalid subgraph input')
@@ -682,7 +692,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
 
   describe('slotHasError', () => {
     it('should return false when node has no errors', () => {
-      const result = store.slotHasError('123', 'width')
+      const result = store.slotHasError(asNodeLocatorId('123'), 'width')
       expect(result).toBe(false)
     })
 
@@ -702,7 +712,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
         }
       }
 
-      const result = store.slotHasError('123', 'height')
+      const result = store.slotHasError(asNodeLocatorId('123'), 'height')
       expect(result).toBe(false)
     })
 
@@ -722,7 +732,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
         }
       }
 
-      const result = store.slotHasError('123', 'width')
+      const result = store.slotHasError(asNodeLocatorId('123'), 'width')
       expect(result).toBe(true)
     })
 
@@ -748,7 +758,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
         }
       }
 
-      const result = store.slotHasError('123', 'width')
+      const result = store.slotHasError(asNodeLocatorId('123'), 'width')
       expect(result).toBe(true)
     })
 
@@ -767,7 +777,7 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
         }
       }
 
-      const result = store.slotHasError('123', 'width')
+      const result = store.slotHasError(asNodeLocatorId('123'), 'width')
       expect(result).toBe(false)
     })
   })

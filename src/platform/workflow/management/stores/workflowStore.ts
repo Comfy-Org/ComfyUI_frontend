@@ -20,6 +20,7 @@ import { defaultGraphJSON } from '@/scripts/defaultGraph'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   asNodeExecutionId,
+  asNodeLocatorId,
   createNodeExecutionId,
   createNodeLocatorId,
   parseNodeExecutionId,
@@ -631,7 +632,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const targetSubgraph = subgraph ?? activeSubgraph.value
     if (!targetSubgraph) {
       // Node is in the root graph, return the node ID as-is
-      return String(nodeId)
+      return asNodeLocatorId(nodeId)
     }
 
     return createNodeLocatorId(targetSubgraph.id, nodeId)
@@ -645,7 +646,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const nodeToNodeLocatorId = (node: LGraphNode): NodeLocatorId => {
     if (isSubgraph(node.graph))
       return createNodeLocatorId(node.graph.id, node.id)
-    return String(node.id)
+    return asNodeLocatorId(node.id)
   }
 
   /**
@@ -658,7 +659,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   ): NodeLocatorId | null => {
     // Handle simple node IDs (root graph - no colons)
     if (!nodeExecutionId.includes(':')) {
-      return nodeExecutionId
+      return asNodeLocatorId(nodeExecutionId)
     }
 
     const parts = parseNodeExecutionId(nodeExecutionId)
@@ -669,7 +670,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     if (subgraphNodeIds.length === 0) {
       // Node is in root graph, return the node ID as-is
-      return String(nodeId)
+      return asNodeLocatorId(nodeId)
     }
 
     try {

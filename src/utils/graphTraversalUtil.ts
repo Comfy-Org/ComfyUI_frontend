@@ -8,6 +8,7 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   asNodeExecutionId,
+  asNodeLocatorId,
   createNodeLocatorId,
   getParentExecutionIds,
   parseNodeLocatorId
@@ -24,10 +25,12 @@ import { isSubgraphIoNode } from './typeGuardUtil'
 export function getLocatorIdFromNodeData(nodeData: {
   id: string | number
   subgraphId?: string | null
-}): string {
-  return nodeData.subgraphId
-    ? `${nodeData.subgraphId}:${String(nodeData.id)}`
-    : String(nodeData.id)
+}): NodeLocatorId {
+  return asNodeLocatorId(
+    nodeData.subgraphId
+      ? `${nodeData.subgraphId}:${String(nodeData.id)}`
+      : String(nodeData.id)
+  )
 }
 
 /**
@@ -506,7 +509,7 @@ export function executionIdToNodeLocatorId(
 
   if (!nodeIdStr.includes(':')) {
     // It's a top-level node ID
-    return nodeIdStr
+    return asNodeLocatorId(nodeIdStr)
   }
 
   // It's an execution node ID — resolve subgraph path

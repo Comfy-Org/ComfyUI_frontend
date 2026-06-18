@@ -16,6 +16,10 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { clone } from '@/scripts/utils'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
+import {
+  asNodeLocatorId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import { parseFilePath } from '@/utils/formatUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import {
@@ -189,7 +193,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
       if (existingOutput && outputs) {
         for (const k in outputs) {
           const existingValue = existingOutput[k]
-          const newValue = (outputs as Record<NodeLocatorId, unknown>)[k]
+          const newValue = (outputs as Record<string, unknown>)[k]
 
           if (Array.isArray(existingValue) && Array.isArray(newValue)) {
             existingOutput[k] = existingValue.concat(newValue)
@@ -321,9 +325,11 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     if (!graph) return
 
     const graphId = graph.isRootGraph ? '' : graph.id + ':'
-    revokePreviewsByLocatorId(graphId + subgraphNode.id)
+    revokePreviewsByLocatorId(asNodeLocatorId(graphId + subgraphNode.id))
     for (const node of subgraphNode.subgraph.nodes) {
-      revokePreviewsByLocatorId(subgraphNode.subgraph.id + node.id)
+      revokePreviewsByLocatorId(
+        createNodeLocatorId(subgraphNode.subgraph.id, node.id)
+      )
     }
   }
 

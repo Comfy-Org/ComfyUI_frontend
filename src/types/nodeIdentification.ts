@@ -17,8 +17,23 @@ import type { NodeId } from '@/types/nodeId'
  *
  * Unlike execution IDs which change based on the instance path,
  * NodeLocatorId remains the same for all instances of a particular node.
+ *
+ * This is a derived *address* (subgraph-definition UUID + local id), NOT an ECS
+ * Entity ID. It must never be branded as or stored where a `NodeId` is expected.
  */
-export type NodeLocatorId = string
+export type NodeLocatorId = string & { readonly __brand: 'NodeLocatorId' }
+
+/** Raw value at boundaries; normalise with `asNodeLocatorId`. */
+export type NodeLocatorIdInput = string | number
+
+/**
+ * Brand a raw boundary value as a `NodeLocatorId`. Lenient (string-cast) like
+ * `asNodeId`; it does not validate locator shape. Use for root-graph nodes whose
+ * locator is the bare local id, and at persistence/boundary read sites.
+ */
+export function asNodeLocatorId(value: NodeLocatorIdInput): NodeLocatorId {
+  return String(value) as NodeLocatorId
+}
 
 /**
  * An execution identifier representing a node's position in nested subgraphs.
@@ -126,7 +141,7 @@ export function createNodeLocatorId(
   subgraphUuid: string,
   localNodeId: NodeId
 ): NodeLocatorId {
-  return `${subgraphUuid}:${localNodeId}`
+  return asNodeLocatorId(`${subgraphUuid}:${localNodeId}`)
 }
 
 /**
