@@ -11,6 +11,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
   AuthMetadata,
+  BillingCycleToggledMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -348,6 +349,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
         : TelemetryEvents.SUBSCRIBE_NOW_BUTTON_CLICKED
 
     this.trackEvent(eventName, metadata)
+  }
+
+  trackBillingCycleToggled(metadata: BillingCycleToggledMetadata): void {
+    this.trackEvent(TelemetryEvents.BILLING_CYCLE_TOGGLED, metadata)
   }
 
   trackAddApiCreditButtonClicked(): void {

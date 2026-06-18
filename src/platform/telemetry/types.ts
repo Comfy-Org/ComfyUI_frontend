@@ -443,6 +443,16 @@ export interface SubscriptionMetadata {
   source?: SubscribeClickSource
 }
 
+/**
+ * Fired when the user toggles the monthly/yearly billing cycle on the
+ * pricing table. Lets us see whether the annual-discount nudge actually
+ * moves the cycle selection before checkout.
+ */
+export interface BillingCycleToggledMetadata {
+  from: BillingCycle
+  to: BillingCycle
+}
+
 export interface BeginCheckoutMetadata
   extends Record<string, unknown>, CheckoutAttributionMetadata {
   user_id: string
@@ -494,6 +504,7 @@ export interface TelemetryProvider {
     metadata?: SubscriptionMetadata
   ): void
   trackBeginCheckout?(metadata: BeginCheckoutMetadata): void
+  trackBillingCycleToggled?(metadata: BillingCycleToggledMetadata): void
   trackMonthlySubscriptionSucceeded?(
     metadata?: SubscriptionSuccessMetadata
   ): void
@@ -601,6 +612,7 @@ export const TelemetryEvents = {
   RUN_BUTTON_CLICKED: 'app:run_button_click',
   SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'app:subscription_required_modal_opened',
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
+  BILLING_CYCLE_TOGGLED: 'app:billing_cycle_toggled',
   MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
   MONTHLY_SUBSCRIPTION_CANCELLED: 'app:monthly_subscription_cancelled',
   ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
@@ -718,3 +730,4 @@ export type TelemetryEventProperties =
   | DefaultViewSetMetadata
   | SubscriptionMetadata
   | SubscriptionSuccessMetadata
+  | BillingCycleToggledMetadata

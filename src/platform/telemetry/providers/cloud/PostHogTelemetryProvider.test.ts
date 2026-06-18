@@ -324,6 +324,18 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures billing cycle toggles with from/to', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackBillingCycleToggled({ from: 'yearly', to: 'monthly' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.BILLING_CYCLE_TOGGLED,
+        { from: 'yearly', to: 'monthly' }
+      )
+    })
+
     it('captures search queries with surface, query, length, and result count', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

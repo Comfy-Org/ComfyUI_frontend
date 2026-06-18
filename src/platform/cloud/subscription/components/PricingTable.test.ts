@@ -31,6 +31,7 @@ const mockAccessBillingPortal = vi.fn()
 const mockReportError = vi.fn()
 const mockTrackBeginCheckout = vi.fn()
 const mockTrackSubscription = vi.fn()
+const mockTrackBillingCycleToggled = vi.fn()
 const mockUserId = ref<string | undefined>('user-123')
 const mockGetAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' })
@@ -113,7 +114,8 @@ vi.mock('@/stores/authStore', () => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackBeginCheckout: mockTrackBeginCheckout,
-    trackSubscription: mockTrackSubscription
+    trackSubscription: mockTrackSubscription,
+    trackBillingCycleToggled: mockTrackBillingCycleToggled
   })
 }))
 
@@ -225,6 +227,7 @@ describe('PricingTable', () => {
     mockAccessBillingPortal.mockResolvedValue(true)
     mockTrackBeginCheckout.mockReset()
     mockTrackSubscription.mockReset()
+    mockTrackBillingCycleToggled.mockReset()
     mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -508,6 +511,29 @@ describe('PricingTable', () => {
       await flushPromises()
 
       expect(mockTrackSubscription).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('billing cycle toggle telemetry', () => {
+    it('fires billing_cycle_toggled with from/to when switching to monthly', async () => {
+      renderComponent()
+      await flushPromises()
+
+      const monthlyToggle = screen.getByRole('button', { name: 'Monthly' })
+      await userEvent.click(monthlyToggle)
+      await flushPromises()
+
+      expect(mockTrackBillingCycleToggled).toHaveBeenCalledWith({
+        from: 'yearly',
+        to: 'monthly'
+      })
+    })
+
+    it('does not fire on initial render when the cycle has not changed', async () => {
+      renderComponent()
+      await flushPromises()
+
+      expect(mockTrackBillingCycleToggled).not.toHaveBeenCalled()
     })
   })
 })

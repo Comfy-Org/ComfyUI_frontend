@@ -3,6 +3,7 @@ import type { AuditLog } from '@/services/customerEventsService'
 import type {
   AuthMetadata,
   BeginCheckoutMetadata,
+  BillingCycleToggledMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
@@ -84,6 +85,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
     this.dispatch((provider) => provider.trackBeginCheckout?.(metadata))
+  }
+
+  trackBillingCycleToggled(metadata: BillingCycleToggledMetadata): void {
+    this.dispatch((provider) => provider.trackBillingCycleToggled?.(metadata))
   }
 
   trackMonthlySubscriptionSucceeded(
