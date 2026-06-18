@@ -9,16 +9,26 @@ export type AppMode =
   | 'builder:outputs'
   | 'builder:arrange'
 
+type WorkflowModeSource = {
+  activeMode: AppMode | null
+  initialMode: AppMode | null | undefined
+}
+
+export function getWorkflowMode(
+  workflow: WorkflowModeSource | null | undefined
+): AppMode {
+  return workflow?.activeMode ?? workflow?.initialMode ?? 'graph'
+}
+
+export function isAppModeValue(mode: AppMode): boolean {
+  return mode === 'app' || mode === 'builder:arrange'
+}
+
 const enableAppBuilder = ref(true)
 
 export function useAppMode() {
   const workflowStore = useWorkflowStore()
-  const mode = computed(
-    () =>
-      workflowStore.activeWorkflow?.activeMode ??
-      workflowStore.activeWorkflow?.initialMode ??
-      'graph'
-  )
+  const mode = computed(() => getWorkflowMode(workflowStore.activeWorkflow))
 
   const isBuilderMode = computed(
     () => isSelectMode.value || isArrangeMode.value
@@ -29,9 +39,7 @@ export function useAppMode() {
     () => isSelectInputsMode.value || isSelectOutputsMode.value
   )
   const isArrangeMode = computed(() => mode.value === 'builder:arrange')
-  const isAppMode = computed(
-    () => mode.value === 'app' || mode.value === 'builder:arrange'
-  )
+  const isAppMode = computed(() => isAppModeValue(mode.value))
   const isGraphMode = computed(
     () => mode.value === 'graph' || isSelectMode.value
   )

@@ -5,9 +5,9 @@ import { useI18n } from 'vue-i18n'
 
 import MoreButton from '@/components/button/MoreButton.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import {
+  demotePromotedInput,
   demoteWidget,
   isLinkedPromotion,
   promoteWidget
@@ -17,7 +17,7 @@ import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { usePromotionStore } from '@/stores/promotionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
 import { getWidgetDefaultValue, promptWidgetLabel } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
@@ -43,13 +43,14 @@ const label = defineModel<string>('label', { required: true })
 const canvasStore = useCanvasStore()
 const favoritedWidgetsStore = useFavoritedWidgetsStore()
 const nodeDefStore = useNodeDefStore()
-const promotionStore = usePromotionStore()
 const { t } = useI18n()
 
 const hasParents = computed(() => parents?.length > 0)
 const isLinked = computed(() => {
-  if (!node.isSubgraphNode() || !isPromotedWidgetView(widget)) return false
-  return isLinkedPromotion(node, widget.sourceNodeId, widget.sourceWidgetName)
+  if (!node.isSubgraphNode()) return false
+  const source = widgetPromotedSource(node, widget)
+  if (!source) return false
+  return isLinkedPromotion(node, source.nodeId, source.widgetName)
 })
 const canToggleVisibility = computed(() => hasParents.value && !isLinked.value)
 const favoriteNode = computed(() =>
@@ -67,9 +68,16 @@ const defaultValue = computed(() => getWidgetDefaultValue(inputSpec.value))
 
 const hasDefault = computed(() => defaultValue.value !== undefined)
 
+const currentValue = computed(
+  () =>
+    (widget.widgetId &&
+      useWidgetValueStore().getWidget(widget.widgetId)?.value) ??
+    widget.value
+)
+
 const isCurrentValueDefault = computed(() => {
   if (!hasDefault.value) return true
-  return isEqual(widget.value, defaultValue.value)
+  return isEqual(currentValue.value, defaultValue.value)
 })
 
 async function handleRename() {
@@ -80,18 +88,15 @@ async function handleRename() {
 function handleHideInput() {
   if (!parents?.length) return
 
-  if (isPromotedWidgetView(widget)) {
+  const source = widgetPromotedSource(node, widget)
+  if (source) {
     for (const parent of parents) {
-      const source: PromotedWidgetSource = {
-        sourceNodeId:
-          String(node.id) === String(parent.id)
-            ? widget.sourceNodeId
-            : String(node.id),
-        sourceWidgetName: widget.sourceWidgetName,
-        disambiguatingSourceNodeId: widget.disambiguatingSourceNodeId
-      }
-      promotionStore.demote(parent.rootGraph.id, parent.id, source)
-      parent.computeSize(parent.size)
+      const sourceNodeId =
+        String(node.id) === String(parent.id) ? source.nodeId : String(node.id)
+      demotePromotedInput(parent, {
+        sourceNodeId,
+        sourceWidgetName: source.widgetName
+      })
     }
     canvasStore.canvas?.setDirty(true, true)
   } else {

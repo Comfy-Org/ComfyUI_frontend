@@ -10,6 +10,9 @@ import type {
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 
+// Legacy coverage backed by AssetsHelper's shadow backend. New assets-sidebar
+// browser coverage should use typed route mocks in assetsSidebarTab.spec.ts.
+
 // ---------------------------------------------------------------------------
 // Shared fixtures
 // ---------------------------------------------------------------------------

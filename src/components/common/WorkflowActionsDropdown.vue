@@ -40,7 +40,8 @@ function handleOpen(open: boolean) {
   if (open) {
     markAsSeen()
     useTelemetry()?.trackUiButtonClicked({
-      button_id: source
+      button_id: source,
+      element_group: 'workflow_actions'
     })
   }
 }

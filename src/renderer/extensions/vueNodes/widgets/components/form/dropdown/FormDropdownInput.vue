@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Loader from '@/components/loader/Loader.vue'
 import { WidgetInputBaseClass } from '../../layout'
 import type { FormDropdownInputProps } from './types'
 
@@ -40,6 +41,14 @@ const theButtonStyle = computed(() =>
     selectedItems.value.length > 0 && 'text-text-primary'
   )
 )
+
+const buttonRef = ref<HTMLButtonElement>()
+
+function focus() {
+  buttonRef.value?.focus()
+}
+
+defineExpose({ focus })
 </script>
 
 <template>
@@ -51,6 +60,7 @@ const theButtonStyle = computed(() =>
     "
   >
     <button
+      ref="buttonRef"
       :class="
         cn(
           theButtonStyle,
@@ -91,7 +101,12 @@ const theButtonStyle = computed(() =>
         )
       "
     >
-      <i class="icon-[lucide--folder-search] size-4" aria-hidden="true" />
+      <Loader v-if="isUploading" size="sm" />
+      <i
+        v-else
+        class="icon-[lucide--folder-search] size-4"
+        aria-hidden="true"
+      />
       <input
         type="file"
         class="absolute inset-0 -z-1 opacity-0"

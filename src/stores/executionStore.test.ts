@@ -1,27 +1,53 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import type * as DistributionTypes from '@/platform/distribution/types'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
+import type { NodeProgressState } from '@/schemas/apiSchema'
 
 // Create mock functions that will be shared
 const {
   mockNodeExecutionIdToNodeLocatorId,
   mockNodeIdToNodeLocatorId,
   mockNodeLocatorIdToNodeExecutionId,
-  mockShowTextPreview
+  mockShowTextPreview,
+  mockTrackExecutionError,
+  mockTrackExecutionSuccess,
+  mockTrackSharedWorkflowRun
 } = vi.hoisted(() => ({
   mockNodeExecutionIdToNodeLocatorId: vi.fn(),
   mockNodeIdToNodeLocatorId: vi.fn(),
   mockNodeLocatorIdToNodeExecutionId: vi.fn(),
-  mockShowTextPreview: vi.fn()
+  mockShowTextPreview: vi.fn(),
+  mockTrackExecutionError: vi.fn(),
+  mockTrackExecutionSuccess: vi.fn(),
+  mockTrackSharedWorkflowRun: vi.fn()
 }))
 
-import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
-import type { NodeProgressState } from '@/schemas/apiSchema'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+const mockAppModeState = vi.hoisted(() => ({
+  mode: { value: 'graph' },
+  isAppMode: { value: false }
+}))
+
+vi.mock('@/composables/useAppMode', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+  return {
+    ...actual,
+    useAppMode: () => mockAppModeState
+  }
+})
+
+beforeEach(() => {
+  mockAppModeState.mode.value = 'graph'
+  mockAppModeState.isAppMode.value = false
+})
+
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -39,6 +65,21 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
     }))
   }
 })
+
+vi.mock('@/platform/distribution/types', async () => ({
+  ...(await vi.importActual<typeof DistributionTypes>(
+    '@/platform/distribution/types'
+  )),
+  isCloud: true
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackExecutionError: mockTrackExecutionError,
+    trackExecutionSuccess: mockTrackExecutionSuccess,
+    trackSharedWorkflowRun: mockTrackSharedWorkflowRun
+  })
+}))
 
 // Remove any previous global types
 declare global {
@@ -70,7 +111,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/stores/imagePreviewStore', () => ({
+vi.mock('@/stores/nodeOutputStore', () => ({
   useNodeOutputStore: () => ({
     revokePreviewsByExecutionId: vi.fn()
   })
@@ -93,6 +134,26 @@ vi.mock('@/scripts/app', () => ({
     nodePreviewImages: {}
   }
 }))
+
+function createQueuedWorkflow(path: string = 'workflows/test.json') {
+  return {
+    activeState: { id: 'workflow-id' },
+    initialState: { id: 'workflow-id' },
+    path
+  } as Parameters<
+    ReturnType<typeof useExecutionStore>['storeJob']
+  >[0]['workflow']
+}
+
+function createPromptNode(title: string, classType: string) {
+  return {
+    inputs: {},
+    class_type: classType,
+    _meta: {
+      title
+    }
+  }
+}
 
 describe('useExecutionStore - NodeLocatorId conversions', () => {
   let store: ReturnType<typeof useExecutionStore>
@@ -709,6 +770,103 @@ describe('useExecutionErrorStore - Node Error Lookups', () => {
   })
 })
 
+describe('useExecutionStore - executingNode with subgraphs', () => {
+  let store: ReturnType<typeof useExecutionStore>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+  })
+
+  it('should find executing node info in root graph from queued prompt data', () => {
+    store.storeJob({
+      id: 'test-prompt',
+      nodes: ['123'],
+      promptOutput: {
+        '123': createPromptNode('Test Node', 'TestNode')
+      },
+      workflow: createQueuedWorkflow()
+    })
+    store.activeJobId = 'test-prompt'
+
+    store.nodeProgressStates = {
+      '123': {
+        state: 'running',
+        value: 0,
+        max: 100,
+        display_node_id: '123',
+        prompt_id: 'test-prompt',
+        node_id: '123'
+      }
+    }
+
+    expect(store.executingNode).toEqual({
+      title: 'Test Node',
+      type: 'TestNode'
+    })
+  })
+
+  it('should find executing node info in subgraph using execution ID', () => {
+    store.storeJob({
+      id: 'test-prompt',
+      nodes: ['456:789'],
+      promptOutput: {
+        '456:789': createPromptNode('Nested Node', 'NestedNode')
+      },
+      workflow: createQueuedWorkflow()
+    })
+    store.activeJobId = 'test-prompt'
+
+    store.nodeProgressStates = {
+      '456:789': {
+        state: 'running',
+        value: 0,
+        max: 100,
+        display_node_id: '456:789',
+        prompt_id: 'test-prompt',
+        node_id: '456:789'
+      }
+    }
+
+    expect(store.executingNode).toEqual({
+      title: 'Nested Node',
+      type: 'NestedNode'
+    })
+  })
+
+  it('should return null when no node is executing', () => {
+    store.nodeProgressStates = {}
+
+    expect(store.executingNode).toBeNull()
+  })
+
+  it('should return null when executing node metadata cannot be found', () => {
+    store.storeJob({
+      id: 'test-prompt',
+      nodes: ['123'],
+      promptOutput: {
+        '123': createPromptNode('Test Node', 'TestNode')
+      },
+      workflow: createQueuedWorkflow()
+    })
+    store.activeJobId = 'test-prompt'
+
+    store.nodeProgressStates = {
+      '999': {
+        state: 'running',
+        value: 0,
+        max: 100,
+        display_node_id: '999',
+        prompt_id: 'test-prompt',
+        node_id: '999'
+      }
+    }
+
+    expect(store.executingNode).toBeNull()
+  })
+})
+
 describe('useMissingNodesErrorStore - setMissingNodeTypes', () => {
   let store: ReturnType<typeof useMissingNodesErrorStore>
 
@@ -831,6 +989,48 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.queuedJobs['job-1']).toEqual({ nodes: {} })
     })
 
+    it('clears transient errors while preserving validation errors', () => {
+      const errorStore = useExecutionErrorStore()
+      const nodeErrors = {
+        '1': {
+          class_type: 'Test',
+          dependent_outputs: [],
+          errors: [
+            {
+              type: 'required_input_missing',
+              message: 'Missing',
+              details: '',
+              extra_info: { input_name: 'x' }
+            }
+          ]
+        }
+      }
+      errorStore.lastExecutionError = {
+        prompt_id: 'old-job',
+        timestamp: 0,
+        node_id: '1',
+        node_type: 'Test',
+        executed: [],
+        exception_message: 'boom',
+        exception_type: 'RuntimeError',
+        traceback: []
+      }
+      errorStore.lastPromptError = {
+        type: 'old-error',
+        message: 'old prompt error',
+        details: ''
+      }
+      errorStore.lastNodeErrors = nodeErrors
+      errorStore.showErrorOverlay()
+
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(errorStore.lastExecutionError).toBeNull()
+      expect(errorStore.lastPromptError).toBeNull()
+      expect(errorStore.lastNodeErrors).toEqual(nodeErrors)
+      expect(errorStore.isErrorOverlayOpen).toBe(true)
+    })
+
     it('clears initializing state for the starting job', () => {
       store.initializingJobIds = new Set([
         'job-1',
@@ -925,6 +1125,101 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(store.activeJobId).toBeNull()
       expect(store.queuedJobs['job-1']).toBeUndefined()
+    })
+
+    it('tracks shared workflow run when the queued workflow has share attribution', () => {
+      const workflow = createQueuedWorkflow()
+      workflow.shareId = 'share-1'
+      store.storeJob({
+        nodes: ['a'],
+        id: 'job-1',
+        promptOutput: {
+          a: createPromptNode('Node A', 'NodeA')
+        },
+        workflow
+      })
+      fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(mockTrackExecutionSuccess).toHaveBeenCalledWith({
+        jobId: 'job-1'
+      })
+      expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
+        job_id: 'job-1',
+        share_id: 'share-1',
+        view_mode: 'graph',
+        is_app_mode: false
+      })
+    })
+
+    it('tracks shared workflow run from the success event job', () => {
+      const workflow = createQueuedWorkflow()
+      workflow.shareId = 'share-1'
+      store.storeJob({
+        nodes: ['a'],
+        id: 'job-1',
+        promptOutput: {
+          a: createPromptNode('Node A', 'NodeA')
+        },
+        workflow
+      })
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
+        job_id: 'job-1',
+        share_id: 'share-1',
+        view_mode: 'graph',
+        is_app_mode: false
+      })
+    })
+
+    it('attributes shared workflow run to queue-time mode, not completion-time mode', () => {
+      const workflow = createQueuedWorkflow()
+      workflow.shareId = 'share-1'
+      store.storeJob({
+        nodes: ['a'],
+        id: 'job-1',
+        promptOutput: {
+          a: createPromptNode('Node A', 'NodeA')
+        },
+        workflow
+      })
+
+      mockAppModeState.mode.value = 'app'
+      mockAppModeState.isAppMode.value = true
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
+        job_id: 'job-1',
+        share_id: 'share-1',
+        view_mode: 'graph',
+        is_app_mode: false
+      })
+    })
+
+    it('attributes shared workflow run to the queued workflow, not the active one', () => {
+      const workflow = createQueuedWorkflow()
+      workflow.shareId = 'share-1'
+      workflow.activeMode = 'app'
+      store.storeJob({
+        nodes: ['a'],
+        id: 'job-1',
+        promptOutput: {
+          a: createPromptNode('Node A', 'NodeA')
+        },
+        workflow
+      })
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
+        job_id: 'job-1',
+        share_id: 'share-1',
+        view_mode: 'app',
+        is_app_mode: true
+      })
     })
   })
 
@@ -1076,10 +1371,23 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
       path: '/workflows/foo.json'
     } as unknown as Parameters<typeof store.storeJob>[0]['workflow']
 
-    store.storeJob({ nodes: ['a', 'b'], id: 'job-1', workflow })
+    store.storeJob({
+      nodes: ['a', 'b'],
+      id: 'job-1',
+      promptOutput: {
+        a: createPromptNode('Node A', 'NodeA'),
+        b: createPromptNode('Node B', 'NodeB')
+      },
+      workflow
+    })
 
     expect(store.queuedJobs['job-1']?.nodes).toEqual({ a: false, b: false })
+    expect(store.queuedJobs['job-1']?.nodeLookup).toEqual({
+      a: { title: 'Node A', type: 'NodeA' },
+      b: { title: 'Node B', type: 'NodeB' }
+    })
     expect(store.queuedJobs['job-1']?.workflow).toStrictEqual(workflow)
+    expect(store.queuedJobs['job-1']?.shareId).toBeUndefined()
     expect(store.jobIdToWorkflowId.get('job-1')).toBe('wf-1')
     expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe(
       '/workflows/foo.json'
