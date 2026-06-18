@@ -325,9 +325,14 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     await expect(
       page.getByRole('heading', { name: 'Make Jane an owner?' })
     ).toBeVisible()
+    await expect(page.getByText("They'll be able to:")).toBeVisible()
+    await expect(page.getByText('Add additional credits')).toBeVisible()
+    await expect(
+      page.getByText('Manage members, payment methods, and workspace settings')
+    ).toBeVisible()
     await expect(
       page.getByText(
-        "They'll have the same access as you — managing members, billing, and workspace settings."
+        'Promote and demote other owners (except the workspace creator).'
       )
     ).toBeVisible()
 
