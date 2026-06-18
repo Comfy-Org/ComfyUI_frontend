@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingContext } from './useBillingContext'
 
@@ -9,12 +10,14 @@ const {
   mockTeamWorkspacesEnabled,
   mockIsPersonal,
   mockPlans,
-  mockPurchaseCredits
+  mockPurchaseCredits,
+  mockLegacyStripeSubscribe
 } = vi.hoisted(() => ({
   mockTeamWorkspacesEnabled: { value: false },
   mockIsPersonal: { value: true },
   mockPlans: { value: [] as Plan[] },
-  mockPurchaseCredits: vi.fn()
+  mockPurchaseCredits: vi.fn(),
+  mockLegacyStripeSubscribe: vi.fn()
 }))
 
 vi.mock('@vueuse/core', async (importOriginal) => {
@@ -60,7 +63,7 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
     isCancelled: { value: false },
     fetchStatus: vi.fn().mockResolvedValue(undefined),
     manageSubscription: vi.fn().mockResolvedValue(undefined),
-    subscribe: vi.fn().mockResolvedValue(undefined),
+    subscribe: mockLegacyStripeSubscribe.mockResolvedValue(undefined),
     showSubscriptionDialog: vi.fn()
   })
 }))
@@ -174,9 +177,18 @@ describe('useBillingContext', () => {
     await expect(fetchBalance()).resolves.toBeUndefined()
   })
 
-  it('exposes subscribe action', async () => {
+  it('routes legacy subscribe through the workspace billing endpoint', async () => {
     const { subscribe } = useBillingContext()
-    await expect(subscribe('pro-monthly')).resolves.toBeUndefined()
+    await expect(
+      subscribe('pro-monthly', 'https://return', 'https://cancel')
+    ).resolves.toStrictEqual({ status: 'subscribed' })
+
+    expect(workspaceApi.subscribe).toHaveBeenCalledWith(
+      'pro-monthly',
+      'https://return',
+      'https://cancel'
+    )
+    expect(mockLegacyStripeSubscribe).not.toHaveBeenCalled()
   })
 
   it('exposes manageSubscription action', async () => {

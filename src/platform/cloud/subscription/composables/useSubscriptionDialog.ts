@@ -61,8 +61,10 @@ export const useSubscriptionDialog = () => {
       return
     }
 
-    const useWorkspaceVariant =
-      flags.teamWorkspacesEnabled && !workspaceStore.isInPersonalWorkspace
+    // Personal is routed through the preview-capable workspace dialog (as a
+    // single-seat workspace) so it gets POST /api/billing/preview-subscribe.
+    const useWorkspaceVariant = flags.teamWorkspacesEnabled
+    const isPersonal = workspaceStore.isInPersonalWorkspace
 
     const component = useWorkspaceVariant
       ? defineAsyncComponent(
@@ -81,7 +83,8 @@ export const useSubscriptionDialog = () => {
     }
     const workspaceProps = {
       onClose: hide,
-      reason: options?.reason
+      reason: options?.reason,
+      isPersonal
     }
 
     dialogService.showLayoutDialog({

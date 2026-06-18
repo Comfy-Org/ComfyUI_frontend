@@ -94,6 +94,53 @@ describe('useSubscriptionDialog', () => {
 
       expect(mockShowLayoutDialog).toHaveBeenCalled()
     })
+
+    it('mounts the legacy personal dialog when team workspaces flag is off', () => {
+      mockTeamWorkspacesEnabled.value = false
+      mockIsInPersonalWorkspace.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props).toHaveProperty('onChooseTeam')
+      expect(props).not.toHaveProperty('isPersonal')
+    })
+
+    it('routes personal through the preview-capable workspace dialog when flag is on', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsInPersonalWorkspace.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props).toMatchObject({ isPersonal: true })
+      expect(props).not.toHaveProperty('onChooseTeam')
+    })
+
+    it('does not fire the member read-only guard for a personal user', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsInPersonalWorkspace.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
+      const call = mockShowLayoutDialog.mock.calls[0][0]
+      expect(call.props).toMatchObject({ isPersonal: true })
+    })
+
+    it('keeps the team workspace dialog non-personal', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsInPersonalWorkspace.value = false
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props).toMatchObject({ isPersonal: false })
+    })
   })
 
   describe('startTeamWorkspaceUpgradeFlow', () => {

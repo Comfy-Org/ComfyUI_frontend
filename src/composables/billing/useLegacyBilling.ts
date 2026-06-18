@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import type {
   BillingStatus,
@@ -8,6 +9,7 @@ import type {
   PreviewSubscribeResponse,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useAuthStore } from '@/stores/authStore'
 
 import type {
@@ -37,6 +39,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
 
   const authStore = useAuthStore()
   const authActions = useAuthActions()
+  const billingPlans = useBillingPlans()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
@@ -90,9 +93,11 @@ export function useLegacyBilling(): BillingState & BillingActions {
     () => legacySubscriptionStatus.value?.renewal_date ?? null
   )
 
-  // Legacy billing doesn't have workspace-style plans
-  const plans = computed(() => [])
-  const currentPlanSlug = computed(() => null)
+  // Personal is treated as a single-seat workspace: plan catalog and slugs come
+  // from the shared /billing/plans source so the preview checkout can resolve
+  // a real plan slug.
+  const plans = computed(() => billingPlans.plans.value)
+  const currentPlanSlug = computed(() => billingPlans.currentPlanSlug.value)
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
@@ -144,19 +149,23 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function subscribe(
-    _planSlug: string,
-    _returnUrl?: string,
-    _cancelUrl?: string
+    planSlug: string,
+    returnUrl?: string,
+    cancelUrl?: string
   ): Promise<SubscribeResponse | void> {
-    // Legacy billing uses Stripe checkout flow via useSubscription
-    await legacySubscribe()
+    const response = await workspaceApi.subscribe(
+      planSlug,
+      returnUrl,
+      cancelUrl
+    )
+    await Promise.all([fetchStatus(), fetchBalance()])
+    return response
   }
 
   async function previewSubscribe(
-    _planSlug: string
+    planSlug: string
   ): Promise<PreviewSubscribeResponse | null> {
-    // Legacy billing doesn't support preview - returns null
-    return null
+    return workspaceApi.previewSubscribe(planSlug)
   }
 
   async function manageSubscription(): Promise<void> {
@@ -178,8 +187,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
   }
 
   async function fetchPlans(): Promise<void> {
-    // Legacy billing doesn't have workspace-style plans
-    // Plans are hardcoded in the UI for legacy subscriptions
+    await billingPlans.fetchPlans()
   }
 
   async function requireActiveSubscription(): Promise<void> {
