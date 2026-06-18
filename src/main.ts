@@ -32,16 +32,19 @@ import './assets/css/style.css'
 import { i18n } from './i18n'
 
 /**
- * CRITICAL: Load remote config FIRST for cloud builds to ensure
- * window.__CONFIG__is available for all modules during initialization
+ * CRITICAL: Load remote config FIRST so window.__CONFIG__ is available
+ * for all modules during initialization. The local /api/features endpoint
+ * is the source of truth for things like comfy_api_base_url, allowing the
+ * server (e.g. an ephemeral env) to dictate which backend the frontend
+ * talks to without a rebuild.
  */
 const isCloud = __DISTRIBUTION__ === 'cloud'
 
-if (isCloud) {
-  const { refreshRemoteConfig } =
-    await import('@/platform/remoteConfig/refreshRemoteConfig')
-  await refreshRemoteConfig({ useAuth: false })
+const { refreshRemoteConfig } =
+  await import('@/platform/remoteConfig/refreshRemoteConfig')
+await refreshRemoteConfig({ useAuth: false })
 
+if (isCloud) {
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
   await initTelemetry()
 }

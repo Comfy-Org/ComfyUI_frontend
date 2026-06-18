@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
 
@@ -43,9 +43,10 @@ describe('refreshRemoteConfig', () => {
 
       await refreshRemoteConfig({ useAuth: true })
 
-      expect(api.fetchApi).toHaveBeenCalledWith('/features', {
-        cache: 'no-store'
-      })
+      expect(api.fetchApi).toHaveBeenCalledWith(
+        '/features',
+        expect.objectContaining({ cache: 'no-store' })
+      )
       expect(global.fetch).not.toHaveBeenCalled()
       expect(remoteConfig.value).toEqual(mockConfig)
       expect(window.__CONFIG__).toEqual(mockConfig)
@@ -67,12 +68,38 @@ describe('refreshRemoteConfig', () => {
 
       await refreshRemoteConfig({ useAuth: false })
 
-      expect(global.fetch).toHaveBeenCalledWith('/api/features', {
-        cache: 'no-store'
-      })
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/features',
+        expect.objectContaining({ cache: 'no-store' })
+      )
       expect(api.fetchApi).not.toHaveBeenCalled()
       expect(remoteConfig.value).toEqual(mockConfig)
       expect(window.__CONFIG__).toEqual(mockConfig)
+    })
+  })
+
+  describe('timeout', () => {
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('aborts and falls back to empty config if /features hangs', async () => {
+      vi.useFakeTimers()
+      vi.mocked(global.fetch).mockImplementation(
+        (_url, init) =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () =>
+              reject(new DOMException('Aborted', 'AbortError'))
+            )
+          })
+      )
+
+      const inflight = refreshRemoteConfig({ useAuth: false })
+      await vi.advanceTimersByTimeAsync(5_000)
+      await inflight
+
+      expect(remoteConfig.value).toEqual({})
+      expect(window.__CONFIG__).toEqual({})
     })
   })
 

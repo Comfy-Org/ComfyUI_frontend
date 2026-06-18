@@ -1,22 +1,29 @@
 import type { AxiosError, AxiosResponse } from 'axios'
 import axios from 'axios'
+import { once } from 'es-toolkit'
 import { ref } from 'vue'
 
+import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
-const API_BASE_URL = 'https://api.comfy.org'
-
-const registryApiClient = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  paramsSerializer: {
-    // Disables PHP-style notation (e.g. param[]=value) in favor of repeated params (e.g. param=value1&param=value2)
-    indexes: null
-  }
-})
+// Lazy + memoized so the base URL is read once — after main.ts's top-level
+// `await refreshRemoteConfig()` populates remoteConfig — and then frozen
+// for the lifetime of the app. (axios.create here at module load would
+// capture the build-time default because static imports are hoisted above
+// the await.)
+const getRegistryClient = once(() =>
+  axios.create({
+    baseURL: getComfyApiBaseUrl(),
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    paramsSerializer: {
+      // Disables PHP-style notation (e.g. param[]=value) in favor of repeated params (e.g. param=value1&param=value2)
+      indexes: null
+    }
+  })
+)
 
 /**
  * Service for interacting with the Comfy Registry API
@@ -118,7 +125,7 @@ export const useComfyRegistryService = () => {
 
     return executeApiRequest(
       () =>
-        registryApiClient.get<
+        getRegistryClient().get<
           operations['ListComfyNodes']['responses'][200]['content']['application/json']
         >(endpoint, {
           params: queryParams,
@@ -142,7 +149,7 @@ export const useComfyRegistryService = () => {
 
     return executeApiRequest(
       () =>
-        registryApiClient.get<
+        getRegistryClient().get<
           operations['searchNodes']['responses'][200]['content']['application/json']
         >(endpoint, { params, signal }),
       errorContext
@@ -164,7 +171,7 @@ export const useComfyRegistryService = () => {
 
     return executeApiRequest(
       () =>
-        registryApiClient.get<components['schemas']['Publisher']>(endpoint, {
+        getRegistryClient().get<components['schemas']['Publisher']>(endpoint, {
           signal
         }),
       errorContext,
@@ -190,7 +197,7 @@ export const useComfyRegistryService = () => {
 
     return executeApiRequest(
       () =>
-        registryApiClient.get<components['schemas']['Node'][]>(endpoint, {
+        getRegistryClient().get<components['schemas']['Node'][]>(endpoint, {
           params,
           signal
         }),
@@ -217,10 +224,14 @@ export const useComfyRegistryService = () => {
 
     return executeApiRequest(
       () =>
-        registryApiClient.post<components['schemas']['Node']>(endpoint, null, {
-          params,
-          signal
-        }),
+        getRegistryClient().post<components['schemas']['Node']>(
+          endpoint,
+          null,
+          {
+            params,
+            signal
+          }
+        ),
       errorContext,
       routeSpecificErrors
     )
@@ -238,7 +249,7 @@ export const useComfyRegistryService = () => {
 
     return executeApiRequest(
       () =>
-        registryApiClient.get<
+        getRegistryClient().get<
           operations['listAllNodes']['responses'][200]['content']['application/json']
         >(endpoint, { params, signal }),
       errorContext
@@ -262,7 +273,7 @@ export const useComfyRegistryService = () => {
 
     return executeApiRequest(
       () =>
-        registryApiClient.get<components['schemas']['NodeVersion'][]>(
+        getRegistryClient().get<components['schemas']['NodeVersion'][]>(
           endpoint,
           { params, signal }
         ),
@@ -288,9 +299,12 @@ export const useComfyRegistryService = () => {
 
     return executeApiRequest(
       () =>
-        registryApiClient.get<components['schemas']['NodeVersion']>(endpoint, {
-          signal
-        }),
+        getRegistryClient().get<components['schemas']['NodeVersion']>(
+          endpoint,
+          {
+            signal
+          }
+        ),
       errorContext,
       routeSpecificErrors
     )
@@ -311,7 +325,7 @@ export const useComfyRegistryService = () => {
 
     return executeApiRequest(
       () =>
-        registryApiClient.get<components['schemas']['Node']>(endpoint, {
+        getRegistryClient().get<components['schemas']['Node']>(endpoint, {
           signal
         }),
       errorContext,
@@ -352,7 +366,7 @@ export const useComfyRegistryService = () => {
 
     return executeApiRequest(
       () =>
-        registryApiClient.get<components['schemas']['Node']>(endpoint, {
+        getRegistryClient().get<components['schemas']['Node']>(endpoint, {
           signal
         }),
       errorContext,
@@ -399,7 +413,7 @@ export const useComfyRegistryService = () => {
 
     return executeApiRequest(
       () =>
-        registryApiClient.post<
+        getRegistryClient().post<
           components['schemas']['BulkNodeVersionsResponse']
         >(endpoint, requestBody, {
           signal

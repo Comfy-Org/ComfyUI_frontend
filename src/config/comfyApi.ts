@@ -1,4 +1,3 @@
-import { isCloud } from '@/platform/distribution/types'
 import {
   configValueOrDefault,
   remoteConfig
@@ -19,11 +18,16 @@ const BUILD_TIME_PLATFORM_BASE_URL = __USE_PROD_CONFIG__
   : (import.meta.env.VITE_STAGING_PLATFORM_BASE_URL ??
     STAGING_PLATFORM_BASE_URL)
 
+/**
+ * Resolves the ComfyUI API base URL.
+ *
+ * The local server (any distribution) is authoritative: whatever
+ * `/api/features` returns for `comfy_api_base_url` wins, falling back to
+ * the build-time default. This lets a self-hosted comfyui — including
+ * ephemeral envs — point its frontend at a different api host without
+ * rebuilding the frontend package.
+ */
 export function getComfyApiBaseUrl(): string {
-  if (!isCloud) {
-    return BUILD_TIME_API_BASE_URL
-  }
-
   return configValueOrDefault(
     remoteConfig.value,
     'comfy_api_base_url',
@@ -32,10 +36,6 @@ export function getComfyApiBaseUrl(): string {
 }
 
 export function getComfyPlatformBaseUrl(): string {
-  if (!isCloud) {
-    return BUILD_TIME_PLATFORM_BASE_URL
-  }
-
   return configValueOrDefault(
     remoteConfig.value,
     'comfy_platform_base_url',
