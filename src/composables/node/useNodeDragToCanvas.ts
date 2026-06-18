@@ -3,6 +3,7 @@ import { ref, shallowRef } from 'vue'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
+import type { NodeAddSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -15,6 +16,7 @@ type Position = { x: number; y: number }
 interface StartDragOptions {
   mode?: DragMode
   widgetValues?: WidgetValues
+  source?: NodeAddSource
 }
 
 const isDragging = ref(false)
@@ -22,6 +24,7 @@ const draggedNode = shallowRef<ComfyNodeDefImpl | null>(null)
 const dragMode = ref<DragMode>('click')
 const lastNativeDragPosition = shallowRef<Position>()
 const pendingWidgetValues = shallowRef<WidgetValues>()
+const pendingSource = ref<NodeAddSource>('sidebar_drag')
 let listenersSetup = false
 
 // Firefox dragend can report stale clientX/Y and `drag` can fire with
@@ -38,6 +41,11 @@ function applyWidgetValues(node: LGraphNode, values: WidgetValues) {
     const widget = node.widgets?.find((w) => w.name === name)
     if (!widget) {
       console.error(`Widget ${name} not found on node ${node.type}`)
+      useToastStore().add({
+        severity: 'warn',
+        summary: t('g.warning'),
+        detail: t('assetBrowser.failedToSetModelValue')
+      })
       continue
     }
     widget.value = value
@@ -69,7 +77,7 @@ function addNodeAtPosition(clientX: number, clientY: number): boolean {
     clientX,
     clientY
   } as PointerEvent)
-  const node = withNodeAddSource('sidebar_drag', () =>
+  const node = withNodeAddSource(pendingSource.value, () =>
     useLitegraphService().addNodeOnGraph(nodeDef, { pos })
   )
   if (!node) {
@@ -136,18 +144,24 @@ function cancelDrag() {
   dragMode.value = 'click'
   lastNativeDragPosition.value = undefined
   pendingWidgetValues.value = undefined
+  pendingSource.value = 'sidebar_drag'
   cleanupGlobalListeners()
 }
 
 export function useNodeDragToCanvas() {
   function startDrag(
     nodeDef: ComfyNodeDefImpl,
-    { mode = 'click', widgetValues }: StartDragOptions = {}
+    {
+      mode = 'click',
+      widgetValues,
+      source = 'sidebar_drag'
+    }: StartDragOptions = {}
   ) {
     isDragging.value = true
     draggedNode.value = nodeDef
     dragMode.value = mode
     pendingWidgetValues.value = widgetValues
+    pendingSource.value = source
     setupGlobalListeners()
   }
 

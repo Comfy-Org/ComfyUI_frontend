@@ -658,7 +658,10 @@ describe('useCoreCommands', () => {
 
       await selectAssetFromBrowser()
 
-      expect(mockStartModelNodeDrag).toHaveBeenCalledWith(asset)
+      expect(mockStartModelNodeDrag).toHaveBeenCalledWith(
+        asset,
+        'asset_browser'
+      )
       expect(mockToastAdd).not.toHaveBeenCalled()
     })
 

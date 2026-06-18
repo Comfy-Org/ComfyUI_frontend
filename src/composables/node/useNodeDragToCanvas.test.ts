@@ -287,7 +287,7 @@ describe('useNodeDragToCanvas', () => {
       expect(widget.value).toBe('model.safetensors')
     })
 
-    it('should still place the node when a requested widget is missing', () => {
+    it('should warn but still place the node when a requested widget is missing', () => {
       mockCanvas.canvas.getBoundingClientRect.mockReturnValue({
         left: 0,
         right: 500,
@@ -315,7 +315,12 @@ describe('useNodeDragToCanvas', () => {
       )
 
       expect(mockSelectItems).toHaveBeenCalledWith([placedNode])
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'warn',
+          detail: 'assetBrowser.failedToSetModelValue'
+        })
+      )
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('ckpt_name')
       )

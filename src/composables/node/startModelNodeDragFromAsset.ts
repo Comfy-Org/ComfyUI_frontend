@@ -2,6 +2,7 @@ import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
 import type { ResolveModelNodeError } from '@/platform/assets/utils/resolveModelNodeFromAsset'
+import type { NodeAddSource } from '@/platform/telemetry/types'
 import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
 
 /**
@@ -10,10 +11,11 @@ import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
  */
 export function startModelLoaderDrag(
   provider: ModelNodeProvider,
-  filename: string
+  filename: string,
+  source: NodeAddSource = 'sidebar_drag'
 ) {
   const widgetValues = provider.key ? { [provider.key]: filename } : undefined
-  useNodeDragToCanvas().startDrag(provider.nodeDef, { widgetValues })
+  useNodeDragToCanvas().startDrag(provider.nodeDef, { widgetValues, source })
 }
 
 /**
@@ -25,11 +27,12 @@ export function startModelLoaderDrag(
  *   otherwise `undefined`.
  */
 export function startModelNodeDragFromAsset(
-  asset: AssetItem
+  asset: AssetItem,
+  source: NodeAddSource = 'sidebar_drag'
 ): ResolveModelNodeError | undefined {
   const resolved = resolveModelNodeFromAsset(asset)
   if (!resolved.success) return resolved.error
 
   const { provider, filename } = resolved.value
-  startModelLoaderDrag(provider, filename)
+  startModelLoaderDrag(provider, filename, source)
 }

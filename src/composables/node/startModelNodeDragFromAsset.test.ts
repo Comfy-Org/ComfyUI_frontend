@@ -42,7 +42,20 @@ describe('startModelNodeDragFromAsset', () => {
 
     expect(error).toBeUndefined()
     expect(mockStartDrag).toHaveBeenCalledWith(nodeDef, {
-      widgetValues: { ckpt_name: 'sd_xl_base_1.0.safetensors' }
+      widgetValues: { ckpt_name: 'sd_xl_base_1.0.safetensors' },
+      source: 'sidebar_drag'
+    })
+  })
+
+  it('threads the node-add source through to the drag', () => {
+    const nodeDef = { name: 'CheckpointLoaderSimple' }
+    mockGetNodeProvider.mockReturnValue({ nodeDef, key: 'ckpt_name' })
+
+    startModelNodeDragFromAsset(createAsset(), 'asset_browser')
+
+    expect(mockStartDrag).toHaveBeenCalledWith(nodeDef, {
+      widgetValues: { ckpt_name: 'sd_xl_base_1.0.safetensors' },
+      source: 'asset_browser'
     })
   })
 
@@ -58,7 +71,8 @@ describe('startModelNodeDragFromAsset', () => {
     )
 
     expect(mockStartDrag).toHaveBeenCalledWith(nodeDef, {
-      widgetValues: undefined
+      widgetValues: undefined,
+      source: 'sidebar_drag'
     })
   })
 

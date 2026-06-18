@@ -3114,6 +3114,7 @@
     "invalidFilename": "Invalid Filename",
     "invalidFilenameDetail": "The asset filename could not be determined. Please try again.",
     "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
+    "failedToSetModelValue": "Node added, but its model could not be set automatically. Check the console for details.",
     "fileFormats": "File formats",
     "fileName": "File Name",
     "fileSize": "File Size",

@@ -1305,7 +1305,7 @@ export function useCoreCommands(): ComfyCommand[] {
           assetType: 'models',
           title: t('sideToolbar.modelLibrary'),
           onAssetSelected: (asset) => {
-            const error = startModelNodeDragFromAsset(asset)
+            const error = startModelNodeDragFromAsset(asset, 'asset_browser')
             if (error) {
               toastStore.add({
                 severity: 'error',
