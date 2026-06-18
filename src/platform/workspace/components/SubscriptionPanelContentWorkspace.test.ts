@@ -162,7 +162,7 @@ const SubscriptionFooterLinksStub = {
 const MenuStub = {
   props: ['model'],
   template:
-    '<ul data-testid="plan-menu"><li v-for="item in model" :key="item.label"><button type="button" @click="item.command?.({})">{{ item.label }}</button></li></ul>'
+    '<ul data-testid="plan-menu"><li v-for="item in model" :key="item.label"><button type="button" :disabled="item.disabled" @click="item.command?.({})">{{ item.label }}</button></li></ul>'
 }
 
 function renderComponent() {
@@ -380,7 +380,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     ).toBeInTheDocument()
   })
 
-  it('does not let the workspace creator leave', () => {
+  it('shows the workspace creator a disabled Leave option', () => {
     mockUserEmail.value = 'creator@example.com'
     renderComponent()
 
@@ -388,8 +388,8 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Cancel Subscription' })
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Leave Workspace' })
-    ).not.toBeInTheDocument()
+      screen.getByRole('button', { name: 'Leave Workspace' })
+    ).toBeDisabled()
   })
 
   it('opens the leave-workspace dialog from the menu', async () => {

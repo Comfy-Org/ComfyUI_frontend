@@ -344,10 +344,6 @@ const isCurrentUserCreator = computed(() => {
     members.value.every((member) => currentMember.joinDate <= member.joinDate)
   )
 })
-
-const canLeaveWorkspace = computed(
-  () => !isInPersonalWorkspace.value && !isCurrentUserCreator.value
-)
 const toast = useToast()
 
 const billingOperationStore = useBillingOperationStore()
@@ -500,12 +496,21 @@ const planMenuItems = computed<MenuItem[]>(() => {
       }
     })
   }
-  if (canLeaveWorkspace.value) {
-    items.push({
-      label: t('workspacePanel.menu.leaveWorkspace'),
-      icon: 'pi pi-sign-out',
-      command: () => void showLeaveWorkspaceDialog()
-    })
+  // Members and non-creator owners can leave; the creator sees it disabled.
+  if (!isInPersonalWorkspace.value) {
+    items.push(
+      isCurrentUserCreator.value
+        ? {
+            label: t('workspacePanel.menu.leaveWorkspace'),
+            icon: 'pi pi-sign-out',
+            disabled: true
+          }
+        : {
+            label: t('workspacePanel.menu.leaveWorkspace'),
+            icon: 'pi pi-sign-out',
+            command: () => void showLeaveWorkspaceDialog()
+          }
+    )
   }
   return items
 })
