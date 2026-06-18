@@ -5,6 +5,7 @@ import type { Locale } from '../../i18n/translations'
 import { externalLinks } from '../../config/routes'
 import { useHeroLogo } from '../../composables/useHeroLogo'
 import { t } from '../../i18n/translations'
+import { captureCtaClick } from '../../scripts/posthog'
 import BrandButton from '../common/BrandButton.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -47,6 +48,7 @@ const { loaded: logoLoaded } = useHeroLogo(logoContainer)
         variant="outline"
         size="lg"
         class="mt-8 w-full p-4 uppercase lg:w-auto lg:min-w-60"
+        @click="captureCtaClick('run_first_workflow', 'hero')"
       >
         {{ t('hero.runFirstWorkflow', locale) }}
       </BrandButton>

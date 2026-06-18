@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
+import type { CtaButton } from '../../scripts/posthog'
+import { captureCtaClick } from '../../scripts/posthog'
+
 type NavDropdownItem = {
   label: string
   href: string
   badge?: string
   external?: boolean
+  ctaButton?: CtaButton
 }
 
 export type NavLink = {
   label: string
   href?: string
   items?: NavDropdownItem[]
+  ctaButton?: CtaButton
 }
 
 const {
@@ -82,6 +87,7 @@ const emit = defineEmits<{
             : 'text-primary-comfy-canvas hover:text-primary-warm-gray'
         )
       "
+      @click="link.ctaButton && captureCtaClick(link.ctaButton, 'nav')"
     >
       {{ link.label }}
     </a>
@@ -105,7 +111,10 @@ const emit = defineEmits<{
               : 'text-primary-comfy-canvas hover:bg-transparency-white-t4 hover:text-white'
           )
         "
-        @click="emit('close')"
+        @click="
+          item.ctaButton && captureCtaClick(item.ctaButton, 'nav'),
+            emit('close')
+        "
       >
         {{ item.label }}
         <span

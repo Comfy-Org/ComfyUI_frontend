@@ -5,10 +5,18 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
+import type { CtaButton } from '../../scripts/posthog'
 import ProductCard from './ProductCard.vue'
 import SectionLabel from './SectionLabel.vue'
 
 type Product = 'local' | 'cloud' | 'api' | 'enterprise'
+
+const ctaButtonByProduct: Record<Product, CtaButton> = {
+  local: 'download_desktop',
+  cloud: 'comfy_cloud',
+  api: 'products',
+  enterprise: 'products'
+}
 
 const {
   locale = 'en',
@@ -29,7 +37,8 @@ function cardDef(product: Product, href: string, bg: string) {
     description: t(`products.${product}.description`, locale),
     cta: t(`products.${product}.cta`, locale),
     href,
-    bg
+    bg,
+    ctaButton: ctaButtonByProduct[product]
   }
 }
 
