@@ -99,7 +99,8 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
 
     await expect
       .poll(
-        () => page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
+        () =>
+          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
         { timeout: 5000 }
       )
       .toBe('initial-token')
@@ -135,7 +136,8 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
 
     await expect
       .poll(
-        () => page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
+        () =>
+          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
         { timeout: 5000 }
       )
       .toBe('personal-token')
@@ -196,7 +198,8 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
 
     await expect
       .poll(
-        () => page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
+        () =>
+          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
         { timeout: 5000 }
       )
       .toBe('original-token')
@@ -249,7 +252,8 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
 
     await expect
       .poll(
-        () => page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
+        () =>
+          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
         { timeout: 5000 }
       )
       .toBe('original-token')
