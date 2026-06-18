@@ -157,6 +157,13 @@ test.describe('Signin dialog', () => {
   })
 
   test('Sign-in dialog resolves true on login', async ({ comfyPage }) => {
+    await comfyPage.page.route('**/customers', (route) =>
+      route.fulfill({
+        status: 201,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 'test-user-e2e', email: 'test@example.com' })
+      })
+    )
     const dialog = new SignInDialog(comfyPage.page)
     const { result: dialogResult } = await dialog.openWithResult()
 

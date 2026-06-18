@@ -7,30 +7,32 @@
     <!-- Grid View -->
     <div
       v-if="viewMode === 'grid'"
+      ref="gridEl"
       data-testid="image-grid"
-      class="group/panel relative grid w-full gap-1 overflow-hidden rounded-sm p-1"
+      class="relative grid w-full flex-1 gap-1 rounded-sm p-1 contain-size"
       :style="{ gridTemplateColumns: `repeat(${gridCols}, 1fr)` }"
     >
-      <button
-        v-for="(url, index) in imageUrls"
+      <Button
+        v-for="(url, index) in gridImageUrls"
         :key="index"
-        class="focus-visible:ring-ring relative cursor-pointer overflow-hidden rounded-sm border-0 bg-transparent p-0 focus-visible:ring-2 focus-visible:outline-none"
+        size="unset"
+        class="ring-ring overflow-hidden rounded-none p-0 hover:ring-1 focus-visible:ring-2"
         :aria-label="
           $t('g.viewImageOfTotal', {
             index: index + 1,
             total: imageUrls.length
           })
         "
-        @pointerdown="trackPointerStart"
-        @click="handleGridThumbnailClick($event, index)"
+        @click="openImageInGallery(index)"
       >
         <img
           :src="url"
           :alt="`${$t('g.galleryThumbnail')} ${index + 1}`"
           draggable="false"
           class="pointer-events-none size-full object-contain"
+          @load="updateAspectRatio($event, index)"
         />
-      </button>
+      </Button>
     </div>
 
     <!-- Gallery View (Image Wrapper) -->
@@ -167,15 +169,17 @@
 </template>
 
 <script setup lang="ts">
-import { useTimeoutFn } from '@vueuse/core'
-import { computed, nextTick, ref, watch } from 'vue'
+import { useElementSize, useTimeoutFn } from '@vueuse/core'
+import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
+import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -202,12 +206,17 @@ function defaultViewMode(urls: readonly string[]): ViewMode {
   return urls.length > 1 ? 'grid' : 'gallery'
 }
 
+const { width: gridWidth, height: gridHeight } = useElementSize(
+  useTemplateRef('gridEl')
+)
+
 const currentIndex = ref(0)
 const viewMode = ref<ViewMode>(defaultViewMode(imageUrls))
 const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
 const showLoader = ref(false)
+const imageAspectRatio = ref(1)
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -219,6 +228,7 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
 )
 
 const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
+const gridImageUrls = computed(() => imageUrls.map(getGridThumbnailUrl))
 const hasMultipleImages = computed(() => imageUrls.length > 1)
 const imageAltText = computed(() =>
   t('g.viewImageOfTotal', {
@@ -227,10 +237,8 @@ const imageAltText = computed(() =>
   })
 )
 const gridCols = computed(() => {
-  const count = imageUrls.length
-  if (count <= 4) return 2
-  if (count <= 9) return 3
-  return 4
+  const bias = gridWidth.value / gridHeight.value / imageAspectRatio.value
+  return Math.max(Math.round(Math.sqrt(imageUrls.length * bias)), 1)
 })
 
 watch(
@@ -274,6 +282,14 @@ function handleImageLoad(event: Event) {
   }
 }
 
+function updateAspectRatio(event: Event, index: number) {
+  if (!(event.target instanceof HTMLImageElement) || index !== 0) return
+  const { naturalWidth, naturalHeight } = event.target
+  if (naturalWidth && naturalHeight) {
+    imageAspectRatio.value = naturalWidth / naturalHeight
+  }
+}
+
 function handleImageError() {
   stopDelayedLoader()
   showLoader.value = false
@@ -308,20 +324,6 @@ function setCurrentIndex(index: number) {
     imageError.value = false
     if (urlChanged) startDelayedLoader()
   }
-}
-
-const CLICK_THRESHOLD = 3
-let pointerStartPos = { x: 0, y: 0 }
-
-function trackPointerStart(event: PointerEvent) {
-  pointerStartPos = { x: event.clientX, y: event.clientY }
-}
-
-function handleGridThumbnailClick(event: MouseEvent, index: number) {
-  const dx = event.clientX - pointerStartPos.x
-  const dy = event.clientY - pointerStartPos.y
-  if (Math.abs(dx) > CLICK_THRESHOLD || Math.abs(dy) > CLICK_THRESHOLD) return
-  openImageInGallery(index)
 }
 
 async function openImageInGallery(index: number) {

@@ -7,7 +7,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 
 type ReleaseNote = components['schemas']['ReleaseNote']
 
-export type HelpMenuItemKey =
+type HelpMenuItemKey =
   | 'feedback'
   | 'help'
   | 'docs'
@@ -17,7 +17,7 @@ export type HelpMenuItemKey =
   | 'update-comfyui'
   | 'more'
 
-export class HelpCenterHelper {
+class HelpCenterHelper {
   public readonly button: Locator
   public readonly popup: Locator
   public readonly backdrop: Locator

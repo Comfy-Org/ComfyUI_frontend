@@ -33,7 +33,6 @@ const {
   items,
   gridStyle,
   bufferRows = 1,
-  scrollThrottle = 64,
   resizeDebounce = 64,
   defaultItemHeight = 200,
   defaultItemWidth = 200,
@@ -42,7 +41,6 @@ const {
   items: (T & { key: string })[]
   gridStyle: CSSProperties
   bufferRows?: number
-  scrollThrottle?: number
   resizeDebounce?: number
   defaultItemHeight?: number
   defaultItemWidth?: number
@@ -61,7 +59,6 @@ const itemWidth = ref(defaultItemWidth)
 const container = ref<HTMLElement | null>(null)
 const { width, height } = useElementSize(container)
 const { y: scrollY } = useScroll(container, {
-  throttle: scrollThrottle,
   eventListenerOptions: { passive: true }
 })
 

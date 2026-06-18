@@ -14,14 +14,7 @@ vi.mock('@/scripts/app', () => ({
 
 const mockGetShareableAssets = vi.fn()
 const mockFetchApi = vi.fn()
-
-vi.mock(
-  '@/platform/workflow/validation/schemas/workflowSchema',
-  async (importOriginal) => ({
-    ...(await importOriginal()),
-    validateComfyWorkflow: vi.fn(async (json: unknown) => json)
-  })
-)
+const mockInvalidateInputAssetsIncludingPublic = vi.hoisted(() => vi.fn())
 
 vi.mock('@/scripts/api', () => ({
   api: {
@@ -29,6 +22,13 @@ vi.mock('@/scripts/api', () => ({
     fetchApi: (...args: unknown[]) => mockFetchApi(...args),
     apiURL: (route: string) => `/api${route}`,
     fileURL: (route: string) => route
+  }
+}))
+
+vi.mock('@/platform/assets/services/assetService', () => ({
+  assetService: {
+    invalidateInputAssetsIncludingPublic:
+      mockInvalidateInputAssetsIncludingPublic
   }
 }))
 
@@ -348,6 +348,7 @@ describe(useWorkflowShareService, () => {
         share_id: 'share-id-1'
       })
     })
+    expect(mockInvalidateInputAssetsIncludingPublic).toHaveBeenCalledTimes(1)
   })
 
   it('omits share_id from the payload when not provided', async () => {
@@ -384,6 +385,7 @@ describe(useWorkflowShareService, () => {
     await expect(
       service.importPublishedAssets(['bad-id'], 'share-id-1')
     ).rejects.toThrow('Failed to import assets: 400')
+    expect(mockInvalidateInputAssetsIncludingPublic).not.toHaveBeenCalled()
   })
 
   it('throws when shared workflow payload is invalid', async () => {
@@ -396,6 +398,36 @@ describe(useWorkflowShareService, () => {
     await expect(service.getSharedWorkflow('invalid')).rejects.toThrow(
       'Failed to load shared workflow: invalid response'
     )
+  })
+
+  it('returns raw workflow_json when it does not match ComfyWorkflowJSON schema', async () => {
+    const rawWorkflowJson = {
+      extra: {
+        linearData: {
+          inputs: [
+            [1, 'prompt'],
+            [2, 'seed', 'invalid-third-element']
+          ],
+          outputs: []
+        }
+      }
+    }
+    mockFetchApi.mockResolvedValue(
+      mockJsonResponse({
+        share_id: 'share-raw',
+        workflow_id: 'wf-raw',
+        name: 'Raw',
+        listed: false,
+        publish_time: null,
+        workflow_json: rawWorkflowJson,
+        assets: []
+      })
+    )
+
+    const service = useWorkflowShareService()
+    const shared = await service.getSharedWorkflow('share-raw')
+
+    expect(shared.workflowJson).toEqual(rawWorkflowJson)
   })
 
   it('treats malformed publish-status payload as unpublished', async () => {

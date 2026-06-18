@@ -10,22 +10,22 @@ const {
   widgetName,
   isDraggable = false,
   isPhysical = false,
+  isShown = false,
   class: className
 } = defineProps<{
   nodeTitle: string
   widgetName: string
   isDraggable?: boolean
   isPhysical?: boolean
+  isShown?: boolean
   class?: ClassValue
 }>()
-defineEmits<{
-  (e: 'toggleVisibility'): void
-}>()
+defineEmits<{ toggleVisibility: [] }>()
 
 const icon = computed(() =>
   isPhysical
     ? 'icon-[lucide--link]'
-    : isDraggable
+    : isShown
       ? 'icon-[lucide--eye]'
       : 'icon-[lucide--eye-off]'
 )
@@ -65,6 +65,7 @@ const icon = computed(() =>
     </Button>
     <div
       v-if="isDraggable"
+      data-testid="subgraph-widget-drag-handle"
       class="pointer-events-none icon-[lucide--grip-vertical] size-4"
     />
   </div>

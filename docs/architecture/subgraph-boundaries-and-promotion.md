@@ -303,22 +303,29 @@ must choose before Phase 3 of the migration.
 
 ### Current mechanism
 
-The current system has three layers:
+> **Historical note:** the legacy three-layer mechanism described below
+> (PromotionStore, PromotedWidgetViewManager, PromotedWidgetView) has been
+> removed by [ADR 0009](../adr/0009-subgraph-promoted-widgets-use-linked-inputs.md).
+> Promoted value widgets are now standard linked `SubgraphInput` widgets.
+> This section is retained for archival context.
 
-1. **PromotionStore** (`src/stores/promotionStore.ts`): A ref-counted Pinia
-   store mapping `graphId → subgraphNodeId → PromotedWidgetSource[]`. Tracks
-   which interior widgets are promoted and provides O(1) `isPromotedByAny()`
-   queries.
+The legacy system had three layers:
 
-2. **PromotedWidgetViewManager**: A reconciliation layer that maintains stable
-   `PromotedWidgetView` proxy widget objects, diffing against the store on each
-   update — a pattern analogous to virtual DOM reconciliation.
+1. **PromotionStore** (removed; formerly `src/stores/promotionStore.ts`): A
+   ref-counted Pinia store mapping
+   `graphId → subgraphNodeId → PromotedWidgetSource[]`. Tracked which interior
+   widgets were promoted and provided O(1) `isPromotedByAny()` queries.
 
-3. **PromotedWidgetView**: A proxy widget on the SubgraphNode that mirrors the
-   interior widget's type, value, and options. Reads and writes delegate to the
-   original widget's entry in `WidgetValueStore`.
+2. **PromotedWidgetViewManager** (removed): A reconciliation layer that
+   maintained stable `PromotedWidgetView` proxy widget objects, diffing against
+   the store on each update — a pattern analogous to virtual DOM reconciliation.
 
-Serialized as `properties.proxyWidgets` on the SubgraphNode.
+3. **PromotedWidgetView** (removed): A proxy widget on the SubgraphNode that
+   mirrored the interior widget's type, value, and options. Reads and writes
+   delegated to the original widget's entry in `WidgetValueStore`.
+
+Serialized as `properties.proxyWidgets` on the SubgraphNode (now consumed only
+during legacy load repair).
 
 ### Candidate A: Connections-only
 

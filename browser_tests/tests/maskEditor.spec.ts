@@ -1,6 +1,10 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { maskEditorTest as test } from '@e2e/fixtures/helpers/MaskEditorHelper'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+
+const wstest = mergeTests(test, webSocketFixture)
 
 test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
   test(
@@ -71,6 +75,34 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
 
     await maskEditor.drawStrokeAndExpectPixels(dialog)
   })
+
+  test(
+    'Middle-click drag should pan the mask editor canvas',
+    { tag: ['@canvas'] },
+    async ({ comfyPage, comfyMouse, maskEditor }) => {
+      const dialog = await maskEditor.openDialog()
+      const pointerZone = dialog.getByTestId('pointer-zone')
+      const getCanvasPosition = () =>
+        comfyPage.page.evaluate(() => {
+          const container = document.querySelector('#maskEditorCanvasContainer')
+          if (!(container instanceof HTMLElement)) return null
+
+          return {
+            left: container.style.left,
+            top: container.style.top
+          }
+        })
+      const canvasPositionBefore = await getCanvasPosition()
+
+      await comfyMouse.middleDragFromCenter(
+        pointerZone,
+        { x: 140, y: 90 },
+        { steps: 10 }
+      )
+
+      await expect.poll(getCanvasPosition).not.toEqual(canvasPositionBefore)
+    }
+  )
 
   test('undo reverts a brush stroke', async ({ maskEditor }) => {
     const dialog = await maskEditor.openDialog()
@@ -301,3 +333,39 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
     }
   )
 })
+
+wstest(
+  'Will not use stale litegraph previews',
+  async ({ comfyPage, getWebSocket }) => {
+    const executionHelper = new ExecutionHelper(comfyPage, await getWebSocket())
+    await comfyPage.menu.topbar.newWorkflowButton.click()
+    await comfyPage.searchBoxV2.addNode('Preview Image')
+
+    async function getNodeOutput() {
+      return await comfyPage.page.evaluate(
+        () => graph!.getNodeById('1')!.images?.[0]?.filename
+      )
+    }
+
+    executionHelper.executed('', '1', { images: [{ filename: 'test1.png' }] })
+    await comfyPage.page.evaluate(() => app!.canvas.setDirty(true))
+    await expect.poll(getNodeOutput).toBe('test1.png')
+
+    await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
+
+    const resolvableFile = { filename: 'example.png', type: 'input' }
+    executionHelper.executed('', '1', { images: [resolvableFile] })
+    await expect.poll(getNodeOutput).toBe('example.png')
+
+    const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
+    await node.imagePreview.hover()
+    await node.imagePreview
+      .getByRole('button', { name: 'Edit or mask image' })
+      .click()
+
+    // On previous versions, attempting to open the mask editor here would
+    // incorrectly reference the non-existant test1.png
+    // This causes the mask editor to throw in setup and not display
+    await expect(comfyPage.page.locator('.mask-editor-dialog')).toBeVisible()
+  }
+)

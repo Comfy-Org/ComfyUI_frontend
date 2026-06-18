@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 
-export type NavDropdownItem = {
+type NavDropdownItem = {
   label: string
   href: string
   badge?: string

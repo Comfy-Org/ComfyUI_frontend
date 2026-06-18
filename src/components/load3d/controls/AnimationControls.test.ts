@@ -6,24 +6,6 @@ import { createI18n } from 'vue-i18n'
 
 import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
 
-vi.mock('primevue/select', () => ({
-  default: {
-    name: 'Select',
-    props: ['modelValue', 'options', 'optionLabel', 'optionValue'],
-    emits: ['update:modelValue'],
-    template: `
-      <select
-        :value="modelValue"
-        @change="$emit('update:modelValue', isNaN(Number($event.target.value)) ? $event.target.value : Number($event.target.value))"
-      >
-        <option v-for="opt in options" :key="opt[optionValue]" :value="opt[optionValue]">
-          {{ opt[optionLabel] }}
-        </option>
-      </select>
-    `
-  }
-}))
-
 vi.mock('@/components/ui/slider/Slider.vue', () => ({
   default: {
     name: 'UiSlider',

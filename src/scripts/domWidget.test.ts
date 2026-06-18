@@ -1,51 +1,17 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 
-const isPromotedByAnyMock = vi.hoisted(() => vi.fn())
-
-// Mock dependencies
 vi.mock('@/stores/domWidgetStore', () => ({
   useDomWidgetStore: () => ({
     unregisterWidget: vi.fn()
   })
 }))
 
-vi.mock('@/stores/promotionStore', () => ({
-  usePromotionStore: () => ({
-    isPromotedByAny: isPromotedByAnyMock
-  })
-}))
-
 vi.mock('@/utils/formatUtil', () => ({
   generateUUID: () => 'test-uuid'
 }))
-
-type MockCanvasContext = Pick<
-  CanvasRenderingContext2D,
-  | 'beginPath'
-  | 'rect'
-  | 'fill'
-  | 'save'
-  | 'restore'
-  | 'strokeRect'
-  | 'fillStyle'
-  | 'strokeStyle'
->
-
-function createMockContext(): MockCanvasContext {
-  return {
-    beginPath: vi.fn(),
-    rect: vi.fn(),
-    fill: vi.fn(),
-    save: vi.fn(),
-    restore: vi.fn(),
-    strokeRect: vi.fn(),
-    fillStyle: '#000',
-    strokeStyle: '#000'
-  }
-}
 
 describe('DOMWidget Y Position Preservation', () => {
   test('BaseDOMWidgetImpl createCopyForNode preserves Y position', () => {
@@ -114,81 +80,19 @@ describe('DOMWidget Y Position Preservation', () => {
   })
 })
 
-describe('DOMWidget draw promotion behavior', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  test('draws promoted outline for visible promoted widgets', () => {
-    isPromotedByAnyMock.mockReturnValue(true)
-
+describe('BaseDOMWidgetImpl.isVisible', () => {
+  test('returns false when the widget is computedDisabled (its input slot is linked)', () => {
     const node = new LGraphNode('test-node')
-    const rootGraph = { id: 'root-graph-id' }
-    node.graph = { rootGraph } as never
-    const onDraw = vi.fn()
-
     const widget = new DOMWidgetImpl({
       node,
-      name: 'seed',
+      name: 'text',
       type: 'text',
-      element: document.createElement('div'),
-      options: { onDraw }
+      element: document.createElement('textarea'),
+      options: {}
     })
-    const ctx = createMockContext()
 
-    widget.draw(ctx as CanvasRenderingContext2D, node, 200, 30, 40)
+    widget.computedDisabled = true
 
-    expect(isPromotedByAnyMock).toHaveBeenCalledWith('root-graph-id', {
-      sourceNodeId: '-1',
-      sourceWidgetName: 'seed'
-    })
-    expect(ctx.strokeRect).toHaveBeenCalledOnce()
-    expect(onDraw).toHaveBeenCalledWith(widget)
-  })
-
-  test('does not draw promoted outline when widget is not promoted', () => {
-    isPromotedByAnyMock.mockReturnValue(false)
-
-    const node = new LGraphNode('test-node')
-    const rootGraph = { id: 'root-graph-id' }
-    node.graph = { rootGraph } as never
-    const onDraw = vi.fn()
-
-    const widget = new DOMWidgetImpl({
-      node,
-      name: 'seed',
-      type: 'text',
-      element: document.createElement('div'),
-      options: { onDraw }
-    })
-    const ctx = createMockContext()
-
-    widget.draw(ctx as CanvasRenderingContext2D, node, 200, 30, 40)
-
-    expect(ctx.strokeRect).not.toHaveBeenCalled()
-    expect(onDraw).toHaveBeenCalledWith(widget)
-  })
-
-  test('skips promotion lookup when widget is hidden', () => {
-    const node = new LGraphNode('test-node')
-    const rootGraph = { id: 'root-graph-id' }
-    node.graph = { rootGraph } as never
-    const onDraw = vi.fn()
-
-    const widget = new DOMWidgetImpl({
-      node,
-      name: 'seed',
-      type: 'text',
-      element: document.createElement('div'),
-      options: { onDraw }
-    })
-    widget.hidden = true
-    const ctx = createMockContext()
-
-    widget.draw(ctx as CanvasRenderingContext2D, node, 200, 30, 40)
-
-    expect(isPromotedByAnyMock).not.toHaveBeenCalled()
-    expect(ctx.strokeRect).not.toHaveBeenCalled()
-    expect(onDraw).toHaveBeenCalledWith(widget)
+    expect(widget.isVisible()).toBe(false)
   })
 })

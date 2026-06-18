@@ -8,6 +8,36 @@ import { useAuthStore } from '@/stores/authStore'
  * Creates and deletes session cookies on the ComfyUI server.
  */
 export const useSessionCookie = () => {
+  const createSessionWithHeader = async (
+    authHeader: Record<string, string>
+  ): Promise<Response> => {
+    return await fetch(api.apiURL('/auth/session'), {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        ...authHeader,
+        'Content-Type': 'application/json'
+      }
+    })
+  }
+
+  const readSessionError = async (response: Response): Promise<string> => {
+    const errorData: unknown = await response.json().catch(() => null)
+    const message = (errorData as { message?: unknown } | null)?.message
+    return typeof message === 'string' ? message : response.statusText
+  }
+
+  const getFirebaseSessionHeaderOrThrow = async (): Promise<
+    Record<string, string>
+  > => {
+    const firebaseToken = await useAuthStore().getIdToken()
+    if (!firebaseToken) {
+      throw new Error('No Firebase token available for session creation')
+    }
+
+    return { Authorization: `Bearer ${firebaseToken}` }
+  }
+
   /**
    * Creates or refreshes the session cookie.
    * Called after login and on token refresh.
@@ -47,24 +77,26 @@ export const useSessionCookie = () => {
         authHeader = header
       }
 
-      const response = await fetch(api.apiURL('/auth/session'), {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          ...authHeader,
-          'Content-Type': 'application/json'
-        }
-      })
+      const response = await createSessionWithHeader(authHeader)
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
         console.warn(
           'Failed to create session cookie:',
-          errorData.message || response.statusText
+          await readSessionError(response)
         )
       }
     } catch (error) {
       console.warn('Failed to create session cookie:', error)
+    }
+  }
+
+  const createSessionOrThrow = async (): Promise<void> => {
+    if (!isCloud) return
+
+    const authHeader = await getFirebaseSessionHeaderOrThrow()
+    const response = await createSessionWithHeader(authHeader)
+    if (!response.ok) {
+      throw new Error(await readSessionError(response))
     }
   }
 
@@ -82,10 +114,9 @@ export const useSessionCookie = () => {
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
         console.warn(
           'Failed to delete session cookie:',
-          errorData.message || response.statusText
+          await readSessionError(response)
         )
       }
     } catch (error) {
@@ -95,6 +126,7 @@ export const useSessionCookie = () => {
 
   return {
     createSession,
+    createSessionOrThrow,
     deleteSession
   }
 }
