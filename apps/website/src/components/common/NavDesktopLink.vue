@@ -52,7 +52,7 @@ const emit = defineEmits<{
           'group flex cursor-pointer items-center gap-1.5 py-3 text-sm font-bold tracking-wide uppercase transition-colors',
           link.items.some((item) => currentPath === item.href)
             ? 'text-primary-comfy-yellow'
-            : 'text-primary-comfy-canvas hover:text-primary-warm-gray'
+            : 'hover:text-primary-warm-gray text-primary-comfy-canvas'
         )
       "
       aria-haspopup="true"
@@ -67,7 +67,7 @@ const emit = defineEmits<{
             'text-base leading-none transition-colors',
             link.items.some((item) => currentPath === item.href)
               ? 'text-primary-comfy-yellow'
-              : 'text-primary-comfy-canvas group-hover:text-primary-warm-gray'
+              : 'group-hover:text-primary-warm-gray text-primary-comfy-canvas'
           )
         "
       >
@@ -84,7 +84,7 @@ const emit = defineEmits<{
           'flex items-center gap-1.5 py-3 text-sm font-bold tracking-wide uppercase transition-colors',
           currentPath === link.href
             ? 'text-primary-comfy-yellow'
-            : 'text-primary-comfy-canvas hover:text-primary-warm-gray'
+            : 'hover:text-primary-warm-gray text-primary-comfy-canvas'
         )
       "
       @click="link.ctaButton && captureCtaClick(link.ctaButton, 'nav')"
@@ -108,18 +108,18 @@ const emit = defineEmits<{
             'flex items-center gap-2 rounded-sm p-2 text-xs font-medium tracking-wide transition-colors',
             currentPath === item.href
               ? 'text-primary-comfy-yellow'
-              : 'text-primary-comfy-canvas hover:bg-transparency-white-t4 hover:text-white'
+              : 'hover:bg-transparency-white-t4 text-primary-comfy-canvas hover:text-white'
           )
         "
         @click="
-          item.ctaButton && captureCtaClick(item.ctaButton, 'nav'),
-            emit('close')
+          (item.ctaButton && captureCtaClick(item.ctaButton, 'nav'),
+          emit('close'))
         "
       >
         {{ item.label }}
         <span
           v-if="item.badge"
-          class="bg-primary-comfy-yellow font-formula-narrow text-primary-comfy-ink -skew-x-12 rounded-sm px-1 py-0.5 text-[9px]/3 leading-none font-bold"
+          class="bg-primary-comfy-yellow font-formula-narrow -skew-x-12 rounded-sm px-1 py-0.5 text-[9px]/3 leading-none font-bold text-primary-comfy-ink"
         >
           <span class="ppformula-text-center inline-block skew-x-12">{{
             item.badge
