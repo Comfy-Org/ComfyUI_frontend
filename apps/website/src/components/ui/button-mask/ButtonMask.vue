@@ -40,8 +40,8 @@ const {
     :data-variant="variant"
     :data-size="size"
     :as
-    :as-child="asChild"
-    :disabled="disabled"
+    :as-child
+    :disabled
     :class="cn(buttonMaskVariants({ variant, size, iconPosition }), className)"
   >
     <span
