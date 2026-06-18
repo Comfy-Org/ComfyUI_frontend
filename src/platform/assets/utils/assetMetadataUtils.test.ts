@@ -6,12 +6,14 @@ import {
   getAssetBaseModel,
   getAssetBaseModels,
   getAssetCardTitle,
+  getAssetCategories,
   getAssetDescription,
   getAssetDisplayFilename,
   getAssetDisplayName,
   getAssetFilename,
   getAssetMetadataDimensions,
   getAssetModelType,
+  getAssetNodeCategory,
   getAssetSourceUrl,
   getAssetStoredFilename,
   getAssetTriggerPhrases,
@@ -578,5 +580,69 @@ describe('assetMetadataUtils', () => {
         rendered
       )
     })
+  })
+})
+
+describe('getAssetCategories', () => {
+  const asset = (tags: string[]): AssetItem => ({
+    id: 'a',
+    name: 'model.safetensors',
+    tags
+  })
+
+  it('uses model_type:* values as the group and disregards other tags', () => {
+    expect(
+      getAssetCategories(asset(['models', 'model_type:checkpoints', 'sdxl']))
+    ).toEqual(['checkpoints'])
+  })
+
+  it('preserves the model_type value casing', () => {
+    expect(getAssetCategories(asset(['models', 'model_type:LLM']))).toEqual([
+      'LLM'
+    ])
+  })
+
+  it('falls back to non-model tags when no model_type tag is present', () => {
+    expect(getAssetCategories(asset(['models', 'checkpoints']))).toEqual([
+      'checkpoints'
+    ])
+  })
+})
+
+describe('getAssetNodeCategory', () => {
+  const asset = (tags: string[]): AssetItem => ({
+    id: 'a',
+    name: 'model.safetensors',
+    tags
+  })
+
+  it('prefers the most specific (deepest) tag over a flat model_type value', () => {
+    expect(
+      getAssetNodeCategory(
+        asset(['models', 'model_type:LLM', 'LLM/Qwen-VL/Qwen3-0.6B'])
+      )
+    ).toBe('LLM/Qwen-VL/Qwen3-0.6B')
+  })
+
+  it('strips the model_type: prefix when it is the only candidate', () => {
+    expect(getAssetNodeCategory(asset(['models', 'model_type:vae']))).toBe(
+      'vae'
+    )
+  })
+
+  it('lets a model_type value win ties against a bare tag', () => {
+    expect(
+      getAssetNodeCategory(asset(['models', 'model_type:checkpoints', 'sdxl']))
+    ).toBe('checkpoints')
+  })
+
+  it('keeps a hierarchical legacy tag intact', () => {
+    expect(
+      getAssetNodeCategory(asset(['models', 'chatterbox/chatterbox_vc']))
+    ).toBe('chatterbox/chatterbox_vc')
+  })
+
+  it('returns undefined when only reserved tags are present', () => {
+    expect(getAssetNodeCategory(asset(['models', 'missing']))).toBeUndefined()
   })
 })

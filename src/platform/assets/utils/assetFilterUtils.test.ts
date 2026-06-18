@@ -34,7 +34,18 @@ describe('filterByCategory', () => {
       tags: ['models', 'checkpoint/xl'],
       expected: true
     },
-    { category: 'xl', tags: ['models', 'checkpoint/xl'], expected: false }
+    { category: 'xl', tags: ['models', 'checkpoint/xl'], expected: false },
+    {
+      category: 'checkpoints',
+      tags: ['models', 'model_type:checkpoints'],
+      expected: true
+    },
+    { category: 'LLM', tags: ['models', 'model_type:LLM'], expected: true },
+    {
+      category: 'sdxl',
+      tags: ['models', 'model_type:checkpoints', 'sdxl'],
+      expected: false
+    }
   ])(
     'category=$category with tags=$tags returns $expected',
     ({ category, tags, expected }) => {

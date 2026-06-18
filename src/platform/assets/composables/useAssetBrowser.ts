@@ -19,6 +19,7 @@ import {
 } from '@/platform/assets/utils/assetFilterUtils'
 import {
   getAssetBaseModels,
+  getAssetCategories,
   getAssetFilename
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { MODELS_TAG } from '@/platform/assets/services/assetService'
@@ -124,10 +125,7 @@ export function useAssetBrowser(
   const typeCategories = computed<NavItemData[]>(() => {
     const categories = assets.value
       .filter((asset) => asset.tags.includes(MODELS_TAG))
-      .flatMap((asset) =>
-        asset.tags.filter((tag) => tag !== MODELS_TAG && tag.length > 0)
-      )
-      .map((tag) => tag.split('/')[0])
+      .flatMap(getAssetCategories)
 
     return Array.from(new Set(categories))
       .sort()

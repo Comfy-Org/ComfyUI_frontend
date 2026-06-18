@@ -1,4 +1,8 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import {
+  MISSING_TAG,
+  MODELS_TAG
+} from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import { isCivitaiUrl } from '@/utils/formatUtil'
 
@@ -148,6 +152,61 @@ export function getSourceName(url: string): string {
 export function getAssetModelType(asset: AssetItem): string | null {
   const typeTag = asset.tags?.find((tag) => tag && tag !== 'models')
   return typeTag ?? null
+}
+
+const MODEL_TYPE_TAG_PREFIX = 'model_type:'
+
+function getModelTypeTagValues(asset: AssetItem): string[] {
+  return asset.tags
+    .filter((tag) => tag.startsWith(MODEL_TYPE_TAG_PREFIX))
+    .map((tag) => tag.slice(MODEL_TYPE_TAG_PREFIX.length))
+    .filter((tag) => tag.length > 0)
+}
+
+/**
+ * Resolves the category keys a model asset is grouped under.
+ *
+ * When the asset carries `model_type:*` tags (the namespaced tag scheme), the
+ * `*` values are authoritative and every other tag is disregarded. Otherwise
+ * we fall back to treating each non-`models` tag's top-level segment as a
+ * category, preserving the pre-namespace behavior.
+ */
+export function getAssetCategories(asset: AssetItem): string[] {
+  const modelTypes = getModelTypeTagValues(asset)
+  if (modelTypes.length > 0) return modelTypes
+
+  return asset.tags
+    .filter((tag) => tag !== MODELS_TAG && tag.length > 0)
+    .map((tag) => tag.split('/')[0])
+}
+
+function pathDepth(tag: string): number {
+  return tag.split('/').length
+}
+
+/**
+ * Resolves the model-type key used to look up a node provider for an asset.
+ *
+ * Unlike {@link getAssetCategories}, this keeps the full (possibly
+ * hierarchical) value so `modelToNodeStore`'s `parent/child` fallback still
+ * works. Candidates are the stripped `model_type:*` values plus any other
+ * non-reserved tags, and the most specific (deepest `parent/child`) candidate
+ * wins so a flat `model_type:LLM` never shadows a resolvable
+ * `LLM/Qwen-VL/...` tag. `model_type:*` values win ties.
+ */
+export function getAssetNodeCategory(asset: AssetItem): string | undefined {
+  const otherTags = asset.tags.filter(
+    (tag) =>
+      tag !== MODELS_TAG &&
+      tag !== MISSING_TAG &&
+      !tag.startsWith(MODEL_TYPE_TAG_PREFIX)
+  )
+  const candidates = [...getModelTypeTagValues(asset), ...otherTags]
+  if (candidates.length === 0) return undefined
+
+  return candidates.reduce((best, candidate) =>
+    pathDepth(candidate) > pathDepth(best) ? candidate : best
+  )
 }
 
 /**
