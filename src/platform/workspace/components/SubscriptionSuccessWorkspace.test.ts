@@ -13,13 +13,36 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
+function makePreviewData(priceCents: number): PreviewSubscribeResponse {
+  return {
+    allowed: true,
+    transition_type: 'new_subscription',
+    effective_at: '2026-07-10T00:00:00Z',
+    is_immediate: true,
+    cost_today_cents: priceCents,
+    cost_next_period_cents: priceCents,
+    credits_today_cents: 0,
+    credits_next_period_cents: 0,
+    new_plan: {
+      slug: 'standard-monthly',
+      tier: 'STANDARD',
+      duration: 'MONTHLY',
+      price_cents: priceCents,
+      credits_cents: 0,
+      seat_summary: {
+        seat_count: 1,
+        total_cost_cents: priceCents,
+        total_credits_cents: 0
+      }
+    }
+  }
+}
+
 function renderCard() {
   return render(SubscriptionSuccessWorkspace, {
     props: {
       tierKey: 'standard',
-      previewData: {
-        new_plan: { price_cents: 1600 }
-      } as unknown as PreviewSubscribeResponse
+      previewData: makePreviewData(1600)
     },
     global: {
       mocks: { $t: (key: string) => key },
