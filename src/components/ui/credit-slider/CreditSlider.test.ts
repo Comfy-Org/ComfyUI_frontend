@@ -17,6 +17,7 @@ const i18n = createI18n({
       subscription: {
         usdPerMonth: 'USD / mo',
         billedYearly: '{total} Billed yearly',
+        billedMonthly: 'Billed monthly',
         creditSliderSave: 'Save {percent}% ({amount})'
       }
     }
@@ -119,6 +120,32 @@ describe('CreditSlider', () => {
     )
     expect(screen.getByTestId('credit-slider-billed-yearly')).toHaveTextContent(
       '$7,560'
+    )
+  })
+
+  it('halves the discount and reads "billed monthly" when cycle=monthly (PRD)', async () => {
+    renderSlider({ cycle: 'monthly' }) // default $700 stop → 10% yearly → 5% monthly
+    await flush()
+
+    expect(screen.getByTestId('credit-slider-price')).toHaveTextContent('$665')
+    expect(
+      screen.getByTestId('credit-slider-original-price')
+    ).toHaveTextContent('$700')
+    expect(screen.getByTestId('credit-slider-save')).toHaveTextContent(
+      'Save 5% ($35)'
+    )
+    expect(screen.getByTestId('credit-slider-billed-yearly')).toHaveTextContent(
+      'Billed monthly'
+    )
+  })
+
+  it('applies the fractional monthly discount at $400 (2.5%)', async () => {
+    renderSlider({ modelValue: 400, cycle: 'monthly' })
+    await flush()
+
+    expect(screen.getByTestId('credit-slider-price')).toHaveTextContent('$390')
+    expect(screen.getByTestId('credit-slider-save')).toHaveTextContent(
+      'Save 2.5% ($10)'
     )
   })
 

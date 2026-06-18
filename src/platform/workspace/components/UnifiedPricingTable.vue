@@ -460,6 +460,10 @@ const emit = defineEmits<{
   // Team-plan checkout. NOTE: the slider stop -> plan-slug mapping is blocked on
   // the BE discount-breakpoint contract (FE-934 / doc Open Q#2); the host shows
   // the confirm step but stubs the final subscribe until the contract lands.
+  // TODO(FE-934): once the contract lands, also carry `currentBillingCycle`
+  // (yearly | monthly) so checkout subscribes to the selected cycle, not just
+  // the stop. The pricing-table view already toggles cycle; the confirm/checkout
+  // chain still assumes yearly.
   subscribeTeam: [payload: TeamPlanSelection]
 }>()
 
