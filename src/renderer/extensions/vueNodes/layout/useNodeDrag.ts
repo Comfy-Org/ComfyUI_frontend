@@ -199,6 +199,19 @@ function useNodeDragIndividual() {
     if (!dragStartPos || !dragStartMouse) {
       return
     }
+    if (canvasStore.isReadOnly) {
+      const canvas = canvasStore.getCanvas()
+      const delta = [event.clientX - lastPointerX, event.clientY - lastPointerY]
+
+      canvas.ds.offset[0] += delta[0] / canvas.ds.scale
+      canvas.ds.offset[1] += delta[1] / canvas.ds.scale
+      canvas.setDirty(true, true)
+      lastPointerX = event.clientX
+      lastPointerY = event.clientY
+      dragStartMouse.x += delta[0]
+      dragStartMouse.y += delta[1]
+      return
+    }
 
     // Throttle position updates using requestAnimationFrame for better performance
     if (rafId !== null) return // Skip if frame already scheduled

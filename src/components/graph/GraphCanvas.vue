@@ -66,6 +66,7 @@
     @pointerdown.capture="forwardPointerDownPanEvent"
     @pointerup.capture="forwardPointerUpPanEvent"
     @pointermove.capture="forwardPointerMovePanEvent"
+    @keydown.space="canvasInteractions.forwardEventToCanvas"
   >
     <!-- Vue nodes rendered based on graph nodes -->
     <LGraphNode
