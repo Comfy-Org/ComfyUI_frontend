@@ -793,9 +793,9 @@ export class GroupNodeConfig {
  * Group nodes are no longer a supported feature. When a legacy workflow that
  * contains group nodes is loaded, {@link GroupNodeConfig.registerFromWorkflow}
  * synthesizes temporary node types so the instances can be created during
- * `configure`. This handler exposes {@link convertToNodes} on each instance so
- * the load-time migration can unpack it and {@link LGraph.convertToSubgraph}
- * can repackage the result as a subgraph.
+ * `configure`. The load-time migration unpacks each instance via
+ * {@link convertToNodes} and {@link LGraph.convertToSubgraph} repackages the
+ * result as a subgraph.
  */
 class GroupNodeHandler {
   node: LGraphNode
@@ -804,9 +804,6 @@ class GroupNodeHandler {
   constructor(node: LGraphNode) {
     this.node = node
     this.groupData = node.constructor?.nodeData?.[GROUP] as GroupNodeConfig
-    ;(
-      this.node as LGraphNode & { convertToNodes: () => LGraphNode[] }
-    ).convertToNodes = () => this.convertToNodes()
   }
 
   /**
@@ -983,8 +980,11 @@ function convertLoadedGroupNodes(): number {
     )
     if (!node) return converted
     try {
-      GroupNodeHandler.getHandler(node)
-      app.rootGraph.convertToSubgraph(new Set([node]))
+      const handler = GroupNodeHandler.getHandler(node)
+      if (!handler) throw new Error('Missing handler for group node')
+      const innerNodes = handler.convertToNodes()
+      for (const inner of innerNodes) inner.updateArea()
+      app.rootGraph.convertToSubgraph(new Set(innerNodes))
       converted++
     } catch (error) {
       console.error('Failed to convert group node to subgraph', error)
@@ -1041,15 +1041,17 @@ const ext: ComfyExtension = {
   },
   nodeCreated(node: LGraphNode) {
     if (!GroupNodeHandler.isGroupNode(node)) return
-    GroupNodeHandler.getHandler(node)
+    const handler = GroupNodeHandler.getHandler(node)
     // A stray group node created after load (e.g. paste) has no migration pass;
     // convert it to a subgraph once it has joined a graph.
     if (!isLoadingWorkflow) {
       queueMicrotask(() => {
         const graph = node.graph
-        if (graph && GroupNodeHandler.isGroupNode(node)) {
+        if (graph && handler && GroupNodeHandler.isGroupNode(node)) {
           try {
-            graph.convertToSubgraph(new Set([node]))
+            const innerNodes = handler.convertToNodes()
+            for (const inner of innerNodes) inner.updateArea()
+            graph.convertToSubgraph(new Set(innerNodes))
           } catch (error) {
             console.error(
               'Failed to convert stray group node to subgraph',
