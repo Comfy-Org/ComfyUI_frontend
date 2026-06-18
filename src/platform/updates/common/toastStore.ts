@@ -5,12 +5,26 @@ import { defineStore } from 'pinia'
 import type { ToastMessageOptions } from 'primevue/toast'
 import { ref } from 'vue'
 
+// Identical toasts fired within this window are coalesced into one. A single
+// user action (e.g. a throttled double-submit) was rendering the same error two
+// or three times; dedup keeps it to one without affecting intentional repeats.
+const TOAST_DEDUP_WINDOW_MS = 3000
+
 export const useToastStore = defineStore('toast', () => {
   const messagesToAdd = ref<ToastMessageOptions[]>([])
   const messagesToRemove = ref<ToastMessageOptions[]>([])
   const removeAllRequested = ref(false)
 
+  const recentlyAdded = new Map<string, number>()
+
   function add(message: ToastMessageOptions) {
+    const key = `${String(message.severity ?? '')}|${String(message.summary ?? '')}|${String(message.detail ?? '')}`
+    const now = Date.now()
+    for (const [k, ts] of recentlyAdded) {
+      if (now - ts > TOAST_DEDUP_WINDOW_MS) recentlyAdded.delete(k)
+    }
+    if (recentlyAdded.has(key)) return
+    recentlyAdded.set(key, now)
     messagesToAdd.value = [...messagesToAdd.value, message]
   }
 

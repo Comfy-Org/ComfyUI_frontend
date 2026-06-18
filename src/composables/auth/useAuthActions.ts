@@ -28,8 +28,35 @@ export const useAuthActions = () => {
 
   const accessError = ref(false)
 
+  // Detect "email already registered" across its shapes: the Firebase SDK
+  // (auth/email-already-in-use) and the raw Identity Toolkit REST 400 (EMAIL_EXISTS),
+  // including when wrapped by an AuthStoreError. Signing up with an existing email
+  // should always show the friendly "sign in instead" message, never the generic
+  // "Something went wrong" fallback.
+  const isEmailAlreadyInUse = (error: unknown): boolean => {
+    if (
+      error instanceof FirebaseError &&
+      error.code === 'auth/email-already-in-use'
+    ) {
+      return true
+    }
+    const message = error instanceof Error ? error.message : String(error ?? '')
+    return /email[-_ ]?already[-_ ]?in[-_ ]?use|EMAIL_EXISTS/i.test(message)
+  }
+
   const reportError = (error: unknown) => {
     // Ref: https://firebase.google.com/docs/auth/admin/errors
+    if (isEmailAlreadyInUse(error)) {
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: st(
+          'auth.errors.auth/email-already-in-use',
+          t('auth.errors.generic')
+        )
+      })
+      return
+    }
     if (
       error instanceof FirebaseError &&
       [

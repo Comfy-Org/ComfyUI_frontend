@@ -305,10 +305,17 @@ export const useAuthStore = defineStore('auth', () => {
       }
     })
     if (!createCustomerRes.ok) {
+      // statusText is empty under HTTP/2, which produced a bare "Failed to create
+      // customer:" toast. Prefer the backend error body, then the status code.
+      let detail = `HTTP ${createCustomerRes.status}`
+      try {
+        const body = await createCustomerRes.json()
+        if (body?.message) detail = String(body.message)
+      } catch {
+        // Non-JSON body; keep the status code.
+      }
       throw new AuthStoreError(
-        t('toastMessages.failedToCreateCustomer', {
-          error: createCustomerRes.statusText
-        })
+        t('toastMessages.failedToCreateCustomer', { error: detail })
       )
     }
 
@@ -336,13 +343,22 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const result = await action(auth)
 
-      // Create customer if needed
+      // Provision the customer up front when requested, but best-effort: a failed
+      // or duplicate POST /customers must not fail an otherwise-successful
+      // sign-in/up. The server-side provisioner backstops it on the next
+      // authenticated request (and customer creation is idempotent server-side).
       if (options?.createCustomer) {
-        const token = await getIdToken()
-        if (!token) {
-          throw new Error('Cannot create customer: User not authenticated')
+        try {
+          const token = await getIdToken()
+          if (token) {
+            await createCustomer()
+          }
+        } catch (error) {
+          console.warn(
+            '[auth] createCustomer failed during sign-in; relying on the server-side provisioner',
+            error
+          )
         }
-        await createCustomer()
       }
 
       return result
