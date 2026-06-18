@@ -390,27 +390,54 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const register = async (
+  // Single-flight guard for account creation: at most one in-flight
+  // createUserWithEmailAndPassword per email, so a single sign-up intent can
+  // never create the account twice (and then show the second caller EMAIL_EXISTS
+  // against the account the first just made). UI throttling/disabled-state is
+  // defense-in-depth; this store-level guard is the actual contract.
+  const inFlightRegister = new Map<string, Promise<UserCredential>>()
+
+  const register = (
     email: string,
     password: string
   ): Promise<UserCredential> => {
-    const result = await executeAuthAction(
-      (authInstance) =>
-        createUserWithEmailAndPassword(authInstance, email, password),
-      { createCustomer: true }
-    )
+    const key = email.trim().toLowerCase()
 
-    if (isCloud) {
-      useTelemetry()?.trackAuth({
-        method: 'email',
-        is_new_user: true,
-        user_id: result.user.uid,
-        email: result.user.email ?? undefined,
-        ...getShareAuthMetadata()
-      })
-    }
+    // Ride an existing attempt for the same email. Kept across the success ->
+    // redirect window (see below), so a re-submit while the post-sign-up
+    // navigation is still in flight returns the existing credential instead of
+    // issuing a second createUserWithEmailAndPassword.
+    const existing = inFlightRegister.get(key)
+    if (existing) return existing
 
-    return result
+    const pending = (async () => {
+      const result = await executeAuthAction(
+        (authInstance) =>
+          createUserWithEmailAndPassword(authInstance, email, password),
+        { createCustomer: true }
+      )
+
+      if (isCloud) {
+        useTelemetry()?.trackAuth({
+          method: 'email',
+          is_new_user: true,
+          user_id: result.user.uid,
+          email: result.user.email ?? undefined,
+          ...getShareAuthMetadata()
+        })
+      }
+
+      return result
+    })()
+
+    inFlightRegister.set(key, pending)
+    // Drop the guard only on FAILURE, so a genuine retry after a real error is
+    // allowed. On success the entry is retained: the account exists, the user is
+    // signed in, and any duplicate submit during the redirect must be a no-op,
+    // not a second account-creation attempt. (Sign-out reloads the app, which
+    // resets this map, so a later legitimate sign-up is unaffected.)
+    pending.catch(() => inFlightRegister.delete(key))
+    return pending
   }
 
   const loginWithGoogle = async (options?: {

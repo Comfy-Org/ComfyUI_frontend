@@ -397,6 +397,67 @@ describe('useAuthStore', () => {
       )
       expect(store.loading).toBe(false)
     })
+
+    it('creates the account once for concurrent same-email sign-ups (incl. case/whitespace)', async () => {
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockClear()
+
+      const results = await Promise.all([
+        store.register('Race@Example.com', 'password'),
+        store.register('  race@example.com  ', 'password'),
+        store.register('RACE@EXAMPLE.COM', 'password')
+      ])
+
+      expect(
+        firebaseAuth.createUserWithEmailAndPassword
+      ).toHaveBeenCalledTimes(1)
+      expect(results[0]).toBe(results[1])
+      expect(results[1]).toBe(results[2])
+    })
+
+    it('does not create a second account on a duplicate submit after success', async () => {
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockClear()
+
+      // First attempt resolves; the guard entry is intentionally retained so a
+      // re-submit during the post-sign-up redirect cannot create a 2nd account.
+      await store.register('keep@example.com', 'password')
+      await store.register('keep@example.com', 'password')
+
+      expect(
+        firebaseAuth.createUserWithEmailAndPassword
+      ).toHaveBeenCalledTimes(1)
+    })
+
+    it('allows a genuine retry after a failed sign-up', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockClear()
+      vi.mocked(
+        firebaseAuth.createUserWithEmailAndPassword
+      ).mockRejectedValueOnce(new Error('network blip'))
+
+      await expect(
+        store.register('retry@example.com', 'password')
+      ).rejects.toThrow('network blip')
+
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(
+        firebaseAuth.createUserWithEmailAndPassword
+      ).mockResolvedValueOnce(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+
+      await store.register('retry@example.com', 'password')
+
+      expect(
+        firebaseAuth.createUserWithEmailAndPassword
+      ).toHaveBeenCalledTimes(2)
+    })
   })
 
   describe('logout', () => {
