@@ -680,7 +680,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.members[0].id).toBe('user-2')
     })
 
-    it('changeMemberRole updates the role in the local list', async () => {
+    it('changeMemberRole applies the Member returned by the API', async () => {
       mockWorkspaceApi.listMembers.mockResolvedValue({
         members: [
           {
@@ -688,17 +688,27 @@ describe('useTeamWorkspaceStore', () => {
             name: 'User One',
             email: 'one@test.com',
             joined_at: '2024-01-01T00:00:00Z',
-            role: 'owner'
+            role: 'owner',
+            is_original_owner: true
           },
           {
             id: 'user-2',
             name: 'User Two',
             email: 'two@test.com',
             joined_at: '2024-01-02T00:00:00Z',
-            role: 'member'
+            role: 'member',
+            is_original_owner: false
           }
         ],
         pagination: { offset: 0, limit: 50, total: 2 }
+      })
+      mockWorkspaceApi.updateMemberRole.mockResolvedValue({
+        id: 'user-2',
+        name: 'User Two',
+        email: 'two@test.com',
+        joined_at: '2024-01-02T00:00:00Z',
+        role: 'owner',
+        is_original_owner: false
       })
       mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
       mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
@@ -713,7 +723,9 @@ describe('useTeamWorkspaceStore', () => {
         'user-2',
         'owner'
       )
-      expect(store.members.find((m) => m.id === 'user-2')?.role).toBe('owner')
+      const updated = store.members.find((m) => m.id === 'user-2')
+      expect(updated?.role).toBe('owner')
+      expect(updated?.isOriginalOwner).toBe(false)
     })
 
     it('changeMemberRole leaves the list untouched when the API rejects', async () => {
@@ -724,7 +736,8 @@ describe('useTeamWorkspaceStore', () => {
             name: 'User Two',
             email: 'two@test.com',
             joined_at: '2024-01-02T00:00:00Z',
-            role: 'member'
+            role: 'member',
+            is_original_owner: false
           }
         ],
         pagination: { offset: 0, limit: 50, total: 1 }
@@ -741,22 +754,60 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.members[0].role).toBe('member')
     })
 
-    it('originalOwnerId is the earliest joined member', async () => {
+    it('changeMemberRole refuses to change the flagged creator and never calls the API', async () => {
       mockWorkspaceApi.listMembers.mockResolvedValue({
         members: [
           {
-            id: 'late-owner',
-            name: 'Late Owner',
-            email: 'late@test.com',
-            joined_at: '2024-02-01T00:00:00Z',
-            role: 'owner'
+            id: 'user-2',
+            name: 'User Two',
+            email: 'two@test.com',
+            joined_at: '2024-01-01T00:00:00Z',
+            role: 'member',
+            is_original_owner: false
           },
           {
             id: 'creator',
             name: 'Creator',
             email: 'creator@test.com',
+            joined_at: '2024-01-02T00:00:00Z',
+            role: 'owner',
+            is_original_owner: true
+          }
+        ],
+        pagination: { offset: 0, limit: 50, total: 2 }
+      })
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      await store.fetchMembers()
+
+      await expect(
+        store.changeMemberRole('creator', 'member')
+      ).rejects.toThrow()
+      expect(mockWorkspaceApi.updateMemberRole).not.toHaveBeenCalled()
+      expect(store.members.find((m) => m.id === 'creator')?.role).toBe('owner')
+    })
+
+    it('originalOwnerId is the member flagged is_original_owner, even when not earliest-joined', async () => {
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members: [
+          {
+            id: 'early-joiner',
+            name: 'Early Joiner',
+            email: 'early@test.com',
             joined_at: '2024-01-01T00:00:00Z',
-            role: 'owner'
+            role: 'owner',
+            is_original_owner: false
+          },
+          {
+            id: 'creator',
+            name: 'Creator',
+            email: 'creator@test.com',
+            joined_at: '2024-02-01T00:00:00Z',
+            role: 'owner',
+            is_original_owner: true
           }
         ],
         pagination: { offset: 0, limit: 50, total: 2 }

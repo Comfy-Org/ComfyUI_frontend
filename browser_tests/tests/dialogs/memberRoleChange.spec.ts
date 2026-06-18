@@ -41,7 +41,8 @@ const CREATOR: Member = {
   name: 'Liz',
   email: 'liz@test.comfy.org',
   joined_at: '2025-01-01T00:00:00Z',
-  role: 'owner'
+  role: 'owner',
+  is_original_owner: true
 }
 // Matches the CloudAuthHelper mock user so this row counts as "(You)".
 const VIEWER: Member = {
@@ -49,21 +50,24 @@ const VIEWER: Member = {
   name: 'E2E Test User',
   email: 'e2e@test.comfy.org',
   joined_at: '2025-01-02T00:00:00Z',
-  role: 'owner'
+  role: 'owner',
+  is_original_owner: false
 }
 const JANE: Member = {
   id: 'u-jane',
   name: 'Jane',
   email: 'jane@test.comfy.org',
   joined_at: '2025-01-03T00:00:00Z',
-  role: 'member'
+  role: 'member',
+  is_original_owner: false
 }
 const JOHN: Member = {
   id: 'u-john',
   name: 'John',
   email: 'john@test.comfy.org',
   joined_at: '2025-01-04T00:00:00Z',
-  role: 'member'
+  role: 'member',
+  is_original_owner: false
 }
 
 interface RoleChangeRequest {
@@ -137,7 +141,9 @@ async function mockCloudBoot(page: Page): Promise<MemberMockState> {
       state.patches.push({ url, role })
       const member = state.members.find((m) => m.id === id)
       if (member) member.role = role
-      return route.fulfill(jsonRoute({}))
+      // The store applies the returned Member to local state; echo the full
+      // updated row so role/id survive the round trip.
+      return route.fulfill(jsonRoute(member))
     }
     return route.fulfill(
       jsonRoute({
