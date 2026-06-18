@@ -19,7 +19,9 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({ trackUiButtonClicked }))
 }))
 
-const userEmail = vi.hoisted(() => ({ value: undefined as string | undefined }))
+const userEmail = vi.hoisted((): { value: string | undefined } => ({
+  value: undefined
+}))
 vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({ userEmail })
 }))
