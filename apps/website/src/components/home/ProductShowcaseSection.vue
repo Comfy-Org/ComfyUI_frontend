@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useIntersectionObserver, useMediaQuery } from '@vueuse/core'
-import { onMounted, ref, useTemplateRef, watch } from 'vue'
+import { onMounted, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -53,15 +53,17 @@ const badgeSegments = [
 const activeIndex = ref(0)
 const sectionRef = useTemplateRef<HTMLElement>('sectionRef')
 const isVisible = ref(false)
-// Initialized false until onMounted to avoid SSR/hydration mismatch.
-// useMediaQuery returns false on the server, which would differ from the
-// client's real viewport and cause structural DOM divergence.
+// Stays false until onMounted so SSR and client both render desktop layout
+// initially, avoiding a structural hydration mismatch (useMediaQuery is false
+// on the server but reflects the real viewport on the client).
 const isMobile = ref(false)
-const _mqMobile = useMediaQuery('(max-width: 1023px)')
+const mqMobile = useMediaQuery('(max-width: 1023px)')
+let stopMqWatch: (() => void) | null = null
 onMounted(() => {
-  isMobile.value = _mqMobile.value
-  watch(_mqMobile, (v) => { isMobile.value = v })
+  isMobile.value = mqMobile.value
+  stopMqWatch = watch(mqMobile, (v) => { isMobile.value = v })
 })
+onBeforeUnmount(() => stopMqWatch?.())
 
 useIntersectionObserver(sectionRef, ([entry]) => {
   isVisible.value = entry?.isIntersecting ?? false

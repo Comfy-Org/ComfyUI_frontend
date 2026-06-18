@@ -40,9 +40,11 @@ function swapImageForVideo(
   image: SVGImageElement,
   href: string
 ): HTMLVideoElement {
-  const rect = image.getBoundingClientRect()
-  const width = image.getAttribute('width') ?? String(rect.width || 0)
-  const height = image.getAttribute('height') ?? String(rect.height || 0)
+  // lottie-web's SVG renderer always sets width/height as presentation
+  // attributes. We read them directly; BCR is unreliable when ancestors are
+  // display:none (v-show), so we don't fall back to it.
+  const width = image.getAttribute('width') ?? image.getAttribute('w') ?? '0'
+  const height = image.getAttribute('height') ?? image.getAttribute('h') ?? '0'
   const fo = document.createElementNS(SVG_NS, 'foreignObject')
   fo.setAttribute('x', '0')
   fo.setAttribute('y', '0')
@@ -125,7 +127,7 @@ watch(
         loop: true,
         autoplay: false,
         path: newSrc,
-        assetsPath: newAssetsPath ?? undefined,
+        assetsPath: newAssetsPath,
         rendererSettings: { preserveAspectRatio: 'xMidYMid slice' }
       })
       anim = created
@@ -213,13 +215,13 @@ onBeforeUnmount(() => {
     <div ref="lottieContainer" class="size-full" />
     <img
       v-if="poster"
-      v-show="!assetsLoaded"
       :src="poster"
       alt=""
       aria-hidden="true"
       :class="
         cn(
-          'pointer-events-none absolute inset-0 size-full object-cover transition-opacity duration-300',
+          'absolute inset-0 size-full object-cover transition-opacity duration-300',
+          assetsLoaded ? 'pointer-events-none opacity-0' : 'pointer-events-none opacity-100',
           posterClass
         )
       "
