@@ -14,16 +14,11 @@ import type { AuthHeader } from '@/types/authTypes'
 import type { WorkspaceWithRole } from '@/platform/workspace/workspaceTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
-// TODO: replace with `zWorkspaceWithRole` from `@comfyorg/ingest-types` once the
-// cloud ingest OpenAPI exposes `is_creator` (see workspaceApi.ts).
 const WorkspaceWithRoleSchema = z.object({
   id: z.string(),
   name: z.string(),
   type: z.enum(['personal', 'team']),
-  role: z.enum(['owner', 'member']),
-  // Pass the original-owner flag through so it isn't stripped on the
-  // auth/session parse path. Optional until BE ships it.
-  is_creator: z.boolean().optional()
+  role: z.enum(['owner', 'member'])
 })
 
 const WorkspaceTokenResponseSchema = z.object({

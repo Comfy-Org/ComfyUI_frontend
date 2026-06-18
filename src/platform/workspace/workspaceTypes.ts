@@ -20,8 +20,4 @@ export interface WorkspaceWithRole {
   name: string
   type: 'personal' | 'team'
   role: 'owner' | 'member'
-  // Mirrors WorkspaceWithRole in api/workspaceApi.ts; kept in sync so the
-  // original-owner flag survives the auth/session schema parse. Optional until
-  // BE ships it on /api/workspaces.
-  is_creator?: boolean
 }

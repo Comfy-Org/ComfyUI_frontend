@@ -20,21 +20,9 @@ interface Workspace {
   joined_at: string
 }
 
-// TODO: once the cloud ingest OpenAPI exposes `is_creator`, drop this hand-rolled
-// interface and the `WorkspaceWithRoleSchema` Zod in workspaceAuthStore for the
-// generated `WorkspaceWithRole` + `zWorkspaceWithRole` from `@comfyorg/ingest-types`.
-// Hand-rolled only because the spec lacks the field today.
 export interface WorkspaceWithRole extends Workspace {
   role: WorkspaceRole
   subscription_tier?: SubscriptionTier
-  // Current-user-relative flag (like `role`): true when the requesting user is
-  // the workspace's original owner/creator. Gates the creator-only billing
-  // lifecycle actions (cancel / reactivate / downgrade). Shape confirmed by BE
-  // (boolean, current-user-relative); BE tracks the creator explicitly. Optional
-  // until the field actually ships on /api/workspaces, so lifecycle gating fails
-  // closed (hidden for everyone) until then. Temporary gate — drops out once
-  // member removal auto-provisions a personal workspace.
-  is_creator?: boolean
 }
 
 export interface Member {
@@ -43,6 +31,10 @@ export interface Member {
   email: string
   joined_at: string
   role: WorkspaceRole
+  // True when this member is the workspace's original owner/creator
+  // (member.id == workspace.created_by_user_id). Gates the creator-only
+  // billing lifecycle actions (cancel / reactivate / downgrade).
+  is_original_owner: boolean
 }
 
 interface PaginationInfo {

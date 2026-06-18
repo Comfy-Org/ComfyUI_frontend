@@ -1,4 +1,4 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { createSharedComposable } from '@vueuse/core'
 
 import type { WorkspaceRole, WorkspaceType } from '../api/workspaceApi'
@@ -154,12 +154,24 @@ function useWorkspaceUIInternal() {
     () => store.activeWorkspace?.role ?? 'owner'
   )
 
-  // Reads `is_creator` off the active workspace (from /api/workspaces). Shape
-  // confirmed by BE; until the field actually ships the flag is undefined →
-  // fails closed (lifecycle actions hidden for everyone in a team).
-  const isOriginalOwner = computed(
-    () => store.activeWorkspace?.is_creator ?? false
+  // The original-owner signal lives on the members-list self-row, so the
+  // members list must be loaded before the team gate resolves. Trigger a fetch
+  // for team workspaces whose members aren't loaded yet; until they arrive the
+  // store getter fails closed, hiding lifecycle actions during the load window.
+  // Watch the workspace id (not the object) so a fetch-induced identity change
+  // can't retrigger the watch; an empty members response then can't loop.
+  watch(
+    () => store.activeWorkspace?.id,
+    () => {
+      const workspace = store.activeWorkspace
+      if (workspace?.type === 'team' && store.members.length === 0) {
+        void store.fetchMembers()
+      }
+    },
+    { immediate: true }
   )
+
+  const isOriginalOwner = computed(() => store.isCurrentUserOriginalOwner)
 
   const permissions = computed<WorkspacePermissions>(() =>
     getPermissions(
