@@ -2,7 +2,14 @@
 import InputNumber from 'primevue/inputnumber'
 import Select from 'primevue/select'
 import { storeToRefs } from 'pinia'
-import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -53,6 +60,10 @@ watch(
   },
   { immediate: true }
 )
+
+onBeforeUnmount(() => {
+  if (clearHighlightTimer) clearTimeout(clearHighlightTimer)
+})
 
 // NODES settings
 const showAdvancedParameters = computed({
