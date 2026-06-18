@@ -2904,6 +2904,10 @@
         "name": "音频",
         "tooltip": "要添加到视频中的音频。"
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "所创建视频的位深度。10位可以保持更平滑的渐变并减少色带，但部分播放器和下游节点可能不支持。"
+      },
       "fps": {
         "name": "帧率"
       },
@@ -5219,6 +5223,10 @@
       },
       "2": {
         "name": "帧率",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -8026,7 +8034,8 @@
         "name": "生成后控制"
       },
       "generate_audio": {
-        "name": "生成音频"
+        "name": "生成音频",
+        "tooltip": "“kling-3.0-turbo”始终生成原生音频，因此音频开关将被忽略。"
       },
       "model": {
         "name": "模型",
@@ -16240,6 +16249,9 @@
       "draw_hands": {
         "name": "draw_hands"
       },
+      "draw_head": {
+        "name": "绘制头部"
+      },
       "face_point_size": {
         "name": "face_point_size"
       },
@@ -18799,6 +18811,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "用于编辑的参考图像。Boogu 每个样本专注于一个参考图像；也允许添加更多。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "文本编码（Hunyuan视频_图像到视频）",
     "inputs": {
@@ -19586,6 +19629,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "将外部3D模型（例如来自Rodin、Hunyuan3D或本地文件）导入Tripo，以便与Tripo的后处理节点（纹理、绑定、转换）一起使用。推荐使用GLB格式：只有嵌入文件的纹理才能在导入时保留。请注意，为导入的模型添加纹理需要提供纹理提示词。",
+    "display_name": "Tripo：导入模型",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "要导入的3D模型（GLB / FBX / OBJ / STL，最大150MB）。OBJ和STL文件不包含嵌入纹理。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo：多视图转模型",
     "inputs": {
@@ -20053,6 +20112,10 @@
       },
       "texture_alignment": {
         "name": "纹理对齐"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "用于纹理生成的可选文本引导。对于导入的模型（Tripo：导入模型），实际操作中需要提供，因为这些模型没有可用于推断颜色的源图像。"
       },
       "texture_quality": {
         "name": "纹理质量"

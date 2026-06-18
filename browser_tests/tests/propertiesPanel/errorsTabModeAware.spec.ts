@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -7,6 +8,18 @@ import {
   openErrorsTab,
   loadWorkflowAndOpenErrorsTab
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+
+const FAKE_MODEL_NAME = 'fake_model.safetensors'
+
+function getModelLabel(group: Locator, modelName: string = FAKE_MODEL_NAME) {
+  return group.getByRole('button', { name: modelName, exact: true })
+}
+
+async function expectReferenceBadge(group: Locator, count: number) {
+  await expect(
+    group.getByTestId(TestIds.dialogs.missingModelReferenceCount)
+  ).toHaveText(String(count))
+}
 
 test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
   test.beforeEach(async ({ comfyPage }) => {
@@ -130,9 +143,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         'missing/missing_models_from_node_properties'
       )
 
-      const copyUrlButton = comfyPage.page.getByTestId(
-        TestIds.dialogs.missingModelCopyUrl
-      )
+      const copyUrlButton = comfyPage.page.getByRole('button', {
+        name: 'Copy URL'
+      })
       await expect(copyUrlButton.first()).toBeVisible()
 
       const node = await comfyPage.nodeOps.getNodeRefById('1')
@@ -156,9 +169,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         TestIds.dialogs.missingModelsGroup
       )
       await expect(missingModelGroup).toBeVisible()
-      await expect(missingModelGroup).toContainText(
-        /fake_model\.safetensors\s*\(1\)/
-      )
+      await expect(getModelLabel(missingModelGroup)).toBeVisible()
 
       const node = await comfyPage.nodeOps.getNodeRefById('1')
       await node.click('title')
@@ -168,9 +179,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect.poll(() => comfyPage.nodeOps.getNodeCount()).toBe(2)
 
       await comfyPage.canvas.click()
-      await expect(missingModelGroup).toContainText(
-        /fake_model\.safetensors\s*\(2\)/
-      )
+      await expectReferenceBadge(missingModelGroup, 2)
     })
 
     test('Pasting a bypassed node does not add a new error', async ({
@@ -252,14 +261,17 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       const missingModelGroup = comfyPage.page.getByTestId(
         TestIds.dialogs.missingModelsGroup
       )
-      await expect(missingModelGroup).toContainText(/\(2\)/)
+      await expectReferenceBadge(missingModelGroup, 2)
 
       const node1 = await comfyPage.nodeOps.getNodeRefById('1')
       await node1.click('title')
-      await expect(missingModelGroup).toContainText(/\(1\)/)
+      await expect(getModelLabel(missingModelGroup)).toBeVisible()
+      await expect(
+        missingModelGroup.getByTestId(TestIds.dialogs.missingModelLocate)
+      ).toHaveCount(1)
 
       await comfyPage.canvas.click()
-      await expect(missingModelGroup).toContainText(/\(2\)/)
+      await expectReferenceBadge(missingModelGroup, 2)
     })
   })
 
@@ -384,9 +396,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         const missingModelGroup = comfyPage.page.getByTestId(
           TestIds.dialogs.missingModelsGroup
         )
-        await expect(missingModelGroup).toContainText(
-          /fake_model\.safetensors\s*\(1\)/
-        )
+        await expect(getModelLabel(missingModelGroup)).toBeVisible()
 
         await comfyPage.page.evaluate((value) => {
           const hostNode = window.app!.graph!.getNodeById(2)
@@ -439,9 +449,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         const missingModelGroup = comfyPage.page.getByTestId(
           TestIds.dialogs.missingModelsGroup
         )
-        await expect(missingModelGroup).toContainText(
-          /fake_model\.safetensors\s*\(1\)/
-        )
+        await expect(getModelLabel(missingModelGroup)).toBeVisible()
 
         const promotedModelCombo = comfyPage.vueNodes
           .getNodeByTitle('Subgraph with Promoted Missing Model')

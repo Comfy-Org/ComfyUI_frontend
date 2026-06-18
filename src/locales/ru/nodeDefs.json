@@ -2904,6 +2904,10 @@
         "name": "аудио",
         "tooltip": "Аудио, которое будет добавлено к видео."
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "Глубина цвета создаваемого видео. 10-бит обеспечивает более плавные градиенты с меньшим количеством полос, но некоторые проигрыватели и последующие узлы могут не поддерживать этот формат."
+      },
       "fps": {
         "name": "кадров в секунду"
       },
@@ -5219,6 +5223,10 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -8026,7 +8034,8 @@
         "name": "контроль после генерации"
       },
       "generate_audio": {
-        "name": "генерировать аудио"
+        "name": "генерировать аудио",
+        "tooltip": "'kling-3.0-turbo' всегда генерирует собственное аудио, поэтому переключатель аудио игнорируется."
       },
       "model": {
         "name": "модель",
@@ -16240,6 +16249,9 @@
       "draw_hands": {
         "name": "draw_hands"
       },
+      "draw_head": {
+        "name": "рисовать_голову"
+      },
       "face_point_size": {
         "name": "face_point_size"
       },
@@ -18799,6 +18811,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Референсное изображение(я) для редактирования. Boogu фокусируется на одном референсе на выборку; допускается больше."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
     "inputs": {
@@ -19586,6 +19629,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "Импорт внешней 3D-модели (например, из Rodin, Hunyuan3D или локального файла) в Tripo для использования с постобработкой Tripo: Текстурирование, Скелетирование, Конвертация. Рекомендуется GLB: текстуры сохраняются только при встраивании в файл. Обратите внимание, что для текстурирования импортированной модели требуется текстурный запрос.",
+    "display_name": "Tripo: Импорт модели",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "3D-модель для импорта (GLB / FBX / OBJ / STL, до 150 МБ). Файлы OBJ и STL не содержат встроенных текстур."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Мультивью в модель",
     "inputs": {
@@ -20053,6 +20112,10 @@
       },
       "texture_alignment": {
         "name": "texture_alignment"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Необязательное текстовое описание для текстурирования. На практике требуется для импортированных моделей (Tripo: Импорт модели), которые не содержат исходного изображения для определения цветов."
       },
       "texture_quality": {
         "name": "texture_quality"
