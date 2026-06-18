@@ -8,6 +8,7 @@ const mockShowTeamWorkspacesDialog = vi.fn()
 const mockIsInPersonalWorkspace = vi.hoisted(() => ({ value: true }))
 const mockIsFreeTier = vi.hoisted(() => ({ value: false }))
 const mockTeamWorkspacesEnabled = vi.hoisted(() => ({ value: false }))
+const mockPersonalWorkspaceBillingReady = vi.hoisted(() => ({ value: false }))
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
 vi.mock('vue', async (importOriginal) => {
@@ -36,6 +37,9 @@ vi.mock('@/composables/useFeatureFlags', () => ({
     flags: {
       get teamWorkspacesEnabled() {
         return mockTeamWorkspacesEnabled.value
+      },
+      get personalWorkspaceBillingReady() {
+        return mockPersonalWorkspaceBillingReady.value
       }
     }
   })
@@ -68,6 +72,7 @@ describe('useSubscriptionDialog', () => {
     mockIsInPersonalWorkspace.value = true
     mockIsFreeTier.value = false
     mockTeamWorkspacesEnabled.value = false
+    mockPersonalWorkspaceBillingReady.value = false
 
     try {
       sessionStorage.clear()
@@ -95,7 +100,7 @@ describe('useSubscriptionDialog', () => {
       expect(mockShowLayoutDialog).toHaveBeenCalled()
     })
 
-    it('mounts the legacy personal dialog when team workspaces flag is off', () => {
+    it('uses the legacy personal variant when team workspaces are disabled', () => {
       mockTeamWorkspacesEnabled.value = false
       mockIsInPersonalWorkspace.value = true
       const { showPricingTable } = useSubscriptionDialog()
@@ -107,28 +112,30 @@ describe('useSubscriptionDialog', () => {
       expect(props).not.toHaveProperty('isPersonal')
     })
 
-    it('routes personal through the preview-capable workspace dialog when flag is on', () => {
+    it('keeps the legacy personal variant when team workspaces are enabled but personal billing is not ready', () => {
       mockTeamWorkspacesEnabled.value = true
+      mockPersonalWorkspaceBillingReady.value = false
       mockIsInPersonalWorkspace.value = true
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable()
 
       const props = mockShowLayoutDialog.mock.calls[0][0].props
-      expect(props).toMatchObject({ isPersonal: true })
-      expect(props).not.toHaveProperty('onChooseTeam')
+      expect(props).toHaveProperty('onChooseTeam')
+      expect(props).not.toHaveProperty('isPersonal')
     })
 
-    it('does not fire the member read-only guard for a personal user', () => {
+    it('uses the workspace variant with isPersonal for personal once personal billing is ready', () => {
       mockTeamWorkspacesEnabled.value = true
+      mockPersonalWorkspaceBillingReady.value = true
       mockIsInPersonalWorkspace.value = true
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable()
 
-      expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
-      const call = mockShowLayoutDialog.mock.calls[0][0]
-      expect(call.props).toMatchObject({ isPersonal: true })
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props).not.toHaveProperty('onChooseTeam')
+      expect(props).toMatchObject({ isPersonal: true })
     })
 
     it('keeps the team workspace dialog non-personal', () => {
