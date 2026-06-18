@@ -6,6 +6,7 @@ import ConfirmationDialogContent from '@/components/dialog/content/ConfirmationD
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
+import { withNodeAddSource } from '@/platform/telemetry/nodeAdded/nodeAddSource'
 import { useWorkflowActionsService } from '@/platform/workflow/core/services/workflowActionsService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
@@ -17,7 +18,10 @@ import { getOutputAssetMetadata } from '../schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { getAssetDisplayName } from '../utils/assetMetadataUtils'
+import {
+  getAssetDisplayName,
+  getAssetStoredFilename
+} from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
 import { getAssetUrl } from '../utils/assetUrlUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
@@ -42,8 +46,8 @@ const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
  *
  * Output assets emit `<name> [output]` (and the subfolder-prefixed form when
  * present in metadata). Input/temp assets emit the bare name plus the explicit
- * annotation. `asset_hash` is included whenever present, since cloud-stored
- * assets can be referenced by hash.
+ * annotation. The content `hash` is included whenever present, since
+ * cloud-stored assets can be referenced by hash.
  */
 function widgetValueVariantsForAsset(asset: AssetItem): string[] {
   const variants: string[] = []
@@ -61,7 +65,8 @@ function widgetValueVariantsForAsset(asset: AssetItem): string[] {
       variants.push(`${name} [input]`)
     }
   }
-  if (asset.asset_hash) variants.push(asset.asset_hash)
+  const hash = asset.hash
+  if (hash) variants.push(hash)
   return variants
 }
 
@@ -195,7 +200,8 @@ export function useMediaAssetActions() {
         ...(Object.keys(jobAssetNameFilters).length > 0
           ? { job_asset_name_filters: jobAssetNameFilters }
           : {}),
-        naming_strategy: namingStrategy
+        naming_strategy: namingStrategy,
+        include_previews: true
       })
 
       assetExportStore.trackExport(result.task_id)
@@ -275,9 +281,11 @@ export function useMediaAssetActions() {
       return
     }
 
-    const node = litegraphService.addNodeOnGraph(nodeDef, {
-      pos: litegraphService.getCanvasCenter()
-    })
+    const node = withNodeAddSource('programmatic', () =>
+      litegraphService.addNodeOnGraph(nodeDef, {
+        pos: litegraphService.getCanvasCenter()
+      })
+    )
 
     if (!node) {
       toast.add({
@@ -292,12 +300,7 @@ export function useMediaAssetActions() {
     const metadata = getOutputAssetMetadata(targetAsset.user_metadata)
     const assetType = getAssetType(targetAsset, 'input')
 
-    // In Cloud mode, use asset_hash (the actual stored filename)
-    // In OSS mode, use the original name
-    const filename =
-      isCloud && targetAsset.asset_hash
-        ? targetAsset.asset_hash
-        : targetAsset.name
+    const filename = getAssetStoredFilename(targetAsset)
 
     // Create annotated path for the asset
     const annotated = createAnnotatedPath(
@@ -421,12 +424,14 @@ export function useMediaAssetActions() {
       }
 
       const center = litegraphService.getCanvasCenter()
-      const node = litegraphService.addNodeOnGraph(nodeDef, {
-        pos: [
-          center[0] + nodeIndex * NODE_OFFSET,
-          center[1] + nodeIndex * NODE_OFFSET
-        ]
-      })
+      const node = withNodeAddSource('programmatic', () =>
+        litegraphService.addNodeOnGraph(nodeDef, {
+          pos: [
+            center[0] + nodeIndex * NODE_OFFSET,
+            center[1] + nodeIndex * NODE_OFFSET
+          ]
+        })
+      )
 
       if (!node) {
         failed++
@@ -436,10 +441,7 @@ export function useMediaAssetActions() {
       const metadata = getOutputAssetMetadata(asset.user_metadata)
       const assetType = getAssetType(asset, 'input')
 
-      // In Cloud mode, use asset_hash (the actual stored filename)
-      // In OSS mode, use the original name
-      const filename =
-        isCloud && asset.asset_hash ? asset.asset_hash : asset.name
+      const filename = getAssetStoredFilename(asset)
 
       const annotated = createAnnotatedPath(
         {

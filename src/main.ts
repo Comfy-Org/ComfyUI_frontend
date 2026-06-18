@@ -13,6 +13,9 @@ import { VueFire, VueFireAuth } from 'vuefire'
 
 import { setAssertReporter } from '@/base/assert'
 import { getFirebaseConfig } from '@/config/firebase'
+import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
+import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
   configValueOrDefault,
   remoteConfig
@@ -104,6 +107,12 @@ app.directive('tooltip', Tooltip)
 app
   .use(router)
   .use(PrimeVue, {
+    zIndex: {
+      modal: 1800,
+      overlay: 1800,
+      menu: 1800,
+      tooltip: 1800
+    },
     theme: {
       preset: ComfyUIPreset,
       options: {
@@ -126,6 +135,15 @@ app
     firebaseApp,
     modules: [VueFireAuth()]
   })
+
+LGraph.proxyWidgetMigrationFlush = (hostNode, nodeData) =>
+  flushProxyWidgetMigration({
+    hostNode,
+    hostWidgetValues: nodeData?.widgets_values
+  })
+
+LGraph.autoExposePreviewNodes = (hostNode) =>
+  autoExposeKnownPreviewNodes(hostNode)
 
 const bootstrapStore = useBootstrapStore(pinia)
 void bootstrapStore.startStoreBootstrap()

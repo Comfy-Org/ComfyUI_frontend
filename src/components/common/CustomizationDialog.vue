@@ -2,11 +2,7 @@
   <Dialog v-model:open="visible" :modal="false">
     <DialogPortal>
       <DialogOverlay />
-      <DialogContent
-        size="md"
-        :aria-labelledby="titleId"
-        @pointer-down-outside="onPointerDownOutside"
-      >
+      <DialogContent size="md" :aria-labelledby="titleId">
         <DialogHeader>
           <DialogTitle :id="titleId">
             {{ $t('g.customizeFolder') }}
@@ -91,21 +87,6 @@ const emit = defineEmits<{
 }>()
 
 const titleId = useId()
-
-// PrimeVue ColorPicker overlay teleports to body. Reka treats clicks on it as
-// outside and would dismiss the dialog mid-color-pick. Treat any PrimeVue
-// overlay click as inside.
-const PRIMEVUE_OVERLAY_SELECTORS =
-  '.p-colorpicker-panel, .p-overlay, .p-overlay-mask'
-
-function onPointerDownOutside(
-  event: CustomEvent<{ originalEvent: PointerEvent }>
-) {
-  const target = event.detail.originalEvent.target
-  if (target instanceof Element && target.closest(PRIMEVUE_OVERLAY_SELECTORS)) {
-    event.preventDefault()
-  }
-}
 
 const nodeBookmarkStore = useNodeBookmarkStore()
 

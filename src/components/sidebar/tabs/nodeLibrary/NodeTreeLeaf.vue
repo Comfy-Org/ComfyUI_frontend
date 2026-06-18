@@ -118,7 +118,8 @@ const toggleBookmark = async () => {
 
 const onHelpClick = () => {
   useTelemetry()?.trackUiButtonClicked({
-    button_id: 'node_library_help_button'
+    button_id: 'node_library_help_button',
+    element_group: 'node_library'
   })
   props.openNodeHelp(nodeDef.value)
 }

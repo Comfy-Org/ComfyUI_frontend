@@ -5,13 +5,17 @@ import type { Plan } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingContext } from './useBillingContext'
 
-const { mockTeamWorkspacesEnabled, mockIsPersonal, mockPlans } = vi.hoisted(
-  () => ({
-    mockTeamWorkspacesEnabled: { value: false },
-    mockIsPersonal: { value: true },
-    mockPlans: { value: [] as Plan[] }
-  })
-)
+const {
+  mockTeamWorkspacesEnabled,
+  mockIsPersonal,
+  mockPlans,
+  mockPurchaseCredits
+} = vi.hoisted(() => ({
+  mockTeamWorkspacesEnabled: { value: false },
+  mockIsPersonal: { value: true },
+  mockPlans: { value: [] as Plan[] },
+  mockPurchaseCredits: vi.fn()
+}))
 
 vi.mock('@vueuse/core', async (importOriginal) => {
   const original = await importOriginal()
@@ -50,8 +54,9 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
     isActiveSubscription: { value: true },
     subscriptionTier: { value: 'PRO' },
     subscriptionDuration: { value: 'MONTHLY' },
-    formattedRenewalDate: { value: 'Jan 1, 2025' },
-    formattedEndDate: { value: '' },
+    subscriptionStatus: {
+      value: { renewal_date: '2025-01-01T00:00:00Z', end_date: null }
+    },
     isCancelled: { value: false },
     fetchStatus: vi.fn().mockResolvedValue(undefined),
     manageSubscription: vi.fn().mockResolvedValue(undefined),
@@ -69,6 +74,12 @@ vi.mock(
     })
   })
 )
+
+vi.mock('@/composables/auth/useAuthActions', () => ({
+  useAuthActions: () => ({
+    purchaseCredits: mockPurchaseCredits
+  })
+}))
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => ({
@@ -129,7 +140,7 @@ describe('useBillingContext', () => {
       tier: 'PRO',
       duration: 'MONTHLY',
       planSlug: null,
-      renewalDate: 'Jan 1, 2025',
+      renewalDate: '2025-01-01T00:00:00Z',
       endDate: null,
       isCancelled: false,
       hasFunds: true
@@ -171,6 +182,13 @@ describe('useBillingContext', () => {
   it('exposes manageSubscription action', async () => {
     const { manageSubscription } = useBillingContext()
     await expect(manageSubscription()).resolves.toBeUndefined()
+  })
+
+  it('converts topup cents to whole dollars for the legacy credit endpoint', async () => {
+    const { topup } = useBillingContext()
+    await topup(500)
+
+    expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
   })
 
   it('provides isActiveSubscription convenience computed', () => {

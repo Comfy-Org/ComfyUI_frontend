@@ -243,6 +243,7 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
+import { getAssetUrl } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -571,10 +572,12 @@ const handleZoomClick = (asset: AssetItem) => {
       title: getAssetDisplayName(asset),
       component: Load3dViewerContent,
       props: {
-        modelUrl: asset.preview_url || ''
+        modelUrl: asset.preview_url || getAssetUrl(asset)
       },
       dialogComponentProps: {
-        style: 'width: 80vw; height: 80vh;',
+        renderer: 'reka',
+        size: 'full',
+        contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
         maximizable: true
       }
     })

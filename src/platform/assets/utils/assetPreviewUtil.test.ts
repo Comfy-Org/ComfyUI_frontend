@@ -51,7 +51,7 @@ function mockFetchError() {
 const cloudAsset = {
   id: '72d169cc-7f9a-40d2-9382-35eadcba0a6a',
   name: 'mesh/ComfyUI_00003_.glb',
-  asset_hash: 'c6cadcee57dd.glb',
+  hash: 'c6cadcee57dd.glb',
   preview_id: null,
   preview_url: undefined
 }
@@ -85,9 +85,7 @@ describe('findOutputAsset', () => {
     const result = await findOutputAsset('c6cadcee57dd.glb')
 
     expect(mockFetchApi).toHaveBeenCalledOnce()
-    expect(mockFetchApi.mock.calls[0][0]).toContain(
-      'asset_hash=c6cadcee57dd.glb'
-    )
+    expect(mockFetchApi.mock.calls[0][0]).toContain('hash=c6cadcee57dd.glb')
     expect(result).toEqual(cloudAsset)
   })
 
@@ -98,7 +96,7 @@ describe('findOutputAsset', () => {
     const result = await findOutputAsset('ComfyUI_00081_.glb')
 
     expect(mockFetchApi).toHaveBeenCalledTimes(2)
-    expect(mockFetchApi.mock.calls[0][0]).toContain('asset_hash=')
+    expect(mockFetchApi.mock.calls[0][0]).toContain('hash=')
     expect(mockFetchApi.mock.calls[1][0]).toContain('name_contains=')
     expect(result).toEqual(localAsset)
   })
