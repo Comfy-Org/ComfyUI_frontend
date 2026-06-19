@@ -24,6 +24,7 @@ interface ErrorGroupBase extends Omit<ResolvedErrorMessage, 'displayTitle'> {
   groupKey: string
   /** Human-friendly title resolved for UI display. */
   displayTitle: string
+  count: number
   priority: number
 }
 

@@ -338,6 +338,35 @@ describe('ModelExporter', () => {
     })
   })
 
+  describe('exportDirect', () => {
+    it('downloads the original source file unchanged', async () => {
+      const blob = new Blob(['x'])
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue({ ok: true, blob: () => Promise.resolve(blob) })
+      )
+
+      await ModelExporter.exportDirect(
+        'http://example.com/api/view?filename=src.ply',
+        'out.ply',
+        'ply'
+      )
+
+      expect(downloadBlobMock).toHaveBeenCalledWith('out.ply', blob)
+      vi.unstubAllGlobals()
+    })
+
+    it('throws without toasting when there is no source URL, leaving the alert to the caller', async () => {
+      await expect(
+        ModelExporter.exportDirect(null, 'out.spz', 'spz')
+      ).rejects.toThrow('No source file available to export as spz')
+      expect(downloadBlobMock).not.toHaveBeenCalled()
+      expect(addAlertMock).not.toHaveBeenCalled()
+    })
+  })
+
   describe('exportFBX', () => {
     it('uses the direct-URL fast path for matching .fbx URLs', async () => {
       const blob = new Blob(['x'])

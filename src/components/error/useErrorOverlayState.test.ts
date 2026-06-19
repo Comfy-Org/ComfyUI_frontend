@@ -8,12 +8,26 @@ import { useErrorOverlayState } from './useErrorOverlayState'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { NodeError } from '@/schemas/apiSchema'
+import type {
+  MissingPackGroup,
+  SwapNodeGroup
+} from '@/components/rightSidePanel/errors/useErrorGroups'
 import type { ErrorGroup } from '@/components/rightSidePanel/errors/types'
+import type { MissingMediaGroup } from '@/platform/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/missingModel/types'
 
-const mockAllErrorGroups = vi.hoisted(() => ({ value: [] as ErrorGroup[] }))
+const mockErrorGroups = vi.hoisted(() => ({
+  allErrorGroups: { value: [] as ErrorGroup[] },
+  missingPackGroups: { value: [] as MissingPackGroup[] },
+  missingModelGroups: { value: [] as MissingModelGroup[] },
+  missingMediaGroups: { value: [] as MissingMediaGroup[] },
+  swapNodeGroups: { value: [] as SwapNodeGroup[] }
+}))
+
+const mockAllErrorGroups = mockErrorGroups.allErrorGroups
 
 vi.mock('@/components/rightSidePanel/errors/useErrorGroups', () => ({
-  useErrorGroups: () => ({ allErrorGroups: mockAllErrorGroups })
+  useErrorGroups: () => mockErrorGroups
 }))
 
 vi.mock('@/composables/graph/useNodeErrorFlagSync', () => ({
@@ -44,7 +58,6 @@ function createTestI18n() {
     messages: {
       en: {
         errorOverlay: {
-          errorCount: '{count} ERROR | {count} ERRORS',
           multipleErrorCount: '{count} error found | {count} errors found',
           multipleErrorsMessage: 'Resolve them before running the workflow.'
         }
@@ -92,20 +105,19 @@ function mountOverlayState() {
 describe('useErrorOverlayState', () => {
   beforeEach(() => {
     mockAllErrorGroups.value = []
+    mockErrorGroups.missingPackGroups.value = []
+    mockErrorGroups.missingModelGroups.value = []
+    mockErrorGroups.missingMediaGroups.value = []
+    mockErrorGroups.swapNodeGroups.value = []
   })
 
   it('uses the raw message for a single uncataloged execution error', async () => {
-    mountOverlayState()
-
-    const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
-      '1': makeNodeError(['Only error'])
-    }
     mockAllErrorGroups.value = [
       {
         type: 'execution',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
+        count: 1,
         priority: 0,
         cards: [
           {
@@ -116,6 +128,12 @@ describe('useErrorOverlayState', () => {
         ]
       }
     ]
+    mountOverlayState()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.lastNodeErrors = {
+      '1': makeNodeError(['Only error'])
+    }
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
@@ -125,17 +143,12 @@ describe('useErrorOverlayState', () => {
   })
 
   it('uses toast copy for a single validation error', async () => {
-    mountOverlayState()
-
-    const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
-      '1': makeNodeError(['Required input is missing'])
-    }
     mockAllErrorGroups.value = [
       {
         type: 'execution',
         groupKey: 'execution:KSampler',
         displayTitle: 'Required input is missing',
+        count: 1,
         priority: 0,
         cards: [
           {
@@ -152,6 +165,12 @@ describe('useErrorOverlayState', () => {
         ]
       }
     ]
+    mountOverlayState()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.lastNodeErrors = {
+      '1': makeNodeError(['Required input is missing'])
+    }
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
@@ -164,17 +183,12 @@ describe('useErrorOverlayState', () => {
   })
 
   it('uses display copy before raw copy when toast copy is absent', async () => {
-    mountOverlayState()
-
-    const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
-      '1': makeNodeError(['Raw validation error'])
-    }
     mockAllErrorGroups.value = [
       {
         type: 'execution',
         groupKey: 'execution:KSampler',
         displayTitle: 'Friendly validation title',
+        count: 1,
         priority: 0,
         cards: [
           {
@@ -190,6 +204,12 @@ describe('useErrorOverlayState', () => {
         ]
       }
     ]
+    mountOverlayState()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.lastNodeErrors = {
+      '1': makeNodeError(['Raw validation error'])
+    }
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
@@ -202,24 +222,12 @@ describe('useErrorOverlayState', () => {
   })
 
   it('uses toast copy for a single runtime error', async () => {
-    mountOverlayState()
-
-    const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastExecutionError = {
-      prompt_id: 'prompt',
-      node_id: 1,
-      node_type: 'KSampler',
-      executed: [],
-      exception_message: 'CUDA out of memory',
-      exception_type: 'torch.OutOfMemoryError',
-      traceback: [],
-      timestamp: Date.now()
-    }
     mockAllErrorGroups.value = [
       {
         type: 'execution',
         groupKey: 'execution:KSampler',
         displayTitle: 'Generation failed',
+        count: 1,
         priority: 0,
         cards: [
           {
@@ -237,6 +245,19 @@ describe('useErrorOverlayState', () => {
         ]
       }
     ]
+    mountOverlayState()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.lastExecutionError = {
+      prompt_id: 'prompt',
+      node_id: 1,
+      node_type: 'KSampler',
+      executed: [],
+      exception_message: 'CUDA out of memory',
+      exception_type: 'torch.OutOfMemoryError',
+      traceback: [],
+      timestamp: Date.now()
+    }
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
@@ -247,6 +268,44 @@ describe('useErrorOverlayState', () => {
   })
 
   it('uses group toast copy for a single missing media error', async () => {
+    mockErrorGroups.missingMediaGroups.value = [
+      {
+        mediaType: 'image',
+        items: [
+          {
+            name: 'image.png',
+            mediaType: 'image',
+            representative: {
+              nodeId: '1',
+              nodeType: 'LoadImage',
+              widgetName: 'image',
+              mediaType: 'image',
+              name: 'image.png',
+              isMissing: true
+            },
+            referencingNodes: [
+              {
+                nodeId: '1',
+                nodeType: 'LoadImage',
+                widgetName: 'image'
+              }
+            ]
+          }
+        ]
+      }
+    ]
+    mockAllErrorGroups.value = [
+      {
+        type: 'missing_media',
+        groupKey: 'missing_media',
+        displayTitle: 'Media input missing',
+        displayMessage: 'A required media input has no file selected.',
+        toastTitle: 'Media input missing',
+        toastMessage: 'Load Image is missing a required media file.',
+        count: 1,
+        priority: 3
+      }
+    ]
     mountOverlayState()
 
     const executionErrorStore = useExecutionErrorStore()
@@ -261,23 +320,153 @@ describe('useErrorOverlayState', () => {
         isMissing: true
       }
     ])
-    mockAllErrorGroups.value = [
-      {
-        type: 'missing_media',
-        groupKey: 'missing_media',
-        displayTitle: 'Media input missing',
-        displayMessage: 'A required media input has no file selected.',
-        toastTitle: 'Media input missing',
-        toastMessage: 'Load Image is missing a required media file.',
-        priority: 3
-      }
-    ]
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
     expect(screen.getByTestId('title')).toHaveTextContent('Media input missing')
     expect(screen.getByTestId('message')).toHaveTextContent(
       'Load Image is missing a required media file.'
+    )
+  })
+
+  it('uses group copy for one missing model referenced by multiple nodes', async () => {
+    mockErrorGroups.missingModelGroups.value = [
+      {
+        directory: 'checkpoints',
+        isAssetSupported: true,
+        models: [
+          {
+            name: 'missing.safetensors',
+            representative: {
+              nodeId: '1',
+              nodeType: 'CheckpointLoaderSimple',
+              widgetName: 'ckpt_name',
+              name: 'missing.safetensors',
+              directory: 'checkpoints',
+              isAssetSupported: true,
+              isMissing: true
+            },
+            referencingNodes: [
+              { nodeId: '1', widgetName: 'ckpt_name' },
+              { nodeId: '2', widgetName: 'ckpt_name' }
+            ]
+          }
+        ]
+      }
+    ]
+    mockAllErrorGroups.value = [
+      {
+        type: 'missing_model',
+        groupKey: 'missing_model',
+        displayTitle: 'Missing Models',
+        displayMessage: 'Import a model, or open the node to replace it.',
+        toastTitle: 'Model missing',
+        toastMessage: 'CheckpointLoaderSimple is missing missing.safetensors.',
+        count: 1,
+        priority: 2
+      }
+    ]
+    mountOverlayState()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.showErrorOverlay()
+    await nextTick()
+
+    expect(screen.getByTestId('title')).toHaveTextContent('Missing Models')
+    expect(screen.getByTestId('message')).toHaveTextContent(
+      'Import a model, or open the node to replace it.'
+    )
+  })
+
+  it('uses group copy for one execution group with multiple errors', async () => {
+    mockAllErrorGroups.value = [
+      {
+        type: 'execution',
+        groupKey: 'execution:required_input_missing',
+        displayTitle: 'Missing connection',
+        displayMessage: 'Required input slots have no connection feeding them.',
+        count: 2,
+        priority: 1,
+        cards: [
+          {
+            id: '1',
+            title: 'KSampler',
+            errors: [
+              { message: 'KSampler is missing model' },
+              { message: 'KSampler is missing positive' }
+            ]
+          }
+        ]
+      }
+    ]
+    mountOverlayState()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.showErrorOverlay()
+    await nextTick()
+
+    expect(screen.getByTestId('title')).toHaveTextContent('Missing connection')
+    expect(screen.getByTestId('message')).toHaveTextContent(
+      'Required input slots have no connection feeding them.'
+    )
+  })
+
+  it('uses aggregate copy for one missing model group with multiple rows', async () => {
+    mockErrorGroups.missingModelGroups.value = [
+      {
+        directory: 'checkpoints',
+        isAssetSupported: true,
+        models: [
+          {
+            name: 'first.safetensors',
+            representative: {
+              nodeId: '1',
+              nodeType: 'CheckpointLoaderSimple',
+              widgetName: 'ckpt_name',
+              name: 'first.safetensors',
+              directory: 'checkpoints',
+              isAssetSupported: true,
+              isMissing: true
+            },
+            referencingNodes: [{ nodeId: '1', widgetName: 'ckpt_name' }]
+          },
+          {
+            name: 'second.safetensors',
+            representative: {
+              nodeId: '2',
+              nodeType: 'CheckpointLoaderSimple',
+              widgetName: 'ckpt_name',
+              name: 'second.safetensors',
+              directory: 'checkpoints',
+              isAssetSupported: true,
+              isMissing: true
+            },
+            referencingNodes: [{ nodeId: '2', widgetName: 'ckpt_name' }]
+          }
+        ]
+      }
+    ]
+    mockAllErrorGroups.value = [
+      {
+        type: 'missing_model',
+        groupKey: 'missing_model',
+        displayTitle: 'Missing Models',
+        displayMessage: 'Import a model, or open the node to replace it.',
+        toastTitle: 'Missing models',
+        toastMessage: '2 model files are missing.',
+        count: 2,
+        priority: 2
+      }
+    ]
+    mountOverlayState()
+
+    const executionErrorStore = useExecutionErrorStore()
+    executionErrorStore.showErrorOverlay()
+    await nextTick()
+
+    expect(screen.getByTestId('title')).toHaveTextContent('2 errors found')
+    expect(screen.getByTestId('message')).toHaveTextContent(
+      'Resolve them before running the workflow.'
     )
   })
 
@@ -295,26 +484,14 @@ describe('useErrorOverlayState', () => {
     expect(screen.getByTestId('message')).toBeEmptyDOMElement()
   })
 
-  it('uses aggregate copy for multiple errors', async () => {
-    mountOverlayState()
-
-    const executionErrorStore = useExecutionErrorStore()
-    executionErrorStore.lastNodeErrors = {
-      '1': makeNodeError([
-        'First error',
-        'Second error',
-        'Third error',
-        'Fourth error',
-        'Fifth error',
-        'Sixth error',
-        'Seventh error'
-      ])
-    }
+  it('uses grouped error counts for aggregate copy', async () => {
     mockAllErrorGroups.value = [
       {
         type: 'execution',
         groupKey: 'execution:KSampler',
         displayTitle: 'Execution failed',
+        displayMessage: 'First group message',
+        count: 2,
         priority: 0,
         cards: [
           {
@@ -323,13 +500,31 @@ describe('useErrorOverlayState', () => {
             errors: [{ message: 'First error' }]
           }
         ]
+      },
+      {
+        type: 'execution',
+        groupKey: 'execution:CLIPTextEncode',
+        displayTitle: 'Invalid CLIP input',
+        displayMessage: 'Second group message',
+        count: 3,
+        priority: 1,
+        cards: [
+          {
+            id: '2',
+            title: 'CLIPTextEncode',
+            errors: [{ message: 'Second error' }]
+          }
+        ]
       }
     ]
+    mountOverlayState()
+
+    const executionErrorStore = useExecutionErrorStore()
     executionErrorStore.showErrorOverlay()
     await nextTick()
 
     expect(screen.getByTestId('visible')).toHaveTextContent('true')
-    expect(screen.getByTestId('title')).toHaveTextContent('7 errors found')
+    expect(screen.getByTestId('title')).toHaveTextContent('5 errors found')
     expect(screen.getByTestId('message')).toHaveTextContent(
       'Resolve them before running the workflow.'
     )
