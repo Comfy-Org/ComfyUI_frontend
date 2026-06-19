@@ -5,6 +5,7 @@ import { computed, onMounted, shallowRef, watch } from 'vue'
 
 import DraggableList from '@/components/common/DraggableList.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
 import {
   demotePromotedInput,
   demoteWidget,
@@ -53,6 +54,7 @@ const canvasStore = useCanvasStore()
 const previewExposureStore = usePreviewExposureStore()
 const rightSidePanelStore = useRightSidePanelStore()
 const { searchQuery } = storeToRefs(rightSidePanelStore)
+const { shouldRenderVueNodes } = useVueFeatureFlags()
 
 const activeNode = computed(() => {
   const node = canvasStore.selectedItems[0]
@@ -175,9 +177,13 @@ const candidateWidgets = computed<WidgetItem[]>(() => {
   const node = activeNode.value
   if (!node) return []
   const promotedSourceKeys = new Set(activeRows.value.map(activeRowSourceKey))
-  return interiorWidgets.value.filter(
-    ([n, w]) => !promotedSourceKeys.has(`${n.id}:${w.name}`)
-  )
+  return interiorWidgets.value
+    .filter(([n, w]) => !promotedSourceKeys.has(`${n.id}:${w.name}`))
+    .filter(
+      ([, w]) =>
+        w.name.startsWith('$$') ||
+        !(w.options.canvasOnly && shouldRenderVueNodes.value)
+    )
 })
 const filteredCandidates = computed<WidgetItem[]>(() => {
   const query = searchQuery.value.toLowerCase()
