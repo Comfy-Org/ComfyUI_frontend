@@ -114,7 +114,7 @@ function scrollToSection(id: string) {
   <section class="px-4 pt-8 pb-24 lg:px-20 lg:pt-24 lg:pb-40">
     <div class="lg:flex lg:gap-16">
       <!-- Desktop sticky nav -->
-      <aside class="scrollbar-none hidden lg:block lg:w-48 lg:shrink-0">
+      <aside class="hidden scrollbar-none lg:block lg:w-48 lg:shrink-0">
         <div class="sticky top-32">
           <CategoryNav
             :categories="categories"
@@ -135,7 +135,7 @@ function scrollToSection(id: string) {
         >
           <h2
             v-if="section.hasTitle"
-            class="text-primary-comfy-canvas mb-6 text-2xl font-light"
+            class="mb-6 text-2xl font-light text-primary-comfy-canvas"
           >
             {{ t(key(section.id, 'title'), locale) }}
           </h2>
@@ -144,7 +144,7 @@ function scrollToSection(id: string) {
             <!-- Paragraph -->
             <p
               v-if="block.type === 'paragraph'"
-              class="text-primary-comfy-canvas mt-4 text-sm/relaxed"
+              class="mt-4 text-sm/relaxed text-primary-comfy-canvas"
               v-html="t(key(section.id, `block.${i}`), locale)"
             />
 
@@ -167,7 +167,7 @@ function scrollToSection(id: string) {
                   locale
                 ).split('\n')"
                 :key="j"
-                class="text-primary-comfy-canvas flex items-start gap-2"
+                class="flex items-start gap-2 text-primary-comfy-canvas"
               >
                 <span
                   class="bg-primary-comfy-yellow mt-1.5 size-1.5 shrink-0 rounded-full"
@@ -187,7 +187,7 @@ function scrollToSection(id: string) {
                   locale
                 ).split('\n')"
                 :key="j"
-                class="text-primary-comfy-canvas flex items-start gap-3"
+                class="flex items-start gap-3 text-primary-comfy-canvas"
               >
                 <span
                   class="text-primary-comfy-yellow shrink-0 font-semibold tabular-nums"
@@ -205,7 +205,7 @@ function scrollToSection(id: string) {
                 :alt="t(key(section.id, `block.${i}.alt`), locale)"
                 class="w-full rounded-2xl object-cover"
               />
-              <figcaption class="text-primary-comfy-canvas mt-3 text-xs">
+              <figcaption class="mt-3 text-xs text-primary-comfy-canvas">
                 {{ t(key(section.id, `block.${i}.caption`), locale) }}
               </figcaption>
             </figure>
@@ -221,7 +221,7 @@ function scrollToSection(id: string) {
               "
             >
               <p
-                class="text-primary-comfy-canvas text-lg/relaxed font-light italic"
+                class="text-lg/relaxed font-light text-primary-comfy-canvas italic"
               >
                 "{{ t(key(section.id, `block.${i}.text`), locale) }}"
               </p>
@@ -238,17 +238,17 @@ function scrollToSection(id: string) {
               <SectionLabel>
                 {{ t(key(section.id, `block.${i}.label`), locale) }}
               </SectionLabel>
-              <p class="text-primary-comfy-canvas mt-2 text-sm font-semibold">
+              <p class="mt-2 text-sm font-semibold text-primary-comfy-canvas">
                 {{ t(key(section.id, `block.${i}.name`), locale) }}
               </p>
-              <p class="text-primary-comfy-canvas text-xs">
+              <p class="text-xs text-primary-comfy-canvas">
                 {{ t(key(section.id, `block.${i}.role`), locale) }}
               </p>
               <template v-if="hasKey(key(section.id, `block.${i}.name2`))">
-                <p class="text-primary-comfy-canvas mt-4 text-sm font-semibold">
+                <p class="mt-4 text-sm font-semibold text-primary-comfy-canvas">
                   {{ t(key(section.id, `block.${i}.name2`), locale) }}
                 </p>
-                <p class="text-primary-comfy-canvas text-xs">
+                <p class="text-xs text-primary-comfy-canvas">
                   {{ t(key(section.id, `block.${i}.role2`), locale) }}
                 </p>
               </template>
