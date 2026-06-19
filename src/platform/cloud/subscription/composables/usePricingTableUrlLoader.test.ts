@@ -47,13 +47,11 @@ vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
   useWorkspaceUI: () => ({ permissions: mockPermissions })
 }))
 
-const mockEnsureMembersLoaded = vi.hoisted(() =>
-  vi.fn().mockResolvedValue(undefined)
-)
+const mockFetchMembers = vi.hoisted(() => vi.fn().mockResolvedValue([]))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
-    ensureMembersLoaded: mockEnsureMembersLoaded
+    fetchMembers: mockFetchMembers
   })
 }))
 
@@ -69,8 +67,8 @@ describe('usePricingTableUrlLoader', () => {
     mockRouteQuery.value = {}
     mockPermissions.value = { canManageSubscriptionLifecycle: true }
     // clearAllMocks resets calls, not implementations, so restore the default
-    // (a test overrides ensureMembersLoaded to flip the gate mid-await).
-    mockEnsureMembersLoaded.mockResolvedValue(undefined)
+    // (a test overrides fetchMembers to flip the gate mid-await).
+    mockFetchMembers.mockResolvedValue([])
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
@@ -109,8 +107,9 @@ describe('usePricingTableUrlLoader', () => {
     // The original owner becomes known only once the members list resolves;
     // proves the loader awaits ensureMembersLoaded before reading the gate.
     mockPermissions.value = { canManageSubscriptionLifecycle: false }
-    mockEnsureMembersLoaded.mockImplementation(async () => {
+    mockFetchMembers.mockImplementation(async () => {
       mockPermissions.value = { canManageSubscriptionLifecycle: true }
+      return []
     })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
