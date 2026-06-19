@@ -104,6 +104,11 @@ export const useDeprecationWarningsStore = defineStore(
       unseenKeys.clear()
     }
 
+    function remove(key: string): void {
+      warningsByKey.delete(key)
+      unseenKeys.delete(key)
+    }
+
     for (const input of pendingBuffer.splice(0)) report(input)
     pendingConsoledKeys.clear()
 
@@ -112,7 +117,8 @@ export const useDeprecationWarningsStore = defineStore(
       unseenCount,
       report,
       markAllSeen,
-      clear
+      clear,
+      remove
     }
   }
 )
