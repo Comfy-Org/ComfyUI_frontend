@@ -1,5 +1,6 @@
 import type { RouteRecordRaw } from 'vue-router'
 
+import { hasDesktopLoginRequest } from '@/platform/cloud/onboarding/desktopLoginBridge'
 import { getOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 
 // `oauth_request_id` capture lives in the global router.beforeEach guard
@@ -53,7 +54,7 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
           import('@/platform/cloud/onboarding/CloudLoginView.vue'),
         beforeEnter: async (to, _from, next) => {
           // Only redirect if not explicitly switching accounts
-          if (!to.query.switchAccount) {
+          if (!to.query.switchAccount && !hasDesktopLoginRequest(to.query)) {
             const { useCurrentUser } =
               await import('@/composables/auth/useCurrentUser')
             const { isLoggedIn } = useCurrentUser()
@@ -71,7 +72,7 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         component: () =>
           import('@/platform/cloud/onboarding/CloudSignupView.vue'),
         beforeEnter: async (to, _from, next) => {
-          if (!to.query.switchAccount) {
+          if (!to.query.switchAccount && !hasDesktopLoginRequest(to.query)) {
             const { useCurrentUser } =
               await import('@/composables/auth/useCurrentUser')
             const { isLoggedIn } = useCurrentUser()

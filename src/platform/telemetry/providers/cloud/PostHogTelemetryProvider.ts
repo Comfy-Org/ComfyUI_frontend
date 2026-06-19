@@ -9,6 +9,10 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
+import {
+  identifyPostHogUser,
+  setPostHogIdentityClient
+} from './posthogIdentity'
 import type {
   AuthMetadata,
   DefaultViewSetMetadata,
@@ -139,6 +143,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               // to clear localStorage on other subdomains, causing identity bleed on logout.
               before_send: createPostHogBeforeSend()
             })
+            setPostHogIdentityClient(this.posthog)
             this.isInitialized = true
             this.flushEventQueue()
             this.registerDesktopEntryProps()
@@ -146,7 +151,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             const currentUser = useCurrentUser()
             currentUser.onUserResolved((user) => {
               if (this.posthog && user.id) {
-                this.posthog.identify(user.id)
+                identifyPostHogUser(user.id)
                 this.setDesktopEntryPersonProperties()
                 this.setSubscriptionProperties()
               }
@@ -166,14 +171,17 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
           })
           .catch((error) => {
             console.error('Failed to load PostHog:', error)
+            setPostHogIdentityClient(null)
             this.isEnabled = false
           })
       } catch (error) {
         console.error('Failed to initialize PostHog:', error)
+        setPostHogIdentityClient(null)
         this.isEnabled = false
       }
     } else {
       console.warn('PostHog API key not provided in runtime config')
+      setPostHogIdentityClient(null)
       this.isEnabled = false
     }
   }

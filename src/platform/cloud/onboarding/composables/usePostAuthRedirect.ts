@@ -4,8 +4,10 @@ import type { RouteLocationRaw } from 'vue-router'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useOAuthPostLoginRedirect } from '@/platform/cloud/oauth/useOAuthPostLoginRedirect'
+import { completeDesktopLoginIfNeeded } from '@/platform/cloud/onboarding/desktopLoginBridge'
 import { getSafePreviousFullPath } from '@/platform/cloud/onboarding/utils/previousFullPath'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAuthStore } from '@/stores/authStore'
 
 /**
  * Shared post-authentication redirect logic used by both CloudLoginView and
@@ -22,8 +24,28 @@ export function usePostAuthRedirect(options: {
   const route = useRoute()
   const toastStore = useToastStore()
   const { resumeOAuthIfNeeded } = useOAuthPostLoginRedirect()
+  const authStore = useAuthStore()
 
   async function onAuthSuccess() {
+    try {
+      const desktopLoginCompleted = await completeDesktopLoginIfNeeded(
+        route.query,
+        authStore.currentUser
+      )
+      if (desktopLoginCompleted) return
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Desktop login callback failed'
+      options.authError.value = message
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: message,
+        life: 4000
+      })
+      return
+    }
+
     toastStore.add({
       severity: 'success',
       summary: options.successSummary,

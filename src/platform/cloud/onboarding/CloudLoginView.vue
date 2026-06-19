@@ -96,30 +96,46 @@
 
 <script setup lang="ts">
 import Message from 'primevue/message'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { hasDesktopLoginRequest } from '@/platform/cloud/onboarding/desktopLoginBridge'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import type { SignInData } from '@/schemas/signInSchema'
 import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
+import { useAuthStore } from '@/stores/authStore'
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authActions = useAuthActions()
+const authStore = useAuthStore()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const showEmailForm = ref(false)
 const googleSsoBlockedReason = getGoogleSsoBlockedReason()
+let desktopLoginCompletionStarted = false
 const { onAuthSuccess } = usePostAuthRedirect({
   authError,
   successSummary: 'Login Completed',
   defaultRedirect: () => ({ name: 'cloud-user-check' })
 })
+
+watch(
+  () => [authStore.isInitialized, authStore.currentUser] as const,
+  ([isInitialized, user]) => {
+    if (!isInitialized || !user) return
+    if (!hasDesktopLoginRequest(route.query)) return
+    if (desktopLoginCompletionStarted) return
+    desktopLoginCompletionStarted = true
+    void onAuthSuccess()
+  },
+  { immediate: true }
+)
 
 function switchToEmailForm() {
   showEmailForm.value = true
