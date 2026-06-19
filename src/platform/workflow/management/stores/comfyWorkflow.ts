@@ -164,7 +164,10 @@ export class ComfyWorkflow extends UserFile {
     const { useWorkflowDraftStoreV2 } =
       await import('@/platform/workflow/persistence/stores/workflowDraftStoreV2')
     const draftStore = useWorkflowDraftStoreV2()
-    this.content = JSON.stringify(this.activeState)
+    // A never-loaded workflow (e.g. one imported from a file) has no
+    // changeTracker, so activeState is null; keep its existing content rather
+    // than overwriting it with "null".
+    if (this.changeTracker) this.content = JSON.stringify(this.activeState)
     // Force save to ensure the content is updated in remote storage incase
     // the isModified state is screwed by changeTracker.
     const ret = await super.save({ force: true })

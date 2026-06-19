@@ -992,6 +992,10 @@
       "dirtyCloseAnyway": "Close anyway",
       "confirmOverwriteTitle": "Overwrite existing file?",
       "confirmOverwrite": "The file below already exists. Would you like to overwrite it?",
+      "dropToImport": "Drop workflow files to import",
+      "importSuccess": "Imported {count} workflow | Imported {count} workflows",
+      "importFailedTitle": "Import failed",
+      "importFailed": "{count} file could not be imported | {count} files could not be imported",
       "workflowTreeType": {
         "browse": "Browse",
         "bookmarks": "Bookmarks",

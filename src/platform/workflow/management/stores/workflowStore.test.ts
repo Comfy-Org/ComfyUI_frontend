@@ -693,6 +693,69 @@ describe('useWorkflowStore', () => {
     })
   })
 
+  describe('importWorkflowFromJson', () => {
+    const importData = () =>
+      JSON.parse(defaultGraphJSON) as Parameters<
+        typeof store.importWorkflowFromJson
+      >[1]
+
+    beforeEach(() => {
+      vi.mocked(api.storeUserData).mockResolvedValue({
+        status: 200,
+        json: () => Promise.resolve({ path: '', modified: Date.now(), size: 2 })
+      } as Response)
+    })
+
+    it('persists the JSON to the workflows directory and lists it', async () => {
+      const workflow = await store.importWorkflowFromJson(
+        'imported.json',
+        importData()
+      )
+
+      expect(api.storeUserData).toHaveBeenCalledOnce()
+      expect(vi.mocked(api.storeUserData).mock.calls[0][0]).toBe(
+        'workflows/imported.json'
+      )
+      expect(workflow.path).toBe('workflows/imported.json')
+      expect(store.persistedWorkflows.map((w) => w.path)).toContain(
+        'workflows/imported.json'
+      )
+    })
+
+    it('does not open the imported workflow', async () => {
+      const workflow = await store.importWorkflowFromJson(
+        'imported.json',
+        importData()
+      )
+
+      expect(store.openWorkflows).not.toContain(workflow)
+      expect(store.activeWorkflow).toBeNull()
+    })
+
+    it('dedupes the filename against existing workflows', async () => {
+      await store.importWorkflowFromJson('imported.json', importData())
+      const second = await store.importWorkflowFromJson(
+        'imported.json',
+        importData()
+      )
+
+      expect(second.path).toBe('workflows/imported (2).json')
+    })
+
+    it('does not leave a phantom workflow when persistence fails', async () => {
+      vi.mocked(api.storeUserData).mockRejectedValueOnce(new Error('boom'))
+
+      await expect(
+        store.importWorkflowFromJson('imported.json', importData())
+      ).rejects.toThrow()
+
+      expect(store.getWorkflowByPath('workflows/imported.json')).toBeNull()
+      expect(store.workflows.map((w) => w.path)).not.toContain(
+        'workflows/imported.json'
+      )
+    })
+  })
+
   describe('Subgraphs', () => {
     beforeEach(async () => {
       // Ensure canvas exists for these tests

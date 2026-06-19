@@ -26,7 +26,7 @@ import {
   parseNodeExecutionId,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
-import { generateUUID, getPathDetails } from '@/utils/formatUtil'
+import { appendJsonExt, generateUUID, getPathDetails } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import { ComfyWorkflow } from './comfyWorkflow'
@@ -65,6 +65,10 @@ interface WorkflowStore {
   renameWorkflow: (workflow: ComfyWorkflow, newPath: string) => Promise<void>
   deleteWorkflow: (workflow: ComfyWorkflow) => Promise<void>
   saveWorkflow: (workflow: ComfyWorkflow) => Promise<void>
+  importWorkflowFromJson: (
+    filename: string,
+    data: ComfyWorkflowJSON
+  ) => Promise<ComfyWorkflow>
 
   workflows: ComfyWorkflow[]
   bookmarkedWorkflows: ComfyWorkflow[]
@@ -558,6 +562,33 @@ export const useWorkflowStore = defineStore('workflow', () => {
     }
   }
 
+  /**
+   * Persist a workflow from raw JSON to the user's workflow list without
+   * loading it into the canvas. The filename is deduped against existing
+   * workflows.
+   */
+  const importWorkflowFromJson = async (
+    filename: string,
+    data: ComfyWorkflowJSON
+  ): Promise<ComfyWorkflow> => {
+    const path = getUnconflictedPath(
+      ComfyWorkflow.basePath + appendJsonExt(filename)
+    )
+    const workflow = createNewWorkflow(path, data)
+    try {
+      await workflow.save()
+    } catch (e) {
+      // createNewWorkflow already registered the workflow; drop it so a failed
+      // import does not leave a phantom temporary workflow in the store.
+      detachWorkflow(workflow)
+      throw e
+    }
+    // Mutating the class instance's size does not retrigger the
+    // persistedWorkflows computed; detach/re-attach to refresh the list.
+    attachWorkflow(workflow, detachWorkflow(workflow))
+    return workflow
+  }
+
   /** @see WorkflowStore.isSubgraphActive */
   const isSubgraphActive = ref(false)
 
@@ -778,6 +809,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     deleteWorkflow,
     saveAs,
     saveWorkflow,
+    importWorkflowFromJson,
     reorderWorkflows,
 
     workflows,
