@@ -1875,6 +1875,35 @@ describe('assetsStore - Model Assets Cache (Cloud)', () => {
   })
 })
 
+describe('assetsStore - Model Assets Cache (non-cloud)', () => {
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    mockIsCloud.value = false
+    vi.clearAllMocks()
+  })
+
+  it('caches model assets fetched by tag on non-cloud builds', async () => {
+    const store = useAssetsStore()
+    vi.mocked(assetService.getAssetsByTag).mockResolvedValue([
+      {
+        id: 'm1',
+        name: 'sd_xl_base_1.0.safetensors',
+        tags: ['checkpoints', 'models']
+      },
+      { id: 'm2', name: 'lora.safetensors', tags: ['loras', 'models'] }
+    ])
+
+    await store.updateModelsForTag('models')
+
+    expect(assetService.getAssetsByTag).toHaveBeenCalledWith(
+      'models',
+      true,
+      expect.anything()
+    )
+    expect(store.getAssets('tag:models')).toHaveLength(2)
+  })
+})
+
 describe('assetsStore - Deletion State and Input Mapping', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
