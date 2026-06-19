@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import { externalLinks } from '../src/config/routes'
 import type { Locale } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
@@ -86,6 +87,26 @@ test.describe('Drops landing — desktop @smoke', () => {
       await expect(secondary).toHaveAttribute('href', CLOUD_URL)
       await expect(secondary).toHaveAttribute('target', '_blank')
       await expect(secondary).toHaveAttribute('rel', 'noopener noreferrer')
+    }
+  })
+
+  test('subscribe banner shows text and a sign-up link in both locales', async ({
+    page
+  }) => {
+    for (const [path, locale] of [
+      [PATH_EN, 'en'],
+      [PATH_ZH, 'zh-CN']
+    ] as const) {
+      await page.goto(path)
+      await expect(page.getByText(t('drops.banner.text', locale))).toBeVisible()
+
+      const signUp = page.getByRole('link', {
+        name: t('drops.banner.cta', locale)
+      })
+      await expect(signUp).toBeVisible()
+      await expect(signUp).toHaveAttribute('href', externalLinks.youtube)
+      await expect(signUp).toHaveAttribute('target', '_blank')
+      await expect(signUp).toHaveAttribute('rel', 'noopener noreferrer')
     }
   })
 })

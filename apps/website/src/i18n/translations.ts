@@ -4959,6 +4959,17 @@ const translations = {
   'drops.hero.visualAlt': {
     en: 'Comfy',
     'zh-CN': 'Comfy'
+  },
+
+  // Drops page (/drops) — subscribe banner
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'drops.banner.text': {
+    en: 'Subscribe to the live stream and get your questions answered in real time.',
+    'zh-CN': '订阅直播，实时获得您的问题解答。'
+  },
+  'drops.banner.cta': {
+    en: 'Sign up now',
+    'zh-CN': '立即注册'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
