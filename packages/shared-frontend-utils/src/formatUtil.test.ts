@@ -102,6 +102,7 @@ describe('formatUtil', () => {
         expect(getMediaTypeFromFilename('sound.wav')).toBe('audio')
         expect(getMediaTypeFromFilename('music.ogg')).toBe('audio')
         expect(getMediaTypeFromFilename('audio.flac')).toBe('audio')
+        expect(getMediaTypeFromFilename('music.opus')).toBe('audio')
       })
     })
 
