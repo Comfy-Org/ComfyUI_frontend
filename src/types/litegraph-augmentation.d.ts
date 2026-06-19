@@ -109,21 +109,15 @@ declare module '@/lib/litegraph/src/litegraph' {
      */
     onExecuted?(output: NodeExecutionOutput): void
     onNodeCreated?(this: LGraphNode): void
-    /** @deprecated groupNode */
-    setInnerNodes?(nodes: LGraphNode[]): void
-    /** Originally a group node API. */
+    /** Flattens a subgraph node into its executable inner nodes. */
     getInnerNodes?(
       nodesByExecutionId: Map<ExecutionId, ExecutableLGraphNode>,
       subgraphNodePath?: readonly NodeId[],
       nodes?: ExecutableLGraphNode[],
       subgraphs?: Set<LGraphNode>
     ): ExecutableLGraphNode[]
-    /** @deprecated groupNode */
-    convertToNodes?(): LGraphNode[]
     recreate?(): Promise<LGraphNode>
     refreshComboInNode?(defs: Record<string, ComfyNodeDef>)
-    /** @deprecated groupNode */
-    updateLink?(link: LLink): LLink | null
     /**
      * @deprecated primitive node.
      * Used by virtual nodes (primitives) to insert their values into the graph prior to queueing.
