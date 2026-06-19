@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   anonymousIdentityProvider,
   getSurveyIdentityTags,
+  getSurveyIdentityTagsAsync,
   setCurrentIdentityProvider
 } from './surveyIdentity'
 
@@ -64,5 +65,31 @@ describe('survey identity', () => {
       distinct_id: 'ph-1',
       comfy_id: 'uid-9'
     })
+  })
+
+  it('resolves async providers for bridge-backed identities', async () => {
+    setCurrentIdentityProvider({
+      getIdentity: () =>
+        Promise.resolve({
+          anon_id: 'desktop-install',
+          distinct_id: 'desktop-user',
+          comfy_id: 'desktop-user'
+        })
+    })
+
+    await expect(getSurveyIdentityTagsAsync()).resolves.toEqual({
+      anon_id: 'desktop-install',
+      distinct_id: 'desktop-user',
+      comfy_id: 'desktop-user'
+    })
+  })
+
+  it('keeps the sync accessor on an anonymous fallback for async providers', () => {
+    setCurrentIdentityProvider({
+      getIdentity: () => Promise.resolve({ anon_id: 'desktop-install' })
+    })
+
+    expect(getSurveyIdentityTags().anon_id).toBeTruthy()
+    expect(getSurveyIdentityTags().anon_id).not.toBe('desktop-install')
   })
 })

@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import { computed } from 'vue'
+import { ref, watchEffect } from 'vue'
 
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import TypeformEmbed from '@/platform/surveys/TypeformEmbed.vue'
-import { getSurveyIdentityTags } from '@/platform/surveys/surveyIdentity'
+import {
+  getSurveyIdentityTags,
+  getSurveyIdentityTagsAsync
+} from '@/platform/surveys/surveyIdentity'
 
 const { dataTfWidget, active = true } = defineProps<{
   dataTfWidget: string
@@ -15,9 +18,22 @@ const { dataTfWidget, active = true } = defineProps<{
 const isMobile = useBreakpoints(breakpointsTailwind).smaller('md')
 
 // Mobile opens the form externally, so identity rides in the URL fragment.
-const formUrl = computed(() => {
-  const params = new URLSearchParams(getSurveyIdentityTags())
-  return `https://form.typeform.com/to/${dataTfWidget}#${params.toString()}`
+function buildFormUrl(widgetId: string, tags: Record<string, string>): string {
+  const params = new URLSearchParams(tags)
+  return `https://form.typeform.com/to/${widgetId}#${params.toString()}`
+}
+
+const formUrl = ref(buildFormUrl(dataTfWidget, getSurveyIdentityTags()))
+
+watchEffect((onCleanup) => {
+  const widgetId = dataTfWidget
+  let cancelled = false
+  void getSurveyIdentityTagsAsync().then((tags) => {
+    if (!cancelled) formUrl.value = buildFormUrl(widgetId, tags)
+  })
+  onCleanup(() => {
+    cancelled = true
+  })
 })
 </script>
 <template>

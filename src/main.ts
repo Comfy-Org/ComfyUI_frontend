@@ -52,6 +52,14 @@ if (isCloud) {
   setCurrentIdentityProvider(cloudIdentityProvider)
 }
 
+if (isDesktop) {
+  const { setCurrentIdentityProvider } =
+    await import('@/platform/surveys/surveyIdentity')
+  const { desktopSurveyIdentityProvider } =
+    await import('@/platform/surveys/desktopSurveyIdentity')
+  setCurrentIdentityProvider(desktopSurveyIdentityProvider)
+}
+
 const ComfyUIPreset = definePreset(Aura, {
   semantic: {
     // @ts-expect-error fixme ts strict error
