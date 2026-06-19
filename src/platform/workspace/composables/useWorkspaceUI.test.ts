@@ -244,10 +244,16 @@ describe('useWorkspaceUI', () => {
       expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(false)
     })
 
-    it('delegates member loading to the store when a workspace becomes active', async () => {
+    it('delegates member loading to the store when a team workspace becomes active', async () => {
       mockStore.activeWorkspace = teamOwnerWorkspace
       await loadComposable()
       expect(mockStore.ensureMembersLoaded).toHaveBeenCalled()
+    })
+
+    it('does not load members for a personal workspace', async () => {
+      mockStore.activeWorkspace = personalWorkspace
+      await loadComposable()
+      expect(mockStore.ensureMembersLoaded).not.toHaveBeenCalled()
     })
   })
 

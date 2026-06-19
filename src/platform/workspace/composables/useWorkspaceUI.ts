@@ -150,13 +150,17 @@ function useWorkspaceUIInternal() {
     () => store.activeWorkspace?.role ?? 'owner'
   )
 
-  // The original-owner signal lives on the members-list self-row, so the
-  // members list must be loaded before the team lifecycle gate can resolve. The
-  // store no-ops for personal/already-loaded workspaces and dedupes in-flight
-  // requests; until members arrive the getter fails closed.
+  // The original-owner signal lives on the members-list self-row, so a team
+  // workspace's members must be loaded before its lifecycle gate can resolve.
+  // The store dedupes in-flight/already-loaded requests and logs failures;
+  // until members arrive the getter fails closed.
   watch(
     () => store.activeWorkspace?.id,
-    () => void store.ensureMembersLoaded(),
+    () => {
+      if (store.activeWorkspace?.type === 'team') {
+        void store.ensureMembersLoaded()
+      }
+    },
     { immediate: true }
   )
 
