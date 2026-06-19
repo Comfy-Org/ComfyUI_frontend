@@ -1244,6 +1244,10 @@ const translations = {
     en: 'Add more credits anytime',
     'zh-CN': '可随时增加积分'
   },
+  'pricing.plan.standard.feature3': {
+    en: 'Run 1 workflow concurrently (via API)',
+    'zh-CN': '通过 API 并发运行 1 个工作流'
+  },
 
   'pricing.plan.creator.label': { en: 'CREATOR', 'zh-CN': '创作者版' },
   'pricing.plan.creator.summary': {
@@ -1272,8 +1276,8 @@ const translations = {
     'zh-CN': '导入你自己的 LoRA'
   },
   'pricing.plan.creator.feature2': {
-    en: '3 concurrent API jobs',
-    'zh-CN': '3 个并发 API 任务'
+    en: 'Run up to 3 workflows concurrently (via API)',
+    'zh-CN': '通过 API 最多并发运行 3 个工作流'
   },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
@@ -1300,8 +1304,8 @@ const translations = {
     'zh-CN': '更长工作流运行时长（最长 1 小时）'
   },
   'pricing.plan.pro.feature2': {
-    en: '5 concurrent API jobs',
-    'zh-CN': '5 个并发 API 任务'
+    en: 'Run up to 5 workflows concurrently (via API)',
+    'zh-CN': '通过 API 最多并发运行 5 个工作流'
   },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
@@ -1385,9 +1389,9 @@ const translations = {
     'zh-CN': '随时加购积分'
   },
   'pricing.included.feature5.description': {
-    en: 'Purchase additional credits at any time. Unused top-ups roll over to the next month automatically for up to 1 year.',
+    en: 'Purchase additional credits at any time. Top-up credits are valid for 1 year from the date of purchase and do not roll over with your monthly plan.',
     'zh-CN':
-      '可随时购买额外积分。未使用的充值积分自动结转至下月，最长保留 1 年。'
+      '可随时购买额外积分。充值积分自购买之日起 1 年内有效，且不会随月度计划结转。'
   },
   'pricing.included.feature6.title': {
     en: 'Pre-installed models',
@@ -1433,10 +1437,19 @@ const translations = {
       'Creator 或 Pro 计划用户可从 CivitAI 或 Huggingface 导入自己的模型和 LoRA，打造专属风格。'
   },
   'pricing.included.feature11.title': {
+    en: 'Run Workflows via API',
+    'zh-CN': '通过 API 运行工作流'
+  },
+  'pricing.included.feature11.description': {
+    en: 'Run Comfy workflows programmatically via API, with concurrency limits based on your plan. Perfect for integrating ComfyUI into your applications, automating batch processing, or building production pipelines. For higher rate limits, reach out to <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>.',
+    'zh-CN':
+      '通过 API 以编程方式运行 Comfy 工作流，并发上限由您的计划决定。非常适合将 ComfyUI 集成到您的应用、自动化批量处理或构建生产级流水线。如需更高的速率限制，请联系 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>。'
+  },
+  'pricing.included.feature12.title': {
     en: 'Parallel job execution',
     'zh-CN': '并行任务执行'
   },
-  'pricing.included.feature11.description': {
+  'pricing.included.feature12.description': {
     en: 'Run multiple workflows in parallel to speed up your pipeline.',
     'zh-CN': '并行运行多个工作流，加速你的流程。'
   },

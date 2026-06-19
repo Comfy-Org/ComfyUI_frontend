@@ -9,7 +9,8 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
+import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { st, t } from '@/i18n'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -82,6 +83,7 @@ import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacem
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
@@ -128,11 +130,11 @@ import {
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
-import { getWidgetState } from '@/world/widgetValueIO'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
+import { applyPromotedWidgetControl } from './promotedWidgetControl'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
@@ -173,14 +175,29 @@ export function sanitizeNodeName(string: string) {
 }
 
 function syncPromotedComboHostOptions(rootGraph: LGraph): void {
+  const widgetValueStore = useWidgetValueStore()
   forEachNode(rootGraph, (node) => {
-    for (const widget of node.widgets ?? []) {
-      if (!isPromotedWidgetView(widget) || widget.type !== 'combo') continue
+    if (!node.isSubgraphNode()) return
+    for (const input of node.inputs) {
+      if (!input.widgetId) continue
 
-      const state = getWidgetState(widget.entityId)
+      const source = promotedInputSource(node, input)
+      if (!source) continue
+
+      const resolution = resolveConcretePromotedWidget(
+        node,
+        source.nodeId,
+        source.widgetName
+      )
+      if (resolution.status !== 'resolved') continue
+
+      const sourceWidget = resolution.resolved.widget
+      if (sourceWidget.type !== 'combo') continue
+
+      const state = widgetValueStore.getWidget(input.widgetId)
       if (!state) continue
 
-      state.options = { ...(widget.options ?? {}) }
+      state.options = { ...(sourceWidget.options ?? {}) }
     }
   })
 }
@@ -1170,7 +1187,7 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph()
 
     if (skipAssetScans) {
-      // Only reset candidates; preserve UI state (fileSizes, urlInputs, etc.)
+      // Only reset candidates; preserve UI state (fileSizes, etc.)
       // so cached results restored by showPendingWarnings still display sizes.
       // Abort any in-flight verification from the outgoing workflow so a late
       // result cannot repopulate the store after we've switched workflows.
@@ -1632,6 +1649,9 @@ export class ComfyApp {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
+            applyPromotedWidgetControl(node, 'beforeQueued', {
+              isPartialExecution
+            })
           })
 
           // Capture workflow before await — activeWorkflow may change if the
@@ -1766,6 +1786,11 @@ export class ComfyApp {
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
           })
+          for (const node of queuedNodes) {
+            applyPromotedWidgetControl(node, 'afterQueued', {
+              isPartialExecution
+            })
+          }
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }

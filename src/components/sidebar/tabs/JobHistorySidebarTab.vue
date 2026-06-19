@@ -189,7 +189,9 @@ const onViewItem = wrapWithErrorHandlingAsync(async (item: JobListItem) => {
         modelUrl: previewOutput.url || ''
       },
       dialogComponentProps: {
-        style: 'width: 80vw; height: 80vh;',
+        renderer: 'reka',
+        size: 'full',
+        contentClass: 'w-[80vw] h-[80vh] max-h-[80vh]',
         maximizable: true
       }
     })

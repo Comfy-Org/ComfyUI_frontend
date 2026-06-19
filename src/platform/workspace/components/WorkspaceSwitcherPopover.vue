@@ -30,7 +30,7 @@
               "
             >
               <button
-                class="flex flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0"
+                class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 border-none bg-transparent p-0"
                 @click="handleSelectWorkspace(workspace)"
               >
                 <WorkspaceProfilePic
@@ -38,10 +38,10 @@
                   :workspace-name="workspace.name"
                 />
                 <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
-                  <div class="flex max-w-full items-center gap-1.5">
+                  <div class="flex max-w-full min-w-0 items-center gap-1.5">
                     <span
                       :title="getDisplayName(workspace)"
-                      class="truncate text-sm text-base-foreground"
+                      class="min-w-0 truncate text-sm text-base-foreground"
                     >
                       {{ getDisplayName(workspace) }}
                     </span>
@@ -183,6 +183,8 @@ function getRoleLabel(role: AvailableWorkspace['role']): string {
 }
 
 function resolveTierLabel(workspace: AvailableWorkspace): string | null {
+  if (workspace.type !== 'personal') return null
+
   if (isCurrentWorkspace(workspace)) {
     return currentSubscriptionTierName.value || null
   }

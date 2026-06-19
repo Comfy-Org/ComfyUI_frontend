@@ -5,10 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type {
-  IBaseWidget,
-  IStringComboWidget
-} from '@/lib/litegraph/src/types/widgets'
-import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -30,9 +26,12 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import type { NodeError } from '@/schemas/apiSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { widgetEntityId } from '@/world/entityIds'
-import type { WidgetEntityId } from '@/world/entityIds'
-import { ensureWidgetState, getWidgetState } from '@/world/widgetValueIO'
+import {
+  createTestRootGraph,
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const {
   mockApiKeyAuthStore,
@@ -169,18 +168,6 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
   }
 }
 
-type PromotedComboWidget = IStringComboWidget & {
-  readonly entityId: WidgetEntityId
-  readonly sourceNodeId: string
-  readonly sourceWidgetName: string
-}
-
-type PromotedNumberWidget = IBaseWidget<number, 'number'> & {
-  readonly entityId: WidgetEntityId
-  readonly sourceNodeId: string
-  readonly sourceWidgetName: string
-}
-
 describe('ComfyApp', () => {
   let app: ComfyApp
   let mockCanvas: LGraphCanvas
@@ -292,60 +279,43 @@ describe('ComfyApp', () => {
   })
 
   describe('reloadNodeDefs', () => {
-    it('syncs refreshed combo options into promoted widget host state', async () => {
-      const graph = new LGraph()
-      const node = new LGraphNode(
+    it('syncs refreshed combo options into promoted combo host state', async () => {
+      const initialOptions = ['missing.safetensors']
+      const refreshedOptions = ['missing.safetensors', 'present.safetensors']
+
+      const rootGraph = createTestRootGraph()
+      const subgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'ckpt_name', type: '*' }]
+      })
+
+      const interiorNode = new LGraphNode(
         'CheckpointLoaderSimple',
         'CheckpointLoaderSimple'
       )
-      graph.add(node)
-
-      const initialOptions = ['missing.safetensors']
-      const refreshedOptions = ['missing.safetensors', 'present.safetensors']
-      const promotedEntityId = widgetEntityId(graph.id, node.id, 'ckpt_name')
-      const missingStateEntityId = widgetEntityId(
-        graph.id,
-        node.id,
-        'missing_state_ckpt'
+      const interiorInput = interiorNode.addInput('ckpt_name', '*')
+      interiorInput.widget = { name: 'ckpt_name' }
+      const interiorWidget = interiorNode.addWidget(
+        'combo',
+        'ckpt_name',
+        'missing.safetensors',
+        () => {},
+        { values: initialOptions }
       )
-      const promotedNumberEntityId = widgetEntityId(graph.id, node.id, 'steps')
-      const plainComboWidget: IStringComboWidget = {
-        name: 'ckpt_name',
-        type: 'combo',
-        value: 'missing.safetensors',
-        options: { values: initialOptions },
-        y: 0
-      }
-      const promotedNumberWidget: PromotedNumberWidget = {
-        name: 'steps',
-        type: 'number',
-        value: 20,
-        options: { min: 1, max: 100 },
-        y: 0,
-        entityId: promotedNumberEntityId,
-        sourceNodeId: '1',
-        sourceWidgetName: 'steps'
-      }
-      const missingStatePromotedWidget: PromotedComboWidget = {
-        name: 'missing_state_ckpt',
-        type: 'combo',
-        value: 'missing.safetensors',
-        options: { values: initialOptions },
-        y: 0,
-        entityId: missingStateEntityId,
-        sourceNodeId: '1',
-        sourceWidgetName: 'missing_state_ckpt'
-      }
-      const promotedWidget: PromotedComboWidget = {
-        name: 'ckpt_name',
-        type: 'combo',
-        value: 'missing.safetensors',
-        options: { values: initialOptions },
-        y: 0,
-        entityId: promotedEntityId,
-        sourceNodeId: '1',
-        sourceWidgetName: 'ckpt_name'
-      }
+      subgraph.add(interiorNode)
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+
+      const host = createTestSubgraphNode(subgraph)
+      rootGraph.add(host)
+
+      const hostWidgetId = host.inputs[0].widgetId
+      if (!hostWidgetId) throw new Error('Expected a promoted host widgetId')
+
+      const widgetValueStore = useWidgetValueStore()
+      expect(widgetValueStore.getWidget(hostWidgetId)?.options).toEqual({
+        values: initialOptions
+      })
+
       const defs: Record<string, ComfyNodeDef> = {
         CheckpointLoaderSimple: {
           name: 'CheckpointLoaderSimple',
@@ -367,31 +337,16 @@ describe('ComfyApp', () => {
           experimental: false
         }
       }
-      node.widgets = [
-        plainComboWidget,
-        promotedNumberWidget,
-        missingStatePromotedWidget,
-        promotedWidget
-      ]
-      Reflect.set(app, 'rootGraphInternal', graph)
-      ensureWidgetState(promotedEntityId, {
-        type: 'combo',
-        value: 'missing.safetensors',
-        options: { values: initialOptions },
-        serialize: false
-      })
+      Reflect.set(app, 'rootGraphInternal', rootGraph)
       vi.spyOn(app, 'getNodeDefs').mockResolvedValue(defs)
       vi.spyOn(app, 'registerNodeDef').mockResolvedValue(undefined)
 
       await app.reloadNodeDefs()
 
-      expect(plainComboWidget.options.values).toEqual(refreshedOptions)
-      expect(promotedWidget.options.values).toEqual(refreshedOptions)
-      expect(getWidgetState(promotedEntityId)?.options.values).toEqual(
+      expect(interiorWidget.options.values).toEqual(refreshedOptions)
+      expect(widgetValueStore.getWidget(hostWidgetId)?.options.values).toEqual(
         refreshedOptions
       )
-      expect(getWidgetState(missingStateEntityId)).toBeUndefined()
-      expect(getWidgetState(promotedNumberEntityId)).toBeUndefined()
       expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
         'refreshComboInNodes',
         defs
