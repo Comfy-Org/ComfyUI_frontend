@@ -88,11 +88,15 @@ const test = comfyPageFixture.extend({
 })
 
 // Opens the profile popover then the workspace-switcher panel.
+// Waits for the panel to be visible before returning.
 // useWorkspaceSwitch skips switchWorkspace when the target is already active,
 // so always switch to a workspace other than the auto-selected Personal one.
 async function openSwitcherPanel(page: Page): Promise<void> {
+  // Close any open popovers first by pressing Escape, then open fresh.
+  await page.keyboard.press('Escape')
   await page.getByRole('button', { name: 'Current user' }).click()
   await page.getByTestId('workspace-switcher-trigger').click()
+  await expect(page.getByTestId('workspace-switcher-panel')).toBeVisible()
 }
 
 test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
@@ -261,15 +265,11 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     await openSwitcherPanel(page)
     await page.getByText('Team Workspace').click()
 
-    await expect
-      .poll(
-        () =>
-          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
-        { timeout: 5000 }
-      )
-      .toBe('original-token')
+    // Wait for both the switch (callCount=1) and the immediate refresh (callCount=2)
+    // to complete. The refresh fires at delay≈0 so token may already be cleared
+    // before we can assert the intermediate 'original-token' state.
+    await expect.poll(() => callCount, { timeout: 5000 }).toBe(2)
 
-    // The scheduled refresh fires immediately (token expires within buffer window).
     // A 403 ACCESS_DENIED response must clear the workspace session entirely.
     await expect
       .poll(
