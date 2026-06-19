@@ -36,9 +36,11 @@
       </p>
     </div>
 
-    <!-- Pricing Table Step (unified: personal/team plan toggle) -->
+    <!-- Pricing Table Step. v-show (not v-if) keeps it mounted so the plan,
+         billing cycle, and credit-stop selection survive a round trip to the
+         confirm step and back. -->
     <UnifiedPricingTable
-      v-if="checkoutStep === 'pricing'"
+      v-show="checkoutStep === 'pricing'"
       class="xl:flex-1"
       :initial-plan-mode="initialPlanMode"
       :is-loading="isLoadingPreview || isResubscribing"
@@ -48,48 +50,44 @@
       @subscribe-team="handleSubscribeTeamClick"
     />
 
-    <!-- Subscription Preview Step - New Subscription -->
-    <SubscriptionAddPaymentPreviewWorkspace
-      v-else-if="
-        checkoutStep === 'preview' &&
-        previewData &&
-        previewData.transition_type === 'new_subscription'
-      "
-      :preview-data="previewData"
-      :tier-key="selectedTierKey!"
-      :billing-cycle="selectedBillingCycle"
-      :is-loading="isSubscribing || isPolling"
-      @add-credit-card="handleAddCreditCard"
-      @back="handleBackToPricing"
-    />
+    <template v-if="checkoutStep === 'preview'">
+      <!-- New Subscription -->
+      <SubscriptionAddPaymentPreviewWorkspace
+        v-if="previewData && previewData.transition_type === 'new_subscription'"
+        :preview-data="previewData"
+        :tier-key="selectedTierKey!"
+        :billing-cycle="selectedBillingCycle"
+        :is-loading="isSubscribing || isPolling"
+        @add-credit-card="handleAddCreditCard"
+        @back="handleBackToPricing"
+      />
 
-    <!-- Subscription Preview Step - Plan Transition -->
-    <SubscriptionTransitionPreviewWorkspace
-      v-else-if="
-        checkoutStep === 'preview' &&
-        previewData &&
-        previewData.transition_type !== 'new_subscription'
-      "
-      :preview-data="previewData"
-      :is-loading="isSubscribing || isPolling"
-      @confirm="handleConfirmTransition"
-      @back="handleBackToPricing"
-    />
+      <!-- Plan Transition -->
+      <SubscriptionTransitionPreviewWorkspace
+        v-else-if="
+          previewData && previewData.transition_type !== 'new_subscription'
+        "
+        :preview-data="previewData"
+        :is-loading="isSubscribing || isPolling"
+        @confirm="handleConfirmTransition"
+        @back="handleBackToPricing"
+      />
 
-    <!-- Subscription Preview Step - Team (display-only confirm; the slider stop
-         and active billing cycle drive the real subscribe). -->
-    <SubscriptionAddPaymentPreviewWorkspace
-      v-else-if="checkoutStep === 'preview' && selectedTeamStop"
-      :team-plan="selectedTeamStop"
-      :billing-cycle="selectedBillingCycle"
-      :is-loading="isSubscribing || isPolling"
-      @add-credit-card="handleTeamSubscribe"
-      @back="handleBackToPricing"
-    />
+      <!-- Team (display-only confirm; the slider stop and active billing cycle
+           drive the real subscribe). -->
+      <SubscriptionAddPaymentPreviewWorkspace
+        v-else-if="selectedTeamStop"
+        :team-plan="selectedTeamStop"
+        :billing-cycle="selectedBillingCycle"
+        :is-loading="isSubscribing || isPolling"
+        @add-credit-card="handleTeamSubscribe"
+        @back="handleBackToPricing"
+      />
+    </template>
 
     <!-- Success Step - "You're all set" -->
     <SubscriptionSuccessWorkspace
-      v-else-if="checkoutStep === 'success' && selectedTierKey"
+      v-if="checkoutStep === 'success' && selectedTierKey"
       :tier-key="selectedTierKey"
       :preview-data="previewData"
       @close="handleSuccessClose"
@@ -98,6 +96,8 @@
 </template>
 
 <script setup lang="ts">
+import { useEventListener } from '@vueuse/core'
+
 import Button from '@/components/ui/button/Button.vue'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
@@ -137,4 +137,21 @@ const {
   handleTeamSubscribe,
   handleResubscribe
 } = useSubscriptionCheckout(emit)
+
+// Backspace mirrors the back arrow on the confirm step, but never while an
+// editable element is focused (let it delete text there).
+useEventListener(window, 'keydown', (event: KeyboardEvent) => {
+  if (event.key !== 'Backspace' || checkoutStep.value !== 'preview') return
+  const target = event.target
+  if (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  ) {
+    return
+  }
+  event.preventDefault()
+  handleBackToPricing()
+})
 </script>
