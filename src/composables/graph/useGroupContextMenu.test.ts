@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 
 const {
   mockShowNodeOptions,
@@ -26,14 +27,20 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
 }))
 
 interface StubCanvas {
-  graph: { getGroupOnPos: ReturnType<typeof vi.fn> }
+  graph: {
+    getGroupOnPos: ReturnType<typeof vi.fn>
+    getRerouteOnPos: ReturnType<typeof vi.fn>
+  }
   deselectAll: ReturnType<typeof vi.fn>
   select: ReturnType<typeof vi.fn>
+  links_render_mode: number
 }
+
+type ProcessArgs = Parameters<typeof LGraphCanvas.prototype.processContextMenu>
 
 describe('useGroupContextMenu', () => {
   const group = { id: 1 }
-  const event = { canvasX: 10, canvasY: 20 }
+  const event = { canvasX: 10, canvasY: 20 } as unknown as ProcessArgs[1]
   let realProcessContextMenu: typeof LGraphCanvas.prototype.processContextMenu
   let originalSpy: ReturnType<typeof vi.fn>
   let stubCanvas: StubCanvas
@@ -45,14 +52,19 @@ describe('useGroupContextMenu', () => {
 
     realProcessContextMenu = LGraphCanvas.prototype.processContextMenu
     originalSpy = vi.fn()
-    LGraphCanvas.prototype.processContextMenu = originalSpy as never
+    LGraphCanvas.prototype.processContextMenu =
+      originalSpy as unknown as typeof LGraphCanvas.prototype.processContextMenu
 
     useGroupContextMenu()
 
     stubCanvas = {
-      graph: { getGroupOnPos: vi.fn(() => group) },
+      graph: {
+        getGroupOnPos: vi.fn(() => group),
+        getRerouteOnPos: vi.fn(() => undefined)
+      },
       deselectAll: vi.fn(),
-      select: vi.fn()
+      select: vi.fn(),
+      links_render_mode: LinkRenderType.SPLINE_LINK
     }
   })
 
@@ -61,11 +73,11 @@ describe('useGroupContextMenu', () => {
     LiteGraph.vueNodesMode = false
   })
 
-  function invoke(node: unknown) {
+  function invoke(node: ProcessArgs[0]) {
     LGraphCanvas.prototype.processContextMenu.call(
-      stubCanvas as never,
-      node as never,
-      event as never
+      stubCanvas as unknown as LGraphCanvas,
+      node,
+      event
     )
   }
 
@@ -80,7 +92,7 @@ describe('useGroupContextMenu', () => {
   })
 
   it('falls through to the legacy menu when a node is under the cursor', () => {
-    invoke({ id: 'n1' })
+    invoke({ id: 'n1' } as unknown as ProcessArgs[0])
 
     expect(originalSpy).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).not.toHaveBeenCalled()
@@ -106,14 +118,37 @@ describe('useGroupContextMenu', () => {
     expect(mockShowNodeOptions).not.toHaveBeenCalled()
   })
 
-  it('keeps the legacy menu when a reroute is under the cursor inside a group', () => {
+  it('keeps the legacy menu when the layout store reports a reroute', () => {
     mockQueryRerouteAtPoint.mockReturnValue({ id: 5 })
+
+    invoke(undefined)
+
+    expect(stubCanvas.graph.getRerouteOnPos).not.toHaveBeenCalled()
+    expect(stubCanvas.graph.getGroupOnPos).not.toHaveBeenCalled()
+    expect(originalSpy).toHaveBeenCalledOnce()
+    expect(mockShowNodeOptions).not.toHaveBeenCalled()
+  })
+
+  it('keeps the legacy menu when getRerouteOnPos finds a reroute the layout store missed', () => {
+    stubCanvas.graph.getRerouteOnPos.mockReturnValue({ id: 5 })
 
     invoke(undefined)
 
     expect(stubCanvas.graph.getGroupOnPos).not.toHaveBeenCalled()
     expect(originalSpy).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).not.toHaveBeenCalled()
+  })
+
+  it('skips the reroute check and opens the group menu when links are hidden', () => {
+    stubCanvas.links_render_mode = LinkRenderType.HIDDEN_LINK
+
+    invoke(undefined)
+
+    expect(mockQueryRerouteAtPoint).not.toHaveBeenCalled()
+    expect(stubCanvas.graph.getRerouteOnPos).not.toHaveBeenCalled()
+    expect(stubCanvas.select).toHaveBeenCalledWith(group)
+    expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
+    expect(originalSpy).not.toHaveBeenCalled()
   })
 
   it('preserves selection but still opens the menu when the group is already selected', () => {
@@ -132,9 +167,9 @@ describe('useGroupContextMenu', () => {
     const graphlessCanvas = { deselectAll: vi.fn(), select: vi.fn() }
 
     LGraphCanvas.prototype.processContextMenu.call(
-      graphlessCanvas as never,
-      undefined as never,
-      event as never
+      graphlessCanvas as unknown as LGraphCanvas,
+      undefined,
+      event
     )
 
     expect(originalSpy).toHaveBeenCalledOnce()

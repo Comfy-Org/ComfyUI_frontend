@@ -1,5 +1,6 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
@@ -27,11 +28,16 @@ export function useGroupContextMenu() {
       return
     }
 
-    // Reroutes can sit inside a group; keep their legacy right-click menu.
-    const onReroute = layoutStore.queryRerouteAtPoint({
-      x: event.canvasX,
-      y: event.canvasY
-    })
+    // A reroute can sit inside a group; defer it to the legacy "Delete Reroute"
+    // menu. Mirror processContextMenu's hit-test (layout store first, litegraph
+    // fallback) so we never miss one and wrongly open the group menu over it.
+    const onReroute =
+      this.links_render_mode !== LinkRenderType.HIDDEN_LINK &&
+      (!!layoutStore.queryRerouteAtPoint({
+        x: event.canvasX,
+        y: event.canvasY
+      }) ||
+        !!this.graph.getRerouteOnPos(event.canvasX, event.canvasY))
     const group = onReroute
       ? undefined
       : this.graph.getGroupOnPos(event.canvasX, event.canvasY)
