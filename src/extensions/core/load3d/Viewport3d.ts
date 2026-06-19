@@ -56,6 +56,7 @@ export class Viewport3d {
   private getZoomScaleCallback: (() => number) | undefined
   private externalActiveCamera: THREE.Camera | null = null
   private overlay: SceneOverlay | null = null
+  private initialRenderTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(
     container: Element | HTMLElement,
@@ -68,10 +69,8 @@ export class Viewport3d {
     this.getDimensionsCallback = options.getDimensions
     this.getZoomScaleCallback = options.getZoomScale
 
-    if (options.width && options.height) {
-      this.targetWidth = options.width
-      this.targetHeight = options.height
-      this.targetAspectRatio = options.width / options.height
+    if (options.width !== undefined && options.height !== undefined) {
+      this.applyTargetSize(options.width, options.height)
     }
 
     this.renderer = deps.renderer
@@ -103,12 +102,21 @@ export class Viewport3d {
     this.hasStarted = true
     this.handleResize()
     this.startAnimation()
-    setTimeout(() => {
+    this.initialRenderTimer = setTimeout(() => {
+      this.initialRenderTimer = null
       this.forceRender()
     }, 100)
   }
 
   private hasStarted: boolean = false
+
+  private applyTargetSize(width: number, height: number): void {
+    if (!Number.isFinite(width) || !Number.isFinite(height)) return
+    if (width <= 0 || height <= 0) return
+    this.targetWidth = width
+    this.targetHeight = height
+    this.targetAspectRatio = width / height
+  }
 
   private initResizeObserver(container: Element | HTMLElement): void {
     if (typeof ResizeObserver === 'undefined') return
@@ -227,9 +235,7 @@ export class Viewport3d {
     if (this.getDimensionsCallback) {
       const dims = this.getDimensionsCallback()
       if (dims) {
-        this.targetWidth = dims.width
-        this.targetHeight = dims.height
-        this.targetAspectRatio = dims.width / dims.height
+        this.applyTargetSize(dims.width, dims.height)
       }
     }
 
@@ -309,12 +315,15 @@ export class Viewport3d {
   toggleCamera(cameraType?: 'perspective' | 'orthographic'): void {
     this.cameraManager.toggleCamera(cameraType)
     this.controlsManager.updateCamera(this.cameraManager.activeCamera)
+    this.onActiveCameraChanged()
     this.viewHelperManager.recreateViewHelper()
     if (!this.externalActiveCamera) {
       this.overlay?.onActiveCameraChange?.(this.cameraManager.activeCamera)
     }
     this.handleResize()
   }
+
+  protected onActiveCameraChanged(): void {}
 
   getCurrentCameraType(): 'perspective' | 'orthographic' {
     return this.cameraManager.getCurrentCameraType()
@@ -330,9 +339,7 @@ export class Viewport3d {
   }
 
   setTargetSize(width: number, height: number): void {
-    this.targetWidth = width
-    this.targetHeight = height
-    this.targetAspectRatio = width / height
+    this.applyTargetSize(width, height)
     this.handleResize()
   }
 
@@ -365,9 +372,7 @@ export class Viewport3d {
     if (this.getDimensionsCallback) {
       const dims = this.getDimensionsCallback()
       if (dims) {
-        this.targetWidth = dims.width
-        this.targetHeight = dims.height
-        this.targetAspectRatio = dims.width / dims.height
+        this.applyTargetSize(dims.width, dims.height)
       }
     }
 
@@ -390,6 +395,11 @@ export class Viewport3d {
   }
 
   remove(): void {
+    if (this.initialRenderTimer) {
+      clearTimeout(this.initialRenderTimer)
+      this.initialRenderTimer = null
+    }
+
     if (this.resizeObserver) {
       this.resizeObserver.disconnect()
       this.resizeObserver = null

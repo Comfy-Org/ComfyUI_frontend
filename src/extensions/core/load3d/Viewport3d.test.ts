@@ -140,7 +140,7 @@ describe('Viewport3d', () => {
   })
 
   describe('isActive (no model concerns)', () => {
-    it('returns false when the initial render has not run and no mouse activity is present', () => {
+    it('returns false when no mouse activity is present', () => {
       Object.assign(ctx.viewport, {
         STATUS_MOUSE_ON_NODE: false,
         STATUS_MOUSE_ON_SCENE: false,
@@ -324,6 +324,110 @@ describe('Viewport3d', () => {
       ctx.viewport.setExternalActiveCamera(subjectCamera)
 
       expect(overlay.onActiveCameraChange).toHaveBeenCalledWith(subjectCamera)
+    })
+  })
+
+  describe('applyTargetSize guards', () => {
+    function applyTargetSize(width: number, height: number): void {
+      ;(
+        ctx.viewport as unknown as {
+          applyTargetSize(w: number, h: number): void
+        }
+      ).applyTargetSize(width, height)
+    }
+
+    beforeEach(() => {
+      Object.assign(ctx.viewport, {
+        targetWidth: 0,
+        targetHeight: 0,
+        targetAspectRatio: 1
+      })
+    })
+
+    it('writes width / height / aspect when both inputs are positive finite', () => {
+      applyTargetSize(800, 400)
+
+      expect(ctx.viewport.targetWidth).toBe(800)
+      expect(ctx.viewport.targetHeight).toBe(400)
+      expect(ctx.viewport.targetAspectRatio).toBe(2)
+    })
+
+    it.for([
+      ['zero width', 0, 100],
+      ['zero height', 100, 0],
+      ['negative width', -100, 100],
+      ['negative height', 100, -100],
+      ['NaN width', Number.NaN, 100],
+      ['Infinity height', 100, Number.POSITIVE_INFINITY]
+    ] as const)('rejects %s without touching prior state', ([, w, h]) => {
+      Object.assign(ctx.viewport, {
+        targetWidth: 800,
+        targetHeight: 400,
+        targetAspectRatio: 2
+      })
+
+      applyTargetSize(w, h)
+
+      expect(ctx.viewport.targetWidth).toBe(800)
+      expect(ctx.viewport.targetHeight).toBe(400)
+      expect(ctx.viewport.targetAspectRatio).toBe(2)
+    })
+
+    it('setTargetSize routes through the guard', () => {
+      Object.assign(ctx.viewport, {
+        targetWidth: 800,
+        targetHeight: 400,
+        targetAspectRatio: 2
+      })
+
+      ctx.viewport.setTargetSize(0, 0)
+
+      expect(ctx.viewport.targetAspectRatio).toBe(2)
+    })
+  })
+
+  describe('start / remove lifecycle', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      Object.assign(ctx.viewport, {
+        hasStarted: false,
+        initialRenderTimer: null,
+        startAnimation: vi.fn(),
+        renderLoop: { stop: vi.fn() },
+        resizeObserver: null,
+        disposeContextMenuGuard: null,
+        renderer: {
+          forceContextLoss: vi.fn(),
+          dispose: vi.fn(),
+          domElement: Object.assign(document.createElement('canvas'), {
+            remove: vi.fn()
+          })
+        },
+        disposeManagers: vi.fn()
+      })
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+    })
+
+    it('start schedules a deferred forceRender and remove clears it before the timer fires', () => {
+      ctx.viewport.start()
+      ctx.forceRender.mockClear()
+
+      ctx.viewport.remove()
+      vi.advanceTimersByTime(500)
+
+      expect(ctx.forceRender).not.toHaveBeenCalled()
+    })
+
+    it('the deferred forceRender does fire when remove is not called', () => {
+      ctx.viewport.start()
+      ctx.forceRender.mockClear()
+
+      vi.advanceTimersByTime(100)
+
+      expect(ctx.forceRender).toHaveBeenCalledOnce()
     })
   })
 })

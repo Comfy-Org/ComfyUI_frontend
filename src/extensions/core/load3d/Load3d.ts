@@ -224,14 +224,8 @@ class Load3d extends Viewport3d {
     return ModelExporter.detectFormatFromURL(url)
   }
 
-  override toggleCamera(cameraType?: 'perspective' | 'orthographic'): void {
-    this.cameraManager.toggleCamera(cameraType)
-
-    this.controlsManager.updateCamera(this.cameraManager.activeCamera)
+  protected override onActiveCameraChanged(): void {
     this.gizmoManager.updateCamera(this.cameraManager.activeCamera)
-    this.viewHelperManager.recreateViewHelper()
-
-    this.handleResize()
   }
 
   setFOV(fov: number): void {
