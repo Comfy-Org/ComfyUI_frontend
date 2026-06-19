@@ -239,12 +239,12 @@ export function getAssetMetadataDimensions(
  * back to `renderedNaturalSize` — the natural size of the `<img>` the card
  * actually rendered — and only when that rendered image was the original file.
  *
- * When a downscaled thumbnail was rendered (`asset.thumbnail_url` is set, e.g.
- * on runtimes that serve previews), the measured natural size is the preview's,
- * not the asset's, so surfacing it would report a wrong resolution (a 512px
- * thumbnail for a 1920×1080 image). In that case this returns `undefined` so
- * the card shows no dimensions rather than a misleading one — a blank label is
- * preferable to a confidently wrong number.
+ * A distinct `thumbnail_url` (one that differs from `preview_url`) means the
+ * card rendered a downscaled preview, so `renderedNaturalSize` reflects the
+ * preview's dimensions rather than the asset's. In that case this returns
+ * `undefined` so the card shows no label rather than a wrong resolution.
+ * On OSS, `thumbnail_url` and `preview_url` are the same URL (full-res),
+ * so the guard correctly passes through `renderedNaturalSize`.
  */
 export function resolveDisplayImageDimensions(
   asset: AssetItem | undefined,
@@ -252,7 +252,11 @@ export function resolveDisplayImageDimensions(
 ): ImageDimensions | undefined {
   const fromMetadata = getAssetMetadataDimensions(asset)
   if (fromMetadata) return fromMetadata
-  if (asset?.thumbnail_url) return undefined
+  if (
+    asset?.thumbnail_url &&
+    asset.thumbnail_url !== asset.preview_url
+  )
+    return undefined
   return renderedNaturalSize
 }
 

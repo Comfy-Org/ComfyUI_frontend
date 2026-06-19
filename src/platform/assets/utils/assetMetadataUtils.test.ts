@@ -435,7 +435,8 @@ describe('assetMetadataUtils', () => {
     it('prefers metadata even when a downscaled thumbnail was rendered', () => {
       const asset = {
         ...mockAsset,
-        thumbnail_url: 'https://cdn.example/thumb.webp',
+        thumbnail_url: 'https://cdn.example/thumb.webp?res=512',
+        preview_url: 'https://cdn.example/original.webp',
         metadata: { width: 1920, height: 1080 }
       }
       expect(resolveDisplayImageDimensions(asset, rendered)).toEqual({
@@ -449,20 +450,30 @@ describe('assetMetadataUtils', () => {
       expect(resolveDisplayImageDimensions(asset, rendered)).toEqual(rendered)
     })
 
-    it('returns undefined (no label) when metadata is absent and a downscaled thumbnail was rendered', () => {
-      // The guard: the measured natural size is the thumbnail's, not the
-      // asset's — a blank label beats a confidently wrong resolution.
+    it('falls back to the rendered natural size on OSS where thumbnail_url equals preview_url (full-res)', () => {
+      const fullResUrl = 'http://localhost:8188/view?filename=output.png&type=output'
       const asset = {
         ...mockAsset,
-        thumbnail_url: 'https://cdn.example/thumb.webp'
+        thumbnail_url: fullResUrl,
+        preview_url: fullResUrl
+      }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toEqual(rendered)
+    })
+
+    it('returns undefined (no label) when metadata is absent and a distinct downscaled thumbnail was rendered', () => {
+      const asset = {
+        ...mockAsset,
+        thumbnail_url: 'https://cdn.example/thumb.webp?res=512',
+        preview_url: 'https://cdn.example/original.webp'
       }
       expect(resolveDisplayImageDimensions(asset, rendered)).toBeUndefined()
     })
 
-    it('suppresses the fallback for an invalid metadata shape when a thumbnail was rendered', () => {
+    it('suppresses the fallback for an invalid metadata shape when a distinct thumbnail was rendered', () => {
       const asset = {
         ...mockAsset,
-        thumbnail_url: 'https://cdn.example/thumb.webp',
+        thumbnail_url: 'https://cdn.example/thumb.webp?res=512',
+        preview_url: 'https://cdn.example/original.webp',
         metadata: { width: 0, height: 1080 }
       }
       expect(resolveDisplayImageDimensions(asset, rendered)).toBeUndefined()
