@@ -158,15 +158,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "解開所選子圖"
   },
-  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "將選取的節點轉換為群組節點"
-  },
-  "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "管理群組節點"
-  },
-  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "取消群組所選群組節點"
-  },
   "Comfy_Help_AboutComfyUI": {
     "label": "開啟關於 ComfyUI"
   },

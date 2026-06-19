@@ -94,6 +94,7 @@ export type RemoteConfig = {
   comfy_platform_base_url?: string
   firebase_config?: FirebaseRuntimeConfig
   telemetry_disabled_events?: TelemetryEventName[]
+  enable_telemetry?: boolean
   model_upload_button_enabled?: boolean
   asset_rename_enabled?: boolean
   private_models_enabled?: boolean
