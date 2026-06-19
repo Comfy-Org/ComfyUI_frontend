@@ -73,7 +73,7 @@ test.describe('Download page @smoke', () => {
     })
 
     const windowsBtn = hero.locator(
-      'a[href="https://download.comfy.org/windows/nsis/x64"]'
+      'a[href="https://comfy.org/download/windows/nsis/x64"]'
     )
     await expect(windowsBtn).toBeVisible()
     await expect(windowsBtn).toHaveText(/DOWNLOAD DESKTOP/i)
