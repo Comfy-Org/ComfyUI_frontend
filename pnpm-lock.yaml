@@ -415,6 +415,9 @@ importers:
       '@atlaskit/pragmatic-drag-and-drop':
         specifier: ^1.3.1
         version: 1.3.1
+      '@comfyorg/comfyui-desktop-bridge-types':
+        specifier: workspace:*
+        version: link:packages/comfyui-desktop-bridge-types
       '@comfyorg/comfyui-electron-types':
         specifier: 'catalog:'
         version: 0.6.2
@@ -985,6 +988,8 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.0.16(@opentelemetry/api@1.9.0)(@types/node@25.0.3)(@vitest/ui@4.0.16)(esbuild@0.27.3)(happy-dom@20.0.11)(jiti@2.6.1)(jsdom@27.4.0)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.2)
+
+  packages/comfyui-desktop-bridge-types: {}
 
   packages/design-system:
     dependencies:
