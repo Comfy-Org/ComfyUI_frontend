@@ -27,6 +27,7 @@
         :can-use-background-image="canUseBackgroundImage"
         :material-modes="materialModes"
         :has-skeleton="hasSkeleton"
+        :source-format="sourceFormat"
         @update-background-image="handleBackgroundImageUpdate"
         @export-model="handleExportModel"
         @update-hdri-file="handleHDRIFileUpdate"
@@ -166,6 +167,7 @@ const {
   canExport,
   materialModes,
   hasSkeleton,
+  sourceFormat,
   hasRecording,
   recordingDuration,
   animations,
