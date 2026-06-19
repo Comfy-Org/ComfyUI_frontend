@@ -288,7 +288,7 @@ test.describe(
     test('right-clicking a group opens the Vue context menu instead of the legacy menu', async ({
       comfyPage
     }) => {
-      // Group the nodes, then deselect so the right-click selects the group itself.
+      // Deselect so the right-click selects the group itself.
       await comfyPage.keyboard.selectAll()
       await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
       await expect
@@ -302,7 +302,6 @@ test.describe(
         button: 'right'
       })
 
-      // The new Vue context menu opens; the legacy litegraph menu does not.
       await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
       await expect(comfyPage.contextMenu.litegraphContextMenu).toBeHidden()
       await expect(comfyPage.contextMenu.litegraphMenu).toBeHidden()

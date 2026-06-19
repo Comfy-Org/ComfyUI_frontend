@@ -4,13 +4,8 @@ import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 /**
- * Routes a right-click on a group (frame) to the Vue context menu instead of
- * the legacy litegraph menu, mirroring how a Vue node right-click opens the
- * same menu via {@link showNodeOptions}.
- *
- * Only active in Nodes 2.0 mode ({@link LiteGraph.vueNodesMode}); in legacy
- * rendering, groups keep the old menu so they stay consistent with legacy
- * nodes. Nodes, the canvas background, and reroutes are left untouched.
+ * Routes Nodes 2.0 group right-clicks to Vue while nodes, reroutes,
+ * background, and legacy mode stay on litegraph.
  */
 export function useGroupContextMenu() {
   const original = LGraphCanvas.prototype.processContextMenu
@@ -39,6 +34,7 @@ export function useGroupContextMenu() {
     if (!group.selected) {
       this.deselectAll()
       group.selected = true
+      group.recomputeInsideNodes()
       this.selectedItems.add(group)
       this.state.selectionChanged = true
     }

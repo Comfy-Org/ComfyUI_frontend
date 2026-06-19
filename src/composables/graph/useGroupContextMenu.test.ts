@@ -41,14 +41,18 @@ interface StubCanvas {
 
 describe('useGroupContextMenu', () => {
   const event = fromPartial<CanvasPointerEvent>({ canvasX: 10, canvasY: 20 })
-  let group: { id: number; selected?: boolean }
+  let group: {
+    id: number
+    selected?: boolean
+    recomputeInsideNodes: ReturnType<typeof vi.fn>
+  }
   let legacyMenuMock: ReturnType<typeof vi.fn>
   let stubCanvas: StubCanvas
 
   beforeEach(() => {
     vi.clearAllMocks()
     LiteGraph.vueNodesMode = true
-    group = { id: 1 }
+    group = { id: 1, recomputeInsideNodes: vi.fn() }
     mockGetCanvasContextMenuTarget.mockReturnValue({ group })
 
     legacyMenuMock = vi.fn()
@@ -79,6 +83,7 @@ describe('useGroupContextMenu', () => {
     expect(group.selected).toBe(true)
     expect(stubCanvas.selectedItems.has(group)).toBe(true)
     expect(stubCanvas.state.selectionChanged).toBe(true)
+    expect(group.recomputeInsideNodes).toHaveBeenCalledOnce()
     expect(mockUpdateSelectedItems).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
     expect(legacyMenuMock).not.toHaveBeenCalled()
