@@ -61,6 +61,8 @@ import {
   ComponentWidgetImpl,
   DOMWidgetImpl
 } from '@/scripts/domWidget'
+import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -787,20 +789,13 @@ export class ComfyApp {
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
-      // Check if this is an auth-related error or credits-related error
-      if (
-        detail.exception_message?.includes(
-          'Unauthorized: Please login first to use this node.'
-        )
-      ) {
-        useDialogService().showApiNodesSignInDialog([detail.node_type])
-      } else if (
-        detail.exception_message?.includes(
-          'Payment Required: Please add credits to your account to use this node.'
-        )
-      ) {
-        useDialogService().showTopUpCreditsDialog({
-          isInsufficientCredits: true
+      const precondition = resolveAccountPrecondition({
+        exceptionType: detail.exception_type ?? '',
+        exceptionMessage: detail.exception_message ?? ''
+      })
+      if (precondition) {
+        useAccountPreconditionDialog().open(precondition, {
+          nodeType: detail.node_type
         })
       } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
         useExecutionErrorStore().showErrorOverlay()
@@ -1697,6 +1692,24 @@ export class ComfyApp {
               this.canvas.draw(true, true)
             }
           } catch (error: unknown) {
+            const preconditionResponseError =
+              error instanceof PromptExecutionError &&
+              typeof error.response.error === 'object'
+                ? error.response.error
+                : undefined
+            const promptPrecondition = preconditionResponseError
+              ? resolveAccountPrecondition({
+                  exceptionType: preconditionResponseError.type,
+                  exceptionMessage: preconditionResponseError.message
+                })
+              : undefined
+            // Account preconditions (sign-in, subscription, credits) open their
+            // own modal and must stay out of the error panel and error count.
+            if (promptPrecondition) {
+              useAccountPreconditionDialog().open(promptPrecondition)
+              console.error(error)
+              break
+            }
             if (
               error instanceof PromptExecutionError &&
               typeof error.response.error === 'object' &&
