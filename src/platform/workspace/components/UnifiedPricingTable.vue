@@ -337,11 +337,7 @@
             </span>
             <div class="flex flex-col gap-3">
               <span class="text-sm/relaxed font-normal text-muted-foreground">
-                {{
-                  t('subscription.enterprise.needMoreMembers', {
-                    count: TEAM_MAX_MEMBERS
-                  })
-                }}
+                {{ t('subscription.enterprise.needMoreMembers') }}
               </span>
               <span class="text-sm/relaxed font-normal text-muted-foreground">
                 {{ t('subscription.enterprise.flexibility') }}
@@ -380,31 +376,34 @@
         </a>
       </template>
       <template #questions>
-        <button
-          type="button"
-          class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
-          @click="handleQuestions"
+        <a
+          :href="QUESTIONS_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
         >
           {{ t('subscription.pricingBlurbQuestions') }}
-        </button>
+        </a>
       </template>
       <template #enterpriseDiscussions>
-        <button
-          type="button"
-          class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
-          @click="handleViewEnterprise"
+        <a
+          :href="ENTERPRISE_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
         >
           {{ t('subscription.pricingBlurbEnterprise') }}
-        </button>
+        </a>
       </template>
       <template #clickHere>
-        <button
-          type="button"
-          class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
-          @click="handleViewPricing"
+        <a
+          :href="PRICING_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
         >
           {{ t('subscription.pricingBlurbClickHere') }}
-        </button>
+        </a>
       </template>
     </I18nT>
   </div>
@@ -432,6 +431,7 @@ import type {
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
+  getDiscountedMonthlyUsd,
   TEAM_PLAN_CREDIT_STOPS
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
@@ -475,11 +475,14 @@ const showTeam = computed(() => flags.teamWorkspacesEnabled)
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
-const TEAM_MAX_MEMBERS = 30
-
 /** The Wan 2.2 i2v template the video estimates are based on. */
 const VIDEO_TEMPLATE_URL =
   'https://cloud.comfy.org/?template=video_wan2_2_14B_i2v'
+
+/** External footnote destinations — rendered as real links (open in a new tab). */
+const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
+const ENTERPRISE_URL = 'https://www.comfy.org/enterprise'
+const PRICING_URL = 'https://www.comfy.org/pricing'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
  *  plan's template-based estimate until the BE carries a team figure. */
@@ -745,18 +748,17 @@ function onTeamChange(stop: { index: number; usd: number; credits: number }) {
 
 function handleSubscribeTeam() {
   if (isLoading) return
-  emit('subscribeTeam', { usd: teamUsd.value, credits: teamCredits.value })
-}
-
-function handleQuestions() {
-  window.open('https://portal.usepylon.com/comfy-org/forms/question', '_blank')
+  emit('subscribeTeam', {
+    usd: teamUsd.value,
+    credits: teamCredits.value,
+    discountedUsd: getDiscountedMonthlyUsd(
+      teamUsd.value,
+      currentBillingCycle.value
+    )
+  })
 }
 
 function handleViewEnterprise() {
-  window.open('https://www.comfy.org/enterprise', '_blank')
-}
-
-function handleViewPricing() {
-  window.open('https://www.comfy.org/pricing', '_blank')
+  window.open(ENTERPRISE_URL, '_blank')
 }
 </script>
