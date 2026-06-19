@@ -191,6 +191,7 @@
     <!-- Upsell Banner -->
     <MemberUpsellBanner
       v-if="!isOnTeamPlan"
+      :reactivate="hasLapsedTeamPlan"
       @show-plans="showSubscriptionDialog()"
     />
     <!-- Need More Members Footer -->
@@ -233,6 +234,7 @@ const {
   activeView,
   maxSeats,
   isOnTeamPlan,
+  hasLapsedTeamPlan,
   hasMultipleMembers,
   showSearch,
   showViewTabs,

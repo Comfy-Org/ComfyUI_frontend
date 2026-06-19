@@ -2669,7 +2669,9 @@
         "removeMember": "Remove member"
       },
       "upsellBanner": "To add teammates, upgrade your plan.",
+      "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
       "upgradeToTeam": "Upgrade to Team",
+      "reactivateTeam": "Reactivate Team",
       "needMoreMembers": "Need more members?",
       "contactUs": "Contact us",
       "noInvites": "No pending invites",

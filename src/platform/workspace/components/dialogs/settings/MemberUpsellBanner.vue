@@ -5,7 +5,11 @@
     <div class="flex items-center gap-2">
       <i class="icon-[lucide--info] size-4 shrink-0 text-muted-foreground" />
       <p class="m-0 text-sm text-muted-foreground">
-        {{ $t('workspacePanel.members.upsellBanner') }}
+        {{
+          reactivate
+            ? $t('workspacePanel.members.upsellBannerReactivate')
+            : $t('workspacePanel.members.upsellBanner')
+        }}
       </p>
     </div>
     <Button
@@ -14,13 +18,21 @@
       class="max-sm:w-full"
       @click="$emit('showPlans')"
     >
-      {{ $t('workspacePanel.members.upgradeToTeam') }}
+      {{
+        reactivate
+          ? $t('workspacePanel.members.reactivateTeam')
+          : $t('workspacePanel.members.upgradeToTeam')
+      }}
     </Button>
   </div>
 </template>
 
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
+
+const { reactivate = false } = defineProps<{
+  reactivate?: boolean
+}>()
 
 defineEmits<{
   showPlans: []

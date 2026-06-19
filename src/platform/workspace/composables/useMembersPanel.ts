@@ -93,7 +93,7 @@ export function useMembersPanel() {
   const { resendInvite } = workspaceStore
   const { permissions, uiConfig } = useWorkspaceUI()
   const { showSubscriptionDialog } = useBillingContext()
-  const { isOnTeamPlan, isCancelled } = useTeamPlan()
+  const { isOnTeamPlan, isCancelled, hasLapsedTeamPlan } = useTeamPlan()
 
   // The team plan caps members at a flat MAX_WORKSPACE_MEMBERS, independent of
   // the subscription tier.
@@ -227,6 +227,7 @@ export function useMembersPanel() {
     selectedMember,
     maxSeats,
     isOnTeamPlan,
+    hasLapsedTeamPlan,
     hasMultipleMembers,
     showSearch,
     showViewTabs,
