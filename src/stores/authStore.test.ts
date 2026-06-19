@@ -519,9 +519,9 @@ describe('useAuthStore', () => {
       await store.logout()
       await store.register('clear@example.com', 'password')
 
-      expect(
-        firebaseAuth.createUserWithEmailAndPassword
-      ).toHaveBeenCalledTimes(2)
+      expect(firebaseAuth.createUserWithEmailAndPassword).toHaveBeenCalledTimes(
+        2
+      )
     })
   })
 
