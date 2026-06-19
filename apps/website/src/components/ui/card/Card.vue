@@ -12,7 +12,7 @@ const { class: className } = defineProps<{
     data-slot="card"
     :class="
       cn(
-        'bg-transparency-ink-t80 text-primary-warm-white flex flex-col gap-6 rounded-3xl border shadow-sm',
+        'bg-transparency-white-t4 text-primary-warm-white rounded-4.5xl flex flex-col gap-6 shadow-sm',
         className
       )
     "

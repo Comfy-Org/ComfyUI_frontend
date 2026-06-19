@@ -34,7 +34,7 @@ function resolveRel(cta: Cta): AnchorHTMLAttributes['rel'] {
     class="max-w-9xl mx-auto flex flex-col items-center px-6 py-16 text-center lg:py-24"
   >
     <h2
-      class="text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
+      class="max-w-3xl text-4xl/tight font-light tracking-tight text-pretty text-primary-comfy-canvas lg:text-6xl"
     >
       {{ heading }}
     </h2>
@@ -45,7 +45,7 @@ function resolveRel(cta: Cta): AnchorHTMLAttributes['rel'] {
         :href="primaryCta.href"
         :target="primaryCta.target"
         :rel="resolveRel(primaryCta)"
-        variant="outline"
+        variant="default"
         size="lg"
       >
         {{ primaryCta.label }}

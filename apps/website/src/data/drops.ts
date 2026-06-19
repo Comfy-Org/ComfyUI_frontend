@@ -38,7 +38,7 @@ export const drops: readonly Drop[] = [
     id: 'desktop-client',
     badge: NEW_BADGE,
     category: PLATFORM,
-    image: imageFor('desktop-client', {
+    image: imageFor('placeholder.jpeg', {
       en: 'New Desktop Client',
       'zh-CN': '新桌面客户端'
     }),
@@ -56,7 +56,10 @@ export const drops: readonly Drop[] = [
     id: 'app-mode',
     badge: NEW_BADGE,
     category: PLATFORM,
-    image: imageFor('app-mode', { en: 'App Mode', 'zh-CN': 'App 模式' }),
+    image: imageFor('placeholder.jpeg', {
+      en: 'App Mode',
+      'zh-CN': 'App 模式'
+    }),
     title: { en: 'App Mode', 'zh-CN': 'App 模式' },
     description: {
       en: 'A simplified view of your workflows. Flip back to the node graph anytime to go deeper.',
@@ -72,7 +75,10 @@ export const drops: readonly Drop[] = [
     id: 'comfy-api',
     badge: NEW_BADGE,
     category: DEVELOPER,
-    image: imageFor('comfy-api', { en: 'Comfy API', 'zh-CN': 'Comfy API' }),
+    image: imageFor('placeholder.jpeg', {
+      en: 'Comfy API',
+      'zh-CN': 'Comfy API'
+    }),
     title: { en: 'Comfy API', 'zh-CN': 'Comfy API' },
     description: {
       en: 'Turn any workflow into a production endpoint. Automate generation and scale to thousands of outputs.',
@@ -87,7 +93,7 @@ export const drops: readonly Drop[] = [
     id: 'comfy-cloud',
     badge: FEATURED_BADGE,
     category: CLOUD,
-    image: imageFor('comfy-cloud', {
+    image: imageFor('placeholder.jpeg', {
       en: 'Comfy Cloud',
       'zh-CN': 'Comfy Cloud'
     }),
@@ -104,7 +110,7 @@ export const drops: readonly Drop[] = [
   {
     id: 'community-workflows',
     category: COMMUNITY,
-    image: imageFor('community-workflows', {
+    image: imageFor('placeholder.jpeg', {
       en: 'Community Workflows on Comfy Hub',
       'zh-CN': 'Comfy Hub 上的社区工作流'
     }),
@@ -124,7 +130,7 @@ export const drops: readonly Drop[] = [
   {
     id: 'supported-models',
     category: MODELS_AND_NODES,
-    image: imageFor('supported-models', {
+    image: imageFor('placeholder.jpeg', {
       en: 'Supported Models',
       'zh-CN': '支持的模型'
     }),
@@ -142,7 +148,7 @@ export const drops: readonly Drop[] = [
   {
     id: 'supported-nodes',
     category: MODELS_AND_NODES,
-    image: imageFor('supported-nodes', {
+    image: imageFor('placeholder.jpeg', {
       en: 'Supported Nodes',
       'zh-CN': '支持的节点'
     }),
@@ -163,7 +169,7 @@ export const drops: readonly Drop[] = [
   {
     id: 'comfy-enterprise',
     category: CLOUD,
-    image: imageFor('comfy-enterprise', {
+    image: imageFor('placeholder.jpeg', {
       en: 'Comfy Enterprise',
       'zh-CN': 'Comfy 企业版'
     }),
@@ -180,7 +186,7 @@ export const drops: readonly Drop[] = [
   {
     id: 'learning-hub',
     category: COMMUNITY,
-    image: imageFor('learning-hub', {
+    image: imageFor('placeholder.jpeg', {
       en: 'Learning Hub',
       'zh-CN': '学习中心'
     }),
@@ -198,7 +204,7 @@ export const drops: readonly Drop[] = [
     id: 'share-comfy',
     badge: NEW_BADGE,
     category: COMMUNITY,
-    image: imageFor('share-comfy', {
+    image: imageFor('placeholder.jpeg', {
       en: 'Share Comfy with your audience',
       'zh-CN': '与您的受众分享 Comfy'
     }),

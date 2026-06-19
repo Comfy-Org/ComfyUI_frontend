@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import type { Drop } from '../../data/drops'
 import type { Locale } from '../../i18n/translations'
+import Badge from '../ui/badge/Badge.vue'
 
-import Button from '../ui/button/Button.vue'
+import ButtonPill from '../ui/button-pill/ButtonPill.vue'
 import Card from '../ui/card/Card.vue'
-import CardContent from '../ui/card/CardContent.vue'
+import CardDescription from '../ui/card/CardDescription.vue'
 import CardFooter from '../ui/card/CardFooter.vue'
 import CardHeader from '../ui/card/CardHeader.vue'
+import CardTitle from '../ui/card/CardTitle.vue'
 
 const { drop, locale } = defineProps<{
   drop: Drop
@@ -16,44 +18,40 @@ const { drop, locale } = defineProps<{
 
 <template>
   <Card class="overflow-hidden">
-    <CardHeader class="p-0">
-      <div class="relative">
-        <img
-          :src="drop.image.src"
-          :alt="drop.image.alt[locale]"
-          loading="lazy"
-          decoding="async"
-          class="aspect-video w-full object-cover"
-        />
-        <span
-          v-if="drop.badge"
-          class="bg-primary-comfy-yellow absolute top-3 left-3 px-2 py-0.5 text-[10px] font-bold tracking-wide text-primary-comfy-ink uppercase"
-        >
-          {{ drop.badge[locale] }}
-        </span>
-      </div>
+    <div class="relative p-2">
+      <img
+        :src="drop.image.src"
+        :alt="drop.image.alt[locale]"
+        loading="lazy"
+        decoding="async"
+        class="aspect-video w-full overflow-hidden rounded-4xl object-cover"
+      />
+      <Badge v-if="drop.badge" variant="accent" class="absolute top-6 left-8">
+        {{ drop.badge[locale] }}
+      </Badge>
+    </div>
+
+    <CardHeader class="gap-2 px-6">
+      <Badge variant="ghost">
+        {{ drop.category[locale] }}
+      </Badge>
+      <CardTitle class="pt-4">
+        {{ drop.title[locale] }}
+      </CardTitle>
+      <CardDescription>
+        {{ drop.description[locale] }}
+      </CardDescription>
     </CardHeader>
 
-    <CardContent class="flex flex-col gap-2 px-6">
-      <p
-        class="text-xs font-medium tracking-wider text-primary-comfy-canvas/70 uppercase"
-      >
-        {{ drop.category[locale] }}
-      </p>
-      <h3
-        class="text-primary-warm-white line-clamp-1 text-lg font-semibold tracking-tight"
-      >
-        {{ drop.title[locale] }}
-      </h3>
-      <p class="text-sm/relaxed text-primary-comfy-canvas/80">
-        {{ drop.description[locale] }}
-      </p>
-    </CardContent>
-
     <CardFooter class="px-6 pb-6">
-      <Button as="a" :href="drop.cta.href[locale]" variant="link">
+      <ButtonPill
+        as="a"
+        :href="drop.cta.href[locale]"
+        variant="ghost"
+        icon-position="left"
+      >
         {{ drop.cta.label[locale] }}
-      </Button>
+      </ButtonPill>
     </CardFooter>
   </Card>
 </template>

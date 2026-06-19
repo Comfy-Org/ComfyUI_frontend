@@ -57,7 +57,7 @@ function resolveRel(cta: Cta): AnchorHTMLAttributes['rel'] {
     </p>
 
     <h1
-      class="text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
+      class="max-w-3xl text-4xl/tight font-light tracking-tight text-pretty text-primary-comfy-canvas lg:text-6xl"
     >
       {{ title }}
     </h1>
