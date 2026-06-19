@@ -235,8 +235,9 @@
                    cycle halves the yearly discount when monthly. -->
               <CreditSlider
                 v-model="teamUsd"
+                :stops="teamStops"
+                :default-stop-index="teamDefaultStopIndex"
                 :cycle="currentBillingCycle"
-                @change="onTeamChange"
               />
 
               <!-- Selected credit grant + template-based video estimate -->
@@ -430,9 +431,11 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS
+  TEAM_PLAN_CREDIT_STOPS,
+  mapApiTeamCreditStops
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -457,14 +460,9 @@ const {
 const emit = defineEmits<{
   subscribe: [payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }]
   resubscribe: []
-  // Team-plan checkout. NOTE: the slider stop -> plan-slug mapping is blocked on
-  // the BE discount-breakpoint contract (FE-934 / doc Open Q#2); the host shows
-  // the confirm step but stubs the final subscribe until the contract lands.
-  // TODO(FE-934): once the contract lands, also carry `currentBillingCycle`
-  // (yearly | monthly) so checkout subscribes to the selected cycle, not just
-  // the stop. The pricing-table view already toggles cycle; the confirm/checkout
-  // chain still assumes yearly.
-  subscribeTeam: [payload: TeamPlanSelection]
+  subscribeTeam: [
+    payload: { stop: TeamPlanSelection; billingCycle: BillingCycle }
+  ]
 }>()
 
 const { t, n } = useI18n()
@@ -612,17 +610,41 @@ const {
   subscription
 } = useBillingContext()
 
+const { teamCreditStops } = useBillingPlans()
+
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
-// Team plan selection (slider). Stop -> slug mapping is BE-blocked (see emit).
-const teamUsd = ref<number>(
-  TEAM_PLAN_CREDIT_STOPS[DEFAULT_TEAM_PLAN_STOP_INDEX].usd
+// Team credit stops: backend-sourced when the API supplies them, otherwise the
+// hardcoded DES-197 fallback so OSS / pre-deploy still renders.
+const teamStops = computed(() =>
+  teamCreditStops.value
+    ? mapApiTeamCreditStops(teamCreditStops.value.stops)
+    : TEAM_PLAN_CREDIT_STOPS
 )
-const teamCredits = ref<number>(
-  TEAM_PLAN_CREDIT_STOPS[DEFAULT_TEAM_PLAN_STOP_INDEX].credits
+const teamDefaultStopIndex = computed(
+  () =>
+    teamCreditStops.value?.default_stop_index ?? DEFAULT_TEAM_PLAN_STOP_INDEX
 )
+const defaultTeamStop = computed(
+  () =>
+    teamStops.value[teamDefaultStopIndex.value] ??
+    teamStops.value[0] ??
+    TEAM_PLAN_CREDIT_STOPS[DEFAULT_TEAM_PLAN_STOP_INDEX]
+)
+
+const teamUsd = ref<number>(defaultTeamStop.value.usd)
+
+// The selected stop follows the slider's USD value; when it matches none (e.g.
+// the API stops loaded after mount with different breakpoints) it falls back to
+// the default stop so the id/credits stay consistent with what's displayed.
+const selectedTeamStop = computed(
+  () =>
+    teamStops.value.find((stop) => stop.usd === teamUsd.value) ??
+    defaultTeamStop.value
+)
+const teamCredits = computed(() => selectedTeamStop.value.credits)
 const teamVideoEstimate = computed(() =>
   Math.round(teamCredits.value * VIDEO_PER_CREDIT)
 )
@@ -738,14 +760,13 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
   emit('subscribe', { tierKey, billingCycle: currentBillingCycle.value })
 }
 
-function onTeamChange(stop: { index: number; usd: number; credits: number }) {
-  teamUsd.value = stop.usd
-  teamCredits.value = stop.credits
-}
-
 function handleSubscribeTeam() {
   if (isLoading) return
-  emit('subscribeTeam', { usd: teamUsd.value, credits: teamCredits.value })
+  const stop = selectedTeamStop.value
+  emit('subscribeTeam', {
+    stop: { id: stop.id, usd: stop.usd, credits: stop.credits },
+    billingCycle: currentBillingCycle.value
+  })
 }
 
 function handleQuestions() {

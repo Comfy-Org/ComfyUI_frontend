@@ -334,18 +334,42 @@ describe('workspaceApi', () => {
       const data = { billing_op_id: 'op-1', status: 'subscribed' }
       mockAxiosInstance.post.mockResolvedValue({ data })
 
-      const result = await workspaceApi.subscribe(
-        'pro-monthly',
-        'https://return.url',
-        'https://cancel.url'
-      )
+      const result = await workspaceApi.subscribe('pro-monthly', {
+        returnUrl: 'https://return.url',
+        cancelUrl: 'https://cancel.url'
+      })
 
       expect(mockAxiosInstance.post).toHaveBeenCalledWith(
         '/api/billing/subscribe',
         {
           plan_slug: 'pro-monthly',
           return_url: 'https://return.url',
-          cancel_url: 'https://cancel.url'
+          cancel_url: 'https://cancel.url',
+          team_credit_stop_id: undefined,
+          billing_cycle: undefined
+        },
+        { headers: AUTH_HEADER }
+      )
+      expect(result).toEqual(data)
+    })
+
+    it('subscribe() sends team_credit_stop_id and billing_cycle for team plans', async () => {
+      const data = { billing_op_id: 'op-1b', status: 'needs_payment_method' }
+      mockAxiosInstance.post.mockResolvedValue({ data })
+
+      const result = await workspaceApi.subscribe('team_per_credit_annual', {
+        teamCreditStopId: 'team_700',
+        billingCycle: 'yearly'
+      })
+
+      expect(mockAxiosInstance.post).toHaveBeenCalledWith(
+        '/api/billing/subscribe',
+        {
+          plan_slug: 'team_per_credit_annual',
+          return_url: undefined,
+          cancel_url: undefined,
+          team_credit_stop_id: 'team_700',
+          billing_cycle: 'yearly'
         },
         { headers: AUTH_HEADER }
       )

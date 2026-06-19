@@ -2562,7 +2562,7 @@
       "perkProjectAssets": "Project & asset management",
       "cta": "Subscribe to Team Yearly",
       "ctaMonthly": "Subscribe to Team Monthly",
-      "checkoutComingSoon": "Team plan checkout is coming soon."
+      "unavailable": "This team plan is not available right now."
     },
     "enterprise": {
       "name": "Enterprise",
