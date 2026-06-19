@@ -103,7 +103,7 @@ export function isExtensionOriginPreloadError(
   error: Error,
   info: PreloadErrorInfo
 ): boolean {
-  if (info.url && isExtensionFileUrl(info.url)) return true
+  if (info.url) return isExtensionFileUrl(info.url)
 
   const stack = error?.stack
   if (typeof stack !== 'string') return false

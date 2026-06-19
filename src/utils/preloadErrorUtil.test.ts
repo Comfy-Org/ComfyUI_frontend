@@ -142,6 +142,19 @@ describe('isExtensionOriginPreloadError', () => {
     expect(isExtensionOriginPreloadError(error, info)).toBe(false)
   })
 
+  it('does not flag a first-party url even when the stack contains an extension frame', () => {
+    const error = makeError(
+      'Failed to fetch dynamically imported module: https://example.com/assets/vendor-three-def456.js',
+      [
+        'Error: Failed to fetch dynamically imported module: https://example.com/assets/vendor-three-def456.js',
+        '    at https://example.com/extensions/SomePack/js/init.js:1:100'
+      ].join('\n')
+    )
+    const info = parsePreloadError(error)
+
+    expect(isExtensionOriginPreloadError(error, info)).toBe(false)
+  })
+
   it('does not flag evaluation errors with first-party stacks', () => {
     const error = makeError(
       'Some chunk evaluation failure',
