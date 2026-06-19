@@ -111,7 +111,7 @@ const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
-const { isBuilderMode } = useAppMode()
+const { isBuilderMode, mode, isAppMode } = useAppMode()
 const { linearMode } = storeToRefs(useCanvasStore())
 
 watch(linearMode, (isLinear) => {
@@ -354,7 +354,12 @@ const onGraphReady = () => {
 
     // Shell layout snapshot, once per session (cloud only)
     if (isCloud && telemetry) {
-      telemetry.trackShellLayout(getShellLayoutSnapshot())
+      telemetry.trackShellLayout(
+        getShellLayoutSnapshot({
+          view_mode: mode.value,
+          is_app_mode: isAppMode.value
+        })
+      )
     }
 
     // Setting values now available after comfyApp.setup.
