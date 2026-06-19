@@ -81,6 +81,7 @@
     <SubscriptionAddPaymentPreviewWorkspace
       v-else-if="checkoutStep === 'preview' && selectedTeamStop"
       :team-plan="selectedTeamStop"
+      :billing-cycle="selectedBillingCycle"
       :is-loading="isSubscribing || isPolling"
       @add-credit-card="handleTeamSubscribe"
       @back="handleBackToPricing"
