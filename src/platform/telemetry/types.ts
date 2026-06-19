@@ -17,6 +17,7 @@ import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricin
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AuditLog } from '@/services/customerEventsService'
 import type { AppMode } from '@/utils/appMode'
+import type { TemplateContentType } from '@/schemas/apiSchema'
 
 /**
  * Authentication metadata for sign-up tracking
@@ -343,6 +344,7 @@ export interface TemplateFilterMetadata {
     | 'newest'
     | 'vram-low-to-high'
     | 'model-size-low-to-high'
+  content_type?: TemplateContentType
   filtered_count: number
   total_count: number
 }

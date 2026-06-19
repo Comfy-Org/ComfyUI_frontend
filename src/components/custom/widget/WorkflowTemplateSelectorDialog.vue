@@ -46,6 +46,19 @@
           :ref="primeVueOverlay.overlayScopeRef"
           class="flex flex-wrap gap-2"
         >
+          <!-- Content Type Filter -->
+          <SingleSelect
+            v-model="contentType"
+            :label="$t('templateWorkflows.contentTypeFilter', 'Type')"
+            :options="contentTypeOptions"
+            :content-style="selectContentStyle"
+            class="w-37.5"
+          >
+            <template #icon>
+              <i class="icon-[lucide--layout-grid] text-muted-foreground" />
+            </template>
+          </SingleSelect>
+
           <!-- Model Filter -->
           <MultiSelect
             v-model="selectedModelObjects"
@@ -426,21 +439,30 @@ import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
 import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
-import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import {
+  isAppTemplate,
+  useTemplateFiltering
+} from '@/composables/useTemplateFiltering'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+import type { TemplateContentType } from '@/schemas/apiSchema'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { createGridStyle } from '@/utils/gridUtil'
 
 const { t } = useI18n()
 
-const { onClose: originalOnClose, initialCategory = 'all' } = defineProps<{
+const {
+  onClose: originalOnClose,
+  initialCategory = 'all',
+  initialContentType
+} = defineProps<{
   onClose: () => void
   initialCategory?: string
+  initialContentType?: TemplateContentType
 }>()
 
 // Track session time for telemetry
@@ -481,8 +503,6 @@ const {
 
 const getEffectiveSourceModule = (template: TemplateInfo) =>
   template.sourceModule || 'default'
-
-const isAppTemplate = (template: TemplateInfo) => template.name.endsWith('.app')
 
 const getBaseThumbnailSrc = (template: TemplateInfo) => {
   const sm = getEffectiveSourceModule(template)
@@ -560,6 +580,7 @@ const {
   selectedUseCases,
   selectedRunsOn,
   sortBy,
+  contentType,
   activeModels,
   activeUseCases,
   filteredTemplates,
@@ -570,7 +591,7 @@ const {
   totalCount,
   resetFilters,
   loadFuseOptions
-} = useTemplateFiltering(navigationFilteredTemplates)
+} = useTemplateFiltering(navigationFilteredTemplates, { initialContentType })
 
 /**
  * Raw search input bound to the search box. The actual `searchQuery` consumed
@@ -691,6 +712,12 @@ const runsOnOptions = computed(() =>
     value: runsOn
   }))
 )
+
+const contentTypeOptions = computed(() => [
+  { name: t('templateWorkflows.contentType.all', 'All'), value: 'all' },
+  { name: t('templateWorkflows.contentType.app', 'App'), value: 'app' },
+  { name: t('templateWorkflows.contentType.graph', 'Graph'), value: 'graph' }
+])
 
 // Filter labels
 const modelFilterLabel = computed(() => {

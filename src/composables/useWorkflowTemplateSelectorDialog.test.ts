@@ -44,6 +44,7 @@ import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelector
 describe('useWorkflowTemplateSelectorDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
   })
 
   describe('show', () => {
@@ -131,6 +132,48 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const onClose =
         mockDialogService.showLayoutDialog.mock.calls[0][0].props.onClose
       expect(() => onClose()).not.toThrow()
+    })
+
+    it('seeds the app content type when the onboarding prefers-app flag is set', () => {
+      mockNewUserService.isNewUser.mockReturnValue(false)
+      localStorage.setItem('Comfy.Onboarding.PreferAppTemplates', 'true')
+
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show()
+
+      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          props: expect.objectContaining({
+            initialContentType: 'app'
+          })
+        })
+      )
+    })
+
+    it('consumes the prefers-app flag so a reopen no longer seeds app', () => {
+      mockNewUserService.isNewUser.mockReturnValue(false)
+      localStorage.setItem('Comfy.Onboarding.PreferAppTemplates', 'true')
+
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show()
+      dialog.show()
+
+      expect(
+        mockDialogService.showLayoutDialog.mock.calls[1][0].props
+          .initialContentType
+      ).toBeUndefined()
+    })
+
+    it('does not seed a content type without the flag', () => {
+      mockNewUserService.isNewUser.mockReturnValue(false)
+
+      const dialog = useWorkflowTemplateSelectorDialog()
+      dialog.show()
+
+      expect(
+        mockDialogService.showLayoutDialog.mock.calls[0][0].props
+          .initialContentType
+      ).toBeUndefined()
     })
 
     it('tracks telemetry with source', () => {

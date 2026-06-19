@@ -4,6 +4,8 @@ import type { IFuseOptions } from 'fuse.js'
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
+import type { TemplateContentType } from '@/schemas/apiSchema'
+
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
@@ -26,6 +28,11 @@ function isTemplateVisibleForDistributions(
   return distributions.some((d) => template.includeOnDistributions!.includes(d))
 }
 
+/** App templates are identified by their `.app` filename suffix. */
+export function isAppTemplate(template: TemplateInfo): boolean {
+  return template.name.endsWith('.app')
+}
+
 // Fuse.js configuration for fuzzy search
 const defaultFuseOptions: IFuseOptions<TemplateInfo> = {
   keys: [
@@ -41,7 +48,8 @@ const defaultFuseOptions: IFuseOptions<TemplateInfo> = {
 }
 
 export function useTemplateFiltering(
-  templates: Ref<TemplateInfo[]> | TemplateInfo[]
+  templates: Ref<TemplateInfo[]> | TemplateInfo[],
+  options: { initialContentType?: TemplateContentType } = {}
 ) {
   const settingStore = useSettingStore()
   const systemStatsStore = useSystemStatsStore()
@@ -66,6 +74,18 @@ export function useTemplateFiltering(
     | 'vram-low-to-high'
     | 'model-size-low-to-high'
   >(settingStore.get('Comfy.Templates.SortBy'))
+
+  const contentType = ref<TemplateContentType>(
+    options.initialContentType ??
+      settingStore.get('Comfy.Templates.ContentType')
+  )
+  // A seeded content type (e.g. from onboarding) persists so it survives reopen.
+  if (options.initialContentType) {
+    void settingStore.set(
+      'Comfy.Templates.ContentType',
+      options.initialContentType
+    )
+  }
 
   const fuseOptions = ref<IFuseOptions<TemplateInfo>>(defaultFuseOptions)
 
@@ -221,8 +241,18 @@ export function useTemplateFiltering(
     })
   })
 
+  const filteredByContentType = computed(() => {
+    if (contentType.value === 'all') {
+      return filteredByRunsOn.value
+    }
+    const wantApp = contentType.value === 'app'
+    return filteredByRunsOn.value.filter(
+      (template) => isAppTemplate(template) === wantApp
+    )
+  })
+
   watch(
-    filteredByRunsOn,
+    filteredByContentType,
     (templates) => {
       rankingStore.largestUsageScore = Math.max(
         ...templates.map((t) => t.usage || 0)
@@ -232,7 +262,7 @@ export function useTemplateFiltering(
   )
 
   const sortedTemplates = computed(() => {
-    const templates = [...filteredByRunsOn.value]
+    const templates = [...filteredByContentType.value]
 
     switch (sortBy.value) {
       case 'recommended':
@@ -292,6 +322,7 @@ export function useTemplateFiltering(
     selectedUseCases.value = []
     selectedRunsOn.value = []
     sortBy.value = 'default'
+    contentType.value = 'all'
   }
 
   const removeModelFilter = (model: string) => {
@@ -318,6 +349,7 @@ export function useTemplateFiltering(
       selected_use_cases: selectedUseCases.value,
       selected_runs_on: selectedRunsOn.value,
       sort_by: sortBy.value,
+      content_type: contentType.value,
       filtered_count: filteredCount.value,
       total_count: totalCount.value
     })
@@ -332,7 +364,14 @@ export function useTemplateFiltering(
 
   // Watch for filter changes and track them
   watch(
-    [searchQuery, selectedModels, selectedUseCases, selectedRunsOn, sortBy],
+    [
+      searchQuery,
+      selectedModels,
+      selectedUseCases,
+      selectedRunsOn,
+      sortBy,
+      contentType
+    ],
     () => {
       // Only track if at least one filter is active (to avoid tracking initial state)
       const hasActiveFilters =
@@ -340,7 +379,8 @@ export function useTemplateFiltering(
         selectedModels.value.length > 0 ||
         selectedUseCases.value.length > 0 ||
         selectedRunsOn.value.length > 0 ||
-        sortBy.value !== 'default'
+        sortBy.value !== 'default' ||
+        contentType.value !== 'all'
 
       if (hasActiveFilters) {
         debouncedTrackFilterChange()
@@ -382,6 +422,14 @@ export function useTemplateFiltering(
     { debounce: 500 }
   )
 
+  watchDebounced(
+    contentType,
+    (newValue) => {
+      void settingStore.set('Comfy.Templates.ContentType', newValue)
+    },
+    { debounce: 500 }
+  )
+
   return {
     // State
     searchQuery,
@@ -389,6 +437,7 @@ export function useTemplateFiltering(
     selectedUseCases,
     selectedRunsOn,
     sortBy,
+    contentType,
 
     // Computed - Active filters (actually applied)
     activeModels,

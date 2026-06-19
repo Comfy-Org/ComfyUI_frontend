@@ -304,6 +304,9 @@ const zPreviewMethod = z.enum([
 ])
 export type PreviewMethod = z.infer<typeof zPreviewMethod>
 
+const zTemplateContentType = z.enum(['all', 'app', 'graph'])
+export type TemplateContentType = z.infer<typeof zTemplateContentType>
+
 const zSettings = z.object({
   'Comfy.ColorPalette': z.string(),
   'Comfy.CustomColorPalettes': colorPalettesSchema,
@@ -473,6 +476,7 @@ const zSettings = z.object({
     'vram-low-to-high',
     'model-size-low-to-high'
   ]),
+  'Comfy.Templates.ContentType': zTemplateContentType,
   /** Settings used for testing */
   'test.setting': z.any(),
   'main.sub.setting.name': z.any(),

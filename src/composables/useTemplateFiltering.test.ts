@@ -16,6 +16,8 @@ const defaultSettingStore = {
         return []
       case 'Comfy.Templates.SortBy':
         return 'newest'
+      case 'Comfy.Templates.ContentType':
+        return 'all'
       default:
         return undefined
     }
@@ -51,9 +53,10 @@ vi.mock('@/stores/systemStatsStore', () => ({
   useSystemStatsStore: vi.fn(() => mockSystemStatsStore)
 }))
 
+const mockTrackTemplateFilterChanged = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({
-    trackTemplateFilterChanged: vi.fn(),
+    trackTemplateFilterChanged: mockTrackTemplateFilterChanged,
     trackSearchQuery: vi.fn()
   }))
 }))
@@ -780,6 +783,77 @@ describe('useTemplateFiltering', () => {
 
       expect(filteredCount.value).toBe(1)
       expect(filteredTemplates.value[0].name).toBe('mac-template')
+    })
+  })
+
+  describe('content type filter', () => {
+    const makeTemplates = () =>
+      ref<TemplateInfo[]>([
+        {
+          name: 'flux-image.app',
+          description: 'An app template',
+          mediaType: 'image',
+          mediaSubtype: 'png'
+        },
+        {
+          name: 'flux-graph',
+          description: 'A graph template',
+          mediaType: 'image',
+          mediaSubtype: 'png'
+        }
+      ])
+
+    it('shows every template when content type is "all"', () => {
+      const { filteredTemplates } = useTemplateFiltering(makeTemplates())
+
+      expect(filteredTemplates.value.map((t) => t.name)).toEqual([
+        'flux-image.app',
+        'flux-graph'
+      ])
+    })
+
+    it('keeps only .app templates when content type is "app"', () => {
+      const { contentType, filteredTemplates } = useTemplateFiltering(
+        makeTemplates(),
+        { initialContentType: 'app' }
+      )
+
+      expect(contentType.value).toBe('app')
+      expect(filteredTemplates.value.map((t) => t.name)).toEqual([
+        'flux-image.app'
+      ])
+    })
+
+    it('excludes .app templates when content type is "graph"', async () => {
+      const { contentType, filteredTemplates } =
+        useTemplateFiltering(makeTemplates())
+
+      contentType.value = 'graph'
+      await nextTick()
+
+      expect(filteredTemplates.value.map((t) => t.name)).toEqual(['flux-graph'])
+    })
+
+    it('persists a seeded content type so it survives reopen', () => {
+      useTemplateFiltering(makeTemplates(), { initialContentType: 'app' })
+
+      expect(defaultSettingStore.set).toHaveBeenCalledWith(
+        'Comfy.Templates.ContentType',
+        'app'
+      )
+    })
+
+    it('tracks a content type change with the content_type payload', async () => {
+      vi.useFakeTimers()
+      const { contentType } = useTemplateFiltering(makeTemplates())
+
+      contentType.value = 'app'
+      await nextTick()
+      await vi.runOnlyPendingTimersAsync()
+
+      expect(mockTrackTemplateFilterChanged).toHaveBeenCalledWith(
+        expect.objectContaining({ content_type: 'app' })
+      )
     })
   })
 })

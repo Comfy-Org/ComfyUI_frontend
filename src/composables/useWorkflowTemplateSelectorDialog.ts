@@ -1,6 +1,8 @@
 import WorkflowTemplateSelectorDialog from '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import type { TemplateLibraryMetadata } from '@/platform/telemetry/types'
+import { consumePreferAppTemplates } from '@/platform/workflow/templates/preferAppTemplates'
+import type { TemplateContentType } from '@/schemas/apiSchema'
 import { useDialogService } from '@/services/dialogService'
 import { useNewUserService } from '@/services/useNewUserService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -19,13 +21,21 @@ export const useWorkflowTemplateSelectorDialog = () => {
 
   function show(
     source: TemplateLibraryMetadata['source'] = 'command',
-    options?: { initialCategory?: string; afterClose?: () => void }
+    options?: {
+      initialCategory?: string
+      initialContentType?: TemplateContentType
+      afterClose?: () => void
+    }
   ) {
     useTelemetry()?.trackTemplateLibraryOpened({ source })
 
     const initialCategory =
       options?.initialCategory ??
       (newUserService.isNewUser() ? GETTING_STARTED_CATEGORY_ID : 'all')
+
+    const initialContentType =
+      options?.initialContentType ??
+      (consumePreferAppTemplates() ? 'app' : undefined)
 
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
@@ -35,7 +45,8 @@ export const useWorkflowTemplateSelectorDialog = () => {
           hide()
           options?.afterClose?.()
         },
-        initialCategory
+        initialCategory,
+        initialContentType
       }
     })
   }

@@ -21,9 +21,11 @@ import {
 import { isCloud } from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTelemetry } from '@/platform/telemetry'
+import { setPreferAppTemplates } from '@/platform/workflow/templates/preferAppTemplates'
 
 import DynamicSurveyForm from './survey/DynamicSurveyForm.vue'
 import { defaultOnboardingSurvey } from './survey/defaultSurveySchema'
+import { prefersAppTemplates } from './survey/familiarity'
 
 const router = useRouter()
 const { flags } = useFeatureFlags()
@@ -60,6 +62,7 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
     return
   }
   isSubmitting.value = true
+  setPreferAppTemplates(prefersAppTemplates(payload.familiarity))
   try {
     await submitSurvey(payload)
     if (isCloud) {

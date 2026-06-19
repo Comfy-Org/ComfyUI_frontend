@@ -1183,6 +1183,12 @@ export const CORE_SETTINGS: SettingParams[] = [
     type: 'hidden',
     defaultValue: 'default'
   },
+  {
+    id: 'Comfy.Templates.ContentType',
+    name: 'Template library - Content type filter',
+    type: 'hidden',
+    defaultValue: 'all'
+  },
 
   /**
    * Nodes 2.0 Settings

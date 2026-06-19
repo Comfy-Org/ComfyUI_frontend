@@ -1114,6 +1114,12 @@
     "useCasesSelected": "{count} Use Cases",
     "runsOnSelected": "{count} Runs On",
     "runsOnFilter": "Runs on",
+    "contentTypeFilter": "Type",
+    "contentType": {
+      "all": "All",
+      "app": "App",
+      "graph": "Graph"
+    },
     "resultsCount": "Showing {count} of {total} templates",
     "sort": {
       "recommended": "Recommended",
