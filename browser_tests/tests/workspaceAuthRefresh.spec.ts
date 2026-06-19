@@ -44,6 +44,11 @@ function makeTokenResponse(
   }
 }
 
+// On app boot, teamWorkspaceStore.initialize() auto-selects Personal Workspace
+// (personal type, no prior localStorage) and calls switchWorkspace → /api/auth/token.
+// This default stub absorbs that init call so per-test mocks only see explicit switches.
+const defaultTokenResponse = makeTokenResponse(mockPersonalWorkspace, 'init-token')
+
 const test = comfyPageFixture.extend({
   page: async ({ page }, use) => {
     await page.route('**/api/features', (route) =>
@@ -68,10 +73,23 @@ const test = comfyPageFixture.extend({
       })
     })
 
+    // Default stub for the init-time auto-switch. Per-test mocks added later
+    // take priority (Playwright matches routes LIFO) and handle explicit switches.
+    await page.route('**/api/auth/token', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(defaultTokenResponse)
+      })
+    )
+
     await use(page)
   }
 })
 
+// Opens the profile popover then the workspace-switcher panel.
+// useWorkspaceSwitch skips switchWorkspace when the target is already active,
+// so always switch to a workspace other than the auto-selected Personal one.
 async function openSwitcherPanel(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Current user' }).click()
   await page.getByTestId('workspace-switcher-trigger').click()
@@ -83,65 +101,16 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
   }) => {
     const page = comfyPage.page
 
+    // Override: explicit switch to Team Workspace returns a specific token.
     await page.route('**/api/auth/token', (route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(
-          makeTokenResponse(mockPersonalWorkspace, 'initial-token')
-        )
+        body: JSON.stringify(makeTokenResponse(mockTeamWorkspace, 'team-token'))
       })
     )
 
     await comfyPage.toast.closeToasts()
-    await openSwitcherPanel(page)
-    await page.getByText('Personal Workspace').click()
-
-    await expect
-      .poll(
-        () =>
-          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
-        { timeout: 5000 }
-      )
-      .toBe('initial-token')
-
-    const expiresAt = await page.evaluate(() =>
-      sessionStorage.getItem('Comfy.Workspace.ExpiresAt')
-    )
-    expect(Number(expiresAt)).toBeGreaterThan(Date.now())
-  })
-
-  test('switching to a different workspace replaces sessionStorage token', async ({
-    comfyPage
-  }) => {
-    const page = comfyPage.page
-
-    let callCount = 0
-    await page.route('**/api/auth/token', (route) => {
-      callCount++
-      const body =
-        callCount === 1
-          ? makeTokenResponse(mockPersonalWorkspace, 'personal-token')
-          : makeTokenResponse(mockTeamWorkspace, 'team-token')
-      return route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(body)
-      })
-    })
-
-    await comfyPage.toast.closeToasts()
-    await openSwitcherPanel(page)
-    await page.getByText('Personal Workspace').click()
-
-    await expect
-      .poll(
-        () =>
-          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
-        { timeout: 5000 }
-      )
-      .toBe('personal-token')
-
     await openSwitcherPanel(page)
     await page.getByText('Team Workspace').click()
 
@@ -153,11 +122,61 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
       )
       .toBe('team-token')
 
+    const expiresAt = await page.evaluate(() =>
+      sessionStorage.getItem('Comfy.Workspace.ExpiresAt')
+    )
+    expect(Number(expiresAt)).toBeGreaterThan(Date.now())
+  })
+
+  test('switching back to personal workspace replaces sessionStorage token', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+
+    let callCount = 0
+    await page.route('**/api/auth/token', (route) => {
+      callCount++
+      const body =
+        callCount === 1
+          ? makeTokenResponse(mockTeamWorkspace, 'team-token')
+          : makeTokenResponse(mockPersonalWorkspace, 'personal-token')
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(body)
+      })
+    })
+
+    await comfyPage.toast.closeToasts()
+
+    // Switch to Team (not the auto-selected Personal)
+    await openSwitcherPanel(page)
+    await page.getByText('Team Workspace').click()
+
+    await expect
+      .poll(
+        () => page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
+        { timeout: 5000 }
+      )
+      .toBe('team-token')
+
+    // Switch back to Personal — different from current, so switchWorkspace fires
+    await openSwitcherPanel(page)
+    await page.getByText('Personal Workspace').click()
+
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
+        { timeout: 5000 }
+      )
+      .toBe('personal-token')
+
     expect(
       await page.evaluate(() =>
         sessionStorage.getItem('Comfy.Workspace.Current')
       )
-    ).toContain('ws-team')
+    ).toContain('ws-personal')
   })
 
   test('transient token refresh failure preserves the active workspace session', async ({
@@ -177,11 +196,7 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify(
-            makeTokenResponse(
-              mockPersonalWorkspace,
-              'original-token',
-              expiresInMs
-            )
+            makeTokenResponse(mockTeamWorkspace, 'original-token', expiresInMs)
           )
         })
       }
@@ -194,7 +209,7 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
 
     await comfyPage.toast.closeToasts()
     await openSwitcherPanel(page)
-    await page.getByText('Personal Workspace').click()
+    await page.getByText('Team Workspace').click()
 
     await expect
       .poll(
@@ -231,11 +246,7 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify(
-            makeTokenResponse(
-              mockPersonalWorkspace,
-              'original-token',
-              expiresInMs
-            )
+            makeTokenResponse(mockTeamWorkspace, 'original-token', expiresInMs)
           )
         })
       }
@@ -248,7 +259,7 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
 
     await comfyPage.toast.closeToasts()
     await openSwitcherPanel(page)
-    await page.getByText('Personal Workspace').click()
+    await page.getByText('Team Workspace').click()
 
     await expect
       .poll(
@@ -262,8 +273,7 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     // A 403 ACCESS_DENIED response must clear the workspace session entirely.
     await expect
       .poll(
-        () =>
-          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
+        () => page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
         { timeout: 5000 }
       )
       .toBeNull()
