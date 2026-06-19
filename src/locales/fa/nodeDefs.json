@@ -8034,7 +8034,8 @@
         "name": "کنترل پس از تولید"
       },
       "generate_audio": {
-        "name": "تولید صوت"
+        "name": "تولید صوت",
+        "tooltip": "مدل 'kling-3.0-turbo' همواره صدای بومی تولید می‌کند، بنابراین گزینه فعال‌سازی صدا نادیده گرفته می‌شود."
       },
       "model": {
         "name": "مدل",
@@ -16248,6 +16249,9 @@
       "draw_hands": {
         "name": "ترسیم دست‌ها"
       },
+      "draw_head": {
+        "name": "رسم سر"
+      },
       "face_point_size": {
         "name": "اندازه نقطه صورت"
       },
@@ -18803,6 +18807,37 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصویر(های) مرجع برای ویرایش. Boogu بر یک مرجع برای هر نمونه تمرکز دارد؛ تعداد بیشتر نیز مجاز است."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "مثبت",
+        "tooltip": null
+      },
+      "1": {
+        "name": "منفی",
         "tooltip": null
       }
     }

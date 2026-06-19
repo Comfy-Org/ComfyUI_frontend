@@ -8034,7 +8034,8 @@
         "name": "生成後のコントロール"
       },
       "generate_audio": {
-        "name": "オーディオ生成"
+        "name": "オーディオ生成",
+        "tooltip": "「kling-3.0-turbo」は常にネイティブオーディオを生成するため、オーディオの切り替えは無視されます。"
       },
       "model": {
         "name": "モデル",
@@ -16248,6 +16249,9 @@
       "draw_hands": {
         "name": "手を描画"
       },
+      "draw_head": {
+        "name": "頭部を描く"
+      },
       "face_point_size": {
         "name": "顔ポイントサイズ"
       },
@@ -18803,6 +18807,37 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "編集する参照画像。Booguはサンプルごとに1つの参照画像に重点を置きますが、複数も可能です。"
+      },
+      "negative_prompt": {
+        "name": "ネガティブプロンプト"
+      },
+      "prompt": {
+        "name": "プロンプト"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "ポジティブ",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ネガティブ",
         "tooltip": null
       }
     }

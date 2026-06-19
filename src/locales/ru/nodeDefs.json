@@ -8034,7 +8034,8 @@
         "name": "контроль после генерации"
       },
       "generate_audio": {
-        "name": "генерировать аудио"
+        "name": "генерировать аудио",
+        "tooltip": "'kling-3.0-turbo' всегда генерирует собственное аудио, поэтому переключатель аудио игнорируется."
       },
       "model": {
         "name": "модель",
@@ -16248,6 +16249,9 @@
       "draw_hands": {
         "name": "draw_hands"
       },
+      "draw_head": {
+        "name": "рисовать_голову"
+      },
       "face_point_size": {
         "name": "face_point_size"
       },
@@ -18803,6 +18807,37 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Референсное изображение(я) для редактирования. Boogu фокусируется на одном референсе на выборку; допускается больше."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }

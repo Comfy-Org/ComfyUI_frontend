@@ -1,4 +1,5 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { isCivitaiUrl } from '@/utils/formatUtil'
 
 /**
@@ -169,6 +170,22 @@ export function getAssetUserDescription(asset: AssetItem): string {
  */
 export function getAssetFilename(asset: AssetItem): string {
   return getStringProperty(asset, 'filename') ?? asset.name
+}
+
+/**
+ * Resolves the filename that addresses an asset's *bytes* in storage — use
+ * this to build the path a backend resolves to a real file (the
+ * `createAnnotatedPath` input behind `/view` requests and widget values),
+ * never to show the user. Cloud is content-addressed, so it returns the
+ * content hash (`hash`); OSS is filesystem-backed, so it returns `name`.
+ *
+ * For a human-readable label use {@link getAssetDisplayFilename}; for a
+ * serialized identifier (matching, validation) use {@link getAssetFilename}.
+ *
+ * TODO(BE-933/934): collapse to `asset.file_path ?? asset.name`.
+ */
+export function getAssetStoredFilename(asset: AssetItem): string {
+  return isCloud && asset.hash ? asset.hash : asset.name
 }
 
 /**

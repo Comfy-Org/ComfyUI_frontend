@@ -8034,7 +8034,8 @@
         "name": "생성 후 제어"
       },
       "generate_audio": {
-        "name": "오디오 생성"
+        "name": "오디오 생성",
+        "tooltip": "'kling-3.0-turbo'는 항상 기본 오디오를 생성하므로, 오디오 토글은 무시됩니다."
       },
       "model": {
         "name": "모델",
@@ -16248,6 +16249,9 @@
       "draw_hands": {
         "name": "draw_hands"
       },
+      "draw_head": {
+        "name": "머리 그리기"
+      },
       "face_point_size": {
         "name": "face_point_size"
       },
@@ -18803,6 +18807,37 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "편집할 참조 이미지입니다. Boogu는 샘플당 하나의 참조 이미지를 중점적으로 사용하지만, 여러 개도 허용됩니다."
+      },
+      "negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }

@@ -8034,7 +8034,8 @@
         "name": "التحكم بعد التوليد"
       },
       "generate_audio": {
-        "name": "توليد الصوت"
+        "name": "توليد الصوت",
+        "tooltip": "‏'kling-3.0-turbo' يُولّد دائماً صوتاً أصلياً، لذلك يتم تجاهل تبديل الصوت."
       },
       "model": {
         "name": "النموذج",
@@ -16248,6 +16249,9 @@
       "draw_hands": {
         "name": "رسم اليدين"
       },
+      "draw_head": {
+        "name": "رسم الرأس"
+      },
       "face_point_size": {
         "name": "حجم نقطة الوجه"
       },
@@ -18803,6 +18807,37 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "صورة مرجعية (أو صور) للتعديل. يركّز Boogu على مرجع واحد لكل عينة؛ يمكن إضافة المزيد."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }

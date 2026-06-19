@@ -8034,7 +8034,8 @@
         "name": "oluşturduktan sonra kontrol et"
       },
       "generate_audio": {
-        "name": "ses oluştur"
+        "name": "ses oluştur",
+        "tooltip": "'kling-3.0-turbo' her zaman yerel ses üretir, bu nedenle ses seçeneği dikkate alınmaz."
       },
       "model": {
         "name": "model",
@@ -16248,6 +16249,9 @@
       "draw_hands": {
         "name": "elleri_çiz"
       },
+      "draw_head": {
+        "name": "Kafa Çiz"
+      },
       "face_point_size": {
         "name": "yüz_nokta_boyutu"
       },
@@ -18803,6 +18807,37 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Düzenlenecek referans görsel(ler)i. Boogu, örnek başına bir referansa odaklanır; daha fazlasına da izin verilir."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }

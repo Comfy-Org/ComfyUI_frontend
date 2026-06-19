@@ -8034,7 +8034,8 @@
         "name": "生成後控制"
       },
       "generate_audio": {
-        "name": "生成音訊"
+        "name": "生成音訊",
+        "tooltip": "「kling-3.0-turbo」總是會產生原生音訊，因此音訊切換將被忽略。"
       },
       "model": {
         "name": "模型",
@@ -16248,6 +16249,9 @@
       "draw_hands": {
         "name": "draw_hands"
       },
+      "draw_head": {
+        "name": "繪製頭部"
+      },
       "face_point_size": {
         "name": "face_point_size"
       },
@@ -18803,6 +18807,37 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "要編輯的參考圖像。Boogu 每個樣本專注於一個參考圖像；也允許多個。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
         "tooltip": null
       }
     }

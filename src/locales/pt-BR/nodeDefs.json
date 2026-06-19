@@ -8034,7 +8034,8 @@
         "name": "controlar após gerar"
       },
       "generate_audio": {
-        "name": "gerar áudio"
+        "name": "gerar áudio",
+        "tooltip": "'kling-3.0-turbo' sempre gera áudio nativo, então a opção de áudio é ignorada."
       },
       "model": {
         "name": "modelo",
@@ -16248,6 +16249,9 @@
       "draw_hands": {
         "name": "desenhar_mãos"
       },
+      "draw_head": {
+        "name": "desenhar_cabeça"
+      },
       "face_point_size": {
         "name": "tamanho_do_ponto_do_rosto"
       },
@@ -18803,6 +18807,37 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "Imagem(ns) de referência para editar. O Boogu foca em uma referência por amostra; mais são permitidas."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
         "tooltip": null
       }
     }

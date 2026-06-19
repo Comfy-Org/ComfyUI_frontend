@@ -1598,7 +1598,7 @@
   },
   "CLIPLoader": {
     "display_name": "Load CLIP",
-    "description": "[Recipes]\n\nstable_diffusion: clip-l\nstable_cascade: clip-g\nsd3: t5 xxl/ clip-g / clip-l\nstable_audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\n hidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\nlens: gpt-oss-20b\n pixeldit: gemma 2 2B elm",
+    "description": "Recipes:\nsd: clip-l\nstable cascade: clip-g\nsd3: t5 xxl / clip-g / clip-l\nstable audio: t5 base\nmochi: t5 xxl\ncogvideox: t5 xxl (226-token padding)\ncosmos: old t5 xxl\nlumina2: gemma 2 2B\nwan: umt5 xxl\nhidream: llama-3.1 (Recommend) or t5\nomnigen2: qwen vl 2.5 3B\nlens: gpt-oss-20b\npixeldit: gemma 2 2B elm",
     "inputs": {
       "clip_name": {
         "name": "clip_name"
@@ -1733,7 +1733,7 @@
     }
   },
   "CLIPTextEncodeHiDream": {
-    "display_name": "CLIPTextEncodeHiDream",
+    "display_name": "CLIP Text Encode (HiDream)",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -1758,7 +1758,7 @@
     }
   },
   "CLIPTextEncodeHunyuanDiT": {
-    "display_name": "CLIPTextEncodeHunyuanDiT",
+    "display_name": "CLIP Text Encode (Hunyuan Image)",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -1777,7 +1777,7 @@
     }
   },
   "CLIPTextEncodeKandinsky5": {
-    "display_name": "CLIPTextEncodeKandinsky5",
+    "display_name": "CLIP Text Encode (Kandinsky 5)",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -1796,7 +1796,7 @@
     }
   },
   "CLIPTextEncodeLumina2": {
-    "display_name": "CLIP Text Encode for Lumina2",
+    "display_name": "CLIP Text Encode (Lumina 2)",
     "description": "Encodes a system prompt and a user prompt using a CLIP model into an embedding that can be used to guide the diffusion model towards generating specific images.",
     "inputs": {
       "system_prompt": {
@@ -1819,7 +1819,7 @@
     }
   },
   "CLIPTextEncodePixArtAlpha": {
-    "display_name": "CLIPTextEncodePixArtAlpha",
+    "display_name": "CLIP Text Encode (PixArt Alpha)",
     "description": "Encodes text and sets the resolution conditioning for PixArt Alpha. Does not apply to PixArt Sigma.",
     "inputs": {
       "width": {
@@ -1842,7 +1842,7 @@
     }
   },
   "CLIPTextEncodeSD3": {
-    "display_name": "CLIPTextEncodeSD3",
+    "display_name": "CLIP Text Encode (SD3)",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -1867,7 +1867,7 @@
     }
   },
   "CLIPTextEncodeSDXL": {
-    "display_name": "CLIPTextEncodeSDXL",
+    "display_name": "CLIP Text Encode (SDXL)",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -1904,7 +1904,7 @@
     }
   },
   "CLIPTextEncodeSDXLRefiner": {
-    "display_name": "CLIPTextEncodeSDXLRefiner",
+    "display_name": "CLIP Text Encode (SDXL Refiner)",
     "inputs": {
       "ascore": {
         "name": "ascore"
@@ -2158,7 +2158,7 @@
     }
   },
   "ConditioningAverage": {
-    "display_name": "ConditioningAverage",
+    "display_name": "Conditioning (Average)",
     "inputs": {
       "conditioning_to": {
         "name": "conditioning_to"
@@ -2240,7 +2240,7 @@
     }
   },
   "ConditioningSetAreaPercentageVideo": {
-    "display_name": "ConditioningSetAreaPercentageVideo",
+    "display_name": "Conditioning (Set Area with Percentage for Video)",
     "inputs": {
       "conditioning": {
         "name": "conditioning"
@@ -2269,7 +2269,7 @@
     }
   },
   "ConditioningSetAreaStrength": {
-    "display_name": "ConditioningSetAreaStrength",
+    "display_name": "Conditioning (Set Area Strength)",
     "inputs": {
       "conditioning": {
         "name": "conditioning"
@@ -2420,7 +2420,7 @@
     }
   },
   "ConditioningZeroOut": {
-    "display_name": "ConditioningZeroOut",
+    "display_name": "Conditioning Zero Out",
     "inputs": {
       "conditioning": {
         "name": "conditioning"
@@ -2580,7 +2580,7 @@
     }
   },
   "ControlNetInpaintingAliMamaApply": {
-    "display_name": "ControlNetInpaintingAliMamaApply",
+    "display_name": "Apply ControlNet Inpainting (AliMama)",
     "inputs": {
       "positive": {
         "name": "positive"
@@ -3136,7 +3136,7 @@
     }
   },
   "DiffusersLoader": {
-    "display_name": "DiffusersLoader",
+    "display_name": "Load Diffusers Model (DEPRECATED)",
     "inputs": {
       "model_path": {
         "name": "model_path"
@@ -3200,8 +3200,8 @@
     }
   },
   "DualCLIPLoader": {
-    "display_name": "DualCLIPLoader",
-    "description": "[Recipes]\n\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5\nhidream: at least one of t5 or llama, recommended t5 and llama\nhunyuan_image: qwen2.5vl 7b and byt5 small\nnewbie: gemma-3-4b-it, jina clip v2",
+    "display_name": "Load CLIP (Dual)",
+    "description": "Recipes:\nsdxl: clip-l, clip-g\nsd3: clip-l, clip-g / clip-l, t5 / clip-g, t5\nflux: clip-l, t5\nhidream: at least one of t5 or llama, recommended t5 and llama\nhunyuan_image: qwen2.5vl 7b and byt5 small\nnewbie: gemma-3-4b-it, jina clip v2",
     "inputs": {
       "clip_name1": {
         "name": "clip_name1"
@@ -4972,7 +4972,7 @@
     }
   },
   "GenerateTracks": {
-    "display_name": "GenerateTracks",
+    "display_name": "Generate Video Tracks",
     "inputs": {
       "width": {
         "name": "width"
@@ -5151,7 +5151,7 @@
     }
   },
   "GLIGENTextBoxApply": {
-    "display_name": "GLIGENTextBoxApply",
+    "display_name": "Apply GLIGEN Text Box",
     "inputs": {
       "conditioning_to": {
         "name": "conditioning_to"
@@ -7921,7 +7921,8 @@
         "tooltip": "Generate a series of video segments with individual prompts and durations."
       },
       "generate_audio": {
-        "name": "generate_audio"
+        "name": "generate_audio",
+        "tooltip": "'kling-3.0-turbo' always generates native audio, so the audio toggle is ignored."
       },
       "model": {
         "name": "model",
@@ -8233,7 +8234,7 @@
     }
   },
   "LatentBatch": {
-    "display_name": "LatentBatch",
+    "display_name": "Batch Latents (DEPRECATED)",
     "inputs": {
       "samples1": {
         "name": "samples1"
@@ -8299,7 +8300,7 @@
     }
   },
   "LatentCompositeMasked": {
-    "display_name": "LatentCompositeMasked",
+    "display_name": "Latent Composite Masked",
     "inputs": {
       "destination": {
         "name": "destination"
@@ -8418,7 +8419,7 @@
     }
   },
   "LatentFromBatch": {
-    "display_name": "Latent From Batch",
+    "display_name": "Get Latent From Batch",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -9036,8 +9037,8 @@
     }
   },
   "LTXAVTextEncoderLoader": {
-    "display_name": "LTXV Audio Text Encoder Loader",
-    "description": "[Recipes]\n\nltxav: gemma 3 12B",
+    "display_name": "Load LTXV Audio Text Encoder",
+    "description": "Recipes:\nltxav: gemma 3 12B",
     "inputs": {
       "text_encoder": {
         "name": "text_encoder"
@@ -12763,7 +12764,7 @@
     }
   },
   "ModelPatchLoader": {
-    "display_name": "ModelPatchLoader",
+    "display_name": "Load Model Patch",
     "inputs": {
       "name": {
         "name": "name"
@@ -14268,8 +14269,8 @@
     }
   },
   "QuadrupleCLIPLoader": {
-    "display_name": "QuadrupleCLIPLoader",
-    "description": "[Recipes]\n\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
+    "display_name": "Load CLIP (Quadruple)",
+    "description": "Recipes:\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "inputs": {
       "clip_name1": {
         "name": "clip_name1"
@@ -14376,7 +14377,7 @@
     }
   },
   "QwenImageDiffsynthControlnet": {
-    "display_name": "QwenImageDiffsynthControlnet",
+    "display_name": "Apply Qwen Image DiffSynth ControlNet",
     "inputs": {
       "model": {
         "name": "model"
@@ -14958,7 +14959,7 @@
     }
   },
   "ReferenceLatent": {
-    "display_name": "ReferenceLatent",
+    "display_name": "Set Reference Latent",
     "description": "This node sets the guiding latent for an edit model. If the model supports it you can chain multiple to set multiple reference images.",
     "inputs": {
       "conditioning": {
@@ -14975,7 +14976,7 @@
     }
   },
   "ReferenceTimbreAudio": {
-    "display_name": "Reference Audio",
+    "display_name": "Set Reference Audio",
     "description": "This node sets the reference audio for ace step 1.5",
     "inputs": {
       "conditioning": {
@@ -15232,7 +15233,7 @@
     }
   },
   "ReplaceVideoLatentFrames": {
-    "display_name": "ReplaceVideoLatentFrames",
+    "display_name": "Replace Video Latent Frames",
     "inputs": {
       "destination": {
         "name": "destination",
@@ -15836,7 +15837,7 @@
     }
   },
   "RTDETR_detect": {
-    "display_name": "RT-DETR Detect",
+    "display_name": "Run Real-Time Detection (RT-DETR)",
     "inputs": {
       "model": {
         "name": "model"
@@ -16161,7 +16162,7 @@
     }
   },
   "SAM3_VideoTrack": {
-    "display_name": "SAM3 Video Track",
+    "display_name": "Run SAM3 Video Track",
     "inputs": {
       "images": {
         "name": "images",
@@ -16951,7 +16952,7 @@
       },
       "sort_by": {
         "name": "sort_by",
-        "tooltip": "Order in which palette colors are assigned to the tracked objects (applied to both reference and pose video so each identity keeps the same color). left_to_right = leftmost object (by first-frame centroid) gets the first color; area = biggest object (by first-frame mask area) gets the first color; none = keep SAM3's order."
+        "tooltip": "Order in which palette colors are assigned to the tracked objects (applied to both reference and pose video so each identity keeps the same color). Objects that appear in earlier frames always come first; within a frame, left_to_right = leftmost object (by centroid at first appearance) gets the first color, area = biggest object (by mask area at first appearance) gets the first color; none = keep SAM3's order."
       },
       "replacement_mode": {
         "name": "replacement_mode",
@@ -16959,7 +16960,7 @@
       },
       "ref_track_data": {
         "name": "ref_track_data",
-        "tooltip": "SAM3 track of the reference image."
+        "tooltip": "SAM3 track of the reference image(s) (one identity per object, colored in batch order), or a plain MASK of the reference subject (rendered as a single identity)."
       }
     },
     "outputs": {
@@ -17065,6 +17066,9 @@
       },
       "score_threshold": {
         "name": "score_threshold"
+      },
+      "draw_head": {
+        "name": "draw_head"
       }
     },
     "outputs": {
@@ -17268,7 +17272,7 @@
     }
   },
   "SetUnionControlNetType": {
-    "display_name": "SetUnionControlNetType",
+    "display_name": "Set Union ControlNet Type",
     "inputs": {
       "control_net": {
         "name": "control_net"
@@ -17442,7 +17446,7 @@
   },
   "SoniloTextToMusic": {
     "display_name": "Sonilo Text to Music",
-    "description": "Generate music from a text prompt using Sonilo's AI model. Leave duration at 0 to let the model infer it from the prompt.",
+    "description": "Generate music from a text prompt using Sonilo's AI model.",
     "inputs": {
       "prompt": {
         "name": "prompt",
@@ -17450,7 +17454,7 @@
       },
       "duration": {
         "name": "duration",
-        "tooltip": "Target duration in seconds. Set to 0 to let the model infer the duration from the prompt. Maximum: 6 minutes."
+        "tooltip": "Target duration in seconds. Maximum: 6 minutes."
       },
       "seed": {
         "name": "seed",
@@ -18807,6 +18811,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Reference image(s) to edit. Boogu focuses on one reference per sample; more are allowed."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
     "inputs": {
@@ -19438,7 +19473,7 @@
     }
   },
   "TrimVideoLatent": {
-    "display_name": "TrimVideoLatent",
+    "display_name": "Trim Video Latent",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -19454,8 +19489,8 @@
     }
   },
   "TripleCLIPLoader": {
-    "display_name": "TripleCLIPLoader",
-    "description": "[Recipes]\n\nsd3: clip-l, clip-g, t5",
+    "display_name": "Load CLIP (Triple)",
+    "description": "Recipes:\nsd3: clip-l, clip-g, t5",
     "inputs": {
       "clip_name1": {
         "name": "clip_name1"
@@ -20248,7 +20283,7 @@
     }
   },
   "USOStyleReference": {
-    "display_name": "USOStyleReference",
+    "display_name": "Apply USO Style Reference",
     "inputs": {
       "model": {
         "name": "model"
@@ -22777,11 +22812,11 @@
       },
       "reference_image": {
         "name": "reference_image",
-        "tooltip": "Reference image, for multiple references composite all on single image."
+        "tooltip": "Reference image. The first image is the primary reference (composite all identities onto it). SCAIL-2: extra batch images are used as additional views (back view, close-up, occluded background), each needing a matching reference_image_mask in that identity's color."
       },
       "reference_image_mask": {
         "name": "reference_image_mask",
-        "tooltip": "SCAIL-2 only. Colored reference mask at the same resolution as reference_image."
+        "tooltip": "SCAIL-2 only. Colored reference mask, batch matching reference_image (first = primary reference mask, rest = identity masks for the additional reference_image)."
       },
       "clip_vision_output": {
         "name": "clip_vision_output",
@@ -23174,7 +23209,7 @@
     }
   },
   "ZImageFunControlnet": {
-    "display_name": "ZImageFunControlnet",
+    "display_name": "Apply Z-Image Fun ControlNet",
     "inputs": {
       "model": {
         "name": "model"
