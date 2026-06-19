@@ -712,7 +712,6 @@
     "Inputs": "ورودی‌ها",
     "Left": "چپ",
     "Manage": "مدیریت",
-    "Manage Group Nodes": "مدیریت Group Nodeها",
     "Minimize Node": "کوچک‌سازی Node",
     "Mode": "حالت",
     "Node Info": "اطلاعات Node",
@@ -1830,10 +1829,6 @@
     "zoomOptions": "گزینه‌های بزرگ‌نمایی",
     "zoomOut": "کوچک‌نمایی"
   },
-  "groupNode": {
-    "create": "ایجاد گره گروهی",
-    "enterName": "نام را وارد کنید"
-  },
   "help": {
     "helpCenterMenu": "منوی مرکز راهنما",
     "recentReleases": "انتشارهای اخیر"
@@ -2563,7 +2558,6 @@
     "Job History": "تاریخچه وظایف",
     "Load Default Workflow": "بارگذاری Workflow پیش‌فرض",
     "Lock Canvas": "قفل کردن بوم",
-    "Manage group nodes": "مدیریت group nodeها",
     "Manager": "مدیر",
     "Manager Menu (Legacy)": "منوی مدیر (قدیمی)",
     "Minimap": "نقشه کوچک",
@@ -2629,7 +2623,6 @@
     "Toggle View Controls Bottom Panel": "تغییر وضعیت کنترل‌های نمای پایین",
     "Toggle promotion of hovered widget": "تغییر وضعیت ارتقاء ابزارک زیر نشانگر",
     "Undo": "واگرد",
-    "Ungroup selected group nodes": "خارج کردن group nodeهای انتخاب‌شده از گروه",
     "Unload Models": "خارج کردن مدل‌ها",
     "Unload Models and Execution Cache": "خارج کردن مدل‌ها و حافظه اجرای موقت",
     "Unlock Canvas": "باز کردن قفل بوم",

@@ -37,7 +37,8 @@ const WORKSPACE_INSUFFICIENT_CREDITS_MESSAGES = new Set([
 ])
 const SUBSCRIPTION_REQUIRED_MESSAGES = new Set([
   'Workspace has no active subscription. Please subscribe to a plan to continue.',
-  'User has no active subscription. Please subscribe to a plan to continue.'
+  'User has no active subscription. Please subscribe to a plan to continue.',
+  'Subscription required to queue workflows'
 ])
 const SUBSCRIPTION_UPGRADE_REQUIRED_PREFIX =
   'the following private models require a subscription upgrade:'
@@ -120,7 +121,7 @@ const PREPROCESSING_FAILED_PREFIXES = [
   'Failed to complete preparation:'
 ]
 
-interface RuntimeErrorInfo {
+export interface RuntimeErrorInfo {
   exceptionType: string
   exceptionMessage: string
 }
