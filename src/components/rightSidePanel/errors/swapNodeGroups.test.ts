@@ -46,10 +46,6 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn(() => false)
 }))
 
-vi.mock('@/utils/executableGroupNodeDto', () => ({
-  isGroupNode: vi.fn(() => false)
-}))
-
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useErrorGroups } from './useErrorGroups'
 

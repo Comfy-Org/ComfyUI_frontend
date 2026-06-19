@@ -1299,6 +1299,75 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         exception_message: 'CUDA OOM'
       })
     })
+
+    it('keeps a subscription precondition (no node_id) out of the error panel and count', () => {
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: null,
+        exception_type: 'InactiveSubscriptionError',
+        exception_message:
+          'User has no active subscription. Please subscribe to a plan to continue.',
+        traceback: []
+      })
+
+      expect(errorStore.lastExecutionError).toBeNull()
+      expect(errorStore.lastPromptError).toBeNull()
+      expect(errorStore.lastNodeErrors).toBeNull()
+      expect(errorStore.totalErrorCount).toBe(0)
+    })
+
+    it('keeps a sign-in precondition out of the error panel and count', () => {
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: 'n1',
+        node_type: 'ApiNode',
+        exception_type: 'RuntimeError',
+        exception_message: 'Unauthorized: Please login first to use this node.',
+        traceback: []
+      })
+
+      expect(errorStore.lastExecutionError).toBeNull()
+      expect(errorStore.lastPromptError).toBeNull()
+      expect(errorStore.totalErrorCount).toBe(0)
+    })
+
+    it('keeps a runtime credit precondition at a node out of the error panel and count', () => {
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: 'n1',
+        node_type: 'PartnerApiNode',
+        exception_type: 'InsufficientFundsError',
+        exception_message:
+          'Payment Required: Please add credits to your account to use this node.',
+        traceback: []
+      })
+
+      expect(errorStore.lastExecutionError).toBeNull()
+      expect(errorStore.lastPromptError).toBeNull()
+      expect(errorStore.totalErrorCount).toBe(0)
+    })
+
+    it('still routes an ordinary node runtime error to the error panel', () => {
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: 'n1',
+        node_type: 'KSampler',
+        exception_type: 'RuntimeError',
+        exception_message: 'Something unrelated broke',
+        traceback: []
+      })
+
+      expect(errorStore.lastExecutionError).not.toBeNull()
+      expect(errorStore.totalErrorCount).toBe(1)
+    })
   })
 
   describe('notification', () => {
