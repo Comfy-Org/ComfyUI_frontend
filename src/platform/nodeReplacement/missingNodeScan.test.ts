@@ -49,6 +49,7 @@ import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
 import { rescanAndSurfaceMissingNodes } from './missingNodeScan'
@@ -138,7 +139,9 @@ describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
 
   it('uses executionId when available for nodeId', () => {
     vi.mocked(collectAllNodes).mockReturnValue([mockNode(1, 'Missing')])
-    vi.mocked(getExecutionIdByNode).mockReturnValue('exec-42')
+    vi.mocked(getExecutionIdByNode).mockReturnValue(
+      asNodeExecutionId('exec-42')
+    )
 
     rescanAndSurfaceMissingNodes(mockGraph())
 

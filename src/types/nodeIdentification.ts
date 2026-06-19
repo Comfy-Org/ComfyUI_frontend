@@ -15,8 +15,23 @@ import type { NodeId } from '@/types/nodeId'
  *
  * Unlike execution IDs which change based on the instance path,
  * NodeLocatorId remains the same for all instances of a particular node.
+ *
+ * This is a derived *address* (subgraph-definition UUID + local id), NOT an ECS
+ * Entity ID. It must never be branded as or stored where a `NodeId` is expected.
  */
-export type NodeLocatorId = string
+export type NodeLocatorId = string & { readonly __brand: 'NodeLocatorId' }
+
+/** Raw value at boundaries; normalise with `asNodeLocatorId`. */
+export type NodeLocatorIdInput = string | number
+
+/**
+ * Brand a raw boundary value as a `NodeLocatorId`. Lenient (string-cast) like
+ * `asNodeId`; it does not validate locator shape. Use for root-graph nodes whose
+ * locator is the bare local id, and at persistence/boundary read sites.
+ */
+export function asNodeLocatorId(value: NodeLocatorIdInput): NodeLocatorId {
+  return String(value) as NodeLocatorId
+}
 
 /**
  * An execution identifier representing a node's position in nested subgraphs.
@@ -24,8 +39,24 @@ export type NodeLocatorId = string
  *
  * Format: Colon-separated path of node IDs
  * Example: "123:456:789" (node 789 in subgraph 456 in subgraph 123)
+ *
+ * This is a derived *address* (a path through subgraph instances), NOT an ECS
+ * Entity ID. It must never be branded as or stored where a `NodeId` is expected.
  */
-export type NodeExecutionId = string
+export type NodeExecutionId = string & { readonly __brand: 'NodeExecutionId' }
+
+/** Raw value at API/runtime boundaries; normalise with `asNodeExecutionId`. */
+export type NodeExecutionIdInput = string | number
+
+/**
+ * Brand a raw boundary value as a `NodeExecutionId`. Lenient (string-cast) like
+ * `asNodeId`; it does not validate path shape.
+ */
+export function asNodeExecutionId(
+  value: NodeExecutionIdInput
+): NodeExecutionId {
+  return String(value) as NodeExecutionId
+}
 
 /**
  * Type guard to check if a value is a NodeLocatorId
@@ -99,7 +130,7 @@ export function createNodeLocatorId(
   subgraphUuid: string,
   localNodeId: NodeId
 ): NodeLocatorId {
-  return `${subgraphUuid}:${localNodeId}`
+  return asNodeLocatorId(`${subgraphUuid}:${localNodeId}`)
 }
 
 /**
@@ -119,7 +150,7 @@ export function parseNodeExecutionId(id: string): NodeId[] | null {
  * @returns A properly formatted NodeExecutionId
  */
 export function createNodeExecutionId(nodeIds: NodeId[]): NodeExecutionId {
-  return nodeIds.join(':')
+  return asNodeExecutionId(nodeIds.join(':'))
 }
 
 /**
@@ -132,7 +163,7 @@ export function getAncestorExecutionIds(
 ): NodeExecutionId[] {
   const parts = executionId.split(':')
   return Array.from({ length: parts.length }, (_, i) =>
-    parts.slice(0, i + 1).join(':')
+    asNodeExecutionId(parts.slice(0, i + 1).join(':'))
   )
 }
 

@@ -1,6 +1,7 @@
 import type { NodeError } from '@/schemas/apiSchema'
 import type { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionIdInput } from '@/types/nodeIdentification'
 
 type ExecutionErrorStore = ReturnType<typeof useExecutionErrorStore>
 
@@ -21,10 +22,11 @@ function createRequiredInputMissingNodeError(inputName: string): NodeError {
 
 export function seedRequiredInputMissingNodeError(
   store: ExecutionErrorStore,
-  executionId: NodeExecutionId,
+  executionId: NodeExecutionIdInput,
   inputName: string
 ): void {
   store.lastNodeErrors = {
-    [executionId]: createRequiredInputMissingNodeError(inputName)
+    [asNodeExecutionId(executionId)]:
+      createRequiredInputMissingNodeError(inputName)
   }
 }

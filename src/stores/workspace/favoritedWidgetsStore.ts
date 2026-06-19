@@ -7,6 +7,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { asNodeId } from '@/types/nodeId'
 import { app } from '@/scripts/app'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { asNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -86,14 +87,14 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
     try {
       const [nodeLocatorId, widgetName] = JSON.parse(key) as [string, string]
       if (!nodeLocatorId || !widgetName) return null
-      return { nodeLocatorId, widgetName }
+      return { nodeLocatorId: asNodeLocatorId(nodeLocatorId), widgetName }
     } catch {
       const separatorIndex = key.indexOf(':')
       if (separatorIndex === -1) return null
       const nodeLocatorId = key.slice(0, separatorIndex)
       const widgetName = key.slice(separatorIndex + 1)
       if (!nodeLocatorId || !widgetName) return null
-      return { nodeLocatorId, widgetName }
+      return { nodeLocatorId: asNodeLocatorId(nodeLocatorId), widgetName }
     }
   }
 
@@ -104,7 +105,7 @@ export const useFavoritedWidgetsStore = defineStore('favoritedWidgets', () => {
 
     if ('nodeLocatorId' in id && id.nodeLocatorId) {
       return {
-        nodeLocatorId: String(id.nodeLocatorId),
+        nodeLocatorId: asNodeLocatorId(String(id.nodeLocatorId)),
         widgetName: String(id.widgetName)
       }
     }
