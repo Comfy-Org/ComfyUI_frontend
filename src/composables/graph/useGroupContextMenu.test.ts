@@ -1,6 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useGroupContextMenu } from '@/composables/graph/useGroupContextMenu'
+import type {
+  CanvasPointerEvent,
+  LGraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 
@@ -36,12 +41,9 @@ interface StubCanvas {
   links_render_mode: number
 }
 
-type ProcessArgs = Parameters<typeof LGraphCanvas.prototype.processContextMenu>
-
 describe('useGroupContextMenu', () => {
   const group = { id: 1 }
-  const event = { canvasX: 10, canvasY: 20 } as unknown as ProcessArgs[1]
-  let realProcessContextMenu: typeof LGraphCanvas.prototype.processContextMenu
+  const event = fromPartial<CanvasPointerEvent>({ canvasX: 10, canvasY: 20 })
   let originalSpy: ReturnType<typeof vi.fn>
   let stubCanvas: StubCanvas
 
@@ -50,10 +52,8 @@ describe('useGroupContextMenu', () => {
     mockQueryRerouteAtPoint.mockReturnValue(null)
     LiteGraph.vueNodesMode = true
 
-    realProcessContextMenu = LGraphCanvas.prototype.processContextMenu
     originalSpy = vi.fn()
-    LGraphCanvas.prototype.processContextMenu =
-      originalSpy as unknown as typeof LGraphCanvas.prototype.processContextMenu
+    LGraphCanvas.prototype.processContextMenu = fromAny(originalSpy)
 
     useGroupContextMenu()
 
@@ -68,17 +68,8 @@ describe('useGroupContextMenu', () => {
     }
   })
 
-  afterEach(() => {
-    LGraphCanvas.prototype.processContextMenu = realProcessContextMenu
-    LiteGraph.vueNodesMode = false
-  })
-
-  function invoke(node: ProcessArgs[0]) {
-    LGraphCanvas.prototype.processContextMenu.call(
-      stubCanvas as unknown as LGraphCanvas,
-      node,
-      event
-    )
+  function invoke(node: LGraphNode | undefined) {
+    LGraphCanvas.prototype.processContextMenu.call(fromAny(stubCanvas), node, event)
   }
 
   it('opens the Vue menu for a group right-click in Nodes 2.0 mode', () => {
@@ -92,7 +83,7 @@ describe('useGroupContextMenu', () => {
   })
 
   it('falls through to the legacy menu when a node is under the cursor', () => {
-    invoke({ id: 'n1' } as unknown as ProcessArgs[0])
+    invoke(fromPartial<LGraphNode>({}))
 
     expect(originalSpy).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).not.toHaveBeenCalled()
@@ -164,10 +155,8 @@ describe('useGroupContextMenu', () => {
   })
 
   it('falls through to the legacy menu when the canvas has no graph', () => {
-    const graphlessCanvas = { deselectAll: vi.fn(), select: vi.fn() }
-
     LGraphCanvas.prototype.processContextMenu.call(
-      graphlessCanvas as unknown as LGraphCanvas,
+      fromAny({ deselectAll: vi.fn(), select: vi.fn() }),
       undefined,
       event
     )
