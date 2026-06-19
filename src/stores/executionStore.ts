@@ -2,12 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
-import type { AppMode } from '@/composables/useAppMode'
-import {
-  getWorkflowMode,
-  isAppModeValue,
-  useAppMode
-} from '@/composables/useAppMode'
+import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTelemetry } from '@/platform/telemetry'
@@ -41,6 +36,8 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import type { AppMode } from '@/utils/appMode'
+import { getWorkflowMode, isAppModeValue } from '@/utils/appMode'
 
 interface ExecutionNodeInfo {
   title?: string | null
