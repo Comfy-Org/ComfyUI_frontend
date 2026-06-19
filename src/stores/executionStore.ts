@@ -307,6 +307,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
+    logNodeCached(e.detail.nodes.map(String))
     if (!activeJob.value) return
     for (const n of e.detail.nodes) {
       activeJob.value.nodes[n] = true
@@ -317,12 +318,13 @@ export const useExecutionStore = defineStore('execution', () => {
     e: CustomEvent<ExecutionInterruptedWsMessage>
   ) {
     const jobId = e.detail.prompt_id
+    logExecutionInterrupted(jobId)
     if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
     resetExecutionState(jobId)
   }
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
-    logNodeExecuted(e.detail.node)
+    logNodeExecuted(String(e.detail.node))
     if (!activeJob.value) return
     activeJob.value.nodes[e.detail.node] = true
   }
@@ -350,7 +352,10 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuting(e: CustomEvent<NodeId | null>): void {
-    logExecutingNode(e.detail, activeJobId.value || 'unknown')
+    logExecutingNode(
+      e.detail !== null ? String(e.detail) : null,
+      activeJobId.value || 'unknown'
+    )
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 
@@ -432,6 +437,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
+    logProgress(String(e.detail.node), e.detail.value, e.detail.max)
     _executingNodeProgress.value = e.detail
   }
 
@@ -611,6 +617,8 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleProgressText(e: CustomEvent<ProgressTextWsMessage>) {
     const { nodeId, text, prompt_id } = e.detail
     if (!text || !nodeId) return
+
+    logProgressText(String(nodeId), text)
 
     // Filter: only accept progress for the active prompt
     if (prompt_id && activeJobId.value && prompt_id !== activeJobId.value)

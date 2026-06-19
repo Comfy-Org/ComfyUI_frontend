@@ -9,8 +9,6 @@ import {
   logWebSocketOpen,
   logWebSocketClose,
   logWebSocketMessage,
-  startTiming,
-  endTiming,
   logQueuePromptApiCall
 } from './debugLogger'
 import { ref } from 'vue'
@@ -448,7 +446,9 @@ export class ComfyApi extends EventTarget {
   async fetchApi(route: string, options?: RequestInit) {
     const headers: HeadersInit = options?.headers ?? {}
     const method = options?.method || 'GET'
-    const reqBody = options?.body ? JSON.parse(options.body as string) : undefined
+    const reqBody = options?.body
+      ? JSON.parse(options.body as string)
+      : undefined
     logHttpRequest(method, route, reqBody)
     const reqStart = performance.now()
 
