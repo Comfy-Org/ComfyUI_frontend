@@ -8,6 +8,7 @@ const baseRoutes = {
   cloudEnterprise: '/cloud/enterprise',
   api: '/api',
   gallery: '/gallery',
+  drops: '/drops',
   about: '/about',
   careers: '/careers',
   customers: '/customers',

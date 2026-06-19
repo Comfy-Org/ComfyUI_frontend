@@ -1,0 +1,12 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro'
+import { t } from '../i18n/translations'
+
+const locale = 'en' as const
+---
+
+<BaseLayout
+  title={t('drops.page.title', locale)}
+  description={t('drops.page.description', locale)}
+>
+</BaseLayout>

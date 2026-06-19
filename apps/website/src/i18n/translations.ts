@@ -4928,6 +4928,18 @@ const translations = {
   'affiliate.cta.termsLabel': {
     en: 'Read the affiliate program terms',
     'zh-CN': '阅读联盟计划条款'
+  },
+
+  // Drops page (/drops) — head metadata
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'drops.page.title': {
+    en: 'Drops — Everything new in ComfyUI',
+    'zh-CN': 'Drops — ComfyUI 最新动态'
+  },
+  'drops.page.description': {
+    en: 'Explore everything new in Comfy — releases, features, models, and resources across platform, cloud, community, and developer tools.',
+    'zh-CN':
+      '探索 Comfy 的最新动态 — 涵盖平台、云端、社区和开发者工具的发布、功能、模型和资源。'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
