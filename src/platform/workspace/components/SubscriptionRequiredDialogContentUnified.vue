@@ -1,5 +1,13 @@
 <template>
-  <div class="relative flex h-full flex-col gap-4 overflow-y-auto p-4 pt-6">
+  <div
+    :class="
+      cn(
+        'relative flex h-full flex-col gap-4 overflow-y-auto p-4 pt-6',
+        checkoutStep === 'pricing' &&
+          'xl:min-h-[min(740px,90vh)] xl:w-[min(1280px,95vw)]'
+      )
+    "
+  >
     <Button
       v-if="checkoutStep === 'preview'"
       size="icon"
@@ -96,6 +104,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useToast } from 'primevue/usetoast'
 import { useI18n } from 'vue-i18n'
 
