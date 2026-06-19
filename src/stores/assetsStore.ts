@@ -122,6 +122,7 @@ export const useAssetsStore = defineStore('assets', () => {
   const allHistoryItems = ref<AssetItem[]>([])
 
   const loadedIds = shallowReactive(new Set<string>())
+  const loadedJobIds = new Set<string>()
 
   const fetchInputFiles = isCloud
     ? fetchInputFilesFromCloud
@@ -151,46 +152,43 @@ export const useAssetsStore = defineStore('assets', () => {
    * @param loadMore - true for pagination (append), false for initial load (replace)
    */
   const fetchHistoryAssets = async (loadMore = false): Promise<AssetItem[]> => {
-    // Reset state for initial load
     if (!loadMore) {
       historyOffset.value = 0
       hasMoreHistory.value = true
       allHistoryItems.value = []
       loadedIds.clear()
+      loadedJobIds.clear()
     }
 
-    // Fetch from server with offset
     const history = await api.getHistory(BATCH_SIZE, {
       offset: historyOffset.value
     })
 
-    // Convert JobListItems to AssetItems
+    for (const job of history) {
+      loadedJobIds.add(job.id)
+    }
+
     const newAssets = mapHistoryToAssets(history)
 
     if (loadMore) {
-      // Filter out duplicates and insert in sorted order
       for (const asset of newAssets) {
         if (loadedIds.has(asset.id)) {
-          continue // Skip duplicates
+          continue
         }
         loadedIds.add(asset.id)
 
-        // Find insertion index to maintain sorted order (newest first)
         const assetTime = new Date(asset.created_at ?? 0).getTime()
         const insertIndex = allHistoryItems.value.findIndex(
           (item) => new Date(item.created_at ?? 0).getTime() < assetTime
         )
 
         if (insertIndex === -1) {
-          // Asset is oldest, append to end
           allHistoryItems.value.push(asset)
         } else {
-          // Insert at the correct position
           allHistoryItems.value.splice(insertIndex, 0, asset)
         }
       }
     } else {
-      // Initial load: replace all
       allHistoryItems.value = newAssets
       newAssets.forEach((asset) => loadedIds.add(asset.id))
     }
@@ -267,15 +265,16 @@ export const useAssetsStore = defineStore('assets', () => {
   const flatOutputHasMore = ref(true)
   const flatOutputIsLoadingMore = ref(false)
   const flatOutputSeenIds = new Set<string>()
-  let flatOutputInFlight: Promise<AssetItem[]> | null = null
+  let flatOutputRefreshInFlight: Promise<AssetItem[]> | null = null
+  let flatOutputLoadMoreInFlight: Promise<AssetItem[]> | null = null
 
   async function fetchFlatOutputs(loadMore: boolean): Promise<AssetItem[]> {
-    if (flatOutputInFlight) return flatOutputInFlight
-
     if (loadMore) {
       if (!flatOutputHasMore.value) return flatOutputAssets.value
+      if (flatOutputLoadMoreInFlight) return flatOutputLoadMoreInFlight
       flatOutputIsLoadingMore.value = true
     } else {
+      if (flatOutputRefreshInFlight) return flatOutputRefreshInFlight
       flatOutputLoading.value = true
       flatOutputOffset.value = 0
       flatOutputHasMore.value = true
@@ -283,7 +282,7 @@ export const useAssetsStore = defineStore('assets', () => {
     }
     flatOutputError.value = null
 
-    flatOutputInFlight = (async () => {
+    const inFlight = (async () => {
       try {
         const page = await assetService.getAssetsByTag(OUTPUT_TAG, true, {
           limit: FLAT_OUTPUT_PAGE_SIZE,
@@ -304,13 +303,23 @@ export const useAssetsStore = defineStore('assets', () => {
         console.error('Failed to fetch output assets:', err)
         return loadMore ? flatOutputAssets.value : []
       } finally {
-        if (loadMore) flatOutputIsLoadingMore.value = false
-        else flatOutputLoading.value = false
-        flatOutputInFlight = null
+        if (loadMore) {
+          flatOutputIsLoadingMore.value = false
+          flatOutputLoadMoreInFlight = null
+        } else {
+          flatOutputLoading.value = false
+          flatOutputRefreshInFlight = null
+        }
       }
     })()
 
-    return flatOutputInFlight
+    if (loadMore) {
+      flatOutputLoadMoreInFlight = inFlight
+    } else {
+      flatOutputRefreshInFlight = inFlight
+    }
+
+    return inFlight
   }
 
   const updateFlatOutputs = () => fetchFlatOutputs(false)
