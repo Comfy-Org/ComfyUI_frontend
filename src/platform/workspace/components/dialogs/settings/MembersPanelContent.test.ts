@@ -14,7 +14,7 @@ import type {
 const mockHandleCopyInviteLink = vi.fn()
 const mockHandleRevokeInvite = vi.fn()
 const mockHandleCreateWorkspace = vi.fn()
-const mockShowSubscriptionDialog = vi.fn()
+const mockShowTeamPlans = vi.fn()
 const mockSelectMember = vi.fn()
 const mockToggleSort = vi.fn()
 
@@ -98,7 +98,7 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
       m.email.toLowerCase() === 'owner@example.com',
     selectMember: mockSelectMember,
     toggleSort: mockToggleSort,
-    showSubscriptionDialog: mockShowSubscriptionDialog,
+    showTeamPlans: mockShowTeamPlans,
     handleCopyInviteLink: mockHandleCopyInviteLink,
     handleRevokeInvite: mockHandleRevokeInvite,
     handleCreateWorkspace: mockHandleCreateWorkspace,
@@ -318,13 +318,13 @@ describe('MembersPanelContent', () => {
       ).toBeTruthy()
     })
 
-    it('opens subscription dialog on view plans click', async () => {
+    it('opens team plans on view plans click', async () => {
       renderComponent()
       const viewPlansBtn = screen.getByRole('button', {
         name: /workspacePanel\.members\.viewPlans/
       })
       await userEvent.click(viewPlansBtn)
-      expect(mockShowSubscriptionDialog).toHaveBeenCalled()
+      expect(mockShowTeamPlans).toHaveBeenCalled()
     })
 
     it('hides search input', () => {

@@ -109,6 +109,28 @@ describe('useSubscriptionDialog', () => {
       expect(props).not.toHaveProperty('onChooseTeam')
     })
 
+    it('defaults to the personal tab in a personal workspace', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsInPersonalWorkspace.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable()
+
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props.initialPlanMode).toBe('personal')
+    })
+
+    it('opens the team tab when planMode is forced from a personal workspace', () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsInPersonalWorkspace.value = true
+      const { showPricingTable } = useSubscriptionDialog()
+
+      showPricingTable({ planMode: 'team' })
+
+      const props = mockShowLayoutDialog.mock.calls[0][0].props
+      expect(props.initialPlanMode).toBe('team')
+    })
+
     it('uses the legacy table (with onChooseTeam) when team workspaces are disabled', () => {
       mockTeamWorkspacesEnabled.value = false
       const { showPricingTable } = useSubscriptionDialog()
