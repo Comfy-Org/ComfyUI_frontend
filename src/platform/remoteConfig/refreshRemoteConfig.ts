@@ -31,7 +31,7 @@ export async function refreshRemoteConfig(
   try {
     const response = useAuth
       ? await api.fetchApi('/features', { cache: 'no-store' })
-      : await fetch('/api/features', { cache: 'no-store' })
+      : await fetch(api.apiURL('/features'), { cache: 'no-store' })
 
     if (response.ok) {
       const config = await response.json()
