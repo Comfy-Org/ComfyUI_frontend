@@ -244,6 +244,14 @@ export interface LoadModelOptions {
   silentOnNotFound?: boolean
 }
 
+export interface SceneOverlay {
+  attach(scene: THREE.Scene): void
+  detach(): void
+  update?(deltaSeconds: number): void
+  onActiveCameraChange?(camera: THREE.Camera): void
+  dispose(): void
+}
+
 export interface LoaderManagerInterface {
   init(): void
   dispose(): void
