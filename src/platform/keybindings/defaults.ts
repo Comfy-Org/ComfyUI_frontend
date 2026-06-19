@@ -38,6 +38,12 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
   },
   {
     combo: {
+      key: 'Tab'
+    },
+    commandId: 'Workspace.SearchBox.Toggle'
+  },
+  {
+    combo: {
       key: 'n'
     },
     commandId: 'Workspace.ToggleSidebarTab.node-library'
