@@ -612,18 +612,20 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
   test('Can zoom in/out with ctrl+shift+vertical-drag', async ({
     comfyPage
   }) => {
-    await comfyPage.page.keyboard.down('Control')
-    await comfyPage.page.keyboard.down('Shift')
-    await comfyPage.canvasOps.dragAndDrop({ x: 10, y: 100 }, { x: 10, y: 40 })
+    // Use ctrlShiftDrag so the Control+Shift modifiers are pressed and released
+    // around each individual gesture. Holding the modifiers down across all
+    // three drags plus the intervening screenshot assertions could saturate the
+    // main thread and stall a single mouse.move step past the test timeout, and
+    // a mid-test failure would leave the modifiers stuck down. Releasing per
+    // gesture matches the robust pattern used in canvasSettings.spec.ts.
+    await comfyPage.canvasOps.ctrlShiftDrag({ x: 10, y: 100 }, { x: 10, y: 40 })
     await expect(comfyPage.canvas).toHaveScreenshot('zoomed-in-ctrl-shift.png')
-    await comfyPage.canvasOps.dragAndDrop({ x: 10, y: 40 }, { x: 10, y: 160 })
+    await comfyPage.canvasOps.ctrlShiftDrag({ x: 10, y: 40 }, { x: 10, y: 160 })
     await expect(comfyPage.canvas).toHaveScreenshot('zoomed-out-ctrl-shift.png')
-    await comfyPage.canvasOps.dragAndDrop({ x: 10, y: 280 }, { x: 10, y: 220 })
+    await comfyPage.canvasOps.ctrlShiftDrag({ x: 10, y: 280 }, { x: 10, y: 220 })
     await expect(comfyPage.canvas).toHaveScreenshot(
       'zoomed-default-ctrl-shift.png'
     )
-    await comfyPage.page.keyboard.up('Control')
-    await comfyPage.page.keyboard.up('Shift')
   })
 
   test('Can zoom in/out after decreasing canvas zoom speed setting', async ({
