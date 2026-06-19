@@ -4,6 +4,7 @@ import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteG
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
+import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import {
   DEFAULT_DARK_COLOR_PALETTE,
   DEFAULT_LIGHT_COLOR_PALETTE
@@ -85,6 +86,7 @@ export function useCoreCommands(): ComfyCommand[] {
   const executionStore = useExecutionStore()
   const modelStore = useModelStore()
   const telemetry = useTelemetry()
+  const { trackRunButton } = useRunButtonTelemetry()
   const { staticUrls, buildDocsUrl } = useExternalLink()
   const settingStore = useSettingStore()
 
@@ -499,7 +501,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        useTelemetry()?.trackRunButton(metadata)
+        trackRunButton(metadata)
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -522,7 +524,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        useTelemetry()?.trackRunButton(metadata)
+        trackRunButton(metadata)
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return
@@ -544,7 +546,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        useTelemetry()?.trackRunButton(metadata)
+        trackRunButton(metadata)
         if (!isActiveSubscription.value) {
           showSubscriptionDialog()
           return

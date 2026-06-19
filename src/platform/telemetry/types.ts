@@ -12,11 +12,11 @@
  * 3. Check dist/assets/*.js files contain no tracking code
  */
 
-import type { AppMode } from '@/composables/useAppMode'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { AuditLog } from '@/services/customerEventsService'
+import type { AppMode } from '@/utils/appMode'
 
 /**
  * Authentication metadata for sign-up tracking
@@ -486,10 +486,7 @@ export interface TelemetryProvider {
   trackAddApiCreditButtonClicked?(): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void
-  trackRunButton?(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void
+  trackRunButton?(properties: RunButtonProperties): void
 
   // Credit top-up tracking (composition with internal utilities)
   startTopupTracking?(): void
