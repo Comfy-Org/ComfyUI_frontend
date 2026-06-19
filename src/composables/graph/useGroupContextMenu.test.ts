@@ -37,23 +37,24 @@ interface StubCanvas {
     getRerouteOnPos: ReturnType<typeof vi.fn>
   }
   deselectAll: ReturnType<typeof vi.fn>
-  select: ReturnType<typeof vi.fn>
+  selectedItems: Set<unknown>
   links_render_mode: number
 }
 
 describe('useGroupContextMenu', () => {
-  const group = { id: 1 }
   const event = fromPartial<CanvasPointerEvent>({ canvasX: 10, canvasY: 20 })
-  let originalSpy: ReturnType<typeof vi.fn>
+  let group: { id: number; selected?: boolean }
+  let legacyMenuMock: ReturnType<typeof vi.fn>
   let stubCanvas: StubCanvas
 
   beforeEach(() => {
     vi.clearAllMocks()
     mockQueryRerouteAtPoint.mockReturnValue(null)
     LiteGraph.vueNodesMode = true
+    group = { id: 1 }
 
-    originalSpy = vi.fn()
-    LGraphCanvas.prototype.processContextMenu = fromAny(originalSpy)
+    legacyMenuMock = vi.fn()
+    LGraphCanvas.prototype.processContextMenu = fromAny(legacyMenuMock)
 
     useGroupContextMenu()
 
@@ -63,7 +64,7 @@ describe('useGroupContextMenu', () => {
         getRerouteOnPos: vi.fn(() => undefined)
       },
       deselectAll: vi.fn(),
-      select: vi.fn(),
+      selectedItems: new Set(),
       links_render_mode: LinkRenderType.SPLINE_LINK
     }
   })
@@ -76,22 +77,23 @@ describe('useGroupContextMenu', () => {
     )
   }
 
-  it('opens the Vue menu for a group right-click in Nodes 2.0 mode', () => {
+  it('opens the Vue menu and selects only the group in Nodes 2.0 mode', () => {
     invoke(undefined)
 
     expect(stubCanvas.deselectAll).toHaveBeenCalledOnce()
-    expect(stubCanvas.select).toHaveBeenCalledWith(group)
+    expect(group.selected).toBe(true)
+    expect(stubCanvas.selectedItems.has(group)).toBe(true)
     expect(mockUpdateSelectedItems).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
-    expect(originalSpy).not.toHaveBeenCalled()
+    expect(legacyMenuMock).not.toHaveBeenCalled()
   })
 
   it('falls through to the legacy menu when a node is under the cursor', () => {
     invoke(fromPartial<LGraphNode>({}))
 
-    expect(originalSpy).toHaveBeenCalledOnce()
+    expect(legacyMenuMock).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).not.toHaveBeenCalled()
-    expect(stubCanvas.select).not.toHaveBeenCalled()
+    expect(stubCanvas.selectedItems.size).toBe(0)
   })
 
   it('falls through to the legacy menu in legacy (non-Nodes 2.0) mode', () => {
@@ -99,9 +101,9 @@ describe('useGroupContextMenu', () => {
 
     invoke(undefined)
 
-    expect(originalSpy).toHaveBeenCalledOnce()
+    expect(legacyMenuMock).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).not.toHaveBeenCalled()
-    expect(stubCanvas.select).not.toHaveBeenCalled()
+    expect(stubCanvas.selectedItems.size).toBe(0)
   })
 
   it('falls through to the legacy menu when no group is under the cursor', () => {
@@ -109,7 +111,7 @@ describe('useGroupContextMenu', () => {
 
     invoke(undefined)
 
-    expect(originalSpy).toHaveBeenCalledOnce()
+    expect(legacyMenuMock).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).not.toHaveBeenCalled()
   })
 
@@ -120,7 +122,7 @@ describe('useGroupContextMenu', () => {
 
     expect(stubCanvas.graph.getRerouteOnPos).not.toHaveBeenCalled()
     expect(stubCanvas.graph.getGroupOnPos).not.toHaveBeenCalled()
-    expect(originalSpy).toHaveBeenCalledOnce()
+    expect(legacyMenuMock).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).not.toHaveBeenCalled()
   })
 
@@ -130,7 +132,7 @@ describe('useGroupContextMenu', () => {
     invoke(undefined)
 
     expect(stubCanvas.graph.getGroupOnPos).not.toHaveBeenCalled()
-    expect(originalSpy).toHaveBeenCalledOnce()
+    expect(legacyMenuMock).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).not.toHaveBeenCalled()
   })
 
@@ -141,31 +143,32 @@ describe('useGroupContextMenu', () => {
 
     expect(mockQueryRerouteAtPoint).not.toHaveBeenCalled()
     expect(stubCanvas.graph.getRerouteOnPos).not.toHaveBeenCalled()
-    expect(stubCanvas.select).toHaveBeenCalledWith(group)
+    expect(stubCanvas.selectedItems.has(group)).toBe(true)
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
-    expect(originalSpy).not.toHaveBeenCalled()
+    expect(legacyMenuMock).not.toHaveBeenCalled()
   })
 
-  it('preserves selection but still opens the menu when the group is already selected', () => {
-    stubCanvas.graph.getGroupOnPos.mockReturnValue({ id: 1, selected: true })
+  it('keeps the menu open without re-selecting when the group is already selected', () => {
+    const selectedGroup = { id: 1, selected: true }
+    stubCanvas.graph.getGroupOnPos.mockReturnValue(selectedGroup)
 
     invoke(undefined)
 
     expect(stubCanvas.deselectAll).not.toHaveBeenCalled()
-    expect(stubCanvas.select).not.toHaveBeenCalled()
-    expect(mockUpdateSelectedItems).not.toHaveBeenCalled()
+    expect(stubCanvas.selectedItems.size).toBe(0)
+    expect(mockUpdateSelectedItems).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
-    expect(originalSpy).not.toHaveBeenCalled()
+    expect(legacyMenuMock).not.toHaveBeenCalled()
   })
 
   it('falls through to the legacy menu when the canvas has no graph', () => {
     LGraphCanvas.prototype.processContextMenu.call(
-      fromAny({ deselectAll: vi.fn(), select: vi.fn() }),
+      fromAny({ deselectAll: vi.fn() }),
       undefined,
       event
     )
 
-    expect(originalSpy).toHaveBeenCalledOnce()
+    expect(legacyMenuMock).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).not.toHaveBeenCalled()
   })
 })

@@ -1,4 +1,5 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
+import type { Reroute } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -14,7 +15,6 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
  * nodes. Nodes, the canvas background, and reroutes are left untouched.
  */
 export function useGroupContextMenu() {
-  const canvasStore = useCanvasStore()
   const original = LGraphCanvas.prototype.processContextMenu
 
   function processContextMenuWithVueGroupMenu(
@@ -28,16 +28,20 @@ export function useGroupContextMenu() {
       return
     }
 
-    // A reroute can sit inside a group; defer it to the legacy "Delete Reroute"
-    // menu. Mirror processContextMenu's hit-test (layout store first, litegraph
-    // fallback) so we never miss one and wrongly open the group menu over it.
+    const reroutesVisible =
+      this.links_render_mode !== LinkRenderType.HIDDEN_LINK
     const onReroute =
-      this.links_render_mode !== LinkRenderType.HIDDEN_LINK &&
+      reroutesVisible &&
       (!!layoutStore.queryRerouteAtPoint({
         x: event.canvasX,
         y: event.canvasY
       }) ||
-        !!this.graph.getRerouteOnPos(event.canvasX, event.canvasY))
+        !!this.graph.getRerouteOnPos(
+          event.canvasX,
+          event.canvasY,
+          (this as unknown as { _visibleReroutes: Set<Reroute> })
+            ._visibleReroutes
+        ))
     const group = onReroute
       ? undefined
       : this.graph.getGroupOnPos(event.canvasX, event.canvasY)
@@ -49,9 +53,10 @@ export function useGroupContextMenu() {
 
     if (!group.selected) {
       this.deselectAll()
-      this.select(group)
-      canvasStore.updateSelectedItems()
+      group.selected = true
+      this.selectedItems.add(group)
     }
+    useCanvasStore().updateSelectedItems()
     showNodeOptions(event)
   }
 
