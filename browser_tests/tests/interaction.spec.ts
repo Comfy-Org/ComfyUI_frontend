@@ -622,7 +622,10 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
     await expect(comfyPage.canvas).toHaveScreenshot('zoomed-in-ctrl-shift.png')
     await comfyPage.canvasOps.ctrlShiftDrag({ x: 10, y: 40 }, { x: 10, y: 160 })
     await expect(comfyPage.canvas).toHaveScreenshot('zoomed-out-ctrl-shift.png')
-    await comfyPage.canvasOps.ctrlShiftDrag({ x: 10, y: 280 }, { x: 10, y: 220 })
+    await comfyPage.canvasOps.ctrlShiftDrag(
+      { x: 10, y: 280 },
+      { x: 10, y: 220 }
+    )
     await expect(comfyPage.canvas).toHaveScreenshot(
       'zoomed-default-ctrl-shift.png'
     )
