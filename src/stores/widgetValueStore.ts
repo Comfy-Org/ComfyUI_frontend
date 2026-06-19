@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
-import { asNodeId } from '@/types/nodeId'
+import { asNodeId, tryAsNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 import { parseWidgetId } from '@/types/widgetId'
@@ -10,6 +10,14 @@ import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
 
 export function stripGraphPrefix(scopedId: NodeId | string): NodeId {
   return asNodeId(String(scopedId).replace(/^(.*:)+/, ''))
+}
+
+/** Non-throwing variant of `stripGraphPrefix` for untrusted/missing ids. */
+export function tryStripGraphPrefix(
+  scopedId: NodeId | string | null | undefined
+): NodeId | null {
+  if (scopedId == null) return null
+  return tryAsNodeId(String(scopedId).replace(/^(.*:)+/, ''))
 }
 
 export const useWidgetValueStore = defineStore('widgetValue', () => {

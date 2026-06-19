@@ -144,7 +144,7 @@ const node = ref<LGraphNode | null>(null)
 
 if (isComponentWidget(widget)) {
   node.value = widget.node
-} else if (nodeId) {
+} else if (nodeId != null) {
   onMounted(() => {
     node.value = resolveNode(nodeId) ?? null
   })

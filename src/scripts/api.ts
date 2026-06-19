@@ -733,12 +733,14 @@ export class ComfyApi extends EventTarget {
               }
               this.dispatchCustomEvent('status', msg.data.status ?? null)
               break
-            case 'executing':
+            case 'executing': {
+              const executingNode = msg.data.display_node || msg.data.node
               this.dispatchCustomEvent(
                 'executing',
-                msg.data.display_node || msg.data.node
+                executingNode != null ? asNodeExecutionId(executingNode) : null
               )
               break
+            }
             case 'execution_start':
             case 'execution_error':
             case 'execution_interrupted':

@@ -27,7 +27,7 @@ import {
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import {
-  stripGraphPrefix,
+  tryStripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
@@ -134,15 +134,16 @@ export function getWidgetIdentity(
     const dedupeIdentity = `${widget.widgetId}:${widget.type}`
     return { dedupeIdentity, renderKey: dedupeIdentity }
   }
+  const hostNodeId = tryStripGraphPrefix(nodeId)
   const hostNodeIdRoot =
-    nodeId !== undefined && nodeId !== ''
-      ? `node:${String(stripGraphPrefix(nodeId))}`
-      : undefined
-  const stableIdentityRoot = widget.nodeId
-    ? `node:${String(stripGraphPrefix(widget.nodeId))}`
-    : widget.sourceExecutionId
-      ? `exec:${widget.sourceExecutionId}`
-      : hostNodeIdRoot
+    hostNodeId !== null ? `node:${String(hostNodeId)}` : undefined
+  const widgetNodeId = tryStripGraphPrefix(widget.nodeId)
+  const stableIdentityRoot =
+    widgetNodeId !== null
+      ? `node:${String(widgetNodeId)}`
+      : widget.sourceExecutionId
+        ? `exec:${widget.sourceExecutionId}`
+        : hostNodeIdRoot
 
   const dedupeIdentity = stableIdentityRoot
     ? `${stableIdentityRoot}:${widget.name}:${widget.type}`
@@ -200,16 +201,11 @@ export function computeProcessedWidgets({
     if (!shouldRenderAsVue(widget)) continue
 
     const identity = getWidgetIdentity(widget, String(nodeId), index)
+    const bareNodeId = tryStripGraphPrefix(widget.nodeId ?? nodeId)
     const widgetState = widget.widgetId
       ? widgetValueStore.getWidget(widget.widgetId)
-      : graphId
-        ? widgetValueStore.getWidget(
-            widgetId(
-              graphId,
-              stripGraphPrefix(widget.nodeId ?? nodeId ?? ''),
-              widget.name
-            )
-          )
+      : graphId && bareNodeId !== null
+        ? widgetValueStore.getWidget(widgetId(graphId, bareNodeId, widget.name))
         : undefined
     const mergedOptions: IWidgetOptions = {
       ...(widget.options ?? {}),
@@ -263,7 +259,9 @@ export function computeProcessedWidgets({
     isVisible: visible,
     identity: { renderKey }
   } of uniqueWidgets) {
-    const bareWidgetId = String(stripGraphPrefix(widget.nodeId ?? nodeId ?? ''))
+    const bareWidgetId = String(
+      tryStripGraphPrefix(widget.nodeId ?? nodeId) ?? ''
+    )
 
     const vueComponent =
       getComponent(widget.type) ||
@@ -327,7 +325,7 @@ export function computeProcessedWidgets({
         e,
         widget.name,
         widget.nodeId !== undefined
-          ? stripGraphPrefix(widget.nodeId)
+          ? (tryStripGraphPrefix(widget.nodeId) ?? undefined)
           : undefined
       )
     }

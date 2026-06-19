@@ -342,7 +342,7 @@ export const zComfyWorkflow = zBaseExportableGraph
   .extend({
     id: z.string().uuid().optional(),
     revision: z.number().optional(),
-    last_node_id: z.number(),
+    last_node_id: z.number().int().nonnegative(),
     last_link_id: z.number(),
     nodes: z.array(zComfyNode),
     links: z.array(zComfyLink),

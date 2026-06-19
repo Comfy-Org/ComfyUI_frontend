@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isNumericNodeId, nodeIdToNumber } from '@/types/nodeId'
+import { isNumericNodeId, nodeIdToNumber, tryAsNodeId } from '@/types/nodeId'
 
 describe('isNumericNodeId', () => {
   it('treats non-negative counter ids as numeric in both forms', () => {
@@ -35,5 +35,22 @@ describe('nodeIdToNumber', () => {
     expect(() => nodeIdToNumber('abc')).toThrow(TypeError)
     expect(() => nodeIdToNumber('10:3')).toThrow(TypeError)
     expect(() => nodeIdToNumber(Number.NaN)).toThrow(TypeError)
+  })
+})
+
+describe('tryAsNodeId', () => {
+  it('brands valid decimal ids in both forms', () => {
+    expect(tryAsNodeId(0)).toBe(0)
+    expect(tryAsNodeId('42')).toBe(42)
+    expect(tryAsNodeId(-1)).toBe(-1)
+  })
+
+  it('returns null instead of throwing for invalid or missing ids', () => {
+    expect(tryAsNodeId(null)).toBeNull()
+    expect(tryAsNodeId(undefined)).toBeNull()
+    expect(tryAsNodeId('')).toBeNull()
+    expect(tryAsNodeId('0x10')).toBeNull()
+    expect(tryAsNodeId('10:3')).toBeNull()
+    expect(tryAsNodeId('3f1beb2b-bded')).toBeNull()
   })
 })

@@ -94,7 +94,11 @@ export function isNodeLocatorId(value: unknown): value is NodeLocatorId {
 }
 
 /**
- * Type guard to check if a value is a NodeExecutionId
+ * Type guard for nested execution paths (colon-separated node ids, e.g.
+ * `"123:456"`). Root-graph execution ids (simple numeric ids like `"123"`) are
+ * intentionally excluded — they have no colon. This guard is deliberately
+ * stricter than `zNodeExecutionId`/`asNodeExecutionId`, which leniently brand
+ * trusted values (including root ids) without validating path shape.
  */
 export function isNodeExecutionId(value: unknown): value is NodeExecutionId {
   if (typeof value !== 'string') return false

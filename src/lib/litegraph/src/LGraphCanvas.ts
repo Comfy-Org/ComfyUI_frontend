@@ -117,6 +117,7 @@ import {
   asNodeId,
   isNumericNodeId,
   nodeIdToNumber,
+  tryAsNodeId,
   UNASSIGNED_NODE_ID
 } from '@/types/nodeId'
 import { resolveConnectingLinkColor } from './utils/linkColors'
@@ -8999,13 +9000,17 @@ function isNodeIdValue(value: unknown): value is NodeIdInput {
   return typeof value === 'string' || typeof value === 'number'
 }
 
-/** Looks up a remap, tolerating legacy numeric ids and skipping sentinels. */
+/**
+ * Looks up a remap, tolerating legacy numeric ids and skipping sentinels.
+ * Invalid metadata ids (e.g. non-decimal strings from legacy/extension
+ * `proxyWidgets` or `previewExposures`) are skipped rather than aborting paste.
+ */
 function remapNodeId(
   nodeId: NodeIdInput,
   remappedIds: Map<NodeId, NodeId>
 ): NodeId | undefined {
-  const normalized = asNodeId(nodeId)
-  if (normalized === UNASSIGNED_NODE_ID) return undefined
+  const normalized = tryAsNodeId(nodeId)
+  if (normalized === null || normalized === UNASSIGNED_NODE_ID) return undefined
   return remappedIds.get(normalized)
 }
 

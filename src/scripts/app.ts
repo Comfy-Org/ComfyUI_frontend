@@ -40,7 +40,6 @@ import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { NodeId } from '@/types/nodeId'
 import {
   collectSubgraphDefinitions,
   buildSubgraphExecutionPaths
@@ -298,7 +297,7 @@ export class ComfyApp {
    * The node errors from the previous execution.
    * @deprecated Use app.extensionManager.lastNodeErrors instead
    */
-  get lastNodeErrors(): Record<NodeId, NodeError> | null {
+  get lastNodeErrors(): Record<string, NodeError> | null {
     return useExecutionErrorStore().lastNodeErrors
   }
 
@@ -1677,7 +1676,7 @@ export class ComfyApp {
             const hasNodeErrors =
               nodeErrors && Object.keys(nodeErrors).length > 0
             executionErrorStore.lastNodeErrors = hasNodeErrors
-              ? (nodeErrors as Record<NodeId, NodeError>)
+              ? (nodeErrors ?? null)
               : null
             try {
               if (res.prompt_id) {
@@ -1749,9 +1748,7 @@ export class ComfyApp {
 
             if (error instanceof PromptExecutionError) {
               executionErrorStore.lastNodeErrors =
-                (error.response.node_errors as
-                  | Record<NodeId, NodeError>
-                  | undefined) ?? null
+                error.response.node_errors ?? null
 
               // Store prompt-level error separately only when no node-specific errors exist,
               // because node errors already carry the full context. Prompt-level errors

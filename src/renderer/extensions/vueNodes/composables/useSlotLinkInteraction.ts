@@ -7,7 +7,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import { asNodeId } from '@/types/nodeId'
+import { asNodeId, tryAsNodeId } from '@/types/nodeId'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type {
@@ -338,8 +338,7 @@ export function useSlotLinkInteraction({
       const elWithNode = target.closest<HTMLElement>('[data-node-id]')
       hoveredSlotKey = elWithSlot?.dataset['slotKey'] ?? null
       const hoveredNodeIdAttr = elWithNode?.dataset['nodeId']
-      hoveredNodeId =
-        hoveredNodeIdAttr != null ? asNodeId(hoveredNodeIdAttr) : null
+      hoveredNodeId = tryAsNodeId(hoveredNodeIdAttr)
       dragContext.lastPointerEventTarget = target
       dragContext.lastPointerTargetSlotKey = hoveredSlotKey
       dragContext.lastPointerTargetNodeId = hoveredNodeId

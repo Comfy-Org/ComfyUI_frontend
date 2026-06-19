@@ -49,10 +49,10 @@ Subgraphs are not a separate entity kind. A subgraph is a node with a `SubgraphS
 
 ### Branded ID Design
 
-Each entity kind gets a nominal/branded type wrapping its underlying primitive, and the brand prevents accidental cross-kind usage at compile time. `NodeId` and `WidgetId` are branded `string`: node ids are canonicalized from legacy `number | string` values to `string` at load/serialization boundaries (via `asNodeId`), and widget ids are composite path strings. The remaining ids keep `number` as their underlying primitive:
+Each entity kind gets a nominal/branded type wrapping its underlying primitive, and the brand prevents accidental cross-kind usage at compile time. `NodeId` is a branded `number`: node ids are normalized from legacy `number | string` values to `number` at load/serialization boundaries (via `asNodeId`, which rejects non-decimal-integer strings). `WidgetId` is a branded `string` composite path. The remaining ids keep `number` as their underlying primitive:
 
 ```ts
-type NodeId = string & { readonly __brand: 'NodeId' }
+type NodeId = number & { readonly __brand: 'NodeId' }
 type LinkId = number & { readonly __brand: 'LinkId' }
 type WidgetId = string & { readonly __brand: 'WidgetId' }
 type SlotId = number & { readonly __brand: 'SlotId' }

@@ -2,7 +2,6 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import { asNodeExecutionId } from '@/types/nodeIdentification'
 import type { MissingNodeType } from '@/types/comfy'
 
@@ -56,7 +55,7 @@ describe('executionErrorStore — node error operations', () => {
     it('clears entirely if there are only simple errors for the same slot', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'value_bigger_than_max',
@@ -79,7 +78,7 @@ describe('executionErrorStore — node error operations', () => {
     it('clears only the specific slot errors, leaving other errors alone', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'value_bigger_than_max',
@@ -103,16 +102,19 @@ describe('executionErrorStore — node error operations', () => {
 
       // otherSlot error should still exist
       expect(store.lastNodeErrors).not.toBeNull()
-      expect(store.lastNodeErrors?.[asNodeId('123')].errors).toHaveLength(1)
       expect(
-        store.lastNodeErrors?.[asNodeId('123')].errors[0].extra_info?.input_name
+        store.lastNodeErrors?.[asNodeExecutionId('123')].errors
+      ).toHaveLength(1)
+      expect(
+        store.lastNodeErrors?.[asNodeExecutionId('123')].errors[0].extra_info
+          ?.input_name
       ).toBe('otherSlot')
     })
 
     it('does nothing if executionId is not found in lastNodeErrors', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'value_bigger_than_max',
@@ -129,13 +131,15 @@ describe('executionErrorStore — node error operations', () => {
       store.clearSimpleNodeErrors('999', 'testSlot')
 
       // Original error should remain untouched
-      expect(store.lastNodeErrors?.[asNodeId('123')].errors).toHaveLength(1)
+      expect(
+        store.lastNodeErrors?.[asNodeExecutionId('123')].errors
+      ).toHaveLength(1)
     })
 
     it('preserves complex errors when slot has both simple and complex errors', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'value_bigger_than_max',
@@ -158,13 +162,15 @@ describe('executionErrorStore — node error operations', () => {
       store.clearSimpleNodeErrors('123', 'testSlot')
 
       // Mixed simple+complex: not all are simple, so none are cleared
-      expect(store.lastNodeErrors?.[asNodeId('123')].errors).toHaveLength(2)
+      expect(
+        store.lastNodeErrors?.[asNodeExecutionId('123')].errors
+      ).toHaveLength(2)
     })
 
     it('clears one node while preserving another in multi-node errors', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'value_bigger_than_max',
@@ -176,7 +182,7 @@ describe('executionErrorStore — node error operations', () => {
           dependent_outputs: [],
           class_type: 'KSampler'
         },
-        [asNodeId('456')]: {
+        [asNodeExecutionId('456')]: {
           errors: [
             {
               type: 'exception_type',
@@ -193,14 +199,16 @@ describe('executionErrorStore — node error operations', () => {
       store.clearSimpleNodeErrors('123', 'steps')
 
       // Node 123 cleared, node 456 remains
-      expect(store.lastNodeErrors?.[asNodeId('123')]).toBeUndefined()
-      expect(store.lastNodeErrors?.[asNodeId('456')].errors).toHaveLength(1)
+      expect(store.lastNodeErrors?.[asNodeExecutionId('123')]).toBeUndefined()
+      expect(
+        store.lastNodeErrors?.[asNodeExecutionId('456')].errors
+      ).toHaveLength(1)
     })
 
     it('clears entire node when no slotName and all errors are simple', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'value_bigger_than_max',
@@ -228,7 +236,7 @@ describe('executionErrorStore — node error operations', () => {
     it('does not clear when no slotName and some errors are not simple', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'value_bigger_than_max',
@@ -250,13 +258,15 @@ describe('executionErrorStore — node error operations', () => {
 
       store.clearSimpleNodeErrors('123')
 
-      expect(store.lastNodeErrors?.[asNodeId('123')].errors).toHaveLength(2)
+      expect(
+        store.lastNodeErrors?.[asNodeExecutionId('123')].errors
+      ).toHaveLength(2)
     })
 
     it('does not clear if the error is not simple', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'exception_type', // Complex error
@@ -273,7 +283,9 @@ describe('executionErrorStore — node error operations', () => {
       store.clearSimpleNodeErrors('123', 'testSlot')
 
       // Error should remain
-      expect(store.lastNodeErrors?.[asNodeId('123')].errors).toHaveLength(1)
+      expect(
+        store.lastNodeErrors?.[asNodeExecutionId('123')].errors
+      ).toHaveLength(1)
     })
   })
 
@@ -281,7 +293,7 @@ describe('executionErrorStore — node error operations', () => {
     it('clears error if value is valid (isValueStillOutOfRange is false)', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'value_bigger_than_max',
@@ -306,7 +318,7 @@ describe('executionErrorStore — node error operations', () => {
     it('optimistically clears value_not_in_list error for string combo values', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'value_not_in_list',
@@ -328,7 +340,7 @@ describe('executionErrorStore — node error operations', () => {
     it('does not clear error if value is still out of range', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = {
-        [asNodeId('123')]: {
+        [asNodeExecutionId('123')]: {
           errors: [
             {
               type: 'value_bigger_than_max',
@@ -348,7 +360,9 @@ describe('executionErrorStore — node error operations', () => {
       })
 
       expect(store.lastNodeErrors).not.toBeNull()
-      expect(store.lastNodeErrors?.[asNodeId('123')].errors).toHaveLength(1)
+      expect(
+        store.lastNodeErrors?.[asNodeExecutionId('123')].errors
+      ).toHaveLength(1)
     })
   })
 })
@@ -517,7 +531,7 @@ describe('clearAllErrors', () => {
       details: ''
     }
     executionErrorStore.lastNodeErrors = {
-      [asNodeId('1')]: {
+      [asNodeExecutionId('1')]: {
         errors: [
           {
             type: 'required_input_missing',

@@ -74,7 +74,7 @@ test.describe('Graph', { tag: ['@smoke', '@canvas'] }, () => {
         // Count links from Switch(CFG) to node 85 cfg (should be 1, not 2)
         let cfgLinkToNode85Count = 0
         for (const link of subgraph.links.values()) {
-          if (link.origin_id === '120' && link.target_id === '85')
+          if (link.origin_id === 120 && link.target_id === 85)
             cfgLinkToNode85Count++
         }
 

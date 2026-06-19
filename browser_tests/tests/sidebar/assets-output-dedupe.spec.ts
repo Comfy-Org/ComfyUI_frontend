@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { asNodeId } from '@/types/nodeId'
+import { asNodeExecutionId } from '@/types/nodeIdentification'
 
 /**
  * Expanded folder view must drop output records that resolve to the same
@@ -13,7 +13,7 @@ import { asNodeId } from '@/types/nodeId'
  */
 
 const STACK_JOB_ID = 'job-output-dedupe'
-const COVER_NODE_ID = asNodeId('9')
+const COVER_NODE_ID = asNodeExecutionId('9')
 const COVER_FILENAME = 'cover_00001_.png'
 const DUPLICATE_FILENAME = 'duplicate_00002_.png'
 const DISTINCT_FILENAMES = ['distinct_00003_.png', 'distinct_00004_.png']

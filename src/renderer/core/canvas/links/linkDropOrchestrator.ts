@@ -1,6 +1,6 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { NodeId } from '@/types/nodeId'
-import { asNodeId } from '@/types/nodeId'
+import { tryAsNodeId } from '@/types/nodeId'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
@@ -64,7 +64,8 @@ export const resolveNodeSurfaceSlotCandidate = (
 
   if (!adapter || !graph) return null
 
-  const nodeId: NodeId = asNodeId(nodeIdAttr)
+  const nodeId = tryAsNodeId(nodeIdAttr)
+  if (nodeId === null) return null
 
   const cachedPreferredSlotForNode = session.preferredSlotForNode.get(nodeId)
   if (cachedPreferredSlotForNode !== undefined) {

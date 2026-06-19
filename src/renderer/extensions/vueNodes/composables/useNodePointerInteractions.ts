@@ -52,7 +52,7 @@ export function useNodePointerInteractions(
     }
 
     const nodeId = toValue(nodeIdRef)
-    if (!nodeId) {
+    if (nodeId == null) {
       console.warn(
         'LGraphNode: nodeData is null/undefined in handlePointerDown'
       )
@@ -156,7 +156,7 @@ export function useNodePointerInteractions(
     const multiSelect = isMultiSelectKey(event)
 
     const nodeId = toValue(nodeIdRef)
-    if (nodeId) {
+    if (nodeId != null) {
       toggleNodeSelectionAfterPointerUp(nodeId, multiSelect)
     }
   }

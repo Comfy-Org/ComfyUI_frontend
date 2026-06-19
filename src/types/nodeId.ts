@@ -44,6 +44,23 @@ export function asNodeId(value: NodeIdInput): NodeId {
 }
 
 /**
+ * Non-throwing variant of `asNodeId`. Returns `null` for values that are not
+ * valid node ids (missing values, UUIDs, execution paths, or malformed
+ * metadata) instead of throwing. Use at untrusted boundaries — DOM attributes,
+ * legacy clipboard/extension metadata — where invalid ids should be skipped.
+ */
+export function tryAsNodeId(
+  value: NodeIdInput | null | undefined
+): NodeId | null {
+  if (value == null) return null
+  try {
+    return asNodeId(value)
+  } catch {
+    return null
+  }
+}
+
+/**
  * Sentinel for a node not yet assigned a real id by a graph. Also used for a
  * floating link's unbound endpoint, which is definitionally not assigned to a
  * node.

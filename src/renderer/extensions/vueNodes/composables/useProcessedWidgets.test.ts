@@ -3,7 +3,10 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
+import type {
+  SafeWidgetData,
+  VueNodeData
+} from '@/composables/graph/useGraphNodeManager'
 import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import {
   computeProcessedWidgets,
@@ -510,6 +513,33 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       ui: noopUi
     })
   }
+
+  it('does not throw when both nodeData.id and widget.nodeId are absent', () => {
+    const widget = createMockWidget({ nodeId: undefined, name: 'no_id' })
+    // Runtime edge: a node can reach widget processing before an id is
+    // assigned, so id may be missing despite the VueNodeData type.
+    const nodeDataWithoutId = {
+      type: 'TestNode',
+      widgets: [widget],
+      title: 'Test',
+      mode: 0,
+      selected: false,
+      executing: false,
+      inputs: [],
+      outputs: []
+    } as unknown as VueNodeData
+
+    expect(() =>
+      computeProcessedWidgets({
+        nodeData: nodeDataWithoutId,
+        graphId: GRAPH_ID,
+        showAdvanced: false,
+        isGraphReady: false,
+        rootGraph: null,
+        ui: noopUi
+      })
+    ).not.toThrow()
+  })
 
   it('calls widget.callback with the new value when widgetState exists', () => {
     const callback = vi.fn()

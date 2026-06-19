@@ -1513,48 +1513,47 @@ class LayoutStoreImpl implements LayoutStore {
     const shouldNormalizeHeights = originalSource === LayoutSource.DOM
     this.currentSource = LayoutSource.Vue
 
-    const nodeIds: NodeId[] = []
-    const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
+    try {
+      const nodeIds: NodeId[] = []
+      const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
-    for (const { nodeId: rawNodeId, bounds } of updates) {
-      // Boundary: legacy callers pass numeric ids cast as `NodeId`.
-      const nodeId = asNodeId(rawNodeId)
-      const ynode = this.ynodes.get(nodeIdToYKey(nodeId))
-      if (!ynode) continue
-      const currentLayout = yNodeToLayout(ynode)
+      for (const { nodeId: rawNodeId, bounds } of updates) {
+        // Boundary: legacy callers pass numeric ids cast as `NodeId`.
+        const nodeId = asNodeId(rawNodeId)
+        const ynode = this.ynodes.get(nodeIdToYKey(nodeId))
+        if (!ynode) continue
+        const currentLayout = yNodeToLayout(ynode)
 
-      const normalizedBounds = shouldNormalizeHeights
-        ? {
-            ...bounds,
-            height: removeNodeTitleHeight(bounds.height)
-          }
-        : bounds
+        const normalizedBounds = shouldNormalizeHeights
+          ? {
+              ...bounds,
+              height: removeNodeTitleHeight(bounds.height)
+            }
+          : bounds
 
-      boundsRecord[nodeId] = {
-        bounds: normalizedBounds,
-        previousBounds: currentLayout.bounds
+        boundsRecord[nodeId] = {
+          bounds: normalizedBounds,
+          previousBounds: currentLayout.bounds
+        }
+        nodeIds.push(nodeId)
       }
-      nodeIds.push(nodeId)
-    }
 
-    if (!nodeIds.length) {
+      if (!nodeIds.length) return
+
+      const operation: BatchUpdateBoundsOperation = {
+        type: 'batchUpdateBounds',
+        entity: 'node',
+        nodeIds,
+        bounds: boundsRecord,
+        timestamp: Date.now(),
+        source: this.currentSource,
+        actor: this.currentActor
+      }
+
+      this.applyOperation(operation)
+    } finally {
       this.currentSource = originalSource
-      return
     }
-
-    const operation: BatchUpdateBoundsOperation = {
-      type: 'batchUpdateBounds',
-      entity: 'node',
-      nodeIds,
-      bounds: boundsRecord,
-      timestamp: Date.now(),
-      source: this.currentSource,
-      actor: this.currentActor
-    }
-
-    this.applyOperation(operation)
-
-    this.currentSource = originalSource
   }
 }
 

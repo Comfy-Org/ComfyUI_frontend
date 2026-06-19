@@ -600,8 +600,8 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJobs.value[id] ??= { nodes: {} }
     const queuedJob = queuedJobs.value[id]
     queuedJob.nodes = {
-      ...nodes.reduce((p: Record<string, boolean>, n) => {
-        p[n] = false
+      ...nodes.reduce((p: Record<NodeExecutionId, boolean>, n) => {
+        p[asNodeExecutionId(n)] = false
         return p
       }, {}),
       ...queuedJob.nodes
