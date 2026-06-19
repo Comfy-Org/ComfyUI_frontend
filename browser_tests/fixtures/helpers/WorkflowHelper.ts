@@ -2,11 +2,11 @@ import { readFileSync } from 'fs'
 
 import { test } from '@playwright/test'
 
+import type { AppMode } from '@/utils/appMode'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { AppMode } from '@/utils/appMode'
 import type { WorkspaceStore } from '@e2e/types/globals'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
