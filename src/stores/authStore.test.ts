@@ -1151,7 +1151,9 @@ describe('useAuthStore', () => {
       mockFetch.mockImplementation((url: string, init?: RequestInit) => {
         if (url.endsWith('/customers') && init?.method === 'POST') {
           postCount++
-          return postCount === 1 ? slowCreateP : Promise.resolve(mockCreateCustomerResponse)
+          return postCount === 1
+            ? slowCreateP
+            : Promise.resolve(mockCreateCustomerResponse)
         }
         return Promise.resolve(makeConflictResponse())
       })
@@ -1177,7 +1179,9 @@ describe('useAuthStore', () => {
 
       // A fresh recovery for the new session must POST again;
       // customerCreated must not have been set by the stale resolution.
-      await store.fetchWithCustomerRecovery('https://api.test/customers/balance')
+      await store.fetchWithCustomerRecovery(
+        'https://api.test/customers/balance'
+      )
       expect(postCount).toBe(2)
     })
   })
