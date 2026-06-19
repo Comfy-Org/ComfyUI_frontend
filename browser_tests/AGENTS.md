@@ -18,7 +18,6 @@ browser_tests/
 │   ├── components/       - Page object classes (locators, user interactions)
 │   │   ├── Actionbar.ts
 │   │   ├── ContextMenu.ts
-│   │   ├── ManageGroupNode.ts
 │   │   ├── SettingDialog.ts
 │   │   ├── SidebarTab.ts
 │   │   ├── Templates.ts
@@ -44,7 +43,7 @@ browser_tests/
 ### Architectural Separation
 
 - **`fixtures/data/`** — Static test data only. Mock API responses, workflow JSONs, node definitions. No code, no imports from Playwright.
-- **`fixtures/components/`** — Page object components. Classes that own locators for a specific UI region (e.g. `Actionbar`, `ContextMenu`, `ManageGroupNode`).
+- **`fixtures/components/`** — Page object components. Classes that own locators for a specific UI region (e.g. `Actionbar`, `ContextMenu`, `SettingDialog`).
 - **`fixtures/helpers/`** — Helper classes that coordinate actions across multiple regions without owning a locator surface of their own (e.g. `CanvasHelper`, `WorkflowHelper`, `NodeOperationsHelper`).
 - **`fixtures/utils/`** — Standalone utility functions. Exported functions (not classes) used by tests or fixtures (e.g. `fitToView`, `clipboardSpy`, `builderTestUtils`).
 
