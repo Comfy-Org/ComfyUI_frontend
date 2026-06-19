@@ -67,9 +67,7 @@ const emit = defineEmits<{
   submit: [values: SignUpData]
 }>()
 
-// Leading-edge only (trailing: false): the default throttle would replay a
-// double-submit 1.5s later and create the account twice. The loading guard drops
-// submits once a sign-up is already running.
+// Leading-edge only (trailing: false) + loading guard: a double-submit must create the account once.
 const onSubmit = useThrottleFn(
   (event: FormSubmitEvent) => {
     if (loading.value) return
