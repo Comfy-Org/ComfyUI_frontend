@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
+import HeroSection from '../templates/drops/HeroSection.vue'
 import { t } from '../i18n/translations'
 
 const locale = 'en' as const
@@ -9,4 +10,5 @@ const locale = 'en' as const
   title={t('drops.page.title', locale)}
   description={t('drops.page.description', locale)}
 >
+  <HeroSection locale={locale} />
 </BaseLayout>

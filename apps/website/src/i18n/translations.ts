@@ -4940,6 +4940,25 @@ const translations = {
     en: 'Explore everything new in Comfy — releases, features, models, and resources across platform, cloud, community, and developer tools.',
     'zh-CN':
       '探索 Comfy 的最新动态 — 涵盖平台、云端、社区和开发者工具的发布、功能、模型和资源。'
+  },
+
+  // Drops page (/drops) — hero section
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'drops.hero.title': {
+    en: 'Everything new in ComfyUI',
+    'zh-CN': 'ComfyUI 全新内容'
+  },
+  'drops.hero.primary': {
+    en: 'Download Desktop',
+    'zh-CN': '下载桌面版'
+  },
+  'drops.hero.secondary': {
+    en: 'Launch Cloud',
+    'zh-CN': '启动云端'
+  },
+  'drops.hero.visualAlt': {
+    en: 'Comfy',
+    'zh-CN': 'Comfy'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
