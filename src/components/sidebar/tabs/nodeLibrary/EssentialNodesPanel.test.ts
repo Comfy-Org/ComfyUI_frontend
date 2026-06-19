@@ -1,5 +1,6 @@
+import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
-import { createPinia, setActivePinia } from 'pinia'
+import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
@@ -29,7 +30,7 @@ function createMediaFilters(
 
 describe('EssentialNodesPanel', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
+    setActivePinia(createTestingPinia())
   })
 
   function renderComponent({

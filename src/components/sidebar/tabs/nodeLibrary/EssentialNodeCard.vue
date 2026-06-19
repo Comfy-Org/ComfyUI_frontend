@@ -36,6 +36,8 @@
 </template>
 
 <script setup lang="ts">
+import { useTemplateRef } from 'vue'
+
 import TextTickerMultiLine from '@/components/common/TextTickerMultiLine.vue'
 import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
@@ -49,15 +51,14 @@ const { previewPanel, tile } = defineProps<{
   previewPanel?: HTMLElement | null
 }>()
 const nodeDef = useEssentialTileNodeDef(() => tile)
+const previewRef = useTemplateRef('previewRef')
 
 const {
-  previewRef,
   showPreview,
   nodePreviewStyle,
   handleMouseEnter,
   handleMouseLeave,
   handleDragStart,
   handleDragEnd
-} = useNodePreviewAndDrag(nodeDef, () => previewPanel ?? null)
-void previewRef // typechecker is wrong
+} = useNodePreviewAndDrag(nodeDef, previewRef, () => previewPanel ?? null)
 </script>

@@ -27,7 +27,7 @@
       >
         <EssentialNodeCard
           v-for="tile in section.tiles.filter(
-            (t) => !t.media || mediaFilters[t.media]
+            (tile) => !tile.media || mediaFilters[tile.media]
           )"
           :key="tile.nodeName"
           :preview-panel

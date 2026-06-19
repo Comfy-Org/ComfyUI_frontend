@@ -517,5 +517,5 @@ const NODE_TO_ESSENTIALS_PATH: Record<string, EssentialsPath> =
 
 export const NODE_TO_ESSENTIALS_CATEGORY: Record<string, string> = mapValues(
   NODE_TO_ESSENTIALS_PATH,
-  (v) => v?.subgroup ?? v.section
+  (v) => v.subgroup ?? v.section
 )

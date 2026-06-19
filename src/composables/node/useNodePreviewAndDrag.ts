@@ -10,6 +10,7 @@ const PREVIEW_MARGIN = 16
 
 export function useNodePreviewAndDrag(
   nodeDef: Ref<ComfyNodeDefImpl | undefined>,
+  previewRef: Ref<HTMLElement | null>,
   panelRef?: MaybeRefOrGetter<HTMLElement | null>
 ) {
   const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
@@ -18,7 +19,6 @@ export function useNodePreviewAndDrag(
     settingStore.get('Comfy.Sidebar.Location')
   )
 
-  const previewRef = ref<HTMLElement | null>(null)
   const isHovered = ref(false)
   const isDragging = ref(false)
   const showPreview = computed(() => isHovered.value && !isDragging.value)
@@ -134,7 +134,6 @@ export function useNodePreviewAndDrag(
   }
 
   return {
-    previewRef,
     isHovered,
     isDragging,
     showPreview,

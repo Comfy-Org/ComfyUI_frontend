@@ -22,11 +22,9 @@ export function resolveEssentialTileNodeDef(
   return nodeDefStore.nodeDefs.find((d) => d.display_name === target)
 }
 
-export function useEssentialTileNodeDef(
-  title: MaybeRefOrGetter<EssentialTile>
-) {
+export function useEssentialTileNodeDef(tile: MaybeRefOrGetter<EssentialTile>) {
   const nodeDefStore = useNodeDefStore()
   return computed(() =>
-    resolveEssentialTileNodeDef(toValue(title), nodeDefStore)
+    resolveEssentialTileNodeDef(toValue(tile), nodeDefStore)
   )
 }

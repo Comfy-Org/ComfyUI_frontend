@@ -152,7 +152,7 @@
           >
             <EssentialNodesPanel
               v-model:media-filters="effectiveMediaFilters"
-              :search-query="searchQuery"
+              :search-query
             />
           </TabPanel>
           <TabPanel :model-value="selectedTab" value="all">
@@ -309,7 +309,7 @@ const filterableCategories: NodeCategoryId[] = [
   'comfyNodes',
   'partnerNodes',
   'extensions'
-]
+] as const
 
 const filterOptions = ref<Record<NodeCategoryId, boolean>>({
   blueprints: false,
