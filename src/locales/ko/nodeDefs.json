@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "Bernini 인컨텍스트 비디오/이미지 컨디셔닝을 위한 컨디셔닝 노드입니다. 다음 작업에 사용할 수 있습니다: t2v (텍스트-투-비디오), v2v (비디오-투-비디오), rv2v (참조 기반 비디오 편집), r2v (참조-투-비디오), ads2v (이미지/비디오를 비디오에 삽입). 인컨텍스트 토큰(r2v, rv2v)으로 삽입된 참조 이미지는 고유의 원본 종횡비(긴 변이 ref_max_size로 제한됨)로 독립적으로 인코딩됩니다.",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "ref_max_size",
+        "tooltip": "reference_video 및 reference_images의 긴 변의 최대 크기. 종횡비를 유지하며 리사이즈되고 16px 단위로 맞춰집니다."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "reference_video": {
+        "name": "reference_video",
+        "tooltip": "원본 비디오에 삽입할 비디오(ads2v)."
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "편집 또는 스타일 변경할 원본 비디오(v2v, rv2v). width/height로 리사이즈되고 length로 자릅니다."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "베타 샘플링 스케줄러",
     "inputs": {
@@ -636,6 +692,36 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoReplaceBackground": {
+    "description": "Bria를 사용하여 비디오의 배경을 제공된 이미지 또는 비디오로 교체합니다. 출력은 전경의 해상도와 프레임 속도를 유지하며, 배경의 종횡비가 다를 경우 맞춰 늘어나므로 왜곡 없는 결과를 원한다면 종횡비를 맞추세요.",
+    "display_name": "Bria 비디오 배경 교체",
+    "inputs": {
+      "background_image": {
+        "name": "background_image",
+        "tooltip": "전경 뒤에 합성할 배경 이미지입니다. 배경 이미지 또는 배경 비디오 중 하나만 제공하세요."
+      },
+      "background_video": {
+        "name": "background_video",
+        "tooltip": "전경 뒤에 합성할 배경 비디오입니다. 배경 이미지 또는 배경 비디오 중 하나만 제공하세요."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "배경이 교체될 전경 비디오입니다."
       }
     },
     "outputs": {
@@ -2818,6 +2904,10 @@
         "name": "오디오",
         "tooltip": "비디오에 추가할 오디오입니다."
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "생성된 비디오의 비트 깊이입니다. 10비트는 더 부드러운 그라데이션과 적은 밴딩을 제공하지만, 일부 플레이어나 후속 노드에서 지원되지 않을 수 있습니다."
+      },
       "fps": {
         "name": "fps"
       },
@@ -2922,6 +3012,98 @@
       },
       "1": {
         "name": "INDEX",
+        "tooltip": null
+      }
+    }
+  },
+  "DA3GeometryToMesh": {
+    "description": "깊이 맵을 삼각형 3D 메시로 변환합니다.",
+    "display_name": "DA3 지오메트리를 메시로 변환",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "변환할 배치 내 이미지 인덱스입니다. 이미지마다 버텍스 개수가 다르므로 배치를 쌓을 수 없습니다."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "이미지별 정규화된 신뢰도가 이 값보다 낮은 픽셀을 제외합니다 (0 = 모두 유지, 1 = 가장 신뢰도 높은 픽셀만 유지). 지오메트리에 신뢰도 맵이 있을 때 사용합니다 (Small/Base 모델)."
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "버텍스 간격입니다. 1 = 전체 해상도, 2 = 절반 해상도 등."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "3x3 깊이 범위가 이 비율을 초과하는 삼각형을 제거합니다. 0 = 비활성화."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "원본 이미지를 기본 색상 텍스처로 사용합니다."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "메시에서 하늘 확률 픽셀(하늘 >= 0.5)을 제외합니다. 지오메트리에 하늘 맵이 있을 때 사용합니다 (Mono/Metric 모델)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "이미지에서 Depth Anything 3을 실행합니다. 다중 뷰 모드에서는 각 이미지를 동일한 장면의 별도 뷰로 처리합니다.",
+    "display_name": "Depth Anything 3 실행",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: 단일 뷰 이미지(모든 모델 변형에서 사용 가능).\nmultiview: 모든 이미지를 기하학적 일관성 및 카메라 포즈를 위해 함께 처리(Small/Base 모델 전용)."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: 가장 긴 변이 resolution이 되도록 스케일(메모리 제한, 기본값).\nlower_bound_resize: 가장 짧은 변이 resolution이 되도록 스케일(세로/가로가 긴 이미지에서 더 많은 디테일 보존, 메모리 더 사용)."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "모델이 실행되는 해상도 (가장 긴 변, 14의 배수).\n낮을수록 빠르고 VRAM 사용량이 적음.\n높을수록 더 많은 디테일.\n출력은 원본 크기로 업샘플링됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "정규화되지 않은 텐서의 딕셔너리.\n항상 포함되는 키: depth, image, mode.\n선택적 키: sky(Mono/Metric), confidence(Small/Base), extrinsics + intrinsics(다중 뷰)."
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "Depth Anything 3 지오메트리 데이터에서 깊이 맵, 신뢰도 맵 또는 하늘 마스크를 렌더링합니다.",
+    "display_name": "Depth Anything 3 렌더",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: 정규화된 그레이스케일 깊이 이미지.\n- depth_colored: Turbo 컬러맵을 적용한 깊이.\n- sky_mask: [0, 1] 범위의 하늘 확률(Mono/Metric 모델 전용).\n- confidence: 정규화된 깊이 신뢰도(Small/Base 모델 전용)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -5041,6 +5223,10 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -7848,7 +8034,8 @@
         "name": "생성 후 제어"
       },
       "generate_audio": {
-        "name": "오디오 생성"
+        "name": "오디오 생성",
+        "tooltip": "'kling-3.0-turbo'는 항상 기본 오디오를 생성하므로, 오디오 토글은 무시됩니다."
       },
       "model": {
         "name": "모델",
@@ -8927,6 +9114,22 @@
     "outputs": {
       "0": {
         "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "Depth Anything 3 불러오기",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15661,6 +15864,98 @@
       }
     }
   },
+  "RunwayAleph2KeyframeNode": {
+    "description": "가이드 이미지를 입력(소스) 비디오의 특정 순간에 고정하여, Aleph2가 해당 시점에서 편집을 유도하도록 합니다. 이 노드를 Runway Aleph2 Video to Video 노드의 'keyframes' 입력에 연결하세요. 아래의 선택적 'keyframes' 입력을 통해 여러 개(최대 5개)를 연쇄 연결할 수 있습니다.",
+    "display_name": "Runway Aleph2 키프레임",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "입력 비디오의 선택한 순간에 적용할 가이드 이미지입니다."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "이전 키프레임을 이 키프레임과 연쇄 연결할 수 있습니다(선택 사항)."
+      },
+      "timing": {
+        "name": "timing",
+        "tooltip": "이 이미지를 입력 비디오 타임라인에 배치하는 방법입니다."
+      },
+      "timing_seconds": {
+        "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "가이드 이미지를 출력(결과) 비디오의 특정 순간에 고정하여, 해당 시점의 편집된 비디오가 어떻게 보일지 안내합니다. 이 노드를 Runway Aleph2 Video to Video 노드의 'prompt_images' 입력에 연결하세요. 아래의 선택적 'prompt_images' 입력을 통해 여러 개(최대 5개)를 연쇄 연결할 수 있습니다.",
+    "display_name": "Runway Aleph2 프롬프트 이미지",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "출력 비디오의 선택한 순간에 배치할 가이드 이미지입니다."
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "이 이미지를 출력 비디오 타임라인에 배치하는 방법입니다."
+      },
+      "position_seconds": {
+        "name": "seconds"
+      },
+      "prompt_images": {
+        "name": "prompt_images",
+        "tooltip": "이전 프롬프트 이미지를 이 이미지와 연쇄 연결할 수 있습니다(선택 사항)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt_images",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "Runway의 Aleph2 모델을 사용하여 텍스트 프롬프트로 비디오를 편집합니다. Aleph2는 원본의 움직임과 타이밍을 유지하면서 영상의 스타일 변경, 조명 변경, 요소 추가/제거, 시점 변경 등을 수행합니다. 출력 해상도는 입력 비디오와 동일하며, 입력 비디오는 2~30초, 30fps 이하만 지원됩니다. 선택적으로 키프레임(입력 비디오에 고정) 또는 프롬프트 이미지(출력 비디오에 고정) 중 하나로 편집을 조정할 수 있습니다. 두 가지를 동시에 사용할 수 없습니다.",
+    "display_name": "Runway Aleph2 비디오 투 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "keyframes": {
+        "name": "키프레임",
+        "tooltip": "입력 비디오에 고정된 가이드 이미지로, Aleph2 Keyframe 노드에서 가져옵니다(최대 5개). 키프레임 또는 프롬프트 이미지 중 하나만 사용하세요."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "출력에 나타나야 할 내용을 설명합니다. (1~1000자)"
+      },
+      "prompt_images": {
+        "name": "프롬프트 이미지",
+        "tooltip": "출력 비디오에 고정된 가이드 이미지로, Aleph2 Prompt Image 노드에서 가져옵니다(최대 5개). 키프레임 또는 프롬프트 이미지 중 하나만 사용하세요."
+      },
+      "public_figure_threshold": {
+        "name": "공인 임계값",
+        "tooltip": "식별 가능한 공인에 대한 콘텐츠 모더레이션."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "생성에 사용할 랜덤 시드"
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "편집할 입력 비디오입니다. 2~30초, 30fps 이하만 지원됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RunwayFirstLastFrameNode": {
     "description": "첫 번째와 마지막 키프레임을 업로드하고 프롬프트를 작성하여 비디오를 생성합니다. 마지막 프레임이 첫 번째 프레임과 완전히 다른 경우와 같은 복잡한 전환은 10초의 긴 지속 시간을 사용하는 것이 좋습니다. 이렇게 하면 두 입력 사이를 부드럽게 전환할 수 있는 시간이 더 주어집니다. 시작하기 전에 입력 선택이 생성 성공을 보장할 수 있도록 다음 모범 사례를 검토하세요: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
     "display_name": "Runway 첫-마지막 프레임 비디오 변환",
@@ -15904,6 +16199,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "SCAIL-2 컬러 마스크 생성",
+    "inputs": {
+      "driving_track_data": {
+        "name": "driving_track_data",
+        "tooltip": "드라이빙 포즈 비디오의 SAM3 트랙. pose_video_mask 출력으로 렌더링됩니다."
+      },
+      "object_indices": {
+        "name": "object_indices",
+        "tooltip": "포함할 사람 인덱스의 쉼표로 구분된 목록(예: '0,2,3'). 참조 및 포즈 비디오 마스크 모두에 적용됩니다. 비워두면 전체 선택."
+      },
+      "ref_track_data": {
+        "name": "ref_track_data",
+        "tooltip": "참조 이미지의 SAM3 트랙."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "False = mask_video는 검정 배경(애니메이션 모드). True = 흰색 배경(대체 모드). WanSCAILToVideo에서 일치하는 replacement_mode를 설정하세요. reference_image_mask는 항상 검정 배경입니다."
+      },
+      "sort_by": {
+        "name": "sort_by",
+        "tooltip": "팔레트 색상이 트래킹된 객체에 할당되는 순서(참조 및 포즈 비디오 모두에 적용되어 각 아이덴티티가 동일한 색상을 유지). left_to_right = 첫 프레임 중심 기준 가장 왼쪽 객체가 첫 번째 색상; area = 첫 프레임 마스크 면적 기준 가장 큰 객체가 첫 번째 색상; none = SAM3의 순서 유지."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -15918,6 +16248,9 @@
       },
       "draw_hands": {
         "name": "draw_hands"
+      },
+      "draw_head": {
+        "name": "머리 그리기"
       },
       "face_point_size": {
         "name": "face_point_size"
@@ -18478,6 +18811,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "편집할 참조 이미지입니다. Boogu는 샘플당 하나의 참조 이미지를 중점적으로 사용하지만, 여러 개도 허용됩니다."
+      },
+      "negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "HunyuanVideo 텍스트 인코딩 (이미지 → 비디오)",
     "inputs": {
@@ -19265,6 +19629,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "외부 3D 모델(예: Rodin, Hunyuan3D 또는 로컬 파일)을 Tripo로 가져와 Tripo의 후처리 노드(Texture, Rig, Convert)와 함께 사용할 수 있습니다. GLB 형식을 권장합니다: 텍스처가 파일에 임베드되어 있을 때만 가져오기가 가능합니다. 가져온 모델에 텍스처를 적용하려면 텍스처 프롬프트가 필요합니다.",
+    "display_name": "Tripo: Import Model",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "가져올 3D 모델(GLB / FBX / OBJ / STL, 최대 150MB). OBJ와 STL 파일은 임베드된 텍스처를 포함하지 않습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: 다중 뷰에서 모델 생성",
     "inputs": {
@@ -19732,6 +20112,10 @@
       },
       "texture_alignment": {
         "name": "텍스처 정렬"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "텍스처링을 위한 선택적 텍스트 가이드입니다. 가져온 모델(Tripo: Import Model)의 경우 실제로 필요하며, 색상을 추론할 소스 이미지가 없기 때문입니다."
       },
       "texture_quality": {
         "name": "텍스처 품질"
@@ -22338,7 +22722,8 @@
         "name": "배치 크기"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "조건부를 위한 CLIP 비전 특징입니다. stretch resize로 종횡비에 맞춰 학습되었습니다."
       },
       "height": {
         "name": "높이"
@@ -22365,14 +22750,39 @@
         "name": "포즈 비디오",
         "tooltip": "포즈 컨디셔닝에 사용되는 비디오입니다. 메인 비디오 해상도의 절반으로 다운스케일됩니다."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "SCAIL-2 전용. pose_video와 동일 해상도의 신원별 색상 SAM3 마스크 비디오입니다."
+      },
       "positive": {
         "name": "positive"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "이전 프레임의 마지막 프레임 수를 기준점으로 사용합니다. SCAIL-2는 5(81프레임 청크, 76프레임 스텝)로 학습되었습니다."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "SCAIL-2 전용. 이전 청크의 전체 디코딩 출력입니다. 마지막 previous_frame_count만 확장 기준점으로 사용됩니다."
+      },
       "reference_image": {
-        "name": "참조 이미지"
+        "name": "참조 이미지",
+        "tooltip": "참조 이미지입니다. 여러 참조가 있을 경우 하나의 이미지에 모두 합성하세요."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "SCAIL-2 전용. reference_image와 동일 해상도의 색상 참조 마스크입니다."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "SCAIL-2 전용. 거짓 = 애니메이션 모드(pose_video_mask는 검은색 배경이어야 함). 참 = 교체 모드(pose_video_mask는 흰색 배경이어야 함)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "이 청크가 시작하는 누적 출력 프레임입니다. 이전 청크의 video_frame_offset 출력에서 연결하세요."
       },
       "width": {
         "name": "너비"
@@ -22390,6 +22800,10 @@
       "2": {
         "name": "latent",
         "tooltip": "생성 크기의 빈 latent입니다."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "조정된 오프셋 + 길이. 다음 청크에 연결하세요."
       }
     }
   },

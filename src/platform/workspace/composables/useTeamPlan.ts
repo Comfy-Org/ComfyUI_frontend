@@ -10,7 +10,7 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
  * that is subscribed to it.
  */
 export function useTeamPlan() {
-  const { subscription } = useBillingContext()
+  const { subscription, subscriptionStatus } = useBillingContext()
   const { isInPersonalWorkspace, isWorkspaceSubscribed } = storeToRefs(
     useTeamWorkspaceStore()
   )
@@ -20,5 +20,14 @@ export function useTeamPlan() {
   )
   const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 
-  return { isOnTeamPlan, isCancelled }
+  // Subscribed-then-lapsed (cancelled or ended), not never-subscribed — drives
+  // reactivate-vs-upgrade copy.
+  const hasLapsedTeamPlan = computed(
+    () =>
+      !isInPersonalWorkspace.value &&
+      (subscriptionStatus.value === 'canceled' ||
+        subscriptionStatus.value === 'ended')
+  )
+
+  return { isOnTeamPlan, isCancelled, hasLapsedTeamPlan }
 }

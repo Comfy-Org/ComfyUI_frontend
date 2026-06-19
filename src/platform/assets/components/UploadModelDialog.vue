@@ -17,6 +17,7 @@
         v-model="selectedModelType"
         :metadata="wizardData.metadata"
         :preview-image="wizardData.previewImage"
+        :upload-context="uploadContext"
       />
 
       <!-- Step 3: Upload Progress -->
@@ -24,6 +25,7 @@
         v-else-if="currentStep === 3 && uploadStatus != null"
         :result="uploadStatus"
         :error="uploadError"
+        :type-mismatch="uploadTypeMismatch"
         :metadata="wizardData.metadata"
         :model-type="selectedModelType"
         :preview-image="wizardData.previewImage"
@@ -39,6 +41,7 @@
       :can-fetch-metadata="canFetchMetadata"
       :can-upload-model="canUploadModel"
       :upload-status="uploadStatus"
+      :can-import-another="!isMissingModelResolution"
       @back="goToPreviousStep"
       @fetch-metadata="handleFetchMetadata"
       @upload="handleUploadModel"
@@ -49,22 +52,39 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 
 import UploadModelConfirmation from '@/platform/assets/components/UploadModelConfirmation.vue'
 import UploadModelFooter from '@/platform/assets/components/UploadModelFooter.vue'
 import UploadModelProgress from '@/platform/assets/components/UploadModelProgress.vue'
 import UploadModelUrlInput from '@/platform/assets/components/UploadModelUrlInput.vue'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
+import type {
+  UploadModelDialogContext,
+  UploadModelSuccess
+} from '@/platform/assets/composables/useUploadModelWizard'
 import { useUploadModelWizard } from '@/platform/assets/composables/useUploadModelWizard'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
 const { modelTypes, fetchModelTypes } = useModelTypes()
 
-const emit = defineEmits<{
-  'upload-success': []
+const { uploadContext } = defineProps<{
+  uploadContext?: UploadModelDialogContext
 }>()
+
+const emit = defineEmits<{
+  'upload-success': [result: UploadModelSuccess]
+}>()
+
+const isMissingModelResolution = computed(
+  () => uploadContext?.kind === 'missing-model-resolution'
+)
+const requiredModelType = computed(() =>
+  uploadContext?.kind === 'missing-model-resolution'
+    ? uploadContext.requiredModelType
+    : undefined
+)
 
 const {
   currentStep,
@@ -72,6 +92,7 @@ const {
   isUploading,
   uploadStatus,
   uploadError,
+  uploadTypeMismatch,
   wizardData,
   selectedModelType,
   canFetchMetadata,
@@ -80,16 +101,18 @@ const {
   uploadModel,
   goToPreviousStep,
   resetWizard
-} = useUploadModelWizard(modelTypes)
+} = useUploadModelWizard(modelTypes, {
+  requiredModelType: requiredModelType.value
+})
 
 async function handleFetchMetadata() {
   await fetchMetadata()
 }
 
 async function handleUploadModel() {
-  const success = await uploadModel()
-  if (success) {
-    emit('upload-success')
+  const result = await uploadModel()
+  if (result) {
+    emit('upload-success', result)
   }
 }
 

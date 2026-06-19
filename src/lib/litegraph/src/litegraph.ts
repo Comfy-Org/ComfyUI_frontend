@@ -7,6 +7,7 @@ import type {
   Point,
   Size
 } from './interfaces'
+import { registerLiteGraphInstance } from './litegraphInstance'
 import { loadPolyfills } from './polyfills'
 import type { CanvasEventDetail } from './types/events'
 import type { RenderShape, TitleMode } from './types/globalEnums'
@@ -15,6 +16,7 @@ import type { RenderShape, TitleMode } from './types/globalEnums'
 export { Subgraph } from './subgraph/Subgraph'
 
 export const LiteGraph = new LiteGraphGlobal()
+registerLiteGraphInstance(LiteGraph)
 
 // Load legacy polyfills
 loadPolyfills()
@@ -106,8 +108,6 @@ export type {
 } from './interfaces'
 export {
   LGraph,
-  type GroupNodeConfigEntry,
-  type GroupNodeWorkflowData,
   type LGraphTriggerAction,
   type LGraphTriggerParam,
   type GraphAddOptions,
