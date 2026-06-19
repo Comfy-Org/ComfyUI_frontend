@@ -7,11 +7,11 @@ on:
   workflow_dispatch:
     inputs:
       pr_number:
-        description: "PR number to backport"
+        description: 'PR number to backport'
         required: true
         type: string
       force_rerun:
-        description: "Force rerun even if backports exist"
+        description: 'Force rerun even if backports exist'
         required: false
         type: boolean
         default: false
