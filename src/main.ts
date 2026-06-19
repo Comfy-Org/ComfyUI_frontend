@@ -24,7 +24,6 @@ import '@/lib/litegraph/public/css/litegraph.css'
 import router from '@/router'
 import { isDesktop, isNightly } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { installBillingMockHarness } from '@/platform/workspace/dev/billingMockHarness'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 
 import App from './App.vue'
@@ -37,10 +36,6 @@ import { i18n } from './i18n'
  * window.__CONFIG__is available for all modules during initialization
  */
 const isCloud = __DISTRIBUTION__ === 'cloud'
-
-// PREVIEW HARNESS (FE-991, do not merge): no-op unless `?billingmock`. Must run
-// before /api/features is fetched so the team-workspaces flag merge lands.
-installBillingMockHarness()
 
 if (isCloud) {
   const { refreshRemoteConfig } =
