@@ -313,7 +313,8 @@ export const useAssetsStore = defineStore('assets', () => {
       } catch (err) {
         flatOutputError.value = err
         console.error('Failed to fetch output assets:', err)
-        return loadMore ? flatOutputAssets.value : []
+        if (!loadMore) flatOutputAssets.value = []
+        return flatOutputAssets.value
       } finally {
         if (loadMore) flatOutputIsLoadingMore.value = false
         else flatOutputLoading.value = false

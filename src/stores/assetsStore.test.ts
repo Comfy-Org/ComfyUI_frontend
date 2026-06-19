@@ -1690,6 +1690,7 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
       const result = await store.updateFlatOutputs()
 
       expect(result).toEqual([])
+      expect(store.flatOutputAssets).toEqual([])
       expect(store.flatOutputError).toBe(err)
       expect(store.flatOutputLoading).toBe(false)
     } finally {
@@ -1754,6 +1755,7 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
         true,
         { limit: FLAT_OUTPUT_PAGE_SIZE, offset: 0 }
       )
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['a2'])
     } finally {
       consoleSpy.mockRestore()
     }
