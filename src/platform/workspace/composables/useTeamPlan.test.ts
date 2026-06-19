@@ -3,7 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const {
   mockIsInPersonalWorkspace,
   mockIsWorkspaceSubscribed,
-  mockSubscription
+  mockSubscription,
+  mockSubscriptionStatus
 } = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
@@ -13,7 +14,8 @@ const {
     mockIsWorkspaceSubscribed: ref(true),
     mockSubscription: ref<{ isCancelled?: boolean } | null>({
       isCancelled: false
-    })
+    }),
+    mockSubscriptionStatus: ref<string | null>('active')
   }
 })
 
@@ -33,7 +35,10 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({ subscription: mockSubscription })
+  useBillingContext: () => ({
+    subscription: mockSubscription,
+    subscriptionStatus: mockSubscriptionStatus
+  })
 }))
 
 async function setup() {
@@ -47,6 +52,7 @@ describe('useTeamPlan', () => {
     mockIsInPersonalWorkspace.value = false
     mockIsWorkspaceSubscribed.value = true
     mockSubscription.value = { isCancelled: false }
+    mockSubscriptionStatus.value = 'active'
   })
 
   it('is on the team plan for a subscribed team workspace', async () => {
@@ -77,5 +83,25 @@ describe('useTeamPlan', () => {
     mockSubscription.value = null
     const plan = await setup()
     expect(plan.isCancelled.value).toBe(false)
+  })
+
+  it('does not flag a lapsed plan while the team subscription is active', async () => {
+    const plan = await setup()
+    expect(plan.hasLapsedTeamPlan.value).toBe(false)
+  })
+
+  it('flags a lapsed plan when the team subscription is cancelled or ended', async () => {
+    const plan = await setup()
+    mockSubscriptionStatus.value = 'canceled'
+    expect(plan.hasLapsedTeamPlan.value).toBe(true)
+    mockSubscriptionStatus.value = 'ended'
+    expect(plan.hasLapsedTeamPlan.value).toBe(true)
+  })
+
+  it('does not flag a lapsed plan in a personal workspace', async () => {
+    mockIsInPersonalWorkspace.value = true
+    mockSubscriptionStatus.value = 'canceled'
+    const plan = await setup()
+    expect(plan.hasLapsedTeamPlan.value).toBe(false)
   })
 })
