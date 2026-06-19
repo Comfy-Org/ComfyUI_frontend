@@ -19,7 +19,17 @@ export interface CreditStop {
 }
 
 /** A selected slider stop, as emitted by the pricing table's team column. */
-export type TeamPlanSelection = Pick<CreditStop, 'id' | 'usd' | 'credits'>
+export interface TeamPlanSelection {
+  /** Backend stop identifier (e.g. "team_700"), sent on subscribe. Absent for
+   *  the hardcoded fallback stops until the API contract reaches prod. */
+  id?: string
+  /** Pre-discount monthly price in USD (the struck-through list price). */
+  usd: number
+  /** Monthly credit grant at this stop. */
+  credits: number
+  /** Cycle-adjusted discounted monthly price in USD — what the user actually pays. */
+  discountedUsd: number
+}
 
 /**
  * Team-plan credit-subscription slider stops.
@@ -78,4 +88,23 @@ export function mapApiTeamCreditStops(
       discountPercentYearly
     }
   })
+}
+
+/**
+ * Discounted monthly price for a stop's list `usd`, applying the billing-cycle
+ * discount (yearly = full `discountPercentYearly`; monthly halves it). Shared by
+ * the slider display and the checkout confirm step so the two never drift.
+ * Falls back to the list price when `usd` is not a known stop.
+ */
+export function getDiscountedMonthlyUsd(
+  usd: number,
+  cycle: 'monthly' | 'yearly'
+): number {
+  const stop = TEAM_PLAN_CREDIT_STOPS.find((s) => s.usd === usd)
+  if (!stop) return usd
+  const percent =
+    cycle === 'monthly'
+      ? stop.discountPercentYearly / 2
+      : stop.discountPercentYearly
+  return Math.round(usd * (1 - percent / 100))
 }

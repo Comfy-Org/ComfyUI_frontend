@@ -211,7 +211,7 @@ const tierName = computed(() =>
 )
 
 const displayPrice = computed(() => {
-  if (teamPlan) return teamPlan.usd
+  if (teamPlan) return teamPlan.discountedUsd
   if (previewData?.new_plan) {
     return (previewData.new_plan.price_cents / 100).toFixed(0)
   }
@@ -235,7 +235,7 @@ const hasCustomLoRAs = computed(() =>
 const maxDuration = computed(() => t(`subscription.maxDuration.${tierKey}`))
 
 const totalDueToday = computed(() => {
-  if (teamPlan) return teamPlan.usd.toFixed(2)
+  if (teamPlan) return teamPlan.discountedUsd.toFixed(2)
   if (previewData) {
     return (previewData.cost_today_cents / 100).toFixed(2)
   }

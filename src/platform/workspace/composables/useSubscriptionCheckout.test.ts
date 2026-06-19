@@ -240,7 +240,7 @@ describe('useSubscriptionCheckout', () => {
       const checkout = await setup()
 
       checkout.handleSubscribeTeamClick({
-        stop: { id: 'team_400', usd: 400, credits: 84_400 },
+        stop: { id: 'team_400', usd: 400, credits: 84_400, discountedUsd: 380 },
         billingCycle: 'yearly'
       })
 
@@ -248,7 +248,8 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.selectedTeamStop.value).toStrictEqual({
         id: 'team_400',
         usd: 400,
-        credits: 84_400
+        credits: 84_400,
+        discountedUsd: 380
       })
       expect(checkout.selectedBillingCycle.value).toBe('yearly')
       expect(checkout.previewData.value).toBeNull()
@@ -260,7 +261,12 @@ describe('useSubscriptionCheckout', () => {
     it('subscribes with the team plan slug, stop id and billing cycle', async () => {
       const checkout = await setup()
       checkout.handleSubscribeTeamClick({
-        stop: { id: 'team_700', usd: 700, credits: 147_700 },
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
         billingCycle: 'monthly'
       })
       mockSubscribe.mockResolvedValueOnce({
@@ -284,7 +290,12 @@ describe('useSubscriptionCheckout', () => {
     it('uses the annual plan slug for the yearly cycle', async () => {
       const checkout = await setup()
       checkout.handleSubscribeTeamClick({
-        stop: { id: 'team_700', usd: 700, credits: 147_700 },
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 630
+        },
         billingCycle: 'yearly'
       })
       mockSubscribe.mockResolvedValueOnce({
@@ -308,7 +319,12 @@ describe('useSubscriptionCheckout', () => {
     it('opens the payment URL when the team subscribe needs a payment method', async () => {
       const checkout = await setup()
       checkout.handleSubscribeTeamClick({
-        stop: { id: 'team_700', usd: 700, credits: 147_700 },
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 630
+        },
         billingCycle: 'yearly'
       })
       mockSubscribe.mockResolvedValueOnce({
@@ -330,7 +346,7 @@ describe('useSubscriptionCheckout', () => {
     it('does not subscribe and shows an error when the stop has no id', async () => {
       const checkout = await setup()
       checkout.handleSubscribeTeamClick({
-        stop: { usd: 700, credits: 147_700 },
+        stop: { usd: 700, credits: 147_700, discountedUsd: 630 },
         billingCycle: 'yearly'
       })
 
@@ -345,7 +361,12 @@ describe('useSubscriptionCheckout', () => {
     it('shows an error toast when the team subscribe fails', async () => {
       const checkout = await setup()
       checkout.handleSubscribeTeamClick({
-        stop: { id: 'team_700', usd: 700, credits: 147_700 },
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 630
+        },
         billingCycle: 'yearly'
       })
       mockSubscribe.mockRejectedValueOnce(new Error('Team payment failed'))
@@ -376,7 +397,7 @@ describe('useSubscriptionCheckout', () => {
     it('clears the selected team stop', async () => {
       const checkout = await setup()
       checkout.handleSubscribeTeamClick({
-        stop: { id: 'team_400', usd: 400, credits: 84_400 },
+        stop: { id: 'team_400', usd: 400, credits: 84_400, discountedUsd: 380 },
         billingCycle: 'yearly'
       })
 
