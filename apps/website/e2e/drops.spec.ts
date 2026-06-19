@@ -159,16 +159,10 @@ test.describe('Drops landing — desktop @smoke', () => {
     }
   })
 
-  test('drops section renders title and the desktop-client card in both locales', async ({
+  test('drops section renders one card per data entry with the correct localized href in both locales', async ({
     page
   }) => {
-    const desktopDrop = drops.find((d) => d.id === 'desktop-client')
-    if (!desktopDrop) throw new Error('desktop-client drop missing from data')
-
-    for (const [path, locale, expectedHref] of [
-      [PATH_EN, 'en', '/download'],
-      [PATH_ZH, 'zh-CN', '/zh-CN/download']
-    ] as const) {
+    for (const [path, locale] of LOCALES) {
       await page.goto(path)
       const section = dropsSection(page, locale)
 
@@ -179,24 +173,51 @@ test.describe('Drops landing — desktop @smoke', () => {
         })
       ).toBeVisible()
 
-      await expect(section.getByText(desktopDrop.title[locale])).toBeVisible()
-      await expect(
-        section.getByText(desktopDrop.description[locale])
-      ).toBeVisible()
-      await expect(
-        section.getByText(desktopDrop.category[locale])
-      ).toBeVisible()
+      const cards = section.locator('[data-slot="card"]')
+      await expect(cards).toHaveCount(drops.length)
 
-      const explore = section.getByRole('link', {
-        name: desktopDrop.cta.label[locale]
-      })
-      await expect(explore).toBeVisible()
-      await expect(explore).toHaveAttribute('href', expectedHref)
+      for (const [i, drop] of drops.entries()) {
+        const card = cards.nth(i)
+        await expect(card).toContainText(drop.title[locale])
+        const explore = card.getByRole('link', {
+          name: drop.cta.label[locale]
+        })
+        await expect(explore).toBeVisible()
+        await expect(explore).toHaveAttribute('href', drop.cta.href[locale])
+      }
     }
+  })
+
+  test('desktop: first 4 drop cards are wider than cards 5+', async ({
+    page
+  }) => {
+    await page.goto(PATH_EN)
+    const cards = dropsSection(page, 'en').locator('[data-slot="card"]')
+    await expect(cards).toHaveCount(drops.length)
+
+    const firstWidth = (await cards.nth(0).boundingBox())?.width ?? 0
+    const fifthWidth = (await cards.nth(4).boundingBox())?.width ?? 0
+    expect(firstWidth).toBeGreaterThan(fifthWidth)
   })
 })
 
 test.describe('Drops landing — mobile @mobile', () => {
+  test('drops grid stacks in a single column at mobile width', async ({
+    page
+  }) => {
+    await page.goto(PATH_EN)
+    const cards = dropsSection(page, 'en').locator('[data-slot="card"]')
+    await expect(cards).toHaveCount(drops.length)
+
+    const viewportWidth = page.viewportSize()!.width
+    const firstBox = await cards.nth(0).boundingBox()
+    const secondBox = await cards.nth(1).boundingBox()
+    expect(firstBox, 'first card bounding box').not.toBeNull()
+    expect(secondBox, 'second card bounding box').not.toBeNull()
+    expect(firstBox!.width).toBeGreaterThanOrEqual(viewportWidth * 0.7)
+    expect(secondBox!.y).toBeGreaterThanOrEqual(firstBox!.y + firstBox!.height)
+  })
+
   test('closing CTA heading stays within viewport width', async ({ page }) => {
     await page.goto(PATH_EN)
     const heading = page.getByRole('heading', {

@@ -16,8 +16,14 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       {{ t('drops.section.title', locale) }}
     </h2>
 
-    <div class="mt-10 grid grid-cols-1 gap-6 lg:mt-12">
-      <DropCard v-for="drop in drops" :key="drop.id" :drop :locale />
+    <div class="mt-10 grid grid-cols-1 gap-6 md:grid-cols-6 lg:mt-12">
+      <div
+        v-for="(drop, index) in drops"
+        :key="drop.id"
+        :class="index < 4 ? 'md:col-span-3' : 'md:col-span-2'"
+      >
+        <DropCard :drop :locale />
+      </div>
     </div>
   </section>
 </template>
