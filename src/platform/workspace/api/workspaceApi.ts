@@ -113,12 +113,12 @@ export interface Plan {
   seat_summary: PlanSeatSummary
 }
 
-export interface TeamCreditStopPrice {
+interface TeamCreditStopPrice {
   list_price_cents: number
   price_cents: number
 }
 
-export interface TeamCreditStop {
+interface TeamCreditStop {
   id: string
   credits: number
   monthly: TeamCreditStopPrice
@@ -146,7 +146,7 @@ interface PreviewSubscribeRequest {
   plan_slug: string
 }
 
-export type SubscribeBillingCycle = 'monthly' | 'yearly'
+type SubscribeBillingCycle = 'monthly' | 'yearly'
 
 interface SubscribeRequest {
   plan_slug: string
