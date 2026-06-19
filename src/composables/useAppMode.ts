@@ -1,28 +1,8 @@
 import { computed, ref } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-
-export type AppMode =
-  | 'graph'
-  | 'app'
-  | 'builder:inputs'
-  | 'builder:outputs'
-  | 'builder:arrange'
-
-type WorkflowModeSource = {
-  activeMode: AppMode | null
-  initialMode: AppMode | null | undefined
-}
-
-export function getWorkflowMode(
-  workflow: WorkflowModeSource | null | undefined
-): AppMode {
-  return workflow?.activeMode ?? workflow?.initialMode ?? 'graph'
-}
-
-export function isAppModeValue(mode: AppMode): boolean {
-  return mode === 'app' || mode === 'builder:arrange'
-}
+import { getWorkflowMode, isAppModeValue } from '@/utils/appMode'
+import type { AppMode } from '@/utils/appMode'
 
 const enableAppBuilder = ref(true)
 

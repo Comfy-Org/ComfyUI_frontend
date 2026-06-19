@@ -39,7 +39,6 @@ beforeEach(() => {
   vi.restoreAllMocks()
   vi.resetAllMocks()
   delete window.__comfyDesktop2
-  delete window.__comfyDesktop2Remote
 })
 
 describe('fetchModelMetadata', () => {
@@ -258,7 +257,10 @@ describe('downloadModel', () => {
         (url: string, filename: string, directory: string) => Promise<boolean>
       >()
       .mockResolvedValue(true)
-    window.__comfyDesktop2 = { downloadModel: desktopDownloadModel }
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      downloadModel: desktopDownloadModel
+    }
 
     downloadModel(
       {
@@ -289,7 +291,10 @@ describe('downloadModel', () => {
         (url: string, filename: string, directory: string) => Promise<boolean>
       >()
       .mockRejectedValue(bridgeError)
-    window.__comfyDesktop2 = { downloadModel: desktopDownloadModel }
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      downloadModel: desktopDownloadModel
+    }
 
     downloadModel(
       {
@@ -323,7 +328,10 @@ describe('downloadModel', () => {
       .mockImplementation(() => {
         throw bridgeError
       })
-    window.__comfyDesktop2 = { downloadModel: desktopDownloadModel }
+    window.__comfyDesktop2 = {
+      isRemote: () => false,
+      downloadModel: desktopDownloadModel
+    }
 
     downloadModel(
       {
@@ -353,8 +361,10 @@ describe('downloadModel', () => {
         (url: string, filename: string, directory: string) => Promise<boolean>
       >()
       .mockResolvedValue(true)
-    window.__comfyDesktop2 = { downloadModel: desktopDownloadModel }
-    window.__comfyDesktop2Remote = true
+    window.__comfyDesktop2 = {
+      isRemote: () => true,
+      downloadModel: desktopDownloadModel
+    }
 
     downloadModel(
       {
