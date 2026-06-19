@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { externalLinks } from '../src/config/routes'
+import { drops } from '../src/data/drops'
 import type { Locale } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
@@ -29,6 +30,15 @@ function ctaSection(page: Page, locale: Locale) {
     has: page.getByRole('heading', {
       level: 2,
       name: t('drops.cta.heading', locale)
+    })
+  })
+}
+
+function dropsSection(page: Page, locale: Locale) {
+  return page.locator('section').filter({
+    has: page.getByRole('heading', {
+      level: 2,
+      name: t('drops.section.title', locale)
     })
   })
 }
@@ -146,6 +156,42 @@ test.describe('Drops landing — desktop @smoke', () => {
       await expect(secondary).toHaveAttribute('href', externalLinks.workflows)
       await expect(secondary).toHaveAttribute('target', '_blank')
       await expect(secondary).toHaveAttribute('rel', 'noopener noreferrer')
+    }
+  })
+
+  test('drops section renders title and the desktop-client card in both locales', async ({
+    page
+  }) => {
+    const desktopDrop = drops.find((d) => d.id === 'desktop-client')
+    if (!desktopDrop) throw new Error('desktop-client drop missing from data')
+
+    for (const [path, locale, expectedHref] of [
+      [PATH_EN, 'en', '/download'],
+      [PATH_ZH, 'zh-CN', '/zh-CN/download']
+    ] as const) {
+      await page.goto(path)
+      const section = dropsSection(page, locale)
+
+      await expect(
+        section.getByRole('heading', {
+          level: 2,
+          name: t('drops.section.title', locale)
+        })
+      ).toBeVisible()
+
+      await expect(section.getByText(desktopDrop.title[locale])).toBeVisible()
+      await expect(
+        section.getByText(desktopDrop.description[locale])
+      ).toBeVisible()
+      await expect(
+        section.getByText(desktopDrop.category[locale])
+      ).toBeVisible()
+
+      const explore = section.getByRole('link', {
+        name: desktopDrop.cta.label[locale]
+      })
+      await expect(explore).toBeVisible()
+      await expect(explore).toHaveAttribute('href', expectedHref)
     }
   })
 })

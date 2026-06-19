@@ -4985,6 +4985,13 @@ const translations = {
   'drops.cta.secondary': {
     en: 'Try Workflow',
     'zh-CN': '试用工作流'
+  },
+
+  // Drops page (/drops) — drops grid
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'drops.section.title': {
+    en: 'Latest Drops',
+    'zh-CN': '最新发布'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 
