@@ -24,7 +24,6 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'
-import { isGroupNode } from '@/utils/executableGroupNodeDto'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
@@ -192,9 +191,7 @@ const hasDirectError = computed(() => {
 
 const hasContainerInternalError = computed(() => {
   if (!targetNode.value) return false
-  const isContainer =
-    targetNode.value instanceof SubgraphNode || isGroupNode(targetNode.value)
-  if (!isContainer) return false
+  if (!(targetNode.value instanceof SubgraphNode)) return false
 
   return executionErrorStore.isContainerWithInternalError(targetNode.value)
 })

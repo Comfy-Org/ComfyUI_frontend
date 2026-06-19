@@ -16,12 +16,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import {
   getNodeByExecutionId,
-  getExecutionIdByNode,
-  getRootParentNode
+  getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { isGroupNode } from '@/utils/executableGroupNodeDto'
 import { st } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
@@ -83,26 +81,17 @@ interface ErrorSearchItem {
 
 type CataloguedErrorItem = ErrorItem & ResolvedCatalogErrorMessage
 
-/**
- * Resolve display info for a node by its execution ID.
- * For group node internals, resolves the parent group node's title instead.
- */
+/** Resolve display info for a node by its execution ID. */
 function resolveNodeInfo(nodeId: string) {
   const graphNode = getNodeByExecutionId(app.rootGraph, nodeId)
 
-  const parentNode = getRootParentNode(app.rootGraph, nodeId)
-  const isParentGroupNode = parentNode ? isGroupNode(parentNode) : false
-
   return {
-    title: isParentGroupNode
-      ? parentNode?.title || ''
-      : resolveNodeDisplayName(graphNode, {
-          emptyLabel: '',
-          untitledLabel: '',
-          st
-        }),
-    graphNodeId: graphNode ? String(graphNode.id) : undefined,
-    isParentGroupNode
+    title: resolveNodeDisplayName(graphNode, {
+      emptyLabel: '',
+      untitledLabel: '',
+      st
+    }),
+    graphNodeId: graphNode ? String(graphNode.id) : undefined
   }
 }
 
@@ -141,7 +130,7 @@ function createErrorCard(
     nodeId,
     nodeTitle: nodeInfo.title,
     graphNodeId: nodeInfo.graphNodeId,
-    isSubgraphNode: isNodeExecutionId(nodeId) && !nodeInfo.isParentGroupNode,
+    isSubgraphNode: isNodeExecutionId(nodeId),
     errors: []
   }
 }
@@ -259,10 +248,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     for (const item of items) {
       if (!isLGraphNode(item)) continue
       nodeIds.add(String(item.id))
-      if (
-        (item instanceof SubgraphNode || isGroupNode(item)) &&
-        app.rootGraph
-      ) {
+      if (item instanceof SubgraphNode && app.rootGraph) {
         const execId = getExecutionIdByNode(app.rootGraph, item)
         if (execId) containerExecutionIds.add(execId)
       }
