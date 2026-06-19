@@ -2692,10 +2692,11 @@
     "preview": {
       "confirmPayment": "Confirm your payment",
       "confirmPlanChange": "Confirm your plan change",
-      "startingToday": "Starting today",
+      "startingToday": "Starts today",
       "starting": "Starting {date}",
       "ends": "Ends {date}",
       "eachMonthCreditsRefill": "Each month credits refill to",
+      "eachYearCreditsRefill": "Each year credits refill to",
       "everyMonthStarting": "Every month starting {date}",
       "creditsRefillTo": "Credits refill to",
       "youllBeCharged": "You'll be charged",
