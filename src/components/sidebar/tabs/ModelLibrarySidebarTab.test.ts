@@ -196,7 +196,8 @@ describe('ModelLibrarySidebarTab', () => {
 
     expect(mockGetNodeProvider).toHaveBeenCalledWith('checkpoints')
     expect(mockStartDrag).toHaveBeenCalledWith(mockNodeDef, {
-      widgetValues: { ckpt_name: 'model.safetensors' }
+      widgetValues: { ckpt_name: 'model.safetensors' },
+      source: 'sidebar_drag'
     })
   })
 
