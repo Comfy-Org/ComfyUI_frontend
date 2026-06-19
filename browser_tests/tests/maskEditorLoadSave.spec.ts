@@ -67,10 +67,7 @@ test.describe('Mask Editor load/save', { tag: '@vue-nodes' }, () => {
     await expect(dialog).toBeVisible()
   })
 
-  test('Save failure keeps dialog open', async ({
-    comfyPage,
-    maskEditor
-  }) => {
+  test('Save failure keeps dialog open', async ({ comfyPage, maskEditor }) => {
     const dialog = await maskEditor.openDialog()
     await maskEditor.drawStrokeAndExpectPixels(dialog)
 
