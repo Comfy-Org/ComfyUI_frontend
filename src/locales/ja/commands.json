@@ -158,15 +158,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "選択したサブグラフを展開"
   },
-  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "選択したノードをグループノードに変換"
-  },
-  "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "グループノードの管理"
-  },
-  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "選択したグループノードのグループ解除"
-  },
   "Comfy_Help_AboutComfyUI": {
     "label": "ComfyUIについてを開く"
   },
