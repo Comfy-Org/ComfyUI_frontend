@@ -41,6 +41,10 @@ vi.mock('@/platform/settings/settingStore', () => ({
   })
 }))
 
+vi.mock('@/platform/surveys/surveyIdentity', () => ({
+  getSurveyIdentityTags: () => ({ anon_id: 'anon-1' })
+}))
+
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackHelpResourceClicked: vi.fn(),
@@ -132,7 +136,7 @@ describe('HelpCenterMenuContent feedback item', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Give Feedback' }))
 
     expect(openSpy).toHaveBeenCalledWith(
-      'https://form.typeform.com/to/q7azbWPi#distribution=ccloud&source=help-center',
+      'https://form.typeform.com/to/q7azbWPi#distribution=ccloud&source=help-center&anon_id=anon-1',
       '_blank',
       'noopener,noreferrer'
     )
@@ -146,7 +150,7 @@ describe('HelpCenterMenuContent feedback item', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Give Feedback' }))
 
     expect(openSpy).toHaveBeenCalledWith(
-      'https://form.typeform.com/to/q7azbWPi#distribution=oss-nightly&source=help-center',
+      'https://form.typeform.com/to/q7azbWPi#distribution=oss-nightly&source=help-center&anon_id=anon-1',
       '_blank',
       'noopener,noreferrer'
     )

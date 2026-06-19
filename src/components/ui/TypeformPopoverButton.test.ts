@@ -15,6 +15,10 @@ vi.mock('@vueuse/core', async (importOriginal) => {
   }
 })
 
+vi.mock('@/platform/surveys/surveyIdentity', () => ({
+  getSurveyIdentityTags: () => ({ anon_id: 'anon-1' })
+}))
+
 const PopoverStub = defineComponent({
   name: 'Popover',
   setup(_, { slots }) {
@@ -67,7 +71,7 @@ describe('TypeformPopoverButton', () => {
     expect(screen.queryByTestId('embed')).not.toBeInTheDocument()
     expect(screen.getByRole('link')).toHaveAttribute(
       'href',
-      'https://form.typeform.com/to/abc123'
+      'https://form.typeform.com/to/abc123#anon_id=anon-1'
     )
   })
 })

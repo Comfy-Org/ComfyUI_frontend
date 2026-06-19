@@ -1,22 +1,30 @@
 <script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
+import { computed } from 'vue'
 
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import TypeformEmbed from '@/platform/surveys/TypeformEmbed.vue'
+import { getSurveyIdentityTags } from '@/platform/surveys/surveyIdentity'
 
-const { active = true } = defineProps<{
+const { dataTfWidget, active = true } = defineProps<{
   dataTfWidget: string
   active?: boolean
 }>()
 
 const isMobile = useBreakpoints(breakpointsTailwind).smaller('md')
+
+// Mobile opens the form externally, so identity rides in the URL fragment.
+const formUrl = computed(() => {
+  const params = new URLSearchParams(getSurveyIdentityTags())
+  return `https://form.typeform.com/to/${dataTfWidget}#${params.toString()}`
+})
 </script>
 <template>
   <Button
     v-if="isMobile"
     as="a"
-    :href="`https://form.typeform.com/to/${dataTfWidget}`"
+    :href="formUrl"
     target="_blank"
     variant="inverted"
     class="flex h-10 items-center justify-center gap-2.5 px-3 py-2"

@@ -473,6 +473,9 @@ export interface TelemetryProvider {
   trackAuth?(metadata: AuthMetadata): void
   trackUserLoggedIn?(): void
 
+  /** Anonymous/identified id used to stitch activity; null when unavailable. */
+  getDistinctId?(): string | null
+
   // Subscription flow events
   trackSubscription?(
     event: 'modal_opened' | 'subscribe_clicked',

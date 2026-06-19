@@ -45,4 +45,34 @@ describe('TelemetryRegistry', () => {
       })
     ).not.toThrow()
   })
+
+  it('getDistinctId returns the first provider id, skipping those without one', () => {
+    const registry = new TelemetryRegistry()
+    registry.registerProvider({})
+    registry.registerProvider({ getDistinctId: () => 'ph-1' })
+    registry.registerProvider({ getDistinctId: () => 'ph-2' })
+
+    expect(registry.getDistinctId()).toBe('ph-1')
+  })
+
+  it('getDistinctId returns null when no provider has one', () => {
+    const registry = new TelemetryRegistry()
+    registry.registerProvider({})
+    registry.registerProvider({ getDistinctId: () => null })
+
+    expect(registry.getDistinctId()).toBeNull()
+  })
+
+  it('getDistinctId skips a provider that throws and returns the next id', () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {})
+    const registry = new TelemetryRegistry()
+    registry.registerProvider({
+      getDistinctId: () => {
+        throw new Error('boom')
+      }
+    })
+    registry.registerProvider({ getDistinctId: () => 'ph-2' })
+
+    expect(registry.getDistinctId()).toBe('ph-2')
+  })
 })

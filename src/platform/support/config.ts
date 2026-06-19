@@ -1,4 +1,8 @@
 import { isCloud, isNightly } from '@/platform/distribution/types'
+import {
+  formatTypeformHiddenFields,
+  getSurveyIdentityTags
+} from '@/platform/surveys/surveyIdentity'
 
 /**
  * Zendesk ticket form field IDs.
@@ -44,17 +48,15 @@ function getFeedbackTags(source: FeedbackSource): Record<string, string> {
  * by distribution (cloud / oss-nightly / oss) and entry point.
  */
 export function buildFeedbackTypeformUrl(source: FeedbackSource): string {
-  const params = new URLSearchParams(getFeedbackTags(source))
+  const params = new URLSearchParams({
+    ...getFeedbackTags(source),
+    ...getSurveyIdentityTags()
+  })
   return `${FEEDBACK_TYPEFORM_BASE_URL}#${params.toString()}`
 }
 
-export function buildFeedbackHiddenFields(
-  source: FeedbackSource,
-  extraTags: Record<string, string> = {}
-): string {
-  return Object.entries({ ...getFeedbackTags(source), ...extraTags })
-    .map(([key, value]) => `${key}=${value}`)
-    .join(',')
+export function buildFeedbackHiddenFields(source: FeedbackSource): string {
+  return formatTypeformHiddenFields(getFeedbackTags(source))
 }
 
 /**

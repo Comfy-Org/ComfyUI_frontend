@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import {
+  formatTypeformHiddenFields,
+  getSurveyIdentityTags
+} from './surveyIdentity'
 import { useTypeformEmbed } from './useTypeformEmbed'
 
 const {
@@ -25,6 +29,11 @@ const { typeformError, isValidTypeformId } = useTypeformEmbed(
   typeformRef,
   () => typeformId
 )
+
+const dataTfHidden = computed(() => {
+  const identity = formatTypeformHiddenFields(getSurveyIdentityTags())
+  return [hiddenFields, identity].filter(Boolean).join(',')
+})
 </script>
 
 <template>
@@ -40,7 +49,7 @@ const { typeformError, isValidTypeformId } = useTypeformEmbed(
     ref="typeformRef"
     data-testid="typeform-embed"
     :data-tf-widget="typeformId"
-    :data-tf-hidden="hiddenFields"
+    :data-tf-hidden="dataTfHidden"
     :data-tf-redirect-target="redirectTarget"
     :data-tf-auto-resize="autoResize || undefined"
     :class="autoResize ? 'w-full' : 'size-full'"
