@@ -123,7 +123,7 @@
       <SubscriptionTermsNote />
 
       <Button
-        variant="secondary"
+        variant="tertiary"
         size="lg"
         class="w-full rounded-lg"
         :loading="isLoading"
