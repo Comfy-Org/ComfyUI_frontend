@@ -92,6 +92,5 @@ declare global {
     __appReadiness?: AppReadiness
 
     __comfyDesktop2?: ComfyDesktop2Bridge
-    __comfyDesktop2Remote?: boolean
   }
 }

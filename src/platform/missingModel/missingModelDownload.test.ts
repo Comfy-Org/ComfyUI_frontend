@@ -39,20 +39,7 @@ beforeEach(() => {
   vi.restoreAllMocks()
   vi.resetAllMocks()
   delete window.__comfyDesktop2
-  delete window.__comfyDesktop2Remote
 })
-
-function setLegacyDesktop2Bridge(
-  downloadModel: NonNullable<
-    NonNullable<typeof window.__comfyDesktop2>['downloadModel']
-  >
-): void {
-  Object.defineProperty(window, '__comfyDesktop2', {
-    configurable: true,
-    writable: true,
-    value: { downloadModel }
-  })
-}
 
 describe('fetchModelMetadata', () => {
   beforeEach(() => {
@@ -378,59 +365,6 @@ describe('downloadModel', () => {
       isRemote: () => true,
       downloadModel: desktopDownloadModel
     }
-
-    downloadModel(
-      {
-        name: 'model.safetensors',
-        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
-        directory: 'checkpoints'
-      },
-      { checkpoints: ['/models/checkpoints'] }
-    )
-
-    expect(desktopDownloadModel).not.toHaveBeenCalled()
-    expect(anchorClick).toHaveBeenCalledTimes(1)
-  })
-
-  it('uses the Desktop2 bridge when the new remote check is not available', () => {
-    const anchorClick = vi
-      .spyOn(HTMLAnchorElement.prototype, 'click')
-      .mockImplementation(() => {})
-    const desktopDownloadModel = vi
-      .fn<
-        (url: string, filename: string, directory: string) => Promise<boolean>
-      >()
-      .mockResolvedValue(true)
-    setLegacyDesktop2Bridge(desktopDownloadModel)
-
-    downloadModel(
-      {
-        name: 'model.safetensors',
-        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
-        directory: 'checkpoints'
-      },
-      { checkpoints: ['/models/checkpoints'] }
-    )
-
-    expect(desktopDownloadModel).toHaveBeenCalledWith(
-      'https://huggingface.co/org/model/resolve/main/model.safetensors',
-      'model.safetensors',
-      'checkpoints'
-    )
-    expect(anchorClick).not.toHaveBeenCalled()
-  })
-
-  it('honors the legacy Desktop2 remote marker when the new remote check is not available', () => {
-    const anchorClick = vi
-      .spyOn(HTMLAnchorElement.prototype, 'click')
-      .mockImplementation(() => {})
-    const desktopDownloadModel = vi
-      .fn<
-        (url: string, filename: string, directory: string) => Promise<boolean>
-      >()
-      .mockResolvedValue(true)
-    setLegacyDesktop2Bridge(desktopDownloadModel)
-    window.__comfyDesktop2Remote = true
 
     downloadModel(
       {
