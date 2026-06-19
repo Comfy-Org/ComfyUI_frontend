@@ -712,7 +712,6 @@
     "Inputs": "Girdiler",
     "Left": "Sol",
     "Manage": "Yönet",
-    "Manage Group Nodes": "Grup Düğümlerini Yönet",
     "Minimize Node": "Düğümü Küçült",
     "Mode": "Mod",
     "Node Info": "Düğüm Bilgisi",
@@ -1830,10 +1829,6 @@
     "zoomOptions": "Yakınlaştırma Seçenekleri",
     "zoomOut": "Uzaklaştır"
   },
-  "groupNode": {
-    "create": "Grup düğümü oluştur",
-    "enterName": "İsim girin"
-  },
   "help": {
     "helpCenterMenu": "Yardım Merkezi Menüsü",
     "recentReleases": "Son sürümler"
@@ -2563,7 +2558,6 @@
     "Job History": "İş Geçmişi",
     "Load Default Workflow": "Varsayılan İş Akışını Yükle",
     "Lock Canvas": "Tuvali Kilitle",
-    "Manage group nodes": "Grup düğümlerini yönet",
     "Manager": "Yönetici",
     "Manager Menu (Legacy)": "Yönetici Menüsü (Eski)",
     "Minimap": "Mini Harita",
@@ -2629,7 +2623,6 @@
     "Toggle View Controls Bottom Panel": "Görünüm Kontrolleri Alt Panelini Aç/Kapat",
     "Toggle promotion of hovered widget": "Üzerine gelinen widget'ı yükseltmeyi aç/kapat",
     "Undo": "Geri Al",
-    "Ungroup selected group nodes": "Seçili grup düğümlerinin grubunu çöz",
     "Unload Models": "Modelleri Boşalt",
     "Unload Models and Execution Cache": "Modelleri ve Yürütme Önbelleğini Boşalt",
     "Unlock Canvas": "Tuvalin Kilidini Aç",
