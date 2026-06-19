@@ -2,13 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
-import type { AppMode } from '@/composables/useAppMode'
-import {
-  getWorkflowMode,
-  isAppModeValue,
-  useAppMode
-} from '@/composables/useAppMode'
+import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
+import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -40,6 +36,8 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import type { AppMode } from '@/utils/appMode'
+import { getWorkflowMode, isAppModeValue } from '@/utils/appMode'
 
 interface ExecutionNodeInfo {
   title?: string | null
@@ -416,8 +414,8 @@ export const useExecutionStore = defineStore('execution', () => {
     const jobId = e.detail.prompt_id
     setWorkflowStatus(jobId, 'completed')
     const queuedJob = queuedJobs.value[jobId]
-    if (isCloud && queuedJob) {
-      const telemetry = useTelemetry()
+    const telemetry = useTelemetry()
+    if (queuedJob) {
       telemetry?.trackExecutionSuccess({
         jobId
       })
@@ -527,14 +525,14 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
-    if (isCloud) {
-      useTelemetry()?.trackExecutionError({
-        jobId: e.detail.prompt_id,
-        nodeId: String(e.detail.node_id),
-        nodeType: e.detail.node_type,
-        error: e.detail.exception_message
-      })
+    useTelemetry()?.trackExecutionError({
+      jobId: e.detail.prompt_id,
+      nodeId: String(e.detail.node_id),
+      nodeType: e.detail.node_type,
+      error: e.detail.exception_message
+    })
 
+    if (isCloud) {
       // Cloud wraps validation errors (400) in exception_message as embedded JSON.
       // Pre-flight validation isn't a runtime failure — no badge.
       if (handleCloudValidationError(e.detail)) {
@@ -542,6 +540,10 @@ export const useExecutionStore = defineStore('execution', () => {
         return
       }
     }
+
+    // Account preconditions (sign-in, subscription, credits) open their own
+    // modal and must stay out of the error panel and error count.
+    if (handleAccountPreconditionError(e.detail)) return
 
     // Service-level errors (e.g. "Job has stagnated") have no associated node.
     if (handleServiceLevelError(e.detail)) {
@@ -553,6 +555,20 @@ export const useExecutionStore = defineStore('execution', () => {
     executionErrorStore.lastExecutionError = e.detail
     clearInitializationByJobId(e.detail.prompt_id)
     resetExecutionState(e.detail.prompt_id)
+  }
+
+  function handleAccountPreconditionError(
+    detail: ExecutionErrorWsMessage
+  ): boolean {
+    const precondition = resolveAccountPrecondition({
+      exceptionType: detail.exception_type ?? '',
+      exceptionMessage: detail.exception_message ?? ''
+    })
+    if (!precondition) return false
+
+    clearInitializationByJobId(detail.prompt_id)
+    resetExecutionState(detail.prompt_id)
+    return true
   }
 
   function handleServiceLevelError(detail: ExecutionErrorWsMessage): boolean {
