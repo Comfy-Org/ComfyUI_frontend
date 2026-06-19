@@ -1491,6 +1491,74 @@ describe('useWorkspaceAuthStore', () => {
       expect(mockFetch).toHaveBeenCalledTimes(2)
     })
 
+    it('remintUnifiedOnce surfaces a permanent re-mint failure as a toast and clears the slot', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(personalTokenResponse)
+        })
+        // The 401 re-mint revokes the session permanently.
+        .mockResolvedValue({
+          ok: false,
+          status: 401,
+          statusText: 'Unauthorized',
+          json: () => Promise.resolve({ message: 'Invalid token' })
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+
+      await store.mintAtLogin()
+      expect(unifiedToken.value).toBe('unified-token-1')
+
+      await expect(store.remintUnifiedOnce()).rejects.toThrow(
+        WorkspaceAuthError
+      )
+
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: 'workspaceAuth.errors.invalidFirebaseToken'
+        })
+      )
+      expect(unifiedToken.value).toBeNull()
+    })
+
+    it('remintUnifiedOnce does not toast or clear the slot on a transient re-mint failure', async () => {
+      mockUnifiedCloudAuthEnabled.value = true
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(personalTokenResponse)
+        })
+        // A transient backend failure must not alarm the user or wipe the slot.
+        .mockResolvedValue({
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+          json: () => Promise.resolve({ message: 'try again' })
+        })
+      vi.stubGlobal('fetch', mockFetch)
+
+      const store = useWorkspaceAuthStore()
+      const { unifiedToken } = storeToRefs(store)
+
+      await store.mintAtLogin()
+
+      await expect(store.remintUnifiedOnce()).rejects.toThrow(
+        WorkspaceAuthError
+      )
+
+      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(unifiedToken.value).toBe('unified-token-1')
+    })
+
     it('remintUnifiedOnce returns null without minting when the flag is OFF', async () => {
       mockUnifiedCloudAuthEnabled.value = false
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')

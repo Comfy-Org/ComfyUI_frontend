@@ -82,7 +82,7 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({ trackAuth: vi.fn() })
 }))
 
-vi.mock('@/stores/toastStore', () => ({
+vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({ add: vi.fn() })
 }))
 

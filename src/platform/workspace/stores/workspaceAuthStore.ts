@@ -613,8 +613,16 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     if (!target) {
       return null
     }
-    await mintUnified(target)
-    return unifiedToken.value
+    try {
+      await mintUnified(target)
+      return unifiedToken.value
+    } catch (err) {
+      if (isPermanentAuthError(err)) {
+        surfacePermanentAuthError(err)
+        clearUnifiedContext()
+      }
+      throw err
+    }
   }
 
   function getWorkspaceAuthHeader(): AuthHeader | null {
