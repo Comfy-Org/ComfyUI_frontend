@@ -3,7 +3,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useColorWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useColorWidget'
-import type { ColorInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type {
+  ColorInputSpec,
+  InputSpec
+} from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 const DECLARED_DEFAULT = '#00ff00'
 const BLACK_FALLBACK = '#000000'
@@ -85,5 +88,14 @@ describe('useColorWidget', () => {
     expect(second).toBe(first)
     expect(addWidget).toHaveBeenCalledOnce()
     expect(node.widgets).toHaveLength(1)
+  })
+
+  it('throws when the input spec is not a color spec', () => {
+    const { node } = createMockNode()
+    const inputSpec = { type: 'STRING', name: 'color' } as unknown as InputSpec
+
+    expect(() => useColorWidget()(node, inputSpec)).toThrow(
+      'Invalid input spec for color widget'
+    )
   })
 })
