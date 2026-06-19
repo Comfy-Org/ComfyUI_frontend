@@ -239,12 +239,17 @@ describe('useSubscriptionCheckout', () => {
     it('transitions to preview with the selected team stop', async () => {
       const checkout = await setup()
 
-      checkout.handleSubscribeTeamClick({ usd: 400, credits: 84_400 })
+      checkout.handleSubscribeTeamClick({
+        usd: 400,
+        credits: 84_400,
+        discountedUsd: 380
+      })
 
       expect(checkout.checkoutStep.value).toBe('preview')
       expect(checkout.selectedTeamStop.value).toStrictEqual({
         usd: 400,
-        credits: 84_400
+        credits: 84_400,
+        discountedUsd: 380
       })
       expect(checkout.previewData.value).toBeNull()
       expect(checkout.selectedTierKey.value).toBeNull()
@@ -265,7 +270,11 @@ describe('useSubscriptionCheckout', () => {
 
     it('clears the selected team stop', async () => {
       const checkout = await setup()
-      checkout.handleSubscribeTeamClick({ usd: 400, credits: 84_400 })
+      checkout.handleSubscribeTeamClick({
+        usd: 400,
+        credits: 84_400,
+        discountedUsd: 380
+      })
 
       checkout.handleBackToPricing()
 
