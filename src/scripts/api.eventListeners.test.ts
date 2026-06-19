@@ -58,7 +58,7 @@ describe('ComfyApi event listener error isolation', () => {
     const err = new Error('thenable boom')
 
     api.addEventListener('reconnected', () => ({
-      then(onFulfilled: unknown, onRejected: (e: unknown) => void) {
+      then(_onFulfilled: unknown, onRejected: (e: unknown) => void) {
         onRejected(err)
         return this
       }
