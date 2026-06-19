@@ -235,8 +235,9 @@
                    cycle halves the yearly discount when monthly. -->
               <CreditSlider
                 v-model="teamUsd"
+                :stops="teamStops"
+                :default-stop-index="teamDefaultStopIndex"
                 :cycle="currentBillingCycle"
-                @change="onTeamChange"
               />
 
               <!-- Selected credit grant + template-based video estimate -->
@@ -337,11 +338,7 @@
             </span>
             <div class="flex flex-col gap-3">
               <span class="text-sm/relaxed font-normal text-muted-foreground">
-                {{
-                  t('subscription.enterprise.needMoreMembers', {
-                    count: TEAM_MAX_MEMBERS
-                  })
-                }}
+                {{ t('subscription.enterprise.needMoreMembers') }}
               </span>
               <span class="text-sm/relaxed font-normal text-muted-foreground">
                 {{ t('subscription.enterprise.flexibility') }}
@@ -380,31 +377,34 @@
         </a>
       </template>
       <template #questions>
-        <button
-          type="button"
-          class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
-          @click="handleQuestions"
+        <a
+          :href="QUESTIONS_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
         >
           {{ t('subscription.pricingBlurbQuestions') }}
-        </button>
+        </a>
       </template>
       <template #enterpriseDiscussions>
-        <button
-          type="button"
-          class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
-          @click="handleViewEnterprise"
+        <a
+          :href="ENTERPRISE_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
         >
           {{ t('subscription.pricingBlurbEnterprise') }}
-        </button>
+        </a>
       </template>
       <template #clickHere>
-        <button
-          type="button"
-          class="cursor-pointer border-none bg-transparent p-0 text-sm text-base-foreground hover:text-muted-foreground"
-          @click="handleViewPricing"
+        <a
+          :href="PRICING_URL"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="cursor-pointer text-sm text-base-foreground no-underline hover:text-muted-foreground"
         >
           {{ t('subscription.pricingBlurbClickHere') }}
-        </button>
+        </a>
       </template>
     </I18nT>
   </div>
@@ -430,9 +430,12 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import {
   DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS
+  getDiscountedMonthlyUsd,
+  TEAM_PLAN_CREDIT_STOPS,
+  mapApiTeamCreditStops
 } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
@@ -457,14 +460,9 @@ const {
 const emit = defineEmits<{
   subscribe: [payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }]
   resubscribe: []
-  // Team-plan checkout. NOTE: the slider stop -> plan-slug mapping is blocked on
-  // the BE discount-breakpoint contract (FE-934 / doc Open Q#2); the host shows
-  // the confirm step but stubs the final subscribe until the contract lands.
-  // TODO(FE-934): once the contract lands, also carry `currentBillingCycle`
-  // (yearly | monthly) so checkout subscribes to the selected cycle, not just
-  // the stop. The pricing-table view already toggles cycle; the confirm/checkout
-  // chain still assumes yearly.
-  subscribeTeam: [payload: TeamPlanSelection]
+  subscribeTeam: [
+    payload: { stop: TeamPlanSelection; billingCycle: BillingCycle }
+  ]
 }>()
 
 const { t, n } = useI18n()
@@ -475,11 +473,14 @@ const showTeam = computed(() => flags.teamWorkspacesEnabled)
 
 const planMode = ref<'personal' | 'team'>(initialPlanMode)
 
-const TEAM_MAX_MEMBERS = 30
-
 /** The Wan 2.2 i2v template the video estimates are based on. */
 const VIDEO_TEMPLATE_URL =
   'https://cloud.comfy.org/?template=video_wan2_2_14B_i2v'
+
+/** External footnote destinations — rendered as real links (open in a new tab). */
+const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
+const ENTERPRISE_URL = 'https://www.comfy.org/enterprise'
+const PRICING_URL = 'https://www.comfy.org/pricing'
 
 /** Videos-per-credit ratio is constant across tiers; reuse it for the team
  *  plan's template-based estimate until the BE carries a team figure. */
@@ -612,17 +613,41 @@ const {
   subscription
 } = useBillingContext()
 
+const { teamCreditStops } = useBillingPlans()
+
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
-// Team plan selection (slider). Stop -> slug mapping is BE-blocked (see emit).
-const teamUsd = ref<number>(
-  TEAM_PLAN_CREDIT_STOPS[DEFAULT_TEAM_PLAN_STOP_INDEX].usd
+// Team credit stops: backend-sourced when the API supplies them, otherwise the
+// hardcoded DES-197 fallback so OSS / pre-deploy still renders.
+const teamStops = computed(() =>
+  teamCreditStops.value
+    ? mapApiTeamCreditStops(teamCreditStops.value.stops)
+    : TEAM_PLAN_CREDIT_STOPS
 )
-const teamCredits = ref<number>(
-  TEAM_PLAN_CREDIT_STOPS[DEFAULT_TEAM_PLAN_STOP_INDEX].credits
+const teamDefaultStopIndex = computed(
+  () =>
+    teamCreditStops.value?.default_stop_index ?? DEFAULT_TEAM_PLAN_STOP_INDEX
 )
+const defaultTeamStop = computed(
+  () =>
+    teamStops.value[teamDefaultStopIndex.value] ??
+    teamStops.value[0] ??
+    TEAM_PLAN_CREDIT_STOPS[DEFAULT_TEAM_PLAN_STOP_INDEX]
+)
+
+const teamUsd = ref<number>(defaultTeamStop.value.usd)
+
+// The selected stop follows the slider's USD value; when it matches none (e.g.
+// the API stops loaded after mount with different breakpoints) it falls back to
+// the default stop so the id/credits stay consistent with what's displayed.
+const selectedTeamStop = computed(
+  () =>
+    teamStops.value.find((stop) => stop.usd === teamUsd.value) ??
+    defaultTeamStop.value
+)
+const teamCredits = computed(() => selectedTeamStop.value.credits)
 const teamVideoEstimate = computed(() =>
   Math.round(teamCredits.value * VIDEO_PER_CREDIT)
 )
@@ -738,25 +763,24 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
   emit('subscribe', { tierKey, billingCycle: currentBillingCycle.value })
 }
 
-function onTeamChange(stop: { index: number; usd: number; credits: number }) {
-  teamUsd.value = stop.usd
-  teamCredits.value = stop.credits
-}
-
 function handleSubscribeTeam() {
   if (isLoading) return
-  emit('subscribeTeam', { usd: teamUsd.value, credits: teamCredits.value })
-}
-
-function handleQuestions() {
-  window.open('https://portal.usepylon.com/comfy-org/forms/question', '_blank')
+  const stop = selectedTeamStop.value
+  emit('subscribeTeam', {
+    stop: {
+      id: stop.id,
+      usd: stop.usd,
+      credits: stop.credits,
+      discountedUsd: getDiscountedMonthlyUsd(
+        stop.usd,
+        currentBillingCycle.value
+      )
+    },
+    billingCycle: currentBillingCycle.value
+  })
 }
 
 function handleViewEnterprise() {
-  window.open('https://www.comfy.org/enterprise', '_blank')
-}
-
-function handleViewPricing() {
-  window.open('https://www.comfy.org/pricing', '_blank')
+  window.open(ENTERPRISE_URL, '_blank')
 }
 </script>

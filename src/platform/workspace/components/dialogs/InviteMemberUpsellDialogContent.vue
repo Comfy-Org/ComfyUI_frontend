@@ -48,10 +48,12 @@
 <script setup lang="ts">
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 
 const dialogStore = useDialogStore()
-const { isActiveSubscription, showSubscriptionDialog } = useBillingContext()
+const { isActiveSubscription } = useBillingContext()
+const subscriptionDialog = useSubscriptionDialog()
 
 function onDismiss() {
   dialogStore.closeDialog({ key: 'invite-member-upsell' })
@@ -59,6 +61,6 @@ function onDismiss() {
 
 function onUpgrade() {
   dialogStore.closeDialog({ key: 'invite-member-upsell' })
-  showSubscriptionDialog()
+  subscriptionDialog.show({ planMode: 'team' })
 }
 </script>

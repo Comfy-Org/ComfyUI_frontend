@@ -118,9 +118,27 @@ export interface Plan {
   seat_summary: PlanSeatSummary
 }
 
+interface TeamCreditStopPrice {
+  list_price_cents: number
+  price_cents: number
+}
+
+interface TeamCreditStop {
+  id: string
+  credits: number
+  monthly: TeamCreditStopPrice
+  yearly: TeamCreditStopPrice
+}
+
+export interface TeamCreditStops {
+  default_stop_index: number
+  stops: TeamCreditStop[]
+}
+
 interface BillingPlansResponse {
   current_plan_slug?: string
   plans: Plan[]
+  team_credit_stops?: TeamCreditStops
 }
 
 type SubscriptionTransitionType =
@@ -133,11 +151,22 @@ interface PreviewSubscribeRequest {
   plan_slug: string
 }
 
+type SubscribeBillingCycle = 'monthly' | 'yearly'
+
 interface SubscribeRequest {
   plan_slug: string
   idempotency_key?: string
   return_url?: string
   cancel_url?: string
+  team_credit_stop_id?: string
+  billing_cycle?: SubscribeBillingCycle
+}
+
+export interface SubscribeOptions {
+  returnUrl?: string
+  cancelUrl?: string
+  teamCreditStopId?: string
+  billingCycle?: SubscribeBillingCycle
 }
 
 type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
@@ -595,8 +624,7 @@ export const workspaceApi = {
    */
   async subscribe(
     planSlug: string,
-    returnUrl?: string,
-    cancelUrl?: string
+    options: SubscribeOptions = {}
   ): Promise<SubscribeResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
@@ -604,8 +632,10 @@ export const workspaceApi = {
         api.apiURL('/billing/subscribe'),
         {
           plan_slug: planSlug,
-          return_url: returnUrl,
-          cancel_url: cancelUrl
+          return_url: options.returnUrl,
+          cancel_url: options.cancelUrl,
+          team_credit_stop_id: options.teamCreditStopId,
+          billing_cycle: options.billingCycle
         } satisfies SubscribeRequest,
         { headers }
       )

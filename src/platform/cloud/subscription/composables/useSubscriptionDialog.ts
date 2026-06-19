@@ -16,6 +16,16 @@ export type SubscriptionDialogReason =
   | 'out_of_credits'
   | 'top_up_blocked'
 
+export interface SubscriptionDialogOptions {
+  reason?: SubscriptionDialogReason
+  /**
+   * Forces the unified pricing dialog to open on a specific plan tab,
+   * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
+   * always lands on the team tab even from a personal workspace).
+   */
+  planMode?: 'personal' | 'team'
+}
+
 export const useSubscriptionDialog = () => {
   const { flags } = useFeatureFlags()
   const dialogService = useDialogService()
@@ -29,7 +39,7 @@ export const useSubscriptionDialog = () => {
     dialogStore.closeDialog({ key: FREE_TIER_DIALOG_KEY })
   }
 
-  function showPricingTable(options?: { reason?: SubscriptionDialogReason }) {
+  function showPricingTable(options?: SubscriptionDialogOptions) {
     if (!isCloud) return
 
     // Members can't manage the workspace subscription, so a blocked run shows a
@@ -88,17 +98,26 @@ export const useSubscriptionDialog = () => {
         props: {
           onClose: hide,
           reason: options?.reason,
-          // A team workspace lands on the For Teams tab; personal on For Personal.
-          initialPlanMode: workspaceStore.isInPersonalWorkspace
-            ? 'personal'
-            : 'team'
+          // A team workspace lands on the For Teams tab; personal on For
+          // Personal. An explicit caller (e.g. an "Upgrade to Team" CTA) can
+          // override via options.planMode.
+          initialPlanMode:
+            options?.planMode ??
+            (workspaceStore.isInPersonalWorkspace ? 'personal' : 'team')
         },
         dialogComponentProps: {
-          ...dialogComponentProps,
-          // Fixed height so the dialog stays the same size across the
-          // personal/team toggle and the cards fill it instead of leaving a
-          // gap above the footnote (DES QA 2026-06-13).
-          style: 'width: min(1328px, 95vw); height: min(760px, 90vh);'
+          // The dialog hugs its content so each step sizes itself: the pricing
+          // table stays wide/fixed (cards fill it, DES QA 2026-06-13) while the
+          // compact confirm/success steps shrink instead of floating in the big
+          // pricing modal. Sizes are set on the content root per checkoutStep.
+          style: 'max-width: 95vw; max-height: 90vh;',
+          pt: {
+            root: { class: 'rounded-2xl bg-transparent' },
+            content: {
+              class:
+                '!p-0 rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
+            }
+          }
         }
       })
       return
@@ -119,7 +138,7 @@ export const useSubscriptionDialog = () => {
     })
   }
 
-  function show(options?: { reason?: SubscriptionDialogReason }) {
+  function show(options?: SubscriptionDialogOptions) {
     if (isFreeTier.value && workspaceStore.isInPersonalWorkspace) {
       const component = defineAsyncComponent(
         () =>

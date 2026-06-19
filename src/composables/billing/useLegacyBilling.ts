@@ -6,6 +6,7 @@ import type {
   BillingStatus,
   BillingSubscriptionStatus,
   PreviewSubscribeResponse,
+  SubscribeOptions,
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { useAuthStore } from '@/stores/authStore'
@@ -145,8 +146,7 @@ export function useLegacyBilling(): BillingState & BillingActions {
 
   async function subscribe(
     _planSlug: string,
-    _returnUrl?: string,
-    _cancelUrl?: string
+    _options?: SubscribeOptions
   ): Promise<SubscribeResponse | void> {
     // Legacy billing uses Stripe checkout flow via useSubscription
     await legacySubscribe()

@@ -33,18 +33,18 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
 
   it('renders the team plan from the selected slider stop', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: { teamPlan: { usd: 400, credits: 84_400 } },
+      props: { teamPlan: { usd: 400, credits: 84_400, discountedUsd: 380 } },
       global: globalOptions
     })
     expect(screen.getByText('subscription.teamPlan.name')).toBeTruthy()
-    expect(screen.getByText('$400')).toBeTruthy()
+    expect(screen.getByText('$380')).toBeTruthy()
     expect(screen.getAllByText('84,400').length).toBeGreaterThan(0)
-    expect(screen.getByText('$400.00')).toBeTruthy()
+    expect(screen.getByText('$380.00')).toBeTruthy()
   })
 
   it('emits addCreditCard from the team confirm CTA', async () => {
     const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
-      props: { teamPlan: { usd: 400, credits: 84_400 } },
+      props: { teamPlan: { usd: 400, credits: 84_400, discountedUsd: 380 } },
       global: globalOptions
     })
     await userEvent.click(

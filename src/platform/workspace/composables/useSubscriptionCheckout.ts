@@ -4,13 +4,15 @@ import { useI18n } from 'vue-i18n'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { TEAM_PLAN_SLUG_BY_CYCLE } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   Plan,
-  PreviewSubscribeResponse
+  PreviewSubscribeResponse,
+  SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
@@ -116,12 +118,15 @@ export function useSubscriptionCheckout(emit: {
   }
 
   /**
-   * Team-plan checkout entry: show the "Confirm your payment" step rendered
-   * from the selected slider stop. The final subscribe call stays stubbed in
-   * the host until the BE slider contract lands (FE-934 / doc Open Q#2).
+   * Team-plan checkout entry: show the display-only "Confirm your payment" step
+   * for the selected slider stop, then subscribe via `handleTeamSubscription`.
    */
-  function handleSubscribeTeamClick(payload: TeamPlanSelection) {
-    selectedTeamStop.value = payload
+  function handleSubscribeTeamClick(payload: {
+    stop: TeamPlanSelection
+    billingCycle: BillingCycle
+  }) {
+    selectedTeamStop.value = payload.stop
+    selectedBillingCycle.value = payload.billingCycle
     selectedTierKey.value = null
     previewData.value = null
     checkoutStep.value = 'preview'
@@ -147,33 +152,73 @@ export function useSubscriptionCheckout(emit: {
         selectedBillingCycle.value
       )
       if (!planSlug) return
-      const response = await subscribe(
-        planSlug,
-        `${getComfyPlatformBaseUrl()}/payment/success`,
-        `${getComfyPlatformBaseUrl()}/payment/failed`
+      const response = await subscribe(planSlug, {
+        returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
+        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
+      })
+
+      await handleSubscribeResponse(response)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to subscribe'
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: message
+      })
+    } finally {
+      isSubscribing.value = false
+    }
+  }
+
+  async function handleSubscribeResponse(
+    response: SubscribeResponse | void
+  ): Promise<void> {
+    if (!response) return
+
+    if (response.status === 'subscribed') {
+      telemetry?.trackMonthlySubscriptionSucceeded()
+      await Promise.all([fetchStatus(), fetchBalance()])
+      checkoutStep.value = 'success'
+    } else if (
+      response.status === 'needs_payment_method' &&
+      response.payment_method_url
+    ) {
+      window.open(response.payment_method_url, '_blank')
+      void billingOperationStore.startOperation(
+        response.billing_op_id,
+        'subscription'
       )
+    } else if (response.status === 'pending_payment') {
+      void billingOperationStore.startOperation(
+        response.billing_op_id,
+        'subscription'
+      )
+    }
+  }
 
-      if (!response) return
+  async function handleTeamSubscription() {
+    const stop = selectedTeamStop.value
+    if (!stop?.id) {
+      toast.add({
+        severity: 'error',
+        summary: t('subscription.teamPlan.name'),
+        detail: t('subscription.teamPlan.unavailable')
+      })
+      return
+    }
 
-      if (response.status === 'subscribed') {
-        telemetry?.trackMonthlySubscriptionSucceeded()
-        await Promise.all([fetchStatus(), fetchBalance()])
-        checkoutStep.value = 'success'
-      } else if (
-        response.status === 'needs_payment_method' &&
-        response.payment_method_url
-      ) {
-        window.open(response.payment_method_url, '_blank')
-        void billingOperationStore.startOperation(
-          response.billing_op_id,
-          'subscription'
-        )
-      } else if (response.status === 'pending_payment') {
-        void billingOperationStore.startOperation(
-          response.billing_op_id,
-          'subscription'
-        )
-      }
+    isSubscribing.value = true
+    try {
+      const planSlug = TEAM_PLAN_SLUG_BY_CYCLE[selectedBillingCycle.value]
+      const response = await subscribe(planSlug, {
+        teamCreditStopId: stop.id,
+        billingCycle: selectedBillingCycle.value,
+        returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
+        cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
+      })
+
+      await handleSubscribeResponse(response)
     } catch (error) {
       const message =
         error instanceof Error ? error.message : 'Failed to subscribe'
@@ -228,6 +273,7 @@ export function useSubscriptionCheckout(emit: {
     handleSuccessClose,
     handleAddCreditCard: handleSubscription,
     handleConfirmTransition: handleSubscription,
+    handleTeamSubscribe: handleTeamSubscription,
     handleResubscribe
   }
 }

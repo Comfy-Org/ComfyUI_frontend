@@ -2629,11 +2629,11 @@
       "perkProjectAssets": "Project & asset management",
       "cta": "Subscribe to Team Yearly",
       "ctaMonthly": "Subscribe to Team Monthly",
-      "checkoutComingSoon": "Team plan checkout is coming soon."
+      "unavailable": "This team plan is not available right now."
     },
     "enterprise": {
       "name": "Enterprise",
-      "needMoreMembers": "Need more than {count} members?",
+      "needMoreMembers": "Need more members?",
       "flexibility": "Looking for more flexibility or custom features?",
       "reachOut": "Reach out to us and let's schedule a chat.",
       "cta": "Learn more"

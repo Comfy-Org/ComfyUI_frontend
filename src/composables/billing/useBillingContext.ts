@@ -7,6 +7,7 @@ import {
   getTierFeatures
 } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import type { SubscribeOptions } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type {
@@ -219,12 +220,8 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.fetchBalance()
   }
 
-  async function subscribe(
-    planSlug: string,
-    returnUrl?: string,
-    cancelUrl?: string
-  ) {
-    return activeContext.value.subscribe(planSlug, returnUrl, cancelUrl)
+  async function subscribe(planSlug: string, options?: SubscribeOptions) {
+    return activeContext.value.subscribe(planSlug, options)
   }
 
   async function previewSubscribe(planSlug: string) {
