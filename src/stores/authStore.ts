@@ -308,6 +308,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const createCustomer = async (): Promise<CreateCustomerResponse> => {
+    const sessionUserId = currentUser.value?.uid
     const authHeader = await getAuthHeader()
     if (!authHeader) {
       throw new AuthStoreError(t('toastMessages.userNotAuthenticated'))
@@ -338,7 +339,9 @@ export const useAuthStore = defineStore('auth', () => {
       )
     }
 
-    customerCreated.value = true
+    if (currentUser.value?.uid === sessionUserId) {
+      customerCreated.value = true
+    }
     return createCustomerResJson
   }
 
@@ -349,12 +352,17 @@ export const useAuthStore = defineStore('auth', () => {
    * request can retry, e.g. after a transient network failure.
    */
   const recoverMissingCustomer = (): Promise<void> => {
-    customerRecovery ??= createCustomer()
-      .then(() => undefined)
-      .catch((error: unknown) => {
-        customerRecovery = null
-        throw error
-      })
+    if (customerRecovery === null) {
+      const thisRecovery: Promise<void> = createCustomer()
+        .then(() => undefined)
+        .catch((error: unknown) => {
+          if (customerRecovery === thisRecovery) {
+            customerRecovery = null
+          }
+          throw error
+        })
+      customerRecovery = thisRecovery
+    }
     return customerRecovery
   }
 

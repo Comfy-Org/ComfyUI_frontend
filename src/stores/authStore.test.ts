@@ -1083,5 +1083,102 @@ describe('useAuthStore', () => {
 
       expect(countCustomerPosts()).toBe(1)
     })
+
+    it('stale rejection from previous session does not null out a new in-flight recovery', async () => {
+      let rejectSession1Create!: (reason: unknown) => void
+      let resolveSession2Create!: (value: Response) => void
+      let postCount = 0
+
+      const session1CreateP = new Promise<Response>((_, reject) => {
+        rejectSession1Create = reject
+      })
+      const session2CreateP = new Promise<Response>((resolve) => {
+        resolveSession2Create = resolve
+      })
+
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          postCount++
+          return postCount === 1 ? session1CreateP : session2CreateP
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      // Session 1: trigger a recovery whose POST will hang
+      const session1Done = store
+        .fetchWithCustomerRecovery('https://api.test/customers/balance')
+        .then(() => 'session1')
+        .catch(() => 'session1-failed')
+
+      // Drain microtasks so session1's POST is registered
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+      // Auth resets; new session starts
+      authStateCallback(null)
+      authStateCallback(mockUser)
+
+      // Session 2 recovery — should create a new independent in-flight promise
+      const session2Done = store
+        .fetchWithCustomerRecovery('https://api.test/customers/balance')
+        .then(() => 'session2')
+        .catch(() => 'session2-failed')
+
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+      // Session 1's POST fails — stale rejection fires; must NOT null out session 2's recovery
+      rejectSession1Create(new Error('network error'))
+      await session1Done
+
+      // Session 2's POST resolves successfully
+      resolveSession2Create({
+        ok: true,
+        statusText: 'OK',
+        json: () => Promise.resolve({ id: 'id-2' })
+      } as Response)
+      const session2Result = await session2Done
+
+      // Session 2 must succeed, proving its recovery was not nulled by session 1's rejection
+      expect(session2Result).toBe('session2')
+    })
+
+    it('does not skip re-provisioning when createCustomer resolves after sign-out', async () => {
+      let resolveCreate!: (value: Response) => void
+      const slowCreateP = new Promise<Response>((resolve) => {
+        resolveCreate = resolve
+      })
+      let postCount = 0
+
+      mockFetch.mockImplementation((url: string, init?: RequestInit) => {
+        if (url.endsWith('/customers') && init?.method === 'POST') {
+          postCount++
+          return postCount === 1 ? slowCreateP : Promise.resolve(mockCreateCustomerResponse)
+        }
+        return Promise.resolve(makeConflictResponse())
+      })
+
+      // Session 1 triggers recovery with a slow POST
+      const session1Done = store
+        .fetchWithCustomerRecovery('https://api.test/customers/balance')
+        .catch(() => {})
+
+      await new Promise<void>((resolve) => setTimeout(resolve, 0))
+
+      // User signs out before the POST resolves
+      authStateCallback(null)
+      authStateCallback(mockUser)
+
+      // Stale POST resolves successfully after session reset
+      resolveCreate!({
+        ok: true,
+        statusText: 'OK',
+        json: () => Promise.resolve({ id: 'stale-id' })
+      } as Response)
+      await session1Done
+
+      // A fresh recovery for the new session must POST again;
+      // customerCreated must not have been set by the stale resolution.
+      await store.fetchWithCustomerRecovery('https://api.test/customers/balance')
+      expect(postCount).toBe(2)
+    })
   })
 })
