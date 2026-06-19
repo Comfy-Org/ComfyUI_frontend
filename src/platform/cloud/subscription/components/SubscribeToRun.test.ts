@@ -31,9 +31,14 @@ vi.mock('@/platform/distribution/types', () => ({
   isCloud: true
 }))
 
+vi.mock('@/composables/useRunButtonTelemetry', () => ({
+  useRunButtonTelemetry: () => ({
+    trackRunButton: mockTrackRunButton
+  })
+}))
+
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackRunButton: mockTrackRunButton,
     trackSubscription: mockTrackSubscription
   })
 }))

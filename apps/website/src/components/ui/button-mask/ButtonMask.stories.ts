@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import MaskRevealButton from './MaskRevealButton.vue'
+import ButtonMask from './ButtonMask.vue'
 
-const meta: Meta<typeof MaskRevealButton> = {
-  title: 'Website/Common/MaskRevealButton',
-  component: MaskRevealButton,
+const meta: Meta<typeof ButtonMask> = {
+  title: 'Website/UI/ButtonMask',
+  component: ButtonMask,
   tags: ['autodocs'],
   decorators: [
     () => ({
@@ -12,22 +12,19 @@ const meta: Meta<typeof MaskRevealButton> = {
     })
   ],
   argTypes: {
-    href: { control: 'text' },
-    target: { control: 'text' },
-    rel: { control: 'text' },
-    type: {
+    as: {
       control: { type: 'select' },
-      options: ['button', 'submit', 'reset']
+      options: ['button', 'a']
     },
+    asChild: { control: 'boolean' },
     disabled: { control: 'boolean' },
-    ariaLabel: { control: 'text' },
     variant: {
       control: { type: 'select' },
       options: ['solid', 'ghost']
     },
     size: {
       control: { type: 'select' },
-      options: ['sm', 'md', 'lg']
+      options: ['default', 'lg', 'icon']
     },
     iconPosition: {
       control: { type: 'select' },
@@ -41,57 +38,57 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const Default: Story = {
-  args: { href: '#' },
+  args: { as: 'a', href: '#' },
   render: (args) => ({
-    components: { MaskRevealButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
-    template: `<MaskRevealButton v-bind="args">Try Workflow</MaskRevealButton>`
+    template: `<ButtonMask v-bind="args">Try Workflow</ButtonMask>`
   })
 }
 
 export const Ghost: Story = {
-  args: { href: '#', variant: 'ghost' },
+  args: { as: 'a', href: '#', variant: 'ghost' },
   render: (args) => ({
-    components: { MaskRevealButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
-    template: '<MaskRevealButton v-bind="args">Read More</MaskRevealButton>'
+    template: '<ButtonMask v-bind="args">Read More</ButtonMask>'
   })
 }
 
 export const IconLeft: Story = {
-  args: { href: '#', iconPosition: 'left' },
+  args: { as: 'a', href: '#', iconPosition: 'left' },
   render: (args) => ({
-    components: { MaskRevealButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
-    template: '<MaskRevealButton v-bind="args">Go Back</MaskRevealButton>'
+    template: '<ButtonMask v-bind="args">Go Back</ButtonMask>'
   })
 }
 
-export const SmallSolid: Story = {
-  args: { href: '#', size: 'sm' },
+export const DefaultSolid: Story = {
+  args: { as: 'a', href: '#', size: 'default' },
   render: (args) => ({
-    components: { MaskRevealButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
-    template: '<MaskRevealButton v-bind="args">Try Workflow</MaskRevealButton>'
+    template: '<ButtonMask v-bind="args">Try Workflow</ButtonMask>'
   })
 }
 
 export const LargeSolid: Story = {
-  args: { href: '#', size: 'lg' },
+  args: { as: 'a', href: '#', size: 'lg' },
   render: (args) => ({
-    components: { MaskRevealButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
-    template: `<MaskRevealButton v-bind="args">Let's Collaborate</MaskRevealButton>`
+    template: `<ButtonMask v-bind="args">Let's Collaborate</ButtonMask>`
   })
 }
 
 export const WithCustomIcon: Story = {
-  args: { href: '#' },
+  args: { as: 'a', href: '#' },
   render: (args) => ({
-    components: { MaskRevealButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
     template: `
-      <MaskRevealButton v-bind="args">
+      <ButtonMask v-bind="args">
         Next Step
         <template #icon>
           <svg
@@ -106,57 +103,53 @@ export const WithCustomIcon: Story = {
             <polyline points="9 6 15 12 9 18" />
           </svg>
         </template>
-      </MaskRevealButton>
+      </ButtonMask>
     `
   })
 }
 
 export const LabelVisible: Story = {
-  args: { href: '#', hideLabel: false },
+  args: { as: 'a', href: '#', hideLabel: false },
   render: (args) => ({
-    components: { MaskRevealButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
-    template:
-      '<MaskRevealButton v-bind="args">Always Visible</MaskRevealButton>'
+    template: '<ButtonMask v-bind="args">Always Visible</ButtonMask>'
   })
 }
 
 export const Disabled: Story = {
   args: { disabled: true },
   render: (args) => ({
-    components: { MaskRevealButton },
+    components: { ButtonMask },
     setup: () => ({ args }),
-    template: '<MaskRevealButton v-bind="args">Unavailable</MaskRevealButton>'
+    template: '<ButtonMask v-bind="args">Unavailable</ButtonMask>'
   })
 }
 
 export const AllVariants: Story = {
   render: () => ({
-    components: { MaskRevealButton },
+    components: { ButtonMask },
     template: `
       <div class="flex flex-col gap-8">
         <div class="flex flex-col gap-3">
           <span class="text-primary-comfy-canvas text-xs uppercase tracking-wider">Solid</span>
           <div class="flex flex-wrap items-center gap-4">
-            <MaskRevealButton href="#" variant="solid" size="sm">Small</MaskRevealButton>
-            <MaskRevealButton href="#" variant="solid" size="md">Medium</MaskRevealButton>
-            <MaskRevealButton href="#" variant="solid" size="lg">Large</MaskRevealButton>
+            <ButtonMask as="a" href="#" variant="solid" size="default">Default</ButtonMask>
+            <ButtonMask as="a" href="#" variant="solid" size="lg">Large</ButtonMask>
           </div>
         </div>
         <div class="flex flex-col gap-3">
           <span class="text-primary-comfy-canvas text-xs uppercase tracking-wider">Ghost</span>
           <div class="flex flex-wrap items-center gap-4">
-            <MaskRevealButton href="#" variant="ghost" size="sm">Small</MaskRevealButton>
-            <MaskRevealButton href="#" variant="ghost" size="md">Medium</MaskRevealButton>
-            <MaskRevealButton href="#" variant="ghost" size="lg">Large</MaskRevealButton>
+            <ButtonMask as="a" href="#" variant="ghost" size="default">Default</ButtonMask>
+            <ButtonMask as="a" href="#" variant="ghost" size="lg">Large</ButtonMask>
           </div>
         </div>
         <div class="flex flex-col gap-3">
           <span class="text-primary-comfy-canvas text-xs uppercase tracking-wider">Icon Left</span>
           <div class="flex flex-wrap items-center gap-4">
-            <MaskRevealButton href="#" iconPosition="left" size="sm">Small</MaskRevealButton>
-            <MaskRevealButton href="#" iconPosition="left" size="md">Medium</MaskRevealButton>
-            <MaskRevealButton href="#" iconPosition="left" size="lg">Large</MaskRevealButton>
+            <ButtonMask as="a" href="#" iconPosition="left" size="default">Default</ButtonMask>
+            <ButtonMask as="a" href="#" iconPosition="left" size="lg">Large</ButtonMask>
           </div>
         </div>
       </div>

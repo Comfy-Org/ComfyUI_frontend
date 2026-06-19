@@ -1,6 +1,16 @@
+@import 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap';
+
 @import 'tailwindcss';
 @import '@comfyorg/design-system/css/base.css';
+@import 'tw-animate-css';
 
+/* PP Formula's native vertical metrics place the baseline too high, so caps
+   sit in the upper half of the line box. Overriding ascent/descent re-anchors
+   the baseline so caps render optically centered when line-height is tight. 
+    BUT, IT IS NOT WELL SUPPORTED:
+    ascent-override: 92%;
+    descent-override: 8%;
+    line-gap-override: 0%; */
 @font-face {
   font-family: 'PP Formula';
   src: url('/fonts/PPFormula-Light.woff2') format('woff2');
@@ -53,10 +63,12 @@
   --color-site-dropdown: #332b38;
   --color-primary-comfy-yellow: #f2ff59;
   --color-primary-comfy-ink: #211927;
+  --color-primary-comfy-ink-light: #2a2330;
   --color-primary-comfy-canvas: #c2bfb9;
   --color-primary-warm-white: #f0efed;
   --color-primary-warm-gray: #7e7c78;
   --color-secondary-mauve: #4d3762;
+  --color-destructive: #f44336;
   --color-primary-comfy-plum: #49378b;
   --color-secondary-cool-gray: #3c3c3c;
   --color-illustration-forest: #20464c;
@@ -100,6 +112,7 @@
   0% {
     transform: translateX(0);
   }
+
   100% {
     transform: translateX(calc(-100% - var(--marquee-gap, 0px)));
   }
@@ -109,6 +122,7 @@
   0% {
     transform: translateX(calc(-100% - var(--marquee-gap, 0px)));
   }
+
   100% {
     transform: translateX(0);
   }
@@ -131,9 +145,11 @@
     transform: scale(1);
     opacity: 1;
   }
+
   85% {
     opacity: 1;
   }
+
   100% {
     transform: scale(1.75);
     opacity: 0;
@@ -174,6 +190,7 @@
 @utility scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
+
   &::-webkit-scrollbar {
     display: none;
   }

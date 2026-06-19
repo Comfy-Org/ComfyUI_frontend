@@ -1,11 +1,12 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
-import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
 import { isCloud } from '@/platform/distribution/types'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
+import { type StatusWsMessageStatus } from '@/schemas/apiSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -488,7 +489,9 @@ export class ComfyUI {
           textContent: 'Queue Prompt',
           onclick: () => {
             if (isCloud) {
-              useTelemetry()?.trackRunButton({ trigger_source: 'legacy_ui' })
+              useRunButtonTelemetry().trackRunButton({
+                trigger_source: 'legacy_ui'
+              })
               useTelemetry()?.trackWorkflowExecution()
             }
             app.queuePrompt(0, this.batchCount)
@@ -596,7 +599,9 @@ export class ComfyUI {
             textContent: 'Queue Front',
             onclick: () => {
               if (isCloud) {
-                useTelemetry()?.trackRunButton({ trigger_source: 'legacy_ui' })
+                useRunButtonTelemetry().trackRunButton({
+                  trigger_source: 'legacy_ui'
+                })
                 useTelemetry()?.trackWorkflowExecution()
               }
               app.queuePrompt(-1, this.batchCount)

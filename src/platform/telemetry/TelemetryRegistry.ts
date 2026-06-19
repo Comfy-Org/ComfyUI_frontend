@@ -19,7 +19,6 @@ import type {
   ShareLinkOpenedMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
-  ExecutionTriggerSource,
   FirstExecutionCompletedMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
@@ -34,6 +33,7 @@ import type {
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
+  RunButtonProperties,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
   ShellLayoutMetadata,
@@ -185,11 +185,8 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackApiCreditTopupSucceeded?.())
   }
 
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
-    this.dispatch((provider) => provider.trackRunButton?.(options))
+  trackRunButton(properties: RunButtonProperties): void {
+    this.dispatch((provider) => provider.trackRunButton?.(properties))
   }
 
   startTopupTracking(): void {
