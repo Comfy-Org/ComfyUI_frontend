@@ -151,29 +151,20 @@ function useWorkspaceUIInternal() {
   )
 
   // The original-owner signal lives on the members-list self-row, so the
-  // members list must be loaded before the team gate resolves. Trigger a fetch
-  // for team workspaces whose members aren't loaded yet; until they arrive the
-  // store getter fails closed, hiding lifecycle actions during the load window.
-  // Watch the workspace id (not the object) so a fetch-induced identity change
-  // can't retrigger the watch; an empty members response then can't loop.
+  // members list must be loaded before the team lifecycle gate can resolve. The
+  // store no-ops for personal/already-loaded workspaces and dedupes in-flight
+  // requests; until members arrive the getter fails closed.
   watch(
     () => store.activeWorkspace?.id,
-    () => {
-      const workspace = store.activeWorkspace
-      if (workspace?.type === 'team' && store.members.length === 0) {
-        void store.fetchMembers()
-      }
-    },
+    () => void store.ensureMembersLoaded(),
     { immediate: true }
   )
-
-  const isOriginalOwner = computed(() => store.isCurrentUserOriginalOwner)
 
   const permissions = computed<WorkspacePermissions>(() =>
     getPermissions(
       workspaceType.value,
       workspaceRole.value,
-      isOriginalOwner.value
+      store.isCurrentUserOriginalOwner
     )
   )
 

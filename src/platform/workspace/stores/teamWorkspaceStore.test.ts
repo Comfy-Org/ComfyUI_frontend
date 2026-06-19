@@ -871,6 +871,92 @@ describe('useTeamWorkspaceStore', () => {
     })
   })
 
+  describe('ensureMembersLoaded', () => {
+    const memberRow = {
+      id: 'user-1',
+      name: 'Owner',
+      email: 'owner@test.com',
+      joined_at: '2024-01-01T00:00:00Z'
+    }
+
+    function mockMembersResponse() {
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members: [memberRow],
+        pagination: { offset: 0, limit: 50, total: 1 }
+      })
+    }
+
+    async function activateTeamWorkspace() {
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      return store
+    }
+
+    it('loads members for a team workspace that is not yet loaded', async () => {
+      mockMembersResponse()
+      const store = await activateTeamWorkspace()
+
+      await store.ensureMembersLoaded()
+
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalledTimes(1)
+      expect(store.members).toHaveLength(1)
+    })
+
+    it('does not load members again once loaded', async () => {
+      mockMembersResponse()
+      const store = await activateTeamWorkspace()
+
+      await store.ensureMembersLoaded()
+      await store.ensureMembersLoaded()
+
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalledTimes(1)
+    })
+
+    it('dedupes concurrent calls into a single request', async () => {
+      mockMembersResponse()
+      const store = await activateTeamWorkspace()
+
+      await Promise.all([
+        store.ensureMembersLoaded(),
+        store.ensureMembersLoaded()
+      ])
+
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not load members for a personal workspace', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      await store.ensureMembersLoaded()
+
+      expect(mockWorkspaceApi.listMembers).not.toHaveBeenCalled()
+    })
+
+    it('logs a failed request and retries on the next call', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      mockWorkspaceApi.listMembers.mockRejectedValueOnce(new Error('boom'))
+      const store = await activateTeamWorkspace()
+
+      await store.ensureMembersLoaded()
+
+      expect(consoleError).toHaveBeenCalled()
+      expect(store.members).toHaveLength(0)
+
+      mockMembersResponse()
+      await store.ensureMembersLoaded()
+
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalledTimes(2)
+      expect(store.members).toHaveLength(1)
+
+      consoleError.mockRestore()
+    })
+  })
+
   describe('isCurrentUserOriginalOwner', () => {
     async function loadTeamWithMembers(
       members: Array<{

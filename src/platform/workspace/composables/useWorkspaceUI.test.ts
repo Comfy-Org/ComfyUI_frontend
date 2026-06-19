@@ -4,9 +4,8 @@ import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
 const mockStore = vi.hoisted(() => ({
   activeWorkspace: null as WorkspaceWithRole | null,
-  members: [] as unknown[],
   isCurrentUserOriginalOwner: false,
-  fetchMembers: vi.fn()
+  ensureMembersLoaded: vi.fn()
 }))
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
@@ -14,13 +13,10 @@ vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
     get activeWorkspace() {
       return mockStore.activeWorkspace
     },
-    get members() {
-      return mockStore.members
-    },
     get isCurrentUserOriginalOwner() {
       return mockStore.isCurrentUserOriginalOwner
     },
-    fetchMembers: mockStore.fetchMembers
+    ensureMembersLoaded: mockStore.ensureMembersLoaded
   })
 }))
 
@@ -58,9 +54,8 @@ async function loadComposable() {
 
 function resetStore() {
   mockStore.activeWorkspace = null
-  mockStore.members = []
   mockStore.isCurrentUserOriginalOwner = false
-  mockStore.fetchMembers.mockReset()
+  mockStore.ensureMembersLoaded.mockReset()
 }
 
 describe('useWorkspaceUI', () => {
@@ -222,7 +217,6 @@ describe('useWorkspaceUI', () => {
 
     it('grants lifecycle to a team owner who is the original owner', async () => {
       mockStore.activeWorkspace = teamOwnerWorkspace
-      mockStore.members = [{ email: 'self@test.com', isOriginalOwner: true }]
       mockStore.isCurrentUserOriginalOwner = true
       const ui = await loadComposable()
       expect(ui.permissions.value.canManageSubscription).toBe(true)
@@ -231,7 +225,6 @@ describe('useWorkspaceUI', () => {
 
     it('withholds lifecycle from a promoted (non-creator) team owner', async () => {
       mockStore.activeWorkspace = teamOwnerWorkspace
-      mockStore.members = [{ email: 'self@test.com', isOriginalOwner: false }]
       mockStore.isCurrentUserOriginalOwner = false
       const ui = await loadComposable()
       expect(ui.permissions.value.canManageSubscription).toBe(true)
@@ -251,24 +244,10 @@ describe('useWorkspaceUI', () => {
       expect(ui.permissions.value.canManageSubscriptionLifecycle).toBe(false)
     })
 
-    it('fetches members for a team workspace whose list is not loaded', async () => {
+    it('delegates member loading to the store when a workspace becomes active', async () => {
       mockStore.activeWorkspace = teamOwnerWorkspace
-      mockStore.members = []
       await loadComposable()
-      expect(mockStore.fetchMembers).toHaveBeenCalledTimes(1)
-    })
-
-    it('does not refetch when members are already loaded', async () => {
-      mockStore.activeWorkspace = teamOwnerWorkspace
-      mockStore.members = [{ email: 'self@test.com', isOriginalOwner: true }]
-      await loadComposable()
-      expect(mockStore.fetchMembers).not.toHaveBeenCalled()
-    })
-
-    it('does not fetch members for a personal workspace', async () => {
-      mockStore.activeWorkspace = personalWorkspace
-      await loadComposable()
-      expect(mockStore.fetchMembers).not.toHaveBeenCalled()
+      expect(mockStore.ensureMembersLoaded).toHaveBeenCalled()
     })
   })
 
