@@ -46,8 +46,8 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import { useTelemetry } from '@/platform/telemetry'
-import { useCommandStore } from '@/stores/commandStore'
 import { useAuthStore } from '@/stores/authStore'
+import { useCommandStore } from '@/stores/commandStore'
 
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const authStore = useAuthStore()

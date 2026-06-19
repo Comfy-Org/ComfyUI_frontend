@@ -19,10 +19,7 @@
       </div>
       <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
       <div v-else class="flex items-baseline gap-2">
-        <i
-          class="icon-[lucide--component] size-4 self-center"
-          :style="creditIconStyle"
-        />
+        <i class="icon-[lucide--component] size-4 self-center text-credit" />
         <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
         <span class="text-sm text-muted @max-[300px]:hidden">{{
           $t('subscription.remaining')
@@ -60,8 +57,8 @@
           class="h-2 w-full overflow-hidden rounded-full bg-secondary-background-hover"
         >
           <div
-            class="h-full rounded-full"
-            :style="{ width: usedBarWidth, backgroundColor: CREDIT_COLOR }"
+            class="h-full rounded-full bg-credit"
+            :style="{ width: usedBarWidth }"
           />
         </div>
         <div class="flex items-center justify-between gap-2 text-sm">
@@ -79,10 +76,7 @@
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
           >
-            <i
-              class="icon-[lucide--component] size-4"
-              :style="creditIconStyle"
-            />
+            <i class="icon-[lucide--component] size-4 text-credit" />
             <span class="@max-[180px]:hidden">
               {{
                 $t('subscription.creditsLeftOfTotal', {
@@ -120,7 +114,7 @@
             />
             <span
               v-if="isSpendingAdditional"
-              class="flex h-3.5 items-center rounded-full bg-base-foreground px-1 text-[10px] leading-none font-semibold text-base-background uppercase"
+              class="flex h-3.5 items-center rounded-full bg-base-foreground px-1 text-2xs leading-none font-semibold text-base-background uppercase"
             >
               {{ $t('subscription.additionalCreditsInUse') }}
             </span>
@@ -130,10 +124,7 @@
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
           >
-            <i
-              class="icon-[lucide--component] size-4"
-              :style="creditIconStyle"
-            />
+            <i class="icon-[lucide--component] size-4 text-credit" />
             {{ displayPrepaid }}
           </span>
         </div>
@@ -174,10 +165,12 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
+import { useEventListener } from '@vueuse/core'
 import Skeleton from 'primevue/skeleton'
-import { computed, onBeforeUnmount, onMounted, toValue } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { formatCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
@@ -197,13 +190,10 @@ const { zeroState = false } = defineProps<{
   zeroState?: boolean
 }>()
 
-const CREDIT_COLOR = '#fabc25'
-const creditIconStyle = { color: CREDIT_COLOR }
-
 const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
 const TOPUP_EXPIRY_MS = 5 * 60 * 1000
 
-const { locale, n, t } = useI18n()
+const { locale, t } = useI18n()
 
 const {
   subscription,
@@ -256,12 +246,19 @@ const refillsDateShort = computed(() => {
     : date.toLocaleDateString(locale.value, { month: 'short', day: 'numeric' })
 })
 
+const formatCreditCount = (value: number) =>
+  formatCredits({
+    value,
+    locale: locale.value,
+    numberOptions: { maximumFractionDigits: 0 }
+  })
+
 const monthlyTotalDisplay = computed(() => {
   const total = monthlyTotalCredits.value
-  return total === null ? '—' : n(total)
+  return total === null ? '—' : formatCreditCount(total)
 })
 
-const usedDisplay = computed(() => n(usage.value.used))
+const usedDisplay = computed(() => formatCreditCount(usage.value.used))
 
 const compactNumber = computed(
   () => new Intl.NumberFormat(locale.value, { notation: 'compact' })
@@ -295,7 +292,7 @@ const isMonthlyDepleted = computed(
   () =>
     showBar.value &&
     !isLoadingBalance.value &&
-    toValue(balance) != null &&
+    balance.value != null &&
     monthlyBonusCreditsValue.value <= 0
 )
 const isOutOfCredits = computed(
@@ -352,12 +349,9 @@ function handleWindowFocus() {
   localStorage.removeItem(PENDING_TOPUP_KEY)
 }
 
-onMounted(() => {
-  window.addEventListener('focus', handleWindowFocus)
-  void handleRefresh()
-})
+useEventListener(window, 'focus', handleWindowFocus)
 
-onBeforeUnmount(() => {
-  window.removeEventListener('focus', handleWindowFocus)
+onMounted(() => {
+  void handleRefresh()
 })
 </script>
