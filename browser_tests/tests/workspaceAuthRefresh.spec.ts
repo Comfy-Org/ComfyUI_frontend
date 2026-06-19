@@ -47,7 +47,10 @@ function makeTokenResponse(
 // On app boot, teamWorkspaceStore.initialize() auto-selects Personal Workspace
 // (personal type, no prior localStorage) and calls switchWorkspace → /api/auth/token.
 // This default stub absorbs that init call so per-test mocks only see explicit switches.
-const defaultTokenResponse = makeTokenResponse(mockPersonalWorkspace, 'init-token')
+const defaultTokenResponse = makeTokenResponse(
+  mockPersonalWorkspace,
+  'init-token'
+)
 
 const test = comfyPageFixture.extend({
   page: async ({ page }, use) => {
@@ -134,7 +137,6 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     )
     expect(Number(expiresAt)).toBeGreaterThan(Date.now())
   })
-
 
   test('transient token refresh failure preserves the active workspace session', async ({
     comfyPage
@@ -232,7 +234,8 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
     // A 403 ACCESS_DENIED response must clear the workspace session entirely.
     await expect
       .poll(
-        () => page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
+        () =>
+          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
         { timeout: 5000 }
       )
       .toBeNull()
