@@ -1,6 +1,6 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodeId, Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -388,6 +388,52 @@ describe('Subgraph Definition Garbage Collection', () => {
     rootGraph.remove(subgraphNode)
 
     expect(rootGraph.subgraphs.has(subgraphId)).toBe(false)
+  })
+})
+
+describe('beforeChange deprecated onBeforeChange shim', () => {
+  beforeEach(() => {
+    LiteGraph.onDeprecationWarning = []
+    LiteGraph.alwaysRepeatWarnings = true
+  })
+
+  afterEach(() => {
+    LiteGraph.alwaysRepeatWarnings = false
+  })
+
+  it('still invokes a listener assigned to onBeforeChange', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    const onBeforeChange = vi.fn()
+    graph.onBeforeChange = onBeforeChange
+
+    graph.beforeChange(node)
+
+    expect(onBeforeChange).toHaveBeenCalledWith(graph, node)
+  })
+
+  it('warns that onBeforeChange is deprecated when used', () => {
+    const graph = new LGraph()
+    const deprecationCallback = vi.fn()
+    LiteGraph.onDeprecationWarning = [deprecationCallback]
+    graph.onBeforeChange = vi.fn()
+
+    graph.beforeChange()
+
+    expect(deprecationCallback).toHaveBeenCalledWith(
+      expect.stringContaining('LGraph.onBeforeChange is deprecated'),
+      undefined
+    )
+  })
+
+  it('does not warn when no listener is assigned', () => {
+    const graph = new LGraph()
+    const deprecationCallback = vi.fn()
+    LiteGraph.onDeprecationWarning = [deprecationCallback]
+
+    graph.beforeChange()
+
+    expect(deprecationCallback).not.toHaveBeenCalled()
   })
 })
 
