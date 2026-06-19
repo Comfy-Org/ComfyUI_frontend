@@ -1,6 +1,9 @@
 <template>
-  <!-- Minimal standalone layout for OAuth flows — no app chrome -->
-  <RouterView />
+  <div
+    class="dark-theme h-svh w-screen overflow-y-auto bg-primary-comfy-ink font-sans text-primary-comfy-canvas"
+  >
+    <RouterView />
+  </div>
   <GlobalToast />
 </template>
 
