@@ -199,7 +199,6 @@
     "name": "محرك PLY",
     "options": {
       "fastply": "fastply",
-      "sparkjs": "sparkjs",
       "threejs": "threejs"
     },
     "tooltip": "اختر المحرك لتحميل ملفات PLY. \"threejs\" يستخدم محمل Three.js PLY الأصلي (الأفضل لملفات الشبكة). \"fastply\" يستخدم محملًا محسنًا لملفات PLY السحابية النقطية بنسق ASCII. \"sparkjs\" يستخدم Spark.js لملفات PLY الخاصة بتقنية Gaussian Splatting ثلاثية الأبعاد."

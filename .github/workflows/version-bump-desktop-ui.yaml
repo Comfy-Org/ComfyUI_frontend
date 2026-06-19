@@ -21,7 +21,7 @@ on:
         type: string
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.inputs.branch }}
   cancel-in-progress: false
 
 jobs:
@@ -94,4 +94,3 @@ jobs:
           base: ${{ github.event.inputs.branch }}
           labels: |
             Release
-

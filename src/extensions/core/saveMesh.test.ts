@@ -7,12 +7,14 @@ const {
   registerExtensionMock,
   waitForLoad3dMock,
   onLoad3dReadyMock,
-  configureForSaveMeshMock
+  configureForSaveMeshMock,
+  getNodeByLocatorIdMock
 } = vi.hoisted(() => ({
   registerExtensionMock: vi.fn(),
   waitForLoad3dMock: vi.fn(),
   onLoad3dReadyMock: vi.fn(),
-  configureForSaveMeshMock: vi.fn()
+  configureForSaveMeshMock: vi.fn(),
+  getNodeByLocatorIdMock: vi.fn()
 }))
 
 vi.mock('@/services/extensionService', () => ({
@@ -52,8 +54,19 @@ vi.mock('@/platform/assets/utils/assetPreviewUtil', () => ({
   persistThumbnail: vi.fn()
 }))
 
+vi.mock('@/scripts/app', () => ({
+  app: { rootGraph: {} }
+}))
+
+vi.mock('@/utils/graphTraversalUtil', () => ({
+  getNodeByLocatorId: getNodeByLocatorIdMock
+}))
+
 type SaveMeshExtension = ComfyExtension & {
   nodeCreated: (node: LGraphNode) => Promise<void>
+  onNodeOutputsUpdated: (
+    nodeOutputs: Record<string, Record<string, unknown>>
+  ) => void
 }
 
 async function loadSaveMeshExtensionFresh(): Promise<SaveMeshExtension> {
@@ -232,5 +245,99 @@ describe('saveMesh', () => {
       'sub/mesh.glb',
       { silentOnNotFound: true }
     )
+  })
+})
+
+describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    waitForLoad3dMock.mockImplementation((cb: (load3d: unknown) => void) => {
+      cb({
+        whenLoadIdle: () => Promise.resolve(),
+        captureThumbnail: vi.fn()
+      })
+    })
+  })
+
+  it('rehydrates a SaveGLB node from restored outputs', async () => {
+    const ext = await loadSaveMeshExtensionFresh()
+    const node = makeNode()
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    ext.onNodeOutputsUpdated!({
+      '7': {
+        '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
+      }
+    } as never)
+
+    const modelWidget = node.widgets!.find((w) => w.name === 'image')!
+    expect(modelWidget.value).toBe('sub/mesh.glb')
+    expect(node.properties['Last Time Model File']).toBe('sub/mesh.glb')
+    expect(node.properties['Last Time Model Folder']).toBe('output')
+    expect(configureForSaveMeshMock).toHaveBeenCalledWith(
+      'output',
+      'sub/mesh.glb',
+      { silentOnNotFound: true }
+    )
+  })
+
+  it('skips entries with no 3d output', async () => {
+    const ext = await loadSaveMeshExtensionFresh()
+    const node = makeNode()
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    ext.onNodeOutputsUpdated!({ '7': {} } as never)
+
+    expect(getNodeByLocatorIdMock).not.toHaveBeenCalled()
+    expect(configureForSaveMeshMock).not.toHaveBeenCalled()
+  })
+
+  it('skips entries whose node is not in the active rootGraph', async () => {
+    const ext = await loadSaveMeshExtensionFresh()
+    getNodeByLocatorIdMock.mockReturnValue(null)
+
+    ext.onNodeOutputsUpdated!({
+      '7': {
+        '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
+      }
+    } as never)
+
+    expect(configureForSaveMeshMock).not.toHaveBeenCalled()
+  })
+
+  it('skips nodes whose comfyClass is not SaveGLB', async () => {
+    const ext = await loadSaveMeshExtensionFresh()
+    const node = makeNode({ comfyClass: 'Preview3D' })
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    ext.onNodeOutputsUpdated!({
+      '7': {
+        '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
+      }
+    } as never)
+
+    expect(configureForSaveMeshMock).not.toHaveBeenCalled()
+  })
+
+  it('does not re-apply when the same result is already loaded', async () => {
+    const ext = await loadSaveMeshExtensionFresh()
+    const node = makeNode({
+      properties: {
+        'Last Time Model File': 'sub/mesh.glb',
+        'Last Time Model Folder': 'output'
+      }
+    })
+    ;(
+      node.widgets!.find((w) => w.name === 'image') as { value: string }
+    ).value = 'sub/mesh.glb'
+    getNodeByLocatorIdMock.mockReturnValue(node)
+
+    ext.onNodeOutputsUpdated!({
+      '7': {
+        '3d': [{ filename: 'mesh.glb', subfolder: 'sub', type: 'output' }]
+      }
+    } as never)
+
+    expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
 })

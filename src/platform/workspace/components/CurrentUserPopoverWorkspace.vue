@@ -24,36 +24,37 @@
     </div>
 
     <!-- Workspace Selector -->
-    <div
-      class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
-      @click="toggleWorkspaceSwitcher"
-    >
-      <div class="flex min-w-0 flex-1 items-center gap-2">
-        <WorkspaceProfilePic
-          class="size-6 shrink-0 text-xs"
-          :workspace-name="workspaceName"
-        />
-        <span class="truncate text-sm text-base-foreground">{{
-          workspaceName
-        }}</span>
+    <div class="relative">
+      <div
+        ref="workspaceSwitcherTrigger"
+        class="flex cursor-pointer items-center justify-between rounded-lg px-4 py-2 hover:bg-secondary-background-hover"
+        data-testid="workspace-switcher-trigger"
+        @click="toggleWorkspaceSwitcher"
+      >
+        <div class="flex min-w-0 flex-1 items-center gap-2">
+          <WorkspaceProfilePic
+            class="size-6 shrink-0 text-xs"
+            :workspace-name="workspaceName"
+          />
+          <span class="truncate text-sm text-base-foreground">{{
+            workspaceName
+          }}</span>
+        </div>
+        <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
       </div>
-      <i class="pi pi-chevron-down shrink-0 text-sm text-muted-foreground" />
-    </div>
 
-    <Popover
-      ref="workspaceSwitcherPopover"
-      append-to="body"
-      :pt="{
-        content: {
-          class: 'p-0'
-        }
-      }"
-    >
-      <WorkspaceSwitcherPopover
-        @select="workspaceSwitcherPopover?.hide()"
-        @create="handleCreateWorkspace"
-      />
-    </Popover>
+      <div
+        v-if="isWorkspaceSwitcherOpen"
+        ref="workspaceSwitcherPanel"
+        class="absolute top-0 right-full z-10 mr-4 rounded-lg border border-border-default bg-base-background shadow-[1px_1px_8px_0_rgba(0,0,0,0.4)]"
+        data-testid="workspace-switcher-panel"
+      >
+        <WorkspaceSwitcherPopover
+          @select="isWorkspaceSwitcherOpen = false"
+          @create="handleCreateWorkspace"
+        />
+      </div>
+    </div>
 
     <!-- Credits Section -->
 
@@ -138,12 +139,6 @@
       <span class="flex-1 text-sm text-base-foreground">{{
         $t('subscription.plansAndPricing')
       }}</span>
-      <span
-        v-if="canUpgrade"
-        class="rounded-full bg-base-foreground px-1.5 py-0.5 text-xs font-bold text-base-background"
-      >
-        {{ $t('subscription.upgrade') }}
-      </span>
     </div>
 
     <!-- Manage Plan (PERSONAL and OWNER, only if subscribed) -->
@@ -214,11 +209,11 @@
 </template>
 
 <script setup lang="ts">
+import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import Divider from 'primevue/divider'
-import Popover from 'primevue/popover'
 import Skeleton from 'primevue/skeleton'
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
@@ -246,7 +241,17 @@ const {
   isInPersonalWorkspace: isPersonalWorkspace
 } = storeToRefs(workspaceStore)
 const { permissions } = useWorkspaceUI()
-const workspaceSwitcherPopover = ref<InstanceType<typeof Popover> | null>(null)
+const isWorkspaceSwitcherOpen = ref(false)
+const workspaceSwitcherTrigger = useTemplateRef('workspaceSwitcherTrigger')
+const workspaceSwitcherPanel = useTemplateRef('workspaceSwitcherPanel')
+
+onClickOutside(
+  workspaceSwitcherPanel,
+  () => {
+    isWorkspaceSwitcherOpen.value = false
+  },
+  { ignore: [workspaceSwitcherTrigger] }
+)
 
 const emit = defineEmits<{
   close: []
@@ -287,12 +292,6 @@ const displayedCredits = computed(() => {
       maximumFractionDigits: 2
     }
   })
-})
-
-const canUpgrade = computed(() => {
-  // PRO is currently the only/highest tier, so no upgrades available
-  // This will need updating when additional tiers are added
-  return false
 })
 
 const showPlansAndPricing = computed(
@@ -358,13 +357,13 @@ const handleLogout = async () => {
 }
 
 const handleCreateWorkspace = () => {
-  workspaceSwitcherPopover.value?.hide()
+  isWorkspaceSwitcherOpen.value = false
   dialogService.showCreateWorkspaceDialog()
   emit('close')
 }
 
-const toggleWorkspaceSwitcher = (event: MouseEvent) => {
-  workspaceSwitcherPopover.value?.toggle(event)
+const toggleWorkspaceSwitcher = () => {
+  isWorkspaceSwitcherOpen.value = !isWorkspaceSwitcherOpen.value
 }
 
 const refreshBalance = () => {

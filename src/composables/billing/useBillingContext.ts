@@ -122,6 +122,15 @@ function useBillingContextInternal(): BillingContext {
 
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
 
+  const billingStatus = computed(() =>
+    toValue(activeContext.value.billingStatus)
+  )
+  const subscriptionStatus = computed(() =>
+    toValue(activeContext.value.subscriptionStatus)
+  )
+  const tier = computed(() => toValue(activeContext.value.tier))
+  const renewalDate = computed(() => toValue(activeContext.value.renewalDate))
+
   function getMaxSeats(tierKey: TierKey): number {
     if (type.value === 'legacy') return 1
 
@@ -218,6 +227,14 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.cancelSubscription()
   }
 
+  async function resubscribe() {
+    return activeContext.value.resubscribe()
+  }
+
+  async function topup(amountCents: number) {
+    return activeContext.value.topup(amountCents)
+  }
+
   async function fetchPlans() {
     return activeContext.value.fetchPlans()
   }
@@ -241,6 +258,10 @@ function useBillingContextInternal(): BillingContext {
     error,
     isActiveSubscription,
     isFreeTier,
+    billingStatus,
+    subscriptionStatus,
+    tier,
+    renewalDate,
     getMaxSeats,
 
     initialize,
@@ -250,6 +271,8 @@ function useBillingContextInternal(): BillingContext {
     previewSubscribe,
     manageSubscription,
     cancelSubscription,
+    resubscribe,
+    topup,
     fetchPlans,
     requireActiveSubscription,
     showSubscriptionDialog

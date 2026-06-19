@@ -10,6 +10,9 @@ import type {
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 
+// Legacy coverage backed by AssetsHelper's shadow backend. New assets-sidebar
+// browser coverage should use typed route mocks in assetsSidebarTab.spec.ts.
+
 // ---------------------------------------------------------------------------
 // Shared fixtures
 // ---------------------------------------------------------------------------
@@ -1101,4 +1104,57 @@ test.describe('Assets sidebar - drag and drop', () => {
     const fileComboWidget = await nodes[0].getWidget(0)
     await expect.poll(() => fileComboWidget.getValue()).toBe('test.png [temp]')
   })
+})
+
+test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
+  await comfyPage.assets.mockOutputHistory([
+    createMockJob({
+      id: 'job1',
+      preview_output: {
+        filename: `1.png`,
+        type: 'temp',
+        nodeId: '1',
+        mediaType: 'images'
+      }
+    }),
+    createMockJob({
+      id: 'job2',
+      preview_output: {
+        filename: `2.png`,
+        type: 'output',
+        nodeId: '1',
+        mediaType: 'images'
+      }
+    }),
+    createMockJob({
+      id: 'job2',
+      preview_output: {
+        filename: `3.png`,
+        type: 'input',
+        nodeId: '1',
+        mediaType: 'images'
+      }
+    })
+  ])
+  const { assetsTab } = comfyPage.menu
+  await assetsTab.open()
+  await assetsTab.waitForAssets()
+  await expect(assetsTab.assetCards).toHaveCount(3)
+  for (const [index, expectedName] of [
+    [0, '1.png [temp]'],
+    [1, '2.png [output]'],
+    [2, '3.png']
+  ] as const) {
+    await comfyPage.nodeOps.clearGraph()
+    await assetsTab.assetCards.nth(index).scrollIntoViewIfNeeded()
+    await assetsTab.assetCards.nth(index).click({ button: 'right' })
+
+    await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+    await comfyPage.contextMenu.primeVueMenu.getByText('Insert as node').click()
+
+    await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
+    const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    const fileWidget = await nodes[0].getWidget(0)
+    await expect.poll(() => fileWidget.getValue()).toBe(expectedName)
+  }
 })

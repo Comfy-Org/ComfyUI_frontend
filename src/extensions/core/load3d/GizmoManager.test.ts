@@ -287,6 +287,41 @@ describe('GizmoManager', () => {
     })
   })
 
+  describe('applyModelTransform', () => {
+    it('sets position, quaternion, and scale on target and notifies', () => {
+      manager.init()
+      const model = new THREE.Object3D()
+      manager.setupForModel(model)
+
+      manager.applyModelTransform({
+        position: { x: 1, y: 2, z: 3 },
+        quaternion: { x: 0.1, y: 0.2, z: 0.3, w: 0.92 },
+        scale: { x: 2, y: 2, z: 2 }
+      })
+
+      expect(model.position.x).toBeCloseTo(1)
+      expect(model.position.y).toBeCloseTo(2)
+      expect(model.position.z).toBeCloseTo(3)
+      expect(model.quaternion.x).toBeCloseTo(0.1)
+      expect(model.quaternion.y).toBeCloseTo(0.2)
+      expect(model.quaternion.z).toBeCloseTo(0.3)
+      expect(model.quaternion.w).toBeCloseTo(0.92)
+      expect(model.scale.x).toBeCloseTo(2)
+      expect(onTransformChange).toHaveBeenCalledOnce()
+    })
+
+    it('does nothing without a target', () => {
+      manager.init()
+      expect(() =>
+        manager.applyModelTransform({
+          position: { x: 0, y: 0, z: 0 },
+          quaternion: { x: 0, y: 0, z: 0, w: 1 },
+          scale: { x: 1, y: 1, z: 1 }
+        })
+      ).not.toThrow()
+    })
+  })
+
   describe('getTransform', () => {
     it('returns current target transform', () => {
       manager.init()
@@ -311,6 +346,30 @@ describe('GizmoManager', () => {
       expect(transform.position).toEqual({ x: 0, y: 0, z: 0 })
       expect(transform.rotation).toEqual({ x: 0, y: 0, z: 0 })
       expect(transform.scale).toEqual({ x: 1, y: 1, z: 1 })
+    })
+  })
+
+  describe('getModelInfo', () => {
+    it('returns the full transform payload for the target object', () => {
+      manager.init()
+      const model = new THREE.Object3D()
+      model.name = 'my-model'
+      model.position.set(1, 2, 3)
+      model.rotation.set(0.1, 0.2, 0.3)
+      model.scale.set(4, 5, 6)
+      manager.setupForModel(model)
+
+      const info = manager.getModelInfo()
+
+      expect(info).not.toBeNull()
+      expect(info!.position).toEqual({ x: 1, y: 2, z: 3 })
+      expect(info!.quaternion.w).toBeCloseTo(model.quaternion.w)
+      expect(info!.scale).toEqual({ x: 4, y: 5, z: 6 })
+    })
+
+    it('returns null when there is no target', () => {
+      manager.init()
+      expect(manager.getModelInfo()).toBeNull()
     })
   })
 
