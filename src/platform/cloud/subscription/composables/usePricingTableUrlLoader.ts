@@ -51,9 +51,9 @@ export function usePricingTableUrlLoader() {
     })
     clearPreservedQuery(NAMESPACE)
 
-    // The original-owner flag is on the members list; load it before the gate
-    // (the store dedupes and no-ops for personal workspaces).
-    await workspaceStore.ensureMembersLoaded()
+    // Fetch members (no-ops for personal) so the original-owner self-row loads
+    // before the gate; fetchMembers awaits, ensureMembersLoaded can return early.
+    await workspaceStore.fetchMembers()
     if (!permissions.value.canManageSubscriptionLifecycle) return
 
     const planMode =
