@@ -27,7 +27,7 @@ export const LOAD3D_NONE_MODEL = 'none'
 
 export const DIRECT_EXPORT_FORMATS = new Set(['ply', 'spz', 'splat', 'ksplat'])
 
-export interface ExportFormatOption {
+interface ExportFormatOption {
   label: string
   value: string
 }
