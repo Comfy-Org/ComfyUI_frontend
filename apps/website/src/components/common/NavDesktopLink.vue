@@ -52,7 +52,7 @@ const emit = defineEmits<{
           'group flex cursor-pointer items-center gap-1.5 py-3 text-sm font-bold tracking-wide uppercase transition-colors',
           link.items.some((item) => currentPath === item.href)
             ? 'text-primary-comfy-yellow'
-            : 'hover:text-primary-warm-gray text-primary-comfy-canvas'
+            : 'text-primary-comfy-canvas hover:text-primary-warm-gray'
         )
       "
       aria-haspopup="true"
@@ -67,7 +67,7 @@ const emit = defineEmits<{
             'text-base leading-none transition-colors',
             link.items.some((item) => currentPath === item.href)
               ? 'text-primary-comfy-yellow'
-              : 'group-hover:text-primary-warm-gray text-primary-comfy-canvas'
+              : 'text-primary-comfy-canvas group-hover:text-primary-warm-gray'
           )
         "
       >
@@ -84,7 +84,7 @@ const emit = defineEmits<{
           'flex items-center gap-1.5 py-3 text-sm font-bold tracking-wide uppercase transition-colors',
           currentPath === link.href
             ? 'text-primary-comfy-yellow'
-            : 'hover:text-primary-warm-gray text-primary-comfy-canvas'
+            : 'text-primary-comfy-canvas hover:text-primary-warm-gray'
         )
       "
       @click="link.ctaButton && captureCtaClick(link.ctaButton, 'nav')"
@@ -108,7 +108,7 @@ const emit = defineEmits<{
             'flex items-center gap-2 rounded-sm p-2 text-xs font-medium tracking-wide transition-colors',
             currentPath === item.href
               ? 'text-primary-comfy-yellow'
-              : 'hover:bg-transparency-white-t4 text-primary-comfy-canvas hover:text-white'
+              : 'text-primary-comfy-canvas hover:bg-transparency-white-t4 hover:text-white'
           )
         "
         @click="
