@@ -116,7 +116,10 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
 
     await comfyPage.toast.closeToasts()
     await openSwitcherPanel(page)
-    await page.getByText('Team Workspace').click()
+    await page
+      .getByTestId('workspace-switcher-panel')
+      .getByText('Team Workspace')
+      .click()
 
     await expect
       .poll(
@@ -155,7 +158,10 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
 
     // Switch to Team (not the auto-selected Personal)
     await openSwitcherPanel(page)
-    await page.getByText('Team Workspace').click()
+    await page
+      .getByTestId('workspace-switcher-panel')
+      .getByText('Team Workspace')
+      .click()
 
     await expect
       .poll(
@@ -166,7 +172,10 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
 
     // Switch back to Personal — different from current, so switchWorkspace fires
     await openSwitcherPanel(page)
-    await page.getByText('Personal Workspace').click()
+    await page
+      .getByTestId('workspace-switcher-panel')
+      .getByText('Personal Workspace')
+      .click()
 
     await expect
       .poll(
@@ -213,7 +222,10 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
 
     await comfyPage.toast.closeToasts()
     await openSwitcherPanel(page)
-    await page.getByText('Team Workspace').click()
+    await page
+      .getByTestId('workspace-switcher-panel')
+      .getByText('Team Workspace')
+      .click()
 
     await expect
       .poll(
@@ -263,7 +275,10 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
 
     await comfyPage.toast.closeToasts()
     await openSwitcherPanel(page)
-    await page.getByText('Team Workspace').click()
+    await page
+      .getByTestId('workspace-switcher-panel')
+      .getByText('Team Workspace')
+      .click()
 
     // Wait for both the switch (callCount=1) and the immediate refresh (callCount=2)
     // to complete. The refresh fires at delay≈0 so token may already be cleared
