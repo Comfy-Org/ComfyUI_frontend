@@ -1,10 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import PillButton from './PillButton.vue'
+import ButtonPill from './ButtonPill.vue'
 
-const meta: Meta<typeof PillButton> = {
-  title: 'Website/Common/PillButton',
-  component: PillButton,
+const meta: Meta<typeof ButtonPill> = {
+  title: 'Website/UI/ButtonPill',
+  component: ButtonPill,
   tags: ['autodocs'],
   decorators: [
     () => ({
@@ -12,22 +12,19 @@ const meta: Meta<typeof PillButton> = {
     })
   ],
   argTypes: {
-    href: { control: 'text' },
-    target: { control: 'text' },
-    rel: { control: 'text' },
-    type: {
+    as: {
       control: { type: 'select' },
-      options: ['button', 'submit', 'reset']
+      options: ['button', 'a']
     },
+    asChild: { control: 'boolean' },
     disabled: { control: 'boolean' },
-    ariaLabel: { control: 'text' },
     variant: {
       control: { type: 'select' },
       options: ['solid', 'ghost']
     },
     size: {
       control: { type: 'select' },
-      options: ['sm', 'md', 'lg']
+      options: ['default', 'lg', 'icon']
     },
     iconPosition: {
       control: { type: 'select' },
@@ -41,57 +38,57 @@ export default meta
 type Story = StoryObj<typeof meta>
 
 export const AsAnchor: Story = {
-  args: { href: '#' },
+  args: { as: 'a', href: '#' },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonPill },
     setup: () => ({ args }),
-    template: `<PillButton v-bind="args">Let's Collaborate</PillButton>`
+    template: `<ButtonPill v-bind="args">Let's Collaborate</ButtonPill>`
   })
 }
 
 export const AsButton: Story = {
-  args: { type: 'button' },
+  args: { as: 'button', type: 'button' },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonPill },
     setup: () => ({ args }),
-    template: '<PillButton v-bind="args">Submit</PillButton>'
+    template: '<ButtonPill v-bind="args">Submit</ButtonPill>'
   })
 }
 
 export const Ghost: Story = {
-  args: { href: '#', variant: 'ghost' },
+  args: { as: 'a', href: '#', variant: 'ghost' },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonPill },
     setup: () => ({ args }),
-    template: '<PillButton v-bind="args">Read More</PillButton>'
+    template: '<ButtonPill v-bind="args">Read More</ButtonPill>'
   })
 }
 
-export const SmallSolid: Story = {
-  args: { href: '#', size: 'sm' },
+export const DefaultSolid: Story = {
+  args: { as: 'a', href: '#', size: 'default' },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonPill },
     setup: () => ({ args }),
-    template: '<PillButton v-bind="args">Try Workflow</PillButton>'
+    template: '<ButtonPill v-bind="args">Try Workflow</ButtonPill>'
   })
 }
 
 export const LargeSolid: Story = {
-  args: { href: '#', size: 'lg' },
+  args: { as: 'a', href: '#', size: 'lg' },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonPill },
     setup: () => ({ args }),
-    template: `<PillButton v-bind="args">Let's Collaborate</PillButton>`
+    template: `<ButtonPill v-bind="args">Let's Collaborate</ButtonPill>`
   })
 }
 
 export const WithCustomIcon: Story = {
-  args: { href: '#' },
+  args: { as: 'a', href: '#' },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonPill },
     setup: () => ({ args }),
     template: `
-      <PillButton v-bind="args">
+      <ButtonPill v-bind="args">
         Next Step
         <template #icon>
           <svg
@@ -106,57 +103,55 @@ export const WithCustomIcon: Story = {
             <polyline points="9 6 15 12 9 18" />
           </svg>
         </template>
-      </PillButton>
+      </ButtonPill>
     `
   })
 }
 
 export const IconLeft: Story = {
-  args: { href: '#', iconPosition: 'left' },
+  args: { as: 'a', href: '#', iconPosition: 'left' },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonPill },
     setup: () => ({ args }),
-    template: '<PillButton v-bind="args">Go Back</PillButton>'
+    template: '<ButtonPill v-bind="args">Go Back</ButtonPill>'
   })
 }
 
 export const RevealLabelOnHover: Story = {
-  args: { href: '#', hideLabel: true },
+  args: { as: 'a', href: '#', hideLabel: true },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonPill },
     setup: () => ({ args }),
-    template: '<PillButton v-bind="args">Try Workflow</PillButton>'
+    template: '<ButtonPill v-bind="args">Try Workflow</ButtonPill>'
   })
 }
 
 export const Disabled: Story = {
   args: { disabled: true },
   render: (args) => ({
-    components: { PillButton },
+    components: { ButtonPill },
     setup: () => ({ args }),
-    template: '<PillButton v-bind="args">Unavailable</PillButton>'
+    template: '<ButtonPill v-bind="args">Unavailable</ButtonPill>'
   })
 }
 
 export const AllVariants: Story = {
   render: () => ({
-    components: { PillButton },
+    components: { ButtonPill },
     template: `
       <div class="flex flex-col gap-8">
         <div class="flex flex-col gap-3">
           <span class="text-primary-comfy-canvas text-xs uppercase tracking-wider">Solid</span>
           <div class="flex flex-wrap items-center gap-4">
-            <PillButton href="#" variant="solid" size="sm">Small</PillButton>
-            <PillButton href="#" variant="solid" size="md">Medium</PillButton>
-            <PillButton href="#" variant="solid" size="lg">Large</PillButton>
+            <ButtonPill as="a" href="#" variant="solid" size="default">Default</ButtonPill>
+            <ButtonPill as="a" href="#" variant="solid" size="lg">Large</ButtonPill>
           </div>
         </div>
         <div class="flex flex-col gap-3">
           <span class="text-primary-comfy-canvas text-xs uppercase tracking-wider">Ghost</span>
           <div class="flex flex-wrap items-center gap-4">
-            <PillButton href="#" variant="ghost" size="sm">Small</PillButton>
-            <PillButton href="#" variant="ghost" size="md">Medium</PillButton>
-            <PillButton href="#" variant="ghost" size="lg">Large</PillButton>
+            <ButtonPill as="a" href="#" variant="ghost" size="default">Default</ButtonPill>
+            <ButtonPill as="a" href="#" variant="ghost" size="lg">Large</ButtonPill>
           </div>
         </div>
       </div>
