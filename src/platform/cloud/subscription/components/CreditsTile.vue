@@ -114,7 +114,7 @@
             />
             <span
               v-if="isSpendingAdditional"
-              class="flex h-3.5 items-center rounded-full bg-base-foreground px-1 text-2xs leading-none font-semibold text-base-background uppercase"
+              class="flex h-3.5 items-center rounded-full bg-base-foreground px-1 text-2xs/none font-semibold text-base-background uppercase"
             >
               {{ $t('subscription.additionalCreditsInUse') }}
             </span>
