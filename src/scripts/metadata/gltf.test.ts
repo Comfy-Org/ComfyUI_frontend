@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ASCII, GltfSizeBytes } from '@/types/metadataTypes'
 
 import {
+  EXPECTED_PROMPT_NAN_COERCED,
   mockFileReaderAbort,
   mockFileReaderError
 } from './__fixtures__/helpers'
@@ -13,12 +14,6 @@ describe('GLTF binary metadata parser', () => {
     const header = new ArrayBuffer(GltfSizeBytes.HEADER)
     const headerView = new DataView(header)
     return { header, headerView }
-  }
-
-  const jsonToBinary = (json: object) => {
-    const jsonString = JSON.stringify(json)
-    const jsonData = new TextEncoder().encode(jsonString)
-    return jsonData
   }
 
   const createJSONChunk = (jsonData: ArrayBuffer) => {
@@ -51,7 +46,14 @@ describe('GLTF binary metadata parser', () => {
   }
 
   function createMockGltfFile(jsonContent: object): File {
-    const jsonData = jsonToBinary(jsonContent)
+    return createMockGltfFileFromText(JSON.stringify(jsonContent))
+  }
+
+  // Builds a GLB whose JSON chunk is the literal text passed in - used to
+  // embed Python generated bare NaN/Infinity tokens that JSON.stringify
+  // would otherwise coerce to null.
+  function createMockGltfFileFromText(jsonText: string): File {
+    const jsonData = new TextEncoder().encode(jsonText)
     const { header, headerView } = createGLTFFileStructure()
 
     setHeaders(headerView, jsonData.buffer)
@@ -157,6 +159,18 @@ describe('GLTF binary metadata parser', () => {
       nodes: Array<{ id: number; type: string }>
     }
     expect(workflow.nodes[0].type).toBe('StringifiedNode')
+  })
+
+  it('parses Python generated prompt with bare NaN/Infinity tokens', async () => {
+    const pythonJsonText =
+      '{"asset":{"version":"2.0","extras":{"prompt":' +
+      '{"1":{"class_type":"KSampler","inputs":{"cfg":NaN,"denoise":Infinity}}}' +
+      '}}}'
+    const mockFile = createMockGltfFileFromText(pythonJsonText)
+
+    const metadata = await getGltfBinaryMetadata(mockFile)
+
+    expect(metadata.prompt).toEqual(EXPECTED_PROMPT_NAN_COERCED)
   })
 
   it('should handle invalid GLTF binary files gracefully', async () => {

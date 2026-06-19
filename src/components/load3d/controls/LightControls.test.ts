@@ -107,7 +107,7 @@ describe('LightControls', () => {
       ).toBeInTheDocument()
     })
 
-    it.each(['normal', 'wireframe'] as const)(
+    it.for(['normal', 'wireframe'] as const)(
       'hides the intensity control when materialMode is %s',
       (mode) => {
         renderComponent({ materialMode: mode })

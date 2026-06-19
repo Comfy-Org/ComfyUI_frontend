@@ -25,7 +25,7 @@ const categories: Category[] = [
   {
     label: t('useCase.vfx', locale),
     leftSrc: 'https://media.comfy.org/website/homepage/use-case/left1.webm',
-    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right1.webp'
+    rightSrc: 'https://media.comfy.org/website/homepage/use-case/right1.webm'
   },
   {
     label: t('useCase.advertising', locale),

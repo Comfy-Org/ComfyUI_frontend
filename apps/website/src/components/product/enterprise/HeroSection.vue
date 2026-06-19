@@ -35,20 +35,20 @@ onMounted(() => {
 
 <template>
   <section
-    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden lg:flex-row-reverse lg:items-center lg:overflow-x-visible lg:overflow-y-clip lg:pb-[min(8vw,10rem)]"
+    class="max-w-9xl relative mx-auto flex flex-col items-center overflow-hidden pt-16 lg:flex-row-reverse lg:items-center lg:overflow-x-visible lg:overflow-y-clip lg:pt-[min(8vw,10rem)] lg:pb-[min(8vw,10rem)]"
   >
     <!-- Illustration (overlaps text slightly; stacks above on mobile, right on lg) -->
     <div
-      class="aspect-square w-4/5 max-w-md scale-150 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-ml-12 lg:-translate-x-[10%] lg:translate-y-[40px] lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
+      class="aspect-square w-4/5 max-w-md scale-150 self-center md:max-w-2xl lg:pointer-events-none lg:z-1 lg:-ml-12 lg:-translate-x-[10%] lg:self-center xl:size-[clamp(32rem,max(40vh,32vw),36rem)] xl:min-h-[min(32vw,24rem)] xl:min-w-[min(24vw,20rem)]"
     >
       <svg
         ref="svgRef"
-        class="block size-full"
+        class="block size-full overflow-visible"
         viewBox="0 0 1600 1046"
         fill="none"
         aria-hidden="true"
       >
-        <g clip-path="url(#enterpriseHeroClip)">
+        <g>
           <rect width="1600" height="1046" fill="#211927" />
           <rect
             width="800"
@@ -84,7 +84,7 @@ onMounted(() => {
           />
 
           <!-- Exploding block cluster -->
-          <g class="block-cluster">
+          <g class="block-cluster" clip-path="url(#enterpriseHeroBlockClip)">
             <path
               class="block-piece"
               d="M1018.44 635.715L1018.45 581.73C1018.46 574.554 1013.42 565.829 1007.21 562.242L960.479 535.262C956.544 532.99 949.469 533.096 945.535 535.368L898.79 562.373C892.576 565.963 887.537 574.691 887.535 581.867L887.52 635.852C887.519 640.395 890.967 646.574 894.902 648.845L941.632 675.825C947.845 679.412 957.918 679.409 964.132 675.819L1010.88 648.815C1014.82 646.538 1018.44 640.267 1018.44 635.715Z"
@@ -353,7 +353,7 @@ onMounted(() => {
             <stop stop-color="#211927" stop-opacity="0" />
             <stop offset="1" stop-color="#211927" />
           </linearGradient>
-          <clipPath id="enterpriseHeroClip">
+          <clipPath id="enterpriseHeroBlockClip">
             <rect width="1600" height="1046" fill="white" />
           </clipPath>
         </defs>

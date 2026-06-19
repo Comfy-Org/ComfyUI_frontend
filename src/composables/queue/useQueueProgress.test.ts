@@ -58,7 +58,7 @@ describe('useQueueProgress', () => {
     setExecutingNodeProgress(null)
   })
 
-  it.each([
+  it.for([
     {
       description: 'defaults to 0% when execution store values are missing',
       execution: undefined,

@@ -10,7 +10,7 @@ import {
   normalizePendingWarnings,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
-import { useWorkflowDraftStore } from '@/platform/workflow/persistence/stores/workflowDraftStore'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import {
   ComfyWorkflow,
   useWorkflowStore
@@ -23,7 +23,6 @@ import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
 import { useAppMode } from '@/composables/useAppMode'
-import type { AppMode } from '@/composables/useAppMode'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -37,6 +36,7 @@ import {
   appendWorkflowJsonExt,
   generateUUID
 } from '@/utils/formatUtil'
+import type { AppMode } from '@/utils/appMode'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
@@ -51,7 +51,42 @@ export const useWorkflowService = () => {
   const workflowThumbnail = useWorkflowThumbnail()
   const domWidgetStore = useDomWidgetStore()
   const missingNodesErrorStore = useMissingNodesErrorStore()
-  const workflowDraftStore = useWorkflowDraftStore()
+  const workflowDraftStore = useWorkflowDraftStoreV2()
+
+  const showFailedToSaveDraftToast = () => {
+    toastStore.add({
+      severity: 'error',
+      summary: t('g.error'),
+      detail: t('toastMessages.failedToSaveDraft')
+    })
+  }
+
+  const persistActiveWorkflowDraft = (activeWorkflow: ComfyWorkflow) => {
+    if (!settingStore.get('Comfy.Workflow.Persist') || !activeWorkflow.path) {
+      return
+    }
+
+    const activeState = activeWorkflow.activeState
+    if (!activeState) return
+
+    try {
+      const saved = workflowDraftStore.saveDraft(
+        activeWorkflow.path,
+        JSON.stringify(activeState),
+        {
+          name: activeWorkflow.key,
+          isTemporary: activeWorkflow.isTemporary
+        }
+      )
+
+      if (!saved) {
+        showFailedToSaveDraftToast()
+      }
+    } catch (err) {
+      console.error('Failed to persist active workflow draft', err)
+      showFailedToSaveDraftToast()
+    }
+  }
 
   function confirmOverwrite(targetPath: string) {
     return dialogService.confirm({
@@ -174,40 +209,39 @@ export const useWorkflowService = () => {
    * Save a workflow
    * @param workflow The workflow to save
    */
-  const saveWorkflow = async (workflow: ComfyWorkflow) => {
+  const saveWorkflow = async (workflow: ComfyWorkflow): Promise<boolean> => {
     if (workflow.isTemporary) {
-      await saveWorkflowAs(workflow)
-    } else {
-      workflow.changeTracker?.prepareForSave()
-      const isApp = workflow.initialMode === 'app'
-      const expectedPath =
-        workflow.directory +
-        '/' +
-        appendWorkflowJsonExt(workflow.filename, isApp)
-      if (workflow.path !== expectedPath) {
-        const existing = workflowStore.getWorkflowByPath(expectedPath)
-        if (existing && !existing.isTemporary) {
-          if ((await confirmOverwrite(expectedPath)) !== true) {
-            await workflowStore.saveWorkflow(workflow)
-            return
-          }
-          await deleteWorkflow(existing, true)
-        }
-        await renameWorkflow(workflow, expectedPath)
-        toastStore.add({
-          severity: 'info',
-          summary: t(
-            isApp
-              ? 'workflowService.savedAsApp'
-              : 'workflowService.savedAsWorkflow'
-          ),
-          life: 3000
-        })
-      }
-
-      await workflowStore.saveWorkflow(workflow)
-      useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: false })
+      return await saveWorkflowAs(workflow)
     }
+
+    workflow.changeTracker?.prepareForSave()
+    const isApp = workflow.initialMode === 'app'
+    const expectedPath =
+      workflow.directory + '/' + appendWorkflowJsonExt(workflow.filename, isApp)
+    if (workflow.path !== expectedPath) {
+      const existing = workflowStore.getWorkflowByPath(expectedPath)
+      if (existing && !existing.isTemporary) {
+        if ((await confirmOverwrite(expectedPath)) !== true) {
+          await workflowStore.saveWorkflow(workflow)
+          return true
+        }
+        await deleteWorkflow(existing, true)
+      }
+      await renameWorkflow(workflow, expectedPath)
+      toastStore.add({
+        severity: 'info',
+        summary: t(
+          isApp
+            ? 'workflowService.savedAsApp'
+            : 'workflowService.savedAsWorkflow'
+        ),
+        life: 3000
+      })
+    }
+
+    await workflowStore.saveWorkflow(workflow)
+    useTelemetry()?.trackWorkflowSaved({ is_app: isApp, is_new: false })
+    return true
   }
 
   /**
@@ -284,13 +318,15 @@ export const useWorkflowService = () => {
         type: 'dirtyClose',
         message: t('sideToolbar.workflowTab.dirtyClose'),
         itemList: [workflow.path],
-        hint: options.hint
+        hint: options.hint,
+        denyLabel: t('sideToolbar.workflowTab.dirtyCloseAnyway')
       })
       // Cancel
       if (confirmed === null) return false
 
       if (confirmed === true) {
-        await saveWorkflow(workflow)
+        const saved = await saveWorkflow(workflow)
+        if (!saved) return false
       }
     }
 
@@ -374,26 +410,7 @@ export const useWorkflowService = () => {
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
       activeWorkflow.changeTracker?.deactivate()
-      if (settingStore.get('Comfy.Workflow.Persist') && activeWorkflow.path) {
-        const activeState = activeWorkflow.activeState
-        if (activeState) {
-          try {
-            const workflowJson = JSON.stringify(activeState)
-            workflowDraftStore.saveDraft(activeWorkflow.path, {
-              data: workflowJson,
-              updatedAt: Date.now(),
-              name: activeWorkflow.key,
-              isTemporary: activeWorkflow.isTemporary
-            })
-          } catch {
-            toastStore.add({
-              severity: 'error',
-              summary: t('g.error'),
-              detail: t('toastMessages.failedToSaveDraft')
-            })
-          }
-        }
-      }
+      persistActiveWorkflowDraft(activeWorkflow)
       // Cache missing model/media/node state for restore on tab switch.
       // Always overwrite to reflect the current store state (e.g. after
       // muting a node cleared its errors).
@@ -428,7 +445,8 @@ export const useWorkflowService = () => {
    */
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
-    workflowData: ComfyWorkflowJSON
+    workflowData: ComfyWorkflowJSON,
+    shareId?: string
   ) => {
     const workflowStore = useWorkspaceStore().workflow
     const { isAppMode } = useAppMode()
@@ -482,6 +500,9 @@ export const useWorkflowService = () => {
               ) ?? freshLoadMode
             trackIfEnteringApp(loadedWorkflow)
           }
+          if (shareId) {
+            loadedWorkflow.shareId = shareId
+          }
           loadedWorkflow.changeTracker.reset(workflowData)
           loadedWorkflow.changeTracker.restore()
           return
@@ -493,12 +514,18 @@ export const useWorkflowService = () => {
         workflowData
       )
       tempWorkflow.initialMode = freshLoadMode
+      if (shareId) {
+        tempWorkflow.shareId = shareId
+      }
       trackIfEnteringApp(tempWorkflow)
       await workflowStore.openWorkflow(tempWorkflow)
       return
     }
 
     const loadedWorkflow = await workflowStore.openWorkflow(value)
+    if (shareId) {
+      loadedWorkflow.shareId = shareId
+    }
     if (loadedWorkflow.initialMode === undefined) {
       loadedWorkflow.initialMode = freshLoadMode
       trackIfEnteringApp(loadedWorkflow)

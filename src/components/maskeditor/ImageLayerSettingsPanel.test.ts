@@ -111,26 +111,29 @@ describe('ImageLayerSettingsPanel', () => {
   })
 
   describe('blend mode select', () => {
-    it.each([
+    it.for([
       ['black', MaskBlendMode.Black],
       ['white', MaskBlendMode.White],
       ['negative', MaskBlendMode.Negative],
       ['unknown-fallback', MaskBlendMode.Black]
-    ] as const)('should map %s to MaskBlendMode.%s', async (raw, expected) => {
-      const { container } = renderPanel()
-      const select = container.querySelector('select') as HTMLSelectElement
+    ] as const)(
+      'should map %s to MaskBlendMode.%s',
+      async ([raw, expected]) => {
+        const { container } = renderPanel()
+        const select = container.querySelector('select') as HTMLSelectElement
 
-      Object.defineProperty(select, 'value', {
-        value: raw,
-        configurable: true
-      })
-      select.dispatchEvent(new Event('change', { bubbles: true }))
+        Object.defineProperty(select, 'value', {
+          value: raw,
+          configurable: true
+        })
+        select.dispatchEvent(new Event('change', { bubbles: true }))
 
-      await new Promise((r) => setTimeout(r, 0))
+        await new Promise((r) => setTimeout(r, 0))
 
-      expect(mockStore.maskBlendMode).toBe(expected)
-      expect(mockUpdateMaskColor).toHaveBeenCalled()
-    })
+        expect(mockStore.maskBlendMode).toBe(expected)
+        expect(mockUpdateMaskColor).toHaveBeenCalled()
+      }
+    )
   })
 
   describe('layer visibility checkboxes', () => {

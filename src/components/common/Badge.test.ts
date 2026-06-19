@@ -42,7 +42,7 @@ describe('Badge', () => {
   })
 
   describe('twMerge preserves color alongside text-3xs font size', () => {
-    it.each([
+    it.for([
       ['default', 'text-white'],
       ['secondary', 'text-white'],
       ['warn', 'text-white'],
@@ -50,7 +50,7 @@ describe('Badge', () => {
       ['contrast', 'text-base-background']
     ] as const)(
       '%s severity retains its text color class',
-      (severity, expectedColor) => {
+      ([severity, expectedColor]) => {
         const classes = badgeVariants({ severity, variant: 'label' })
         expect(classes).toContain(expectedColor)
         expect(classes).toContain('text-3xs')

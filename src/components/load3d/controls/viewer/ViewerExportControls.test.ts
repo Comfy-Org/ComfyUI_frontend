@@ -5,22 +5,65 @@ import { createI18n } from 'vue-i18n'
 
 import ViewerExportControls from '@/components/load3d/controls/viewer/ViewerExportControls.vue'
 
-vi.mock('primevue/select', () => ({
-  default: {
-    name: 'Select',
-    props: ['modelValue', 'options', 'optionLabel', 'optionValue'],
-    emits: ['update:modelValue'],
-    template: `
-      <select
-        :value="modelValue"
-        @change="$emit('update:modelValue', $event.target.value)"
-      >
-        <option v-for="opt in options" :key="opt[optionValue]" :value="opt[optionValue]">
-          {{ opt[optionLabel] }}
-        </option>
-      </select>
-    `
+vi.mock('@/components/ui/select/Select.vue', async () => {
+  const { provide } = await import('vue')
+  return {
+    default: {
+      name: 'Select',
+      props: ['modelValue'],
+      emits: ['update:modelValue'],
+      setup(
+        props: { modelValue: string },
+        { emit }: { emit: (event: string, value: string) => void }
+      ) {
+        provide('selectModelValue', (): string => props.modelValue)
+        provide('selectUpdate', (v: string): void =>
+          emit('update:modelValue', v)
+        )
+      },
+      template: '<div><slot /></div>'
+    }
   }
+})
+
+vi.mock('@/components/ui/select/SelectContent.vue', async () => {
+  const { inject, ref, onMounted } = await import('vue')
+  return {
+    default: {
+      name: 'SelectContent',
+      setup() {
+        const selectModelValue = inject<() => string>('selectModelValue')
+        const selectUpdate = inject<(v: string) => void>('selectUpdate')
+        const el = ref<HTMLSelectElement | null>(null)
+        onMounted(() => {
+          if (el.value) el.value.value = selectModelValue?.() ?? ''
+        })
+        return {
+          el,
+          onChange: (e: Event) => {
+            selectUpdate?.((e.target as HTMLSelectElement).value)
+          }
+        }
+      },
+      template: '<select ref="el" @change="onChange"><slot /></select>'
+    }
+  }
+})
+
+vi.mock('@/components/ui/select/SelectItem.vue', () => ({
+  default: {
+    name: 'SelectItem',
+    props: ['value'],
+    template: '<option :value="value"><slot /></option>'
+  }
+}))
+
+vi.mock('@/components/ui/select/SelectTrigger.vue', () => ({
+  default: { name: 'SelectTrigger', template: '<span />' }
+}))
+
+vi.mock('@/components/ui/select/SelectValue.vue', () => ({
+  default: { name: 'SelectValue', template: '<span />' }
 }))
 
 const i18n = createI18n({
@@ -29,21 +72,24 @@ const i18n = createI18n({
   messages: { en: { load3d: { export: 'Export' } } }
 })
 
-function renderComponent(onExportModel?: (format: string) => void) {
+function renderComponent(
+  onExportModel?: (format: string) => void,
+  sourceFormat: string | null = null
+) {
   const utils = render(ViewerExportControls, {
-    props: { onExportModel },
+    props: { onExportModel, sourceFormat },
     global: { plugins: [i18n] }
   })
   return { ...utils, user: userEvent.setup() }
 }
 
 describe('ViewerExportControls', () => {
-  it('renders all three export format options', () => {
+  it('renders all four export format options', () => {
     renderComponent()
     const select = screen.getByRole('combobox') as HTMLSelectElement
     const optionValues = Array.from(select.options).map((o) => o.value)
 
-    expect(optionValues).toEqual(['glb', 'obj', 'stl'])
+    expect(optionValues).toEqual(['glb', 'obj', 'stl', 'fbx'])
   })
 
   it('defaults the export format to obj', () => {
@@ -70,5 +116,33 @@ describe('ViewerExportControls', () => {
     await user.click(screen.getByRole('button', { name: 'Export' }))
 
     expect(onExportModel).toHaveBeenCalledWith('glb')
+  })
+
+  it('offers only the source format for direct-export files (e.g. spz)', async () => {
+    const onExportModel = vi.fn()
+    const { user } = renderComponent(onExportModel, 'spz')
+    const select = screen.getByRole('combobox') as HTMLSelectElement
+
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['spz'])
+
+    await user.click(screen.getByRole('button', { name: 'Export' }))
+
+    expect(onExportModel).toHaveBeenCalledWith('spz')
+  })
+
+  it('repairs the selected format when sourceFormat switches to a direct-export type', async () => {
+    const onExportModel = vi.fn()
+    const { user, rerender } = renderComponent(onExportModel, null)
+    const select = screen.getByRole('combobox') as HTMLSelectElement
+
+    expect(select.value).toBe('obj')
+
+    await rerender({ onExportModel, sourceFormat: 'ply' })
+
+    expect(Array.from(select.options).map((o) => o.value)).toEqual(['ply'])
+
+    await user.click(screen.getByRole('button', { name: 'Export' }))
+
+    expect(onExportModel).toHaveBeenCalledWith('ply')
   })
 })

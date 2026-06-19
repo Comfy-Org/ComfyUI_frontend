@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  AssetItem,
+  AssetResponse
+} from '@/platform/assets/schemas/assetSchema'
 import {
   MISSING_TAG,
-  assetService,
-  isBlake3AssetHash,
-  toBlake3AssetHash
+  assetService
 } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 
@@ -49,9 +50,11 @@ vi.mock('@/i18n', () => ({
 
 const fetchApiMock = vi.mocked(api.fetchApi)
 
-const validBlake3Hash =
-  '1111111111111111111111111111111111111111111111111111111111111111'
-const validBlake3AssetHash = `blake3:${validBlake3Hash}`
+type AssetListResponseOptions = {
+  hasMore?: AssetResponse['has_more']
+  total?: AssetResponse['total']
+  nextCursor?: AssetResponse['next_cursor']
+}
 
 function buildResponse(
   body: unknown,
@@ -62,6 +65,22 @@ function buildResponse(
     status: init.status ?? 200,
     json: vi.fn().mockResolvedValue(body)
   } as unknown as Response
+}
+
+function buildAssetListResponse(
+  assets: AssetItem[],
+  {
+    hasMore = false,
+    total = assets.length,
+    nextCursor
+  }: AssetListResponseOptions = {}
+): Response {
+  return buildResponse({
+    assets,
+    total,
+    has_more: hasMore,
+    ...(nextCursor === undefined ? {} : { next_cursor: nextCursor })
+  })
 }
 
 function validAsset(overrides: Partial<AssetItem> = {}): AssetItem {
@@ -189,25 +208,6 @@ describe(assetService.getAssetMetadata, () => {
   })
 })
 
-describe(isBlake3AssetHash, () => {
-  it('accepts only prefixed 64-character blake3 hashes', () => {
-    expect(isBlake3AssetHash(validBlake3AssetHash)).toBe(true)
-    expect(isBlake3AssetHash('BLAKE3:' + validBlake3Hash.toUpperCase())).toBe(
-      true
-    )
-    expect(isBlake3AssetHash('blake3:abc')).toBe(false)
-    expect(isBlake3AssetHash(validBlake3Hash)).toBe(false)
-  })
-})
-
-describe(toBlake3AssetHash, () => {
-  it('normalizes 64-character blake3 hex values to asset hashes', () => {
-    expect(toBlake3AssetHash(validBlake3Hash)).toBe(validBlake3AssetHash)
-    expect(toBlake3AssetHash('abc')).toBeNull()
-    expect(toBlake3AssetHash(undefined)).toBeNull()
-  })
-})
-
 describe(assetService.uploadAssetFromUrl, () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -218,7 +218,7 @@ describe(assetService.uploadAssetFromUrl, () => {
     const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     fetchApiMock
-      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
       .mockResolvedValueOnce(buildResponse({ id: 'missing-name' }))
 
     await assetService.getInputAssetsIncludingPublic()
@@ -240,7 +240,7 @@ describe(assetService.uploadAssetFromUrl, () => {
     const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     fetchApiMock
-      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
       .mockResolvedValueOnce(
         buildResponse(validAsset({ id: 'uploaded-input', tags: ['input'] }))
       )
@@ -301,7 +301,7 @@ describe(assetService.uploadAssetFromBase64, () => {
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response('hello'))
     fetchApiMock
-      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
       .mockResolvedValueOnce(buildResponse({ id: 'missing-name' }))
 
     await assetService.getInputAssetsIncludingPublic()
@@ -327,7 +327,7 @@ describe(assetService.uploadAssetFromBase64, () => {
       .spyOn(globalThis, 'fetch')
       .mockResolvedValueOnce(new Response('hello'))
     fetchApiMock
-      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
       .mockResolvedValueOnce(
         buildResponse({
           ...validAsset({ id: 'uploaded-input', tags: ['input'] }),
@@ -421,17 +421,14 @@ describe(assetService.getAssetModelFolders, () => {
     vi.clearAllMocks()
   })
 
-  it('filters out missing-tagged assets and blacklisted directories, returning alphabetical unique folders without include_public', async () => {
+  it('requests missing-tag exclusion and returns alphabetical unique folders without include_public', async () => {
     fetchApiMock.mockResolvedValueOnce(
-      buildResponse({
-        assets: [
-          validAsset({ id: 'a', tags: ['models', 'loras'] }),
-          validAsset({ id: 'b', tags: ['models', 'checkpoints'] }),
-          validAsset({ id: 'c', tags: ['models', 'configs'] }),
-          validAsset({ id: 'd', tags: ['models', 'missing', 'controlnet'] }),
-          validAsset({ id: 'e', tags: ['models', 'loras'] })
-        ]
-      })
+      buildAssetListResponse([
+        validAsset({ id: 'a', tags: ['models', 'loras'] }),
+        validAsset({ id: 'b', tags: ['models', 'checkpoints'] }),
+        validAsset({ id: 'c', tags: ['models', 'configs'] }),
+        validAsset({ id: 'e', tags: ['models', 'loras'] })
+      ])
     )
 
     const folders = await assetService.getAssetModelFolders()
@@ -444,6 +441,7 @@ describe(assetService.getAssetModelFolders, () => {
     const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.has('include_public')).toBe(false)
+    expect(params.get('exclude_tags')).toBe(MISSING_TAG)
   })
 })
 
@@ -490,14 +488,9 @@ describe(assetService.getAssetsByTag, () => {
     vi.clearAllMocks()
   })
 
-  it('forwards include_public=true by default and excludes missing-tagged assets', async () => {
+  it('forwards include_public=true by default and requests missing-tag exclusion', async () => {
     fetchApiMock.mockResolvedValueOnce(
-      buildResponse({
-        assets: [
-          validAsset({ id: 'visible', tags: ['input'] }),
-          validAsset({ id: 'hidden', tags: ['input', 'missing'] })
-        ]
-      })
+      buildAssetListResponse([validAsset({ id: 'visible', tags: ['input'] })])
     )
 
     const assets = await assetService.getAssetsByTag('input')
@@ -507,6 +500,20 @@ describe(assetService.getAssetsByTag, () => {
     const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
     const params = new URL(requestedUrl, 'http://localhost').searchParams
     expect(params.get('include_public')).toBe('true')
+    expect(params.get('exclude_tags')).toBe(MISSING_TAG)
+  })
+
+  it('normalizes tag query parameters', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'visible', tags: ['input'] })])
+    )
+
+    await assetService.getAssetsByTag(' input ')
+
+    const requestedUrl = fetchApiMock.mock.calls[0]?.[0] as string
+    const params = new URL(requestedUrl, 'http://localhost').searchParams
+    expect(params.get('include_tags')).toBe('input')
+    expect(params.get('exclude_tags')).toBe(MISSING_TAG)
   })
 })
 
@@ -515,20 +522,19 @@ describe(assetService.getAllAssetsByTag, () => {
     vi.clearAllMocks()
   })
 
-  it('paginates tagged asset requests with include_public=true', async () => {
+  it('walks pages by keyset cursor with include_public=true', async () => {
     fetchApiMock
       .mockResolvedValueOnce(
-        buildResponse({
-          assets: [
+        buildAssetListResponse(
+          [
             validAsset({ id: 'a', tags: ['input'] }),
             validAsset({ id: 'b', tags: ['input'] })
-          ]
-        })
+          ],
+          { hasMore: true, nextCursor: 'cursor-page-2' }
+        )
       )
       .mockResolvedValueOnce(
-        buildResponse({
-          assets: [validAsset({ id: 'c', tags: ['input'] })]
-        })
+        buildAssetListResponse([validAsset({ id: 'c', tags: ['input'] })])
       )
 
     const assets = await assetService.getAllAssetsByTag('input', true, {
@@ -540,63 +546,37 @@ describe(assetService.getAllAssetsByTag, () => {
     const firstUrl = fetchApiMock.mock.calls[0]?.[0] as string
     const firstParams = new URL(firstUrl, 'http://localhost').searchParams
     expect(firstParams.get('include_public')).toBe('true')
+    expect(firstParams.get('exclude_tags')).toBe(MISSING_TAG)
     expect(firstParams.get('limit')).toBe('2')
+    // First page carries neither a cursor nor an offset.
+    expect(firstParams.has('after')).toBe(false)
     expect(firstParams.has('offset')).toBe(false)
 
     const secondUrl = fetchApiMock.mock.calls[1]?.[0] as string
     const secondParams = new URL(secondUrl, 'http://localhost').searchParams
     expect(secondParams.get('include_public')).toBe('true')
+    expect(secondParams.get('exclude_tags')).toBe(MISSING_TAG)
     expect(secondParams.get('limit')).toBe('2')
-    expect(secondParams.get('offset')).toBe('2')
-  })
-
-  it('paginates from raw response size before filtering missing-tagged assets', async () => {
-    fetchApiMock
-      .mockResolvedValueOnce(
-        buildResponse({
-          assets: [
-            validAsset({ id: 'visible', tags: ['input'] }),
-            validAsset({ id: 'hidden', tags: ['input', MISSING_TAG] })
-          ]
-        })
-      )
-      .mockResolvedValueOnce(
-        buildResponse({
-          assets: [validAsset({ id: 'later-public', tags: ['input'] })]
-        })
-      )
-
-    const assets = await assetService.getAllAssetsByTag('input', true, {
-      limit: 2
-    })
-
-    expect(assets.map((a) => a.id)).toEqual(['visible', 'later-public'])
-    expect(fetchApiMock).toHaveBeenCalledTimes(2)
-
-    const secondUrl = fetchApiMock.mock.calls[1]?.[0]
-    if (typeof secondUrl !== 'string') {
-      throw new Error('Expected a second asset request URL')
-    }
-    const secondParams = new URL(secondUrl, 'http://localhost').searchParams
-    expect(secondParams.get('offset')).toBe('2')
+    // Subsequent pages resume from the prior response's next_cursor, never offset.
+    expect(secondParams.get('after')).toBe('cursor-page-2')
+    expect(secondParams.has('offset')).toBe(false)
   })
 
   it('honors has_more when walking tagged asset pages', async () => {
     fetchApiMock
       .mockResolvedValueOnce(
-        buildResponse({
-          assets: [
+        buildAssetListResponse(
+          [
             validAsset({ id: 'first', tags: ['input'] }),
             validAsset({ id: 'second', tags: ['input'] })
           ],
-          has_more: true
-        })
+          { hasMore: true, nextCursor: 'cursor-next' }
+        )
       )
       .mockResolvedValueOnce(
-        buildResponse({
-          assets: [validAsset({ id: 'later-public', tags: ['input'] })],
-          has_more: false
-        })
+        buildAssetListResponse([
+          validAsset({ id: 'later-public', tags: ['input'] })
+        ])
       )
 
     const assets = await assetService.getAllAssetsByTag('input', true, {
@@ -611,15 +591,82 @@ describe(assetService.getAllAssetsByTag, () => {
       throw new Error('Expected a second asset request URL')
     }
     const secondParams = new URL(secondUrl, 'http://localhost').searchParams
-    expect(secondParams.get('offset')).toBe('2')
+    expect(secondParams.get('after')).toBe('cursor-next')
+  })
+
+  it('stops walking when next_cursor is absent even if has_more is true', async () => {
+    fetchApiMock.mockResolvedValueOnce(
+      buildAssetListResponse([validAsset({ id: 'only', tags: ['input'] })], {
+        hasMore: true
+      })
+    )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 2
+    })
+
+    expect(assets.map((a) => a.id)).toEqual(['only'])
+    expect(fetchApiMock).toHaveBeenCalledOnce()
+  })
+
+  it('stops walking when the server returns a non-advancing cursor', async () => {
+    fetchApiMock
+      .mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'a', tags: ['input'] })], {
+          hasMore: true,
+          nextCursor: 'stuck'
+        })
+      )
+      .mockResolvedValueOnce(
+        buildAssetListResponse([validAsset({ id: 'b', tags: ['input'] })], {
+          hasMore: true,
+          nextCursor: 'stuck'
+        })
+      )
+
+    const assets = await assetService.getAllAssetsByTag('input', true, {
+      limit: 1
+    })
+
+    expect(assets.map((a) => a.id)).toEqual(['a', 'b'])
+    expect(fetchApiMock).toHaveBeenCalledTimes(2)
+  })
+
+  it.for([
+    {
+      name: 'missing has_more',
+      body: {
+        assets: [validAsset({ id: 'a', tags: ['input'] })],
+        total: 1
+      }
+    },
+    {
+      name: 'missing total',
+      body: {
+        assets: [validAsset({ id: 'a', tags: ['input'] })],
+        has_more: false
+      }
+    },
+    {
+      name: 'non-boolean has_more',
+      body: {
+        assets: [validAsset({ id: 'a', tags: ['input'] })],
+        total: 1,
+        has_more: 'false'
+      }
+    }
+  ])('rejects asset responses with $name', async ({ body }) => {
+    fetchApiMock.mockResolvedValueOnce(buildResponse(body))
+
+    await expect(
+      assetService.getAllAssetsByTag('input', true, { limit: 2 })
+    ).rejects.toThrow(/Invalid asset response/)
   })
 
   it('passes abort signals through paginated requests', async () => {
     const controller = new AbortController()
     fetchApiMock.mockResolvedValueOnce(
-      buildResponse({
-        assets: [validAsset({ id: 'a', tags: ['input'] })]
-      })
+      buildAssetListResponse([validAsset({ id: 'a', tags: ['input'] })])
     )
 
     await assetService.getAllAssetsByTag('input', true, {
@@ -636,12 +683,13 @@ describe(assetService.getAllAssetsByTag, () => {
     const controller = new AbortController()
     fetchApiMock.mockImplementationOnce(async () => {
       controller.abort()
-      return buildResponse({
-        assets: [
+      return buildAssetListResponse(
+        [
           validAsset({ id: 'a', tags: ['input'] }),
           validAsset({ id: 'b', tags: ['input'] })
-        ]
-      })
+        ],
+        { hasMore: true, nextCursor: 'cursor-page-2' }
+      )
     })
 
     await expect(
@@ -666,7 +714,7 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
       validAsset({ id: 'user-input', tags: ['input'] }),
       validAsset({ id: 'public-input', tags: ['input'], is_immutable: true })
     ]
-    fetchApiMock.mockResolvedValueOnce(buildResponse({ assets }))
+    fetchApiMock.mockResolvedValueOnce(buildAssetListResponse(assets))
 
     const first = await assetService.getInputAssetsIncludingPublic()
     const second = await assetService.getInputAssetsIncludingPublic()
@@ -685,8 +733,8 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
     const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
     const freshAssets = [validAsset({ id: 'fresh-input', tags: ['input'] })]
     fetchApiMock
-      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
-      .mockResolvedValueOnce(buildResponse({ assets: freshAssets }))
+      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
+      .mockResolvedValueOnce(buildAssetListResponse(freshAssets))
 
     await assetService.getInputAssetsIncludingPublic()
     assetService.invalidateInputAssetsIncludingPublic()
@@ -720,7 +768,7 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
     await expect(first).rejects.toMatchObject({ name: 'AbortError' })
     expect(serviceSignal).toBeUndefined()
 
-    resolveResponse(buildResponse({ assets }))
+    resolveResponse(buildAssetListResponse(assets))
 
     await expect(second).resolves.toEqual(assets)
     expect(fetchApiMock).toHaveBeenCalledOnce()
@@ -750,7 +798,7 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
     await expect(first).rejects.toMatchObject({ name: 'AbortError' })
     await expect(second).rejects.toMatchObject({ name: 'AbortError' })
 
-    resolveResponse(buildResponse({ assets }))
+    resolveResponse(buildAssetListResponse(assets))
     await Promise.resolve()
 
     await expect(assetService.getInputAssetsIncludingPublic()).resolves.toEqual(
@@ -770,12 +818,12 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
             resolveResponse = resolve
           })
       )
-      .mockResolvedValueOnce(buildResponse({ assets: freshAssets }))
+      .mockResolvedValueOnce(buildAssetListResponse(freshAssets))
 
     const inFlight = assetService.getInputAssetsIncludingPublic()
     assetService.invalidateInputAssetsIncludingPublic()
 
-    resolveResponse(buildResponse({ assets }))
+    resolveResponse(buildAssetListResponse(assets))
 
     await expect(inFlight).resolves.toEqual(assets)
     await expect(assetService.getInputAssetsIncludingPublic()).resolves.toEqual(
@@ -788,9 +836,9 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
     const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
     const freshAssets = [validAsset({ id: 'fresh-input', tags: ['input'] })]
     fetchApiMock
-      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
       .mockResolvedValueOnce(buildResponse(null))
-      .mockResolvedValueOnce(buildResponse({ assets: freshAssets }))
+      .mockResolvedValueOnce(buildAssetListResponse(freshAssets))
 
     await assetService.getInputAssetsIncludingPublic()
     await assetService.deleteAsset('stale-input')
@@ -809,9 +857,9 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
     const uploadedAsset = validAsset({ id: 'uploaded-input', tags: ['input'] })
     const freshAssets = [uploadedAsset]
     fetchApiMock
-      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
       .mockResolvedValueOnce(buildResponse(uploadedAsset))
-      .mockResolvedValueOnce(buildResponse({ assets: freshAssets }))
+      .mockResolvedValueOnce(buildAssetListResponse(freshAssets))
 
     await assetService.getInputAssetsIncludingPublic()
     await assetService.uploadAssetAsync({
@@ -827,7 +875,7 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
   it('does not invalidate cached input assets for pending async input uploads', async () => {
     const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
     fetchApiMock
-      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
       .mockResolvedValueOnce(
         buildResponse(
           { task_id: 'task-1', status: 'running' },
@@ -849,7 +897,7 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
   it('does not invalidate cached input assets for non-input uploads', async () => {
     const staleAssets = [validAsset({ id: 'stale-input', tags: ['input'] })]
     fetchApiMock
-      .mockResolvedValueOnce(buildResponse({ assets: staleAssets }))
+      .mockResolvedValueOnce(buildAssetListResponse(staleAssets))
       .mockResolvedValueOnce(buildResponse(validAsset({ tags: ['models'] })))
 
     await assetService.getInputAssetsIncludingPublic()
@@ -861,39 +909,5 @@ describe(assetService.getInputAssetsIncludingPublic, () => {
 
     expect(cached).toEqual(staleAssets)
     expect(fetchApiMock).toHaveBeenCalledTimes(2)
-  })
-})
-
-describe(assetService.checkAssetHash, () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
-
-  it.each([
-    [200, 'exists'],
-    [404, 'missing'],
-    [400, 'invalid']
-  ] as const)('maps %s responses to %s', async (status, expected) => {
-    const hash =
-      'blake3:1111111111111111111111111111111111111111111111111111111111111111'
-    fetchApiMock.mockResolvedValueOnce(buildResponse(null, { status }))
-
-    await expect(assetService.checkAssetHash(hash)).resolves.toBe(expected)
-
-    expect(fetchApiMock).toHaveBeenCalledWith(
-      `/assets/hash/${encodeURIComponent(hash)}`,
-      {
-        method: 'HEAD',
-        signal: undefined
-      }
-    )
-  })
-
-  it('throws for unexpected responses', async () => {
-    fetchApiMock.mockResolvedValueOnce(buildResponse(null, { status: 500 }))
-
-    await expect(assetService.checkAssetHash('blake3:abc')).rejects.toThrow(
-      'Unexpected asset hash check status: 500'
-    )
   })
 })

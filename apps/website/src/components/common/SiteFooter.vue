@@ -43,6 +43,7 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
   {
     title: t('footer.resources', locale),
     links: [
+      { label: t('nav.learning', locale), href: routes.learning },
       {
         label: t('footer.blog', locale),
         href: externalLinks.blog,
@@ -67,6 +68,10 @@ const topColumns: { title: string; links: FooterLink[] }[] = [
         label: t('nav.youtube', locale),
         href: externalLinks.youtube,
         external: true
+      },
+      {
+        label: t('footer.affiliateProgram', locale),
+        href: routes.affiliates
       }
     ]
   }
@@ -82,13 +87,18 @@ const companyColumn: { title: string; links: FooterLink[] } = {
   ]
 }
 
-const contactColumn = {
+const contactColumn: { title: string; links: FooterLink[] } = {
   title: t('footer.contact', locale),
   links: [
     { label: t('footer.sales', locale), href: routes.contact },
     {
       label: t('footer.support', locale),
       href: externalLinks.support,
+      external: true
+    },
+    {
+      label: t('footer.cloudStatus', locale),
+      href: externalLinks.cloudStatus,
       external: true
     },
     { label: t('footer.press', locale), href: 'mailto:press@comfy.org' }

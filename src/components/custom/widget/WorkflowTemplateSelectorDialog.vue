@@ -14,10 +14,12 @@
     </template>
 
     <template #header>
-      <SearchInput
-        v-model="searchQuery"
-        size="lg"
-        class="max-w-96 flex-1"
+      <AsyncSearchInput
+        v-model="searchInput"
+        :searcher="applySearchQuery"
+        :debounce-ms="400"
+        :debounce-max-wait-ms="4000"
+        class="h-10 max-w-96 flex-1"
         autofocus
       />
     </template>
@@ -40,7 +42,10 @@
 
     <template #contentFilter>
       <div class="relative flex flex-wrap justify-between gap-2 px-6 pb-4">
-        <div class="flex flex-wrap gap-2">
+        <div
+          :ref="primeVueOverlay.overlayScopeRef"
+          class="flex flex-wrap gap-2"
+        >
           <!-- Model Filter -->
           <MultiSelect
             v-model="selectedModelObjects"
@@ -48,6 +53,7 @@
             class="w-[250px]"
             :label="modelFilterLabel"
             :options="modelOptions"
+            :content-style="selectContentStyle"
             :show-search-box="true"
             :show-selected-count="true"
             :show-clear-button="true"
@@ -62,6 +68,7 @@
             v-model="selectedUseCaseObjects"
             :label="useCaseFilterLabel"
             :options="useCaseOptions"
+            :content-style="selectContentStyle"
             :show-search-box="true"
             :show-selected-count="true"
             :show-clear-button="true"
@@ -76,6 +83,7 @@
             v-model="selectedRunsOnObjects"
             :label="runsOnFilterLabel"
             :options="runsOnOptions"
+            :content-style="selectContentStyle"
             :show-search-box="true"
             :show-selected-count="true"
             :show-clear-button="true"
@@ -92,6 +100,7 @@
             v-model="sortBy"
             :label="$t('templateWorkflows.sorting', 'Sort by')"
             :options="sortOptions"
+            :content-style="selectContentStyle"
             class="w-62.5"
           >
             <template #icon>
@@ -181,7 +190,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="hover:bg-base-background"
+            class="group/card hover:bg-base-background"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template)"
@@ -307,11 +316,11 @@
                       class="flex flex-col-reverse justify-center"
                     >
                       <Button
-                        v-if="hoveredTemplate === template.name"
                         v-tooltip.bottom="$t('g.seeTutorial')"
-                        v-bind="$attrs"
+                        :aria-label="$t('g.seeTutorial')"
                         variant="inverted"
                         size="icon"
+                        class="not-group-hover/card:opacity-0"
                         @click.stop="openTutorial(template)"
                       >
                         <i class="icon-[lucide--info] size-4" />
@@ -403,7 +412,7 @@ import CardBottom from '@/components/card/CardBottom.vue'
 import CardContainer from '@/components/card/CardContainer.vue'
 import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import MultiSelect from '@/components/ui/multi-select/MultiSelect.vue'
 import SingleSelect from '@/components/ui/single-select/SingleSelect.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
@@ -416,6 +425,7 @@ import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
 import { useLazyPagination } from '@/composables/useLazyPagination'
+import { usePrimeVueOverlayChildStyle } from '@/composables/usePopoverSizing'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
@@ -563,6 +573,25 @@ const {
 } = useTemplateFiltering(navigationFilteredTemplates)
 
 /**
+ * Raw search input bound to the search box. The actual `searchQuery` consumed
+ * by the filtering composable is only updated via `applySearchQuery` after the
+ * debounce settles, keeping Fuse/grid re-renders off the keystroke critical path.
+ */
+const searchInput = ref(searchQuery.value)
+
+const applySearchQuery = async (query: string) => {
+  searchQuery.value = query
+}
+
+/**
+ * Sync the visible search input when `searchQuery` is reset externally
+ * (e.g. via the "Clear Filters" button).
+ */
+watch(searchQuery, (value) => {
+  if (value !== searchInput.value) searchInput.value = value
+})
+
+/**
  * Coordinates state between the selected navigation item and the sort order to
  * create deterministic, predictable behavior.
  * @param source The origin of the change ('nav' or 'sort').
@@ -632,6 +661,8 @@ const selectedRunsOnObjects = computed({
 const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
+const primeVueOverlay = usePrimeVueOverlayChildStyle()
+const selectContentStyle = primeVueOverlay.contentStyle
 
 // Force re-render key for templates when sorting changes
 const templateListKey = ref(0)
@@ -713,10 +744,6 @@ const sortOptions = computed(() => [
     value: 'popular'
   },
   { name: t('templateWorkflows.sort.newest', 'Newest'), value: 'newest' },
-  {
-    name: t('templateWorkflows.sort.vramLowToHigh', 'VRAM Usage (Low to High)'),
-    value: 'vram-low-to-high'
-  },
   {
     name: t(
       'templateWorkflows.sort.modelSizeLowToHigh',

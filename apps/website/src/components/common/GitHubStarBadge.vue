@@ -13,7 +13,7 @@ const { stars } = defineProps<{
     target="_blank"
     rel="noopener noreferrer"
     :aria-label="`ComfyUI on GitHub — ${stars} stars`"
-    class="hidden shrink-0 items-center gap-2 lg:flex"
+    class="hidden shrink-0 items-center gap-1 lg:flex"
   >
     <NodeBadge
       :segments="[{ text: stars }]"
@@ -22,7 +22,7 @@ const { stars } = defineProps<{
       size-class="h-5 sm:h-5"
     />
     <span
-      class="bg-primary-comfy-yellow block size-7"
+      class="bg-primary-comfy-yellow block size-6 shrink-0"
       aria-hidden="true"
       style="mask: url('/icons/social/github.svg') center / contain no-repeat"
     />

@@ -5,6 +5,7 @@ import type {
   IComboWidget,
   IStringWidget
 } from '@/lib/litegraph/src/types/widgets'
+import { nextValueForLinkedTarget } from './valueControl'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { dynamicWidgets } from '@/core/graph/widgets/dynamicWidgets'
 import { useBooleanWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useBooleanWidget'
@@ -28,8 +29,11 @@ import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 
 import type { ComfyApp } from './app'
+import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
 import './domWidget'
 import './errorNodeWidgets'
+
+export { IS_CONTROL_WIDGET }
 
 export type ComfyWidgetConstructorV2 = (
   node: LGraphNode,
@@ -77,7 +81,6 @@ export function updateControlWidgetLabel(widget: IBaseWidget) {
   }
 }
 
-export const IS_CONTROL_WIDGET = Symbol()
 const HAS_EXECUTED = Symbol()
 
 export function addValueControlWidget(
@@ -174,121 +177,40 @@ export function addValueControlWidgets(
     widgets.push(comboFilter)
   }
 
-  const applyWidgetControl = () => {
-    var v = valueControl.value
+  function applyWidgetControl(isPartialExecution: boolean | undefined) {
+    if (
+      node.inputs?.some(
+        (input) =>
+          input.widget?.name === targetWidget.name && input.link != null
+      )
+    )
+      return
 
-    if (isCombo && v !== 'fixed') {
-      let values = targetWidget.options.values ?? []
-      const filter = comboFilter?.value
-      if (filter) {
-        let check
-        if (filter.startsWith('/') && filter.endsWith('/')) {
-          try {
-            const regex = new RegExp(filter.substring(1, filter.length - 1))
-            check = (item: string) => regex.test(item)
-          } catch (error) {
-            console.error(
-              'Error constructing RegExp filter for node ' + node.id,
-              filter,
-              error
-            )
-          }
-        }
-        if (!check) {
-          const lower = filter.toLocaleLowerCase()
-          check = (item: string) => item.toLocaleLowerCase().includes(lower)
-        }
-        // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-        values = values.filter((item: string) => check(item))
-        if (!values.length && targetWidget.options.values?.length) {
-          console.warn(
-            'Filter for node ' + node.id + ' has filtered out all items',
-            filter
-          )
-        }
-      }
-      // @ts-expect-error targetWidget.value can be number or string
-      let current_index = values.indexOf(targetWidget.value)
-      let current_length = values.length
+    const next = nextValueForLinkedTarget({
+      target: targetWidget,
+      linkedWidgets: targetWidget.linkedWidgets,
+      nodeId: node.id,
+      isPartialExecution
+    })
+    if (next === undefined) return
 
-      switch (v) {
-        case 'increment':
-          current_index += 1
-          break
-        case 'increment-wrap':
-          current_index += 1
-          if (current_index >= current_length) {
-            current_index = 0
-          }
-          break
-        case 'decrement':
-          current_index -= 1
-          break
-        case 'randomize':
-          // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-          current_index = Math.floor(Math.random() * current_length)
-          break
-        default:
-          break
-      }
-      current_index = Math.max(0, current_index)
-      // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-      current_index = Math.min(current_length - 1, current_index)
-      if (current_index >= 0) {
-        // @ts-expect-error Combo widget values may be a dictionary or legacy function type
-        let value = values[current_index]
-        targetWidget.value = value
-        targetWidget.callback?.(value)
-      }
-    } else {
-      //number
-      let { min = 0, max = 1, step2 = 1 } = targetWidget.options
-      // limit to something that javascript can handle
-      max = Math.min(1125899906842624, max)
-      min = Math.max(-1125899906842624, min)
-      let range = (max - min) / step2
-
-      //adjust values based on valueControl Behaviour
-      switch (v) {
-        case 'fixed':
-          break
-        case 'increment':
-          // @ts-expect-error targetWidget.value can be number or string
-          targetWidget.value += step2
-          break
-        case 'decrement':
-          // @ts-expect-error targetWidget.value can be number or string
-          targetWidget.value -= step2
-          break
-        case 'randomize':
-          targetWidget.value = Math.floor(Math.random() * range) * step2 + min
-          break
-        default:
-          break
-      }
-      /*check if values are over or under their respective
-       * ranges and set them to min or max.*/
-      // @ts-expect-error targetWidget.value can be number or string
-      if (targetWidget.value < min) targetWidget.value = min
-      // @ts-expect-error targetWidget.value can be number or string
-      if (targetWidget.value > max) targetWidget.value = max
-      targetWidget.callback?.(targetWidget.value)
-    }
+    targetWidget.value = next
+    targetWidget.callback?.(next)
   }
 
   valueControl.beforeQueued = ({ isPartialExecution } = {}) => {
-    if (!isPartialExecution && controlValueRunBefore()) {
+    if (controlValueRunBefore()) {
       // Don't run on first execution
       if (valueControl[HAS_EXECUTED]) {
-        applyWidgetControl()
+        applyWidgetControl(isPartialExecution)
       }
     }
     valueControl[HAS_EXECUTED] = true
   }
 
   valueControl.afterQueued = ({ isPartialExecution } = {}) => {
-    if (!isPartialExecution && !controlValueRunBefore()) {
-      applyWidgetControl()
+    if (!controlValueRunBefore()) {
+      applyWidgetControl(isPartialExecution)
     }
   }
 

@@ -2,6 +2,9 @@ import type { ComputedRef, Ref } from 'vue'
 
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type {
+  BillingStatus,
+  BillingSubscriptionStatus,
+  CreateTopupResponse,
   Plan,
   PreviewSubscribeResponse,
   SubscribeResponse,
@@ -16,7 +19,9 @@ export interface SubscriptionInfo {
   tier: SubscriptionTier | null
   duration: SubscriptionDuration | null
   planSlug: string | null
+  /** ISO 8601 */
   renewalDate: string | null
+  /** ISO 8601 */
   endDate: string | null
   isCancelled: boolean
   hasFunds: boolean
@@ -44,6 +49,9 @@ export interface BillingActions {
   ) => Promise<PreviewSubscribeResponse | null>
   manageSubscription: () => Promise<void>
   cancelSubscription: () => Promise<void>
+  resubscribe: () => Promise<void>
+  /** `amountCents` must be a whole-dollar multiple of 100. */
+  topup: (amountCents: number) => Promise<CreateTopupResponse | void>
   fetchPlans: () => Promise<void>
   /**
    * Ensures billing is initialized and subscription is active.
@@ -65,16 +73,12 @@ export interface BillingState {
   currentPlanSlug: ComputedRef<string | null>
   isLoading: Ref<boolean>
   error: Ref<string | null>
-  /**
-   * Convenience computed for checking if subscription is active.
-   * Equivalent to `subscription.value?.isActive ?? false`
-   */
   isActiveSubscription: ComputedRef<boolean>
-  /**
-   * Whether the current billing context has a FREE tier subscription.
-   * Workspace-aware: reflects the active workspace's tier, not the user's personal tier.
-   */
   isFreeTier: ComputedRef<boolean>
+  billingStatus: ComputedRef<BillingStatus | null>
+  subscriptionStatus: ComputedRef<BillingSubscriptionStatus | null>
+  tier: ComputedRef<SubscriptionTier | null>
+  renewalDate: ComputedRef<string | null>
 }
 
 export interface BillingContext extends BillingState, BillingActions {
