@@ -202,7 +202,7 @@ export const useAssetsStore = defineStore('assets', () => {
     after: string | null,
     epoch: number
   ): Promise<FetchHistoryPageResult> => {
-    if (!after) return fetchHistoryJobsPage({ offset: historyOffset.value })
+    if (after == null) return fetchHistoryJobsPage({ offset: historyOffset.value })
     try {
       return await fetchHistoryJobsPage({ after })
     } catch (err) {
@@ -309,13 +309,14 @@ export const useAssetsStore = defineStore('assets', () => {
     isLoadingMore.value = true
     historyError.value = null
 
+    const epoch = historyFetchEpoch
     try {
       await fetchHistoryAssets(true)
       historyAssets.value = allHistoryItems.value
     } catch (err) {
+      if (epoch !== historyFetchEpoch) return
       console.error('Error loading more history:', err)
       historyError.value = err
-      // Keep existing data when error occurs (consistent with updateHistory)
       if (!historyAssets.value.length) {
         historyAssets.value = []
       }
@@ -374,16 +375,13 @@ export const useAssetsStore = defineStore('assets', () => {
     }
 
     historyError.value = null
+    const epoch = historyFetchEpoch
     try {
-      const epoch = historyFetchEpoch
       const page = await fetchHistoryJobsPage({ offset: 0 })
       if (epoch !== historyFetchEpoch) return
 
       const reachesLoadedItems = page.jobs.some((job) => loadedIds.has(job.id))
       if (page.hasMore && !reachesLoadedItems) {
-        // More than a page of new jobs arrived since the last refresh;
-        // merging would leave a hole the cursor walk can never reach back
-        // to fill, so restart the walk from the top instead.
         await updateHistory()
         return
       }
@@ -396,6 +394,7 @@ export const useAssetsStore = defineStore('assets', () => {
       }
       historyAssets.value = allHistoryItems.value
     } catch (err) {
+      if (epoch !== historyFetchEpoch) return
       console.error('Error refreshing history:', err)
       historyError.value = err
     }

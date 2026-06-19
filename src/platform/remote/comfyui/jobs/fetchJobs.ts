@@ -33,12 +33,18 @@ export interface JobsPageRequest {
  * Non-ok response from the jobs API. Carries the HTTP status so callers can
  * tell a rejected cursor (400 INVALID_CURSOR) apart from transient failures.
  */
+const MAX_ERROR_BODY_LENGTH = 200
+
 export class JobsApiError extends Error {
   constructor(
     readonly status: number,
     body: string
   ) {
-    super(`[Jobs API] Failed to fetch jobs: ${status} ${body}`.trim())
+    const truncated =
+      body.length > MAX_ERROR_BODY_LENGTH
+        ? `${body.slice(0, MAX_ERROR_BODY_LENGTH)}…`
+        : body
+    super(`[Jobs API] Failed to fetch jobs: ${status} ${truncated}`.trim())
     this.name = 'JobsApiError'
   }
 }
@@ -74,9 +80,10 @@ async function fetchJobsRaw(
   page: JobsPageRequest = {}
 ): Promise<FetchJobsRawResult> {
   const statusParam = statuses.join(',')
-  const pageParam = page.after
-    ? `after=${encodeURIComponent(page.after)}`
-    : `offset=${page.offset ?? 0}`
+  const pageParam =
+    page.after != null
+      ? `after=${encodeURIComponent(page.after)}`
+      : `offset=${page.offset ?? 0}`
   const url = `/jobs?status=${statusParam}&limit=${maxItems}&${pageParam}`
   const res = await fetchApi(url)
   if (!res.ok) {
