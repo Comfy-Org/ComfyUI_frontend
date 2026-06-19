@@ -10,6 +10,11 @@ const PATH_EN = '/drops'
 const PATH_ZH = '/zh-CN/drops'
 const CLOUD_URL = 'https://cloud.comfy.org'
 
+const LOCALES: ReadonlyArray<readonly [string, Locale]> = [
+  [PATH_EN, 'en'],
+  [PATH_ZH, 'zh-CN']
+]
+
 function heroSection(page: Page, locale: Locale) {
   return page.locator('section').filter({
     has: page.getByRole('heading', {
@@ -84,10 +89,7 @@ test.describe('Drops landing — desktop @smoke', () => {
   test('hero secondary CTA opens external Cloud in a new tab on both locales', async ({
     page
   }) => {
-    for (const [path, locale] of [
-      [PATH_EN, 'en'],
-      [PATH_ZH, 'zh-CN']
-    ] as const) {
+    for (const [path, locale] of LOCALES) {
       await page.goto(path)
       const secondary = heroSection(page, locale).getByRole('link', {
         name: t('drops.hero.secondary', locale)
@@ -102,10 +104,7 @@ test.describe('Drops landing — desktop @smoke', () => {
   test('subscribe banner shows text and a sign-up link in both locales', async ({
     page
   }) => {
-    for (const [path, locale] of [
-      [PATH_EN, 'en'],
-      [PATH_ZH, 'zh-CN']
-    ] as const) {
+    for (const [path, locale] of LOCALES) {
       await page.goto(path)
       await expect(page.getByText(t('drops.banner.text', locale))).toBeVisible()
 
@@ -122,10 +121,7 @@ test.describe('Drops landing — desktop @smoke', () => {
   test('closing CTA shows heading and both action buttons in both locales', async ({
     page
   }) => {
-    for (const [path, locale] of [
-      [PATH_EN, 'en'],
-      [PATH_ZH, 'zh-CN']
-    ] as const) {
+    for (const [path, locale] of LOCALES) {
       await page.goto(path)
       const section = ctaSection(page, locale)
       await expect(
