@@ -1,6 +1,6 @@
 # Entity Interactions (Current System)
 
-This document maps the relationships and interaction patterns between all entity types in the litegraph layer as it exists today. It serves as a baseline for the ECS migration planned in [ADR 0008](../adr/0008-entity-component-system.md).
+This document maps the relationships and interaction patterns between all entity types in the litegraph layer as it exists today. It serves as a baseline for the ECS migration planned in [ADR 0008](../adr/0008-entity-component-system.md), whose target is realized as a set of dedicated Pinia stores (see [Proto-ECS Stores](proto-ecs-stores.md)).
 
 ## Entities
 
@@ -361,7 +361,7 @@ graph TD
     subgraph Stores
         WVS["WidgetValueStore
 (Pinia)"]
-        PS["PromotionStore
+        PES["PreviewExposureStore
 (Pinia)"]
         LM["LayoutMutations
 (composable)"]
@@ -379,9 +379,9 @@ lastRerouteId, lastGroupId)"]
     Widget <-->|"value, label, disabled"| WVS
     WVS -.->|"keyed by graphId:nodeId:name"| Widget
 
-    %% PromotionStore
-    SGNode -->|"tracks promoted widgets"| PS
-    Widget -.->|"isPromotedByAny() query"| PS
+    %% PreviewExposureStore
+    SGNode -->|"host-scoped preview exposures"| PES
+    PES -.->|"keyed by host node locator"| SGNode
 
     %% LayoutMutations
     Node -->|"pos/size setter"| LM
