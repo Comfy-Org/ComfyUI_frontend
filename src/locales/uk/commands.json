@@ -1,0 +1,361 @@
+{
+  "Comfy-Desktop_CheckForUpdates": {
+    "label": "Перевірити оновлення"
+  },
+  "Comfy-Desktop_Folders_OpenCustomNodesFolder": {
+    "label": "Відкрити папку Custom Nodes"
+  },
+  "Comfy-Desktop_Folders_OpenInputsFolder": {
+    "label": "Відкрити папку Inputs"
+  },
+  "Comfy-Desktop_Folders_OpenLogsFolder": {
+    "label": "Відкрити папку логів"
+  },
+  "Comfy-Desktop_Folders_OpenModelConfig": {
+    "label": "Відкрити extra_model_paths.yaml"
+  },
+  "Comfy-Desktop_Folders_OpenModelsFolder": {
+    "label": "Відкрити папку Models"
+  },
+  "Comfy-Desktop_Folders_OpenOutputsFolder": {
+    "label": "Відкрити папку Outputs"
+  },
+  "Comfy-Desktop_OpenDevTools": {
+    "label": "Відкрити DevTools"
+  },
+  "Comfy-Desktop_OpenUserGuide": {
+    "label": "Посібник користувача для десктопа"
+  },
+  "Comfy-Desktop_Quit": {
+    "label": "Вийти"
+  },
+  "Comfy-Desktop_Reinstall": {
+    "label": "Перевстановити"
+  },
+  "Comfy-Desktop_Restart": {
+    "label": "Перезапустити"
+  },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Відкрити 3D Viewer (Beta) для вибраного вузла"
+  },
+  "Comfy_BrowseModelAssets": {
+    "label": "Експериментально: Перегляд активів моделі"
+  },
+  "Comfy_BrowseTemplates": {
+    "label": "Переглянути шаблони"
+  },
+  "Comfy_Canvas_CopySelected": {
+    "label": "Копіювати"
+  },
+  "Comfy_Canvas_DeleteSelectedItems": {
+    "label": "Видалити вибрані елементи"
+  },
+  "Comfy_Canvas_FitView": {
+    "label": "Вписати вигляд до вибраних вузлів"
+  },
+  "Comfy_Canvas_Lock": {
+    "label": "Заблокувати полотно"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Down": {
+    "label": "Перемістити вибрані вузли вниз"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Left": {
+    "label": "Перемістити вибрані вузли вліво"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Right": {
+    "label": "Перемістити вибрані вузли вправо"
+  },
+  "Comfy_Canvas_MoveSelectedNodes_Up": {
+    "label": "Перемістити вибрані вузли вгору"
+  },
+  "Comfy_Canvas_PasteFromClipboard": {
+    "label": "Вставити"
+  },
+  "Comfy_Canvas_PasteFromClipboardWithConnect": {
+    "label": "Вставити з підключенням"
+  },
+  "Comfy_Canvas_ResetView": {
+    "label": "Скинути вигляд"
+  },
+  "Comfy_Canvas_Resize": {
+    "label": "Змінити розмір вибраних вузлів"
+  },
+  "Comfy_Canvas_SelectAll": {
+    "label": "Вибрати все"
+  },
+  "Comfy_Canvas_ToggleLinkVisibility": {
+    "label": "Перемкнути видимість зв'язків на полотні"
+  },
+  "Comfy_Canvas_ToggleLock": {
+    "label": "Перемкнути блокування полотна"
+  },
+  "Comfy_Canvas_ToggleMinimap": {
+    "label": "Перемкнути мінікарту полотна"
+  },
+  "Comfy_Canvas_ToggleSelected_Pin": {
+    "label": "Закріпити/Відкріпити вибрані елементи"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Bypass": {
+    "label": "Обхід/Скасування обходу вибраних вузлів"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
+    "label": "Згорнути/Розгорнути вибрані вузли"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Mute": {
+    "label": "Вимкнути/увімкнути звук вибраних вузлів"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Pin": {
+    "label": "Закріпити/Відкріпити вибрані вузли"
+  },
+  "Comfy_Canvas_Unlock": {
+    "label": "Розблокувати полотно"
+  },
+  "Comfy_Canvas_ZoomIn": {
+    "label": "Наближення"
+  },
+  "Comfy_Canvas_ZoomOut": {
+    "label": "Віддалення"
+  },
+  "Comfy_ClearPendingTasks": {
+    "label": "Очистити очікувані завдання"
+  },
+  "Comfy_ClearWorkflow": {
+    "label": "Очистити робочий процес"
+  },
+  "Comfy_ContactSupport": {
+    "label": "Зв'язатися з підтримкою"
+  },
+  "Comfy_Dev_ShowModelSelector": {
+    "label": "Показувати селектор моделей (Dev)"
+  },
+  "Comfy_DuplicateWorkflow": {
+    "label": "Дублювати поточний робочий процес"
+  },
+  "Comfy_ExportWorkflow": {
+    "label": "Експортувати робочий процес"
+  },
+  "Comfy_ExportWorkflowAPI": {
+    "label": "Експорт робочого процесу (формат API)"
+  },
+  "Comfy_Graph_ConvertToSubgraph": {
+    "label": "Перетворити виділення на підграф"
+  },
+  "Comfy_Graph_EditSubgraphWidgets": {
+    "label": "Редагувати віджети підграфа"
+  },
+  "Comfy_Graph_ExitSubgraph": {
+    "label": "Вийти з підграфа"
+  },
+  "Comfy_Graph_FitGroupToContents": {
+    "label": "Підігнати групу під вміст"
+  },
+  "Comfy_Graph_GroupSelectedNodes": {
+    "label": "Згрупувати вибрані вузли"
+  },
+  "Comfy_Graph_ToggleWidgetPromotion": {
+    "label": "Перемикання виділення віджета при наведенні"
+  },
+  "Comfy_Graph_UnpackSubgraph": {
+    "label": "Розпакувати вибраний підграф"
+  },
+  "Comfy_Help_AboutComfyUI": {
+    "label": "Відкрити Про ComfyUI"
+  },
+  "Comfy_Help_OpenComfyOrgDiscord": {
+    "label": "Відкрити Comfy-Org Discord"
+  },
+  "Comfy_Help_OpenComfyUIDocs": {
+    "label": "Відкрити документацію ComfyUI"
+  },
+  "Comfy_Help_OpenComfyUIForum": {
+    "label": "Відкрити форум ComfyUI"
+  },
+  "Comfy_Help_OpenComfyUIIssues": {
+    "label": "Відкрити проблеми (Issues) ComfyUI"
+  },
+  "Comfy_Interrupt": {
+    "label": "Перервати"
+  },
+  "Comfy_LoadDefaultWorkflow": {
+    "label": "Завантажити робочий процес за замовчуванням"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowCustomNodesMenu": {
+    "label": "Менеджер власних вузлів"
+  },
+  "Comfy_Manager_CustomNodesManager_ShowLegacyCustomNodesMenu": {
+    "label": "Власні вузли (застарілі)"
+  },
+  "Comfy_Manager_ShowLegacyManagerMenu": {
+    "label": "Меню Manager (застаріле)"
+  },
+  "Comfy_Manager_ShowMissingPacks": {
+    "label": "Встановити відсутні кастомні вузли"
+  },
+  "Comfy_Manager_ShowUpdateAvailablePacks": {
+    "label": "Перевірити оновлення кастомних вузлів"
+  },
+  "Comfy_MaskEditor_BrushSize_Decrease": {
+    "label": "Зменшити розмір пензля в MaskEditor"
+  },
+  "Comfy_MaskEditor_BrushSize_Increase": {
+    "label": "Збільшити розмір пензля в MaskEditor"
+  },
+  "Comfy_MaskEditor_ColorPicker": {
+    "label": "Відкрити вибір кольору в MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Horizontal": {
+    "label": "Віддзеркалити горизонтально в MaskEditor"
+  },
+  "Comfy_MaskEditor_Mirror_Vertical": {
+    "label": "Віддзеркалити вертикально в MaskEditor"
+  },
+  "Comfy_MaskEditor_OpenMaskEditor": {
+    "label": "Відкрити Mask Editor для вибраного вузла"
+  },
+  "Comfy_MaskEditor_Rotate_Left": {
+    "label": "Повернути ліворуч у MaskEditor"
+  },
+  "Comfy_MaskEditor_Rotate_Right": {
+    "label": "Повернути праворуч у MaskEditor"
+  },
+  "Comfy_Memory_UnloadModels": {
+    "label": "Вивантажити моделі"
+  },
+  "Comfy_Memory_UnloadModelsAndExecutionCache": {
+    "label": "Вивантажити моделі та кеш виконання"
+  },
+  "Comfy_NewBlankWorkflow": {
+    "label": "Новий порожній робочий процес"
+  },
+  "Comfy_OpenClipspace": {
+    "label": "Простір обрізки (Clipspace)"
+  },
+  "Comfy_OpenManagerDialog": {
+    "label": "Менеджер"
+  },
+  "Comfy_OpenWorkflow": {
+    "label": "Відкрити робочий процес"
+  },
+  "Comfy_PublishSubgraph": {
+    "label": "Опублікувати підграф"
+  },
+  "Comfy_Queue_ToggleOverlay": {
+    "label": "Перемикати історію завдань"
+  },
+  "Comfy_QueuePrompt": {
+    "label": "Додати запит у чергу"
+  },
+  "Comfy_QueuePromptFront": {
+    "label": "Додати запит у чергу (на початок)"
+  },
+  "Comfy_QueueSelectedOutputNodes": {
+    "label": "Додати вибрані вузли виводу в чергу"
+  },
+  "Comfy_Redo": {
+    "label": "Повторити"
+  },
+  "Comfy_RefreshNodeDefinitions": {
+    "label": "Оновити визначення вузлів"
+  },
+  "Comfy_RenameWorkflow": {
+    "label": "Перейменувати робочий процес"
+  },
+  "Comfy_SaveWorkflow": {
+    "label": "Зберегти робочий процес"
+  },
+  "Comfy_SaveWorkflowAs": {
+    "label": "Зберегти робочий процес як"
+  },
+  "Comfy_ShowSettingsDialog": {
+    "label": "Показувати діалог налаштувань"
+  },
+  "Comfy_Subgraph_SetDescription": {
+    "label": "Встановити опис підграфа"
+  },
+  "Comfy_Subgraph_SetSearchAliases": {
+    "label": "Встановити псевдоніми пошуку підграфа"
+  },
+  "Comfy_ToggleAssetAPI": {
+    "label": "Експериментально: Увімкнути AssetAPI"
+  },
+  "Comfy_ToggleCanvasInfo": {
+    "label": "Продуктивність полотна"
+  },
+  "Comfy_ToggleHelpCenter": {
+    "label": "Центр допомоги"
+  },
+  "Comfy_ToggleLinear": {
+    "label": "Перемикати режим додатка"
+  },
+  "Comfy_ToggleQPOV2": {
+    "label": "Перемикати панель черги V2"
+  },
+  "Comfy_ToggleTheme": {
+    "label": "Змінити тему (Темна/Світла)"
+  },
+  "Comfy_Undo": {
+    "label": "Скасувати"
+  },
+  "Comfy_User_OpenSignInDialog": {
+    "label": "Відкрити діалог входу"
+  },
+  "Comfy_User_SignOut": {
+    "label": "Вийти"
+  },
+  "Experimental_ToggleVueNodes": {
+    "label": "Експериментально: Увімкнути Nodes 2.0"
+  },
+  "Workspace_CloseWorkflow": {
+    "label": "Закрити поточний робочий процес"
+  },
+  "Workspace_NextOpenedWorkflow": {
+    "label": "Наступний відкритий робочий процес"
+  },
+  "Workspace_PreviousOpenedWorkflow": {
+    "label": "Попередній відкритий робочий процес"
+  },
+  "Workspace_SearchBox_Toggle": {
+    "label": "Перемикати поле пошуку"
+  },
+  "Workspace_ToggleBottomPanel": {
+    "label": "Перемикати нижню панель"
+  },
+  "Workspace_ToggleBottomPanel_Shortcuts": {
+    "label": "Показувати діалог гарячих клавіш"
+  },
+  "Workspace_ToggleBottomPanelTab_command-terminal": {
+    "label": "Перемикати нижню панель терміналу"
+  },
+  "Workspace_ToggleBottomPanelTab_logs-terminal": {
+    "label": "Перемикати нижню панель логів"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-essentials": {
+    "label": "Перемикати основну нижню панель"
+  },
+  "Workspace_ToggleBottomPanelTab_shortcuts-view-controls": {
+    "label": "Показати/приховати нижню панель керування переглядом"
+  },
+  "Workspace_ToggleFocusMode": {
+    "label": "Перемикати режим фокусування"
+  },
+  "Workspace_ToggleSidebarTab_apps": {
+    "label": "Перемикати бічну панель додатків",
+    "tooltip": "Додатки"
+  },
+  "Workspace_ToggleSidebarTab_assets": {
+    "label": "Перемикати бічну панель ресурсів",
+    "tooltip": "Ресурси"
+  },
+  "Workspace_ToggleSidebarTab_model-library": {
+    "label": "Перемикати бічну панель бібліотеки моделей",
+    "tooltip": "Бібліотека моделей"
+  },
+  "Workspace_ToggleSidebarTab_node-library": {
+    "label": "Перемикати бічну панель бібліотеки вузлів",
+    "tooltip": "Бібліотека вузлів"
+  },
+  "Workspace_ToggleSidebarTab_workflows": {
+    "label": "Показати/приховати бічну панель робочих процесів",
+    "tooltip": "Робочі процеси"
+  }
+}
