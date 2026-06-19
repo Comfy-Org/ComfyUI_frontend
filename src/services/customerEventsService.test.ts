@@ -32,7 +32,8 @@ vi.mock('@/stores/authStore', () => ({
 }))
 
 vi.mock('@/i18n', () => ({
-  d: mockI18n.d
+  d: mockI18n.d,
+  t: (key: string) => key
 }))
 
 vi.mock('@/utils/typeGuardUtil', () => ({
@@ -197,15 +198,24 @@ describe('useCustomerEventsService', () => {
   })
 
   describe('formatEventType', () => {
-    it('should format known event types correctly', () => {
-      expect(service.formatEventType(EventType.CREDIT_ADDED)).toBe(
-        'Credits Added'
-      )
-      expect(service.formatEventType(EventType.ACCOUNT_CREATED)).toBe(
-        'Account Created'
-      )
-      expect(service.formatEventType(EventType.API_USAGE_COMPLETED)).toBe(
-        'API Usage'
+    const knownEventTypes = [
+      'credit_added',
+      'topup_completed',
+      'account_created',
+      'api_usage_completed',
+      'gpu_usage',
+      'api_node_usage'
+    ]
+
+    it('maps known legacy and unified event types to a label, not the raw type', () => {
+      for (const eventType of knownEventTypes) {
+        expect(service.formatEventType(eventType)).not.toBe(eventType)
+      }
+    })
+
+    it('treats topup_completed as the unified alias of credit_added', () => {
+      expect(service.formatEventType('topup_completed')).toBe(
+        service.formatEventType('credit_added')
       )
     })
 
@@ -221,6 +231,15 @@ describe('useCustomerEventsService', () => {
       expect(service.getEventSeverity(EventType.API_USAGE_COMPLETED)).toBe(
         'warning'
       )
+    })
+
+    it('returns success for the unified topup_completed event', () => {
+      expect(service.getEventSeverity('topup_completed')).toBe('success')
+    })
+
+    it('returns warning for unified usage events', () => {
+      expect(service.getEventSeverity('gpu_usage')).toBe('warning')
+      expect(service.getEventSeverity('api_node_usage')).toBe('warning')
     })
 
     it('should return default severity for unknown event types', () => {

@@ -2418,6 +2418,13 @@
     "model": "Model",
     "added": "Added",
     "accountInitialized": "Account initialized",
+    "eventTypes": {
+      "creditAdded": "Credits Added",
+      "accountCreated": "Account Created",
+      "apiUsage": "API Usage",
+      "gpuUsage": "GPU Usage",
+      "apiNodeUsage": "Partner Node Usage"
+    },
     "unified": {
       "message": "Credits have been unified",
       "tooltip": "We've unified payments across Comfy. Everything now runs on Comfy Credits:\n- Partner Nodes (formerly API nodes)\n- Cloud workflows\n\nYour existing Partner node balance has been converted into credits."
