@@ -105,7 +105,7 @@ describe('usePricingTableUrlLoader', () => {
   it('reads the gate only after members finish loading', async () => {
     mockRouteQuery.value = { pricing: '1' }
     // The original owner becomes known only once the members list resolves;
-    // proves the loader awaits ensureMembersLoaded before reading the gate.
+    // proves the loader awaits fetchMembers before reading the gate.
     mockPermissions.value = { canManageSubscriptionLifecycle: false }
     mockFetchMembers.mockImplementation(async () => {
       mockPermissions.value = { canManageSubscriptionLifecycle: true }
@@ -153,13 +153,15 @@ describe('usePricingTableUrlLoader', () => {
     expect(mockTrackSubscription).not.toHaveBeenCalled()
   })
 
-  it('strips the param even when the user is not eligible', async () => {
+  it('denies, strips, and clears together when the user is not eligible', async () => {
     mockRouteQuery.value = { pricing: '1', other: 'param' }
     mockPermissions.value = { canManageSubscriptionLifecycle: false }
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(mockTrackSubscription).not.toHaveBeenCalled()
     expect(mockRouterReplace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })
@@ -200,5 +202,34 @@ describe('usePricingTableUrlLoader', () => {
     await loadPricingTableFromUrl()
 
     expect(mockShowPricingTable).not.toHaveBeenCalled()
+  })
+
+  it('opens the default tab for an unrecognized pricing value', async () => {
+    mockRouteQuery.value = { pricing: 'garbage' }
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await loadPricingTableFromUrl()
+
+    expect(mockShowPricingTable).toHaveBeenCalledWith({
+      reason: 'deep_link',
+      planMode: undefined
+    })
+  })
+
+  it('strips and clears, then propagates a members-fetch failure', async () => {
+    mockRouteQuery.value = { pricing: '1' }
+    mockFetchMembers.mockRejectedValue(new Error('listMembers failed'))
+
+    const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
+    await expect(loadPricingTableFromUrl()).rejects.toThrow(
+      'listMembers failed'
+    )
+
+    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(mockTrackSubscription).not.toHaveBeenCalled()
+    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+      'pricing'
+    )
   })
 })
