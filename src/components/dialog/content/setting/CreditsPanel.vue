@@ -61,7 +61,7 @@ watch(
   () => authStore.lastBalanceUpdateTime,
   (newTime, oldTime) => {
     if (newTime && newTime !== oldTime && usageLogsTableRef.value) {
-      usageLogsTableRef.value.refresh()
+      void usageLogsTableRef.value.refresh()
     }
   }
 )
@@ -82,14 +82,16 @@ const handleMessageSupport = async () => {
 const handleFaqClick = () => {
   window.open(
     buildDocsUrl('/tutorials/api-nodes/faq', { includeLocale: true }),
-    '_blank'
+    '_blank',
+    'noopener,noreferrer'
   )
 }
 
 const handleOpenPartnerNodesInfo = () => {
   window.open(
     buildDocsUrl(docsPaths.partnerNodesPricing, { includeLocale: true }),
-    '_blank'
+    '_blank',
+    'noopener,noreferrer'
   )
 }
 </script>

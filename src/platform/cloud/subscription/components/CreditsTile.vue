@@ -253,7 +253,7 @@ const refillsDateShort = computed(() => {
   const date = new Date(raw)
   return Number.isNaN(date.getTime())
     ? raw
-    : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : date.toLocaleDateString(locale.value, { month: 'short', day: 'numeric' })
 })
 
 const monthlyTotalDisplay = computed(() => {

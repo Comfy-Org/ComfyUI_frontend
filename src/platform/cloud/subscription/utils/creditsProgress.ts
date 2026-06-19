@@ -18,7 +18,10 @@ export function computeMonthlyUsage(
     return { used: 0, usedFraction: 0 }
   }
 
-  const used = Math.max(0, monthlyTotal - monthlyRemaining)
+  const used = Math.min(
+    monthlyTotal,
+    Math.max(0, monthlyTotal - monthlyRemaining)
+  )
   const usedFraction = Math.min(1, used / monthlyTotal)
 
   return { used, usedFraction }

@@ -89,7 +89,7 @@ async function mockCloudBoot(page: Page) {
         is_active: true,
         subscription_tier: 'PRO',
         subscription_duration: 'MONTHLY',
-        renewal_date: '2099-02-20T00:00:00Z',
+        renewal_date: '2099-02-20T12:00:00Z',
         end_date: null
       })
     )
