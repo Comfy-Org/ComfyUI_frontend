@@ -11,6 +11,7 @@ import { isCurveData } from '@/components/curve/curveUtils'
 import type { CurveData } from '@/components/curve/types'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import { hexToInt } from '@/utils/colorUtil'
+import { widgetId } from '@/types/widgetId'
 
 interface AutogrowGroup {
   max: number
@@ -132,7 +133,9 @@ export function useGLSLUniforms(
 
     if (subgraphSources) {
       return subgraphSources.map(({ nodeId: nId, widgetName, directValue }) => {
-        const widget = widgetValueStore.getWidget(gId, nId, widgetName)
+        const widget = widgetValueStore.getWidget(
+          widgetId(gId, nId, widgetName)
+        )
         return coerce(widget?.value ?? directValue() ?? defaultValue)
       })
     }
@@ -144,7 +147,7 @@ export function useGLSLUniforms(
     const values: T[] = []
     for (let i = 0; i < maxCount; i++) {
       const inputName = `${groupName}.${uniformPrefix}${i}`
-      const widget = widgetValueStore.getWidget(gId, nId, inputName)
+      const widget = widgetValueStore.getWidget(widgetId(gId, nId, inputName))
       if (widget !== undefined) {
         values.push(coerce(widget.value))
         continue
@@ -214,7 +217,9 @@ export function useGLSLUniforms(
     if (sources && sources.length > 0) {
       return sources
         .map(({ nodeId: nId, widgetName, directValue }) => {
-          const widget = widgetValueStore.getWidget(gId, nId, widgetName)
+          const widget = widgetValueStore.getWidget(
+            widgetId(gId, nId, widgetName)
+          )
           const value = widget?.value ?? directValue()
           return isCurveData(value) ? (value as CurveData) : null
         })
@@ -230,7 +235,7 @@ export function useGLSLUniforms(
     for (let i = 0; i < max; i++) {
       const inputName = `curves.u_curve${i}`
 
-      const widget = widgetValueStore.getWidget(gId, nId, inputName)
+      const widget = widgetValueStore.getWidget(widgetId(gId, nId, inputName))
       if (widget && isCurveData(widget.value)) {
         values.push(widget.value as CurveData)
         continue

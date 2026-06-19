@@ -2904,6 +2904,10 @@
         "name": "ses",
         "tooltip": "Videoya eklenecek ses."
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "Oluşturulan videonun bit derinliği. 10-bit, daha az bantlanma ile daha yumuşak geçişler sağlar, ancak bazı oynatıcılar ve sonraki düğümler bunu desteklemeyebilir."
+      },
       "fps": {
         "name": "fps"
       },
@@ -5219,6 +5223,10 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -8026,7 +8034,8 @@
         "name": "oluşturduktan sonra kontrol et"
       },
       "generate_audio": {
-        "name": "ses oluştur"
+        "name": "ses oluştur",
+        "tooltip": "'kling-3.0-turbo' her zaman yerel ses üretir, bu nedenle ses seçeneği dikkate alınmaz."
       },
       "model": {
         "name": "model",
@@ -16240,6 +16249,9 @@
       "draw_hands": {
         "name": "elleri_çiz"
       },
+      "draw_head": {
+        "name": "Kafa Çiz"
+      },
       "face_point_size": {
         "name": "yüz_nokta_boyutu"
       },
@@ -18799,6 +18811,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Düzenlenecek referans görsel(ler)i. Boogu, örnek başına bir referansa odaklanır; daha fazlasına da izin verilir."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "MetinKodlamaHunyuanVideo_GörüntüdenVideoya",
     "inputs": {
@@ -19586,6 +19629,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "Harici bir 3D modeli (ör. Rodin, Hunyuan3D veya yerel bir dosyadan) Tripo'ya aktararak Tripo'nun son işlem düğümleriyle kullanın: Texture, Rig, Convert. GLB önerilir: dokular yalnızca dosyaya gömülü olduğunda aktarımda korunur. Aktarılan bir modelin dokulandırılması için bir doku istemi gerektiğini unutmayın.",
+    "display_name": "Tripo: Model İçe Aktar",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "İçe aktarılacak 3D model (GLB / FBX / OBJ / STL, en fazla 150 MB). OBJ ve STL dosyalarında gömülü doku bulunmaz."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Çok Bakışlıdan Modele",
     "inputs": {
@@ -20053,6 +20112,10 @@
       },
       "texture_alignment": {
         "name": "doku_hizalama"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Dokulandırma için isteğe bağlı metin rehberi. Pratikte, renkleri çıkarmak için kaynak görseli olmayan aktarılan modeller (Tripo: Model İçe Aktar) için gereklidir."
       },
       "texture_quality": {
         "name": "doku_kalitesi"

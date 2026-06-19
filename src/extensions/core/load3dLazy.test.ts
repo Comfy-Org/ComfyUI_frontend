@@ -119,6 +119,23 @@ describe('load3dLazy', () => {
     expect(spec.upload_subfolder).toBe('3d')
   })
 
+  it('injects mesh_upload spec flags into the model_file widget for Load3DAdvanced nodes', async () => {
+    const { hook } = await loadLazyExtensionFresh()
+    const nodeData = makeNodeDef('Load3DAdvanced', {
+      input: {
+        required: { model_file: ['STRING', {}] }
+      }
+    } as Partial<ComfyNodeDef>)
+
+    await hook({} as typeof LGraphNode, nodeData)
+
+    const spec = (
+      nodeData.input!.required!.model_file as [string, Record<string, unknown>]
+    )[1]
+    expect(spec.mesh_upload).toBe(true)
+    expect(spec.upload_subfolder).toBe('3d')
+  })
+
   it('does not throw when a Load3D node has no model_file widget spec', async () => {
     const { hook } = await loadLazyExtensionFresh()
     const nodeData = makeNodeDef('Load3D', {
