@@ -9,7 +9,10 @@ import {
   logWebSocketOpen,
   logWebSocketClose,
   logWebSocketMessage,
-  logQueuePromptApiCall
+  logWebSocketSend,
+  logQueuePromptStart,
+  logQueuePromptApiCall,
+  logStatus
 } from './debugLogger'
 import { ref } from 'vue'
 
@@ -612,12 +615,12 @@ export class ComfyApi extends EventTarget {
       logWebSocketOpen(wsUrl)
 
       // Send feature flags as the first message
-      this.socket!.send(
-        JSON.stringify({
-          type: 'feature_flags',
-          data: this.getClientFeatureFlags()
-        })
-      )
+      const featureFlagsMsg = JSON.stringify({
+        type: 'feature_flags',
+        data: this.getClientFeatureFlags()
+      })
+      logWebSocketSend('feature_flags', this.getClientFeatureFlags())
+      this.socket!.send(featureFlagsMsg)
 
       if (isReconnect) {
         this.dispatchCustomEvent('reconnected')
@@ -743,6 +746,10 @@ export class ComfyApi extends EventTarget {
           logWebSocketMessage(msg.type, msg.data)
           switch (msg.type) {
             case 'status':
+              logStatus(
+                msg.data.status?.exec_info?.queue_remaining ?? -1,
+                msg.data.sid ?? ''
+              )
               if (msg.data.sid) {
                 const clientId = msg.data.sid
                 this.clientId = clientId
@@ -881,6 +888,7 @@ export class ComfyApi extends EventTarget {
     options?: QueuePromptOptions
   ): Promise<PromptResponse> {
     const { output: prompt, workflow } = data
+    logQueuePromptStart(this.clientId ?? 'unknown', Object.keys(prompt).length)
 
     const body: QueuePromptRequestBody = {
       client_id: this.clientId ?? '', // TODO: Unify clientId access

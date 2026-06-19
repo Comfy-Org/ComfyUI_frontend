@@ -19,6 +19,7 @@ import {
   logProgressState,
   logProgress,
   logProgressText,
+  logQueuePromptStored,
   startTiming,
   endTiming
 } from '@/scripts/debugLogger'
@@ -644,6 +645,7 @@ export const useExecutionStore = defineStore('execution', () => {
     promptOutput: ComfyApiWorkflow
     workflow: ComfyWorkflow
   }) {
+    logQueuePromptStored(String(id), nodes.length)
     queuedJobs.value[id] ??= { nodes: {} }
     const queuedJob = queuedJobs.value[id]
     queuedJob.nodes = {

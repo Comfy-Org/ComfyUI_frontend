@@ -60,12 +60,28 @@ export function endTiming(label: string): number | undefined {
 // ─── HTTP API Calls ───────────────────────────────────────────────────────────
 
 export function logHttpRequest(method: string, url: string, body?: any) {
-  log('HTTP', '🌐', `${method} ${url}`, body ? truncate(JSON.parse(JSON.stringify(body)), 500) : undefined)
+  log(
+    'HTTP',
+    '🌐',
+    `${method} ${url}`,
+    body ? truncate(JSON.parse(JSON.stringify(body)), 500) : undefined
+  )
 }
 
-export function logHttpResponse(method: string, url: string, status: number, duration: number, body?: any) {
+export function logHttpResponse(
+  method: string,
+  url: string,
+  status: number,
+  duration: number,
+  body?: any
+) {
   const icon = status >= 400 ? '❌' : '✅'
-  log('HTTP', icon, `${method} ${url} → ${status} (${duration.toFixed(0)}ms)`, body ? truncate(body, 500) : undefined)
+  log(
+    'HTTP',
+    icon,
+    `${method} ${url} → ${status} (${duration.toFixed(0)}ms)`,
+    body ? truncate(body, 500) : undefined
+  )
 }
 
 // ─── WebSocket Messages ───────────────────────────────────────────────────────
@@ -90,7 +106,11 @@ export function logWebSocketSend(type: string, data?: any) {
 // ─── Queue Prompt Flow ────────────────────────────────────────────────────────
 
 export function logQueuePromptStart(requestId: string, nodeCount: number) {
-  log('QUEUE', '🚀', `Queue Prompt START (requestId=${requestId}, nodes=${nodeCount})`)
+  log(
+    'QUEUE',
+    '🚀',
+    `Queue Prompt START (requestId=${requestId}, nodes=${nodeCount})`
+  )
 }
 
 export function logQueuePromptApiCall(promptId: string) {
@@ -116,7 +136,12 @@ export function logExecutingNode(nodeId: string | null, promptId: string) {
 }
 
 export function logNodeExecuted(nodeId: string, output?: any) {
-  log('EXEC', '✅', `Node executed: ${nodeId}`, output ? truncate(output, 200) : undefined)
+  log(
+    'EXEC',
+    '✅',
+    `Node executed: ${nodeId}`,
+    output ? truncate(output, 200) : undefined
+  )
 }
 
 export function logNodeCached(nodeIds: string[]) {
@@ -156,7 +181,11 @@ export function logProgressText(nodeId: string, text: string) {
 // ─── Status ───────────────────────────────────────────────────────────────────
 
 export function logStatus(queueRemaining: number, sessionId: string) {
-  log('STATUS', '📌', `Status: queue_remaining=${queueRemaining}, session=${sessionId}`)
+  log(
+    'STATUS',
+    '📌',
+    `Status: queue_remaining=${queueRemaining}, session=${sessionId}`
+  )
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -194,8 +223,4 @@ function truncate(obj: any, maxLen: number): any {
   const str = typeof obj === 'string' ? obj : JSON.stringify(obj)
   if (str.length <= maxLen) return obj
   return str.slice(0, maxLen) + `... (${str.length} chars total)`
-}
-
-export function isDebugEnabled(): boolean {
-  return DEBUG_ENABLED
 }
