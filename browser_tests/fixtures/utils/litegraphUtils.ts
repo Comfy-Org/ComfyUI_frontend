@@ -2,7 +2,6 @@ import { expect } from '@playwright/test'
 
 import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { ManageGroupNode } from '@e2e/fixtures/components/ManageGroupNode'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position, Size } from '@e2e/fixtures/types'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
@@ -524,14 +523,6 @@ export class NodeReference {
       )
     }
     return nodes[0]
-  }
-  async manageGroupNode() {
-    await this.clickContextMenuOption('Manage Group Node')
-    await this.comfyPage.nextFrame()
-    return new ManageGroupNode(
-      this.comfyPage.page,
-      this.comfyPage.page.locator('.comfy-group-manage')
-    )
   }
   async navigateIntoSubgraph() {
     const titleHeight = await this.comfyPage.page.evaluate(() => {

@@ -712,7 +712,6 @@
     "Inputs": "入力",
     "Left": "左",
     "Manage": "管理",
-    "Manage Group Nodes": "グループノードを管理",
     "Minimize Node": "ノードを最小化",
     "Mode": "モード",
     "Node Info": "ノード情報",
@@ -1830,10 +1829,6 @@
     "zoomOptions": "ズームオプション",
     "zoomOut": "縮小"
   },
-  "groupNode": {
-    "create": "グループノードを作成",
-    "enterName": "名前を入力"
-  },
   "help": {
     "helpCenterMenu": "ヘルプセンターメニュー",
     "recentReleases": "最近のリリース"
@@ -2563,7 +2558,6 @@
     "Job History": "ジョブ履歴",
     "Load Default Workflow": "デフォルトワークフローを読み込む",
     "Lock Canvas": "キャンバスをロック",
-    "Manage group nodes": "グループノードを管理",
     "Manager": "マネージャー",
     "Manager Menu (Legacy)": "マネージャーメニュー（レガシー）",
     "Minimap": "ミニマップ",
@@ -2629,7 +2623,6 @@
     "Toggle View Controls Bottom Panel": "ビューコントロール下部パネルの切り替え",
     "Toggle promotion of hovered widget": "ホバー中のウィジェットの昇格を切り替え",
     "Undo": "元に戻す",
-    "Ungroup selected group nodes": "選択したグループノードのグループ解除",
     "Unload Models": "モデルのアンロード",
     "Unload Models and Execution Cache": "モデルと実行キャッシュのアンロード",
     "Unlock Canvas": "キャンバスのロックを解除",
