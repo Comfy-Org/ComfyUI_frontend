@@ -41,11 +41,19 @@ test.describe(
   { tag: '@node' },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      test.setTimeout(60_000)
       await comfyPage.page.route('**/api/object_info', (route) =>
         route.fulfill({ json: fixtureDefs })
       )
       await comfyPage.workflow.reloadAndWaitForApp()
+      // The Essentials chip is gated behind this server feature flag. In a
+      // production build (as run in CI) it defaults to off, so enable it
+      // explicitly to render the chip deterministically.
+      await comfyPage.page.evaluate(() => {
+        window.app!.api.serverFeatureFlags.value = {
+          ...window.app!.api.serverFeatureFlags.value,
+          node_library_essentials_enabled: true
+        }
+      })
       await comfyPage.searchBoxV2.setup()
     })
 
