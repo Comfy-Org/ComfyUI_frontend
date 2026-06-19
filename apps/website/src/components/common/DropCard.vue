@@ -5,6 +5,7 @@ import Badge from '../ui/badge/Badge.vue'
 
 import ButtonPill from '../ui/button-pill/ButtonPill.vue'
 import Card from '../ui/card/Card.vue'
+import CardContent from '../ui/card/CardContent.vue'
 import CardDescription from '../ui/card/CardDescription.vue'
 import CardFooter from '../ui/card/CardFooter.vue'
 import CardHeader from '../ui/card/CardHeader.vue'
@@ -24,45 +25,47 @@ const { drop, locale } = defineProps<{
       class="rounded-4.5xl focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
     />
 
-    <div class="relative p-2">
-      <div class="aspect-video w-full overflow-hidden rounded-4xl">
-        <img
-          v-if="drop.media.type === 'image'"
-          :src="drop.media.src"
-          :alt="drop.media.alt[locale]"
-          loading="lazy"
-          decoding="async"
-          class="size-full object-cover object-center transition-transform duration-500 ease-out group-hover/pill-trigger:scale-105"
-        />
-        <video
-          v-else
-          :src="drop.media.src"
-          :poster="drop.media.poster"
-          :aria-label="drop.media.alt[locale]"
-          autoplay
-          loop
-          muted
-          playsinline
-          preload="metadata"
-          class="size-full object-cover object-center transition-transform duration-500 ease-out group-hover/pill-trigger:scale-105"
-        />
-      </div>
-      <Badge v-if="drop.badge" variant="accent" class="absolute top-6 left-8">
-        {{ drop.badge[locale] }}
-      </Badge>
-    </div>
+    <div class="flex flex-col-reverse">
+      <CardHeader class="gap-2 px-6">
+        <Badge variant="ghost">
+          {{ drop.category[locale] }}
+        </Badge>
+        <CardTitle class="pt-4">
+          {{ drop.title[locale] }}
+        </CardTitle>
+        <CardDescription>
+          {{ drop.description[locale] }}
+        </CardDescription>
+      </CardHeader>
 
-    <CardHeader class="gap-2 px-6">
-      <Badge variant="ghost">
-        {{ drop.category[locale] }}
-      </Badge>
-      <CardTitle class="pt-4">
-        {{ drop.title[locale] }}
-      </CardTitle>
-      <CardDescription>
-        {{ drop.description[locale] }}
-      </CardDescription>
-    </CardHeader>
+      <CardContent class="relative p-2">
+        <div class="aspect-video w-full overflow-hidden rounded-4xl">
+          <img
+            v-if="drop.media.type === 'image'"
+            :src="drop.media.src"
+            :alt="drop.media.alt[locale]"
+            loading="lazy"
+            decoding="async"
+            class="size-full object-cover object-center transition-transform duration-500 ease-out group-hover/pill-trigger:scale-105"
+          />
+          <video
+            v-else
+            :src="drop.media.src"
+            :poster="drop.media.poster"
+            :aria-label="drop.media.alt[locale]"
+            autoplay
+            loop
+            muted
+            playsinline
+            preload="metadata"
+            class="size-full object-cover object-center transition-transform duration-500 ease-out group-hover/pill-trigger:scale-105"
+          />
+        </div>
+        <Badge v-if="drop.badge" variant="accent" class="absolute top-6 left-8">
+          {{ drop.badge[locale] }}
+        </Badge>
+      </CardContent>
+    </div>
 
     <CardFooter class="px-6 pb-6">
       <ButtonPill as="span" variant="ghost" icon-position="left">
