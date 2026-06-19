@@ -8,11 +8,17 @@
  * Or set URL param: ?debug=1
  */
 
+declare global {
+  interface Window {
+    __COMFY_DEBUG?: boolean
+  }
+}
+
 const urlParams = new URLSearchParams(window.location.search)
 const DEBUG_ENABLED =
   urlParams.get('debug') === '1' ||
   urlParams.get('debug') === 'true' ||
-  (window as any).__COMFY_DEBUG === true
+  window.__COMFY_DEBUG === true
 
 const START_TIME = performance.now()
 
@@ -28,7 +34,7 @@ function elapsed(): string {
   return ((performance.now() - START_TIME) / 1000).toFixed(3) + 's'
 }
 
-function log(category: string, icon: string, message: string, data?: any) {
+function log(category: string, icon: string, message: string, data?: unknown) {
   if (!DEBUG_ENABLED) return
   const ts = elapsed()
   const prefix = `${icon} [${ts}] [${category}]`
@@ -59,7 +65,7 @@ export function endTiming(label: string): number | undefined {
 
 // ─── HTTP API Calls ───────────────────────────────────────────────────────────
 
-export function logHttpRequest(method: string, url: string, body?: any) {
+export function logHttpRequest(method: string, url: string, body?: unknown) {
   log(
     'HTTP',
     '🌐',
@@ -73,7 +79,7 @@ export function logHttpResponse(
   url: string,
   status: number,
   duration: number,
-  body?: any
+  body?: unknown
 ) {
   const icon = status >= 400 ? '❌' : '✅'
   log(
@@ -94,12 +100,12 @@ export function logWebSocketClose(code: number, reason: string) {
   log('WS', '🔴', `Disconnected: code=${code} reason=${reason}`)
 }
 
-export function logWebSocketMessage(type: string, data: any) {
+export function logWebSocketMessage(type: string, data: unknown) {
   const icon = getWsIcon(type)
   log('WS', icon, `← ${type}`, truncate(data, 300))
 }
 
-export function logWebSocketSend(type: string, data?: any) {
+export function logWebSocketSend(type: string, data?: unknown) {
   log('WS', '📤', `→ ${type}`, data ? truncate(data, 300) : undefined)
 }
 
@@ -135,7 +141,7 @@ export function logExecutingNode(nodeId: string | null, promptId: string) {
   }
 }
 
-export function logNodeExecuted(nodeId: string, output?: any) {
+export function logNodeExecuted(nodeId: string, output?: unknown) {
   log(
     'EXEC',
     '✅',
@@ -152,7 +158,7 @@ export function logExecutionSuccess(promptId: string) {
   log('EXEC', '🎉', `Execution SUCCESS: prompt_id=${promptId}`)
 }
 
-export function logExecutionError(promptId: string, error: any) {
+export function logExecutionError(promptId: string, error: unknown) {
   log('EXEC', '❌', `Execution ERROR: prompt_id=${promptId}`, error)
 }
 
@@ -167,9 +173,12 @@ export function logProgress(nodeId: string, value: number, max: number) {
   log('PROG', '📊', `Node ${nodeId}: ${value}/${max} (${pct}%)`)
 }
 
-export function logProgressState(nodes: Record<string, any>) {
+export function logProgressState(nodes: Record<string, unknown>) {
   const summary = Object.entries(nodes)
-    .map(([id, n]: [string, any]) => `${id}:${n.state || 'unknown'}`)
+    .map(([id, n]) => {
+      const node = n as Record<string, unknown>
+      return `${id}:${String(node.state ?? 'unknown')}`
+    })
     .join(', ')
   log('PROG', '📊', `Progress state: ${summary}`)
 }
@@ -218,7 +227,7 @@ function getWsIcon(type: string): string {
   }
 }
 
-function truncate(obj: any, maxLen: number): any {
+function truncate(obj: unknown, maxLen: number): unknown {
   if (obj === null || obj === undefined) return obj
   const str = typeof obj === 'string' ? obj : JSON.stringify(obj)
   if (str.length <= maxLen) return obj

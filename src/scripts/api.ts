@@ -449,9 +449,14 @@ export class ComfyApi extends EventTarget {
   async fetchApi(route: string, options?: RequestInit) {
     const headers: HeadersInit = options?.headers ?? {}
     const method = options?.method || 'GET'
-    const reqBody = options?.body
-      ? JSON.parse(options.body as string)
-      : undefined
+    let reqBody: unknown
+    if (options?.body && typeof options.body === 'string') {
+      try {
+        reqBody = JSON.parse(options.body)
+      } catch {
+        reqBody = options.body
+      }
+    }
     logHttpRequest(method, route, reqBody)
     const reqStart = performance.now()
 

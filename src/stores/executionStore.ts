@@ -320,7 +320,8 @@ export const useExecutionStore = defineStore('execution', () => {
   ) {
     const jobId = e.detail.prompt_id
     logExecutionInterrupted(jobId)
-    if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
+    endTiming(`exec:${jobId}`)
+    clearInitializationByJobId(jobId)
     resetExecutionState(jobId)
   }
 
