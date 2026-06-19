@@ -24,6 +24,20 @@ const topupMocks = vi.hoisted(() => ({
 }))
 vi.mock('@/platform/telemetry/topupTracker', () => topupMocks)
 
+vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
+  getExecutionContext: () => ({
+    is_template: false,
+    workflow_name: 'untitled',
+    custom_node_count: 0,
+    total_node_count: 0,
+    subgraph_count: 0,
+    has_api_nodes: false,
+    api_node_names: [],
+    has_toolkit_nodes: false,
+    toolkit_node_names: []
+  })
+}))
+
 const mockNormalizeSurveyResponses = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry/utils/surveyNormalization', () => ({
   normalizeSurveyResponses: mockNormalizeSurveyResponses
