@@ -451,7 +451,8 @@ describe('assetMetadataUtils', () => {
     })
 
     it('falls back to the rendered natural size on OSS where thumbnail_url equals preview_url (full-res)', () => {
-      const fullResUrl = 'http://localhost:8188/view?filename=output.png&type=output'
+      const fullResUrl =
+        'http://localhost:8188/view?filename=output.png&type=output'
       const asset = {
         ...mockAsset,
         thumbnail_url: fullResUrl,

@@ -252,10 +252,7 @@ export function resolveDisplayImageDimensions(
 ): ImageDimensions | undefined {
   const fromMetadata = getAssetMetadataDimensions(asset)
   if (fromMetadata) return fromMetadata
-  if (
-    asset?.thumbnail_url &&
-    asset.thumbnail_url !== asset.preview_url
-  )
+  if (asset?.thumbnail_url && asset.thumbnail_url !== asset.preview_url)
     return undefined
   return renderedNaturalSize
 }
