@@ -27,7 +27,8 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
+  WorkflowSavedMetadata,
+  WorkspaceInviteMetadata
 } from '../../types'
 
 /**
@@ -179,6 +180,10 @@ export class GtmTelemetryProvider implements TelemetryProvider {
       'subscription_success',
       metadata ? { ...metadata } : undefined
     )
+  }
+
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    this.pushEvent('workspace_invite_sent', { ...metadata })
   }
 
   trackRunButton(properties: RunButtonProperties): void {

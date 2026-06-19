@@ -41,7 +41,8 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
+  WorkflowSavedMetadata,
+  WorkspaceInviteMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
@@ -368,6 +369,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackApiCreditTopupSucceeded(): void {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
+  }
+
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
   }
 
   trackRunButton(properties: RunButtonProperties): void {

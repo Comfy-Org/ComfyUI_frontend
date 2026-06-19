@@ -98,6 +98,7 @@
       v-if="checkoutStep === 'success' && selectedTierKey"
       :tier-key="selectedTierKey"
       :preview-data="previewData"
+      :is-team="isTeamCheckout"
       @close="handleSuccessClose"
     />
   </div>
@@ -137,6 +138,7 @@ const {
   selectedTeamStop,
   selectedBillingCycle,
   isPolling,
+  isTeamCheckout,
   handleSubscribeClick,
   handleSubscribeTeamClick,
   handleBackToPricing,

@@ -33,7 +33,34 @@
         </div>
       </div>
 
-      <!-- Team success "Invite your team" block renders here (FE-965 / DES-394). -->
+      <div v-if="showInviteBlock" class="mt-4 flex w-full flex-col gap-2">
+        <h3 class="m-0 text-base font-semibold text-base-foreground">
+          {{ $t('subscription.success.inviteTitle') }}
+        </h3>
+        <p class="m-0 text-sm text-muted-foreground">
+          {{ $t('subscription.success.inviteSubtext') }}
+        </p>
+        <p
+          v-if="invitedEmails.length > 0"
+          class="text-success-foreground m-0 text-sm"
+        >
+          {{
+            $t(
+              'workspacePanel.inviteMemberDialog.invitedMessage',
+              { emails: invitedEmails.join(', ') },
+              invitedEmails.length
+            )
+          }}
+        </p>
+        <InviteMembersForm
+          v-else
+          source="post_upgrade_success"
+          :submit-label="$t('subscription.success.sendInvites')"
+          :placeholder="$t('subscription.success.inviteEmailsPlaceholder')"
+          :max-seats="invitableSeats"
+          @submitted="onInvited"
+        />
+      </div>
     </div>
 
     <div class="flex flex-col gap-2 pt-8">
@@ -50,17 +77,26 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import Button from '@/components/ui/button/Button.vue'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
-const { tierKey, previewData = null } = defineProps<{
+import InviteMembersForm from './InviteMembersForm.vue'
+
+const {
+  tierKey,
+  previewData = null,
+  isTeam = false
+} = defineProps<{
   tierKey: Exclude<TierKey, 'free' | 'founder'>
   previewData?: PreviewSubscribeResponse | null
+  isTeam?: boolean
 }>()
 
 defineEmits<{
@@ -68,6 +104,8 @@ defineEmits<{
 }>()
 
 const { t, n } = useI18n()
+const { flags } = useFeatureFlags()
+const { getMaxSeats } = useBillingContext()
 
 const tierName = computed(() => t(`subscription.tiers.${tierKey}.name`))
 
@@ -78,4 +116,20 @@ const displayPrice = computed(() =>
 )
 
 const displayCredits = computed(() => n(getTierCredits(tierKey) ?? 0))
+
+const maxSeats = computed(() => getMaxSeats(tierKey))
+
+// The buyer already occupies one seat post-upgrade, so invites are capped at the
+// remaining seats.
+const invitableSeats = computed(() => maxSeats.value - 1)
+
+const showInviteBlock = computed(
+  () => isTeam && flags.teamWorkspacesEnabled && maxSeats.value > 1
+)
+
+const invitedEmails = ref<string[]>([])
+
+function onInvited(emails: string[]) {
+  invitedEmails.value = emails
+}
 </script>

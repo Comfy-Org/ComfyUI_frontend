@@ -58,6 +58,7 @@ export function useSubscriptionCheckout(emit: {
   const selectedTeamStop = ref<TeamPlanSelection | null>(null)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const isPolling = computed(() => billingOperationStore.hasPendingOperations)
+  const isTeamCheckout = computed(() => selectedTeamStop.value !== null)
 
   function getApiPlanSlug(
     tierKey: CheckoutTierKey,
@@ -265,6 +266,7 @@ export function useSubscriptionCheckout(emit: {
     selectedTeamStop,
     selectedBillingCycle,
     isPolling,
+    isTeamCheckout,
     handleSubscribeClick,
     handleSubscribeTeamClick,
     handleBackToPricing,

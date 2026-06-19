@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
@@ -13,36 +13,35 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-function makePreviewData(priceCents: number): PreviewSubscribeResponse {
-  return {
-    allowed: true,
-    transition_type: 'new_subscription',
-    effective_at: '2026-07-10T00:00:00Z',
-    is_immediate: true,
-    cost_today_cents: priceCents,
-    cost_next_period_cents: priceCents,
-    credits_today_cents: 0,
-    credits_next_period_cents: 0,
-    new_plan: {
-      slug: 'standard-monthly',
-      tier: 'STANDARD',
-      duration: 'MONTHLY',
-      price_cents: priceCents,
-      credits_cents: 0,
-      seat_summary: {
-        seat_count: 1,
-        total_cost_cents: priceCents,
-        total_credits_cents: 0
-      }
-    }
-  }
-}
+const { mockGetMaxSeats, mockFlags } = vi.hoisted(() => ({
+  mockGetMaxSeats: vi.fn(),
+  mockFlags: { teamWorkspacesEnabled: true }
+}))
 
-function renderCard() {
+vi.mock('@/composables/billing/useBillingContext', () => ({
+  useBillingContext: () => ({ getMaxSeats: mockGetMaxSeats })
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({ flags: mockFlags })
+}))
+
+vi.mock('./InviteMembersForm.vue', () => ({
+  default: {
+    name: 'InviteMembersForm',
+    props: ['maxSeats', 'source', 'submitLabel', 'placeholder'],
+    template: '<div data-testid="invite-form">seats:{{ maxSeats }}</div>'
+  }
+}))
+
+function renderCard(props: Record<string, unknown> = {}) {
   return render(SubscriptionSuccessWorkspace, {
     props: {
-      tierKey: 'standard',
-      previewData: makePreviewData(1600)
+      tierKey: 'creator',
+      previewData: {
+        new_plan: { price_cents: 1600 }
+      } as unknown as PreviewSubscribeResponse,
+      ...props
     },
     global: {
       mocks: { $t: (key: string) => key },
@@ -56,6 +55,12 @@ function renderCard() {
 }
 
 describe('SubscriptionSuccessWorkspace', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockGetMaxSeats.mockReturnValue(5)
+    mockFlags.teamWorkspacesEnabled = true
+  })
+
   it('renders the all-set heading and plan price', () => {
     renderCard()
     expect(screen.getByText('subscription.success.allSet')).toBeTruthy()
@@ -63,8 +68,34 @@ describe('SubscriptionSuccessWorkspace', () => {
   })
 
   it('emits close when the close button is clicked', async () => {
-    const { emitted } = renderCard()
+    const { emitted } = renderCard({ isTeam: false })
     await userEvent.click(screen.getByRole('button'))
     expect(emitted().close).toBeTruthy()
+  })
+
+  it('renders the invite block capped at the plan seats minus the owner', () => {
+    renderCard({ isTeam: true })
+    expect(screen.getByText('subscription.success.inviteTitle')).toBeTruthy()
+    // getMaxSeats returns 5; the owner already holds one seat, so 4 are invitable.
+    expect(screen.getByTestId('invite-form')).toHaveTextContent('seats:4')
+    expect(mockGetMaxSeats).toHaveBeenCalledWith('creator')
+  })
+
+  it('does not render the invite block for a personal upgrade', () => {
+    renderCard({ isTeam: false })
+    expect(screen.queryByText('subscription.success.inviteTitle')).toBeNull()
+    expect(screen.queryByTestId('invite-form')).toBeNull()
+  })
+
+  it('hides the invite block when team workspaces are disabled', () => {
+    mockFlags.teamWorkspacesEnabled = false
+    renderCard({ isTeam: true })
+    expect(screen.queryByTestId('invite-form')).toBeNull()
+  })
+
+  it('hides the invite block when the plan has a single seat', () => {
+    mockGetMaxSeats.mockReturnValue(1)
+    renderCard({ isTeam: true })
+    expect(screen.queryByTestId('invite-form')).toBeNull()
   })
 })
