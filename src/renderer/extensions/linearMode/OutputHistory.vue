@@ -290,6 +290,7 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
     e.ctrlKey ||
     e.metaKey ||
     e.altKey ||
+    e.shiftKey ||
     e.target instanceof HTMLTextAreaElement ||
     e.target instanceof HTMLInputElement
   )
@@ -374,4 +375,3 @@ useEventListener(document.body, 'keydown', (e: KeyboardEvent) => {
     </article>
   </div>
 </template>
-
