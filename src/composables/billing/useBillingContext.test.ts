@@ -2,6 +2,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingContext } from './useBillingContext'
@@ -28,15 +29,25 @@ vi.mock('@vueuse/core', async (importOriginal) => {
   }
 })
 
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get teamWorkspacesEnabled() {
-        return mockTeamWorkspacesEnabled.value
-      }
+vi.mock('@/composables/useFeatureFlags', async () => {
+  const { ref } = await import('vue')
+  const teamWorkspacesEnabledRef = ref(mockTeamWorkspacesEnabled.value)
+  Object.defineProperty(mockTeamWorkspacesEnabled, 'value', {
+    get: () => teamWorkspacesEnabledRef.value,
+    set: (value: boolean) => {
+      teamWorkspacesEnabledRef.value = value
     }
   })
-}))
+  return {
+    useFeatureFlags: () => ({
+      flags: {
+        get teamWorkspacesEnabled() {
+          return mockTeamWorkspacesEnabled.value
+        }
+      }
+    })
+  }
+})
 
 vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
   useTeamWorkspaceStore: () => ({
@@ -224,6 +235,25 @@ describe('useBillingContext', () => {
   it('exposes showSubscriptionDialog action', () => {
     const { showSubscriptionDialog } = useBillingContext()
     expect(() => showSubscriptionDialog()).not.toThrow()
+  })
+
+  it('reinitializes workspace billing when the type flips on after legacy init', async () => {
+    mockTeamWorkspacesEnabled.value = false
+    mockIsPersonal.value = true
+
+    const { type } = useBillingContext()
+    await nextTick()
+
+    expect(type.value).toBe('legacy')
+    expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
+
+    // Authenticated remote config resolves the flag on for the same workspace
+    mockTeamWorkspacesEnabled.value = true
+
+    await vi.waitFor(() => {
+      expect(type.value).toBe('workspace')
+      expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
+    })
   })
 
   describe('subscription mirror to workspace store', () => {
