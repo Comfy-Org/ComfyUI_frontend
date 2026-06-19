@@ -522,6 +522,36 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     return members
   }
 
+  // Tracks which team workspaces have already loaded their members so the
+  // lifecycle gate resolves without redundant or duplicate fetches.
+  const loadedMemberWorkspaceIds = new Set<string>()
+  let inFlightMembersWorkspaceId: string | null = null
+
+  /**
+   * Load the active team workspace's members once. No-ops for personal or
+   * already-loaded workspaces and dedupes concurrent calls. A failed request is
+   * logged and leaves the workspace unloaded so a later call retries.
+   */
+  async function ensureMembersLoaded(): Promise<void> {
+    const workspaceId = activeWorkspaceId.value
+    if (!workspaceId) return
+    if (activeWorkspace.value?.type === 'personal') return
+    if (loadedMemberWorkspaceIds.has(workspaceId)) return
+    if (inFlightMembersWorkspaceId === workspaceId) return
+
+    inFlightMembersWorkspaceId = workspaceId
+    try {
+      await fetchMembers()
+      loadedMemberWorkspaceIds.add(workspaceId)
+    } catch (e) {
+      console.error('Failed to load workspace members', e)
+    } finally {
+      if (inFlightMembersWorkspaceId === workspaceId) {
+        inFlightMembersWorkspaceId = null
+      }
+    }
+  }
+
   /**
    * Remove a member from the current workspace.
    */
@@ -691,6 +721,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     // Member Actions
     fetchMembers,
+    ensureMembersLoaded,
     removeMember,
 
     // Invite Actions
