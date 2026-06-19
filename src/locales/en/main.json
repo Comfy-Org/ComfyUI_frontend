@@ -3262,9 +3262,10 @@
       "error": "Error"
     },
     "selection": {
-      "selectedCount": "Assets Selected: {count}",
+      "selectedCount": "{count} selected",
       "multipleSelectedAssets": "Multiple assets selected",
       "deselectAll": "Deselect all",
+      "unselectAssets": "Unselect asset | Unselect assets",
       "downloadSelected": "Download",
       "downloadSelectedAll": "Download all",
       "deleteSelected": "Delete",

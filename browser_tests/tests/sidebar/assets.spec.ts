@@ -435,11 +435,8 @@ test.describe('Assets sidebar - selection', () => {
     await tab.assetCards.first().click()
     await expect(tab.selectedCards).toHaveCount(1)
 
-    // Hover over the selection count button to reveal "Deselect all"
-    await tab.selectionCountButton.hover()
+    // Click the deselect (✕) button in the selection bar
     await expect(tab.deselectAllButton).toBeVisible()
-
-    // Click "Deselect all"
     await tab.deselectAllButton.click()
     await expect(tab.selectedCards).toHaveCount(0)
   })
@@ -712,9 +709,7 @@ test.describe('Assets sidebar - bulk actions', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // Select the two single-output assets (job-alpha, job-beta).
-    // The count reflects total outputs, not cards — job-gamma has
-    // outputs_count: 2 which would inflate the total.
+    // The count reflects the number of selected assets (cards).
     const cards = tab.assetCards
     await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(3)
 
@@ -726,7 +721,21 @@ test.describe('Assets sidebar - bulk actions', () => {
 
     // Selection count should show the count
     await expect(tab.selectionCountButton).toBeVisible()
-    await expect(tab.selectionCountButton).toHaveText(/Assets Selected:\s*2\b/)
+    await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
+  })
+
+  test('Selection count counts assets, not their outputs', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    // job-gamma (the first card) has outputs_count: 2. Selecting it alone must
+    // read "1 selected" — the count is per selected asset, not per output file.
+    await tab.assetCards.first().click()
+
+    await expect(tab.selectionCountButton).toBeVisible()
+    await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
   })
 })
 
