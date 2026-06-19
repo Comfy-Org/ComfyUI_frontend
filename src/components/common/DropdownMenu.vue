@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ZIndex } from '@primeuix/utils/zindex'
 import type { MenuItem } from 'primevue/menuitem'
 import {
   DropdownMenuArrow,
@@ -7,12 +8,15 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, toValue } from 'vue'
+import { computed, ref, toValue } from 'vue'
 
 import DropdownItem from '@/components/common/DropdownItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 import type { ButtonVariants } from '../ui/button/button.variants'
+
+// Shared base for @primeuix's auto-incrementing 'modal' z-index counter.
+const MODAL_BASE_Z_INDEX = 1700
 
 defineOptions({
   inheritAttrs: false
@@ -37,14 +41,24 @@ const itemClass = computed(() =>
 
 const contentClass = computed(() =>
   cn(
-    'data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade z-3000 min-w-[220px] rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[opacity,transform]',
+    'data-[side=top]:animate-slideDownAndFade data-[side=right]:animate-slideLeftAndFade data-[side=bottom]:animate-slideUpAndFade data-[side=left]:animate-slideRightAndFade z-1700 min-w-[220px] rounded-lg border border-border-subtle bg-base-background p-2 shadow-sm will-change-[opacity,transform]',
     contentProp
   )
 )
+
+// Body-portaled content keeps its static z-1700 unless a dialog that joined
+// @primeuix's auto-incrementing 'modal' counter is open above it; then lift
+// past that dialog so the menu isn't hidden behind it.
+const open = ref(false)
+const contentStyle = computed(() => {
+  if (!open.value) return undefined
+  const topZIndex = ZIndex.getCurrent('modal')
+  return topZIndex >= MODAL_BASE_Z_INDEX ? { zIndex: topZIndex + 1 } : undefined
+})
 </script>
 
 <template>
-  <DropdownMenuRoot>
+  <DropdownMenuRoot v-model:open="open">
     <DropdownMenuTrigger as-child>
       <slot name="button">
         <Button :size="buttonSize ?? 'icon'" :class="buttonClass">
@@ -60,6 +74,7 @@ const contentClass = computed(() =>
         :collision-padding="10"
         v-bind="$attrs"
         :class="contentClass"
+        :style="contentStyle"
       >
         <slot :item-class>
           <DropdownItem
