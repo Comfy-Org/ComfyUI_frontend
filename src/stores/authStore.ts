@@ -310,8 +310,15 @@ export const useAuthStore = defineStore('auth', () => {
       // statusText is empty under HTTP/2; use the body message, then the status.
       let detail = `HTTP ${createCustomerRes.status}`
       try {
-        const body = await createCustomerRes.json()
-        if (body?.message) detail = String(body.message)
+        const body: unknown = await createCustomerRes.json()
+        if (
+          body &&
+          typeof body === 'object' &&
+          'message' in body &&
+          body.message
+        ) {
+          detail = String(body.message)
+        }
       } catch {
         // Non-JSON body; keep the status code.
       }
@@ -420,8 +427,8 @@ export const useAuthStore = defineStore('auth', () => {
     })()
 
     inFlightRegister.set(key, pending)
-    // Drop on failure (allow retry); on success keep through the redirect then
-    // evict, so it can't return a stale credential after a no-reload sign-out.
+    // Drop on failure (allow retry); on success keep through the redirect window,
+    // then evict to keep the map bounded (sign-out also clears it; see logout).
     pending
       .then(() => {
         setTimeout(
@@ -479,8 +486,13 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const logout = async (): Promise<void> =>
-    executeAuthAction((authInstance) => signOut(authInstance))
+  const logout = async (): Promise<void> => {
+    // Sign-out (which on desktop/localhost doesn't reload) invalidates any
+    // retained register() dedup entries; clear them so a later sign-up can't get
+    // a stale credential back.
+    inFlightRegister.clear()
+    await executeAuthAction((authInstance) => signOut(authInstance))
+  }
 
   const sendPasswordReset = async (email: string): Promise<void> =>
     executeAuthAction((authInstance) =>

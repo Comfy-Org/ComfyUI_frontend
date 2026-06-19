@@ -506,6 +506,23 @@ describe('useAuthStore', () => {
       expect(result).toEqual(mockUserCredential)
       expect(store.loading).toBe(false)
     })
+
+    it('clears the register dedup on logout so a later sign-up re-runs', async () => {
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+      vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockClear()
+
+      await store.register('clear@example.com', 'password')
+      await store.logout()
+      await store.register('clear@example.com', 'password')
+
+      expect(
+        firebaseAuth.createUserWithEmailAndPassword
+      ).toHaveBeenCalledTimes(2)
+    })
   })
 
   describe('logout', () => {

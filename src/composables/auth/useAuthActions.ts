@@ -32,7 +32,7 @@ export const useAuthActions = () => {
   const isEmailAlreadyInUse = (error: unknown): boolean => {
     if (
       error instanceof FirebaseError &&
-      error.code === 'auth/email-already-in-use'
+      error.code === AuthErrorCodes.EMAIL_EXISTS
     ) {
       return true
     }
