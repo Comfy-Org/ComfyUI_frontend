@@ -3,7 +3,7 @@
     class="mx-auto flex h-full max-w-[400px] flex-col items-stretch justify-between text-sm"
   >
     <div class="flex flex-col items-center gap-4 pt-8">
-      <i class="pi pi-check-circle text-success-foreground text-5xl" />
+      <i class="pi pi-check-circle text-success-background text-5xl" />
       <h2
         class="m-0 text-center text-xl font-semibold text-base-foreground lg:text-2xl"
       >
