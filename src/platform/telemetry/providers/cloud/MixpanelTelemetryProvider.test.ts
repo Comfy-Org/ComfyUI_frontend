@@ -191,6 +191,28 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
 
   it.for<
     [
+      'opened' | 'requested' | 'completed',
+      (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
+    ]
+  >([
+    ['opened' as const, TelemetryEvents.USER_EMAIL_VERIFY_OPENED],
+    ['requested' as const, TelemetryEvents.USER_EMAIL_VERIFY_REQUESTED],
+    ['completed' as const, TelemetryEvents.USER_EMAIL_VERIFY_COMPLETED]
+  ])(
+    'trackEmailVerification(%s) dispatches %s',
+    async ([stage, expectedEvent]) => {
+      const provider = new MixpanelTelemetryProvider()
+      await waitForMixpanelInit()
+      mockMixpanel.track.mockClear()
+
+      provider.trackEmailVerification(stage)
+
+      expect(mockMixpanel.track).toHaveBeenCalledWith(expectedEvent, {})
+    }
+  )
+
+  it.for<
+    [
       'modal_opened' | 'subscribe_clicked',
       (typeof TelemetryEvents)[keyof typeof TelemetryEvents]
     ]

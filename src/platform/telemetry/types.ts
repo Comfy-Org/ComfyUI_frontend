@@ -702,6 +702,9 @@ export interface TelemetryProvider {
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
 
+  // Email verification events
+  trackEmailVerification?(stage: 'opened' | 'requested' | 'completed'): void
+
   // Template workflow events
   trackTemplate?(metadata: TemplateMetadata): void
   trackTemplateLibraryOpened?(metadata: TemplateLibraryMetadata): void
@@ -807,10 +810,16 @@ export const TelemetryEvents = {
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
   API_CREDIT_TOPUP_SUCCEEDED: 'app:api_credit_topup_succeeded',
+  BEGIN_CHECKOUT: 'begin_checkout',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',
   USER_SURVEY_SUBMITTED: 'app:user_survey_submitted',
+
+  // Email Verification
+  USER_EMAIL_VERIFY_OPENED: 'app:user_email_verify_opened',
+  USER_EMAIL_VERIFY_REQUESTED: 'app:user_email_verify_requested',
+  USER_EMAIL_VERIFY_COMPLETED: 'app:user_email_verify_completed',
 
   // Template Tracking
   TEMPLATE_WORKFLOW_OPENED: 'app:template_workflow_opened',

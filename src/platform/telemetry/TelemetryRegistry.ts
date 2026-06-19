@@ -215,6 +215,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackSurvey?.(stage, responses))
   }
 
+  trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
+    this.dispatch((provider) => provider.trackEmailVerification?.(stage))
+  }
+
   trackTemplate(metadata: TemplateMetadata): void {
     this.dispatch((provider) => provider.trackTemplate?.(metadata))
   }

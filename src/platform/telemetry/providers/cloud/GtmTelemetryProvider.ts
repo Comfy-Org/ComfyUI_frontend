@@ -29,6 +29,7 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata
 } from '../../types'
+import { TelemetryEvents } from '../../types'
 
 /**
  * Google Tag Manager telemetry provider.
@@ -152,7 +153,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
-    this.pushEvent('begin_checkout', metadata)
+    this.pushEvent(TelemetryEvents.BEGIN_CHECKOUT, metadata)
   }
 
   trackSubscription(
@@ -247,6 +248,15 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     const ga4EventName =
       stage === 'opened' ? 'survey_opened' : 'survey_submitted'
     this.pushEvent(ga4EventName, responses ? { ...responses } : undefined)
+  }
+
+  trackEmailVerification(stage: 'opened' | 'requested' | 'completed'): void {
+    const eventMap = {
+      opened: 'email_verify_opened',
+      requested: 'email_verify_requested',
+      completed: 'email_verify_completed'
+    } as const
+    this.pushEvent(eventMap[stage])
   }
 
   trackWorkflowOpened(metadata: WorkflowImportMetadata): void {

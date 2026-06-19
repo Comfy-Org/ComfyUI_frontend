@@ -1139,6 +1139,13 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.queuedJobs['job-1']).toBeUndefined()
     })
 
+    it('does not track success for jobs this client did not queue', () => {
+      fire('execution_success', { prompt_id: 'foreign-job', timestamp: 0 })
+
+      expect(mockTrackExecutionSuccess).not.toHaveBeenCalled()
+      expect(mockTrackSharedWorkflowRun).not.toHaveBeenCalled()
+    })
+
     it('tracks shared workflow run when the queued workflow has share attribution', () => {
       const workflow = createQueuedWorkflow()
       workflow.shareId = 'share-1'

@@ -277,6 +277,22 @@ describe('GtmTelemetryProvider', () => {
       })
     })
 
+    it('pushes email_verify_opened for opened stage', () => {
+      const provider = createInitializedProvider()
+      provider.trackEmailVerification('opened')
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'email_verify_opened'
+      })
+    })
+
+    it('pushes email_verify_completed for completed stage', () => {
+      const provider = createInitializedProvider()
+      provider.trackEmailVerification('completed')
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'email_verify_completed'
+      })
+    })
+
     it('pushes search for node search (GA4 recommended)', () => {
       const provider = createInitializedProvider()
       provider.trackNodeSearch({ query: 'KSampler' })
