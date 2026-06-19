@@ -308,7 +308,7 @@ export const useAssetsStore = defineStore('assets', () => {
           nextCursor !== undefined && nextCursor === requestedAfter
         flatOutputNextCursor = cursorStuck ? undefined : nextCursor
         flatOutputHasMore.value =
-          batch.length > 0 && page.has_more && !cursorStuck
+          fresh.length > 0 && page.has_more && !cursorStuck
         return flatOutputAssets.value
       } catch (err) {
         flatOutputError.value = err

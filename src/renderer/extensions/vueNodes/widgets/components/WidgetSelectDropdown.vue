@@ -155,6 +155,7 @@ function handleIsOpenUpdate(isOpen: boolean) {
 const handleApproachEnd = useDebounceFn(async () => {
   if (
     outputMediaAssets.hasMore.value &&
+    !outputMediaAssets.loading.value &&
     !outputMediaAssets.isLoadingMore.value
   ) {
     await outputMediaAssets.loadMore()
