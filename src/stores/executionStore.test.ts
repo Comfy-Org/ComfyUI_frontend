@@ -15,12 +15,16 @@ const {
   mockNodeExecutionIdToNodeLocatorId,
   mockNodeIdToNodeLocatorId,
   mockNodeLocatorIdToNodeExecutionId,
-  mockShowTextPreview
+  mockShowTextPreview,
+  mockTrackExecutionError,
+  mockTrackExecutionSuccess
 } = vi.hoisted(() => ({
   mockNodeExecutionIdToNodeLocatorId: vi.fn(),
   mockNodeIdToNodeLocatorId: vi.fn(),
   mockNodeLocatorIdToNodeExecutionId: vi.fn(),
-  mockShowTextPreview: vi.fn()
+  mockShowTextPreview: vi.fn(),
+  mockTrackExecutionError: vi.fn(),
+  mockTrackExecutionSuccess: vi.fn()
 }))
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
@@ -79,6 +83,13 @@ vi.mock('@/stores/nodeOutputStore', () => ({
 vi.mock('@/stores/jobPreviewStore', () => ({
   useJobPreviewStore: () => ({
     clearPreview: vi.fn()
+  })
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () => ({
+    trackExecutionError: mockTrackExecutionError,
+    trackExecutionSuccess: mockTrackExecutionSuccess
   })
 }))
 
@@ -1084,6 +1095,12 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(store.activeJobId).toBeNull()
       expect(store.queuedJobs['job-1']).toBeUndefined()
+    })
+
+    it('does not track success for jobs this client did not queue', () => {
+      fire('execution_success', { prompt_id: 'foreign-job', timestamp: 0 })
+
+      expect(mockTrackExecutionSuccess).not.toHaveBeenCalled()
     })
   })
 

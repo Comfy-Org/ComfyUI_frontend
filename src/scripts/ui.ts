@@ -1,5 +1,4 @@
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
-import { isCloud } from '@/platform/distribution/types'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -488,12 +487,10 @@ export class ComfyUI {
           id: 'queue-button',
           textContent: 'Queue Prompt',
           onclick: () => {
-            if (isCloud) {
-              useRunButtonTelemetry().trackRunButton({
-                trigger_source: 'legacy_ui'
-              })
-              useTelemetry()?.trackWorkflowExecution()
-            }
+            useRunButtonTelemetry().trackRunButton({
+              trigger_source: 'legacy_ui'
+            })
+            useTelemetry()?.trackWorkflowExecution()
             app.queuePrompt(0, this.batchCount)
           }
         }),
@@ -598,12 +595,10 @@ export class ComfyUI {
             id: 'queue-front-button',
             textContent: 'Queue Front',
             onclick: () => {
-              if (isCloud) {
-                useRunButtonTelemetry().trackRunButton({
-                  trigger_source: 'legacy_ui'
-                })
-                useTelemetry()?.trackWorkflowExecution()
-              }
+              useRunButtonTelemetry().trackRunButton({
+                trigger_source: 'legacy_ui'
+              })
+              useTelemetry()?.trackWorkflowExecution()
               app.queuePrompt(-1, this.batchCount)
             }
           }),

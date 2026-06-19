@@ -45,7 +45,6 @@ import {
 
 describe('useRunButtonTelemetry', () => {
   beforeEach(() => {
-    localStorage.clear()
     state.telemetry.trackRunButton.mockClear()
     state.mode.value = 'graph'
     state.isAppMode.value = false
@@ -53,8 +52,6 @@ describe('useRunButtonTelemetry', () => {
   })
 
   it('builds run button properties from workspace state', () => {
-    localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
-
     expect(
       getRunButtonTelemetryProperties({
         subscribe_to_run: true,
