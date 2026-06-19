@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro'
+import CtaSection from '../templates/drops/CtaSection.vue'
 import HeroSection from '../templates/drops/HeroSection.vue'
 import SubscribeBanner from '../templates/drops/SubscribeBanner.vue'
 import { t } from '../i18n/translations'
@@ -13,4 +14,5 @@ const locale = 'en' as const
 >
   <SubscribeBanner locale={locale} />
   <HeroSection locale={locale} />
+  <CtaSection locale={locale} />
 </BaseLayout>

@@ -19,6 +19,15 @@ function heroSection(page: Page, locale: Locale) {
   })
 }
 
+function ctaSection(page: Page, locale: Locale) {
+  return page.locator('section').filter({
+    has: page.getByRole('heading', {
+      level: 2,
+      name: t('drops.cta.heading', locale)
+    })
+  })
+}
+
 test.describe('Drops landing — desktop @smoke', () => {
   test('renders the configured title at /drops', async ({ page }) => {
     await page.goto(PATH_EN)
@@ -108,5 +117,57 @@ test.describe('Drops landing — desktop @smoke', () => {
       await expect(signUp).toHaveAttribute('target', '_blank')
       await expect(signUp).toHaveAttribute('rel', 'noopener noreferrer')
     }
+  })
+
+  test('closing CTA shows heading and both action buttons in both locales', async ({
+    page
+  }) => {
+    for (const [path, locale] of [
+      [PATH_EN, 'en'],
+      [PATH_ZH, 'zh-CN']
+    ] as const) {
+      await page.goto(path)
+      const section = ctaSection(page, locale)
+      await expect(
+        section.getByRole('heading', {
+          level: 2,
+          name: t('drops.cta.heading', locale)
+        })
+      ).toBeVisible()
+
+      const primary = section.getByRole('link', {
+        name: t('drops.cta.primary', locale)
+      })
+      await expect(primary).toBeVisible()
+      await expect(primary).toHaveAttribute('href', externalLinks.cloud)
+      await expect(primary).toHaveAttribute('target', '_blank')
+      await expect(primary).toHaveAttribute('rel', 'noopener noreferrer')
+
+      const secondary = section.getByRole('link', {
+        name: t('drops.cta.secondary', locale)
+      })
+      await expect(secondary).toBeVisible()
+      await expect(secondary).toHaveAttribute('href', externalLinks.workflows)
+      await expect(secondary).toHaveAttribute('target', '_blank')
+      await expect(secondary).toHaveAttribute('rel', 'noopener noreferrer')
+    }
+  })
+})
+
+test.describe('Drops landing — mobile @mobile', () => {
+  test('closing CTA heading stays within viewport width', async ({ page }) => {
+    await page.goto(PATH_EN)
+    const heading = page.getByRole('heading', {
+      level: 2,
+      name: t('drops.cta.heading', 'en')
+    })
+    await heading.scrollIntoViewIfNeeded()
+    await expect(heading).toBeVisible()
+
+    const box = await heading.boundingBox()
+    expect(box, 'CTA heading bounding box').not.toBeNull()
+    expect(box!.x + box!.width).toBeLessThanOrEqual(
+      page.viewportSize()!.width + 1
+    )
   })
 })

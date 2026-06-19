@@ -4970,6 +4970,21 @@ const translations = {
   'drops.banner.cta': {
     en: 'Sign up now',
     'zh-CN': '立即注册'
+  },
+
+  // Drops page (/drops) — closing CTA
+  // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
+  'drops.cta.heading': {
+    en: 'Everything Comfy ships. All in one place.',
+    'zh-CN': 'Comfy 的全部内容，一处尽享。'
+  },
+  'drops.cta.primary': {
+    en: 'Open Comfy Cloud',
+    'zh-CN': '打开 Comfy Cloud'
+  },
+  'drops.cta.secondary': {
+    en: 'Try Workflow',
+    'zh-CN': '试用工作流'
   }
 } as const satisfies Record<string, Record<Locale, string>>
 

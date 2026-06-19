@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import BrandButton from '../common/BrandButton.vue'
+import type { AnchorHTMLAttributes } from 'vue'
+
+import Button from '../ui/button/Button.vue'
 
 type Cta = {
   label: string
   href: string
-  target?: '_blank' | '_self' | '_parent' | '_top'
+  target?: AnchorHTMLAttributes['target']
+  rel?: AnchorHTMLAttributes['rel']
 }
 
 type TermsLink = {
@@ -12,11 +15,18 @@ type TermsLink = {
   href: string
 }
 
-defineProps<{
+const { heading, primaryCta, secondaryCta, termsLink } = defineProps<{
   heading: string
   primaryCta: Cta
-  termsLink: TermsLink
+  secondaryCta?: Cta
+  termsLink?: TermsLink
 }>()
+
+function resolveRel(cta: Cta): AnchorHTMLAttributes['rel'] {
+  return (
+    cta.rel ?? (cta.target === '_blank' ? 'noopener noreferrer' : undefined)
+  )
+}
 </script>
 
 <template>
@@ -29,18 +39,32 @@ defineProps<{
       {{ heading }}
     </h2>
 
-    <BrandButton
-      :href="primaryCta.href"
-      :target="primaryCta.target"
-      :rel="primaryCta.target === '_blank' ? 'noopener noreferrer' : undefined"
-      variant="outline"
-      size="lg"
-      class="mt-10 px-20 py-4 text-base uppercase lg:mt-12"
-    >
-      {{ primaryCta.label }}
-    </BrandButton>
+    <div class="mt-10 flex flex-col gap-4 sm:flex-row lg:mt-12">
+      <Button
+        as="a"
+        :href="primaryCta.href"
+        :target="primaryCta.target"
+        :rel="resolveRel(primaryCta)"
+        variant="outline"
+        size="lg"
+      >
+        {{ primaryCta.label }}
+      </Button>
+      <Button
+        v-if="secondaryCta"
+        as="a"
+        :href="secondaryCta.href"
+        :target="secondaryCta.target"
+        :rel="resolveRel(secondaryCta)"
+        variant="outline"
+        size="lg"
+      >
+        {{ secondaryCta.label }}
+      </Button>
+    </div>
 
     <a
+      v-if="termsLink"
       :href="termsLink.href"
       class="mt-8 text-sm text-primary-comfy-canvas/70 underline underline-offset-4 transition-colors hover:text-primary-comfy-canvas"
     >
