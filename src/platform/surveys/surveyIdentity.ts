@@ -11,8 +11,11 @@ export interface SurveyIdentity {
   comfy_id?: string
 }
 
+type MaybePromise<T> = T | Promise<T>
+type SurveyIdentityResult = Partial<SurveyIdentity> | null | undefined
+
 export interface IdentityProvider {
-  getIdentity(): SurveyIdentity
+  getIdentity(): MaybePromise<SurveyIdentityResult>
 }
 
 let memoryAnonId: string | undefined
@@ -41,18 +44,42 @@ export function setCurrentIdentityProvider(provider: IdentityProvider): void {
   currentProvider = provider
 }
 
-function getSurveyIdentity(): SurveyIdentity {
-  return currentProvider.getIdentity()
+function isPromiseLike<T>(value: MaybePromise<T>): value is Promise<T> {
+  return typeof (value as Promise<T>)?.then === 'function'
 }
 
-/** Identity as Typeform hidden-field tags, dropping any absent field. */
-export function getSurveyIdentityTags(): Record<string, string> {
-  const { anon_id, distinct_id, comfy_id } = getSurveyIdentity()
+function normalizeSurveyIdentity(
+  identity: SurveyIdentityResult
+): SurveyIdentity {
+  return {
+    ...(identity ?? {}),
+    anon_id: identity?.anon_id ?? getOrCreateAnonId()
+  }
+}
+
+function tagsFromIdentity(
+  identity: SurveyIdentityResult
+): Record<string, string> {
+  const { anon_id, distinct_id, comfy_id } = normalizeSurveyIdentity(identity)
   return {
     anon_id,
     ...(distinct_id ? { distinct_id } : {}),
     ...(comfy_id ? { comfy_id } : {})
   }
+}
+
+/** Identity as Typeform hidden-field tags, dropping any absent field. */
+export function getSurveyIdentityTags(): Record<string, string> {
+  const identity = currentProvider.getIdentity()
+  return isPromiseLike(identity)
+    ? tagsFromIdentity(null)
+    : tagsFromIdentity(identity)
+}
+
+export async function getSurveyIdentityTagsAsync(): Promise<
+  Record<string, string>
+> {
+  return tagsFromIdentity(await currentProvider.getIdentity())
 }
 
 /** Formats tags as Typeform's comma-separated `key=value` hidden-field string. */

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, useTemplateRef } from 'vue'
+import { ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import {
   formatTypeformHiddenFields,
-  getSurveyIdentityTags
+  getSurveyIdentityTagsAsync
 } from './surveyIdentity'
 import { useTypeformEmbed } from './useTypeformEmbed'
 
@@ -30,10 +30,23 @@ const { typeformError, isValidTypeformId } = useTypeformEmbed(
   () => typeformId
 )
 
-const dataTfHidden = computed(() => {
-  const identity = formatTypeformHiddenFields(getSurveyIdentityTags())
-  return [hiddenFields, identity].filter(Boolean).join(',')
-})
+const dataTfHidden = ref<string>()
+
+watch(
+  () => hiddenFields,
+  async (_, __, onCleanup) => {
+    let cancelled = false
+    onCleanup(() => {
+      cancelled = true
+    })
+    const identity = formatTypeformHiddenFields(
+      await getSurveyIdentityTagsAsync()
+    )
+    if (cancelled) return
+    dataTfHidden.value = [hiddenFields, identity].filter(Boolean).join(',')
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -45,7 +58,7 @@ const dataTfHidden = computed(() => {
   </div>
   <!-- `data-tf-auto-resize` is read by presence, so it must be absent (not "false") when disabled -->
   <div
-    v-else
+    v-else-if="dataTfHidden !== undefined"
     ref="typeformRef"
     data-testid="typeform-embed"
     :data-tf-widget="typeformId"

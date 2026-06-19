@@ -16,7 +16,8 @@ vi.mock('@vueuse/core', async (importOriginal) => {
 })
 
 vi.mock('@/platform/surveys/surveyIdentity', () => ({
-  getSurveyIdentityTags: () => ({ anon_id: 'anon-1' })
+  getSurveyIdentityTags: () => ({ anon_id: 'anon-1' }),
+  getSurveyIdentityTagsAsync: () => Promise.resolve({ anon_id: 'anon-1' })
 }))
 
 const PopoverStub = defineComponent({
