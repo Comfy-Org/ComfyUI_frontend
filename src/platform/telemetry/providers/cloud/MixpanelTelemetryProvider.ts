@@ -1,7 +1,6 @@
 import type { OverridedMixpanel } from 'mixpanel-browser'
 import { watch } from 'vue'
 
-import { useAppMode } from '@/composables/useAppMode'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   checkForCompletedTopup as checkTopupUtil,
@@ -11,7 +10,6 @@ import {
 import type { AuditLog } from '@/services/customerEventsService'
 
 import { getExecutionContext } from '../../utils/getExecutionContext'
-
 import type {
   AuthMetadata,
   CreditTopupMetadata,
@@ -277,31 +275,9 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
     clearTopupUtil()
   }
 
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
-    const executionContext = getExecutionContext()
-    const { mode, isAppMode } = useAppMode()
-
-    const runButtonProperties: RunButtonProperties = {
-      subscribe_to_run: options?.subscribe_to_run || false,
-      workflow_type: executionContext.is_template ? 'template' : 'custom',
-      workflow_name: executionContext.workflow_name ?? 'untitled',
-      custom_node_count: executionContext.custom_node_count,
-      total_node_count: executionContext.total_node_count,
-      subgraph_count: executionContext.subgraph_count,
-      has_api_nodes: executionContext.has_api_nodes,
-      api_node_names: executionContext.api_node_names,
-      has_toolkit_nodes: executionContext.has_toolkit_nodes,
-      toolkit_node_names: executionContext.toolkit_node_names,
-      trigger_source: options?.trigger_source,
-      view_mode: mode.value,
-      is_app_mode: isAppMode.value
-    }
-
-    this.lastTriggerSource = options?.trigger_source
-    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
+  trackRunButton(properties: RunButtonProperties): void {
+    this.lastTriggerSource = properties.trigger_source
+    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
   }
 
   trackSurvey(

@@ -17,33 +17,12 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({ onUserResolved: mockOnUserResolved })
 }))
 
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => ({
-    mode: { value: 'workflow' },
-    isAppMode: { value: false }
-  })
-}))
-
 const topupMocks = vi.hoisted(() => ({
   startTopupTracking: vi.fn(),
   clearTopupTracking: vi.fn(),
   checkForCompletedTopup: vi.fn().mockReturnValue(true)
 }))
 vi.mock('@/platform/telemetry/topupTracker', () => topupMocks)
-
-vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
-  getExecutionContext: () => ({
-    is_template: false,
-    workflow_name: 'untitled',
-    custom_node_count: 0,
-    total_node_count: 0,
-    subgraph_count: 0,
-    has_api_nodes: false,
-    api_node_names: [],
-    has_toolkit_nodes: false,
-    toolkit_node_names: []
-  })
-}))
 
 const mockNormalizeSurveyResponses = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry/utils/surveyNormalization', () => ({
@@ -61,6 +40,7 @@ import type {
   EnterLinearMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
+  RunButtonProperties,
   ShareFlowMetadata,
   SurveyResponses,
   TemplateLibraryClosedMetadata,
@@ -401,25 +381,32 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     )
   })
 
-  it('trackRunButton populates RunButtonProperties from the execution context', async () => {
+  it('trackRunButton forwards RunButtonProperties', async () => {
     const provider = new MixpanelTelemetryProvider()
     await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
 
-    provider.trackRunButton({
+    const properties: RunButtonProperties = {
       subscribe_to_run: true,
-      trigger_source: 'button'
-    })
+      workflow_type: 'custom',
+      workflow_name: 'untitled',
+      custom_node_count: 0,
+      total_node_count: 0,
+      subgraph_count: 0,
+      has_api_nodes: false,
+      api_node_names: [],
+      has_toolkit_nodes: false,
+      toolkit_node_names: [],
+      trigger_source: 'button',
+      view_mode: 'graph',
+      is_app_mode: false
+    }
+
+    provider.trackRunButton(properties)
 
     expect(mockMixpanel.track).toHaveBeenCalledWith(
       TelemetryEvents.RUN_BUTTON_CLICKED,
-      expect.objectContaining({
-        subscribe_to_run: true,
-        workflow_type: 'custom',
-        trigger_source: 'button',
-        view_mode: 'workflow',
-        is_app_mode: false
-      })
+      properties
     )
   })
 
@@ -428,7 +415,21 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
     await waitForMixpanelInit()
     mockMixpanel.track.mockClear()
 
-    provider.trackRunButton({ trigger_source: 'keybinding' })
+    provider.trackRunButton({
+      subscribe_to_run: false,
+      workflow_type: 'custom',
+      workflow_name: 'untitled',
+      custom_node_count: 0,
+      total_node_count: 0,
+      subgraph_count: 0,
+      has_api_nodes: false,
+      api_node_names: [],
+      has_toolkit_nodes: false,
+      toolkit_node_names: [],
+      trigger_source: 'keybinding',
+      view_mode: 'graph',
+      is_app_mode: false
+    })
     provider.trackWorkflowExecution()
 
     expect(mockMixpanel.track).toHaveBeenCalledWith(
