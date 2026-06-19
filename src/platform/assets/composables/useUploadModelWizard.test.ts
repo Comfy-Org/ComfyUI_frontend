@@ -282,7 +282,7 @@ describe('useUploadModelWizard', () => {
     expect(result?.modelType).toBe('checkpoints')
   })
 
-  it('writes the namespaced model_type: tag when the backend supports it', async () => {
+  it('namespaces the tag but keeps user_metadata.model_type bare when the backend supports it', async () => {
     const { assetService } =
       await import('@/platform/assets/services/assetService')
     const { api } = await import('@/scripts/api')
@@ -306,14 +306,10 @@ describe('useUploadModelWizard', () => {
 
       await wizard.uploadModel()
 
-      expect(assetService.uploadAssetAsync).toHaveBeenCalledWith(
-        expect.objectContaining({
-          tags: ['models', 'model_type:checkpoints'],
-          user_metadata: expect.objectContaining({
-            model_type: 'checkpoints'
-          })
-        })
-      )
+      const uploadArg = vi.mocked(assetService.uploadAssetAsync).mock
+        .calls[0][0]
+      expect(uploadArg.tags).toEqual(['models', 'model_type:checkpoints'])
+      expect(uploadArg.user_metadata?.model_type).toBe('checkpoints')
     } finally {
       vi.mocked(api.getServerFeature).mockImplementation(
         (_name, defaultValue) => defaultValue
