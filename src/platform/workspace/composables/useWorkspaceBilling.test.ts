@@ -645,8 +645,6 @@ describe('useWorkspaceBilling', () => {
 
       expect(mockWorkspaceApi.createTopup).toHaveBeenCalledWith(500)
       expect(result).toBe(topupResponse)
-      // Pass-through: the caller owns the completed/pending follow-up, so the
-      // facade must not double-fetch here.
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
       expect(mockWorkspaceApi.getBillingBalance).not.toHaveBeenCalled()
       expect(billing.error.value).toBeNull()
