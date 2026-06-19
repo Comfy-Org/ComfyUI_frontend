@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { stringToLocale } from '@/utils/formatUtil'
+import { stringToLocale } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import { useReleaseService } from './releaseService'
 import type { ReleaseNote } from './releaseService'

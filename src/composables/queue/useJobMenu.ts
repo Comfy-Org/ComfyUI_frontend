@@ -22,7 +22,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { ResultItemImpl, TaskItemImpl } from '@/stores/queueStore'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
-import { appendJsonExt } from '@/utils/formatUtil'
+import { appendJsonExt } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 export type MenuEntry =
   | {

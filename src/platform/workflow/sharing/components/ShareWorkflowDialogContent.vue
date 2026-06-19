@@ -209,7 +209,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@/platform/telemetry'
-import { appendJsonExt } from '@/utils/formatUtil'
+import { appendJsonExt } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { onClose } = defineProps<{

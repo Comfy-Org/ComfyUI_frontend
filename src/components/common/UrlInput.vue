@@ -28,7 +28,7 @@ import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import { onMounted, ref, watch } from 'vue'
 
-import { isValidUrl } from '@/utils/formatUtil'
+import { isValidUrl } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { checkUrlReachable } from '@/utils/networkUtil'
 import { ValidationState } from '@/utils/validationUtil'
 

@@ -69,7 +69,10 @@ import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
-import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
+import {
+  ensureWorkflowSuffix,
+  getWorkflowSuffix
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,

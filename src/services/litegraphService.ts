@@ -63,7 +63,7 @@ import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsSto
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { WidgetId } from '@/types/widgetId'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 import {
   isAnimatedOutput,
   isImageNode,

@@ -316,7 +316,7 @@ import { useKeybindingPresetService } from '@/platform/keybindings/presetService
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import KeybindingList from './keybinding/KeybindingList.vue'
 import KeybindingPresetToolbar from './keybinding/KeybindingPresetToolbar.vue'

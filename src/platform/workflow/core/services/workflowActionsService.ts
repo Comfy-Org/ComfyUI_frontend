@@ -10,7 +10,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogService } from '@/services/dialogService'
-import { appendJsonExt } from '@/utils/formatUtil'
+import { appendJsonExt } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { t } from '@/i18n'
 
 /**

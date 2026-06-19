@@ -1,6 +1,6 @@
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobState } from '@/types/queue'
-import { formatDuration } from '@/utils/formatUtil'
+import { formatDuration } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { clampPercentInt, formatPercent0 } from '@/utils/numberUtil'
 
 export type BuildJobDisplayCtx = {

@@ -152,7 +152,7 @@ import {
   getFilenameDetails,
   getMediaTypeFromFilename,
   isPreviewableMediaType
-} from '@/utils/formatUtil'
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
 import { getAssetUrl } from '../utils/assetUrlUtil'

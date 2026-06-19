@@ -57,7 +57,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { formatVersionAnchor } from '@/utils/formatUtil'
+import { formatVersionAnchor } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
 import type { ReleaseNote } from '../common/releaseService'

@@ -3,7 +3,10 @@ import { assetService } from '@/platform/assets/services/assetService'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { api } from '@/scripts/api'
-import { getFilePathSeparatorVariants, joinFilePath } from '@/utils/formatUtil'
+import {
+  getFilePathSeparatorVariants,
+  joinFilePath
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import { getMediaPathDetectionNames } from './mediaPathDetectionUtil'
 
 const HISTORY_MEDIA_ASSETS_PAGE_SIZE = 200

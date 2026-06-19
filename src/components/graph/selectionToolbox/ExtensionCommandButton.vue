@@ -22,7 +22,7 @@ import Button from '@/components/ui/button/Button.vue'
 import { st } from '@/i18n'
 import type { ComfyCommand } from '@/stores/commandStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { normalizeI18nKey } from '@/utils/formatUtil'
+import { normalizeI18nKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 defineProps<{
   command: ComfyCommand

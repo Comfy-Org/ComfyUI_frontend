@@ -1,6 +1,6 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { isCloud } from '@/platform/distribution/types'
-import { isCivitaiUrl } from '@/utils/formatUtil'
+import { isCivitaiUrl } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 /**
  * Type-safe utilities for extracting metadata from assets.

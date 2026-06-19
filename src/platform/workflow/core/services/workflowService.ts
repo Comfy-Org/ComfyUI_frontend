@@ -35,7 +35,7 @@ import {
   appendJsonExt,
   appendWorkflowJsonExt,
   generateUUID
-} from '@/utils/formatUtil'
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import type { AppMode } from '@/utils/appMode'
 
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
