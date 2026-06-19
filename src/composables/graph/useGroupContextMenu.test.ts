@@ -69,7 +69,11 @@ describe('useGroupContextMenu', () => {
   })
 
   function invoke(node: LGraphNode | undefined) {
-    LGraphCanvas.prototype.processContextMenu.call(fromAny(stubCanvas), node, event)
+    LGraphCanvas.prototype.processContextMenu.call(
+      fromAny(stubCanvas),
+      node,
+      event
+    )
   }
 
   it('opens the Vue menu for a group right-click in Nodes 2.0 mode', () => {
