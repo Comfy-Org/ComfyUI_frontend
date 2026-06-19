@@ -264,8 +264,6 @@ describe('useAuthActions.reportError', () => {
   it('maps a raw/wrapped EMAIL_EXISTS error to the friendly message, not the generic fallback', () => {
     const { reportError } = useAuthActions()
 
-    // A non-FirebaseError carrying the raw EMAIL_EXISTS message still maps to
-    // the "account exists" toast, not the generic fallback.
     reportError(new Error('Identity Toolkit error: EMAIL_EXISTS'))
 
     expect(mockToastStore.add).toHaveBeenCalledWith({

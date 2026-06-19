@@ -425,8 +425,6 @@ describe('useAuthStore', () => {
       )
       vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockClear()
 
-      // First attempt resolves; the guard entry is intentionally retained so a
-      // re-submit during the post-sign-up redirect cannot create a 2nd account.
       await store.register('keep@example.com', 'password')
       await store.register('keep@example.com', 'password')
 
@@ -471,13 +469,11 @@ describe('useAuthStore', () => {
         vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockClear()
 
         await store.register('evict@example.com', 'password')
-        // Within the window: rides the kept promise.
         await store.register('evict@example.com', 'password')
         expect(
           firebaseAuth.createUserWithEmailAndPassword
         ).toHaveBeenCalledTimes(1)
 
-        // After the window: the entry is evicted, so a later sign-up re-runs.
         await vi.advanceTimersByTimeAsync(10_001)
         await store.register('evict@example.com', 'password')
         expect(
@@ -493,8 +489,6 @@ describe('useAuthStore', () => {
       vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
         mockUserCredential as Partial<UserCredential> as UserCredential
       )
-      // createCustomer fails, but the sign-up itself must still succeed
-      // (best-effort: the customer is provisioned server-side too).
       mockFetch.mockImplementation((url: string) => {
         if (url.endsWith('/customers')) {
           return Promise.resolve({

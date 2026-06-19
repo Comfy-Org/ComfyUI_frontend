@@ -67,7 +67,7 @@ const emit = defineEmits<{
   submit: [values: SignUpData]
 }>()
 
-// Leading-edge only (trailing: false) + loading guard: a double-submit must create the account once.
+// Leading edge only (trailing: false) so a double-submit can't create a 2nd account.
 const onSubmit = useThrottleFn(
   (event: FormSubmitEvent) => {
     if (loading.value) return

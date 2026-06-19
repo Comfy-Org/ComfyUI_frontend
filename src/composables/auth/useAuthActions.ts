@@ -28,8 +28,7 @@ export const useAuthActions = () => {
 
   const accessError = ref(false)
 
-  // "Email already registered" across its shapes: the Firebase SDK code and the
-  // raw/wrapped Identity Toolkit EMAIL_EXISTS, so both get the "sign in" message.
+  // Matches both the Firebase SDK code and the raw EMAIL_EXISTS REST message.
   const isEmailAlreadyInUse = (error: unknown): boolean => {
     if (
       error instanceof FirebaseError &&

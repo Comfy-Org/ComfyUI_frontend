@@ -61,7 +61,6 @@ export class AuthStoreError extends Error {
   }
 }
 
-// Window a succeeded register() is deduped for, covering the post-sign-up redirect.
 const REGISTER_DEDUP_RETENTION_MS = 10_000
 
 export const useAuthStore = defineStore('auth', () => {
@@ -308,8 +307,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
     })
     if (!createCustomerRes.ok) {
-      // statusText is empty under HTTP/2, which produced a bare "Failed to create
-      // customer:" toast. Prefer the backend error body, then the status code.
+      // statusText is empty under HTTP/2; use the body message, then the status.
       let detail = `HTTP ${createCustomerRes.status}`
       try {
         const body = await createCustomerRes.json()
@@ -346,8 +344,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const result = await action(auth)
 
-      // Best-effort: the customer is also provisioned server-side, so a failure
-      // here must not fail an otherwise-successful sign-in.
+      // Best-effort: also provisioned server-side, so don't fail sign-in on it.
       if (options?.createCustomer) {
         try {
           const token = await getIdToken()
@@ -391,8 +388,7 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  // Single-flight per email: one signup creates the account at most once,
-  // however many times the form submits.
+  // Single-flight per email: one signup creates the account at most once.
   const inFlightRegister = new Map<string, Promise<UserCredential>>()
 
   const register = (
@@ -425,9 +421,8 @@ export const useAuthStore = defineStore('auth', () => {
     })()
 
     inFlightRegister.set(key, pending)
-    // Drop on failure so a retry is allowed. On success, keep it for the redirect
-    // window then evict, so it can't hand back a stale credential after a sign-out
-    // that doesn't reload the page.
+    // Drop on failure (allow retry); on success keep through the redirect then
+    // evict, so it can't return a stale credential after a no-reload sign-out.
     pending
       .then(() => {
         setTimeout(
