@@ -5,13 +5,7 @@ const state = vi.hoisted(() => ({
   activeSidebarTabId: null as string | null,
   rightSidePanelOpen: false,
   bottomPanelVisible: false,
-  openWorkflows: [] as unknown[],
-  mode: { value: 'graph' },
-  isAppMode: { value: false }
-}))
-
-vi.mock('@/composables/useAppMode', () => ({
-  useAppMode: () => ({ mode: state.mode, isAppMode: state.isAppMode })
+  openWorkflows: [] as unknown[]
 }))
 
 vi.mock('@/platform/settings/settingStore', () => ({
@@ -48,12 +42,12 @@ describe('getShellLayoutSnapshot', () => {
     state.rightSidePanelOpen = false
     state.bottomPanelVisible = false
     state.openWorkflows = []
-    state.mode.value = 'graph'
-    state.isAppMode.value = false
   })
 
   it('captures the default layout', () => {
-    expect(getShellLayoutSnapshot()).toEqual({
+    expect(
+      getShellLayoutSnapshot({ view_mode: 'graph', is_app_mode: false })
+    ).toEqual({
       view_mode: 'graph',
       is_app_mode: false,
       dock_state: 'docked',
@@ -71,10 +65,10 @@ describe('getShellLayoutSnapshot', () => {
     state.rightSidePanelOpen = true
     state.bottomPanelVisible = true
     state.openWorkflows = [{}, {}, {}]
-    state.mode.value = 'app'
-    state.isAppMode.value = true
 
-    expect(getShellLayoutSnapshot()).toEqual({
+    expect(
+      getShellLayoutSnapshot({ view_mode: 'app', is_app_mode: true })
+    ).toEqual({
       view_mode: 'app',
       is_app_mode: true,
       dock_state: 'floating',
