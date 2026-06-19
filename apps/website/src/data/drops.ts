@@ -4,11 +4,15 @@
 import { externalLinks } from '../config/routes'
 import type { LocalizedText } from '../i18n/translations'
 
+export type DropMedia =
+  | { type: 'image'; src: string; alt: LocalizedText }
+  | { type: 'video'; src: string; alt: LocalizedText; poster?: string }
+
 export type Drop = {
   id: string
   badge?: LocalizedText
   category: LocalizedText
-  image: { src: string; alt: LocalizedText }
+  media: DropMedia
   title: LocalizedText
   description: LocalizedText
   cta: { label: LocalizedText; href: LocalizedText }
@@ -26,10 +30,26 @@ const MODELS_AND_NODES: LocalizedText = {
 const NEW_BADGE: LocalizedText = { en: 'NEW', 'zh-CN': '新' }
 const FEATURED_BADGE: LocalizedText = { en: 'FEATURED', 'zh-CN': '精选' }
 
-function imageFor(fileName: string, alt: LocalizedText) {
+function imageFor(fileName: string, alt: LocalizedText): DropMedia {
   return {
+    type: 'image',
     src: `https://media.comfy.org/website/drops/${fileName}`,
     alt
+  }
+}
+
+function videoFor(
+  fileName: string,
+  alt: LocalizedText,
+  poster?: string
+): DropMedia {
+  return {
+    type: 'video',
+    src: `https://media.comfy.org/website/drops/${fileName}`,
+    alt,
+    ...(poster && {
+      poster: `https://media.comfy.org/website/drops/${poster}`
+    })
   }
 }
 
@@ -38,7 +58,7 @@ export const drops: readonly Drop[] = [
     id: 'desktop-client',
     badge: NEW_BADGE,
     category: PLATFORM,
-    image: imageFor('placeholder.jpeg', {
+    media: imageFor('Drops_2x2card_Desktop.jpg', {
       en: 'New Desktop Client',
       'zh-CN': '新桌面客户端'
     }),
@@ -56,7 +76,7 @@ export const drops: readonly Drop[] = [
     id: 'app-mode',
     badge: NEW_BADGE,
     category: PLATFORM,
-    image: imageFor('placeholder.jpeg', {
+    media: videoFor('Drops_2x2card_APP.mp4', {
       en: 'App Mode',
       'zh-CN': 'App 模式'
     }),
@@ -68,14 +88,17 @@ export const drops: readonly Drop[] = [
     // TODO: no destination page yet — link out when App Mode lands.
     cta: {
       label: EXPLORE,
-      href: { en: '#', 'zh-CN': '#' }
+      href: {
+        en: 'https://docs.comfy.org/interface/app-mode',
+        'zh-CN': 'https://docs.comfy.org/zh/interface/app-mode'
+      }
     }
   },
   {
     id: 'comfy-api',
     badge: NEW_BADGE,
     category: DEVELOPER,
-    image: imageFor('placeholder.jpeg', {
+    media: imageFor('Drops_2x2card_API.jpg', {
       en: 'Comfy API',
       'zh-CN': 'Comfy API'
     }),
@@ -93,7 +116,7 @@ export const drops: readonly Drop[] = [
     id: 'comfy-cloud',
     badge: FEATURED_BADGE,
     category: CLOUD,
-    image: imageFor('placeholder.jpeg', {
+    media: imageFor('placeholder.jpeg', {
       en: 'Comfy Cloud',
       'zh-CN': 'Comfy Cloud'
     }),
@@ -110,13 +133,13 @@ export const drops: readonly Drop[] = [
   {
     id: 'community-workflows',
     category: COMMUNITY,
-    image: imageFor('placeholder.jpeg', {
-      en: 'Community Workflows on Comfy Hub',
-      'zh-CN': 'Comfy Hub 上的社区工作流'
+    media: imageFor('placeholder.jpeg', {
+      en: 'Community Workflows',
+      'zh-CN': '社区工作流'
     }),
     title: {
-      en: 'Community Workflows on Comfy Hub',
-      'zh-CN': 'Comfy Hub 上的社区工作流'
+      en: 'Community Workflows',
+      'zh-CN': '社区工作流'
     },
     description: {
       en: 'Browse and remix thousands of community-shared workflows. Start from a proven template.',
@@ -130,7 +153,7 @@ export const drops: readonly Drop[] = [
   {
     id: 'supported-models',
     category: MODELS_AND_NODES,
-    image: imageFor('placeholder.jpeg', {
+    media: imageFor('Drops_Supported models.jpg', {
       en: 'Supported Models',
       'zh-CN': '支持的模型'
     }),
@@ -148,7 +171,7 @@ export const drops: readonly Drop[] = [
   {
     id: 'supported-nodes',
     category: MODELS_AND_NODES,
-    image: imageFor('placeholder.jpeg', {
+    media: imageFor('Drops_Supported models.jpg', {
       en: 'Supported Nodes',
       'zh-CN': '支持的节点'
     }),
@@ -169,7 +192,7 @@ export const drops: readonly Drop[] = [
   {
     id: 'comfy-enterprise',
     category: CLOUD,
-    image: imageFor('placeholder.jpeg', {
+    media: imageFor('placeholder.jpeg', {
       en: 'Comfy Enterprise',
       'zh-CN': 'Comfy 企业版'
     }),
@@ -186,7 +209,7 @@ export const drops: readonly Drop[] = [
   {
     id: 'learning-hub',
     category: COMMUNITY,
-    image: imageFor('placeholder.jpeg', {
+    media: imageFor('Drops_3x3_Learninghub.jpg', {
       en: 'Learning Hub',
       'zh-CN': '学习中心'
     }),
@@ -204,7 +227,7 @@ export const drops: readonly Drop[] = [
     id: 'share-comfy',
     badge: NEW_BADGE,
     category: COMMUNITY,
-    image: imageFor('placeholder.jpeg', {
+    media: imageFor('placeholder.jpeg', {
       en: 'Share Comfy with your audience',
       'zh-CN': '与您的受众分享 Comfy'
     }),
