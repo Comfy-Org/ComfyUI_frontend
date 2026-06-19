@@ -1,9 +1,7 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
-import type { Reroute } from '@/lib/litegraph/src/litegraph'
+import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { LinkRenderType } from '@/lib/litegraph/src/types/globalEnums'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 /**
  * Routes a right-click on a group (frame) to the Vue context menu instead of
@@ -28,25 +26,12 @@ export function useGroupContextMenu() {
       return
     }
 
-    const reroutesVisible =
-      this.links_render_mode !== LinkRenderType.HIDDEN_LINK
-    const onReroute =
-      reroutesVisible &&
-      (!!layoutStore.queryRerouteAtPoint({
-        x: event.canvasX,
-        y: event.canvasY
-      }) ||
-        !!this.graph.getRerouteOnPos(
-          event.canvasX,
-          event.canvasY,
-          (this as unknown as { _visibleReroutes: Set<Reroute> })
-            ._visibleReroutes
-        ))
-    const group = onReroute
-      ? undefined
-      : this.graph.getGroupOnPos(event.canvasX, event.canvasY)
-
-    if (!group) {
+    const { reroute, group } = getCanvasContextMenuTarget(
+      this,
+      event.canvasX,
+      event.canvasY
+    )
+    if (reroute || !group) {
       original.apply(this, args)
       return
     }
@@ -55,6 +40,7 @@ export function useGroupContextMenu() {
       this.deselectAll()
       group.selected = true
       this.selectedItems.add(group)
+      this.state.selectionChanged = true
     }
     useCanvasStore().updateSelectedItems()
     showNodeOptions(event)
