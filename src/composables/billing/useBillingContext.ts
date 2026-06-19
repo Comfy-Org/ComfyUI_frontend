@@ -155,10 +155,15 @@ function useBillingContextInternal(): BillingContext {
     { immediate: true }
   )
 
-  // Initialize billing when workspace changes
+  // Reinitialize when the workspace or the resolved billing type changes.
+  // type can flip after setup (e.g. when the team-workspaces flag resolves from
+  // authenticated config), which swaps the active backend and needs a fresh init.
   watch(
-    () => store.activeWorkspace?.id,
-    async (newWorkspaceId, oldWorkspaceId) => {
+    [() => store.activeWorkspace?.id, () => type.value],
+    async (
+      [newWorkspaceId, newType],
+      [oldWorkspaceId, oldType] = [undefined, undefined]
+    ) => {
       if (!newWorkspaceId) {
         // No workspace selected - reset state
         isInitialized.value = false
@@ -166,8 +171,8 @@ function useBillingContextInternal(): BillingContext {
         return
       }
 
-      if (newWorkspaceId !== oldWorkspaceId) {
-        // Workspace changed - reinitialize
+      if (newWorkspaceId !== oldWorkspaceId || newType !== oldType) {
+        // Workspace or billing type changed - reinitialize
         isInitialized.value = false
         try {
           await initialize()
