@@ -514,6 +514,19 @@ describe('assetMetadataUtils', () => {
       expect(resolveDisplayImageDimensions(asset, rendered)).toBeUndefined()
     })
 
+    it('suppresses the fallback when thumbnail_url is present but preview_url is absent', () => {
+      const asset = {
+        ...mockAsset,
+        thumbnail_url: 'https://cdn.example/thumb.webp'
+      }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toBeUndefined()
+    })
+
+    it('falls back to the rendered natural size when metadata is invalid and no thumbnail guard applies', () => {
+      const asset = { ...mockAsset, metadata: { width: 0, height: 1080 } }
+      expect(resolveDisplayImageDimensions(asset, rendered)).toEqual(rendered)
+    })
+
     it('returns undefined when neither metadata nor a rendered size is available', () => {
       expect(
         resolveDisplayImageDimensions(mockAsset, undefined)
