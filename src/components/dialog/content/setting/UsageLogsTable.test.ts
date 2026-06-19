@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import { render, screen, waitFor } from '@testing-library/vue'
 
+import type * as DistributionTypes from '@/platform/distribution/types'
 import type { AuditLog } from '@/services/customerEventsService'
 import { EventType } from '@/services/customerEventsService'
 
@@ -44,7 +45,7 @@ vi.mock('@/composables/useFeatureFlags', () => ({
 }))
 
 vi.mock('@/platform/distribution/types', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/platform/distribution/types')>()),
+  ...(await importOriginal<typeof DistributionTypes>()),
   isCloud: true
 }))
 
