@@ -3,6 +3,7 @@
     <div
       ref="dialogRef"
       class="flex h-[min(80vh,750px)] w-full flex-col overflow-hidden rounded-lg border border-interface-stroke bg-base-background"
+      @keydown.capture="closeOnTab"
     >
       <!-- Search input row -->
       <NodeSearchInput
@@ -151,7 +152,21 @@ const emit = defineEmits<{
   addFilter: [filter: FuseFilterWithValue<ComfyNodeDefImpl, string>]
   removeFilter: [filter: FuseFilterWithValue<ComfyNodeDefImpl, string>]
   hoverNode: [nodeDef: ComfyNodeDefImpl | null]
+  close: []
 }>()
+
+function closeOnTab(event: KeyboardEvent) {
+  if (
+    event.key === 'Tab' &&
+    !event.ctrlKey &&
+    !event.metaKey &&
+    !event.altKey
+  ) {
+    event.preventDefault()
+    event.stopPropagation()
+    emit('close')
+  }
+}
 
 const { t } = useI18n()
 const { flags } = useFeatureFlags()
