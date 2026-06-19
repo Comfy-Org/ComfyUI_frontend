@@ -73,10 +73,11 @@ describe('SubscriptionSuccessWorkspace', () => {
     expect(emitted().close).toBeTruthy()
   })
 
-  it('renders the invite block for a team upgrade with the seat cap', () => {
+  it('renders the invite block capped at the plan seats minus the owner', () => {
     renderCard({ isTeam: true })
     expect(screen.getByText('subscription.success.inviteTitle')).toBeTruthy()
-    expect(screen.getByTestId('invite-form')).toHaveTextContent('seats:5')
+    // getMaxSeats returns 5; the owner already holds one seat, so 4 are invitable.
+    expect(screen.getByTestId('invite-form')).toHaveTextContent('seats:4')
     expect(mockGetMaxSeats).toHaveBeenCalledWith('creator')
   })
 

@@ -2851,7 +2851,8 @@
       "placeholder": "Enter emails separated by commas",
       "invalidEmailCount": "{count} invalid email address | {count} invalid email addresses",
       "failedCount": "Couldn't send {count} invite. Try again. | Couldn't send {count} invites. Try again.",
-      "invitedMessage": "An invite was emailed to {emails}. | Invites were emailed to {emails}."
+      "invitedMessage": "An invite was emailed to {emails}. | Invites were emailed to {emails}.",
+      "seatLimitReached": "You can invite up to {count} teammate. | You can invite up to {count} teammates."
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",

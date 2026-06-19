@@ -5,7 +5,7 @@
       add-on-paste
       add-on-blur
       :delimiter="EMAIL_DELIMITER"
-      :convert-value="trimEmail"
+      :convert-value="normalizeEmail"
       :model-value="emails"
       class="min-h-10 w-full bg-secondary-background"
       @update:model-value="onEmailsUpdate"
@@ -40,7 +40,7 @@
       }}
     </p>
     <p v-else-if="isSeatLimitReached" class="m-0 text-xs text-muted-foreground">
-      {{ $t('workspacePanel.inviteLimitReached', { count: maxSeats }) }}
+      {{ $t('workspacePanel.inviteMemberDialog.seatLimitReached', maxSeats) }}
     </p>
 
     <div
@@ -127,8 +127,8 @@ const canSubmit = computed(
     invalidEmails.value.length === 0
 )
 
-function trimEmail(value: string) {
-  return value.trim()
+function normalizeEmail(value: string) {
+  return value.trim().toLowerCase()
 }
 
 function onEmailsUpdate(value: string[]) {

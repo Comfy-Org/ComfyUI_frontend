@@ -57,7 +57,7 @@
           source="post_upgrade_success"
           :submit-label="$t('subscription.success.sendInvites')"
           :placeholder="$t('subscription.success.inviteEmailsPlaceholder')"
-          :max-seats="maxSeats"
+          :max-seats="invitableSeats"
           @submitted="onInvited"
         />
       </div>
@@ -118,6 +118,10 @@ const displayPrice = computed(() =>
 const displayCredits = computed(() => n(getTierCredits(tierKey) ?? 0))
 
 const maxSeats = computed(() => getMaxSeats(tierKey))
+
+// The buyer already occupies one seat post-upgrade, so invites are capped at the
+// remaining seats.
+const invitableSeats = computed(() => maxSeats.value - 1)
 
 const showInviteBlock = computed(
   () => isTeam && flags.teamWorkspacesEnabled && maxSeats.value > 1

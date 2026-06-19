@@ -152,7 +152,7 @@ describe('InviteMembersForm', () => {
     expect(screen.getByText('b@b.com')).toBeInTheDocument()
     expect(screen.queryByText('c@b.com')).not.toBeInTheDocument()
     expect(
-      screen.getByText('workspacePanel.inviteLimitReached')
+      screen.getByText('workspacePanel.inviteMemberDialog.seatLimitReached')
     ).toBeInTheDocument()
   })
 

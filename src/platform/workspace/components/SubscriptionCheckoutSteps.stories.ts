@@ -181,7 +181,7 @@ export const SuccessAllSet: Story = {
 export const TeamSuccessWithInvite: Story = {
   render: () => ({
     components: { SubscriptionSuccessWorkspace },
-    data: () => ({ previewData: { new_plan: creatorAnnual } }),
+    data: () => ({ previewData: { new_plan: creatorMonthly } }),
     template: `${shell}<SubscriptionSuccessWorkspace tier-key="creator" is-team :preview-data="previewData" /></div>`
   })
 }
