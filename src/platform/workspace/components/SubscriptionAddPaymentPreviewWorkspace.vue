@@ -19,8 +19,12 @@
             {{ $t('subscription.usdPerMonth') }}
           </span>
         </div>
-        <span v-if="isYearly" class="text-muted-foreground">
-          {{ $t('subscription.billedYearly', { total: annualTotalFormatted }) }}
+        <span class="text-muted-foreground">
+          {{
+            isYearly
+              ? $t('subscription.billedYearly', { total: annualTotalFormatted })
+              : $t('subscription.billedMonthly')
+          }}
         </span>
         <span class="text-muted-foreground">
           {{ $t('subscription.preview.startingToday') }}

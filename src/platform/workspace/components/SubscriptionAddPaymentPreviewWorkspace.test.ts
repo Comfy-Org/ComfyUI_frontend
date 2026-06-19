@@ -115,6 +115,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
       global: globalOptions
     })
     expect(screen.getByText('$35')).toBeTruthy()
+    expect(screen.getByText('subscription.billedMonthly')).toBeTruthy()
     expect(screen.queryByText('subscription.billedYearly')).toBeNull()
     expect(
       screen.getByText('subscription.preview.eachMonthCreditsRefill')
