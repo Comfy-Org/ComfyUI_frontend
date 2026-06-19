@@ -515,7 +515,7 @@ export class ComfyApi extends EventTarget {
             result != null &&
             typeof (result as PromiseLike<unknown>).then === 'function'
           ) {
-            void (result as Promise<unknown>).catch((error: unknown) =>
+            void Promise.resolve(result).catch((error: unknown) =>
               logError(event, error)
             )
           }

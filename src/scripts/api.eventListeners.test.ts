@@ -52,6 +52,23 @@ describe('ComfyApi event listener error isolation', () => {
     expect(warn.mock.calls[0][1]).toBe(err)
   })
 
+  it('guards bare PromiseLike thenables (no .catch method) without throwing', async () => {
+    const api = new ComfyApi()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const err = new Error('thenable boom')
+
+    api.addEventListener('reconnected', () => ({
+      then(onFulfilled: unknown, onRejected: (e: unknown) => void) {
+        onRejected(err)
+        return this
+      }
+    }))
+    expect(() => api.dispatchCustomEvent('reconnected')).not.toThrow()
+
+    await vi.waitFor(() => expect(warn).toHaveBeenCalled())
+    expect(warn.mock.calls[0][1]).toBe(err)
+  })
+
   it('supports EventListenerObject ({ handleEvent }) listeners', () => {
     const api = new ComfyApi()
     const handleEvent = vi.fn()
