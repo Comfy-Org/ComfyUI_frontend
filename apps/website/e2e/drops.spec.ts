@@ -1,11 +1,22 @@
+import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import type { Locale } from '../src/i18n/translations'
 import { t } from '../src/i18n/translations'
 import { test } from './fixtures/blockExternalMedia'
 
 const PATH_EN = '/drops'
 const PATH_ZH = '/zh-CN/drops'
 const CLOUD_URL = 'https://cloud.comfy.org'
+
+function heroSection(page: Page, locale: Locale) {
+  return page.locator('section').filter({
+    has: page.getByRole('heading', {
+      level: 1,
+      name: t('drops.hero.title', locale)
+    })
+  })
+}
 
 test.describe('Drops landing — desktop @smoke', () => {
   test('renders the configured title at /drops', async ({ page }) => {
@@ -52,13 +63,7 @@ test.describe('Drops landing — desktop @smoke', () => {
       [PATH_ZH, 'zh-CN', '/zh-CN/download']
     ] as const) {
       await page.goto(path)
-      const heroSection = page.locator('section').filter({
-        has: page.getByRole('heading', {
-          level: 1,
-          name: t('drops.hero.title', locale)
-        })
-      })
-      const primary = heroSection.getByRole('link', {
+      const primary = heroSection(page, locale).getByRole('link', {
         name: t('drops.hero.primary', locale)
       })
       await expect(primary).toBeVisible()
@@ -74,13 +79,7 @@ test.describe('Drops landing — desktop @smoke', () => {
       [PATH_ZH, 'zh-CN']
     ] as const) {
       await page.goto(path)
-      const heroSection = page.locator('section').filter({
-        has: page.getByRole('heading', {
-          level: 1,
-          name: t('drops.hero.title', locale)
-        })
-      })
-      const secondary = heroSection.getByRole('link', {
+      const secondary = heroSection(page, locale).getByRole('link', {
         name: t('drops.hero.secondary', locale)
       })
       await expect(secondary).toBeVisible()

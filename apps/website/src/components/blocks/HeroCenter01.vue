@@ -27,8 +27,11 @@ const { visual, eyebrow, title, subtitle, primaryCta, secondaryCta } =
     secondaryCta?: Cta
   }>()
 
-const resolveRel = (cta: Cta): AnchorHTMLAttributes['rel'] =>
-  cta.rel ?? (cta.target === '_blank' ? 'noopener noreferrer' : undefined)
+function resolveRel(cta: Cta): AnchorHTMLAttributes['rel'] {
+  return (
+    cta.rel ?? (cta.target === '_blank' ? 'noopener noreferrer' : undefined)
+  )
+}
 </script>
 
 <template>
