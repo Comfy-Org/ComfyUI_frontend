@@ -407,15 +407,14 @@ export const useAuthStore = defineStore('auth', () => {
         { createCustomer: true }
       )
 
-      if (isCloud) {
-        useTelemetry()?.trackAuth({
-          method: 'email',
-          is_new_user: true,
-          user_id: result.user.uid,
-          email: result.user.email ?? undefined,
-          ...getShareAuthMetadata()
-        })
-      }
+      // useTelemetry() is null off-cloud, so this is already a no-op there.
+      useTelemetry()?.trackAuth({
+        method: 'email',
+        is_new_user: true,
+        user_id: result.user.uid,
+        email: result.user.email ?? undefined,
+        ...getShareAuthMetadata()
+      })
 
       return result
     })()
