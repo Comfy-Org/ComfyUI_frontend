@@ -98,4 +98,43 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     expect(box).not.toBeNull()
     expect(box!.height).toBeLessThan(SINGLE_LINE_MAX_HEIGHT_PX)
   })
+
+  test('opens the switcher to the left of the profile menu without overlap', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+
+    await comfyPage.toast.closeToasts()
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('workspace-switcher-trigger').click()
+
+    const panel = page.getByTestId('workspace-switcher-panel')
+    await expect(panel).toBeVisible()
+
+    const profileMenu = page.locator('.current-user-popover')
+    const panelBox = await panel.boundingBox()
+    const profileBox = await profileMenu.boundingBox()
+    expect(panelBox).not.toBeNull()
+    expect(profileBox).not.toBeNull()
+    expect(panelBox!.x + panelBox!.width).toBeLessThanOrEqual(profileBox!.x)
+  })
+
+  test('opens the create-workspace dialog with DES-246 copy', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+
+    await comfyPage.toast.closeToasts()
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('workspace-switcher-trigger').click()
+
+    await page.getByText('Create a workspace').click()
+
+    await expect(
+      page.getByText(
+        'Workspaces keep your projects and files organized. Subscribe to a Team plan to invite members.'
+      )
+    ).toBeVisible()
+    await expect(page.getByPlaceholder('Ex: Comfy Org')).toBeVisible()
+  })
 })
