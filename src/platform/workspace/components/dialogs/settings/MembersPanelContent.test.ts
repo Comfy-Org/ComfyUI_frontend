@@ -460,7 +460,7 @@ describe('MembersPanelContent', () => {
   })
 
   describe('contact us footer', () => {
-    it('opens discord in a new tab for team workspaces on a team plan', async () => {
+    it('opens the cloud enterprise page in a new tab for team workspaces on a team plan', async () => {
       const openSpy = vi.spyOn(window, 'open').mockReturnValue(null)
       renderComponent()
       expect(
@@ -470,7 +470,7 @@ describe('MembersPanelContent', () => {
         screen.getByText('workspacePanel.members.contactUs')
       )
       expect(openSpy).toHaveBeenCalledWith(
-        'https://www.comfy.org/discord',
+        'https://comfy.org/cloud/enterprise',
         '_blank',
         'noopener,noreferrer'
       )

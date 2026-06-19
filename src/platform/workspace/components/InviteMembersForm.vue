@@ -26,7 +26,7 @@
       </TagsInputItem>
       <TagsInputInput
         auto-focus
-        class="text-sm"
+        class="min-w-0 text-sm"
         :placeholder="emails.length === 0 ? placeholder : undefined"
       />
     </TagsInput>
@@ -51,6 +51,7 @@
       <Button
         v-if="cancelLabel"
         variant="muted-textonly"
+        size="lg"
         @click="$emit('cancel')"
       >
         {{ cancelLabel }}

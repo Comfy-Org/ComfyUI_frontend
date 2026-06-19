@@ -214,7 +214,6 @@
 <script setup lang="ts">
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { useExternalLink } from '@/composables/useExternalLink'
 import MemberListItem from '@/platform/workspace/components/dialogs/settings/MemberListItem.vue'
 import MemberUpsellBanner from '@/platform/workspace/components/dialogs/settings/MemberUpsellBanner.vue'
 import PendingInvitesList from '@/platform/workspace/components/dialogs/settings/PendingInvitesList.vue'
@@ -252,9 +251,11 @@ const {
   handleRevokeInvite
 } = useMembersPanel()
 
-const { staticUrls } = useExternalLink()
-
 function handleContactUs() {
-  window.open(staticUrls.discord, '_blank', 'noopener,noreferrer')
+  window.open(
+    'https://comfy.org/cloud/enterprise',
+    '_blank',
+    'noopener,noreferrer'
+  )
 }
 </script>

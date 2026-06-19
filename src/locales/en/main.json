@@ -2477,7 +2477,7 @@
     "cancelSuccess": "Subscription cancelled successfully",
     "cancelDialog": {
       "title": "Cancel subscription",
-      "description": "Your access continues until {date}. You won't be charged again, and your workspace and credits will be preserved. You can resubscribe anytime.",
+      "description": "Your plan stays active until {date}. You won't be charged again. Any unused monthly credits will expire, but additional credits are kept. Resubscribe anytime.",
       "endOfBillingPeriod": "end of billing period",
       "keepSubscription": "Keep subscription",
       "confirmCancel": "Cancel subscription",
@@ -2839,7 +2839,7 @@
       "placeholder": "Enter emails separated by commas",
       "invalidEmailCount": "{count} invalid email address | {count} invalid email addresses",
       "failedCount": "Couldn't send {count} invite. Try again. | Couldn't send {count} invites. Try again.",
-      "invitedMessage": "An invite was sent to {emails} | Invites were sent to {emails}"
+      "invitedMessage": "An invite was emailed to {emails}. | Invites were emailed to {emails}."
     },
     "createWorkspaceDialog": {
       "title": "Create a new workspace",
