@@ -202,7 +202,8 @@ export const useAssetsStore = defineStore('assets', () => {
     after: string | null,
     epoch: number
   ): Promise<FetchHistoryPageResult> => {
-    if (after == null) return fetchHistoryJobsPage({ offset: historyOffset.value })
+    if (after == null)
+      return fetchHistoryJobsPage({ offset: historyOffset.value })
     try {
       return await fetchHistoryJobsPage({ after })
     } catch (err) {
