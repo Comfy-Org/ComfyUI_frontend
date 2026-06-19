@@ -27,6 +27,8 @@ const { mockFeatureFlags } = vi.hoisted(() => ({
   }
 }))
 
+const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
+
 type MockUser = Omit<User, 'getIdToken'> & {
   getIdToken: Mock
 }
@@ -108,9 +110,9 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 // Mock useToastStore
-vi.mock('@/stores/toastStore', () => ({
+vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({
-    add: vi.fn()
+    add: mockToastAdd
   })
 }))
 
@@ -430,6 +432,36 @@ describe('useAuthStore', () => {
 
       expect(firebaseAuth.createUserWithEmailAndPassword).toHaveBeenCalledTimes(
         1
+      )
+    })
+
+    it('keeps the user signed in but warns when account setup fails', async () => {
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+      mockToastAdd.mockClear()
+      // Make the createCustomer (POST /customers) call fail.
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/customers')) {
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+            json: () => Promise.resolve({ message: 'boom' })
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      const result = await store.register('setup-fail@example.com', 'password')
+
+      // Sign-up still resolves (provisioning is best-effort)...
+      expect(result).toEqual(mockUserCredential)
+      expect(store.loading).toBe(false)
+      // ...and the failure is surfaced to the user, not swallowed silently.
+      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn' })
       )
     })
 

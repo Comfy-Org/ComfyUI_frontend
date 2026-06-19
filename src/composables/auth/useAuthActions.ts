@@ -37,7 +37,7 @@ export const useAuthActions = () => {
       return true
     }
     const message = error instanceof Error ? error.message : String(error ?? '')
-    return /email[-_ ]?already[-_ ]?in[-_ ]?use|EMAIL_EXISTS/i.test(message)
+    return /email[-_ ]?already[-_ ]?in[-_ ]?use|\bEMAIL_EXISTS\b/i.test(message)
   }
 
   const reportError = (error: unknown) => {

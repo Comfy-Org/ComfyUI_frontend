@@ -67,7 +67,10 @@ const emit = defineEmits<{
   submit: [values: SignUpData]
 }>()
 
-// Leading edge only (trailing: false) so a double-submit can't create a 2nd account.
+// UX guard: leading edge only (trailing: false) drops a rapid double-submit to
+// avoid a duplicate request / spinner flicker. The store's single-flight
+// (inFlightRegister in authStore) owns "create the account once"; this is
+// defense-in-depth.
 const onSubmit = useThrottleFn(
   (event: FormSubmitEvent) => {
     if (loading.value) return

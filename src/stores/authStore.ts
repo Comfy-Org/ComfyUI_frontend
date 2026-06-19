@@ -29,6 +29,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -65,6 +66,7 @@ const REGISTER_DEDUP_RETENTION_MS = 10_000
 
 export const useAuthStore = defineStore('auth', () => {
   const { flags } = useFeatureFlags()
+  const toastStore = useToastStore()
 
   // State
   const loading = ref(false)
@@ -351,18 +353,28 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const result = await action(auth)
 
-      // Best-effort: also provisioned server-side, so don't fail sign-in on it.
+      // Provisioning is best-effort (the server also provisions on the next
+      // authenticated request), so surface failures without blocking sign-in.
       if (options?.createCustomer) {
         try {
           const token = await getIdToken()
           if (token) {
             await createCustomer()
+          } else {
+            console.warn(
+              '[auth] skipped account setup: no ID token available after sign-in'
+            )
           }
         } catch (error) {
-          console.warn(
-            '[auth] createCustomer failed during sign-in; relying on the server-side provisioner',
-            error
-          )
+          console.warn('[auth] account setup failed after sign-in', error)
+          if (isCloud) {
+            toastStore.add({
+              severity: 'warn',
+              summary: t('g.warning'),
+              detail: t('toastMessages.accountSetupIncomplete'),
+              life: 8000
+            })
+          }
         }
       }
 
@@ -431,10 +443,12 @@ export const useAuthStore = defineStore('auth', () => {
     // then evict to keep the map bounded (sign-out also clears it; see logout).
     pending
       .then(() => {
-        setTimeout(
-          () => inFlightRegister.delete(key),
-          REGISTER_DEDUP_RETENTION_MS
-        )
+        setTimeout(() => {
+          // Only evict if this is still our entry; a re-registration of the same
+          // email (e.g. after a no-reload sign-out) may have replaced it.
+          if (inFlightRegister.get(key) === pending)
+            inFlightRegister.delete(key)
+        }, REGISTER_DEDUP_RETENTION_MS)
       })
       .catch(() => inFlightRegister.delete(key))
     return pending
