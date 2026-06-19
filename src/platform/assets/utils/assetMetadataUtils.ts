@@ -199,6 +199,64 @@ export function getAssetCardTitle(asset: AssetItem): string {
   return getAssetDisplayFilename(asset)
 }
 
+export interface ImageDimensions {
+  width: number
+  height: number
+}
+
+/**
+ * Type guard: a pixel dimension is a finite positive integer. `metadata` is
+ * typed as `Record<string, unknown>`, so `typeof === 'number'` alone admits
+ * NaN, Infinity, 0, negatives, and fractional values.
+ */
+function isValidDimension(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+}
+
+/**
+ * Returns the original image dimensions from `asset.metadata.{width,height}`
+ * when both pass shape validation, otherwise `undefined`. Callers should fall
+ * back to the locally-computed `<img>.naturalWidth/Height`, which is correct
+ * on runtimes that serve the original file but reports preview size on
+ * runtimes that serve a downscaled preview.
+ */
+export function getAssetMetadataDimensions(
+  asset: AssetItem | undefined
+): ImageDimensions | undefined {
+  const w = asset?.metadata?.width
+  const h = asset?.metadata?.height
+  if (isValidDimension(w) && isValidDimension(h)) {
+    return { width: w, height: h }
+  }
+  return undefined
+}
+
+/**
+ * Resolves the image dimensions an asset card should display.
+ *
+ * Prefers the server-provided original dimensions from
+ * {@link getAssetMetadataDimensions}. Only when those are absent does it fall
+ * back to `renderedNaturalSize` — the natural size of the `<img>` the card
+ * actually rendered — and only when that rendered image was the original file.
+ *
+ * A distinct `thumbnail_url` (one that differs from `preview_url`) means the
+ * card rendered a downscaled preview, so `renderedNaturalSize` reflects the
+ * preview's dimensions rather than the asset's. In that case this returns
+ * `undefined` so the card shows no label rather than a wrong resolution.
+ * On OSS, `thumbnail_url` and `preview_url` are the same URL (full-res),
+ * so the guard correctly passes through `renderedNaturalSize`.
+ */
+export function resolveDisplayImageDimensions(
+  asset: AssetItem | undefined,
+  renderedNaturalSize: ImageDimensions | undefined
+): ImageDimensions | undefined {
+  const fromMetadata = getAssetMetadataDimensions(asset)
+  if (fromMetadata) return fromMetadata
+  if (asset?.thumbnail_url && asset.thumbnail_url !== asset.preview_url)
+    return undefined
+  return renderedNaturalSize
+}
+
 /**
  * Returns the filename component the cloud `/api/view` endpoint resolves
  * for this asset — `hash` when present (cloud assets are hash-keyed
