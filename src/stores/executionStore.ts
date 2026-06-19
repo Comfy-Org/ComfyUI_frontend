@@ -313,8 +313,8 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     const jobId = e.detail.prompt_id
     const queuedJob = queuedJobs.value[jobId]
-    if (isCloud && queuedJob) {
-      const telemetry = useTelemetry()
+    const telemetry = useTelemetry()
+    if (queuedJob) {
       telemetry?.trackExecutionSuccess({
         jobId
       })
@@ -424,14 +424,14 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
-    if (isCloud) {
-      useTelemetry()?.trackExecutionError({
-        jobId: e.detail.prompt_id,
-        nodeId: String(e.detail.node_id),
-        nodeType: e.detail.node_type,
-        error: e.detail.exception_message
-      })
+    useTelemetry()?.trackExecutionError({
+      jobId: e.detail.prompt_id,
+      nodeId: String(e.detail.node_id),
+      nodeType: e.detail.node_type,
+      error: e.detail.exception_message
+    })
 
+    if (isCloud) {
       // Cloud wraps validation errors (400) in exception_message as embedded JSON.
       if (handleCloudValidationError(e.detail)) return
     }

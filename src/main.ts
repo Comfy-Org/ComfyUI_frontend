@@ -31,19 +31,25 @@ import App from './App.vue'
 import './assets/css/style.css'
 import { i18n } from './i18n'
 
-/**
- * CRITICAL: Load remote config FIRST for cloud builds to ensure
- * window.__CONFIG__is available for all modules during initialization
- */
 const isCloud = __DISTRIBUTION__ === 'cloud'
+const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
+const requiresRemoteConfigBootstrap = isCloud || hasHostTelemetryBridge
 
-if (isCloud) {
+if (requiresRemoteConfigBootstrap) {
   const { refreshRemoteConfig } =
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false })
+}
 
+if (isCloud) {
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
   await initTelemetry()
+}
+
+if (hasHostTelemetryBridge) {
+  const { initHostTelemetry } =
+    await import('@/platform/telemetry/initHostTelemetry')
+  initHostTelemetry()
 }
 
 const ComfyUIPreset = definePreset(Aura, {
