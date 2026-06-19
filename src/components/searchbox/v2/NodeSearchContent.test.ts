@@ -37,6 +37,7 @@ describe('NodeSearchContent', () => {
     const onRemoveFilter =
       vi.fn<(f: FuseFilterWithValue<ComfyNodeDefImpl, string>) => void>()
     const onAddFilter = vi.fn()
+    const onClose = vi.fn()
     render(NodeSearchContent, {
       props: {
         filters: [],
@@ -44,6 +45,7 @@ describe('NodeSearchContent', () => {
         onHoverNode,
         onRemoveFilter,
         onAddFilter,
+        onClose,
         ...props
       },
       global: {
@@ -63,7 +65,14 @@ describe('NodeSearchContent', () => {
         }
       }
     })
-    return { user, onAddNode, onHoverNode, onRemoveFilter, onAddFilter }
+    return {
+      user,
+      onAddNode,
+      onHoverNode,
+      onRemoveFilter,
+      onAddFilter,
+      onClose
+    }
   }
 
   function mockBookmarks(
@@ -524,6 +533,30 @@ describe('NodeSearchContent', () => {
       expect(onAddNode).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'TestNode' })
       )
+    })
+  })
+
+  describe('close on Tab', () => {
+    it('should emit close when Tab is pressed from the search input', async () => {
+      const { user, onClose } = await setupFavorites([
+        { name: 'TestNode', display_name: 'Test Node' }
+      ])
+
+      await user.click(screen.getByRole('combobox'))
+      await user.keyboard('{Tab}')
+
+      expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    it('should not emit close for Ctrl+Tab', async () => {
+      const { user, onClose } = await setupFavorites([
+        { name: 'TestNode', display_name: 'Test Node' }
+      ])
+
+      await user.click(screen.getByRole('combobox'))
+      await user.keyboard('{Control>}{Tab}{/Control}')
+
+      expect(onClose).not.toHaveBeenCalled()
     })
   })
 

@@ -31,6 +31,7 @@
             @remove-filter="removeFilter"
             @add-node="addNode"
             @hover-node="hoveredNodeDef = $event"
+            @close="closeDialog"
           />
           <NodePreviewCard
             v-if="hoveredNodeDef && enableNodePreview"
