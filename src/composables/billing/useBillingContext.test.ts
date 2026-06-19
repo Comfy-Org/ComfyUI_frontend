@@ -241,7 +241,8 @@ describe('useBillingContext', () => {
     mockTeamWorkspacesEnabled.value = false
     mockIsPersonal.value = true
 
-    const { type } = useBillingContext()
+    const { type, initialize } = useBillingContext()
+    await initialize()
     await nextTick()
 
     expect(type.value).toBe('legacy')
