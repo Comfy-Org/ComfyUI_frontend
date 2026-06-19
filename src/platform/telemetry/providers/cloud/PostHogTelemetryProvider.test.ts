@@ -906,14 +906,8 @@ describe('PostHogTelemetryProvider', () => {
       setLocation('')
     })
 
-    // The plumbing registers is_app_mode / customer_tier via watch(..., {
-    // immediate: true }) inside the post-init block. The vue mock stubs watch
-    // as a no-op, so its callbacks never auto-fire; we replay the registered
-    // handler the same way the real immediate watcher would, then assert the
-    // exact mechanism the plumbing used (posthog.register). The vue mock's
-    // composables hand back a fresh ref per call, so we cannot match the watch
-    // source by identity; instead we locate the handler by the super-property
-    // key it registers when replayed with a truthy value.
+    // The vue mock no-ops watch, so the immediate registration never auto-fires; replay the
+    // registered handler manually and locate it by the super-property key it registers.
     type WatchHandler = (value: unknown) => void
 
     function getWatchHandlers(): WatchHandler[] {

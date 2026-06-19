@@ -130,10 +130,8 @@ function useSubscriptionInternal() {
   let pendingCheckoutRecoveryAttempt = 0
   let isRecoveringPendingCheckout = false
 
-  // The checkout attempt initiated in this session via subscribe(). Carries the
-  // attempt_id/tier/cycle needed to attribute a non-success checkout_returned
-  // (cancelled/unknown). Success outcomes source the id from the consumed
-  // success metadata instead, so they work cross-session.
+  // In-session checkout attempt (attempt_id/tier/cycle) for attributing a non-success
+  // checkout_returned; success outcomes source the id from metadata instead (cross-session).
   let lastCheckoutAttempt: {
     attempt_id: string
     tier: string

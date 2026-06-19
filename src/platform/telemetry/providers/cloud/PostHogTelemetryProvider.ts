@@ -139,12 +139,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               api_host:
                 window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
               ui_host: 'https://us.posthog.com',
-              // Web analytics enabled so cloud.comfy.org gets $pageview / $pageleave
-              // (the login/onboarding pages previously had zero coverage). autocapture
-              // does NOT record input *values* (posthog masks them), and these defaults
-              // remain overridable per-environment via `serverConfig` (spread below).
-              // Heatmaps are toggled via PostHog project settings (RemoteConfig), not a
-              // client init option in this posthog-js version.
+              // Enable web analytics on cloud.comfy.org ($pageview/$pageleave); overridable
+              // via serverConfig. Heatmaps are server-side (RemoteConfig), not a client key.
               autocapture: true,
               capture_pageview: true,
               capture_pageleave: true,
@@ -352,10 +348,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
    * because this is event-context, not a stable person trait.
    */
   private registerAppModeSuperProperty(): void {
-    // Defensive: useAppMode() pulls in a Pinia store. This runs inside the
-    // posthog-js import .then(), so a throw here would hit the init .catch and
-    // disable the whole provider (and skip identify/logout wiring). Contain it
-    // to "is_app_mode absent" instead.
+    // Contain errors: this runs inside the posthog-js import .then(), so a throw would hit
+    // init's .catch and disable the whole provider. Degrade to is_app_mode absent instead.
     try {
       const { isAppMode } = useAppMode()
       watch(
