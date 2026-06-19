@@ -24,6 +24,15 @@ const topupMocks = vi.hoisted(() => ({
 }))
 vi.mock('@/platform/telemetry/topupTracker', () => topupMocks)
 
+const mockNormalizeSurveyResponses = vi.hoisted(() => vi.fn())
+vi.mock('@/platform/telemetry/utils/surveyNormalization', () => ({
+  normalizeSurveyResponses: mockNormalizeSurveyResponses
+}))
+
+vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
+  remoteConfig: { value: null }
+}))
+
 vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
   getExecutionContext: () => ({
     is_template: false,
@@ -36,15 +45,6 @@ vi.mock('@/platform/telemetry/utils/getExecutionContext', () => ({
     has_toolkit_nodes: false,
     toolkit_node_names: []
   })
-}))
-
-const mockNormalizeSurveyResponses = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/utils/surveyNormalization', () => ({
-  normalizeSurveyResponses: mockNormalizeSurveyResponses
-}))
-
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfig: { value: null }
 }))
 
 import { MixpanelTelemetryProvider } from '@/platform/telemetry/providers/cloud/MixpanelTelemetryProvider'
