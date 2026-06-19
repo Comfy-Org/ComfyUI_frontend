@@ -36,6 +36,11 @@ describe('nodeIdToNumber', () => {
     expect(() => nodeIdToNumber('10:3')).toThrow(TypeError)
     expect(() => nodeIdToNumber(Number.NaN)).toThrow(TypeError)
   })
+
+  it('rejects non-decimal string formats like asNodeId does', () => {
+    expect(() => nodeIdToNumber('0x10')).toThrow(TypeError)
+    expect(() => nodeIdToNumber('1e3')).toThrow(TypeError)
+  })
 })
 
 describe('tryAsNodeId', () => {

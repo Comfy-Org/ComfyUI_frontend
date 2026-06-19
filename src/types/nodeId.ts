@@ -110,6 +110,9 @@ export function isNumericNodeId(id: NodeIdInput): boolean {
 }
 
 export function nodeIdToNumber(id: NodeIdInput): number {
+  if (typeof id === 'string' && !DECIMAL_INTEGER.test(id)) {
+    throw new TypeError(`Invalid numeric node id: ${id}`)
+  }
   const value = typeof id === 'number' ? id : Number(id)
   if (!Number.isInteger(value)) {
     throw new TypeError(`Invalid numeric node id: ${String(id)}`)
