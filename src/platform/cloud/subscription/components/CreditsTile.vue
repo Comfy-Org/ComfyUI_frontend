@@ -210,6 +210,7 @@ const {
   balance,
   isActiveSubscription,
   isFreeTier,
+  currentTeamCreditStop,
   fetchBalance,
   fetchStatus
 } = useBillingContext()
@@ -235,6 +236,8 @@ const tierKey = computed(() => {
 })
 
 const monthlyTotalCredits = computed<number | null>(() => {
+  const teamStop = currentTeamCreditStop.value
+  if (teamStop) return teamStop.credits_monthly
   const credits = getTierCredits(tierKey.value)
   if (credits === null) return null
   return isYearly.value ? credits * 12 : credits

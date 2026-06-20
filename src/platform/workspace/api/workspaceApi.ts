@@ -243,6 +243,12 @@ export type BillingStatus =
   | 'payment_failed'
   | 'inactive'
 
+export interface CurrentTeamCreditStop {
+  id: string
+  credits_monthly: number
+  stop_usd: number
+}
+
 export interface BillingStatusResponse {
   is_active: boolean
   subscription_status?: BillingSubscriptionStatus
@@ -253,6 +259,7 @@ export interface BillingStatusResponse {
   has_funds: boolean
   cancel_at?: string
   renewal_date?: string
+  team_credit_stop?: CurrentTeamCreditStop
 }
 
 export interface BillingBalanceResponse {

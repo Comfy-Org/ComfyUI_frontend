@@ -16,12 +16,18 @@ type Subscription = {
   duration: string | null
   renewalDate: string | null
 }
+type TeamStop = {
+  id: string
+  credits_monthly: number
+  stop_usd: number
+}
 
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
   subscription: null as Subscription | null,
   isActiveSubscription: false,
   isFreeTier: false,
+  currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
   canTopUp: true,
   fetchBalance: vi.fn(),
@@ -37,6 +43,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     subscription: computed(() => state.subscription),
     isActiveSubscription: computed(() => state.isActiveSubscription),
     isFreeTier: computed(() => state.isFreeTier),
+    currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
     isLoading: computed(() => state.isLoading),
     fetchBalance: state.fetchBalance,
     fetchStatus: state.fetchStatus
@@ -137,6 +144,7 @@ describe('CreditsTile', () => {
     state.subscription = null
     state.isActiveSubscription = false
     state.isFreeTier = false
+    state.currentTeamCreditStop = null
     state.isLoading = false
     state.canTopUp = true
     vi.clearAllMocks()
@@ -166,6 +174,25 @@ describe('CreditsTile', () => {
     activeProSubscription()
     const { container } = renderTile()
     expect(container.textContent).toContain('422 left of 21K')
+  })
+
+  it('uses the team credit stop monthly grant for the monthly total', () => {
+    state.isActiveSubscription = true
+    state.subscription = {
+      tier: 'TEAM',
+      duration: 'ANNUAL',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.currentTeamCreditStop = {
+      id: 'team_2500',
+      credits_monthly: 527500,
+      stop_usd: 2500
+    }
+    state.balance = { amountMicros: 0, cloudCreditBalanceMicros: 200 }
+    const { container } = renderTile()
+    // Monthly total is the stop's raw monthly grant, not the tier fallback,
+    // and is not multiplied by 12 for annual billing.
+    expect(container.textContent).toContain('422 left of 527,500')
   })
 
   it('hides the breakdown and forces zeros in the zero state', () => {
