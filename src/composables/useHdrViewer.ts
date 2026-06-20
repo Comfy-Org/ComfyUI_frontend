@@ -1,4 +1,3 @@
-import { useResizeObserver } from '@vueuse/core'
 import * as THREE from 'three'
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader'
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
@@ -18,6 +17,7 @@ import {
   computeChannelHistograms,
   computeImageStats
 } from '@/renderer/hdr/hdrStats'
+import { WebGLViewport } from '@/renderer/three/WebGLViewport'
 import { getImageFilenameFromUrl } from '@/utils/hdrFormatUtil'
 
 const MIN_ZOOM = 0.05
@@ -126,6 +126,7 @@ export function useHdrViewer() {
   const containerRef = shallowRef<HTMLElement | null>(null)
 
   let renderer: THREE.WebGLRenderer | null = null
+  let viewport: WebGLViewport | null = null
   let scene: THREE.Scene | null = null
   let camera: THREE.OrthographicCamera | null = null
   let material: THREE.ShaderMaterial | null = null
@@ -204,6 +205,7 @@ export function useHdrViewer() {
 
   function buildScene() {
     renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false })
+    viewport = new WebGLViewport(renderer)
     renderer.outputColorSpace = THREE.LinearSRGBColorSpace
     renderer.setPixelRatio(window.devicePixelRatio)
     renderer.setClearColor(0x0a0a0a, 1)
@@ -278,6 +280,7 @@ export function useHdrViewer() {
       resize()
       applyUniforms()
       attachInteractions(renderer!.domElement)
+      viewport!.observeResize(container, resize)
 
       const { texture: loaded, gamut: detectedGamut } =
         await loadHdrTexture(url)
@@ -400,18 +403,14 @@ export function useHdrViewer() {
       renderer.domElement.removeEventListener('pointerdown', onPointerDown)
       renderer.domElement.removeEventListener('pointermove', onHoverMove)
       renderer.domElement.removeEventListener('pointerleave', onHoverLeave)
-      renderer.forceContextLoss()
-      renderer.domElement.dispatchEvent(
-        new Event('webglcontextlost', { bubbles: true, cancelable: true })
-      )
-      renderer.dispose()
-      renderer.domElement.remove()
     }
+    viewport?.disposeRenderer()
     texture?.dispose()
     material?.dispose()
     mesh?.geometry.dispose()
 
     renderer = null
+    viewport = null
     scene = null
     camera = null
     material = null
@@ -419,8 +418,6 @@ export function useHdrViewer() {
     texture = null
     readSample = null
   }
-
-  useResizeObserver(containerRef, resize)
 
   watch([exposureStops, dither, clipWarnings, gamut, channel], applyUniforms)
 
