@@ -95,8 +95,9 @@
 
     <!-- Success Step - "You're all set" -->
     <SubscriptionSuccessWorkspace
-      v-if="checkoutStep === 'success' && selectedTierKey"
+      v-if="checkoutStep === 'success' && (selectedTierKey || isTeamCheckout)"
       :tier-key="selectedTierKey"
+      :team-plan="selectedTeamStop"
       :preview-data="previewData"
       @close="handleSuccessClose"
     />
@@ -137,6 +138,7 @@ const {
   selectedTeamStop,
   selectedBillingCycle,
   isPolling,
+  isTeamCheckout,
   handleSubscribeClick,
   handleSubscribeTeamClick,
   handleBackToPricing,

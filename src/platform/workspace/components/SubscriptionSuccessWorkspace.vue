@@ -54,13 +54,19 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
-const { tierKey, previewData = null } = defineProps<{
-  tierKey: Exclude<TierKey, 'free' | 'founder'>
+const {
+  tierKey,
+  previewData = null,
+  teamPlan = null
+} = defineProps<{
+  tierKey?: Exclude<TierKey, 'free' | 'founder'> | null
   previewData?: PreviewSubscribeResponse | null
+  teamPlan?: TeamPlanSelection | null
 }>()
 
 defineEmits<{
@@ -69,13 +75,20 @@ defineEmits<{
 
 const { t, n } = useI18n()
 
-const tierName = computed(() => t(`subscription.tiers.${tierKey}.name`))
-
-const displayPrice = computed(() =>
-  previewData?.new_plan
-    ? (previewData.new_plan.price_cents / 100).toFixed(0)
-    : '0'
+const tierName = computed(() =>
+  teamPlan
+    ? t('subscription.teamPlan.name')
+    : t(`subscription.tiers.${tierKey}.name`)
 )
 
-const displayCredits = computed(() => n(getTierCredits(tierKey) ?? 0))
+const displayPrice = computed(() => {
+  if (teamPlan) return String(teamPlan.discountedUsd)
+  return previewData?.new_plan
+    ? (previewData.new_plan.price_cents / 100).toFixed(0)
+    : '0'
+})
+
+const displayCredits = computed(() =>
+  n(teamPlan ? teamPlan.credits : tierKey ? (getTierCredits(tierKey) ?? 0) : 0)
+)
 </script>

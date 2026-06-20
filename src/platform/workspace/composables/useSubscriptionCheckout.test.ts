@@ -74,7 +74,8 @@ const {
   mockFetchBalance,
   mockPlans,
   mockResubscribe,
-  mockToastAdd
+  mockToastAdd,
+  mockStartOperation
 } = vi.hoisted(() => ({
   mockSubscribe: vi.fn(),
   mockPreviewSubscribe: vi.fn(),
@@ -82,7 +83,8 @@ const {
   mockFetchBalance: vi.fn(),
   mockPlans: { value: [] as Plan[] },
   mockResubscribe: vi.fn(),
-  mockToastAdd: vi.fn()
+  mockToastAdd: vi.fn(),
+  mockStartOperation: vi.fn()
 }))
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
@@ -99,6 +101,13 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
 // Shields the test from the real workspaceApi → @/scripts/api → app.ts import chain
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: { resubscribe: mockResubscribe }
+}))
+
+vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
+  useBillingOperationStore: () => ({
+    startOperation: mockStartOperation,
+    hasPendingOperations: false
+  })
 }))
 
 vi.mock('@/config/comfyApi', () => ({
@@ -136,6 +145,7 @@ describe('useSubscriptionCheckout', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.clearAllMocks()
     mockPlans.value = allPlans()
+    mockStartOperation.mockResolvedValue({ status: 'succeeded' })
     emit = vi.fn()
   })
 
@@ -444,6 +454,48 @@ describe('useSubscriptionCheckout', () => {
 
       expect(openSpy).toHaveBeenCalledWith('https://stripe.com/pay', '_blank')
       openSpy.mockRestore()
+    })
+
+    it('advances to success once the async payment operation succeeds', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'needs_payment_method',
+        billing_op_id: 'op-async-1',
+        payment_method_url: 'https://stripe.com/pay'
+      })
+      mockStartOperation.mockResolvedValueOnce({ status: 'succeeded' })
+      const openSpy = vi.spyOn(window, 'open').mockImplementation(() => null)
+
+      await checkout.handleAddCreditCard()
+
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-async-1',
+        'subscription'
+      )
+      expect(checkout.checkoutStep.value).toBe('success')
+      openSpy.mockRestore()
+    })
+
+    it('stays on the confirm step when the async operation does not succeed', async () => {
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      checkout.checkoutStep.value = 'preview'
+      mockSubscribe.mockResolvedValueOnce({
+        status: 'pending_payment',
+        billing_op_id: 'op-async-2'
+      })
+      mockStartOperation.mockResolvedValueOnce({ status: 'failed' })
+
+      await checkout.handleAddCreditCard()
+
+      expect(mockStartOperation).toHaveBeenCalledWith(
+        'op-async-2',
+        'subscription'
+      )
+      expect(checkout.checkoutStep.value).toBe('preview')
     })
 
     it('shows error toast on subscribe failure', async () => {

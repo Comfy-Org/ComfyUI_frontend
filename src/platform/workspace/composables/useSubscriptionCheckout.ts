@@ -58,6 +58,7 @@ export function useSubscriptionCheckout(emit: {
   const selectedTeamStop = ref<TeamPlanSelection | null>(null)
   const selectedBillingCycle = ref<BillingCycle>('yearly')
   const isPolling = computed(() => billingOperationStore.hasPendingOperations)
+  const isTeamCheckout = computed(() => selectedTeamStop.value !== null)
 
   function getApiPlanSlug(
     tierKey: CheckoutTierKey,
@@ -184,16 +185,21 @@ export function useSubscriptionCheckout(emit: {
       response.payment_method_url
     ) {
       window.open(response.payment_method_url, '_blank')
-      void billingOperationStore.startOperation(
-        response.billing_op_id,
-        'subscription'
-      )
+      await advanceToSuccessOnOperation(response.billing_op_id)
     } else if (response.status === 'pending_payment') {
-      void billingOperationStore.startOperation(
-        response.billing_op_id,
-        'subscription'
-      )
+      await advanceToSuccessOnOperation(response.billing_op_id)
     }
+  }
+
+  // A Stripe-backed subscribe finishes asynchronously: await the billing op and
+  // advance to the success step ourselves. The store refreshes status/balance
+  // before resolving and surfaces any failure via toast.
+  async function advanceToSuccessOnOperation(opId: string) {
+    const operation = await billingOperationStore.startOperation(
+      opId,
+      'subscription'
+    )
+    if (operation.status === 'succeeded') checkoutStep.value = 'success'
   }
 
   async function handleTeamSubscription() {
@@ -265,6 +271,7 @@ export function useSubscriptionCheckout(emit: {
     selectedTeamStop,
     selectedBillingCycle,
     isPolling,
+    isTeamCheckout,
     handleSubscribeClick,
     handleSubscribeTeamClick,
     handleBackToPricing,

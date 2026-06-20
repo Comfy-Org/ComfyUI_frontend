@@ -55,11 +55,39 @@ function renderCard() {
   })
 }
 
+function renderTeamCard() {
+  return render(SubscriptionSuccessWorkspace, {
+    props: {
+      teamPlan: {
+        id: 'team_700',
+        usd: 700,
+        credits: 147_700,
+        discountedUsd: 630
+      }
+    },
+    global: {
+      mocks: { $t: (key: string) => key },
+      stubs: {
+        Button: {
+          template: '<button @click="$emit(\'click\')"><slot /></button>'
+        }
+      }
+    }
+  })
+}
+
 describe('SubscriptionSuccessWorkspace', () => {
   it('renders the all-set heading and plan price', () => {
     renderCard()
     expect(screen.getByText('subscription.success.allSet')).toBeTruthy()
     expect(screen.getByText('$16')).toBeTruthy()
+  })
+
+  it('renders the team plan summary from the selected stop', () => {
+    renderTeamCard()
+    expect(screen.getByText('subscription.teamPlan.name')).toBeTruthy()
+    expect(screen.getByText('$630')).toBeTruthy()
+    expect(screen.getByText(/147700/)).toBeTruthy()
   })
 
   it('emits close when the close button is clicked', async () => {
