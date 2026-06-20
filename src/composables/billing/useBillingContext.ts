@@ -116,6 +116,14 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.currentPlanSlug)
   )
 
+  const teamCreditStops = computed(() =>
+    toValue(activeContext.value.teamCreditStops)
+  )
+
+  const currentTeamCreditStop = computed(() =>
+    toValue(activeContext.value.currentTeamCreditStop)
+  )
+
   const isActiveSubscription = computed(() =>
     toValue(activeContext.value.isActiveSubscription)
   )
@@ -263,6 +271,8 @@ function useBillingContextInternal(): BillingContext {
     balance,
     plans,
     currentPlanSlug,
+    teamCreditStops,
+    currentTeamCreditStop,
     isLoading,
     error,
     isActiveSubscription,
