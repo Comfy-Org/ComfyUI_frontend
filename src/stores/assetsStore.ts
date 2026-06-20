@@ -294,7 +294,11 @@ export const useAssetsStore = defineStore('assets', () => {
             ? { after: requestedAfter }
             : { offset: flatOutputOffset.value })
         })
-        const batch = page.assets
+        const {
+          assets: batch,
+          next_cursor: nextCursor,
+          has_more: hasMore
+        } = page
         const fresh = loadMore
           ? batch.filter((asset) => !flatOutputSeenIds.has(asset.id))
           : batch
@@ -303,12 +307,11 @@ export const useAssetsStore = defineStore('assets', () => {
           ? [...flatOutputAssets.value, ...fresh]
           : batch
         flatOutputOffset.value += batch.length
-        const nextCursor = page.next_cursor || undefined
         const cursorStuck =
           nextCursor !== undefined && nextCursor === requestedAfter
         flatOutputNextCursor = cursorStuck ? undefined : nextCursor
         flatOutputHasMore.value =
-          batch.length > 0 && page.has_more && !cursorStuck
+          batch.length > 0 && hasMore && !cursorStuck
         return flatOutputAssets.value
       } catch (err) {
         flatOutputError.value = err
