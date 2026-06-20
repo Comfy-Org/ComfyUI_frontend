@@ -1199,10 +1199,6 @@ const translations = {
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
 
   'pricing.plan.free.label': { en: 'FREE', 'zh-CN': '免费版' },
-  'pricing.plan.free.summary': {
-    en: "Explore Comfy's possibilities",
-    'zh-CN': '探索 Comfy 的可能性'
-  },
   'pricing.plan.free.price': { en: '$0', 'zh-CN': '$0' },
   'pricing.plan.free.credits': {
     en: 'Includes 400 monthly credits',
@@ -1223,10 +1219,6 @@ const translations = {
   },
 
   'pricing.plan.standard.label': { en: 'STANDARD', 'zh-CN': '标准版' },
-  'pricing.plan.standard.summary': {
-    en: 'For individuals creating workflows',
-    'zh-CN': '面向个人工作流创作者'
-  },
   'pricing.plan.standard.price': { en: '$20', 'zh-CN': '$20' },
   'pricing.plan.standard.credits': {
     en: 'Includes 4,200 monthly credits with top-ups available',
@@ -1254,10 +1246,6 @@ const translations = {
   },
 
   'pricing.plan.creator.label': { en: 'CREATOR', 'zh-CN': '创作者版' },
-  'pricing.plan.creator.summary': {
-    en: 'Small teams building fine-tuned, repeatable workflows',
-    'zh-CN': '小团队构建精细调优、可复用的工作流'
-  },
   'pricing.plan.creator.price': { en: '$35', 'zh-CN': '$35' },
   'pricing.plan.creator.credits': {
     en: 'Includes 7,400 monthly credits with top-ups available',
@@ -1281,10 +1269,6 @@ const translations = {
   },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
-  'pricing.plan.pro.summary': {
-    en: 'For growing teams running Comfy in production',
-    'zh-CN': '面向在生产环境使用 Comfy 的成长型团队'
-  },
   'pricing.plan.pro.price': { en: '$100', 'zh-CN': '$100' },
   'pricing.plan.pro.credits': {
     en: 'Includes 21,100 monthly credits with top-ups available',

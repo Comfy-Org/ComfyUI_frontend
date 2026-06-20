@@ -23,7 +23,6 @@ interface PlanFeature {
 interface PricingPlan {
   id: string
   labelKey: TranslationKey
-  summaryKey: TranslationKey
   priceKey?: TranslationKey
   creditsKey?: TranslationKey
   estimateKey?: TranslationKey
@@ -39,7 +38,6 @@ interface PricingPlan {
 const freePlan: PricingPlan = {
   id: 'free',
   labelKey: 'pricing.plan.free.label',
-  summaryKey: 'pricing.plan.free.summary',
   priceKey: 'pricing.plan.free.price',
   creditsKey: 'pricing.plan.free.credits',
   estimateKey: 'pricing.plan.free.estimate',
@@ -56,7 +54,6 @@ const plans: PricingPlan[] = [
   {
     id: 'standard',
     labelKey: 'pricing.plan.standard.label',
-    summaryKey: 'pricing.plan.standard.summary',
     priceKey: 'pricing.plan.standard.price',
     creditsKey: 'pricing.plan.standard.credits',
     estimateKey: 'pricing.plan.standard.estimate',
@@ -71,7 +68,6 @@ const plans: PricingPlan[] = [
   {
     id: 'creator',
     labelKey: 'pricing.plan.creator.label',
-    summaryKey: 'pricing.plan.creator.summary',
     priceKey: 'pricing.plan.creator.price',
     creditsKey: 'pricing.plan.creator.credits',
     estimateKey: 'pricing.plan.creator.estimate',
@@ -86,7 +82,6 @@ const plans: PricingPlan[] = [
   {
     id: 'pro',
     labelKey: 'pricing.plan.pro.label',
-    summaryKey: 'pricing.plan.pro.summary',
     priceKey: 'pricing.plan.pro.price',
     creditsKey: 'pricing.plan.pro.credits',
     estimateKey: 'pricing.plan.pro.estimate',
@@ -100,7 +95,6 @@ const plans: PricingPlan[] = [
   {
     id: 'enterprise',
     labelKey: 'pricing.enterprise.label',
-    summaryKey: 'pricing.enterprise.description',
     ctaKey: 'pricing.enterprise.cta',
     ctaHref: getRoutes(locale).cloudEnterprise,
     features: [],
@@ -165,11 +159,6 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
             />
           </span>
         </div>
-
-        <!-- Summary -->
-        <p class="px-6 text-sm text-primary-comfy-canvas">
-          {{ t(plan.summaryKey, locale) }}
-        </p>
 
         <!-- Price -->
         <div v-if="plan.priceKey" class="flex items-baseline gap-1 px-6 pt-2">
@@ -268,18 +257,15 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
             </span>
           </div>
 
-          <!-- Enterprise heading -->
-          <h2
-            v-if="plan.isEnterprise"
-            class="mt-3 text-2xl font-light text-primary-comfy-canvas"
-          >
-            {{ t('pricing.enterprise.heading', locale) }}
-          </h2>
-
-          <!-- Summary -->
-          <p class="mt-2 text-sm text-primary-comfy-canvas">
-            {{ t(plan.summaryKey, locale) }}
-          </p>
+          <!-- Enterprise heading + description -->
+          <template v-if="plan.isEnterprise">
+            <h2 class="mt-3 text-2xl font-light text-primary-comfy-canvas">
+              {{ t('pricing.enterprise.heading', locale) }}
+            </h2>
+            <p class="mt-2 text-sm text-primary-comfy-canvas">
+              {{ t('pricing.enterprise.description', locale) }}
+            </p>
+          </template>
 
           <!-- Price (standard plans only) -->
           <div v-if="plan.priceKey" class="mt-6 flex items-baseline gap-1">
@@ -362,7 +348,7 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
             {{ t('pricing.enterprise.heading', locale) }}
           </h2>
           <p class="mt-3 text-sm text-primary-comfy-canvas">
-            {{ t(enterprisePlan.summaryKey, locale) }}
+            {{ t('pricing.enterprise.description', locale) }}
           </p>
         </div>
         <BrandButton :href="enterprisePlan.ctaHref" variant="outline" size="lg">
