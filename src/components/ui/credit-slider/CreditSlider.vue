@@ -22,7 +22,6 @@ const {
   class: rootClass,
   stops = TEAM_PLAN_CREDIT_STOPS,
   defaultStopIndex = DEFAULT_TEAM_PLAN_STOP_INDEX,
-  currentStopIndex = null,
   cycle = 'yearly'
 } = defineProps<{
   disabled?: boolean
@@ -39,13 +38,6 @@ const {
    * Maps to `team_credit_stops.default_stop_index`. Defaults to DES-197 ($700).
    */
   defaultStopIndex?: number
-  /**
-   * The stop the workspace is already subscribed to (its index in `stops`).
-   * Rendered as the disabled "current plan" stop so it can't be re-selected;
-   * the consumer gates the CTA on it. Null when there's nothing to disable
-   * (e.g. unsubscribed, or a cancelled plan being re-subscribed).
-   */
-  currentStopIndex?: number | null
   /**
    * Billing cycle. Yearly applies the full `discountPercentYearly`; monthly
    * applies half of it (PRD: GA Team Billing — "for monthly the discount is
@@ -218,15 +210,12 @@ const { t } = useI18n()
         v-for="(stop, i) in stops"
         :key="stop.usd"
         :data-selected="i === selectedIndex ? '' : undefined"
-        :data-current="i === currentStopIndex ? '' : undefined"
         :class="
           cn(
             'flex items-center gap-1 text-xs tabular-nums',
-            i === currentStopIndex
-              ? 'text-muted-foreground opacity-50'
-              : i === selectedIndex
-                ? 'font-semibold text-base-foreground'
-                : 'text-muted-foreground'
+            i === selectedIndex
+              ? 'font-semibold text-base-foreground'
+              : 'text-muted-foreground'
           )
         "
       >
@@ -234,9 +223,7 @@ const { t } = useI18n()
           :class="
             cn(
               'icon-[comfy--credits] size-3 shrink-0',
-              i === selectedIndex && i !== currentStopIndex
-                ? 'bg-amber-400'
-                : 'bg-muted-foreground'
+              i === selectedIndex ? 'bg-amber-400' : 'bg-muted-foreground'
             )
           "
           aria-hidden="true"

@@ -170,20 +170,6 @@ describe('CreditSlider', () => {
     }
   })
 
-  it('marks the current stop as disabled (data-current + muted)', async () => {
-    renderSlider({ modelValue: 700, currentStopIndex: 4 })
-    await flush()
-
-    const items = within(
-      screen.getByTestId('credit-slider-stops')
-    ).getAllByRole('listitem')
-    // index 4 → 527.5K is the workspace's current stop: marked + muted.
-    expect(items[4]).toHaveAttribute('data-current', '')
-    expect(items[4].className).toContain('opacity-50')
-    // A non-current stop is not marked.
-    expect(items[2]).not.toHaveAttribute('data-current')
-  })
-
   it('renders stops + default index supplied via props (BE-sourced override)', async () => {
     const stops = [
       { usd: 50, credits: 10_550, discountPercentYearly: 0 },
