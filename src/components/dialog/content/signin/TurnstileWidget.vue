@@ -1,7 +1,13 @@
 <template>
   <div class="flex flex-col gap-2">
     <div ref="containerRef"></div>
-    <small v-if="errorMessage" class="text-danger">{{ errorMessage }}</small>
+    <small
+      v-if="errorMessage"
+      role="alert"
+      aria-live="assertive"
+      class="text-red-500"
+      >{{ errorMessage }}</small
+    >
   </div>
 </template>
 
@@ -32,10 +38,12 @@ const clearToken = () => {
  * Turnstile tokens are single-use, so after a token is consumed by a submit
  * attempt that did not succeed, the spent token must be discarded and a new
  * challenge requested. Clearing the model re-blocks submission until the user
- * solves the fresh challenge.
+ * solves the fresh challenge; clearing the error drops any stale failure text
+ * so it can't linger over the new challenge.
  */
 const reset = () => {
   clearToken()
+  errorMessage.value = ''
   if (widgetId && window.turnstile) {
     window.turnstile.reset(widgetId)
   }
@@ -65,10 +73,12 @@ onMounted(async () => {
       },
       'error-callback': () => {
         clearToken()
+        console.warn('Turnstile challenge failed')
         errorMessage.value = t('auth.turnstile.failed')
       }
     })
-  } catch {
+  } catch (error) {
+    console.warn('Turnstile failed to load', error)
     errorMessage.value = t('auth.turnstile.failed')
   }
 })

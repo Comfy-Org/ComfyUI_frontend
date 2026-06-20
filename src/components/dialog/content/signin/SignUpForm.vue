@@ -35,6 +35,16 @@
       v-model:token="turnstileToken"
     />
 
+    <small
+      v-show="submitBlockedByTurnstile"
+      id="comfy-org-sign-up-turnstile-hint"
+      role="status"
+      aria-live="polite"
+      class="opacity-80"
+    >
+      {{ t('auth.turnstile.submitBlockedHint') }}
+    </small>
+
     <!-- Submit Button -->
     <ProgressSpinner v-if="loading" class="mx-auto size-8" />
     <Button
@@ -42,6 +52,11 @@
       type="submit"
       class="mt-4 h-10 font-medium"
       :disabled="!$form.valid || submitBlockedByTurnstile"
+      :aria-describedby="
+        submitBlockedByTurnstile
+          ? 'comfy-org-sign-up-turnstile-hint'
+          : undefined
+      "
     >
       {{ t('auth.signup.signUpButton') }}
     </Button>
@@ -55,7 +70,7 @@ import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -93,13 +108,15 @@ const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
   }
 }, 1_500)
 
-// Turnstile tokens are single-use. When a submit attempt finishes without
-// navigating away (i.e. signup failed and the form is still mounted), the
-// captured token is already spent. Reset the widget so the next attempt sends a
-// fresh token instead of deterministically re-failing with the spent one.
-watch(loading, (isLoading, wasLoading) => {
-  if (wasLoading && !isLoading) {
-    turnstileWidget.value?.reset()
-  }
-})
+// Turnstile tokens are single-use. The parent calls this after a FAILED signup
+// (the form can't observe the submit outcome itself) to discard the spent token
+// and request a fresh challenge. Driving it from the actual result — instead of
+// watching the store-global loading flag — keeps an unrelated auth action from
+// wiping a freshly-solved token, and avoids resetting a widget that is about to
+// unmount on success.
+function resetTurnstile() {
+  turnstileWidget.value?.reset()
+}
+
+defineExpose({ resetTurnstile })
 </script>

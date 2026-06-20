@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { TurnstileApi } from '@/composables/auth/turnstileScript'
+
 const TURNSTILE_SRC =
   'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
 
-type TurnstileGlobal = NonNullable<Window['turnstile']>
-
-const fakeApi = (): TurnstileGlobal => ({
+const fakeApi = (): TurnstileApi => ({
   render: vi.fn(() => 'widget-id'),
   reset: vi.fn(),
   remove: vi.fn()

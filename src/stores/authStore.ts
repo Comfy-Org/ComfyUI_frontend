@@ -45,9 +45,13 @@ type CreateCustomerResponse =
 
 /**
  * Request body for createCustomer. The Cloudflare Turnstile token captured at
- * signup is forwarded to the BE as `turnstile_token` (snake_case). The BE
- * (repo `cloud`) reads this field on the CreateCustomer request; it is omitted
- * for non-signup flows and on OSS / localhost where Turnstile is not rendered.
+ * signup is forwarded to the backend as `turnstile_token` (snake_case), which
+ * reads this field on the CreateCustomer request; it is omitted for non-signup
+ * flows and on OSS / localhost where Turnstile is not rendered.
+ *
+ * TODO: replace with the generated `operations['createCustomer']` request-body
+ * type once the backend OpenAPI spec includes `turnstile_token`, so the field
+ * name/optionality drift-checks against the backend at compile time.
  */
 type CreateCustomerPayload = {
   turnstile_token?: string

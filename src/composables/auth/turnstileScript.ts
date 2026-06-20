@@ -3,7 +3,7 @@ const TURNSTILE_SRC =
 const SCRIPT_LOAD_TIMEOUT_MS = 10_000
 const SCRIPT_POLL_INTERVAL_MS = 50
 
-interface TurnstileRenderOptions {
+export interface TurnstileRenderOptions {
   sitekey: string
   theme?: 'light' | 'dark' | 'auto'
   callback?: (token: string) => void
@@ -11,7 +11,7 @@ interface TurnstileRenderOptions {
   'error-callback'?: () => void
 }
 
-interface TurnstileApi {
+export interface TurnstileApi {
   render: (
     container: string | HTMLElement,
     options: TurnstileRenderOptions

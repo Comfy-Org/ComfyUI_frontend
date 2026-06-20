@@ -37,7 +37,7 @@
         <Message v-if="userIsInChina" severity="warn" class="mb-4">
           {{ t('auth.signup.regionRestrictionChina') }}
         </Message>
-        <SignUpForm v-else @submit="signUpWithEmail" />
+        <SignUpForm v-else ref="signUpForm" @submit="signUpWithEmail" />
       </template>
 
       <!-- Divider -->
@@ -206,6 +206,8 @@ const signInWithEmail = async (values: SignInData) => {
   }
 }
 
+const signUpForm = ref<InstanceType<typeof SignUpForm> | null>(null)
+
 const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
   if (
     await authActions.signUpWithEmail(
@@ -215,6 +217,10 @@ const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
     )
   ) {
     onSuccess()
+  } else {
+    // Signup failed while the form is still mounted: re-arm the single-use
+    // Turnstile token so the next attempt sends a fresh one.
+    signUpForm.value?.resetTurnstile()
   }
 }
 

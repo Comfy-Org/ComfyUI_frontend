@@ -111,7 +111,10 @@ export type RemoteConfig = {
   unified_cloud_auth?: boolean
   sentry_dsn?: string
   turnstile_sitekey?: string
-  signup_turnstile?: TurnstileMode
+  // Raw, unvalidated wire value (a server typo like 'enfroce' is possible).
+  // Always funnel it through normalizeTurnstileMode before trusting it as a
+  // TurnstileMode — that resolver is the single narrowing boundary.
+  signup_turnstile?: string
 }
 
 /**

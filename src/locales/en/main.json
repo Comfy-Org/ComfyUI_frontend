@@ -2282,7 +2282,8 @@
     },
     "turnstile": {
       "failed": "Verification failed. Please try again.",
-      "expired": "Verification expired. Please complete the challenge again."
+      "expired": "Verification expired. Please complete the challenge again.",
+      "submitBlockedHint": "Complete the verification challenge above to enable sign up."
     },
     "signOut": {
       "signOut": "Log Out",

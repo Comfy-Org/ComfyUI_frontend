@@ -1,12 +1,13 @@
 import { Form, FormField } from '@primevue/forms'
+import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import Button from '@/components/ui/button/Button.vue'
-import PrimeVue from 'primevue/config'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
+import PrimeVue from 'primevue/config'
 import ProgressSpinner from 'primevue/progressspinner'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -39,6 +40,7 @@ vi.mock('@/stores/authStore', () => ({
 const mockTurnstileEnabled = ref(false)
 const mockTurnstileEnforced = ref(false)
 const mockReset = vi.fn()
+let emitTurnstileToken: ((token: string) => void) | undefined
 
 vi.mock('@/composables/auth/useTurnstile', () => ({
   useTurnstile: () => ({
@@ -47,20 +49,44 @@ vi.mock('@/composables/auth/useTurnstile', () => ({
   })
 }))
 
-// Stub the real widget (which loads the external Turnstile script) with a
-// component that exposes a spyable reset() so we can assert SignUpForm wires it.
+// Stub the real widget (which loads the external Turnstile script) with one that
+// exposes a spyable reset() and lets a test drive the v-model token the way a
+// solved challenge would.
 vi.mock('./TurnstileWidget.vue', async () => {
-  const { defineComponent } = await import('vue')
+  const { defineComponent: defineMock } = await import('vue')
   return {
-    default: defineComponent({
+    default: defineMock({
       name: 'TurnstileWidget',
-      setup(_, { expose }) {
+      emits: ['update:token'],
+      setup(_, { expose, emit }) {
         expose({ reset: mockReset })
+        emitTurnstileToken = (token: string) => emit('update:token', token)
         return () => null
       }
     })
   }
 })
+
+const signUpButton = enMessages.auth.signup.signUpButton
+
+function globalOptions() {
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'en',
+    messages: { en: enMessages }
+  })
+  return {
+    plugins: [PrimeVue, i18n],
+    components: {
+      Form,
+      FormField,
+      Button,
+      InputText,
+      Password,
+      ProgressSpinner
+    }
+  }
+}
 
 describe('SignUpForm', () => {
   beforeEach(() => {
@@ -68,31 +94,59 @@ describe('SignUpForm', () => {
     mockTurnstileEnabled.value = false
     mockTurnstileEnforced.value = false
     mockReset.mockClear()
+    emitTurnstileToken = undefined
   })
 
   afterEach(() => {
     vi.restoreAllMocks()
   })
 
-  function renderComponent() {
-    const i18n = createI18n({
-      legacy: false,
-      locale: 'en',
-      messages: { en: enMessages }
-    })
-    return render(SignUpForm, {
-      global: {
-        plugins: [PrimeVue, i18n],
-        components: {
-          Form,
-          FormField,
-          Button,
-          InputText,
-          Password,
-          ProgressSpinner
-        }
+  function renderComponent(props: Record<string, unknown> = {}) {
+    const user = userEvent.setup()
+    const utils = render(SignUpForm, { global: globalOptions(), props })
+    return { ...utils, user }
+  }
+
+  /** Render through a host that keeps a ref, so the parent-facing exposed
+   * `resetTurnstile()` can be invoked the way SignInContent would. */
+  function renderWithRef() {
+    const formRef = ref<{ resetTurnstile: () => void } | null>(null)
+    const Host = defineComponent({
+      setup() {
+        return () => h(SignUpForm, { ref: formRef })
       }
     })
+    const utils = render(Host, { global: globalOptions() })
+    return {
+      ...utils,
+      form: () => {
+        if (!formRef.value) throw new Error('form not mounted')
+        return formRef.value
+      }
+    }
+  }
+
+  const expectedValues = {
+    email: 'new@example.com',
+    password: 'Password1!',
+    confirmPassword: 'Password1!'
+  }
+
+  async function fillValidSignup(user: ReturnType<typeof userEvent.setup>) {
+    await user.type(
+      screen.getByPlaceholderText(enMessages.auth.signup.emailPlaceholder),
+      expectedValues.email
+    )
+    await user.type(
+      screen.getByPlaceholderText(enMessages.auth.signup.passwordPlaceholder),
+      expectedValues.password
+    )
+    await user.type(
+      screen.getByPlaceholderText(
+        enMessages.auth.login.confirmPasswordPlaceholder
+      ),
+      expectedValues.confirmPassword
+    )
   }
 
   describe('Password manager autofill attributes', () => {
@@ -138,27 +192,71 @@ describe('SignUpForm', () => {
   })
 
   describe('Turnstile single-use token reset', () => {
-    it('resets the widget when loading returns to false (failed submit)', async () => {
+    it('exposes resetTurnstile() that resets the rendered widget', async () => {
       mockTurnstileEnabled.value = true
-      renderComponent()
+      const { form } = renderWithRef()
       await nextTick()
 
-      // Simulate a submit that started (loading=true) then failed without
-      // navigating away (loading=false). The spent token must be reset.
-      mockLoadingRef.value = true
-      await nextTick()
-      mockLoadingRef.value = false
-      await nextTick()
+      form().resetTurnstile()
 
       expect(mockReset).toHaveBeenCalledOnce()
     })
 
     it('does not reset the widget on the initial render', async () => {
       mockTurnstileEnabled.value = true
-      renderComponent()
+      renderWithRef()
       await nextTick()
 
       expect(mockReset).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Turnstile submit gating', () => {
+    it('disables the submit button in enforce mode until a token is present', async () => {
+      mockTurnstileEnabled.value = true
+      mockTurnstileEnforced.value = true
+      renderComponent()
+      await nextTick()
+
+      expect(screen.getByRole('button', { name: signUpButton })).toBeDisabled()
+    })
+
+    it('does not emit submit in enforce mode while the token is empty', async () => {
+      mockTurnstileEnabled.value = true
+      mockTurnstileEnforced.value = true
+      const onSubmit = vi.fn()
+      const { user } = renderComponent({ onSubmit })
+      await fillValidSignup(user)
+
+      await user.click(screen.getByRole('button', { name: signUpButton }))
+
+      expect(onSubmit).not.toHaveBeenCalled()
+    })
+
+    it('emits submit with the token in enforce mode once the challenge is solved', async () => {
+      mockTurnstileEnabled.value = true
+      mockTurnstileEnforced.value = true
+      const onSubmit = vi.fn()
+      const { user } = renderComponent({ onSubmit })
+      await fillValidSignup(user)
+
+      emitTurnstileToken!('token-xyz')
+      await nextTick()
+      await user.click(screen.getByRole('button', { name: signUpButton }))
+
+      expect(onSubmit).toHaveBeenCalledWith(expectedValues, 'token-xyz')
+    })
+
+    it('emits submit without a token in shadow mode (never blocks)', async () => {
+      mockTurnstileEnabled.value = true
+      mockTurnstileEnforced.value = false
+      const onSubmit = vi.fn()
+      const { user } = renderComponent({ onSubmit })
+      await fillValidSignup(user)
+
+      await user.click(screen.getByRole('button', { name: signUpButton }))
+
+      expect(onSubmit).toHaveBeenCalledWith(expectedValues, undefined)
     })
   })
 })

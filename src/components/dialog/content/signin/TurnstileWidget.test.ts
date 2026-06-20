@@ -4,6 +4,8 @@ import { createI18n } from 'vue-i18n'
 
 import { render } from '@testing-library/vue'
 
+import type { TurnstileRenderOptions } from '@/composables/auth/turnstileScript'
+
 import TurnstileWidget from './TurnstileWidget.vue'
 
 const { mockLoadTurnstile, mockGetSiteKey, mockLightTheme } = vi.hoisted(
@@ -45,19 +47,11 @@ const i18n = createI18n({
   }
 })
 
-type RenderOptions = {
-  sitekey: string
-  theme: string
-  callback: (token: string) => void
-  'expired-callback': () => void
-  'error-callback': () => void
-}
-
 /** A controllable Cloudflare Turnstile global whose render() captures options. */
 function fakeTurnstile() {
-  let captured: RenderOptions | undefined
+  let captured: TurnstileRenderOptions | undefined
   const api = {
-    render: vi.fn((_el: unknown, options: RenderOptions) => {
+    render: vi.fn((_el: unknown, options: TurnstileRenderOptions) => {
       captured = options
       return 'widget-id'
     }),
@@ -144,7 +138,7 @@ describe('TurnstileWidget', () => {
     const { emitted, container } = renderWidget()
     await flush()
 
-    options()!.callback('token-abc')
+    options()!.callback!('token-abc')
     await flush()
 
     expect(emitted()['update:token'].at(-1)).toEqual(['token-abc'])
@@ -159,8 +153,8 @@ describe('TurnstileWidget', () => {
     const { emitted, container } = renderWidget()
     await flush()
 
-    options()!.callback('token-abc')
-    options()!['expired-callback']()
+    options()!.callback!('token-abc')
+    options()!['expired-callback']!()
     await flush()
 
     expect(emitted()['update:token'].at(-1)).toEqual([''])
@@ -174,8 +168,8 @@ describe('TurnstileWidget', () => {
     const { emitted, container } = renderWidget()
     await flush()
 
-    options()!.callback('token-abc')
-    options()!['error-callback']()
+    options()!.callback!('token-abc')
+    options()!['error-callback']!()
     await flush()
 
     expect(emitted()['update:token'].at(-1)).toEqual([''])
@@ -199,7 +193,7 @@ describe('TurnstileWidget', () => {
     const { emitted, getCurrentInstance } = renderWidgetWithExpose()
     await flush()
 
-    options()!.callback('token-abc')
+    options()!.callback!('token-abc')
     await flush()
     expect(emitted()['update:token'].at(-1)).toEqual(['token-abc'])
 
@@ -208,6 +202,23 @@ describe('TurnstileWidget', () => {
 
     expect(api.reset).toHaveBeenCalledWith('widget-id')
     expect(emitted()['update:token'].at(-1)).toEqual([''])
+  })
+
+  it('reset() clears a stale error so it does not linger over a fresh challenge', async () => {
+    const { api, options } = fakeTurnstile()
+    mockLoadTurnstile.mockResolvedValue(api)
+    window.turnstile = api as unknown as NonNullable<Window['turnstile']>
+
+    const { container, getCurrentInstance } = renderWidgetWithExpose()
+    await flush()
+
+    options()!['error-callback']!()
+    await flush()
+    expect(container.textContent).toContain('Verification failed')
+
+    getCurrentInstance().reset()
+    await flush()
+    expect(container.textContent).not.toContain('Verification failed')
   })
 
   it('reset() clears the token even when the widget never rendered', async () => {

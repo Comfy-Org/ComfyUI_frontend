@@ -636,6 +636,20 @@ describe('useAuthStore', () => {
         expect(store.loading).toBe(false)
       })
 
+      it('never sends a turnstile_token on the customer request (OAuth is exempt)', async () => {
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+          user: mockUser
+        } as Partial<UserCredential> as UserCredential)
+
+        await store.loginWithGoogle()
+
+        const customerCall = mockFetch.mock.calls.find(([url]) =>
+          String(url).endsWith('/customers')
+        )
+        expect(customerCall).toBeDefined()
+        expect(customerCall?.[1]).not.toHaveProperty('body')
+      })
+
       it('should handle Google sign in errors', async () => {
         const mockError = new Error('Google authentication failed')
         vi.mocked(firebaseAuth.signInWithPopup).mockRejectedValue(mockError)
@@ -667,6 +681,20 @@ describe('useAuthStore', () => {
         )
         expect(result).toEqual(mockUserCredential)
         expect(store.loading).toBe(false)
+      })
+
+      it('never sends a turnstile_token on the customer request (OAuth is exempt)', async () => {
+        vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue({
+          user: mockUser
+        } as Partial<UserCredential> as UserCredential)
+
+        await store.loginWithGithub()
+
+        const customerCall = mockFetch.mock.calls.find(([url]) =>
+          String(url).endsWith('/customers')
+        )
+        expect(customerCall).toBeDefined()
+        expect(customerCall?.[1]).not.toHaveProperty('body')
       })
 
       it('should handle Github sign in errors', async () => {
