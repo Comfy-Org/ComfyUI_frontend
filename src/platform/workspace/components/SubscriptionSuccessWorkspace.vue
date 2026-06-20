@@ -54,6 +54,8 @@
         </p>
         <InviteMembersForm
           v-else
+          ref="inviteForm"
+          :show-submit="false"
           source="post_upgrade_success"
           :submit-label="$t('subscription.success.sendInvites')"
           :placeholder="$t('subscription.success.inviteEmailsPlaceholder')"
@@ -64,6 +66,17 @@
     </div>
 
     <div class="flex flex-col gap-2 pt-8">
+      <Button
+        v-if="showInviteBlock && invitedEmails.length === 0"
+        variant="tertiary"
+        size="lg"
+        class="w-full rounded-lg"
+        :disabled="!canSendInvites"
+        :loading="isSendingInvites"
+        @click="handleSendInvites"
+      >
+        {{ $t('subscription.success.sendInvites') }}
+      </Button>
       <Button
         variant="secondary"
         size="lg"
@@ -133,6 +146,14 @@ const invitableSeats = computed(() => MAX_WORKSPACE_MEMBERS - 1)
 const showInviteBlock = computed(() => isTeam && flags.teamWorkspacesEnabled)
 
 const invitedEmails = ref<string[]>([])
+
+const inviteForm = ref<InstanceType<typeof InviteMembersForm>>()
+const canSendInvites = computed(() => inviteForm.value?.canSubmit ?? false)
+const isSendingInvites = computed(() => inviteForm.value?.loading ?? false)
+
+function handleSendInvites() {
+  void inviteForm.value?.submit()
+}
 
 function onInvited(emails: string[]) {
   invitedEmails.value = emails

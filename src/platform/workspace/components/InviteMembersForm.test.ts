@@ -164,4 +164,12 @@ describe('InviteMembersForm', () => {
     expect(emitted().cancel).toBeTruthy()
     expect(mockCreateInvite).not.toHaveBeenCalled()
   })
+
+  it('hides the built-in submit row when showSubmit is false', () => {
+    renderForm({ showSubmit: false })
+
+    expect(
+      screen.queryByRole('button', { name: 'Send invites' })
+    ).not.toBeInTheDocument()
+  })
 })

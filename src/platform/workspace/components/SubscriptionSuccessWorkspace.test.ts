@@ -110,6 +110,16 @@ describe('SubscriptionSuccessWorkspace', () => {
     )
   })
 
+  it('places the Send invites action in the footer for a team upgrade', () => {
+    renderTeamCard()
+    expect(screen.getByText('subscription.success.sendInvites')).toBeTruthy()
+  })
+
+  it('shows no Send invites action for a personal upgrade', () => {
+    renderCard({ isTeam: false })
+    expect(screen.queryByText('subscription.success.sendInvites')).toBeNull()
+  })
+
   it('does not render the invite block for a personal upgrade', () => {
     renderCard({ isTeam: false })
     expect(screen.queryByText('subscription.success.inviteTitle')).toBeNull()
