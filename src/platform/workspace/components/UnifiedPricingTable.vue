@@ -268,15 +268,11 @@
               <!-- CTA pinned to the card bottom (aligns with Enterprise CTA) -->
               <Button
                 variant="inverted"
-                :disabled="isLoading"
+                :disabled="isTeamButtonDisabled"
                 class="mt-auto h-10 w-full font-inter text-sm/normal font-bold"
                 @click="handleSubscribeTeam"
               >
-                {{
-                  currentBillingCycle === 'yearly'
-                    ? t('subscription.teamPlan.cta')
-                    : t('subscription.teamPlan.ctaMonthly')
-                }}
+                {{ teamButtonLabel }}
               </Button>
             </div>
 
@@ -414,7 +410,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { I18nT, useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -610,7 +606,8 @@ const {
   plans: apiPlans,
   currentPlanSlug,
   fetchPlans,
-  subscription
+  subscription,
+  currentTeamCreditStop
 } = useBillingContext()
 
 const { teamCreditStops } = useBillingPlans()
@@ -650,6 +647,60 @@ const selectedTeamStop = computed(
 const teamCredits = computed(() => selectedTeamStop.value.credits)
 const teamVideoEstimate = computed(() =>
   Math.round(teamCredits.value * VIDEO_PER_CREDIT)
+)
+
+// The team's currently-subscribed stop (null when on no team plan). Matched to
+// the slider stops by list price so the current stop can be disabled.
+const isTeamSubscribed = computed(() => currentTeamCreditStop.value !== null)
+const currentTeamStopIndex = computed(() => {
+  const usd = currentTeamCreditStop.value?.stop_usd
+  if (usd == null) return null
+  const i = TEAM_PLAN_CREDIT_STOPS.findIndex((stop) => stop.usd === usd)
+  return i === -1 ? null : i
+})
+
+// Start the slider on the current stop so an active subscriber sees their plan
+// (disabled) and must move off it to change.
+watch(
+  currentTeamCreditStop,
+  (stop) => {
+    if (!stop) return
+    teamUsd.value = stop.stop_usd
+  },
+  { immediate: true }
+)
+
+// The CTA — not the slider stop — reflects the current plan: when the slider
+// sits on the active stop the button reads "Current plan" and is disabled; any
+// other stop reads "Change plan". A cancelled plan re-subscribes instead.
+const isTeamCurrentStopSelected = computed(
+  () =>
+    currentTeamStopIndex.value !== null &&
+    TEAM_PLAN_CREDIT_STOPS[currentTeamStopIndex.value]?.usd === teamUsd.value
+)
+
+const teamButtonLabel = computed(() => {
+  if (!isTeamSubscribed.value) {
+    return currentBillingCycle.value === 'yearly'
+      ? t('subscription.teamPlan.cta')
+      : t('subscription.teamPlan.ctaMonthly')
+  }
+  // Only the current stop re-subscribes (cancelled) or reads "Current plan"
+  // (active); any other stop is a plan change.
+  if (isTeamCurrentStopSelected.value) {
+    return isCancelled.value
+      ? t('subscription.resubscribe')
+      : t('subscription.teamPlan.currentPlan')
+  }
+  return t('subscription.teamPlan.changePlan')
+})
+
+const isTeamButtonDisabled = computed(
+  () =>
+    isLoading ||
+    (isTeamSubscribed.value &&
+      !isCancelled.value &&
+      isTeamCurrentStopSelected.value)
 )
 
 onMounted(() => {
@@ -764,7 +815,12 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
 }
 
 function handleSubscribeTeam() {
-  if (isLoading) return
+  if (isTeamButtonDisabled.value) return
+  // Re-subscribe only when keeping the current stop; a different stop is a change.
+  if (isCancelled.value && isTeamCurrentStopSelected.value) {
+    emit('resubscribe')
+    return
+  }
   const stop = selectedTeamStop.value
   emit('subscribeTeam', {
     stop: {

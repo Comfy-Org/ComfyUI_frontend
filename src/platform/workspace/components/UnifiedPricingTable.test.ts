@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -13,20 +14,31 @@ interface MockSubscription {
   duration?: string
 }
 
+interface MockTeamStop {
+  id: string
+  credits_monthly: number
+  stop_usd: number
+}
+
 const mockSubscription = ref<MockSubscription | null>(null)
 const mockCurrentPlanSlug = ref<string | null>(null)
+const mockCurrentTeamCreditStop = ref<MockTeamStop | null>(null)
+const mockTeamFlag = ref(false)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     plans: ref([]),
     currentPlanSlug: computed(() => mockCurrentPlanSlug.value),
     fetchPlans: vi.fn(),
-    subscription: computed(() => mockSubscription.value)
+    subscription: computed(() => mockSubscription.value),
+    currentTeamCreditStop: computed(() => mockCurrentTeamCreditStop.value)
   })
 }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({ flags: { teamWorkspacesEnabled: false } })
+  useFeatureFlags: () => ({
+    flags: { teamWorkspacesEnabled: mockTeamFlag.value }
+  })
 }))
 
 const i18n = createI18n({
@@ -35,14 +47,21 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function renderComponent() {
+function renderComponent(props: Record<string, unknown> = {}) {
   return render(UnifiedPricingTable, {
+    props,
     global: {
       plugins: [i18n],
       components: { Button },
       stubs: {
         SelectButton: { template: '<div />' },
-        CreditSlider: { template: '<div />' }
+        // Clicking moves the v-model selection to a different stop ($200) so
+        // tests can move off the current stop.
+        CreditSlider: {
+          template:
+            '<button data-testid="team-slider" @click="$emit(\'update:modelValue\', 200)" />',
+          emits: ['update:modelValue']
+        }
       }
     }
   })
@@ -52,6 +71,8 @@ describe('UnifiedPricingTable plan CTA labels', () => {
   beforeEach(() => {
     mockSubscription.value = null
     mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockTeamFlag.value = false
   })
 
   it('prompts free-tier users to subscribe, never to "change"', () => {
@@ -81,6 +102,99 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     ).toBeTruthy()
     expect(
       screen.getByRole('button', { name: 'Change to Pro Yearly' })
+    ).toBeTruthy()
+  })
+})
+
+describe('UnifiedPricingTable team plan CTA', () => {
+  const TEAM_STOP = {
+    id: 'team_2500',
+    credits_monthly: 527_500,
+    stop_usd: 2_500
+  }
+
+  beforeEach(() => {
+    mockSubscription.value = null
+    mockCurrentPlanSlug.value = null
+    mockCurrentTeamCreditStop.value = null
+    mockTeamFlag.value = true
+  })
+
+  it('disables the CTA while sitting on the active current stop', () => {
+    mockSubscription.value = {
+      tier: 'TEAM',
+      duration: 'ANNUAL',
+      isCancelled: false
+    }
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+
+    renderComponent({ initialPlanMode: 'team' })
+
+    const cta = screen.getByRole('button', { name: 'Current plan' })
+    expect(cta).toBeDisabled()
+  })
+
+  it('enables "Change plan" once a different stop is selected', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = {
+      tier: 'TEAM',
+      duration: 'ANNUAL',
+      isCancelled: false
+    }
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    await user.click(screen.getByTestId('team-slider'))
+
+    const cta = screen.getByRole('button', { name: 'Change plan' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribeTeam).toBeTruthy()
+  })
+
+  it('re-subscribes (not change) for a cancelled team subscription', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = {
+      tier: 'TEAM',
+      duration: 'ANNUAL',
+      isCancelled: true
+    }
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    const cta = screen.getByRole('button', { name: 'Resubscribe' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().resubscribe).toBeTruthy()
+  })
+
+  it('changes plan (not re-subscribe) when a cancelled sub picks a different stop', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = {
+      tier: 'TEAM',
+      duration: 'ANNUAL',
+      isCancelled: true
+    }
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    await user.click(screen.getByTestId('team-slider'))
+
+    const cta = screen.getByRole('button', { name: 'Change plan' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribeTeam).toBeTruthy()
+    expect(emitted().resubscribe).toBeFalsy()
+  })
+
+  it('prompts a fresh subscribe when on no team plan', () => {
+    renderComponent({ initialPlanMode: 'team' })
+
+    expect(
+      screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
     ).toBeTruthy()
   })
 })
