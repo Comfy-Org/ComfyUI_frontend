@@ -7,7 +7,7 @@
       :delimiter="EMAIL_DELIMITER"
       :convert-value="normalizeEmail"
       :model-value="emails"
-      class="min-h-10 w-full bg-tertiary-background px-3 hover:bg-tertiary-background-hover focus-within:bg-tertiary-background"
+      class="min-h-10 w-full bg-tertiary-background px-3 focus-within:bg-tertiary-background hover:bg-tertiary-background-hover"
       @update:model-value="onEmailsUpdate"
     >
       <TagsInputItem
