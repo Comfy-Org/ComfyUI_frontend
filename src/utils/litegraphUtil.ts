@@ -1,6 +1,5 @@
 import _ from 'es-toolkit/compat'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import {
@@ -28,8 +27,8 @@ import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNod
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
-import type { WidgetEntityId } from '@/world/entityIds'
-import { widgetEntityId } from '@/world/entityIds'
+import type { WidgetId } from '@/types/widgetId'
+import { widgetId } from '@/types/widgetId'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
 type VideoNode = LGraphNode & {
@@ -358,28 +357,20 @@ export function resolveNodeWidget(
     return widget ? [node, widget] : []
   }
 
-  for (const node of graph.nodes) {
-    if (!node.isSubgraphNode()) continue
-    const widget = node.widgets?.find(
-      (w) =>
-        isPromotedWidgetView(w) &&
-        w.sourceWidgetName === widgetName &&
-        w.sourceNodeId === nodeId
-    )
-    if (widget) return [node, widget]
-  }
-
   return []
 }
 
-export function getWidgetEntityIdForNode(
+export function getWidgetIdForNode(
   node: LGraphNode,
-  widget: Pick<IBaseWidget, 'name' | 'entityId'>
-): WidgetEntityId | undefined {
-  if (widget.entityId) return widget.entityId
+  widget: Pick<IBaseWidget, 'name' | 'widgetId'>,
+  duplicateIndex = 0
+): WidgetId | undefined {
+  if (widget.widgetId) return widget.widgetId
   const graphId = node.graph?.rootGraph.id
   if (!graphId || node.id === -1) return undefined
-  return widgetEntityId(graphId, node.id, widget.name)
+  const name =
+    duplicateIndex > 0 ? `${widget.name}#${duplicateIndex}` : widget.name
+  return widgetId(graphId, node.id, name)
 }
 
 export function isLoad3dNode(node: LGraphNode) {

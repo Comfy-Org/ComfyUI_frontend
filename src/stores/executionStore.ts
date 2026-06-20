@@ -2,7 +2,9 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
+import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
+import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -34,6 +36,8 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import type { AppMode } from '@/utils/appMode'
+import { getWorkflowMode, isAppModeValue } from '@/utils/appMode'
 
 interface ExecutionNodeInfo {
   title?: string | null
@@ -60,6 +64,12 @@ interface QueuedJob {
    * `workflow.shareId`, which can gain attribution after the job was queued.
    */
   shareId?: string
+  /**
+   * View-mode attribution snapshotted at queue time, so mode switches during
+   * the run don't misattribute completion events.
+   */
+  viewMode?: AppMode
+  isAppMode?: boolean
 }
 
 function buildExecutionNodeLookup(
@@ -87,6 +97,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
   const executionErrorStore = useExecutionErrorStore()
+  const { mode, isAppMode } = useAppMode()
 
   const clientId = ref<string | null>(null)
   const activeJobId = ref<JobId | null>(null)
@@ -302,15 +313,17 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
     const jobId = e.detail.prompt_id
     const queuedJob = queuedJobs.value[jobId]
-    if (isCloud && queuedJob) {
-      const telemetry = useTelemetry()
+    const telemetry = useTelemetry()
+    if (queuedJob) {
       telemetry?.trackExecutionSuccess({
         jobId
       })
       if (queuedJob.shareId) {
         telemetry?.trackSharedWorkflowRun({
           job_id: jobId,
-          share_id: queuedJob.shareId
+          share_id: queuedJob.shareId,
+          view_mode: queuedJob.viewMode ?? mode.value,
+          is_app_mode: queuedJob.isAppMode ?? isAppMode.value
         })
       }
     }
@@ -411,17 +424,21 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
-    if (isCloud) {
-      useTelemetry()?.trackExecutionError({
-        jobId: e.detail.prompt_id,
-        nodeId: String(e.detail.node_id),
-        nodeType: e.detail.node_type,
-        error: e.detail.exception_message
-      })
+    useTelemetry()?.trackExecutionError({
+      jobId: e.detail.prompt_id,
+      nodeId: String(e.detail.node_id),
+      nodeType: e.detail.node_type,
+      error: e.detail.exception_message
+    })
 
+    if (isCloud) {
       // Cloud wraps validation errors (400) in exception_message as embedded JSON.
       if (handleCloudValidationError(e.detail)) return
     }
+
+    // Account preconditions (sign-in, subscription, credits) open their own
+    // modal and must stay out of the error panel and error count.
+    if (handleAccountPreconditionError(e.detail)) return
 
     // Service-level errors (e.g. "Job has stagnated") have no associated node.
     // Route them as job errors
@@ -431,6 +448,20 @@ export const useExecutionStore = defineStore('execution', () => {
     executionErrorStore.lastExecutionError = e.detail
     clearInitializationByJobId(e.detail.prompt_id)
     resetExecutionState(e.detail.prompt_id)
+  }
+
+  function handleAccountPreconditionError(
+    detail: ExecutionErrorWsMessage
+  ): boolean {
+    const precondition = resolveAccountPrecondition({
+      exceptionType: detail.exception_type ?? '',
+      exceptionMessage: detail.exception_message ?? ''
+    })
+    if (!precondition) return false
+
+    clearInitializationByJobId(detail.prompt_id)
+    resetExecutionState(detail.prompt_id)
+    return true
   }
 
   function handleServiceLevelError(detail: ExecutionErrorWsMessage): boolean {
@@ -594,6 +625,9 @@ export const useExecutionStore = defineStore('execution', () => {
     queuedJob.nodeLookup = buildExecutionNodeLookup(promptOutput)
     queuedJob.workflow = workflow
     queuedJob.shareId = workflow?.shareId
+    const queuedMode = getWorkflowMode(workflow)
+    queuedJob.viewMode = queuedMode
+    queuedJob.isAppMode = isAppModeValue(queuedMode)
     const wid = workflow?.activeState?.id ?? workflow?.initialState?.id
     if (wid) {
       jobIdToWorkflowId.value.set(id, wid)

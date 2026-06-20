@@ -5,7 +5,6 @@ import type {
   EnterLinearMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
-  ExecutionTriggerSource,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
@@ -13,6 +12,7 @@ import type {
   NodeSearchResultMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
+  RunButtonProperties,
   SettingChangedMetadata,
   ShareFlowMetadata,
   SubscriptionMetadata,
@@ -29,6 +29,7 @@ import type {
   WorkflowImportMetadata,
   WorkflowSavedMetadata
 } from '../../types'
+import { TelemetryEvents } from '../../types'
 
 /**
  * Google Tag Manager telemetry provider.
@@ -152,7 +153,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   }
 
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
-    this.pushEvent('begin_checkout', metadata)
+    this.pushEvent(TelemetryEvents.BEGIN_CHECKOUT, metadata)
   }
 
   trackSubscription(
@@ -181,13 +182,13 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
+  trackRunButton(properties: RunButtonProperties): void {
     this.pushEvent('run_workflow', {
-      subscribe_to_run: options?.subscribe_to_run ?? false,
-      trigger_source: options?.trigger_source ?? 'unknown'
+      subscribe_to_run: properties.subscribe_to_run,
+      trigger_source: properties.trigger_source ?? 'unknown',
+      view_mode: properties.view_mode,
+      is_app_mode: properties.is_app_mode,
+      dock_state: properties.dock_state
     })
   }
 
@@ -287,7 +288,9 @@ export class GtmTelemetryProvider implements TelemetryProvider {
   trackShareFlow(metadata: ShareFlowMetadata): void {
     this.pushEvent('share_flow', {
       step: metadata.step,
-      source: metadata.source
+      source: metadata.source,
+      view_mode: metadata.view_mode,
+      is_app_mode: metadata.is_app_mode
     })
   }
 
@@ -333,7 +336,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.pushEvent('ui_button_click', {
-      button_id: metadata.button_id
+      button_id: metadata.button_id,
+      element_group: metadata.element_group
     })
   }
 

@@ -101,6 +101,7 @@ const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
 
 const {
   hasAnySelection,
+  hasGroupedNodesSelection,
   hasMultipleSelection,
   isSingleNode,
   isSingleSubgraph,
@@ -118,7 +119,10 @@ const showSubgraphButtons = computed(() => isSingleSubgraph.value)
 
 const showBypass = computed(
   () =>
-    isSingleNode.value || isSingleSubgraph.value || hasMultipleSelection.value
+    isSingleNode.value ||
+    isSingleSubgraph.value ||
+    hasMultipleSelection.value ||
+    hasGroupedNodesSelection.value
 )
 const showLoad3DViewer = computed(() => hasAny3DNodeSelected.value)
 const showMaskEditor = computed(() => isSingleImageNode.value)

@@ -63,7 +63,7 @@ describe('SplatModelAdapter', () => {
     const adapter = new SplatModelAdapter()
     expect(adapter.kind).toBe('splat')
     expect(adapter.capabilities.lighting).toBe(false)
-    expect(adapter.capabilities.exportable).toBe(false)
+    expect(adapter.capabilities.exportable).toBe(true)
     expect([...adapter.capabilities.materialModes]).toEqual([])
   })
 

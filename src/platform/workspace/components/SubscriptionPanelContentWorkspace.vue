@@ -128,9 +128,10 @@
                 v-if="isActiveSubscription && permissions.canManageSubscription"
                 class="flex flex-wrap gap-2 md:ml-auto"
               >
-                <!-- Cancelled state: show only Resubscribe button -->
+                <!-- Cancelled state: reactivation is original-owner-only. -->
                 <template v-if="isCancelled">
                   <Button
+                    v-if="permissions.canManageSubscriptionLifecycle"
                     size="lg"
                     variant="primary"
                     class="rounded-lg px-4 text-sm font-normal"
@@ -161,7 +162,7 @@
                     {{ $t('subscription.upgradePlan') }}
                   </Button>
                   <Button
-                    v-if="!isFreeTierPlan"
+                    v-if="!isFreeTierPlan && planMenuItems.length > 0"
                     v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                     variant="secondary"
                     size="lg"
@@ -371,7 +372,6 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDialogService } from '@/services/dialogService'
 import {
   DEFAULT_TIER_KEY,
@@ -404,7 +404,8 @@ const {
   manageSubscription,
   fetchStatus,
   fetchBalance,
-  getMaxSeats
+  getMaxSeats,
+  resubscribe
 } = useBillingContext()
 
 const { showCancelSubscriptionDialog } = useDialogService()
@@ -415,13 +416,12 @@ const isResubscribing = ref(false)
 async function handleResubscribe() {
   isResubscribing.value = true
   try {
-    await workspaceApi.resubscribe()
+    await resubscribe()
     toast.add({
       severity: 'success',
       summary: t('subscription.resubscribeSuccess'),
       life: 5000
     })
-    await Promise.all([fetchStatus(), fetchBalance()])
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Failed to resubscribe'
@@ -514,15 +514,23 @@ const subscriptionTierName = computed(() => {
 
 const planMenu = ref<InstanceType<typeof Menu> | null>(null)
 
-const planMenuItems = computed(() => [
-  {
-    label: t('subscription.cancelSubscription'),
-    icon: 'pi pi-times',
-    command: () => {
-      showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
-    }
-  }
-])
+// Cancel is original-owner-only (creator); a promoted owner gets no menu items
+// and the "more options" button is hidden (see template).
+const planMenuItems = computed(() =>
+  permissions.value.canManageSubscriptionLifecycle
+    ? [
+        {
+          label: t('subscription.cancelSubscription'),
+          icon: 'pi pi-times',
+          command: () => {
+            showCancelSubscriptionDialog(
+              subscription.value?.endDate ?? undefined
+            )
+          }
+        }
+      ]
+    : []
+)
 
 const tierKey = computed(() => {
   const tier = subscriptionTier.value

@@ -3,6 +3,8 @@ import {
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 
 const CREATE_GROUP_HOTKEY = 'Control+g'
 
@@ -175,6 +177,30 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
     }).toPass({ timeout: 5000 })
   })
 
+  test('does not drag contents when control is held', async ({ comfyPage }) => {
+    await comfyPage.keyboard.selectAll()
+    await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
+    const groupCount = () => comfyPage.page.evaluate(() => graph!.groups.length)
+    await expect.poll(groupCount, 'create group').toBe(1)
+    await comfyPage.page.mouse.click(100, 100)
+
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    const initialNodeBounds = await ksampler.boundingBox()
+    expect(initialNodeBounds).toBeTruthy()
+
+    const groupPos = await getGroupTitlePosition(comfyPage, 'Group')
+    await comfyPage.page.mouse.move(groupPos.x, groupPos.y)
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.keyboard.down('Control')
+    await comfyPage.page.mouse.move(groupPos.x + 100, groupPos.y)
+    await comfyPage.page.mouse.up()
+    await comfyPage.page.keyboard.up('Control')
+    await expect
+      .poll(() => getGroupTitlePosition(comfyPage, 'Group'))
+      .not.toEqual(groupPos)
+    expect(await ksampler.boundingBox()).toEqual(initialNodeBounds)
+  })
+
   test('should keep groups aligned after loading legacy Vue workflows', async ({
     comfyPage
   }) => {
@@ -216,5 +242,41 @@ test.describe('Vue Node Groups', { tag: ['@screenshot', '@vue-nodes'] }, () => {
         CENTERING_TOLERANCE.outerGroup
       )
     }).toPass({ timeout: 5000 })
+  })
+
+  test('Bypassing a group bypasses contents', async ({ comfyPage }) => {
+    await comfyPage.settings.setSetting('Comfy.Canvas.SelectionToolbox', true)
+    await comfyPage.keyboard.selectAll()
+    await comfyPage.page.keyboard.press('.')
+    await comfyPage.page.keyboard.press(CREATE_GROUP_HOTKEY)
+
+    const toggleBypass = () =>
+      comfyPage.page.getByTestId(TestIds.selectionToolbox.bypass).click()
+    const bypassCount = () =>
+      comfyPage.page.evaluate(
+        () => graph!.nodes.filter((node) => node.mode === 4).length
+      )
+    expect(await bypassCount()).toBe(0)
+    const groupCount = () => comfyPage.page.evaluate(() => graph!.groups.length)
+    await expect.poll(groupCount, 'create group').toBe(1)
+
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await ksampler.select()
+    await toggleBypass()
+    await expect.poll(bypassCount, 'setup bypass of single node').toBe(1)
+
+    const groupPos = await getGroupTitlePosition(comfyPage, 'Group')
+    await comfyPage.page.mouse.click(groupPos.x, groupPos.y)
+    await toggleBypass()
+    await expect.poll(bypassCount, 'all nodes are set to bypassed').toBe(7)
+    await toggleBypass()
+    await expect.poll(bypassCount, 'all nodes are unbypassed').toBe(0)
+
+    await comfyPage.page.keyboard.down('Shift')
+    await ksampler.select()
+    await comfyPage.page.keyboard.up('Shift')
+
+    await toggleBypass()
+    await expect.poll(bypassCount, "won't toggle double selected node").toBe(7)
   })
 })

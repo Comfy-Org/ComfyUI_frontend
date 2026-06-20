@@ -82,7 +82,8 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
       name: 'Owner User',
       email: 'owner@example.com',
       role: 'owner' as const,
-      joinDate: new Date(0)
+      joinDate: new Date(0),
+      isOriginalOwner: true
     })),
     filteredMembers: mockFilteredMembers,
     filteredPendingInvites: mockFilteredPendingInvites,
