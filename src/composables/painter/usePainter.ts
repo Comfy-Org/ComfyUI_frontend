@@ -649,9 +649,10 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     }
 
     if (resp.status !== 200) {
+      const bodyText = await resp.text().catch(() => '')
       const err = t('painter.uploadError', {
         status: resp.status,
-        statusText: resp.statusText
+        statusText: bodyText || resp.statusText || 'unknown error'
       })
       toastStore.addAlert(err)
       throw new Error(err)
@@ -670,12 +671,9 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
     }
 
     if (!data?.name) {
-      const err = t('painter.uploadError', {
-        status: resp.status,
-        statusText: "missing 'name' in response"
-      })
-      toastStore.addAlert(err)
-      throw new Error(err)
+      const detail = `Painter upload succeeded (${resp.status}) but response is missing 'name'`
+      toastStore.addAlert(detail)
+      throw new Error(detail)
     }
 
     const result = `${data.name} [input]`

@@ -234,7 +234,10 @@ export function useMaskEditorSaver() {
     })
 
     if (!response.ok) {
-      throw new Error(`Failed to upload: ${layer.ref.filename}`)
+      const body = await response.text().catch(() => '')
+      throw new Error(
+        `Failed to upload ${layer.ref.filename} (${response.status}${body ? `: ${body}` : ''})`
+      )
     }
 
     let data: UploadImageResponse

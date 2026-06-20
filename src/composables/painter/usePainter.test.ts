@@ -414,7 +414,7 @@ describe('usePainter', () => {
 
       await expect(
         maskWidget.serializeValue!({} as LGraphNode, 0)
-      ).rejects.toThrow(/painter\.uploadError/)
+      ).rejects.toThrow(/missing 'name'/)
     })
 
     it('throws when the upload response body is not valid JSON', async () => {
