@@ -31,80 +31,16 @@
                 />
               </div>
               <div class="flex shrink-0 items-center gap-2">
-                <DropdownMenu button-class="icon-[lucide--list-filter]">
-                  <template #button>
-                    <Button
-                      size="icon"
-                      :aria-label="$t('sideToolbar.nodeLibraryTab.filter')"
-                    >
-                      <i class="icon-[lucide--list-filter] size-4" />
-                    </Button>
-                  </template>
-                  <template #default="{ itemClass }">
-                    <template v-if="selectedTab === 'essentials'">
-                      <DropdownMenuCheckboxItem
-                        :model-value="allMediaSelected"
-                        :class="itemClass"
-                        @select.prevent
-                        @update:model-value="selectAllMedia"
-                      >
-                        <span class="flex-1">{{ $t('g.all') }}</span>
-                        <span class="size-4 shrink-0">
-                          <DropdownMenuItemIndicator>
-                            <i class="icon-[lucide--check] size-4" />
-                          </DropdownMenuItemIndicator>
-                        </span>
-                      </DropdownMenuCheckboxItem>
-                      <DropdownMenuCheckboxItem
-                        v-for="media in ESSENTIALS_MEDIA_TYPES"
-                        :key="media"
-                        :model-value="mediaFilters[media]"
-                        :class="itemClass"
-                        @select.prevent
-                        @update:model-value="setMediaFilter(media, $event)"
-                      >
-                        <span class="flex-1">
-                          {{ t(ESSENTIALS_MEDIA_LABELS[media]) }}
-                        </span>
-                        <DropdownMenuItemIndicator class="size-4 shrink-0">
-                          <i class="icon-[lucide--check]" />
-                        </DropdownMenuItemIndicator>
-                      </DropdownMenuCheckboxItem>
-                    </template>
-                    <template v-else>
-                      <DropdownMenuCheckboxItem
-                        :model-value="allCategoriesSelected"
-                        :class="itemClass"
-                        @select.prevent
-                        @update:model-value="selectAllCategories"
-                      >
-                        <span class="flex-1">{{ $t('g.all') }}</span>
-                        <DropdownMenuItemIndicator class="size-4 shrink-0">
-                          <i class="icon-[lucide--check]" />
-                        </DropdownMenuItemIndicator>
-                      </DropdownMenuCheckboxItem>
-                      <DropdownMenuCheckboxItem
-                        v-for="category in filterableCategories"
-                        :key="category"
-                        :model-value="filterOptions[category]"
-                        :class="itemClass"
-                        @select.prevent
-                        @update:model-value="
-                          setCategoryFilter(category, $event)
-                        "
-                      >
-                        <span class="flex-1">{{
-                          $t(
-                            `sideToolbar.nodeLibraryTab.filterOptions.${category}`
-                          )
-                        }}</span>
-                        <DropdownMenuItemIndicator class="size-4 shrink-0">
-                          <i class="icon-[lucide--check]" />
-                        </DropdownMenuItemIndicator>
-                      </DropdownMenuCheckboxItem>
-                    </template>
-                  </template>
-                </DropdownMenu>
+                <FilterDropdown
+                  v-if="selectedTab === 'essentials'"
+                  v-model="essentialsFilters"
+                  :filter-labels="essentialsFilterLabels"
+                />
+                <FilterDropdown
+                  v-else
+                  v-model="nodeFilters"
+                  :filter-labels="nodeFilterLabels"
+                />
                 <DropdownMenu
                   v-if="selectedTab === 'essentials'"
                   :entries="jumpMenuEntries"
@@ -151,7 +87,7 @@
             value="essentials"
           >
             <EssentialNodesPanel
-              v-model:media-filters="effectiveMediaFilters"
+              v-model:media-filters="essentialsFilters"
               :search-query
             />
           </TabPanel>
@@ -182,14 +118,10 @@
 </template>
 
 <script setup lang="ts">
+import { mapValues } from 'es-toolkit'
 import { useEventListener, useLocalStorage } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
-import {
-  DropdownMenuCheckboxItem,
-  DropdownMenuItemIndicator,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem
-} from 'reka-ui'
+import { DropdownMenuRadioGroup, DropdownMenuRadioItem } from 'reka-ui'
 import {
   computed,
   nextTick,
@@ -201,16 +133,12 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import FilterDropdown from '@/components/common/FilterDropdown.vue'
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
 import TabPanel from '@/components/tab/TabPanel.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Button from '@/components/ui/button/Button.vue'
-import {
-  ESSENTIALS_MEDIA_LABELS,
-  ESSENTIALS_MEDIA_TYPES,
-  useEssentialsFilters
-} from '@/composables/useEssentialsFilters'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { usePerTabState } from '@/composables/usePerTabState'
@@ -243,13 +171,6 @@ import NodeDragPreview from './nodeLibrary/NodeDragPreview.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 
 const { flags } = useFeatureFlags()
-const {
-  effectiveMediaFilters,
-  mediaFilters,
-  setMediaFilter,
-  allMediaSelected,
-  selectAllMedia
-} = useEssentialsFilters()
 
 const scrollContainerRef = useTemplateRef('scrollContainerRef')
 const titleTabsRef = useTemplateRef('titleTabsRef')
@@ -304,56 +225,21 @@ const sortingOptions = computed(() =>
   }))
 )
 
-const filterableCategories: NodeCategoryId[] = [
-  'blueprints',
-  'comfyNodes',
-  'partnerNodes',
-  'extensions'
-] as const
-
-const filterOptions = ref<Record<NodeCategoryId, boolean>>({
-  blueprints: false,
-  essentialNodes: false,
-  comfyNodes: false,
-  partnerNodes: false,
-  extensions: false
-})
-
-const allCategoriesSelected = ref(true)
-
-function clearAllCategoryFilters() {
-  for (const category of filterableCategories) {
-    filterOptions.value[category] = false
-  }
-}
-
-function selectAllCategories() {
-  clearAllCategoryFilters()
-  allCategoriesSelected.value = true
-}
-
-function setCategoryFilter(category: NodeCategoryId, enabled: boolean) {
-  if (allCategoriesSelected.value) {
-    clearAllCategoryFilters()
-    allCategoriesSelected.value = false
-  }
-  filterOptions.value[category] = enabled
-  const allChecked = filterableCategories.every((c) => filterOptions.value[c])
-  const anyChecked = filterableCategories.some((c) => filterOptions.value[c])
-  if (allChecked || !anyChecked) {
-    selectAllCategories()
-  }
-}
-
-const effectiveFilterOptions = computed<Record<NodeCategoryId, boolean>>(() => {
-  if (allCategoriesSelected.value) {
-    return filterableCategories.reduce(
-      (acc, c) => ({ ...acc, [c]: true }),
-      {} as Record<NodeCategoryId, boolean>
-    )
-  }
-  return filterOptions.value
-})
+const nodeFilterLabels: Record<NodeCategoryId, string> = {
+  blueprints: 'sideToolbar.nodeLibraryTab.filterOptions.blueprints',
+  comfyNodes: 'sideToolbar.nodeLibraryTab.filterOptions.comfyNodes',
+  partnerNodes: 'sideToolbar.nodeLibraryTab.filterOptions.partnerNodes',
+  extensions: 'sideToolbar.nodeLibraryTab.filterOptions.extensions'
+} as const
+const nodeFilters = ref(mapValues(nodeFilterLabels, () => true))
+const essentialsFilterLabels = {
+  image: 'sideToolbar.mediaAssets.filterImage',
+  video: 'sideToolbar.mediaAssets.filterVideo',
+  text: 'sideToolbar.mediaAssets.filterText',
+  audio: 'sideToolbar.mediaAssets.filterAudio',
+  '3d': 'sideToolbar.mediaAssets.filter3D'
+} as const
+const essentialsFilters = ref(mapValues(essentialsFilterLabels, () => true))
 
 const { t } = useI18n()
 
@@ -469,8 +355,7 @@ function renderSections(
 const renderedSections = computed(() =>
   renderSections(
     sections.value,
-    (section) =>
-      !section.category || effectiveFilterOptions.value[section.category]
+    (section) => !section.category || nodeFilters.value[section.category]
   )
 )
 

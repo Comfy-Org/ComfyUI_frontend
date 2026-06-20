@@ -66,9 +66,9 @@
 import { computed, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
 import { resolveEssentialTileNodeDef } from '@/composables/useEssentialTileNodeDef'
 import type {
+  EssentialsMediaType,
   EssentialSection,
   EssentialTile
 } from '@/constants/essentialsNodes'

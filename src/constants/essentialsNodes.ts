@@ -1,6 +1,6 @@
 import { mapValues } from 'es-toolkit'
 
-import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
+export type EssentialsMediaType = 'image' | 'video' | 'text' | 'audio' | '3d'
 
 interface EssentialsPath {
   section: string

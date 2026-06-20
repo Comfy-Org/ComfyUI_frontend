@@ -889,11 +889,9 @@
       "allNodes": "All nodes",
       "blueprints": "Blueprints",
       "custom": "Custom",
-      "filter": "Filter",
       "filterOptions": {
         "blueprints": "Blueprints",
         "comfyNodes": "Comfy Nodes",
-        "essentialNodes": "Essential Nodes",
         "partnerNodes": "Partner Nodes",
         "extensions": "Extensions"
       },

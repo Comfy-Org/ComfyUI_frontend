@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { EssentialsMediaType } from '@/composables/useEssentialsFilters'
+import type { EssentialsMediaType } from '@/constants/essentialsNodes'
 import { i18n } from '@/i18n'
 
 import EssentialNodesPanel from './EssentialNodesPanel.vue'
