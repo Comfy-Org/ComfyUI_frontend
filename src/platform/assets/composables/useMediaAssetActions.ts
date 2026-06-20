@@ -778,6 +778,10 @@ export function useMediaAssetActions() {
           onCancel: () => {
             resolve(false)
           }
+        },
+        dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md'
         }
       })
     })

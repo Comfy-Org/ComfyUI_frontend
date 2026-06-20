@@ -23,11 +23,13 @@ export function showConfirmDialog(options: ConfirmDialogOptions = {}) {
     props,
     footerProps,
     dialogComponentProps: {
-      pt: {
-        header: 'py-0! px-0!',
-        content: 'p-0!',
-        footer: 'p-0!'
-      }
+      renderer: 'reka',
+      size: 'md',
+      // Confirm sections carry their own padding — zero out the dialog
+      // chrome padding, like the PrimeVue `pt` overrides did.
+      headerClass: 'p-0',
+      bodyClass: 'p-0',
+      footerClass: 'p-0'
     }
   })
 }
