@@ -684,9 +684,13 @@ const teamButtonLabel = computed(() => {
       ? t('subscription.teamPlan.cta')
       : t('subscription.teamPlan.ctaMonthly')
   }
-  if (isCancelled.value) return t('subscription.resubscribe')
-  if (isTeamCurrentStopSelected.value)
-    return t('subscription.teamPlan.currentPlan')
+  // Only the current stop re-subscribes (cancelled) or reads "Current plan"
+  // (active); any other stop is a plan change.
+  if (isTeamCurrentStopSelected.value) {
+    return isCancelled.value
+      ? t('subscription.resubscribe')
+      : t('subscription.teamPlan.currentPlan')
+  }
   return t('subscription.teamPlan.changePlan')
 })
 
@@ -811,7 +815,8 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
 
 function handleSubscribeTeam() {
   if (isTeamButtonDisabled.value) return
-  if (isTeamSubscribed.value && isCancelled.value) {
+  // Re-subscribe only when keeping the current stop; a different stop is a change.
+  if (isCancelled.value && isTeamCurrentStopSelected.value) {
     emit('resubscribe')
     return
   }
