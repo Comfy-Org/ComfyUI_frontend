@@ -122,7 +122,6 @@ export const useAssetsStore = defineStore('assets', () => {
   const allHistoryItems = ref<AssetItem[]>([])
 
   const loadedIds = shallowReactive(new Set<string>())
-  const loadedJobIds = new Set<string>()
 
   const fetchInputFiles = isCloud
     ? fetchInputFilesFromCloud
@@ -157,16 +156,11 @@ export const useAssetsStore = defineStore('assets', () => {
       hasMoreHistory.value = true
       allHistoryItems.value = []
       loadedIds.clear()
-      loadedJobIds.clear()
     }
 
     const history = await api.getHistory(BATCH_SIZE, {
       offset: historyOffset.value
     })
-
-    for (const job of history) {
-      loadedJobIds.add(job.id)
-    }
 
     const newAssets = mapHistoryToAssets(history)
 
@@ -267,6 +261,7 @@ export const useAssetsStore = defineStore('assets', () => {
   const flatOutputSeenIds = new Set<string>()
   let flatOutputRefreshInFlight: Promise<AssetItem[]> | null = null
   let flatOutputLoadMoreInFlight: Promise<AssetItem[]> | null = null
+  let flatOutputGeneration = 0
 
   async function fetchFlatOutputs(loadMore: boolean): Promise<AssetItem[]> {
     if (loadMore) {
@@ -275,6 +270,7 @@ export const useAssetsStore = defineStore('assets', () => {
       flatOutputIsLoadingMore.value = true
     } else {
       if (flatOutputRefreshInFlight) return flatOutputRefreshInFlight
+      flatOutputGeneration++
       flatOutputLoading.value = true
       flatOutputOffset.value = 0
       flatOutputHasMore.value = true
@@ -282,12 +278,17 @@ export const useAssetsStore = defineStore('assets', () => {
     }
     flatOutputError.value = null
 
+    const generation = flatOutputGeneration
+
     const inFlight = (async () => {
       try {
         const page = await assetService.getAssetsByTag(OUTPUT_TAG, true, {
           limit: FLAT_OUTPUT_PAGE_SIZE,
           offset: flatOutputOffset.value
         })
+        if (loadMore && generation !== flatOutputGeneration) {
+          return flatOutputAssets.value
+        }
         const fresh = loadMore
           ? page.filter((asset) => !flatOutputSeenIds.has(asset.id))
           : page

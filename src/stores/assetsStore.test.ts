@@ -1741,6 +1741,7 @@ describe('assetsStore - Flat Output Assets (cloud-only)', () => {
       await Promise.all([loadMoreResult, refreshResult])
 
       expect(store.flatOutputAssets.map((a) => a.id)).toContain('fresh-1')
+      expect(store.flatOutputAssets.map((a) => a.id)).not.toContain('extra-1')
     })
 
     it('a second concurrent refresh coalesces into the first refresh promise', async () => {
