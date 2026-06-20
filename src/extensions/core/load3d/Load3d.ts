@@ -2,25 +2,19 @@ import * as THREE from 'three'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
 
 import type { AnimationManager } from './AnimationManager'
-import type { CameraManager } from './CameraManager'
-import type { ControlsManager } from './ControlsManager'
-import type { EventManager } from './EventManager'
 import type { GizmoManager } from './GizmoManager'
 import type { HDRIManager } from './HDRIManager'
-import type { LightingManager } from './LightingManager'
 import type { LoaderManager } from './LoaderManager'
 import { ModelExporter } from './ModelExporter'
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { AdapterRef, ModelAdapterCapabilities } from './ModelAdapter'
 import type { RecordingManager } from './RecordingManager'
-import type { SceneManager } from './SceneManager'
 import type { SceneModelManager } from './SceneModelManager'
-import type { ViewHelperManager } from './ViewHelperManager'
+import { Viewport3d, type Viewport3dDeps } from './Viewport3d'
 import { computeCameraFromMatrices } from './cameraFromMatrices'
+import { DIRECT_EXPORT_FORMATS } from './constants'
 import type {
-  CameraState,
   CaptureResult,
-  EventCallback,
   GizmoMode,
   Load3DOptions,
   LoadModelOptions,
@@ -28,20 +22,10 @@ import type {
   Model3DTransform,
   UpDirection
 } from './interfaces'
-import { attachContextMenuGuard } from './load3dContextMenuGuard'
-import type { RenderLoopHandle } from './load3dRenderLoop'
-import { startRenderLoop } from './load3dRenderLoop'
 import { computeLetterboxedViewport, isLoad3dActive } from './load3dViewport'
 
-export type Load3dDeps = {
-  renderer: THREE.WebGLRenderer
-  eventManager: EventManager
-  sceneManager: SceneManager
-  cameraManager: CameraManager
-  controlsManager: ControlsManager
-  lightingManager: LightingManager
+export type Load3dDeps = Viewport3dDeps & {
   hdriManager: HDRIManager
-  viewHelperManager: ViewHelperManager
   loaderManager: LoaderManager
   modelManager: SceneModelManager
   recordingManager: RecordingManager
@@ -69,22 +53,8 @@ function positionThumbnailCamera(
   camera.updateProjectionMatrix()
 }
 
-class Load3d {
-  renderer: THREE.WebGLRenderer
-  protected clock: THREE.Clock
-  private renderLoop: RenderLoopHandle | null = null
-  private loadingPromise: Promise<void> | null = null
-  private _loadGeneration: number = 0
-  private onContextMenuCallback?: (event: MouseEvent) => void
-  private getDimensionsCallback?: () => { width: number; height: number } | null
-
-  eventManager: EventManager
-  sceneManager: SceneManager
-  cameraManager: CameraManager
-  controlsManager: ControlsManager
-  lightingManager: LightingManager
+class Load3d extends Viewport3d {
   hdriManager: HDRIManager
-  viewHelperManager: ViewHelperManager
   loaderManager: LoaderManager
   modelManager: SceneModelManager
   recordingManager: RecordingManager
@@ -92,20 +62,8 @@ class Load3d {
   gizmoManager: GizmoManager
   adapterRef: AdapterRef
 
-  STATUS_MOUSE_ON_NODE: boolean
-  STATUS_MOUSE_ON_SCENE: boolean
-  STATUS_MOUSE_ON_VIEWER: boolean
-  INITIAL_RENDER_DONE: boolean = false
-
-  targetWidth: number = 0
-  targetHeight: number = 0
-  targetAspectRatio: number = 1
-  isViewerMode: boolean = false
-
-  private disposeContextMenuGuard: (() => void) | null = null
-  private resizeObserver: ResizeObserver | null = null
-  private getZoomScaleCallback: (() => number) | undefined
-  private retainViewOnReload: boolean = false
+  private loadingPromise: Promise<void> | null = null
+  private _loadGeneration: number = 0
   private hasLoadedModel: boolean = false
 
   constructor(
@@ -113,26 +71,9 @@ class Load3d {
     deps: Load3dDeps,
     options: Load3DOptions = {}
   ) {
-    this.clock = new THREE.Clock()
-    this.isViewerMode = options.isViewerMode || false
-    this.onContextMenuCallback = options.onContextMenu
-    this.getDimensionsCallback = options.getDimensions
-    this.getZoomScaleCallback = options.getZoomScale
+    super(container, deps, options)
 
-    if (options.width && options.height) {
-      this.targetWidth = options.width
-      this.targetHeight = options.height
-      this.targetAspectRatio = options.width / options.height
-    }
-
-    this.renderer = deps.renderer
-    this.eventManager = deps.eventManager
-    this.sceneManager = deps.sceneManager
-    this.cameraManager = deps.cameraManager
-    this.controlsManager = deps.controlsManager
-    this.lightingManager = deps.lightingManager
     this.hdriManager = deps.hdriManager
-    this.viewHelperManager = deps.viewHelperManager
     this.loaderManager = deps.loaderManager
     this.modelManager = deps.modelManager
     this.recordingManager = deps.recordingManager
@@ -140,35 +81,16 @@ class Load3d {
     this.gizmoManager = deps.gizmoManager
     this.adapterRef = deps.adapterRef
 
-    this.sceneManager.init()
-    this.cameraManager.init()
-    this.controlsManager.init()
-    this.lightingManager.init()
     this.loaderManager.init()
     this.animationManager.init()
     this.gizmoManager.init()
-
-    this.viewHelperManager.createViewHelper(container)
-    this.viewHelperManager.init()
-
-    this.STATUS_MOUSE_ON_NODE = false
-    this.STATUS_MOUSE_ON_SCENE = false
-    this.STATUS_MOUSE_ON_VIEWER = false
-
-    this.initContextMenu()
-    this.initResizeObserver(container)
-
-    this.handleResize()
-    this.startAnimation()
 
     this.eventManager.addEventListener('modelReady', () => {
       if (this.adapterRef.current?.kind !== 'splat') return
       void this.repaintWhenSparkPaintable()
     })
 
-    setTimeout(() => {
-      this.forceRender()
-    }, 100)
+    this.start()
   }
 
   private async repaintWhenSparkPaintable(): Promise<void> {
@@ -178,49 +100,14 @@ class Load3d {
     this.forceRender()
   }
 
-  private initResizeObserver(container: Element | HTMLElement): void {
-    if (typeof ResizeObserver === 'undefined') return
-
-    this.resizeObserver?.disconnect()
-    this.resizeObserver = new ResizeObserver(() => {
-      this.handleResize()
-    })
-    this.resizeObserver.observe(container)
-  }
-
-  private initContextMenu(): void {
-    this.disposeContextMenuGuard = attachContextMenuGuard(
-      this.renderer.domElement,
-      (event) => this.onContextMenuCallback?.(event),
-      { isDisabled: () => this.isViewerMode }
-    )
-  }
-
-  getEventManager(): EventManager {
-    return this.eventManager
-  }
-
-  getSceneManager(): SceneManager {
-    return this.sceneManager
-  }
-  getCameraManager(): CameraManager {
-    return this.cameraManager
-  }
-  getControlsManager(): ControlsManager {
-    return this.controlsManager
-  }
-  getLightingManager(): LightingManager {
-    return this.lightingManager
-  }
-  getViewHelperManager(): ViewHelperManager {
-    return this.viewHelperManager
-  }
   getLoaderManager(): LoaderManager {
     return this.loaderManager
   }
+
   getModelManager(): SceneModelManager {
     return this.modelManager
   }
+
   getRecordingManager(): RecordingManager {
     return this.recordingManager
   }
@@ -229,119 +116,12 @@ class Load3d {
     return this.gizmoManager
   }
 
-  getTargetSize(): { width: number; height: number } {
-    return {
-      width: this.targetWidth,
-      height: this.targetHeight
-    }
-  }
-
-  private shouldMaintainAspectRatio(): boolean {
-    return this.isViewerMode || (this.targetWidth > 0 && this.targetHeight > 0)
-  }
-
-  forceRender(): void {
-    const delta = this.clock.getDelta()
+  protected override tickPerFrame(delta: number): void {
     this.animationManager.update(delta)
-    this.viewHelperManager.update(delta)
-    this.controlsManager.update()
-
-    this.renderMainScene()
-
-    this.resetViewport()
-
-    if (this.viewHelperManager.viewHelper.render) {
-      this.viewHelperManager.viewHelper.render(this.renderer)
-    }
-
-    this.INITIAL_RENDER_DONE = true
+    super.tickPerFrame(delta)
   }
 
-  renderMainScene(): void {
-    const containerWidth = this.renderer.domElement.clientWidth
-    const containerHeight = this.renderer.domElement.clientHeight
-
-    if (this.getDimensionsCallback) {
-      const dims = this.getDimensionsCallback()
-      if (dims) {
-        this.targetWidth = dims.width
-        this.targetHeight = dims.height
-        this.targetAspectRatio = dims.width / dims.height
-      }
-    }
-
-    if (this.shouldMaintainAspectRatio()) {
-      const { offsetX, offsetY, width, height } = computeLetterboxedViewport(
-        { width: containerWidth, height: containerHeight },
-        this.targetAspectRatio
-      )
-
-      this.renderer.setViewport(0, 0, containerWidth, containerHeight)
-      this.renderer.setScissor(0, 0, containerWidth, containerHeight)
-      this.renderer.setScissorTest(true)
-      this.renderer.setClearColor(0x0a0a0a)
-      this.renderer.clear()
-
-      this.renderer.setViewport(offsetX, offsetY, width, height)
-      this.renderer.setScissor(offsetX, offsetY, width, height)
-
-      this.cameraManager.updateAspectRatio(width / height)
-    } else {
-      // No aspect ratio constraint: fill the entire container
-      this.renderer.setViewport(0, 0, containerWidth, containerHeight)
-      this.renderer.setScissor(0, 0, containerWidth, containerHeight)
-      this.renderer.setScissorTest(true)
-    }
-
-    this.sceneManager.renderBackground()
-    this.renderer.render(
-      this.sceneManager.scene,
-      this.cameraManager.activeCamera
-    )
-  }
-
-  resetViewport(): void {
-    const width = this.renderer.domElement.clientWidth
-    const height = this.renderer.domElement.clientHeight
-
-    this.renderer.setViewport(0, 0, width, height)
-    this.renderer.setScissor(0, 0, width, height)
-    this.renderer.setScissorTest(false)
-  }
-
-  private startAnimation(): void {
-    this.renderLoop = startRenderLoop({
-      tick: () => {
-        const delta = this.clock.getDelta()
-        this.animationManager.update(delta)
-        this.viewHelperManager.update(delta)
-        this.controlsManager.update()
-
-        this.renderMainScene()
-
-        this.resetViewport()
-
-        if (this.viewHelperManager.viewHelper.render) {
-          this.viewHelperManager.viewHelper.render(this.renderer)
-        }
-      },
-      isActive: () => this.isActive()
-    })
-  }
-
-  updateStatusMouseOnNode(onNode: boolean): void {
-    this.STATUS_MOUSE_ON_NODE = onNode
-  }
-
-  updateStatusMouseOnScene(onScene: boolean): void {
-    this.STATUS_MOUSE_ON_SCENE = onScene
-  }
-
-  updateStatusMouseOnViewer(onViewer: boolean): void {
-    this.STATUS_MOUSE_ON_VIEWER = onViewer
-  }
-
-  isActive(): boolean {
+  override isActive(): boolean {
     return isLoad3dActive({
       mouseOnNode: this.STATUS_MOUSE_ON_NODE,
       mouseOnScene: this.STATUS_MOUSE_ON_SCENE,
@@ -359,6 +139,27 @@ class Load3d {
 
     const exportMessage = `Exporting as ${format.toUpperCase()}...`
     this.eventManager.emitEvent('exportLoadingStart', exportMessage)
+
+    const originalFileName = this.modelManager.originalFileName || 'model'
+    const filename = `${originalFileName}.${format}`
+    const originalURL = this.modelManager.originalURL
+
+    if (DIRECT_EXPORT_FORMATS.has(format)) {
+      try {
+        if (this.getSourceFormat() !== format) {
+          throw new Error(
+            `Cannot export ${format} without converting from the loaded ${this.getSourceFormat() ?? 'unknown'} source`
+          )
+        }
+        await ModelExporter.exportDirect(originalURL, filename, format)
+      } catch (error) {
+        console.error(`Error exporting model as ${format}:`, error)
+        throw error
+      } finally {
+        this.eventManager.emitEvent('exportLoadingEnd', null)
+      }
+      return
+    }
 
     const source = this.modelManager.currentModel
     const savedPos = source.position.clone()
@@ -385,11 +186,6 @@ class Load3d {
           ? Object.assign(cloneSkinned(source), { animations: clips })
           : source.clone()
 
-      const originalFileName = this.modelManager.originalFileName || 'model'
-      const filename = `${originalFileName}.${format}`
-
-      const originalURL = this.modelManager.originalURL
-
       await new Promise((resolve) => setTimeout(resolve, 10))
 
       switch (format) {
@@ -400,7 +196,7 @@ class Load3d {
           await ModelExporter.exportOBJ(model, filename, originalURL)
           break
         case 'stl':
-          ;(await ModelExporter.exportSTL(model, filename), originalURL)
+          await ModelExporter.exportSTL(model, filename, originalURL)
           break
         case 'fbx':
           await ModelExporter.exportFBX(model, filename, originalURL)
@@ -422,9 +218,33 @@ class Load3d {
     }
   }
 
+  getSourceFormat(): string | null {
+    const url = this.modelManager.originalURL
+    if (!url) return null
+    return ModelExporter.detectFormatFromURL(url)
+  }
+
+  protected override onActiveCameraChanged(): void {
+    this.gizmoManager.updateCamera(this.cameraManager.activeCamera)
+  }
+
+  setFOV(fov: number): void {
+    this.cameraManager.setFOV(fov)
+    this.forceRender()
+  }
+
   setBackgroundColor(color: string): void {
     this.sceneManager.setBackgroundColor(color)
+    this.forceRender()
+  }
 
+  toggleGrid(showGrid: boolean): void {
+    this.sceneManager.toggleGrid(showGrid)
+    this.forceRender()
+  }
+
+  setLightIntensity(intensity: number): void {
+    this.lightingManager.setLightIntensity(intensity)
     this.forceRender()
   }
 
@@ -451,7 +271,6 @@ class Load3d {
           height
         )
       } else {
-        // No aspect ratio constraints: fill container
         this.sceneManager.updateBackgroundSize(
           this.sceneManager.backgroundTexture,
           this.sceneManager.backgroundMesh,
@@ -466,50 +285,11 @@ class Load3d {
 
   removeBackgroundImage(): void {
     this.sceneManager.removeBackgroundImage()
-
-    this.forceRender()
-  }
-
-  toggleGrid(showGrid: boolean): void {
-    this.sceneManager.toggleGrid(showGrid)
     this.forceRender()
   }
 
   setBackgroundRenderMode(mode: 'tiled' | 'panorama'): void {
     this.sceneManager.setBackgroundRenderMode(mode)
-    this.forceRender()
-  }
-
-  toggleCamera(cameraType?: 'perspective' | 'orthographic'): void {
-    this.cameraManager.toggleCamera(cameraType)
-
-    this.controlsManager.updateCamera(this.cameraManager.activeCamera)
-    this.gizmoManager.updateCamera(this.cameraManager.activeCamera)
-    this.viewHelperManager.recreateViewHelper()
-
-    this.handleResize()
-  }
-
-  getCurrentCameraType(): 'perspective' | 'orthographic' {
-    return this.cameraManager.getCurrentCameraType()
-  }
-
-  getCurrentModel(): THREE.Object3D | null {
-    return this.modelManager.currentModel
-  }
-
-  setCameraState(state: CameraState): void {
-    this.cameraManager.setCameraState(state)
-
-    this.forceRender()
-  }
-
-  getCameraState(): CameraState {
-    return this.cameraManager.getCameraState()
-  }
-
-  setFOV(fov: number): void {
-    this.cameraManager.setFOV(fov)
     this.forceRender()
   }
 
@@ -531,19 +311,15 @@ class Load3d {
     this.setFOV(fovYDegrees)
   }
 
+  getCurrentModel(): THREE.Object3D | null {
+    return this.modelManager.currentModel
+  }
+
   setMaterialMode(mode: MaterialMode): void {
     this.modelManager.setMaterialMode(mode)
     this.forceRender()
   }
 
-  /**
-   * Monotonic counter that ticks once per loadModel call, **before** any
-   * await. Callers can capture this immediately after triggering a load and
-   * later compare against `currentLoadGeneration` to verify their load is
-   * still the latest one — useful when chaining post-load work
-   * (e.g. applying camera matrices) through `whenLoadIdle()`, which would
-   * otherwise wait for any newer queued load and apply stale state to it.
-   */
   get currentLoadGeneration(): number {
     return this._loadGeneration
   }
@@ -579,17 +355,12 @@ class Load3d {
     }
   }
 
-  public setRetainViewOnReload(value: boolean): void {
-    this.retainViewOnReload = value
-  }
-
   private async _loadModelInternal(
     url: string,
     originalFileName?: string,
     options?: LoadModelOptions
   ): Promise<void> {
-    // First load always uses default framing; retain only applies on reload.
-    const shouldRetainView = this.retainViewOnReload && this.hasLoadedModel
+    const shouldRetainView = this.hasLoadedModel
     const savedCameraState = shouldRetainView
       ? this.cameraManager.getCameraState()
       : null
@@ -604,7 +375,6 @@ class Load3d {
 
     await this.loaderManager.loadModel(url, originalFileName, options)
 
-    // Auto-detect and setup animations if present
     if (this.modelManager.currentModel) {
       this.animationManager.setupModelAnimations(
         this.modelManager.currentModel,
@@ -614,7 +384,6 @@ class Load3d {
     }
 
     if (savedCameraState) {
-      // setupForModel runs during loadModel and clobbers the camera; restore on top.
       if (
         savedCameraState.cameraType !==
         this.cameraManager.getCurrentCameraType()
@@ -655,11 +424,6 @@ class Load3d {
     this.forceRender()
   }
 
-  setLightIntensity(intensity: number): void {
-    this.lightingManager.setLightIntensity(intensity)
-    this.forceRender()
-  }
-
   async loadHDRI(url: string): Promise<void> {
     await this.hdriManager.loadHDRI(url)
     this.forceRender()
@@ -687,71 +451,8 @@ class Load3d {
     this.forceRender()
   }
 
-  setTargetSize(width: number, height: number): void {
-    this.targetWidth = width
-    this.targetHeight = height
-    this.targetAspectRatio = width / height
-    this.handleResize()
-  }
-
-  addEventListener<T>(event: string, callback: EventCallback<T>): void {
-    this.eventManager.addEventListener(event, callback)
-  }
-
-  removeEventListener<T>(event: string, callback: EventCallback<T>): void {
-    this.eventManager.removeEventListener(event, callback)
-  }
-
   emitModelReady(): void {
     this.eventManager.emitEvent('modelReady', null)
-  }
-
-  refreshViewport(): void {
-    this.handleResize()
-  }
-
-  handleResize(): void {
-    const parentElement = this.renderer?.domElement?.parentElement
-
-    if (!parentElement) {
-      console.warn('Parent element not found')
-      return
-    }
-
-    const containerWidth = parentElement.clientWidth
-    const containerHeight = parentElement.clientHeight
-
-    // Scale pixel density to match the graph zoom level so the 3D scene
-    // renders at the correct resolution when the canvas is zoomed in or out.
-    const zoomScale = this.getZoomScaleCallback?.() ?? 1
-    this.renderer.setPixelRatio(Math.min(zoomScale, 3))
-
-    if (this.getDimensionsCallback) {
-      const dims = this.getDimensionsCallback()
-      if (dims) {
-        this.targetWidth = dims.width
-        this.targetHeight = dims.height
-        this.targetAspectRatio = dims.width / dims.height
-      }
-    }
-
-    if (this.shouldMaintainAspectRatio()) {
-      const { width, height } = computeLetterboxedViewport(
-        { width: containerWidth, height: containerHeight },
-        this.targetAspectRatio
-      )
-
-      this.renderer.setSize(containerWidth, containerHeight)
-      this.cameraManager.handleResize(width, height)
-      this.sceneManager.handleResize(width, height)
-    } else {
-      // No aspect ratio constraint: use container dimensions directly
-      this.renderer.setSize(containerWidth, containerHeight)
-      this.cameraManager.handleResize(containerWidth, containerHeight)
-      this.sceneManager.handleResize(containerWidth, containerHeight)
-    }
-
-    this.forceRender()
   }
 
   captureScene(width: number, height: number): Promise<CaptureResult> {
@@ -799,7 +500,6 @@ class Load3d {
     this.recordingManager.clearRecording()
   }
 
-  // Animation methods
   public setAnimationSpeed(speed: number): void {
     this.animationManager.setAnimationSpeed(speed)
   }
@@ -919,6 +619,12 @@ class Load3d {
     this.forceRender()
   }
 
+  public applyModelTransform(transform: Model3DTransform): void {
+    if (!this.getCurrentModelCapabilities().gizmoTransform) return
+    this.gizmoManager.applyModelTransform(transform)
+    this.forceRender()
+  }
+
   public getGizmoTransform(): {
     position: { x: number; y: number; z: number }
     rotation: { x: number; y: number; z: number }
@@ -952,41 +658,15 @@ class Load3d {
     this.forceRender()
   }
 
-  public remove(): void {
-    if (this.resizeObserver) {
-      this.resizeObserver.disconnect()
-      this.resizeObserver = null
-    }
-
-    this.disposeContextMenuGuard?.()
-    this.disposeContextMenuGuard = null
-
-    this.renderer.forceContextLoss()
-    const canvas = this.renderer.domElement
-    const event = new Event('webglcontextlost', {
-      bubbles: true,
-      cancelable: true
-    })
-    canvas.dispatchEvent(event)
-
-    this.renderLoop?.stop()
-    this.renderLoop = null
-
-    this.sceneManager.dispose()
-    this.cameraManager.dispose()
-    this.controlsManager.dispose()
-    this.lightingManager.dispose()
+  protected override disposeManagers(): void {
+    super.disposeManagers()
     this.hdriManager.dispose()
-    this.viewHelperManager.dispose()
     this.loaderManager.dispose()
     this.modelManager.dispose()
     this.adapterRef.current = null
     this.recordingManager.dispose()
     this.animationManager.dispose()
     this.gizmoManager.dispose()
-
-    this.renderer.dispose()
-    this.renderer.domElement.remove()
   }
 }
 

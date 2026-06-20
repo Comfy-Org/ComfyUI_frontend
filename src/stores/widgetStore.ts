@@ -22,6 +22,11 @@ export const useWidgetStore = defineStore('widget', () => {
   function registerCustomWidgets(
     newWidgets: Record<string, ComfyWidgetConstructor>
   ) {
+    // Extensions are untrusted code: `getCustomWidgets` is typed to return
+    // `Record<string, ...>`, but in practice an extension can resolve it to
+    // null/undefined. Guard here so a single misbehaving custom node can't
+    // throw "Cannot convert undefined or null to object" and break app init.
+    if (!newWidgets) return
     for (const [type, widget] of Object.entries(newWidgets)) {
       customWidgets.value.set(type, widget)
     }

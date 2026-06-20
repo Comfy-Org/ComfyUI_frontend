@@ -116,6 +116,14 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.currentPlanSlug)
   )
 
+  const teamCreditStops = computed(() =>
+    toValue(activeContext.value.teamCreditStops)
+  )
+
+  const currentTeamCreditStop = computed(() =>
+    toValue(activeContext.value.currentTeamCreditStop)
+  )
+
   const isActiveSubscription = computed(() =>
     toValue(activeContext.value.isActiveSubscription)
   )
@@ -232,6 +240,15 @@ function useBillingContextInternal(): BillingContext {
   }
 
   async function topup(amountCents: number) {
+    if (
+      !Number.isInteger(amountCents) ||
+      amountCents <= 0 ||
+      amountCents % 100 !== 0
+    ) {
+      throw new Error(
+        'Top-up amount must be a positive whole-dollar cent value'
+      )
+    }
     return activeContext.value.topup(amountCents)
   }
 
@@ -254,6 +271,8 @@ function useBillingContextInternal(): BillingContext {
     balance,
     plans,
     currentPlanSlug,
+    teamCreditStops,
+    currentTeamCreditStop,
     isLoading,
     error,
     isActiveSubscription,

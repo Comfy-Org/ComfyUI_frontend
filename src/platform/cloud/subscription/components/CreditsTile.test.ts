@@ -16,12 +16,18 @@ type Subscription = {
   duration: string | null
   renewalDate: string | null
 }
+type TeamStop = {
+  id: string
+  credits_monthly: number
+  stop_usd: number
+}
 
 const state = vi.hoisted(() => ({
   balance: null as Balance | null,
   subscription: null as Subscription | null,
   isActiveSubscription: false,
   isFreeTier: false,
+  currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
   canTopUp: true,
   fetchBalance: vi.fn(),
@@ -37,6 +43,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     subscription: computed(() => state.subscription),
     isActiveSubscription: computed(() => state.isActiveSubscription),
     isFreeTier: computed(() => state.isFreeTier),
+    currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
     isLoading: computed(() => state.isLoading),
     fetchBalance: state.fetchBalance,
     fetchStatus: state.fetchStatus
@@ -82,8 +89,14 @@ const i18n = createI18n({
         creditsUsed: '{used} used',
         creditsLeftOfTotal: '{remaining} left of {total}',
         additionalCredits: 'Additional credits',
+        additionalCreditsInUse: 'In use',
         usedAfterMonthly: 'Used after monthly runs out',
-        additionalCreditsTooltip: 'Credits you add on top of your plan.',
+        monthlyCreditsUsedUpTitle:
+          'Monthly credits are used up. Refills {date}',
+        monthlyCreditsUsedUpDescription:
+          "You're now spending additional credits.",
+        outOfCreditsTitle: "You're out of credits. Credits refill {date}",
+        outOfCreditsDescription: 'Add more credits to continue generating.',
         addCredits: 'Add credits',
         upgradeToAddCredits: 'Upgrade to add credits'
       }
@@ -100,7 +113,7 @@ function renderTile(props: Record<string, unknown> = {}) {
       stubs: {
         Button: {
           template:
-            '<button v-bind="$attrs" :disabled="loading" @click="$emit(\'click\')"><slot/></button>',
+            '<button v-bind="$attrs" :data-variant="variant" :disabled="loading" @click="$emit(\'click\')"><slot/></button>',
           props: ['variant', 'size', 'loading'],
           emits: ['click']
         },
@@ -131,6 +144,7 @@ describe('CreditsTile', () => {
     state.subscription = null
     state.isActiveSubscription = false
     state.isFreeTier = false
+    state.currentTeamCreditStop = null
     state.isLoading = false
     state.canTopUp = true
     vi.clearAllMocks()
@@ -162,6 +176,25 @@ describe('CreditsTile', () => {
     expect(container.textContent).toContain('422 left of 21K')
   })
 
+  it('uses the team credit stop monthly grant for the monthly total', () => {
+    state.isActiveSubscription = true
+    state.subscription = {
+      tier: 'TEAM',
+      duration: 'ANNUAL',
+      renewalDate: '2026-02-20T12:00:00Z'
+    }
+    state.currentTeamCreditStop = {
+      id: 'team_2500',
+      credits_monthly: 527500,
+      stop_usd: 2500
+    }
+    state.balance = { amountMicros: 0, cloudCreditBalanceMicros: 200 }
+    const { container } = renderTile()
+    // Monthly total is the stop's raw monthly grant, not the tier fallback,
+    // and is not multiplied by 12 for annual billing.
+    expect(container.textContent).toContain('422 left of 527,500')
+  })
+
   it('hides the breakdown and forces zeros in the zero state', () => {
     activeProSubscription()
     const { container } = renderTile({ zeroState: true })
@@ -179,6 +212,59 @@ describe('CreditsTile', () => {
     expect(container.textContent).not.toContain('left of')
     expect(container.textContent).not.toContain('Additional credits')
     expect(screen.queryByText('Add credits')).toBeNull()
+  })
+
+  it('shows no depletion notice or in-use badge while monthly credits remain', () => {
+    activeProSubscription()
+    const { container } = renderTile()
+    expect(container.textContent).not.toContain('Monthly credits are used up')
+    expect(container.textContent).not.toContain("You're out of credits")
+    expect(screen.queryByText('In use')).toBeNull()
+  })
+
+  it('flags spending of additional credits once the monthly allowance is depleted', () => {
+    activeProSubscription()
+    state.balance = {
+      amountMicros: 300,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 300
+    }
+    const { container } = renderTile()
+    expect(container.textContent).toContain(
+      'Monthly credits are used up. Refills Feb 20'
+    )
+    expect(container.textContent).toContain(
+      "You're now spending additional credits."
+    )
+    expect(screen.getByText('In use')).toBeTruthy()
+    expect(screen.getByText('Add credits').dataset.variant).toBe('secondary')
+  })
+
+  it('emphasizes add-credits when fully out of credits', () => {
+    activeProSubscription()
+    state.balance = {
+      amountMicros: 0,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 0
+    }
+    const { container } = renderTile()
+    expect(container.textContent).toContain(
+      "You're out of credits. Credits refill Feb 20"
+    )
+    expect(container.textContent).toContain(
+      'Add more credits to continue generating.'
+    )
+    expect(screen.queryByText('In use')).toBeNull()
+    expect(screen.getByText('Add credits').dataset.variant).toBe('inverted')
+  })
+
+  it('suppresses the depletion notice until the balance has loaded', () => {
+    activeProSubscription()
+    state.balance = null
+    state.isLoading = true
+    const { container } = renderTile()
+    expect(container.textContent).not.toContain('Monthly credits are used up')
+    expect(container.textContent).not.toContain("You're out of credits")
   })
 
   it('routes add-credits through telemetry + the top-up dialog', async () => {

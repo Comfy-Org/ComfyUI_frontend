@@ -113,9 +113,27 @@ export interface Plan {
   seat_summary: PlanSeatSummary
 }
 
+interface TeamCreditStopPrice {
+  list_price_cents: number
+  price_cents: number
+}
+
+interface TeamCreditStop {
+  id: string
+  credits: number
+  monthly: TeamCreditStopPrice
+  yearly: TeamCreditStopPrice
+}
+
+export interface TeamCreditStops {
+  default_stop_index: number
+  stops: TeamCreditStop[]
+}
+
 interface BillingPlansResponse {
   current_plan_slug?: string
   plans: Plan[]
+  team_credit_stops?: TeamCreditStops
 }
 
 type SubscriptionTransitionType =
@@ -209,6 +227,12 @@ export type BillingStatus =
   | 'payment_failed'
   | 'inactive'
 
+export interface CurrentTeamCreditStop {
+  id: string
+  credits_monthly: number
+  stop_usd: number
+}
+
 export interface BillingStatusResponse {
   is_active: boolean
   subscription_status?: BillingSubscriptionStatus
@@ -219,6 +243,7 @@ export interface BillingStatusResponse {
   has_funds: boolean
   cancel_at?: string
   renewal_date?: string
+  team_credit_stop?: CurrentTeamCreditStop
 }
 
 export interface BillingBalanceResponse {

@@ -341,7 +341,6 @@ const isResubscribing = ref(false)
 async function handleResubscribe() {
   isResubscribing.value = true
   try {
-    // facade resubscribe() refreshes status + balance internally
     await resubscribe()
     toast.add({
       severity: 'success',

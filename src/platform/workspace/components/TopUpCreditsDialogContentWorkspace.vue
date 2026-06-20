@@ -176,7 +176,7 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance, topup } = useBillingContext()
+const { fetchBalance, fetchStatus, topup } = useBillingContext()
 
 const billingOperationStore = useBillingOperationStore()
 const isPolling = computed(() => billingOperationStore.hasPendingOperations)
@@ -257,7 +257,6 @@ async function handleBuy() {
 
     const amountCents = payAmount.value * 100
     const response = await topup(amountCents)
-    // Workspace topup always returns a response; void only on the legacy path.
     if (!response) return
 
     if (response.status === 'completed') {
@@ -266,7 +265,7 @@ async function handleBuy() {
         summary: t('credits.topUp.purchaseSuccess'),
         life: 5000
       })
-      await fetchBalance()
+      await Promise.all([fetchBalance(), fetchStatus()])
       handleClose(false)
       settingsDialog.show('workspace')
     } else if (response.status === 'pending') {

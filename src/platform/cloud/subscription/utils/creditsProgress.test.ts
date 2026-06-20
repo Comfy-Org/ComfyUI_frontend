@@ -27,4 +27,11 @@ describe('computeMonthlyUsage', () => {
       usedFraction: 1
     })
   })
+
+  it('caps used at the allowance when the remaining balance is negative', () => {
+    expect(computeMonthlyUsage(-50_000, 200_000)).toEqual({
+      used: 200_000,
+      usedFraction: 1
+    })
+  })
 })

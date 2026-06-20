@@ -18,8 +18,8 @@
         {{ $t('subscription.totalCredits') }}
       </div>
       <Skeleton v-if="isLoadingBalance" width="8rem" height="2rem" />
-      <div v-else class="flex items-center gap-1">
-        <i class="icon-[lucide--component] size-4" :style="creditIconStyle" />
+      <div v-else class="flex items-baseline gap-2">
+        <i class="icon-[lucide--component] size-4 self-center text-credit" />
         <span class="text-2xl leading-none font-bold">{{ displayTotal }}</span>
         <span class="text-sm text-muted @max-[300px]:hidden">{{
           $t('subscription.remaining')
@@ -28,7 +28,23 @@
     </div>
 
     <template v-if="showBreakdown">
-      <div v-if="showBar" class="flex flex-col gap-2">
+      <div
+        v-if="emptyStateNotice"
+        class="flex items-start gap-2 rounded-lg bg-base-background p-3 text-sm"
+      >
+        <i
+          class="mt-0.5 icon-[lucide--info] size-4 shrink-0 text-base-foreground"
+        />
+        <div class="flex flex-col gap-1">
+          <span class="text-base-foreground">{{ emptyStateNotice.title }}</span>
+          <span class="text-muted">{{ emptyStateNotice.description }}</span>
+        </div>
+      </div>
+
+      <div
+        v-if="showBar"
+        :class="cn('flex flex-col gap-2', isMonthlyDepleted && 'opacity-30')"
+      >
         <div class="flex items-center justify-between text-sm">
           <span class="text-text-primary">{{
             $t('subscription.monthly')
@@ -41,8 +57,8 @@
           class="h-2 w-full overflow-hidden rounded-full bg-secondary-background-hover"
         >
           <div
-            class="h-full rounded-full"
-            :style="{ width: usedBarWidth, backgroundColor: CREDIT_COLOR }"
+            class="h-full rounded-full bg-credit"
+            :style="{ width: usedBarWidth }"
           />
         </div>
         <div class="flex items-center justify-between gap-2 text-sm">
@@ -60,10 +76,7 @@
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
           >
-            <i
-              class="icon-[lucide--component] size-4"
-              :style="creditIconStyle"
-            />
+            <i class="icon-[lucide--component] size-4 text-credit" />
             <span class="@max-[180px]:hidden">
               {{
                 $t('subscription.creditsLeftOfTotal', {
@@ -99,16 +112,19 @@
               }"
               class="icon-[lucide--info] size-4 text-muted"
             />
+            <span
+              v-if="isSpendingAdditional"
+              class="flex h-3.5 items-center rounded-full bg-base-foreground px-1 text-2xs/none font-semibold text-base-background uppercase"
+            >
+              {{ $t('subscription.additionalCreditsInUse') }}
+            </span>
           </span>
           <Skeleton v-if="isLoadingBalance" width="3rem" height="1rem" />
           <span
             v-else
             class="flex items-center gap-1 font-bold text-text-primary"
           >
-            <i
-              class="icon-[lucide--component] size-4"
-              :style="creditIconStyle"
-            />
+            <i class="icon-[lucide--component] size-4 text-credit" />
             {{ displayPrepaid }}
           </span>
         </div>
@@ -122,15 +138,23 @@
       <Button
         v-if="isFreeTier"
         variant="gradient"
-        class="min-h-8 w-full rounded-lg p-2 text-sm font-normal"
+        size="lg"
+        class="w-full font-normal"
         @click="handleUpgradeToAddCredits"
       >
         {{ $t('subscription.upgradeToAddCredits') }}
       </Button>
       <Button
         v-else
-        variant="secondary"
-        class="min-h-8 w-full rounded-lg bg-interface-menu-component-surface-selected p-2 text-sm font-normal text-text-primary"
+        :variant="isOutOfCredits ? 'inverted' : 'secondary'"
+        size="lg"
+        :class="
+          cn(
+            'w-full font-normal',
+            !isOutOfCredits &&
+              'bg-interface-menu-component-surface-selected text-text-primary'
+          )
+        "
         @click="handleAddCredits"
       >
         {{ $t('subscription.addCredits') }}
@@ -140,10 +164,13 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { useEventListener } from '@vueuse/core'
 import Skeleton from 'primevue/skeleton'
-import { computed, onBeforeUnmount, onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { formatCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionCredits } from '@/platform/cloud/subscription/composables/useSubscriptionCredits'
@@ -163,18 +190,17 @@ const { zeroState = false } = defineProps<{
   zeroState?: boolean
 }>()
 
-const CREDIT_COLOR = '#fabc25'
-const creditIconStyle = { color: CREDIT_COLOR }
-
 const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
 const TOPUP_EXPIRY_MS = 5 * 60 * 1000
 
-const { locale, n } = useI18n()
+const { locale, t } = useI18n()
 
 const {
   subscription,
+  balance,
   isActiveSubscription,
   isFreeTier,
+  currentTeamCreditStop,
   fetchBalance,
   fetchStatus
 } = useBillingContext()
@@ -183,6 +209,7 @@ const {
   prepaidCredits,
   totalCredits,
   monthlyBonusCreditsValue,
+  prepaidCreditsValue,
   isLoadingBalance
 } = useSubscriptionCredits()
 const { permissions } = useWorkspaceUI()
@@ -199,6 +226,8 @@ const tierKey = computed(() => {
 })
 
 const monthlyTotalCredits = computed<number | null>(() => {
+  const teamStop = currentTeamCreditStop.value
+  if (teamStop) return teamStop.credits_monthly
   const credits = getTierCredits(tierKey.value)
   if (credits === null) return null
   return isYearly.value ? credits * 12 : credits
@@ -217,15 +246,22 @@ const refillsDateShort = computed(() => {
   const date = new Date(raw)
   return Number.isNaN(date.getTime())
     ? raw
-    : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : date.toLocaleDateString(locale.value, { month: 'short', day: 'numeric' })
 })
+
+const formatCreditCount = (value: number) =>
+  formatCredits({
+    value,
+    locale: locale.value,
+    numberOptions: { maximumFractionDigits: 0 }
+  })
 
 const monthlyTotalDisplay = computed(() => {
   const total = monthlyTotalCredits.value
-  return total === null ? '—' : n(total)
+  return total === null ? '—' : formatCreditCount(total)
 })
 
-const usedDisplay = computed(() => n(usage.value.used))
+const usedDisplay = computed(() => formatCreditCount(usage.value.used))
 
 const compactNumber = computed(
   () => new Intl.NumberFormat(locale.value, { notation: 'compact' })
@@ -255,6 +291,40 @@ const showActionButton = computed(
   () => isActiveSubscription.value && !zeroState && permissions.value.canTopUp
 )
 
+const isMonthlyDepleted = computed(
+  () =>
+    showBar.value &&
+    !isLoadingBalance.value &&
+    balance.value != null &&
+    monthlyBonusCreditsValue.value <= 0
+)
+const isOutOfCredits = computed(
+  () => isMonthlyDepleted.value && prepaidCreditsValue.value <= 0
+)
+const isSpendingAdditional = computed(
+  () => isMonthlyDepleted.value && prepaidCreditsValue.value > 0
+)
+
+const emptyStateNotice = computed(() => {
+  if (isOutOfCredits.value) {
+    return {
+      title: t('subscription.outOfCreditsTitle', {
+        date: refillsDateShort.value
+      }),
+      description: t('subscription.outOfCreditsDescription')
+    }
+  }
+  if (isMonthlyDepleted.value) {
+    return {
+      title: t('subscription.monthlyCreditsUsedUpTitle', {
+        date: refillsDateShort.value
+      }),
+      description: t('subscription.monthlyCreditsUsedUpDescription')
+    }
+  }
+  return null
+})
+
 async function handleRefresh() {
   await Promise.all([fetchBalance(), fetchStatus()])
 }
@@ -282,12 +352,9 @@ function handleWindowFocus() {
   localStorage.removeItem(PENDING_TOPUP_KEY)
 }
 
-onMounted(() => {
-  window.addEventListener('focus', handleWindowFocus)
-  void handleRefresh()
-})
+useEventListener(window, 'focus', handleWindowFocus)
 
-onBeforeUnmount(() => {
-  window.removeEventListener('focus', handleWindowFocus)
+onMounted(() => {
+  void handleRefresh()
 })
 </script>

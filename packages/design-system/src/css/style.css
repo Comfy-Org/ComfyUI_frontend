@@ -52,6 +52,8 @@
   --color-gold-500: #fdab34;
   --color-gold-600: #fd9903;
 
+  --color-credit: #fabc25;
+
   --color-coral-500: #f75951;
   --color-coral-600: #e04e48;
   --color-coral-700: #b33a3a;
@@ -121,6 +123,7 @@
   --comfy-topbar-height: 2.5rem;
   --workflow-tabs-height: 2.375rem;
   --comfy-input-bg: #222;
+  --comfy-textarea-font-size: 10px;
   --input-text: #ddd;
   --descrip-text: #999;
   --drag-text: #ccc;

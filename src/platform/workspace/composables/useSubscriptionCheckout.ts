@@ -149,12 +149,12 @@ export function useSubscriptionCheckout(emit: {
         response.payment_method_url
       ) {
         window.open(response.payment_method_url, '_blank')
-        billingOperationStore.startOperation(
+        void billingOperationStore.startOperation(
           response.billing_op_id,
           'subscription'
         )
       } else if (response.status === 'pending_payment') {
-        billingOperationStore.startOperation(
+        void billingOperationStore.startOperation(
           response.billing_op_id,
           'subscription'
         )
@@ -175,7 +175,6 @@ export function useSubscriptionCheckout(emit: {
   async function handleResubscribe() {
     isResubscribing.value = true
     try {
-      // facade resubscribe() refreshes status + balance internally
       await resubscribe()
       toast.add({
         severity: 'success',
