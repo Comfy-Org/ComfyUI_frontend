@@ -132,7 +132,7 @@
           </template>
           <template #privacy>
             <a
-              href="https://www.comfy.org/privacy"
+              href="https://www.comfy.org/privacy-policy"
               target="_blank"
               rel="noopener noreferrer"
               class="underline hover:text-base-foreground"

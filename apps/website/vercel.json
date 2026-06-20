@@ -23,6 +23,11 @@
       "permanent": true
     },
     {
+      "source": "/privacy",
+      "destination": "/privacy-policy",
+      "permanent": true
+    },
+    {
       "source": "/enterprise",
       "destination": "/cloud/enterprise",
       "permanent": true
