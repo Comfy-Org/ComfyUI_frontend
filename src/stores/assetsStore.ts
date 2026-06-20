@@ -310,8 +310,7 @@ export const useAssetsStore = defineStore('assets', () => {
         const cursorStuck =
           nextCursor !== undefined && nextCursor === requestedAfter
         flatOutputNextCursor = cursorStuck ? undefined : nextCursor
-        flatOutputHasMore.value =
-          batch.length > 0 && hasMore && !cursorStuck
+        flatOutputHasMore.value = batch.length > 0 && hasMore && !cursorStuck
         return flatOutputAssets.value
       } catch (err) {
         flatOutputError.value = err
