@@ -3,6 +3,17 @@ import axios from 'axios'
 import { storeToRefs } from 'pinia'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
+import {
+  logHttpRequest,
+  logHttpResponse,
+  logWebSocketOpen,
+  logWebSocketClose,
+  logWebSocketMessage,
+  logWebSocketSend,
+  logQueuePromptStart,
+  logQueuePromptApiCall,
+  logStatus
+} from './debugLogger'
 import { ref } from 'vue'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
@@ -437,6 +448,17 @@ export class ComfyApi extends EventTarget {
 
   async fetchApi(route: string, options?: RequestInit) {
     const headers: HeadersInit = options?.headers ?? {}
+    const method = options?.method || 'GET'
+    let reqBody: unknown
+    if (options?.body && typeof options.body === 'string') {
+      try {
+        reqBody = JSON.parse(options.body)
+      } catch {
+        reqBody = options.body
+      }
+    }
+    logHttpRequest(method, route, reqBody)
+    const reqStart = performance.now()
 
     if (isCloud) {
       await this.waitForAuthInitialization()
@@ -462,11 +484,13 @@ export class ComfyApi extends EventTarget {
     }
 
     addHeaderEntry(headers, 'Comfy-User', this.user)
-    return fetch(this.apiURL(route), {
+    const res = await fetch(this.apiURL(route), {
       cache: 'no-cache',
       ...options,
       headers
     })
+    logHttpResponse(method, route, res.status, performance.now() - reqStart)
+    return res
   }
 
   override addEventListener<TEvent extends keyof ApiEvents>(
@@ -593,14 +617,15 @@ export class ComfyApi extends EventTarget {
 
     this.socket.addEventListener('open', () => {
       opened = true
+      logWebSocketOpen(wsUrl)
 
       // Send feature flags as the first message
-      this.socket!.send(
-        JSON.stringify({
-          type: 'feature_flags',
-          data: this.getClientFeatureFlags()
-        })
-      )
+      const featureFlagsMsg = JSON.stringify({
+        type: 'feature_flags',
+        data: this.getClientFeatureFlags()
+      })
+      logWebSocketSend('feature_flags', this.getClientFeatureFlags())
+      this.socket!.send(featureFlagsMsg)
 
       if (isReconnect) {
         this.dispatchCustomEvent('reconnected')
@@ -614,7 +639,8 @@ export class ComfyApi extends EventTarget {
       }
     })
 
-    this.socket.addEventListener('close', () => {
+    this.socket.addEventListener('close', (event) => {
+      logWebSocketClose(event.code, event.reason)
       setTimeout(async () => {
         this.socket = null
         await this.createSocket(true)
@@ -722,8 +748,13 @@ export class ComfyApi extends EventTarget {
           }
         } else {
           const msg = JSON.parse(event.data) as ApiMessageUnion
+          logWebSocketMessage(msg.type, msg.data)
           switch (msg.type) {
             case 'status':
+              logStatus(
+                msg.data.status?.exec_info?.queue_remaining ?? -1,
+                msg.data.sid ?? ''
+              )
               if (msg.data.sid) {
                 const clientId = msg.data.sid
                 this.clientId = clientId
@@ -862,6 +893,7 @@ export class ComfyApi extends EventTarget {
     options?: QueuePromptOptions
   ): Promise<PromptResponse> {
     const { output: prompt, workflow } = data
+    logQueuePromptStart(this.clientId ?? 'unknown', Object.keys(prompt).length)
 
     const body: QueuePromptRequestBody = {
       client_id: this.clientId ?? '', // TODO: Unify clientId access
@@ -912,7 +944,9 @@ export class ComfyApi extends EventTarget {
       throw new PromptExecutionError(errorResponse, res.status)
     }
 
-    return await res.json()
+    const result = await res.json()
+    logQueuePromptApiCall(result.prompt_id)
+    return result
   }
 
   /**

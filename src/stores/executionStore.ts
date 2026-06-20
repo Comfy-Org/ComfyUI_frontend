@@ -8,6 +8,21 @@ import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreco
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  logExecutionStart,
+  logExecutingNode,
+  logNodeExecuted,
+  logNodeCached,
+  logExecutionSuccess,
+  logExecutionError,
+  logExecutionInterrupted,
+  logProgressState,
+  logProgress,
+  logProgressText,
+  logQueuePromptStored,
+  startTiming,
+  endTiming
+} from '@/scripts/debugLogger'
 import type {
   ComfyApiWorkflow,
   NodeId,
@@ -276,6 +291,8 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
+    logExecutionStart(e.detail.prompt_id)
+    startTiming(`exec:${e.detail.prompt_id}`)
     executionIdToLocatorCache.clear()
     executionErrorStore.clearExecutionStartErrors()
     activeJobId.value = e.detail.prompt_id
@@ -291,6 +308,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionCached(e: CustomEvent<ExecutionCachedWsMessage>) {
+    logNodeCached(e.detail.nodes.map(String))
     if (!activeJob.value) return
     for (const n of e.detail.nodes) {
       activeJob.value.nodes[n] = true
@@ -301,16 +319,21 @@ export const useExecutionStore = defineStore('execution', () => {
     e: CustomEvent<ExecutionInterruptedWsMessage>
   ) {
     const jobId = e.detail.prompt_id
-    if (activeJobId.value) clearInitializationByJobId(activeJobId.value)
+    logExecutionInterrupted(jobId)
+    endTiming(`exec:${jobId}`)
+    clearInitializationByJobId(jobId)
     resetExecutionState(jobId)
   }
 
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
+    logNodeExecuted(String(e.detail.node))
     if (!activeJob.value) return
     activeJob.value.nodes[e.detail.node] = true
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
+    endTiming(`exec:${e.detail.prompt_id}`)
+    logExecutionSuccess(e.detail.prompt_id)
     const jobId = e.detail.prompt_id
     const queuedJob = queuedJobs.value[jobId]
     const telemetry = useTelemetry()
@@ -331,6 +354,10 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecuting(e: CustomEvent<NodeId | null>): void {
+    logExecutingNode(
+      e.detail !== null ? String(e.detail) : null,
+      activeJobId.value || 'unknown'
+    )
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 
@@ -375,6 +402,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   function handleProgressState(e: CustomEvent<ProgressStateWsMessage>) {
     const { nodes, prompt_id: jobId } = e.detail
+    logProgressState(nodes)
 
     // Revoke previews for nodes that are starting to execute
     const previousForJob = nodeProgressStatesByJob.value[jobId] || {}
@@ -411,6 +439,7 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleProgress(e: CustomEvent<ProgressWsMessage>) {
+    logProgress(String(e.detail.node), e.detail.value, e.detail.max)
     _executingNodeProgress.value = e.detail
   }
 
@@ -424,6 +453,8 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handleExecutionError(e: CustomEvent<ExecutionErrorWsMessage>) {
+    endTiming(`exec:${e.detail.prompt_id}`)
+    logExecutionError(e.detail.prompt_id, e.detail)
     useTelemetry()?.trackExecutionError({
       jobId: e.detail.prompt_id,
       nodeId: String(e.detail.node_id),
@@ -589,6 +620,8 @@ export const useExecutionStore = defineStore('execution', () => {
     const { nodeId, text, prompt_id } = e.detail
     if (!text || !nodeId) return
 
+    logProgressText(String(nodeId), text)
+
     // Filter: only accept progress for the active prompt
     if (prompt_id && activeJobId.value && prompt_id !== activeJobId.value)
       return
@@ -613,6 +646,7 @@ export const useExecutionStore = defineStore('execution', () => {
     promptOutput: ComfyApiWorkflow
     workflow: ComfyWorkflow
   }) {
+    logQueuePromptStored(String(id), nodes.length)
     queuedJobs.value[id] ??= { nodes: {} }
     const queuedJob = queuedJobs.value[id]
     queuedJob.nodes = {
