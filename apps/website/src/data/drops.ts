@@ -4,7 +4,7 @@
 import { externalLinks } from '../config/routes'
 import type { LocalizedText } from '../i18n/translations'
 
-export type DropMedia =
+type DropMedia =
   | { type: 'image'; src: string; alt: LocalizedText }
   | { type: 'video'; src: string; alt: LocalizedText; poster?: string }
 
