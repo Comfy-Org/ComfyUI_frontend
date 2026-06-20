@@ -2558,7 +2558,6 @@
     "monthlyCreditsPerMemberLabel": "Monthly credits / member",
     "maxMembersLabel": "Max. members",
     "yearlyCreditsLabel": "Total yearly credits",
-    "nextMonthInvoice": "Next month invoice",
     "memberCount": "{count} member | {count} members",
     "maxDurationLabel": "Max run duration",
     "gpuLabel": "RTX 6000 Pro (96GB VRAM)",
