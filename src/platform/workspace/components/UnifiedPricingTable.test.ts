@@ -130,7 +130,7 @@ describe('UnifiedPricingTable team plan CTA', () => {
 
     renderComponent({ initialPlanMode: 'team' })
 
-    const cta = screen.getByRole('button', { name: 'Current Plan' })
+    const cta = screen.getByRole('button', { name: 'Current plan' })
     expect(cta).toBeDisabled()
   })
 

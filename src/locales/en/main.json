@@ -2624,6 +2624,7 @@
       "cta": "Subscribe to Team Yearly",
       "ctaMonthly": "Subscribe to Team Monthly",
       "changePlan": "Change plan",
+      "currentPlan": "Current plan",
       "unavailable": "This team plan is not available right now."
     },
     "enterprise": {

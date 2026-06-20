@@ -238,7 +238,6 @@
                 :stops="teamStops"
                 :default-stop-index="teamDefaultStopIndex"
                 :cycle="currentBillingCycle"
-                :current-stop-index="teamDisabledStopIndex"
               />
 
               <!-- Selected credit grant + template-based video estimate -->
@@ -670,13 +669,9 @@ watch(
   { immediate: true }
 )
 
-// Disable the current stop only while active; a cancelled plan can re-subscribe
-// to any stop, including the current one.
-const teamDisabledStopIndex = computed(() =>
-  isTeamSubscribed.value && !isCancelled.value
-    ? currentTeamStopIndex.value
-    : null
-)
+// The CTA — not the slider stop — reflects the current plan: when the slider
+// sits on the active stop the button reads "Current plan" and is disabled; any
+// other stop reads "Change plan". A cancelled plan re-subscribes instead.
 const isTeamCurrentStopSelected = computed(
   () =>
     currentTeamStopIndex.value !== null &&
@@ -690,7 +685,8 @@ const teamButtonLabel = computed(() => {
       : t('subscription.teamPlan.ctaMonthly')
   }
   if (isCancelled.value) return t('subscription.resubscribe')
-  if (isTeamCurrentStopSelected.value) return t('subscription.currentPlan')
+  if (isTeamCurrentStopSelected.value)
+    return t('subscription.teamPlan.currentPlan')
   return t('subscription.teamPlan.changePlan')
 })
 
