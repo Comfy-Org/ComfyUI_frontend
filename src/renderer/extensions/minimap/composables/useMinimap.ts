@@ -12,7 +12,11 @@ import type { MinimapCanvas, MinimapSettingsKey } from '../types'
 import { useMinimapGraph } from './useMinimapGraph'
 import { useMinimapInteraction } from './useMinimapInteraction'
 import { useMinimapRenderer } from './useMinimapRenderer'
-import { useMinimapSettings } from './useMinimapSettings'
+import {
+  CANVAS_HEIGHT as height,
+  CANVAS_WIDTH as width,
+  useMinimapSettings
+} from './useMinimapSettings'
 import { useMinimapViewport } from './useMinimapViewport'
 
 export function useMinimap({
@@ -32,9 +36,6 @@ export function useMinimap({
 
   const visible = ref(true)
   const initialized = ref(false)
-
-  const width = 252
-  const height = 165
 
   const canvas = computed(() => canvasStore.canvas as MinimapCanvas | null)
   const graph = computed(() => {
