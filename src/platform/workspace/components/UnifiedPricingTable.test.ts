@@ -170,6 +170,26 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(emitted().resubscribe).toBeTruthy()
   })
 
+  it('changes plan (not re-subscribe) when a cancelled sub picks a different stop', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = {
+      tier: 'TEAM',
+      duration: 'ANNUAL',
+      isCancelled: true
+    }
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    await user.click(screen.getByTestId('team-slider'))
+
+    const cta = screen.getByRole('button', { name: 'Change plan' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribeTeam).toBeTruthy()
+    expect(emitted().resubscribe).toBeFalsy()
+  })
+
   it('prompts a fresh subscribe when on no team plan', () => {
     renderComponent({ initialPlanMode: 'team' })
 
