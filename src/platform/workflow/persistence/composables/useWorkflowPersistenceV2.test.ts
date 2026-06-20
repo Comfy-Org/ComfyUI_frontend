@@ -591,5 +591,31 @@ describe('useWorkflowPersistenceV2', () => {
         'Comfy.BrowseTemplates'
       )
     })
+
+    it('does not open templates browser when template param is in URL', async () => {
+      routeMocks.query = { template: 'default-template-id' }
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
+
+    it('does not open templates browser when template intent is preserved across /user-select redirect', async () => {
+      preservedQueryMocks.payloads.template = {
+        template: 'default-template-id'
+      }
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+      await initializeWorkflow()
+
+      expect(loadBlankWorkflowMock).toHaveBeenCalled()
+      expect(commandStoreMocks.execute).not.toHaveBeenCalledWith(
+        'Comfy.BrowseTemplates'
+      )
+    })
   })
 })

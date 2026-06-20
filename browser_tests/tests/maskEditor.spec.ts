@@ -32,6 +32,10 @@ test.describe('Mask Editor', { tag: '@vue-nodes' }, () => {
       await expect(dialog.getByText('Save')).toBeVisible()
       await expect(dialog.getByText('Cancel')).toBeVisible()
 
+      await dialog.getByTestId('pointer-zone').hover()
+      await dialog.getByText('Brush Settings').hover()
+      await expect(dialog.getByTestId('brush-cursor')).toHaveCSS('opacity', '0')
+
       await comfyPage.expectScreenshot(dialog, 'mask-editor-dialog-open.png')
     }
   )

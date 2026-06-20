@@ -63,6 +63,15 @@ export class ControlsManager implements ControlsManagerInterface {
     camera.position.copy(position)
     this.controls.update()
   }
+
+  detach(): void {
+    this.controls.enabled = false
+  }
+
+  attach(): void {
+    this.controls.enabled = true
+  }
+
   reset(): void {
     this.controls.target.set(0, 0, 0)
     this.controls.update()
