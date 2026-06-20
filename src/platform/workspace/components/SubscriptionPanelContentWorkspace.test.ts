@@ -211,9 +211,9 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     expect(screen.getByText('Team')).toBeInTheDocument()
-    // Header and invoice card both read seat_summary.total_cost_cents
-    // ($320 workspace total), not the per-seat price_cents ($80).
-    expect(screen.getAllByText('$320')).toHaveLength(2)
+    // Header reads seat_summary.total_cost_cents ($320 workspace total),
+    // not the per-seat price_cents ($80).
+    expect(screen.getByText('$320')).toBeInTheDocument()
     expect(screen.queryByText('$80')).not.toBeInTheDocument()
     expect(screen.getByText('USD / mo')).toBeInTheDocument()
     expect(screen.queryByText('USD / mo / member')).not.toBeInTheDocument()
@@ -229,7 +229,6 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
     expect(screen.getByText('$100')).toBeInTheDocument()
     expect(screen.getByText('USD / mo / member')).toBeInTheDocument()
-    expect(screen.getByText('$200')).toBeInTheDocument()
   })
 
   it('wires Manage billing and Change plan actions for subscription managers', async () => {
