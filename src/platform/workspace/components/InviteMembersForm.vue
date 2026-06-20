@@ -7,7 +7,7 @@
       :delimiter="EMAIL_DELIMITER"
       :convert-value="normalizeEmail"
       :model-value="emails"
-      class="min-h-10 w-full bg-secondary-background"
+      class="min-h-10 w-full bg-tertiary-background px-3 hover:bg-tertiary-background-hover focus-within:bg-tertiary-background"
       @update:model-value="onEmailsUpdate"
     >
       <TagsInputItem
@@ -44,6 +44,7 @@
     </p>
 
     <div
+      v-if="showSubmit"
       :class="
         cn('flex', cancelLabel ? 'items-center justify-end gap-4' : 'flex-col')
       "
@@ -94,13 +95,17 @@ const {
   placeholder,
   source,
   cancelLabel,
-  maxSeats = Number.POSITIVE_INFINITY
+  maxSeats = Number.POSITIVE_INFINITY,
+  showSubmit = true
 } = defineProps<{
   submitLabel: string
   placeholder: string
   source: WorkspaceInviteMetadata['source']
   cancelLabel?: string
   maxSeats?: number
+  /** Hide the built-in submit row so a parent can place the action elsewhere
+   *  (e.g. the team-upgrade success footer); drive it via the exposed submit. */
+  showSubmit?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -171,4 +176,6 @@ async function onSubmit() {
     loading.value = false
   }
 }
+
+defineExpose({ submit: onSubmit, canSubmit, loading })
 </script>
