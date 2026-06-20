@@ -6,7 +6,7 @@
     >
       <button
         v-tooltip.top="{
-          value: t('mediaAsset.selection.unselectAssets', { count }, count),
+          value: $t('mediaAsset.selection.unselectAssets', count),
           showDelay: 300
         }"
         type="button"
@@ -56,8 +56,6 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
-
 const { count, showDelete = true } = defineProps<{
   count: number
   showDelete?: boolean
@@ -69,8 +67,6 @@ const emit = defineEmits<{
   delete: []
 }>()
 
-const { t } = useI18n()
-
 const iconButtonClass =
-  'flex size-10 cursor-pointer items-center justify-center rounded-lg border-none bg-transparent text-base-background transition-colors hover:bg-base-background/10 focus-visible:ring-1 focus-visible:ring-base-background/40 focus-visible:outline-none'
+  'flex size-10 cursor-pointer items-center justify-center rounded-lg text-base-background transition-colors hover:bg-base-background/10 focus-visible:ring-1 focus-visible:ring-base-background/40 focus-visible:outline-none'
 </script>
