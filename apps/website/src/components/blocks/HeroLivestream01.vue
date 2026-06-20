@@ -12,12 +12,22 @@ type Cta = {
   rel?: AnchorHTMLAttributes['rel']
 }
 
-type Visual = {
-  src: string
-  alt: string
-  width?: number
-  height?: number
-}
+type Visual =
+  | {
+      type: 'image'
+      src: string
+      alt: string
+      width?: number
+      height?: number
+    }
+  | {
+      type: 'video'
+      src: string
+      alt: string
+      poster?: string
+      width?: number
+      height?: number
+    }
 
 const {
   visual,
@@ -103,7 +113,7 @@ const isLive = computed(
       />
     </div>
     <img
-      v-else-if="visual"
+      v-else-if="visual?.type === 'image'"
       :src="visual.src"
       :alt="visual.alt"
       :width="visual.width"
@@ -111,6 +121,20 @@ const isLive = computed(
       fetchpriority="high"
       decoding="async"
       class="mb-10 h-auto w-full max-w-md lg:mb-12 lg:max-w-lg"
+    />
+    <video
+      v-else-if="visual?.type === 'video'"
+      :src="visual.src"
+      :poster="visual.poster"
+      :aria-label="visual.alt"
+      :width="visual.width"
+      :height="visual.height"
+      autoplay
+      loop
+      muted
+      playsinline
+      preload="metadata"
+      class="mb-10 h-auto w-full max-w-md lg:mb-12 lg:max-w-2xl"
     />
 
     <p

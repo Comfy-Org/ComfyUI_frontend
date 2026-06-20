@@ -18,10 +18,11 @@ const endDateTime = '2026-06-24T19:00:00Z'
 <template>
   <HeroLivestream01
     :visual="{
-      src: '/affiliates/brand/comfy-amplified-logo.png',
+      type: 'video',
+      src: 'https://media.comfy.org/website/drops/Drops_hero_rotatinglogo.mp4',
       alt: t('drops.hero.visualAlt', locale),
-      width: 632,
-      height: 632
+      width: 1760,
+      height: 528
     }"
     :title="t('drops.hero.title', locale)"
     :primary-cta="{

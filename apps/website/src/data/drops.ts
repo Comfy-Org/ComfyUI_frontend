@@ -113,27 +113,28 @@ export const drops: readonly Drop[] = [
     }
   },
   {
-    id: 'comfy-cloud',
-    badge: FEATURED_BADGE,
+    id: 'comfy-mcp',
+    badge: NEW_BADGE,
     category: CLOUD,
-    media: imageFor('placeholder.jpeg', {
-      en: 'Comfy Cloud',
-      'zh-CN': 'Comfy Cloud'
+    media: imageFor('Drops_2x2card_MCP.jpg', {
+      en: 'Comfy MCP',
+      'zh-CN': 'Comfy MCP'
     }),
-    title: { en: 'Comfy Cloud', 'zh-CN': 'Comfy Cloud' },
+    title: { en: 'Comfy MCP', 'zh-CN': 'Comfy MCP' },
+    // TODO: production MCP copy + destination page pending.
     description: {
       en: 'The full power of ComfyUI from anywhere — no setup, no GPU required.',
       'zh-CN': '随时随地体验 ComfyUI 的全部能力 — 无需配置，无需 GPU。'
     },
     cta: {
       label: EXPLORE,
-      href: { en: '/cloud', 'zh-CN': '/zh-CN/cloud' }
+      href: { en: '/mcp', 'zh-CN': '/zh-CN/mcp' }
     }
   },
   {
     id: 'community-workflows',
     category: COMMUNITY,
-    media: imageFor('placeholder.jpeg', {
+    media: imageFor('Drops_3x3card_Comm Workflows.jpg', {
       en: 'Community Workflows',
       'zh-CN': '社区工作流'
     }),
@@ -171,7 +172,7 @@ export const drops: readonly Drop[] = [
   {
     id: 'supported-nodes',
     category: MODELS_AND_NODES,
-    media: imageFor('Drops_Supported models.jpg', {
+    media: videoFor('Drops_3x3card_supported nodes.mp4', {
       en: 'Supported Nodes',
       'zh-CN': '支持的节点'
     }),
@@ -192,7 +193,7 @@ export const drops: readonly Drop[] = [
   {
     id: 'comfy-enterprise',
     category: CLOUD,
-    media: imageFor('placeholder.jpeg', {
+    media: imageFor('Drops_3x3card_enterprise.png', {
       en: 'Comfy Enterprise',
       'zh-CN': 'Comfy 企业版'
     }),
@@ -227,13 +228,13 @@ export const drops: readonly Drop[] = [
     id: 'share-comfy',
     badge: NEW_BADGE,
     category: COMMUNITY,
-    media: imageFor('placeholder.jpeg', {
-      en: 'Share Comfy with your audience',
-      'zh-CN': '与您的受众分享 Comfy'
+    media: videoFor('Drops_3x3card_Affilliate.mp4', {
+      en: 'Comfy Affiliate',
+      'zh-CN': 'Comfy Affiliate'
     }),
     title: {
-      en: 'Share Comfy with your audience',
-      'zh-CN': '与您的受众分享 Comfy'
+      en: 'Comfy Affiliate',
+      'zh-CN': 'Comfy Affiliate'
     },
     description: {
       en: 'Share Comfy with your audience and earn for every creator you bring on board.',
