@@ -1,4 +1,4 @@
-import { useRafFn } from '@vueuse/core'
+import { useElementSize, useRafFn } from '@vueuse/core'
 import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 import type { ShallowRef } from 'vue'
 
@@ -12,11 +12,7 @@ import type { MinimapCanvas, MinimapSettingsKey } from '../types'
 import { useMinimapGraph } from './useMinimapGraph'
 import { useMinimapInteraction } from './useMinimapInteraction'
 import { useMinimapRenderer } from './useMinimapRenderer'
-import {
-  CANVAS_HEIGHT as height,
-  CANVAS_WIDTH as width,
-  useMinimapSettings
-} from './useMinimapSettings'
+import { useMinimapSettings } from './useMinimapSettings'
 import { useMinimapViewport } from './useMinimapViewport'
 
 export function useMinimap({
@@ -36,6 +32,11 @@ export function useMinimap({
 
   const visible = ref(true)
   const initialized = ref(false)
+
+  const { width: measuredWidth, height: measuredHeight } =
+    useElementSize(containerRef)
+  const width = computed(() => Math.round(measuredWidth.value))
+  const height = computed(() => Math.round(measuredHeight.value))
 
   const canvas = computed(() => canvasStore.canvas as MinimapCanvas | null)
   const graph = computed(() => {
@@ -202,6 +203,17 @@ export function useMinimap({
       viewport.stopViewportSync()
     }
   })
+
+  watch(
+    [width, height],
+    ([w, h]) => {
+      if (!w || !h || !initialized.value || !visible.value) return
+      renderer.forceFullRedraw()
+      renderer.updateMinimap(viewport.updateBounds, viewport.updateViewport)
+      viewport.updateViewport()
+    },
+    { flush: 'post' }
+  )
 
   const executionStore = useExecutionStore()
   watch(

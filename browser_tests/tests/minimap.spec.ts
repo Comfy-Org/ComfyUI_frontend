@@ -74,6 +74,43 @@ test.describe('Minimap', { tag: '@canvas' }, () => {
     await expect(minimapMainContainer).toHaveCSS('z-index', '1000')
   })
 
+  test('Minimap canvas buffer matches its rendered container size', async ({
+    comfyPage
+  }) => {
+    const { container, canvas } = getMinimapLocators(comfyPage)
+    await expect(container).toBeVisible()
+    await expect(canvas).toBeVisible()
+
+    const readDims = async () => {
+      const buffer = await canvas.evaluate((el: HTMLCanvasElement) => ({
+        w: el.width,
+        h: el.height
+      }))
+      const box = await container.evaluate((el: HTMLElement) => ({
+        w: el.clientWidth,
+        h: el.clientHeight
+      }))
+      return {
+        bufferW: buffer.w,
+        bufferH: buffer.h,
+        clientW: box.w,
+        clientH: box.h
+      }
+    }
+
+    // The canvas bitmap resolution must equal its rendered content box (within
+    // sub-pixel rounding); otherwise the drawing is CSS-stretched and the
+    // viewport cone drifts off the nodes.
+    await expect
+      .poll(async () => {
+        const { bufferW, bufferH, clientW, clientH } = await readDims()
+        return (
+          Math.abs(bufferW - clientW) <= 1 && Math.abs(bufferH - clientH) <= 1
+        )
+      })
+      .toBe(true)
+  })
+
   test('Validate minimap toggle button state', async ({ comfyPage }) => {
     const { container, toggleButton } = getMinimapLocators(comfyPage)
 

@@ -1,6 +1,6 @@
 import { useRafFn } from '@vueuse/core'
-import { computed, ref } from 'vue'
-import type { Ref } from 'vue'
+import { computed, ref, toValue } from 'vue'
+import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -26,8 +26,8 @@ export function clampViewportSpan(
 export function useMinimapViewport(
   canvas: Ref<MinimapCanvas | null>,
   graph: Ref<LGraph | null>,
-  width: number,
-  height: number
+  width: MaybeRefOrGetter<number>,
+  height: MaybeRefOrGetter<number>
 ) {
   const bounds = ref<MinimapBounds>({
     minX: 0,
@@ -84,7 +84,7 @@ export function useMinimapViewport(
   }
 
   const calculateScale = () => {
-    return calculateMinimapScale(bounds.value, width, height)
+    return calculateMinimapScale(bounds.value, toValue(width), toValue(height))
   }
 
   const updateViewport = () => {
@@ -106,16 +106,20 @@ export function useMinimapViewport(
     const worldX = -ds.offset[0]
     const worldY = -ds.offset[1]
 
-    const centerOffsetX = (width - bounds.value.width * scale.value) / 2
-    const centerOffsetY = (height - bounds.value.height * scale.value) / 2
+    const vw = toValue(width)
+    const vh = toValue(height)
+    if (!vw || !vh) return
+
+    const centerOffsetX = (vw - bounds.value.width * scale.value) / 2
+    const centerOffsetY = (vh - bounds.value.height * scale.value) / 2
 
     const rawX = (worldX - bounds.value.minX) * scale.value + centerOffsetX
     const rawY = (worldY - bounds.value.minY) * scale.value + centerOffsetY
     const rawW = viewportWidth * scale.value
     const rawH = viewportHeight * scale.value
 
-    const horizontal = clampViewportSpan(rawX, rawW, width)
-    const vertical = clampViewportSpan(rawY, rawH, height)
+    const horizontal = clampViewportSpan(rawX, rawW, vw)
+    const vertical = clampViewportSpan(rawY, rawH, vh)
 
     const x = Math.round(horizontal.offset)
     const y = Math.round(vertical.offset)

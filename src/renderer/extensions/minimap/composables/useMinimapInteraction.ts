@@ -1,5 +1,5 @@
-import { ref } from 'vue'
-import type { Ref, ShallowRef } from 'vue'
+import { ref, toValue } from 'vue'
+import type { MaybeRefOrGetter, Ref, ShallowRef } from 'vue'
 
 import type { MinimapCanvas } from '../types'
 
@@ -7,8 +7,8 @@ export function useMinimapInteraction(
   containerRef: Readonly<ShallowRef<HTMLDivElement | null>>,
   bounds: Ref<{ minX: number; minY: number; width: number; height: number }>,
   scale: Ref<number>,
-  width: number,
-  height: number,
+  width: MaybeRefOrGetter<number>,
+  height: MaybeRefOrGetter<number>,
   centerViewOn: (worldX: number, worldY: number) => void,
   canvas: Ref<MinimapCanvas | null>
 ) {
@@ -16,8 +16,8 @@ export function useMinimapInteraction(
   const containerRect = ref({
     left: 0,
     top: 0,
-    width: width,
-    height: height
+    width: toValue(width),
+    height: toValue(height)
   })
 
   const updateContainerRect = () => {
@@ -48,8 +48,8 @@ export function useMinimapInteraction(
     const x = e.clientX - containerRect.value.left
     const y = e.clientY - containerRect.value.top
 
-    const offsetX = (width - bounds.value.width * scale.value) / 2
-    const offsetY = (height - bounds.value.height * scale.value) / 2
+    const offsetX = (toValue(width) - bounds.value.width * scale.value) / 2
+    const offsetY = (toValue(height) - bounds.value.height * scale.value) / 2
 
     const worldX = (x - offsetX) / scale.value + bounds.value.minX
     const worldY = (y - offsetY) / scale.value + bounds.value.minY
@@ -101,8 +101,8 @@ export function useMinimapInteraction(
     const x = e.clientX - containerRect.value.left
     const y = e.clientY - containerRect.value.top
 
-    const offsetX = (width - bounds.value.width * scale.value) / 2
-    const offsetY = (height - bounds.value.height * scale.value) / 2
+    const offsetX = (toValue(width) - bounds.value.width * scale.value) / 2
+    const offsetY = (toValue(height) - bounds.value.height * scale.value) / 2
 
     const worldX = (x - offsetX) / scale.value + bounds.value.minX
     const worldY = (y - offsetY) / scale.value + bounds.value.minY

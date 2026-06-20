@@ -86,7 +86,11 @@ vi.mock('@vueuse/core', () => {
       return (...args: unknown[]) => {
         return callback(...args)
       }
-    })
+    }),
+    useElementSize: vi.fn(() => ({
+      width: { value: 252 },
+      height: { value: 165 }
+    }))
   }
 })
 
@@ -332,8 +336,6 @@ describe('useMinimap', () => {
 
       const minimap = useMinimap()
 
-      expect(minimap.width).toBe(252)
-      expect(minimap.height).toBe(165)
       expect(minimap.visible.value).toBe(true)
       expect(minimap.initialized.value).toBe(false)
 

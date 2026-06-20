@@ -1,5 +1,5 @@
-import { ref } from 'vue'
-import type { Ref, ShallowRef } from 'vue'
+import { ref, toValue } from 'vue'
+import type { MaybeRefOrGetter, Ref, ShallowRef } from 'vue'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
@@ -19,8 +19,8 @@ export function useMinimapRenderer(
     renderBypass: Ref<boolean>
     renderError: Ref<boolean>
   },
-  width: number,
-  height: number
+  width: MaybeRefOrGetter<number>,
+  height: MaybeRefOrGetter<number>
 ) {
   const needsFullRedraw = ref(true)
   const needsBoundsUpdate = ref(true)
@@ -32,9 +32,13 @@ export function useMinimapRenderer(
     const ctx = canvasRef.value.getContext('2d')
     if (!ctx) return
 
+    const w = toValue(width)
+    const h = toValue(height)
+    if (!w || !h) return
+
     // Fast path for 0 nodes - just show background
     if (!g._nodes || g._nodes.length === 0) {
-      ctx.clearRect(0, 0, width, height)
+      ctx.clearRect(0, 0, w, h)
       return
     }
 
@@ -54,8 +58,8 @@ export function useMinimapRenderer(
           renderBypass: settings.renderBypass.value,
           renderError: settings.renderError.value
         },
-        width,
-        height
+        width: w,
+        height: h
       })
 
       needsFullRedraw.value = false

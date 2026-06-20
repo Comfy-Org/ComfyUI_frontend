@@ -3,14 +3,8 @@ import { computed } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 
-const BORDER = 1
-const HEADER_HEIGHT = 32
-
 const CARD_WIDTH = 254
 const CARD_HEIGHT = 200
-
-export const CANVAS_WIDTH = CARD_WIDTH - 2 * BORDER
-export const CANVAS_HEIGHT = CARD_HEIGHT - HEADER_HEIGHT - 3 * BORDER
 
 /**
  * Composable for minimap configuration options that are set by the user in the
