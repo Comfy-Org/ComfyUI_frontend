@@ -7,7 +7,10 @@ import { createI18n } from 'vue-i18n'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type {
+  CurrentTeamCreditStop,
+  TeamCreditStops
+} from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionPanelContentWorkspace from './SubscriptionPanelContentWorkspace.vue'
 
@@ -22,24 +25,28 @@ function formatPanelDate(isoDate: string) {
   })
 }
 
-// price_cents is the per-seat base price; seat_summary carries the
-// seat-aware workspace total the panel must display.
-const teamPlan: Plan = {
-  slug: 'team-monthly',
-  tier: 'PRO',
-  duration: 'MONTHLY',
-  price_cents: 8000,
-  credits_cents: 8000,
-  max_seats: 10,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 4,
-    total_cost_cents: 32000,
-    total_credits_cents: 32000
-  }
+// The panel displays the subscribed credit stop's per-month price; monthly and
+// yearly stops are both per-month figures.
+const teamCreditStops: TeamCreditStops = {
+  default_stop_index: 1,
+  stops: [
+    {
+      id: 'team_700',
+      credits: 147700,
+      monthly: { list_price_cents: 70000, price_cents: 66500 },
+      yearly: { list_price_cents: 70000, price_cents: 63000 }
+    },
+    {
+      id: 'team_2500',
+      credits: 527500,
+      monthly: { list_price_cents: 250000, price_cents: 225000 },
+      yearly: { list_price_cents: 250000, price_cents: 200000 }
+    }
+  ]
 }
 
 const mockSubscriptionStatus = ref<'active' | 'canceled'>('active')
+const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 const mockHasSubscription = ref(true)
 const mockIsActiveSubscription = ref(true)
 const mockIsInPersonalWorkspace = ref(false)
@@ -50,8 +57,12 @@ const mockCanManageSubscription = ref(true)
 const mockCanManageSubscriptionLifecycle = ref(true)
 const mockIsCurrentUserOriginalOwner = ref(true)
 const mockMembers = ref([{ id: 'member-1' }, { id: 'member-2' }])
-const mockPlans = ref<Plan[]>([teamPlan])
-const mockCurrentPlanSlug = ref<string | null>('team-monthly')
+const mockTeamCreditStops = ref<TeamCreditStops | null>(teamCreditStops)
+const mockCurrentTeamCreditStop = ref<CurrentTeamCreditStop | null>({
+  id: 'team_700',
+  credits_monthly: 147700,
+  stop_usd: 700
+})
 
 const mockManageSubscription = vi.fn()
 const mockShowSubscriptionDialog = vi.fn()
@@ -63,7 +74,7 @@ const mockSubscription = computed<SubscriptionInfo | null>(() =>
     ? {
         isActive: true,
         tier: 'PRO',
-        duration: 'MONTHLY',
+        duration: mockSubscriptionDuration.value,
         planSlug: 'team-monthly',
         renewalDate: RENEWAL_DATE_ISO,
         endDate: END_DATE_ISO,
@@ -78,8 +89,8 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     isActiveSubscription: computed(() => mockIsActiveSubscription.value),
     isFreeTier: computed(() => false),
     subscription: mockSubscription,
-    plans: mockPlans,
-    currentPlanSlug: mockCurrentPlanSlug,
+    teamCreditStops: mockTeamCreditStops,
+    currentTeamCreditStop: mockCurrentTeamCreditStop,
     showSubscriptionDialog: mockShowSubscriptionDialog,
     manageSubscription: mockManageSubscription,
     resubscribe: mockResubscribe
@@ -183,18 +194,21 @@ describe('SubscriptionPanelContentWorkspace', () => {
     mockCanManageSubscriptionLifecycle.value = true
     mockIsCurrentUserOriginalOwner.value = true
     mockMembers.value = [{ id: 'member-1' }, { id: 'member-2' }]
-    mockPlans.value = [teamPlan]
-    mockCurrentPlanSlug.value = 'team-monthly'
+    mockSubscriptionDuration.value = 'MONTHLY'
+    mockTeamCreditStops.value = teamCreditStops
+    mockCurrentTeamCreditStop.value = {
+      id: 'team_700',
+      credits_monthly: 147700,
+      stop_usd: 700
+    }
   })
 
-  it('renders the team header with the seat-aware workspace price and renewal subtitle', () => {
+  it('renders the subscribed credit stop price and renewal subtitle', () => {
     renderComponent()
 
     expect(screen.getByText('Team')).toBeInTheDocument()
-    // Header reads seat_summary.total_cost_cents ($320 workspace total),
-    // not the per-seat price_cents ($80).
-    expect(screen.getByText('$320')).toBeInTheDocument()
-    expect(screen.queryByText('$80')).not.toBeInTheDocument()
+    // Monthly subscription on team_700 -> monthly.price_cents 66500 -> $665.
+    expect(screen.getByText('$665')).toBeInTheDocument()
     expect(screen.getByText('USD / mo')).toBeInTheDocument()
     expect(screen.queryByText('USD / mo / member')).not.toBeInTheDocument()
     expect(
@@ -203,8 +217,23 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(screen.getByTestId('subscription-footer-links')).toBeInTheDocument()
   })
 
-  it('falls back to the per-member tier price until plans resolve', () => {
-    mockPlans.value = []
+  it('uses the yearly stop price for an annual subscription, still shown per month', () => {
+    mockSubscriptionDuration.value = 'ANNUAL'
+    mockCurrentTeamCreditStop.value = {
+      id: 'team_2500',
+      credits_monthly: 527500,
+      stop_usd: 2500
+    }
+    renderComponent()
+
+    // team_2500 yearly.price_cents 200000 -> $2000, labelled per month.
+    expect(screen.getByText('$2000')).toBeInTheDocument()
+    expect(screen.getByText('USD / mo')).toBeInTheDocument()
+  })
+
+  it('falls back to the per-member tier price until stops resolve', () => {
+    mockTeamCreditStops.value = null
+    mockCurrentTeamCreditStop.value = null
     renderComponent()
 
     expect(screen.getByText('$100')).toBeInTheDocument()
