@@ -6,11 +6,17 @@ const zAsset = z.object({
   id: z.string(),
   name: z.string(),
   hash: z.string().nullish(),
+  // Namespace-rooted locator/display string, e.g. `input/sub/image.png` or
+  // `models/checkpoints/flux.safetensors`. Emitted on a best-effort basis
+  // (nullable). Identity is `id`, not `file_path`. Consumers must not assume
+  // `file_path` is populated and must degrade gracefully — see
+  // missingMediaAssetResolver.getAssetDetectionNames.
+  file_path: z.string().nullish(),
   size: z.number().optional(), // TBD: Will be provided by history API in the future
   mime_type: z.string().nullish(),
   tags: z.array(z.string()).optional().default([]),
   preview_id: z.string().nullable().optional(),
-  display_name: z.string().optional(),
+  display_name: z.string().nullish(),
   preview_url: z.string().optional(),
   thumbnail_url: z.string().optional(),
   created_at: z.string().optional(),

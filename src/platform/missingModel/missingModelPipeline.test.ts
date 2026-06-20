@@ -402,6 +402,36 @@ describe('missingModelPipeline', () => {
       })
     })
 
+    it('soft-degrades when loading model folders fails so graph load is not aborted', async () => {
+      mockHandles.modelStore.loadModelFolders.mockRejectedValueOnce(
+        new Error('Unable to load model folders: Server returned 500.')
+      )
+      mockHandles.state.enrichedCandidates = []
+
+      await expect(
+        runMissingModelPipeline({
+          graph: createGraph(),
+          graphData: createWorkflowGraphData(),
+          missingModelStore: mockHandles.missingModelStore
+        })
+      ).resolves.toEqual({ missingModels: [], confirmedCandidates: [] })
+
+      expect(mockHandles.enrichWithEmbeddedMetadata).toHaveBeenCalled()
+    })
+
+    it('re-throws abort errors from model folder loading', async () => {
+      const abortError = new DOMException('Aborted', 'AbortError')
+      mockHandles.modelStore.loadModelFolders.mockRejectedValueOnce(abortError)
+
+      await expect(
+        runMissingModelPipeline({
+          graph: createGraph(),
+          graphData: createWorkflowGraphData(),
+          missingModelStore: mockHandles.missingModelStore
+        })
+      ).rejects.toBe(abortError)
+    })
+
     it('does not expose downloadable model metadata without a directory', async () => {
       const confirmedCandidate = {
         nodeType: 'CheckpointLoaderSimple',
