@@ -9,7 +9,10 @@ import {
   calculateNodeBounds,
   enforceMinimumBounds
 } from '@/renderer/core/spatial/boundsCalculator'
-import { useMinimapViewport } from '@/renderer/extensions/minimap/composables/useMinimapViewport'
+import {
+  clampViewportSpan,
+  useMinimapViewport
+} from '@/renderer/extensions/minimap/composables/useMinimapViewport'
 import type { MinimapCanvas } from '@/renderer/extensions/minimap/types'
 
 vi.mock('@vueuse/core')
@@ -187,6 +190,38 @@ describe('useMinimapViewport', () => {
     expect(transform.height).toBeCloseTo(viewportHeight * 0.5) // 300 * 0.5 = 150
   })
 
+  it('rounds the viewport transform to whole pixels to avoid sub-pixel cone jitter', () => {
+    vi.mocked(calculateNodeBounds).mockReturnValue({
+      minX: 0,
+      minY: 0,
+      maxX: 500,
+      maxY: 400,
+      width: 500,
+      height: 400
+    })
+    vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
+    vi.mocked(calculateMinimapScale).mockReturnValue(0.5)
+
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+
+    const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
+
+    mockCanvas.ds.scale = 2
+    mockCanvas.ds.offset = [-100.5, -50.5]
+
+    viewport.updateBounds()
+    viewport.updateCanvasDimensions()
+    viewport.updateViewport()
+
+    const transform = viewport.viewportTransform.value
+
+    expect(Number.isInteger(transform.x)).toBe(true)
+    expect(Number.isInteger(transform.y)).toBe(true)
+    expect(Number.isInteger(transform.width)).toBe(true)
+    expect(Number.isInteger(transform.height)).toBe(true)
+  })
+
   it('should maintain strict reference equality for viewportTransform when canvas state is unchanged', () => {
     vi.mocked(calculateNodeBounds).mockReturnValue({
       minX: 0,
@@ -225,6 +260,39 @@ describe('useMinimapViewport', () => {
 
     expect(transformAfterPan).not.toBe(initialTransform)
     expect(transformAfterPan.x).not.toBe(initialTransform.x)
+  })
+
+  it('short-circuits the re-render guard on sub-pixel pans that round to the same pixel', () => {
+    vi.mocked(calculateNodeBounds).mockReturnValue({
+      minX: 0,
+      minY: 0,
+      maxX: 500,
+      maxY: 400,
+      width: 500,
+      height: 400
+    })
+    vi.mocked(enforceMinimumBounds).mockImplementation((bounds) => bounds)
+    vi.mocked(calculateMinimapScale).mockReturnValue(0.5)
+
+    const canvasRef = ref(mockCanvas) as Ref<MinimapCanvas | null>
+    const graphRef = ref(mockGraph) as Ref<LGraph | null>
+
+    const viewport = useMinimapViewport(canvasRef, graphRef, 250, 200)
+
+    mockCanvas.ds.scale = 2
+    mockCanvas.ds.offset = [-100, -50]
+
+    viewport.updateBounds()
+    viewport.updateCanvasDimensions()
+    viewport.updateViewport()
+
+    const initialTransform = viewport.viewportTransform.value
+
+    // worldX shifts 0.5 -> rawX moves 0.25px -> rounds to the same pixel
+    mockCanvas.ds.offset = [-100.5, -50]
+    viewport.updateViewport()
+
+    expect(viewport.viewportTransform.value).toBe(initialTransform)
   })
 
   it('should center view on world coordinates', () => {
@@ -327,5 +395,28 @@ describe('useMinimapViewport', () => {
       value: originalDPR,
       configurable: true
     })
+  })
+})
+
+describe('clampViewportSpan', () => {
+  it('clamps a negative start to 0', () => {
+    expect(clampViewportSpan(-20, 30, 100)).toEqual({ offset: 0, span: 10 })
+  })
+
+  it('clamps the offset so the cone stays visible at the far edge', () => {
+    expect(clampViewportSpan(98, 30, 100)).toEqual({ offset: 96, span: 4 })
+  })
+
+  it('caps the span at the canvas when the cone is larger than it', () => {
+    expect(clampViewportSpan(0, 200, 100)).toEqual({ offset: 0, span: 100 })
+  })
+
+  it('caps the span at the right edge when start + size overflows', () => {
+    expect(clampViewportSpan(80, 40, 100)).toEqual({ offset: 80, span: 20 })
+  })
+
+  it('never returns a span below the minimum visible size', () => {
+    expect(clampViewportSpan(50, 0, 100).span).toBe(4)
+    expect(clampViewportSpan(-50, 20, 100).span).toBe(4)
   })
 })

@@ -13,14 +13,14 @@ import type { MinimapBounds, MinimapCanvas, ViewportTransform } from '../types'
 
 const VIEWPORT_MIN_VISIBLE = 4
 
-function clampViewportSpan(
+export function clampViewportSpan(
   start: number,
   size: number,
   max: number
-): [number, number] {
-  const lo = Math.max(0, Math.min(start, max - VIEWPORT_MIN_VISIBLE))
-  const hi = Math.min(max, Math.max(start + size, VIEWPORT_MIN_VISIBLE))
-  return [lo, Math.max(VIEWPORT_MIN_VISIBLE, hi - lo)]
+): { offset: number; span: number } {
+  const offset = Math.max(0, Math.min(start, max - VIEWPORT_MIN_VISIBLE))
+  const end = Math.min(max, start + size)
+  return { offset, span: Math.max(VIEWPORT_MIN_VISIBLE, end - offset) }
 }
 
 export function useMinimapViewport(
@@ -69,7 +69,14 @@ export function useMinimapViewport(
     const dataSource = MinimapDataSourceFactory.create(graph.value)
 
     if (!dataSource.hasData()) {
-      return { minX: 0, minY: 0, maxX: 100, maxY: 100, width: 100, height: 100 }
+      return {
+        minX: 0,
+        minY: 0,
+        maxX: 100,
+        maxY: 100,
+        width: 100,
+        height: 100
+      }
     }
 
     const sourceBounds = dataSource.getBounds()
@@ -107,8 +114,13 @@ export function useMinimapViewport(
     const rawW = viewportWidth * scale.value
     const rawH = viewportHeight * scale.value
 
-    const [x, w] = clampViewportSpan(rawX, rawW, width)
-    const [y, h] = clampViewportSpan(rawY, rawH, height)
+    const horizontal = clampViewportSpan(rawX, rawW, width)
+    const vertical = clampViewportSpan(rawY, rawH, height)
+
+    const x = Math.round(horizontal.offset)
+    const y = Math.round(vertical.offset)
+    const w = Math.round(horizontal.span)
+    const h = Math.round(vertical.span)
 
     const curr = viewportTransform.value
     if (curr.x === x && curr.y === y && curr.width === w && curr.height === h)
