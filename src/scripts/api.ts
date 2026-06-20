@@ -317,7 +317,7 @@ export class PromptExecutionError extends Error {
 }
 
 // Preview-only backend pin; throwaway, do not merge
-const PREVIEW_BACKEND_ORIGIN = 'https://pr-4393.testenvs.comfy.org'
+const PREVIEW_BACKEND_ORIGIN = 'https://pr-4378.testenvs.comfy.org'
 
 export class ComfyApi extends EventTarget {
   private _registered = new Set()
