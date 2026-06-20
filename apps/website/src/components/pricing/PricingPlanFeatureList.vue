@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
+import { Check, X } from '@lucide/vue'
+
 import { t } from '../../i18n/translations'
 
 interface PlanFeature {
   text: TranslationKey
+  included?: boolean
 }
 
 const {
@@ -33,8 +36,19 @@ const {
       :key="feature.text"
       class="flex items-start gap-2"
     >
-      <span class="text-primary-comfy-yellow mt-0.5 text-sm">✓</span>
-      <span class="text-sm text-primary-comfy-canvas">
+      <Check
+        v-if="feature.included !== false"
+        class="text-primary-comfy-yellow mt-0.5 size-4 shrink-0"
+      />
+      <X v-else class="mt-0.5 size-4 shrink-0 text-primary-comfy-canvas/40" />
+      <span
+        class="text-sm"
+        :class="
+          feature.included === false
+            ? 'text-primary-comfy-canvas/40'
+            : 'text-primary-comfy-canvas'
+        "
+      >
         {{ t(feature.text, locale) }}
       </span>
     </li>

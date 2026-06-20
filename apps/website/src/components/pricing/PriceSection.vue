@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
+import { Check, X } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import BrandButton from '../common/BrandButton.vue'
@@ -18,6 +19,7 @@ function subscribeUrl(tier: string): string {
 
 interface PlanFeature {
   text: TranslationKey
+  included?: boolean
 }
 
 interface PricingPlan {
@@ -60,9 +62,10 @@ const plans: PricingPlan[] = [
     ctaKey: 'pricing.plan.standard.cta',
     ctaHref: subscribeUrl('standard'),
     features: [
-      { text: 'pricing.plan.standard.feature1' },
-      { text: 'pricing.plan.standard.feature2' },
-      { text: 'pricing.plan.standard.feature3' }
+      { text: 'pricing.feature.shortRuntime' },
+      { text: 'pricing.feature.addCredits' },
+      { text: 'pricing.feature.importModels', included: false },
+      { text: 'pricing.feature.longRuntime', included: false }
     ]
   },
   {
@@ -74,8 +77,10 @@ const plans: PricingPlan[] = [
     ctaKey: 'pricing.plan.creator.cta',
     ctaHref: subscribeUrl('creator'),
     features: [
-      { text: 'pricing.plan.creator.feature1' },
-      { text: 'pricing.plan.creator.feature2' }
+      { text: 'pricing.feature.shortRuntime' },
+      { text: 'pricing.feature.addCredits' },
+      { text: 'pricing.feature.importModels' },
+      { text: 'pricing.feature.longRuntime', included: false }
     ],
     isPopular: true
   },
@@ -88,8 +93,10 @@ const plans: PricingPlan[] = [
     ctaKey: 'pricing.plan.pro.cta',
     ctaHref: subscribeUrl('pro'),
     features: [
-      { text: 'pricing.plan.pro.feature1' },
-      { text: 'pricing.plan.pro.feature2' }
+      { text: 'pricing.feature.shortRuntime' },
+      { text: 'pricing.feature.addCredits' },
+      { text: 'pricing.feature.importModels' },
+      { text: 'pricing.feature.longRuntime' }
     ]
   },
   {
@@ -181,8 +188,22 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
               :key="feature.text"
               class="flex items-start gap-2"
             >
-              <span class="text-primary-comfy-yellow mt-0.5 text-sm">✓</span>
-              <span class="text-sm text-primary-comfy-canvas">
+              <Check
+                v-if="feature.included !== false"
+                class="text-primary-comfy-yellow mt-0.5 size-4 shrink-0"
+              />
+              <X
+                v-else
+                class="mt-0.5 size-4 shrink-0 text-primary-comfy-canvas/40"
+              />
+              <span
+                class="text-sm"
+                :class="
+                  feature.included === false
+                    ? 'text-primary-comfy-canvas/40'
+                    : 'text-primary-comfy-canvas'
+                "
+              >
                 {{ t(feature.text, locale) }}
               </span>
             </li>

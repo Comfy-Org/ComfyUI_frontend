@@ -1198,6 +1198,23 @@ const translations = {
   'pricing.badge.popular': { en: 'MOST POPULAR', 'zh-CN': '最受欢迎' },
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
 
+  'pricing.feature.shortRuntime': {
+    en: '30 minute max workflow runtime',
+    'zh-CN': '单个工作流最长运行 30 分钟'
+  },
+  'pricing.feature.addCredits': {
+    en: 'Add more credits anytime',
+    'zh-CN': '可随时增加积分'
+  },
+  'pricing.feature.importModels': {
+    en: 'Import your own models',
+    'zh-CN': '导入你自己的模型'
+  },
+  'pricing.feature.longRuntime': {
+    en: 'Longer workflow runtime (up to 1 hr)',
+    'zh-CN': '更长工作流运行时长（最长 1 小时）'
+  },
+
   'pricing.plan.free.label': { en: 'FREE', 'zh-CN': '免费版' },
   'pricing.plan.free.price': { en: '$0', 'zh-CN': '$0' },
   'pricing.plan.free.credits': {
@@ -1232,18 +1249,6 @@ const translations = {
     en: 'SUBSCRIBE TO STANDARD',
     'zh-CN': '订阅标准版'
   },
-  'pricing.plan.standard.feature1': {
-    en: '30-minute max runtime per workflow',
-    'zh-CN': '单个工作流最长运行 30 分钟'
-  },
-  'pricing.plan.standard.feature2': {
-    en: 'Add more credits anytime',
-    'zh-CN': '可随时增加积分'
-  },
-  'pricing.plan.standard.feature3': {
-    en: 'Run 1 workflow concurrently (via API)',
-    'zh-CN': '通过 API 并发运行 1 个工作流'
-  },
 
   'pricing.plan.creator.label': { en: 'CREATOR', 'zh-CN': '创作者版' },
   'pricing.plan.creator.price': { en: '$35', 'zh-CN': '$35' },
@@ -1259,14 +1264,6 @@ const translations = {
     en: 'SUBSCRIBE TO CREATOR',
     'zh-CN': '订阅创作者版'
   },
-  'pricing.plan.creator.feature1': {
-    en: 'Import your own LoRAs',
-    'zh-CN': '导入你自己的 LoRA'
-  },
-  'pricing.plan.creator.feature2': {
-    en: 'Run up to 3 workflows concurrently (via API)',
-    'zh-CN': '通过 API 最多并发运行 3 个工作流'
-  },
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
   'pricing.plan.pro.price': { en: '$100', 'zh-CN': '$100' },
@@ -1279,14 +1276,6 @@ const translations = {
     'zh-CN': '约可生成 1,915 个 5 秒视频*'
   },
   'pricing.plan.pro.cta': { en: 'SUBSCRIBE TO PRO', 'zh-CN': '订阅专业版' },
-  'pricing.plan.pro.feature1': {
-    en: 'Longer workflow runtime (up to 1 hour)',
-    'zh-CN': '更长工作流运行时长（最长 1 小时）'
-  },
-  'pricing.plan.pro.feature2': {
-    en: 'Run up to 5 workflows concurrently (via API)',
-    'zh-CN': '通过 API 最多并发运行 5 个工作流'
-  },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
   'pricing.enterprise.heading': {
