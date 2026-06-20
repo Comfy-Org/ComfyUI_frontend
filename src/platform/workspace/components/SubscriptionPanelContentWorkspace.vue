@@ -251,34 +251,6 @@
         </div>
       </div>
 
-      <!-- Members invoice card -->
-      <div
-        v-if="
-          isActiveSubscription &&
-          !isInPersonalWorkspace &&
-          permissions.canManageSubscription
-        "
-        class="mt-6 flex items-center justify-between gap-1 rounded-2xl border border-interface-stroke p-6 text-sm"
-      >
-        <div class="flex flex-col gap-2">
-          <h4 class="m-0 text-sm text-text-primary">
-            {{ $t('subscription.nextMonthInvoice') }}
-          </h4>
-          <span
-            class="cursor-pointer text-muted-foreground underline"
-            @click="manageSubscription"
-          >
-            {{ $t('subscription.invoiceHistory') }}
-          </span>
-        </div>
-        <div class="flex flex-col items-end gap-2">
-          <h4 class="m-0 font-bold">${{ nextMonthInvoice }}</h4>
-          <h5 class="m-0 text-muted-foreground">
-            {{ $t('subscription.memberCount', memberCount) }}
-          </h5>
-        </div>
-      </div>
-
       <!-- View More Details - Outside main content -->
       <div v-if="permissions.canManageSubscription" class="py-6">
         <Button
@@ -534,11 +506,6 @@ const priceUnitLabel = computed(() =>
   workspacePlanCost.value !== null || isInPersonalWorkspace.value
     ? t('subscription.usdPerMonth')
     : t('subscription.usdPerMonthPerMember')
-)
-
-const memberCount = computed(() => members.value.length)
-const nextMonthInvoice = computed(
-  () => workspacePlanCost.value ?? memberCount.value * tierPrice.value
 )
 
 const TEAM_PERK_KEYS = [
