@@ -2,7 +2,7 @@ import { readFileSync } from 'fs'
 
 import { test } from '@playwright/test'
 
-import type { AppMode } from '@/composables/useAppMode'
+import type { AppMode } from '@/utils/appMode'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
