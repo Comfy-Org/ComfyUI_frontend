@@ -114,7 +114,7 @@ await expect(async () => {
 ## CI Debugging
 
 1. Download artifacts from failed CI run
-2. Extract and view trace: `npx playwright show-trace trace.zip`
+2. Extract and view trace: `pnpm dlx playwright show-trace trace.zip`
 3. CI deploys HTML report to Cloudflare Pages (link in PR comment)
 4. Reproduce CI: `CI=true pnpm test:browser`
 5. Local runs: `pnpm test:browser:local`

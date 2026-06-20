@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import {
   EXPECTED_PROMPT,
+  EXPECTED_PROMPT_NAN_COERCED,
   EXPECTED_WORKFLOW,
   mockFileReaderAbort,
   mockFileReaderError
@@ -11,6 +12,10 @@ import {
 import { getFromWebmFile } from './ebml'
 
 const fixturePath = path.resolve(__dirname, '__fixtures__/with_metadata.webm')
+const nanFixturePath = path.resolve(
+  __dirname,
+  '__fixtures__/with_nan_metadata.webm'
+)
 
 describe('WebM/EBML metadata', () => {
   it('extracts workflow and prompt from EBML SimpleTag elements', async () => {
@@ -21,6 +26,16 @@ describe('WebM/EBML metadata', () => {
 
     expect(result.workflow).toEqual(EXPECTED_WORKFLOW)
     expect(result.prompt).toEqual(EXPECTED_PROMPT)
+  })
+
+  it('parses Python generated prompt with bare NaN/Infinity tokens', async () => {
+    const bytes = fs.readFileSync(nanFixturePath)
+    const file = new File([bytes], 'nan.webm', { type: 'video/webm' })
+
+    const result = await getFromWebmFile(file)
+
+    expect(result.workflow).toBeUndefined()
+    expect(result.prompt).toEqual(EXPECTED_PROMPT_NAN_COERCED)
   })
 
   it('returns empty for non-WebM data', async () => {

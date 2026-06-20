@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { getGroupTitlePosition } from '@e2e/fixtures/utils/groupHelpers'
 
 test.describe('Group Copy Paste', { tag: ['@canvas'] }, () => {
   test.afterEach(async ({ comfyPage }) => {
@@ -12,15 +13,7 @@ test.describe('Group Copy Paste', { tag: ['@canvas'] }, () => {
   }) => {
     await comfyPage.workflow.loadWorkflow('groups/single_group_only')
 
-    const titlePos = await comfyPage.page.evaluate(() => {
-      const app = window.app!
-      const group = app.graph.groups[0]
-      const clientPos = app.canvasPosToClientPos([
-        group.pos[0] + 50,
-        group.pos[1] + 15
-      ])
-      return { x: clientPos[0], y: clientPos[1] }
-    })
+    const titlePos = await getGroupTitlePosition(comfyPage, 'Group')
     await comfyPage.canvas.click({ position: titlePos })
     await comfyPage.nextFrame()
 

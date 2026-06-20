@@ -57,154 +57,85 @@ function drawFrame(canvas: LGraphCanvas) {
   canvas.onDrawForeground?.({} as CanvasRenderingContext2D, new Rectangle())
 }
 
-describe('DomWidgets transition grace characterization', () => {
+describe('DomWidgets positioning', () => {
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
   })
 
-  it('applies transition grace for exactly one frame when override exists but is not active', () => {
+  it('positions an active visible widget relative to its owning node', () => {
     const canvasStore = useCanvasStore()
     const domWidgetStore = useDomWidgetStore()
 
-    const graphA = new LGraph()
-    const graphB = new LGraph()
-    const interiorNode = createNode(graphA, 1, 'interior', [100, 200])
-    const overrideNode = createNode(graphB, 2, 'override', [600, 700])
-
-    const widget = createWidget('widget-transition', interiorNode, 14)
-    const overrideWidget = createWidget('override-widget', overrideNode, 22)
+    const graph = new LGraph()
+    const node = createNode(graph, 1, 'host', [100, 200])
+    const widget = createWidget('widget-pos', node, 14)
 
     domWidgetStore.registerWidget(widget)
-    domWidgetStore.setPositionOverride(widget.id, {
-      node: overrideNode,
-      widget: overrideWidget
+
+    const canvas = createCanvas(graph)
+    canvasStore.canvas = canvas
+
+    render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
     })
+
+    drawFrame(canvas)
+
+    const widgetState = domWidgetStore.widgetStates.get(widget.id)
+    if (!widgetState) throw new Error('Widget state not registered')
+    expect(widgetState.visible).toBe(true)
+    expect(widgetState.pos).toEqual([110, 224])
+  })
+
+  it('hides a widget whose owning node is in a different graph', () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+
+    const currentGraph = new LGraph()
+    const otherGraph = new LGraph()
+    const node = createNode(otherGraph, 1, 'host', [100, 200])
+    const widget = createWidget('widget-other-graph', node, 14)
+
+    domWidgetStore.registerWidget(widget)
+
+    const canvas = createCanvas(currentGraph)
+    canvasStore.canvas = canvas
+
+    render(DomWidgets, {
+      global: { stubs: { DomWidget: true } }
+    })
+
+    drawFrame(canvas)
+
+    const widgetState = domWidgetStore.widgetStates.get(widget.id)
+    if (!widgetState) throw new Error('Widget state not registered')
+    expect(widgetState.visible).toBe(false)
+  })
+
+  it('hides an inactive widget', () => {
+    const canvasStore = useCanvasStore()
+    const domWidgetStore = useDomWidgetStore()
+
+    const graph = new LGraph()
+    const node = createNode(graph, 1, 'host', [0, 0])
+    const widget = createWidget('widget-inactive', node, 10)
+
+    domWidgetStore.registerWidget(widget)
     domWidgetStore.deactivateWidget(widget.id)
 
     const widgetState = domWidgetStore.widgetStates.get(widget.id)
     if (!widgetState) throw new Error('Widget state not registered')
     widgetState.visible = true
-    widgetState.pos = [321, 654]
 
-    const canvas = createCanvas(graphA)
+    const canvas = createCanvas(graph)
     canvasStore.canvas = canvas
 
     render(DomWidgets, {
-      global: {
-        stubs: {
-          DomWidget: true
-        }
-      }
+      global: { stubs: { DomWidget: true } }
     })
 
     drawFrame(canvas)
-    expect(widgetState.visible).toBe(true)
-    expect(widgetState.pos).toEqual([321, 654])
 
-    drawFrame(canvas)
     expect(widgetState.visible).toBe(false)
-  })
-
-  it('uses override positioning while override node is in current graph even when widget is inactive', () => {
-    const canvasStore = useCanvasStore()
-    const domWidgetStore = useDomWidgetStore()
-
-    const graphA = new LGraph()
-    const graphB = new LGraph()
-    const interiorNode = createNode(graphA, 1, 'interior', [10, 20])
-    const overrideNode = createNode(graphB, 2, 'override', [300, 400])
-
-    const widget = createWidget('widget-override-active', interiorNode, 8)
-    const overrideWidget = createWidget(
-      'override-position-source',
-      overrideNode,
-      18
-    )
-
-    domWidgetStore.registerWidget(widget)
-    domWidgetStore.setPositionOverride(widget.id, {
-      node: overrideNode,
-      widget: overrideWidget
-    })
-    domWidgetStore.deactivateWidget(widget.id)
-
-    const widgetState = domWidgetStore.widgetStates.get(widget.id)
-    if (!widgetState) throw new Error('Widget state not registered')
-
-    const canvas = createCanvas(graphB)
-    canvasStore.canvas = canvas
-
-    render(DomWidgets, {
-      global: {
-        stubs: {
-          DomWidget: true
-        }
-      }
-    })
-
-    drawFrame(canvas)
-
-    expect(widgetState.visible).toBe(true)
-    expect(widgetState.pos).toEqual([310, 428])
-  })
-
-  it('cleans orphaned transition-grace ids after widget removal', () => {
-    const canvasStore = useCanvasStore()
-    const domWidgetStore = useDomWidgetStore()
-
-    const graphA = new LGraph()
-    const graphB = new LGraph()
-    const interiorNode = createNode(graphA, 1, 'interior', [0, 0])
-    const overrideNode = createNode(graphB, 2, 'override', [200, 200])
-
-    const canvas = createCanvas(graphA)
-    canvasStore.canvas = canvas
-
-    render(DomWidgets, {
-      global: {
-        stubs: {
-          DomWidget: true
-        }
-      }
-    })
-
-    const oldWidget = createWidget('shared-widget-id', interiorNode, 10)
-    const overrideWidget = createWidget(
-      'shared-override-widget',
-      overrideNode,
-      14
-    )
-
-    domWidgetStore.registerWidget(oldWidget)
-    domWidgetStore.setPositionOverride(oldWidget.id, {
-      node: overrideNode,
-      widget: overrideWidget
-    })
-    domWidgetStore.deactivateWidget(oldWidget.id)
-
-    drawFrame(canvas)
-    domWidgetStore.unregisterWidget(oldWidget.id)
-
-    drawFrame(canvas)
-
-    const replacementWidget = createWidget('shared-widget-id', interiorNode, 10)
-    domWidgetStore.registerWidget(replacementWidget)
-    domWidgetStore.setPositionOverride(replacementWidget.id, {
-      node: overrideNode,
-      widget: overrideWidget
-    })
-    domWidgetStore.deactivateWidget(replacementWidget.id)
-
-    const replacementState = domWidgetStore.widgetStates.get(
-      replacementWidget.id
-    )
-    if (!replacementState) throw new Error('Replacement widget missing state')
-    replacementState.visible = true
-    replacementState.pos = [999, 999]
-
-    drawFrame(canvas)
-
-    expect(replacementState.visible).toBe(true)
-    expect(replacementState.pos).toEqual([999, 999])
   })
 })

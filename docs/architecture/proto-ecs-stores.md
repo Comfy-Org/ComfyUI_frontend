@@ -6,16 +6,21 @@ For the full problem analysis, see [Entity Problems](entity-problems.md). For th
 
 ## 1. What's Already Extracted
 
-Six stores extract entity state out of class instances into centralized, queryable registries:
+Five stores extract entity state out of class instances into centralized,
+queryable registries. Promoted value-widget topology is no longer a store; ADR
+0009 represents it as ordinary linked `SubgraphInput` state.
 
-| Store                   | Extracts From       | Scoping                       | Key Format                        | Data Shape                    |
-| ----------------------- | ------------------- | ----------------------------- | --------------------------------- | ----------------------------- |
-| WidgetValueStore        | `BaseWidget`        | `graphId → nodeId:name`       | `"${nodeId}:${widgetName}"`       | Plain `WidgetState` object    |
-| PromotionStore          | `SubgraphNode`      | `graphId → nodeId → source[]` | `"${sourceNodeId}:${widgetName}"` | Ref-counted promotion entries |
-| DomWidgetStore          | `BaseDOMWidget`     | Global                        | `widgetId` (UUID)                 | Position, visibility, z-index |
-| LayoutStore             | Node, Link, Reroute | Workflow-level                | `nodeId`, `linkId`, `rerouteId`   | Y.js CRDT maps (pos, size)    |
-| NodeOutputStore         | Execution results   | `nodeLocatorId`               | `"${subgraphId}:${nodeId}"`       | Output data, preview URLs     |
-| SubgraphNavigationStore | Canvas viewport     | `subgraphId`                  | `subgraphId` or `'root'`          | LRU viewport cache            |
+| Store                   | Extracts From       | Scoping                 | Key Format                      | Data Shape                    |
+| ----------------------- | ------------------- | ----------------------- | ------------------------------- | ----------------------------- |
+| WidgetValueStore        | `BaseWidget`        | `graphId → nodeId:name` | `"${nodeId}:${widgetName}"`     | Plain `WidgetState` object    |
+| DomWidgetStore          | `BaseDOMWidget`     | Global                  | `widgetId` (UUID)               | Position, visibility, z-index |
+| LayoutStore             | Node, Link, Reroute | Workflow-level          | `nodeId`, `linkId`, `rerouteId` | Y.js CRDT maps (pos, size)    |
+| NodeOutputStore         | Execution results   | `nodeLocatorId`         | `"${subgraphId}:${nodeId}"`     | Output data, preview URLs     |
+| SubgraphNavigationStore | Canvas viewport     | `subgraphId`            | `subgraphId` or `'root'`        | LRU viewport cache            |
+
+ADR 0009 refines promoted-widget identity: promoted value widgets are keyed by
+the host boundary (`host node locator + SubgraphInput.name`), while interior
+source node/widget identity is migration and diagnostic metadata only.
 
 ## 2. WidgetValueStore
 
@@ -95,62 +100,39 @@ graph LR
 | Behavior on class           | **No**   | Drawing, events, callbacks still on widget        |
 | Module-scope store access   | **No**   | `useWidgetValueStore()` called from domain object |
 
-## 3. PromotionStore
+## 3. Linked promoted widgets and preview exposures
 
-**File:** `src/stores/promotionStore.ts`
+`PromotionStore` was removed by ADR 0009. Promoted value widgets are represented
+by linked `SubgraphInput`s, and display-only previews are represented by
+host-scoped `properties.previewExposures` / `PreviewExposureStore` entries.
+Legacy `properties.proxyWidgets` is load-time migration input only.
 
-Extracts subgraph widget promotion decisions into a centralized, ref-counted registry.
+### Runtime shape
 
-### State Shape
+```diagram
+╭────────────────╮     ╭──────────────────╮     ╭────────────────╮
+│ SubgraphInput  │────▶│ Interior slot     │────▶│ Source widget  │
+╰────────────────╯     ╰──────────────────╯     ╰────────────────╯
 
-```
-graphPromotions:  Map<UUID, Map<NodeId, PromotedWidgetSource[]>>
-                       │          │              │
-                    graphId    subgraphNodeId   ordered promotion entries
-
-graphRefCounts:   Map<UUID, Map<string, number>>
-                       │          │        │
-                    graphId    entryKey   count of nodes promoting this widget
-```
-
-### Ref-Counting for O(1) Queries
-
-The store maintains a parallel ref-count map. When a widget is promoted on a SubgraphNode, the ref count for that entry key increments. When demoted, it decrements. This enables:
-
-```ts
-isPromotedByAny(graphId, { sourceNodeId, sourceWidgetName }): boolean
-// O(1) lookup: refCounts.get(key) > 0
+╭────────────────╮     ╭──────────────────────╮
+│ Subgraph host  │────▶│ PreviewExposureStore │
+╰────────────────╯     ╰──────────────────────╯
 ```
 
-Without ref counting, this query would require scanning all SubgraphNodes in the graph.
-
-### View Reconciliation Layer
-
-`PromotedWidgetViewManager` (`src/lib/litegraph/src/subgraph/PromotedWidgetViewManager.ts`) sits between the store and the UI:
-
-```mermaid
-graph LR
-    PS["PromotionStore
-(data)"] -->|"entries"| VM["PromotedWidgetViewManager
-(reconciliation)"] -->|"stable views"| PV["PromotedWidgetView
-(proxy widget)"]
-    PV -->|"resolveDeepest()"| CW["Concrete Widget
-(leaf node)"]
-    PV -->|"reads value"| WVS["WidgetValueStore"]
-```
-
-The manager maintains a `viewCache` to preserve object identity across updates — a reconciliation pattern similar to React's virtual DOM diffing.
+`PromotedWidgetViewManager`
+(`src/lib/litegraph/src/subgraph/PromotedWidgetViewManager.ts`) now reconciles
+synthetic widget views derived from linked subgraph inputs. It does not sit on
+top of a promotion registry.
 
 ### ECS Alignment
 
-| Aspect                             | ECS-like  | Why                                                                     |
-| ---------------------------------- | --------- | ----------------------------------------------------------------------- |
-| Data separated from views          | Yes       | Store holds entries; ViewManager holds UI proxies                       |
-| Ref-counted queries                | Yes       | Efficient global state queries without scanning                         |
-| Graph-scoped lifecycle             | Yes       | `clearGraph(graphId)`                                                   |
-| View reconciliation                | Partially | ViewManager is a system-like layer, but tightly coupled to SubgraphNode |
-| SubgraphNode drives mutations      | **No**    | Entity class calls `store.setPromotions()` directly                     |
-| BaseWidget queries store in render | **No**    | `getOutlineColor()` calls `isPromotedByAny()` every frame               |
+| Aspect                        | ECS-like  | Why                                                           |
+| ----------------------------- | --------- | ------------------------------------------------------------- |
+| Canonical topology            | Yes       | Value exposure is ordinary subgraph input/link state          |
+| Host-scoped preview state     | Yes       | Preview exposure data is keyed by host locator                |
+| Legacy migration boundary     | Yes       | `proxyWidgets` is consumed into canonical state or quarantine |
+| View reconciliation           | Partially | ViewManager preserves synthetic widget object identity        |
+| Entity class drives view sync | **No**    | SubgraphNode still owns synthetic view cache invalidation     |
 
 ## 4. LayoutStore (CRDT)
 
@@ -204,8 +186,8 @@ These module-scope calls create implicit dependencies on the Vue runtime and mak
 
 1. **Plain data objects**: `WidgetState`, `DomWidgetState`, CRDT maps are all methods-free data
 2. **Centralized registries**: Each store is a `Map<key, data>` — structurally identical to an ECS component store
-3. **Graph-scoped lifecycle**: `clearGraph(graphId)` for cleanup (WidgetValueStore, PromotionStore)
-4. **Query APIs**: `getWidget()`, `isPromotedByAny()`, `getNodeWidgets()` — system-like queries
+3. **Graph-scoped lifecycle**: `clearGraph(graphId)` for cleanup (WidgetValueStore, PreviewExposureStore)
+4. **Query APIs**: `getWidget()`, preview exposure queries, `getNodeWidgets()` — system-like queries
 5. **Separation of data from behavior**: The stores hold data; classes retain behavior
 
 ### What's Missing vs Full ECS
@@ -218,7 +200,7 @@ graph TD
         H2["Plain data components
 (WidgetState, LayoutMap)"]
         H3["Query APIs
-(getWidget, isPromotedByAny)"]
+(getWidget, preview exposures)"]
         H4["Graph-scoped lifecycle"]
         H5["Partial position extraction
 (LayoutStore)"]
@@ -245,15 +227,17 @@ graph TD
 
 Each store invents its own identity scheme:
 
-| Store            | Key Format                        | Entity ID Used          | Type-Safe? |
-| ---------------- | --------------------------------- | ----------------------- | ---------- |
-| WidgetValueStore | `"${nodeId}:${widgetName}"`       | NodeId (number\|string) | No         |
-| PromotionStore   | `"${sourceNodeId}:${widgetName}"` | NodeId (string-coerced) | No         |
-| DomWidgetStore   | Widget UUID                       | UUID (string)           | No         |
-| LayoutStore      | Raw nodeId/linkId/rerouteId       | Mixed number types      | No         |
-| NodeOutputStore  | `"${subgraphId}:${nodeId}"`       | Composite string        | No         |
+| Store            | Key Format                  | Entity ID Used          | Type-Safe? |
+| ---------------- | --------------------------- | ----------------------- | ---------- |
+| WidgetValueStore | `"${nodeId}:${widgetName}"` | NodeId (number\|string) | No         |
+| DomWidgetStore   | Widget UUID                 | UUID (string)           | No         |
+| LayoutStore      | Raw nodeId/linkId/rerouteId | Mixed number types      | No         |
+| NodeOutputStore  | `"${subgraphId}:${nodeId}"` | Composite string        | No         |
 
 In the ECS target, all of these would use branded entity IDs (`WidgetEntityId`, `NodeEntityId`, etc.) with compile-time cross-kind protection.
+For promoted value widgets, ADR 0009 narrows the target key to host boundary
+identity (`host node locator + SubgraphInput.name`) instead of interior source
+identity.
 
 ## 6. Extraction Map
 
@@ -282,7 +266,6 @@ graph TD
 - value → WidgetValueStore
 - label → WidgetValueStore
 - disabled → WidgetValueStore
-- promotion status → PromotionStore
 - DOM pos/vis → DomWidgetStore"]
         W_rem["Remains on class:
 - _node back-ref
@@ -326,7 +309,8 @@ graph TD
 
     subgraph Subgraph["Subgraph (node component)"]
         S_ext["Extracted:
-- promotions → PromotionStore"]
+- value exposure → linked inputs
+- preview exposure → PreviewExposureStore"]
         S_rem["Remains on class:
 - name, description
 - inputs[], outputs[]
@@ -353,15 +337,15 @@ graph TD
 
 What each entity needs to reach the ECS target from [ADR 0008](../adr/0008-entity-component-system.md):
 
-| Entity       | Already Extracted                                                                                 | Still on Class                                                                       | ECS Target Components                                                                | Gap                                                                                        |
-| ------------ | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
-| **Node**     | pos, size (LayoutStore)                                                                           | type, visual, connectivity, execution, properties, widgets, rendering, serialization | Position, NodeVisual, NodeType, Connectivity, Execution, Properties, WidgetContainer | Large — 6 components unextracted, all behavior on class                                    |
-| **Link**     | layout (LayoutStore)                                                                              | endpoints, visual, state, connectivity methods                                       | LinkEndpoints, LinkVisual, LinkState                                                 | Medium — 3 components unextracted                                                          |
-| **Widget**   | value, label, disabled (WidgetValueStore); promotion (PromotionStore); DOM state (DomWidgetStore) | node back-ref, rendering, events, layout                                             | WidgetIdentity, WidgetValue, WidgetLayout                                            | Small — value extraction done; rendering and layout remain                                 |
-| **Slot**     | (nothing)                                                                                         | name, type, direction, link refs, visual, position                                   | SlotIdentity, SlotConnection, SlotVisual                                             | Full — no extraction started                                                               |
-| **Reroute**  | pos (LayoutStore)                                                                                 | links, visual, chain traversal                                                       | Position, RerouteLinks, RerouteVisual                                                | Medium — position done, rest unextracted                                                   |
-| **Group**    | (nothing)                                                                                         | pos, size, meta, visual, children                                                    | Position, GroupMeta, GroupVisual, GroupChildren                                      | Full — no extraction started                                                               |
-| **Subgraph** | promotions (PromotionStore)                                                                       | structure, meta, I/O, all LGraph state                                               | SubgraphStructure, SubgraphMeta (as node components)                                 | Large — mostly unextracted; subgraph is a node with components, not a separate entity kind |
+| Entity       | Already Extracted                                                                | Still on Class                                                                       | ECS Target Components                                                                | Gap                                                                                        |
+| ------------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| **Node**     | pos, size (LayoutStore)                                                          | type, visual, connectivity, execution, properties, widgets, rendering, serialization | Position, NodeVisual, NodeType, Connectivity, Execution, Properties, WidgetContainer | Large — 6 components unextracted, all behavior on class                                    |
+| **Link**     | layout (LayoutStore)                                                             | endpoints, visual, state, connectivity methods                                       | LinkEndpoints, LinkVisual, LinkState                                                 | Medium — 3 components unextracted                                                          |
+| **Widget**   | value, label, disabled (WidgetValueStore); DOM state (DomWidgetStore)            | node back-ref, rendering, events, layout                                             | WidgetIdentity, WidgetValue, WidgetLayout                                            | Small — value extraction done; rendering and layout remain                                 |
+| **Slot**     | (nothing)                                                                        | name, type, direction, link refs, visual, position                                   | SlotIdentity, SlotConnection, SlotVisual                                             | Full — no extraction started                                                               |
+| **Reroute**  | pos (LayoutStore)                                                                | links, visual, chain traversal                                                       | Position, RerouteLinks, RerouteVisual                                                | Medium — position done, rest unextracted                                                   |
+| **Group**    | (nothing)                                                                        | pos, size, meta, visual, children                                                    | Position, GroupMeta, GroupVisual, GroupChildren                                      | Full — no extraction started                                                               |
+| **Subgraph** | promoted value exposure (linked inputs); preview exposure (PreviewExposureStore) | structure, meta, I/O, all LGraph state                                               | SubgraphStructure, SubgraphMeta (as node components)                                 | Large — mostly unextracted; subgraph is a node with components, not a separate entity kind |
 
 ### Priority Order for Extraction
 

@@ -59,6 +59,7 @@ const slotClass = computed(() =>
 
 <template>
   <div
+    data-testid="slot-connection-dot"
     :class="
       cn(
         'group/slot relative flex size-6 items-center justify-center after:absolute after:inset-y-0 after:w-5/2',

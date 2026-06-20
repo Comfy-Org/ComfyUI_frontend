@@ -1,4 +1,5 @@
 import { readFileSync } from 'fs'
+import { basename } from 'path'
 
 import type { Page } from '@playwright/test'
 
@@ -13,6 +14,7 @@ export class DragDropHelper {
   async dragAndDropExternalResource(
     options: {
       fileName?: string
+      filePath?: string
       url?: string
       dropPosition?: Position
       waitForUpload?: boolean
@@ -22,13 +24,14 @@ export class DragDropHelper {
     const {
       dropPosition = { x: 100, y: 100 },
       fileName,
+      filePath,
       url,
       waitForUpload = false,
       preserveNativePropagation = false
     } = options
 
-    if (!fileName && !url)
-      throw new Error('Must provide either fileName or url')
+    if (!fileName && !filePath && !url)
+      throw new Error('Must provide fileName, filePath, or url')
 
     const evaluateParams: {
       dropPosition: Position
@@ -39,12 +42,22 @@ export class DragDropHelper {
       preserveNativePropagation: boolean
     } = { dropPosition, preserveNativePropagation }
 
-    if (fileName) {
-      const filePath = assetPath(fileName)
-      const buffer = readFileSync(filePath)
+    if (fileName || filePath) {
+      const resolvedPath = filePath ?? assetPath(fileName!)
+      const displayName = fileName ?? basename(resolvedPath)
+      let buffer: Buffer
+      try {
+        buffer = readFileSync(resolvedPath)
+      } catch (error) {
+        const reason = error instanceof Error ? error.message : String(error)
+        throw new Error(
+          `Failed to read drag-and-drop fixture at "${resolvedPath}": ${reason}`,
+          { cause: error }
+        )
+      }
 
-      evaluateParams.fileName = fileName
-      evaluateParams.fileType = getMimeType(fileName)
+      evaluateParams.fileName = displayName
+      evaluateParams.fileType = getMimeType(displayName)
       evaluateParams.buffer = [...new Uint8Array(buffer)]
     }
 
@@ -146,6 +159,13 @@ export class DragDropHelper {
     options: { dropPosition?: Position; waitForUpload?: boolean } = {}
   ): Promise<void> {
     return this.dragAndDropExternalResource({ fileName, ...options })
+  }
+
+  async dragAndDropFilePath(
+    filePath: string,
+    options: { dropPosition?: Position; waitForUpload?: boolean } = {}
+  ): Promise<void> {
+    return this.dragAndDropExternalResource({ filePath, ...options })
   }
 
   async dragAndDropURL(

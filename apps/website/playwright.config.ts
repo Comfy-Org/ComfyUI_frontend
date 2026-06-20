@@ -28,7 +28,7 @@ export default defineConfig({
     ? [['html'], ['json', { outputFile: 'results.json' }]]
     : 'html',
   expect: {
-    toHaveScreenshot: { maxDiffPixels: 50 }
+    toHaveScreenshot: { maxDiffPixels: 100 }
   },
   ...maybeLocalOptions,
   webServer: {

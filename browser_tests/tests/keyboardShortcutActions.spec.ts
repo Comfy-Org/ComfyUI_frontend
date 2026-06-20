@@ -13,45 +13,35 @@ test.describe('Keyboard shortcut actions', { tag: '@keyboard' }, () => {
     await comfyPage.setup()
   })
 
-  test('Ctrl+Z undoes the last graph change', async ({ comfyPage }) => {
+  test('Ctrl+Z undoes and Ctrl+Shift+Z redoes the last graph change', async ({
+    comfyPage
+  }) => {
     const initialNodeCount = await comfyPage.nodeOps.getNodeCount()
 
-    await comfyPage.page.evaluate(() => {
-      const node = window.LiteGraph!.createNode('Note')
-      window.app!.graph!.add(node)
+    await test.step('Ctrl+Z undoes the last graph change', async () => {
+      await comfyPage.page.evaluate(() => {
+        const node = window.LiteGraph!.createNode('Note')
+        window.app!.graph!.add(node)
+      })
+      await comfyPage.nextFrame()
+      await expect
+        .poll(() => comfyPage.nodeOps.getNodeCount())
+        .toBe(initialNodeCount + 1)
+
+      await comfyPage.canvas.click()
+      await comfyPage.page.keyboard.press('ControlOrMeta+z')
+
+      await expect
+        .poll(() => comfyPage.nodeOps.getNodeCount())
+        .toBe(initialNodeCount)
     })
-    await comfyPage.nextFrame()
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount())
-      .toBe(initialNodeCount + 1)
 
-    await comfyPage.canvas.click()
-    await comfyPage.page.keyboard.press('ControlOrMeta+z')
-
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount())
-      .toBe(initialNodeCount)
-  })
-
-  test('Ctrl+Shift+Z redoes after undo', async ({ comfyPage }) => {
-    const initialNodeCount = await comfyPage.nodeOps.getNodeCount()
-
-    await comfyPage.page.evaluate(() => {
-      const node = window.LiteGraph!.createNode('Note')
-      window.app!.graph!.add(node)
+    await test.step('Ctrl+Shift+Z redoes after undo', async () => {
+      await comfyPage.page.keyboard.press('ControlOrMeta+Shift+z')
+      await expect
+        .poll(() => comfyPage.nodeOps.getNodeCount())
+        .toBe(initialNodeCount + 1)
     })
-    await comfyPage.nextFrame()
-
-    await comfyPage.canvas.click()
-    await comfyPage.page.keyboard.press('ControlOrMeta+z')
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount())
-      .toBe(initialNodeCount)
-
-    await comfyPage.page.keyboard.press('ControlOrMeta+Shift+z')
-    await expect
-      .poll(() => comfyPage.nodeOps.getNodeCount())
-      .toBe(initialNodeCount + 1)
   })
 
   test('Ctrl+S opens save dialog', async ({ comfyPage }) => {
@@ -62,25 +52,23 @@ test.describe('Keyboard shortcut actions', { tag: '@keyboard' }, () => {
     await expect(saveDialog).toBeVisible()
   })
 
-  test('Ctrl+, opens settings dialog', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.down('ControlOrMeta')
-    await comfyPage.page.keyboard.press(',')
-    await comfyPage.page.keyboard.up('ControlOrMeta')
-
+  test('Ctrl+, opens and Escape closes settings dialog', async ({
+    comfyPage
+  }) => {
     const settingsDialog = comfyPage.page.getByTestId('settings-dialog')
-    await expect(settingsDialog).toBeVisible()
-  })
 
-  test('Escape closes settings dialog', async ({ comfyPage }) => {
-    await comfyPage.page.keyboard.down('ControlOrMeta')
-    await comfyPage.page.keyboard.press(',')
-    await comfyPage.page.keyboard.up('ControlOrMeta')
+    await test.step('Ctrl+, opens settings dialog', async () => {
+      await comfyPage.page.keyboard.down('ControlOrMeta')
+      await comfyPage.page.keyboard.press(',')
+      await comfyPage.page.keyboard.up('ControlOrMeta')
 
-    const settingsDialog = comfyPage.page.getByTestId('settings-dialog')
-    await expect(settingsDialog).toBeVisible()
+      await expect(settingsDialog).toBeVisible()
+    })
 
-    await comfyPage.page.keyboard.press('Escape')
-    await expect(settingsDialog).toBeHidden()
+    await test.step('Escape closes settings dialog', async () => {
+      await comfyPage.page.keyboard.press('Escape')
+      await expect(settingsDialog).toBeHidden()
+    })
   })
 
   test('Delete key removes selected nodes', async ({ comfyPage }) => {
