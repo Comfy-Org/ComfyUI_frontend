@@ -4,6 +4,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
+import { isTelemetryEnabled } from '@/platform/telemetry/telemetryEnabled'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -32,14 +33,15 @@ export const useSubscriptionDialog = () => {
   const { isFreeTier, subscriptionTier } = useSubscription()
 
   /**
-   * Emit paywall_viewed for a dialog that is about to open. Cloud-only, matching
-   * the isCloud gating used elsewhere in the subscription flow. Emitted at the
+   * Emit paywall_viewed for a dialog that is about to open. Fires whenever
+   * telemetry is enabled (cloud, or desktop with the host flag). Emitted at the
    * point each paywall surface actually opens (FreeTierDialog in show(), the
    * pricing table in showPricingTable()) so each surface counts exactly once
-   * with the reason that triggered it.
+   * with the reason that triggered it. Note showPricingTable() still gates the
+   * surface itself on isCloud, so on desktop this only fires if a paywall opens.
    */
   function trackPaywallViewed(reason?: SubscriptionDialogReason) {
-    if (!isCloud) return
+    if (!isTelemetryEnabled()) return
     useTelemetry()?.trackPaywallViewed({
       reason: reason ?? 'subscription_required',
       ...(subscriptionTier.value

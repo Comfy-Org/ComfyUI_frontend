@@ -65,7 +65,8 @@ import { setActiveLocale } from '@/i18n'
 import AssetExportProgressDialog from '@/platform/assets/components/AssetExportProgressDialog.vue'
 import ModelImportProgressDialog from '@/platform/assets/components/ModelImportProgressDialog.vue'
 import DesktopCloudNotificationController from '@/platform/cloud/notification/components/DesktopCloudNotificationController.vue'
-import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { isDesktop } from '@/platform/distribution/types'
+import { isTelemetryEnabled } from '@/platform/telemetry/telemetryEnabled'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { consumeAuthActivation } from '@/platform/telemetry/authActivationMarker'
@@ -299,8 +300,8 @@ const onGraphReady = () => {
   // canvas_ready's ms_since_auth measures auth -> canvas, not auth -> idle.
   const canvasReadyAt = Date.now()
   runWhenGlobalIdle(() => {
-    // Track user login when app is ready in graph view (cloud only)
-    if (isCloud && authStore.isAuthenticated && !hasTrackedLogin) {
+    // Track user login when app is ready in graph view
+    if (isTelemetryEnabled() && authStore.isAuthenticated && !hasTrackedLogin) {
       telemetry?.trackUserLoggedIn()
       hasTrackedLogin = true
 
@@ -314,8 +315,8 @@ const onGraphReady = () => {
       })
     }
 
-    // Set up page visibility tracking (cloud only)
-    if (isCloud && telemetry) {
+    // Set up page visibility tracking
+    if (isTelemetryEnabled() && telemetry) {
       useEventListener(document, 'visibilitychange', () => {
         telemetry.trackPageVisibilityChanged({
           visibility_state: document.visibilityState as 'visible' | 'hidden'
@@ -323,8 +324,8 @@ const onGraphReady = () => {
       })
     }
 
-    // Set up tab count tracking (cloud only)
-    if (isCloud && telemetry) {
+    // Set up tab count tracking
+    if (isTelemetryEnabled() && telemetry) {
       const tabCountChannel = new BroadcastChannel('comfyui-tab-count')
       const activeTabs = new Map<string, number>()
       const currentTabId = crypto.randomUUID()
@@ -365,8 +366,8 @@ const onGraphReady = () => {
       tabCountChannel.postMessage({ type: 'heartbeat', tabId: currentTabId })
     }
 
-    // Shell layout snapshot, once per session (cloud only)
-    if (isCloud && telemetry) {
+    // Shell layout snapshot, once per session
+    if (isTelemetryEnabled() && telemetry) {
       telemetry.trackShellLayout(
         getShellLayoutSnapshot({
           view_mode: mode.value,

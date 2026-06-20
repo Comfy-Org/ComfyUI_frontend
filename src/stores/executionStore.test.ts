@@ -83,14 +83,21 @@ vi.mock('@/platform/distribution/types', async () => ({
   }
 }))
 
+// Toggleable so tests can simulate telemetry disabled (no active registry),
+// where useTelemetry() returns null and the durable guard must not be spent.
+const mockTelemetry = vi.hoisted(() => ({ enabled: true }))
+
 vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({
-    trackExecutionError: mockTrackExecutionError,
-    trackExecutionSuccess: mockTrackExecutionSuccess,
-    trackFirstExecutionCompleted: mockTrackFirstExecutionCompleted,
-    trackOutputViewed: mockTrackOutputViewed,
-    trackSharedWorkflowRun: mockTrackSharedWorkflowRun
-  })
+  useTelemetry: () =>
+    mockTelemetry.enabled
+      ? {
+          trackExecutionError: mockTrackExecutionError,
+          trackExecutionSuccess: mockTrackExecutionSuccess,
+          trackFirstExecutionCompleted: mockTrackFirstExecutionCompleted,
+          trackOutputViewed: mockTrackOutputViewed,
+          trackSharedWorkflowRun: mockTrackSharedWorkflowRun
+        }
+      : null
 }))
 
 // Remove any previous global types
@@ -1757,18 +1764,37 @@ describe('useExecutionStore - first_execution_completed activation telemetry', (
     expect(mockTrackFirstExecutionCompleted).not.toHaveBeenCalled()
   })
 
-  it('does not emit when isCloud is false', () => {
+  it('emits on desktop (isCloud false) when telemetry is enabled', () => {
+    // Parity: the activation event is no longer cloud-only. With the host
+    // telemetry registry active, it fires regardless of distribution.
     mockDistribution.isCloud = false
     try {
       const store = freshStore()
       queueAndStart(store, 'run-1')
       fireSuccess('run-1')
 
-      expect(mockTrackFirstExecutionCompleted).not.toHaveBeenCalled()
-      // Cloud-gated event must not consume the durable first-run guard either.
-      expect(localStorage.getItem(FIRST_EXECUTION_COMPLETED_KEY)).toBeNull()
+      expect(mockTrackFirstExecutionCompleted).toHaveBeenCalledTimes(1)
+      expect(mockTrackFirstExecutionCompleted).toHaveBeenCalledWith({
+        workflow_run_id: 'run-1'
+      })
     } finally {
       mockDistribution.isCloud = true
+    }
+  })
+
+  it('does not emit nor consume the durable guard when telemetry is disabled', () => {
+    // Data-loss guard: with no active registry the once-ever claim must not be
+    // spent, so enabling telemetry later still captures the activation moment.
+    mockTelemetry.enabled = false
+    try {
+      const store = freshStore()
+      queueAndStart(store, 'run-1')
+      fireSuccess('run-1')
+
+      expect(mockTrackFirstExecutionCompleted).not.toHaveBeenCalled()
+      expect(localStorage.getItem(FIRST_EXECUTION_COMPLETED_KEY)).toBeNull()
+    } finally {
+      mockTelemetry.enabled = true
     }
   })
 })

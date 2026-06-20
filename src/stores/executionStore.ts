@@ -4,6 +4,7 @@ import { computed, ref, shallowRef } from 'vue'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
+import { isTelemetryEnabled } from '@/platform/telemetry/telemetryEnabled'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -378,8 +379,8 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!activeJob.value) return
     activeJob.value.nodes[e.detail.node] = true
 
-    // First media output of a run is the activation moment (cloud only).
-    if (isCloud) {
+    // First media output of a run is the activation moment.
+    if (isTelemetryEnabled()) {
       const runId = e.detail.prompt_id
       const mediaType = firstOutputMediaType(e.detail.output)
       if (mediaType && !outputViewedRuns.has(runId)) {
@@ -409,10 +410,11 @@ export const useExecutionStore = defineStore('execution', () => {
       telemetry?.trackExecutionSuccess({
         jobId
       })
-      // Activation moment (cloud only): fire once ever per browser profile.
-      // isCloud short-circuits first so the durable claim isn't spent off-cloud.
-      if (isCloud && claimFirstExecutionCompleted()) {
-        telemetry?.trackFirstExecutionCompleted({
+      // Activation moment: fire once ever per browser profile. Gate the durable
+      // claim on the live telemetry registry (not just the enabled flag) so the
+      // once-ever flag is never spent when nothing would actually be sent.
+      if (telemetry && claimFirstExecutionCompleted()) {
+        telemetry.trackFirstExecutionCompleted({
           workflow_run_id: jobId
         })
       }
