@@ -22,8 +22,8 @@
     />
 
     <div
-      class="flex flex-col overflow-hidden rounded-lg border border-interface-stroke bg-comfy-menu-bg shadow-interface"
-      :style="{ width: containerStyles.width, height: containerStyles.height }"
+      class="flex flex-col overflow-hidden bg-comfy-menu-bg shadow-interface"
+      :style="containerStyles"
     >
       <div class="flex shrink-0 items-center justify-between">
         <Button
