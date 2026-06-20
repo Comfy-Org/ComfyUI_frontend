@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useNow } from '@vueuse/core'
 
 import Button from '../ui/button/Button.vue'
+import { resolveRel } from '../../utils/cta'
 
 type Cta = {
   label: string
@@ -36,7 +37,7 @@ const {
   subtitle,
   primaryCta,
   secondaryCta,
-  youtubeUrl,
+  youtubeVideoId,
   startDateTime,
   endDateTime
 } = defineProps<{
@@ -46,34 +47,15 @@ const {
   subtitle?: string
   primaryCta: Cta
   secondaryCta?: Cta
-  youtubeUrl: string
+  youtubeVideoId: string
   startDateTime: string
   endDateTime: string
 }>()
 
-function resolveRel(cta: Cta): AnchorHTMLAttributes['rel'] {
-  return (
-    cta.rel ?? (cta.target === '_blank' ? 'noopener noreferrer' : undefined)
-  )
-}
-
-function extractVideoId(url: string): string | null {
-  try {
-    const parsed = new URL(url)
-    const v = parsed.searchParams.get('v')
-    if (v) return v
-    const segments = parsed.pathname.split('/').filter(Boolean)
-    return segments.at(-1) ?? null
-  } catch {
-    return null
-  }
-}
-
-const embedUrl = computed(() => {
-  const id = extractVideoId(youtubeUrl)
-  if (!id) return null
-  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&rel=0`
-})
+const embedUrl = computed(
+  () =>
+    `https://www.youtube-nocookie.com/embed/${youtubeVideoId}?autoplay=1&mute=1&rel=0`
+)
 
 // Keep SSR/initial paint deterministic on the logo and only flip to the embed
 // after client hydration — avoids a build-time `now` leaking into the markup.
@@ -89,7 +71,6 @@ const endMs = computed(() => new Date(endDateTime).getTime())
 const isLive = computed(
   () =>
     mounted.value &&
-    embedUrl.value !== null &&
     now.value.getTime() >= startMs.value &&
     now.value.getTime() < endMs.value
 )
@@ -104,7 +85,7 @@ const isLive = computed(
       class="mb-10 aspect-video w-full overflow-hidden rounded-2xl lg:mb-12"
     >
       <iframe
-        :src="embedUrl ?? undefined"
+        :src="embedUrl"
         :title="title"
         class="size-full"
         loading="lazy"

@@ -2,6 +2,7 @@
 import type { AnchorHTMLAttributes } from 'vue'
 
 import Button from '../ui/button/Button.vue'
+import { resolveRel } from '../../utils/cta'
 
 type Cta = {
   label: string
@@ -21,12 +22,6 @@ const { heading, primaryCta, secondaryCta, termsLink } = defineProps<{
   secondaryCta?: Cta
   termsLink?: TermsLink
 }>()
-
-function resolveRel(cta: Cta): AnchorHTMLAttributes['rel'] {
-  return (
-    cta.rel ?? (cta.target === '_blank' ? 'noopener noreferrer' : undefined)
-  )
-}
 </script>
 
 <template>

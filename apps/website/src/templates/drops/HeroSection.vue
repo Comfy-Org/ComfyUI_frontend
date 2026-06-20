@@ -9,8 +9,8 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const routes = getRoutes(locale)
 
-// TODO(drops-livestream): replace with the production stream URL + window.
-const youtubeUrl = 'https://www.youtube.com/watch?v=nlLZfNIqF8M'
+// TODO(drops-livestream): replace with the production stream ID + window.
+const youtubeVideoId = 'nlLZfNIqF8M'
 const startDateTime = '2026-06-24T17:00:00Z'
 const endDateTime = '2026-06-24T19:00:00Z'
 </script>
@@ -34,7 +34,7 @@ const endDateTime = '2026-06-24T19:00:00Z'
       href: externalLinks.cloud,
       target: '_blank'
     }"
-    :youtube-url="youtubeUrl"
+    :youtube-video-id="youtubeVideoId"
     :start-date-time="startDateTime"
     :end-date-time="endDateTime"
   />
