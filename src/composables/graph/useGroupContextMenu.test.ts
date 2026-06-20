@@ -66,6 +66,9 @@ describe('useGroupContextMenu', () => {
       selectedItems: new Set(),
       state: { selectionChanged: false }
     }
+    stubCanvas.deselectAll.mockImplementation(() => {
+      stubCanvas.selectedItems.clear()
+    })
   })
 
   function invoke(node: LGraphNode | undefined) {
@@ -86,6 +89,9 @@ describe('useGroupContextMenu', () => {
     expect(group.recomputeInsideNodes).toHaveBeenCalledOnce()
     expect(mockUpdateSelectedItems).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
+    expect(mockUpdateSelectedItems.mock.invocationCallOrder[0]).toBeLessThan(
+      mockShowNodeOptions.mock.invocationCallOrder[0]
+    )
     expect(legacyMenuMock).not.toHaveBeenCalled()
   })
 
@@ -130,16 +136,35 @@ describe('useGroupContextMenu', () => {
     expect(stubCanvas.selectedItems.size).toBe(0)
   })
 
-  it('keeps the menu open without re-selecting when the group is already selected', () => {
-    mockGetCanvasContextMenuTarget.mockReturnValue({
-      group: { id: 1, selected: true }
-    })
+  it('keeps the menu open without re-selecting when only the group is selected', () => {
+    group.selected = true
+    stubCanvas.selectedItems.add(group)
 
     invoke(undefined)
 
     expect(stubCanvas.deselectAll).not.toHaveBeenCalled()
-    expect(stubCanvas.selectedItems.size).toBe(0)
+    expect(stubCanvas.selectedItems.size).toBe(1)
+    expect(stubCanvas.selectedItems.has(group)).toBe(true)
     expect(stubCanvas.state.selectionChanged).toBe(false)
+    expect(group.recomputeInsideNodes).not.toHaveBeenCalled()
+    expect(mockUpdateSelectedItems).toHaveBeenCalledOnce()
+    expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
+    expect(legacyMenuMock).not.toHaveBeenCalled()
+  })
+
+  it('reselects the group when selected child nodes would hide group actions', () => {
+    const childNode = { selected: true }
+    group.selected = true
+    stubCanvas.selectedItems.add(group)
+    stubCanvas.selectedItems.add(childNode)
+
+    invoke(undefined)
+
+    expect(stubCanvas.deselectAll).toHaveBeenCalledOnce()
+    expect(stubCanvas.selectedItems.size).toBe(1)
+    expect(stubCanvas.selectedItems.has(group)).toBe(true)
+    expect(stubCanvas.state.selectionChanged).toBe(true)
+    expect(group.recomputeInsideNodes).toHaveBeenCalledOnce()
     expect(mockUpdateSelectedItems).toHaveBeenCalledOnce()
     expect(mockShowNodeOptions).toHaveBeenCalledWith(event)
     expect(legacyMenuMock).not.toHaveBeenCalled()

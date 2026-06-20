@@ -31,7 +31,10 @@ export function useGroupContextMenu() {
       return
     }
 
-    if (!group.selected) {
+    const groupIsOnlySelection =
+      this.selectedItems.size === 1 && this.selectedItems.has(group)
+
+    if (!groupIsOnlySelection) {
       this.deselectAll()
       group.selected = true
       group.recomputeInsideNodes()
