@@ -1,3 +1,4 @@
+import { isCloud } from '@/platform/distribution/types'
 import {
   configValueOrDefault,
   remoteConfig
@@ -10,14 +11,34 @@ import {
  */
 const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA'
 
+// Public per-environment sitekeys, baked at build time so a cloud build renders
+// the widget even before (or without) remote config. They mirror the build-time
+// fallbacks in comfyApi.ts / firebase.ts; remote config still overrides them, so
+// keys rotate live without a rebuild.
+const PROD_TURNSTILE_SITE_KEY = '0x4AAAAAADnYZPVOpFCL_zeo'
+const STAGING_TURNSTILE_SITE_KEY = '0x4AAAAAADnYY4_Q0qxHZ5a7'
+
+const BUILD_TIME_TURNSTILE_SITE_KEY = __USE_PROD_CONFIG__
+  ? PROD_TURNSTILE_SITE_KEY
+  : STAGING_TURNSTILE_SITE_KEY
+
 /**
- * Returns the Cloudflare Turnstile sitekey, delivered per-environment at runtime
- * via cloud remote config (`turnstile_sitekey`). Only the cloud-served frontend
- * receives remote config, so OSS / local builds get '' and the widget never
- * renders — no origin or `isCloud` check is needed. In dev it falls back to the
- * always-pass test key so the flow is exercisable locally.
+ * Returns the Cloudflare Turnstile sitekey for the current environment.
+ * - OSS / localhost never renders the cloud widget (server-side loopback
+ *   exemption covers local signup); in dev it falls back to the always-pass test
+ *   key so the flow is exercisable locally, otherwise ''.
+ * - Cloud builds prefer the per-env sitekey delivered via remote config
+ *   (`turnstile_sitekey`) and fall back to the build-time constant, so the widget
+ *   still renders during a remote-config gap rather than silently disappearing.
  */
 export function getTurnstileSiteKey(): string {
-  const fallback = import.meta.env.DEV ? TURNSTILE_TEST_SITE_KEY : ''
-  return configValueOrDefault(remoteConfig.value, 'turnstile_sitekey', fallback)
+  if (!isCloud) {
+    return import.meta.env.DEV ? TURNSTILE_TEST_SITE_KEY : ''
+  }
+
+  return configValueOrDefault(
+    remoteConfig.value,
+    'turnstile_sitekey',
+    BUILD_TIME_TURNSTILE_SITE_KEY
+  )
 }

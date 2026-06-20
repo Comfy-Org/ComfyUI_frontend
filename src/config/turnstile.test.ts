@@ -3,13 +3,16 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getTurnstileSiteKey } from '@/config/turnstile'
 
 const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA'
+// __USE_PROD_CONFIG__ is false under vitest (see vitest.setup.ts), so the
+// build-time fallback resolves to the staging sitekey.
+const STAGING_TURNSTILE_SITE_KEY = '0x4AAAAAADnYY4_Q0qxHZ5a7'
 
-// Mock remote config with a mutable container + the real merge semantics
-// (`configValue || defaultValue`). The container goes through vi.hoisted so the
-// hoisted vi.mock factory can reference it without a temporal-dead-zone crash
-// (which surfaces under coverage instrumentation, not a plain run).
-const { mockRemoteConfig } = vi.hoisted(() => ({
-  mockRemoteConfig: { value: {} as Record<string, unknown> }
+// Mutable containers go through vi.hoisted so the hoisted vi.mock factories can
+// reference them without a temporal-dead-zone crash (which surfaces under
+// coverage instrumentation, not a plain run).
+const { mockRemoteConfig, mockIsCloud } = vi.hoisted(() => ({
+  mockRemoteConfig: { value: {} as Record<string, unknown> },
+  mockIsCloud: { value: false }
 }))
 vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
   remoteConfig: mockRemoteConfig,
@@ -19,39 +22,56 @@ vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
     fallback: unknown
   ) => cfg[key] || fallback
 }))
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  }
+}))
 
 describe('getTurnstileSiteKey', () => {
   beforeEach(() => {
     mockRemoteConfig.value = {}
+    mockIsCloud.value = false
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
   })
 
-  it('returns the sitekey delivered via cloud remote config', () => {
-    vi.stubEnv('DEV', false)
-    mockRemoteConfig.value = { turnstile_sitekey: '0x4AAAAAreal' }
+  describe('OSS / non-cloud build', () => {
+    it('falls back to the always-pass test key in dev', () => {
+      vi.stubEnv('DEV', true)
 
-    expect(getTurnstileSiteKey()).toBe('0x4AAAAAreal')
+      expect(getTurnstileSiteKey()).toBe(TURNSTILE_TEST_SITE_KEY)
+    })
+
+    it('returns empty string outside dev so the widget never renders', () => {
+      vi.stubEnv('DEV', false)
+
+      expect(getTurnstileSiteKey()).toBe('')
+    })
+
+    it('ignores remote config (the widget is cloud-only)', () => {
+      vi.stubEnv('DEV', false)
+      mockRemoteConfig.value = { turnstile_sitekey: '0xshould-not-be-used' }
+
+      expect(getTurnstileSiteKey()).toBe('')
+    })
   })
 
-  it('prefers the remote-config sitekey over the dev test key in dev', () => {
-    vi.stubEnv('DEV', true)
-    mockRemoteConfig.value = { turnstile_sitekey: '0x4AAAAAreal' }
+  describe('cloud build', () => {
+    beforeEach(() => {
+      mockIsCloud.value = true
+    })
 
-    expect(getTurnstileSiteKey()).toBe('0x4AAAAAreal')
-  })
+    it('returns the sitekey delivered via remote config', () => {
+      mockRemoteConfig.value = { turnstile_sitekey: '0x4AAAAAreal' }
 
-  it('falls back to the always-pass test key in dev when unconfigured', () => {
-    vi.stubEnv('DEV', true)
+      expect(getTurnstileSiteKey()).toBe('0x4AAAAAreal')
+    })
 
-    expect(getTurnstileSiteKey()).toBe(TURNSTILE_TEST_SITE_KEY)
-  })
-
-  it('returns empty string in prod when unconfigured (OSS / non-cloud build)', () => {
-    vi.stubEnv('DEV', false)
-
-    expect(getTurnstileSiteKey()).toBe('')
+    it('falls back to the build-time per-env sitekey during a remote-config gap', () => {
+      expect(getTurnstileSiteKey()).toBe(STAGING_TURNSTILE_SITE_KEY)
+    })
   })
 })
