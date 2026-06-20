@@ -22,6 +22,8 @@ export function useBillingContext(): BillingContext {
     balance: computed(() => null),
     plans: computed(() => []),
     currentPlanSlug: computed(() => null),
+    teamCreditStops: computed(() => null),
+    currentTeamCreditStop: computed(() => null),
     isLoading: ref(false),
     error: ref<string | null>(null),
     isActiveSubscription: computed(() => false),

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
@@ -21,6 +22,7 @@ export interface WorkspaceMember {
   email: string
   joinDate: Date
   role: 'owner' | 'member'
+  isOriginalOwner: boolean
 }
 
 export interface PendingInvite {
@@ -49,7 +51,8 @@ function mapApiMemberToWorkspaceMember(member: Member): WorkspaceMember {
     name: member.name,
     email: member.email,
     joinDate: new Date(member.joined_at),
-    role: member.role
+    role: member.role,
+    isOriginalOwner: member.is_original_owner ?? false
   }
 }
 
@@ -103,7 +106,7 @@ function setLastWorkspaceId(workspaceId: string): void {
 }
 
 const MAX_OWNED_WORKSPACES = 10
-const MAX_WORKSPACE_MEMBERS = 50
+export const MAX_WORKSPACE_MEMBERS = 50
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 
@@ -145,6 +148,18 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const members = computed<WorkspaceMember[]>(
     () => activeWorkspace.value?.members ?? []
   )
+
+  // True when the current user is the active workspace's original owner,
+  // resolved from the self-row of the loaded members list. Matches by email
+  // (the stable current-user join key; member.id is a cloud user id, not the
+  // Firebase uid). Fails closed when members are not loaded or no self-row
+  // matches, so lifecycle gating stays hidden until the real signal arrives.
+  const isCurrentUserOriginalOwner = computed(() => {
+    const email = useCurrentUser().userEmail.value?.toLowerCase()
+    if (!email) return false
+    const selfRow = members.value.find((m) => m.email.toLowerCase() === email)
+    return selfRow?.isOriginalOwner ?? false
+  })
 
   const pendingInvites = computed<PendingInvite[]>(
     () => activeWorkspace.value?.pendingInvites ?? []
@@ -507,6 +522,36 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     return members
   }
 
+  // Tracks which team workspaces have already loaded their members so the
+  // lifecycle gate resolves without redundant or duplicate fetches.
+  const loadedMemberWorkspaceIds = new Set<string>()
+  let inFlightMembersWorkspaceId: string | null = null
+
+  /**
+   * Load the active team workspace's members once. No-ops for personal or
+   * already-loaded workspaces and dedupes concurrent calls. A failed request is
+   * logged and leaves the workspace unloaded so a later call retries.
+   */
+  async function ensureMembersLoaded(): Promise<void> {
+    const workspaceId = activeWorkspaceId.value
+    if (!workspaceId) return
+    if (activeWorkspace.value?.type === 'personal') return
+    if (loadedMemberWorkspaceIds.has(workspaceId)) return
+    if (inFlightMembersWorkspaceId === workspaceId) return
+
+    inFlightMembersWorkspaceId = workspaceId
+    try {
+      await fetchMembers()
+      loadedMemberWorkspaceIds.add(workspaceId)
+    } catch (e) {
+      console.error('Failed to load workspace members', e)
+    } finally {
+      if (inFlightMembersWorkspaceId === workspaceId) {
+        inFlightMembersWorkspaceId = null
+      }
+    }
+  }
+
   /**
    * Remove a member from the current workspace.
    */
@@ -652,6 +697,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     ownedWorkspacesCount,
     canCreateWorkspace,
     members,
+    isCurrentUserOriginalOwner,
     pendingInvites,
     totalMemberSlots,
     isInviteLimitReached,
@@ -675,6 +721,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
 
     // Member Actions
     fetchMembers,
+    ensureMembersLoaded,
     removeMember,
 
     // Invite Actions

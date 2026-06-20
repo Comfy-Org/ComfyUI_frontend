@@ -2584,7 +2584,9 @@
       "perkProjectAssets": "Project & asset management",
       "cta": "Subscribe to Team Yearly",
       "ctaMonthly": "Subscribe to Team Monthly",
-      "unavailable": "This team plan is not available right now."
+      "unavailable": "This team plan is not available right now.",
+      "changePlan": "Change plan",
+      "currentPlan": "Current plan"
     },
     "enterprise": {
       "name": "Enterprise",
@@ -3418,7 +3420,7 @@
     "mediaLabel": "{count} Media File | {count} Media Files",
     "modelsLabel": "{count} Model | {count} Models",
     "checkingAssets": "Checking media visibility…",
-    "acknowledgeCheckbox": "I understand these media items will be published and made public",
+    "acknowledgeCheckbox": "I understand anyone with the link can view these files",
     "inLibrary": "In library",
     "comfyHubTitle": "Upload to ComfyHub",
     "comfyHubDescription": "ComfyHub is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",

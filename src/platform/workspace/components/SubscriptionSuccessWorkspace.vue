@@ -93,22 +93,25 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import Button from '@/components/ui/button/Button.vue'
+import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import { MAX_WORKSPACE_MEMBERS } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import InviteMembersForm from './InviteMembersForm.vue'
 
 const {
   tierKey,
   previewData = null,
+  teamPlan = null,
   isTeam = false
 } = defineProps<{
-  tierKey: Exclude<TierKey, 'free' | 'founder'>
+  tierKey?: Exclude<TierKey, 'free' | 'founder'> | null
   previewData?: PreviewSubscribeResponse | null
+  teamPlan?: TeamPlanSelection | null
   isTeam?: boolean
 }>()
 
@@ -118,27 +121,29 @@ defineEmits<{
 
 const { t, n } = useI18n()
 const { flags } = useFeatureFlags()
-const { getMaxSeats } = useBillingContext()
 
-const tierName = computed(() => t(`subscription.tiers.${tierKey}.name`))
+const tierName = computed(() =>
+  teamPlan
+    ? t('subscription.teamPlan.name')
+    : t(`subscription.tiers.${tierKey}.name`)
+)
 
-const displayPrice = computed(() =>
-  previewData?.new_plan
+const displayPrice = computed(() => {
+  if (teamPlan) return String(teamPlan.discountedUsd)
+  return previewData?.new_plan
     ? (previewData.new_plan.price_cents / 100).toFixed(0)
     : '0'
+})
+
+const displayCredits = computed(() =>
+  n(teamPlan ? teamPlan.credits : tierKey ? (getTierCredits(tierKey) ?? 0) : 0)
 )
 
-const displayCredits = computed(() => n(getTierCredits(tierKey) ?? 0))
+// A team plan caps members at a flat MAX_WORKSPACE_MEMBERS; the buyer already
+// holds one seat post-upgrade, so invites fill the rest.
+const invitableSeats = computed(() => MAX_WORKSPACE_MEMBERS - 1)
 
-const maxSeats = computed(() => getMaxSeats(tierKey))
-
-// The buyer already occupies one seat post-upgrade, so invites are capped at the
-// remaining seats.
-const invitableSeats = computed(() => maxSeats.value - 1)
-
-const showInviteBlock = computed(
-  () => isTeam && flags.teamWorkspacesEnabled && maxSeats.value > 1
-)
+const showInviteBlock = computed(() => isTeam && flags.teamWorkspacesEnabled)
 
 const invitedEmails = ref<string[]>([])
 
