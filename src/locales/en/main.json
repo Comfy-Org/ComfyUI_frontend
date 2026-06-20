@@ -2623,6 +2623,7 @@
       "perkProjectAssets": "Project & asset management",
       "cta": "Subscribe to Team Yearly",
       "ctaMonthly": "Subscribe to Team Monthly",
+      "changePlan": "Change plan",
       "unavailable": "This team plan is not available right now."
     },
     "enterprise": {
