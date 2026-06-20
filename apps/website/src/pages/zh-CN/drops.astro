@@ -14,7 +14,7 @@ const locale = 'zh-CN' as const
   description={t('drops.page.description', locale)}
 >
   <SubscribeBanner locale={locale} />
-  <HeroSection locale={locale} />
+  <HeroSection locale={locale} client:load />
   <DropsSection locale={locale} />
   <CtaSection locale={locale} />
 </BaseLayout>

@@ -1,17 +1,22 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
 
-import HeroCenter01 from '../../components/blocks/HeroCenter01.vue'
+import HeroLivestream01 from '../../components/blocks/HeroLivestream01.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const routes = getRoutes(locale)
+
+// TODO(drops-livestream): replace with the production stream URL + window.
+const youtubeUrl = 'https://www.youtube.com/watch?v=nlLZfNIqF8M'
+const startDateTime = '2026-06-24T17:00:00Z'
+const endDateTime = '2026-06-24T19:00:00Z'
 </script>
 
 <template>
-  <HeroCenter01
+  <HeroLivestream01
     :visual="{
       src: '/affiliates/brand/comfy-amplified-logo.png',
       alt: t('drops.hero.visualAlt', locale),
@@ -28,5 +33,8 @@ const routes = getRoutes(locale)
       href: externalLinks.cloud,
       target: '_blank'
     }"
+    :youtube-url="youtubeUrl"
+    :start-date-time="startDateTime"
+    :end-date-time="endDateTime"
   />
 </template>

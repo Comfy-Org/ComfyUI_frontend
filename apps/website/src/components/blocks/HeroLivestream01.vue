@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { AnchorHTMLAttributes } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useNow } from '@vueuse/core'
 
 import Button from '../ui/button/Button.vue'
 
@@ -17,29 +19,91 @@ type Visual = {
   height?: number
 }
 
-const { visual, eyebrow, title, subtitle, primaryCta, secondaryCta } =
-  defineProps<{
-    visual?: Visual
-    eyebrow?: string
-    title: string
-    subtitle?: string
-    primaryCta: Cta
-    secondaryCta?: Cta
-  }>()
+const {
+  visual,
+  eyebrow,
+  title,
+  subtitle,
+  primaryCta,
+  secondaryCta,
+  youtubeUrl,
+  startDateTime,
+  endDateTime
+} = defineProps<{
+  visual?: Visual
+  eyebrow?: string
+  title: string
+  subtitle?: string
+  primaryCta: Cta
+  secondaryCta?: Cta
+  youtubeUrl: string
+  startDateTime: string
+  endDateTime: string
+}>()
 
 function resolveRel(cta: Cta): AnchorHTMLAttributes['rel'] {
   return (
     cta.rel ?? (cta.target === '_blank' ? 'noopener noreferrer' : undefined)
   )
 }
+
+function extractVideoId(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    const v = parsed.searchParams.get('v')
+    if (v) return v
+    const segments = parsed.pathname.split('/').filter(Boolean)
+    return segments.at(-1) ?? null
+  } catch {
+    return null
+  }
+}
+
+const embedUrl = computed(() => {
+  const id = extractVideoId(youtubeUrl)
+  if (!id) return null
+  return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&mute=1&rel=0`
+})
+
+// Keep SSR/initial paint deterministic on the logo and only flip to the embed
+// after client hydration — avoids a build-time `now` leaking into the markup.
+const mounted = ref(false)
+onMounted(() => {
+  mounted.value = true
+})
+
+const now = useNow({ interval: 30_000 })
+const startMs = computed(() => new Date(startDateTime).getTime())
+const endMs = computed(() => new Date(endDateTime).getTime())
+
+const isLive = computed(
+  () =>
+    mounted.value &&
+    embedUrl.value !== null &&
+    now.value.getTime() >= startMs.value &&
+    now.value.getTime() < endMs.value
+)
 </script>
 
 <template>
   <section
     class="max-w-9xl mx-auto flex flex-col items-center px-6 py-16 text-center lg:py-24"
   >
+    <div
+      v-if="isLive"
+      class="mb-10 aspect-video w-full overflow-hidden rounded-2xl lg:mb-12"
+    >
+      <iframe
+        :src="embedUrl ?? undefined"
+        :title="title"
+        class="size-full"
+        loading="lazy"
+        allow="autoplay; encrypted-media; picture-in-picture"
+        allowfullscreen
+      />
+    </div>
     <img
-      v-if="visual"
+      v-else-if="visual"
       :src="visual.src"
       :alt="visual.alt"
       :width="visual.width"
