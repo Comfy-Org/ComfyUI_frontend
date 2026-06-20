@@ -190,7 +190,7 @@
     <MemberUpsellBanner
       v-if="!isOnTeamPlan"
       :reactivate="hasLapsedTeamPlan"
-      @show-plans="showSubscriptionDialog()"
+      @show-plans="showTeamPlans()"
     />
     <!-- Need More Members Footer -->
     <div
@@ -248,7 +248,7 @@ const {
   isCurrentUser,
   isOriginalOwner,
   toggleSort,
-  showSubscriptionDialog,
+  showTeamPlans,
   handleResendInvite,
   handleRevokeInvite
 } = useMembersPanel()
