@@ -1,8 +1,9 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { cleanup, render, screen } from '@testing-library/vue'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import { MAX_WORKSPACE_MEMBERS } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 
@@ -13,13 +14,14 @@ vi.mock('vue-i18n', () => ({
   })
 }))
 
-const { mockGetMaxSeats, mockFlags } = vi.hoisted(() => ({
-  mockGetMaxSeats: vi.fn(),
-  mockFlags: { teamWorkspacesEnabled: true }
+// Provide just the seat cap so the component import doesn't drag the team store's
+// i18n/app chain into this unit test.
+vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
+  MAX_WORKSPACE_MEMBERS: 30
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({ getMaxSeats: mockGetMaxSeats })
+const { mockFlags } = vi.hoisted(() => ({
+  mockFlags: { teamWorkspacesEnabled: true }
 }))
 
 vi.mock('@/composables/useFeatureFlags', () => ({
@@ -33,6 +35,13 @@ vi.mock('./InviteMembersForm.vue', () => ({
     template: '<div data-testid="invite-form">seats:{{ maxSeats }}</div>'
   }
 }))
+
+const TEAM_STOP = {
+  id: 'team_700',
+  usd: 700,
+  credits: 147_700,
+  discountedUsd: 630
+}
 
 function renderCard(props: Record<string, unknown> = {}) {
   return render(SubscriptionSuccessWorkspace, {
@@ -54,11 +63,23 @@ function renderCard(props: Record<string, unknown> = {}) {
   })
 }
 
+function renderTeamCard(props: Record<string, unknown> = {}) {
+  return renderCard({
+    tierKey: null,
+    teamPlan: TEAM_STOP,
+    isTeam: true,
+    ...props
+  })
+}
+
 describe('SubscriptionSuccessWorkspace', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGetMaxSeats.mockReturnValue(5)
     mockFlags.teamWorkspacesEnabled = true
+  })
+
+  afterEach(() => {
+    cleanup()
   })
 
   it('renders the all-set heading and plan price', () => {
@@ -67,18 +88,26 @@ describe('SubscriptionSuccessWorkspace', () => {
     expect(screen.getByText('$16')).toBeTruthy()
   })
 
+  it('renders the team plan summary from the selected stop', () => {
+    renderTeamCard()
+    expect(screen.getByText('subscription.teamPlan.name')).toBeTruthy()
+    expect(screen.getByText('$630')).toBeTruthy()
+    expect(screen.getByText(/147700/)).toBeTruthy()
+  })
+
   it('emits close when the close button is clicked', async () => {
     const { emitted } = renderCard({ isTeam: false })
     await userEvent.click(screen.getByRole('button'))
     expect(emitted().close).toBeTruthy()
   })
 
-  it('renders the invite block capped at the plan seats minus the owner', () => {
-    renderCard({ isTeam: true })
+  it('renders the invite block capped at the workspace member limit', () => {
+    renderTeamCard()
     expect(screen.getByText('subscription.success.inviteTitle')).toBeTruthy()
-    // getMaxSeats returns 5; the owner already holds one seat, so 4 are invitable.
-    expect(screen.getByTestId('invite-form')).toHaveTextContent('seats:4')
-    expect(mockGetMaxSeats).toHaveBeenCalledWith('creator')
+    // The buyer holds one of the flat team-member seats, so the rest are invitable.
+    expect(screen.getByTestId('invite-form')).toHaveTextContent(
+      `seats:${MAX_WORKSPACE_MEMBERS - 1}`
+    )
   })
 
   it('does not render the invite block for a personal upgrade', () => {
@@ -89,13 +118,7 @@ describe('SubscriptionSuccessWorkspace', () => {
 
   it('hides the invite block when team workspaces are disabled', () => {
     mockFlags.teamWorkspacesEnabled = false
-    renderCard({ isTeam: true })
-    expect(screen.queryByTestId('invite-form')).toBeNull()
-  })
-
-  it('hides the invite block when the plan has a single seat', () => {
-    mockGetMaxSeats.mockReturnValue(1)
-    renderCard({ isTeam: true })
+    renderTeamCard()
     expect(screen.queryByTestId('invite-form')).toBeNull()
   })
 })
