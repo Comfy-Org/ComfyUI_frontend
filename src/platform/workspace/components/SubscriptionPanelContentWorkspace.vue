@@ -325,8 +325,8 @@ const {
   isActiveSubscription,
   isFreeTier: isFreeTierPlan,
   subscription,
-  plans,
-  currentPlanSlug,
+  teamCreditStops,
+  currentTeamCreditStop,
   showSubscriptionDialog,
   manageSubscription,
   resubscribe
@@ -497,18 +497,25 @@ const tierPrice = computed(() =>
 
 const freeTierPrice = getTierPrice('free')
 
-const currentPlan = computed(() =>
-  isInPersonalWorkspace.value
-    ? undefined
-    : plans.value.find((plan) => plan.slug === currentPlanSlug.value)
+const billingCycleKey = computed(() =>
+  subscription.value?.duration === 'ANNUAL' ? 'yearly' : 'monthly'
 )
-// Seat-aware workspace total (design shows the whole-workspace price); the
-// per-member tier price remains the fallback until plans resolve
-const workspacePlanCost = computed(() =>
-  currentPlan.value
-    ? (currentPlan.value.seat_summary.total_cost_cents / 100).toFixed(0)
-    : null
-)
+
+const currentStop = computed(() => {
+  const id = currentTeamCreditStop.value?.id
+  const stops = teamCreditStops.value?.stops
+  if (!id || !stops) return null
+  return stops.find((stop) => stop.id === id) ?? null
+})
+
+// Team price is the subscribed credit stop's per-month price (both monthly and
+// yearly stops are per-month); seats no longer drive team pricing. Falls back to
+// the per-member tier price until stops resolve.
+const workspacePlanCost = computed(() => {
+  const stop = currentStop.value
+  if (!stop) return null
+  return (stop[billingCycleKey.value].price_cents / 100).toFixed(0)
+})
 const displayPrice = computed(() => workspacePlanCost.value ?? tierPrice.value)
 const priceUnitLabel = computed(() =>
   workspacePlanCost.value !== null || isInPersonalWorkspace.value
