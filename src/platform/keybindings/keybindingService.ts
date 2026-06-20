@@ -56,6 +56,7 @@ export function useKeybindingService() {
       }
 
       event.preventDefault()
+      event.stopPropagation()
       const runCommandIds = new Set([
         'Comfy.QueuePrompt',
         'Comfy.QueuePromptFront',

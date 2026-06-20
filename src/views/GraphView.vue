@@ -279,7 +279,9 @@ onBeforeUnmount(() => {
   executionStore.unbindExecutionEvents()
 })
 
-useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
+useEventListener(window, 'keydown', useKeybindingService().keybindHandler, {
+  capture: true
+})
 
 const { wrapWithErrorHandling, wrapWithErrorHandlingAsync } = useErrorHandling()
 
