@@ -29,7 +29,6 @@ interface PricingPlan {
   estimateKey?: TranslationKey
   ctaKey: TranslationKey
   ctaHref: string
-  featureIntroKey?: TranslationKey
   features: PlanFeature[]
   andMoreKey?: TranslationKey
   image?: string
@@ -63,9 +62,6 @@ const plans: PricingPlan[] = [
     estimateKey: 'pricing.plan.standard.estimate',
     ctaKey: 'pricing.plan.standard.cta',
     ctaHref: subscribeUrl('standard'),
-    featureIntroKey: SHOW_FREE_TIER
-      ? 'pricing.plan.standard.featureIntro'
-      : undefined,
     features: [
       { text: 'pricing.plan.standard.feature1' },
       { text: 'pricing.plan.standard.feature2' },
@@ -81,7 +77,6 @@ const plans: PricingPlan[] = [
     estimateKey: 'pricing.plan.creator.estimate',
     ctaKey: 'pricing.plan.creator.cta',
     ctaHref: subscribeUrl('creator'),
-    featureIntroKey: 'pricing.plan.creator.featureIntro',
     features: [
       { text: 'pricing.plan.creator.feature1' },
       { text: 'pricing.plan.creator.feature2' }
@@ -97,7 +92,6 @@ const plans: PricingPlan[] = [
     estimateKey: 'pricing.plan.pro.estimate',
     ctaKey: 'pricing.plan.pro.cta',
     ctaHref: subscribeUrl('pro'),
-    featureIntroKey: 'pricing.plan.pro.featureIntro',
     features: [
       { text: 'pricing.plan.pro.feature1' },
       { text: 'pricing.plan.pro.feature2' }
@@ -190,6 +184,23 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
         </div>
         <div v-else class="px-6 pt-2" />
 
+        <!-- Features -->
+        <div v-if="plan.features.length" class="px-6 py-3">
+          <ul class="space-y-2">
+            <li
+              v-for="feature in plan.features"
+              :key="feature.text"
+              class="flex items-start gap-2"
+            >
+              <span class="text-primary-comfy-yellow mt-0.5 text-sm">✓</span>
+              <span class="text-sm text-primary-comfy-canvas">
+                {{ t(feature.text, locale) }}
+              </span>
+            </li>
+          </ul>
+        </div>
+        <div v-else class="px-6 py-3" />
+
         <!-- Credits -->
         <p
           v-if="plan.creditsKey"
@@ -208,27 +219,6 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
         </p>
         <div v-else class="px-6" />
 
-        <!-- Features -->
-        <div v-if="plan.features.length" class="px-6 py-3">
-          <p
-            v-if="plan.featureIntroKey"
-            class="mb-2 text-sm font-semibold text-primary-comfy-canvas"
-          >
-            {{ t(plan.featureIntroKey, locale) }}
-          </p>
-          <ul class="space-y-2">
-            <li
-              v-for="feature in plan.features"
-              :key="feature.text"
-              class="flex items-start gap-2"
-            >
-              <span class="text-primary-comfy-yellow mt-0.5 text-sm">✓</span>
-              <span class="text-sm text-primary-comfy-canvas">
-                {{ t(feature.text, locale) }}
-              </span>
-            </li>
-          </ul>
-        </div>
         <!-- CTA -->
         <div class="flex self-end px-6">
           <BrandButton
@@ -246,7 +236,7 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
     <!-- Mobile: stacked plans -->
     <div class="flex flex-col gap-8 lg:hidden">
       <div v-for="plan in plans" :key="plan.id" class="flex flex-col">
-        <!-- Main info card -->
+        <!-- Unified plan card -->
         <div class="bg-transparency-white-t4 rounded-3xl p-6">
           <!-- Label + badge -->
           <div class="flex items-center gap-2">
@@ -292,32 +282,41 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
           </p>
 
           <!-- Price (standard plans only) -->
-          <template v-if="plan.priceKey">
-            <div class="mt-6 flex items-baseline gap-1">
-              <span
-                class="font-formula text-5xl font-light text-primary-comfy-canvas"
-              >
-                {{ t(plan.priceKey, locale) }}
-              </span>
-              <span class="text-sm text-primary-comfy-canvas/55">
-                {{ t('pricing.plan.period', locale) }}
-              </span>
-            </div>
-
-            <p
-              v-if="plan.creditsKey"
-              class="mt-4 text-xs font-medium text-primary-comfy-canvas"
+          <div v-if="plan.priceKey" class="mt-6 flex items-baseline gap-1">
+            <span
+              class="font-formula text-5xl font-light text-primary-comfy-canvas"
             >
-              {{ t(plan.creditsKey, locale) }}
-            </p>
+              {{ t(plan.priceKey, locale) }}
+            </span>
+            <span class="text-sm text-primary-comfy-canvas/55">
+              {{ t('pricing.plan.period', locale) }}
+            </span>
+          </div>
 
-            <p
-              v-if="plan.estimateKey"
-              class="mt-2 text-xs text-primary-comfy-canvas"
-            >
-              {{ t(plan.estimateKey, locale) }}
-            </p>
-          </template>
+          <!-- Features -->
+          <div v-if="plan.features.length" class="mt-6">
+            <PricingPlanFeatureList
+              :features="plan.features"
+              :and-more-key="plan.andMoreKey"
+              :locale
+            />
+          </div>
+
+          <!-- Credits -->
+          <p
+            v-if="plan.creditsKey"
+            class="mt-4 text-xs font-medium text-primary-comfy-canvas"
+          >
+            {{ t(plan.creditsKey, locale) }}
+          </p>
+
+          <!-- Estimate -->
+          <p
+            v-if="plan.estimateKey"
+            class="mt-2 text-xs text-primary-comfy-canvas"
+          >
+            {{ t(plan.estimateKey, locale) }}
+          </p>
 
           <!-- CTA -->
           <div class="mt-6">
@@ -330,19 +329,6 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
               {{ t(plan.ctaKey, locale) }}
             </BrandButton>
           </div>
-        </div>
-
-        <!-- Features card -->
-        <div
-          v-if="plan.features.length"
-          class="bg-transparency-white-t4 mt-2 rounded-3xl p-6"
-        >
-          <PricingPlanFeatureList
-            :features="plan.features"
-            :feature-intro-key="plan.featureIntroKey"
-            :and-more-key="plan.andMoreKey"
-            :locale
-          />
         </div>
 
         <!-- Image (standard plans only) -->

@@ -1240,10 +1240,6 @@ const translations = {
     en: 'SUBSCRIBE TO STANDARD',
     'zh-CN': '订阅标准版'
   },
-  'pricing.plan.standard.featureIntro': {
-    en: 'Everything in Free, plus:',
-    'zh-CN': '包含免费版全部能力，另加：'
-  },
   'pricing.plan.standard.feature1': {
     en: '30-minute max runtime per workflow',
     'zh-CN': '单个工作流最长运行 30 分钟'
@@ -1275,10 +1271,6 @@ const translations = {
     en: 'SUBSCRIBE TO CREATOR',
     'zh-CN': '订阅创作者版'
   },
-  'pricing.plan.creator.featureIntro': {
-    en: 'Everything in Standard, plus:',
-    'zh-CN': '包含标准版全部能力，另加：'
-  },
   'pricing.plan.creator.feature1': {
     en: 'Import your own LoRAs',
     'zh-CN': '导入你自己的 LoRA'
@@ -1303,10 +1295,6 @@ const translations = {
     'zh-CN': '约可生成 1,915 个 5 秒视频*'
   },
   'pricing.plan.pro.cta': { en: 'SUBSCRIBE TO PRO', 'zh-CN': '订阅专业版' },
-  'pricing.plan.pro.featureIntro': {
-    en: 'Everything in Creator, plus:',
-    'zh-CN': '包含创作者版全部能力，另加：'
-  },
   'pricing.plan.pro.feature1': {
     en: 'Longer workflow runtime (up to 1 hour)',
     'zh-CN': '更长工作流运行时长（最长 1 小时）'
@@ -1326,10 +1314,6 @@ const translations = {
     'zh-CN': '面向在生产环境和规模化场景中运行 Comfy 的团队。'
   },
   'pricing.enterprise.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
-  'pricing.enterprise.featureIntro': {
-    en: 'Everything in Pro, plus:',
-    'zh-CN': '包含专业版全部能力，另加：'
-  },
   'pricing.enterprise.feature1': {
     en: 'Annual commitments with bulk pricing and custom compute packages',
     'zh-CN': '支持年度承诺、批量定价与定制算力套餐'
