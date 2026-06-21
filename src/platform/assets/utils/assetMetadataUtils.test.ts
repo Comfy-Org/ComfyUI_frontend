@@ -17,6 +17,7 @@ import {
   getAssetSourceUrl,
   getAssetStoredFilename,
   getAssetTriggerPhrases,
+  getAssetTypeBadge,
   getAssetUserDescription,
   getSourceName,
   resolveDisplayImageDimensions
@@ -668,5 +669,36 @@ describe('getAssetNodeCategory', () => {
     expect(getAssetNodeCategory(asset(['models', 'checkpoints']))).toBe(
       'checkpoints'
     )
+  })
+})
+
+describe('getAssetTypeBadge', () => {
+  const asset = (tags: string[]): AssetItem => ({
+    id: 'a',
+    name: 'model.safetensors',
+    tags
+  })
+
+  it('strips the model_type: prefix in model_type mode (no raw leak)', () => {
+    expect(
+      getAssetTypeBadge(
+        asset(['models', 'model_type:checkpoints', 'sdxl']),
+        true
+      )
+    ).toBe('checkpoints')
+  })
+
+  it('leaks the literal model_type: tag when mode is off (default)', () => {
+    expect(getAssetTypeBadge(asset(['models', 'model_type:checkpoints']))).toBe(
+      'model_type:checkpoints'
+    )
+  })
+
+  it('shows the segment after the first slash for a bare hierarchical tag', () => {
+    expect(getAssetTypeBadge(asset(['models', 'checkpoint/xl']))).toBe('xl')
+  })
+
+  it('returns undefined when only the models tag is present', () => {
+    expect(getAssetTypeBadge(asset(['models']), true)).toBeUndefined()
   })
 })

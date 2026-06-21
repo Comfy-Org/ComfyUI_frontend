@@ -20,7 +20,8 @@ import {
 import {
   getAssetBaseModels,
   getAssetCategories,
-  getAssetFilename
+  getAssetFilename,
+  getAssetTypeBadge
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { MODELS_TAG } from '@/platform/assets/services/assetService'
 import { sortAssets } from '@/platform/assets/utils/assetSortUtils'
@@ -45,18 +46,20 @@ export interface AssetDisplayItem extends AssetItem {
   }
 }
 
-const displayItemCache = new WeakMap<AssetItem, AssetDisplayItem>()
+const displayItemCache = new WeakMap<
+  AssetItem,
+  { modelTypeMode: boolean; item: AssetDisplayItem }
+>()
 
-function buildDisplayItem(asset: AssetItem): AssetDisplayItem {
+function buildDisplayItem(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): AssetDisplayItem {
   const badges: AssetBadge[] = []
 
-  const typeTag = asset.tags.find((tag) => tag !== 'models')
-  if (typeTag) {
-    const badgeLabel = typeTag.includes('/')
-      ? typeTag.substring(typeTag.indexOf('/') + 1)
-      : typeTag
-
-    badges.push({ label: badgeLabel, type: 'type' })
+  const typeBadge = getAssetTypeBadge(asset, modelTypeMode)
+  if (typeBadge) {
+    badges.push({ label: typeBadge, type: 'type' })
   }
 
   for (const model of getAssetBaseModels(asset)) {
@@ -77,12 +80,15 @@ function buildDisplayItem(asset: AssetItem): AssetDisplayItem {
   }
 }
 
-function transformAssetForDisplay(asset: AssetItem): AssetDisplayItem {
+function transformAssetForDisplay(
+  asset: AssetItem,
+  modelTypeMode: boolean
+): AssetDisplayItem {
   const cached = displayItemCache.get(asset)
-  if (cached) return cached
-  const built = buildDisplayItem(asset)
-  displayItemCache.set(asset, built)
-  return built
+  if (cached && cached.modelTypeMode === modelTypeMode) return cached.item
+  const item = buildDisplayItem(asset, modelTypeMode)
+  displayItemCache.set(asset, { modelTypeMode, item })
+  return item
 }
 
 /**
@@ -252,7 +258,9 @@ export function useAssetBrowser(
     const sortedAssets = sortAssets(filtered, filters.value.sortBy)
 
     // Transform to display format
-    return sortedAssets.map(transformAssetForDisplay)
+    return sortedAssets.map((asset) =>
+      transformAssetForDisplay(asset, flags.supportsModelTypeTags)
+    )
   })
 
   function updateFilters(newFilters: AssetFilterState) {
