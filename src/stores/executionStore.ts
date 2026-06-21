@@ -410,9 +410,9 @@ export const useExecutionStore = defineStore('execution', () => {
       telemetry?.trackExecutionSuccess({
         jobId
       })
-      // Activation moment: fire once ever per browser profile. Gate the durable
-      // claim on the live telemetry registry (not just the enabled flag) so the
-      // once-ever flag is never spent when nothing would actually be sent.
+      // Activation moment, once ever per browser profile. Gate the claim on the
+      // live registry (not just the enabled flag) so the once-ever flag isn't
+      // spent when nothing would send.
       if (telemetry && claimFirstExecutionCompleted()) {
         telemetry.trackFirstExecutionCompleted({
           workflow_run_id: jobId

@@ -1765,8 +1765,7 @@ describe('useExecutionStore - first_execution_completed activation telemetry', (
   })
 
   it('emits on desktop (isCloud false) when telemetry is enabled', () => {
-    // Parity: the activation event is no longer cloud-only. With the host
-    // telemetry registry active, it fires regardless of distribution.
+    // Parity: activation event is no longer cloud-only; fires whenever a telemetry registry is active.
     mockDistribution.isCloud = false
     try {
       const store = freshStore()

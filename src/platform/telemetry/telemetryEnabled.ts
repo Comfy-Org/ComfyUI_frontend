@@ -17,10 +17,9 @@ export function isHostTelemetryEnabled(): boolean {
 }
 
 /**
- * Whether telemetry should be emitted at all. Cloud builds always emit; the
- * desktop-embedded (localhost) frontend emits when the host has telemetry
- * enabled. Replaces the per-call-site `isCloud` gate so the same funnel fires
- * on desktop, routed through the host bridge.
+ * Whether telemetry should be emitted at all: cloud always, or desktop when the
+ * host flag is on. Replaces the per-call-site `isCloud` gate so the same funnel
+ * fires on desktop.
  */
 export function isTelemetryEnabled(): boolean {
   return isCloud || isHostTelemetryEnabled()

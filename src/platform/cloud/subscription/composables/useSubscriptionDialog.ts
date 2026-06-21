@@ -33,12 +33,9 @@ export const useSubscriptionDialog = () => {
   const { isFreeTier, subscriptionTier } = useSubscription()
 
   /**
-   * Emit paywall_viewed for a dialog that is about to open. Fires whenever
-   * telemetry is enabled (cloud, or desktop with the host flag). Emitted at the
-   * point each paywall surface actually opens (FreeTierDialog in show(), the
-   * pricing table in showPricingTable()) so each surface counts exactly once
-   * with the reason that triggered it. Note showPricingTable() still gates the
-   * surface itself on isCloud, so on desktop this only fires if a paywall opens.
+   * Emit paywall_viewed when a paywall surface opens (FreeTierDialog.show(), the
+   * pricing table), once per surface. Note: showPricingTable() still gates the
+   * surface on isCloud, so on desktop this only fires if a paywall actually opens.
    */
   function trackPaywallViewed(reason?: SubscriptionDialogReason) {
     if (!isTelemetryEnabled()) return
