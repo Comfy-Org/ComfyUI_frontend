@@ -35,7 +35,7 @@ const prefix = locale === 'zh-CN' ? '/zh-CN' : ''
             {{ t(story.category, locale) }}
           </span>
           <h3
-            class="text-primary-comfy-canvas mt-2 text-lg/snug font-light lg:text-xl/snug"
+            class="mt-2 text-lg/snug font-light text-primary-comfy-canvas lg:text-xl/snug"
           >
             {{ t(story.title, locale) }}
           </h3>

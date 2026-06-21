@@ -83,7 +83,12 @@ export function useNodePointerInteractions(
     const multiSelect = isMultiSelectKey(event)
 
     const lmbDown = event.buttons & 1
-    if (lmbDown && multiSelect && !layoutStore.isDraggingVueNodes.value) {
+    if (
+      lmbDown &&
+      multiSelect &&
+      !layoutStore.isDraggingVueNodes.value &&
+      dragGuard.wasDragged(event)
+    ) {
       layoutStore.isDraggingVueNodes.value = true
       handleNodeSelect(event, nodeId)
       safeDragStart(event, nodeId)

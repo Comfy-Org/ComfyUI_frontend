@@ -389,7 +389,6 @@ export class PrimitiveNode extends LGraphNode {
       }
 
       // Temporarily store the current values in case the node is being recreated
-      // e.g. by group node conversion
       this.controlValues = []
       this.lastType = this.widgets[0]?.type
       for (let i = 1; i < this.widgets.length; i++) {

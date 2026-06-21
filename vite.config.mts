@@ -156,6 +156,13 @@ const gcsRedirectProxyConfig: ProxyOptions = {
   }
 }
 
+// Disabling absolute asset-URL transforms under Vitest keeps `/assets/...` as
+// string literals, avoiding rootless `file:///assets/...` imports that crash
+// Vitest's `createRequire` on Windows.
+const vuePluginOptions = process.env.VITEST
+  ? { template: { transformAssetUrls: { includeAbsolute: false } } }
+  : undefined
+
 export default defineConfig({
   base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
@@ -259,8 +266,8 @@ export default defineConfig({
 
   plugins: [
     ...(!DISABLE_VUE_PLUGINS
-      ? [vueDevTools(), vue(), createHtmlPlugin({})]
-      : [vue()]),
+      ? [vueDevTools(), vue(vuePluginOptions), createHtmlPlugin({})]
+      : [vue(vuePluginOptions)]),
     tailwindcss(),
     typegpuPlugin({}),
     comfyAPIPlugin(IS_DEV),
@@ -651,13 +658,6 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'happy-dom',
-    // Node 25+ enables the Web Storage API by default, which shadows
-    // happy-dom's localStorage/sessionStorage with a non-functional Proxy.
-    // See https://github.com/capricorn86/happy-dom/issues/1950
-    execArgv:
-      Number(process.versions.node.split('.')[0]) >= 25
-        ? ['--no-experimental-webstorage']
-        : [],
     setupFiles: ['./vitest.setup.ts'],
     retry: process.env.CI ? 2 : 0,
     include: [

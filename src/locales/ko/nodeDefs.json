@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "Bernini 인컨텍스트 비디오/이미지 컨디셔닝을 위한 컨디셔닝 노드입니다. 다음 작업에 사용할 수 있습니다: t2v (텍스트-투-비디오), v2v (비디오-투-비디오), rv2v (참조 기반 비디오 편집), r2v (참조-투-비디오), ads2v (이미지/비디오를 비디오에 삽입). 인컨텍스트 토큰(r2v, rv2v)으로 삽입된 참조 이미지는 고유의 원본 종횡비(긴 변이 ref_max_size로 제한됨)로 독립적으로 인코딩됩니다.",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "batch_size"
+      },
+      "height": {
+        "name": "height"
+      },
+      "length": {
+        "name": "length"
+      },
+      "negative": {
+        "name": "negative"
+      },
+      "positive": {
+        "name": "positive"
+      },
+      "ref_max_size": {
+        "name": "ref_max_size",
+        "tooltip": "reference_video 및 reference_images의 긴 변의 최대 크기. 종횡비를 유지하며 리사이즈되고 16px 단위로 맞춰집니다."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "reference_video": {
+        "name": "reference_video",
+        "tooltip": "원본 비디오에 삽입할 비디오(ads2v)."
+      },
+      "source_video": {
+        "name": "source_video",
+        "tooltip": "편집 또는 스타일 변경할 원본 비디오(v2v, rv2v). width/height로 리사이즈되고 length로 자릅니다."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "베타 샘플링 스케줄러",
     "inputs": {
@@ -585,6 +641,87 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaTransparentVideoBackground": {
+    "description": "Bria를 사용하여 비디오에서 배경을 제거하고 잘라낸 프레임과 알파 마스크를 반환합니다. 둘 다 합성 노드에 연결하거나, Save WEBM에 전달하여 투명 비디오로 저장할 수 있습니다.",
+    "display_name": "Bria 비디오 배경 제거 (투명)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "seed는 노드가 다시 실행될지 여부를 제어합니다. seed와 관계없이 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "이미지",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoGreenScreen": {
+    "description": "Bria를 사용하여 비디오의 배경을 단색 크로마키 스크린으로 교체합니다.",
+    "display_name": "Bria 비디오 그린 스크린",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "green_shade": {
+        "name": "green_shade",
+        "tooltip": "전경 뒤에 적용되는 단색 크로마키 색상: broadcast_green (#00B140), chroma_green (#00FF00), 또는 blue_screen (#0000FF)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoReplaceBackground": {
+    "description": "Bria를 사용하여 비디오의 배경을 제공된 이미지 또는 비디오로 교체합니다. 출력은 전경의 해상도와 프레임 속도를 유지하며, 배경의 종횡비가 다를 경우 맞춰 늘어나므로 왜곡 없는 결과를 원한다면 종횡비를 맞추세요.",
+    "display_name": "Bria 비디오 배경 교체",
+    "inputs": {
+      "background_image": {
+        "name": "background_image",
+        "tooltip": "전경 뒤에 합성할 배경 이미지입니다. 배경 이미지 또는 배경 비디오 중 하나만 제공하세요."
+      },
+      "background_video": {
+        "name": "background_video",
+        "tooltip": "전경 뒤에 합성할 배경 비디오입니다. 배경 이미지 또는 배경 비디오 중 하나만 제공하세요."
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "배경이 교체될 전경 비디오입니다."
       }
     },
     "outputs": {
@@ -1212,6 +1349,29 @@
       }
     }
   },
+  "CFGOverride": {
+    "description": "[start, end] 퍼센트 구간 동안 cfg를 고정 값으로 오버라이드합니다. 여러 오버라이드가 있을 경우, 샘플러에 가장 가까운 것이 겹치는 부분에서 우선 적용됩니다.",
+    "display_name": "CFG 오버라이드",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "종료 퍼센트"
+      },
+      "model": {
+        "name": "model"
+      },
+      "start_percent": {
+        "name": "시작 퍼센트"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CFGZeroStar": {
     "display_name": "CFGZeroStar",
     "inputs": {
@@ -1721,6 +1881,10 @@
         "name": "end_sigma",
         "tooltip": "이 옵션이 적용될 마지막 시그마 값입니다."
       },
+      "force_sequential_txt_ids": {
+        "name": "force_sequential_txt_ids",
+        "tooltip": "연속 텍스트 토큰 ID를 0 대신 강제로 사용합니다. 2026-05-22부터 2026-06-01 사이에 이 방식으로 학습되었으나 state dict에 __sequential__ 키가 없는 체크포인트에 사용해야 합니다."
+      },
       "model": {
         "name": "model"
       },
@@ -1797,6 +1961,10 @@
     "outputs": {
       "0": {
         "name": "rgb_정수",
+        "tooltip": null
+      },
+      "1": {
+        "name": "hex",
         "tooltip": null
       }
     }
@@ -2523,6 +2691,57 @@
       }
     }
   },
+  "CreateCameraInfo": {
+    "description": "카메라 정보를 생성합니다. 'orbit' 모드는 타겟을 중심으로 yaw/pitch/거리로 회전하며, 'look_at'은 월드 좌표에 카메라를 배치합니다. 좌표는 뷰어의 월드 공간(오른손 좌표계, Y-업) 기준입니다.",
+    "display_name": "카메라 정보 생성",
+    "inputs": {
+      "camera_type": {
+        "name": "camera_type",
+        "tooltip": "Render Splat에서 사용하는 투영 방식: 원근(foreshortening) 또는 직교(평행)."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "수직 시야각(도 단위)."
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "카메라를 정의하는 방법: 오빗 각도, 명시적 위치, 또는 위치 + 쿼터니언."
+      },
+      "mode_distance": {
+        "name": "distance"
+      },
+      "mode_pitch": {
+        "name": "pitch"
+      },
+      "mode_yaw": {
+        "name": "yaw"
+      },
+      "roll": {
+        "name": "roll",
+        "tooltip": "뷰 축을 기준으로 한 카메라 롤(도 단위)."
+      },
+      "target_x": {
+        "name": "target_x",
+        "tooltip": "바라보는 지점(오빗 피벗/조준점). 오빗 모드에서 전체 카메라를 이동하려면 이 값을 조정하세요. 쿼터니언 모드에서는 무시됩니다. 기본값은 원점입니다."
+      },
+      "target_y": {
+        "name": "target_y"
+      },
+      "target_z": {
+        "name": "target_z"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "디지털 줌(초점 거리 배수). 1보다 크면 카메라를 이동하지 않고 확대합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      }
+    }
+  },
   "CreateHookKeyframe": {
     "display_name": "후크 키프레임 생성",
     "inputs": {
@@ -2685,6 +2904,10 @@
         "name": "오디오",
         "tooltip": "비디오에 추가할 오디오입니다."
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "생성된 비디오의 비트 깊이입니다. 10비트는 더 부드러운 그라데이션과 적은 밴딩을 제공하지만, 일부 플레이어나 후속 노드에서 지원되지 않을 수 있습니다."
+      },
       "fps": {
         "name": "fps"
       },
@@ -2789,6 +3012,98 @@
       },
       "1": {
         "name": "INDEX",
+        "tooltip": null
+      }
+    }
+  },
+  "DA3GeometryToMesh": {
+    "description": "깊이 맵을 삼각형 3D 메시로 변환합니다.",
+    "display_name": "DA3 지오메트리를 메시로 변환",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "변환할 배치 내 이미지 인덱스입니다. 이미지마다 버텍스 개수가 다르므로 배치를 쌓을 수 없습니다."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "이미지별 정규화된 신뢰도가 이 값보다 낮은 픽셀을 제외합니다 (0 = 모두 유지, 1 = 가장 신뢰도 높은 픽셀만 유지). 지오메트리에 신뢰도 맵이 있을 때 사용합니다 (Small/Base 모델)."
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "버텍스 간격입니다. 1 = 전체 해상도, 2 = 절반 해상도 등."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "3x3 깊이 범위가 이 비율을 초과하는 삼각형을 제거합니다. 0 = 비활성화."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "원본 이미지를 기본 색상 텍스처로 사용합니다."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "메시에서 하늘 확률 픽셀(하늘 >= 0.5)을 제외합니다. 지오메트리에 하늘 맵이 있을 때 사용합니다 (Mono/Metric 모델)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "이미지에서 Depth Anything 3을 실행합니다. 다중 뷰 모드에서는 각 이미지를 동일한 장면의 별도 뷰로 처리합니다.",
+    "display_name": "Depth Anything 3 실행",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: 단일 뷰 이미지(모든 모델 변형에서 사용 가능).\nmultiview: 모든 이미지를 기하학적 일관성 및 카메라 포즈를 위해 함께 처리(Small/Base 모델 전용)."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: 가장 긴 변이 resolution이 되도록 스케일(메모리 제한, 기본값).\nlower_bound_resize: 가장 짧은 변이 resolution이 되도록 스케일(세로/가로가 긴 이미지에서 더 많은 디테일 보존, 메모리 더 사용)."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "모델이 실행되는 해상도 (가장 긴 변, 14의 배수).\n낮을수록 빠르고 VRAM 사용량이 적음.\n높을수록 더 많은 디테일.\n출력은 원본 크기로 업샘플링됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "정규화되지 않은 텐서의 딕셔너리.\n항상 포함되는 키: depth, image, mode.\n선택적 키: sky(Mono/Metric), confidence(Small/Base), extrinsics + intrinsics(다중 뷰)."
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "Depth Anything 3 지오메트리 데이터에서 깊이 맵, 신뢰도 맵 또는 하늘 마스크를 렌더링합니다.",
+    "display_name": "Depth Anything 3 렌더",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: 정규화된 그레이스케일 깊이 이미지.\n- depth_colored: Turbo 컬러맵을 적용한 깊이.\n- sky_mask: [0, 1] 범위의 하늘 확률(Mono/Metric 모델 전용).\n- confidence: 정규화된 깊이 신뢰도(Small/Base 모델 전용)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2899,6 +3214,34 @@
       },
       "type": {
         "name": "유형"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "Dual Model CFG Guider",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "양수(조건부) 패스에 사용되는 모델입니다."
+      },
+      "model_negative": {
+        "name": "model_negative",
+        "tooltip": "음수(비조건부) 패스에 사용되는 모델입니다. 일반 CFG에는 동일한 모델을 사용하세요."
+      },
+      "negative": {
+        "name": "negative",
+        "tooltip": "음수 모델에서 실행되는 네거티브 컨디셔닝입니다. 연결하지 않으면 텍스트 없는(이미지 전용) 비조건부 패스가 됩니다."
+      },
+      "positive": {
+        "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3696,6 +4039,22 @@
       }
     }
   },
+  "File3DToSplat": {
+    "description": "splat File3D를 가우시안 splat으로 파싱합니다. Create 3D File (from Splat)의 역과정입니다. 지원 포맷: PLY, SPLAT, KSPLAT, SPZ. PLY는 완전한 구면 고조파를 포함하며, 다른 포맷은 기본 색상만 지원합니다. 포맷은 파일 내용에서 자동 감지됩니다.",
+    "display_name": "Splat 가져오기",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "가우시안 splat 3D 파일"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "FlipSigmas": {
     "display_name": "시그마 배열 뒤집기",
     "inputs": {
@@ -3837,6 +4196,35 @@
     "inputs": {
       "conditioning": {
         "name": "조건"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxEraseNode": {
+    "description": "이미지에서 마스킹된 객체를 제거하고 배경을 복원합니다. 지우고 싶은 부분에 마스크를 칠하세요.",
+    "display_name": "Flux 이미지 지우기",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "dilate_pixels": {
+        "name": "dilate_pixels",
+        "tooltip": "객체의 가장자리를 깨끗하게 덮기 위해 마스크 경계를 확장합니다."
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask",
+        "tooltip": "흰색 영역은 제거되고, 검은색 영역은 보존됩니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
       }
     },
     "outputs": {
@@ -4114,6 +4502,36 @@
       "seed": {
         "name": "시드",
         "tooltip": "노이즈 생성을 위한 랜덤 시드입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVTONode": {
+    "description": "가상 피팅: 제공된 의상을 인물 이미지에 입힙니다.",
+    "display_name": "Flux 가상 피팅",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "garment": {
+        "name": "garment",
+        "tooltip": "적용할 의상 이미지."
+      },
+      "person": {
+        "name": "person",
+        "tooltip": "의상을 입힐 인물 이미지."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "선택 사항: 자연어 스타일링 지시(예: 의상이 어떻게 맞아야 하는지 등)."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노이즈 생성을 위한 랜덤 시드."
       }
     },
     "outputs": {
@@ -4550,6 +4968,14 @@
       "system_prompt": {
         "name": "시스템 프롬프트",
         "tooltip": "AI의 동작을 지시하는 기본 지침입니다."
+      },
+      "temperature": {
+        "name": "temperature",
+        "tooltip": "생성의 무작위성을 제어합니다. 낮을수록 더 집중되고 결정적입니다."
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "누클리어스 샘플링 임계값입니다. 낮을수록 집중되고, 높을수록 다양성이 증가합니다."
       }
     },
     "outputs": {
@@ -4603,6 +5029,48 @@
       "video": {
         "name": "비디오",
         "tooltip": "모델의 컨텍스트로 사용할 선택적 비디오입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "Google의 Gemini 모델로 텍스트 응답을 생성합니다. 텍스트 프롬프트와 선택적으로 하나 이상의 이미지, 오디오 클립, 비디오 또는 파일을 멀티모달 컨텍스트로 제공합니다.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "응답 생성을 위해 사용되는 Gemini 모델입니다."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_temperature": {
+        "name": "temperature"
+      },
+      "model_thinking_level": {
+        "name": "thinking_level"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "모델에 입력할 텍스트입니다. 자세한 지침, 질문 또는 컨텍스트를 포함하세요."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "샘플링을 위한 시드입니다. 0으로 설정하면 랜덤 시드가 사용됩니다. 결정적 출력은 보장되지 않습니다."
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 동작을 지시하는 기본 지침입니다."
       }
     },
     "outputs": {
@@ -4716,6 +5184,25 @@
       }
     }
   },
+  "GetSplatCount": {
+    "description": "배치 전체에서 합산된 splat의 개수를 반환합니다.",
+    "display_name": "Splat 개수 가져오기",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "count",
+        "tooltip": null
+      }
+    }
+  },
   "GetVideoComponents": {
     "description": "비디오에서 모든 컴포넌트(프레임, 오디오, 프레임레이트)를 추출합니다.",
     "display_name": "비디오 컴포넌트 추출",
@@ -4736,6 +5223,10 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -4926,10 +5417,12 @@
         "tooltip": "출력 비디오의 길이(초)입니다."
       },
       "image": {
-        "name": "image"
+        "name": "image",
+        "tooltip": "grok-imagine-video의 선택적 시작 이미지입니다. grok-imagine-video-1.5에서는 필수입니다."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-video-1.5는 항상 입력 이미지를 필요로 합니다."
       },
       "prompt": {
         "name": "프롬프트",
@@ -5535,6 +6028,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Ideogram 4 스케줄러",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "std"
+      },
+      "steps": {
+        "name": "steps"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "Ideogram V1 모델을 사용하여 동기적으로 이미지를 생성합니다.\n\n이미지 링크는 제한된 기간 동안만 제공되며, 이미지를 보관하려면 반드시 다운로드해야 합니다.",
     "display_name": "Ideogram V1",
@@ -5671,6 +6189,34 @@
       },
       "seed": {
         "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "텍스트 프롬프트로 Ideogram 4.0 모델을 사용해 이미지를 생성합니다.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "이미지 생성을 위한 텍스트 프롬프트입니다."
+      },
+      "rendering_speed": {
+        "name": "렌더링 속도",
+        "tooltip": "생성 속도와 품질 간의 균형을 제어합니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -7488,7 +8034,8 @@
         "name": "생성 후 제어"
       },
       "generate_audio": {
-        "name": "오디오 생성"
+        "name": "오디오 생성",
+        "tooltip": "'kling-3.0-turbo'는 항상 기본 오디오를 생성하므로, 오디오 토글은 무시됩니다."
       },
       "model": {
         "name": "모델",
@@ -8567,6 +9114,22 @@
     "outputs": {
       "0": {
         "name": "bg_model",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "Depth Anything 3 불러오기",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9659,6 +10222,21 @@
       "0": {
         "name": "이미지",
         "tooltip": "처리된 이미지"
+      }
+    }
+  },
+  "MergeSplat": {
+    "description": "여러 개의 gaussian splat을 하나로 연결합니다. 동일한 latent를 서로 다른 시드로 여러 번 디코딩하여 합치면 표면이 더 조밀해져, 메시 품질이 향상될 수 있습니다.",
+    "display_name": "Splats 병합",
+    "inputs": {
+      "splats": {
+        "name": "splats"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },
@@ -13427,6 +14005,52 @@
       }
     }
   },
+  "Preview3DAdvanced": {
+    "display_name": "3D 미리보기 (고급)",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "업스트림 3D 노드에서 가져온 3D 모델 파일입니다."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_file",
+        "tooltip": null
+      },
+      "1": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewAny": {
     "display_name": "미리보기 아무거나",
     "inputs": {
@@ -13453,12 +14077,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "스플랫 미리보기",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "가우시안 스플랫 3D 파일입니다."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "description": "입력 이미지를 ComfyUI 의 임시(temp) 폴더에 저장합니다.",
     "display_name": "이미지 미리보기",
     "inputs": {
       "images": {
         "name": "이미지"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "포인트 클라우드 미리보기",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "포인트 클라우드 파일 (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -14415,6 +15131,66 @@
       }
     }
   },
+  "RenderSplat": {
+    "description": "이방성 EWA 래스터라이저(방향성 타원 splat, 앤티앨리어싱, 깊이 정렬 전면-후면)로 가우시안 splat을 이미지로 렌더링합니다. 카메라는 camera_info 입력(Load / Preview 3D 또는 Create Camera Info 노드)에서 가져옵니다. 비워두면 splat이 자동으로 프레이밍됩니다. 프레임을 1보다 크게 설정하면 Video 노드에 전달할 턴테이블 이미지 배치를 생성합니다.",
+    "display_name": "Render Splat",
+    "inputs": {
+      "background": {
+        "name": "background"
+      },
+      "bg_image": {
+        "name": "bg_image",
+        "tooltip": "선택적 배경 이미지를 splat 뒤에 합성합니다(단색 배경 색상보다 우선). 렌더 크기에 맞게 리사이즈됩니다; 배치는 프레임별로 사용, 단일 이미지는 전체에 사용. color/clay에서만 사용."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "렌더링에 사용할 카메라 - Load3D / Preview3D 카메라 또는 Create Camera Info 노드. 비워두면 기본 3/4 뷰에서 splat이 자동 프레이밍됩니다."
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "-1, 0, 1 = 단일 정지 이미지; >1 = 턴테이블, 카메라가 360도 회전(모든 camera_info에서 동작). 음수 값은 반대 방향으로 회전합니다."
+      },
+      "headlight_shading": {
+        "name": "headlight_shading",
+        "tooltip": "카메라(헤드라이트)에서 오는 조명으로 난반사 음영을 적용합니다. splat surfel 노멀을 사용하여, 시야에서 멀어지는 표면을 어둡게 하여 형태/곡률을 드러냅니다. 0 = 평면 알베도, 1 = 가장 강한 음영."
+      },
+      "height": {
+        "name": "height"
+      },
+      "opacity_threshold": {
+        "name": "opacity_threshold",
+        "tooltip": "이 값보다 불투명도가 낮은 가우시안을 제거합니다(희미한 부유물 제거)."
+      },
+      "render_style": {
+        "name": "render_style",
+        "tooltip": "이미지 출력에 표시할 내용: color, clay(중립 알베도 음영), depth(가까움=밝음), normal(OpenGL 노멀 맵)."
+      },
+      "sharpen": {
+        "name": "sharpen",
+        "tooltip": "겹치는 splat을 선명하게: 1.0 = 물리적으로 올바른 블렌드; 더 높은 값은 각 픽셀을 지배적인(가장 가까운) splat에 더 치우치게 하여 질감을 선명하게 하지만, splat을 줄이거나 틈을 만들지 않습니다. 1 이상은 비물리적입니다."
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "splat_scale": {
+        "name": "splat_scale",
+        "tooltip": "각 splat의 투영 면적에 곱하는 값(낮을수록 더 선명한 점, 높을수록 더 부드럽고 풍부한 표면)."
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -14649,6 +15425,10 @@
       "megapixels": {
         "name": "메가픽셀",
         "tooltip": "목표 총 메가픽셀. 1.0 MP ≈ 1024×1024 (정사각형 기준)."
+      },
+      "multiple": {
+        "name": "배수",
+        "tooltip": "선택한 해상도를 설정할 때 결과의 가장 가까운 배수입니다."
       }
     },
     "outputs": {
@@ -15084,6 +15864,98 @@
       }
     }
   },
+  "RunwayAleph2KeyframeNode": {
+    "description": "가이드 이미지를 입력(소스) 비디오의 특정 순간에 고정하여, Aleph2가 해당 시점에서 편집을 유도하도록 합니다. 이 노드를 Runway Aleph2 Video to Video 노드의 'keyframes' 입력에 연결하세요. 아래의 선택적 'keyframes' 입력을 통해 여러 개(최대 5개)를 연쇄 연결할 수 있습니다.",
+    "display_name": "Runway Aleph2 키프레임",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "입력 비디오의 선택한 순간에 적용할 가이드 이미지입니다."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "이전 키프레임을 이 키프레임과 연쇄 연결할 수 있습니다(선택 사항)."
+      },
+      "timing": {
+        "name": "timing",
+        "tooltip": "이 이미지를 입력 비디오 타임라인에 배치하는 방법입니다."
+      },
+      "timing_seconds": {
+        "name": "seconds"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "가이드 이미지를 출력(결과) 비디오의 특정 순간에 고정하여, 해당 시점의 편집된 비디오가 어떻게 보일지 안내합니다. 이 노드를 Runway Aleph2 Video to Video 노드의 'prompt_images' 입력에 연결하세요. 아래의 선택적 'prompt_images' 입력을 통해 여러 개(최대 5개)를 연쇄 연결할 수 있습니다.",
+    "display_name": "Runway Aleph2 프롬프트 이미지",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "출력 비디오의 선택한 순간에 배치할 가이드 이미지입니다."
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "이 이미지를 출력 비디오 타임라인에 배치하는 방법입니다."
+      },
+      "position_seconds": {
+        "name": "seconds"
+      },
+      "prompt_images": {
+        "name": "prompt_images",
+        "tooltip": "이전 프롬프트 이미지를 이 이미지와 연쇄 연결할 수 있습니다(선택 사항)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "prompt_images",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "Runway의 Aleph2 모델을 사용하여 텍스트 프롬프트로 비디오를 편집합니다. Aleph2는 원본의 움직임과 타이밍을 유지하면서 영상의 스타일 변경, 조명 변경, 요소 추가/제거, 시점 변경 등을 수행합니다. 출력 해상도는 입력 비디오와 동일하며, 입력 비디오는 2~30초, 30fps 이하만 지원됩니다. 선택적으로 키프레임(입력 비디오에 고정) 또는 프롬프트 이미지(출력 비디오에 고정) 중 하나로 편집을 조정할 수 있습니다. 두 가지를 동시에 사용할 수 없습니다.",
+    "display_name": "Runway Aleph2 비디오 투 비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "keyframes": {
+        "name": "키프레임",
+        "tooltip": "입력 비디오에 고정된 가이드 이미지로, Aleph2 Keyframe 노드에서 가져옵니다(최대 5개). 키프레임 또는 프롬프트 이미지 중 하나만 사용하세요."
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "출력에 나타나야 할 내용을 설명합니다. (1~1000자)"
+      },
+      "prompt_images": {
+        "name": "프롬프트 이미지",
+        "tooltip": "출력 비디오에 고정된 가이드 이미지로, Aleph2 Prompt Image 노드에서 가져옵니다(최대 5개). 키프레임 또는 프롬프트 이미지 중 하나만 사용하세요."
+      },
+      "public_figure_threshold": {
+        "name": "공인 임계값",
+        "tooltip": "식별 가능한 공인에 대한 콘텐츠 모더레이션."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "생성에 사용할 랜덤 시드"
+      },
+      "video": {
+        "name": "비디오",
+        "tooltip": "편집할 입력 비디오입니다. 2~30초, 30fps 이하만 지원됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RunwayFirstLastFrameNode": {
     "description": "첫 번째와 마지막 키프레임을 업로드하고 프롬프트를 작성하여 비디오를 생성합니다. 마지막 프레임이 첫 번째 프레임과 완전히 다른 경우와 같은 복잡한 전환은 10초의 긴 지속 시간을 사용하는 것이 좋습니다. 이렇게 하면 두 입력 사이를 부드럽게 전환할 수 있는 시간이 더 주어집니다. 시작하기 전에 입력 선택이 생성 성공을 보장할 수 있도록 다음 모범 사례를 검토하세요: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
     "display_name": "Runway 첫-마지막 프레임 비디오 변환",
@@ -15327,6 +16199,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "SCAIL-2 컬러 마스크 생성",
+    "inputs": {
+      "driving_track_data": {
+        "name": "driving_track_data",
+        "tooltip": "드라이빙 포즈 비디오의 SAM3 트랙. pose_video_mask 출력으로 렌더링됩니다."
+      },
+      "object_indices": {
+        "name": "object_indices",
+        "tooltip": "포함할 사람 인덱스의 쉼표로 구분된 목록(예: '0,2,3'). 참조 및 포즈 비디오 마스크 모두에 적용됩니다. 비워두면 전체 선택."
+      },
+      "ref_track_data": {
+        "name": "ref_track_data",
+        "tooltip": "참조 이미지의 SAM3 트랙."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "False = mask_video는 검정 배경(애니메이션 모드). True = 흰색 배경(대체 모드). WanSCAILToVideo에서 일치하는 replacement_mode를 설정하세요. reference_image_mask는 항상 검정 배경입니다."
+      },
+      "sort_by": {
+        "name": "sort_by",
+        "tooltip": "팔레트 색상이 트래킹된 객체에 할당되는 순서(참조 및 포즈 비디오 모두에 적용되어 각 아이덴티티가 동일한 색상을 유지). left_to_right = 첫 프레임 중심 기준 가장 왼쪽 객체가 첫 번째 색상; area = 첫 프레임 마스크 면적 기준 가장 큰 객체가 첫 번째 색상; none = SAM3의 순서 유지."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -15341,6 +16248,9 @@
       },
       "draw_hands": {
         "name": "draw_hands"
+      },
+      "draw_head": {
+        "name": "머리 그리기"
       },
       "face_point_size": {
         "name": "face_point_size"
@@ -16054,6 +16964,27 @@
       }
     }
   },
+  "SaveAudioAdvanced": {
+    "description": "입력된 오디오를 ComfyUI 출력 디렉터리에 저장합니다.",
+    "display_name": "오디오 저장 (고급)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "저장할 오디오입니다."
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "저장할 파일의 접두사입니다. %date:yyyy-MM-dd%와 같은 포맷 토큰을 포함할 수 있습니다."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "오디오를 저장할 파일 형식입니다."
+      }
+    }
+  },
   "SaveAudioMP3": {
     "display_name": "오디오 저장 (MP3)",
     "inputs": {
@@ -16299,7 +17230,8 @@
         "name": "fps"
       },
       "images": {
-        "name": "이미지"
+        "name": "이미지",
+        "tooltip": "RGBA 이미지는 알파 채널이 투명도로 저장됩니다(vp9 코덱만 지원)."
       }
     }
   },
@@ -16681,6 +17613,68 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToFile3D": {
+    "description": "가우시안 splat을 File3D 객체로 직렬화하여 Save / Preview 3D 노드에서 사용할 수 있습니다. 배치당 한 항목만 지원합니다.",
+    "display_name": "3D 파일 생성(splat에서)",
+    "inputs": {
+      "format": {
+        "name": "format",
+        "tooltip": "ply: 표준 3D Gaussian Splat(완전한 구면 고조파 포함). ksplat: mkkellogg SplatBuffer(레벨 0, 비압축), 기본 색상만. spz: Niantic gzip 압축(~10배 더 작음), 기본 색상만."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToMesh": {
+    "description": "가우시안 splat에서 컬러 메시를 추출합니다.",
+    "display_name": "Splat에서 메시 추출",
+    "inputs": {
+      "color_sharpen": {
+        "name": "컬러 샤프닝",
+        "tooltip": "버텍스 텍스처를 선명하게 만듭니다: 1.0 = 물리적으로 올바른 블렌드; 더 높게 하면 각 voxel의 색상이 이웃 평균 대신 지배적인 가우시안 쪽으로 치우쳐집니다(텍스처 번짐 방지). 색상만 변경되며, 기하학은 변하지 않습니다."
+      },
+      "kernel": {
+        "name": "커널",
+        "tooltip": "voxel 단위의 최대 splat 반너비입니다. 각 가우시안은 자신의 3-시그마 크기만큼의 윈도우에 래스터화되며, 여기서 제한됩니다. 작은 surfel은 저렴하게 유지되고, 큰 surfel은 잘리지 않습니다. splat이 드물어 빈 공간이 생기면 값을 높이세요."
+      },
+      "level": {
+        "name": "레벨",
+        "tooltip": "Iso-surface 레벨입니다. Otsu로 자동 선택되며, 이 값으로 조정할 수 있습니다(1.0 = 자동, 낮을수록 표면이 두껍고 더 연결됨, 높을수록 얇고 더 조여짐)."
+      },
+      "min_component": {
+        "name": "최소 컴포넌트",
+        "tooltip": "이 값보다 작은 꼭짓점 개수의 연결 컴포넌트는 제거합니다(0 = 모두 유지). 분리된 플로터 블롭과 이중 벽의 내부 셸을 제거합니다."
+      },
+      "min_opacity": {
+        "name": "최소 불투명도",
+        "tooltip": "메시 생성 전에 이 값보다 약한 가우시안은 무시합니다."
+      },
+      "resolution": {
+        "name": "해상도",
+        "tooltip": "가장 긴 축을 따라 밀도 그리드 해상도입니다. 높을수록 표면이 더 정밀해지며, VRAM/시간이 더 많이 소모됩니다(해상도^3에 비례)."
+      },
+      "smooth": {
+        "name": "스무스",
+        "tooltip": "Taubin 메시 스무딩 반복 횟수입니다. 표면을 줄이지 않고(부피 보존) 부드럽게 만듭니다. 밀도를 블러 처리하는 것과 다릅니다. 0 = 원본 표면."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "mesh",
         "tooltip": null
       }
     }
@@ -17817,6 +18811,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "편집할 참조 이미지입니다. Boogu는 샘플당 하나의 참조 이미지를 중점적으로 사용하지만, 여러 개도 허용됩니다."
+      },
+      "negative_prompt": {
+        "name": "네거티브 프롬프트"
+      },
+      "prompt": {
+        "name": "프롬프트"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "HunyuanVideo 텍스트 인코딩 (이미지 → 비디오)",
     "inputs": {
@@ -18383,6 +19408,48 @@
       }
     }
   },
+  "TransformSplat": {
+    "description": "가우시안 splat을 이동, 회전, 스케일합니다. 비균일 스케일은 각 splat의 형태도 변경하며, 처리 속도가 느려집니다.",
+    "display_name": "Splat 변환",
+    "inputs": {
+      "rotate_x": {
+        "name": "회전_x"
+      },
+      "rotate_y": {
+        "name": "회전_y"
+      },
+      "rotate_z": {
+        "name": "회전_z"
+      },
+      "scale_x": {
+        "name": "스케일_x"
+      },
+      "scale_y": {
+        "name": "스케일_y"
+      },
+      "scale_z": {
+        "name": "스케일_z"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "translate_x": {
+        "name": "이동_x"
+      },
+      "translate_y": {
+        "name": "이동_y"
+      },
+      "translate_z": {
+        "name": "이동_z"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "TrimAudioDuration": {
     "description": "오디오 텐서를 선택한 시간 범위로 자릅니다.",
     "display_name": "오디오 길이 자르기",
@@ -18558,6 +19625,22 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoImportModelNode": {
+    "description": "외부 3D 모델(예: Rodin, Hunyuan3D 또는 로컬 파일)을 Tripo로 가져와 Tripo의 후처리 노드(Texture, Rig, Convert)와 함께 사용할 수 있습니다. GLB 형식을 권장합니다: 텍스처가 파일에 임베드되어 있을 때만 가져오기가 가능합니다. 가져온 모델에 텍스처를 적용하려면 텍스처 프롬프트가 필요합니다.",
+    "display_name": "Tripo: Import Model",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "가져올 3D 모델(GLB / FBX / OBJ / STL, 최대 150MB). OBJ와 STL 파일은 임베드된 텍스처를 포함하지 않습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
         "tooltip": null
       }
     }
@@ -18862,6 +19945,101 @@
       }
     }
   },
+  "TripoSplatConditioning": {
+    "description": "이미지를 DINOv3와 Flux2 VAE로 인코딩하여 TripoSplat의 positive/negative 컨디셔닝을 생성하고, KSampler를 위한 고정 크기 노이즈 타겟(latent + 카메라)을 만듭니다.",
+    "display_name": "TripoSplat 컨디셔닝",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision",
+        "tooltip": "DINOv3 ViT-H/16+ 이미지 인코더"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Flux2 VAE"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "고정 크기 노이즈 타겟(latent + 카메라)."
+      }
+    }
+  },
+  "TripoSplatPreprocessImage": {
+    "description": "각 이미지를 중앙에서 정사각형 캔버스로 자르고 검은색 배경에 패딩을 추가합니다.",
+    "display_name": "TripoSplat 전처리 이미지",
+    "inputs": {
+      "erode_radius": {
+        "name": "erode_radius",
+        "tooltip": "자르기 전에 알파 매트를 이 픽셀 반경만큼 침식합니다(테두리 번짐 방지)."
+      },
+      "image": {
+        "name": "image"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "size": {
+        "name": "size",
+        "tooltip": "정사각형 이미지 크기. 모델은 1024로 학습되었습니다. 다른 크기도 실행 가능하지만 분포에서 벗어날 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "image",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatSamplingPreview": {
+    "description": "표준 Ksampler 노드에 TripoSplat 모델을 패치하여 각 단계에서 실시간 디코딩된 가우시안 splat 미리보기를 표시합니다.",
+    "display_name": "TripoSplat 샘플링 미리보기",
+    "inputs": {
+      "model": {
+        "name": "model"
+      },
+      "num_gaussians": {
+        "name": "num_gaussians",
+        "tooltip": "미리보기를 위해 생성할 가우시안 개수(32의 배수로 반올림)."
+      },
+      "octree_level": {
+        "name": "octree_level",
+        "tooltip": "미리보기 디코드용 옥트리 깊이(낮을수록 저렴/거침)."
+      },
+      "pitch": {
+        "name": "pitch",
+        "tooltip": "미리보기 카메라의 pitch(도 단위)."
+      },
+      "point_size": {
+        "name": "point_size",
+        "tooltip": "최대 splat 반지름(픽셀 단위). 각 가우시안은 스케일에 따라 크기가 정해지며 여기서 제한됩니다. 낮을수록 더 세밀/뾰족, 높을수록 더 두껍게 표시됩니다."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAE 디코더"
+      },
+      "yaw": {
+        "name": "yaw",
+        "tooltip": "미리보기 카메라의 yaw(도 단위)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TripoTextToModelNode": {
     "display_name": "Tripo: 텍스트에서 모델 생성",
     "inputs": {
@@ -18934,6 +20112,10 @@
       },
       "texture_alignment": {
         "name": "텍스처 정렬"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "텍스처링을 위한 선택적 텍스트 가이드입니다. 가져온 모델(Tripo: Import Model)의 경우 실제로 필요하며, 색상을 추론할 소스 이미지가 없기 때문입니다."
       },
       "texture_quality": {
         "name": "텍스처 품질"
@@ -19190,6 +20372,36 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTripoSplat": {
+    "description": "샘플링된 TripoSplat latent를 3D 가우시안 splat으로 디코딩합니다. 가우시안 개수를 조절하여 밀도를 변경할 수 있습니다.",
+    "display_name": "TripoSplat 디코드",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "num_gaussians": {
+        "name": "num_gaussians",
+        "tooltip": "생성할 가우시안 개수(32의 배수로 반올림). 262144는 옥트리의 포인트 밀도와 일치합니다. 더 높게 설정하면 같은 포인트를 더 많이 샘플링(더 조밀하지만 새로운 디테일 없음)하며 VRAM/시간이 비례해 증가합니다."
+      },
+      "samples": {
+        "name": "samples"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "옥트리 포인트 샘플러(글로벌 RNG)에 시드를 부여하여 디코드를 결정적으로 만듭니다."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "TripoSplat VAE 디코더"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },
@@ -21510,7 +22722,8 @@
         "name": "배치 크기"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "조건부를 위한 CLIP 비전 특징입니다. stretch resize로 종횡비에 맞춰 학습되었습니다."
       },
       "height": {
         "name": "높이"
@@ -21537,14 +22750,39 @@
         "name": "포즈 비디오",
         "tooltip": "포즈 컨디셔닝에 사용되는 비디오입니다. 메인 비디오 해상도의 절반으로 다운스케일됩니다."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "SCAIL-2 전용. pose_video와 동일 해상도의 신원별 색상 SAM3 마스크 비디오입니다."
+      },
       "positive": {
         "name": "positive"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "이전 프레임의 마지막 프레임 수를 기준점으로 사용합니다. SCAIL-2는 5(81프레임 청크, 76프레임 스텝)로 학습되었습니다."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "SCAIL-2 전용. 이전 청크의 전체 디코딩 출력입니다. 마지막 previous_frame_count만 확장 기준점으로 사용됩니다."
+      },
       "reference_image": {
-        "name": "참조 이미지"
+        "name": "참조 이미지",
+        "tooltip": "참조 이미지입니다. 여러 참조가 있을 경우 하나의 이미지에 모두 합성하세요."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "SCAIL-2 전용. reference_image와 동일 해상도의 색상 참조 마스크입니다."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "SCAIL-2 전용. 거짓 = 애니메이션 모드(pose_video_mask는 검은색 배경이어야 함). 참 = 교체 모드(pose_video_mask는 흰색 배경이어야 함)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "이 청크가 시작하는 누적 출력 프레임입니다. 이전 청크의 video_frame_offset 출력에서 연결하세요."
       },
       "width": {
         "name": "너비"
@@ -21562,6 +22800,10 @@
       "2": {
         "name": "latent",
         "tooltip": "생성 크기의 빈 latent입니다."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "조정된 오프셋 + 길이. 다음 청크에 연결하세요."
       }
     }
   },

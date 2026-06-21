@@ -113,7 +113,7 @@ import type { IBaseWidget, TWidgetValue } from './types/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getAllNestedItems } from './utils/collections'
 import { resolveConnectingLinkColor } from './utils/linkColors'
-import { createUuidv4 } from './utils/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 import { BaseWidget } from './widgets/BaseWidget'
 import { toConcreteWidget } from './widgets/widgetMap'
 
@@ -6155,10 +6155,25 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       if (!this.pointer.isDown) reroute.drawSlots(ctx)
     }
 
-    const highlightPos = this._getHighlightPosition()
-    this.linkConnector.renderLinks
-      .filter((rl) => rl instanceof MovingInputLink)
-      .forEach((rl) => rl.drawConnectionCircle(ctx, highlightPos))
+    this.linkConnector.renderLinks.forEach((link: RenderLink) => {
+      if (!link.disconnectOnDrop || !link.disconnectOrigin) return
+
+      const [originX, originY] = link.disconnectOrigin
+      const radius = 35
+      const to = this._getHighlightPosition()
+      const distSquared = (originX - to[0]) ** 2 + (originY - to[1]) ** 2
+
+      ctx.save()
+      ctx.strokeStyle = LiteGraph.WIDGET_OUTLINE_COLOR
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(originX + radius, originY)
+      ctx.arc(originX, originY, radius, 0, Math.PI * 2)
+      ctx.stroke()
+      ctx.restore()
+
+      link.disconnectOnDrop = distSquared < radius ** 2
+    })
 
     ctx.globalAlpha = 1
   }
@@ -8916,71 +8931,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
   }
 
-  /**
-   * Collect all nodes that are children of groups in the selection
-   */
-  private collectNodesInGroups(items: Set<Positionable>): Set<LGraphNode> {
-    const nodesInGroups = new Set<LGraphNode>()
-    for (const item of items) {
-      if (item instanceof LGraphGroup) {
-        for (const child of item._children) {
-          if (child instanceof LGraphNode) {
-            nodesInGroups.add(child)
-          }
-        }
-      }
-    }
-    return nodesInGroups
-  }
-
-  /**
-   * Move group children (both nodes and non-nodes)
-   */
-  private moveGroupChildren(
-    group: LGraphGroup,
-    deltaX: number,
-    deltaY: number,
-    nodesToMove: Array<{ node: LGraphNode; newPos: { x: number; y: number } }>
-  ): void {
-    for (const child of group._children) {
-      if (child instanceof LGraphNode) {
-        const node = child as LGraphNode
-        nodesToMove.push({
-          node,
-          newPos: this.calculateNewPosition(node, deltaX, deltaY)
-        })
-      } else if (!(child instanceof LGraphGroup)) {
-        // Non-node, non-group children (reroutes, etc.)
-        // Skip groups here - they're already in allItems and will be
-        // processed in the main loop of moveChildNodesInGroupVueMode
-        child.move(deltaX, deltaY, true)
-      }
-    }
-  }
-
   moveChildNodesInGroupVueMode(
     allItems: Set<Positionable>,
     deltaX: number,
     deltaY: number
   ) {
-    const nodesInMovingGroups = this.collectNodesInGroups(allItems)
     const nodesToMove: NewNodePosition[] = []
 
     // First, collect all the moves we need to make
     for (const item of allItems) {
-      const isNode = item instanceof LGraphNode
-      if (isNode) {
-        const node = item as LGraphNode
-        if (nodesInMovingGroups.has(node)) {
-          continue
-        }
+      if (item instanceof LGraphNode) {
         nodesToMove.push({
-          node,
-          newPos: this.calculateNewPosition(node, deltaX, deltaY)
+          node: item,
+          newPos: this.calculateNewPosition(item, deltaX, deltaY)
         })
-      } else if (item instanceof LGraphGroup) {
-        item.move(deltaX, deltaY, true)
-        this.moveGroupChildren(item, deltaX, deltaY, nodesToMove)
       } else {
         // Other items (reroutes, etc.)
         item.move(deltaX, deltaY, true)

@@ -5,7 +5,7 @@ import { z } from 'zod'
 const zAsset = z.object({
   id: z.string(),
   name: z.string(),
-  asset_hash: z.string().nullish(),
+  hash: z.string().nullish(),
   size: z.number().optional(), // TBD: Will be provided by history API in the future
   mime_type: z.string().nullish(),
   tags: z.array(z.string()).optional().default([]),
@@ -22,7 +22,7 @@ const zAsset = z.object({
 })
 
 const zAssetResponse = zListAssetsResponse
-  .pick({ total: true, has_more: true })
+  .pick({ total: true, has_more: true, next_cursor: true })
   .extend({
     assets: z.array(zAsset)
   })

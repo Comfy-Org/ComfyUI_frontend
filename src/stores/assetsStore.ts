@@ -347,13 +347,14 @@ export const useAssetsStore = defineStore('assets', () => {
 
   /**
    * Map of asset hash filename to asset item for O(1) lookup
-   * Cloud assets use asset_hash for the hash-based filename
+   * Cloud assets use hash for the hash-based filename
    */
   const inputAssetsByFilename = computed(() => {
     const map = new Map<string, AssetItem>()
     for (const asset of inputAssets.value) {
-      if (asset.asset_hash) {
-        map.set(asset.asset_hash, asset)
+      const hash = asset.hash
+      if (hash) {
+        map.set(hash, asset)
       }
     }
     return map

@@ -4,6 +4,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const DIALOG_KEY = 'subscription-required'
@@ -20,6 +21,7 @@ export const useSubscriptionDialog = () => {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const workspaceStore = useTeamWorkspaceStore()
+  const { permissions } = useWorkspaceUI()
   const { isFreeTier } = useSubscription()
 
   function hide() {
@@ -29,6 +31,31 @@ export const useSubscriptionDialog = () => {
 
   function showPricingTable(options?: { reason?: SubscriptionDialogReason }) {
     if (!isCloud) return
+
+    // Members can't manage the workspace subscription, so a blocked run shows a
+    // small read-only "ask your owner to reactivate" modal instead of the
+    // pricing table. Out-of-credits still routes everyone to the credits flow.
+    if (
+      flags.teamWorkspacesEnabled &&
+      !workspaceStore.isInPersonalWorkspace &&
+      !permissions.value.canManageSubscription &&
+      options?.reason !== 'out_of_credits'
+    ) {
+      dialogService.showLayoutDialog({
+        key: DIALOG_KEY,
+        component: defineAsyncComponent(
+          () =>
+            import('@/platform/workspace/components/SubscriptionInactiveMemberDialog.vue')
+        ),
+        props: { onClose: hide },
+        dialogComponentProps: {
+          renderer: 'reka',
+          contentClass:
+            'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
+        }
+      })
+      return
+    }
 
     const useWorkspaceVariant =
       flags.teamWorkspacesEnabled && !workspaceStore.isInPersonalWorkspace
@@ -58,16 +85,14 @@ export const useSubscriptionDialog = () => {
       component,
       props: useWorkspaceVariant ? workspaceProps : personalProps,
       dialogComponentProps: {
-        style: 'width: min(1328px, 95vw); max-height: 958px;',
-        pt: {
-          root: {
-            class: 'rounded-2xl bg-transparent h-full'
-          },
-          content: {
-            class:
-              '!p-0 rounded-2xl border border-border-default bg-base-background/60 backdrop-blur-md shadow-[0_25px_80px_rgba(5,6,12,0.45)] h-full'
-          }
-        }
+        renderer: 'reka',
+        size: 'full',
+        // The pricing tables host a PrimeVue Popover teleported to body.
+        // Reka's modal mode traps focus and disables body pointer-events,
+        // making the popover unclickable. Mirrors Settings/Manager.
+        modal: false,
+        contentClass:
+          'w-[min(1328px,95vw)] max-w-[min(1328px,95vw)] sm:max-w-[min(1328px,95vw)] h-full max-h-[958px] overflow-hidden rounded-2xl border-border-default bg-base-background/60 shadow-[0_25px_80px_rgba(5,6,12,0.45)] backdrop-blur-md'
       }
     })
   }
@@ -91,16 +116,10 @@ export const useSubscriptionDialog = () => {
           }
         },
         dialogComponentProps: {
-          style: 'width: min(640px, 95vw);',
-          pt: {
-            root: {
-              class: 'rounded-2xl bg-transparent'
-            },
-            content: {
-              class:
-                '!p-0 rounded-2xl border border-border-default bg-base-background/60 backdrop-blur-md shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
-            }
-          }
+          renderer: 'reka',
+          size: 'full',
+          contentClass:
+            'w-[min(640px,95vw)] max-w-[min(640px,95vw)] sm:max-w-[min(640px,95vw)] overflow-hidden rounded-2xl border-border-default bg-base-background/60 shadow-[0_25px_80px_rgba(5,6,12,0.45)] backdrop-blur-md'
         }
       })
       return

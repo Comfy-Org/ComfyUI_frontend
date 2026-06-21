@@ -468,6 +468,62 @@
       }
     }
   },
+  "BerniniConditioning": {
+    "description": "Nó de condicionamento para Bernini em condicionamento de vídeo/imagem em contexto. Pode ser usado para as seguintes tarefas: t2v (texto para vídeo), v2v (vídeo para vídeo), rv2v (edição de vídeo guiada por referência), r2v (referência para vídeo), ads2v (inserir imagem/vídeo em vídeo). Imagens de referência injetadas como tokens em contexto (r2v, rv2v) são codificadas independentemente em sua própria proporção nativa (borda longa limitada por ref_max_size)",
+    "display_name": "Bernini Conditioning",
+    "inputs": {
+      "batch_size": {
+        "name": "tamanho_do_lote"
+      },
+      "height": {
+        "name": "altura"
+      },
+      "length": {
+        "name": "duração"
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "positive": {
+        "name": "positivo"
+      },
+      "ref_max_size": {
+        "name": "ref_max_size",
+        "tooltip": "Tamanho máximo para a borda longa de reference_video e reference_images. Redimensionado mantendo a proporção e ajustado para múltiplos de 16px."
+      },
+      "reference_images": {
+        "name": "imagens_referência"
+      },
+      "reference_video": {
+        "name": "vídeo_referência",
+        "tooltip": "Vídeo a ser inserido no vídeo fonte (ads2v)."
+      },
+      "source_video": {
+        "name": "vídeo_fonte",
+        "tooltip": "Vídeo fonte para editar ou estilizar (v2v, rv2v). Redimensionado para largura/altura e cortado para a duração."
+      },
+      "vae": {
+        "name": "vae"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "BetaSamplingScheduler": {
     "display_name": "Agendador de Amostragem Beta",
     "inputs": {
@@ -585,6 +641,87 @@
       },
       "video": {
         "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaTransparentVideoBackground": {
+    "description": "Remove o fundo de um vídeo usando Bria e retorna os frames recortados mais uma máscara alfa. Conecte ambos a um nó de composição ou envie-os para Salvar WEBM para gerar um vídeo transparente.",
+    "display_name": "Bria Remover Fundo de Vídeo (Transparente)",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagens",
+        "tooltip": null
+      },
+      "1": {
+        "name": "máscara",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoGreenScreen": {
+    "description": "Substitua o fundo de um vídeo por uma tela sólida de chroma key usando Bria.",
+    "display_name": "Bria Video Green Screen",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "green_shade": {
+        "name": "tom_de_verde",
+        "tooltip": "Tom sólido de chroma key aplicado atrás do primeiro plano: broadcast_green (#00B140), chroma_green (#00FF00) ou blue_screen (#0000FF)."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoReplaceBackground": {
+    "description": "Substitua o fundo de um vídeo por uma imagem ou vídeo fornecido usando Bria. A saída mantém a resolução e taxa de quadros do primeiro plano; um fundo com proporção diferente será esticado para encaixar, então combine as proporções para evitar distorções.",
+    "display_name": "Bria Video Substituir Fundo",
+    "inputs": {
+      "background_image": {
+        "name": "imagem_de_fundo",
+        "tooltip": "Imagem de fundo para compor atrás do primeiro plano. Forneça uma imagem de fundo ou um vídeo de fundo, não ambos."
+      },
+      "background_video": {
+        "name": "vídeo_de_fundo",
+        "tooltip": "Vídeo de fundo para compor atrás do primeiro plano. Forneça uma imagem de fundo ou um vídeo de fundo, não ambos."
+      },
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo de primeiro plano cujo fundo será substituído."
       }
     },
     "outputs": {
@@ -1212,6 +1349,29 @@
       }
     }
   },
+  "CFGOverride": {
+    "description": "Substitua o cfg por um valor fixo em um intervalo de [início, fim] por cento dos passos. Com múltiplas substituições, a mais próxima do sampler prevalece em caso de sobreposição.",
+    "display_name": "Substituir CFG",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "end_percent": {
+        "name": "percentual_final"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "start_percent": {
+        "name": "percentual_inicial"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CFGZeroStar": {
     "display_name": "CFGZeroStar",
     "inputs": {
@@ -1721,6 +1881,10 @@
         "name": "end_sigma",
         "tooltip": "Último sigma em que essas opções estarão em vigor."
       },
+      "force_sequential_txt_ids": {
+        "name": "force_sequential_txt_ids",
+        "tooltip": "Forçar o uso de IDs de tokens de texto sequenciais em vez de zeros. Deve ser usado para checkpoints de 22/05/2026 a 01/06/2026 que foram treinados dessa forma, mas não contêm a chave __sequential__ no state dict."
+      },
       "model": {
         "name": "model"
       },
@@ -1797,6 +1961,10 @@
     "outputs": {
       "0": {
         "name": "rgb_int",
+        "tooltip": null
+      },
+      "1": {
+        "name": "hex",
         "tooltip": null
       }
     }
@@ -2523,6 +2691,57 @@
       }
     }
   },
+  "CreateCameraInfo": {
+    "description": "Constrói um camera_info. O modo 'orbit' mira com yaw/pitch/distância ao redor do alvo; 'look_at' posiciona a câmera em uma posição no mundo. As coordenadas estão no espaço mundial do visualizador (mão direita, Y para cima).",
+    "display_name": "Criar Informações da Câmera",
+    "inputs": {
+      "camera_type": {
+        "name": "tipo_de_câmera",
+        "tooltip": "Projeção usada pelo Render Splat: perspectiva (com profundidade) ou ortográfica (paralela)."
+      },
+      "fov": {
+        "name": "fov",
+        "tooltip": "Campo de visão vertical em graus."
+      },
+      "mode": {
+        "name": "modo",
+        "tooltip": "Como definir a câmera: ângulos de órbita, uma posição explícita ou uma posição + quaternion."
+      },
+      "mode_distance": {
+        "name": "distância"
+      },
+      "mode_pitch": {
+        "name": "pitch"
+      },
+      "mode_yaw": {
+        "name": "yaw"
+      },
+      "roll": {
+        "name": "rolagem",
+        "tooltip": "Rolagem da câmera sobre o eixo de visão, em graus."
+      },
+      "target_x": {
+        "name": "alvo_x",
+        "tooltip": "Ponto de foco (pivô/objetivo da órbita). No modo órbita, mova para transladar toda a câmera. Ignorado no modo quaternion. Padrão é a origem."
+      },
+      "target_y": {
+        "name": "alvo_y"
+      },
+      "target_z": {
+        "name": "alvo_z"
+      },
+      "zoom": {
+        "name": "zoom",
+        "tooltip": "Zoom digital (multiplicador da distância focal). >1 aproxima sem mover a câmera."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      }
+    }
+  },
   "CreateHookKeyframe": {
     "display_name": "Criar Quadro-chave de Gancho",
     "inputs": {
@@ -2685,6 +2904,10 @@
         "name": "áudio",
         "tooltip": "O áudio a ser adicionado ao vídeo."
       },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "Profundidade de bits do vídeo criado. 10 bits mantém gradientes mais suaves com menos faixas, mas alguns players e nós subsequentes podem não suportar."
+      },
       "fps": {
         "name": "fps"
       },
@@ -2789,6 +3012,98 @@
       },
       "1": {
         "name": "ÍNDICE",
+        "tooltip": null
+      }
+    }
+  },
+  "DA3GeometryToMesh": {
+    "description": "Converta um mapa de profundidade em uma malha 3D triangulada.",
+    "display_name": "Converter Geometria DA3 para Malha",
+    "inputs": {
+      "batch_index": {
+        "name": "batch_index",
+        "tooltip": "Qual imagem de um lote converter. A contagem de vértices por imagem difere, então os lotes não podem ser empilhados."
+      },
+      "confidence_threshold": {
+        "name": "confidence_threshold",
+        "tooltip": "Excluir pixels cuja confiança normalizada por imagem esteja abaixo deste valor (0 = manter todos, 1 = manter apenas o pixel mais confiável). Usado quando a geometria possui um mapa de confiança (modelos Small/Base)."
+      },
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "decimation": {
+        "name": "decimation",
+        "tooltip": "Intervalo de vértices. 1 = resolução total, 2 = metade, etc."
+      },
+      "discontinuity_threshold": {
+        "name": "discontinuity_threshold",
+        "tooltip": "Descartar triângulos cuja variação de profundidade em 3x3 exceda essa fração. 0 = desativado."
+      },
+      "texture": {
+        "name": "texture",
+        "tooltip": "Usar a imagem de origem como textura de cor base."
+      },
+      "use_sky_mask": {
+        "name": "use_sky_mask",
+        "tooltip": "Excluir pixels com alta probabilidade de céu (sky >= 0.5) da malha. Usado quando a geometria possui um mapa de céu (modelos Mono/Metric)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "DA3Inference": {
+    "description": "Execute o Depth Anything 3 em uma imagem. No modo multiview, cada imagem é tratada como uma visão separada da mesma cena.",
+    "display_name": "Executar Depth Anything 3",
+    "inputs": {
+      "da3_model": {
+        "name": "da3_model"
+      },
+      "image": {
+        "name": "image"
+      },
+      "mode": {
+        "name": "mode",
+        "tooltip": "mono: imagem de visão única (funciona com qualquer variante do modelo).\nmultiview: todas as imagens processadas juntas para consistência geométrica + pose da câmera (apenas para modelos Small/Base)."
+      },
+      "resize_method": {
+        "name": "resize_method",
+        "tooltip": "upper_bound_resize: escala para que o lado mais longo = resolução (limita a memória, padrão).\nlower_bound_resize: escala para que o lado mais curto = resolução (preserva mais detalhes em imagens altas/largas, usa mais memória)."
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Resolução em que o modelo será executado (lado mais longo, múltiplo de 14).\nMenor = mais rápido / menos VRAM.\nMaior = mais detalhes.\nA saída é redimensionada de volta ao tamanho original."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "da3_geometry",
+        "tooltip": "Dicionário de tensores não normalizados.\nSempre possui as chaves: depth, image, mode.\nChaves opcionais: sky (para Mono/Metric), confidence (para Small/Base), extrinsics + intrinsics (para multi-view)."
+      }
+    }
+  },
+  "DA3Render": {
+    "description": "Renderize um mapa de profundidade, mapa de confiança ou máscara de céu a partir dos dados de geometria do Depth Anything 3.",
+    "display_name": "Renderizar Depth Anything 3",
+    "inputs": {
+      "da3_geometry": {
+        "name": "da3_geometry"
+      },
+      "output": {
+        "name": "output",
+        "tooltip": "- depth: imagem de profundidade em escala de cinza normalizada.\n- depth_colored: profundidade mapeada pela colormap Turbo.\n- sky_mask: probabilidade de céu em [0, 1] (apenas para modelos Mono/Metric).\n- confidence: confiança de profundidade normalizada (apenas para modelos Small/Base)."
+      },
+      "output_apply_sky_clip": {
+        "name": "apply_sky_clip"
+      },
+      "output_normalization": {
+        "name": "normalization"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -2899,6 +3214,34 @@
       },
       "type": {
         "name": "tipo"
+      }
+    }
+  },
+  "DualModelGuider": {
+    "display_name": "Orientador CFG de Dois Modelos",
+    "inputs": {
+      "cfg": {
+        "name": "cfg"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo usado para a passagem positiva (condicional)."
+      },
+      "model_negative": {
+        "name": "modelo_negativo",
+        "tooltip": "Modelo usado para a passagem negativa (incondicional). Use o mesmo modelo para CFG comum."
+      },
+      "negative": {
+        "name": "negativo",
+        "tooltip": "Condicionamento negativo executado no modelo negativo. Deixe desconectado para uma passagem incondicional sem texto (apenas imagem)."
+      },
+      "positive": {
+        "name": "positivo"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -3696,6 +4039,22 @@
       }
     }
   },
+  "File3DToSplat": {
+    "description": "Converte um arquivo File3D splat em um gaussian splat. Inverso de Criar Arquivo 3D (a partir de Splat). Formatos suportados: PLY, SPLAT, KSPLAT, SPZ. PLY contém harmônicos esféricos completos, os outros formatos apenas cor base. O formato é detectado automaticamente pelo conteúdo do arquivo.",
+    "display_name": "Obter Splat",
+    "inputs": {
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Um arquivo 3D gaussian splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "FlipSigmas": {
     "display_name": "FlipSigmas",
     "inputs": {
@@ -3837,6 +4196,35 @@
     "inputs": {
       "conditioning": {
         "name": "condicionamento"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxEraseNode": {
+    "description": "Remove o objeto mascarado de uma imagem e reconstrói o fundo. Pinte a máscara sobre o que deseja apagar.",
+    "display_name": "Flux Apagar Imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "dilate_pixels": {
+        "name": "dilatar_pixels",
+        "tooltip": "Expande os limites da máscara para garantir cobertura limpa das bordas do objeto."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "mask": {
+        "name": "máscara",
+        "tooltip": "Áreas brancas são removidas; áreas pretas são preservadas."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente aleatória usada para criar o ruído."
       }
     },
     "outputs": {
@@ -4114,6 +4502,36 @@
       "seed": {
         "name": "seed",
         "tooltip": "A seed aleatória usada para criar o ruído."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVTONode": {
+    "description": "Prova virtual: veste a pessoa com a peça de roupa fornecida.",
+    "display_name": "Flux Prova Virtual de Roupas",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "garment": {
+        "name": "roupa",
+        "tooltip": "Imagem da peça de roupa a ser aplicada."
+      },
+      "person": {
+        "name": "pessoa",
+        "tooltip": "Imagem da pessoa a ser vestida."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Instrução opcional de estilo em linguagem natural (ex: como a roupa deve se ajustar)."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente aleatória usada para criar o ruído."
       }
     },
     "outputs": {
@@ -4550,6 +4968,14 @@
       "system_prompt": {
         "name": "system_prompt",
         "tooltip": "Instruções fundamentais que ditam o comportamento da IA."
+      },
+      "temperature": {
+        "name": "temperatura",
+        "tooltip": "Controla a aleatoriedade na geração. Valores menores são mais focados/determinísticos."
+      },
+      "top_p": {
+        "name": "top_p",
+        "tooltip": "Limite de amostragem por núcleo. Valores menores são mais focados, maiores são mais diversos."
       }
     },
     "outputs": {
@@ -4603,6 +5029,48 @@
       "video": {
         "name": "vídeo",
         "tooltip": "Vídeo opcional para usar como contexto para o modelo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiNodeV2": {
+    "description": "Gere respostas de texto com os modelos Gemini do Google. Forneça um prompt de texto e, opcionalmente, uma ou mais imagens, clipes de áudio, vídeos ou arquivos como contexto multimodal.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "O modelo Gemini utilizado para gerar a resposta."
+      },
+      "model_max_output_tokens": {
+        "name": "max_output_tokens"
+      },
+      "model_temperature": {
+        "name": "temperatura"
+      },
+      "model_thinking_level": {
+        "name": "nível_de_raciocínio"
+      },
+      "model_top_p": {
+        "name": "top_p"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Entrada de texto para o modelo. Inclua instruções detalhadas, perguntas ou contexto."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente para amostragem. Defina como 0 para uma semente aleatória. A saída determinística não é garantida."
+      },
+      "system_prompt": {
+        "name": "prompt_do_sistema",
+        "tooltip": "Instruções fundamentais que determinam o comportamento do modelo."
       }
     },
     "outputs": {
@@ -4716,6 +5184,25 @@
       }
     }
   },
+  "GetSplatCount": {
+    "description": "Retorna o número de splats somados em todo o lote.",
+    "display_name": "Obter Contagem de Splat",
+    "inputs": {
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      },
+      "1": {
+        "name": "contagem",
+        "tooltip": null
+      }
+    }
+  },
   "GetVideoComponents": {
     "description": "Extrai todos os componentes de um vídeo: quadros, áudio e taxa de quadros.",
     "display_name": "Obter Componentes do Vídeo",
@@ -4736,6 +5223,10 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -4926,10 +5417,12 @@
         "tooltip": "A duração do vídeo de saída em segundos."
       },
       "image": {
-        "name": "image"
+        "name": "image",
+        "tooltip": "Imagem inicial opcional para grok-imagine-video. Obrigatória para grok-imagine-video-1.5."
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-video-1.5 atualmente sempre requer uma imagem de entrada."
       },
       "prompt": {
         "name": "prompt",
@@ -5535,6 +6028,31 @@
       }
     }
   },
+  "Ideogram4Scheduler": {
+    "display_name": "Agendador Ideogram 4",
+    "inputs": {
+      "height": {
+        "name": "altura"
+      },
+      "mu": {
+        "name": "mu"
+      },
+      "std": {
+        "name": "std"
+      },
+      "steps": {
+        "name": "passos"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "IdeogramV1": {
     "description": "Gera imagens usando o modelo Ideogram V1.",
     "display_name": "Ideogram V1",
@@ -5668,6 +6186,34 @@
       "resolution": {
         "name": "resolução",
         "tooltip": "A resolução para geração de imagem. Se não estiver definida como Automática, esta opção sobrescreve a configuração de proporção."
+      },
+      "seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "IdeogramV4": {
+    "description": "Gera imagens usando o modelo Ideogram 4.0 a partir de um prompt de texto.",
+    "display_name": "Ideogram V4",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Prompt de texto para a geração da imagem."
+      },
+      "rendering_speed": {
+        "name": "velocidade_de_renderização",
+        "tooltip": "Controla o equilíbrio entre velocidade de geração e qualidade."
+      },
+      "resolution": {
+        "name": "resolução"
       },
       "seed": {
         "name": "semente"
@@ -7488,7 +8034,8 @@
         "name": "controlar após gerar"
       },
       "generate_audio": {
-        "name": "gerar áudio"
+        "name": "gerar áudio",
+        "tooltip": "'kling-3.0-turbo' sempre gera áudio nativo, então a opção de áudio é ignorada."
       },
       "model": {
         "name": "modelo",
@@ -8567,6 +9114,22 @@
     "outputs": {
       "0": {
         "name": "modelo_fundo",
+        "tooltip": null
+      }
+    }
+  },
+  "LoadDA3Model": {
+    "display_name": "Carregar Depth Anything 3",
+    "inputs": {
+      "model_name": {
+        "name": "model_name"
+      },
+      "weight_dtype": {
+        "name": "weight_dtype"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -9659,6 +10222,21 @@
       "0": {
         "name": "imagens",
         "tooltip": "Imagens processadas"
+      }
+    }
+  },
+  "MergeSplat": {
+    "description": "Concatene qualquer número de gaussian splats em um só. Unir várias decodificações do mesmo latent com seeds diferentes densifica a superfície, o que pode melhorar a qualidade da superfície ao criar malha.",
+    "display_name": "Mesclar Splats",
+    "inputs": {
+      "splats": {
+        "name": "splats"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },
@@ -13427,6 +14005,52 @@
       }
     }
   },
+  "Preview3DAdvanced": {
+    "display_name": "Visualizar 3D (Avançado)",
+    "inputs": {
+      "camera_info": {
+        "name": "info_câmera"
+      },
+      "height": {
+        "name": "altura"
+      },
+      "model_3d": {
+        "name": "modelo_3d",
+        "tooltip": "Arquivo de modelo 3D de um nó 3D anterior."
+      },
+      "model_3d_info": {
+        "name": "info_modelo_3d"
+      },
+      "viewport_state": {
+        "name": "estado_da_janela_de_visualização"
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "arquivo_modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "info_câmera",
+        "tooltip": null
+      },
+      "2": {
+        "name": "info_modelo_3d",
+        "tooltip": null
+      },
+      "3": {
+        "name": "largura",
+        "tooltip": null
+      },
+      "4": {
+        "name": "altura",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewAny": {
     "display_name": "Pré-visualizar como Texto",
     "inputs": {
@@ -13453,12 +14077,104 @@
       }
     }
   },
+  "PreviewGaussianSplat": {
+    "display_name": "Pré-visualizar Splat",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Um arquivo 3D de gaussian splat."
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "PreviewImage": {
     "description": "Salva as imagens de entrada no seu diretório de saída do ComfyUI.",
     "display_name": "Imagem de Pré-visualização",
     "inputs": {
       "images": {
         "name": "imagens"
+      }
+    }
+  },
+  "PreviewPointCloud": {
+    "display_name": "Pré-visualizar Nuvem de Pontos",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info"
+      },
+      "height": {
+        "name": "height"
+      },
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Arquivo de nuvem de pontos (.ply)"
+      },
+      "model_3d_info": {
+        "name": "model_3d_info"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
       }
     }
   },
@@ -14415,6 +15131,66 @@
       }
     }
   },
+  "RenderSplat": {
+    "description": "Renderize um gaussian splat como uma imagem com um rasterizador EWA anisotrópico (splats elípticos orientados, antialiasing, ordenados por profundidade do mais próximo para o mais distante). A câmera vem de uma entrada camera_info (Load / Preview 3D, ou um nó Create Camera Info); deixe vazio para enquadrar automaticamente o splat. Defina frames maior que 1 para um lote de imagens em turntable para alimentar um nó Video.",
+    "display_name": "Render Splat",
+    "inputs": {
+      "background": {
+        "name": "fundo"
+      },
+      "bg_image": {
+        "name": "imagem_fundo",
+        "tooltip": "Imagem de fundo opcional composta atrás do splat (substitui a cor sólida de fundo). Redimensionada para o tamanho do render; um lote é usado por frame, uma única imagem para todos. Apenas para color/clay."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "Câmera para renderizar - uma câmera Load3D / Preview3D ou um nó Create Camera Info. Se vazio, o splat é enquadrado automaticamente de uma visão padrão 3/4."
+      },
+      "frames": {
+        "name": "frames",
+        "tooltip": "-1, 0, 1 = imagem única; >1 = turntable, a câmera orbita em 360 graus completos (funciona com qualquer camera_info). Valor negativo orbita no sentido oposto."
+      },
+      "headlight_shading": {
+        "name": "sombreamento_headlight",
+        "tooltip": "Sombreamento difuso de uma luz na câmera (headlight), usando as normais dos surfels do splat: escurece superfícies que se afastam da visão para revelar forma/curvatura. 0 = albedo plano, 1 = sombreamento mais forte."
+      },
+      "height": {
+        "name": "altura"
+      },
+      "opacity_threshold": {
+        "name": "limite_opacidade",
+        "tooltip": "Remove gaussians com opacidade abaixo deste valor (remove flutuantes fracos)."
+      },
+      "render_style": {
+        "name": "estilo_render",
+        "tooltip": "O que a imagem de saída mostra: color (cor), clay (sombreamento neutro), depth (próximo=claro), normal (mapa de normais OpenGL)."
+      },
+      "sharpen": {
+        "name": "nitidez",
+        "tooltip": "Aumenta a nitidez dos splats sobrepostos: 1.0 = mistura fisicamente correta; valores maiores tendem cada pixel ao splat dominante (mais próximo) para textura mais nítida, sem encolher splats ou abrir lacunas. Não físico acima de 1."
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "splat_scale": {
+        "name": "escala_splat",
+        "tooltip": "Multiplicador na projeção de cada splat (menor = pontos mais nítidos, maior = superfície mais suave/preenchida)."
+      },
+      "width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagem",
+        "tooltip": null
+      },
+      "1": {
+        "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
   "RenormCFG": {
     "display_name": "RenormCFG",
     "inputs": {
@@ -14649,6 +15425,10 @@
       "megapixels": {
         "name": "megapixels",
         "tooltip": "Total de megapixels desejado. 1,0 MP ≈ 1024×1024 para quadrado."
+      },
+      "multiple": {
+        "name": "múltiplo",
+        "tooltip": "Múltiplo mais próximo do resultado para definir a resolução selecionada."
       }
     },
     "outputs": {
@@ -15084,6 +15864,98 @@
       }
     }
   },
+  "RunwayAleph2KeyframeNode": {
+    "description": "Ancore uma imagem de referência a um momento do vídeo de entrada (origem), para que Aleph2 direcione a edição nesse ponto do seu vídeo. Conecte este nó à entrada 'keyframes' do nó Runway Aleph2 Vídeo para Vídeo; encadeie vários juntos (até 5) pela entrada opcional 'keyframes' abaixo.",
+    "display_name": "Runway Aleph2 Quadro-chave",
+    "inputs": {
+      "image": {
+        "name": "imagem",
+        "tooltip": "A imagem de referência a ser aplicada no momento escolhido do vídeo de entrada."
+      },
+      "keyframes": {
+        "name": "quadros-chave",
+        "tooltip": "Quadros-chave anteriores opcionais para encadear com este."
+      },
+      "timing": {
+        "name": "tempo",
+        "tooltip": "Como posicionar esta imagem na linha do tempo do vídeo de entrada."
+      },
+      "timing_seconds": {
+        "name": "segundos"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "quadros-chave",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "Ancore uma imagem de referência a um momento do vídeo de saída (resultado), para guiar como o vídeo editado ficará nesse ponto. Conecte este nó à entrada 'prompt_images' do nó Runway Aleph2 Vídeo para Vídeo; encadeie várias juntas (até 5) pela entrada opcional 'prompt_images' abaixo.",
+    "display_name": "Runway Aleph2 Imagem de Prompt",
+    "inputs": {
+      "image": {
+        "name": "imagem",
+        "tooltip": "A imagem de referência a ser posicionada no momento escolhido do vídeo de saída."
+      },
+      "position": {
+        "name": "posição",
+        "tooltip": "Como posicionar esta imagem na linha do tempo do vídeo de saída."
+      },
+      "position_seconds": {
+        "name": "segundos"
+      },
+      "prompt_images": {
+        "name": "imagens_de_prompt",
+        "tooltip": "Imagens de prompt anteriores opcionais para encadear com esta."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagens_de_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "Edite um vídeo com um prompt de texto usando o modelo Aleph2 da Runway. O Aleph2 transforma sua filmagem (restiliza, reluz, adiciona ou remove elementos, altera o ponto de vista) mantendo o movimento e o tempo originais; a resolução de saída corresponde ao vídeo de entrada, que deve ter entre 2 e 30 segundos a 30 fps ou menos. Opcionalmente, direcione a edição com quadros-chave (ancorados ao vídeo de entrada) ou imagens de prompt (ancoradas ao vídeo de saída) – use um ou outro, não ambos.",
+    "display_name": "Runway Aleph2 Vídeo para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "keyframes": {
+        "name": "quadros-chave",
+        "tooltip": "Imagens de orientação ancoradas ao vídeo de entrada, de nós Aleph2 Keyframe (até 5). Use quadros-chave ou imagens de prompt, não ambos."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Descreve o que deve aparecer na saída (1-1000 caracteres)."
+      },
+      "prompt_images": {
+        "name": "imagens de prompt",
+        "tooltip": "Imagens de orientação ancoradas ao vídeo de saída, de nós Aleph2 Prompt Image (até 5). Use quadros-chave ou imagens de prompt, não ambos."
+      },
+      "public_figure_threshold": {
+        "name": "limite de figura pública",
+        "tooltip": "Moderação de conteúdo para figuras públicas reconhecíveis."
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Semente aleatória para geração"
+      },
+      "video": {
+        "name": "vídeo",
+        "tooltip": "Vídeo de entrada para editar. Deve ter entre 2 e 30 segundos a 30 fps ou menos."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RunwayFirstLastFrameNode": {
     "description": "Envie os quadros-chave inicial e final, escreva um prompt e gere um vídeo. Transições mais complexas, como casos em que o quadro final é completamente diferente do inicial, podem se beneficiar da duração mais longa de 10s. Isso dará mais tempo para a geração fazer uma transição suave entre as duas entradas. Antes de começar, revise estas melhores práticas para garantir que suas seleções de entrada ajudarão no sucesso da geração: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
     "display_name": "Runway Quadro Inicial-Final para Vídeo",
@@ -15327,6 +16199,41 @@
       }
     }
   },
+  "SCAIL2ColoredMask": {
+    "display_name": "Criar Máscara Colorida SCAIL-2",
+    "inputs": {
+      "driving_track_data": {
+        "name": "dados_de_rastreamento_driving",
+        "tooltip": "Trilha SAM3 do vídeo de pose de condução. Será renderizada na saída pose_video_mask."
+      },
+      "object_indices": {
+        "name": "índices_de_objetos",
+        "tooltip": "Lista separada por vírgulas dos índices das pessoas a incluir (ex: '0,2,3'). Aplicado tanto às máscaras de vídeo de referência quanto de pose. Vazio = todos."
+      },
+      "ref_track_data": {
+        "name": "dados_de_rastreamento_referência",
+        "tooltip": "Trilha SAM3 da imagem de referência."
+      },
+      "replacement_mode": {
+        "name": "modo_de_substituição",
+        "tooltip": "Falso = mask_video tem fundo preto (Modo Animação). Verdadeiro = fundo branco (Modo Substituição). Defina o mesmo replacement_mode em WanSCAILToVideo. reference_image_mask é sempre com fundo preto."
+      },
+      "sort_by": {
+        "name": "ordenar_por",
+        "tooltip": "Ordem em que as cores da paleta são atribuídas aos objetos rastreados (aplicado tanto ao vídeo de referência quanto ao de pose para que cada identidade mantenha a mesma cor). left_to_right = objeto mais à esquerda (pelo centróide do primeiro quadro) recebe a primeira cor; area = maior objeto (pela área da máscara do primeiro quadro) recebe a primeira cor; none = mantém a ordem do SAM3."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "pose_video_mask",
+        "tooltip": null
+      },
+      "1": {
+        "name": "reference_image_mask",
+        "tooltip": null
+      }
+    }
+  },
   "SDPoseDrawKeypoints": {
     "display_name": "SDPoseDrawKeypoints",
     "inputs": {
@@ -15341,6 +16248,9 @@
       },
       "draw_hands": {
         "name": "desenhar_mãos"
+      },
+      "draw_head": {
+        "name": "desenhar_cabeça"
       },
       "face_point_size": {
         "name": "tamanho_do_ponto_do_rosto"
@@ -16054,6 +16964,27 @@
       }
     }
   },
+  "SaveAudioAdvanced": {
+    "description": "Salva o áudio de entrada no diretório de saída do ComfyUI.",
+    "display_name": "Salvar Áudio (Avançado)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "O áudio a ser salvo."
+      },
+      "audioUI": {
+        "name": "audioUI"
+      },
+      "filename_prefix": {
+        "name": "filename_prefix",
+        "tooltip": "O prefixo para o arquivo a ser salvo. Pode incluir tokens de formatação como %date:yyyy-MM-dd%."
+      },
+      "format": {
+        "name": "format",
+        "tooltip": "O formato de arquivo no qual salvar o áudio."
+      }
+    }
+  },
   "SaveAudioMP3": {
     "display_name": "Salvar Áudio (MP3)",
     "inputs": {
@@ -16299,7 +17230,8 @@
         "name": "fps"
       },
       "images": {
-        "name": "imagens"
+        "name": "imagens",
+        "tooltip": "Imagens RGBA são salvas com seu canal alfa como transparência (apenas codec vp9)."
       }
     }
   },
@@ -16681,6 +17613,68 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToFile3D": {
+    "description": "Serializa um gaussian splat para um objeto File3D para os nós Save / Preview 3D. Suporta apenas um item por lote.",
+    "display_name": "Criar Arquivo 3D (de Splat)",
+    "inputs": {
+      "format": {
+        "name": "formato",
+        "tooltip": "ply: Gaussian Splat 3D padrão com harmônicos esféricos completos. ksplat: SplatBuffer mkkellogg (nível 0, sem compressão), apenas cor base. spz: Niantic gzip-comprimido (~10x menor), apenas cor base."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "modelo_3d",
+        "tooltip": null
+      }
+    }
+  },
+  "SplatToMesh": {
+    "description": "Extrai uma malha colorida de um gaussian splat.",
+    "display_name": "Extrair Malha do Splat",
+    "inputs": {
+      "color_sharpen": {
+        "name": "nitidez_cor",
+        "tooltip": "Deixa a textura dos vértices mais nítida: 1.0 = mistura fisicamente correta; valores maiores tendem a cor de cada voxel para sua gaussiana dominante ao invés de fazer média com vizinhos (reduz borrão da textura). Apenas cor - geometria não é alterada."
+      },
+      "kernel": {
+        "name": "kernel",
+        "tooltip": "Largura máxima do splat em voxels (meia-largura). Cada gaussiana é rasterizada em uma janela do seu próprio 3-sigma, limitada aqui - surfels pequenos permanecem leves, grandes não são truncados. Aumente se splats esparsos deixarem lacunas."
+      },
+      "level": {
+        "name": "nível",
+        "tooltip": "Nível da iso-superfície. Escolhido automaticamente por Otsu; este valor o ajusta (1.0 = auto, menor = superfície mais grossa/conectada, maior = mais fina/justa)."
+      },
+      "min_component": {
+        "name": "mín_componente",
+        "tooltip": "Descarta componentes conectados menores que este número de vértices (0 = mantém todos). Remove blobs flutuantes desconectados e a camada interna da parede dupla."
+      },
+      "min_opacity": {
+        "name": "mín_opacidade",
+        "tooltip": "Ignora gaussianas mais fracas que este valor antes de gerar a malha."
+      },
+      "resolution": {
+        "name": "resolução",
+        "tooltip": "Resolução da grade de densidade ao longo do eixo mais longo. Maior = superfície mais fina, mais VRAM/tempo (cresce com resolução^3)."
+      },
+      "smooth": {
+        "name": "suavizar",
+        "tooltip": "Iterações de suavização de malha Taubin. Suaviza a superfície sem encolhê-la (preserva o volume), diferente do desfoque da densidade. 0 = superfície bruta."
+      },
+      "splat": {
+        "name": "splat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "malha",
         "tooltip": null
       }
     }
@@ -17817,6 +18811,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "Imagem(ns) de referência para editar. O Boogu foca em uma referência por amostra; mais são permitidas."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "TextEncodeHunyuanVideo_ImageToVideo",
     "inputs": {
@@ -18383,6 +19408,48 @@
       }
     }
   },
+  "TransformSplat": {
+    "description": "Translada, rotaciona e escala um gaussian splat. Escala não uniforme também deforma cada splat individualmente, processo mais lento.",
+    "display_name": "Transformar Splat",
+    "inputs": {
+      "rotate_x": {
+        "name": "rotacionar_x"
+      },
+      "rotate_y": {
+        "name": "rotacionar_y"
+      },
+      "rotate_z": {
+        "name": "rotacionar_z"
+      },
+      "scale_x": {
+        "name": "escala_x"
+      },
+      "scale_y": {
+        "name": "escala_y"
+      },
+      "scale_z": {
+        "name": "escala_z"
+      },
+      "splat": {
+        "name": "splat"
+      },
+      "translate_x": {
+        "name": "transladar_x"
+      },
+      "translate_y": {
+        "name": "transladar_y"
+      },
+      "translate_z": {
+        "name": "transladar_z"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
+      }
+    }
+  },
   "TrimAudioDuration": {
     "description": "Corta o tensor de áudio no intervalo de tempo escolhido.",
     "display_name": "Cortar Duração do Áudio",
@@ -18558,6 +19625,22 @@
       },
       "2": {
         "name": "GLB",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoImportModelNode": {
+    "description": "Importe um modelo 3D externo (por exemplo, do Rodin, Hunyuan3D ou de um arquivo local) para o Tripo para usá-lo com os nós de pós-processamento do Tripo: Texture, Rig, Convert. GLB é recomendado: as texturas só permanecem após a importação quando estão incorporadas no arquivo. Observe que texturizar um modelo importado requer um prompt de textura.",
+    "display_name": "Tripo: Importar Modelo",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "Modelo 3D para importar (GLB / FBX / OBJ / STL, até 150 MB). Arquivos OBJ e STL não possuem texturas incorporadas."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
         "tooltip": null
       }
     }
@@ -18862,6 +19945,101 @@
       }
     }
   },
+  "TripoSplatConditioning": {
+    "description": "Codifica a imagem com DINOv3 e o Flux2 VAE em condicionamento positivo/negativo TripoSplat, e cria o alvo de ruído de tamanho fixo (latent + câmera) para o KSampler",
+    "display_name": "Condicionamento TripoSplat",
+    "inputs": {
+      "clip_vision": {
+        "name": "clip_vision",
+        "tooltip": "Codificador de imagem DINOv3 ViT-H/16+"
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Flux2 VAE"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positivo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negativo",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "O alvo de ruído de tamanho fixo (latent + câmera)."
+      }
+    }
+  },
+  "TripoSplatPreprocessImage": {
+    "description": "Recorta o centro de cada imagem para um canvas quadrado em fundo preto e adiciona preenchimento.",
+    "display_name": "TripoSplat Pré-processar Imagem",
+    "inputs": {
+      "erode_radius": {
+        "name": "raio_de_erosão",
+        "tooltip": "Erosiona o canal alfa por este raio em pixels antes de recortar (evita vazamento nas bordas)."
+      },
+      "image": {
+        "name": "imagem"
+      },
+      "mask": {
+        "name": "mask"
+      },
+      "size": {
+        "name": "tamanho",
+        "tooltip": "Tamanho da imagem quadrada. O modelo foi treinado em 1024; outros tamanhos funcionam, mas ficam fora da distribuição."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "imagem",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSplatSamplingPreview": {
+    "description": "Adapta o modelo TripoSplat para o nó padrão Ksampler para mostrar uma prévia ao vivo do gaussian splat decodificado em cada etapa.",
+    "display_name": "Pré-visualização de Amostragem TripoSplat",
+    "inputs": {
+      "model": {
+        "name": "modelo"
+      },
+      "num_gaussians": {
+        "name": "número_de_gaussianos",
+        "tooltip": "Número de gaussianos a serem produzidos para a pré-visualização (arredondado para múltiplos de 32)."
+      },
+      "octree_level": {
+        "name": "nível_octree",
+        "tooltip": "Profundidade da octree para a pré-visualização da decodificação (menor = mais barato/grosseiro)."
+      },
+      "pitch": {
+        "name": "pitch",
+        "tooltip": "Ângulo de pitch da câmera de pré-visualização em graus."
+      },
+      "point_size": {
+        "name": "tamanho_do_ponto",
+        "tooltip": "Raio máximo do splat em pixels. Cada gaussiano é dimensionado a partir de sua escala e limitado aqui; menor = mais fino/pontudo, maior = mais grosso."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Decodificador VAE do TripoSplat"
+      },
+      "yaw": {
+        "name": "yaw",
+        "tooltip": "Ângulo de yaw da câmera de pré-visualização em graus."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TripoTextToModelNode": {
     "display_name": "Tripo: Texto para Modelo",
     "inputs": {
@@ -18934,6 +20112,10 @@
       },
       "texture_alignment": {
         "name": "alinhamento_textura"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Orientação textual opcional para texturização. Necessário na prática para modelos importados (Tripo: Importar Modelo), que não possuem imagem de origem para inferir cores."
       },
       "texture_quality": {
         "name": "qualidade_textura"
@@ -19190,6 +20372,36 @@
       },
       "vae": {
         "name": "vae"
+      }
+    }
+  },
+  "VAEDecodeTripoSplat": {
+    "description": "Decodifica o latent TripoSplat amostrado em um gaussian splat 3D. Modifique o número de gaussianos para variar a densidade.",
+    "display_name": "Decodificar TripoSplat",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controlar após gerar"
+      },
+      "num_gaussians": {
+        "name": "número_de_gaussianos",
+        "tooltip": "Número de gaussianos a serem produzidos (arredondado para múltiplos de 32). 262144 corresponde à densidade de pontos da octree; valores maiores superamostram os mesmos pontos (mais denso, mas sem novos detalhes) e custam proporcionalmente mais VRAM/tempo."
+      },
+      "samples": {
+        "name": "amostras"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "Define a semente do amostrador de pontos da octree (RNG global) para decodificações determinísticas."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Decodificador VAE do TripoSplat"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "splat",
+        "tooltip": null
       }
     }
   },
@@ -21510,7 +22722,8 @@
         "name": "tamanho_do_lote"
       },
       "clip_vision_output": {
-        "name": "clip_vision_output"
+        "name": "clip_vision_output",
+        "tooltip": "Recursos de visão do CLIP para condicionamento. O modelo é treinado com redimensionamento esticado para a proporção de aspecto."
       },
       "height": {
         "name": "altura"
@@ -21537,14 +22750,39 @@
         "name": "vídeo_de_pose",
         "tooltip": "Vídeo usado para condicionamento de pose. Será redimensionado para metade da resolução do vídeo principal."
       },
+      "pose_video_mask": {
+        "name": "pose_video_mask",
+        "tooltip": "Apenas SCAIL-2. Vídeo de máscara SAM3 colorido por identidade na mesma resolução de pose_video."
+      },
       "positive": {
         "name": "positivo"
       },
+      "previous_frame_count": {
+        "name": "previous_frame_count",
+        "tooltip": "Quadros finais de previous_frames para ancorar. SCAIL-2 foi treinado com 5 (segmentos de 81 quadros, passo de 76 quadros)."
+      },
+      "previous_frames": {
+        "name": "previous_frames",
+        "tooltip": "Apenas SCAIL-2. Saída totalmente decodificada do segmento anterior. Apenas os últimos previous_frame_count são usados como âncora de extensão."
+      },
       "reference_image": {
-        "name": "imagem_de_referência"
+        "name": "imagem_de_referência",
+        "tooltip": "Imagem de referência; para múltiplas referências, componha todas em uma única imagem."
+      },
+      "reference_image_mask": {
+        "name": "reference_image_mask",
+        "tooltip": "Apenas SCAIL-2. Máscara de referência colorida na mesma resolução da reference_image."
+      },
+      "replacement_mode": {
+        "name": "replacement_mode",
+        "tooltip": "Apenas SCAIL-2. Falso = Modo Animação (pose_video_mask deve ter fundo preto). Verdadeiro = Modo Substituição (pose_video_mask deve ter fundo branco)."
       },
       "vae": {
         "name": "vae"
+      },
+      "video_frame_offset": {
+        "name": "video_frame_offset",
+        "tooltip": "Quadro cumulativo de saída onde este segmento começa. Conecte a partir da saída video_frame_offset do segmento anterior."
       },
       "width": {
         "name": "largura"
@@ -21562,6 +22800,10 @@
       "2": {
         "name": "latente",
         "tooltip": "Espaço latente vazio do tamanho da geração."
+      },
+      "3": {
+        "name": "video_frame_offset",
+        "tooltip": "Offset ajustado + comprimento. Conecte ao próximo segmento."
       }
     }
   },
