@@ -103,7 +103,7 @@ describe('useWorkspaceUI', () => {
       })
     })
 
-    it('hides multi-member UI elements', async () => {
+    it('lets the personal owner rename their workspace', async () => {
       const ui = await loadComposable()
 
       expect(ui.uiConfig.value).toMatchObject({
@@ -111,7 +111,7 @@ describe('useWorkspaceUI', () => {
         showPendingTab: false,
         showSearch: false,
         showRoleColumn: false,
-        showEditWorkspaceMenuItem: false,
+        showEditWorkspaceMenuItem: true,
         workspaceMenuAction: null,
         workspaceMenuDisabledTooltip: null
       })

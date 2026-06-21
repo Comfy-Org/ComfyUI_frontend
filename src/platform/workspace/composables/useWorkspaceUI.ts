@@ -99,7 +99,7 @@ function getUIConfig(
       membersGridCols: 'grid-cols-1',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-1',
-      showEditWorkspaceMenuItem: false,
+      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: null,
       workspaceMenuDisabledTooltip: null
     }

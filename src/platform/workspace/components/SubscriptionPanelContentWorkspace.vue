@@ -88,14 +88,32 @@
                   </span>
                 </div>
               </div>
-              <Button
-                variant="primary"
-                size="lg"
-                class="rounded-lg px-4 text-sm font-normal md:ml-auto"
-                @click="handleSubscribeWorkspace"
-              >
-                {{ $t('subscription.subscribe') }}
-              </Button>
+              <div class="flex flex-wrap gap-2 md:ml-auto">
+                <Button
+                  variant="primary"
+                  size="lg"
+                  class="rounded-lg px-4 text-sm font-normal"
+                  @click="handleSubscribeWorkspace"
+                >
+                  {{ $t('subscription.subscribe') }}
+                </Button>
+                <DropdownMenu
+                  v-if="planMenuItems.length > 0"
+                  :entries="planMenuEntries"
+                >
+                  <template #button>
+                    <Button
+                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      variant="secondary"
+                      size="icon-lg"
+                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      :aria-label="$t('g.moreOptions')"
+                    >
+                      <i class="pi pi-ellipsis-h" />
+                    </Button>
+                  </template>
+                </DropdownMenu>
+              </div>
             </template>
 
             <!-- Normal Subscribed State (Owner with subscription, or member viewing subscribed workspace) -->
@@ -142,57 +160,56 @@
                 v-if="isActiveSubscription"
                 class="flex flex-wrap gap-2 md:ml-auto"
               >
-                <!-- Cancelled state: reactivation is original-owner-only. -->
-                <template v-if="isCancelled">
-                  <Button
-                    v-if="permissions.canManageSubscriptionLifecycle"
-                    size="lg"
-                    variant="primary"
-                    class="rounded-lg px-4 text-sm font-normal"
-                    :loading="isResubscribing"
-                    @click="handleResubscribe"
-                  >
-                    {{ $t('subscription.resubscribe') }}
-                  </Button>
-                </template>
-
-                <!-- Owners manage the plan; members and non-creator owners can still leave -->
-                <template v-else>
-                  <Button
-                    v-if="!isFreeTierPlan && permissions.canManageSubscription"
-                    size="lg"
-                    variant="secondary"
-                    class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
-                    @click="manageSubscription"
-                  >
-                    {{ $t('subscription.manageBilling') }}
-                  </Button>
-                  <Button
-                    v-if="permissions.canManageSubscription"
-                    size="lg"
-                    variant="secondary"
-                    class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
-                    @click="handleUpgrade"
-                  >
-                    {{
-                      isInPersonalWorkspace
-                        ? $t('subscription.upgradePlan')
-                        : $t('subscription.changePlan')
-                    }}
-                  </Button>
-                  <Button
-                    v-if="planMenuItems.length > 0"
-                    v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                    variant="secondary"
-                    size="icon-lg"
-                    class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
-                    :aria-label="$t('g.moreOptions')"
-                    @click="planMenu?.toggle($event)"
-                  >
-                    <i class="pi pi-ellipsis-h" />
-                  </Button>
-                  <Menu ref="planMenu" :model="planMenuItems" :popup="true" />
-                </template>
+                <Button
+                  v-if="!isFreeTierPlan && permissions.canManageSubscription"
+                  size="lg"
+                  variant="secondary"
+                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  @click="manageSubscription"
+                >
+                  {{ $t('subscription.manageBilling') }}
+                </Button>
+                <Button
+                  v-if="
+                    isCancelled && permissions.canManageSubscriptionLifecycle
+                  "
+                  size="lg"
+                  variant="primary"
+                  class="rounded-lg px-4 text-sm font-normal"
+                  :loading="isResubscribing"
+                  @click="handleResubscribe"
+                >
+                  {{ $t('subscription.reactivatePlan') }}
+                </Button>
+                <Button
+                  v-else-if="!isCancelled && permissions.canManageSubscription"
+                  size="lg"
+                  variant="secondary"
+                  class="rounded-lg bg-interface-menu-component-surface-selected px-4 text-sm font-normal text-text-primary"
+                  @click="handleUpgrade"
+                >
+                  {{
+                    isInPersonalWorkspace
+                      ? $t('subscription.upgradePlan')
+                      : $t('subscription.changePlan')
+                  }}
+                </Button>
+                <DropdownMenu
+                  v-if="planMenuItems.length > 0"
+                  :entries="planMenuEntries"
+                >
+                  <template #button>
+                    <Button
+                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      variant="secondary"
+                      size="icon-lg"
+                      class="rounded-lg bg-interface-menu-component-surface-selected text-text-primary"
+                      :aria-label="$t('g.moreOptions')"
+                    >
+                      <i class="pi pi-ellipsis-h" />
+                    </Button>
+                  </template>
+                </DropdownMenu>
               </div>
             </template>
           </div>
@@ -270,13 +287,13 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import Menu from 'primevue/menu'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { MenuItem } from 'primevue/menuitem'
 import { useToast } from 'primevue/usetoast'
 
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -296,12 +313,9 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const workspaceStore = useTeamWorkspaceStore()
-const {
-  isWorkspaceSubscribed,
-  isInPersonalWorkspace,
-  isCurrentUserOriginalOwner
-} = storeToRefs(workspaceStore)
-const { permissions } = useWorkspaceUI()
+const { isWorkspaceSubscribed, isInPersonalWorkspace } =
+  storeToRefs(workspaceStore)
+const { permissions, uiConfig } = useWorkspaceUI()
 const { t, n, locale } = useI18n()
 const toast = useToast()
 
@@ -319,8 +333,12 @@ const {
   resubscribe
 } = useBillingContext()
 
-const { showCancelSubscriptionDialog, showLeaveWorkspaceDialog } =
-  useDialogService()
+const {
+  showCancelSubscriptionDialog,
+  showLeaveWorkspaceDialog,
+  showEditWorkspaceDialog,
+  showDeleteWorkspaceDialog
+} = useDialogService()
 const { showPricingTable } = useSubscriptionDialog()
 
 const isResubscribing = ref(false)
@@ -441,41 +459,85 @@ const planDisplayName = computed(() =>
     : t('subscription.teamPlanName')
 )
 
-const planMenu = ref<InstanceType<typeof Menu> | null>(null)
+// A workspace (team or personal) can't be deleted while its subscription is
+// active and not yet cancelled — the owner must cancel first.
+const isDeleteDisabled = computed(
+  () =>
+    isActiveSubscription.value && !(subscription.value?.isCancelled ?? false)
+)
+
+const deleteTooltip = computed(() =>
+  isDeleteDisabled.value
+    ? t('workspacePanel.menu.deleteWorkspaceDisabledTooltip')
+    : undefined
+)
 
 const planMenuItems = computed<MenuItem[]>(() => {
+  const config = uiConfig.value
   const items: MenuItem[] = []
-  // Cancel is original-owner-only (creator); promoted owners get no cancel item.
+
+  if (config.showEditWorkspaceMenuItem) {
+    items.push({
+      label: t('workspacePanel.menu.editWorkspace'),
+      command: () => void showEditWorkspaceDialog()
+    })
+  }
+
+  // Cancel plan: the original owner of an active paid plan (team or personal).
   if (
     permissions.value.canManageSubscriptionLifecycle &&
+    isActiveSubscription.value &&
+    !isCancelled.value &&
     !isFreeTierPlan.value
   ) {
     items.push({
-      label: t('subscription.cancelSubscription'),
-      icon: 'pi pi-times',
-      command: () => {
+      label: t('subscription.cancelPlan'),
+      command: () =>
         showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
-      }
     })
   }
-  // Members and non-creator owners can leave; the creator sees it disabled.
-  if (!isInPersonalWorkspace.value) {
-    items.push(
-      isCurrentUserOriginalOwner.value
-        ? {
-            label: t('workspacePanel.menu.leaveWorkspace'),
-            icon: 'pi pi-sign-out',
-            disabled: true
-          }
-        : {
-            label: t('workspacePanel.menu.leaveWorkspace'),
-            icon: 'pi pi-sign-out',
-            command: () => void showLeaveWorkspaceDialog()
-          }
-    )
+
+  // Delete: a team's original owner, or a personal owner on a paid plan.
+  if (
+    permissions.value.canManageSubscriptionLifecycle &&
+    (!isInPersonalWorkspace.value || isActiveSubscription.value)
+  ) {
+    items.push({
+      label: t('workspacePanel.menu.deleteWorkspace'),
+      // Disabled Delete keeps the danger color and stays hoverable so its
+      // "cancel first" tooltip shows (the shared item style would otherwise mute
+      // it and block pointer events).
+      class: isDeleteDisabled.value
+        ? 'data-disabled:cursor-not-allowed data-disabled:text-coral-700 data-disabled:pointer-events-auto'
+        : 'text-coral-700',
+      disabled: isDeleteDisabled.value,
+      tooltip: deleteTooltip.value,
+      command: isDeleteDisabled.value
+        ? undefined
+        : () => void showDeleteWorkspaceDialog()
+    })
   }
+
+  // Members and promoted (non-original) owners can leave; the creator cannot.
+  if (
+    !isInPersonalWorkspace.value &&
+    !permissions.value.canManageSubscriptionLifecycle
+  ) {
+    items.push({
+      label: t('workspacePanel.menu.leaveWorkspace'),
+      command: () => void showLeaveWorkspaceDialog()
+    })
+  }
+
   return items
 })
+
+// Figma 3343-25140 renders a divider between every menu option.
+const planMenuEntries = computed<MenuItem[]>(() =>
+  planMenuItems.value.flatMap((item, index) =>
+    index === 0 ? [item] : [{ separator: true }, item]
+  )
+)
 
 const tierKey = computed(() => {
   const tier = subscriptionTier.value
