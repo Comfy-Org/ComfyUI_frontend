@@ -11,6 +11,7 @@ import {
 import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
+  ApiCreditTopupFailedMetadata,
   AuthMetadata,
   CreditTopupMetadata,
   DefaultViewSetMetadata,
@@ -256,6 +257,10 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackApiCreditTopupSucceeded(): void {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
+  }
+
+  trackApiCreditTopupFailed(metadata: ApiCreditTopupFailedMetadata): void {
+    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_FAILED, metadata)
   }
 
   // Credit top-up tracking methods (composition with utility functions)

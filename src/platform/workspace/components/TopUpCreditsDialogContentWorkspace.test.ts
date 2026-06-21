@@ -37,9 +37,22 @@ vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: () => ({ closeDialog: vi.fn() })
 }))
 
+const {
+  mockTrackApiCreditTopupButtonPurchaseClicked,
+  mockTrackApiCreditTopupSucceeded,
+  mockTrackApiCreditTopupFailed
+} = vi.hoisted(() => ({
+  mockTrackApiCreditTopupButtonPurchaseClicked: vi.fn(),
+  mockTrackApiCreditTopupSucceeded: vi.fn(),
+  mockTrackApiCreditTopupFailed: vi.fn()
+}))
+
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackApiCreditTopupButtonPurchaseClicked: vi.fn()
+    trackApiCreditTopupButtonPurchaseClicked:
+      mockTrackApiCreditTopupButtonPurchaseClicked,
+    trackApiCreditTopupSucceeded: mockTrackApiCreditTopupSucceeded,
+    trackApiCreditTopupFailed: mockTrackApiCreditTopupFailed
   })
 }))
 
@@ -142,6 +155,15 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockShowSettings).toHaveBeenCalledWith('workspace')
   })
 
+  it('fires topup-succeeded telemetry on a completed top-up', async () => {
+    mockTopup.mockResolvedValue(topupResponse('completed'))
+
+    renderDialog()
+    await clickAddCredits()
+
+    expect(mockTrackApiCreditTopupSucceeded).toHaveBeenCalledOnce()
+  })
+
   it('does not refresh balance or status for a pending top-up', async () => {
     mockTopup.mockResolvedValue(topupResponse('pending'))
 
@@ -161,5 +183,28 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
 
     expect(mockFetchBalance).not.toHaveBeenCalled()
     expect(mockFetchStatus).not.toHaveBeenCalled()
+  })
+
+  it('fires topup-failed telemetry on an unexpected top-up status', async () => {
+    mockTopup.mockResolvedValue(topupResponse('failed'))
+
+    renderDialog()
+    await clickAddCredits()
+
+    expect(mockTrackApiCreditTopupFailed).toHaveBeenCalledWith({
+      reason: 'unexpected_status'
+    })
+  })
+
+  it('fires topup-failed telemetry when the purchase throws', async () => {
+    mockTopup.mockRejectedValue(new Error('boom'))
+
+    renderDialog()
+    await clickAddCredits()
+
+    expect(mockTrackApiCreditTopupFailed).toHaveBeenCalledWith({
+      reason: 'exception',
+      error_message: 'boom'
+    })
   })
 })

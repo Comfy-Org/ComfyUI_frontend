@@ -50,10 +50,14 @@ vi.mock('@/stores/dialogStore', () => ({
 }))
 
 const mockTrackMonthlySubscriptionSucceeded = vi.fn()
+const mockTrackApiCreditTopupSucceeded = vi.fn()
+const mockTrackApiCreditTopupFailed = vi.fn()
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
-    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded
+    trackMonthlySubscriptionSucceeded: mockTrackMonthlySubscriptionSucceeded,
+    trackApiCreditTopupSucceeded: mockTrackApiCreditTopupSucceeded,
+    trackApiCreditTopupFailed: mockTrackApiCreditTopupFailed
   })
 }))
 
@@ -214,7 +218,7 @@ describe('billingOperationStore', () => {
       expect(mockTrackMonthlySubscriptionSucceeded).toHaveBeenCalledOnce()
     })
 
-    it('does not fire purchase telemetry on topup success', async () => {
+    it('fires topup-succeeded telemetry on topup success', async () => {
       vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
         id: 'op-1',
         status: 'succeeded',
@@ -226,6 +230,7 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
+      expect(mockTrackApiCreditTopupSucceeded).toHaveBeenCalledOnce()
       expect(mockTrackMonthlySubscriptionSucceeded).not.toHaveBeenCalled()
     })
 
@@ -311,6 +316,26 @@ describe('billingOperationStore', () => {
         detail: undefined
       })
     })
+
+    it('fires topup-failed telemetry on topup failure', async () => {
+      const errorMessage = 'Payment declined'
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        error_message: errorMessage,
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(mockTrackApiCreditTopupFailed).toHaveBeenCalledWith({
+        reason: 'processing_failed',
+        error_message: errorMessage
+      })
+    })
   })
 
   describe('polling timeout', () => {
@@ -355,6 +380,24 @@ describe('billingOperationStore', () => {
       expect(mockToastAdd).toHaveBeenCalledWith({
         severity: 'error',
         summary: 'billingOperation.topupTimeout'
+      })
+    })
+
+    it('fires topup-failed telemetry with timeout reason on topup timeout', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'pending',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(121_000)
+      await vi.runAllTimersAsync()
+
+      expect(mockTrackApiCreditTopupFailed).toHaveBeenCalledWith({
+        reason: 'processing_timeout'
       })
     })
   })
