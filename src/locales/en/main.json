@@ -2460,8 +2460,10 @@
     "manageBilling": "Manage billing",
     "changePlan": "Change plan",
     "cancelSubscription": "Cancel Subscription",
+    "cancelPlan": "Cancel plan",
     "canceled": "Canceled",
     "resubscribe": "Resubscribe",
+    "reactivatePlan": "Reactivate plan",
     "resubscribeTo": "Resubscribe to {plan}",
     "resubscribeSuccess": "Subscription reactivated successfully",
     "canceledCard": {

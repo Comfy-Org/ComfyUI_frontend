@@ -117,7 +117,9 @@ app
       modal: 1800,
       overlay: 1800,
       menu: 1800,
-      tooltip: 1800
+      // Tooltips sit above modals/menus so a menu-item tooltip isn't hidden
+      // behind a body-portaled dropdown that lifts itself to modal + 1.
+      tooltip: 2000
     },
     theme: {
       preset: ComfyUIPreset,
