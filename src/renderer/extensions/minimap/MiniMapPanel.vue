@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'minimap-panel flex flex-col gap-2 bg-comfy-menu-bg p-3 text-sm shadow-interface',
+        'minimap-panel flex flex-col gap-2 rounded-lg border border-interface-stroke bg-comfy-menu-bg p-3 text-sm shadow-interface',
         isMobile ? 'mb-1' : 'mr-1'
       )
     "

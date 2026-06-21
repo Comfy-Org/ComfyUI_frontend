@@ -75,8 +75,6 @@ describe('useMinimapSettings', () => {
 
     expect(styles.width).toBe('254px')
     expect(styles.height).toBe('200px')
-    expect(styles.border).toBe('1px solid var(--interface-stroke)')
-    expect(styles.borderRadius).toBe('8px')
   })
 
   it('should generate light theme container styles', () => {
@@ -99,8 +97,6 @@ describe('useMinimapSettings', () => {
 
     expect(styles.width).toBe('254px')
     expect(styles.height).toBe('200px')
-    expect(styles.border).toBe('1px solid var(--interface-stroke)')
-    expect(styles.borderRadius).toBe('8px')
   })
 
   it('should generate panel styles based on theme', () => {
@@ -123,8 +119,6 @@ describe('useMinimapSettings', () => {
 
     expect(styles.width).toBe('210px')
     expect(styles.height).toBe('200px')
-    expect(styles.border).toBe('1px solid var(--interface-stroke)')
-    expect(styles.borderRadius).toBe('8px')
   })
 
   it('should create computed properties that call the store getter', () => {

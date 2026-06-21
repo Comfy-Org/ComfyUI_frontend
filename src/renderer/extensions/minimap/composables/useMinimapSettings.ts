@@ -35,16 +35,12 @@ export function useMinimapSettings() {
 
   const containerStyles = computed(() => ({
     width: `${CARD_WIDTH}px`,
-    height: `${CARD_HEIGHT}px`,
-    border: '1px solid var(--interface-stroke)',
-    borderRadius: '8px'
+    height: `${CARD_HEIGHT}px`
   }))
 
   const panelStyles = computed(() => ({
     width: `210px`,
-    height: `${CARD_HEIGHT}px`,
-    border: '1px solid var(--interface-stroke)',
-    borderRadius: '8px'
+    height: `${CARD_HEIGHT}px`
   }))
 
   return {
