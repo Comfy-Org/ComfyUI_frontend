@@ -55,7 +55,7 @@
       :loading-tier="loadingTier"
       @subscribe="handleSubscribeClick"
       @resubscribe="handleResubscribe"
-      @subscribe-team="handleSubscribeTeamClick"
+      @subscribe-team="onTeamSubscribe"
     />
 
     <template v-if="checkoutStep === 'preview'">
@@ -111,17 +111,22 @@ import { useEventListener } from '@vueuse/core'
 import Button from '@/components/ui/button/Button.vue'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useSubscriptionCheckout } from '@/platform/workspace/composables/useSubscriptionCheckout'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 import UnifiedPricingTable from './UnifiedPricingTable.vue'
 
-const { onClose, reason, initialPlanMode } = defineProps<{
+const { onClose, reason, initialPlanMode, onChooseTeam } = defineProps<{
   onClose: () => void
   reason?: SubscriptionDialogReason
   initialPlanMode?: 'personal' | 'team'
+  /** Invoked instead of team checkout when a personal workspace picks a team plan. */
+  onChooseTeam?: () => void
 }>()
+
+const workspaceStore = useTeamWorkspaceStore()
 
 const emit = defineEmits<{
   close: [subscribed: boolean]
@@ -148,6 +153,18 @@ const {
   handleTeamSubscribe,
   handleResubscribe
 } = useSubscriptionCheckout(emit)
+
+// A personal workspace can't subscribe to a team plan in place, so route the
+// user to create/switch a team workspace instead of into team checkout.
+function onTeamSubscribe(
+  payload: Parameters<typeof handleSubscribeTeamClick>[0]
+) {
+  if (workspaceStore.isInPersonalWorkspace) {
+    onChooseTeam?.()
+    return
+  }
+  handleSubscribeTeamClick(payload)
+}
 
 // Backspace mirrors the back arrow on the confirm step, but never while an
 // editable element is focused (let it delete text there).
