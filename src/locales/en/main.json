@@ -2483,7 +2483,9 @@
       "failed": "Failed to change plan",
       "notAllowed": "This plan change is not available",
       "paymentMethodRequired": "A payment method is required to change plans",
-      "paymentPageBlocked": "Couldn't open the payment page — please try again"
+      "paymentPageBlocked": "Couldn't open the payment page — please try again",
+      "memberRemovalFailed": "Couldn't remove {email} from the team — some members may already be removed and your plan was not changed",
+      "failedAfterMemberRemoval": "Team members were removed, but the plan change didn't complete — please try again or contact support"
     },
     "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
     "partnerNodesDescription": "For running commercial/proprietary models",

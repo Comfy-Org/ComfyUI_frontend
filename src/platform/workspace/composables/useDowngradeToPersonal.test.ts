@@ -1,15 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { useDowngradeToPersonal } from './useDowngradeToPersonal'
 
-const mockMembers = vi.hoisted(() => ({
-  value: [] as WorkspaceMember[]
-}))
-const mockUserEmail = vi.hoisted(() => ({
-  value: null as string | null
-}))
+const mockMembers = ref<WorkspaceMember[]>([])
+const mockUserEmail = ref<string | null>(null)
 const mockRemoveMember = vi.hoisted(() => vi.fn())
 const mockFetchMembers = vi.hoisted(() => vi.fn())
 const mockSubscribe = vi.hoisted(() => vi.fn())
@@ -52,7 +49,8 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
 }))
 
 vi.mock('@/i18n', () => ({
-  t: (key: string) => key
+  t: (key: string, params?: Record<string, unknown>) =>
+    params ? `${key} ${JSON.stringify(params)}` : key
 }))
 
 vi.mock('@/config/comfyApi', () => ({
@@ -297,14 +295,38 @@ describe('useDowngradeToPersonal', () => {
       expect(mockStartOperation).toHaveBeenCalledWith('op-4', 'subscription')
     })
 
-    it('throws when subscribe resolves without a response', async () => {
+    it('reports the generic failure when subscribe fails and no members were removed', async () => {
+      mockMembers.value = teamWithOwnerAnd()
+      mockSubscribe.mockResolvedValue(undefined)
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        /^subscription\.downgrade\.failed$/
+      )
+    })
+
+    it('reports members were already removed when subscribe fails after removal', async () => {
       mockMembers.value = teamWithOwnerAnd('m1')
       mockSubscribe.mockResolvedValue(undefined)
       const { downgradeToPersonal } = useDowngradeToPersonal()
 
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
-        'subscription.downgrade.failed'
+        'subscription.downgrade.failedAfterMemberRemoval'
       )
+    })
+
+    it('surfaces which member failed and skips the plan change when removal throws', async () => {
+      mockMembers.value = teamWithOwnerAnd('m1', 'm2')
+      mockRemoveMember.mockImplementation((id: string) =>
+        id === 'm2' ? Promise.reject(new Error('network')) : Promise.resolve()
+      )
+      const { downgradeToPersonal } = useDowngradeToPersonal()
+
+      await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
+        'm2@example.com'
+      )
+      expect(mockRemoveMember).toHaveBeenCalledWith('m1')
+      expect(mockSubscribe).not.toHaveBeenCalled()
     })
   })
 
@@ -316,6 +338,7 @@ describe('useDowngradeToPersonal', () => {
         return Promise.resolve(mockMembers.value)
       })
       const { refreshMembers, hasOtherMembers } = useDowngradeToPersonal()
+      expect(hasOtherMembers.value).toBe(false)
 
       await refreshMembers()
 

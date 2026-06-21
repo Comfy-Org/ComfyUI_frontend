@@ -42,8 +42,18 @@ export function useDowngradeToPersonal() {
       throw new Error(preview?.reason || t('subscription.downgrade.notAllowed'))
     }
 
-    for (const member of removableMembers.value) {
-      await workspaceStore.removeMember(member.id)
+    const membersToRemove = removableMembers.value
+    for (const member of membersToRemove) {
+      try {
+        await workspaceStore.removeMember(member.id)
+      } catch (error) {
+        throw new Error(
+          t('subscription.downgrade.memberRemovalFailed', {
+            email: member.email
+          }),
+          { cause: error }
+        )
+      }
     }
 
     const response = await subscribe(
@@ -52,7 +62,11 @@ export function useDowngradeToPersonal() {
       `${getComfyPlatformBaseUrl()}/payment/failed`
     )
     if (!response) {
-      throw new Error(t('subscription.downgrade.failed'))
+      throw new Error(
+        membersToRemove.length > 0
+          ? t('subscription.downgrade.failedAfterMemberRemoval')
+          : t('subscription.downgrade.failed')
+      )
     }
 
     if (response.status === 'needs_payment_method') {
@@ -63,7 +77,7 @@ export function useDowngradeToPersonal() {
       if (!paymentTab) {
         throw new Error(t('subscription.downgrade.paymentPageBlocked'))
       }
-      billingOperationStore.startOperation(
+      void billingOperationStore.startOperation(
         response.billing_op_id,
         'subscription'
       )
@@ -71,7 +85,7 @@ export function useDowngradeToPersonal() {
     }
 
     if (response.status === 'pending_payment') {
-      billingOperationStore.startOperation(
+      void billingOperationStore.startOperation(
         response.billing_op_id,
         'subscription'
       )
