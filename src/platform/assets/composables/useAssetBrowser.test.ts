@@ -150,6 +150,25 @@ describe('useAssetBrowser', () => {
       })
     })
 
+    it('strips the model_type: prefix from the badge when the flag is on', () => {
+      mockSupportsModelTypeTags.value = true
+      const apiAsset = createApiAsset({
+        tags: ['models', 'model_type:checkpoints', 'sdxl']
+      })
+
+      const { filteredAssets } = useAssetBrowser(ref([apiAsset]))
+      const result = filteredAssets.value[0]
+
+      expect(result.badges).toContainEqual({
+        label: 'checkpoints',
+        type: 'type'
+      })
+      expect(result.badges).not.toContainEqual({
+        label: 'model_type:checkpoints',
+        type: 'type'
+      })
+    })
+
     it('handles tags with multiple slashes in badges', () => {
       const apiAsset = createApiAsset({
         tags: ['models', 'checkpoint/subfolder/model-name']

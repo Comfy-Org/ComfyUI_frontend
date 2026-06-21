@@ -156,6 +156,7 @@ export function getAssetModelType(asset: AssetItem): string | null {
 
 const MODEL_TYPE_TAG_PREFIX = 'model_type:'
 
+/** Strips the `model_type:` prefix off each namespaced tag, dropping non-`model_type:` tags. */
 function getModelTypeTagValues(asset: AssetItem): string[] {
   return asset.tags
     .filter((tag) => tag.startsWith(MODEL_TYPE_TAG_PREFIX))
@@ -163,6 +164,7 @@ function getModelTypeTagValues(asset: AssetItem): string[] {
     .filter((tag) => tag.length > 0)
 }
 
+/** Legacy grouping: each non-`models` tag's top-level path segment. */
 function getBareTagCategories(asset: AssetItem): string[] {
   return asset.tags
     .filter((tag) => tag !== MODELS_TAG && tag.length > 0)
@@ -190,8 +192,33 @@ export function getAssetCategories(
   return getBareTagCategories(asset)
 }
 
+/** Number of `parent/child` segments in a tag, used to pick the most specific. */
 function pathDepth(tag: string): number {
   return tag.split('/').length
+}
+
+/**
+ * Resolves the short label shown on an asset card's type badge.
+ *
+ * In `modelTypeMode` a `model_type:*` tag's stripped value is preferred so the
+ * badge never leaks the raw `model_type:` namespace; otherwise (and as a
+ * fallback for an uncovered asset) it uses the first non-`models` tag, showing
+ * the segment after the first `/` for hierarchical tags.
+ */
+export function getAssetTypeBadge(
+  asset: AssetItem,
+  modelTypeMode = false
+): string | undefined {
+  if (modelTypeMode) {
+    const [modelType] = getModelTypeTagValues(asset)
+    if (modelType) return modelType
+  }
+
+  const typeTag = asset.tags.find((tag) => tag !== MODELS_TAG)
+  if (!typeTag) return undefined
+  return typeTag.includes('/')
+    ? typeTag.slice(typeTag.indexOf('/') + 1)
+    : typeTag
 }
 
 /**
