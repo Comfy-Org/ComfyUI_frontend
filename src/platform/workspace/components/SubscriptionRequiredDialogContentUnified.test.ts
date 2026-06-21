@@ -97,7 +97,9 @@ describe('SubscriptionRequiredDialogContentUnified team-plan gate', () => {
 
     await user.click(screen.getByTestId('subscribe-team-btn'))
 
-    expect(onChooseTeam).toHaveBeenCalledOnce()
+    await vi.waitFor(() => {
+      expect(onChooseTeam).toHaveBeenCalledOnce()
+    })
     expect(mockHandleSubscribeTeamClick).not.toHaveBeenCalled()
   })
 
@@ -109,7 +111,9 @@ describe('SubscriptionRequiredDialogContentUnified team-plan gate', () => {
 
     await user.click(screen.getByTestId('subscribe-team-btn'))
 
-    expect(mockHandleSubscribeTeamClick).toHaveBeenCalledWith(TEAM_PAYLOAD)
+    await vi.waitFor(() => {
+      expect(mockHandleSubscribeTeamClick).toHaveBeenCalledWith(TEAM_PAYLOAD)
+    })
     expect(onChooseTeam).not.toHaveBeenCalled()
   })
 })
