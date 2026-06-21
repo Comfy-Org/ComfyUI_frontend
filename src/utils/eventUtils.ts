@@ -1,3 +1,21 @@
+/**
+ * Best-effort filename extraction from a dragged resource URL. Prefers
+ * ComfyUI's own `?filename=` query convention (used by /api/view and /view),
+ * falling back to the last path segment for other URLs.
+ */
+function extractFilenameFromUri(uri: string): string {
+  try {
+    const url = new URL(uri)
+    const queryFilename = url.searchParams.get('filename')
+    if (queryFilename) return queryFilename
+
+    const lastSegment = url.pathname.split('/').filter(Boolean).pop()
+    return lastSegment || 'file'
+  } catch {
+    return uri.split('/').pop() || 'file'
+  }
+}
+
 export async function extractFilesFromDragEvent(
   event: DragEvent
 ): Promise<File[]> {
@@ -14,13 +32,23 @@ export async function extractFilesFromDragEvent(
     validTypes.includes(t)
   )
   if (match) {
-    const uri = event.dataTransfer.getData(match)?.split('\n')?.[0]
+    // text/uri-list (RFC 2483) may contain multiple lines, where lines
+    // starting with '#' are comments and must be skipped - otherwise a
+    // leading comment line (e.g. one starting with '#') would resolve as a
+    // same-page fragment URL and be fetched instead of the real URI.
+    const uri = event.dataTransfer
+      .getData(match)
+      ?.split('\n')
+      .map((line) => line.trim())
+      .find((line) => line && !line.startsWith('#'))
     if (uri) {
       try {
         const response = await fetch(uri)
         if (response.ok) {
           const blob = await response.blob()
-          return [new File([blob], uri, { type: blob.type })]
+          return [
+            new File([blob], extractFilenameFromUri(uri), { type: blob.type })
+          ]
         }
       } catch {
         // Fall through to dataTransfer.files below
