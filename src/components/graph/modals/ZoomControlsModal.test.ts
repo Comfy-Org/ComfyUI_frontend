@@ -41,14 +41,6 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-vi.mock('@/renderer/extensions/minimap/composables/useMinimap', () => ({
-  useMinimap: () => ({
-    containerStyles: {
-      value: { backgroundColor: '#fff', borderRadius: '8px' }
-    }
-  })
-}))
-
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({
     execute: mockExecute,

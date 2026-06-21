@@ -3,7 +3,6 @@
     ref="buttonRef"
     variant="secondary"
     class="group h-8 rounded-none! bg-comfy-menu-bg p-0 transition-none! hover:rounded-lg! hover:bg-interface-button-hover-surface!"
-    :style="buttonStyles"
     :aria-label="$t('graphCanvasMenu.canvasMode')"
     aria-haspopup="menu"
     :aria-expanded="isOpen"
@@ -97,11 +96,6 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCommandStore } from '@/stores/commandStore'
 
-interface Props {
-  buttonStyles?: Record<string, string>
-}
-
-defineProps<Props>()
 const buttonRef = ref<ComponentPublicInstance | null>(null)
 const popover = ref<InstanceType<typeof Popover>>()
 const menuRef = ref<HTMLElement | null>(null)

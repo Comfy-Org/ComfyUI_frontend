@@ -12,15 +12,10 @@
     <ButtonGroup
       role="toolbar"
       :aria-label="t('graphCanvasMenu.canvasToolbar')"
-      class="absolute right-0 bottom-0 z-1200 flex-row gap-1 border border-interface-stroke bg-comfy-menu-bg p-2"
-      :style="{
-        ...stringifiedMinimapStyles.buttonGroupStyles
-      }"
+      class="absolute right-0 bottom-0 z-1200 flex-row gap-1 rounded-lg border border-interface-stroke bg-comfy-menu-bg p-2"
       @wheel="canvasInteractions.handleWheel"
     >
-      <CanvasModeSelector
-        :button-styles="stringifiedMinimapStyles.buttonStyles"
-      />
+      <CanvasModeSelector />
 
       <div class="h-[27px] w-px self-center bg-node-divider" />
 
@@ -28,7 +23,6 @@
         v-tooltip.top="fitViewTooltip"
         variant="secondary"
         :aria-label="fitViewTooltip"
-        :style="stringifiedMinimapStyles.buttonStyles"
         class="size-8 bg-comfy-menu-bg p-0 hover:bg-interface-button-hover-surface!"
         @click="() => commandStore.execute('Comfy.Canvas.FitView')"
       >
@@ -41,7 +35,6 @@
         :class="zoomButtonClass"
         :aria-label="t('zoomControls.label')"
         data-testid="zoom-controls-button"
-        :style="stringifiedMinimapStyles.buttonStyles"
         @click="toggleModal"
       >
         <span class="inline-flex items-center gap-1 px-2 text-xs">
@@ -57,7 +50,6 @@
         variant="secondary"
         :aria-label="minimapTooltip"
         data-testid="toggle-minimap-button"
-        :style="stringifiedMinimapStyles.buttonStyles"
         :class="minimapButtonClass"
         @click="onMinimapToggleClick"
       >
@@ -77,7 +69,6 @@
         :class="linkVisibleClass"
         :aria-label="linkVisibilityAriaLabel"
         data-testid="toggle-link-visibility-button"
-        :style="stringifiedMinimapStyles.buttonStyles"
         @click="onLinkVisibilityToggleClick"
       >
         <i class="icon-[lucide--route-off] size-4" aria-hidden="true" />
@@ -98,7 +89,6 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
 
 import CanvasModeSelector from './CanvasModeSelector.vue'
@@ -110,34 +100,9 @@ const { formatKeySequence } = useCommandStore()
 const canvasStore = useCanvasStore()
 const settingStore = useSettingStore()
 const canvasInteractions = useCanvasInteractions()
-const minimap = useMinimap()
 
 const { isModalVisible, toggleModal, hideModal, hasActivePopup } =
   useZoomControls()
-
-const stringifiedMinimapStyles = computed(() => {
-  const buttonGroupKeys = ['borderRadius']
-  const buttonKeys = ['borderRadius']
-  const additionalButtonStyles = {
-    border: 'none'
-  }
-
-  const containerStyles = minimap.containerStyles.value
-
-  const buttonStyles = {
-    ...Object.fromEntries(
-      Object.entries(containerStyles).filter(([key]) =>
-        buttonKeys.includes(key)
-      )
-    ),
-    ...additionalButtonStyles
-  }
-  const buttonGroupStyles = Object.entries(containerStyles)
-    .filter(([key]) => buttonGroupKeys.includes(key))
-    .reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
-
-  return { buttonStyles, buttonGroupStyles }
-})
 
 // Computed properties for reactive states
 const linkHidden = computed(

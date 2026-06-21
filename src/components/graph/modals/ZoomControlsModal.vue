@@ -5,7 +5,6 @@
   >
     <div
       class="w-4/5 rounded-lg border border-interface-stroke bg-interface-panel-surface p-2 text-text-primary shadow-lg select-none"
-      :style="filteredMinimapStyles"
       @click.stop
     >
       <div class="flex flex-col gap-1">
@@ -76,10 +75,8 @@ import { InputNumber } from 'primevue'
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
 
-const minimap = useMinimap()
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const { formatKeySequence } = useCommandStore()
@@ -117,13 +114,6 @@ const stopRepeat = () => {
     interval.value = null
   }
 }
-const filteredMinimapStyles = computed(() => {
-  return {
-    ...minimap.containerStyles.value,
-    height: undefined,
-    width: undefined
-  }
-})
 const zoomInCommandText = computed(() =>
   formatKeySequence(commandStore.getCommand('Comfy.Canvas.ZoomIn'))
 )
