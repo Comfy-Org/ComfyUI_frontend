@@ -34,6 +34,16 @@ describe('getImageFilenameFromUrl', () => {
       'out.hdr'
     )
   })
+
+  it('returns undefined for empty input', () => {
+    expect(getImageFilenameFromUrl('')).toBeUndefined()
+  })
+})
+
+describe('isHdrImageUrl edge cases', () => {
+  it('returns false for undefined', () => {
+    expect(isHdrImageUrl(undefined)).toBe(false)
+  })
 })
 
 describe('isHdrImageUrl', () => {
@@ -56,5 +66,11 @@ describe('toFullResolutionUrl', () => {
     expect(toFullResolutionUrl('/api/view?filename=out.exr')).toBe(
       '/api/view?filename=out.exr'
     )
+  })
+
+  it('preserves absolute http urls while stripping preview', () => {
+    expect(
+      toFullResolutionUrl('https://x.test/api/view?filename=out.exr&preview=w')
+    ).toBe('https://x.test/api/view?filename=out.exr')
   })
 })
