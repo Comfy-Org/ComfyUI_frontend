@@ -42,11 +42,11 @@ const {
       />
       <X v-else class="mt-0.5 size-4 shrink-0 text-primary-comfy-canvas/40" />
       <span
-        class="text-sm"
+        class="ppformula-text-center text-sm"
         :class="
           feature.included === false
-            ? 'text-primary-comfy-canvas/40'
-            : 'text-primary-comfy-canvas'
+            ? 'text-primary-warm-gray'
+            : 'text-primary-warm-white'
         "
       >
         {{ t(feature.text, locale) }}

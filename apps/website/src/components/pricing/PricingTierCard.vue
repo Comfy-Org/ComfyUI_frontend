@@ -1,6 +1,6 @@
 <template>
   <div
-    class="bg-primary-comfy-ink rounded-4.5xl row-span-7 grid grid-rows-subgrid pb-3"
+    class="rounded-4.5xl row-span-7 grid grid-rows-subgrid bg-primary-comfy-ink p-8"
   >
     <slot />
   </div>

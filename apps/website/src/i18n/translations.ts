@@ -1190,13 +1190,14 @@ const translations = {
   'buildWhat.row2b': { en: 'YET', 'zh-CN': '事物' },
 
   // PriceSection
-  'pricing.title': { en: 'Pricing', 'zh-CN': '价格' },
+  'pricing.title': { en: 'Choose a plan', 'zh-CN': '价格' },
   'pricing.subtitle': {
     en: 'Access cloud-powered ComfyUI workflows with straightforward, usage-based pricing.',
     'zh-CN': '通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。'
   },
   'pricing.badge.popular': { en: 'MOST POPULAR', 'zh-CN': '最受欢迎' },
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
+  'pricing.creditsLabel': { en: 'monthly credits', 'zh-CN': '每月积分' },
 
   'pricing.feature.shortRuntime': {
     en: '30 minute max workflow runtime',
@@ -1217,12 +1218,9 @@ const translations = {
 
   'pricing.plan.free.label': { en: 'FREE', 'zh-CN': '免费版' },
   'pricing.plan.free.price': { en: '$0', 'zh-CN': '$0' },
-  'pricing.plan.free.credits': {
-    en: 'Includes 400 monthly credits',
-    'zh-CN': '每月包含 400 积分'
-  },
+  'pricing.plan.free.credits': { en: '400', 'zh-CN': '400' },
   'pricing.plan.free.estimate': {
-    en: '~35 5s videos*',
+    en: 'Generates ~35 5s videos*',
     'zh-CN': '约可生成 35 个 5 秒视频*'
   },
   'pricing.plan.free.cta': { en: 'START FREE', 'zh-CN': '免费开始' },
@@ -1237,12 +1235,9 @@ const translations = {
 
   'pricing.plan.standard.label': { en: 'STANDARD', 'zh-CN': '标准版' },
   'pricing.plan.standard.price': { en: '$20', 'zh-CN': '$20' },
-  'pricing.plan.standard.credits': {
-    en: 'Includes 4,200 monthly credits with top-ups available',
-    'zh-CN': '每月包含 4,200 积分，并支持充值'
-  },
+  'pricing.plan.standard.credits': { en: '4,200', 'zh-CN': '4,200' },
   'pricing.plan.standard.estimate': {
-    en: '~380 5s videos*',
+    en: 'Generates ~380 5s videos*',
     'zh-CN': '约可生成 380 个 5 秒视频*'
   },
   'pricing.plan.standard.cta': {
@@ -1252,12 +1247,9 @@ const translations = {
 
   'pricing.plan.creator.label': { en: 'CREATOR', 'zh-CN': '创作者版' },
   'pricing.plan.creator.price': { en: '$35', 'zh-CN': '$35' },
-  'pricing.plan.creator.credits': {
-    en: 'Includes 7,400 monthly credits with top-ups available',
-    'zh-CN': '每月包含 7,400 积分，并支持充值'
-  },
+  'pricing.plan.creator.credits': { en: '7,400', 'zh-CN': '7,400' },
   'pricing.plan.creator.estimate': {
-    en: '~670 5s videos*',
+    en: 'Generates ~670 5s videos*',
     'zh-CN': '约可生成 670 个 5 秒视频*'
   },
   'pricing.plan.creator.cta': {
@@ -1267,12 +1259,9 @@ const translations = {
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
   'pricing.plan.pro.price': { en: '$100', 'zh-CN': '$100' },
-  'pricing.plan.pro.credits': {
-    en: 'Includes 21,100 monthly credits with top-ups available',
-    'zh-CN': '每月包含 21,100 积分，并支持充值'
-  },
+  'pricing.plan.pro.credits': { en: '21,100', 'zh-CN': '21,100' },
   'pricing.plan.pro.estimate': {
-    en: '~1,915 5s videos*',
+    en: 'Generates ~1,915 5s videos*',
     'zh-CN': '约可生成 1,915 个 5 秒视频*'
   },
   'pricing.plan.pro.cta': { en: 'SUBSCRIBE TO PRO', 'zh-CN': '订阅专业版' },
