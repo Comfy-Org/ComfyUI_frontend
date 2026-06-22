@@ -1,16 +1,16 @@
 import type { MaybeRefOrGetter } from 'vue'
 import { computed, toValue } from 'vue'
 
-import { asNodeId } from '@/types/nodeId'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { UUID } from '@/utils/uuid'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeId } from '@/types/nodeId'
 
 interface PromotedPreview {
-  sourceNodeId: string
+  sourceNodeId: NodeId
   sourceWidgetName: string
   type: 'image' | 'video' | 'audio'
   urls: string[]
@@ -38,13 +38,13 @@ export function usePromotedPreviews(
   /** Touches reactive sources for Vue tracking; `getNodeImageUrls` reads non-reactive app state. */
   function readReactivePreviewUrls(
     leafHost: SubgraphNode,
-    leafSourceNodeId: string,
+    leafSourceNodeId: NodeId,
     leafExecutionId: string,
     interiorNode: LGraphNode
   ): string[] | undefined {
     const locatorId = createNodeLocatorId(
       leafHost.subgraph.id,
-      asNodeId(leafSourceNodeId)
+      leafSourceNodeId
     )
     const reactiveOutputs = nodeOutputStore.nodeOutputs[locatorId]
     const reactivePreviews = nodeOutputStore.nodePreviewImages[locatorId]
@@ -85,10 +85,10 @@ export function usePromotedPreviews(
     function resolveNestedHost(
       rootGraphId: UUID,
       currentHostLocator: string,
-      sourceNodeId: string
+      sourceNodeId: NodeId
     ) {
       const currentHost = hostNodesByLocator.get(currentHostLocator)
-      const sourceNode = currentHost?.subgraph.getNodeByRawId(sourceNodeId)
+      const sourceNode = currentHost?.subgraph.getNodeById(sourceNodeId)
       if (!(sourceNode instanceof SubgraphNode)) return undefined
 
       const pathLocator = `${currentHostLocator}:${sourceNode.id}`
@@ -116,7 +116,7 @@ export function usePromotedPreviews(
       const leafHostLocator =
         resolved?.steps.at(-1)?.hostNodeLocator ?? hostLocator
       const leafHost = hostNodesByLocator.get(leafHostLocator) ?? node
-      const interiorNode = leafHost.subgraph.getNodeByRawId(leaf.sourceNodeId)
+      const interiorNode = leafHost.subgraph.getNodeById(leaf.sourceNodeId)
       if (!interiorNode) return []
 
       const urls = readReactivePreviewUrls(

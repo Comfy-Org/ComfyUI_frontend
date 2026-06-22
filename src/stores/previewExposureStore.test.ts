@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { asNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 import { usePreviewExposureStore } from './previewExposureStore'
@@ -27,13 +28,13 @@ describe(usePreviewExposureStore, () => {
   describe('addExposure', () => {
     it('appends a new exposure and returns it with name = sourcePreviewName when no collision', () => {
       const entry = store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '42',
+        sourceNodeId: asNodeId(42),
         sourcePreviewName: '$$canvas-image-preview'
       })
 
       expect(entry).toEqual({
         name: '$$canvas-image-preview',
-        sourceNodeId: '42',
+        sourceNodeId: asNodeId(42),
         sourcePreviewName: '$$canvas-image-preview'
       })
       expect(store.getExposures(rootGraphA, hostA)).toEqual([entry])
@@ -41,15 +42,15 @@ describe(usePreviewExposureStore, () => {
 
     it('disambiguates name collisions via nextUniqueName', () => {
       const first = store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '42',
+        sourceNodeId: asNodeId(42),
         sourcePreviewName: 'preview'
       })
       const second = store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '43',
+        sourceNodeId: asNodeId(43),
         sourcePreviewName: 'preview'
       })
       const third = store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '44',
+        sourceNodeId: asNodeId(44),
         sourcePreviewName: 'preview'
       })
 
@@ -67,14 +68,14 @@ describe(usePreviewExposureStore, () => {
   describe('setExposures', () => {
     it('replaces the array for the host', () => {
       store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '42',
+        sourceNodeId: asNodeId(42),
         sourcePreviewName: 'preview'
       })
 
       const next = [
         {
           name: 'replaced',
-          sourceNodeId: '99',
+          sourceNodeId: asNodeId(99),
           sourcePreviewName: 'other'
         }
       ]
@@ -87,7 +88,7 @@ describe(usePreviewExposureStore, () => {
 
     it('clears the host bucket when given an empty array', () => {
       store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '42',
+        sourceNodeId: asNodeId(42),
         sourcePreviewName: 'preview'
       })
 
@@ -100,11 +101,11 @@ describe(usePreviewExposureStore, () => {
   describe('removeExposure', () => {
     beforeEach(() => {
       store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '42',
+        sourceNodeId: asNodeId(42),
         sourcePreviewName: 'preview'
       })
       store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '43',
+        sourceNodeId: asNodeId(43),
         sourcePreviewName: 'preview'
       })
     })
@@ -131,17 +132,17 @@ describe(usePreviewExposureStore, () => {
 
     it('maps each exposure to {sourceNodeId, sourceWidgetName} preserving order', () => {
       store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '42',
+        sourceNodeId: asNodeId(42),
         sourcePreviewName: 'preview'
       })
       store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '43',
+        sourceNodeId: asNodeId(43),
         sourcePreviewName: 'preview'
       })
 
       expect(store.getExposuresAsPromotionShape(rootGraphA, hostA)).toEqual([
-        { sourceNodeId: '42', sourceWidgetName: 'preview' },
-        { sourceNodeId: '43', sourceWidgetName: 'preview' }
+        { sourceNodeId: asNodeId(42), sourceWidgetName: 'preview' },
+        { sourceNodeId: asNodeId(43), sourceWidgetName: 'preview' }
       ])
     })
   })
@@ -149,16 +150,16 @@ describe(usePreviewExposureStore, () => {
   describe('clearGraph', () => {
     it('removes all hosts under the rootGraphId without affecting others', () => {
       store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '1',
+        sourceNodeId: asNodeId(1),
         sourcePreviewName: 'p'
       })
       store.addExposure(rootGraphA, hostB, {
-        sourceNodeId: '2',
+        sourceNodeId: asNodeId(2),
         sourcePreviewName: 'p'
       })
       const hostInB = '7'
       store.addExposure(rootGraphB, hostInB, {
-        sourceNodeId: '3',
+        sourceNodeId: asNodeId(3),
         sourcePreviewName: 'p'
       })
 
@@ -173,32 +174,38 @@ describe(usePreviewExposureStore, () => {
   describe('isolation between (rootGraphId, hostNodeLocator) pairs', () => {
     it('keeps separate buckets per host and per root graph', () => {
       store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '1',
+        sourceNodeId: asNodeId(1),
         sourcePreviewName: 'p'
       })
       store.addExposure(rootGraphA, hostB, {
-        sourceNodeId: '2',
+        sourceNodeId: asNodeId(2),
         sourcePreviewName: 'p'
       })
       const hostInB = '7'
       store.addExposure(rootGraphB, hostInB, {
-        sourceNodeId: '3',
+        sourceNodeId: asNodeId(3),
         sourcePreviewName: 'p'
       })
 
       expect(store.getExposures(rootGraphA, hostA)).toHaveLength(1)
       expect(store.getExposures(rootGraphA, hostB)).toHaveLength(1)
       expect(store.getExposures(rootGraphB, hostInB)).toHaveLength(1)
-      expect(store.getExposures(rootGraphA, hostA)[0].sourceNodeId).toBe('1')
-      expect(store.getExposures(rootGraphA, hostB)[0].sourceNodeId).toBe('2')
-      expect(store.getExposures(rootGraphB, hostInB)[0].sourceNodeId).toBe('3')
+      expect(store.getExposures(rootGraphA, hostA)[0].sourceNodeId).toBe(
+        asNodeId(1)
+      )
+      expect(store.getExposures(rootGraphA, hostB)[0].sourceNodeId).toBe(
+        asNodeId(2)
+      )
+      expect(store.getExposures(rootGraphB, hostInB)[0].sourceNodeId).toBe(
+        asNodeId(3)
+      )
     })
   })
 
   describe('resolveChain', () => {
     it('returns a single-step chain for an existing exposure when no resolver is provided', () => {
       const entry = store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '42',
+        sourceNodeId: asNodeId(42),
         sourcePreviewName: 'preview'
       })
 
@@ -210,13 +217,13 @@ describe(usePreviewExposureStore, () => {
         hostNodeLocator: hostA,
         exposure: {
           name: 'preview',
-          sourceNodeId: '42',
+          sourceNodeId: asNodeId(42),
           sourcePreviewName: 'preview'
         }
       })
       expect(result?.leaf).toEqual({
         rootGraphId: rootGraphA,
-        sourceNodeId: '42',
+        sourceNodeId: asNodeId(42),
         sourcePreviewName: 'preview'
       })
     })
@@ -228,11 +235,11 @@ describe(usePreviewExposureStore, () => {
     it('walks one nested host when a resolver is provided', () => {
       const innerHost = '99'
       store.addExposure(rootGraphA, innerHost, {
-        sourceNodeId: 'inner-leaf',
+        sourceNodeId: asNodeId(70),
         sourcePreviewName: 'inner-preview'
       })
       const outer = store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '99',
+        sourceNodeId: asNodeId(99),
         sourcePreviewName: 'inner-preview'
       })
 
@@ -241,7 +248,7 @@ describe(usePreviewExposureStore, () => {
         hostA,
         outer.name,
         (rootGraphId, hostLocator, sourceNodeId) => {
-          if (hostLocator === hostA && sourceNodeId === '99') {
+          if (hostLocator === hostA && sourceNodeId === asNodeId(99)) {
             return { rootGraphId, hostNodeLocator: innerHost }
           }
           return undefined
@@ -253,7 +260,7 @@ describe(usePreviewExposureStore, () => {
       expect(resolved?.steps[1].hostNodeLocator).toBe(innerHost)
       expect(resolved?.leaf).toEqual({
         rootGraphId: rootGraphA,
-        sourceNodeId: 'inner-leaf',
+        sourceNodeId: asNodeId(70),
         sourcePreviewName: 'inner-preview'
       })
     })
@@ -262,15 +269,15 @@ describe(usePreviewExposureStore, () => {
       const inner = '50'
       const innermost = '60'
       store.addExposure(rootGraphA, innermost, {
-        sourceNodeId: 'leaf',
+        sourceNodeId: asNodeId(61),
         sourcePreviewName: '$$canvas-image-preview'
       })
       store.addExposure(rootGraphA, inner, {
-        sourceNodeId: '60',
+        sourceNodeId: asNodeId(60),
         sourcePreviewName: '$$canvas-image-preview'
       })
       const outer = store.addExposure(rootGraphA, hostA, {
-        sourceNodeId: '50',
+        sourceNodeId: asNodeId(50),
         sourcePreviewName: '$$canvas-image-preview'
       })
 
@@ -279,9 +286,9 @@ describe(usePreviewExposureStore, () => {
         hostA,
         outer.name,
         (rootGraphId, hostLocator, sourceNodeId) => {
-          if (hostLocator === hostA && sourceNodeId === '50')
+          if (hostLocator === hostA && sourceNodeId === asNodeId(50))
             return { rootGraphId, hostNodeLocator: inner }
-          if (hostLocator === inner && sourceNodeId === '60')
+          if (hostLocator === inner && sourceNodeId === asNodeId(60))
             return { rootGraphId, hostNodeLocator: innermost }
           return undefined
         }
@@ -295,7 +302,7 @@ describe(usePreviewExposureStore, () => {
       ])
       expect(resolved?.leaf).toEqual({
         rootGraphId: rootGraphA,
-        sourceNodeId: 'leaf',
+        sourceNodeId: asNodeId(61),
         sourcePreviewName: '$$canvas-image-preview'
       })
     })

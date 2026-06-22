@@ -16,7 +16,18 @@ describe(parsePreviewExposures, () => {
         sourcePreviewName: '$$canvas-image-preview'
       }
     ]
-    expect(parsePreviewExposures(input)).toEqual(input)
+    expect(parsePreviewExposures(input)).toEqual([
+      {
+        name: 'preview',
+        sourceNodeId: 5,
+        sourcePreviewName: '$$canvas-image-preview'
+      },
+      {
+        name: 'preview2',
+        sourceNodeId: 7,
+        sourcePreviewName: '$$canvas-image-preview'
+      }
+    ])
   })
 
   it('parses JSON-string input', () => {
@@ -27,7 +38,13 @@ describe(parsePreviewExposures, () => {
         sourcePreviewName: '$$canvas-image-preview'
       }
     ]
-    expect(parsePreviewExposures(JSON.stringify(input))).toEqual(input)
+    expect(parsePreviewExposures(JSON.stringify(input))).toEqual([
+      {
+        name: 'preview',
+        sourceNodeId: 5,
+        sourcePreviewName: '$$canvas-image-preview'
+      }
+    ])
   })
 
   it('returns empty array for undefined', () => {
@@ -65,7 +82,7 @@ describe(parsePreviewExposures, () => {
     ).toEqual([])
   })
 
-  it('returns empty array when entries have wrong types', () => {
+  it('returns empty array when entries have wrong types or invalid node ids', () => {
     expect(
       parsePreviewExposures([
         {
@@ -79,7 +96,7 @@ describe(parsePreviewExposures, () => {
       parsePreviewExposures([
         {
           name: 'preview',
-          sourceNodeId: 5,
+          sourceNodeId: 'not-a-node-id',
           sourcePreviewName: '$$canvas-image-preview'
         }
       ])

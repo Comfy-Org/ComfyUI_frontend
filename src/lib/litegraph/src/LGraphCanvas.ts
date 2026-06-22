@@ -9058,8 +9058,7 @@ function remapPreviewExposures(
     if (!hasSourceNodeId(entry)) continue
 
     const remappedNodeId = remapNodeId(entry.sourceNodeId, remappedIds)
-    if (remappedNodeId !== undefined)
-      entry.sourceNodeId = String(remappedNodeId)
+    if (remappedNodeId !== undefined) entry.sourceNodeId = remappedNodeId
   }
 }
 

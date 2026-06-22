@@ -251,13 +251,18 @@ describe('remapClipboardSubgraphNodeIds', () => {
 
     const remappedInteriorId = parsed.subgraphs?.[0]?.nodes?.[0]?.id
     expect(remappedInteriorId).not.toBe(1)
-    expect(parsed.nodes?.[0]?.properties?.previewExposures).toStrictEqual([
+    expect(typeof remappedInteriorId).toBe('number')
+    const previewExposures = parsed.nodes?.[0]?.properties?.previewExposures
+    expect(previewExposures).toStrictEqual([
       {
         name: '$$canvas-image-preview',
-        sourceNodeId: String(remappedInteriorId),
+        sourceNodeId: remappedInteriorId,
         sourcePreviewName: '$$canvas-image-preview'
       }
     ])
+    if (!Array.isArray(previewExposures))
+      throw new Error('Expected previewExposures')
+    expect(typeof previewExposures?.[0]?.sourceNodeId).toBe('number')
   })
 })
 
@@ -476,7 +481,7 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
     const interiorIdAfterRemap = pastedHost!.subgraph.nodes[0].id
     expect(exposures).toEqual([
       expect.objectContaining({
-        sourceNodeId: String(interiorIdAfterRemap),
+        sourceNodeId: interiorIdAfterRemap,
         sourcePreviewName: '$$canvas-image-preview'
       })
     ])

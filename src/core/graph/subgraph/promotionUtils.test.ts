@@ -223,7 +223,7 @@ describe('pruneDisconnected', () => {
       subgraphNode.rootGraph.id,
       hostLocator,
       {
-        sourceNodeId: String(interiorNode.id),
+        sourceNodeId: interiorNode.id,
         sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
       }
     )
@@ -238,7 +238,7 @@ describe('pruneDisconnected', () => {
     ).toEqual([
       {
         name: CANVAS_IMAGE_PREVIEW_WIDGET,
-        sourceNodeId: String(interiorNode.id),
+        sourceNodeId: interiorNode.id,
         sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
       }
     ])
@@ -363,7 +363,7 @@ describe('promoteRecommendedWidgets', () => {
     ).toEqual([
       {
         name: CANVAS_IMAGE_PREVIEW_WIDGET,
-        sourceNodeId: String(glslNode.id),
+        sourceNodeId: glslNode.id,
         sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
       }
     ])
@@ -408,7 +408,7 @@ describe('promoteRecommendedWidgets', () => {
       )
     ).toContainEqual({
       name: CANVAS_IMAGE_PREVIEW_WIDGET,
-      sourceNodeId: String(glslNode.id),
+      sourceNodeId: glslNode.id,
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })
     expect(updatePreviewsMock).not.toHaveBeenCalled()
@@ -468,7 +468,7 @@ describe('autoExposeKnownPreviewNodes', () => {
     subgraphNode.properties.previewExposures = [
       {
         name: CANVAS_IMAGE_PREVIEW_WIDGET,
-        sourceNodeId: String(otherNode.id),
+        sourceNodeId: otherNode.id,
         sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
       }
     ]
@@ -479,7 +479,7 @@ describe('autoExposeKnownPreviewNodes', () => {
       usePreviewExposureStore()
         .getExposures(subgraphNode.rootGraph.id, String(subgraphNode.id))
         .map((e) => e.sourceNodeId)
-    ).not.toContain(String(glslNode.id))
+    ).not.toContain(glslNode.id)
   })
 })
 

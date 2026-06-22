@@ -186,7 +186,7 @@ function isPreviewExposed(
     .getExposures(subgraphNode.rootGraph.id, hostLocator)
     .some(
       (exposure) =>
-        exposure.sourceNodeId === source.sourceNodeId &&
+        String(exposure.sourceNodeId) === source.sourceNodeId &&
         exposure.sourcePreviewName === source.sourceWidgetName
     )
 }
@@ -309,7 +309,7 @@ function promotePreviewViaExposure(
     .getExposures(rootGraphId, hostLocator)
     .some(
       (exposure) =>
-        exposure.sourceNodeId === String(sourceNode.id) &&
+        exposure.sourceNodeId === sourceNode.id &&
         exposure.sourcePreviewName === sourcePreviewName
     )
   if (existing) return
@@ -404,7 +404,7 @@ export function demoteWidget(
         .getExposures(parent.rootGraph.id, hostLocator)
         .find(
           (entry) =>
-            entry.sourceNodeId === source.sourceNodeId &&
+            String(entry.sourceNodeId) === source.sourceNodeId &&
             entry.sourcePreviewName === source.sourceWidgetName
         )
       if (exposure) {

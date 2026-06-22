@@ -1,4 +1,9 @@
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { NodeId } from '@/types/nodeId'
+
+interface PromotedPseudoWidgetSource {
+  sourceNodeId: NodeId
+  sourceWidgetName: string
+}
 
 export interface SubgraphPseudoWidget {
   name: string
@@ -15,7 +20,7 @@ interface SubgraphPseudoWidgetCacheEntry<
   TNode extends SubgraphPseudoWidgetNode<TWidget>,
   TWidget extends SubgraphPseudoWidget
 > {
-  sourceNodeId: string
+  sourceNodeId: NodeId
   sourceWidgetName: string
   node: TNode
 }
@@ -24,7 +29,7 @@ export interface SubgraphPseudoWidgetCache<
   TNode extends SubgraphPseudoWidgetNode<TWidget>,
   TWidget extends SubgraphPseudoWidget
 > {
-  promotions: readonly PromotedWidgetSource[]
+  promotions: readonly PromotedPseudoWidgetSource[]
   entries: SubgraphPseudoWidgetCacheEntry<TNode, TWidget>[]
   nodes: TNode[]
 }
@@ -34,8 +39,8 @@ interface ResolveSubgraphPseudoWidgetCacheArgs<
   TWidget extends SubgraphPseudoWidget
 > {
   cache: SubgraphPseudoWidgetCache<TNode, TWidget> | null
-  promotions: readonly PromotedWidgetSource[]
-  getNodeById: (nodeId: string) => TNode | undefined
+  promotions: readonly PromotedPseudoWidgetSource[]
+  getNodeById: (nodeId: NodeId) => TNode | undefined
   isPreviewPseudoWidget: (widget: TWidget) => boolean
 }
 
@@ -62,7 +67,7 @@ function isCacheStillValid<
   TWidget extends SubgraphPseudoWidget
 >(
   cache: SubgraphPseudoWidgetCache<TNode, TWidget>,
-  getNodeById: (nodeId: string) => TNode | undefined,
+  getNodeById: (nodeId: NodeId) => TNode | undefined,
   isPreviewPseudoWidget: (widget: TWidget) => boolean
 ): boolean {
   return cache.entries.every((entry) => {

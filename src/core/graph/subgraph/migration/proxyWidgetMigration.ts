@@ -32,7 +32,11 @@ import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
-interface LegacyProxyEntrySource extends PromotedWidgetSource {
+interface LegacyProxyEntrySource extends Omit<
+  PromotedWidgetSource,
+  'sourceNodeId'
+> {
+  sourceNodeId: NodeId
   disambiguatingSourceNodeId?: string
 }
 
@@ -56,12 +60,12 @@ function stripLegacyPrefixes(sourceWidgetName: string): StrippedPrefix {
 
 function canResolveLegacyProxy(
   hostNode: SubgraphNode,
-  sourceNodeId: string,
+  sourceNodeId: NodeId,
   widgetName: string
 ): boolean {
   return (
-    resolveConcretePromotedWidget(hostNode, sourceNodeId, widgetName).status ===
-    'resolved'
+    resolveConcretePromotedWidget(hostNode, String(sourceNodeId), widgetName)
+      .status === 'resolved'
   )
 }
 
@@ -71,9 +75,12 @@ export function normalizeLegacyProxyWidgetEntry(
   sourceWidgetName: string,
   disambiguatingSourceNodeId?: string
 ): LegacyProxyEntrySource {
-  if (canResolveLegacyProxy(hostNode, sourceNodeId, sourceWidgetName)) {
+  const normalizedSourceNodeId = asNodeId(sourceNodeId)
+  if (
+    canResolveLegacyProxy(hostNode, normalizedSourceNodeId, sourceWidgetName)
+  ) {
     return {
-      sourceNodeId,
+      sourceNodeId: normalizedSourceNodeId,
       sourceWidgetName,
       ...(disambiguatingSourceNodeId && { disambiguatingSourceNodeId })
     }
@@ -84,7 +91,7 @@ export function normalizeLegacyProxyWidgetEntry(
     stripped.deepestPrefixId ?? disambiguatingSourceNodeId
 
   return {
-    sourceNodeId,
+    sourceNodeId: normalizedSourceNodeId,
     sourceWidgetName: stripped.sourceWidgetName,
     ...(patchDisambiguatingSourceNodeId && {
       disambiguatingSourceNodeId: patchDisambiguatingSourceNodeId
@@ -292,7 +299,7 @@ function collectTargetsSkippingDangling(
 
 function cohortDuplicatesPrimitive(
   cohort: readonly LegacyProxyEntrySource[],
-  primitiveNodeId: string
+  primitiveNodeId: NodeId
 ): boolean {
   return (
     cohort.filter((entry) => entry.sourceNodeId === primitiveNodeId).length >= 2
@@ -306,7 +313,7 @@ function classify(
 ): Plan {
   const linkedInput = findHostInputForPromotion(
     hostNode,
-    normalized.sourceNodeId,
+    String(normalized.sourceNodeId),
     normalized.sourceWidgetName
   )
   if (linkedInput) {
@@ -732,8 +739,8 @@ function quarantineFor(
   const { sourceNodeId, sourceWidgetName, disambiguatingSourceNodeId } =
     entry.normalized
   const originalEntry: SerializedProxyWidgetTuple = disambiguatingSourceNodeId
-    ? [sourceNodeId, sourceWidgetName, disambiguatingSourceNodeId]
-    : [sourceNodeId, sourceWidgetName]
+    ? [String(sourceNodeId), sourceWidgetName, disambiguatingSourceNodeId]
+    : [String(sourceNodeId), sourceWidgetName]
   return makeQuarantineEntry({
     originalEntry,
     reason,

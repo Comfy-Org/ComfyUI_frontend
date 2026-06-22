@@ -81,7 +81,7 @@ describe('SubgraphEditor', () => {
       subgraph.rootGraph.id,
       String(host.id),
       {
-        sourceNodeId: String(previewNode.id),
+        sourceNodeId: previewNode.id,
         sourcePreviewName: '$$canvas-image-preview'
       }
     )
@@ -277,7 +277,7 @@ describe('SubgraphEditor', () => {
 
     const previewStore = usePreviewExposureStore()
     previewStore.addExposure(subgraph.rootGraph.id, String(host.id), {
-      sourceNodeId: String(orphanedSourceNode.id),
+      sourceNodeId: orphanedSourceNode.id,
       sourcePreviewName: '$$canvas-image-preview'
     })
 

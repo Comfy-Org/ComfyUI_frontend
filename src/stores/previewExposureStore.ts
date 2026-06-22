@@ -9,24 +9,42 @@ import { resolvePreviewExposureChain } from '@/core/graph/subgraph/preview/previ
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { asNodeId } from '@/types/nodeId'
+import type { NodeId, NodeIdInput } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
-const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
+export type NormalizedPreviewExposure = Omit<
+  PreviewExposure,
+  'sourceNodeId'
+> & {
+  sourceNodeId: NodeId
+}
+
+type NormalizedPromotedWidgetSource = Omit<
+  PromotedWidgetSource,
+  'sourceNodeId'
+> & {
+  sourceNodeId: NodeId
+}
+
+const EMPTY_EXPOSURES: readonly NormalizedPreviewExposure[] = Object.freeze([])
 
 type ResolveNestedHostFn = NonNullable<
   PreviewExposureChainContext['resolveNestedHost']
 >
 
 export const usePreviewExposureStore = defineStore('previewExposure', () => {
-  const exposures = ref(new Map<UUID, Map<string, PreviewExposure[]>>())
+  const exposures = ref(
+    new Map<UUID, Map<string, NormalizedPreviewExposure[]>>()
+  )
 
   function _getHostsForGraph(
     rootGraphId: UUID
-  ): Map<string, PreviewExposure[]> {
+  ): Map<string, NormalizedPreviewExposure[]> {
     const hosts = exposures.value.get(rootGraphId)
     if (hosts) return hosts
 
-    const nextHosts = new Map<string, PreviewExposure[]>()
+    const nextHosts = new Map<string, NormalizedPreviewExposure[]>()
     exposures.value.set(rootGraphId, nextHosts)
     return nextHosts
   }
@@ -34,21 +52,30 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   function _getExposuresRef(
     rootGraphId: UUID,
     hostNodeLocator: string
-  ): PreviewExposure[] | undefined {
+  ): NormalizedPreviewExposure[] | undefined {
     return exposures.value.get(rootGraphId)?.get(hostNodeLocator)
   }
 
   function getExposures(
     rootGraphId: UUID,
     hostNodeLocator: string
-  ): readonly PreviewExposure[] {
+  ): readonly NormalizedPreviewExposure[] {
     return _getExposuresRef(rootGraphId, hostNodeLocator) ?? EMPTY_EXPOSURES
+  }
+
+  function normalizeExposure(
+    exposure: PreviewExposure | NormalizedPreviewExposure
+  ): NormalizedPreviewExposure {
+    return {
+      ...exposure,
+      sourceNodeId: asNodeId(exposure.sourceNodeId)
+    }
   }
 
   function setExposures(
     rootGraphId: UUID,
     hostNodeLocator: string,
-    next: readonly PreviewExposure[]
+    next: readonly (PreviewExposure | NormalizedPreviewExposure)[]
   ): void {
     const hosts = _getHostsForGraph(rootGraphId)
     if (next.length === 0) {
@@ -56,21 +83,21 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
       if (hosts.size === 0) exposures.value.delete(rootGraphId)
       return
     }
-    hosts.set(hostNodeLocator, [...next])
+    hosts.set(hostNodeLocator, next.map(normalizeExposure))
   }
 
   function addExposure(
     rootGraphId: UUID,
     hostNodeLocator: string,
-    source: { sourceNodeId: string; sourcePreviewName: string }
-  ): PreviewExposure {
+    source: { sourceNodeId: NodeIdInput; sourcePreviewName: string }
+  ): NormalizedPreviewExposure {
     const hosts = _getHostsForGraph(rootGraphId)
     const current = hosts.get(hostNodeLocator) ?? []
     const existingNames = current.map((e) => e.name)
     const name = nextUniqueName(source.sourcePreviewName, existingNames)
-    const entry: PreviewExposure = {
+    const entry: NormalizedPreviewExposure = {
       name,
-      sourceNodeId: source.sourceNodeId,
+      sourceNodeId: asNodeId(source.sourceNodeId),
       sourcePreviewName: source.sourcePreviewName
     }
     hosts.set(hostNodeLocator, [...current, entry])
@@ -96,7 +123,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   function getExposuresAsPromotionShape(
     rootGraphId: UUID,
     hostNodeLocator: string
-  ): PromotedWidgetSource[] {
+  ): NormalizedPromotedWidgetSource[] {
     return getExposures(rootGraphId, hostNodeLocator).map((exposure) => ({
       sourceNodeId: exposure.sourceNodeId,
       sourceWidgetName: exposure.sourcePreviewName

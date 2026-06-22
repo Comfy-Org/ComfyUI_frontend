@@ -1144,8 +1144,16 @@ describe('SubgraphWidgetPromotion', () => {
         sourceNodeId: '14',
         sourcePreviewName: 'videopreview'
       }
-      const named12 = { name: CANVAS, ...exposure12 }
-      const named14 = { name: 'videopreview', ...exposure14 }
+      const named12 = {
+        name: CANVAS,
+        sourceNodeId: asNodeId(12),
+        sourcePreviewName: CANVAS
+      }
+      const named14 = {
+        name: 'videopreview',
+        sourceNodeId: asNodeId(14),
+        sourcePreviewName: 'videopreview'
+      }
 
       it('hydrates previewExposures into the store during configure', () => {
         const hostNode = createTestSubgraphNode(createTestSubgraph())
@@ -1159,7 +1167,13 @@ describe('SubgraphWidgetPromotion', () => {
             hostNode.rootGraph.id,
             String(hostNode.id)
           )
-        ).toEqual([{ name: 'preview', ...exposure12 }])
+        ).toEqual([
+          {
+            name: 'preview',
+            sourceNodeId: asNodeId(12),
+            sourcePreviewName: CANVAS
+          }
+        ])
       })
 
       type SerializeCase = {
@@ -1170,7 +1184,7 @@ describe('SubgraphWidgetPromotion', () => {
           sourceNodeId: string
           sourcePreviewName: string
         }[]
-        expected: (typeof named12)[] | undefined
+        expected: (typeof named12 | typeof named14)[] | undefined
         expectLiveUnchanged?: boolean
       }
 
@@ -1218,7 +1232,7 @@ describe('SubgraphWidgetPromotion', () => {
 
         const legacyKey = createNodeLocatorId(rootGraphId, hostNode.id)
         store.setExposures(rootGraphId, legacyKey, [
-          { name: 'legacy', ...exposure12 }
+          { ...named12, name: 'legacy' }
         ])
         store.setExposures(rootGraphId, hostLocator, [])
 

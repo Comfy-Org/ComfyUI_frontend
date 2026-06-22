@@ -445,7 +445,7 @@ describe('flushProxyWidgetMigration', () => {
       )
       expect(exposures).toHaveLength(1)
       expect(exposures[0].sourcePreviewName).toBe('$$canvas-image-preview')
-      expect(exposures[0].sourceNodeId).toBe(String(inner.id))
+      expect(exposures[0].sourceNodeId).toBe(inner.id)
     })
 
     it('classifies type:preview serialize:false widgets as preview exposure', () => {
@@ -465,7 +465,7 @@ describe('flushProxyWidgetMigration', () => {
       )
       expect(exposures).toEqual([
         expect.objectContaining({
-          sourceNodeId: String(inner.id),
+          sourceNodeId: inner.id,
           sourcePreviewName: 'videopreview'
         })
       ])
@@ -483,7 +483,7 @@ describe('flushProxyWidgetMigration', () => {
       const store = usePreviewExposureStore()
       const locator = String(host.id)
       store.addExposure(host.rootGraph.id, locator, {
-        sourceNodeId: String(innerA.id),
+        sourceNodeId: innerA.id,
         sourcePreviewName: '$$canvas-image-preview'
       })
 
@@ -494,9 +494,7 @@ describe('flushProxyWidgetMigration', () => {
 
       const exposures = store.getExposures(host.rootGraph.id, locator)
       expect(exposures).toHaveLength(2)
-      const newExposure = exposures.find(
-        (e) => e.sourceNodeId === String(innerB.id)
-      )
+      const newExposure = exposures.find((e) => e.sourceNodeId === innerB.id)
       expect(newExposure?.name).toBe('$$canvas-image-preview_1')
     })
 
@@ -509,7 +507,7 @@ describe('flushProxyWidgetMigration', () => {
       const store = usePreviewExposureStore()
       const locator = String(host.id)
       store.addExposure(host.rootGraph.id, locator, {
-        sourceNodeId: String(inner.id),
+        sourceNodeId: inner.id,
         sourcePreviewName: '$$canvas-image-preview'
       })
 
@@ -746,7 +744,7 @@ describe('flushProxyWidgetMigration', () => {
         )
       ).toEqual([
         expect.objectContaining({
-          sourceNodeId: String(inner.id),
+          sourceNodeId: inner.id,
           sourcePreviewName: '$$canvas-image-preview'
         })
       ])
@@ -779,7 +777,7 @@ describe('normalizeLegacyProxyWidgetEntry', () => {
     )
 
     expect(result).toEqual({
-      sourceNodeId: String(innerNode.id),
+      sourceNodeId: innerNode.id,
       sourceWidgetName: 'seed'
     })
   })
@@ -795,7 +793,7 @@ describe('normalizeLegacyProxyWidgetEntry', () => {
     )
 
     expect(result).toEqual({
-      sourceNodeId: String(innerNode.id),
+      sourceNodeId: innerNode.id,
       sourceWidgetName: 'seed',
       disambiguatingSourceNodeId: String(innerNode.id)
     })
@@ -833,7 +831,7 @@ describe('normalizeLegacyProxyWidgetEntry', () => {
     )
 
     expect(result).toEqual({
-      sourceNodeId: String(innerNode.id),
+      sourceNodeId: innerNode.id,
       sourceWidgetName: 'nonexistent_widget',
       disambiguatingSourceNodeId: '999'
     })

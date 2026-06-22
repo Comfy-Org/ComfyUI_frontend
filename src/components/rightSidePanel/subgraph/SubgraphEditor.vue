@@ -22,7 +22,6 @@ import {
 } from '@/core/graph/subgraph/promotedInputWidget'
 import type { PromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import type { WidgetItem } from '@/core/graph/subgraph/promotionUtils'
-import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import { asNodeId, UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -32,6 +31,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import type { NormalizedPreviewExposure } from '@/stores/previewExposureStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -46,7 +46,7 @@ type PromotedRow = {
 type PreviewRow = {
   kind: 'preview'
   node: LGraphNode
-  exposure: PreviewExposure
+  exposure: NormalizedPreviewExposure
   realWidget?: IBaseWidget
 }
 type ActiveRow = PromotedRow | PreviewRow
@@ -117,8 +117,7 @@ function getActivePreviewRows(node: SubgraphNode): PreviewRow[] {
   const rootGraphId = node.rootGraph.id
   const exposures = previewExposureStore.getExposures(rootGraphId, hostLocator)
   return exposures.flatMap((exposure): PreviewRow[] => {
-    const sourceNode =
-      node.subgraph._nodes_by_id[asNodeId(exposure.sourceNodeId)]
+    const sourceNode = node.subgraph.getNodeById(exposure.sourceNodeId)
     if (!sourceNode) return []
     const realWidget = getPromotableWidgets(sourceNode).find(
       (candidate) => candidate.name === exposure.sourcePreviewName

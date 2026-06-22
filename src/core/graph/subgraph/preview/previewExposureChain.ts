@@ -1,17 +1,22 @@
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
+import type { NodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
+
+type ChainPreviewExposure = Omit<PreviewExposure, 'sourceNodeId'> & {
+  sourceNodeId: NodeId
+}
 
 interface ResolvedPreviewChainStep {
   rootGraphId: UUID
   hostNodeLocator: string
-  exposure: PreviewExposure
+  exposure: ChainPreviewExposure
 }
 
 export interface ResolvedPreviewChain {
   steps: readonly ResolvedPreviewChainStep[]
   leaf: {
     rootGraphId: UUID
-    sourceNodeId: string
+    sourceNodeId: NodeId
     sourcePreviewName: string
   }
 }
@@ -20,11 +25,11 @@ export interface PreviewExposureChainContext {
   getExposures(
     rootGraphId: UUID,
     hostNodeLocator: string
-  ): readonly PreviewExposure[]
+  ): readonly ChainPreviewExposure[]
   resolveNestedHost(
     rootGraphId: UUID,
     hostNodeLocator: string,
-    sourceNodeId: string
+    sourceNodeId: NodeId
   ): { rootGraphId: UUID; hostNodeLocator: string } | undefined
 }
 

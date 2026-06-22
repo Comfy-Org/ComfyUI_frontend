@@ -1,7 +1,7 @@
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { reactive } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import { LGraphNode, asNodeId } from '@/lib/litegraph/src/litegraph'
 import {
@@ -11,6 +11,7 @@ import {
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeId } from '@/types/nodeId'
 
 import { CANVAS_IMAGE_PREVIEW_WIDGET } from './canvasImagePreviewTypes'
 import { usePromotedPreviews } from './usePromotedPreviews'
@@ -89,13 +90,13 @@ function seedPreviewImages(
 
 function exposePreview(
   setup: ReturnType<typeof createSetup>,
-  sourceNodeId: string,
+  sourceNodeId: number | string,
   sourcePreviewName = CANVAS_IMAGE_PREVIEW_WIDGET
 ) {
   usePreviewExposureStore().addExposure(
     setup.subgraphNode.rootGraph.id,
     String(setup.subgraphNode.id),
-    { sourceNodeId, sourcePreviewName }
+    { sourceNodeId: asNodeId(sourceNodeId), sourcePreviewName }
   )
 }
 
@@ -153,12 +154,36 @@ describe(usePromotedPreviews, () => {
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
       {
-        sourceNodeId: '10',
+        sourceNodeId: asNodeId(10),
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
         urls
       }
     ])
+  })
+
+  it('types preview exposure source node ids as NodeId', () => {
+    const setup = createSetup()
+    const sourceNodeId = asNodeId(10)
+
+    usePreviewExposureStore().addExposure(
+      setup.subgraphNode.rootGraph.id,
+      String(setup.subgraphNode.id),
+      {
+        sourceNodeId,
+        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+      }
+    )
+
+    const exposure = usePreviewExposureStore().getExposures(
+      setup.subgraphNode.rootGraph.id,
+      String(setup.subgraphNode.id)
+    )[0]
+    const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
+
+    expectTypeOf(exposure.sourceNodeId).toEqualTypeOf<NodeId>()
+    type PromotedPreview = (typeof promotedPreviews.value)[number]
+    expectTypeOf<PromotedPreview['sourceNodeId']>().toEqualTypeOf<NodeId>()
   })
 
   it.for([
@@ -226,7 +251,7 @@ describe(usePromotedPreviews, () => {
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
       {
-        sourceNodeId: '10',
+        sourceNodeId: asNodeId(10),
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
         urls: [blobUrl]
@@ -248,7 +273,7 @@ describe(usePromotedPreviews, () => {
 
     expect(promotedPreviews.value).toEqual([
       {
-        sourceNodeId: '10',
+        sourceNodeId: asNodeId(10),
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
         urls: [blobUrl]
@@ -291,7 +316,7 @@ describe(usePromotedPreviews, () => {
       outerSetup.subgraphNode.rootGraph.id,
       String(innerHost.id),
       {
-        sourceNodeId: String(leafNode.id),
+        sourceNodeId: leafNode.id,
         sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
       }
     )
@@ -299,7 +324,7 @@ describe(usePromotedPreviews, () => {
       outerSetup.subgraphNode.rootGraph.id,
       String(outerSetup.subgraphNode.id),
       {
-        sourceNodeId: String(innerHost.id),
+        sourceNodeId: innerHost.id,
         sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
       }
     )
@@ -315,7 +340,7 @@ describe(usePromotedPreviews, () => {
     )
     expect(promotedPreviews.value).toEqual([
       {
-        sourceNodeId: '10',
+        sourceNodeId: asNodeId(10),
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
         urls: mockUrls
@@ -350,19 +375,19 @@ describe(usePromotedPreviews, () => {
 
     const store = usePreviewExposureStore()
     store.addExposure(firstHost.rootGraph.id, firstHostLocator, {
-      sourceNodeId: String(innerHost.id),
+      sourceNodeId: innerHost.id,
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })
     store.addExposure(firstHost.rootGraph.id, secondHostLocator, {
-      sourceNodeId: String(innerHost.id),
+      sourceNodeId: innerHost.id,
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })
     store.addExposure(firstHost.rootGraph.id, firstNestedLocator, {
-      sourceNodeId: String(leafNode.id),
+      sourceNodeId: leafNode.id,
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })
     store.addExposure(firstHost.rootGraph.id, secondNestedLocator, {
-      sourceNodeId: String(leafNode.id),
+      sourceNodeId: leafNode.id,
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })
 
@@ -385,7 +410,7 @@ describe(usePromotedPreviews, () => {
     expect(usePromotedPreviews(() => firstHost).promotedPreviews.value).toEqual(
       [
         {
-          sourceNodeId: '10',
+          sourceNodeId: asNodeId(10),
           sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
           type: 'image',
           urls: ['blob:first']
@@ -396,7 +421,7 @@ describe(usePromotedPreviews, () => {
       usePromotedPreviews(() => secondHost).promotedPreviews.value
     ).toEqual([
       {
-        sourceNodeId: '10',
+        sourceNodeId: asNodeId(10),
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
         urls: ['blob:second']
