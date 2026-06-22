@@ -3,7 +3,7 @@ import type { TranslationKey } from '../i18n/translations'
 import { SHOW_FREE_TIER } from '../config/features'
 import { externalLinks } from '../config/routes'
 
-export interface PlanFeature {
+interface PlanFeature {
   text: TranslationKey
   included?: boolean
 }
