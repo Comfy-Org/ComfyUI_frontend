@@ -1,14 +1,13 @@
 import type { LGraphState } from '../LGraph'
 import type { NodeId } from '../LGraphNode'
 import { asNodeId, isNumericNodeId, nodeIdToNumber } from '@/types/nodeId'
+import { nextFreeNodeId } from '../nodeIdAllocation'
 import type {
   ExportedSubgraph,
   ExposedWidget,
   ISerialisedNode,
   SerialisableLLink
 } from '../types/serialisation'
-
-const MAX_NODE_ID = 100_000_000
 
 interface DeduplicationResult {
   subgraphs: ExportedSubgraph[]
@@ -74,10 +73,9 @@ function remapNodeIds(
 
     const numericId = nodeIdToNumber(id)
     if (usedNodeIds.has(numericId)) {
-      const newId = findNextAvailableId(usedNodeIds, state)
+      const newId = nextFreeNodeId(usedNodeIds, state)
       remappedIds.set(id, newId)
       node.id = newId
-      usedNodeIds.add(nodeIdToNumber(newId))
       console.warn(
         `LiteGraph: duplicate subgraph node ID ${id} remapped to ${newId}`
       )
@@ -88,24 +86,6 @@ function remapNodeIds(
   }
 
   return remappedIds
-}
-
-/**
- * Finds the next unused node ID by incrementing `state.lastNodeId`.
- * Throws if the ID space is exhausted.
- */
-function findNextAvailableId(
-  usedNodeIds: Set<number>,
-  state: LGraphState
-): NodeId {
-  while (true) {
-    const nextId = state.lastNodeId + 1
-    if (nextId > MAX_NODE_ID) {
-      throw new Error('Node ID space exhausted')
-    }
-    state.lastNodeId = nextId
-    if (!usedNodeIds.has(nextId)) return asNodeId(nextId)
-  }
 }
 
 /** Patches origin_id / target_id in serialized links. */

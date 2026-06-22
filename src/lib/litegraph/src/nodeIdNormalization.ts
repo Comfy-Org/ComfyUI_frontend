@@ -1,16 +1,15 @@
 import type { NodeId, NodeIdInput } from '@/types/nodeId'
-import { asNodeId, tryAsNodeId } from '@/types/nodeId'
+import { tryAsNodeId } from '@/types/nodeId'
 
 import type { LGraphState } from './LGraph'
 import type { SerialisedLLinkArray } from './LLink'
+import { nextFreeNodeId } from './nodeIdAllocation'
 import type {
   ISerialisedGraph,
   ISerialisedNode,
   SerialisableGraph,
   SerialisableLLink
 } from './types/serialisation'
-
-const MAX_NODE_ID = 100_000_000
 
 type ConfigurableGraphData = ISerialisedGraph | SerialisableGraph
 
@@ -42,7 +41,7 @@ export function normalizeStringNodeIds<T extends ConfigurableGraphData>(
   const remap = new Map<string, NodeId>()
   for (const node of nodes) {
     if (!isRemappableStringId(node.id)) continue
-    const newId = allocateNextNodeId(usedNodeIds, state)
+    const newId = nextFreeNodeId(usedNodeIds, state)
     remap.set(String(node.id), newId)
     node.id = newId
   }
@@ -77,23 +76,6 @@ function seedNodeIdCounter(
   let max = Math.max(state.lastNodeId, serialized)
   for (const id of usedNodeIds) if (id > max) max = id
   state.lastNodeId = max
-}
-
-function allocateNextNodeId(
-  usedNodeIds: Set<number>,
-  state: LGraphState
-): NodeId {
-  while (true) {
-    const next = state.lastNodeId + 1
-    if (next > MAX_NODE_ID)
-      throw new Error('LiteGraph: node ID space exhausted')
-
-    state.lastNodeId = next
-    if (!usedNodeIds.has(next)) {
-      usedNodeIds.add(next)
-      return asNodeId(next)
-    }
-  }
 }
 
 function patchArrayLinkEndpoints(

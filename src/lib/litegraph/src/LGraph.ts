@@ -15,6 +15,7 @@ import {
   repairInputLinks,
   selectSurvivorLink
 } from './linkDeduplication'
+import { nextFreeNodeId } from './nodeIdAllocation'
 import { normalizeStringNodeIds } from './nodeIdNormalization'
 
 import type { DragAndScaleState } from './DragAndScale'
@@ -2697,12 +2698,10 @@ export class LGraph
         const numericId = nodeIdToNumber(node.id)
         if (usedNodeIds.has(numericId)) {
           const oldId = node.id
-          while (usedNodeIds.has(++state.lastNodeId));
-          const newId = asNodeId(state.lastNodeId)
+          const newId = nextFreeNodeId(usedNodeIds, state)
           delete graph._nodes_by_id[oldId]
           node.id = newId
           graph._nodes_by_id[newId] = node
-          usedNodeIds.add(state.lastNodeId)
           remappedIds.set(oldId, newId)
           console.warn(
             `LiteGraph: duplicate node ID ${oldId} reassigned to ${newId} in graph ${graph.id}`
