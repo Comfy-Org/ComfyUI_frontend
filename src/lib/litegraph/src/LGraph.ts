@@ -15,6 +15,7 @@ import {
   repairInputLinks,
   selectSurvivorLink
 } from './linkDeduplication'
+import { normalizeStringNodeIds } from './nodeIdNormalization'
 
 import type { DragAndScaleState } from './DragAndScale'
 import { LGraphCanvas } from './LGraphCanvas'
@@ -2426,6 +2427,8 @@ export class LGraph
       // TODO: Finish typing configure()
       if (!data) return
       if (options.clearGraph) this.clear()
+
+      data = normalizeStringNodeIds(data, this.state)
 
       this._configureBase(data)
 

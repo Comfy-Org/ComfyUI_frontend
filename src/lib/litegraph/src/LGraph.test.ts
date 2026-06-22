@@ -462,6 +462,47 @@ describe('Shared LGraphState', () => {
   })
 })
 
+describe('configure with arbitrary string node ids', () => {
+  class StringIdNode extends LGraphNode {
+    constructor() {
+      super('StringIdNode')
+      this.addOutput('out', 'STRING')
+      this.addInput('in', 'STRING')
+    }
+  }
+
+  beforeEach(() => {
+    LiteGraph.registerNodeType('test/string-id', StringIdNode)
+  })
+
+  it('remaps string ids to numeric and preserves link connectivity', () => {
+    const graph = new LGraph()
+    graph.configure({
+      id: zeroUuid,
+      revision: 0,
+      version: 0.4,
+      config: {},
+      last_node_id: 0,
+      last_link_id: 18,
+      groups: [],
+      nodes: [
+        { id: 'Source.0', type: 'test/string-id' },
+        { id: 'Sink.0', type: 'test/string-id' }
+      ],
+      links: [[10, 'Source.0', 0, 'Sink.0', 0, 'STRING']]
+    } as unknown as SerialisableGraph)
+
+    expect(graph._nodes).toHaveLength(2)
+    expect(graph._nodes.every((n) => typeof n.id === 'number')).toBe(true)
+
+    const [source, sink] = graph._nodes
+    const link = [...graph._links.values()][0]
+    expect(link.origin_id).toBe(source.id)
+    expect(link.target_id).toBe(sink.id)
+    expect(graph.getNodeById(source.id)).toBe(source)
+  })
+})
+
 describe('ensureGlobalIdUniqueness', () => {
   function createSubgraphOnGraph(rootGraph: LGraph): Subgraph {
     const data = createTestSubgraphData()
