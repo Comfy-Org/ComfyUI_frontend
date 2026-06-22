@@ -11,15 +11,36 @@ import {
 } from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { class: className, ...restProps } = defineProps<
-  SliderRootProps & { class?: HTMLAttributes['class'] }
+const {
+  class: className,
+  ticks,
+  min = 0,
+  max = 100,
+  ...restProps
+} = defineProps<
+  SliderRootProps & { class?: HTMLAttributes['class']; ticks?: number }
 >()
 const emits = defineEmits<SliderRootEmits>()
 
 const forwarded = useForwardPropsEmits(
-  computed(() => ({ ...restProps })),
+  computed(() => ({ ...restProps, min, max })),
   emits
 )
+
+function tickValue(i: number): number {
+  return min + ((i - 1) / (ticks! - 1)) * (max - min)
+}
+
+function isTickFilled(
+  i: number,
+  modelValue: number[] | null | undefined
+): boolean {
+  if (!modelValue?.length) return false
+  const value = tickValue(i)
+  if (modelValue.length === 1) return value <= modelValue[0]
+  const sorted = [...modelValue].sort((a, b) => a - b)
+  return value >= sorted[0] && value <= sorted[sorted.length - 1]
+}
 </script>
 
 <template>
@@ -34,9 +55,24 @@ const forwarded = useForwardPropsEmits(
     "
     v-bind="forwarded"
   >
+    <template v-if="ticks && ticks > 1">
+      <span
+        v-for="i in ticks"
+        :key="i"
+        data-slot="slider-tick"
+        class="pointer-events-none absolute top-1/2 size-2 -translate-1/2 rounded-full"
+        :class="
+          isTickFilled(i, modelValue)
+            ? 'bg-primary-warm-white'
+            : 'bg-primary-warm-gray'
+        "
+        :style="{ left: `${((i - 1) / (ticks - 1)) * 100}%` }"
+      />
+    </template>
+
     <SliderTrack
       data-slot="slider-track"
-      class="bg-primary-warm-gray/60 relative grow overflow-hidden rounded-full data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5"
+      class="bg-primary-warm-gray relative grow overflow-hidden rounded-full data-[orientation=horizontal]:h-1.5 data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-1.5"
     >
       <SliderRange
         data-slot="slider-range"

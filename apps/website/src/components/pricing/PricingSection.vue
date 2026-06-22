@@ -24,6 +24,9 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 type BillingPeriod = 'monthly' | 'yearly'
 const billingPeriod = ref<BillingPeriod>('yearly')
 
+const teamCreditTiers = ['42.2K', '84.4K', '147K', '295K', '528K'] as const
+const teamCreditTierIndex = ref<number[]>([0])
+
 function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
   if (billingPeriod.value === 'yearly' && plan.yearlyPriceKey) {
     return plan.yearlyPriceKey
@@ -282,7 +285,14 @@ const enterprisePlan = plans.find((p) => p.id === 'enterprise')!
             </div>
 
             <div class="mt-6">
-              <Slider class="w-full" />
+              <Slider
+                v-model="teamCreditTierIndex"
+                class="w-full"
+                :min="0"
+                :max="teamCreditTiers.length - 1"
+                :step="1"
+                :ticks="teamCreditTiers.length"
+              />
             </div>
           </div>
 
