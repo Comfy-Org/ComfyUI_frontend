@@ -8,7 +8,7 @@ on:
 
 permissions:
   actions: write
-  contents: read  # 'read' is enough because signatures live in a REMOTE repo
+  contents: read # 'read' is enough because signatures live in a REMOTE repo
   pull-requests: write
   statuses: write
 
