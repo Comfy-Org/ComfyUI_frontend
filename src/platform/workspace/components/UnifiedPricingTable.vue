@@ -683,6 +683,18 @@ const isTeamCurrentStopSelected = computed(
     teamStops.value[currentTeamStopIndex.value]?.usd === teamUsd.value
 )
 
+// Yearly and monthly at the same credit stop are distinct plans, so toggling
+// the cycle is not the current plan — but team plan changes aren't supported
+// yet, so it stays locked.
+const subscribedCycle = computed<BillingCycle>(() =>
+  subscription.value?.duration === 'MONTHLY' ? 'monthly' : 'yearly'
+)
+const isTeamCurrentPlanSelected = computed(
+  () =>
+    isTeamCurrentStopSelected.value &&
+    currentBillingCycle.value === subscribedCycle.value
+)
+
 // A team workspace holding a personal subscription can't switch to a team plan
 // in place; a personal workspace instead routes to create/switch a team workspace.
 const isTeamLockedOnPersonalPlan = computed(
@@ -698,25 +710,29 @@ const teamButtonLabel = computed(() => {
       ? t('subscription.teamPlan.cta')
       : t('subscription.teamPlan.ctaMonthly')
   }
-  // The current stop re-subscribes (cancelled) or reads "Current plan" (active).
-  // A team plan's credit stop can't be changed, so every other stop is locked.
-  if (isTeamCurrentStopSelected.value) {
+  // The exact current plan re-subscribes (cancelled) or reads "Current plan"
+  // (active).
+  if (isTeamCurrentPlanSelected.value) {
     return isCancelled.value
       ? t('subscription.resubscribe')
       : t('subscription.teamPlan.currentPlan')
   }
+  // Same credit stop, other billing cycle: team plan changes aren't supported.
+  if (isTeamCurrentStopSelected.value) {
+    return t('subscription.teamPlan.planLocked')
+  }
   return t('subscription.teamPlan.creditsLocked')
 })
 
-// The only actionable subscribed state is re-subscribing on the current stop
-// (cancelled); every other stop is locked since the credit stop can't be changed.
-const isTeamButtonDisabled = computed(
-  () =>
-    isLoading ||
-    isTeamLockedOnPersonalPlan.value ||
-    (isTeamSubscribed.value &&
-      !(isCancelled.value && isTeamCurrentStopSelected.value))
-)
+const isTeamButtonDisabled = computed(() => {
+  if (isLoading) return true
+  if (isTeamLockedOnPersonalPlan.value) return true
+  if (!isTeamSubscribed.value) return false
+  // Only a cancelled sub on its exact current plan can re-subscribe; every
+  // other team selection is locked (changes aren't supported yet).
+  if (isTeamCurrentPlanSelected.value) return !isCancelled.value
+  return true
+})
 
 onMounted(() => {
   void fetchPlans()
@@ -839,8 +855,9 @@ function handleSubscribe(tierKey: CheckoutTierKey) {
 
 function handleSubscribeTeam() {
   if (isTeamButtonDisabled.value) return
-  // Re-subscribe only when keeping the current stop; a different stop is a change.
-  if (isCancelled.value && isTeamCurrentStopSelected.value) {
+  // Re-subscribe only when keeping the exact current plan; otherwise it's a
+  // fresh team subscribe (other transitions are locked).
+  if (isCancelled.value && isTeamCurrentPlanSelected.value) {
     emit('resubscribe')
     return
   }

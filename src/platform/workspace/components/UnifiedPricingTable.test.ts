@@ -249,6 +249,42 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(emitted().subscribeTeam).toBeFalsy()
   })
 
+  it('locks the CTA when an active sub toggles to a different billing cycle', () => {
+    mockSubscription.value = {
+      tier: 'TEAM',
+      duration: 'MONTHLY',
+      isCancelled: false
+    }
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    // The subscription is monthly; the default view is yearly, so the same stop
+    // on the other cycle is locked, not the current plan (BE rejects the change).
+    const cta = screen.getByRole('button', {
+      name: "Team plan currently can't be changed"
+    })
+    expect(cta).toBeDisabled()
+    expect(emitted().subscribeTeam).toBeFalsy()
+  })
+
+  it('does not re-subscribe a cancelled sub on a different billing cycle', () => {
+    mockSubscription.value = {
+      tier: 'TEAM',
+      duration: 'MONTHLY',
+      isCancelled: true
+    }
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    const cta = screen.getByRole('button', {
+      name: "Team plan currently can't be changed"
+    })
+    expect(cta).toBeDisabled()
+    expect(emitted().resubscribe).toBeFalsy()
+  })
+
   it('prompts a fresh subscribe when on no team plan', () => {
     renderComponent({ initialPlanMode: 'team' })
 

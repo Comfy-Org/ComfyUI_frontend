@@ -2626,6 +2626,7 @@
       "cta": "Subscribe to Team Yearly",
       "ctaMonthly": "Subscribe to Team Monthly",
       "creditsLocked": "Credits currently can't be changed",
+      "planLocked": "Team plan currently can't be changed",
       "currentPlan": "Current plan",
       "unavailable": "This team plan is not available right now."
     },
