@@ -53,7 +53,7 @@ const forwarded = useForwardPropsEmits(
     v-bind="forwarded"
     :class="
       cn(
-        'group/toggle-group flex w-fit items-center gap-[--spacing(var(--gap))] rounded-md data-[spacing=default]:data-[variant=outline]:shadow-xs',
+        'group/toggle-group ring-primary-warm-white/20 flex w-fit items-center gap-[--spacing(var(--gap))] rounded-2xl p-1.5 ring-2 data-[spacing=default]:data-[variant=outline]:shadow-xs',
         className
       )
     "
