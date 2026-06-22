@@ -60,6 +60,7 @@ import type { ComponentPublicInstance } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
+import type { NodeId } from '@/types/nodeId'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
@@ -77,7 +78,7 @@ interface InputSlotProps {
   hasError?: boolean
   index: number
   nodeType?: string
-  nodeId?: string
+  nodeId: NodeId
   socketless?: boolean
 }
 
@@ -113,7 +114,7 @@ onErrorCaptured((error) => {
 
 const { state: dragState } = useSlotLinkDragUIState()
 const slotKey = computed(() =>
-  getSlotKey(props.nodeId ?? '', props.index, true)
+  props.nodeId ? getSlotKey(props.nodeId, props.index, true) : ''
 )
 const shouldDim = computed(() => {
   if (!dragState.active) return false
@@ -131,14 +132,14 @@ watchEffect(() => {
 })
 
 useSlotElementTracking({
-  nodeId: props.nodeId ?? '',
+  nodeId: props.nodeId,
   index: props.index,
   type: 'input',
   element: slotElRef
 })
 
 const { onClick, onDoubleClick, onPointerDown } = useSlotLinkInteraction({
-  nodeId: props.nodeId ?? '',
+  nodeId: props.nodeId,
   index: props.index,
   type: 'input'
 })

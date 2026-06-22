@@ -37,7 +37,7 @@ import { app } from '@/scripts/app'
 import { createRafBatch } from '@/utils/rafBatch'
 
 interface SlotInteractionOptions {
-  nodeId: string
+  nodeId: NodeId
   index: number
   type: 'input' | 'output'
 }
@@ -143,7 +143,7 @@ export function useSlotLinkInteraction({
     const nodeId = link.node.id
     if (nodeId != null) {
       const isInputFrom = link.toType === 'output'
-      const key = getSlotKey(String(nodeId), link.fromSlotIndex, isInputFrom)
+      const key = getSlotKey(nodeId, link.fromSlotIndex, isInputFrom)
       const layout = layoutStore.getSlotLayout(key)
       if (layout) return layout.position
     }
@@ -220,7 +220,11 @@ export function useSlotLinkInteraction({
   ): { position: Point; direction: LinkDirection } | null => {
     if (!link) return null
 
-    const slotKey = getSlotKey(String(link.origin_id), link.origin_slot, false)
+    const slotKey = getSlotKey(
+      asNodeId(link.origin_id),
+      link.origin_slot,
+      false
+    )
     const layout = layoutStore.getSlotLayout(slotKey)
     if (!layout) return null
 
@@ -618,7 +622,7 @@ export function useSlotLinkInteraction({
     )
     if (!layout) return
 
-    const localNodeId: NodeId = asNodeId(nodeId)
+    const localNodeId: NodeId = nodeId
     const isInputSlot = type === 'input'
     const isOutputSlot = type === 'output'
 

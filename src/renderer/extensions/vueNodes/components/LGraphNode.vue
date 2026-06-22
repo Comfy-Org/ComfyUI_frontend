@@ -6,7 +6,7 @@
     v-else
     ref="nodeContainerRef"
     tabindex="0"
-    :data-node-id="nodeData.id"
+    :data-node-id="String(nodeData.id)"
     :data-collapsed="isCollapsed || undefined"
     :data-ghost="nodeData.flags?.ghost || undefined"
     :class="

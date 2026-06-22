@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
+import { asNodeId } from '@/types/nodeId'
+
 const {
   capturedOnPan,
   capturedAutoPan,
@@ -58,6 +60,11 @@ vi.mock('@/scripts/app', () => ({
       ds: mockDs,
       graph: {
         getNodeById: (id: string) => ({
+          id,
+          inputs: [],
+          outputs: [{ name: 'out', type: '*', links: [], _floatingLinks: null }]
+        }),
+        getNodeByRawId: (id: number) => ({
           id,
           inputs: [],
           outputs: [{ name: 'out', type: '*', links: [], _floatingLinks: null }]
@@ -223,7 +230,7 @@ function pointerEvent(
 
 function startDrag() {
   const { onPointerDown } = useSlotLinkInteraction({
-    nodeId: '1',
+    nodeId: asNodeId(1),
     index: 0,
     type: 'output'
   })

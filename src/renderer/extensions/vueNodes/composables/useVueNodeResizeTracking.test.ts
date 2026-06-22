@@ -265,9 +265,7 @@ describe('useVueNodeResizeTracking', () => {
         }
       }
     ])
-    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(
-      String(nodeId)
-    )
+    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 
   it('writes collapsed dimensions through the normal bounds path', () => {
@@ -301,9 +299,7 @@ describe('useVueNodeResizeTracking', () => {
         }
       }
     ])
-    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(
-      String(nodeId)
-    )
+    expect(testState.syncNodeSlotLayoutsFromDOM).toHaveBeenCalledWith(nodeId)
   })
 
   it('updates bounds with expanded dimensions on collapse-to-expand transition', () => {
@@ -340,9 +336,7 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    expect(testState.scheduleSlotLayoutSync).toHaveBeenCalledWith(
-      String(parentNodeId)
-    )
+    expect(testState.scheduleSlotLayoutSync).toHaveBeenCalledWith(parentNodeId)
     expect(testState.batchUpdateNodeBounds).not.toHaveBeenCalled()
     expect(testState.setSource).not.toHaveBeenCalled()
     expect(testState.syncNodeSlotLayoutsFromDOM).not.toHaveBeenCalled()

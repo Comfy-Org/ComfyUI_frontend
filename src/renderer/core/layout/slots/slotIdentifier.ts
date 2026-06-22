@@ -8,7 +8,7 @@
 import type { NodeId } from '@/types/nodeId'
 
 interface SlotIdentifier {
-  nodeId: NodeId | string
+  nodeId: NodeId
   index: number
   isInput: boolean
 }
@@ -19,23 +19,23 @@ interface SlotIdentifier {
  */
 export function getSlotKey(identifier: SlotIdentifier): string
 export function getSlotKey(
-  nodeId: NodeId | string,
+  nodeId: NodeId,
   index: number,
   isInput: boolean
 ): string
 export function getSlotKey(
-  nodeIdOrIdentifier: NodeId | string | SlotIdentifier,
+  nodeIdOrIdentifier: NodeId | SlotIdentifier,
   index?: number,
   isInput?: boolean
 ): string {
   if (typeof nodeIdOrIdentifier === 'object') {
     const { nodeId, index, isInput } = nodeIdOrIdentifier
-    return `${nodeId}-${isInput ? 'in' : 'out'}-${index}`
+    return `${String(nodeId)}-${isInput ? 'in' : 'out'}-${index}`
   }
 
   if (index === undefined || isInput === undefined) {
     throw new Error('Missing required parameters for slot key generation')
   }
 
-  return `${nodeIdOrIdentifier}-${isInput ? 'in' : 'out'}-${index}`
+  return `${String(nodeIdOrIdentifier)}-${isInput ? 'in' : 'out'}-${index}`
 }

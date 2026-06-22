@@ -14,7 +14,7 @@ import { useDocumentVisibility } from '@vueuse/core'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { asNodeId } from '@/types/nodeId'
+import { asNodeId, tryAsNodeId } from '@/types/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
@@ -132,7 +132,8 @@ const resizeObserver = new ResizeObserver((entries) => {
     // slot-layout pipeline and skip bounds processing entirely.
     const widgetsGridParentNodeId = element.dataset.widgetsGridNodeId
     if (widgetsGridParentNodeId) {
-      scheduleSlotLayoutSync(widgetsGridParentNodeId)
+      const nodeId = tryAsNodeId(widgetsGridParentNodeId)
+      if (nodeId) scheduleSlotLayoutSync(nodeId)
       continue
     }
 
@@ -260,7 +261,7 @@ const resizeObserver = new ResizeObserver((entries) => {
   // After node bounds are updated, refresh slot cached offsets and layouts
   if (nodesNeedingSlotResync.size > 0) {
     for (const nodeId of nodesNeedingSlotResync) {
-      syncNodeSlotLayoutsFromDOM(String(nodeId))
+      syncNodeSlotLayoutsFromDOM(nodeId)
     }
   }
 })

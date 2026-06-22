@@ -38,14 +38,14 @@
           "
         >
           <InputSlot
-            v-if="widget.slotMetadata"
+            v-if="widget.slotMetadata && nodeData"
             :key="`widget-slot-${widget.name}-${widget.slotMetadata.index}`"
             :slot-data="{
               name: widget.name,
               type: widget.slotMetadata.type,
               boundingRect: [0, 0, 0, 0]
             }"
-            :node-id="nodeData?.id != null ? String(nodeData.id) : ''"
+            :node-id="nodeData.id"
             :has-error="widget.hasError"
             :index="widget.slotMetadata.index"
             :socketless="widget.simplified.spec?.socketless"

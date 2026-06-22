@@ -96,7 +96,7 @@ export const resolveNodeSurfaceSlotCandidate = (
     return null
   }
 
-  const key = getSlotKey(String(nodeId), index, isInput)
+  const key = getSlotKey(nodeId, index, isInput)
   const layout = layoutStore.getSlotLayout(key)
   if (!layout) {
     session.preferredSlotForNode.set(nodeId, null)
