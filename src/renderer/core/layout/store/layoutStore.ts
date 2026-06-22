@@ -235,9 +235,7 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Get or create a customRef for a node layout
    */
-  getNodeLayoutRef(rawNodeId: NodeId): Ref<NodeLayout | null> {
-    // Boundary: legacy callers pass numeric ids cast as `NodeId`.
-    const nodeId = asNodeId(rawNodeId)
+  getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null> {
     let nodeRef = this.nodeRefs.get(nodeId)
 
     if (!nodeRef) {
@@ -1517,9 +1515,7 @@ class LayoutStoreImpl implements LayoutStore {
       const nodeIds: NodeId[] = []
       const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
-      for (const { nodeId: rawNodeId, bounds } of updates) {
-        // Boundary: legacy callers pass numeric ids cast as `NodeId`.
-        const nodeId = asNodeId(rawNodeId)
+      for (const { nodeId, bounds } of updates) {
         const ynode = this.ynodes.get(nodeIdToYKey(nodeId))
         if (!ynode) continue
         const currentLayout = yNodeToLayout(ynode)

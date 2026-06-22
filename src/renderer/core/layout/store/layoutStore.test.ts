@@ -1,16 +1,18 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import { LiteGraph, asNodeId } from '@/lib/litegraph/src/litegraph'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId, NodeIdInput } from '@/types/nodeId'
 import type {
   LayoutChange,
   LayoutOperation,
   NodeLayout,
   SlotLayout
 } from '@/renderer/core/layout/types'
+
+const nid = (id: NodeIdInput) => asNodeId(id)
 
 function getOperationsAddedBy(action: () => void): LayoutOperation[] {
   const operationCount = layoutStore.getOperationsSince(0).length
@@ -32,8 +34,8 @@ describe('layoutStore CRDT operations', () => {
     layoutStore.initializeFromLiteGraph([])
   })
   // Helper to create test node data
-  const createTestNode = (id: NodeId): NodeLayout => ({
-    id,
+  const createTestNode = (id: NodeIdInput): NodeLayout => ({
+    id: nid(id),
     position: { x: 100, y: 100 },
     size: { width: 200, height: 100 },
     zIndex: 0,
@@ -427,27 +429,8 @@ describe('layoutStore CRDT operations', () => {
     unsubscribe()
   })
 
-  it('resolves node layout refs for legacy numeric node ids', () => {
-    const nodeId = asNodeId(7)
-    const layout = createTestNode(nodeId)
-
-    layoutStore.applyOperation({
-      type: 'createNode',
-      entity: 'node',
-      nodeId,
-      layout,
-      timestamp: Date.now(),
-      source: LayoutSource.External,
-      actor: 'test'
-    })
-
-    const numericRef = layoutStore.getNodeLayoutRef(7 as unknown as NodeId)
-    expect(numericRef.value).toEqual(layout)
-    expect(numericRef).toBe(layoutStore.getNodeLayoutRef(nodeId))
-  })
-
-  it('applies batch bounds updates for legacy numeric node ids', () => {
-    const nodeId = asNodeId(1)
+  it('applies batch bounds updates for branded node ids', () => {
+    const nodeId = nid(1)
     const layout = createTestNode(nodeId)
 
     layoutStore.applyOperation({
@@ -461,9 +444,7 @@ describe('layoutStore CRDT operations', () => {
     })
 
     const newBounds = { x: 50, y: 50, width: 400, height: 350 }
-    layoutStore.batchUpdateNodeBounds([
-      { nodeId: 1 as unknown as NodeId, bounds: newBounds }
-    ])
+    layoutStore.batchUpdateNodeBounds([{ nodeId, bounds: newBounds }])
 
     const nodeRef = layoutStore.getNodeLayoutRef(nodeId)
     expect(nodeRef.value?.size).toEqual({ width: 400, height: 350 })
@@ -715,6 +696,22 @@ describe('layoutStore CRDT operations', () => {
       expect(layoutStore.getSlotLayout(slotKey)).toEqual(slotLayout)
     }
   )
+})
+
+describe('NodeId layout typing', () => {
+  beforeEach(() => {
+    layoutStore.initializeFromLiteGraph([])
+  })
+
+  expectTypeOf(layoutStore.getNodeLayoutRef)
+    .parameter(0)
+    .toEqualTypeOf<NodeId>()
+
+  it('requires branded NodeId for layout refs', () => {
+    const nodeId = asNodeId(123)
+
+    expect(layoutStore.getNodeLayoutRef(nodeId).value).toBeNull()
+  })
 })
 
 describe('layoutStore getNodeLayoutRef setter', () => {
