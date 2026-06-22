@@ -463,7 +463,7 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   ecommerce: EcommerceMetadata
 }
 
-export type ApiCreditTopupFailureReason =
+type ApiCreditTopupFailureReason =
   | 'unexpected_status' // sync: topup() returned a non-completed/non-pending status
   | 'exception' // sync: topup() threw
   | 'processing_failed' // async: the pending billing op resolved to failed

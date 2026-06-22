@@ -487,10 +487,15 @@ describe('PostHogTelemetryProvider', () => {
         button_id: 'sidebar_settings_button_clicked',
         element_group: 'sidebar'
       })
+      provider.trackApiCreditTopupFailed({ reason: 'exception' })
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.SETTING_CHANGED,
         { setting_id: 'theme' }
+      )
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.API_CREDIT_TOPUP_FAILED,
+        { reason: 'exception' }
       )
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.TEMPLATE_FILTER_CHANGED,
