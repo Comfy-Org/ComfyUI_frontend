@@ -49,6 +49,51 @@ const translations = {
     en: 'Run your first workflow',
     'zh-CN': '运行你的第一个工作流'
   },
+  'hero.node.image': { en: 'IMAGE', 'zh-CN': '图像' },
+  'hero.node.texture': { en: 'TEXTURE', 'zh-CN': '纹理' },
+  'hero.node.lighting': { en: 'LIGHTING', 'zh-CN': '光照' },
+  'hero.node.color': { en: 'COLOR REMIXER', 'zh-CN': '颜色重映射' },
+  'hero.node.output': { en: 'OUTPUT', 'zh-CN': '输出' },
+  'hero.image.variant1': {
+    en: 'Portrait under multicolor studio lighting',
+    'zh-CN': '多彩影棚灯光下的人像'
+  },
+  'hero.image.variant2': {
+    en: 'Vase rendered as a rainbow normal map',
+    'zh-CN': '以彩虹法线贴图渲染的花瓶'
+  },
+  'hero.image.variant3': {
+    en: 'Deer in a forest with chromatic aberration',
+    'zh-CN': '带色散效果的森林中的鹿'
+  },
+  'hero.image.variant4': {
+    en: 'Two people at a mirror, glitch lighting',
+    'zh-CN': '镜前两人，故障风格灯光'
+  },
+  'hero.image.texture': {
+    en: 'Texture pass: rainbow normal-map vase',
+    'zh-CN': '纹理处理：彩虹法线贴图花瓶'
+  },
+  'hero.output.variant1': {
+    en: 'Output: cyberpunk portrait among glowing CRT screens',
+    'zh-CN': '输出：发光 CRT 屏幕中的赛博朋克人像'
+  },
+  'hero.output.variant2': {
+    en: 'Output: ceramic vase relit on a plinth in a dim library',
+    'zh-CN': '输出：昏暗图书馆中重新打光、置于基座上的陶瓷花瓶'
+  },
+  'hero.output.variant3': {
+    en: 'Output: iridescent deer before a neon city skyline',
+    'zh-CN': '输出：霓虹城市天际线前的虹彩鹿'
+  },
+  'hero.output.variant4': {
+    en: 'Output: couple at a cracked mirror in neon bathroom light',
+    'zh-CN': '输出：霓虹浴室灯光下裂镜前的情侣'
+  },
+  'hero.image.pickerLabel': {
+    en: 'Choose input image variant',
+    'zh-CN': '选择输入图像变体'
+  },
 
   // ProductShowcaseSection
   'showcase.subtitle1': {
