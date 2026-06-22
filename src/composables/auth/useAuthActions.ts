@@ -49,12 +49,12 @@ export const useAuthActions = () => {
       })
     } else if (
       error instanceof FirebaseError &&
-      typeof error.message === 'string' &&
-      error.message.includes('signup_blocked')
+      error.message.toLowerCase().includes('signup_blocked')
     ) {
       // `signup_blocked` is a stable token from the auth backend's sign-up
-      // rejection response. Matched on the message (not error.code, which the
-      // Firebase SDK wraps inconsistently across versions).
+      // rejection response. Matched case-insensitively on the message (not
+      // error.code, which the Firebase SDK wraps inconsistently across
+      // versions).
       toastStore.add({
         severity: 'error',
         summary: t('g.error'),

@@ -245,6 +245,20 @@ describe('useAuthActions.reportError', () => {
     expect(mockToastErrorHandler).not.toHaveBeenCalled()
   })
 
+  it('matches the signup_blocked token case-insensitively', () => {
+    const { reportError } = useAuthActions()
+
+    reportError(
+      new FirebaseError('auth/internal-error', 'rejected: SIGNUP_BLOCKED')
+    )
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.signupBlocked'
+    })
+  })
+
   it('shows the generic fallback for an unknown Firebase auth code', () => {
     const { reportError } = useAuthActions()
 
