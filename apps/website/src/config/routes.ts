@@ -62,9 +62,12 @@ export const externalLinks = {
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   github: 'https://github.com/Comfy-Org/ComfyUI',
   githubInstall: 'https://github.com/Comfy-Org/ComfyUI#installing',
+  instagram: 'https://www.instagram.com/comfyui/',
   platform: 'https://platform.comfy.org',
   platformUsage: 'https://platform.comfy.org/profile/usage',
+  reddit: 'https://www.reddit.com/r/comfyui/',
   support: 'https://support.comfy.org/hc/en-us',
   workflows: 'https://comfy.org/workflows',
+  x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const

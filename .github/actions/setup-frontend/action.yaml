@@ -29,3 +29,5 @@ runs:
       if: ${{ inputs.include_build_step == 'true' }}
       shell: bash
       run: pnpm build
+      env:
+        VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'

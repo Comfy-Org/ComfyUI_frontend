@@ -25,12 +25,15 @@
     "@comfyorg/object-info-parser": "workspace:*",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@comfyorg/tailwind-utils": "workspace:*",
+    "@lucide/vue": "catalog:",
     "@vercel/analytics": "catalog:",
     "@vueuse/core": "catalog:",
+    "class-variance-authority": "catalog:",
     "cva": "catalog:",
     "gsap": "catalog:",
     "lenis": "catalog:",
     "posthog-js": "catalog:",
+    "reka-ui": "catalog:",
     "three": "catalog:",
     "vue": "catalog:",
     "zod": "catalog:"
@@ -43,6 +46,7 @@
     "astro": "catalog:",
     "tailwindcss": "catalog:",
     "tsx": "catalog:",
+    "tw-animate-css": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
