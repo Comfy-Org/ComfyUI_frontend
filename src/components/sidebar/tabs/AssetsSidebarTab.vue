@@ -117,7 +117,7 @@
     <template #footer>
       <MediaAssetSelectionBar
         v-if="hasSelection"
-        :count="selectedAssets.length"
+        :count="totalOutputCount"
         :show-delete="shouldShowDeleteButton"
         @deselect="handleDeselectAll"
         @download="handleDownloadSelected"
@@ -265,6 +265,7 @@ const {
   getSelectedAssets,
   reconcileSelection,
   getOutputCount,
+  getTotalOutputCount,
   activate: activateSelection,
   deactivate: deactivateSelection
 } = useAssetSelection()
@@ -343,6 +344,10 @@ const previewableVisibleAssets = computed(() =>
 )
 
 const selectedAssets = computed(() => getSelectedAssets(visibleAssets.value))
+
+const totalOutputCount = computed(() =>
+  getTotalOutputCount(selectedAssets.value)
+)
 
 const isBulkMode = computed(
   () => hasSelection.value && selectedAssets.value.length > 1

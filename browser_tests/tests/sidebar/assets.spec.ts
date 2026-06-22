@@ -13,10 +13,6 @@ import type {
 // Legacy coverage backed by AssetsHelper's shadow backend. New assets-sidebar
 // browser coverage should use typed route mocks in assetsSidebarTab.spec.ts.
 
-// ---------------------------------------------------------------------------
-// Shared fixtures
-// ---------------------------------------------------------------------------
-
 const SAMPLE_JOBS: RawJobListItem[] = [
   createMockJob({
     id: 'job-alpha',
@@ -180,12 +176,10 @@ test.describe('Assets sidebar - tab navigation', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // Switch to Imported
     await tab.switchToImported()
     await expect(tab.importedTab).toHaveAttribute('aria-selected', 'true')
     await expect(tab.generatedTab).toHaveAttribute('aria-selected', 'false')
 
-    // Switch back to Generated
     await tab.switchToGenerated()
     await expect(tab.generatedTab).toHaveAttribute('aria-selected', 'true')
   })
@@ -194,11 +188,9 @@ test.describe('Assets sidebar - tab navigation', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // Type search in Generated tab
     await tab.searchInput.fill('landscape')
     await expect(tab.searchInput).toHaveValue('landscape')
 
-    // Switch to Imported tab
     await tab.switchToImported()
     await expect(tab.searchInput).toHaveValue('')
   })
@@ -235,10 +227,8 @@ test.describe('Assets sidebar - grid view display', () => {
     await tab.open()
     await tab.switchToImported()
 
-    // Wait for imported assets to render
     await expect(tab.assetCards.first()).toBeVisible()
 
-    // Imported tab should show the mocked files
     await expect.poll(() => tab.assetCards.count()).toBeGreaterThanOrEqual(1)
   })
 
@@ -286,11 +276,9 @@ test.describe('Assets sidebar - view mode toggle', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // Open settings menu and select list view
     await tab.openSettingsMenu()
     await tab.listViewOption.click()
 
-    // List view items should now be visible
     await expect(tab.listViewItems.first()).toBeVisible()
   })
 
@@ -298,16 +286,13 @@ test.describe('Assets sidebar - view mode toggle', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // Switch to list view
     await tab.openSettingsMenu()
     await tab.listViewOption.click()
     await expect(tab.listViewItems.first()).toBeVisible()
 
-    // Switch back to grid view (settings popover is still open)
     await tab.gridViewOption.click()
     await tab.waitForAssets()
 
-    // Grid cards (with data-selected attribute) should be visible again
     await expect(tab.assetCards.first()).toBeVisible()
   })
 })
@@ -342,10 +327,8 @@ test.describe('Assets sidebar - search', () => {
 
     const initialCount = await tab.assetCards.count()
 
-    // Search for a specific filename that matches only one asset
     await tab.searchInput.fill('landscape')
 
-    // Wait for filter to reduce the count
     await expect.poll(() => tab.assetCards.count()).toBeLessThan(initialCount)
   })
 
@@ -355,7 +338,6 @@ test.describe('Assets sidebar - search', () => {
 
     const initialCount = await tab.assetCards.count()
 
-    // Filter then clear
     await tab.searchInput.fill('landscape')
     await expect.poll(() => tab.assetCards.count()).toBeLessThan(initialCount)
 
@@ -391,10 +373,8 @@ test.describe('Assets sidebar - selection', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // Click first asset card
     await tab.assetCards.first().click()
 
-    // Should have data-selected="true"
     await expect(tab.selectedCards).toHaveCount(1)
   })
 
@@ -405,11 +385,9 @@ test.describe('Assets sidebar - selection', () => {
     const cards = tab.assetCards
     await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
 
-    // Click first card
     await cards.first().click()
     await expect(tab.selectedCards).toHaveCount(1)
 
-    // Ctrl+click second card
     await cards.nth(1).click({ modifiers: ['ControlOrMeta'] })
     await expect(tab.selectedCards).toHaveCount(2)
   })
@@ -420,10 +398,8 @@ test.describe('Assets sidebar - selection', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // Select an asset
     await tab.assetCards.first().click()
 
-    // Footer should show selection count
     await expect(tab.selectionCountButton).toBeVisible()
   })
 
@@ -431,11 +407,9 @@ test.describe('Assets sidebar - selection', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // Select an asset
     await tab.assetCards.first().click()
     await expect(tab.selectedCards).toHaveCount(1)
 
-    // Click the deselect (✕) button in the selection bar
     await expect(tab.deselectAllButton).toBeVisible()
     await tab.deselectAllButton.click()
     await expect(tab.selectedCards).toHaveCount(0)
@@ -445,14 +419,11 @@ test.describe('Assets sidebar - selection', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // Select an asset
     await tab.assetCards.first().click()
     await expect(tab.selectedCards).toHaveCount(1)
 
-    // Switch to Imported tab
     await tab.switchToImported()
 
-    // Switch back - selection should be cleared
     await tab.switchToGenerated()
     await tab.waitForAssets()
     await expect(tab.selectedCards).toHaveCount(0)
@@ -478,10 +449,8 @@ test.describe('Assets sidebar - context menu', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // Right-click first asset
     await tab.assetCards.first().click({ button: 'right' })
 
-    // Context menu should appear with standard items
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
     await expect(contextMenu).toBeVisible()
   })
@@ -562,8 +531,6 @@ test.describe('Assets sidebar - context menu', () => {
   test('Cancelling export-workflow filename prompt does not show an error toast', async ({
     comfyPage
   }) => {
-    // job-gamma is the first card; its detail carries a valid workflow so
-    // extraction succeeds and the filename prompt opens.
     await comfyPage.assets.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
 
     const tab = comfyPage.menu.assetsTab
@@ -611,8 +578,6 @@ test.describe('Assets sidebar - context menu', () => {
   test('Export-workflow shows a warning toast when the asset has no workflow', async ({
     comfyPage
   }) => {
-    // Strip the workflow field so extraction yields null and the export
-    // action returns { success: false, error: 'No workflow…' }.
     const { workflow: _, ...detailWithoutWorkflow } = JOB_GAMMA_DETAIL
     await comfyPage.assets.mockJobDetail('job-gamma', detailWithoutWorkflow)
 
@@ -622,7 +587,6 @@ test.describe('Assets sidebar - context menu', () => {
     await tab.assetCards.first().click({ button: 'right' })
     await tab.contextMenuItem('Export workflow').click()
 
-    // Filename prompt should be skipped: extraction fails before the prompt.
     await expect(comfyPage.toast.toastWarnings).toBeVisible()
     await expect(comfyPage.toast.toastSuccesses).toBeHidden({ timeout: 1500 })
   })
@@ -636,23 +600,18 @@ test.describe('Assets sidebar - context menu', () => {
     const cards = tab.assetCards
     await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
 
-    // Dismiss any toasts that appeared after asset loading
     await tab.dismissToasts()
 
-    // Multi-select: use keyboard.down/up so useKeyModifier('Control') detects
-    // the modifier — click({ modifiers }) only sets the mouse event flag and
-    // does not fire a keydown event that VueUse tracks.
+    // useKeyModifier('Control') needs keyboard events, not click modifiers.
     await cards.first().click()
     await comfyPage.page.keyboard.down('Control')
     await cards.nth(1).click()
     await comfyPage.page.keyboard.up('Control')
 
-    // Verify multi-selection took effect and footer is stable before right-clicking
     await expect(tab.selectedCards).toHaveCount(2)
     await expect(tab.selectionFooter).toBeVisible()
 
-    // Use dispatchEvent instead of click({ button: 'right' }) to avoid any
-    // overlay intercepting the event, and assert directly without toPass.
+    // dispatchEvent avoids the selection footer intercepting a right click.
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
     await cards.first().dispatchEvent('contextmenu', {
       bubbles: true,
@@ -661,7 +620,6 @@ test.describe('Assets sidebar - context menu', () => {
     })
     await expect(contextMenu).toBeVisible()
 
-    // Bulk menu should show bulk download action
     await expect(tab.contextMenuItem('Download all')).toBeVisible()
   })
 })
@@ -689,7 +647,6 @@ test.describe('Assets sidebar - bulk actions', () => {
 
     await tab.assetCards.first().click()
 
-    // Download button in footer should be visible
     await expect(tab.downloadSelectedButton).toBeVisible()
   })
 
@@ -701,7 +658,6 @@ test.describe('Assets sidebar - bulk actions', () => {
 
     await tab.assetCards.first().click()
 
-    // Delete button in footer should be visible
     await expect(tab.deleteSelectedButton).toBeVisible()
   })
 
@@ -709,33 +665,28 @@ test.describe('Assets sidebar - bulk actions', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // The count reflects the number of selected assets (cards).
     const cards = tab.assetCards
     await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(3)
 
-    // Cards are sorted newest-first: gamma (idx 0), beta (1), alpha (2)
     await cards.nth(1).click()
     await comfyPage.page.keyboard.down('Control')
     await cards.nth(2).click()
     await comfyPage.page.keyboard.up('Control')
 
-    // Selection count should show the count
     await expect(tab.selectionCountButton).toBeVisible()
     await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
   })
 
-  test('Selection count counts assets, not their outputs', async ({
+  test('Selection count sums the outputs of a stacked asset', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // job-gamma (the first card) has outputs_count: 2. Selecting it alone must
-    // read "1 selected" — the count is per selected asset, not per output file.
     await tab.assetCards.first().click()
 
     await expect(tab.selectionCountButton).toBeVisible()
-    await expect(tab.selectionCountButton).toHaveText(/\b1 selected\b/)
+    await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
   })
 })
 
@@ -842,8 +793,7 @@ test.describe('Assets sidebar - pagination', () => {
     await comfyPage.assets.mockOutputHistory(manyJobs)
     await comfyPage.setup()
 
-    // Capture the first history fetch (terminal statuses only).
-    // Queue polling also hits /jobs but with status=in_progress,pending.
+    // Queue polling also calls /jobs, so wait for completed history only.
     const firstRequest = comfyPage.page.waitForRequest((req) => {
       if (!/\/api\/jobs\?/.test(req.url())) return false
       const url = new URL(req.url())
@@ -1011,9 +961,7 @@ const MIXED_MEDIA_JOBS: RawJobListItem[] = [
   })
 ]
 
-// Filter button is guarded by isCloud (compile-time). The cloud CI project
-// cannot use comfyPageFixture (auth required). Enable once cloud E2E infra
-// supports authenticated comfyPage setup.
+// Filter button is guarded by isCloud; cloud CI needs authenticated setup.
 test.describe('Assets sidebar - media type filter', () => {
   test.fixme(true, 'Requires DISTRIBUTION=cloud build with auth bypass')
 
@@ -1049,12 +997,9 @@ test.describe('Assets sidebar - media type filter', () => {
       'All three mixed-media jobs should render'
     ).toHaveCount(3)
 
-    // Open filter menu and enable only image filter (selecting a filter
-    // restricts to that type only, hiding unselected types)
     await tab.openFilterMenu()
     await tab.filterCheckbox('Image').click()
 
-    // Only the image asset should remain
     await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
     await expect(tab.getAssetCardByName('photo.png')).toBeVisible()
   })
@@ -1065,12 +1010,10 @@ test.describe('Assets sidebar - media type filter', () => {
 
     const initialCount = await tab.assetCards.count()
 
-    // Enable image filter to restrict to images only
     await tab.openFilterMenu()
     await tab.filterCheckbox('Image').click()
     await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
 
-    // Uncheck image filter to remove all filters (restores all assets)
     await tab.filterCheckbox('Image').click()
     await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })
   })

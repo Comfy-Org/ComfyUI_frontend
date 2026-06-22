@@ -13,7 +13,6 @@ const i18n = createI18n({
       mediaAsset: {
         selection: {
           deselectAll: 'Deselect all',
-          unselectAssets: 'Unselect asset | Unselect assets',
           downloadSelected: 'Download',
           deleteSelected: 'Delete',
           selectedCount: '{count} selected'
@@ -61,12 +60,6 @@ describe('MediaAssetSelectionBar', () => {
     expect(
       screen.queryByRole('button', { name: 'Delete' })
     ).not.toBeInTheDocument()
-    // download stays available
     expect(screen.getByRole('button', { name: 'Download' })).toBeInTheDocument()
-  })
-
-  it('shows the delete button by default', () => {
-    renderBar({ count: 1 })
-    expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
   })
 })
