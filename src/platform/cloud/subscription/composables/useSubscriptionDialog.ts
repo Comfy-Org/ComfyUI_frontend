@@ -4,6 +4,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
@@ -15,6 +16,10 @@ export type SubscriptionDialogReason =
   | 'subscription_required'
   | 'out_of_credits'
   | 'top_up_blocked'
+  // Non-activation cohort: the activation funnel must be able to exclude these.
+  | 'member_invite'
+  | 'upload_model'
+  | 'run_workflow'
 
 export const useSubscriptionDialog = () => {
   const { flags } = useFeatureFlags()
@@ -22,7 +27,17 @@ export const useSubscriptionDialog = () => {
   const dialogStore = useDialogStore()
   const workspaceStore = useTeamWorkspaceStore()
   const { permissions } = useWorkspaceUI()
-  const { isFreeTier } = useSubscription()
+  const { isFreeTier, subscriptionTier } = useSubscription()
+
+  function trackPaywallViewed(reason?: SubscriptionDialogReason) {
+    if (!isCloud) return
+    useTelemetry()?.trackPaywallViewed({
+      reason: reason ?? 'subscription_required',
+      ...(subscriptionTier.value
+        ? { current_tier: subscriptionTier.value.toLowerCase() }
+        : {})
+    })
+  }
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -31,6 +46,8 @@ export const useSubscriptionDialog = () => {
 
   function showPricingTable(options?: { reason?: SubscriptionDialogReason }) {
     if (!isCloud) return
+
+    trackPaywallViewed(options?.reason)
 
     // Members can't manage the workspace subscription, so a blocked run shows a
     // small read-only "ask your owner to reactivate" modal instead of the
@@ -99,6 +116,8 @@ export const useSubscriptionDialog = () => {
 
   function show(options?: { reason?: SubscriptionDialogReason }) {
     if (isFreeTier.value && workspaceStore.isInPersonalWorkspace) {
+      trackPaywallViewed(options?.reason)
+
       const component = defineAsyncComponent(
         () =>
           import('@/platform/cloud/subscription/components/FreeTierDialogContent.vue')

@@ -68,6 +68,7 @@ import DesktopCloudNotificationController from '@/platform/cloud/notification/co
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import { consumeAuthActivation } from '@/platform/telemetry/authActivationMarker'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
@@ -294,11 +295,23 @@ void nextTick(() => {
 })
 
 const onGraphReady = () => {
+  // Stamp interactivity time before runWhenGlobalIdle defers the body, so
+  // canvas_ready's ms_since_auth measures auth -> canvas, not auth -> idle.
+  const canvasReadyAt = Date.now()
   runWhenGlobalIdle(() => {
     // Track user login when app is ready in graph view (cloud only)
     if (isCloud && authStore.isAuthenticated && !hasTrackedLogin) {
       telemetry?.trackUserLoggedIn()
       hasTrackedLogin = true
+
+      // Canvas is interactive: the activation anchor. The auth marker (when
+      // present) carries new-user status and auth time across the onboarding
+      // page reload; absent for returning users who just reloaded the app.
+      const activation = consumeAuthActivation()
+      telemetry?.trackCanvasReady({
+        is_new_user: activation?.isNewUser ?? false,
+        ms_since_auth: activation ? canvasReadyAt - activation.at : undefined
+      })
     }
 
     // Set up page visibility tracking (cloud only)

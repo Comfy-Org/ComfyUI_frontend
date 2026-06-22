@@ -1,20 +1,35 @@
 import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
+  AuthFailedMetadata,
+  AuthMethodSelectedMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
+  CanvasReadyMetadata,
+  CheckoutInitiateFailedMetadata,
+  CheckoutReturnedMetadata,
+  CheckoutViewedMetadata,
+  CheckoutWindowBlockedMetadata,
+  BillingCycleToggledMetadata,
+  AuthErrorMetadata,
+  TemplateCategorySelectedMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
+  FirstExecutionCompletedMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OAuthPopupResultMetadata,
+  OnboardingRoutedMetadata,
+  OutputViewedMetadata,
+  PaywallViewedMetadata,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -67,12 +82,32 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackSignupOpened?.())
   }
 
+  trackAuthMethodSelected(metadata: AuthMethodSelectedMetadata): void {
+    this.dispatch((provider) => provider.trackAuthMethodSelected?.(metadata))
+  }
+
+  trackOAuthPopupResult(metadata: OAuthPopupResultMetadata): void {
+    this.dispatch((provider) => provider.trackOAuthPopupResult?.(metadata))
+  }
+
+  trackAuthFailed(metadata: AuthFailedMetadata): void {
+    this.dispatch((provider) => provider.trackAuthFailed?.(metadata))
+  }
+
   trackAuth(metadata: AuthMetadata): void {
     this.dispatch((provider) => provider.trackAuth?.(metadata))
   }
 
   trackUserLoggedIn(): void {
     this.dispatch((provider) => provider.trackUserLoggedIn?.())
+  }
+
+  trackCanvasReady(metadata: CanvasReadyMetadata): void {
+    this.dispatch((provider) => provider.trackCanvasReady?.(metadata))
+  }
+
+  trackOnboardingRouted(metadata: OnboardingRoutedMetadata): void {
+    this.dispatch((provider) => provider.trackOnboardingRouted?.(metadata))
   }
 
   trackSubscription(
@@ -82,8 +117,46 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackSubscription?.(event, metadata))
   }
 
+  trackPaywallViewed(metadata: PaywallViewedMetadata): void {
+    this.dispatch((provider) => provider.trackPaywallViewed?.(metadata))
+  }
+
   trackBeginCheckout(metadata: BeginCheckoutMetadata): void {
     this.dispatch((provider) => provider.trackBeginCheckout?.(metadata))
+  }
+
+  trackCheckoutViewed(metadata: CheckoutViewedMetadata): void {
+    this.dispatch((provider) => provider.trackCheckoutViewed?.(metadata))
+  }
+
+  trackCheckoutReturned(metadata: CheckoutReturnedMetadata): void {
+    this.dispatch((provider) => provider.trackCheckoutReturned?.(metadata))
+  }
+
+  trackCheckoutInitiateFailed(metadata: CheckoutInitiateFailedMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackCheckoutInitiateFailed?.(metadata)
+    )
+  }
+
+  trackCheckoutWindowBlocked(metadata?: CheckoutWindowBlockedMetadata): void {
+    this.dispatch((provider) => provider.trackCheckoutWindowBlocked?.(metadata))
+  }
+
+  trackBillingCycleToggled(metadata: BillingCycleToggledMetadata): void {
+    this.dispatch((provider) => provider.trackBillingCycleToggled?.(metadata))
+  }
+
+  trackAuthError(metadata: AuthErrorMetadata): void {
+    this.dispatch((provider) => provider.trackAuthError?.(metadata))
+  }
+
+  trackTemplateCategorySelected(
+    metadata: TemplateCategorySelectedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackTemplateCategorySelected?.(metadata)
+    )
   }
 
   trackMonthlySubscriptionSucceeded(
@@ -246,6 +319,18 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
     this.dispatch((provider) => provider.trackExecutionSuccess?.(metadata))
+  }
+
+  trackFirstExecutionCompleted(
+    metadata: FirstExecutionCompletedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackFirstExecutionCompleted?.(metadata)
+    )
+  }
+
+  trackOutputViewed(metadata: OutputViewedMetadata): void {
+    this.dispatch((provider) => provider.trackOutputViewed?.(metadata))
   }
 
   trackSharedWorkflowRun(metadata: SharedWorkflowRunMetadata): void {

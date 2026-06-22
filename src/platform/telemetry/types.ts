@@ -33,6 +33,34 @@ export interface AuthMetadata {
   utm_campaign?: string
 }
 
+export type AuthMethod = 'email' | 'google' | 'github'
+
+export type AuthView = 'login' | 'signup'
+
+export interface AuthMethodSelectedMetadata {
+  method: AuthMethod
+  view: AuthView
+}
+
+export type OAuthProvider = 'google' | 'github'
+
+type OAuthPopupResult = 'success' | 'cancelled' | 'error'
+
+export interface OAuthPopupResultMetadata {
+  provider: OAuthProvider
+  result: OAuthPopupResult
+  error_code?: string
+}
+
+// create_customer failure = authenticated in Firebase but never provisioned (no auth_completed).
+type AuthFailureStage = 'firebase' | 'create_customer'
+
+export interface AuthFailedMetadata {
+  method: AuthMethod
+  stage: AuthFailureStage
+  error_code?: string
+}
+
 /**
  * Survey response data for user profiling
  * Maps 1-to-1 with actual survey fields
@@ -423,9 +451,64 @@ export interface CheckoutAttributionMetadata {
   wbraid?: string
 }
 
+type SubscribeClickSource =
+  | 'pricing_table'
+  | 'subscribe_to_run'
+  | 'subscribe_button'
+
 export interface SubscriptionMetadata {
   current_tier?: string
   reason?: SubscriptionDialogReason
+  tier?: TierKey
+  cycle?: BillingCycle
+  source?: SubscribeClickSource
+}
+
+export interface BillingCycleToggledMetadata {
+  from: BillingCycle
+  to: BillingCycle
+}
+
+export interface AuthErrorMetadata {
+  method: 'email' | 'google' | 'github'
+  is_sign_up: boolean
+  error_code?: string
+  error_message?: string
+}
+
+export interface TemplateCategorySelectedMetadata {
+  category_id: string
+  category_label?: string
+}
+
+// no_url = server returned no checkout_url; server_error = checkout request failed.
+type CheckoutInitiateFailureStage = 'no_url' | 'server_error'
+
+export interface CheckoutInitiateFailedMetadata {
+  stage: CheckoutInitiateFailureStage
+  error_code?: string
+}
+
+export type CheckoutWindowBlockedMetadata = Record<string, never>
+
+// Activation proxy: fires on the `executed` message, not on actual output visibility.
+export interface OutputViewedMetadata {
+  workflow_run_id: string
+  media_type: string
+  is_first_output: boolean
+}
+
+type OnboardingDestination = 'waitlist' | 'survey' | 'onboarded'
+
+export interface OnboardingRoutedMetadata {
+  destination: OnboardingDestination
+  survey_completed: boolean
+  has_cloud_status: boolean
+}
+
+export interface CanvasReadyMetadata {
+  is_new_user: boolean
+  ms_since_auth?: number
 }
 
 export interface BeginCheckoutMetadata
@@ -463,6 +546,30 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   ecommerce: EcommerceMetadata
 }
 
+export interface PaywallViewedMetadata {
+  reason: SubscriptionDialogReason | string
+  current_tier?: string
+}
+
+// checkout_attempt_id correlates this open with the matching checkout_returned.
+export interface CheckoutViewedMetadata {
+  checkout_attempt_id: string
+  tier: string
+  cycle: string
+}
+
+type CheckoutReturnOutcome = 'success' | 'cancelled' | 'unknown'
+
+export interface CheckoutReturnedMetadata {
+  checkout_attempt_id: string
+  outcome: CheckoutReturnOutcome
+}
+
+export interface FirstExecutionCompletedMetadata {
+  workflow_run_id: string
+  customer_tier?: string
+}
+
 /**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
@@ -470,15 +577,30 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
 export interface TelemetryProvider {
   // Authentication flow events
   trackSignupOpened?(): void
+  trackAuthMethodSelected?(metadata: AuthMethodSelectedMetadata): void
+  trackOAuthPopupResult?(metadata: OAuthPopupResultMetadata): void
+  trackAuthFailed?(metadata: AuthFailedMetadata): void
   trackAuth?(metadata: AuthMetadata): void
   trackUserLoggedIn?(): void
+  trackCanvasReady?(metadata: CanvasReadyMetadata): void
+  trackOnboardingRouted?(metadata: OnboardingRoutedMetadata): void
 
   // Subscription flow events
   trackSubscription?(
     event: 'modal_opened' | 'subscribe_clicked',
     metadata?: SubscriptionMetadata
   ): void
+  trackPaywallViewed?(metadata: PaywallViewedMetadata): void
   trackBeginCheckout?(metadata: BeginCheckoutMetadata): void
+  trackCheckoutViewed?(metadata: CheckoutViewedMetadata): void
+  trackCheckoutReturned?(metadata: CheckoutReturnedMetadata): void
+  trackCheckoutInitiateFailed?(metadata: CheckoutInitiateFailedMetadata): void
+  trackCheckoutWindowBlocked?(metadata?: CheckoutWindowBlockedMetadata): void
+  trackBillingCycleToggled?(metadata: BillingCycleToggledMetadata): void
+  trackAuthError?(metadata: AuthErrorMetadata): void
+  trackTemplateCategorySelected?(
+    metadata: TemplateCategorySelectedMetadata
+  ): void
   trackMonthlySubscriptionSucceeded?(
     metadata?: SubscriptionSuccessMetadata
   ): void
@@ -547,6 +669,8 @@ export interface TelemetryProvider {
   trackWorkflowExecution?(): void
   trackExecutionError?(metadata: ExecutionErrorMetadata): void
   trackExecutionSuccess?(metadata: ExecutionSuccessMetadata): void
+  trackFirstExecutionCompleted?(metadata: FirstExecutionCompletedMetadata): void
+  trackOutputViewed?(metadata: OutputViewedMetadata): void
   trackSharedWorkflowRun?(metadata: SharedWorkflowRunMetadata): void
 
   // Settings events
@@ -576,13 +700,26 @@ export type TelemetryDispatcher = Required<TelemetryProvider>
 export const TelemetryEvents = {
   // Authentication Flow
   USER_SIGN_UP_OPENED: 'app:user_sign_up_opened',
+  AUTH_METHOD_SELECTED: 'app:auth_method_selected',
+  OAUTH_POPUP_RESULT: 'app:oauth_popup_result',
+  AUTH_FAILED: 'app:auth_failed',
   USER_AUTH_COMPLETED: 'app:user_auth_completed',
   USER_LOGGED_IN: 'app:user_logged_in',
+  CANVAS_READY: 'app:canvas_ready',
+  ONBOARDING_ROUTED: 'app:onboarding_routed',
 
   // Subscription Flow
   RUN_BUTTON_CLICKED: 'app:run_button_click',
   SUBSCRIPTION_REQUIRED_MODAL_OPENED: 'app:subscription_required_modal_opened',
   SUBSCRIBE_NOW_BUTTON_CLICKED: 'app:subscribe_now_button_clicked',
+  PAYWALL_VIEWED: 'app:paywall_viewed',
+  CHECKOUT_VIEWED: 'app:checkout_viewed',
+  CHECKOUT_RETURNED: 'app:checkout_returned',
+  CHECKOUT_INITIATE_FAILED: 'app:checkout_initiate_failed',
+  CHECKOUT_WINDOW_BLOCKED: 'app:checkout_window_blocked',
+  BILLING_CYCLE_TOGGLED: 'app:billing_cycle_toggled',
+  AUTH_ERROR: 'app:auth_error',
+  TEMPLATE_CATEGORY_SELECTED: 'app:template_category_selected',
   MONTHLY_SUBSCRIPTION_SUCCEEDED: 'app:monthly_subscription_succeeded',
   MONTHLY_SUBSCRIPTION_CANCELLED: 'app:monthly_subscription_cancelled',
   ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
@@ -647,6 +784,8 @@ export const TelemetryEvents = {
   EXECUTION_START: 'execution_start',
   EXECUTION_ERROR: 'execution_error',
   EXECUTION_SUCCESS: 'execution_success',
+  FIRST_EXECUTION_COMPLETED: 'app:first_execution_completed',
+  OUTPUT_VIEWED: 'app:output_viewed',
   SHARED_WORKFLOW_RUN: 'app:shared_workflow_run',
   // Generic UI Button Click
   UI_BUTTON_CLICKED: 'app:ui_button_clicked',
@@ -670,6 +809,14 @@ export type ExecutionTriggerSource =
  */
 export type TelemetryEventProperties =
   | AuthMetadata
+  | AuthMethodSelectedMetadata
+  | OAuthPopupResultMetadata
+  | AuthFailedMetadata
+  | CanvasReadyMetadata
+  | OnboardingRoutedMetadata
+  | CheckoutInitiateFailedMetadata
+  | CheckoutWindowBlockedMetadata
+  | OutputViewedMetadata
   | SurveyResponses
   | TemplateMetadata
   | ExecutionContext
@@ -701,3 +848,10 @@ export type TelemetryEventProperties =
   | DefaultViewSetMetadata
   | SubscriptionMetadata
   | SubscriptionSuccessMetadata
+  | PaywallViewedMetadata
+  | CheckoutViewedMetadata
+  | CheckoutReturnedMetadata
+  | FirstExecutionCompletedMetadata
+  | BillingCycleToggledMetadata
+  | AuthErrorMetadata
+  | TemplateCategorySelectedMetadata

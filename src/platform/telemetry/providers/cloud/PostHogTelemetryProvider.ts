@@ -4,22 +4,38 @@ import { watch } from 'vue'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useAppMode } from '@/composables/useAppMode'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
+  AuthFailedMetadata,
+  AuthMethodSelectedMetadata,
   AuthMetadata,
+  CanvasReadyMetadata,
+  CheckoutInitiateFailedMetadata,
+  CheckoutReturnedMetadata,
+  CheckoutViewedMetadata,
+  CheckoutWindowBlockedMetadata,
+  BillingCycleToggledMetadata,
+  AuthErrorMetadata,
+  TemplateCategorySelectedMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
+  FirstExecutionCompletedMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OAuthPopupResultMetadata,
+  OnboardingRoutedMetadata,
+  OutputViewedMetadata,
+  PaywallViewedMetadata,
   SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
@@ -47,15 +63,13 @@ import { TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
-  TelemetryEvents.WORKFLOW_OPENED,
   TelemetryEvents.PAGE_VISIBILITY_CHANGED,
   TelemetryEvents.TAB_COUNT_TRACKING,
   TelemetryEvents.NODE_SEARCH,
   TelemetryEvents.NODE_SEARCH_RESULT_SELECTED,
   TelemetryEvents.HELP_CENTER_OPENED,
   TelemetryEvents.HELP_RESOURCE_CLICKED,
-  TelemetryEvents.HELP_CENTER_CLOSED,
-  TelemetryEvents.WORKFLOW_CREATED
+  TelemetryEvents.HELP_CENTER_CLOSED
 ] as const satisfies TelemetryEventName[]
 
 const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
@@ -122,9 +136,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               api_host:
                 window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
               ui_host: 'https://us.posthog.com',
-              autocapture: false,
-              capture_pageview: false,
-              capture_pageleave: false,
+              autocapture: true,
+              capture_pageview: true,
+              capture_pageleave: true,
               persistence: 'localStorage+cookie',
               debug: import.meta.env.VITE_POSTHOG_DEBUG === 'true',
               ...serverConfig,
@@ -138,6 +152,9 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
             this.isInitialized = true
             this.flushEventQueue()
             this.registerDesktopEntryProps()
+            this.registerAppModeSuperProperty()
+            this.registerCustomerTierSuperProperty()
+            this.setFirstTouchAttribution()
 
             const currentUser = useCurrentUser()
             currentUser.onUserResolved((user) => {
@@ -319,8 +336,81 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
+  private registerAppModeSuperProperty(): void {
+    // Runs inside init's import .then(); an uncaught throw hits .catch and disables the provider.
+    try {
+      const { isAppMode } = useAppMode()
+      watch(
+        isAppMode,
+        (value) => {
+          if (this.posthog) {
+            this.posthog.register({ is_app_mode: value })
+          }
+        },
+        { immediate: true }
+      )
+    } catch (error) {
+      console.error('Failed to register is_app_mode super-property:', error)
+    }
+  }
+
+  private registerCustomerTierSuperProperty(): void {
+    try {
+      const { subscriptionTier } = useSubscription()
+      watch(
+        subscriptionTier,
+        (tier) => {
+          if (tier && this.posthog) {
+            this.posthog.register({ customer_tier: tier })
+          }
+        },
+        { immediate: true }
+      )
+    } catch (error) {
+      console.error('Failed to register customer_tier super-property:', error)
+    }
+  }
+
+  private setFirstTouchAttribution(): void {
+    if (!this.posthog) return
+    const params = new URLSearchParams(window.location.search)
+    const firstTouch: Record<string, string> = {}
+    const source = params.get('utm_source')
+    const medium = params.get('utm_medium')
+    const campaign = params.get('utm_campaign')
+    if (source) firstTouch.initial_utm_source = source
+    if (medium) firstTouch.initial_utm_medium = medium
+    if (campaign) firstTouch.initial_utm_campaign = campaign
+    if (Object.keys(firstTouch).length === 0) return
+    try {
+      this.posthog.people.set_once(firstTouch)
+    } catch (error) {
+      console.error('Failed to set first-touch attribution:', error)
+    }
+  }
+
   trackSignupOpened(): void {
     this.trackEvent(TelemetryEvents.USER_SIGN_UP_OPENED)
+  }
+
+  trackAuthMethodSelected(metadata: AuthMethodSelectedMetadata): void {
+    this.trackEvent(TelemetryEvents.AUTH_METHOD_SELECTED, metadata)
+  }
+
+  trackOAuthPopupResult(metadata: OAuthPopupResultMetadata): void {
+    this.trackEvent(TelemetryEvents.OAUTH_POPUP_RESULT, metadata)
+  }
+
+  trackAuthFailed(metadata: AuthFailedMetadata): void {
+    this.trackEvent(TelemetryEvents.AUTH_FAILED, metadata)
+  }
+
+  trackCanvasReady(metadata: CanvasReadyMetadata): void {
+    this.trackEvent(TelemetryEvents.CANVAS_READY, metadata)
+  }
+
+  trackOnboardingRouted(metadata: OnboardingRoutedMetadata): void {
+    this.trackEvent(TelemetryEvents.ONBOARDING_ROUTED, metadata)
   }
 
   trackAuth(metadata: AuthMetadata): void {
@@ -346,8 +436,42 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(eventName, metadata)
   }
 
+  trackPaywallViewed(metadata: PaywallViewedMetadata): void {
+    this.trackEvent(TelemetryEvents.PAYWALL_VIEWED, metadata)
+  }
+
+  trackCheckoutViewed(metadata: CheckoutViewedMetadata): void {
+    this.trackEvent(TelemetryEvents.CHECKOUT_VIEWED, metadata)
+  }
+
+  trackCheckoutReturned(metadata: CheckoutReturnedMetadata): void {
+    this.trackEvent(TelemetryEvents.CHECKOUT_RETURNED, metadata)
+  }
+
+  trackBillingCycleToggled(metadata: BillingCycleToggledMetadata): void {
+    this.trackEvent(TelemetryEvents.BILLING_CYCLE_TOGGLED, metadata)
+  }
+
+  trackAuthError(metadata: AuthErrorMetadata): void {
+    this.trackEvent(TelemetryEvents.AUTH_ERROR, metadata)
+  }
+
+  trackTemplateCategorySelected(
+    metadata: TemplateCategorySelectedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.TEMPLATE_CATEGORY_SELECTED, metadata)
+  }
+
   trackAddApiCreditButtonClicked(): void {
     this.trackEvent(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED)
+  }
+
+  trackCheckoutInitiateFailed(metadata: CheckoutInitiateFailedMetadata): void {
+    this.trackEvent(TelemetryEvents.CHECKOUT_INITIATE_FAILED, metadata)
+  }
+
+  trackCheckoutWindowBlocked(metadata?: CheckoutWindowBlockedMetadata): void {
+    this.trackEvent(TelemetryEvents.CHECKOUT_WINDOW_BLOCKED, metadata)
   }
 
   trackMonthlySubscriptionSucceeded(
@@ -508,6 +632,16 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackWorkflowCreated(metadata: WorkflowCreatedMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
+  }
+
+  trackFirstExecutionCompleted(
+    metadata: FirstExecutionCompletedMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.FIRST_EXECUTION_COMPLETED, metadata)
+  }
+
+  trackOutputViewed(metadata: OutputViewedMetadata): void {
+    this.trackEvent(TelemetryEvents.OUTPUT_VIEWED, metadata)
   }
 
   trackSharedWorkflowRun(metadata: SharedWorkflowRunMetadata): void {

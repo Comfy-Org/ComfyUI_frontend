@@ -7,6 +7,7 @@ import { getRoutes } from '../../../config/routes.ts'
 import { lockScroll, unlockScroll } from '../../../composables/scrollLock'
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
+import { captureCtaClick } from '../../../scripts/posthog'
 import NavLinkContent from './NavLinkContent.vue'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
 import SheetContent from '@/components/ui/sheet/SheetContent.vue'
@@ -94,7 +95,11 @@ onUnmounted(() => {
                   variant="navMuted"
                   :type="item.columns ? 'button' : undefined"
                   :href="item.columns ? undefined : item.href"
-                  @click="item.columns && (activeSection = item.label)"
+                  @click="
+                    item.columns
+                      ? (activeSection = item.label)
+                      : item.ctaButton && captureCtaClick(item.ctaButton, 'nav')
+                  "
                 >
                   {{ item.label }}
                   <template #append>
@@ -147,6 +152,9 @@ onUnmounted(() => {
                     as="a"
                     :target="link.external ? '_blank' : undefined"
                     :rel="link.external ? 'noopener noreferrer' : undefined"
+                    @click="
+                      link.ctaButton && captureCtaClick(link.ctaButton, 'nav')
+                    "
                   >
                     <NavLinkContent :item="link" :locale="locale" />
                   </Button>

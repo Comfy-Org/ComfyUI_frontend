@@ -78,3 +78,28 @@ describe('captureDownloadClick', () => {
     expect(hoisted.mockCapture).not.toHaveBeenCalled()
   })
 })
+
+describe('captureCtaClick', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.resetModules()
+  })
+
+  it('captures the CTA event with button and location', async () => {
+    const { initPostHog, captureCtaClick } = await import('./posthog')
+    initPostHog()
+    captureCtaClick('launch_cloud', 'nav')
+
+    expect(hoisted.mockCapture).toHaveBeenCalledWith('website:cta_clicked', {
+      button: 'launch_cloud',
+      location: 'nav'
+    })
+  })
+
+  it('does not capture before PostHog is initialized', async () => {
+    const { captureCtaClick } = await import('./posthog')
+    captureCtaClick('run_first_workflow', 'hero')
+
+    expect(hoisted.mockCapture).not.toHaveBeenCalled()
+  })
+})

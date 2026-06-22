@@ -2,6 +2,8 @@
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
+import type { CtaButton } from '../../../scripts/posthog'
+import { captureCtaClick } from '../../../scripts/posthog'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
@@ -13,20 +15,29 @@ const { locale = 'en', githubStars = '' } = defineProps<{
 }>()
 const routes = getRoutes(locale)
 
-const ctaButtons = [
+const ctaButtons: {
+  prefix: string
+  core: string
+  ariaLabel: string
+  href: string
+  primary: boolean
+  ctaButton: CtaButton
+}[] = [
   {
     prefix: t('nav.ctaDesktopPrefix', locale),
     core: t('nav.ctaDesktopCore', locale),
     ariaLabel: t('nav.downloadLocal', locale),
     href: routes.download,
-    primary: false
+    primary: false,
+    ctaButton: 'download_desktop'
   },
   {
     prefix: t('nav.ctaCloudPrefix', locale),
     core: t('nav.ctaCloudCore', locale),
     ariaLabel: t('nav.launchCloud', locale),
     href: externalLinks.cloud,
-    primary: true
+    primary: true,
+    ctaButton: 'launch_cloud'
   }
 ]
 </script>
@@ -74,6 +85,7 @@ const ctaButtons = [
         :href="cta.href"
         :variant="cta.primary ? 'default' : 'outline'"
         :aria-label="cta.ariaLabel"
+        @click="captureCtaClick(cta.ctaButton, 'nav')"
       >
         <span
           ><span class="hidden xl:inline-block">{{ cta.prefix }}&nbsp;</span

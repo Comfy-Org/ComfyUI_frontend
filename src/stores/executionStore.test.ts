@@ -21,6 +21,8 @@ const {
   mockShowTextPreview,
   mockTrackExecutionError,
   mockTrackExecutionSuccess,
+  mockTrackFirstExecutionCompleted,
+  mockTrackOutputViewed,
   mockTrackSharedWorkflowRun
 } = await vi.hoisted(async () => {
   const { shallowRef } = await import('vue')
@@ -33,6 +35,8 @@ const {
     mockShowTextPreview: vi.fn(),
     mockTrackExecutionError: vi.fn(),
     mockTrackExecutionSuccess: vi.fn(),
+    mockTrackFirstExecutionCompleted: vi.fn(),
+    mockTrackOutputViewed: vi.fn(),
     mockTrackSharedWorkflowRun: vi.fn()
   }
 })
@@ -80,17 +84,25 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   }
 })
 
+// Toggleable so the output_viewed cloud-gate test can flip isCloud to false
+// without vi.doMock (banned) or a module reload.
+const mockDistribution = vi.hoisted(() => ({ isCloud: true }))
+
 vi.mock('@/platform/distribution/types', async () => ({
   ...(await vi.importActual<typeof DistributionTypes>(
     '@/platform/distribution/types'
   )),
-  isCloud: true
+  get isCloud() {
+    return mockDistribution.isCloud
+  }
 }))
 
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () => ({
     trackExecutionError: mockTrackExecutionError,
     trackExecutionSuccess: mockTrackExecutionSuccess,
+    trackFirstExecutionCompleted: mockTrackFirstExecutionCompleted,
+    trackOutputViewed: mockTrackOutputViewed,
     trackSharedWorkflowRun: mockTrackSharedWorkflowRun
   })
 }))
@@ -1752,5 +1764,278 @@ describe('useExecutionStore - storeJob and workflow path tracking', () => {
     store.ensureSessionWorkflowPath('job-1', '/b.json')
 
     expect(store.jobIdToSessionWorkflowPath.get('job-1')).toBe('/b.json')
+  })
+})
+
+describe('useExecutionStore - output_viewed activation telemetry', () => {
+  /**
+   * `handleExecuted` dedups via per-store-instance state (`outputViewedRuns`
+   * + `sessionHasViewedOutput`), so a fresh pinia + store per test starts from
+   * a clean slate without reloading the module.
+   */
+  type Store = ReturnType<typeof useExecutionStore>
+
+  type ExecutedOutput = Record<string, unknown>
+
+  async function freshStore(): Promise<Store> {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const store = useExecutionStore()
+    store.bindExecutionEvents()
+    return store
+  }
+
+  function fireExecuted(detail: {
+    node: string
+    prompt_id: string
+    output: ExecutedOutput
+  }) {
+    const handler = apiEventHandlers.get('executed')
+    if (!handler) throw new Error('executed handler not bound')
+    handler(
+      new CustomEvent('executed', {
+        detail: { display_node: detail.node, ...detail }
+      })
+    )
+  }
+
+  /** Seed an active job so `handleExecuted` runs its body (it early-returns
+   *  when there is no active job). */
+  function startRun(store: Store, jobId: string) {
+    const startHandler = apiEventHandlers.get('execution_start')
+    if (!startHandler) throw new Error('execution_start handler not bound')
+    startHandler(
+      new CustomEvent('execution_start', {
+        detail: { prompt_id: jobId, timestamp: 0 }
+      })
+    )
+    expect(store.activeJobId).toBe(jobId)
+  }
+
+  const imageOutput: ExecutedOutput = {
+    images: [{ filename: 'out.png', type: 'output' }]
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    mockTrackOutputViewed.mockReset()
+  })
+
+  it('emits trackOutputViewed once for the first media output of a run', async () => {
+    const store = await freshStore()
+    startRun(store, 'run-1')
+
+    fireExecuted({ node: 'save-1', prompt_id: 'run-1', output: imageOutput })
+
+    expect(mockTrackOutputViewed).toHaveBeenCalledTimes(1)
+    expect(mockTrackOutputViewed).toHaveBeenCalledWith({
+      workflow_run_id: 'run-1',
+      media_type: 'image',
+      is_first_output: true
+    })
+  })
+
+  it('does not re-emit for a second media node in the same run', async () => {
+    const store = await freshStore()
+    startRun(store, 'run-1')
+
+    fireExecuted({ node: 'save-1', prompt_id: 'run-1', output: imageOutput })
+    fireExecuted({
+      node: 'save-2',
+      prompt_id: 'run-1',
+      output: { images: [{ filename: 'second.png', type: 'output' }] }
+    })
+
+    // Per-run dedup: only the first media output of run-1 fires.
+    expect(mockTrackOutputViewed).toHaveBeenCalledTimes(1)
+    expect(mockTrackOutputViewed).toHaveBeenCalledWith(
+      expect.objectContaining({ workflow_run_id: 'run-1' })
+    )
+  })
+
+  it('emits again for a second run with is_first_output false', async () => {
+    const store = await freshStore()
+
+    startRun(store, 'run-1')
+    fireExecuted({ node: 'save-1', prompt_id: 'run-1', output: imageOutput })
+
+    startRun(store, 'run-2')
+    fireExecuted({ node: 'save-1', prompt_id: 'run-2', output: imageOutput })
+
+    expect(mockTrackOutputViewed).toHaveBeenCalledTimes(2)
+    expect(mockTrackOutputViewed).toHaveBeenNthCalledWith(1, {
+      workflow_run_id: 'run-1',
+      media_type: 'image',
+      is_first_output: true
+    })
+    expect(mockTrackOutputViewed).toHaveBeenNthCalledWith(2, {
+      workflow_run_id: 'run-2',
+      media_type: 'image',
+      is_first_output: false
+    })
+  })
+
+  // media_type is classified by filename via getMediaTypeFromFilename, so the
+  // output bucket name is irrelevant (gif is an image extension; glb is 3D).
+  it.for([
+    { filename: 'a.png', expected: 'image' },
+    { filename: 'a.mp4', expected: 'video' },
+    { filename: 'a.webm', expected: 'video' },
+    { filename: 'a.gif', expected: 'image' },
+    { filename: 'a.mp3', expected: 'audio' },
+    { filename: 'a.glb', expected: '3D' }
+  ])(
+    'classifies $filename as media_type $expected',
+    async ({ filename, expected }, { expect }) => {
+      const store = await freshStore()
+      startRun(store, 'run-media')
+
+      fireExecuted({
+        node: 'save-1',
+        prompt_id: 'run-media',
+        output: { images: [{ filename }] }
+      })
+
+      expect(mockTrackOutputViewed).toHaveBeenCalledTimes(1)
+      expect(mockTrackOutputViewed).toHaveBeenCalledWith(
+        expect.objectContaining({ media_type: expected })
+      )
+    }
+  )
+
+  it('does not emit for a non-media (text-only) output', async () => {
+    const store = await freshStore()
+    startRun(store, 'run-text')
+
+    fireExecuted({
+      node: 'show-text',
+      prompt_id: 'run-text',
+      output: { text: 'hello world' }
+    })
+
+    expect(mockTrackOutputViewed).not.toHaveBeenCalled()
+  })
+
+  it('does not emit anything when isCloud is false', async () => {
+    mockDistribution.isCloud = false
+    try {
+      const store = await freshStore()
+      startRun(store, 'run-1')
+      fireExecuted({ node: 'save-1', prompt_id: 'run-1', output: imageOutput })
+
+      expect(mockTrackOutputViewed).not.toHaveBeenCalled()
+      // The node is still marked executed regardless of the cloud gate.
+      expect(store.activeJob?.nodes['save-1']).toBe(true)
+    } finally {
+      mockDistribution.isCloud = true
+    }
+  })
+})
+
+describe('useExecutionStore - first_execution_completed activation telemetry', () => {
+  /**
+   * `first_execution_completed` fires once ever per browser profile, guarded by
+   * a durable localStorage key. Tests clear localStorage between cases so each
+   * starts as a "never executed" profile, and a single shared store instance
+   * verifies the within-profile dedup survives across successive runs.
+   */
+  type Store = ReturnType<typeof useExecutionStore>
+
+  const FIRST_EXECUTION_COMPLETED_KEY =
+    'comfy:telemetry:first_execution_completed'
+
+  function freshStore(): Store {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    const store = useExecutionStore()
+    store.bindExecutionEvents()
+    return store
+  }
+
+  function queueAndStart(store: Store, jobId: string) {
+    store.storeJob({
+      nodes: ['a'],
+      id: jobId,
+      promptOutput: { a: createPromptNode('Node A', 'NodeA') },
+      workflow: createQueuedWorkflow()
+    })
+    const startHandler = apiEventHandlers.get('execution_start')
+    if (!startHandler) throw new Error('execution_start handler not bound')
+    startHandler(
+      new CustomEvent('execution_start', {
+        detail: { prompt_id: jobId, timestamp: 0 }
+      })
+    )
+  }
+
+  function fireSuccess(jobId: string) {
+    const handler = apiEventHandlers.get('execution_success')
+    if (!handler) throw new Error('execution_success handler not bound')
+    handler(
+      new CustomEvent('execution_success', {
+        detail: { prompt_id: jobId, timestamp: 0 }
+      })
+    )
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    localStorage.removeItem(FIRST_EXECUTION_COMPLETED_KEY)
+    mockTrackFirstExecutionCompleted.mockReset()
+  })
+
+  it('emits trackFirstExecutionCompleted on the first successful execution', () => {
+    const store = freshStore()
+    queueAndStart(store, 'run-1')
+
+    fireSuccess('run-1')
+
+    expect(mockTrackFirstExecutionCompleted).toHaveBeenCalledTimes(1)
+    expect(mockTrackFirstExecutionCompleted).toHaveBeenCalledWith({
+      workflow_run_id: 'run-1'
+    })
+    // The durable guard is now set for this browser profile.
+    expect(localStorage.getItem(FIRST_EXECUTION_COMPLETED_KEY)).toBeTruthy()
+  })
+
+  it('does not re-emit on subsequent successful executions in the same profile', () => {
+    const store = freshStore()
+
+    queueAndStart(store, 'run-1')
+    fireSuccess('run-1')
+
+    queueAndStart(store, 'run-2')
+    fireSuccess('run-2')
+
+    expect(mockTrackFirstExecutionCompleted).toHaveBeenCalledTimes(1)
+    expect(mockTrackFirstExecutionCompleted).toHaveBeenCalledWith({
+      workflow_run_id: 'run-1'
+    })
+  })
+
+  it('does not emit when the durable guard is already set (e.g. after reload)', () => {
+    // Simulate a prior session having already activated this profile.
+    localStorage.setItem(FIRST_EXECUTION_COMPLETED_KEY, '2026-01-01T00:00:00Z')
+
+    const store = freshStore()
+    queueAndStart(store, 'run-1')
+    fireSuccess('run-1')
+
+    expect(mockTrackFirstExecutionCompleted).not.toHaveBeenCalled()
+  })
+
+  it('does not emit when isCloud is false', () => {
+    mockDistribution.isCloud = false
+    try {
+      const store = freshStore()
+      queueAndStart(store, 'run-1')
+      fireSuccess('run-1')
+
+      expect(mockTrackFirstExecutionCompleted).not.toHaveBeenCalled()
+      // Cloud-gated event must not consume the durable first-run guard either.
+      expect(localStorage.getItem(FIRST_EXECUTION_COMPLETED_KEY)).toBeNull()
+    } finally {
+      mockDistribution.isCloud = true
+    }
   })
 })

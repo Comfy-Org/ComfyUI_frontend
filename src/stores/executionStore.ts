@@ -35,6 +35,10 @@ import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
+import {
+  getMediaTypeFromFilename,
+  isPreviewableMediaType
+} from '@/utils/formatUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type { AppMode } from '@/utils/appMode'
 import { getWorkflowMode, isAppModeValue } from '@/utils/appMode'
@@ -93,6 +97,38 @@ function buildExecutionNodeLookup(
  */
 export const MAX_PROGRESS_JOBS = 1000
 
+const MAX_TRACKED_OUTPUT_RUNS = 256
+
+const FIRST_EXECUTION_COMPLETED_KEY =
+  'comfy:telemetry:first_execution_completed'
+
+// On storage throw, return false (treat as already emitted) so we never spam the event.
+function claimFirstExecutionCompleted(): boolean {
+  try {
+    if (localStorage.getItem(FIRST_EXECUTION_COMPLETED_KEY)) return false
+    localStorage.setItem(
+      FIRST_EXECUTION_COMPLETED_KEY,
+      new Date().toISOString()
+    )
+    return true
+  } catch {
+    return false
+  }
+}
+
+function firstOutputMediaType(
+  output: ExecutedWsMessage['output']
+): string | null {
+  for (const value of Object.values(output)) {
+    if (!Array.isArray(value) || value.length === 0) continue
+    const filename = (value[0] as { filename?: unknown })?.filename
+    if (typeof filename !== 'string') continue
+    const mediaType = getMediaTypeFromFilename(filename)
+    if (isPreviewableMediaType(mediaType)) return mediaType
+  }
+  return null
+}
+
 export type WorkflowExecutionStatus = 'running' | 'completed' | 'failed'
 
 export const WORKFLOW_STATUS_I18N_KEYS: Record<
@@ -109,6 +145,9 @@ export const useExecutionStore = defineStore('execution', () => {
   const canvasStore = useCanvasStore()
   const executionErrorStore = useExecutionErrorStore()
   const { mode, isAppMode } = useAppMode()
+
+  const outputViewedRuns = new Set<string>()
+  let sessionHasViewedOutput = false
 
   const clientId = ref<string | null>(null)
   const activeJobId = ref<JobId | null>(null)
@@ -408,6 +447,26 @@ export const useExecutionStore = defineStore('execution', () => {
   function handleExecuted(e: CustomEvent<ExecutedWsMessage>) {
     if (!activeJob.value) return
     activeJob.value.nodes[e.detail.node] = true
+
+    if (isCloud) {
+      const runId = e.detail.prompt_id
+      const mediaType = firstOutputMediaType(e.detail.output)
+      if (mediaType && !outputViewedRuns.has(runId)) {
+        // Evict-before-add so we never evict the run we are about to record.
+        if (outputViewedRuns.size >= MAX_TRACKED_OUTPUT_RUNS) {
+          const oldest = outputViewedRuns.values().next().value
+          if (oldest !== undefined) outputViewedRuns.delete(oldest)
+        }
+        outputViewedRuns.add(runId)
+        const isFirstOutput = !sessionHasViewedOutput
+        sessionHasViewedOutput = true
+        useTelemetry()?.trackOutputViewed({
+          workflow_run_id: runId,
+          media_type: mediaType,
+          is_first_output: isFirstOutput
+        })
+      }
+    }
   }
 
   function handleExecutionSuccess(e: CustomEvent<ExecutionSuccessWsMessage>) {
@@ -419,6 +478,12 @@ export const useExecutionStore = defineStore('execution', () => {
       telemetry?.trackExecutionSuccess({
         jobId
       })
+      // isCloud short-circuits first so the durable claim isn't spent off-cloud.
+      if (isCloud && claimFirstExecutionCompleted()) {
+        telemetry?.trackFirstExecutionCompleted({
+          workflow_run_id: jobId
+        })
+      }
       if (queuedJob.shareId) {
         telemetry?.trackSharedWorkflowRun({
           job_id: jobId,

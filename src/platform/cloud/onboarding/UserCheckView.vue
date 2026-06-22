@@ -32,6 +32,8 @@ import {
   getSurveyCompletedStatus,
   getUserCloudStatus
 } from '@/platform/cloud/onboarding/auth'
+import { isCloud } from '@/platform/distribution/types'
+import { useTelemetry } from '@/platform/telemetry'
 
 import CloudLoginViewSkeleton from './skeletons/CloudLoginViewSkeleton.vue'
 import CloudSurveyViewSkeleton from './skeletons/CloudSurveyViewSkeleton.vue'
@@ -42,6 +44,7 @@ const { flags } = useFeatureFlags()
 const onboardingSurveyEnabled = computed(
   () => flags.onboardingSurveyEnabled ?? true
 )
+const telemetry = isCloud ? useTelemetry() : undefined
 
 const skeletonType = ref<'login' | 'survey' | 'waitlist' | 'loading'>('loading')
 
@@ -54,6 +57,11 @@ const {
     await nextTick()
 
     if (!onboardingSurveyEnabled.value) {
+      telemetry?.trackOnboardingRouted({
+        destination: 'onboarded',
+        survey_completed: false,
+        has_cloud_status: false
+      })
       await router.replace({ path: '/' })
       return
     }
@@ -65,6 +73,11 @@ const {
 
     // Navigate based on user status
     if (!cloudUserStats) {
+      telemetry?.trackOnboardingRouted({
+        destination: 'waitlist',
+        survey_completed: !!surveyStatus,
+        has_cloud_status: false
+      })
       skeletonType.value = 'login'
       await router.replace({ name: 'cloud-login' })
       return
@@ -72,12 +85,22 @@ const {
 
     // Survey is required for all users when feature flag is enabled
     if (!surveyStatus) {
+      telemetry?.trackOnboardingRouted({
+        destination: 'survey',
+        survey_completed: false,
+        has_cloud_status: true
+      })
       skeletonType.value = 'survey'
       await router.replace({ name: 'cloud-survey' })
       return
     }
 
     // User is fully onboarded (active or whitelist check disabled)
+    telemetry?.trackOnboardingRouted({
+      destination: 'onboarded',
+      survey_completed: true,
+      has_cloud_status: true
+    })
     globalThis.location.href = '/'
   }),
   null,

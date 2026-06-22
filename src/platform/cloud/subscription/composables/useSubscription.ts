@@ -130,6 +130,29 @@ function useSubscriptionInternal() {
   let pendingCheckoutRecoveryAttempt = 0
   let isRecoveringPendingCheckout = false
 
+  // Non-success returns attribute via this; success outcomes use the id from metadata (cross-session).
+  let lastCheckoutAttempt: {
+    attempt_id: string
+    tier: string
+    cycle: string
+  } | null = null
+  // Fire checkout_returned once per attempt despite pageshow/visibilitychange firing repeatedly.
+  const reportedReturnedAttemptIds = new Set<string>()
+
+  const reportCheckoutReturned = (
+    checkoutAttemptId: string,
+    outcome: 'success' | 'cancelled' | 'unknown'
+  ) => {
+    if (reportedReturnedAttemptIds.has(checkoutAttemptId)) {
+      return
+    }
+    reportedReturnedAttemptIds.add(checkoutAttemptId)
+    telemetry?.trackCheckoutReturned({
+      checkout_attempt_id: checkoutAttemptId,
+      outcome
+    })
+  }
+
   const stopPendingCheckoutRecovery = () => {
     if (pendingCheckoutRecoveryTimeout !== null && defaultWindow) {
       defaultWindow.clearTimeout(pendingCheckoutRecoveryTimeout)
@@ -172,13 +195,22 @@ function useSubscriptionInternal() {
 
     if (!metadata) {
       if (hasPendingSubscriptionCheckoutAttempt()) {
+        // Back but Stripe unconfirmed; recovery retries resolve to success later.
+        if (lastCheckoutAttempt) {
+          reportCheckoutReturned(lastCheckoutAttempt.attempt_id, 'unknown')
+        }
         schedulePendingCheckoutRecovery()
       } else {
+        // No pending attempt remains: abandoned/cleared, i.e. cancelled at Stripe.
+        if (lastCheckoutAttempt) {
+          reportCheckoutReturned(lastCheckoutAttempt.attempt_id, 'cancelled')
+        }
         stopPendingCheckoutRecovery()
       }
       return
     }
 
+    reportCheckoutReturned(metadata.checkout_attempt_id, 'success')
     telemetry?.trackMonthlySubscriptionSucceeded({
       ...(authStore.userId ? { user_id: authStore.userId } : {}),
       ...metadata
@@ -204,9 +236,19 @@ function useSubscriptionInternal() {
   )
 
   const subscribe = wrapWithErrorHandlingAsync(async () => {
-    const response = await initiateSubscriptionCheckout()
+    let response: CloudSubscriptionCheckoutResponse
+    try {
+      response = await initiateSubscriptionCheckout()
+    } catch (error) {
+      telemetry?.trackCheckoutInitiateFailed({
+        stage: 'server_error',
+        error_code: error instanceof Error ? error.message : undefined
+      })
+      throw error
+    }
 
     if (!response.checkout_url) {
+      telemetry?.trackCheckoutInitiateFailed({ stage: 'no_url' })
       throw new Error(
         t('toastMessages.failedToInitiateSubscription', {
           error: 'No checkout URL returned'
@@ -216,10 +258,11 @@ function useSubscriptionInternal() {
 
     const checkoutWindow = window.open(response.checkout_url, '_blank')
     if (!checkoutWindow) {
+      telemetry?.trackCheckoutWindowBlocked()
       return
     }
 
-    recordPendingSubscriptionCheckoutAttempt({
+    const attempt = recordPendingSubscriptionCheckoutAttempt({
       tier: 'standard',
       cycle: 'monthly',
       checkout_type: isSubscribedOrIsNotCloud.value ? 'change' : 'new',
@@ -231,6 +274,18 @@ function useSubscriptionInternal() {
         : subscriptionDuration.value === 'MONTHLY'
           ? { previous_cycle: 'monthly' as const }
           : {})
+    })
+
+    lastCheckoutAttempt = {
+      attempt_id: attempt.attempt_id,
+      tier: attempt.tier,
+      cycle: attempt.cycle
+    }
+    reportedReturnedAttemptIds.delete(attempt.attempt_id)
+    telemetry?.trackCheckoutViewed({
+      checkout_attempt_id: attempt.attempt_id,
+      tier: attempt.tier,
+      cycle: attempt.cycle
     })
   }, reportError)
 
@@ -276,7 +331,8 @@ function useSubscriptionInternal() {
     await fetchSubscriptionStatus()
 
     if (!isSubscribedOrIsNotCloud.value) {
-      showSubscriptionDialog()
+      // Login-time enforcement, not a run gate; reason keeps the run_button cohort clean.
+      showSubscriptionDialog({ reason: 'subscription_required' })
     }
   }
 

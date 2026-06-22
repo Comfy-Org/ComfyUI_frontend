@@ -258,7 +258,7 @@ import { storeToRefs } from 'pinia'
 import Popover from 'primevue/popover'
 import SelectButton from 'primevue/selectbutton'
 import type { ToggleButtonPassThroughMethodOptions } from 'primevue/togglebutton'
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -374,6 +374,13 @@ const loadingTier = ref<CheckoutTierKey | null>(null)
 const popover = ref()
 const currentBillingCycle = ref<BillingCycle>('yearly')
 
+// Track monthly/yearly toggles so we can see whether the annual-discount
+// nudge actually moves the cycle selection before checkout.
+watch(currentBillingCycle, (to, from) => {
+  if (!isCloud || to === from) return
+  telemetry?.trackBillingCycleToggled({ from, to })
+})
+
 const hasPaidSubscription = computed(
   () => isActiveSubscription.value && !isFreeTier.value
 )
@@ -447,6 +454,16 @@ const handleSubscribe = wrapWithErrorHandlingAsync(
 
     isLoading.value = true
     loadingTier.value = tierKey
+
+    // Fire the subscribe-now click before opening checkout so the funnel
+    // captures intent even if the checkout window is blocked or abandoned.
+    // Covers both the 'change' (existing paid subscriber) and 'new' paths.
+    telemetry?.trackSubscription('subscribe_clicked', {
+      current_tier: subscriptionTier.value?.toLowerCase(),
+      tier: tierKey,
+      cycle: currentBillingCycle.value,
+      source: 'pricing_table'
+    })
 
     try {
       if (hasPaidSubscription.value) {

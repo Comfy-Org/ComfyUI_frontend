@@ -1,12 +1,14 @@
 import { externalLinks, getRoutes } from '../config/routes'
 import type { Locale } from '../i18n/translations'
 import { t } from '../i18n/translations'
+import type { CtaButton } from '../scripts/posthog'
 
 export type NavColumnItem = {
   label: string
   href: string
   badge?: 'new'
   external?: boolean
+  ctaButton?: CtaButton
 }
 
 export type NavColumn = {
@@ -31,8 +33,15 @@ export type NavItem =
       columns: NavColumn[]
       featured?: NavFeatured
       href?: never
+      ctaButton?: never
     }
-  | { label: string; href: string; columns?: never; featured?: never }
+  | {
+      label: string
+      href: string
+      columns?: never
+      featured?: never
+      ctaButton?: CtaButton
+    }
 
 export function getMainNavigation(locale: Locale): NavItem[] {
   const routes = getRoutes(locale)
@@ -53,8 +62,16 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         {
           header: t('nav.products', locale),
           items: [
-            { label: t('nav.comfyLocal', locale), href: routes.download },
-            { label: t('nav.comfyCloud', locale), href: routes.cloud },
+            {
+              label: t('nav.comfyLocal', locale),
+              href: routes.download,
+              ctaButton: 'comfy_desktop'
+            },
+            {
+              label: t('nav.comfyCloud', locale),
+              href: routes.cloud,
+              ctaButton: 'comfy_cloud'
+            },
             {
               label: t('nav.comfyApi', locale),
               href: routes.api,
@@ -82,7 +99,11 @@ export function getMainNavigation(locale: Locale): NavItem[] {
         }
       ]
     },
-    { label: t('nav.pricing', locale), href: routes.cloudPricing },
+    {
+      label: t('nav.pricing', locale),
+      href: routes.cloudPricing,
+      ctaButton: 'pricing'
+    },
     {
       label: t('nav.community', locale),
       featured: {

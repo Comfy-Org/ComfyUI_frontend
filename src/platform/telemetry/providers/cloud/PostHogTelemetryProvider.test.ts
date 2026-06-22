@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { watch } from 'vue'
 
 import { TelemetryEvents } from '../../types'
 
@@ -67,6 +68,12 @@ vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
   })
 }))
 
+vi.mock('@/composables/useAppMode', () => ({
+  useAppMode: () => ({
+    isAppMode: { value: false }
+  })
+}))
+
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
 
 function createProvider(
@@ -107,9 +114,9 @@ describe('PostHogTelemetryProvider', () => {
         expect.objectContaining({
           api_host: 'https://t.comfy.org',
           ui_host: 'https://us.posthog.com',
-          autocapture: false,
-          capture_pageview: false,
-          capture_pageleave: false,
+          autocapture: true,
+          capture_pageview: true,
+          capture_pageleave: true,
           persistence: 'localStorage+cookie'
         })
       )
@@ -324,6 +331,18 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures billing cycle toggles with from/to', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackBillingCycleToggled({ from: 'yearly', to: 'monthly' })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.BILLING_CYCLE_TOGGLED,
+        { from: 'yearly', to: 'monthly' }
+      )
+    })
+
     it('captures search queries with surface, query, length, and result count', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -450,10 +469,7 @@ describe('PostHogTelemetryProvider', () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
 
-      provider.trackWorkflowOpened({
-        missing_node_count: 0,
-        missing_node_types: []
-      })
+      provider.trackPageVisibilityChanged({ visibility_state: 'hidden' })
 
       expect(hoisted.mockCapture).not.toHaveBeenCalled()
     })
@@ -684,6 +700,316 @@ describe('PostHogTelemetryProvider', () => {
 
       expect(initConfig.before_send).not.toBe(remoteBefore_send)
       expect(initConfig.person_profiles).toBe('identified_only')
+    })
+  })
+
+  describe('funnel events', () => {
+    it('captures canvas_ready with new-user flag and auth latency', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = { is_new_user: true, ms_since_auth: 1234 }
+      provider.trackCanvasReady(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.CANVAS_READY,
+        metadata
+      )
+    })
+
+    it('captures onboarding_routed with destination and provisioning flags', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        destination: 'survey',
+        survey_completed: false,
+        has_cloud_status: true
+      } as const
+      provider.trackOnboardingRouted(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.ONBOARDING_ROUTED,
+        metadata
+      )
+    })
+
+    it('captures output_viewed with run id, media type, and first-output flag', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        workflow_run_id: 'run-1',
+        media_type: 'image',
+        is_first_output: true
+      }
+      provider.trackOutputViewed(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.OUTPUT_VIEWED,
+        metadata
+      )
+    })
+
+    it('captures auth_method_selected with method and view', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = { method: 'google', view: 'signup' } as const
+      provider.trackAuthMethodSelected(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AUTH_METHOD_SELECTED,
+        metadata
+      )
+    })
+
+    it('captures oauth_popup_result with provider, result, and error code', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        provider: 'github',
+        result: 'error',
+        error_code: 'popup_closed_by_user'
+      } as const
+      provider.trackOAuthPopupResult(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.OAUTH_POPUP_RESULT,
+        metadata
+      )
+    })
+
+    it('captures auth_failed with method, stage, and error code', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        method: 'email',
+        stage: 'create_customer',
+        error_code: 'provisioning_timeout'
+      } as const
+      provider.trackAuthFailed(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AUTH_FAILED,
+        metadata
+      )
+    })
+
+    it('captures checkout_initiate_failed with stage and error code', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        stage: 'no_url',
+        error_code: 'missing_checkout_url'
+      } as const
+      provider.trackCheckoutInitiateFailed(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.CHECKOUT_INITIATE_FAILED,
+        metadata
+      )
+    })
+
+    it('captures checkout_window_blocked', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      // Matches the real call site (useSubscription) which passes no metadata.
+      provider.trackCheckoutWindowBlocked()
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.CHECKOUT_WINDOW_BLOCKED,
+        {}
+      )
+    })
+
+    it('captures paywall_viewed with reason and current tier', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        reason: 'run_gate',
+        current_tier: 'free'
+      } as const
+      provider.trackPaywallViewed(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.PAYWALL_VIEWED,
+        metadata
+      )
+    })
+
+    it('captures checkout_viewed with attempt id, tier, and cycle', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        checkout_attempt_id: 'attempt-1',
+        tier: 'creator',
+        cycle: 'monthly'
+      }
+      provider.trackCheckoutViewed(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.CHECKOUT_VIEWED,
+        metadata
+      )
+    })
+
+    it('captures checkout_returned with attempt id and outcome', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        checkout_attempt_id: 'attempt-1',
+        outcome: 'success'
+      } as const
+      provider.trackCheckoutReturned(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.CHECKOUT_RETURNED,
+        metadata
+      )
+    })
+
+    it('captures first_execution_completed with run id and customer tier', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      const metadata = {
+        workflow_run_id: 'run-1',
+        customer_tier: 'CREATOR'
+      }
+      provider.trackFirstExecutionCompleted(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.FIRST_EXECUTION_COMPLETED,
+        metadata
+      )
+    })
+  })
+
+  describe('super-properties', () => {
+    function setLocation(search: string): void {
+      Object.defineProperty(window.location, 'search', {
+        configurable: true,
+        value: search,
+        writable: true
+      })
+    }
+
+    afterEach(() => {
+      setLocation('')
+    })
+
+    // The vue mock no-ops watch, so the immediate registration never auto-fires; replay the
+    // registered handler manually and locate it by the super-property key it registers.
+    type WatchHandler = (value: unknown) => void
+
+    function getWatchHandlers(): WatchHandler[] {
+      return (watch as unknown as ReturnType<typeof vi.fn>).mock.calls.map(
+        (call) => call[1] as WatchHandler
+      )
+    }
+
+    function findRegisterHandler(propertyKey: string): WatchHandler {
+      const handlers = getWatchHandlers()
+      for (const handler of handlers) {
+        hoisted.mockRegister.mockClear()
+        handler('__probe__')
+        const matched = hoisted.mockRegister.mock.calls.some(
+          ([props]) => props && propertyKey in props
+        )
+        if (matched) {
+          hoisted.mockRegister.mockClear()
+          return handler
+        }
+      }
+      hoisted.mockRegister.mockClear()
+      throw new Error(`No watch handler registers "${propertyKey}"`)
+    }
+
+    it('registers is_app_mode as a super-property via register() when app mode changes', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      // registerAppModeSuperProperty() watches useAppMode().isAppMode and
+      // mirrors the current mode onto every event via register().
+      const handler = findRegisterHandler('is_app_mode')
+      handler(true)
+
+      expect(hoisted.mockRegister).toHaveBeenCalledWith({ is_app_mode: true })
+    })
+
+    it('registers customer_tier as a super-property via register() once tier is known', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      // registerCustomerTierSuperProperty() watches
+      // useSubscription().subscriptionTier and only registers a truthy tier.
+      const handler = findRegisterHandler('customer_tier')
+      handler('CREATOR')
+
+      expect(hoisted.mockRegister).toHaveBeenCalledWith({
+        customer_tier: 'CREATOR'
+      })
+    })
+
+    it('does not register customer_tier while tier is still null', async () => {
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const handler = findRegisterHandler('customer_tier')
+      handler(null)
+
+      const tierCall = hoisted.mockRegister.mock.calls.find(
+        ([props]) => props && 'customer_tier' in props
+      )
+      expect(tierCall).toBeUndefined()
+    })
+
+    it('sets first-touch initial_utm_* on the person via set_once from the landing URL', async () => {
+      setLocation(
+        '?utm_source=newsletter&utm_medium=email&utm_campaign=spring_launch'
+      )
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockPeopleSetOnce).toHaveBeenCalledWith({
+        initial_utm_source: 'newsletter',
+        initial_utm_medium: 'email',
+        initial_utm_campaign: 'spring_launch'
+      })
+    })
+
+    it('only sets the first-touch params that are present in the URL', async () => {
+      setLocation('?utm_source=twitter')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const firstTouchCall = hoisted.mockPeopleSetOnce.mock.calls.find(
+        ([props]) => props && 'initial_utm_source' in props
+      )
+      expect(firstTouchCall?.[0]).toEqual({ initial_utm_source: 'twitter' })
+    })
+
+    it('does not set first-touch attribution when no utm params are present', async () => {
+      setLocation('')
+      createProvider()
+      await vi.dynamicImportSettled()
+
+      const firstTouchCall = hoisted.mockPeopleSetOnce.mock.calls.find(
+        ([props]) =>
+          props &&
+          ('initial_utm_source' in props ||
+            'initial_utm_medium' in props ||
+            'initial_utm_campaign' in props)
+      )
+      expect(firstTouchCall).toBeUndefined()
     })
   })
 })

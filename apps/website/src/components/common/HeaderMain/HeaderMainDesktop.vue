@@ -14,6 +14,7 @@ import {
 import { getMainNavigation } from '../../../data/mainNavigation'
 import type { NavItem } from '../../../data/mainNavigation'
 import type { Locale } from '../../../i18n/translations'
+import { captureCtaClick } from '../../../scripts/posthog'
 import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 
@@ -66,9 +67,14 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
           :active="isNavItemActive(navItem, currentPath)"
           :class="navigationMenuTriggerStyle()"
         >
-          <a :href="navItem.href" class="ppformula-text-center">{{
-            navItem.label
-          }}</a>
+          <a
+            :href="navItem.href"
+            class="ppformula-text-center"
+            @click="
+              navItem.ctaButton && captureCtaClick(navItem.ctaButton, 'nav')
+            "
+            >{{ navItem.label }}</a
+          >
         </NavigationMenuLink>
       </NavigationMenuItem>
     </NavigationMenuList>
