@@ -97,29 +97,12 @@ function buildExecutionNodeLookup(
  */
 export const MAX_PROGRESS_JOBS = 1000
 
-/**
- * Upper bound on the per-session set of run ids we have already emitted
- * `output_viewed` for, so a multi-output workflow fires the event once per run
- * (not once per output node). Bounded to avoid unbounded growth.
- */
 const MAX_TRACKED_OUTPUT_RUNS = 256
 
-/**
- * localStorage key marking that this browser profile has emitted the
- * once-per-user `first_execution_completed` activation event. Persisted (not
- * per-session like the `output_viewed` flag) because "first execution ever"
- * must survive reloads. Provider-side a PostHog person `set_once` is the
- * authoritative cross-device dedupe; this key is the local fast-path guard.
- */
 const FIRST_EXECUTION_COMPLETED_KEY =
   'comfy:telemetry:first_execution_completed'
 
-/**
- * Returns true and records the durable flag on the first call ever for this
- * browser profile; false on every subsequent call. All localStorage access is
- * wrapped so private-mode / blocked-storage throws degrade gracefully (treated
- * as "already emitted" so we never spam the event when the flag can't persist).
- */
+// On storage throw, return false (treat as already emitted) so we never spam the event.
 function claimFirstExecutionCompleted(): boolean {
   try {
     if (localStorage.getItem(FIRST_EXECUTION_COMPLETED_KEY)) return false
@@ -133,13 +116,6 @@ function claimFirstExecutionCompleted(): boolean {
   }
 }
 
-/**
- * Classifies a finished node's output into a coarse media type for the
- * `output_viewed` activation event, by running the canonical filename
- * classifier over the first result item across the output buckets (handles the
- * passthrough buckets like `gifs` / `model_file` uniformly via their
- * filenames). Returns null for non-media outputs (text-only / metadata).
- */
 function firstOutputMediaType(
   output: ExecutedWsMessage['output']
 ): string | null {
@@ -159,9 +135,6 @@ export const useExecutionStore = defineStore('execution', () => {
   const executionErrorStore = useExecutionErrorStore()
   const { mode, isAppMode } = useAppMode()
 
-  // `output_viewed` dedup state: one event per run, plus a once-per-session
-  // `is_first_output` flag. Held on the store instance (not module scope) so it
-  // resets with the store lifecycle and tests get isolation without resetModules.
   const outputViewedRuns = new Set<string>()
   let sessionHasViewedOutput = false
 
@@ -375,13 +348,11 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!activeJob.value) return
     activeJob.value.nodes[e.detail.node] = true
 
-    // First media output of a run is the activation moment (cloud only).
     if (isCloud) {
       const runId = e.detail.prompt_id
       const mediaType = firstOutputMediaType(e.detail.output)
       if (mediaType && !outputViewedRuns.has(runId)) {
-        // Evict-before-add: keeps the set at or below the bound and never
-        // evicts the run we are about to record.
+        // Evict-before-add so we never evict the run we are about to record.
         if (outputViewedRuns.size >= MAX_TRACKED_OUTPUT_RUNS) {
           const oldest = outputViewedRuns.values().next().value
           if (oldest !== undefined) outputViewedRuns.delete(oldest)
@@ -406,7 +377,6 @@ export const useExecutionStore = defineStore('execution', () => {
       telemetry?.trackExecutionSuccess({
         jobId
       })
-      // Activation moment (cloud only): fire once ever per browser profile.
       // isCloud short-circuits first so the durable claim isn't spent off-cloud.
       if (isCloud && claimFirstExecutionCompleted()) {
         telemetry?.trackFirstExecutionCompleted({

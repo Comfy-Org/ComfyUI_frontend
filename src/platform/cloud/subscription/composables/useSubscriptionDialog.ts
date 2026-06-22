@@ -16,9 +16,7 @@ export type SubscriptionDialogReason =
   | 'subscription_required'
   | 'out_of_credits'
   | 'top_up_blocked'
-  // Workspace member-invite upsell. A NON-activation cohort: the activation
-  // funnel must be able to EXCLUDE these so single-user activation is not
-  // diluted by team seat-expansion prompts.
+  // Non-activation cohort: the activation funnel must be able to exclude these.
   | 'member_invite'
   | 'upload_model'
   | 'run_workflow'
@@ -31,13 +29,6 @@ export const useSubscriptionDialog = () => {
   const { permissions } = useWorkspaceUI()
   const { isFreeTier, subscriptionTier } = useSubscription()
 
-  /**
-   * Emit paywall_viewed for a dialog that is about to open. Cloud-only, matching
-   * the isCloud gating used elsewhere in the subscription flow. Emitted at the
-   * point each paywall surface actually opens (FreeTierDialog in show(), the
-   * pricing table in showPricingTable()) so each surface counts exactly once
-   * with the reason that triggered it.
-   */
   function trackPaywallViewed(reason?: SubscriptionDialogReason) {
     if (!isCloud) return
     useTelemetry()?.trackPaywallViewed({
@@ -125,9 +116,6 @@ export const useSubscriptionDialog = () => {
 
   function show(options?: { reason?: SubscriptionDialogReason }) {
     if (isFreeTier.value && workspaceStore.isInPersonalWorkspace) {
-      // Emit here (not in showPricingTable) because the free-tier dialog is the
-      // surface actually shown; showPricingTable only fires later if the user
-      // clicks upgrade, which is a separate paywall view.
       trackPaywallViewed(options?.reason)
 
       const component = defineAsyncComponent(

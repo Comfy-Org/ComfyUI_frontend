@@ -334,12 +334,6 @@ export const useAuthStore = defineStore('auth', () => {
   const errorCodeOf = (error: unknown): string | undefined =>
     error instanceof FirebaseError ? error.code : undefined
 
-  /**
-   * Telemetry context threaded through every auth action so the auth funnel
-   * can split outcomes by method/view and pinpoint where a sign-in died:
-   * the Firebase credential step, or the backend create_customer step (the
-   * "zombie customer" who is authenticated in Firebase but never provisioned).
-   */
   interface AuthTelemetryContext {
     method: AuthMethod
     view: AuthView
@@ -385,8 +379,7 @@ export const useAuthStore = defineStore('auth', () => {
             error_code: errorCode
           })
         }
-        // A deliberate popup cancel isn't an auth failure (already captured by
-        // oauth_popup_result above); counting it inflates auth_failed.
+        // A deliberate popup cancel isn't an auth failure; counting it inflates auth_failed.
         if (telemetryContext && !isUserCancel) {
           telemetry?.trackAuthFailed({
             method: telemetryContext.method,
@@ -426,7 +419,6 @@ export const useAuthStore = defineStore('auth', () => {
 
       return result
     } catch (error) {
-      // Surface the auth failure leak that trackAuth (success-only) misses.
       if (isCloud && options?.authError) {
         useTelemetry()?.trackAuthError({
           method: options.authError.method,
