@@ -9,6 +9,10 @@ import {
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
+  routeObjectInfoFromSetupApi,
+  setComboInputOptions
+} from '@e2e/fixtures/helpers/ObjectInfoHelper'
+import {
   createRouteMockJob,
   jobsRouteFixture
 } from '@e2e/fixtures/jobsRouteFixture'
@@ -86,50 +90,6 @@ interface CloudUploadAssetState {
   isUploadedAssetAvailable: boolean
 }
 
-type ObjectInfoResponse = Record<
-  string,
-  { input?: { required?: Record<string, unknown> } }
->
-
-function setComboInputOptions(
-  objectInfo: ObjectInfoResponse,
-  nodeType: string,
-  inputName: string,
-  values: string[]
-) {
-  const nodeInfo = objectInfo[nodeType]
-  if (!nodeInfo) {
-    throw new Error(`Missing object_info entry for ${nodeType}`)
-  }
-
-  const requiredInputs = nodeInfo.input?.required
-  if (!requiredInputs) {
-    throw new Error(`Missing required inputs for ${nodeType}`)
-  }
-
-  const input = requiredInputs[inputName]
-  if (!Array.isArray(input)) {
-    throw new Error(`Expected ${nodeType}.${inputName} to be a combo input`)
-  }
-
-  const [valuesOrType, options] = input
-  const optionsObject =
-    options && typeof options === 'object' && !Array.isArray(options)
-  if (Array.isArray(valuesOrType)) {
-    input[0] = values
-  } else if (valuesOrType !== 'COMBO') {
-    throw new Error(`Expected ${nodeType}.${inputName} to have combo options`)
-  }
-
-  if (optionsObject) {
-    Object.assign(options, { options: values })
-  } else if (!Array.isArray(valuesOrType)) {
-    throw new Error(
-      `Expected ${nodeType}.${inputName} to have options metadata`
-    )
-  }
-}
-
 async function routeCloudBootstrapApis(page: Page) {
   await page.route('**/api/settings**', async (route) => {
     await route.fulfill({
@@ -161,57 +121,10 @@ async function routeCloudBootstrapApis(page: Page) {
   })
 }
 
-async function routeSetupObjectInfo(
-  page: Page,
-  customize?: (objectInfo: ObjectInfoResponse) => void
-) {
-  const setupApiUrl =
-    process.env.PLAYWRIGHT_SETUP_API_URL ?? 'http://127.0.0.1:8188'
-  const objectInfoUrl = new URL('/object_info', setupApiUrl).toString()
-
-  const objectInfoRouteHandler = async (route: Route) => {
-    try {
-      const response = await fetch(objectInfoUrl, {
-        signal: AbortSignal.timeout(5_000)
-      })
-      if (!response.ok) {
-        await route.fulfill({
-          status: response.status,
-          contentType: response.headers.get('content-type') ?? 'text/plain',
-          body: await response.text()
-        })
-        return
-      }
-
-      const objectInfo = (await response.json()) as ObjectInfoResponse
-      customize?.(objectInfo)
-
-      await route.fulfill({
-        status: response.status,
-        contentType: 'application/json',
-        body: JSON.stringify(objectInfo)
-      })
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      await route.fulfill({
-        status: 502,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          error: `Failed to fetch setup object_info from ${objectInfoUrl}: ${message}`
-        })
-      })
-    }
-  }
-
-  await page.route('**/object_info', objectInfoRouteHandler)
-  return async () =>
-    await page.unroute('**/object_info', objectInfoRouteHandler)
-}
-
 const cloudOutputTest = createCloudAssetsFixture([cloudOutputAsset]).extend({
   page: async ({ page }, use) => {
     await routeCloudBootstrapApis(page)
-    const unrouteObjectInfo = await routeSetupObjectInfo(page)
+    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(page)
 
     try {
       await use(page)
@@ -225,13 +138,16 @@ const cloudEmptyMediaInputsTest = createCloudAssetsFixture([]).extend({
   page: async ({ page }, use) => {
     await routeCloudBootstrapApis(page)
 
-    const unrouteObjectInfo = await routeSetupObjectInfo(page, (objectInfo) => {
-      for (const node of emptyMediaLoaderNodes) {
-        setComboInputOptions(objectInfo, node.nodeType, node.widgetName, [
-          node.serverOnlyOption
-        ])
+    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
+      page,
+      (objectInfo) => {
+        for (const node of emptyMediaLoaderNodes) {
+          setComboInputOptions(objectInfo, node.nodeType, node.widgetName, [
+            node.serverOnlyOption
+          ])
+        }
       }
-    })
+    )
 
     try {
       await use(page)
@@ -246,7 +162,7 @@ const cloudUploadRaceTest = comfyPageFixture.extend<{
 }>({
   page: async ({ page }, use) => {
     await routeCloudBootstrapApis(page)
-    const unrouteObjectInfo = await routeSetupObjectInfo(page)
+    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(page)
 
     const state: CloudUploadAssetState = {
       isUploadedAssetAvailable: false

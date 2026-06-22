@@ -2,14 +2,50 @@ import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import {
   cleanupFakeModel,
   openErrorsTab,
   loadWorkflowAndOpenErrorsTab
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import {
+  appendComboInputOptions,
+  routeObjectInfoFromSetupApi
+} from '@e2e/fixtures/helpers/ObjectInfoHelper'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 const FAKE_MODEL_NAME = 'fake_model.safetensors'
+const RESOLVED_PROMOTED_MODEL_NAME = 'resolved_model.safetensors'
+
+const promotedModelTest = test.extend({
+  page: async ({ page }, use) => {
+    const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
+      page,
+      (objectInfo) =>
+        appendComboInputOptions(
+          objectInfo,
+          'CheckpointLoaderSimple',
+          'ckpt_name',
+          [RESOLVED_PROMOTED_MODEL_NAME]
+        )
+    )
+    try {
+      await use(page)
+    } finally {
+      await unrouteObjectInfo()
+    }
+  }
+})
+
+interface ResolvedPromotedModelWorkflow {
+  workflowName: string
+  hostNodeTitle: string
+  expectedStaleInteriorWidgets: Array<{
+    subgraphNodeIdToEnter: string
+    nodeTitle: string
+  }>
+}
 
 function getModelLabel(group: Locator, modelName: string = FAKE_MODEL_NAME) {
   return group.getByRole('button', { name: modelName, exact: true })
@@ -19,6 +55,69 @@ async function expectReferenceBadge(group: Locator, count: number) {
   await expect(
     group.getByTestId(TestIds.dialogs.missingModelReferenceCount)
   ).toHaveText(String(count))
+}
+
+async function expectNoMissingModelUi(comfyPage: ComfyPage) {
+  const panel = new PropertiesPanelHelper(comfyPage.page)
+  await expect(
+    comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+  ).toBeHidden()
+  await panel.open(comfyPage.actionbar.propertiesButton)
+  await expect(
+    panel.root.getByTestId(TestIds.propertiesPanel.errorsTab)
+  ).toBeHidden()
+  await expect(
+    comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
+  ).toBeHidden()
+}
+
+async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
+  comfyPage: ComfyPage,
+  workflow: ResolvedPromotedModelWorkflow
+) {
+  await comfyPage.workflow.loadWorkflow(workflow.workflowName)
+
+  const promotedModelCombo = comfyPage.vueNodes
+    .getNodeByTitle(workflow.hostNodeTitle)
+    .getByRole('combobox', { name: 'ckpt_name', exact: true })
+  await expect(promotedModelCombo).toContainText(RESOLVED_PROMOTED_MODEL_NAME)
+  await expectNoMissingModelUi(comfyPage)
+
+  for (const step of workflow.expectedStaleInteriorWidgets) {
+    await enterVisibleSubgraph(comfyPage, step.subgraphNodeIdToEnter)
+    await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
+    await comfyPage.nextFrame()
+
+    const node = comfyPage.vueNodes.getNodeByTitle(step.nodeTitle)
+    await expect(node).toBeVisible()
+
+    const staleCombo = node.getByRole('combobox', {
+      name: 'ckpt_name',
+      exact: true
+    })
+    await expect(
+      staleCombo,
+      `${step.nodeTitle} should expose the stale linked interior widget`
+    ).toBeDisabled()
+    await expect(
+      staleCombo,
+      `${step.nodeTitle} should keep the stale interior value`
+    ).toContainText(FAKE_MODEL_NAME)
+    await expectNoMissingModelUi(comfyPage)
+  }
+}
+
+async function enterVisibleSubgraph(comfyPage: ComfyPage, nodeId: string) {
+  await comfyPage.page.evaluate((targetNodeId) => {
+    const graph = window.app?.canvas.graph
+    const node = graph?.getNodeById(targetNodeId)
+    if (!node?.isSubgraphNode()) {
+      throw new Error(`Expected visible subgraph node ${targetNodeId}`)
+    }
+    window.app!.canvas.setGraph(node.subgraph)
+  }, nodeId)
+  await comfyPage.nextFrame()
+  await comfyPage.vueNodes.waitForNodes()
 }
 
 test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
@@ -456,17 +555,18 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
           .getByRole('combobox', { name: 'ckpt_name', exact: true })
         await expect(promotedModelCombo).toHaveAttribute('aria-invalid', 'true')
 
-        const objectInfoRoute = /\/object_info$/
-        try {
-          await comfyPage.page.route(objectInfoRoute, async (route) => {
-            const response = await route.fetch()
-            const objectInfo = await response.json()
-            const ckptName =
-              objectInfo.CheckpointLoaderSimple.input.required.ckpt_name
-            ckptName[0] = [...ckptName[0], 'fake_model.safetensors']
-            await route.fulfill({ response, json: objectInfo })
-          })
+        const unrouteObjectInfo = await routeObjectInfoFromSetupApi(
+          comfyPage.page,
+          (objectInfo) =>
+            appendComboInputOptions(
+              objectInfo,
+              'CheckpointLoaderSimple',
+              'ckpt_name',
+              [FAKE_MODEL_NAME]
+            )
+        )
 
+        try {
           await comfyPage.page
             .getByTestId(TestIds.dialogs.missingModelRefresh)
             .click()
@@ -478,8 +578,50 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
             'true'
           )
         } finally {
-          await comfyPage.page.unroute(objectInfoRoute)
+          await unrouteObjectInfo()
         }
+      }
+    )
+
+    promotedModelTest(
+      'Reloading a resolved promoted model ignores the stale interior value',
+      { tag: ['@vue-nodes', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        await expectResolvedPromotedModelSuppressesStaleInteriorErrors(
+          comfyPage,
+          {
+            workflowName: 'missing/missing_model_promoted_widget_resolved_host',
+            hostNodeTitle: 'Subgraph with Promoted Missing Model',
+            expectedStaleInteriorWidgets: [
+              {
+                subgraphNodeIdToEnter: '2',
+                nodeTitle: 'Load Checkpoint'
+              }
+            ]
+          }
+        )
+      }
+    )
+
+    promotedModelTest(
+      'Reloading a resolved nested promoted model ignores stale interior values',
+      { tag: ['@vue-nodes', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        await expectResolvedPromotedModelSuppressesStaleInteriorErrors(
+          comfyPage,
+          {
+            workflowName:
+              'missing/missing_model_nested_promoted_widget_resolved_host',
+            hostNodeTitle: 'Outer Subgraph with Promoted Missing Model',
+            expectedStaleInteriorWidgets: [
+              {
+                subgraphNodeIdToEnter: '3',
+                nodeTitle: 'Inner Subgraph with Promoted Missing Model'
+              },
+              { subgraphNodeIdToEnter: '2', nodeTitle: 'Load Checkpoint' }
+            ]
+          }
+        )
       }
     )
 
