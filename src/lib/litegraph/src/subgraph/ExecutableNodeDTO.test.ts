@@ -3,12 +3,13 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
-  asNodeId,
   LGraph,
   LGraphNode,
   LGraphEventMode,
   ExecutableNodeDTO
 } from '@/lib/litegraph/src/litegraph'
+import type { NodeIdInput } from '@/types/nodeId'
+import { asNodeId } from '@/types/nodeId'
 
 import {
   createNestedSubgraphs,
@@ -16,6 +17,8 @@ import {
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
+
+const nodePath = (...ids: NodeIdInput[]) => ids.map(asNodeId)
 
 beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
@@ -44,7 +47,7 @@ describe('ExecutableNodeDTO Creation', () => {
     const node = new LGraphNode('Inner Node')
     node.id = asNodeId(42)
     graph.add(node)
-    const subgraphPath = [asNodeId('10'), asNodeId('20')] as const
+    const subgraphPath = nodePath('10', '20')
 
     const dto = new ExecutableNodeDTO(node, subgraphPath, new Map(), undefined)
 
@@ -129,7 +132,7 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
     const node = new LGraphNode('Nested Node')
     node.id = asNodeId(3)
     graph.add(node)
-    const path = [asNodeId('1'), asNodeId('2')] as const
+    const path = nodePath('1', '2')
 
     const dto = new ExecutableNodeDTO(node, path, new Map(), undefined)
 
@@ -141,13 +144,7 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
     const node = new LGraphNode('Deep Node')
     node.id = asNodeId(99)
     graph.add(node)
-    const path = [
-      asNodeId('1'),
-      asNodeId('2'),
-      asNodeId('3'),
-      asNodeId('4'),
-      asNodeId('5')
-    ] as const
+    const path = nodePath('1', '2', '3', '4', '5')
 
     const dto = new ExecutableNodeDTO(node, path, new Map(), undefined)
 
@@ -166,13 +163,13 @@ describe('ExecutableNodeDTO Path-Based IDs', () => {
 
     const dto1 = new ExecutableNodeDTO(
       node1,
-      [asNodeId('5')],
+      nodePath('5'),
       new Map(),
       undefined
     )
     const dto2 = new ExecutableNodeDTO(
       node2,
-      [asNodeId('5')],
+      nodePath('5'),
       new Map(),
       undefined
     )
@@ -218,7 +215,7 @@ describe('ExecutableNodeDTO Input Resolution', () => {
     const innerNode = subgraph.nodes[0]
     const dto = new ExecutableNodeDTO(
       innerNode,
-      [asNodeId('1')],
+      nodePath('1'),
       new Map(),
       subgraphNode
     )
@@ -258,7 +255,7 @@ describe('ExecutableNodeDTO Output Resolution', () => {
     const innerNode = subgraph.nodes[0]
     const dto = new ExecutableNodeDTO(
       innerNode,
-      [asNodeId('1')],
+      nodePath('1'),
       new Map(),
       subgraphNode
     )
@@ -521,7 +518,7 @@ describe('ExecutableNodeDTO Properties', () => {
 
     const dto = new ExecutableNodeDTO(
       node,
-      [asNodeId('1'), asNodeId('2')],
+      nodePath('1', '2'),
       new Map(),
       undefined
     )
@@ -560,16 +557,11 @@ describe('ExecutableNodeDTO Memory Efficiency', () => {
     node.addOutput('out2', 'string')
     graph.add(node)
 
-    const dto = new ExecutableNodeDTO(
-      node,
-      [asNodeId('1')],
-      new Map(),
-      undefined
-    )
+    const dto = new ExecutableNodeDTO(node, nodePath('1'), new Map(), undefined)
 
     // DTO should be lightweight - only essential properties
     expect(dto.node).toBe(node) // Reference, not copy
-    expect(dto.subgraphNodePath).toEqual([asNodeId(1)]) // Reference to path
+    expect(dto.subgraphNodePath).toEqual(nodePath(1)) // Reference to path
     expect(dto.inputs).toHaveLength(2) // Copied input data only
 
     // Should not duplicate heavy node data
@@ -588,12 +580,7 @@ describe('ExecutableNodeDTO Memory Efficiency', () => {
       const node = new LGraphNode(`Node ${i}`)
       node.id = asNodeId(i)
       graph.add(node)
-      const dto = new ExecutableNodeDTO(
-        node,
-        [asNodeId(1)],
-        new Map(),
-        undefined
-      )
+      const dto = new ExecutableNodeDTO(node, nodePath(1), new Map(), undefined)
       nodes.push(dto)
     }
 
@@ -614,7 +601,7 @@ describe('ExecutableNodeDTO Memory Efficiency', () => {
 
     const dto = new ExecutableNodeDTO(
       innerNode,
-      [asNodeId('1')],
+      nodePath('1'),
       new Map(),
       subgraphNode
     )
@@ -673,7 +660,7 @@ describe('ExecutableNodeDTO Integration', () => {
 
     const dto = new ExecutableNodeDTO(
       originalNode,
-      [asNodeId(1)],
+      nodePath(1),
       new Map(),
       undefined
     )
@@ -695,7 +682,7 @@ describe('ExecutableNodeDTO Integration', () => {
 
     const dto = new ExecutableNodeDTO(
       innerNode,
-      [asNodeId('99')],
+      nodePath('99'),
       new Map(),
       subgraphNode
     )
@@ -720,12 +707,7 @@ describe('ExecutableNodeDTO Scale Testing', () => {
       node.addInput('in', 'number')
       graph.add(node)
 
-      const dto = new ExecutableNodeDTO(
-        node,
-        [asNodeId(1)],
-        new Map(),
-        undefined
-      )
+      const dto = new ExecutableNodeDTO(node, nodePath(1), new Map(), undefined)
       dtos.push(dto)
     }
 

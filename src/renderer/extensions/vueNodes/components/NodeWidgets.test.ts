@@ -10,12 +10,15 @@ import type {
   SafeWidgetData,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
+import type { NodeIdInput } from '@/types/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
+const testWidgetId = (nodeId: NodeIdInput, name: string, graphId = GRAPH_ID) =>
+  widgetId(graphId, asNodeId(nodeId), name)
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -130,8 +133,8 @@ describe('NodeWidgets', () => {
   })
 
   it('deduplicates widgets with identical render identity while keeping distinct promoted sources', () => {
-    const duplicateEntityId = widgetId(GRAPH_ID, asNodeId(19), 'string_a')
-    const distinctEntityId = widgetId(GRAPH_ID, asNodeId(20), 'string_a')
+    const duplicateEntityId = testWidgetId(19, 'string_a')
+    const distinctEntityId = testWidgetId(20, 'string_a')
     const duplicateA = createMockWidget({
       name: 'string_a',
       type: 'text',
@@ -162,7 +165,7 @@ describe('NodeWidgets', () => {
   })
 
   it('prefers a visible duplicate over a hidden duplicate when identities collide', () => {
-    const sharedEntityId = widgetId(GRAPH_ID, asNodeId(19), 'string_a')
+    const sharedEntityId = testWidgetId(19, 'string_a')
     const hiddenDuplicate = createMockWidget({
       name: 'string_a',
       type: 'text',
@@ -188,7 +191,7 @@ describe('NodeWidgets', () => {
   })
 
   it('does not deduplicate entries that share names but have different widget types', () => {
-    const sharedEntityId = widgetId(GRAPH_ID, asNodeId(19), 'string_a')
+    const sharedEntityId = testWidgetId(19, 'string_a')
     const textWidget = createMockWidget({
       name: 'string_a',
       type: 'text',
@@ -239,13 +242,13 @@ describe('NodeWidgets', () => {
       name: 'text',
       type: 'text',
       nodeId: asNodeId(101),
-      widgetId: widgetId(GRAPH_ID, asNodeId(101), 'text')
+      widgetId: testWidgetId(101, 'text')
     })
     const secondPromoted = createMockWidget({
       name: 'text',
       type: 'text',
       nodeId: asNodeId(102),
-      widgetId: widgetId(GRAPH_ID, asNodeId(102), 'text')
+      widgetId: testWidgetId(102, 'text')
     })
 
     const nodeData = createMockNodeData('SubgraphNode', [
@@ -268,17 +271,14 @@ describe('NodeWidgets', () => {
 
     const { container } = renderComponent(nodeData)
     const widgetValueStore = useWidgetValueStore()
-    widgetValueStore.registerWidget(
-      widgetId('graph-test', asNodeId(1), 'test_widget'),
-      {
-        type: 'combo',
-        value: 'value',
-        options: { hidden: true },
-        label: undefined,
-        serialize: true,
-        disabled: false
-      }
-    )
+    widgetValueStore.registerWidget(testWidgetId(1, 'test_widget'), {
+      type: 'combo',
+      value: 'value',
+      options: { hidden: true },
+      label: undefined,
+      serialize: true,
+      disabled: false
+    })
 
     await nextTick()
 
@@ -286,8 +286,8 @@ describe('NodeWidgets', () => {
   })
 
   it('forwards canonical widgetId to AppInput for selection', () => {
-    const seedAEntityId = widgetId(GRAPH_ID, asNodeId(1), 'seed_a')
-    const seedBEntityId = widgetId(GRAPH_ID, asNodeId(1), 'seed_b')
+    const seedAEntityId = testWidgetId(1, 'seed_a')
+    const seedBEntityId = testWidgetId(1, 'seed_b')
     const nodeData = createMockNodeData('TestNode', [
       createMockWidget({
         nodeId: asNodeId(1),

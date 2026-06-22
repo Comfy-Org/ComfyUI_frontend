@@ -7,7 +7,8 @@ import type {
   SafeWidgetData,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
+import type { NodeIdInput } from '@/types/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import {
   computeProcessedWidgets,
   getWidgetIdentity,
@@ -20,6 +21,8 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
+const testWidgetId = (nodeId: NodeIdInput, name: string, graphId = GRAPH_ID) =>
+  widgetId(graphId, asNodeId(nodeId), name)
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -49,7 +52,7 @@ const createMockWidget = (
 
 describe('getWidgetIdentity', () => {
   it('keys dedupeIdentity by widgetId and widget type', () => {
-    const id = widgetId(GRAPH_ID, asNodeId(19), 'text')
+    const id = testWidgetId(19, 'text')
     const widget = createMockWidget({
       widgetId: id,
       name: 'text',
@@ -255,7 +258,7 @@ describe('computeProcessedWidgets borderStyle', () => {
   })
 
   it('does not apply border styling to promoted widgets', () => {
-    const id = widgetId(GRAPH_ID, asNodeId(101), 'text')
+    const id = testWidgetId(101, 'text')
     useWidgetValueStore().registerWidget(id, {
       type: 'combo',
       value: 'a',
@@ -297,7 +300,7 @@ describe('computeProcessedWidgets borderStyle', () => {
       name: 'text',
       type: 'combo',
       nodeId: asNodeId(101),
-      widgetId: widgetId(GRAPH_ID, asNodeId(101), 'text')
+      widgetId: testWidgetId(101, 'text')
     })
 
     const result = computeProcessedWidgets({
@@ -356,16 +359,13 @@ describe('computeProcessedWidgets borderStyle', () => {
   })
 
   it('reads widget identity, value, label, and options from widgetId state', () => {
-    const id = widgetId(GRAPH_ID, asNodeId(5), 'text')
-    useWidgetValueStore().registerWidget(
-      widgetId(GRAPH_ID, asNodeId(5), 'text'),
-      {
-        type: 'combo',
-        value: 'state value',
-        label: 'State Label',
-        options: { values: ['state value'] }
-      }
-    )
+    const id = testWidgetId(5, 'text')
+    useWidgetValueStore().registerWidget(testWidgetId(5, 'text'), {
+      type: 'combo',
+      value: 'state value',
+      label: 'State Label',
+      options: { values: ['state value'] }
+    })
     const widget = createMockWidget({
       widgetId: id,
       nodeId: asNodeId(5),
@@ -407,7 +407,7 @@ describe('computeProcessedWidgets borderStyle', () => {
   })
 
   it('deduplication keeps visible widget over hidden duplicate', () => {
-    const sharedWidgetId = widgetId(GRAPH_ID, asNodeId('1'), 'text')
+    const sharedWidgetId = testWidgetId('1', 'text')
     const hiddenWidget = createMockWidget({
       name: 'text',
       type: 'combo',
@@ -549,14 +549,11 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       callback
     })
 
-    useWidgetValueStore().registerWidget(
-      widgetId(GRAPH_ID, asNodeId(NODE_ID), 'seed'),
-      {
-        type: 'combo',
-        value: 0,
-        options: {}
-      }
-    )
+    useWidgetValueStore().registerWidget(testWidgetId(NODE_ID, 'seed'), {
+      type: 'combo',
+      value: 0,
+      options: {}
+    })
 
     const [processed] = processWidgets([widget])
     processed.updateHandler(42)
@@ -584,21 +581,16 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
       nodeId: asNodeId(NODE_ID)
     })
 
-    useWidgetValueStore().registerWidget(
-      widgetId(GRAPH_ID, asNodeId(NODE_ID), 'seed'),
-      {
-        type: 'combo',
-        value: 0,
-        options: {}
-      }
-    )
+    useWidgetValueStore().registerWidget(testWidgetId(NODE_ID, 'seed'), {
+      type: 'combo',
+      value: 0,
+      options: {}
+    })
 
     const [processed] = processWidgets([widget])
     processed.updateHandler(99)
 
-    const state = useWidgetValueStore().getWidget(
-      widgetId(GRAPH_ID, asNodeId(NODE_ID), 'seed')
-    )
+    const state = useWidgetValueStore().getWidget(testWidgetId(NODE_ID, 'seed'))
     expect(state?.value).toBe(99)
   })
 
