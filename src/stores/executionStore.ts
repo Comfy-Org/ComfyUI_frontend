@@ -35,7 +35,10 @@ import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import {
+  getMediaTypeFromFilename,
+  isPreviewableMediaType
+} from '@/utils/formatUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type { AppMode } from '@/utils/appMode'
 import { getWorkflowMode, isAppModeValue } from '@/utils/appMode'
@@ -102,12 +105,6 @@ export const MAX_PROGRESS_JOBS = 1000
 const MAX_TRACKED_OUTPUT_RUNS = 256
 
 /**
- * Media types (from {@link getMediaTypeFromFilename}) that count as a viewed
- * result for the `output_viewed` activation event. `text` / `other` do not.
- */
-const VIEWED_MEDIA_TYPES = new Set<string>(['image', 'video', 'audio', '3D'])
-
-/**
  * localStorage key marking that this browser profile has emitted the
  * once-per-user `first_execution_completed` activation event. Persisted (not
  * per-session like the `output_viewed` flag) because "first execution ever"
@@ -151,7 +148,7 @@ function firstOutputMediaType(
     const filename = (value[0] as { filename?: unknown })?.filename
     if (typeof filename !== 'string') continue
     const mediaType = getMediaTypeFromFilename(filename)
-    if (VIEWED_MEDIA_TYPES.has(mediaType)) return mediaType
+    if (isPreviewableMediaType(mediaType)) return mediaType
   }
   return null
 }

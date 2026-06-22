@@ -11,6 +11,10 @@
  */
 const MARKER_KEY = 'comfy:telemetry:auth-activation'
 
+// Auth -> canvas is seconds; a marker older than this was left by an aborted
+// flow and a later unrelated reload would report a bogus ms_since_auth.
+const MAX_MARKER_AGE_MS = 60_000
+
 interface AuthActivationMarker {
   at: number
   isNewUser: boolean
@@ -42,7 +46,10 @@ export function consumeAuthActivation(): AuthActivationMarker | null {
       typeof (parsed as AuthActivationMarker).at === 'number' &&
       typeof (parsed as AuthActivationMarker).isNewUser === 'boolean'
     ) {
-      return parsed as AuthActivationMarker
+      const marker = parsed as AuthActivationMarker
+      // Drop a stale marker so an unrelated later reload doesn't report a bogus
+      // ms_since_auth (canvas_ready then omits the latency).
+      if (Date.now() - marker.at <= MAX_MARKER_AGE_MS) return marker
     }
   } catch {
     // Corrupt or unavailable; treat as no marker.

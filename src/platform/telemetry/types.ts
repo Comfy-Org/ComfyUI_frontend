@@ -541,9 +541,9 @@ export interface CheckoutInitiateFailedMetadata {
 export type CheckoutWindowBlockedMetadata = Record<string, never>
 
 /**
- * Fired when a completed job's output media first becomes visible. Zero
- * telemetry today on whether the user actually SAW their result, which is the
- * activation moment.
+ * Fired when a run first PRODUCES media output (the WebSocket `executed`
+ * message), used as the activation proxy. Note: this is production, not actual
+ * visibility — a user with the output panel collapsed still triggers it.
  */
 export interface OutputViewedMetadata {
   workflow_run_id: string

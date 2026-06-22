@@ -374,23 +374,24 @@ export const useAuthStore = defineStore('auth', () => {
       try {
         result = await action(auth)
       } catch (error) {
+        const errorCode = errorCodeOf(error)
+        const isUserCancel =
+          errorCode === AuthErrorCodes.POPUP_CLOSED_BY_USER ||
+          errorCode === AuthErrorCodes.EXPIRED_POPUP_REQUEST
         if (telemetryContext?.oauthProvider) {
-          const errorCode = errorCodeOf(error)
           telemetry?.trackOAuthPopupResult({
             provider: telemetryContext.oauthProvider,
-            result:
-              errorCode === AuthErrorCodes.POPUP_CLOSED_BY_USER ||
-              errorCode === AuthErrorCodes.EXPIRED_POPUP_REQUEST
-                ? 'cancelled'
-                : 'error',
+            result: isUserCancel ? 'cancelled' : 'error',
             error_code: errorCode
           })
         }
-        if (telemetryContext) {
+        // A deliberate popup cancel isn't an auth failure (already captured by
+        // oauth_popup_result above); counting it inflates auth_failed.
+        if (telemetryContext && !isUserCancel) {
           telemetry?.trackAuthFailed({
             method: telemetryContext.method,
             stage: 'firebase',
-            error_code: errorCodeOf(error)
+            error_code: errorCode
           })
         }
         throw error

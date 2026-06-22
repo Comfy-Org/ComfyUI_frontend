@@ -340,10 +340,10 @@ function useSubscriptionInternal() {
     await fetchSubscriptionStatus()
 
     if (!isSubscribedOrIsNotCloud.value) {
-      // This is the run-workflow gate: the subscription dialog is shown because
-      // the user lacks an active subscription needed to run. Tagging the reason
-      // attributes the paywall view to the run-gate cohort.
-      showSubscriptionDialog({ reason: 'run_workflow' })
+      // Login-time enforcement (the only caller is the isLoggedIn watch in
+      // cloudSubscription.ts), not a run gate — tag subscription_required so the
+      // run-gate cohort (reason 'run_button') isn't polluted.
+      showSubscriptionDialog({ reason: 'subscription_required' })
     }
   }
 
