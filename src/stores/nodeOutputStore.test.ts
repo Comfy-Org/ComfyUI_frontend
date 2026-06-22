@@ -1,13 +1,15 @@
 import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/schemas/apiSchema'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { NodeId } from '@/types/nodeId'
+import { asNodeId } from '@/types/nodeId'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
 const mockResolveNode = vi.fn()
@@ -707,6 +709,16 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     LiteGraph.vueNodesMode = false
   })
 
+  it('requires branded NodeId for local output APIs', () => {
+    const store = useNodeOutputStore()
+
+    expectTypeOf(store.removeNodeOutputs).parameter(0).toEqualTypeOf<NodeId>()
+    expectTypeOf(store.setNodePreviewsByNodeId)
+      .parameter(0)
+      .toEqualTypeOf<NodeId>()
+    expectTypeOf(store.syncLegacyNodeImgs).parameter(0).toEqualTypeOf<NodeId>()
+  })
+
   it('should not sync when vueNodesMode is disabled', () => {
     const store = useNodeOutputStore()
     const mockNode = createMockNode({ id: 1 })
@@ -714,7 +726,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(1, mockImg, 0)
+    store.syncLegacyNodeImgs(asNodeId(1), mockImg, 0)
 
     expect(mockNode.imgs).toBeUndefined()
     expect(mockNode.imageIndex).toBeUndefined()
@@ -728,7 +740,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(1, mockImg, 0)
+    store.syncLegacyNodeImgs(asNodeId(1), mockImg, 0)
 
     expect(mockNode.imgs).toEqual([mockImg])
     expect(mockNode.imageIndex).toBe(0)
@@ -742,13 +754,13 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(42, mockImg, 3)
+    store.syncLegacyNodeImgs(asNodeId(42), mockImg, 3)
 
     expect(mockNode.imgs).toEqual([mockImg])
     expect(mockNode.imageIndex).toBe(3)
   })
 
-  it('should handle string nodeId', () => {
+  it('should resolve branded nodeId directly', () => {
     LiteGraph.vueNodesMode = true
     const store = useNodeOutputStore()
     const mockNode = createMockNode({ id: 123 })
@@ -756,7 +768,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs('123', mockImg, 0)
+    store.syncLegacyNodeImgs(asNodeId(123), mockImg, 0)
 
     expect(mockResolveNode).toHaveBeenCalledWith(123)
     expect(mockNode.imgs).toEqual([mockImg])
@@ -769,7 +781,9 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(undefined)
 
-    expect(() => store.syncLegacyNodeImgs(999, mockImg, 0)).not.toThrow()
+    expect(() =>
+      store.syncLegacyNodeImgs(asNodeId(999), mockImg, 0)
+    ).not.toThrow()
   })
 
   it('should default activeIndex to 0', () => {
@@ -780,7 +794,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
 
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(1, mockImg)
+    store.syncLegacyNodeImgs(asNodeId(1), mockImg)
 
     expect(mockNode.imageIndex).toBe(0)
   })
@@ -796,7 +810,7 @@ describe('nodeOutputStore syncLegacyNodeImgs', () => {
     // But found by resolveNode (in a subgraph)
     mockResolveNode.mockReturnValue(mockNode)
 
-    store.syncLegacyNodeImgs(5, mockImg, 0)
+    store.syncLegacyNodeImgs(asNodeId(5), mockImg, 0)
 
     expect(mockNode.imgs).toEqual([mockImg])
     expect(mockNode.imageIndex).toBe(0)

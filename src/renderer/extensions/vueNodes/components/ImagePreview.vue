@@ -279,7 +279,11 @@ function handleImageLoad(event: Event) {
   }
 
   if (nodeId) {
-    nodeOutputStore.syncLegacyNodeImgs(nodeId, img, currentIndex.value)
+    nodeOutputStore.syncLegacyNodeImgs(
+      asNodeId(nodeId),
+      img,
+      currentIndex.value
+    )
   }
 }
 

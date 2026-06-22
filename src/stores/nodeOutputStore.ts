@@ -5,7 +5,7 @@ import { ref } from 'vue'
 
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { asNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ExecutedWsMessage,
@@ -277,14 +277,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     nodePreviewImages.value[nodeLocatorId] = previewImages
   }
 
-  function setNodePreviewsByNodeId(
-    nodeId: string | number,
-    previewImages: string[]
-  ) {
-    setNodePreviewsByLocatorId(
-      nodeIdToNodeLocatorId(asNodeId(nodeId)),
-      previewImages
-    )
+  function setNodePreviewsByNodeId(nodeId: NodeId, previewImages: string[]) {
+    setNodePreviewsByLocatorId(nodeIdToNodeLocatorId(nodeId), previewImages)
   }
 
   function revokePreviewsByExecutionId(executionId: string) {
@@ -352,8 +346,8 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return hadOutputs
   }
 
-  function removeNodeOutputs(nodeId: number | string) {
-    const nodeLocatorId = nodeIdToNodeLocatorId(asNodeId(nodeId))
+  function removeNodeOutputs(nodeId: NodeId) {
+    const nodeLocatorId = nodeIdToNodeLocatorId(nodeId)
     if (!nodeLocatorId) return false
     return removeOutputsByLocatorId(nodeLocatorId)
   }
@@ -414,13 +408,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function syncLegacyNodeImgs(
-    nodeId: string | number,
+    nodeId: NodeId,
     element: HTMLImageElement,
     activeIndex: number = 0
   ) {
     if (!LiteGraph.vueNodesMode) return
 
-    const node = resolveNode(asNodeId(nodeId))
+    const node = resolveNode(nodeId)
     if (!node) return
 
     node.imgs = [element]

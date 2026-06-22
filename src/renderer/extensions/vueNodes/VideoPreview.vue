@@ -127,6 +127,7 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { asNodeId } from '@/types/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
 
 interface VideoPreviewProps {
@@ -216,7 +217,7 @@ const handleDownload = () => {
 
 const handleRemove = () => {
   if (!props.nodeId) return
-  nodeOutputStore.removeNodeOutputs(props.nodeId)
+  nodeOutputStore.removeNodeOutputs(asNodeId(props.nodeId))
 }
 
 const setCurrentIndex = (index: number) => {

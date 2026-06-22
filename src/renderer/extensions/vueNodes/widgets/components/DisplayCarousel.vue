@@ -363,8 +363,9 @@ function handleDownload() {
 
 function handleRemove() {
   if (!nodeId) return
-  const node = resolveNode(asNodeId(nodeId))
-  nodeOutputStore.removeNodeOutputs(nodeId)
+  const localNodeId = asNodeId(nodeId)
+  const node = resolveNode(localNodeId)
+  nodeOutputStore.removeNodeOutputs(localNodeId)
   if (node) {
     node.imgs = undefined
     const imageWidget = node.widgets?.find((w) => w.name === 'image')
