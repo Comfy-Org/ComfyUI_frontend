@@ -197,25 +197,30 @@ function pathDepth(tag: string): number {
   return tag.split('/').length
 }
 
+/** Removes the `model_type:` namespace prefix from a tag when present. */
+export function stripModelTypePrefix(tag: string): string {
+  return tag.startsWith(MODEL_TYPE_TAG_PREFIX)
+    ? tag.slice(MODEL_TYPE_TAG_PREFIX.length)
+    : tag
+}
+
 /**
  * Resolves the short label shown on an asset card's type badge.
  *
- * In `modelTypeMode` a `model_type:*` tag's stripped value is preferred so the
- * badge never leaks the raw `model_type:` namespace; otherwise (and as a
- * fallback for an uncovered asset) it uses the first non-`models` tag, showing
- * the segment after the first `/` for hierarchical tags.
+ * Uses the first non-`models` tag (unchanged selection); in `modelTypeMode` a
+ * `model_type:` namespace prefix on that tag is stripped so the badge doesn't
+ * leak the raw namespace. Bare hierarchical tags still show the segment after
+ * the first `/`.
  */
 export function getAssetTypeBadge(
   asset: AssetItem,
   modelTypeMode = false
 ): string | undefined {
-  if (modelTypeMode) {
-    const [modelType] = getModelTypeTagValues(asset)
-    if (modelType) return modelType
-  }
-
   const typeTag = asset.tags.find((tag) => tag !== MODELS_TAG)
   if (!typeTag) return undefined
+  if (modelTypeMode && typeTag.startsWith(MODEL_TYPE_TAG_PREFIX)) {
+    return stripModelTypePrefix(typeTag)
+  }
   return typeTag.includes('/')
     ? typeTag.slice(typeTag.indexOf('/') + 1)
     : typeTag
