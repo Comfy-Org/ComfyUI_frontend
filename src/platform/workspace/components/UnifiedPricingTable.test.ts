@@ -5,10 +5,6 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import type {
-  BillingPlanType,
-  SubscriptionLock
-} from '@/composables/billing/types'
 import enMessages from '@/locales/en/main.json'
 import UnifiedPricingTable from '@/platform/workspace/components/UnifiedPricingTable.vue'
 
@@ -28,13 +24,6 @@ const mockSubscription = ref<MockSubscription | null>(null)
 const mockCurrentPlanSlug = ref<string | null>(null)
 const mockCurrentTeamCreditStop = ref<MockTeamStop | null>(null)
 const mockTeamFlag = ref(false)
-const mockPlanType = ref<BillingPlanType>('none')
-const mockSubscriptionLock = ref<SubscriptionLock>({
-  allowPersonalTiers: true,
-  allowTeamPlan: true,
-  resubscribeOnly: false
-})
-const mockIsInPersonalWorkspace = ref(false)
 
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
@@ -42,17 +31,7 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
     currentPlanSlug: computed(() => mockCurrentPlanSlug.value),
     fetchPlans: vi.fn(),
     subscription: computed(() => mockSubscription.value),
-    currentTeamCreditStop: computed(() => mockCurrentTeamCreditStop.value),
-    planType: computed(() => mockPlanType.value),
-    subscriptionLock: computed(() => mockSubscriptionLock.value)
-  })
-}))
-
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get isInPersonalWorkspace() {
-      return mockIsInPersonalWorkspace.value
-    }
+    currentTeamCreditStop: computed(() => mockCurrentTeamCreditStop.value)
   })
 }))
 
@@ -94,13 +73,6 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
     mockTeamFlag.value = false
-    mockPlanType.value = 'none'
-    mockSubscriptionLock.value = {
-      allowPersonalTiers: true,
-      allowTeamPlan: true,
-      resubscribeOnly: false
-    }
-    mockIsInPersonalWorkspace.value = false
   })
 
   it('prompts free-tier users to subscribe, never to "change"', () => {
@@ -133,13 +105,7 @@ describe('UnifiedPricingTable plan CTA labels', () => {
     ).toBeTruthy()
   })
 
-  it('locks every personal tier card for a new-team subscriber', () => {
-    mockPlanType.value = 'new-team'
-    mockSubscriptionLock.value = {
-      allowPersonalTiers: false,
-      allowTeamPlan: false,
-      resubscribeOnly: true
-    }
+  it('keeps personal tier cards actionable for a team subscriber', () => {
     mockSubscription.value = { tier: 'TEAM', duration: 'ANNUAL' }
     mockCurrentTeamCreditStop.value = {
       id: 'team_700',
@@ -149,11 +115,7 @@ describe('UnifiedPricingTable plan CTA labels', () => {
 
     renderComponent()
 
-    const locked = screen.getAllByRole('button', {
-      name: 'Not available while on a team plan'
-    })
-    expect(locked).toHaveLength(3)
-    locked.forEach((button) => expect(button).toBeDisabled())
+    expect(screen.queryByRole('button', { name: /Not available/ })).toBeNull()
   })
 })
 
@@ -169,16 +131,9 @@ describe('UnifiedPricingTable team plan CTA', () => {
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
     mockTeamFlag.value = true
-    mockPlanType.value = 'none'
-    mockSubscriptionLock.value = {
-      allowPersonalTiers: true,
-      allowTeamPlan: true,
-      resubscribeOnly: false
-    }
-    mockIsInPersonalWorkspace.value = false
   })
 
-  it('disables the CTA while sitting on the active current stop', () => {
+  it('disables the CTA while sitting on the active current plan', () => {
     mockSubscription.value = {
       tier: 'TEAM',
       duration: 'ANNUAL',
@@ -192,7 +147,7 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(cta).toBeDisabled()
   })
 
-  it('locks the CTA when an active sub picks a different stop', async () => {
+  it('lets an active sub change to a different stop', async () => {
     const user = userEvent.setup()
     mockSubscription.value = {
       tier: 'TEAM',
@@ -205,11 +160,30 @@ describe('UnifiedPricingTable team plan CTA', () => {
 
     await user.click(screen.getByTestId('team-slider'))
 
-    const cta = screen.getByRole('button', {
-      name: "Credits currently can't be changed"
-    })
-    expect(cta).toBeDisabled()
-    expect(emitted().subscribeTeam).toBeFalsy()
+    const cta = screen.getByRole('button', { name: 'Change plan' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribeTeam).toBeTruthy()
+  })
+
+  it('lets an active sub change billing cycle at the current stop', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = {
+      tier: 'TEAM',
+      duration: 'MONTHLY',
+      isCancelled: false
+    }
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    // The subscription is monthly; the default view is yearly, so the same stop
+    // on the other cycle is a change, not the current plan.
+    const cta = screen.getByRole('button', { name: 'Change plan' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribeTeam).toBeTruthy()
+    expect(emitted().resubscribe).toBeFalsy()
   })
 
   it('re-subscribes (not change) for a cancelled team subscription', async () => {
@@ -229,7 +203,7 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(emitted().resubscribe).toBeTruthy()
   })
 
-  it('locks the CTA when a cancelled sub picks a different stop', async () => {
+  it('lets a cancelled sub change to a different stop (not re-subscribe)', async () => {
     const user = userEvent.setup()
     mockSubscription.value = {
       tier: 'TEAM',
@@ -242,46 +216,10 @@ describe('UnifiedPricingTable team plan CTA', () => {
 
     await user.click(screen.getByTestId('team-slider'))
 
-    const cta = screen.getByRole('button', {
-      name: "Credits currently can't be changed"
-    })
-    expect(cta).toBeDisabled()
-    expect(emitted().subscribeTeam).toBeFalsy()
-  })
-
-  it('locks the CTA when an active sub toggles to a different billing cycle', () => {
-    mockSubscription.value = {
-      tier: 'TEAM',
-      duration: 'MONTHLY',
-      isCancelled: false
-    }
-    mockCurrentTeamCreditStop.value = TEAM_STOP
-
-    const { emitted } = renderComponent({ initialPlanMode: 'team' })
-
-    // The subscription is monthly; the default view is yearly, so the same stop
-    // on the other cycle is locked, not the current plan (BE rejects the change).
-    const cta = screen.getByRole('button', {
-      name: "Team plan currently can't be changed"
-    })
-    expect(cta).toBeDisabled()
-    expect(emitted().subscribeTeam).toBeFalsy()
-  })
-
-  it('does not re-subscribe a cancelled sub on a different billing cycle', () => {
-    mockSubscription.value = {
-      tier: 'TEAM',
-      duration: 'MONTHLY',
-      isCancelled: true
-    }
-    mockCurrentTeamCreditStop.value = TEAM_STOP
-
-    const { emitted } = renderComponent({ initialPlanMode: 'team' })
-
-    const cta = screen.getByRole('button', {
-      name: "Team plan currently can't be changed"
-    })
-    expect(cta).toBeDisabled()
+    const cta = screen.getByRole('button', { name: 'Change plan' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribeTeam).toBeTruthy()
     expect(emitted().resubscribe).toBeFalsy()
   })
 
@@ -291,29 +229,5 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(
       screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
     ).toBeTruthy()
-  })
-
-  it('locks the team CTA for a team workspace holding a personal subscription', () => {
-    mockPlanType.value = 'personal'
-    mockSubscription.value = { tier: 'STANDARD', duration: 'ANNUAL' }
-    mockIsInPersonalWorkspace.value = false
-
-    renderComponent({ initialPlanMode: 'team' })
-
-    const cta = screen.getByRole('button', {
-      name: 'Not available while on a personal plan'
-    })
-    expect(cta).toBeDisabled()
-  })
-
-  it('keeps the team CTA actionable from a personal workspace', () => {
-    mockPlanType.value = 'personal'
-    mockSubscription.value = { tier: 'STANDARD', duration: 'ANNUAL' }
-    mockIsInPersonalWorkspace.value = true
-
-    renderComponent({ initialPlanMode: 'team' })
-
-    const cta = screen.getByRole('button', { name: 'Subscribe to Team Yearly' })
-    expect(cta).toBeEnabled()
   })
 })
