@@ -88,7 +88,7 @@ const zPaginationInfo = z.object({
   limit: z.number(),
   total: z.number(),
   has_more: z.boolean(),
-  next_cursor: z.string().nullish()
+  next_cursor: z.string().min(1).nullish()
 })
 
 export const zJobsListResponse = z.object({
