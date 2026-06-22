@@ -313,9 +313,7 @@ export function useMediaAssetActions() {
         subfolder: metadata?.subfolder || '',
         type: isResultItemType(assetType) ? assetType : undefined
       },
-      {
-        rootFolder: isResultItemType(assetType) ? assetType : undefined
-      }
+      { rootFolder: 'input' }
     )
 
     const widget = node.widgets?.find((w) => w.name === widgetName)
@@ -776,6 +774,10 @@ export function useMediaAssetActions() {
           onCancel: () => {
             resolve(false)
           }
+        },
+        dialogComponentProps: {
+          renderer: 'reka',
+          size: 'md'
         }
       })
     })

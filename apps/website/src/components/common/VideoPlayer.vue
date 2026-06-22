@@ -15,7 +15,7 @@ import { t } from '../../i18n/translations'
 import type { Locale } from '../../i18n/translations'
 import PlayPauseButton from './PlayPauseButton.vue'
 
-type VideoTrack = {
+export type VideoTrack = {
   src: string
   kind: 'subtitles' | 'captions' | 'descriptions'
   srclang: string
@@ -35,7 +35,7 @@ const {
   locale?: Locale
   src?: string
   poster?: string
-  tracks?: VideoTrack[]
+  tracks?: readonly VideoTrack[]
   autoplay?: boolean
   loop?: boolean
   minimal?: boolean
