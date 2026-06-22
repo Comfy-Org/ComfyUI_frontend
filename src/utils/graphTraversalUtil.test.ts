@@ -1,5 +1,5 @@
 // oxlint-disable no-misused-spread
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import type {
   LGraph,
@@ -35,6 +35,9 @@ import {
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { asNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 
@@ -539,6 +542,19 @@ describe('graphTraversalUtil', () => {
     })
 
     describe('getNodeByExecutionId', () => {
+      it('accepts raw execution IDs at the execution boundary', () => {
+        expectTypeOf(getNodeByExecutionId)
+          .parameter(1)
+          .toEqualTypeOf<string | number | NodeExecutionId>()
+      })
+
+      it('treats a numeric boundary value as a root execution ID', () => {
+        const node = createMockNode(123)
+        const graph = createMockGraph([node])
+
+        expect(getNodeByExecutionId(graph, 123)).toBe(node)
+      })
+
       it('should find node in root graph', () => {
         const nodes = [createMockNode('123'), createMockNode('456')]
 
@@ -651,21 +667,27 @@ describe('graphTraversalUtil', () => {
     })
 
     describe('getExecutionIdForNodeInGraph', () => {
+      it('requires a branded local node ID instead of a raw execution ID', () => {
+        expectTypeOf(getExecutionIdForNodeInGraph)
+          .parameter(2)
+          .toEqualTypeOf<NodeId>()
+      })
+
       it('returns local id when graph is rootGraph', () => {
         const node = createMockNode('42')
         const rootGraph = createMockGraph([node])
-        expect(getExecutionIdForNodeInGraph(rootGraph, rootGraph, '42')).toBe(
-          '42'
-        )
+        expect(
+          getExecutionIdForNodeInGraph(rootGraph, rootGraph, asNodeId('42'))
+        ).toBe('42')
       })
 
       it('returns local id when graph.isRootGraph is true', () => {
         const node = createMockNode('42')
         const rootGraph = createMockGraph([node])
         const otherRoot = createMockGraph([])
-        expect(getExecutionIdForNodeInGraph(otherRoot, rootGraph, '42')).toBe(
-          '42'
-        )
+        expect(
+          getExecutionIdForNodeInGraph(otherRoot, rootGraph, asNodeId('42'))
+        ).toBe('42')
       })
 
       it('builds parentPath:nodeId for a single-level subgraph', () => {
@@ -677,9 +699,9 @@ describe('graphTraversalUtil', () => {
         })
         const rootGraph = createMockGraph([subgraphNode])
 
-        expect(getExecutionIdForNodeInGraph(rootGraph, subgraph, '63')).toBe(
-          '65:63'
-        )
+        expect(
+          getExecutionIdForNodeInGraph(rootGraph, subgraph, asNodeId('63'))
+        ).toBe('65:63')
       })
 
       it('builds nested parentPath:nodeId for deeply-nested subgraph', () => {
@@ -696,9 +718,9 @@ describe('graphTraversalUtil', () => {
         })
         const rootGraph = createMockGraph([topNode])
 
-        expect(getExecutionIdForNodeInGraph(rootGraph, deep, '999')).toBe(
-          '123:456:999'
-        )
+        expect(
+          getExecutionIdForNodeInGraph(rootGraph, deep, asNodeId('999'))
+        ).toBe('123:456:999')
       })
 
       it('works when node is detached (node.graph = null)', () => {
@@ -715,7 +737,11 @@ describe('graphTraversalUtil', () => {
         interior.graph = null as unknown as LGraph
 
         expect(
-          getExecutionIdForNodeInGraph(rootGraph, subgraph, interior.id)
+          getExecutionIdForNodeInGraph(
+            rootGraph,
+            subgraph,
+            asNodeId(interior.id)
+          )
         ).toBe('65:63')
       })
 
@@ -725,7 +751,11 @@ describe('graphTraversalUtil', () => {
         const rootGraph = createMockGraph([])
 
         expect(
-          getExecutionIdForNodeInGraph(rootGraph, orphanSubgraph, '63')
+          getExecutionIdForNodeInGraph(
+            rootGraph,
+            orphanSubgraph,
+            asNodeId('63')
+          )
         ).toBe('63')
       })
     })
