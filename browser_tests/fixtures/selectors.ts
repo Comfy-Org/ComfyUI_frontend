@@ -38,7 +38,6 @@ export const TestIds = {
     settings: 'settings-dialog',
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
-    confirm: 'confirm-dialog',
     errorOverlay: 'error-overlay',
     errorOverlaySeeErrors: 'error-overlay-see-errors',
     errorOverlayDismiss: 'error-overlay-dismiss',

@@ -35,17 +35,8 @@ export interface AuthMetadata {
 
 export type AuthMethod = 'email' | 'google' | 'github'
 
-/**
- * `view` distinguishes the sign-in surface from the sign-up surface so the
- * auth funnel can split the two cohorts that today collapse into one drop.
- */
 export type AuthView = 'login' | 'signup'
 
-/**
- * Emitted when the user picks an auth method (email/google/github), before any
- * Firebase call. Lights the first step of the auth black box: page_view ->
- * method_selected, which is dark today.
- */
 export interface AuthMethodSelectedMetadata {
   method: AuthMethod
   view: AuthView
@@ -55,22 +46,13 @@ export type OAuthProvider = 'google' | 'github'
 
 type OAuthPopupResult = 'success' | 'cancelled' | 'error'
 
-/**
- * Outcome of an OAuth popup round-trip. Popup cancels and errors are silent
- * today, so the google/github leg of the auth funnel cannot be debugged.
- */
 export interface OAuthPopupResultMetadata {
   provider: OAuthProvider
   result: OAuthPopupResult
   error_code?: string
 }
 
-/**
- * `firebase` covers the credential/popup step; `create_customer` covers the
- * backend provisioning call that runs after Firebase succeeds. A
- * `create_customer` failure is the "zombie customer": authenticated in Firebase
- * but never provisioned, so it emits no auth_completed today.
- */
+// create_customer failure = authenticated in Firebase but never provisioned (no auth_completed).
 type AuthFailureStage = 'firebase' | 'create_customer'
 
 export interface AuthFailedMetadata {
@@ -469,11 +451,6 @@ export interface CheckoutAttributionMetadata {
   wbraid?: string
 }
 
-/**
- * Surface that triggered a subscribe-now click. Lets us attribute the
- * `app:subscribe_now_button_clicked` event to the specific CTA the user
- * actually clicked, rather than only the legacy SubscribeButton.
- */
 type SubscribeClickSource =
   | 'pricing_table'
   | 'subscribe_to_run'
@@ -482,28 +459,16 @@ type SubscribeClickSource =
 export interface SubscriptionMetadata {
   current_tier?: string
   reason?: SubscriptionDialogReason
-  // Populated on subscribe-now clicks so the funnel can split intent by the
-  // tier/cycle selected and the CTA surface that fired the event.
   tier?: TierKey
   cycle?: BillingCycle
   source?: SubscribeClickSource
 }
 
-/**
- * Fired when the user toggles the monthly/yearly billing cycle on the
- * pricing table. Lets us see whether the annual-discount nudge actually
- * moves the cycle selection before checkout.
- */
 export interface BillingCycleToggledMetadata {
   from: BillingCycle
   to: BillingCycle
 }
 
-/**
- * Fired when an authentication attempt fails (sign-in or sign-up). Lets the
- * signup funnel see the error/bounce leak that `app:user_auth_completed`
- * (success-only) cannot.
- */
 export interface AuthErrorMetadata {
   method: 'email' | 'google' | 'github'
   is_sign_up: boolean
@@ -511,22 +476,12 @@ export interface AuthErrorMetadata {
   error_message?: string
 }
 
-/**
- * Fired when the user switches category/tab in the template selector (e.g.
- * "Getting Started" vs "All"), so we can see which curated entry points get
- * used before a template is opened.
- */
 export interface TemplateCategorySelectedMetadata {
   category_id: string
   category_label?: string
 }
 
-/**
- * `no_url` = the server created no Stripe session (response missing
- * checkout_url); `server_error` = the checkout request itself failed. Both end
- * the monetization funnel before the user ever reaches Stripe, and both are a
- * silent bounce today.
- */
+// no_url = server returned no checkout_url; server_error = checkout request failed.
 type CheckoutInitiateFailureStage = 'no_url' | 'server_error'
 
 export interface CheckoutInitiateFailedMetadata {
@@ -534,28 +489,15 @@ export interface CheckoutInitiateFailedMetadata {
   error_code?: string
 }
 
-/**
- * The browser blocked window.open for the Stripe checkout tab. Distinct from a
- * server failure: the session existed, the popup never opened.
- */
 export type CheckoutWindowBlockedMetadata = Record<string, never>
 
-/**
- * Fired when a completed job's output media first becomes visible. Zero
- * telemetry today on whether the user actually SAW their result, which is the
- * activation moment.
- */
+// Activation proxy: fires on the `executed` message, not on actual output visibility.
 export interface OutputViewedMetadata {
   workflow_run_id: string
   media_type: string
   is_first_output: boolean
 }
 
-/**
- * The UserCheckView routing fork after auth. `waitlist` = not yet provisioned
- * on cloud; `survey` = onboarding survey still required; `onboarded` = sent to
- * the app. Lights the post-auth void where users vanish before the canvas.
- */
 type OnboardingDestination = 'waitlist' | 'survey' | 'onboarded'
 
 export interface OnboardingRoutedMetadata {
@@ -564,11 +506,6 @@ export interface OnboardingRoutedMetadata {
   has_cloud_status: boolean
 }
 
-/**
- * Fired once when the graph canvas is interactive. `is_new_user` anchors
- * new-user activation on the canvas (user_logged_in carries no such flag), and
- * `ms_since_auth` measures auth -> canvas latency.
- */
 export interface CanvasReadyMetadata {
   is_new_user: boolean
   ms_since_auth?: number
@@ -609,23 +546,12 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   ecommerce: EcommerceMetadata
 }
 
-/**
- * Fired when a paywall / subscription dialog is shown. The top of the
- * monetization funnel: today the dialog opens with no signal of WHY it was
- * triggered, so paywall -> checkout drop cannot be attributed to a reason
- * (run gate, out of credits, model upload, etc.).
- */
 export interface PaywallViewedMetadata {
   reason: SubscriptionDialogReason | string
   current_tier?: string
 }
 
-/**
- * Fired when the Stripe checkout window successfully opens.
- * `checkout_attempt_id` correlates this open with the eventual
- * checkout_returned, closing the loop on the Stripe round-trip that is a
- * black box today.
- */
+// checkout_attempt_id correlates this open with the matching checkout_returned.
 export interface CheckoutViewedMetadata {
   checkout_attempt_id: string
   tier: string
@@ -634,21 +560,11 @@ export interface CheckoutViewedMetadata {
 
 type CheckoutReturnOutcome = 'success' | 'cancelled' | 'unknown'
 
-/**
- * Fired when the user returns from the Stripe checkout tab. Pairs with
- * checkout_viewed via `checkout_attempt_id` so abandonment at Stripe can be
- * measured directly instead of inferred from a missing success event.
- */
 export interface CheckoutReturnedMetadata {
   checkout_attempt_id: string
   outcome: CheckoutReturnOutcome
 }
 
-/**
- * Fired once per user on their first successful workflow execution. The
- * core activation moment: the wiring phase guards once-per-user so this
- * marks the transition from signed-up to activated.
- */
 export interface FirstExecutionCompletedMetadata {
   workflow_run_id: string
   customer_tier?: string

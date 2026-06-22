@@ -40,6 +40,16 @@ describe('authActivationMarker', () => {
       expect(marker?.isNewUser).toBe(false)
       expect(typeof marker?.at).toBe('number')
     })
+
+    it('ignores a marker older than the freshness window', () => {
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-06-16T00:00:00.000Z'))
+      markAuthForActivation(true)
+
+      // An unrelated reload minutes later must not report a bogus ms_since_auth.
+      vi.setSystemTime(new Date('2026-06-16T00:05:00.000Z'))
+      expect(consumeAuthActivation()).toBeNull()
+    })
   })
 
   describe('consume without a valid marker', () => {

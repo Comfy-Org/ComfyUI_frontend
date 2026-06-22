@@ -17,9 +17,7 @@ export type SubscriptionDialogReason =
   | 'subscription_required'
   | 'out_of_credits'
   | 'top_up_blocked'
-  // Workspace member-invite upsell. A NON-activation cohort: the activation
-  // funnel must be able to EXCLUDE these so single-user activation is not
-  // diluted by team seat-expansion prompts.
+  // Non-activation cohort: the activation funnel must be able to exclude these.
   | 'member_invite'
   | 'upload_model'
   | 'run_workflow'
@@ -75,13 +73,9 @@ export const useSubscriptionDialog = () => {
         ),
         props: { onClose: hide },
         dialogComponentProps: {
-          style: 'width: min(360px, 95vw);',
-          pt: {
-            root: {
-              class: 'bg-transparent border-none rounded-none shadow-none'
-            },
-            content: { class: '!p-0 bg-transparent border-none shadow-none' }
-          }
+          renderer: 'reka',
+          contentClass:
+            'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
         }
       })
       return
@@ -115,25 +109,20 @@ export const useSubscriptionDialog = () => {
       component,
       props: useWorkspaceVariant ? workspaceProps : personalProps,
       dialogComponentProps: {
-        style: 'width: min(1328px, 95vw); max-height: 958px;',
-        pt: {
-          root: {
-            class: 'rounded-2xl bg-transparent h-full'
-          },
-          content: {
-            class:
-              '!p-0 rounded-2xl border border-border-default bg-base-background/60 backdrop-blur-md shadow-[0_25px_80px_rgba(5,6,12,0.45)] h-full'
-          }
-        }
+        renderer: 'reka',
+        size: 'full',
+        // The pricing tables host a PrimeVue Popover teleported to body.
+        // Reka's modal mode traps focus and disables body pointer-events,
+        // making the popover unclickable. Mirrors Settings/Manager.
+        modal: false,
+        contentClass:
+          'w-[min(1328px,95vw)] max-w-[min(1328px,95vw)] sm:max-w-[min(1328px,95vw)] h-full max-h-[958px] overflow-hidden rounded-2xl border-border-default bg-base-background/60 shadow-[0_25px_80px_rgba(5,6,12,0.45)] backdrop-blur-md'
       }
     })
   }
 
   function show(options?: { reason?: SubscriptionDialogReason }) {
     if (isFreeTier.value && workspaceStore.isInPersonalWorkspace) {
-      // Emit here (not in showPricingTable) because the free-tier dialog is the
-      // surface actually shown; showPricingTable only fires later if the user
-      // clicks upgrade, which is a separate paywall view.
       trackPaywallViewed(options?.reason)
 
       const component = defineAsyncComponent(
@@ -153,16 +142,10 @@ export const useSubscriptionDialog = () => {
           }
         },
         dialogComponentProps: {
-          style: 'width: min(640px, 95vw);',
-          pt: {
-            root: {
-              class: 'rounded-2xl bg-transparent'
-            },
-            content: {
-              class:
-                '!p-0 rounded-2xl border border-border-default bg-base-background/60 backdrop-blur-md shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
-            }
-          }
+          renderer: 'reka',
+          size: 'full',
+          contentClass:
+            'w-[min(640px,95vw)] max-w-[min(640px,95vw)] sm:max-w-[min(640px,95vw)] overflow-hidden rounded-2xl border-border-default bg-base-background/60 shadow-[0_25px_80px_rgba(5,6,12,0.45)] backdrop-blur-md'
         }
       })
       return

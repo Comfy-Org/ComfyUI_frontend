@@ -136,8 +136,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
               api_host:
                 window.__CONFIG__?.posthog_api_host || 'https://t.comfy.org',
               ui_host: 'https://us.posthog.com',
-              // Enable web analytics on cloud.comfy.org ($pageview/$pageleave); overridable
-              // via serverConfig. Heatmaps are server-side (RemoteConfig), not a client key.
               autocapture: true,
               capture_pageview: true,
               capture_pageleave: true,
@@ -338,15 +336,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  /**
-   * Registers `is_app_mode` as a super-property so it rides every PostHog
-   * event. App vs graph mode flips mid-session, so a watcher re-registers on
-   * change to keep the value current at emit time. register() (not people.set)
-   * because this is event-context, not a stable person trait.
-   */
   private registerAppModeSuperProperty(): void {
-    // Contain errors: this runs inside the posthog-js import .then(), so a throw would hit
-    // init's .catch and disable the whole provider. Degrade to is_app_mode absent instead.
+    // Runs inside init's import .then(); an uncaught throw hits .catch and disables the provider.
     try {
       const { isAppMode } = useAppMode()
       watch(
@@ -363,16 +354,7 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     }
   }
 
-  /**
-   * Registers `customer_tier` as a super-property so every event carries the
-   * current subscription tier. Sourced from the same useSubscription() ref as
-   * the subscription_tier person property; registered on change once known.
-   * This is the event-level mirror of the subscription_tier person property:
-   * register() attaches it to events at emit time (vs person-on-events).
-   */
   private registerCustomerTierSuperProperty(): void {
-    // Defensive for the same reason as registerAppModeSuperProperty: a throw
-    // from useSubscription() must not disable the provider at init.
     try {
       const { subscriptionTier } = useSubscription()
       watch(
@@ -389,12 +371,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     }
   }
 
-  /**
-   * First-touch attribution: on provider init, parse the landing URL's UTM
-   * params and $set_once initial_utm_* on the person. set_once never
-   * overwrites, so the very first touch is preserved across sessions. Only
-   * present params are written; absent ones are skipped entirely.
-   */
   private setFirstTouchAttribution(): void {
     if (!this.posthog) return
     const params = new URLSearchParams(window.location.search)

@@ -130,15 +130,13 @@ function useSubscriptionInternal() {
   let pendingCheckoutRecoveryAttempt = 0
   let isRecoveringPendingCheckout = false
 
-  // In-session checkout attempt (attempt_id/tier/cycle) for attributing a non-success
-  // checkout_returned; success outcomes source the id from metadata instead (cross-session).
+  // Non-success returns attribute via this; success outcomes use the id from metadata (cross-session).
   let lastCheckoutAttempt: {
     attempt_id: string
     tier: string
     cycle: string
   } | null = null
-  // checkout_returned must fire at most once per attempt despite pageshow /
-  // visibilitychange firing repeatedly per return.
+  // Fire checkout_returned once per attempt despite pageshow/visibilitychange firing repeatedly.
   const reportedReturnedAttemptIds = new Set<string>()
 
   const reportCheckoutReturned = (
@@ -197,17 +195,13 @@ function useSubscriptionInternal() {
 
     if (!metadata) {
       if (hasPendingSubscriptionCheckoutAttempt()) {
-        // The user is back but Stripe has not confirmed yet; the outcome for
-        // this attempt is not yet known. Recovery retries will resolve it to
-        // success later (which emits its own success outcome).
+        // Back but Stripe unconfirmed; recovery retries resolve to success later.
         if (lastCheckoutAttempt) {
           reportCheckoutReturned(lastCheckoutAttempt.attempt_id, 'unknown')
         }
         schedulePendingCheckoutRecovery()
       } else {
-        // No pending attempt remains: either it was never started here, or the
-        // attempt this session initiated was abandoned/cleared without a
-        // confirmed subscription, i.e. the user cancelled at Stripe.
+        // No pending attempt remains: abandoned/cleared, i.e. cancelled at Stripe.
         if (lastCheckoutAttempt) {
           reportCheckoutReturned(lastCheckoutAttempt.attempt_id, 'cancelled')
         }
@@ -282,9 +276,6 @@ function useSubscriptionInternal() {
           : {})
     })
 
-    // The Stripe tab opened. checkout_attempt_id ties this to the eventual
-    // checkout_returned (and the existing checkout_success which reuses the
-    // same attempt id) so the Stripe round-trip stops being a black box.
     lastCheckoutAttempt = {
       attempt_id: attempt.attempt_id,
       tier: attempt.tier,
@@ -340,10 +331,8 @@ function useSubscriptionInternal() {
     await fetchSubscriptionStatus()
 
     if (!isSubscribedOrIsNotCloud.value) {
-      // This is the run-workflow gate: the subscription dialog is shown because
-      // the user lacks an active subscription needed to run. Tagging the reason
-      // attributes the paywall view to the run-gate cohort.
-      showSubscriptionDialog({ reason: 'run_workflow' })
+      // Login-time enforcement, not a run gate; reason keeps the run_button cohort clean.
+      showSubscriptionDialog({ reason: 'subscription_required' })
     }
   }
 

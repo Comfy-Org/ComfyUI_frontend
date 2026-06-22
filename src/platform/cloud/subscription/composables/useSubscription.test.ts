@@ -715,8 +715,9 @@ describe('useSubscription', () => {
 
       await requireActiveSubscription()
 
+      // Login-time enforcement, not a run gate — see useSubscription.ts.
       expect(mockShowSubscriptionRequiredDialog).toHaveBeenCalledWith({
-        reason: 'run_workflow'
+        reason: 'subscription_required'
       })
     })
   })

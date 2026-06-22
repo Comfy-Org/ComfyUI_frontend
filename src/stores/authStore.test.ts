@@ -621,6 +621,78 @@ describe('useAuthStore', () => {
       expect(store.loading).toBe(false)
     })
 
+    describe('auth funnel telemetry', () => {
+      it('emits auth_method_selected on email login', async () => {
+        vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue({
+          user: mockUser
+        } as Partial<UserCredential> as UserCredential)
+
+        await store.login('a@b.com', 'pw')
+
+        expect(mockTrackAuthMethodSelected).toHaveBeenCalledWith({
+          method: 'email',
+          view: 'login'
+        })
+      })
+
+      it('emits auth_failed (stage firebase) on a non-cancel login error', async () => {
+        const err = new FirebaseError(
+          firebaseAuth.AuthErrorCodes.USER_DISABLED,
+          'disabled'
+        )
+        vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockRejectedValue(
+          err
+        )
+
+        await expect(store.login('a@b.com', 'pw')).rejects.toThrow()
+
+        expect(mockTrackAuthFailed).toHaveBeenCalledWith({
+          method: 'email',
+          stage: 'firebase',
+          error_code: firebaseAuth.AuthErrorCodes.USER_DISABLED
+        })
+      })
+
+      it('counts an OAuth popup cancel as cancelled, not auth_failed', async () => {
+        const cancel = new FirebaseError(
+          firebaseAuth.AuthErrorCodes.POPUP_CLOSED_BY_USER,
+          'cancelled'
+        )
+        vi.mocked(firebaseAuth.signInWithPopup).mockRejectedValue(cancel)
+
+        await expect(store.loginWithGoogle()).rejects.toThrow()
+
+        expect(mockTrackOAuthPopupResult).toHaveBeenCalledWith({
+          provider: 'google',
+          result: 'cancelled',
+          error_code: firebaseAuth.AuthErrorCodes.POPUP_CLOSED_BY_USER
+        })
+        // The fix: a deliberate cancel must not inflate auth_failed.
+        expect(mockTrackAuthFailed).not.toHaveBeenCalled()
+      })
+
+      it('counts a non-cancel OAuth error as both popup error and auth_failed', async () => {
+        const err = new FirebaseError(
+          firebaseAuth.AuthErrorCodes.NETWORK_REQUEST_FAILED,
+          'network'
+        )
+        vi.mocked(firebaseAuth.signInWithPopup).mockRejectedValue(err)
+
+        await expect(store.loginWithGoogle()).rejects.toThrow()
+
+        expect(mockTrackOAuthPopupResult).toHaveBeenCalledWith({
+          provider: 'google',
+          result: 'error',
+          error_code: firebaseAuth.AuthErrorCodes.NETWORK_REQUEST_FAILED
+        })
+        expect(mockTrackAuthFailed).toHaveBeenCalledWith({
+          method: 'google',
+          stage: 'firebase',
+          error_code: firebaseAuth.AuthErrorCodes.NETWORK_REQUEST_FAILED
+        })
+      })
+    })
+
     describe('sign-up telemetry OR logic', () => {
       const mockUserCredential = {
         user: mockUser
