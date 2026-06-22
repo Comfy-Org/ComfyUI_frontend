@@ -154,8 +154,10 @@ export const i18n = createI18n({
 })
 
 /** Convenience shorthand: i18n.global */
-export const { t, te, d } = i18n.global
-const { tm } = i18n.global
+export const t: (typeof i18n.global)['t'] = i18n.global.t
+export const te: (typeof i18n.global)['te'] = i18n.global.te
+export const d: (typeof i18n.global)['d'] = i18n.global.d
+const tm = i18n.global.tm
 
 /**
  * Safe translation function that returns the fallback message if the key is not found.
