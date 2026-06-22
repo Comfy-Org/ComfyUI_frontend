@@ -9,6 +9,9 @@ import { createTestingPinia } from '@pinia/testing'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
+import type { NodeId, NodeIdInput } from '@/types/nodeId'
+
+const nid = (id: NodeIdInput) => asNodeId(id)
 
 const forwardEventToCanvasMock = vi.fn()
 const selectedItemsState: { items: Array<{ id?: string }> } = { items: [] }
@@ -66,7 +69,7 @@ vi.mock(
 vi.mock('@/composables/graph/useVueNodeLifecycle', () => ({
   useVueNodeLifecycle: () => ({
     nodeManager: ref({
-      getNode: vi.fn((id: number) => ({
+      getNode: vi.fn((id: NodeId) => ({
         id,
         selected: false // Default to not selected
       }))
@@ -146,7 +149,7 @@ describe('useNodePointerInteractions', () => {
     const { handleNodeSelect } = useNodeEventHandlers()
     const { startDrag } = useNodeDrag()
 
-    const { pointerHandlers } = useNodePointerInteractions(asNodeId(123))
+    const { pointerHandlers } = useNodePointerInteractions(nid(123))
 
     // Right-click should not trigger selection
     const rightClickEvent = createPointerEvent('pointerdown', { button: 2 })
@@ -158,13 +161,13 @@ describe('useNodePointerInteractions', () => {
     const leftClickEvent = createPointerEvent('pointerdown', { button: 0 })
     pointerHandlers.onPointerdown(leftClickEvent)
 
-    expect(startDrag).toHaveBeenCalledWith(leftClickEvent, 123)
+    expect(startDrag).toHaveBeenCalledWith(leftClickEvent, nid(123))
   })
 
   it('should handle drag termination via cancel and context menu', async () => {
     const { handleNodeSelect } = useNodeEventHandlers()
 
-    const { pointerHandlers } = useNodePointerInteractions(asNodeId(123))
+    const { pointerHandlers } = useNodePointerInteractions(nid(123))
 
     // Test pointer cancel - selection happens on pointer down
     pointerHandlers.onPointerdown(
@@ -211,7 +214,7 @@ describe('useNodePointerInteractions', () => {
   })
 
   it('should integrate with layout store dragging state', async () => {
-    const { pointerHandlers } = useNodePointerInteractions(asNodeId(123))
+    const { pointerHandlers } = useNodePointerInteractions(nid(123))
 
     // Pointer down alone shouldn't set dragging state
     pointerHandlers.onPointerdown(
@@ -237,7 +240,7 @@ describe('useNodePointerInteractions', () => {
   })
 
   it('should select node immediately when drag starts', async () => {
-    const { pointerHandlers } = useNodePointerInteractions(asNodeId(123))
+    const { pointerHandlers } = useNodePointerInteractions(nid(123))
 
     // Pointer down should select node immediately
     const downEvent = createPointerEvent('pointerdown', {
@@ -262,7 +265,7 @@ describe('useNodePointerInteractions', () => {
     expect(layoutStore.isDraggingVueNodes.value).toBe(true)
 
     // Selection should happen on pointer down (before move)
-    expect(handleNodeSelect).toHaveBeenCalledWith(pointerMove, 123)
+    expect(handleNodeSelect).toHaveBeenCalledWith(pointerMove, nid(123))
     expect(handleNodeSelect).toHaveBeenCalledTimes(1)
 
     // End drag
@@ -278,7 +281,7 @@ describe('useNodePointerInteractions', () => {
     const { handleNodeSelect } = useNodeEventHandlers()
     const { startDrag } = useNodeDrag()
 
-    const { pointerHandlers } = useNodePointerInteractions(asNodeId(123))
+    const { pointerHandlers } = useNodePointerInteractions(nid(123))
 
     pointerHandlers.onPointermove(
       createPointerEvent('pointermove', {
@@ -296,7 +299,7 @@ describe('useNodePointerInteractions', () => {
   })
 
   it('on ctrl+click: calls toggleNodeSelectionAfterPointerUp on pointer up (not pointer down)', async () => {
-    const { pointerHandlers } = useNodePointerInteractions(asNodeId(123))
+    const { pointerHandlers } = useNodePointerInteractions(nid(123))
     const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
 
     // Pointer down with ctrl
@@ -319,6 +322,9 @@ describe('useNodePointerInteractions', () => {
     pointerHandlers.onPointerup(upEvent)
 
     // On pointer up: toggle handler IS called with correct params
-    expect(toggleNodeSelectionAfterPointerUp).toHaveBeenCalledWith(123, true)
+    expect(toggleNodeSelectionAfterPointerUp).toHaveBeenCalledWith(
+      nid(123),
+      true
+    )
   })
 })

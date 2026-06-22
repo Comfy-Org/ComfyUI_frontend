@@ -5,10 +5,13 @@ import { useGraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import type { GraphNodeManager } from '@/composables/graph/useGraphNodeManager'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { asNodeId } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { asNodeId } from '@/types/nodeId'
+import type { NodeIdInput } from '@/types/nodeId'
+
+const nid = (id: NodeIdInput) => asNodeId(id)
 
 const canvasSelectedItems = vi.hoisted(() => [] as Array<{ id?: number }>)
 
@@ -46,9 +49,10 @@ vi.mock('@/renderer/core/layout/operations/layoutMutations', () => {
   }
 })
 
-vi.mock('@/composables/graph/useGraphNodeManager', () => {
+vi.mock('@/composables/graph/useGraphNodeManager', async () => {
+  const { asNodeId } = await import('@/types/nodeId')
   const mockNode = {
-    id: 1,
+    id: asNodeId(1),
     selected: false,
     flags: { pinned: false }
   }
@@ -72,10 +76,10 @@ vi.mock('@/composables/graph/useVueNodeLifecycle', () => {
 describe('useNodeEventHandlers', () => {
   const { nodeManager: mockNodeManager } = useVueNodeLifecycle()
 
-  const mockNode = mockNodeManager.value!.getNode(asNodeId(999))
+  const mockNode = mockNodeManager.value!.getNode(nid(999))
   const mockLayoutMutations = useLayoutMutations()
 
-  const testNodeId = asNodeId(1)
+  const testNodeId = nid(1)
 
   beforeEach(async () => {
     vi.resetAllMocks()
@@ -115,7 +119,7 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(ctrlClickEvent, testNodeId)
 
       // On pointer down with multi-select: bring to front
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(1)
+      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(nid(1))
 
       // Selection happens immediately so dragging includes this node
       expect(canvas?.deselectAll).not.toHaveBeenCalled()
@@ -139,7 +143,7 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(ctrlClickEvent, testNodeId)
 
       // On pointer down: bring to front
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(1)
+      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(nid(1))
 
       // But don't deselect yet (deferred to pointer up)
       expect(canvas?.deselect).not.toHaveBeenCalled()
@@ -162,7 +166,7 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(metaClickEvent, testNodeId)
 
       // On pointer down with meta key: bring to front
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(1)
+      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(nid(1))
 
       // Selection happens immediately
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
@@ -185,7 +189,7 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(shiftClickEvent, testNodeId)
 
       // On pointer down with shift: bring to front
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(1)
+      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(nid(1))
 
       // Selection happens immediately for shift-click as well
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
@@ -220,7 +224,7 @@ describe('useNodeEventHandlers', () => {
       const event = new PointerEvent('pointerdown')
       handleNodeSelect(event, testNodeId)
 
-      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(1)
+      expect(mockLayoutMutations.bringNodeToFront).toHaveBeenCalledWith(nid(1))
     })
 
     it('should not bring pinned node to front', () => {
@@ -242,7 +246,7 @@ describe('useNodeEventHandlers', () => {
 
       mockNode!.selected = true
 
-      toggleNodeSelectionAfterPointerUp(asNodeId(1), true)
+      toggleNodeSelectionAfterPointerUp(nid(1), true)
 
       expect(canvas?.deselect).toHaveBeenCalledWith(mockNode)
       expect(updateSelectedItems).toHaveBeenCalledOnce()
@@ -254,7 +258,7 @@ describe('useNodeEventHandlers', () => {
 
       mockNode!.selected = true
 
-      toggleNodeSelectionAfterPointerUp(asNodeId(1), true)
+      toggleNodeSelectionAfterPointerUp(nid(1), true)
 
       expect(canvas?.select).not.toHaveBeenCalled()
       expect(updateSelectedItems).toHaveBeenCalled()
@@ -267,7 +271,7 @@ describe('useNodeEventHandlers', () => {
       mockNode!.selected = true
       canvasSelectedItems.push({ id: 1 }, { id: 2 })
 
-      toggleNodeSelectionAfterPointerUp(asNodeId(1), false)
+      toggleNodeSelectionAfterPointerUp(nid(1), false)
 
       expect(canvas?.deselectAll).toHaveBeenCalledOnce()
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
@@ -281,7 +285,7 @@ describe('useNodeEventHandlers', () => {
       mockNode!.selected = true
       canvasSelectedItems.push({ id: 1 })
 
-      toggleNodeSelectionAfterPointerUp(asNodeId(1), false)
+      toggleNodeSelectionAfterPointerUp(nid(1), false)
 
       expect(canvas?.select).toHaveBeenCalledWith(mockNode)
       expect(updateSelectedItems).toHaveBeenCalled()
