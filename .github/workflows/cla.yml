@@ -23,7 +23,7 @@ jobs:
           github.event_name == 'pull_request_target' ||
           github.event.comment.body == 'recheck' ||
           github.event.comment.body == 'I have read and agree to the Contributor License Agreement'
-        uses: contributor-assistant/github-action@v2.6.1
+        uses: contributor-assistant/github-action@ca4a40a7d1004f18d9960b404b97e5f30a505a08 # v2.6.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # PAT required to write to the centralized signatures repo.
