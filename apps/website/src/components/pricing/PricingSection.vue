@@ -4,8 +4,8 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
-import { pricingPlans } from '../../data/pricingPlans';
-import type { PricingPlan } from '../../data/pricingPlans';
+import { pricingPlans } from '../../data/pricingPlans'
+import type { PricingPlan } from '../../data/pricingPlans'
 import { t } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
 import Button from '../ui/button/Button.vue'
