@@ -134,7 +134,7 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(cta).toBeDisabled()
   })
 
-  it('enables "Change plan" once a different stop is selected', async () => {
+  it('locks the CTA when an active sub picks a different stop', async () => {
     const user = userEvent.setup()
     mockSubscription.value = {
       tier: 'TEAM',
@@ -147,10 +147,11 @@ describe('UnifiedPricingTable team plan CTA', () => {
 
     await user.click(screen.getByTestId('team-slider'))
 
-    const cta = screen.getByRole('button', { name: 'Change plan' })
-    expect(cta).toBeEnabled()
-    await user.click(cta)
-    expect(emitted().subscribeTeam).toBeTruthy()
+    const cta = screen.getByRole('button', {
+      name: "Credits currently can't be changed"
+    })
+    expect(cta).toBeDisabled()
+    expect(emitted().subscribeTeam).toBeFalsy()
   })
 
   it('re-subscribes (not change) for a cancelled team subscription', async () => {
@@ -170,7 +171,7 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(emitted().resubscribe).toBeTruthy()
   })
 
-  it('changes plan (not re-subscribe) when a cancelled sub picks a different stop', async () => {
+  it('locks the CTA when a cancelled sub picks a different stop', async () => {
     const user = userEvent.setup()
     mockSubscription.value = {
       tier: 'TEAM',
@@ -183,11 +184,11 @@ describe('UnifiedPricingTable team plan CTA', () => {
 
     await user.click(screen.getByTestId('team-slider'))
 
-    const cta = screen.getByRole('button', { name: 'Change plan' })
-    expect(cta).toBeEnabled()
-    await user.click(cta)
-    expect(emitted().subscribeTeam).toBeTruthy()
-    expect(emitted().resubscribe).toBeFalsy()
+    const cta = screen.getByRole('button', {
+      name: "Credits currently can't be changed"
+    })
+    expect(cta).toBeDisabled()
+    expect(emitted().subscribeTeam).toBeFalsy()
   })
 
   it('prompts a fresh subscribe when on no team plan', () => {

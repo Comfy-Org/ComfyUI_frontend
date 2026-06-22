@@ -669,9 +669,9 @@ watch(
   { immediate: true }
 )
 
-// The CTA — not the slider stop — reflects the current plan: when the slider
-// sits on the active stop the button reads "Current plan" and is disabled; any
-// other stop reads "Change plan". A cancelled plan re-subscribes instead.
+// The CTA — not the slider stop — reflects the current plan: on the active stop
+// it reads "Current plan" (disabled); a cancelled plan re-subscribes on its
+// stop. Any other stop is locked because the credit stop can't be changed.
 const isTeamCurrentStopSelected = computed(
   () =>
     currentTeamStopIndex.value !== null &&
@@ -684,22 +684,23 @@ const teamButtonLabel = computed(() => {
       ? t('subscription.teamPlan.cta')
       : t('subscription.teamPlan.ctaMonthly')
   }
-  // Only the current stop re-subscribes (cancelled) or reads "Current plan"
-  // (active); any other stop is a plan change.
+  // The current stop re-subscribes (cancelled) or reads "Current plan" (active).
+  // A team plan's credit stop can't be changed, so every other stop is locked.
   if (isTeamCurrentStopSelected.value) {
     return isCancelled.value
       ? t('subscription.resubscribe')
       : t('subscription.teamPlan.currentPlan')
   }
-  return t('subscription.teamPlan.changePlan')
+  return t('subscription.teamPlan.creditsLocked')
 })
 
+// The only actionable subscribed state is re-subscribing on the current stop
+// (cancelled); every other stop is locked since the credit stop can't be changed.
 const isTeamButtonDisabled = computed(
   () =>
     isLoading ||
     (isTeamSubscribed.value &&
-      !isCancelled.value &&
-      isTeamCurrentStopSelected.value)
+      !(isCancelled.value && isTeamCurrentStopSelected.value))
 )
 
 onMounted(() => {
