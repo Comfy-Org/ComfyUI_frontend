@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type * as VueUse from '@vueuse/core'
 import { computed, defineComponent, h } from 'vue'
@@ -16,7 +16,7 @@ vi.mock('@vueuse/core', async (importOriginal) => {
 })
 
 vi.mock('@/platform/surveys/surveyIdentity', () => ({
-  getSurveyIdentityTags: () => ({ anon_id: 'anon-1' })
+  getSurveyIdentityTags: () => Promise.resolve({ anon_id: 'anon-1' })
 }))
 
 const PopoverStub = defineComponent({
@@ -64,14 +64,16 @@ describe('TypeformPopoverButton', () => {
     expect(screen.queryByTestId('embed')).not.toBeInTheDocument()
   })
 
-  it('links directly to the form on mobile instead of embedding', () => {
+  it('links directly to the form on mobile instead of embedding', async () => {
     isMobile.value = true
     renderButton({ dataTfWidget: 'abc123' })
 
     expect(screen.queryByTestId('embed')).not.toBeInTheDocument()
-    expect(screen.getByRole('link')).toHaveAttribute(
-      'href',
-      'https://form.typeform.com/to/abc123#anon_id=anon-1'
+    await waitFor(() =>
+      expect(screen.getByRole('link')).toHaveAttribute(
+        'href',
+        'https://form.typeform.com/to/abc123#anon_id=anon-1'
+      )
     )
   })
 })

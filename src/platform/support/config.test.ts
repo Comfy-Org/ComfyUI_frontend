@@ -15,7 +15,7 @@ vi.mock('@/platform/distribution/types', () => ({
 
 vi.mock('@/platform/surveys/surveyIdentity', async (importOriginal) => ({
   ...(await importOriginal<typeof SurveyIdentityModule>()),
-  getSurveyIdentityTags: () => ({ anon_id: 'anon-1' })
+  getSurveyIdentityTags: () => Promise.resolve({ anon_id: 'anon-1' })
 }))
 
 describe('buildFeedbackTypeformUrl', () => {

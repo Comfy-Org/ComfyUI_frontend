@@ -11,8 +11,10 @@ export interface SurveyIdentity {
   comfy_id?: string
 }
 
+type MaybePromise<T> = T | Promise<T>
+
 export interface IdentityProvider {
-  getIdentity(): SurveyIdentity
+  getIdentity(): MaybePromise<Partial<SurveyIdentity> | null | undefined>
 }
 
 let memoryAnonId: string | undefined
@@ -41,15 +43,14 @@ export function setCurrentIdentityProvider(provider: IdentityProvider): void {
   currentProvider = provider
 }
 
-function getSurveyIdentity(): SurveyIdentity {
-  return currentProvider.getIdentity()
-}
-
-/** Identity as Typeform hidden-field tags, dropping any absent field. */
-export function getSurveyIdentityTags(): Record<string, string> {
-  const { anon_id, distinct_id, comfy_id } = getSurveyIdentity()
+/**
+ * Identity as Typeform hidden-field tags, dropping any absent field.
+ */
+export async function getSurveyIdentityTags(): Promise<Record<string, string>> {
+  const identity = await currentProvider.getIdentity()
+  const { distinct_id, comfy_id } = identity ?? {}
   return {
-    anon_id,
+    anon_id: identity?.anon_id ?? getOrCreateAnonId(),
     ...(distinct_id ? { distinct_id } : {}),
     ...(comfy_id ? { comfy_id } : {})
   }

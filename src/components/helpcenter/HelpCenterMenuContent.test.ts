@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/vue'
+import { cleanup, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
@@ -42,7 +42,7 @@ vi.mock('@/platform/settings/settingStore', () => ({
 }))
 
 vi.mock('@/platform/surveys/surveyIdentity', () => ({
-  getSurveyIdentityTags: () => ({ anon_id: 'anon-1' })
+  getSurveyIdentityTags: () => Promise.resolve({ anon_id: 'anon-1' })
 }))
 
 vi.mock('@/platform/telemetry', () => ({
@@ -135,10 +135,12 @@ describe('HelpCenterMenuContent feedback item', () => {
 
     await user.click(screen.getByRole('menuitem', { name: 'Give Feedback' }))
 
-    expect(openSpy).toHaveBeenCalledWith(
-      'https://form.typeform.com/to/q7azbWPi#distribution=ccloud&source=help-center&anon_id=anon-1',
-      '_blank',
-      'noopener,noreferrer'
+    await waitFor(() =>
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://form.typeform.com/to/q7azbWPi#distribution=ccloud&source=help-center&anon_id=anon-1',
+        '_blank',
+        'noopener,noreferrer'
+      )
     )
     expect(commandStoreExecute).not.toHaveBeenCalled()
   })
@@ -149,10 +151,12 @@ describe('HelpCenterMenuContent feedback item', () => {
 
     await user.click(screen.getByRole('menuitem', { name: 'Give Feedback' }))
 
-    expect(openSpy).toHaveBeenCalledWith(
-      'https://form.typeform.com/to/q7azbWPi#distribution=oss-nightly&source=help-center&anon_id=anon-1',
-      '_blank',
-      'noopener,noreferrer'
+    await waitFor(() =>
+      expect(openSpy).toHaveBeenCalledWith(
+        'https://form.typeform.com/to/q7azbWPi#distribution=oss-nightly&source=help-center&anon_id=anon-1',
+        '_blank',
+        'noopener,noreferrer'
+      )
     )
     expect(commandStoreExecute).not.toHaveBeenCalled()
   })

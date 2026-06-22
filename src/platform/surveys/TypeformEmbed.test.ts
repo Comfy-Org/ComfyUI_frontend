@@ -21,7 +21,7 @@ vi.mock('./useTypeformEmbed', () => ({
 
 vi.mock('./surveyIdentity', async (importOriginal) => ({
   ...(await importOriginal<typeof SurveyIdentityModule>()),
-  getSurveyIdentityTags: () => ({ anon_id: 'anon-1' })
+  getSurveyIdentityTags: () => Promise.resolve({ anon_id: 'anon-1' })
 }))
 
 const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
@@ -36,10 +36,10 @@ describe('TypeformEmbed', () => {
     embedState.isValidTypeformId = true
   })
 
-  it('appends the survey identity to the caller hidden fields', () => {
+  it('appends the survey identity to the caller hidden fields', async () => {
     renderEmbed({ typeformId: 'abc123', hiddenFields: 'source=topbar' })
 
-    const embed = screen.getByTestId('typeform-embed')
+    const embed = await screen.findByTestId('typeform-embed')
     expect(embed).toHaveAttribute('data-tf-widget', 'abc123')
     expect(embed).toHaveAttribute(
       'data-tf-hidden',
@@ -49,28 +49,28 @@ describe('TypeformEmbed', () => {
     expect(embed).not.toHaveAttribute('data-tf-auto-resize')
   })
 
-  it('sends the survey identity even without caller hidden fields', () => {
+  it('sends the survey identity even without caller hidden fields', async () => {
     renderEmbed({ typeformId: 'abc123' })
 
-    expect(screen.getByTestId('typeform-embed')).toHaveAttribute(
+    expect(await screen.findByTestId('typeform-embed')).toHaveAttribute(
       'data-tf-hidden',
       'anon_id=anon-1'
     )
   })
 
-  it('keeps redirect-on-completion inside the iframe when requested', () => {
+  it('keeps redirect-on-completion inside the iframe when requested', async () => {
     renderEmbed({ typeformId: 'abc123', redirectTarget: '_self' })
 
-    expect(screen.getByTestId('typeform-embed')).toHaveAttribute(
+    expect(await screen.findByTestId('typeform-embed')).toHaveAttribute(
       'data-tf-redirect-target',
       '_self'
     )
   })
 
-  it('enables auto-resize when requested', () => {
+  it('enables auto-resize when requested', async () => {
     renderEmbed({ typeformId: 'abc123', autoResize: true })
 
-    expect(screen.getByTestId('typeform-embed')).toHaveAttribute(
+    expect(await screen.findByTestId('typeform-embed')).toHaveAttribute(
       'data-tf-auto-resize'
     )
   })

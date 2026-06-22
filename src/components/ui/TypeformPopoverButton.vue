@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
-import { computed } from 'vue'
+import { ref, watchEffect } from 'vue'
 
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -15,9 +15,19 @@ const { dataTfWidget, active = true } = defineProps<{
 const isMobile = useBreakpoints(breakpointsTailwind).smaller('md')
 
 // Mobile opens the form externally, so identity rides in the URL fragment.
-const formUrl = computed(() => {
-  const params = new URLSearchParams(getSurveyIdentityTags())
-  return `https://form.typeform.com/to/${dataTfWidget}#${params.toString()}`
+const formUrl = ref<string>()
+
+watchEffect((onCleanup) => {
+  const widgetId = dataTfWidget
+  let cancelled = false
+  onCleanup(() => {
+    cancelled = true
+  })
+  void getSurveyIdentityTags().then((tags) => {
+    if (cancelled) return
+    const params = new URLSearchParams(tags)
+    formUrl.value = `https://form.typeform.com/to/${widgetId}#${params.toString()}`
+  })
 })
 </script>
 <template>

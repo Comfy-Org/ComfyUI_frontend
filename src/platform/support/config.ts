@@ -47,10 +47,12 @@ function getFeedbackTags(source: FeedbackSource): Record<string, string> {
  * (Typeform's hidden-field convention) so survey responses can be segmented
  * by distribution (cloud / oss-nightly / oss) and entry point.
  */
-export function buildFeedbackTypeformUrl(source: FeedbackSource): string {
+export async function buildFeedbackTypeformUrl(
+  source: FeedbackSource
+): Promise<string> {
   const params = new URLSearchParams({
     ...getFeedbackTags(source),
-    ...getSurveyIdentityTags()
+    ...(await getSurveyIdentityTags())
   })
   return `${FEEDBACK_TYPEFORM_BASE_URL}#${params.toString()}`
 }

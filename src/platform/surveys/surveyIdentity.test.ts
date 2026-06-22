@@ -16,21 +16,21 @@ describe('survey identity', () => {
     vi.restoreAllMocks()
   })
 
-  it('is anonymous by default', () => {
-    const tags = getSurveyIdentityTags()
+  it('is anonymous by default', async () => {
+    const tags = await getSurveyIdentityTags()
 
     expect(tags.anon_id).toBeTruthy()
     expect(tags.comfy_id).toBeUndefined()
   })
 
-  it('mints a stable anonymous id and reuses it across calls', () => {
-    const anonId = getSurveyIdentityTags().anon_id
+  it('mints a stable anonymous id and reuses it across calls', async () => {
+    const anonId = (await getSurveyIdentityTags()).anon_id
 
     expect(localStorage.getItem('Comfy.SurveyAnonId')).toBe(anonId)
-    expect(getSurveyIdentityTags().anon_id).toBe(anonId)
+    expect((await getSurveyIdentityTags()).anon_id).toBe(anonId)
   })
 
-  it('falls back to a stable in-memory id when storage is unavailable', () => {
+  it('falls back to a stable in-memory id when storage is unavailable', async () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
       throw new Error('storage disabled')
     })
@@ -38,28 +38,39 @@ describe('survey identity', () => {
       throw new Error('storage disabled')
     })
 
-    const anonId = getSurveyIdentityTags().anon_id
+    const anonId = (await getSurveyIdentityTags()).anon_id
 
     expect(anonId).toBeTruthy()
-    expect(getSurveyIdentityTags().anon_id).toBe(anonId)
+    expect((await getSurveyIdentityTags()).anon_id).toBe(anonId)
   })
 
-  it('resolves tags through the registered provider, dropping absent fields', () => {
+  it('resolves tags through the registered provider, dropping absent fields', async () => {
     setCurrentIdentityProvider({ getIdentity: () => ({ anon_id: 'fixed' }) })
 
-    expect(getSurveyIdentityTags()).toEqual({ anon_id: 'fixed' })
+    expect(await getSurveyIdentityTags()).toEqual({ anon_id: 'fixed' })
   })
 
-  it('includes distinct_id and comfy_id when the provider supplies them', () => {
+  it('backfills the anon id when an async provider omits it', async () => {
     setCurrentIdentityProvider({
-      getIdentity: () => ({
-        anon_id: 'fixed',
-        distinct_id: 'ph-1',
-        comfy_id: 'uid-9'
-      })
+      getIdentity: () => Promise.resolve({ distinct_id: 'ph-1' })
     })
 
-    expect(getSurveyIdentityTags()).toEqual({
+    const tags = await getSurveyIdentityTags()
+    expect(tags.anon_id).toBeTruthy()
+    expect(tags.distinct_id).toBe('ph-1')
+  })
+
+  it('includes distinct_id and comfy_id when the provider supplies them', async () => {
+    setCurrentIdentityProvider({
+      getIdentity: () =>
+        Promise.resolve({
+          anon_id: 'fixed',
+          distinct_id: 'ph-1',
+          comfy_id: 'uid-9'
+        })
+    })
+
+    expect(await getSurveyIdentityTags()).toEqual({
       anon_id: 'fixed',
       distinct_id: 'ph-1',
       comfy_id: 'uid-9'

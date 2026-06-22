@@ -4,7 +4,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { getOrCreateAnonId } from './surveyIdentity'
 import type { IdentityProvider } from './surveyIdentity'
 
-export const cloudIdentityProvider: IdentityProvider = {
+export const cloudIdentityProvider = {
   getIdentity() {
     const { resolvedUserInfo } = useCurrentUser()
     return {
@@ -13,4 +13,4 @@ export const cloudIdentityProvider: IdentityProvider = {
       comfy_id: resolvedUserInfo.value?.id
     }
   }
-}
+} satisfies IdentityProvider
