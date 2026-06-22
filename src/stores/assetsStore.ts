@@ -211,7 +211,10 @@ export const useAssetsStore = defineStore('assets', () => {
       if (!isRejectedCursorError(err) || epoch !== historyFetchEpoch) throw err
       console.warn('Stale history cursor rejected, resuming via offset:', err)
       historyNextCursor.value = null
-      return fetchHistoryJobsPage({ offset: historyOffset.value })
+      historyOffset.value = 0
+      allHistoryItems.value = []
+      loadedIds.clear()
+      return fetchHistoryJobsPage({ offset: 0 })
     }
   }
 

@@ -608,7 +608,7 @@ describe('assetsStore - Refactored (Option A)', () => {
       )
     })
 
-    it('recovers from a rejected cursor page by retrying via offset', async () => {
+    it('recovers from a rejected cursor by restarting from offset 0 (no drift)', async () => {
       const firstBatch = Array.from({ length: 10 }, (_, i) =>
         createMockJobItem(i)
       )
@@ -640,9 +640,10 @@ describe('assetsStore - Refactored (Option A)', () => {
         3,
         expect.any(Function),
         200,
-        { offset: 10 }
+        { offset: 0 }
       )
-      expect(store.historyAssets).toHaveLength(20)
+      // List is replaced (not merged) so there are no duplicates from the reset
+      expect(store.historyAssets).toHaveLength(10)
       expect(store.historyError).toBe(null)
 
       // The recovered page minted a fresh cursor, so the walk resumes in cursor mode
@@ -656,7 +657,7 @@ describe('assetsStore - Refactored (Option A)', () => {
       )
     })
 
-    it('keeps pagination resumable when the offset retry also fails', async () => {
+    it('keeps pagination resumable when the offset-0 retry also fails', async () => {
       const firstBatch = Array.from({ length: 10 }, (_, i) =>
         createMockJobItem(i)
       )
@@ -675,12 +676,13 @@ describe('assetsStore - Refactored (Option A)', () => {
 
       expect(store.historyError).toBeInstanceOf(Error)
       expect(store.hasMoreHistory).toBe(true)
+      // historyAssets retains the last successful display state across a failed retry
       expect(store.historyAssets).toHaveLength(10)
 
-      // The dropped cursor means the next attempt resumes via offset
+      // The dropped cursor + reset offset means the next attempt restarts from 0
       vi.mocked(fetchHistoryPage).mockResolvedValueOnce(
         mockHistoryPage(
-          Array.from({ length: 5 }, (_, i) => createMockJobItem(10 + i))
+          Array.from({ length: 5 }, (_, i) => createMockJobItem(i))
         )
       )
       await store.loadMoreHistory()
@@ -688,9 +690,51 @@ describe('assetsStore - Refactored (Option A)', () => {
         4,
         expect.any(Function),
         200,
-        { offset: 10 }
+        { offset: 0 }
       )
-      expect(store.historyAssets).toHaveLength(15)
+      expect(store.historyAssets).toHaveLength(5)
+    })
+
+    it('does not skip or duplicate rows when items are deleted server-side before cursor recovery', async () => {
+      // Client loaded jobs 0-9 (10 items), then some were deleted server-side.
+      // When the cursor is rejected, falling back to { offset: 10 } would skip
+      // rows because the server now has fewer items before that position.
+      // The fix resets to offset 0 and replaces the list.
+      const firstBatch = Array.from({ length: 10 }, (_, i) =>
+        createMockJobItem(i)
+      )
+      // Server-side: jobs 0, 3, 7 were deleted; remaining are 1,2,4,5,6,8,9 (7 items)
+      // Cursor is rejected; fallback at offset 0 returns the current server state
+      const serverStateAfterDeletions = [1, 2, 4, 5, 6, 8, 9].map((i) =>
+        createMockJobItem(i)
+      )
+      vi.mocked(fetchHistoryPage)
+        .mockResolvedValueOnce(
+          mockHistoryPage(firstBatch, {
+            hasMore: true,
+            nextCursor: 'cursor-stale'
+          })
+        )
+        .mockRejectedValueOnce(new JobsApiError(400, 'INVALID_CURSOR'))
+        .mockResolvedValueOnce(mockHistoryPage(serverStateAfterDeletions))
+
+      await store.updateHistory()
+      await store.loadMoreHistory()
+
+      // Fallback must restart from offset 0, not the stale client offset (10)
+      expect(fetchHistoryPage).toHaveBeenNthCalledWith(
+        3,
+        expect.any(Function),
+        200,
+        { offset: 0 }
+      )
+      // List is replaced with the fresh server state — no skipped rows, no duplicates
+      expect(store.historyAssets).toHaveLength(7)
+      const ids = store.historyAssets.map((a) => a.id)
+      expect(ids).not.toContain('prompt_0')
+      expect(ids).not.toContain('prompt_3')
+      expect(ids).not.toContain('prompt_7')
+      expect(new Set(ids).size).toBe(ids.length)
     })
 
     it('preserves the cursor when a transient error rejects the page', async () => {
