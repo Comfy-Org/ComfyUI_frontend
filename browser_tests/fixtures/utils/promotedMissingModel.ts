@@ -178,7 +178,10 @@ export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
   await expectNoMissingModelUi(comfyPage)
 
   for (const step of workflow.expectedStaleInteriorWidgets) {
-    await enterVisibleSubgraph(comfyPage, step.subgraphNodeIdToEnter)
+    await enterSubgraphForStaleInteriorCheck(
+      comfyPage,
+      step.subgraphNodeIdToEnter
+    )
     await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
     await comfyPage.nextFrame()
 
@@ -360,7 +363,16 @@ async function runLegacyPromotedWidgetOperation(
   )
 }
 
-async function enterVisibleSubgraph(comfyPage: ComfyPage, nodeId: string) {
+async function enterSubgraphForStaleInteriorCheck(
+  comfyPage: ComfyPage,
+  nodeId: string
+) {
+  const enterButton = comfyPage.vueNodes.getSubgraphEnterButton(nodeId)
+  if ((await enterButton.count()) > 0) {
+    await comfyPage.vueNodes.enterSubgraph(nodeId)
+    return
+  }
+
   await comfyPage.page.evaluate((targetNodeId) => {
     const graph = window.app?.canvas.graph
     const node = graph?.getNodeById(targetNodeId)

@@ -11,7 +11,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   routeObjectInfoFromSetupApi,
   setComboInputOptions
-} from '@e2e/fixtures/helpers/ObjectInfoHelper'
+} from '@e2e/fixtures/utils/objectInfo'
 import {
   createRouteMockJob,
   jobsRouteFixture

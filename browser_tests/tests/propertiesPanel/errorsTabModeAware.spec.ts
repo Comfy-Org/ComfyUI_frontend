@@ -11,7 +11,7 @@ import {
 import {
   appendComboInputOptions,
   routeObjectInfoFromSetupApi
-} from '@e2e/fixtures/helpers/ObjectInfoHelper'
+} from '@e2e/fixtures/utils/objectInfo'
 import {
   NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
   PROMOTED_MISSING_MODEL_WORKFLOW,
@@ -22,7 +22,7 @@ import {
   selectSectionComboPromotedModel,
   selectVueComboPromotedModel,
   setLegacyPromotedComboModel
-} from '@e2e/fixtures/helpers/PromotedMissingModelHelper'
+} from '@e2e/fixtures/utils/promotedMissingModel'
 
 const FAKE_MODEL_NAME = 'fake_model.safetensors'
 const RESOLVED_PROMOTED_MODEL_NAME = 'resolved_model.safetensors'

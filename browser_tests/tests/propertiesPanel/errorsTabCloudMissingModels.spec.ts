@@ -22,7 +22,7 @@ import {
   selectLegacyPromotedAssetModel,
   selectSectionAssetPromotedModel,
   selectVueAssetPromotedModel
-} from '@e2e/fixtures/helpers/PromotedMissingModelHelper'
+} from '@e2e/fixtures/utils/promotedMissingModel'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
