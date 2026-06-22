@@ -464,7 +464,7 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
 }
 
 type ApiCreditTopupFailureReason =
-  | 'unexpected_status' // sync: topup() returned a non-completed/non-pending status
+  | 'sync_failed' // sync: topup() returned status 'failed'
   | 'exception' // sync: topup() threw
   | 'processing_failed' // async: the pending billing op resolved to failed
   | 'processing_timeout' // async: the pending billing op timed out

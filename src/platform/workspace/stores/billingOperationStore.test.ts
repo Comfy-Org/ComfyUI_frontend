@@ -336,6 +336,24 @@ describe('billingOperationStore', () => {
         error_message: errorMessage
       })
     })
+
+    it('omits error_message from topup-failed telemetry when none is provided', async () => {
+      vi.mocked(workspaceApi.getBillingOpStatus).mockResolvedValue({
+        id: 'op-1',
+        status: 'failed',
+        started_at: new Date().toISOString()
+      })
+
+      const store = useBillingOperationStore()
+      void store.startOperation('op-1', 'topup')
+
+      await vi.advanceTimersByTimeAsync(0)
+
+      // Deep-equal: the error_message key must be absent, not present-undefined.
+      expect(mockTrackApiCreditTopupFailed.mock.calls[0][0]).toEqual({
+        reason: 'processing_failed'
+      })
+    })
   })
 
   describe('polling timeout', () => {

@@ -185,14 +185,14 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     expect(mockFetchStatus).not.toHaveBeenCalled()
   })
 
-  it('fires topup-failed telemetry on an unexpected top-up status', async () => {
+  it('fires topup-failed telemetry on a sync failed top-up', async () => {
     mockTopup.mockResolvedValue(topupResponse('failed'))
 
     renderDialog()
     await clickAddCredits()
 
     expect(mockTrackApiCreditTopupFailed).toHaveBeenCalledWith({
-      reason: 'unexpected_status'
+      reason: 'sync_failed'
     })
   })
 

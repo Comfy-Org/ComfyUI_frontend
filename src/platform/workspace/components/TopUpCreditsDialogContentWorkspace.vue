@@ -273,7 +273,7 @@ async function handleBuy() {
       // Async outcome (success/failure) is tracked when the billing op resolves.
       billingOperationStore.startOperation(response.billing_op_id, 'topup')
     } else {
-      telemetry?.trackApiCreditTopupFailed({ reason: 'unexpected_status' })
+      telemetry?.trackApiCreditTopupFailed({ reason: 'sync_failed' })
       toast.add({
         severity: 'error',
         summary: t('credits.topUp.purchaseError'),

@@ -203,7 +203,7 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     if (operation.type === 'topup') {
       useTelemetry()?.trackApiCreditTopupFailed({
         reason: 'processing_failed',
-        error_message: errorMessage ?? undefined
+        ...(errorMessage ? { error_message: errorMessage } : {})
       })
     }
 
