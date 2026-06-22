@@ -259,6 +259,7 @@ export const useAssetsStore = defineStore('assets', () => {
   const flatOutputHasMore = ref(true)
   const flatOutputIsLoadingMore = ref(false)
   const flatOutputSeenIds = new Set<string>()
+  let flatOutputNextCursor: string | undefined
   let flatOutputRefreshInFlight: Promise<AssetItem[]> | null = null
   let flatOutputLoadMoreInFlight: Promise<AssetItem[]> | null = null
   let flatOutputGeneration = 0
@@ -273,6 +274,7 @@ export const useAssetsStore = defineStore('assets', () => {
       flatOutputGeneration++
       flatOutputLoading.value = true
       flatOutputOffset.value = 0
+      flatOutputNextCursor = undefined
       flatOutputHasMore.value = true
       flatOutputSeenIds.clear()
     }
@@ -281,23 +283,32 @@ export const useAssetsStore = defineStore('assets', () => {
     const generation = flatOutputGeneration
 
     const inFlight = (async () => {
+      const requestedAfter = loadMore ? flatOutputNextCursor : undefined
       try {
-        const page = await assetService.getAssetsByTag(OUTPUT_TAG, true, {
+        const page = await assetService.getAssetsPageByTag(OUTPUT_TAG, true, {
           limit: FLAT_OUTPUT_PAGE_SIZE,
-          offset: flatOutputOffset.value
+          ...(requestedAfter
+            ? { after: requestedAfter }
+            : { offset: flatOutputOffset.value })
         })
         if (loadMore && generation !== flatOutputGeneration) {
           return flatOutputAssets.value
         }
+        const batch = page.assets
         const fresh = loadMore
-          ? page.filter((asset) => !flatOutputSeenIds.has(asset.id))
-          : page
+          ? batch.filter((asset) => !flatOutputSeenIds.has(asset.id))
+          : batch
         for (const asset of fresh) flatOutputSeenIds.add(asset.id)
         flatOutputAssets.value = loadMore
           ? [...flatOutputAssets.value, ...fresh]
-          : page
-        flatOutputOffset.value += page.length
-        flatOutputHasMore.value = page.length === FLAT_OUTPUT_PAGE_SIZE
+          : batch
+        flatOutputOffset.value += batch.length
+        const nextCursor = page.next_cursor || undefined
+        const cursorStuck =
+          nextCursor !== undefined && nextCursor === requestedAfter
+        flatOutputNextCursor = cursorStuck ? undefined : nextCursor
+        flatOutputHasMore.value =
+          fresh.length > 0 && page.has_more && !cursorStuck
         return flatOutputAssets.value
       } catch (err) {
         flatOutputError.value = err
