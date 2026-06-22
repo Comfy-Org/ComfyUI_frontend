@@ -20,7 +20,8 @@ import {
   getAssetTypeBadge,
   getAssetUserDescription,
   getSourceName,
-  resolveDisplayImageDimensions
+  resolveDisplayImageDimensions,
+  stripModelTypePrefix
 } from '@/platform/assets/utils/assetMetadataUtils'
 
 const { isCloudRef } = vi.hoisted(() => ({
@@ -688,6 +689,12 @@ describe('getAssetTypeBadge', () => {
     ).toBe('checkpoints')
   })
 
+  it('keeps the first non-models tag rather than reordering to the model_type value', () => {
+    expect(
+      getAssetTypeBadge(asset(['models', 'foo', 'model_type:bar']), true)
+    ).toBe('foo')
+  })
+
   it('leaks the literal model_type: tag when mode is off (default)', () => {
     expect(getAssetTypeBadge(asset(['models', 'model_type:checkpoints']))).toBe(
       'model_type:checkpoints'
@@ -700,5 +707,16 @@ describe('getAssetTypeBadge', () => {
 
   it('returns undefined when only the models tag is present', () => {
     expect(getAssetTypeBadge(asset(['models']), true)).toBeUndefined()
+  })
+})
+
+describe('stripModelTypePrefix', () => {
+  it('removes the model_type: prefix when present', () => {
+    expect(stripModelTypePrefix('model_type:checkpoints')).toBe('checkpoints')
+  })
+
+  it('leaves a tag without the prefix unchanged', () => {
+    expect(stripModelTypePrefix('checkpoints')).toBe('checkpoints')
+    expect(stripModelTypePrefix('checkpoint/xl')).toBe('checkpoint/xl')
   })
 })
