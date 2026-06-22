@@ -24,10 +24,9 @@ import { zJobDetail, zJobsListResponse, zWorkflowContainer } from './jobTypes'
  * remains as the fallback for random access and for backends that don't mint
  * cursors.
  */
-export interface JobsPageRequest {
-  offset?: number
-  after?: string
-}
+export type JobsPageRequest =
+  | { after: string; offset?: never }
+  | { offset?: number; after?: never }
 
 /**
  * Non-ok response from the jobs API. Carries the HTTP status so callers can
