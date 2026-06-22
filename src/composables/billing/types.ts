@@ -17,6 +17,18 @@ import type {
 
 export type BillingType = 'legacy' | 'workspace'
 
+/** Coarse classification of the active subscription for transition gating. */
+export type BillingPlanType = 'none' | 'personal' | 'new-team' | 'legacy-team'
+
+export interface SubscriptionLock {
+  /** Personal tiers (standard/creator/pro) may be subscribed or changed. */
+  allowPersonalTiers: boolean
+  /** The new-team credit-slider plan may be subscribed or changed. */
+  allowTeamPlan: boolean
+  /** Only re-subscribing on the exact current plan/stop is allowed. */
+  resubscribeOnly: boolean
+}
+
 export interface SubscriptionInfo {
   isActive: boolean
   tier: SubscriptionTier | null
@@ -94,5 +106,12 @@ export interface BillingContext extends BillingState, BillingActions {
    * (legacy) per-member tier plan, which keeps the old team pricing table.
    */
   isLegacyTeamPlan: ComputedRef<boolean>
+  /**
+   * Coarse classification of the active subscription, driving which plan
+   * transitions the pricing table may offer.
+   */
+  planType: ComputedRef<BillingPlanType>
+  /** Which plan transitions are allowed for the active subscription. */
+  subscriptionLock: ComputedRef<SubscriptionLock>
   getMaxSeats: (tierKey: TierKey) => number
 }
