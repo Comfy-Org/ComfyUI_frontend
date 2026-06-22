@@ -5,10 +5,13 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
 import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
+import PricingPlanLabel from './PricingPlanLabel.vue'
+import PricingPrice from './PricingPrice.vue'
+import PricingCredits from './PricingCredits.vue'
 import { SHOW_FREE_TIER } from '../../config/features'
 import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
-import { Clock, Component as ComponentIcon } from '@lucide/vue'
+import { Clock } from '@lucide/vue'
 import Button from '../ui/button/Button.vue'
 import Badge from '../ui/badge/Badge.vue'
 import ToggleGroup from '../ui/toggle-group/ToggleGroup.vue'
@@ -194,38 +197,26 @@ const enterprisePlan = plans.find((p) => p.id === 'enterprise')!
       >
         <!-- Label + badge -->
         <div class="flex items-center gap-4">
-          <span
-            class="text-primary-comfy-yellow ppformula-text-center text-base font-bold tracking-wider uppercase"
-          >
-            {{ t(plan.labelKey, locale) }}
-          </span>
+          <PricingPlanLabel
+            :label="t(plan.labelKey, locale)"
+            class="ppformula-text-center text-base uppercase"
+          />
           <Badge v-if="plan.isPopular" variant="callout">
             {{ t('pricing.badge.popular', locale) }}</Badge
           >
         </div>
 
         <!-- Price -->
-        <div
+        <PricingPrice
           v-if="displayPriceKey(plan)"
-          class="mt-6 flex items-baseline gap-2"
-        >
-          <span
-            class="font-formula text-5xl font-light text-primary-comfy-canvas"
-          >
-            {{ t(displayPriceKey(plan)!, locale) }}
-          </span>
-          <span
-            v-if="
-              billingPeriod === 'yearly' && plan.yearlyPriceKey && plan.priceKey
-            "
-            class="font-formula text-primary-warm-gray text-sm font-light line-through"
-          >
-            {{ t(plan.priceKey, locale) }}
-          </span>
-          <span class="text-primary-warm-white text-sm">
-            {{ t('pricing.plan.period', locale) }}
-          </span>
-        </div>
+          :price="t(displayPriceKey(plan)!, locale)"
+          :period="t('pricing.plan.period', locale)"
+          :original-price="
+            billingPeriod === 'yearly' && plan.yearlyPriceKey && plan.priceKey
+              ? t(plan.priceKey, locale)
+              : undefined
+          "
+        />
 
         <p
           v-if="billingPeriod === 'yearly' && plan.yearlyTotalKey"
@@ -255,15 +246,11 @@ const enterprisePlan = plans.find((p) => p.id === 'enterprise')!
         </div>
 
         <!-- Credits -->
-        <div v-if="plan.creditsKey" class="mt-6 flex items-center gap-2">
-          <ComponentIcon class="text-primary-comfy-orange size-4 shrink-0" />
-          <span class="text-primary-warm-white ppformula-text-center text-sm">
-            <span class="font-extrabold">
-              {{ t(plan.creditsKey, locale) }}
-            </span>
-            {{ t('pricing.creditsLabel', locale) }}
-          </span>
-        </div>
+        <PricingCredits
+          v-if="plan.creditsKey"
+          :credits="t(plan.creditsKey, locale)"
+          :label="t('pricing.creditsLabel', locale)"
+        />
 
         <!-- Estimate -->
         <p v-if="plan.estimateKey" class="text-primary-warm-gray px-6 text-xs">
@@ -288,11 +275,7 @@ const enterprisePlan = plans.find((p) => p.id === 'enterprise')!
         <div class="grid grid-cols-3 gap-20">
           <div class="col-span-2">
             <div class="ppformula-text-center flex items-center gap-4">
-              <span
-                class="text-primary-comfy-yellow text-base font-bold tracking-wider uppercase"
-              >
-                {{ t(teamPlan.labelKey, locale) }}
-              </span>
+              <PricingPlanLabel :label="t(teamPlan.labelKey, locale)" />
               <p class="text-primary-warm-gray text-sm">
                 {{ t('pricing.team.description', locale) }}
               </p>
@@ -330,22 +313,20 @@ const enterprisePlan = plans.find((p) => p.id === 'enterprise')!
       </PricingCard>
 
       <!-- Enterprise -->
-      <PricingCard
-        class="col-span-full flex flex-col justify-between gap-8 lg:flex-row lg:items-center"
-      >
-        <div class="flex flex-col gap-6 lg:flex-row lg:items-center">
-          <span
-            class="text-primary-comfy-yellow text-xs font-bold tracking-wider"
+      <PricingCard class="col-span-full">
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-20">
+          <div
+            class="flex flex-col gap-6 lg:col-span-2 lg:flex-row lg:items-center"
           >
-            {{ t(enterprisePlan.labelKey, locale) }}
-          </span>
-          <p class="text-primary-warm-white text-sm">
-            {{ t('pricing.enterprise.description', locale) }}
-          </p>
+            <PricingPlanLabel :label="t(enterprisePlan.labelKey, locale)" />
+            <p class="text-primary-warm-white text-sm">
+              {{ t('pricing.enterprise.description', locale) }}
+            </p>
+          </div>
+          <Button :href="enterprisePlan.ctaHref" as="a" variant="outline">
+            {{ t(enterprisePlan.ctaKey, locale) }}
+          </Button>
         </div>
-        <Button :href="enterprisePlan.ctaHref" as="a" variant="outline">
-          {{ t(enterprisePlan.ctaKey, locale) }}
-        </Button>
       </PricingCard>
     </div>
 
