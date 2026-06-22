@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'vue'
+import type { CSSProperties, Ref } from 'vue'
 import { ref } from 'vue'
 
 interface Rect {
@@ -28,7 +28,26 @@ interface ClippingOptions {
   margin?: number
 }
 
-export const useDomClipping = (options: ClippingOptions = {}) => {
+interface UseDomClippingReturn {
+  style: Ref<CSSProperties>
+  updateClipPath: (
+    element: HTMLElement,
+    canvasElement: HTMLCanvasElement,
+    isSelected: boolean,
+    selectedArea?: {
+      x: number
+      y: number
+      width: number
+      height: number
+      scale: number
+      offset: [number, number]
+    }
+  ) => void
+}
+
+export function useDomClipping(
+  options: ClippingOptions = {}
+): UseDomClippingReturn {
   const style = ref<CSSProperties>({})
   const { margin = 4 } = options
 
