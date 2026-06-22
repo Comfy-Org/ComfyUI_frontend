@@ -115,10 +115,6 @@ vi.mock('@/utils/litegraphUtil', () => ({
   isLGraphNode: vi.fn(() => false)
 }))
 
-vi.mock('@/utils/executableGroupNodeDto', () => ({
-  isGroupNode: vi.fn(() => false)
-}))
-
 vi.mock(
   '@/platform/missingModel/composables/useMissingModelInteractions',
   () => ({

@@ -158,15 +158,6 @@
   "Comfy_Graph_UnpackSubgraph": {
     "label": "Seçili Alt Grafiği Aç"
   },
-  "Comfy_GroupNode_ConvertSelectedNodesToGroupNode": {
-    "label": "Seçili düğümleri grup düğümüne dönüştür"
-  },
-  "Comfy_GroupNode_ManageGroupNodes": {
-    "label": "Grup düğümlerini yönet"
-  },
-  "Comfy_GroupNode_UngroupSelectedGroupNodes": {
-    "label": "Seçili grup düğümlerinin grubunu çöz"
-  },
   "Comfy_Help_AboutComfyUI": {
     "label": "ComfyUI Hakkında'yı Aç"
   },

@@ -712,7 +712,6 @@
     "Inputs": "Входы",
     "Left": "Влево",
     "Manage": "Управлять",
-    "Manage Group Nodes": "Управление групповыми узлами",
     "Minimize Node": "Свернуть ноду",
     "Mode": "Режим",
     "Node Info": "Информация о ноде",
@@ -1830,10 +1829,6 @@
     "zoomOptions": "Параметры масштабирования",
     "zoomOut": "Уменьшить"
   },
-  "groupNode": {
-    "create": "Создать ноду группы",
-    "enterName": "Введите название"
-  },
   "help": {
     "helpCenterMenu": "Меню справочного центра",
     "recentReleases": "Недавние релизы"
@@ -2563,7 +2558,6 @@
     "Job History": "История заданий",
     "Load Default Workflow": "Загрузить стандартный рабочий процесс",
     "Lock Canvas": "Заблокировать холст",
-    "Manage group nodes": "Управление групповыми нодами",
     "Manager": "Менеджер",
     "Manager Menu (Legacy)": "Меню управления (устаревшее)",
     "Minimap": "Мини-карта",
@@ -2629,7 +2623,6 @@
     "Toggle View Controls Bottom Panel": "Показать/скрыть нижнюю панель элементов управления",
     "Toggle promotion of hovered widget": "Переключить повышение выделенного виджета",
     "Undo": "Отменить",
-    "Ungroup selected group nodes": "Разгруппировать выбранные групповые ноды",
     "Unload Models": "Выгрузить модели",
     "Unload Models and Execution Cache": "Выгрузить модели и кэш выполнения",
     "Unlock Canvas": "Разблокировать холст",

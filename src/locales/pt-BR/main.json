@@ -712,7 +712,6 @@
     "Inputs": "Entradas",
     "Left": "Esquerda",
     "Manage": "Gerenciar",
-    "Manage Group Nodes": "Gerenciar Nós de Grupo",
     "Minimize Node": "Minimizar Nó",
     "Mode": "Modo",
     "Node Info": "Informações do Nó",
@@ -1830,10 +1829,6 @@
     "zoomOptions": "Opções de Zoom",
     "zoomOut": "Afastar"
   },
-  "groupNode": {
-    "create": "Criar nó de grupo",
-    "enterName": "Digite o nome"
-  },
   "help": {
     "helpCenterMenu": "Menu do Centro de Ajuda",
     "recentReleases": "Lançamentos recentes"
@@ -2563,7 +2558,6 @@
     "Job History": "Histórico de tarefas",
     "Load Default Workflow": "Carregar fluxo de trabalho padrão",
     "Lock Canvas": "Travar tela",
-    "Manage group nodes": "Gerenciar nós de grupo",
     "Manager": "Gerenciador",
     "Manager Menu (Legacy)": "Menu do gerenciador (Legado)",
     "Minimap": "Minimapa",
@@ -2629,7 +2623,6 @@
     "Toggle View Controls Bottom Panel": "Alternar painel inferior de controles de visualização",
     "Toggle promotion of hovered widget": "Alternar promoção do widget destacado",
     "Undo": "Desfazer",
-    "Ungroup selected group nodes": "Desagrupar nós de grupo selecionados",
     "Unload Models": "Descarregar modelos",
     "Unload Models and Execution Cache": "Descarregar modelos e cache de execução",
     "Unlock Canvas": "Destravar tela",

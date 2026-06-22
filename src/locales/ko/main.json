@@ -712,7 +712,6 @@
     "Inputs": "입력",
     "Left": "왼쪽",
     "Manage": "관리",
-    "Manage Group Nodes": "그룹 노드 관리",
     "Minimize Node": "노드 최소화",
     "Mode": "모드",
     "Node Info": "노드 정보",
@@ -1830,10 +1829,6 @@
     "zoomOptions": "줌 옵션",
     "zoomOut": "축소"
   },
-  "groupNode": {
-    "create": "그룹 노드 만들기",
-    "enterName": "이름 입력"
-  },
   "help": {
     "helpCenterMenu": "도움말 센터 메뉴",
     "recentReleases": "최근 릴리스"
@@ -2563,7 +2558,6 @@
     "Job History": "작업 기록",
     "Load Default Workflow": "기본 워크플로 불러오기",
     "Lock Canvas": "캔버스 잠금",
-    "Manage group nodes": "그룹 노드 관리",
     "Manager": "매니저",
     "Manager Menu (Legacy)": "매니저 메뉴(구버전)",
     "Minimap": "미니맵",
@@ -2629,7 +2623,6 @@
     "Toggle View Controls Bottom Panel": "뷰 컨트롤 하단 패널 전환",
     "Toggle promotion of hovered widget": "호버된 위젯 승격 전환",
     "Undo": "실행 취소",
-    "Ungroup selected group nodes": "선택한 그룹 노드 그룹 해제",
     "Unload Models": "모델 언로드",
     "Unload Models and Execution Cache": "모델 및 실행 캐시 언로드",
     "Unlock Canvas": "캔버스 잠금 해제",
