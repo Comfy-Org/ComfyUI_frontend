@@ -12,6 +12,8 @@ import { t } from '../../i18n/translations'
 import { Component as ComponentIcon } from '@lucide/vue'
 import Button from '../ui/button/Button.vue'
 import Badge from '../ui/badge/Badge.vue'
+import ToggleGroup from '../ui/toggle-group/ToggleGroup.vue'
+import ToggleGroupItem from '../ui/toggle-group/ToggleGroupItem.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -129,6 +131,13 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
       >
         {{ t('pricing.subtitle', locale) }}
       </p>
+    </div>
+
+    <div class="flex items-center justify-center">
+      <ToggleGroup type="single">
+        <ToggleGroupItem value="a"> A </ToggleGroupItem>
+        <ToggleGroupItem value="b"> B </ToggleGroupItem>
+      </ToggleGroup>
     </div>
 
     <!-- Desktop: dynamic grid (3 or 4 columns) / Mobile: stacked cards -->
