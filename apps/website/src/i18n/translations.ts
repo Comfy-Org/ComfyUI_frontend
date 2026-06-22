@@ -1225,6 +1225,22 @@ const translations = {
     en: 'Longer workflow runtime (up to 1 hr)',
     'zh-CN': '更长工作流运行时长（最长 1 小时）'
   },
+  'pricing.feature.inviteMembers': {
+    en: 'Invite members',
+    'zh-CN': '邀请成员'
+  },
+  'pricing.feature.concurrentWorkflows': {
+    en: 'Members can run workflows concurrently',
+    'zh-CN': '成员可并行运行工作流'
+  },
+  'pricing.feature.sharedCreditPool': {
+    en: 'Shared credit pool for all members',
+    'zh-CN': '所有成员共享积分池'
+  },
+  'pricing.feature.roleBasedPermissions': {
+    en: 'Role-based permissions',
+    'zh-CN': '基于角色的权限'
+  },
 
   'pricing.plan.free.label': { en: 'FREE', 'zh-CN': '免费版' },
   'pricing.plan.free.price': { en: '$0', 'zh-CN': '$0' },
@@ -1281,6 +1297,28 @@ const translations = {
     'zh-CN': '约可生成 1,915 个 5 秒视频*'
   },
   'pricing.plan.pro.cta': { en: 'SUBSCRIBE TO PRO', 'zh-CN': '订阅专业版' },
+
+  'pricing.plan.team.label': { en: 'TEAM', 'zh-CN': '团队版' },
+  'pricing.plan.team.cta': {
+    en: 'SUBSCRIBE TO TEAM',
+    'zh-CN': '订阅团队版'
+  },
+  'pricing.plan.team.everythingInProPlus': {
+    en: 'Everything in Pro, plus:',
+    'zh-CN': '包含专业版的全部功能，另加：'
+  },
+  'pricing.team.description': {
+    en: 'Built for teams collaborating on workflows together.',
+    'zh-CN': '为协作开发工作流的团队打造。'
+  },
+  'pricing.plan.team.comingSoon': {
+    en: 'Coming soon...',
+    'zh-CN': '即将推出…'
+  },
+  'pricing.plan.team.projectAssetManagement': {
+    en: 'Project & asset management',
+    'zh-CN': '项目与资产管理'
+  },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
   'pricing.enterprise.description': {

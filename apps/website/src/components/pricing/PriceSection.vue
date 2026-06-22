@@ -8,12 +8,13 @@ import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
 import { SHOW_FREE_TIER } from '../../config/features'
 import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
-import { Component as ComponentIcon } from '@lucide/vue'
+import { Clock, Component as ComponentIcon } from '@lucide/vue'
 import Button from '../ui/button/Button.vue'
 import Badge from '../ui/badge/Badge.vue'
 import ToggleGroup from '../ui/toggle-group/ToggleGroup.vue'
 import ToggleGroupItem from '../ui/toggle-group/ToggleGroupItem.vue'
 import PricingCard from './PricingCard.vue'
+import Slider from '../ui/slider/Slider.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -50,7 +51,7 @@ interface PricingPlan {
   andMoreKey?: TranslationKey
   image?: string
   isPopular?: boolean
-  isEnterprise?: boolean
+  isStandard?: boolean
 }
 
 const freePlan: PricingPlan = {
@@ -71,6 +72,7 @@ const plans: PricingPlan[] = [
   ...(SHOW_FREE_TIER ? [freePlan] : []),
   {
     id: 'standard',
+    isStandard: true,
     labelKey: 'pricing.plan.standard.label',
     priceKey: 'pricing.plan.standard.price',
     yearlyPriceKey: 'pricing.plan.standard.yearlyPrice',
@@ -88,6 +90,7 @@ const plans: PricingPlan[] = [
   },
   {
     id: 'creator',
+    isStandard: true,
     labelKey: 'pricing.plan.creator.label',
     priceKey: 'pricing.plan.creator.price',
     yearlyPriceKey: 'pricing.plan.creator.yearlyPrice',
@@ -106,6 +109,7 @@ const plans: PricingPlan[] = [
   },
   {
     id: 'pro',
+    isStandard: true,
     labelKey: 'pricing.plan.pro.label',
     priceKey: 'pricing.plan.pro.price',
     yearlyPriceKey: 'pricing.plan.pro.yearlyPrice',
@@ -122,17 +126,29 @@ const plans: PricingPlan[] = [
     ]
   },
   {
+    id: 'team',
+    labelKey: 'pricing.plan.team.label',
+    ctaKey: 'pricing.plan.team.cta',
+    ctaHref: subscribeUrl('team'),
+    features: [
+      { text: 'pricing.feature.inviteMembers' },
+      { text: 'pricing.feature.concurrentWorkflows' },
+      { text: 'pricing.feature.sharedCreditPool' },
+      { text: 'pricing.feature.roleBasedPermissions' }
+    ]
+  },
+  {
     id: 'enterprise',
     labelKey: 'pricing.enterprise.label',
     ctaKey: 'pricing.enterprise.cta',
     ctaHref: getRoutes(locale).cloudEnterprise,
-    features: [],
-    isEnterprise: true
+    features: []
   }
 ]
 
-const standardPlans = plans.filter((p) => !p.isEnterprise)
-const enterprisePlan = plans.find((p) => p.isEnterprise)!
+const standardPlans = plans.filter((p) => p.isStandard)
+const teamPlan = plans.find((p) => p.id === 'team')
+const enterprisePlan = plans.find((p) => p.id === 'enterprise')!
 </script>
 
 <template>
@@ -179,7 +195,7 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
         <!-- Label + badge -->
         <div class="flex items-center gap-4">
           <span
-            class="text-primary-comfy-yellow ppformula-text-center text-base font-bold tracking-wider"
+            class="text-primary-comfy-yellow ppformula-text-center text-base font-bold tracking-wider uppercase"
           >
             {{ t(plan.labelKey, locale) }}
           </span>
@@ -267,6 +283,53 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
         </div>
       </PricingCard>
 
+      <!-- Team -->
+      <PricingCard v-if="teamPlan" class="col-span-full">
+        <div class="grid grid-cols-3 gap-20">
+          <div class="col-span-2">
+            <div class="ppformula-text-center flex items-center gap-4">
+              <span
+                class="text-primary-comfy-yellow text-base font-bold tracking-wider uppercase"
+              >
+                {{ t(teamPlan.labelKey, locale) }}
+              </span>
+              <p class="text-primary-warm-gray text-sm">
+                {{ t('pricing.team.description', locale) }}
+              </p>
+            </div>
+
+            <div class="mt-6">
+              <Slider class="w-full" />
+            </div>
+          </div>
+
+          <div>
+            <PricingPlanFeatureList
+              v-if="teamPlan"
+              :features="teamPlan.features"
+              title-key="pricing.plan.team.everythingInProPlus"
+              :locale
+            />
+
+            <div class="mt-5">
+              <div class="text-primary-warm-gray flex flex-col gap-2 text-sm">
+                <span>{{ t('pricing.plan.team.comingSoon', locale) }}</span>
+                <span>
+                  <Clock class="inline size-4" />
+                  {{ t('pricing.plan.team.projectAssetManagement', locale) }}
+                </span>
+              </div>
+              <div class="mt-8">
+                <Button class="w-full" variant="outline">
+                  {{ t(teamPlan.ctaKey, locale) }}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </PricingCard>
+
+      <!-- Enterprise -->
       <PricingCard
         class="col-span-full flex flex-col justify-between gap-8 lg:flex-row lg:items-center"
       >
