@@ -304,6 +304,7 @@ export const useLitegraphService = () => {
         advanced: inputSpec.advanced,
         hidden: inputSpec.hidden
       })
+      if (inputSpec.hidden !== undefined) widget.hidden = inputSpec.hidden
       if (dynamic) widget.tooltip = inputSpec.tooltip
     }
 

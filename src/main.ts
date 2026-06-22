@@ -5,7 +5,6 @@ import { initializeApp } from 'firebase/app'
 import { createPinia } from 'pinia'
 import 'primeicons/primeicons.css'
 import PrimeVue from 'primevue/config'
-import ConfirmationService from 'primevue/confirmationservice'
 import ToastService from 'primevue/toastservice'
 import Tooltip from 'primevue/tooltip'
 import { createApp } from 'vue'
@@ -31,19 +30,25 @@ import App from './App.vue'
 import './assets/css/style.css'
 import { i18n } from './i18n'
 
-/**
- * CRITICAL: Load remote config FIRST for cloud builds to ensure
- * window.__CONFIG__is available for all modules during initialization
- */
 const isCloud = __DISTRIBUTION__ === 'cloud'
+const hasHostTelemetryBridge = Boolean(window.__comfyDesktop2?.Telemetry)
+const requiresRemoteConfigBootstrap = isCloud || hasHostTelemetryBridge
 
-if (isCloud) {
+if (requiresRemoteConfigBootstrap) {
   const { refreshRemoteConfig } =
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false })
+}
 
+if (isCloud) {
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
   await initTelemetry()
+}
+
+if (hasHostTelemetryBridge) {
+  const { initHostTelemetry } =
+    await import('@/platform/telemetry/initHostTelemetry')
+  initHostTelemetry()
 }
 
 const ComfyUIPreset = definePreset(Aura, {
@@ -127,7 +132,6 @@ app
       }
     }
   })
-  .use(ConfirmationService)
   .use(ToastService)
   .use(pinia)
   .use(i18n)
