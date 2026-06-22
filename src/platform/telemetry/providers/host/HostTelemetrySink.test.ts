@@ -181,6 +181,33 @@ describe('HostTelemetrySink', () => {
       'trackTemplateCategorySelected',
       { category_id: 'image' },
       TelemetryEvents.TEMPLATE_CATEGORY_SELECTED
+    ],
+    [
+      'trackCheckoutReturned',
+      { checkout_attempt_id: 'c1', outcome: 'success' },
+      TelemetryEvents.CHECKOUT_RETURNED
+    ],
+    [
+      'trackCheckoutInitiateFailed',
+      { stage: 'no_url' },
+      TelemetryEvents.CHECKOUT_INITIATE_FAILED
+    ],
+    ['trackCheckoutWindowBlocked', {}, TelemetryEvents.CHECKOUT_WINDOW_BLOCKED],
+    [
+      'trackBillingCycleToggled',
+      { from: 'monthly', to: 'yearly' },
+      TelemetryEvents.BILLING_CYCLE_TOGGLED
+    ],
+    [
+      'trackShellLayout',
+      {
+        view_mode: 'graph',
+        is_app_mode: false,
+        dock_state: 'docked',
+        actionbar_position: 'Top',
+        active_sidebar_tab: null
+      },
+      TelemetryEvents.SHELL_LAYOUT
     ]
   ] as const)('forwards %s to the host bridge', ([method, metadata, event]) => {
     const sink = new HostTelemetrySink()
