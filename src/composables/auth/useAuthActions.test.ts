@@ -225,6 +225,26 @@ describe('useAuthActions.reportError', () => {
     expect(mockToastErrorHandler).not.toHaveBeenCalled()
   })
 
+  it('shows the signupBlocked message when the error carries the signup_blocked token', () => {
+    const { reportError } = useAuthActions()
+
+    // The backend wraps the rejection in a generic code; we match the token in
+    // the message, so it must win over the auth.errors.${code} fallback.
+    reportError(
+      new FirebaseError(
+        'auth/internal-error',
+        'Account creation is temporarily unavailable. (ref: signup_blocked)'
+      )
+    )
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.signupBlocked'
+    })
+    expect(mockToastErrorHandler).not.toHaveBeenCalled()
+  })
+
   it('shows the generic fallback for an unknown Firebase auth code', () => {
     const { reportError } = useAuthActions()
 

@@ -47,6 +47,19 @@ export const useAuthActions = () => {
           email: 'support@comfy.org'
         })
       })
+    } else if (
+      error instanceof FirebaseError &&
+      typeof error.message === 'string' &&
+      error.message.includes('signup_blocked')
+    ) {
+      // `signup_blocked` is a stable token from the auth backend's sign-up
+      // rejection response. Matched on the message (not error.code, which the
+      // Firebase SDK wraps inconsistently across versions).
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('auth.errors.signupBlocked')
+      })
     } else if (error instanceof FirebaseError) {
       toastStore.add({
         severity: 'error',
