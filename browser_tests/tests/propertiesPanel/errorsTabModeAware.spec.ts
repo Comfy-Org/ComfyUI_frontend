@@ -2,7 +2,6 @@ import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import {
   cleanupFakeModel,
@@ -13,7 +12,17 @@ import {
   appendComboInputOptions,
   routeObjectInfoFromSetupApi
 } from '@e2e/fixtures/helpers/ObjectInfoHelper'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import {
+  NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+  PROMOTED_MISSING_MODEL_WORKFLOW,
+  expectNoMissingModelUi,
+  expectResolvedPromotedModelSuppressesStaleInteriorErrors,
+  getMissingModelLabel,
+  loadPromotedMissingModelAndOpenErrorsTab,
+  selectSectionComboPromotedModel,
+  selectVueComboPromotedModel,
+  setLegacyPromotedComboModel
+} from '@e2e/fixtures/helpers/PromotedMissingModelHelper'
 
 const FAKE_MODEL_NAME = 'fake_model.safetensors'
 const RESOLVED_PROMOTED_MODEL_NAME = 'resolved_model.safetensors'
@@ -38,86 +47,10 @@ const promotedModelTest = test.extend({
   }
 })
 
-interface ResolvedPromotedModelWorkflow {
-  workflowName: string
-  hostNodeTitle: string
-  expectedStaleInteriorWidgets: Array<{
-    subgraphNodeIdToEnter: string
-    nodeTitle: string
-  }>
-}
-
-function getModelLabel(group: Locator, modelName: string = FAKE_MODEL_NAME) {
-  return group.getByRole('button', { name: modelName, exact: true })
-}
-
 async function expectReferenceBadge(group: Locator, count: number) {
   await expect(
     group.getByTestId(TestIds.dialogs.missingModelReferenceCount)
   ).toHaveText(String(count))
-}
-
-async function expectNoMissingModelUi(comfyPage: ComfyPage) {
-  const panel = new PropertiesPanelHelper(comfyPage.page)
-  await expect(
-    comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-  ).toBeHidden()
-  await panel.open(comfyPage.actionbar.propertiesButton)
-  await expect(
-    panel.root.getByTestId(TestIds.propertiesPanel.errorsTab)
-  ).toBeHidden()
-  await expect(
-    comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
-  ).toBeHidden()
-}
-
-async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
-  comfyPage: ComfyPage,
-  workflow: ResolvedPromotedModelWorkflow
-) {
-  await comfyPage.workflow.loadWorkflow(workflow.workflowName)
-
-  const promotedModelCombo = comfyPage.vueNodes
-    .getNodeByTitle(workflow.hostNodeTitle)
-    .getByRole('combobox', { name: 'ckpt_name', exact: true })
-  await expect(promotedModelCombo).toContainText(RESOLVED_PROMOTED_MODEL_NAME)
-  await expectNoMissingModelUi(comfyPage)
-
-  for (const step of workflow.expectedStaleInteriorWidgets) {
-    await enterVisibleSubgraph(comfyPage, step.subgraphNodeIdToEnter)
-    await expect.poll(() => comfyPage.subgraph.isInSubgraph()).toBe(true)
-    await comfyPage.nextFrame()
-
-    const node = comfyPage.vueNodes.getNodeByTitle(step.nodeTitle)
-    await expect(node).toBeVisible()
-
-    const staleCombo = node.getByRole('combobox', {
-      name: 'ckpt_name',
-      exact: true
-    })
-    await expect(
-      staleCombo,
-      `${step.nodeTitle} should expose the stale linked interior widget`
-    ).toBeDisabled()
-    await expect(
-      staleCombo,
-      `${step.nodeTitle} should keep the stale interior value`
-    ).toContainText(FAKE_MODEL_NAME)
-    await expectNoMissingModelUi(comfyPage)
-  }
-}
-
-async function enterVisibleSubgraph(comfyPage: ComfyPage, nodeId: string) {
-  await comfyPage.page.evaluate((targetNodeId) => {
-    const graph = window.app?.canvas.graph
-    const node = graph?.getNodeById(targetNodeId)
-    if (!node?.isSubgraphNode()) {
-      throw new Error(`Expected visible subgraph node ${targetNodeId}`)
-    }
-    window.app!.canvas.setGraph(node.subgraph)
-  }, nodeId)
-  await comfyPage.nextFrame()
-  await comfyPage.vueNodes.waitForNodes()
 }
 
 test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
@@ -268,7 +201,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         TestIds.dialogs.missingModelsGroup
       )
       await expect(missingModelGroup).toBeVisible()
-      await expect(getModelLabel(missingModelGroup)).toBeVisible()
+      await expect(
+        getMissingModelLabel(missingModelGroup, FAKE_MODEL_NAME)
+      ).toBeVisible()
 
       const node = await comfyPage.nodeOps.getNodeRefById('1')
       await node.click('title')
@@ -364,7 +299,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
 
       const node1 = await comfyPage.nodeOps.getNodeRefById('1')
       await node1.click('title')
-      await expect(getModelLabel(missingModelGroup)).toBeVisible()
+      await expect(
+        getMissingModelLabel(missingModelGroup, FAKE_MODEL_NAME)
+      ).toBeVisible()
       await expect(
         missingModelGroup.getByTestId(TestIds.dialogs.missingModelLocate)
       ).toHaveCount(1)
@@ -480,57 +417,109 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await cleanupFakeModel(comfyPage)
     })
 
+    promotedModelTest(
+      'Changing an OSS Vue promoted model clears a single subgraph error',
+      { tag: ['@vue-nodes', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        await loadPromotedMissingModelAndOpenErrorsTab(
+          comfyPage,
+          PROMOTED_MISSING_MODEL_WORKFLOW,
+          FAKE_MODEL_NAME
+        )
+
+        await selectVueComboPromotedModel(
+          comfyPage,
+          PROMOTED_MISSING_MODEL_WORKFLOW,
+          RESOLVED_PROMOTED_MODEL_NAME
+        )
+
+        await expectNoMissingModelUi(comfyPage)
+      }
+    )
+
+    promotedModelTest(
+      'Changing an OSS Vue promoted model clears a nested subgraph error',
+      { tag: ['@vue-nodes', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        await loadPromotedMissingModelAndOpenErrorsTab(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          FAKE_MODEL_NAME
+        )
+
+        await selectVueComboPromotedModel(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          RESOLVED_PROMOTED_MODEL_NAME
+        )
+
+        await expectNoMissingModelUi(comfyPage)
+      }
+    )
+
+    promotedModelTest(
+      'Changing an OSS Vue promoted model from the Parameters tab clears its error',
+      { tag: ['@vue-nodes', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        await loadPromotedMissingModelAndOpenErrorsTab(
+          comfyPage,
+          PROMOTED_MISSING_MODEL_WORKFLOW,
+          FAKE_MODEL_NAME
+        )
+
+        await selectSectionComboPromotedModel(
+          comfyPage,
+          PROMOTED_MISSING_MODEL_WORKFLOW,
+          RESOLVED_PROMOTED_MODEL_NAME
+        )
+
+        await expectNoMissingModelUi(comfyPage)
+      }
+    )
+
     test(
-      'Resolving a promoted missing model widget through the legacy canvas path clears its error',
+      'Changing an OSS legacy promoted model clears a single subgraph error',
       { tag: ['@canvas', '@widget', '@subgraph'] },
       async ({ comfyPage }) => {
         const resolvedModelName = 'v1-5-pruned-emaonly-fp16.safetensors'
 
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
-        await loadWorkflowAndOpenErrorsTab(
+        await loadPromotedMissingModelAndOpenErrorsTab(
           comfyPage,
-          'missing/missing_model_promoted_widget'
+          PROMOTED_MISSING_MODEL_WORKFLOW,
+          FAKE_MODEL_NAME
         )
 
-        const missingModelGroup = comfyPage.page.getByTestId(
-          TestIds.dialogs.missingModelsGroup
+        await setLegacyPromotedComboModel(
+          comfyPage,
+          PROMOTED_MISSING_MODEL_WORKFLOW,
+          resolvedModelName
         )
-        await expect(getModelLabel(missingModelGroup)).toBeVisible()
 
-        await comfyPage.page.evaluate((value) => {
-          const hostNode = window.app!.graph!.getNodeById(2)
-          if (!hostNode?.isSubgraphNode()) {
-            throw new Error('Expected subgraph host node')
-          }
+        await expectNoMissingModelUi(comfyPage)
+      }
+    )
 
-          const interiorNode = hostNode.subgraph.getNodeById(1)
-          const widget = interiorNode?.widgets?.find(
-            (entry) => entry.name === 'ckpt_name'
-          )
-          type SettableWidget = typeof widget & {
-            setValue?: (
-              value: string,
-              options: {
-                e: PointerEvent
-                node: unknown
-                canvas: unknown
-              }
-            ) => void
-          }
-          const settableWidget = widget as SettableWidget | undefined
+    test(
+      'Changing an OSS legacy promoted model clears a nested subgraph error',
+      { tag: ['@canvas', '@widget', '@subgraph'] },
+      async ({ comfyPage }) => {
+        const resolvedModelName = 'v1-5-pruned-emaonly-fp16.safetensors'
 
-          if (!settableWidget?.setValue) {
-            throw new Error('Expected concrete ckpt_name widget')
-          }
+        await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
+        await loadPromotedMissingModelAndOpenErrorsTab(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          FAKE_MODEL_NAME
+        )
 
-          settableWidget.setValue(value, {
-            e: new PointerEvent('pointerup'),
-            node: hostNode,
-            canvas: window.app!.canvas
-          })
-        }, resolvedModelName)
+        await setLegacyPromotedComboModel(
+          comfyPage,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          resolvedModelName
+        )
 
-        await expect(missingModelGroup).toBeHidden()
+        await expectNoMissingModelUi(comfyPage)
       }
     )
 
@@ -548,7 +537,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         const missingModelGroup = comfyPage.page.getByTestId(
           TestIds.dialogs.missingModelsGroup
         )
-        await expect(getModelLabel(missingModelGroup)).toBeVisible()
+        await expect(
+          getMissingModelLabel(missingModelGroup, FAKE_MODEL_NAME)
+        ).toBeVisible()
 
         const promotedModelCombo = comfyPage.vueNodes
           .getNodeByTitle('Subgraph with Promoted Missing Model')
@@ -598,7 +589,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
                 nodeTitle: 'Load Checkpoint'
               }
             ]
-          }
+          },
+          RESOLVED_PROMOTED_MODEL_NAME,
+          FAKE_MODEL_NAME
         )
       }
     )
@@ -620,7 +613,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
               },
               { subgraphNodeIdToEnter: '2', nodeTitle: 'Load Checkpoint' }
             ]
-          }
+          },
+          RESOLVED_PROMOTED_MODEL_NAME,
+          FAKE_MODEL_NAME
         )
       }
     )
