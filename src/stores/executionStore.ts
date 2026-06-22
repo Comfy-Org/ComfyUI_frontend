@@ -4,7 +4,6 @@ import { computed, ref, shallowRef } from 'vue'
 import { useNodeProgressText } from '@/composables/node/useNodeProgressText'
 import { useAppMode } from '@/composables/useAppMode'
 import { isCloud } from '@/platform/distribution/types'
-import { isTelemetryEnabled } from '@/platform/telemetry/telemetryEnabled'
 import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -379,8 +378,11 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!activeJob.value) return
     activeJob.value.nodes[e.detail.node] = true
 
-    // First media output of a run is the activation moment.
-    if (isTelemetryEnabled()) {
+    // First media output of a run is the activation moment. Gate the dedup
+    // state on the live registry (not the enabled flag) so it isn't spent when
+    // nothing would actually be sent (flag on but host bridge absent).
+    const telemetry = useTelemetry()
+    if (telemetry) {
       const runId = e.detail.prompt_id
       const mediaType = firstOutputMediaType(e.detail.output)
       if (mediaType && !outputViewedRuns.has(runId)) {
@@ -393,7 +395,7 @@ export const useExecutionStore = defineStore('execution', () => {
         outputViewedRuns.add(runId)
         const isFirstOutput = !sessionHasViewedOutput
         sessionHasViewedOutput = true
-        useTelemetry()?.trackOutputViewed({
+        telemetry.trackOutputViewed({
           workflow_run_id: runId,
           media_type: mediaType,
           is_first_output: isFirstOutput

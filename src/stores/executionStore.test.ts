@@ -1656,19 +1656,49 @@ describe('useExecutionStore - output_viewed activation telemetry', () => {
     expect(mockTrackOutputViewed).not.toHaveBeenCalled()
   })
 
-  it('does not emit anything when isCloud is false', async () => {
+  it('emits on desktop (isCloud false) when a telemetry registry is active', async () => {
+    // Parity: output_viewed gates on the live registry, not isCloud, so a
+    // desktop host with telemetry on emits it too.
     mockDistribution.isCloud = false
     try {
       const store = await freshStore()
       startRun(store, 'run-1')
       fireExecuted({ node: 'save-1', prompt_id: 'run-1', output: imageOutput })
 
-      expect(mockTrackOutputViewed).not.toHaveBeenCalled()
-      // The node is still marked executed regardless of the cloud gate.
-      expect(store.activeJob?.nodes['save-1']).toBe(true)
+      expect(mockTrackOutputViewed).toHaveBeenCalledWith({
+        workflow_run_id: 'run-1',
+        media_type: 'image',
+        is_first_output: true
+      })
     } finally {
       mockDistribution.isCloud = true
     }
+  })
+
+  it('does not emit nor spend the dedup state when telemetry is disabled', async () => {
+    const store = await freshStore()
+
+    mockTelemetry.enabled = false
+    try {
+      startRun(store, 'run-1')
+      fireExecuted({ node: 'save-1', prompt_id: 'run-1', output: imageOutput })
+      expect(mockTrackOutputViewed).not.toHaveBeenCalled()
+      // Node is still marked executed regardless of the gate.
+      expect(store.activeJob?.nodes['save-1']).toBe(true)
+    } finally {
+      mockTelemetry.enabled = true
+    }
+
+    // State was not spent: with telemetry now active, a later run's first output
+    // still reports is_first_output (would regress to false if the disabled run
+    // had consumed sessionHasViewedOutput).
+    startRun(store, 'run-2')
+    fireExecuted({ node: 'save-2', prompt_id: 'run-2', output: imageOutput })
+    expect(mockTrackOutputViewed).toHaveBeenCalledWith({
+      workflow_run_id: 'run-2',
+      media_type: 'image',
+      is_first_output: true
+    })
   })
 })
 
