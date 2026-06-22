@@ -126,7 +126,7 @@ const isLive = computed(
     </p>
 
     <h1
-      class="max-w-3xl text-4xl/tight font-light tracking-tight text-pretty text-primary-comfy-canvas lg:text-6xl"
+      class="max-w-3xl text-4xl/snug font-light tracking-tight text-pretty text-primary-comfy-canvas lg:text-6xl"
     >
       {{ title }}
     </h1>

@@ -19,7 +19,7 @@ const endDateTime = '2026-06-24T19:00:00Z'
   <HeroLivestream01
     :visual="{
       type: 'video',
-      src: 'https://media.comfy.org/website/drops/Drops_hero_rotatinglogo.mp4',
+      src: 'https://media.comfy.org/website/drops/Drops_hero_rotatinglogo.webm',
       alt: t('drops.hero.visualAlt', locale),
       width: 1760,
       height: 528

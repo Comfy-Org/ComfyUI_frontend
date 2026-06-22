@@ -4964,8 +4964,8 @@ const translations = {
   // Drops page (/drops) — subscribe banner
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'drops.banner.text': {
-    en: 'Subscribe to the live stream and get your questions answered in real time.',
-    'zh-CN': '订阅直播，实时获得您的问题解答。'
+    en: 'Join the live stream. Get answers in real time.',
+    'zh-CN': '加入直播，实时获得解答。'
   },
   'drops.banner.cta': {
     en: 'Sign up now',

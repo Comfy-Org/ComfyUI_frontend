@@ -18,7 +18,7 @@ const { drop, locale } = defineProps<{
 </script>
 
 <template>
-  <Card class="group/pill-trigger relative overflow-hidden">
+  <Card class="group/pill-trigger relative h-full overflow-hidden">
     <a
       :href="drop.cta.href[locale]"
       :aria-label="`${drop.title[locale]} — ${drop.cta.label[locale]}`"
@@ -67,7 +67,7 @@ const { drop, locale } = defineProps<{
       </CardContent>
     </div>
 
-    <CardFooter class="px-6 pb-6">
+    <CardFooter class="mt-auto px-6 pb-6">
       <ButtonPill as="span" variant="ghost" icon-position="left">
         {{ drop.cta.label[locale] }}
       </ButtonPill>

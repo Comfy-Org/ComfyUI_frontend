@@ -220,7 +220,7 @@ export const drops: readonly Drop[] = [
       'zh-CN': '配套教程与开箱即用的工作流，带您从第一次渲染走向生产管线。'
     },
     cta: {
-      label: EXPLORE,
+      label: { en: 'START LEARNING', 'zh-CN': '开始学习' },
       href: { en: '/learning', 'zh-CN': '/zh-CN/learning' }
     }
   },
@@ -242,7 +242,7 @@ export const drops: readonly Drop[] = [
     },
     // /affiliates is locale-invariant: same URL in both locales.
     cta: {
-      label: EXPLORE,
+      label: { en: 'LEARN MORE', 'zh-CN': '了解更多' },
       href: { en: '/affiliates', 'zh-CN': '/affiliates' }
     }
   }
