@@ -2587,6 +2587,7 @@
       "unavailable": "This team plan is not available right now.",
       "changePlan": "Change plan",
       "creditsLocked": "Credits currently can't be changed",
+      "planLocked": "Team plan currently can't be changed",
       "currentPlan": "Current plan"
     },
     "enterprise": {
