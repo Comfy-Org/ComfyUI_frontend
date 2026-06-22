@@ -2329,7 +2329,7 @@
       "auth/popup-closed-by-user": "Sign-in was cancelled. Please try again.",
       "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again.",
       "generic": "Something went wrong while signing you in. Please try again.",
-      "signupBlocked": "We couldn't create your account right now. Please try again later. If this keeps happening, contact support."
+      "signupBlocked": "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org."
     },
     "deleteAccount": {
       "contactSupport": "To delete your account, please contact {email}"
