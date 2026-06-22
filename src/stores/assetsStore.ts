@@ -122,9 +122,7 @@ export const useAssetsStore = defineStore('assets', () => {
     return deletingAssetIds.has(assetId)
   }
 
-  // Pagination state. The cursor walks the history timeline without the
-  // drift offset paging has when jobs complete mid-scroll; offset remains
-  // as the fallback for backends that don't mint cursors.
+  // History pagination state
   const historyOffset = ref(0)
   const historyNextCursor = ref<string | null>(null)
   const hasMoreHistory = ref(true)
