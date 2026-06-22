@@ -207,11 +207,9 @@ export const useAssetsStore = defineStore('assets', () => {
     try {
       return await fetchHistoryJobsPage({ after })
     } catch (err) {
-      // Only a rejected cursor (e.g. gone stale across a server restart)
-      // warrants dropping it for the offset fallback; transient failures
-      // propagate so the still-valid cursor is retried on the next attempt.
-      // A continuation from a superseded walk must also propagate — its
-      // recovery would null the cursor the newer walk just minted.
+      // Drop only a rejected cursor (e.g. stale across a restart) to the
+      // offset fallback; transient failures and superseded-walk
+      // continuations must propagate so a valid/newer cursor isn't lost.
       if (!isRejectedCursorError(err) || epoch !== historyFetchEpoch) throw err
       console.warn('Stale history cursor rejected, resuming via offset:', err)
       historyNextCursor.value = null
