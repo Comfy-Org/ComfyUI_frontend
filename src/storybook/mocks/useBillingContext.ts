@@ -28,6 +28,13 @@ export function useBillingContext(): BillingContext {
     error: ref<string | null>(null),
     isActiveSubscription: computed(() => false),
     isFreeTier: computed(() => false),
+    isLegacyTeamPlan: computed(() => false),
+    planType: computed(() => 'none' as const),
+    subscriptionLock: computed(() => ({
+      allowPersonalTiers: true,
+      allowTeamPlan: true,
+      resubscribeOnly: false
+    })),
     billingStatus: computed(() => null),
     subscriptionStatus: computed(() => null),
     tier: computed(() => null),

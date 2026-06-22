@@ -1,20 +1,39 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type {
+  BillingStatusResponse,
+  Plan
+} from '@/platform/workspace/api/workspaceApi'
 
 import { useBillingContext } from './useBillingContext'
+
+const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
+  is_active: true,
+  has_funds: true,
+  subscription_tier: 'PRO',
+  subscription_duration: 'MONTHLY'
+}
 
 const {
   mockTeamWorkspacesEnabled,
   mockIsPersonal,
   mockPlans,
-  mockPurchaseCredits
+  mockPurchaseCredits,
+  mockBillingStatus
 } = vi.hoisted(() => ({
   mockTeamWorkspacesEnabled: { value: false },
   mockIsPersonal: { value: true },
   mockPlans: { value: [] as Plan[] },
-  mockPurchaseCredits: vi.fn()
+  mockPurchaseCredits: vi.fn(),
+  mockBillingStatus: {
+    value: {
+      is_active: true,
+      has_funds: true,
+      subscription_tier: 'PRO',
+      subscription_duration: 'MONTHLY'
+    } as BillingStatusResponse
+  }
 }))
 
 vi.mock('@vueuse/core', async (importOriginal) => {
@@ -103,12 +122,7 @@ vi.mock('@/platform/cloud/subscription/composables/useBillingPlans', () => ({
 
 vi.mock('@/platform/workspace/api/workspaceApi', () => ({
   workspaceApi: {
-    getBillingStatus: vi.fn().mockResolvedValue({
-      is_active: true,
-      has_funds: true,
-      subscription_tier: 'PRO',
-      subscription_duration: 'MONTHLY'
-    }),
+    getBillingStatus: vi.fn(() => Promise.resolve(mockBillingStatus.value)),
     getBillingBalance: vi.fn().mockResolvedValue({
       amount_micros: 10000000,
       currency: 'usd'
@@ -125,6 +139,7 @@ describe('useBillingContext', () => {
     mockTeamWorkspacesEnabled.value = false
     mockIsPersonal.value = true
     mockPlans.value = []
+    mockBillingStatus.value = { ...DEFAULT_BILLING_STATUS }
   })
 
   it('returns legacy type for personal workspace', () => {
@@ -250,6 +265,349 @@ describe('useBillingContext', () => {
       expect(getMaxSeats('pro')).toBe(50)
       // Tiers without API plans still fall back to hardcoded values
       expect(getMaxSeats('creator')).toBe(5)
+    })
+  })
+
+  describe('isLegacyTeamPlan', () => {
+    it('is false for a personal workspace', () => {
+      const { isLegacyTeamPlan } = useBillingContext()
+      expect(isLegacyTeamPlan.value).toBe(false)
+    })
+
+    it('is true for an active team plan: team- slug and no credit stop', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'STANDARD',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'team-standard-annual'
+      }
+
+      const { initialize, isLegacyTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isLegacyTeamPlan.value).toBe(true)
+    })
+
+    it('is true for any legacy team tier, not just standard', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'PRO',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'team-pro-annual'
+      }
+
+      const { initialize, isLegacyTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isLegacyTeamPlan.value).toBe(true)
+    })
+
+    it('is false for a new credit-slider team subscriber', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      // Real BE shape: underscore slug + populated credit stop. (subscription_tier
+      // is 'TEAM' on the wire, not yet in the FE SubscriptionTier union, so it is
+      // omitted here — the predicate does not depend on it.)
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_status: 'active',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'team_per_credit_annual',
+        team_credit_stop: {
+          id: 'team_700',
+          credits_monthly: 147700,
+          stop_usd: 700
+        }
+      }
+
+      const { initialize, isLegacyTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isLegacyTeamPlan.value).toBe(false)
+    })
+
+    it('is false for a new team sub even before its credit stop is populated', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      // Provisioning lag: credit stop not yet attached. The underscore slug
+      // (team_per_credit, not team-) must still exclude it from the legacy table.
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_status: 'active',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'team_per_credit_annual'
+      }
+
+      const { initialize, isLegacyTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isLegacyTeamPlan.value).toBe(false)
+    })
+
+    it('is false for a team workspace on a personal-tier plan', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'STANDARD',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'standard-annual'
+      }
+
+      const { initialize, isLegacyTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isLegacyTeamPlan.value).toBe(false)
+    })
+
+    it('stays true for a cancelled-but-still-active legacy team sub', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_status: 'canceled',
+        subscription_tier: 'STANDARD',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'team-standard-annual',
+        cancel_at: '2099-01-01T00:00:00Z'
+      }
+
+      const { initialize, isLegacyTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isLegacyTeamPlan.value).toBe(true)
+    })
+
+    it('is false for a FREE-tier team even on a team- prefixed slug', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'FREE',
+        plan_slug: 'team-free'
+      }
+
+      const { initialize, isLegacyTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isLegacyTeamPlan.value).toBe(false)
+    })
+
+    it('matches the legacy slug case-insensitively', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'STANDARD',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'Team-Standard-Annual'
+      }
+
+      const { initialize, isLegacyTeamPlan } = useBillingContext()
+      await initialize()
+
+      expect(isLegacyTeamPlan.value).toBe(true)
+    })
+  })
+
+  describe('planType', () => {
+    it("is 'none' with no active subscription", async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = { is_active: false, has_funds: false }
+
+      const { initialize, planType } = useBillingContext()
+      await initialize()
+
+      expect(planType.value).toBe('none')
+    })
+
+    it("is 'none' for a FREE tier", async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'FREE',
+        plan_slug: 'free'
+      }
+
+      const { initialize, planType } = useBillingContext()
+      await initialize()
+
+      expect(planType.value).toBe('none')
+    })
+
+    it("is 'personal' for an active personal-tier subscription", async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'STANDARD',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'standard-annual'
+      }
+
+      const { initialize, planType } = useBillingContext()
+      await initialize()
+
+      expect(planType.value).toBe('personal')
+    })
+
+    it("is 'new-team' for a credit-stop subscription", async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_status: 'active',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'team_per_credit_annual',
+        team_credit_stop: {
+          id: 'team_700',
+          credits_monthly: 147700,
+          stop_usd: 700
+        }
+      }
+
+      const { initialize, planType } = useBillingContext()
+      await initialize()
+
+      expect(planType.value).toBe('new-team')
+    })
+
+    it("is 'new-team' before the credit stop is populated (provisioning lag)", async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_status: 'active',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'team_per_credit_annual'
+      }
+
+      const { initialize, planType } = useBillingContext()
+      await initialize()
+
+      expect(planType.value).toBe('new-team')
+    })
+
+    it("is 'legacy-team' for a per-member team slug", async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'STANDARD',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'team-standard-annual'
+      }
+
+      const { initialize, planType } = useBillingContext()
+      await initialize()
+
+      expect(planType.value).toBe('legacy-team')
+    })
+
+    it("stays 'new-team' for a cancelled-but-still-active credit-stop sub", async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_status: 'canceled',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'team_per_credit_annual',
+        cancel_at: '2099-01-01T00:00:00Z',
+        team_credit_stop: {
+          id: 'team_700',
+          credits_monthly: 147700,
+          stop_usd: 700
+        }
+      }
+
+      const { initialize, planType } = useBillingContext()
+      await initialize()
+
+      expect(planType.value).toBe('new-team')
+    })
+  })
+
+  describe('subscriptionLock', () => {
+    it('allows everything with no active subscription', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = { is_active: false, has_funds: false }
+
+      const { initialize, subscriptionLock } = useBillingContext()
+      await initialize()
+
+      expect(subscriptionLock.value).toEqual({
+        allowPersonalTiers: true,
+        allowTeamPlan: true,
+        resubscribeOnly: false
+      })
+    })
+
+    it('allows personal tiers only on an active personal plan', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_tier: 'STANDARD',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'standard-annual'
+      }
+
+      const { initialize, subscriptionLock } = useBillingContext()
+      await initialize()
+
+      expect(subscriptionLock.value).toEqual({
+        allowPersonalTiers: true,
+        allowTeamPlan: false,
+        resubscribeOnly: false
+      })
+    })
+
+    it('blocks all but a same-stop re-subscribe on an active new-team plan', async () => {
+      mockTeamWorkspacesEnabled.value = true
+      mockIsPersonal.value = false
+      mockBillingStatus.value = {
+        is_active: true,
+        has_funds: true,
+        subscription_status: 'active',
+        subscription_duration: 'ANNUAL',
+        plan_slug: 'team_per_credit_annual',
+        team_credit_stop: {
+          id: 'team_700',
+          credits_monthly: 147700,
+          stop_usd: 700
+        }
+      }
+
+      const { initialize, subscriptionLock } = useBillingContext()
+      await initialize()
+
+      expect(subscriptionLock.value).toEqual({
+        allowPersonalTiers: false,
+        allowTeamPlan: false,
+        resubscribeOnly: true
+      })
     })
   })
 })

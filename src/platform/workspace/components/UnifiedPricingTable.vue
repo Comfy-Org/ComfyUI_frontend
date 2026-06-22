@@ -436,6 +436,7 @@ import {
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -607,10 +608,13 @@ const {
   currentPlanSlug,
   fetchPlans,
   subscription,
-  currentTeamCreditStop
+  currentTeamCreditStop,
+  planType,
+  subscriptionLock
 } = useBillingContext()
 
 const { teamCreditStops } = useBillingPlans()
+const workspaceStore = useTeamWorkspaceStore()
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 
@@ -670,37 +674,48 @@ watch(
   { immediate: true }
 )
 
-// The CTA — not the slider stop — reflects the current plan: when the slider
-// sits on the active stop the button reads "Current plan" and is disabled; any
-// other stop reads "Change plan". A cancelled plan re-subscribes instead.
+// The CTA — not the slider stop — reflects the current plan: on the active stop
+// it reads "Current plan" (disabled); a cancelled plan re-subscribes on its
+// stop. Any other stop is locked because the credit stop can't be changed.
 const isTeamCurrentStopSelected = computed(
   () =>
     currentTeamStopIndex.value !== null &&
     TEAM_PLAN_CREDIT_STOPS[currentTeamStopIndex.value]?.usd === teamUsd.value
 )
 
+// A team workspace holding a personal subscription can't switch to a team plan
+// in place; a personal workspace instead routes to create/switch a team workspace.
+const isTeamLockedOnPersonalPlan = computed(
+  () => planType.value === 'personal' && !workspaceStore.isInPersonalWorkspace
+)
+
 const teamButtonLabel = computed(() => {
+  if (isTeamLockedOnPersonalPlan.value) {
+    return t('subscription.notAvailableOnPersonalPlan')
+  }
   if (!isTeamSubscribed.value) {
     return currentBillingCycle.value === 'yearly'
       ? t('subscription.teamPlan.cta')
       : t('subscription.teamPlan.ctaMonthly')
   }
-  // Only the current stop re-subscribes (cancelled) or reads "Current plan"
-  // (active); any other stop is a plan change.
+  // The current stop re-subscribes (cancelled) or reads "Current plan" (active).
+  // A team plan's credit stop can't be changed, so every other stop is locked.
   if (isTeamCurrentStopSelected.value) {
     return isCancelled.value
       ? t('subscription.resubscribe')
       : t('subscription.teamPlan.currentPlan')
   }
-  return t('subscription.teamPlan.changePlan')
+  return t('subscription.teamPlan.creditsLocked')
 })
 
+// The only actionable subscribed state is re-subscribing on the current stop
+// (cancelled); every other stop is locked since the credit stop can't be changed.
 const isTeamButtonDisabled = computed(
   () =>
     isLoading ||
+    isTeamLockedOnPersonalPlan.value ||
     (isTeamSubscribed.value &&
-      !isCancelled.value &&
-      isTeamCurrentStopSelected.value)
+      !(isCancelled.value && isTeamCurrentStopSelected.value))
 )
 
 onMounted(() => {
@@ -747,6 +762,11 @@ const isCurrentPlan = (tierKey: CheckoutTierKey): boolean => {
 }
 
 const getButtonLabel = (tier: PricingTierConfig): string => {
+  // A team-plan subscriber can't switch to a personal tier.
+  if (!subscriptionLock.value.allowPersonalTiers) {
+    return t('subscription.notAvailableOnTeamPlan')
+  }
+
   const planName =
     currentBillingCycle.value === 'yearly'
       ? t('subscription.tierNameYearly', { name: tier.name })
@@ -770,6 +790,7 @@ const getButtonLabel = (tier: PricingTierConfig): string => {
 const getButtonSeverity = (
   tier: PricingTierConfig
 ): 'primary' | 'secondary' => {
+  if (!subscriptionLock.value.allowPersonalTiers) return 'secondary'
   if (isCurrentPlan(tier.key)) {
     return isCancelled.value ? 'primary' : 'secondary'
   }
@@ -779,6 +800,7 @@ const getButtonSeverity = (
 
 const isButtonDisabled = (tier: PricingTierConfig): boolean => {
   if (isLoading) return true
+  if (!subscriptionLock.value.allowPersonalTiers) return true
   if (isCurrentPlan(tier.key)) {
     return !isCancelled.value
   }
@@ -805,6 +827,7 @@ const getAnnualTotal = (tier: PricingTierConfig): number => {
 
 function handleSubscribe(tierKey: CheckoutTierKey) {
   if (isLoading) return
+  if (!subscriptionLock.value.allowPersonalTiers) return
   if (isCurrentPlan(tierKey)) {
     if (isCancelled.value) {
       emit('resubscribe')
