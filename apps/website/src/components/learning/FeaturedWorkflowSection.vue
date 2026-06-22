@@ -2,7 +2,7 @@
 import type { Locale } from '../../i18n/translations'
 
 import { t } from '../../i18n/translations'
-import Badge from '../common/Badge.vue'
+import Badge from '../ui/badge/Badge.vue'
 import BrandButton from '../common/BrandButton.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 

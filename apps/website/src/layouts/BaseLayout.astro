@@ -4,7 +4,7 @@ import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
 import type { Locale } from '../i18n/translations'
 import SiteFooter from '../components/common/SiteFooter.vue'
-import SiteNav from '../components/common/SiteNav.vue'
+import HeaderMain from '../components/common/HeaderMain/HeaderMain.vue'
 import { escapeJsonLd } from '../utils/escapeJsonLd'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
 
@@ -137,7 +137,7 @@ const websiteJsonLd = {
       </noscript>
     )}
 
-    <SiteNav locale={locale} github-stars={githubStars} client:load />
+    <HeaderMain locale={locale} github-stars={githubStars} client:load />
     <main class="mt-20 lg:mt-32">
       <slot />
     </main>
