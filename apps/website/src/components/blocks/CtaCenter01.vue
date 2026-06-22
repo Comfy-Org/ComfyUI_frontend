@@ -29,7 +29,7 @@ const { heading, primaryCta, secondaryCta, termsLink } = defineProps<{
     class="max-w-9xl mx-auto flex flex-col items-center px-6 py-16 text-center lg:py-24"
   >
     <h2
-      class="max-w-3xl text-4xl/snug font-light tracking-tight text-pretty text-primary-comfy-canvas lg:text-6xl"
+      class="max-w-3xl text-4xl/snug font-light tracking-tight text-pretty text-primary-comfy-canvas lg:text-6xl/snug"
     >
       {{ heading }}
     </h2>
