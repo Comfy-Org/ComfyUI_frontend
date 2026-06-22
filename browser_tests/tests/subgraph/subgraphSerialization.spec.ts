@@ -589,7 +589,7 @@ test.describe('Subgraph Serialization', { tag: ['@subgraph'] }, () => {
           .sort((a, b) => Number(a) - Number(b))
       })
 
-      expect(rootIds).toEqual(['1', '2', '5'])
+      expect(rootIds).toEqual([1, 2, 5])
     })
 
     test('Promoted widget tuples are stable after full page reload boot path', async ({

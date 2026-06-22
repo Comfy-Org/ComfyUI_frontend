@@ -195,7 +195,9 @@ test.describe('Workflow settings', { tag: '@canvas' }, () => {
       // must enumerate the same node set regardless of the sort flag.
       const apiPrompt: ComfyApiWorkflow =
         await comfyPage.workflow.getExportedWorkflow({ api: true })
-      expect(ascendingById(Object.keys(apiPrompt))).toEqual(expectedIds)
+      expect(ascendingById(Object.keys(apiPrompt).map(Number))).toEqual(
+        expectedIds
+      )
     })
   })
 })
