@@ -10,23 +10,9 @@ interface PlanFeature {
   included?: boolean
 }
 
-const {
-  features,
-  titleKey,
-  nextUpKey,
-  andMoreKey,
-  nextUpClass = 'text-primary-comfy-canvas/80 mt-4 text-sm',
-  andMoreClass = 'text-primary-comfy-canvas mt-4 text-sm',
-  listGap = 'space-y-2',
-  locale = 'en'
-} = defineProps<{
+const { locale = 'en' } = defineProps<{
   features: PlanFeature[]
   titleKey?: TranslationKey
-  nextUpKey?: TranslationKey
-  andMoreKey?: TranslationKey
-  nextUpClass?: string
-  andMoreClass?: string
-  listGap?: string
   locale?: Locale
 }>()
 </script>
@@ -36,7 +22,7 @@ const {
     <p v-if="titleKey" class="text-sm text-primary-comfy-canvas">
       {{ t(titleKey, locale) }}
     </p>
-    <ul :class="listGap">
+    <ul class="space-y-2">
       <li
         v-for="feature in features"
         :key="feature.text"
@@ -59,11 +45,5 @@ const {
         </span>
       </li>
     </ul>
-    <p v-if="nextUpKey" :class="nextUpClass">
-      {{ t(nextUpKey, locale) }}
-    </p>
-    <p v-if="andMoreKey" :class="andMoreClass">
-      {{ t(andMoreKey, locale) }}
-    </p>
   </div>
 </template>

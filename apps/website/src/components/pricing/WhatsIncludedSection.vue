@@ -54,11 +54,7 @@ const features: IncludedFeature[] = [
   },
   {
     titleKey: 'pricing.included.feature11.title',
-    descriptionKey: 'pricing.included.feature11.description'
-  },
-  {
-    titleKey: 'pricing.included.feature12.title',
-    descriptionKey: 'pricing.included.feature12.description',
+    descriptionKey: 'pricing.included.feature11.description',
     isComingSoon: true
   }
 ]
@@ -105,6 +101,12 @@ const features: IncludedFeature[] = [
             />
             <p class="text-sm font-medium text-primary-comfy-canvas">
               {{ t(feature.titleKey, locale) }}
+              <span
+                v-if="feature.isComingSoon"
+                class="text-primary-comfy-yellow block"
+              >
+                {{ t('pricing.included.comingSoon', locale) }}
+              </span>
             </p>
           </div>
 

@@ -1206,6 +1206,14 @@ const translations = {
     en: '{total} billed yearly',
     'zh-CN': '按年计费 {total}'
   },
+  'pricing.savePercent': {
+    en: 'Save {pct}% ({amount})',
+    'zh-CN': '节省 {pct}%（{amount}）'
+  },
+  'pricing.team.videosEstimate': {
+    en: 'Generates ~{count} 5s videos*',
+    'zh-CN': '约可生成 {count} 个 5 秒视频*'
+  },
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
   'pricing.creditsLabel': { en: 'monthly credits', 'zh-CN': '每月积分' },
 
@@ -1353,6 +1361,10 @@ const translations = {
     en: "What's included\nin the Comfy plan",
     'zh-CN': 'Comfy 计划\n包含哪些内容'
   },
+  'pricing.included.comingSoon': {
+    en: '(coming soon)',
+    'zh-CN': '（即将推出）'
+  },
   'pricing.included.feature1.title': {
     en: 'Machine Setup',
     'zh-CN': '机器配置'
@@ -1366,9 +1378,9 @@ const translations = {
     'zh-CN': '单个任务时限'
   },
   'pricing.included.feature2.description': {
-    en: 'On our Standard and Creator plans, each workflow has a maximum run time of 30 minutes. On the Pro plan, the limit is increased to 1 hour. Jobs exceeding that limit are automatically cancelled to ensure fair usage and system stability.',
+    en: 'Each workflow run has a maximum duration of 30 minutes. On the Pro plan, the time limit is increased to 1 hour. Jobs exceeding that limit are automatically cancelled to ensure fair usage and system stability.',
     'zh-CN':
-      'Standard 和 Creator 计划下，每个工作流最长运行时间为 30 分钟。Pro 计划的时限可延长至 1 小时。超时任务将自动取消，以确保公平使用和系统稳定。'
+      '每个工作流运行的最长时长为 30 分钟。Pro 计划的时限可延长至 1 小时。超时任务将自动取消，以确保公平使用和系统稳定。'
   },
   'pricing.included.feature3.title': {
     en: 'Usage',
@@ -1393,9 +1405,9 @@ const translations = {
     'zh-CN': '随时加购积分'
   },
   'pricing.included.feature5.description': {
-    en: 'Purchase additional credits at any time. Top-up credits are valid for 1 year from the date of purchase and do not roll over with your monthly plan.',
+    en: 'Purchase additional credits at any time. Unused top-ups roll over to the next month automatically for up to 1 year.',
     'zh-CN':
-      '可随时购买额外积分。充值积分自购买之日起 1 年内有效，且不会随月度计划结转。'
+      '可随时购买额外积分。未使用的充值积分将自动顺延至下个月，最长可保留 1 年。'
   },
   'pricing.included.feature6.title': {
     en: 'Pre-installed models',
@@ -1410,18 +1422,18 @@ const translations = {
     'zh-CN': '自定义节点支持'
   },
   'pricing.included.feature7.description': {
-    en: "Comfy Cloud currently supports a variety of the most-used custom nodes from the ComfyUI community. We're expanding support regularly based on demand and compatibility.",
+    en: 'Comfy Cloud currently supports a variety of the most-used custom nodes from the ComfyUI community. <a href="#" class="text-primary-comfy-yellow underline">Check out which nodes we support currently</a>. We\'re expanding support regularly based on demand and compatibility. <a href="#" class="text-primary-comfy-yellow underline">See which nodes we\'re working on adding</a>.',
     'zh-CN':
-      'Comfy Cloud 目前支持 ComfyUI 社区中最常用的多种自定义节点，并根据需求和兼容性持续扩展支持范围。'
+      'Comfy Cloud 目前支持 ComfyUI 社区中最常用的多种自定义节点。<a href="#" class="text-primary-comfy-yellow underline">查看当前支持的节点</a>。我们会根据需求和兼容性持续扩展支持范围。<a href="#" class="text-primary-comfy-yellow underline">查看我们正在添加的节点</a>。'
   },
   'pricing.included.feature8.title': {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'
   },
   'pricing.included.feature8.description': {
-    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across Comfy Cloud and Comfy Desktop. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
+    en: 'Run <strong>proprietary models</strong> through Comfy\'s <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">Partner Nodes</a>, such as Nano Banana. The amount of credits each node uses depends on the model and parameters you set in the node, but these credits are the same ones that your monthly subscription comes with. These credits can also be used across <strong>Comfy Cloud and local ComfyUI</strong>. Read more about Partner nodes <a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">here</a>.',
     'zh-CN':
-      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 Comfy Cloud 和 Comfy 桌面版间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
+      '通过 Comfy 的<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">合作伙伴节点</a>运行<strong>专有模型</strong>，如 Nano Banana。每个节点消耗的积分取决于所用模型和参数设置，且与月度订阅积分通用。积分可在 <strong>Comfy Cloud 和本地 ComfyUI</strong> 间通用。了解更多关于合作伙伴节点的信息请点击<a href="https://docs.comfy.org/tutorials/partner-nodes/overview" class="text-primary-comfy-yellow underline">此处</a>。'
   },
   'pricing.included.feature9.title': {
     en: 'Job queue',
@@ -1441,19 +1453,10 @@ const translations = {
       'Creator 或 Pro 计划用户可从 CivitAI 或 Huggingface 导入自己的模型和 LoRA，打造专属风格。'
   },
   'pricing.included.feature11.title': {
-    en: 'Run Workflows via API',
-    'zh-CN': '通过 API 运行工作流'
-  },
-  'pricing.included.feature11.description': {
-    en: 'Run Comfy workflows programmatically via API, with concurrency limits based on your plan. Perfect for integrating ComfyUI into your applications, automating batch processing, or building production pipelines. For higher rate limits, reach out to <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>.',
-    'zh-CN':
-      '通过 API 以编程方式运行 Comfy 工作流，并发上限由您的计划决定。非常适合将 ComfyUI 集成到您的应用、自动化批量处理或构建生产级流水线。如需更高的速率限制，请联系 <a href="mailto:enterprise@comfy.org" class="text-primary-comfy-yellow underline">enterprise@comfy.org</a>。'
-  },
-  'pricing.included.feature12.title': {
     en: 'Parallel job execution',
     'zh-CN': '并行任务执行'
   },
-  'pricing.included.feature12.description': {
+  'pricing.included.feature11.description': {
     en: 'Run multiple workflows in parallel to speed up your pipeline.',
     'zh-CN': '并行运行多个工作流，加速你的流程。'
   },

@@ -66,7 +66,9 @@ function isTickFilled(
             ? 'bg-primary-warm-white'
             : 'bg-primary-warm-gray'
         "
-        :style="{ left: `${((i - 1) / (ticks - 1)) * 100}%` }"
+        :style="{
+          left: `calc(8px + ${(i - 1) / (ticks - 1)} * (100% - 16px))`
+        }"
       />
     </template>
 
