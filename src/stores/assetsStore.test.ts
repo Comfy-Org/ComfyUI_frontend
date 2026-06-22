@@ -797,7 +797,8 @@ describe('assetsStore - Refactored (Option A)', () => {
       await staleLoad
 
       // The superseded walk neither nulled the fresh cursor nor fired an
-      // offset retry against the new walk
+      // offset retry against the new walk, and must not surface a spurious error
+      expect(store.historyError).toBeNull()
       expect(fetchHistoryPage).toHaveBeenCalledTimes(3)
       vi.mocked(fetchHistoryPage).mockResolvedValueOnce(mockHistoryPage([]))
       await store.loadMoreHistory()

@@ -158,6 +158,22 @@ describe('fetchJobs', () => {
       })
     })
 
+    it('truncates oversized error bodies to 200 chars in the thrown message', async () => {
+      const oversized = 'x'.repeat(500)
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: () => Promise.resolve(oversized)
+      })
+
+      const err = await fetchHistory(mockFetch).catch((e) => e)
+      expect(err).toBeInstanceOf(JobsApiError)
+      expect(err.message.length).toBeLessThanOrEqual(
+        '[Jobs API] Failed to fetch jobs: 500 '.length + 200 + 1 // +1 for the ellipsis
+      )
+      expect(err.message).toContain('…')
+    })
+
     it('parses a null next_cursor as absent', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
@@ -240,16 +256,19 @@ describe('fetchJobs', () => {
     })
 
     it('sends the cursor instead of offset and returns next_cursor', async () => {
-      const mockFetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve(
-            createMockResponse([createMockJob('job1', 'completed')], 10, {
-              has_more: true,
-              next_cursor: 'cursor-page-2'
-            })
+      const mockFetch = vi
+        .fn<(url: string) => Promise<Response>>()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify(
+              createMockResponse([createMockJob('job1', 'completed')], 10, {
+                has_more: true,
+                next_cursor: 'cursor-page-2'
+              })
+            ),
+            { status: 200 }
           )
-      })
+        )
 
       const result = await fetchHistoryPage(mockFetch, 200, {
         after: 'cursor-page-1'
