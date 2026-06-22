@@ -4,9 +4,7 @@ import type { Locale, TranslationKey } from '../../i18n/translations'
 import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
-import BrandButton from '../common/BrandButton.vue'
 import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
-import PricingTierCard from './PricingTierCard.vue'
 import { SHOW_FREE_TIER } from '../../config/features'
 import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
@@ -15,6 +13,7 @@ import Button from '../ui/button/Button.vue'
 import Badge from '../ui/badge/Badge.vue'
 import ToggleGroup from '../ui/toggle-group/ToggleGroup.vue'
 import ToggleGroupItem from '../ui/toggle-group/ToggleGroupItem.vue'
+import PricingCard from './PricingCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -172,7 +171,11 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
         )
       "
     >
-      <PricingTierCard v-for="plan in standardPlans" :key="plan.id">
+      <PricingCard
+        v-for="plan in standardPlans"
+        :key="plan.id"
+        class="row-span-7 grid grid-rows-subgrid"
+      >
         <!-- Label + badge -->
         <div class="flex items-center gap-4">
           <span
@@ -255,42 +258,32 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
         <div class="mt-8 flex self-end">
           <Button
             :href="plan.ctaHref"
+            as="a"
             variant="outline"
             class="w-full text-center"
           >
             {{ t(plan.ctaKey, locale) }}
           </Button>
         </div>
-      </PricingTierCard>
-    </div>
+      </PricingCard>
 
-    <!-- Enterprise section (desktop only, mobile handled in plan loop) -->
-    <div
-      class="bg-transparency-white-t4 rounded-5xl mt-8 hidden w-full flex-col p-2 lg:mt-8 lg:flex lg:flex-row"
-    >
-      <!-- Left side -->
-      <div
-        class="rounded-4.5xl flex w-full flex-col items-start justify-between gap-8 bg-primary-comfy-ink p-8"
+      <PricingCard
+        class="col-span-full flex flex-col justify-between gap-8 lg:flex-row lg:items-center"
       >
-        <div>
+        <div class="flex flex-col gap-6 lg:flex-row lg:items-center">
           <span
             class="text-primary-comfy-yellow text-xs font-bold tracking-wider"
           >
             {{ t(enterprisePlan.labelKey, locale) }}
           </span>
-          <h2
-            class="mt-3 text-2xl font-light text-primary-comfy-canvas lg:text-3xl"
-          >
-            {{ t('pricing.enterprise.heading', locale) }}
-          </h2>
-          <p class="mt-3 text-sm text-primary-comfy-canvas">
+          <p class="text-primary-warm-white text-sm">
             {{ t('pricing.enterprise.description', locale) }}
           </p>
         </div>
-        <BrandButton :href="enterprisePlan.ctaHref" variant="outline" size="lg">
+        <Button :href="enterprisePlan.ctaHref" as="a" variant="outline">
           {{ t(enterprisePlan.ctaKey, locale) }}
-        </BrandButton>
-      </div>
+        </Button>
+      </PricingCard>
     </div>
 
     <!-- Footnote -->

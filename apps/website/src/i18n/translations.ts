@@ -1283,15 +1283,11 @@ const translations = {
   'pricing.plan.pro.cta': { en: 'SUBSCRIBE TO PRO', 'zh-CN': '订阅专业版' },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
-  'pricing.enterprise.heading': {
-    en: 'Looking for Enterprise Solutions?',
-    'zh-CN': '在寻找企业级解决方案？'
-  },
   'pricing.enterprise.description': {
-    en: 'For teams running Comfy in production, and at scale.',
-    'zh-CN': '面向在生产环境和规模化场景中运行 Comfy 的团队。'
+    en: 'Need more members? Looking for more flexibility or custom features?',
+    'zh-CN': '需要更多成员？想要更多灵活性或定制功能？'
   },
-  'pricing.enterprise.cta': { en: 'LEARN MORE', 'zh-CN': '了解更多' },
+  'pricing.enterprise.cta': { en: 'Contact Us', 'zh-CN': '联系我们' },
   'pricing.enterprise.feature1': {
     en: 'Annual commitments with bulk pricing and custom compute packages',
     'zh-CN': '支持年度承诺、批量定价与定制算力套餐'
