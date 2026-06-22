@@ -1,5 +1,7 @@
 import { mapValues } from 'es-toolkit'
 
+import { BLUEPRINT_TYPE_PREFIX, isBlueprintType } from '@/utils/blueprintUtils'
+
 export type EssentialsMediaType = 'image' | 'video' | 'text' | 'audio' | '3d'
 
 interface EssentialsPath {
@@ -35,7 +37,7 @@ export interface EssentialSection {
 }
 
 function blueprint(name: string) {
-  return `SubgraphBlueprint.${name}`
+  return BLUEPRINT_TYPE_PREFIX + name
 }
 
 export const ESSENTIAL_SECTIONS: EssentialSection[] = [
@@ -518,4 +520,8 @@ const NODE_TO_ESSENTIALS_PATH: Record<string, EssentialsPath> =
 export const NODE_TO_ESSENTIALS_CATEGORY: Record<string, string> = mapValues(
   NODE_TO_ESSENTIALS_PATH,
   (v) => v.subgroup ?? v.section
+)
+
+export const TOOLKIT_NODES = new Set(
+  Object.keys(NODE_TO_ESSENTIALS_PATH).filter(isBlueprintType)
 )

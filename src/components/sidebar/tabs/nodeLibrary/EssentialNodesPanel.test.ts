@@ -41,8 +41,7 @@ describe('EssentialNodesPanel', () => {
       global: { plugins: [i18n] },
       props: {
         searchQuery,
-        mediaFilters,
-        'onUpdate:mediaFilters': vi.fn()
+        mediaFilters
       }
     })
   }

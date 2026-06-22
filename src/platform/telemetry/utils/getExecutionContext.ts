@@ -1,4 +1,4 @@
-import { NODE_TO_ESSENTIALS_CATEGORY } from '@/constants/essentialsNodes'
+import { TOOLKIT_NODES } from '@/constants/essentialsNodes'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
@@ -43,7 +43,7 @@ export function getExecutionContext(): ExecutionContext {
         }
       }
 
-      const isToolkitNode = node.type in NODE_TO_ESSENTIALS_CATEGORY
+      const isToolkitNode = node.type in TOOLKIT_NODES
       if (isToolkitNode) {
         metrics.has_toolkit_nodes = true
         const trackingName = nodeDef?.name ?? node.type

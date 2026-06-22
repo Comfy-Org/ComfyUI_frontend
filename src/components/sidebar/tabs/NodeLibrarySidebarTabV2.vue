@@ -87,7 +87,7 @@
             value="essentials"
           >
             <EssentialNodesPanel
-              v-model:media-filters="essentialsFilters"
+              :media-filters="essentialsFilters"
               :search-query
             />
           </TabPanel>
@@ -175,14 +175,14 @@ const { flags } = useFeatureFlags()
 const scrollContainerRef = useTemplateRef('scrollContainerRef')
 const titleTabsRef = useTemplateRef('titleTabsRef')
 const headerTop = ref(0)
-const lastScrollY = ref(0)
+let lastScrollY = 0
 
 useEventListener(scrollContainerRef, 'scroll', () => {
   const el = scrollContainerRef.value
   if (!el) return
   const y = el.scrollTop
   const h = titleTabsRef.value?.offsetHeight ?? 0
-  const delta = y - lastScrollY.value
+  const delta = y - lastScrollY
   if (y <= 0) {
     headerTop.value = 0
   } else if (delta > 0) {
@@ -190,7 +190,7 @@ useEventListener(scrollContainerRef, 'scroll', () => {
   } else if (delta < 0) {
     headerTop.value = Math.min(0, headerTop.value - delta)
   }
-  lastScrollY.value = y
+  lastScrollY = y
 })
 
 const selectedTab = useLocalStorage<TabId>(
@@ -280,8 +280,7 @@ const hasNoMatches = computed(
 )
 
 const sections = computed(() => {
-  if (selectedTab.value !== 'all') return []
-  return nodeOrganizationService.organizeNodesByTab(activeNodes.value, 'all')
+  return nodeOrganizationService.organizeNodesTab(activeNodes.value)
 })
 
 function getFolderIcon(node: TreeNode): string {
@@ -465,13 +464,13 @@ const jumpMenuEntries = computed<MenuItem[]>(() => {
 
 const tabs = computed<Array<{ value: TabId; label: string }>>(() => {
   const allNodesTab = {
-    value: 'all' as TabId,
+    value: 'all',
     label: t('sideToolbar.nodeLibraryTab.allNodes')
-  }
+  } as const
   if (!flags.nodeLibraryEssentialsEnabled) return [allNodesTab]
   return [
     {
-      value: 'essentials' as TabId,
+      value: 'essentials',
       label: t('sideToolbar.nodeLibraryTab.essentials')
     },
     allNodesTab

@@ -5,8 +5,7 @@ import type {
   NodeGroupingStrategy,
   NodeOrganizationOptions,
   NodeSection,
-  NodeSortStrategy,
-  TabId
+  NodeSortStrategy
 } from '@/types/nodeOrganizationTypes'
 import { NodeSourceType } from '@/types/nodeSource'
 import type { TreeNode } from '@/types/treeExplorerTypes'
@@ -125,18 +124,7 @@ class NodeOrganizationService {
     return this.sortingStrategies.find((strategy) => strategy.id === id)
   }
 
-  organizeNodesByTab(
-    nodes: ComfyNodeDefImpl[],
-    tabId: TabId = DEFAULT_TAB_ID
-  ): NodeSection[] {
-    switch (tabId) {
-      case 'all':
-      default:
-        return this.organizeAll(nodes)
-    }
-  }
-
-  private organizeAll(nodes: ComfyNodeDefImpl[]): NodeSection[] {
+  organizeNodesTab(nodes: ComfyNodeDefImpl[]): NodeSection[] {
     const {
       myBlueprints,
       comfyBlueprints,

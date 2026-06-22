@@ -41,7 +41,7 @@
           )"
           :id="`essentials-subgroup-${subgroup.key}`"
           :key="subgroup.key"
-          class="scroll-mt-14 last:pb-4"
+          class="scroll-mt-30 last:pb-4"
         >
           <div class="text-foreground text-sm leading-[15px] font-normal">
             {{ $t(`essentials.${subgroup.key}`) }}
@@ -78,14 +78,12 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import EssentialNodeCard from './EssentialNodeCard.vue'
 
 const { t } = useI18n()
-const { searchQuery = '' } = defineProps<{ searchQuery?: string }>()
+const { searchQuery = '' } = defineProps<{
+  searchQuery?: string
+  mediaFilters: Record<EssentialsMediaType, boolean>
+}>()
 const previewPanel = useTemplateRef('previewPanel')
 const nodeDefStore = useNodeDefStore()
-
-const mediaFilters = defineModel<Record<EssentialsMediaType, boolean>>(
-  'mediaFilters',
-  { required: true }
-)
 
 const filteredSections = computed<EssentialSection[]>(() => {
   const query = searchQuery.trim().toLowerCase()
