@@ -2,6 +2,7 @@
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
 import { cn } from '@comfyorg/tailwind-utils'
+import { ref } from 'vue'
 
 import BrandButton from '../common/BrandButton.vue'
 import PricingPlanFeatureList from './PricingPlanFeatureList.vue'
@@ -17,6 +18,16 @@ import ToggleGroupItem from '../ui/toggle-group/ToggleGroupItem.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
+type BillingPeriod = 'monthly' | 'yearly'
+const billingPeriod = ref<BillingPeriod>('yearly')
+
+function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
+  if (billingPeriod.value === 'yearly' && plan.yearlyPriceKey) {
+    return plan.yearlyPriceKey
+  }
+  return plan.priceKey
+}
+
 function subscribeUrl(tier: string): string {
   return `${externalLinks.cloud}/cloud/subscribe?tier=${tier}&cycle=monthly`
 }
@@ -30,6 +41,8 @@ interface PricingPlan {
   id: string
   labelKey: TranslationKey
   priceKey?: TranslationKey
+  yearlyPriceKey?: TranslationKey
+  yearlyTotalKey?: TranslationKey
   creditsKey?: TranslationKey
   estimateKey?: TranslationKey
   ctaKey: TranslationKey
@@ -61,6 +74,8 @@ const plans: PricingPlan[] = [
     id: 'standard',
     labelKey: 'pricing.plan.standard.label',
     priceKey: 'pricing.plan.standard.price',
+    yearlyPriceKey: 'pricing.plan.standard.yearlyPrice',
+    yearlyTotalKey: 'pricing.plan.standard.yearlyTotal',
     creditsKey: 'pricing.plan.standard.credits',
     estimateKey: 'pricing.plan.standard.estimate',
     ctaKey: 'pricing.plan.standard.cta',
@@ -76,6 +91,8 @@ const plans: PricingPlan[] = [
     id: 'creator',
     labelKey: 'pricing.plan.creator.label',
     priceKey: 'pricing.plan.creator.price',
+    yearlyPriceKey: 'pricing.plan.creator.yearlyPrice',
+    yearlyTotalKey: 'pricing.plan.creator.yearlyTotal',
     creditsKey: 'pricing.plan.creator.credits',
     estimateKey: 'pricing.plan.creator.estimate',
     ctaKey: 'pricing.plan.creator.cta',
@@ -92,6 +109,8 @@ const plans: PricingPlan[] = [
     id: 'pro',
     labelKey: 'pricing.plan.pro.label',
     priceKey: 'pricing.plan.pro.price',
+    yearlyPriceKey: 'pricing.plan.pro.yearlyPrice',
+    yearlyTotalKey: 'pricing.plan.pro.yearlyTotal',
     creditsKey: 'pricing.plan.pro.credits',
     estimateKey: 'pricing.plan.pro.estimate',
     ctaKey: 'pricing.plan.pro.cta',
@@ -134,9 +153,13 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
     </div>
 
     <div class="flex items-center justify-center pb-16">
-      <ToggleGroup type="single">
-        <ToggleGroupItem value="a"> Monthly </ToggleGroupItem>
-        <ToggleGroupItem value="b"> Yearly (Up to 20% off) </ToggleGroupItem>
+      <ToggleGroup v-model="billingPeriod" type="single">
+        <ToggleGroupItem value="monthly" class="min-w-48">
+          {{ t('pricing.period.monthly', locale) }}
+        </ToggleGroupItem>
+        <ToggleGroupItem value="yearly" class="min-w-48">
+          {{ t('pricing.period.yearly', locale) }}
+        </ToggleGroupItem>
       </ToggleGroup>
     </div>
 
@@ -153,7 +176,7 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
         <!-- Label + badge -->
         <div class="flex items-center gap-4">
           <span
-            class="text-primary-comfy-yellow translate-y-0.5 text-base font-bold tracking-wider"
+            class="text-primary-comfy-yellow ppformula-text-center text-base font-bold tracking-wider"
           >
             {{ t(plan.labelKey, locale) }}
           </span>
@@ -163,9 +186,20 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
         </div>
 
         <!-- Price -->
-        <div v-if="plan.priceKey" class="mt-6 flex items-baseline gap-1">
+        <div
+          v-if="displayPriceKey(plan)"
+          class="mt-6 flex items-baseline gap-2"
+        >
           <span
             class="font-formula text-5xl font-light text-primary-comfy-canvas"
+          >
+            {{ t(displayPriceKey(plan)!, locale) }}
+          </span>
+          <span
+            v-if="
+              billingPeriod === 'yearly' && plan.yearlyPriceKey && plan.priceKey
+            "
+            class="font-formula text-primary-warm-gray text-sm font-light line-through"
           >
             {{ t(plan.priceKey, locale) }}
           </span>
@@ -173,6 +207,24 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
             {{ t('pricing.plan.period', locale) }}
           </span>
         </div>
+
+        <p
+          v-if="billingPeriod === 'yearly' && plan.yearlyTotalKey"
+          class="text-primary-warm-gray mt-2 text-sm"
+        >
+          {{
+            t('pricing.period.billedYearly', locale).replace(
+              '{total}',
+              t(plan.yearlyTotalKey, locale)
+            )
+          }}
+        </p>
+        <p
+          v-else-if="billingPeriod === 'monthly' && plan.priceKey"
+          class="text-primary-warm-gray mt-2 text-sm"
+        >
+          {{ t('pricing.period.billedMonthly', locale) }}
+        </p>
 
         <!-- Features -->
         <div v-if="plan.features.length" class="mt-8">

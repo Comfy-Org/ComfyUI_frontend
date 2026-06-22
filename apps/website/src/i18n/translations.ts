@@ -1196,6 +1196,16 @@ const translations = {
     'zh-CN': '通过简单透明、按使用量计费的方式，访问云端 ComfyUI 工作流。'
   },
   'pricing.badge.popular': { en: 'MOST POPULAR', 'zh-CN': '最受欢迎' },
+  'pricing.period.monthly': { en: 'Monthly', 'zh-CN': '按月' },
+  'pricing.period.yearly': {
+    en: 'Yearly (Up to 20% off)',
+    'zh-CN': '按年（最高 20% 优惠）'
+  },
+  'pricing.period.billedMonthly': { en: 'Billed monthly', 'zh-CN': '按月计费' },
+  'pricing.period.billedYearly': {
+    en: '{total} billed yearly',
+    'zh-CN': '按年计费 {total}'
+  },
   'pricing.plan.period': { en: '/month', 'zh-CN': '/月' },
   'pricing.creditsLabel': { en: 'monthly credits', 'zh-CN': '每月积分' },
 
@@ -1235,6 +1245,8 @@ const translations = {
 
   'pricing.plan.standard.label': { en: 'STANDARD', 'zh-CN': '标准版' },
   'pricing.plan.standard.price': { en: '$20', 'zh-CN': '$20' },
+  'pricing.plan.standard.yearlyPrice': { en: '$16', 'zh-CN': '$16' },
+  'pricing.plan.standard.yearlyTotal': { en: '$192', 'zh-CN': '$192' },
   'pricing.plan.standard.credits': { en: '4,200', 'zh-CN': '4,200' },
   'pricing.plan.standard.estimate': {
     en: 'Generates ~380 5s videos*',
@@ -1247,6 +1259,8 @@ const translations = {
 
   'pricing.plan.creator.label': { en: 'CREATOR', 'zh-CN': '创作者版' },
   'pricing.plan.creator.price': { en: '$35', 'zh-CN': '$35' },
+  'pricing.plan.creator.yearlyPrice': { en: '$28', 'zh-CN': '$28' },
+  'pricing.plan.creator.yearlyTotal': { en: '$336', 'zh-CN': '$336' },
   'pricing.plan.creator.credits': { en: '7,400', 'zh-CN': '7,400' },
   'pricing.plan.creator.estimate': {
     en: 'Generates ~670 5s videos*',
@@ -1259,6 +1273,8 @@ const translations = {
 
   'pricing.plan.pro.label': { en: 'PRO', 'zh-CN': '专业版' },
   'pricing.plan.pro.price': { en: '$100', 'zh-CN': '$100' },
+  'pricing.plan.pro.yearlyPrice': { en: '$80', 'zh-CN': '$80' },
+  'pricing.plan.pro.yearlyTotal': { en: '$960', 'zh-CN': '$960' },
   'pricing.plan.pro.credits': { en: '21,100', 'zh-CN': '21,100' },
   'pricing.plan.pro.estimate': {
     en: 'Generates ~1,915 5s videos*',
