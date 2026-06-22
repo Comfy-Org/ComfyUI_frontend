@@ -88,7 +88,7 @@ export function usePromotedPreviews(
       sourceNodeId: string
     ) {
       const currentHost = hostNodesByLocator.get(currentHostLocator)
-      const sourceNode = currentHost?.subgraph.getNodeById(sourceNodeId)
+      const sourceNode = currentHost?.subgraph.getNodeByRawId(sourceNodeId)
       if (!(sourceNode instanceof SubgraphNode)) return undefined
 
       const pathLocator = `${currentHostLocator}:${sourceNode.id}`
@@ -116,7 +116,7 @@ export function usePromotedPreviews(
       const leafHostLocator =
         resolved?.steps.at(-1)?.hostNodeLocator ?? hostLocator
       const leafHost = hostNodesByLocator.get(leafHostLocator) ?? node
-      const interiorNode = leafHost.subgraph.getNodeById(leaf.sourceNodeId)
+      const interiorNode = leafHost.subgraph.getNodeByRawId(leaf.sourceNodeId)
       if (!interiorNode) return []
 
       const urls = readReactivePreviewUrls(

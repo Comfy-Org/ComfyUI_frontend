@@ -34,7 +34,7 @@ function findLegacyWidget():
       widget: IBaseWidget
     }
   | undefined {
-  const hostNode = canvas?.graph?.getNodeById(props.nodeId) ?? undefined
+  const hostNode = canvas?.graph?.getNodeByRawId(props.nodeId) ?? undefined
   return resolveWidgetFromHostNode(hostNode, props.widget.name)
 }
 

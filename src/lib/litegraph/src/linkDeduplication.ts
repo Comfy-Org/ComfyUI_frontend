@@ -1,6 +1,5 @@
 import type { LGraphNode, NodeId } from './LGraphNode'
 import type { LLink, LinkId } from './LLink'
-import { asNodeId } from '@/types/nodeId'
 
 /** Generates a unique string key for a link's connection tuple. */
 function linkTupleKey(link: LLink): string {
@@ -52,7 +51,7 @@ export function purgeOrphanedLinks(
     const link = links.get(id)
     if (!link) continue
 
-    const originNode = getNodeById(asNodeId(link.origin_id))
+    const originNode = getNodeById(link.origin_id)
     const output = originNode?.outputs?.[link.origin_slot]
     if (output?.links) {
       for (let i = output.links.length - 1; i >= 0; i--) {

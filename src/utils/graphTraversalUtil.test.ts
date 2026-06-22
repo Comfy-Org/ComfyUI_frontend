@@ -65,7 +65,8 @@ function createMockGraph(nodes: LGraphNode[]): LGraph {
     _nodes: nodes,
     nodes: nodes,
     isRootGraph: true,
-    getNodeById: (id: string | number) =>
+    getNodeById: (id) => nodes.find((n) => String(n.id) === String(id)) || null,
+    getNodeByRawId: (id) =>
       nodes.find((n) => String(n.id) === String(id)) || null
   } satisfies Partial<LGraph> as LGraph
 }
@@ -82,7 +83,9 @@ function createMockSubgraph(
     nodes: nodes,
     isRootGraph: false,
     rootGraph,
-    getNodeById: (nodeId: string | number) =>
+    getNodeById: (nodeId) =>
+      nodes.find((n) => String(n.id) === String(nodeId)) || null,
+    getNodeByRawId: (nodeId) =>
       nodes.find((n) => String(n.id) === String(nodeId)) || null
   } satisfies Partial<Subgraph> as Subgraph
   return graph

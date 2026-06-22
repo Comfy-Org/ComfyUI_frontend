@@ -197,7 +197,8 @@ export const useLitegraphService = () => {
     const resolved = resolveSubgraphPseudoWidgetCache({
       cache: subgraphPseudoWidgetCache.get(node) ?? null,
       promotions,
-      getNodeById: (nodeId) => node.subgraph.getNodeById(nodeId) ?? undefined,
+      getNodeById: (nodeId) =>
+        node.subgraph.getNodeByRawId(nodeId) ?? undefined,
       isPreviewPseudoWidget
     })
     subgraphPseudoWidgetCache.set(node, resolved.cache)
@@ -950,7 +951,7 @@ export const useLitegraphService = () => {
   }
 
   function goToNode(nodeId: NodeId) {
-    const graphNode = app.canvas.graph?.getNodeById(nodeId)
+    const graphNode = app.canvas.graph?.getNodeByRawId(nodeId)
     if (!graphNode) return
     app.canvas.animateToBounds(graphNode.boundingRect)
   }

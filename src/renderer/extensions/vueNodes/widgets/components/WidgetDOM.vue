@@ -20,7 +20,7 @@ const canvasStore = useCanvasStore()
 const { canvas } = canvasStore
 
 function findDOMWidget(): DOMWidget<HTMLElement, object | string> | undefined {
-  const hostNode = canvas?.graph?.getNodeById(props.nodeId) ?? undefined
+  const hostNode = canvas?.graph?.getNodeByRawId(props.nodeId) ?? undefined
   const resolved = resolveWidgetFromHostNode(hostNode, props.widget.name)
   if (resolved && isDOMWidget(resolved.widget)) return resolved.widget
 

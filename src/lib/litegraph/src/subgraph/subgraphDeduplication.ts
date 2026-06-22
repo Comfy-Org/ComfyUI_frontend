@@ -94,10 +94,10 @@ function patchSerialisedLinks(
   remappedIds: Map<NodeId, NodeId>
 ): void {
   for (const link of links) {
-    const newOrigin = remappedIds.get(asNodeId(link.origin_id))
+    const newOrigin = remappedIds.get(link.origin_id)
     if (newOrigin !== undefined) link.origin_id = newOrigin
 
-    const newTarget = remappedIds.get(asNodeId(link.target_id))
+    const newTarget = remappedIds.get(link.target_id)
     if (newTarget !== undefined) link.target_id = newTarget
   }
 }
@@ -108,7 +108,7 @@ function patchPromotedWidgets(
   remappedIds: Map<NodeId, NodeId>
 ): void {
   for (const widget of widgets) {
-    const newId = remappedIds.get(asNodeId(widget.id))
+    const newId = remappedIds.get(widget.id)
     if (newId !== undefined) widget.id = newId
   }
 }

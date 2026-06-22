@@ -415,7 +415,7 @@ export function useSlotLinkInteraction({
   const raf = createRafBatch(processPointerMoveFrame)
 
   const canvas = app.canvas
-  const node = canvas.graph?.getNodeById(nodeId)
+  const node = canvas.graph?.getNodeByRawId(nodeId)
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
     event.stopPropagation()
@@ -446,7 +446,7 @@ export function useSlotLinkInteraction({
     if (!graph || !adapter) return false
 
     const nodeId: NodeId = candidate.layout.nodeId
-    const targetNode = graph.getNodeById(nodeId)
+    const targetNode = graph.getNodeByRawId(nodeId)
     if (!targetNode) return false
 
     if (candidate.layout.type === 'input') {
@@ -622,7 +622,7 @@ export function useSlotLinkInteraction({
     const isInputSlot = type === 'input'
     const isOutputSlot = type === 'output'
 
-    const resolvedNode = graph.getNodeById(localNodeId)
+    const resolvedNode = graph.getNodeByRawId(localNodeId)
     const inputSlot = isInputSlot ? resolvedNode?.inputs?.[index] : undefined
     const outputSlot = isOutputSlot ? resolvedNode?.outputs?.[index] : undefined
 
@@ -792,7 +792,7 @@ export function useSlotLinkInteraction({
     if (!app.canvas) return
     const { graph } = app.canvas
     if (!graph) return
-    const node = graph.getNodeById(nodeId)
+    const node = graph.getNodeByRawId(nodeId)
     if (!node) return
     augmentToCanvasPointerEvent(e, node, app.canvas)
     node.onInputDblClick?.(index, e)
@@ -801,7 +801,7 @@ export function useSlotLinkInteraction({
     if (!app.canvas) return
     const { graph } = app.canvas
     if (!graph) return
-    const node = graph.getNodeById(nodeId)
+    const node = graph.getNodeByRawId(nodeId)
     if (!node) return
     augmentToCanvasPointerEvent(e, node, app.canvas)
     node.onInputClick?.(index, e)

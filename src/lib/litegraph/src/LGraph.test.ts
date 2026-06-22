@@ -143,6 +143,25 @@ describe('LGraph', () => {
   })
 })
 
+describe('NodeId lookup typing', () => {
+  it('requires branded NodeId for runtime node lookup', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Test')
+    graph.add(node)
+
+    expect(graph.getNodeById(node.id)).toBe(node)
+    expect(graph.getNodeById(asNodeId(node.id))).toBe(node)
+    expect(graph.getNodeById(asNodeId(999))).toBeNull()
+    expect(graph.getNodeByRawId(999)).toBeNull()
+
+    // @ts-expect-error raw numeric ids must be normalized at boundaries first
+    graph.getNodeById(1)
+
+    // @ts-expect-error raw string ids must be normalized at boundaries first
+    graph.getNodeById('1')
+  })
+})
+
 describe('Floating Links / Reroutes', () => {
   test('Floating reroute should be removed when node and link are removed', ({
     expect,

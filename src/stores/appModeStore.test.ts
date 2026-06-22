@@ -49,7 +49,7 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 const mockResolveNode = vi.hoisted(() =>
-  vi.fn<(id: NodeIdInput) => LGraphNode | undefined>(() => undefined)
+  vi.fn<(id: NodeIdInput) => LGraphNode | null>(() => null)
 )
 vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -160,7 +160,7 @@ describe('appModeStore', () => {
     setActivePinia(createTestingPinia({ stubActions: false }))
     vi.mocked(app.rootGraph).extra = {}
     ChangeTracker.isLoadingGraph = false
-    mockResolveNode.mockReturnValue(undefined)
+    mockResolveNode.mockReturnValue(null)
     mockSettings.reset()
     vi.mocked(app.rootGraph).nodes = [{ id: asNodeId(1) } as LGraphNode]
     workflowStore = useWorkflowStore()
@@ -225,10 +225,10 @@ describe('appModeStore', () => {
       const node1 = nodeWithWidgets(1, ['seed'])
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
-      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+      vi.mocked(app.rootGraph).getNodeByRawId = vi.fn((id) =>
         id == 1 ? node1 : null
       )
-      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : undefined))
+      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : null))
       workflowStore.activeWorkflow = createWorkflowWithLinearData(
         'graph',
         [
@@ -289,10 +289,10 @@ describe('appModeStore', () => {
       const node1 = nodeWithWidgets(1, ['seed'])
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
-      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+      vi.mocked(app.rootGraph).getNodeByRawId = vi.fn((id) =>
         id == 1 ? node1 : null
       )
-      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : undefined))
+      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : null))
       workflowStore.activeWorkflow = createWorkflowWithLinearData(
         'builder:inputs',
         [
@@ -320,7 +320,7 @@ describe('appModeStore', () => {
     it('migrates legacy node-id inputs to entity-id form and drops missing ones', () => {
       const node1 = nodeWithWidgets(1, ['prompt'])
       vi.mocked(app.rootGraph).nodes = [node1]
-      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+      vi.mocked(app.rootGraph).getNodeByRawId = vi.fn((id) =>
         id == 1 ? node1 : null
       )
 
@@ -337,7 +337,7 @@ describe('appModeStore', () => {
     it('preserves config through pruning', () => {
       const node1 = nodeWithWidgets(1, ['prompt'])
       vi.mocked(app.rootGraph).nodes = [node1]
-      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+      vi.mocked(app.rootGraph).getNodeByRawId = vi.fn((id) =>
         id == 1 ? node1 : null
       )
 
@@ -364,7 +364,7 @@ describe('appModeStore', () => {
     it('drops legacy entries whose widget no longer exists', () => {
       const node1 = nodeWithWidgets(1, ['prompt'])
       vi.mocked(app.rootGraph).nodes = [node1]
-      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+      vi.mocked(app.rootGraph).getNodeByRawId = vi.fn((id) =>
         id == 1 ? node1 : null
       )
 
@@ -387,7 +387,7 @@ describe('appModeStore', () => {
     it('removes outputs referencing deleted nodes on load', () => {
       const node1 = { id: 1 }
       mockResolveNode.mockImplementation((id) =>
-        id == 1 ? fromAny<LGraphNode, unknown>(node1) : undefined
+        id == 1 ? fromAny<LGraphNode, unknown>(node1) : null
       )
 
       store.loadSelections({ outputs: [asNodeId(1), asNodeId(99)] })
@@ -400,8 +400,8 @@ describe('appModeStore', () => {
 
       // Initially nodes are not resolvable — pruning removes them
       vi.mocked(app.rootGraph).nodes = []
-      vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
-      mockResolveNode.mockReturnValue(undefined)
+      vi.mocked(app.rootGraph).getNodeByRawId = vi.fn(() => null)
+      mockResolveNode.mockReturnValue(null)
       const inputs: LinearInput[] = [[asWidgetId(1), 'seed']]
       workflowStore.activeWorkflow = createWorkflowWithLinearData(
         'app',
@@ -416,10 +416,10 @@ describe('appModeStore', () => {
 
       // After graph configures, nodes become resolvable
       vi.mocked(app.rootGraph).nodes = [node1]
-      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+      vi.mocked(app.rootGraph).getNodeByRawId = vi.fn((id) =>
         id == 1 ? node1 : null
       )
-      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : undefined))
+      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : null))
       ;(app.rootGraph.events as EventTarget).dispatchEvent(
         new Event('configured')
       )
@@ -430,7 +430,7 @@ describe('appModeStore', () => {
     })
 
     it('hasOutputs is false when all output nodes are deleted', () => {
-      mockResolveNode.mockReturnValue(undefined)
+      mockResolveNode.mockReturnValue(null)
 
       store.loadSelections({ outputs: [asNodeId(10), asNodeId(20)] })
 
@@ -495,7 +495,7 @@ describe('appModeStore', () => {
       const node1 = nodeWithWidgets(1, ['seed'])
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
-      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+      vi.mocked(app.rootGraph).getNodeByRawId = vi.fn((id) =>
         id == 1 ? node1 : null
       )
       ChangeTracker.isLoadingGraph = true
@@ -516,10 +516,10 @@ describe('appModeStore', () => {
       const node1 = nodeWithWidgets(1, ['seed'])
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
-      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+      vi.mocked(app.rootGraph).getNodeByRawId = vi.fn((id) =>
         id == 1 ? node1 : null
       )
-      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : undefined))
+      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : null))
 
       store.loadSelections({
         inputs: [
@@ -539,10 +539,10 @@ describe('appModeStore', () => {
       const node1 = nodeWithWidgets(1, ['seed', 'steps'])
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [node1]
-      vi.mocked(app.rootGraph).getNodeById = vi.fn((id) =>
+      vi.mocked(app.rootGraph).getNodeByRawId = vi.fn((id) =>
         id == 1 ? node1 : null
       )
-      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : undefined))
+      mockResolveNode.mockImplementation((id) => (id == 1 ? node1 : null))
     }
 
     it('falls back to initialState when activeState has no linearData', () => {
@@ -844,11 +844,11 @@ describe('appModeStore', () => {
 
       vi.mocked(app.rootGraph).id = rootGraph.id
       vi.mocked(app.rootGraph).nodes = rootGraph.nodes
-      vi.mocked(app.rootGraph).getNodeById = vi.fn(
-        (id: NodeIdInput | null | undefined) => rootGraph.getNodeById(id)
+      vi.mocked(app.rootGraph).getNodeByRawId = vi.fn(
+        (id: NodeIdInput | null | undefined) => rootGraph.getNodeByRawId(id)
       )
 
-      expect(rootGraph.getNodeById(interior.id)).toBeUndefined()
+      expect(rootGraph.getNodeByRawId(interior.id)).toBeNull()
 
       const result = store.pruneLinearData({
         inputs: [[asWidgetId(interior.id), sourceWidgetName, { height: 120 }]],
@@ -885,7 +885,7 @@ describe('appModeStore', () => {
 
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [rootNode, hostNode]
-      vi.mocked(app.rootGraph).getNodeById = vi.fn(
+      vi.mocked(app.rootGraph).getNodeByRawId = vi.fn(
         (id: NodeIdInput | null | undefined) =>
           id == sourceNodeId ? rootNode : id == hostId ? hostNode : null
       )
@@ -904,7 +904,7 @@ describe('appModeStore', () => {
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = []
-      vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
+      vi.mocked(app.rootGraph).getNodeByRawId = vi.fn(() => null)
 
       const result = store.pruneLinearData({
         inputs: [[asWidgetId(42), 'widget-name', { height: 42 }]],
@@ -936,7 +936,7 @@ describe('appModeStore', () => {
       })
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [hostNode]
-      vi.mocked(app.rootGraph).getNodeById = vi.fn(
+      vi.mocked(app.rootGraph).getNodeByRawId = vi.fn(
         (id: NodeIdInput | null | undefined) => (id == hostId ? hostNode : null)
       )
 

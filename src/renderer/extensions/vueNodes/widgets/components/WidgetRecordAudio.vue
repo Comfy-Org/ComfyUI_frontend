@@ -157,7 +157,7 @@ const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 
 const litegraphNode = computed(() => {
   if (!props.nodeId || !app.canvas.graph) return null
-  return app.canvas.graph.getNodeById(props.nodeId) as LGraphNode | null
+  return app.canvas.graph.getNodeByRawId(props.nodeId) as LGraphNode | null
 })
 
 function handleRecordingComplete(blob: Blob) {

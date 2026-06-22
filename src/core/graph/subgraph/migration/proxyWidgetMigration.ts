@@ -313,7 +313,7 @@ function classify(
     return { kind: 'alreadyLinked', subgraphInputName: linkedInput.name }
   }
 
-  const sourceNode = hostNode.subgraph.getNodeById(normalized.sourceNodeId)
+  const sourceNode = hostNode.subgraph.getNodeByRawId(normalized.sourceNodeId)
   if (!sourceNode) {
     return { kind: 'quarantine', reason: 'missingSourceNode' }
   }
@@ -435,7 +435,7 @@ function repairCreateSubgraphInput(
   sourceWidgetName: string
 ): RepairValueResult {
   const subgraph = hostNode.subgraph
-  const sourceNode: LGraphNode | null = subgraph.getNodeById(
+  const sourceNode: LGraphNode | null = subgraph.getNodeByRawId(
     entry.normalized.sourceNodeId
   )
   if (!sourceNode) {
@@ -556,7 +556,7 @@ function rollback(
     }
   }
   for (const link of snapshot) {
-    const targetNode = hostNode.subgraph.getNodeById(link.targetNodeId)
+    const targetNode = hostNode.subgraph.getNodeByRawId(link.targetNodeId)
     if (!targetNode) continue
     primitiveNode.connect(link.primitiveSlot, targetNode, link.targetSlot)
   }
@@ -571,7 +571,7 @@ function repairPrimitive(
     return failPrimitive('cohort validation failed', { cohort })
 
   const subgraph = hostNode.subgraph
-  const primitiveNode = subgraph.getNodeById(validated.primitiveNodeId)
+  const primitiveNode = subgraph.getNodeByRawId(validated.primitiveNodeId)
   if (!primitiveNode) return failPrimitive('primitive node missing', validated)
   if (primitiveNode.type !== PRIMITIVE_NODE_TYPE) {
     return failPrimitive('node is not a PrimitiveNode', primitiveNode.type)
@@ -586,7 +586,7 @@ function repairPrimitive(
   const primitiveOutputType = String(primitiveOutput.type ?? '*')
 
   for (const target of targets) {
-    const targetNode = subgraph.getNodeById(target.targetNodeId)
+    const targetNode = subgraph.getNodeByRawId(target.targetNodeId)
     if (!targetNode) return failPrimitive('target node missing', target)
     const targetSlot = targetNode.inputs?.[target.targetSlot]
     if (!targetSlot) return failPrimitive('target slot missing', target)
@@ -623,7 +623,7 @@ function repairPrimitive(
     )
 
     for (const snap of snapshot) {
-      const targetNode = subgraph.getNodeById(snap.targetNodeId)
+      const targetNode = subgraph.getNodeByRawId(snap.targetNodeId)
       if (!targetNode)
         throw new Error(
           `target node ${snap.targetNodeId} disappeared mid-mutation`
@@ -632,7 +632,7 @@ function repairPrimitive(
     }
 
     for (const target of targets) {
-      const targetNode = subgraph.getNodeById(target.targetNodeId)
+      const targetNode = subgraph.getNodeByRawId(target.targetNodeId)
       if (!targetNode)
         throw new Error(`target node ${target.targetNodeId} disappeared`)
       const targetSlot = targetNode.inputs?.[target.targetSlot]
@@ -690,7 +690,7 @@ function migratePreview(
   store: ReturnType<typeof usePreviewExposureStore>,
   plan: { kind: 'previewExposure'; sourcePreviewName: string }
 ): MigratePreviewResult {
-  const sourceNode = hostNode.subgraph.getNodeById(
+  const sourceNode = hostNode.subgraph.getNodeByRawId(
     entry.normalized.sourceNodeId
   )
   if (!sourceNode) {

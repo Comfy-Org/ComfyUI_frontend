@@ -2066,7 +2066,7 @@ export class ComfyApp {
     const processNodeInputs = (id: string) => {
       const data = apiData[asNodeId(id)]
       if (!data) return
-      const node = app.rootGraph.getNodeById(id)
+      const node = app.rootGraph.getNodeByRawId(id)
       if (!node) return
 
       for (const input in data.inputs ?? {}) {
@@ -2074,7 +2074,7 @@ export class ComfyApp {
         if (value instanceof Array) {
           const [fromId, fromSlot] = value
           // Flat loader: API prompt execution ids are local node ids here.
-          const fromNode = app.rootGraph.getNodeById(asNodeId(fromId))
+          const fromNode = app.rootGraph.getNodeByRawId(asNodeId(fromId))
           if (!fromNode) continue
 
           let toSlot = node.inputs?.findIndex((inp) => inp.name === input) ?? -1

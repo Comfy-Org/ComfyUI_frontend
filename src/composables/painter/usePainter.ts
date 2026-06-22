@@ -80,7 +80,7 @@ export function usePainter(nodeId: string, options: UsePainterOptions) {
 
   const litegraphNode = computed(() => {
     if (!nodeId || !app.canvas.graph) return null
-    return app.canvas.graph.getNodeById(nodeId) as LGraphNode | null
+    return app.canvas.graph.getNodeByRawId(nodeId) as LGraphNode | null
   })
 
   function getWidgetByName(name: string): IBaseWidget | undefined {

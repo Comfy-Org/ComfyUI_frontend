@@ -574,7 +574,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   const subgraphNodeIdToSubgraph = (id: string, graph: LGraph | Subgraph) => {
-    const node = graph.getNodeById(id)
+    const node = graph.getNodeByRawId(id)
     if (node?.isSubgraphNode()) return node.subgraph
   }
 

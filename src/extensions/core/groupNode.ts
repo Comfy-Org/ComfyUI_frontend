@@ -851,7 +851,7 @@ class GroupNodeHandler {
       const selectedIds = Object.keys(app.canvas.selected_nodes)
       const newNodes: LGraphNode[] = []
       for (let i = 0; i < selectedIds.length; i++) {
-        const newNode = app.rootGraph.getNodeById(selectedIds[i])
+        const newNode = app.rootGraph.getNodeByRawId(selectedIds[i])
         const innerNodeData = nodeData.nodes[i]
         if (!newNode) continue
         newNodes.push(newNode)
@@ -905,7 +905,7 @@ class GroupNodeHandler {
 
     const reconnectInputs = (selectedIds: (string | number)[]) => {
       for (const innerNodeIndex in oldToNewInputMap) {
-        const newNode = app.rootGraph.getNodeById(
+        const newNode = app.rootGraph.getNodeByRawId(
           selectedIds[Number(innerNodeIndex)]
         )
         if (!newNode) continue
@@ -917,7 +917,7 @@ class GroupNodeHandler {
           if (slot.link == null) continue
           const link = app.rootGraph.links[slot.link]
           if (!link) continue
-          const originNode = app.rootGraph.getNodeById(link.origin_id)
+          const originNode = app.rootGraph.getNodeByRawId(link.origin_id)
           originNode?.connect(link.origin_slot, newNode, +innerInputId)
         }
       }
@@ -937,8 +937,8 @@ class GroupNodeHandler {
           if (!slot) continue
           const link = app.rootGraph.links[l]
           if (!link) continue
-          const targetNode = app.rootGraph.getNodeById(link.target_id)
-          const newNode = app.rootGraph.getNodeById(
+          const targetNode = app.rootGraph.getNodeByRawId(link.target_id)
+          const newNode = app.rootGraph.getNodeByRawId(
             selectedIds[slot.node.index ?? 0]
           )
           if (targetNode) {

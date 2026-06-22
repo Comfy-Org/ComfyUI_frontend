@@ -35,7 +35,7 @@ function traversePromotedWidgetChain(
     visited.add(key)
     visitedByHost.set(currentHost, visited)
 
-    const sourceNode = currentHost.subgraph.getNodeById(currentNodeId)
+    const sourceNode = currentHost.subgraph.getNodeByRawId(currentNodeId)
     if (!sourceNode) {
       return { status: 'failure', failure: 'missing-node' }
     }

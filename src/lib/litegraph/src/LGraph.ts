@@ -1141,8 +1141,12 @@ export class LGraph
   /**
    * Returns a node by its id.
    */
-  getNodeById(id: NodeIdInput | null | undefined): LGraphNode | null {
-    return id != null ? this._nodes_by_id[asNodeId(id)] : null
+  getNodeById(id: NodeId | null | undefined): LGraphNode | null {
+    return id != null ? (this._nodes_by_id[id] ?? null) : null
+  }
+
+  getNodeByRawId(id: NodeIdInput | null | undefined): LGraphNode | null {
+    return id != null ? this.getNodeById(asNodeId(id)) : null
   }
 
   /**
@@ -3119,10 +3123,10 @@ function patchLinkNodeIds(
   remappedIds: Map<NodeId, NodeId>
 ): void {
   for (const link of links.values()) {
-    const newOrigin = remappedIds.get(asNodeId(link.origin_id))
+    const newOrigin = remappedIds.get(link.origin_id)
     if (newOrigin !== undefined) link.origin_id = newOrigin
 
-    const newTarget = remappedIds.get(asNodeId(link.target_id))
+    const newTarget = remappedIds.get(link.target_id)
     if (newTarget !== undefined) link.target_id = newTarget
   }
 }

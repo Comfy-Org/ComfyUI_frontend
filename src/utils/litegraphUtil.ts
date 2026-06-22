@@ -328,10 +328,10 @@ export function resolveNode(
   graph: LGraph | null | undefined = app.rootGraph
 ): LGraphNode | undefined {
   if (!graph) return undefined
-  const found = graph.getNodeById(nodeId)
+  const found = graph.getNodeByRawId(nodeId)
   if (found) return found
   for (const sg of graph.subgraphs.values()) {
-    const node = sg.getNodeById(nodeId)
+    const node = sg.getNodeByRawId(nodeId)
     if (node) return node
   }
   return undefined
@@ -344,7 +344,7 @@ export function resolveNodeWidget(
   if (widgetName && typeof nodeId === 'string') {
     const locator = parseNodeLocatorId(nodeId)
     if (locator?.subgraphUuid) {
-      const host = graph.getNodeById(locator.localNodeId)
+      const host = graph.getNodeByRawId(locator.localNodeId)
       if (host?.isSubgraphNode()) {
         const widget = host.widgets?.find((w) => w.name === widgetName)
         return widget ? [host, widget] : []
@@ -352,7 +352,7 @@ export function resolveNodeWidget(
     }
   }
 
-  const node = graph.getNodeById(nodeId)
+  const node = graph.getNodeByRawId(nodeId)
   if (!widgetName) return node ? [node] : []
   if (node) {
     const widget = node.widgets?.find((w) => w.name === widgetName)

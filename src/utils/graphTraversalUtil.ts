@@ -97,7 +97,7 @@ export function traverseSubgraphPath(
   let currentGraph: LGraph | Subgraph = startGraph
 
   for (const nodeId of path) {
-    const node = currentGraph.getNodeById(nodeId)
+    const node = currentGraph.getNodeByRawId(nodeId)
     if (!node?.isSubgraphNode?.() || !node.subgraph) return null
     currentGraph = node.subgraph
   }
@@ -207,7 +207,7 @@ export function findNodeInHierarchy(
   nodeId: string | number
 ): LGraphNode | null {
   // Check current graph
-  const node = graph.getNodeById(nodeId)
+  const node = graph.getNodeByRawId(nodeId)
   if (node) return node
 
   // Search in subgraphs
@@ -305,7 +305,7 @@ export function getRootParentNode(
   const parentId = parts[0]
   if (!rootGraph) return null
 
-  return rootGraph.getNodeById(Number(parentId)) || null
+  return rootGraph.getNodeByRawId(Number(parentId)) || null
 }
 
 /**
@@ -329,7 +329,7 @@ export function getNodeByExecutionId(
 
   // If no subgraph path, it's in the root graph
   if (subgraphPath.length === 0) {
-    return rootGraph.getNodeById(localNodeId) || null
+    return rootGraph.getNodeByRawId(localNodeId) || null
   }
 
   // Traverse to the target subgraph
@@ -337,7 +337,7 @@ export function getNodeByExecutionId(
   if (!targetGraph) return null
 
   // Get the node from the target graph
-  return targetGraph.getNodeById(localNodeId) || null
+  return targetGraph.getNodeByRawId(localNodeId) || null
 }
 
 /**
@@ -483,14 +483,14 @@ export function getNodeByLocatorId(
 
   // If no subgraph UUID, it's in the root graph
   if (!subgraphUuid) {
-    return rootGraph.getNodeById(localNodeId) || null
+    return rootGraph.getNodeByRawId(localNodeId) || null
   }
 
   // Find the subgraph with the matching UUID
   const targetSubgraph = findSubgraphByUuid(rootGraph, subgraphUuid)
   if (!targetSubgraph) return null
 
-  return targetSubgraph.getNodeById(localNodeId) || null
+  return targetSubgraph.getNodeByRawId(localNodeId) || null
 }
 
 /**

@@ -3,8 +3,9 @@ import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraph, NodeId, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { asNodeId } from '@/lib/litegraph/src/litegraph'
+import type { NodeIdInput } from '@/types/nodeId'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   ComfyWorkflow,
@@ -832,7 +833,11 @@ describe('useWorkflowStore', () => {
         _nodes: [] as unknown[],
         nodes: [] as unknown[],
         subgraphs: new Map(),
-        getNodeById: (id: string | number) => {
+        getNodeById: (id: NodeId | null | undefined) => {
+          if (String(id) === '123') return mockNode
+          return null
+        },
+        getNodeByRawId: (id: NodeIdInput | null | undefined) => {
           if (String(id) === '123') return mockNode
           return null
         }

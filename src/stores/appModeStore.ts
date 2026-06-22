@@ -100,7 +100,7 @@ export const useAppModeStore = defineStore('appMode', () => {
       const widget = findWidgetByEntityId(rootGraph, storedId)
       if (widget) return buildEntry(storedId, widgetName, config)
       const { nodeId } = parseWidgetId(storedId)
-      if (rootGraph.getNodeById?.(nodeId)) {
+      if (rootGraph.getNodeByRawId?.(nodeId)) {
         return buildEntry(storedId, widgetName, config)
       }
       return null
@@ -112,7 +112,7 @@ export const useAppModeStore = defineStore('appMode', () => {
       return buildEntry(widget.widgetId, widgetName, config)
     }
 
-    const directNode = rootGraph.getNodeById?.(storedId)
+    const directNode = rootGraph.getNodeByRawId?.(storedId)
     const directWidget = directNode?.widgets?.find((w) => w.name === widgetName)
     if (directNode && directWidget) {
       const derivedId = getWidgetIdForNode(directNode, directWidget)
