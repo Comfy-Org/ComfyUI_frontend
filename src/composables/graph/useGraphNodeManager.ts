@@ -92,15 +92,13 @@ export interface SafeWidgetData {
   slotMetadata?: WidgetSlotMetadata
   /**
    * Execution ID of the interior node that owns the source widget.
-   * Only set for promoted widgets where the source node differs from the
-   * host subgraph node. Used for missing-model lookups that key by
-   * execution ID (e.g. `"65:42"` vs the host node's `"65"`).
+   * Only set for promoted widgets where the source node differs from the host
+   * subgraph node. Retained for source-scoped validation errors.
    */
   sourceExecutionId?: NodeExecutionId
   /**
-   * Interior source widget name. Only set for promoted widgets, where `name`
-   * is the host input slot name; missing-model lookups key by the interior
-   * widget name, which can differ from the slot name (e.g. after a rename).
+   * Interior source widget name. Only set for promoted widgets, where `name` is
+   * the host input slot name and the source widget name can differ.
    */
   sourceWidgetName?: string
   /** Tooltip text from the resolved widget. */

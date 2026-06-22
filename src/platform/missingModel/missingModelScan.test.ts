@@ -1,6 +1,8 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
@@ -17,6 +19,12 @@ import {
 } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { widgetId } from '@/types/widgetId'
+
+beforeEach(() => {
+  setActivePinia(createPinia())
+})
 
 vi.mock('@/utils/graphTraversalUtil', () => ({
   collectAllNodes: (graph: { _testNodes: LGraphNode[] }) => graph._testNodes,
@@ -627,30 +635,235 @@ describe('scanAllModelCandidates', () => {
     expect(result[0].isMissing).toBe(true)
   })
 
-  it('skips subgraph container nodes whose promoted widgets are already scanned via interior nodes', () => {
-    const containerNode = fromAny<LGraphNode, unknown>({
-      id: 65,
-      type: 'abc-def-uuid',
-      widgets: [makeComboWidget('ckpt_name', 'model.safetensors', [])],
-      isSubgraphNode: () => true,
-      _testExecutionId: '65'
-    })
-
+  it('scans unlinked promoted subgraph widgets using host identity and source metadata', () => {
+    const linkId = 12
+    const sourceWidget = makeComboWidget(
+      'ckpt_name',
+      'stale_model.safetensors',
+      ['existing_model.safetensors']
+    )
+    const sourceInput = fromAny({ name: 'ckpt_name', link: linkId })
     const interiorNode = makeNode(
       42,
       'CheckpointLoaderSimple',
-      [
-        makeComboWidget('ckpt_name', 'model.safetensors', ['model.safetensors'])
-      ],
+      [sourceWidget],
       '65:42'
     )
+    Object.assign(interiorNode, {
+      inputs: [sourceInput],
+      isSubgraphNode: () => false,
+      getSlotFromWidget: (widget: IBaseWidget | undefined) =>
+        widget?.name === sourceWidget.name ? sourceInput : undefined,
+      getWidgetFromSlot: () => sourceWidget,
+      properties: {
+        models: [
+          {
+            name: 'missing_model.safetensors',
+            url: 'https://example.com/missing_model',
+            directory: 'checkpoints'
+          }
+        ]
+      }
+    })
 
-    const graph = makeGraph([containerNode, interiorNode])
-    const result = scanAllModelCandidates(graph, noAssetSupport)
+    const hostWidgetId = widgetId('graph', 65, 'promoted_ckpt')
+    const hostWidget = fromAny<IComboWidget, unknown>({
+      ...makeComboWidget('promoted_ckpt', 'missing_model.safetensors', []),
+      widgetId: hostWidgetId
+    })
+    useWidgetValueStore().registerWidget(hostWidgetId, {
+      type: 'combo',
+      value: 'missing_model.safetensors',
+      options: {},
+      label: 'Promoted checkpoint'
+    })
+    const hostInput = fromAny<INodeInputSlot, unknown>({
+      name: 'promoted_ckpt',
+      link: null,
+      widget: { name: 'promoted_ckpt' },
+      widgetId: hostWidgetId
+    })
+    const hostNode = fromAny<LGraphNode, unknown>({
+      id: 65,
+      type: 'abc-def-uuid',
+      widgets: [hostWidget],
+      inputs: [hostInput],
+      isSubgraphNode: () => true,
+      getSlotFromWidget: (widget: IBaseWidget | undefined) =>
+        widget?.widgetId === hostInput.widgetId ||
+        widget?.name === hostInput.name
+          ? hostInput
+          : undefined,
+      subgraph: {
+        inputNode: {
+          slots: [{ name: 'promoted_ckpt', linkIds: [linkId] }]
+        },
+        getLink: (id: number) =>
+          id === linkId
+            ? { resolve: () => ({ inputNode: interiorNode }) }
+            : null,
+        getNodeById: (id: string | number) =>
+          String(id) === String(interiorNode.id) ? interiorNode : null
+      },
+      _testExecutionId: '65'
+    })
+
+    const isAssetSupported = vi.fn(() => false)
+    const graph = makeGraph([hostNode, interiorNode])
+    const result = scanAllModelCandidates(
+      graph,
+      isAssetSupported,
+      () => 'checkpoints'
+    )
 
     expect(result).toHaveLength(1)
-    expect(result[0].nodeId).toBe('65:42')
+    expect(result[0].nodeId).toBe('65')
     expect(result[0].nodeType).toBe('CheckpointLoaderSimple')
+    expect(result[0].widgetName).toBe('promoted_ckpt')
+    expect(result[0].name).toBe('missing_model.safetensors')
+    expect(result[0].isMissing).toBe(true)
+    expect(result[0].url).toBe('https://example.com/missing_model')
+    expect(isAssetSupported).toHaveBeenCalledWith(
+      'CheckpointLoaderSimple',
+      'ckpt_name'
+    )
+  })
+
+  it('scans nested promoted subgraph widgets through the outer host identity', () => {
+    const outerLinkId = 12
+    const innerLinkId = 13
+    const sourceWidget = makeComboWidget(
+      'ckpt_name',
+      'stale_model.safetensors',
+      ['existing_model.safetensors']
+    )
+    const sourceInput = fromAny<INodeInputSlot, unknown>({
+      name: 'ckpt_name',
+      link: innerLinkId
+    })
+    const leafNode = makeNode(
+      42,
+      'CheckpointLoaderSimple',
+      [sourceWidget],
+      '65:77:42'
+    )
+    Object.assign(leafNode, {
+      inputs: [sourceInput],
+      isSubgraphNode: () => false,
+      getSlotFromWidget: (widget: IBaseWidget | undefined) =>
+        widget?.name === sourceWidget.name ? sourceInput : undefined,
+      getWidgetFromSlot: (input: INodeInputSlot | undefined) =>
+        input === sourceInput ? sourceWidget : undefined,
+      properties: {
+        models: [
+          {
+            name: 'missing_model.safetensors',
+            url: 'https://example.com/nested_missing_model',
+            directory: 'checkpoints'
+          }
+        ]
+      }
+    })
+
+    const innerWidgetId = widgetId('graph', 77, 'inner_ckpt')
+    const innerWidget = fromAny<IComboWidget, unknown>({
+      ...makeComboWidget('inner_ckpt', 'stale_model.safetensors', []),
+      widgetId: innerWidgetId
+    })
+    const innerInput = fromAny<INodeInputSlot, unknown>({
+      name: 'inner_ckpt',
+      link: outerLinkId,
+      widget: { name: 'inner_ckpt' },
+      widgetId: innerWidgetId
+    })
+    const innerNode = fromAny<LGraphNode, unknown>({
+      id: 77,
+      type: 'inner-subgraph-uuid',
+      widgets: [innerWidget],
+      inputs: [innerInput],
+      isSubgraphNode: () => true,
+      getSlotFromWidget: (widget: IBaseWidget | undefined) =>
+        widget?.widgetId === innerInput.widgetId ||
+        widget?.name === innerInput.name
+          ? innerInput
+          : undefined,
+      subgraph: {
+        inputNode: {
+          slots: [{ name: 'inner_ckpt', linkIds: [innerLinkId] }]
+        },
+        getLink: (id: number) =>
+          id === innerLinkId
+            ? { resolve: () => ({ inputNode: leafNode }) }
+            : null,
+        getNodeById: (id: string | number) =>
+          String(id) === String(leafNode.id) ? leafNode : null
+      },
+      _testExecutionId: '65:77'
+    })
+
+    const outerWidgetId = widgetId('graph', 65, 'outer_ckpt')
+    useWidgetValueStore().registerWidget(outerWidgetId, {
+      type: 'combo',
+      value: 'missing_model.safetensors',
+      options: {},
+      label: 'Outer checkpoint'
+    })
+    const outerWidget = fromAny<IComboWidget, unknown>({
+      ...makeComboWidget('outer_ckpt', 'missing_model.safetensors', []),
+      widgetId: outerWidgetId
+    })
+    const outerInput = fromAny<INodeInputSlot, unknown>({
+      name: 'outer_ckpt',
+      link: null,
+      widget: { name: 'outer_ckpt' },
+      widgetId: outerWidgetId
+    })
+    const outerNode = fromAny<LGraphNode, unknown>({
+      id: 65,
+      type: 'outer-subgraph-uuid',
+      widgets: [outerWidget],
+      inputs: [outerInput],
+      isSubgraphNode: () => true,
+      getSlotFromWidget: (widget: IBaseWidget | undefined) =>
+        widget?.widgetId === outerInput.widgetId ||
+        widget?.name === outerInput.name
+          ? outerInput
+          : undefined,
+      subgraph: {
+        inputNode: {
+          slots: [{ name: 'outer_ckpt', linkIds: [outerLinkId] }]
+        },
+        getLink: (id: number) =>
+          id === outerLinkId
+            ? { resolve: () => ({ inputNode: innerNode }) }
+            : null,
+        getNodeById: (id: string | number) =>
+          String(id) === String(innerNode.id) ? innerNode : null
+      },
+      _testExecutionId: '65'
+    })
+
+    const isAssetSupported = vi.fn(() => false)
+    const graph = makeGraph([outerNode, innerNode, leafNode])
+    const result = scanAllModelCandidates(
+      graph,
+      isAssetSupported,
+      () => 'checkpoints'
+    )
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      nodeId: '65',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'outer_ckpt',
+      name: 'missing_model.safetensors',
+      isMissing: true,
+      url: 'https://example.com/nested_missing_model'
+    })
+    expect(isAssetSupported).toHaveBeenCalledWith(
+      'CheckpointLoaderSimple',
+      'ckpt_name'
+    )
   })
 })
 
