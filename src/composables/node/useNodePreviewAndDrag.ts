@@ -1,4 +1,4 @@
-import type { CSSProperties, Ref } from 'vue'
+import type { ComputedRef, CSSProperties, Ref } from 'vue'
 import { computed, ref } from 'vue'
 
 import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
@@ -8,10 +8,23 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 const PREVIEW_WIDTH = 200
 const PREVIEW_MARGIN = 16
 
+interface UseNodePreviewAndDragReturn {
+  previewRef: Ref<HTMLElement | null>
+  isHovered: Ref<boolean>
+  isDragging: Ref<boolean>
+  showPreview: ComputedRef<boolean>
+  nodePreviewStyle: Ref<CSSProperties>
+  sidebarLocation: ComputedRef<'left' | 'right'>
+  handleMouseEnter: (e: MouseEvent) => void
+  handleMouseLeave: () => void
+  handleDragStart: (e: DragEvent) => void
+  handleDragEnd: (e: DragEvent) => void
+}
+
 export function useNodePreviewAndDrag(
   nodeDef: Ref<ComfyNodeDefImpl | undefined>,
   panelRef?: Ref<HTMLElement | null>
-) {
+): UseNodePreviewAndDragReturn {
   const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
   const settingStore = useSettingStore()
   const sidebarLocation = computed<'left' | 'right'>(() =>
