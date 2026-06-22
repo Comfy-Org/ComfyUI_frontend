@@ -133,7 +133,7 @@ const enterprisePlan = plans.find((p) => p.isEnterprise)!
       </p>
     </div>
 
-    <div class="flex items-center justify-center">
+    <div class="flex items-center justify-center pb-16">
       <ToggleGroup type="single">
         <ToggleGroupItem value="a"> Monthly </ToggleGroupItem>
         <ToggleGroupItem value="b"> Yearly (Up to 20% off) </ToggleGroupItem>
