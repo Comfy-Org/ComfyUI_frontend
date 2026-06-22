@@ -1,4 +1,11 @@
 {
+  "promptNode": {
+    "searchPlaceholder": "Search prompts…",
+    "saveAsPrompt": "Save as prompt",
+    "namePlaceholder": "Prompt name",
+    "editorPlaceholder": "Write a prompt, or type {'@'} to reference a saved prompt or connected input",
+    "noMatches": "No matches"
+  },
   "g": {
     "shortcutSuffix": " ({shortcut})",
     "user": "User",

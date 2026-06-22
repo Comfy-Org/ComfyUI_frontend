@@ -69,6 +69,9 @@ const WidgetPainter = defineAsyncComponent(
 const WidgetRange = defineAsyncComponent(
   () => import('@/components/range/WidgetRange.vue')
 )
+const WidgetPromptEditor = defineAsyncComponent(
+  () => import('@/components/graph/widgets/PromptNodeWidget.vue')
+)
 
 export const FOR_TESTING = {
   WidgetButton,
@@ -219,6 +222,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       aliases: ['RANGE'],
       essential: false
     }
+  ],
+  [
+    'prompteditor',
+    {
+      component: WidgetPromptEditor,
+      aliases: ['PROMPTEDITOR'],
+      essential: false
+    }
   ]
 ]
 
@@ -258,7 +269,8 @@ const EXPANDING_TYPES = [
   'curve',
   'painter',
   'imagecompare',
-  'range'
+  'range',
+  'prompteditor'
 ] as const
 
 export function shouldExpand(type: string): boolean {

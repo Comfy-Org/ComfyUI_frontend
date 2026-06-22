@@ -479,6 +479,22 @@ function createAssetService() {
   }
 
   /**
+   * Fetches the raw file content of an asset as text.
+   *
+   * @param id - The asset ID
+   * @returns Promise<string> - The asset's file content
+   */
+  async function getAssetContent(id: AssetId): Promise<string> {
+    const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}/content`)
+    if (!res.ok) {
+      throw new Error(
+        `Unable to load asset content for ${id}: Server returned ${res.status}`
+      )
+    }
+    return await res.text()
+  }
+
+  /**
    * Gets assets filtered by a specific tag
    *
    * @param tag - The tag to filter by (e.g., 'models', 'input')
@@ -978,6 +994,7 @@ function createAssetService() {
     shouldUseAssetBrowser,
     getAssetsForNodeType,
     getAssetDetails,
+    getAssetContent,
     getAssetsByTag,
     getAssetsPageByTag,
     getAllAssetsByTag,

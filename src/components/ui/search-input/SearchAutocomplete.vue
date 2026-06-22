@@ -10,7 +10,8 @@
       :class="
         cn(
           searchInputVariants({ size }),
-          disabled && 'pointer-events-none opacity-50'
+          disabled && 'pointer-events-none opacity-50',
+          inputClass
         )
       "
       @click="focus"
@@ -134,6 +135,7 @@ const {
   optionLabel,
   optionKey,
   class: className,
+  inputClass,
   contentStyle
 } = defineProps<{
   placeholder?: string
@@ -146,6 +148,7 @@ const {
   optionLabel?: keyof T & string
   optionKey?: keyof T & string
   class?: HTMLAttributes['class']
+  inputClass?: HTMLAttributes['class']
   contentStyle?: StyleValue
 }>()
 
