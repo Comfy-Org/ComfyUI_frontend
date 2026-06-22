@@ -110,6 +110,14 @@
         @confirm="handleConfirmTransition"
         @back="handleBackToPricing"
       />
+
+      <!-- Success Step - subscribe/change-plan confirmation -->
+      <SubscriptionSuccessWorkspace
+        v-else-if="checkoutStep === 'success' && selectedTierKey"
+        :tier-key="selectedTierKey"
+        :preview-data="previewData"
+        @close="handleSuccessClose"
+      />
     </template>
   </div>
 </template>
@@ -124,6 +132,7 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import PricingTableWorkspace from './PricingTableWorkspace.vue'
 import SubscriptionAddPaymentPreviewWorkspace from './SubscriptionAddPaymentPreviewWorkspace.vue'
+import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
 
 const { onClose, reason } = defineProps<{
@@ -155,7 +164,8 @@ const {
   handleBackToPricing,
   handleAddCreditCard,
   handleConfirmTransition,
-  handleResubscribe
+  handleResubscribe,
+  handleSuccessClose
 } = useSubscriptionCheckout(emit)
 </script>
 

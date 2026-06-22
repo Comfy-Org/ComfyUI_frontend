@@ -1,6 +1,7 @@
 import { defineAsyncComponent } from 'vue'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
@@ -90,6 +91,32 @@ export const useSubscriptionDialog = () => {
     // one workspace) when team workspaces are enabled. Replaces the old
     // personal-vs-team workspace fork. Flag-off keeps the legacy table.
     if (flags.teamWorkspacesEnabled) {
+      // Existing per-member (legacy) team subscribers keep the old tier-based
+      // team table; the unified credit-slider table is for everyone else.
+      // Resolved lazily (not at composable setup): these three composables form
+      // an import cycle (useBillingContext -> useWorkspaceBilling ->
+      // useSubscriptionDialog), so a setup-time read would deref the shared
+      // context before its state is constructed.
+      const { isLegacyTeamPlan } = useBillingContext()
+      if (isLegacyTeamPlan.value) {
+        dialogService.showLayoutDialog({
+          key: DIALOG_KEY,
+          component: defineAsyncComponent(
+            () =>
+              import('@/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.vue')
+          ),
+          props: {
+            onClose: hide,
+            reason: options?.reason
+          },
+          // The legacy table hosts a PrimeVue Popover teleported to body; Reka
+          // modal mode traps focus and disables body pointer-events, making it
+          // unclickable. The unified table has no such overlay.
+          dialogComponentProps: { ...dialogComponentProps, modal: false }
+        })
+        return
+      }
+
       dialogService.showLayoutDialog({
         key: DIALOG_KEY,
         component: defineAsyncComponent(
