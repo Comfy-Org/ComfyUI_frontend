@@ -128,9 +128,10 @@
                 v-if="isActiveSubscription && permissions.canManageSubscription"
                 class="flex flex-wrap gap-2 md:ml-auto"
               >
-                <!-- Cancelled state: show only Resubscribe button -->
+                <!-- Cancelled state: reactivation is original-owner-only. -->
                 <template v-if="isCancelled">
                   <Button
+                    v-if="permissions.canManageSubscriptionLifecycle"
                     size="lg"
                     variant="primary"
                     class="rounded-lg px-4 text-sm font-normal"
@@ -161,7 +162,7 @@
                     {{ $t('subscription.upgradePlan') }}
                   </Button>
                   <Button
-                    v-if="!isFreeTierPlan"
+                    v-if="!isFreeTierPlan && planMenuItems.length > 0"
                     v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
                     variant="secondary"
                     size="lg"
@@ -513,15 +514,23 @@ const subscriptionTierName = computed(() => {
 
 const planMenu = ref<InstanceType<typeof Menu> | null>(null)
 
-const planMenuItems = computed(() => [
-  {
-    label: t('subscription.cancelSubscription'),
-    icon: 'pi pi-times',
-    command: () => {
-      showCancelSubscriptionDialog(subscription.value?.endDate ?? undefined)
-    }
-  }
-])
+// Cancel is original-owner-only (creator); a promoted owner gets no menu items
+// and the "more options" button is hidden (see template).
+const planMenuItems = computed(() =>
+  permissions.value.canManageSubscriptionLifecycle
+    ? [
+        {
+          label: t('subscription.cancelSubscription'),
+          icon: 'pi pi-times',
+          command: () => {
+            showCancelSubscriptionDialog(
+              subscription.value?.endDate ?? undefined
+            )
+          }
+        }
+      ]
+    : []
+)
 
 const tierKey = computed(() => {
   const tier = subscriptionTier.value
