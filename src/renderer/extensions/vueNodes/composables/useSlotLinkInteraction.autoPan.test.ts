@@ -1,7 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  expectTypeOf,
+  it,
+  vi
+} from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { asNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 const {
   capturedOnPan,
@@ -59,12 +68,7 @@ vi.mock('@/scripts/app', () => ({
     canvas: {
       ds: mockDs,
       graph: {
-        getNodeById: (id: string) => ({
-          id,
-          inputs: [],
-          outputs: [{ name: 'out', type: '*', links: [], _floatingLinks: null }]
-        }),
-        getNodeByRawId: (id: number) => ({
+        getNodeById: (id: NodeId) => ({
           id,
           inputs: [],
           outputs: [{ name: 'out', type: '*', links: [], _floatingLinks: null }]
@@ -136,7 +140,7 @@ vi.mock('@/composables/element/useCanvasPositionConversion', () => ({
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     getSlotLayout: (_key: string) => ({
-      nodeId: '1',
+      nodeId: asNodeId(1),
       index: 0,
       type: 'output',
       position: { x: 100, y: 200 }
@@ -208,6 +212,8 @@ vi.mock('@/utils/rafBatch', () => ({
 
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 
+type SlotLinkInteractionOptions = Parameters<typeof useSlotLinkInteraction>[0]
+
 function pointerEvent(
   clientX: number,
   clientY: number,
@@ -238,6 +244,10 @@ function startDrag() {
 }
 
 describe('useSlotLinkInteraction auto-pan', () => {
+  it('requires branded NodeId at the composable boundary', () => {
+    expectTypeOf<SlotLinkInteractionOptions['nodeId']>().toEqualTypeOf<NodeId>()
+  })
+
   beforeEach(() => {
     capturedOnPan.current = null
     capturedAutoPan.current = null

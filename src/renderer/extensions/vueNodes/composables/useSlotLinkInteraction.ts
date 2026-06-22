@@ -7,7 +7,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeId } from '@/types/nodeId'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import { asNodeId, tryAsNodeId } from '@/types/nodeId'
+import { tryAsNodeId } from '@/types/nodeId'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type {
@@ -220,11 +220,7 @@ export function useSlotLinkInteraction({
   ): { position: Point; direction: LinkDirection } | null => {
     if (!link) return null
 
-    const slotKey = getSlotKey(
-      asNodeId(link.origin_id),
-      link.origin_slot,
-      false
-    )
+    const slotKey = getSlotKey(link.origin_id, link.origin_slot, false)
     const layout = layoutStore.getSlotLayout(slotKey)
     if (!layout) return null
 
@@ -419,7 +415,7 @@ export function useSlotLinkInteraction({
   const raf = createRafBatch(processPointerMoveFrame)
 
   const canvas = app.canvas
-  const node = canvas.graph?.getNodeByRawId(nodeId)
+  const node = canvas.graph?.getNodeById(nodeId)
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
     event.stopPropagation()
@@ -449,8 +445,7 @@ export function useSlotLinkInteraction({
     const adapter = activeAdapter
     if (!graph || !adapter) return false
 
-    const nodeId: NodeId = candidate.layout.nodeId
-    const targetNode = graph.getNodeByRawId(nodeId)
+    const targetNode = graph.getNodeById(candidate.layout.nodeId)
     if (!targetNode) return false
 
     if (candidate.layout.type === 'input') {
@@ -622,11 +617,10 @@ export function useSlotLinkInteraction({
     )
     if (!layout) return
 
-    const localNodeId: NodeId = nodeId
     const isInputSlot = type === 'input'
     const isOutputSlot = type === 'output'
 
-    const resolvedNode = graph.getNodeByRawId(localNodeId)
+    const resolvedNode = graph.getNodeById(nodeId)
     const inputSlot = isInputSlot ? resolvedNode?.inputs?.[index] : undefined
     const outputSlot = isOutputSlot ? resolvedNode?.outputs?.[index] : undefined
 
@@ -687,11 +681,11 @@ export function useSlotLinkInteraction({
       isInputSlot && !shouldBreakExistingInputLink && hasExistingInputLink
 
     if (isOutputSlot) {
-      activeAdapter.beginFromOutput(localNodeId, index, {
+      activeAdapter.beginFromOutput(nodeId, index, {
         moveExisting: shouldMoveExistingOutput
       })
     } else {
-      activeAdapter.beginFromInput(localNodeId, index, {
+      activeAdapter.beginFromInput(nodeId, index, {
         moveExisting: shouldMoveExistingInput,
         layout
       })
@@ -796,7 +790,7 @@ export function useSlotLinkInteraction({
     if (!app.canvas) return
     const { graph } = app.canvas
     if (!graph) return
-    const node = graph.getNodeByRawId(nodeId)
+    const node = graph.getNodeById(nodeId)
     if (!node) return
     augmentToCanvasPointerEvent(e, node, app.canvas)
     node.onInputDblClick?.(index, e)
@@ -805,7 +799,7 @@ export function useSlotLinkInteraction({
     if (!app.canvas) return
     const { graph } = app.canvas
     if (!graph) return
-    const node = graph.getNodeByRawId(nodeId)
+    const node = graph.getNodeById(nodeId)
     if (!node) return
     augmentToCanvasPointerEvent(e, node, app.canvas)
     node.onInputClick?.(index, e)
