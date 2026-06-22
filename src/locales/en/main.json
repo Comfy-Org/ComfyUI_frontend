@@ -2584,7 +2584,7 @@
       "perkProjectAssets": "Project & asset management",
       "cta": "Subscribe to Team Yearly",
       "ctaMonthly": "Subscribe to Team Monthly",
-      "changePlan": "Change plan",
+      "creditsLocked": "Credits currently can't be changed",
       "currentPlan": "Current plan",
       "checkoutComingSoon": "Team plan checkout is coming soon."
     },
