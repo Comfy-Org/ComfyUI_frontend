@@ -1,33 +1,33 @@
 <template>
   <main
-    class="dark-theme mx-auto flex min-h-screen max-w-md flex-col justify-center p-6"
+    class="dark-theme mx-auto flex min-h-screen max-w-lg flex-col justify-center p-6"
   >
-    <section
-      v-if="challenge"
-      class="flex flex-col gap-6 rounded-2xl border border-solid border-muted bg-secondary-background p-6 shadow-sm"
-    >
-      <header class="flex flex-col items-center gap-4 pt-2 text-center">
-        <div class="flex items-center gap-3">
+    <section v-if="challenge" class="flex flex-col gap-8">
+      <header class="flex flex-col items-center gap-4 text-center">
+        <div class="flex items-center gap-4">
           <div
-            class="flex size-12 items-center justify-center rounded-2xl border border-solid border-muted bg-secondary-background"
+            class="flex size-14 items-center justify-center rounded-2xl bg-white"
           >
             <i
-              class="icon-[lucide--app-window] size-6 text-base-foreground"
+              :class="cn('size-8 text-black', clientIconClass)"
               aria-hidden="true"
             />
           </div>
           <i
-            class="icon-[lucide--arrow-right-left] size-5 text-muted"
+            class="icon-[lucide--arrow-left-right] size-6 text-muted"
             aria-hidden="true"
           />
-          <img
-            src="/assets/images/comfy-logo-single.svg"
-            alt=""
-            class="size-12 rounded-2xl"
-          />
+          <div
+            class="flex size-14 items-center justify-center rounded-2xl bg-primary-background"
+          >
+            <i
+              class="icon-[comfy--comfy-c] size-8 text-white"
+              aria-hidden="true"
+            />
+          </div>
         </div>
-        <div class="flex flex-col items-center gap-1.5">
-          <h1 class="m-0 text-xl/tight font-semibold text-base-foreground">
+        <div class="flex flex-col items-center gap-2">
+          <h1 class="m-0 text-2xl/tight font-semibold text-base-foreground">
             {{
               t('oauth.consent.title', {
                 client: challenge.client_display_name
@@ -111,7 +111,7 @@
               class="flex items-center gap-2"
             >
               <i
-                class="icon-[lucide--check] size-4 shrink-0 text-primary-background"
+                class="icon-[lucide--check] size-4 shrink-0 text-brand-yellow"
                 aria-hidden="true"
               />
               <span class="text-sm">
@@ -128,7 +128,7 @@
             {{ t('oauth.consent.redirectNotice') }}
           </span>
           <code
-            class="m-0 truncate font-mono text-xs text-base-foreground"
+            class="m-0 block truncate rounded-lg bg-secondary-background px-3 py-2 font-mono text-xs text-base-foreground"
             :title="challenge.redirect_uri"
           >
             {{ challenge.redirect_uri }}
@@ -146,7 +146,7 @@
 
       <footer class="flex flex-col gap-2">
         <Button
-          variant="primary"
+          variant="secondary"
           size="lg"
           class="w-full"
           :loading="submitting === 'allow'"
@@ -156,7 +156,7 @@
           {{ t('oauth.consent.allow') }}
         </Button>
         <Button
-          variant="secondary"
+          variant="textonly"
           size="lg"
           class="w-full"
           :loading="submitting === 'deny'"
@@ -230,6 +230,18 @@ const resourceName = computed(
     challenge.value?.resource_display_name ??
     t('oauth.consent.resourceFallback')
 )
+
+// Stopgap until the consent challenge carries a client logo_uri.
+const clientIconClass = computed(() => {
+  const name = challenge.value?.client_display_name?.toLowerCase() ?? ''
+  if (name.includes('claude') || name.includes('anthropic'))
+    return 'icon-[comfy--anthropic]'
+  if (name.includes('openai') || name.includes('chatgpt'))
+    return 'icon-[comfy--openai]'
+  if (name.includes('gemini')) return 'icon-[comfy--gemini]'
+  if (name.includes('grok')) return 'icon-[comfy--grok]'
+  return 'icon-[lucide--app-window]'
+})
 
 const selectedWorkspaceIsValid = computed(() =>
   Boolean(

@@ -114,7 +114,8 @@ export const RemoteWebClient: Story = {
       client_display_name: 'Claude',
       resource_display_name: 'Comfy Cloud MCP',
       client_application_type: 'web',
-      redirect_uri: 'https://claude.ai/api/mcp/auth_callback'
+      redirect_uri: 'https://claude.ai/api/mcp/auth_callback',
+      scopes: ['comfy-mcp:tools:calls']
     }
   }
 }
