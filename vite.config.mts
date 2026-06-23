@@ -88,8 +88,14 @@ const DEV_SEVER_FALLBACK_URL =
 const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
 
+// HTTPS dev targets (cloud, or a remote backend over Tailscale) need
+// changeOrigin so the TLS SNI matches the target host and the upstream can route
+// the connection; secure:false tolerates self-signed certs. Plain http backends
+// keep the default config.
 const cloudProxyConfig =
-  DISTRIBUTION === 'cloud' ? { secure: false, changeOrigin: true } : {}
+  DISTRIBUTION === 'cloud' || DEV_SERVER_COMFYUI_URL.startsWith('https://')
+    ? { secure: false, changeOrigin: true }
+    : {}
 
 function handleGcsRedirect(
   proxyRes: IncomingMessage,
