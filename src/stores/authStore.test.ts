@@ -695,8 +695,10 @@ describe('useAuthStore', () => {
 
   describe('share auth attribution', () => {
     const mockUserCredential = {
-      user: mockUser
-    } as Partial<UserCredential> as UserCredential
+      user: mockUser,
+      providerId: null,
+      operationType: 'signIn'
+    } satisfies UserCredential
 
     const preserveShareAuth = () => {
       capturePreservedQuery(

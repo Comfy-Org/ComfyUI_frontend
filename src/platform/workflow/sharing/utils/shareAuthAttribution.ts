@@ -4,9 +4,11 @@ import { capturePreservedQuery } from '@/platform/navigation/preservedQueryManag
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 
 const SHARE_QUERY_KEY = 'share'
+const MAX_SHARE_ID_LENGTH = 128
+const SHARE_ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/
 
 export function isValidShareId(shareId: string): boolean {
-  return /^[a-zA-Z0-9_.-]+$/.test(shareId)
+  return shareId.length <= MAX_SHARE_ID_LENGTH && SHARE_ID_PATTERN.test(shareId)
 }
 
 export function preserveLoggedOutShareAuthAttribution(

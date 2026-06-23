@@ -16,7 +16,8 @@ const SHARE_AUTH_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE_AUTH
 const invalidShareQueries: Array<{ name: string; query: LocationQuery }> = [
   { name: 'missing', query: {} },
   { name: 'array value', query: { share: ['share-id-1'] } },
-  { name: 'invalid characters', query: { share: '../share-id-1' } }
+  { name: 'invalid characters', query: { share: '../share-id-1' } },
+  { name: 'too long', query: { share: 'a'.repeat(129) } }
 ]
 
 describe('shareAuthAttribution', () => {
@@ -62,7 +63,14 @@ describe('shareAuthAttribution', () => {
   it.for([
     { shareId: 'abc123', expected: true },
     { shareId: 'share-id_1.2', expected: true },
+    { shareId: 'a'.repeat(128), expected: true },
     { shareId: '../share-id-1', expected: false },
+    { shareId: '.', expected: false },
+    { shareId: '..', expected: false },
+    { shareId: '-share-id', expected: false },
+    { shareId: 'share id', expected: false },
+    { shareId: '\u5171\u4eab', expected: false },
+    { shareId: 'a'.repeat(129), expected: false },
     { shareId: '', expected: false }
   ])('validates "$shareId" as $expected', ({ shareId, expected }) => {
     expect(isValidShareId(shareId)).toBe(expected)
