@@ -70,6 +70,8 @@ test.describe(
           type: 'asset',
           hasLayout: true
         })
+      const initialWidget = await getHostWidgetSnapshot(comfyPage.page)
+      expect(initialWidget.value).not.toBe(SELECTED_MODEL)
 
       const hostNode = await comfyPage.nodeOps.getNodeRefById(HOST_NODE_ID)
       await hostNode.centerOnNode()
