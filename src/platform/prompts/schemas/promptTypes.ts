@@ -20,10 +20,23 @@ export type PromptSegment = z.infer<typeof zPromptSegment>
 /** An ordered list of segments forming an editable prompt. */
 export type PromptTemplate = z.infer<typeof promptTemplateSchema>
 
-/** A stored prompt, backed by an asset tagged {@link PROMPT_TAG}. */
+/**
+ * A stored prompt. Its `id` is a stable logical identifier shared across every
+ * saved version; each version is a separate, immutable asset tagged
+ * {@link PROMPT_TAG}. `latestAssetId` points at the asset holding the current
+ * version's content.
+ */
 export interface Prompt {
   id: string
   name: string
   template: PromptTemplate
   description?: string
+  latestAssetId?: string
+}
+
+/** One saved revision of a {@link Prompt}, newest first in history. */
+export interface PromptVersion {
+  assetId: string
+  name: string
+  createdAt: string
 }

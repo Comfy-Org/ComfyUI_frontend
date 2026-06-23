@@ -4,8 +4,12 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import {
   createPrompt,
+  deletePrompt,
   fetchPromptTemplate,
-  fetchPrompts
+  fetchPromptVersions,
+  fetchPrompts,
+  renamePrompt,
+  savePromptVersion
 } from '@/platform/prompts/services/promptService'
 
 vi.mock('@/platform/assets/services/assetService', () => ({
@@ -13,7 +17,9 @@ vi.mock('@/platform/assets/services/assetService', () => ({
     getAllAssetsByTag: vi.fn(),
     uploadAssetFromBase64: vi.fn(),
     addAssetTags: vi.fn(),
-    getAssetContent: vi.fn()
+    getAssetContent: vi.fn(),
+    deleteAsset: vi.fn(),
+    updateAsset: vi.fn()
   }
 }))
 
@@ -58,7 +64,8 @@ describe('fetchPrompts', () => {
         id: 'a',
         name: 'Greeting',
         template: [{ type: 'text', value: 'hi' }],
-        description: 'a friendly hello'
+        description: 'a friendly hello',
+        latestAssetId: 'a'
       }
     ])
   })
@@ -74,8 +81,36 @@ describe('fetchPrompts', () => {
       id: 'b',
       name: 'Editorial menswear',
       template: [],
-      description: undefined
+      description: undefined,
+      latestAssetId: 'b'
     })
+  })
+
+  it('collapses versions to the newest asset per prompt id', async () => {
+    mockedAssetService.getAllAssetsByTag.mockResolvedValue([
+      asset({
+        id: 'v1',
+        created_at: '2026-01-01T00:00:00Z',
+        user_metadata: { name: 'Old', prompt_id: 'p' }
+      }),
+      asset({
+        id: 'v2',
+        created_at: '2026-02-01T00:00:00Z',
+        user_metadata: { name: 'New', prompt_id: 'p' }
+      })
+    ])
+
+    const prompts = await fetchPrompts()
+
+    expect(prompts).toEqual([
+      {
+        id: 'p',
+        name: 'New',
+        template: [],
+        description: undefined,
+        latestAssetId: 'v2'
+      }
+    ])
   })
 
   it('parses metadata returned as a JSON string', async () => {
@@ -136,15 +171,20 @@ describe('createPrompt', () => {
     const payload = mockedAssetService.uploadAssetFromBase64.mock.calls[0][0]
     expect(payload.name).toBe('My Prompt.txt')
     expect(payload.tags).toEqual(['input', 'prompt'])
+    expect(payload.user_metadata).toEqual({
+      name: 'My Prompt',
+      prompt_id: result.id
+    })
     const stored = JSON.parse(decodeURIComponent(payload.data.split(',')[1]))
     expect(stored).toMatchObject({ name: 'My Prompt', template: [...template] })
 
-    expect(result).toEqual({
-      id: 'x',
+    expect(result).toMatchObject({
       name: 'My Prompt',
       template: [...template],
-      description: undefined
+      description: undefined,
+      latestAssetId: 'x'
     })
+    expect(typeof result.id).toBe('string')
   })
 
   it('ensures the prompt tag when the upload did not apply it', async () => {
@@ -157,6 +197,75 @@ describe('createPrompt', () => {
 
     expect(mockedAssetService.addAssetTags).toHaveBeenCalledWith('y', [
       'prompt'
+    ])
+  })
+})
+
+describe('savePromptVersion', () => {
+  it('uploads a new version under the given prompt id', async () => {
+    mockedAssetService.uploadAssetFromBase64.mockResolvedValue({
+      ...asset({ id: 'v2', tags: ['prompt'] }),
+      created_new: true
+    })
+
+    const result = await savePromptVersion('p', {
+      name: 'Edited',
+      template: [{ type: 'text', value: 'edited' }]
+    })
+
+    const payload = mockedAssetService.uploadAssetFromBase64.mock.calls[0][0]
+    expect(payload.user_metadata).toEqual({ name: 'Edited', prompt_id: 'p' })
+    expect(result).toMatchObject({ id: 'p', latestAssetId: 'v2' })
+  })
+})
+
+describe('deletePrompt', () => {
+  it('deletes every version sharing the prompt id', async () => {
+    mockedAssetService.getAllAssetsByTag.mockResolvedValue([
+      asset({ id: 'v1', user_metadata: { prompt_id: 'p' } }),
+      asset({ id: 'v2', user_metadata: { prompt_id: 'p' } }),
+      asset({ id: 'other', user_metadata: { prompt_id: 'q' } })
+    ])
+
+    await deletePrompt('p')
+
+    expect(mockedAssetService.deleteAsset).toHaveBeenCalledWith('v1')
+    expect(mockedAssetService.deleteAsset).toHaveBeenCalledWith('v2')
+    expect(mockedAssetService.deleteAsset).not.toHaveBeenCalledWith('other')
+  })
+})
+
+describe('renamePrompt', () => {
+  it('renames the latest version asset and preserves the prompt id', async () => {
+    await renamePrompt('p', 'asset-x', 'New Name')
+    expect(mockedAssetService.updateAsset).toHaveBeenCalledWith('asset-x', {
+      name: 'New Name.txt',
+      user_metadata: { name: 'New Name', prompt_id: 'p' }
+    })
+  })
+})
+
+describe('fetchPromptVersions', () => {
+  it('lists versions for a prompt id, newest first', async () => {
+    mockedAssetService.getAllAssetsByTag.mockResolvedValue([
+      asset({
+        id: 'v1',
+        created_at: '2026-01-01T00:00:00Z',
+        user_metadata: { name: 'Old', prompt_id: 'p' }
+      }),
+      asset({
+        id: 'v2',
+        created_at: '2026-02-01T00:00:00Z',
+        user_metadata: { name: 'New', prompt_id: 'p' }
+      }),
+      asset({ id: 'other', user_metadata: { prompt_id: 'q' } })
+    ])
+
+    const versions = await fetchPromptVersions('p')
+
+    expect(versions).toEqual([
+      { assetId: 'v2', name: 'New', createdAt: '2026-02-01T00:00:00Z' },
+      { assetId: 'v1', name: 'Old', createdAt: '2026-01-01T00:00:00Z' }
     ])
   })
 })

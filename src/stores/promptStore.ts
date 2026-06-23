@@ -3,12 +3,17 @@ import { computed, ref } from 'vue'
 
 import {
   createPrompt,
+  deletePrompt as deletePromptAsset,
   fetchPromptTemplate,
-  fetchPrompts
+  fetchPromptVersions,
+  fetchPrompts,
+  renamePrompt as renamePromptAsset,
+  savePromptVersion as savePromptVersionAsset
 } from '@/platform/prompts/services/promptService'
 import type {
   Prompt,
-  PromptTemplate
+  PromptTemplate,
+  PromptVersion
 } from '@/platform/prompts/schemas/promptTypes'
 
 /**
@@ -39,25 +44,58 @@ export const usePromptStore = defineStore('prompt', () => {
     }
   }
 
-  /** Returns a prompt's template, loading it from file content if not cached. */
+  /** Returns a prompt's template, loading the latest version's content lazily. */
   async function resolveTemplate(id: string): Promise<PromptTemplate> {
     const cached = promptsById.value.get(id)
     if (cached?.template.length) return cached.template
 
-    const template = await fetchPromptTemplate(id)
+    const template = await fetchPromptTemplate(cached?.latestAssetId ?? id)
     const prompt = promptsById.value.get(id)
     if (prompt) promptsById.value.set(id, { ...prompt, template })
     return template
   }
 
-  async function savePrompt(input: {
+  type PromptInput = {
     name: string
     template: PromptTemplate
     description?: string
-  }): Promise<Prompt> {
-    const prompt = await createPrompt(input)
-    promptsById.value.set(prompt.id, prompt)
+  }
+
+  function cachePrompt(prompt: Prompt): Prompt {
+    const next = new Map(promptsById.value)
+    next.set(prompt.id, prompt)
+    promptsById.value = next
     return prompt
+  }
+
+  async function savePrompt(input: PromptInput): Promise<Prompt> {
+    return cachePrompt(await createPrompt(input))
+  }
+
+  /** Saves a new version of an existing prompt, keeping its stable id. */
+  async function savePromptVersion(
+    id: string,
+    input: PromptInput
+  ): Promise<Prompt> {
+    return cachePrompt(await savePromptVersionAsset(id, input))
+  }
+
+  async function deletePrompt(id: string): Promise<void> {
+    await deletePromptAsset(id)
+    const next = new Map(promptsById.value)
+    next.delete(id)
+    promptsById.value = next
+  }
+
+  async function renamePrompt(id: string, name: string): Promise<void> {
+    const prompt = promptsById.value.get(id)
+    if (!prompt) return
+    await renamePromptAsset(id, prompt.latestAssetId ?? id, name)
+    cachePrompt({ ...prompt, name })
+  }
+
+  function getVersions(id: string): Promise<PromptVersion[]> {
+    return fetchPromptVersions(id)
   }
 
   return {
@@ -67,6 +105,10 @@ export const usePromptStore = defineStore('prompt', () => {
     getPrompt,
     loadPrompts,
     resolveTemplate,
-    savePrompt
+    savePrompt,
+    savePromptVersion,
+    deletePrompt,
+    renamePrompt,
+    getVersions
   }
 })

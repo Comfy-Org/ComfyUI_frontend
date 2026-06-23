@@ -7,7 +7,8 @@ import {
 } from '@/platform/prompts/schemas/promptTypes'
 import type {
   Prompt,
-  PromptTemplate
+  PromptTemplate,
+  PromptVersion
 } from '@/platform/prompts/schemas/promptTypes'
 
 function readString(value: unknown): string | undefined {
@@ -44,20 +45,58 @@ function toFileName(name: string): string {
   return name.toLowerCase().endsWith('.txt') ? name : `${name}.txt`
 }
 
-function assetToPrompt(asset: AssetItem): Prompt {
+/** Legacy prompts have no prompt_id; treat the asset id as a single-version id. */
+function assetPromptId(asset: AssetItem): string {
+  return readString(coerceObject(asset.user_metadata).prompt_id) ?? asset.id
+}
+
+function assetCreatedAt(asset: AssetItem): string {
+  return asset.created_at ?? ''
+}
+
+function assetName(asset: AssetItem): string {
+  const metadata = coerceObject(asset.user_metadata)
+  return readString(metadata.name) ?? stripTxt(asset.display_name ?? asset.name)
+}
+
+function assetToPrompt(promptId: string, asset: AssetItem): Prompt {
   const metadata = coerceObject(asset.user_metadata)
   return {
-    id: asset.id,
-    name:
-      readString(metadata.name) ?? stripTxt(asset.display_name ?? asset.name),
+    id: promptId,
+    name: assetName(asset),
     template: coerceTemplate(metadata.template),
-    description: readString(metadata.description)
+    description: readString(metadata.description),
+    latestAssetId: asset.id
   }
 }
 
+/** Returns the current prompts: the newest asset per logical prompt id. */
 export async function fetchPrompts(): Promise<Prompt[]> {
   const assets = await assetService.getAllAssetsByTag(PROMPT_TAG)
-  return assets.map(assetToPrompt)
+  const latest = new Map<string, AssetItem>()
+  for (const asset of assets) {
+    const promptId = assetPromptId(asset)
+    const current = latest.get(promptId)
+    if (!current || assetCreatedAt(asset) > assetCreatedAt(current)) {
+      latest.set(promptId, asset)
+    }
+  }
+  return [...latest].map(([promptId, asset]) => assetToPrompt(promptId, asset))
+}
+
+/** Lists every saved version of a prompt, newest first. */
+export async function fetchPromptVersions(
+  promptId: string
+): Promise<PromptVersion[]> {
+  const assets = await assetService.getAllAssetsByTag(PROMPT_TAG)
+  return assets
+    .filter((asset) => assetPromptId(asset) === promptId)
+    .sort((a, b) => assetCreatedAt(b).localeCompare(assetCreatedAt(a)))
+    .map((asset) => ({
+      assetId: asset.id,
+      name: assetName(asset),
+      createdAt: assetCreatedAt(asset)
+    }))
 }
 
 /**
@@ -77,11 +116,17 @@ export async function fetchPromptTemplate(id: string): Promise<PromptTemplate> {
   return content ? [{ type: 'text', value: content }] : []
 }
 
-export async function createPrompt(input: {
+interface PromptInput {
   name: string
   template: PromptTemplate
   description?: string
-}): Promise<Prompt> {
+}
+
+/** Uploads one immutable version asset for a logical prompt id. */
+async function uploadPromptVersion(
+  promptId: string,
+  input: PromptInput
+): Promise<Prompt> {
   const content = JSON.stringify({
     name: input.name,
     template: input.template,
@@ -96,7 +141,7 @@ export async function createPrompt(input: {
     data: `data:text/plain;charset=utf-8,${encodeURIComponent(content)}`,
     name: toFileName(input.name),
     tags,
-    user_metadata: { name: input.name }
+    user_metadata: { name: input.name, prompt_id: promptId }
   })
 
   // The multipart upload does not reliably apply tags; ensure the prompt is
@@ -106,9 +151,42 @@ export async function createPrompt(input: {
   }
 
   return {
-    id: uploaded.id,
+    id: promptId,
     name: input.name,
     template: input.template,
-    description: input.description
+    description: input.description,
+    latestAssetId: uploaded.id
   }
+}
+
+export async function createPrompt(input: PromptInput): Promise<Prompt> {
+  return uploadPromptVersion(crypto.randomUUID(), input)
+}
+
+/** Saves a new version of an existing prompt under its stable id. */
+export async function savePromptVersion(
+  promptId: string,
+  input: PromptInput
+): Promise<Prompt> {
+  return uploadPromptVersion(promptId, input)
+}
+
+/** Deletes a prompt and all of its saved versions. */
+export async function deletePrompt(promptId: string): Promise<void> {
+  const assets = await assetService.getAllAssetsByTag(PROMPT_TAG)
+  const ids = assets
+    .filter((asset) => assetPromptId(asset) === promptId)
+    .map((asset) => asset.id)
+  await Promise.all(ids.map((id) => assetService.deleteAsset(id)))
+}
+
+export async function renamePrompt(
+  promptId: string,
+  latestAssetId: string,
+  name: string
+): Promise<void> {
+  await assetService.updateAsset(latestAssetId, {
+    name: toFileName(name),
+    user_metadata: { name, prompt_id: promptId }
+  })
 }

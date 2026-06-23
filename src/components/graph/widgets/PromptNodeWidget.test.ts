@@ -61,7 +61,9 @@ const i18n = createI18n({
         editorPlaceholder:
           "Write a prompt, or type {'@'} to reference a saved prompt or connected input",
         noMatches: 'No matches',
-        createVariable: 'Create variable: {name}'
+        createVariable: 'Create variable: {name}',
+        menuVariables: 'Variables',
+        menuSavedPrompts: 'Saved prompts'
       }
     }
   }

@@ -5,7 +5,15 @@
     "namePlaceholder": "Prompt name",
     "editorPlaceholder": "Write a prompt, or type {'@'} to reference a saved prompt or connected input",
     "noMatches": "No matches",
-    "createVariable": "Create variable: {name}"
+    "createVariable": "Create variable: {name}",
+    "menuVariables": "Variables",
+    "menuSavedPrompts": "Saved prompts",
+    "managerButton": "Manage prompts",
+    "managerTitle": "Manage prompts",
+    "managerEmpty": "No saved prompts yet",
+    "managerNoMatches": "No prompts match your search",
+    "managerSelectHint": "Select a prompt to view its contents",
+    "confirmDelete": "Confirm delete"
   },
   "g": {
     "shortcutSuffix": " ({shortcut})",

@@ -21,6 +21,14 @@
       <Button
         size="icon-sm"
         variant="textonly"
+        :title="t('promptNode.managerButton')"
+        @click="openManager"
+      >
+        <i class="icon-[lucide--library] size-4" />
+      </Button>
+      <Button
+        size="icon-sm"
+        variant="textonly"
         :title="t('promptNode.saveAsPrompt')"
         @click="toggleSave"
       >
@@ -82,26 +90,39 @@
         @mousedown.prevent
       >
         <template v-if="menuItems.length">
-          <Button
+          <template
             v-for="(item, index) in menuItems"
             :key="`${item.kind}:${item.id ?? item.name}`"
-            variant="textonly"
-            size="sm"
-            :class="
-              cn(
-                'w-full justify-start',
-                index === highlighted && 'bg-secondary-background-hover'
-              )
-            "
-            @mouseenter="highlighted = index"
-            @click="selectItem(item)"
           >
-            <span class="truncate">{{
-              item.create
-                ? t('promptNode.createVariable', { name: item.name })
-                : item.name
-            }}</span>
-          </Button>
+            <div
+              v-if="index === 0 || menuItems[index - 1].kind !== item.kind"
+              class="px-2 pt-1.5 pb-0.5 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
+            >
+              {{
+                item.kind === 'var'
+                  ? t('promptNode.menuVariables')
+                  : t('promptNode.menuSavedPrompts')
+              }}
+            </div>
+            <Button
+              variant="textonly"
+              size="sm"
+              :class="
+                cn(
+                  'w-full justify-start',
+                  index === highlighted && 'bg-secondary-background-hover'
+                )
+              "
+              @mouseenter="highlighted = index"
+              @click="selectItem(item)"
+            >
+              <span class="truncate">{{
+                item.create
+                  ? t('promptNode.createVariable', { name: item.name })
+                  : item.name
+              }}</span>
+            </Button>
+          </template>
         </template>
         <div v-else class="px-2 py-1.5 text-muted-foreground">
           {{ t('promptNode.noMatches') }}
@@ -116,6 +137,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import PromptManagerDialogContent from '@/components/dialog/content/PromptManagerDialogContent.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SearchAutocomplete from '@/components/ui/search-input/SearchAutocomplete.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -132,6 +154,7 @@ import type {
   PromptTemplate
 } from '@/platform/prompts/schemas/promptTypes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { usePromptStore } from '@/stores/promptStore'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
@@ -157,6 +180,15 @@ const isReadOnly = computed(() =>
 
 function getNode(): LGraphNode | undefined {
   return canvasStore.canvas?.graph?.getNodeById(nodeId) ?? undefined
+}
+
+function openManager() {
+  useDialogStore().showDialog({
+    key: 'prompt-manager',
+    title: t('promptNode.managerTitle'),
+    component: PromptManagerDialogContent,
+    dialogComponentProps: { renderer: 'reka', size: 'lg' }
+  })
 }
 
 type VariableSyncNode = LGraphNode & {

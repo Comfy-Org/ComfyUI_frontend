@@ -3,8 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   createPrompt,
+  deletePrompt,
   fetchPromptTemplate,
-  fetchPrompts
+  fetchPrompts,
+  renamePrompt
 } from '@/platform/prompts/services/promptService'
 import type { Prompt } from '@/platform/prompts/schemas/promptTypes'
 import { usePromptStore } from '@/stores/promptStore'
@@ -12,12 +14,18 @@ import { usePromptStore } from '@/stores/promptStore'
 vi.mock('@/platform/prompts/services/promptService', () => ({
   fetchPrompts: vi.fn(),
   fetchPromptTemplate: vi.fn(),
-  createPrompt: vi.fn()
+  createPrompt: vi.fn(),
+  savePromptVersion: vi.fn(),
+  deletePrompt: vi.fn(),
+  renamePrompt: vi.fn(),
+  fetchPromptVersions: vi.fn()
 }))
 
 const mockedFetch = vi.mocked(fetchPrompts)
 const mockedFetchTemplate = vi.mocked(fetchPromptTemplate)
 const mockedCreate = vi.mocked(createPrompt)
+const mockedDelete = vi.mocked(deletePrompt)
+const mockedRename = vi.mocked(renamePrompt)
 
 const prompt = (
   id: string,
@@ -84,5 +92,29 @@ describe('usePromptStore', () => {
 
     expect(result).toEqual(saved)
     expect(store.getPrompt('3')).toEqual(saved)
+  })
+
+  it('removes a prompt from the cache on delete', async () => {
+    mockedFetch.mockResolvedValue([prompt('1', 'one'), prompt('2', 'two')])
+    mockedDelete.mockResolvedValue()
+    const store = usePromptStore()
+    await store.loadPrompts()
+
+    await store.deletePrompt('1')
+
+    expect(mockedDelete).toHaveBeenCalledWith('1')
+    expect(store.prompts.map((p) => p.id)).toEqual(['2'])
+  })
+
+  it('updates the cached name on rename', async () => {
+    mockedFetch.mockResolvedValue([prompt('1', 'one')])
+    mockedRename.mockResolvedValue()
+    const store = usePromptStore()
+    await store.loadPrompts()
+
+    await store.renamePrompt('1', 'renamed')
+
+    expect(mockedRename).toHaveBeenCalledWith('1', '1', 'renamed')
+    expect(store.getPrompt('1')?.name).toBe('renamed')
   })
 })
