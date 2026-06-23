@@ -38,10 +38,7 @@ import {
   resolveMissingErrorMessage,
   resolveRunErrorMessage
 } from '@/platform/errorCatalog/errorMessageResolver'
-import {
-  isNodeExecutionId,
-  compareExecutionId
-} from '@/types/nodeIdentification'
+import { compareExecutionId } from '@/types/nodeIdentification'
 
 const PROMPT_CARD_ID = '__prompt__'
 
@@ -130,7 +127,7 @@ function createErrorCard(
     nodeId,
     nodeTitle: nodeInfo.title,
     graphNodeId: nodeInfo.graphNodeId,
-    isSubgraphNode: isNodeExecutionId(nodeId),
+    isSubgraphNode: nodeId.includes(':'),
     errors: []
   }
 }
