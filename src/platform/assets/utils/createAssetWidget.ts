@@ -14,9 +14,11 @@ import {
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 
+type AssetWidgetNode = Pick<LGraphNode, 'addWidget'>
+
 interface CreateAssetWidgetParams {
   /** The node to add the widget to */
-  node: LGraphNode
+  node: AssetWidgetNode
   /** The widget name */
   widgetName: string
   /** The node type to show in asset browser (may differ from node.comfyClass for PrimitiveNode) */
