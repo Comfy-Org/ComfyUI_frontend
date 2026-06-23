@@ -151,8 +151,6 @@ const i18n = createI18n({
         videoEstimateHelp: 'How is this calculated?',
         videoEstimateExplanation: 'Based on average usage.',
         videoEstimateTryTemplate: 'Try template',
-        soloUseOnly: 'Solo use only',
-        needTeamWorkspace: 'Need team workspace?',
         maxDuration: {
           standard: '30 min',
           creator: '30 min',
@@ -177,9 +175,6 @@ const i18n = createI18n({
 
 function renderComponent() {
   return render(PricingTable, {
-    props: {
-      onChooseTeamWorkspace: onChooseTeamWorkspace
-    },
     global: {
       plugins: [createTestingPinia({ createSpy: vi.fn }), i18n],
       components: {
@@ -209,8 +204,6 @@ function renderComponent() {
     }
   })
 }
-
-const onChooseTeamWorkspace = vi.fn()
 
 describe('PricingTable', () => {
   beforeEach(() => {
@@ -421,22 +414,6 @@ describe('PricingTable', () => {
       await flushPromises()
 
       expect(mockAccessBillingPortal).toHaveBeenCalledWith('standard-yearly')
-    })
-  })
-
-  describe('team workspace link', () => {
-    it('should emit chooseTeamWorkspace when clicking "Need team workspace?" link', async () => {
-      renderComponent()
-      await flushPromises()
-
-      const teamLink = screen
-        .getAllByRole('button')
-        .find((b) => b.textContent?.includes('Need team workspace?'))
-
-      expect(teamLink).toBeDefined()
-      await userEvent.click(teamLink!)
-
-      expect(onChooseTeamWorkspace).toHaveBeenCalledOnce()
     })
   })
 })

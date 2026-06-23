@@ -70,12 +70,7 @@ export const useSubscriptionDialog = () => {
             import('@/platform/cloud/subscription/components/SubscriptionRequiredDialogContent.vue')
         )
 
-    const personalProps = {
-      onClose: hide,
-      reason: options?.reason,
-      onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
-    }
-    const workspaceProps = {
+    const dialogProps = {
       onClose: hide,
       reason: options?.reason
     }
@@ -83,7 +78,7 @@ export const useSubscriptionDialog = () => {
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,
       component,
-      props: useWorkspaceVariant ? workspaceProps : personalProps,
+      props: dialogProps,
       dialogComponentProps: {
         renderer: 'reka',
         size: 'full',

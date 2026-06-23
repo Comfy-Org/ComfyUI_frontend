@@ -33,7 +33,7 @@
       </i18n-t>
     </div>
 
-    <PricingTable class="flex-1" @choose-team-workspace="handleChooseTeam" />
+    <PricingTable class="flex-1" />
 
     <!-- Contact and Enterprise Links -->
     <div class="flex flex-col items-center gap-2">
@@ -159,10 +159,9 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
-const { onClose, reason, onChooseTeam } = defineProps<{
+const { onClose, reason } = defineProps<{
   onClose: () => void
   reason?: SubscriptionDialogReason
-  onChooseTeam?: () => void
 }>()
 
 const emit = defineEmits<{
@@ -201,14 +200,6 @@ watch(
 
 const handleSubscribed = () => {
   emit('close', true)
-}
-
-const handleChooseTeam = () => {
-  if (onChooseTeam) {
-    onChooseTeam()
-  } else {
-    onClose()
-  }
 }
 
 const handleClose = () => {
