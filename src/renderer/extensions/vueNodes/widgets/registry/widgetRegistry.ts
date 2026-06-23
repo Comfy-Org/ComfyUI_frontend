@@ -69,6 +69,9 @@ const WidgetPainter = defineAsyncComponent(
 const WidgetRange = defineAsyncComponent(
   () => import('@/components/range/WidgetRange.vue')
 )
+const WidgetImageGridSlice = defineAsyncComponent(
+  () => import('@/components/imageGridSlice/WidgetImageGridSlice.vue')
+)
 
 export const FOR_TESTING = {
   WidgetButton,
@@ -219,6 +222,14 @@ const coreWidgetDefinitions: Array<[string, WidgetDefinition]> = [
       aliases: ['RANGE'],
       essential: false
     }
+  ],
+  [
+    'imagegridslice',
+    {
+      component: WidgetImageGridSlice,
+      aliases: ['IMAGE_GRID_SLICE'],
+      essential: false
+    }
   ]
 ]
 
@@ -258,7 +269,8 @@ const EXPANDING_TYPES = [
   'curve',
   'painter',
   'imagecompare',
-  'range'
+  'range',
+  'imagegridslice'
 ] as const
 
 export function shouldExpand(type: string): boolean {
