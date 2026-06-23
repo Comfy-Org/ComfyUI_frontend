@@ -341,13 +341,10 @@ class LayoutStoreImpl implements LayoutStore {
       void this.version
 
       const result: NodeId[] = []
-      for (const [nodeId] of this.ynodes) {
-        const ynode = this.ynodes.get(String(nodeId))
-        if (ynode) {
-          const layout = yNodeToLayout(ynode)
-          if (layout && boundsIntersect(layout.bounds, bounds)) {
-            result.push(nodeId)
-          }
+      for (const [nodeId, ynode] of this.ynodes) {
+        const layout = yNodeToLayout(ynode)
+        if (boundsIntersect(layout.bounds, bounds)) {
+          result.push(nodeId)
         }
       }
       return result
@@ -363,14 +360,9 @@ class LayoutStoreImpl implements LayoutStore {
       void this.version
 
       const result = new Map<NodeId, NodeLayout>()
-      for (const [nodeId] of this.ynodes) {
-        const ynode = this.ynodes.get(String(nodeId))
-        if (ynode) {
-          const layout = yNodeToLayout(ynode)
-          if (layout) {
-            result.set(nodeId, layout)
-          }
-        }
+      for (const [nodeId, ynode] of this.ynodes) {
+        const layout = yNodeToLayout(ynode)
+        result.set(nodeId, layout)
       }
       return result
     })
@@ -389,14 +381,9 @@ class LayoutStoreImpl implements LayoutStore {
   queryNodeAtPoint(point: Point): NodeId | null {
     const nodes: Array<[NodeId, NodeLayout]> = []
 
-    for (const [nodeId] of this.ynodes) {
-      const ynode = this.ynodes.get(String(nodeId))
-      if (ynode) {
-        const layout = yNodeToLayout(ynode)
-        if (layout) {
-          nodes.push([nodeId, layout])
-        }
-      }
+    for (const [nodeId, ynode] of this.ynodes) {
+      const layout = yNodeToLayout(ynode)
+      nodes.push([nodeId, layout])
     }
 
     // Sort by zIndex (top to bottom)
@@ -446,17 +433,7 @@ class LayoutStoreImpl implements LayoutStore {
   deleteLinkLayout(linkId: LinkId): void {
     const deleted = this.linkLayouts.delete(linkId)
     if (deleted) {
-      // Clean up any segment layouts for this link
-      const keysToDelete: string[] = []
-      for (const [key] of this.linkSegmentLayouts) {
-        if (key.startsWith(`${linkId}:`)) {
-          keysToDelete.push(key)
-        }
-      }
-      for (const key of keysToDelete) {
-        this.linkSegmentLayouts.delete(key)
-        this.linkSegmentSpatialIndex.remove(key)
-      }
+      this.cleanupLinkSegments(linkId)
     }
   }
 
@@ -536,6 +513,7 @@ class LayoutStoreImpl implements LayoutStore {
    * Update reroute layout data
    */
   updateRerouteLayout(rerouteId: RerouteId, layout: RerouteLayout): void {
+    const rerouteKey = String(rerouteId)
     const existing = this.rerouteLayouts.get(rerouteId)
 
     if (!existing) {
@@ -548,10 +526,10 @@ class LayoutStoreImpl implements LayoutStore {
 
     if (existing) {
       // Update spatial index
-      this.rerouteSpatialIndex.update(String(rerouteId), layout.bounds) // Spatial index uses strings
+      this.rerouteSpatialIndex.update(rerouteKey, layout.bounds)
     } else {
       // Insert into spatial index
-      this.rerouteSpatialIndex.insert(String(rerouteId), layout.bounds) // Spatial index uses strings
+      this.rerouteSpatialIndex.insert(rerouteKey, layout.bounds)
     }
 
     this.rerouteLayouts.set(rerouteId, layout)
@@ -564,7 +542,8 @@ class LayoutStoreImpl implements LayoutStore {
     const deleted = this.rerouteLayouts.delete(rerouteId)
     if (deleted) {
       // Remove from spatial index
-      this.rerouteSpatialIndex.remove(String(rerouteId)) // Spatial index uses strings
+      const rerouteKey = String(rerouteId)
+      this.rerouteSpatialIndex.remove(rerouteKey)
     }
   }
 
@@ -1019,8 +998,9 @@ class LayoutStoreImpl implements LayoutStore {
       this.isGlobalDispatchQueued = false
 
       nodes.forEach((node, index) => {
+        const nodeId = String(node.id)
         const layout: NodeLayout = {
-          id: node.id.toString(),
+          id: nodeId,
           position: { x: node.pos[0], y: node.pos[1] },
           size: { width: node.size[0], height: node.size[1] },
           zIndex: index,
@@ -1033,10 +1013,10 @@ class LayoutStoreImpl implements LayoutStore {
           }
         }
 
-        this.ynodes.set(String(layout.id), layoutToYNode(layout))
+        this.ynodes.set(nodeId, layoutToYNode(layout))
 
         // Add to spatial index
-        this.spatialIndex.insert(layout.id, layout.bounds)
+        this.spatialIndex.insert(nodeId, layout.bounds)
       })
 
       // Trigger all existing refs to notify Vue of the new data
@@ -1128,9 +1108,10 @@ class LayoutStoreImpl implements LayoutStore {
     operation: DeleteNodeOperation,
     change: LayoutChange
   ): void {
-    if (!this.ynodes.has(String(operation.nodeId))) return
+    const nodeKey = String(operation.nodeId)
+    if (!this.ynodes.has(nodeKey)) return
 
-    this.ynodes.delete(String(operation.nodeId))
+    this.ynodes.delete(nodeKey)
     // Note: We intentionally do NOT delete nodeRefs and nodeTriggers here.
     // During undo/redo, Vue components may still hold references to the old ref.
     // If we delete the trigger, Vue won't be notified when the node is re-created.
@@ -1144,7 +1125,8 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Delete the associated links
     for (const linkId of linksToDelete) {
-      this.ylinks.delete(String(linkId))
+      const linkKey = String(linkId)
+      this.ylinks.delete(linkKey)
       this.linkLayouts.delete(linkId)
 
       // Clean up link segment layouts
@@ -1198,7 +1180,8 @@ class LayoutStoreImpl implements LayoutStore {
     linkData.set('targetNodeId', operation.targetNodeId)
     linkData.set('targetSlot', operation.targetSlot)
 
-    this.ylinks.set(String(operation.linkId), linkData)
+    const linkKey = String(operation.linkId)
+    this.ylinks.set(linkKey, linkData)
 
     // Link geometry will be computed separately when nodes move
     // This just tracks that the link exists
@@ -1209,9 +1192,10 @@ class LayoutStoreImpl implements LayoutStore {
     operation: DeleteLinkOperation,
     change: LayoutChange
   ): void {
-    if (!this.ylinks.has(String(operation.linkId))) return
+    const linkKey = String(operation.linkId)
+    if (!this.ylinks.has(linkKey)) return
 
-    this.ylinks.delete(String(operation.linkId))
+    this.ylinks.delete(linkKey)
     this.linkLayouts.delete(operation.linkId)
     // Clean up any segment layouts for this link
     this.cleanupLinkSegments(operation.linkId)
@@ -1229,7 +1213,8 @@ class LayoutStoreImpl implements LayoutStore {
     rerouteData.set('parentId', operation.parentId)
     rerouteData.set('linkIds', operation.linkIds)
 
-    this.yreroutes.set(String(operation.rerouteId), rerouteData) // Yjs Map keys must be strings
+    const rerouteKey = String(operation.rerouteId)
+    this.yreroutes.set(rerouteKey, rerouteData)
 
     // The observer will automatically update the spatial index
     change.type = 'create'
@@ -1239,11 +1224,12 @@ class LayoutStoreImpl implements LayoutStore {
     operation: DeleteRerouteOperation,
     change: LayoutChange
   ): void {
-    if (!this.yreroutes.has(String(operation.rerouteId))) return // Yjs Map keys are strings
+    const rerouteKey = String(operation.rerouteId)
+    if (!this.yreroutes.has(rerouteKey)) return
 
-    this.yreroutes.delete(String(operation.rerouteId)) // Yjs Map keys are strings
+    this.yreroutes.delete(rerouteKey)
     this.rerouteLayouts.delete(operation.rerouteId) // Layout map uses numeric ID
-    this.rerouteSpatialIndex.remove(String(operation.rerouteId)) // Spatial index uses strings
+    this.rerouteSpatialIndex.remove(rerouteKey)
 
     change.type = 'delete'
   }
@@ -1252,7 +1238,8 @@ class LayoutStoreImpl implements LayoutStore {
     operation: MoveRerouteOperation,
     change: LayoutChange
   ): void {
-    const yreroute = this.yreroutes.get(String(operation.rerouteId)) // Yjs Map keys are strings
+    const rerouteKey = String(operation.rerouteId)
+    const yreroute = this.yreroutes.get(rerouteKey)
     if (!yreroute) return
 
     yreroute.set('position', operation.position)
@@ -1332,9 +1319,10 @@ class LayoutStoreImpl implements LayoutStore {
    * Clean up all segment layouts for a link
    */
   private cleanupLinkSegments(linkId: LinkId): void {
+    const linkPrefix = `${linkId}:`
     const keysToDelete: string[] = []
     for (const [key] of this.linkSegmentLayouts) {
-      if (key.startsWith(`${linkId}:`)) {
+      if (key.startsWith(linkPrefix)) {
         keysToDelete.push(key)
       }
     }
@@ -1365,15 +1353,17 @@ class LayoutStoreImpl implements LayoutStore {
    * Handle reroute deletion
    */
   private handleRerouteDelete(rerouteId: RerouteId): void {
+    const rerouteKey = String(rerouteId)
     this.rerouteLayouts.delete(rerouteId)
-    this.rerouteSpatialIndex.remove(String(rerouteId))
+    this.rerouteSpatialIndex.remove(rerouteKey)
   }
 
   /**
    * Handle reroute upsert (update if exists, create if not)
    */
   private handleRerouteUpsert(rerouteId: RerouteId): void {
-    const rerouteData = this.yreroutes.get(String(rerouteId))
+    const rerouteKey = String(rerouteId)
+    const rerouteData = this.yreroutes.get(rerouteKey)
     if (!rerouteData) return
 
     const position = this.getRerouteField(rerouteData, 'position')
