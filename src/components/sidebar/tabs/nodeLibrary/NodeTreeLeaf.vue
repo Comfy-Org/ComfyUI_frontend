@@ -134,7 +134,7 @@ const menu = ref<InstanceType<typeof ContextMenu> | null>(null)
 const subgraphStore = useSubgraphStore()
 const isUserBlueprint = computed(() => {
   const name = nodeDef.value.name
-  if (isBlueprintType(name)) return false
+  if (!isBlueprintType(name)) return false
   return !subgraphStore.isGlobalBlueprint(
     name.slice(BLUEPRINT_TYPE_PREFIX.length)
   )

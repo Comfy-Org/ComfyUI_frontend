@@ -79,7 +79,15 @@ describe('getExecutionContext', () => {
   })
 
   it('returns has_toolkit_nodes false when no toolkit nodes are present', () => {
-    hoisted.mockNodes.push(mockNode('KSampler'))
+    hoisted.mockNodes.push(mockNode('KSampler'), mockNode('LoadImage'))
+    hoisted.mockNodeDefsByName['KSampler'] = {
+      name: 'KSampler',
+      python_module: 'nodes'
+    }
+    hoisted.mockNodeDefsByName['LoadImage'] = {
+      name: 'LoadImage',
+      python_module: 'nodes'
+    }
 
     const context = getExecutionContext()
 
@@ -92,7 +100,7 @@ describe('getExecutionContext', () => {
     hoisted.mockNodes.push(mockNode('Canny'), mockNode('KSampler'))
     hoisted.mockNodeDefsByName['Canny'] = {
       name: 'Canny',
-      python_module: 'comfy_extras.nodes_canny'
+      display_name: 'Canny'
     }
     hoisted.mockNodeDefsByName['KSampler'] = {
       name: 'KSampler',
@@ -106,7 +114,7 @@ describe('getExecutionContext', () => {
     expect(context.toolkit_node_count).toBe(1)
   })
 
-  it('detects blueprint toolkit nodes by path', () => {
+  it('detects blueprint toolkit nodes via path', () => {
     const blueprintType = 'SubgraphBlueprint.Sharpen'
     hoisted.mockNodes.push(mockNode(blueprintType, true))
     hoisted.mockNodeDefsByName[blueprintType] = { name: blueprintType }

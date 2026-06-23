@@ -1,6 +1,6 @@
 import { mapValues } from 'es-toolkit'
 
-import { BLUEPRINT_TYPE_PREFIX, isBlueprintType } from '@/utils/blueprintUtils'
+import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
 
 export type EssentialsMediaType = 'image' | 'video' | 'text' | 'audio' | '3d'
 
@@ -523,5 +523,7 @@ export const NODE_TO_ESSENTIALS_CATEGORY: Record<string, string> = mapValues(
 )
 
 export const TOOLKIT_NODES = new Set(
-  Object.keys(NODE_TO_ESSENTIALS_PATH).filter(isBlueprintType)
+  Object.entries(NODE_TO_ESSENTIALS_PATH)
+    .filter(([, path]) => path.section !== 'inputs-outputs')
+    .map(([type]) => type)
 )

@@ -43,7 +43,7 @@ export function getExecutionContext(): ExecutionContext {
         }
       }
 
-      const isToolkitNode = node.type in TOOLKIT_NODES
+      const isToolkitNode = TOOLKIT_NODES.has(node.type)
       if (isToolkitNode) {
         metrics.has_toolkit_nodes = true
         const trackingName = nodeDef?.name ?? node.type

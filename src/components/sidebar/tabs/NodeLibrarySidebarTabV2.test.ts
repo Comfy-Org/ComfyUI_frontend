@@ -43,7 +43,7 @@ vi.mock('@/services/nodeOrganizationService', () => ({
   DEFAULT_TAB_ID: 'essentials',
   DEFAULT_SORTING_ID: 'alphabetical',
   nodeOrganizationService: {
-    organizeNodes: vi.fn(() => []),
+    organizeNodesTab: vi.fn(() => []),
     getSortingStrategies: vi.fn(() => [])
   }
 }))
