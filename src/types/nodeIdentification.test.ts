@@ -127,12 +127,15 @@ describe('nodeIdentification', () => {
         expect(isNodeExecutionId('123:456')).toBe(true)
         expect(isNodeExecutionId('123:456:789')).toBe(true)
         expect(isNodeExecutionId('node_1:node_2')).toBe(true)
+        expect(isNodeExecutionId('123')).toBe(true)
+        expect(isNodeExecutionId('node_1')).toBe(true)
       })
 
-      it('should return false for non-execution IDs', () => {
-        expect(isNodeExecutionId('123')).toBe(false)
-        expect(isNodeExecutionId('node_1')).toBe(false)
+      it('should return false for malformed execution IDs', () => {
         expect(isNodeExecutionId('')).toBe(false)
+        expect(isNodeExecutionId(':123')).toBe(false)
+        expect(isNodeExecutionId('123:')).toBe(false)
+        expect(isNodeExecutionId('123::456')).toBe(false)
         expect(isNodeExecutionId(123)).toBe(false)
         expect(isNodeExecutionId(null)).toBe(false)
         expect(isNodeExecutionId(undefined)).toBe(false)
@@ -152,11 +155,15 @@ describe('nodeIdentification', () => {
           'node_2',
           456
         ])
+        expect(parseNodeExecutionId('123')).toEqual([123])
+        expect(parseNodeExecutionId('node_1')).toEqual(['node_1'])
       })
 
-      it('should return null for non-execution IDs', () => {
-        expect(parseNodeExecutionId('123')).toBeNull()
+      it('should return null for malformed execution IDs', () => {
         expect(parseNodeExecutionId('')).toBeNull()
+        expect(parseNodeExecutionId(':123')).toBeNull()
+        expect(parseNodeExecutionId('123:')).toBeNull()
+        expect(parseNodeExecutionId('123::456')).toBeNull()
       })
     })
 
@@ -175,12 +182,14 @@ describe('nodeIdentification', () => {
       it('should handle single node ID', () => {
         const result = createNodeExecutionId([123])
         expect(result).toBe('123')
-        // Single node IDs are not execution IDs
-        expect(isNodeExecutionId(result)).toBe(false)
+        expect(isNodeExecutionId(result)).toBe(true)
       })
 
-      it('should handle empty array', () => {
-        expect(createNodeExecutionId([])).toBe('')
+      it('should reject an empty array', () => {
+        const emptyNodeIds = [] as NodeId[]
+        expect(() => createNodeExecutionId(emptyNodeIds)).toThrow(
+          'NodeExecutionId requires at least one node ID'
+        )
       })
     })
   })

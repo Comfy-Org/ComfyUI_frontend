@@ -1,5 +1,7 @@
 import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 
+const NODE_EXECUTION_ID_PATTERN = /^[^:]+(?::[^:]+)*$/
+
 /**
  * A globally unique identifier for nodes that maintains consistency across
  * multiple instances of the same subgraph.
@@ -55,9 +57,7 @@ export function isNodeLocatorId(value: unknown): value is NodeLocatorId {
  * Type guard to check if a value is a NodeExecutionId
  */
 export function isNodeExecutionId(value: unknown): value is NodeExecutionId {
-  if (typeof value !== 'string') return false
-  // Must contain at least one colon to be an execution ID
-  return value.includes(':')
+  return typeof value === 'string' && NODE_EXECUTION_ID_PATTERN.test(value)
 }
 
 /**
@@ -120,7 +120,12 @@ export function parseNodeExecutionId(id: string): NodeId[] | null {
  * @param nodeIds Array of node IDs from root to target
  * @returns A properly formatted NodeExecutionId
  */
-export function createNodeExecutionId(nodeIds: NodeId[]): NodeExecutionId {
+export function createNodeExecutionId<const T extends readonly NodeId[]>(
+  nodeIds: T & (T extends readonly [] ? never : unknown)
+): NodeExecutionId {
+  if (nodeIds.length === 0) {
+    throw new Error('NodeExecutionId requires at least one node ID')
+  }
   return nodeIds.join(':') as NodeExecutionId
 }
 
