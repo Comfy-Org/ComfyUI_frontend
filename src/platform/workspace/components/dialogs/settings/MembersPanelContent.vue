@@ -168,7 +168,7 @@
           <MemberUpsellBanner
             v-if="isSingleSeatPlan"
             :is-active-subscription="isActiveSubscription"
-            @show-plans="showSubscriptionDialog()"
+            @show-plans="showTeamPlans()"
           />
 
           <!-- Pending Invites -->
@@ -229,7 +229,7 @@ const {
   isCurrentUser,
   selectMember,
   toggleSort,
-  showSubscriptionDialog,
+  showTeamPlans,
   handleCopyInviteLink,
   handleRevokeInvite,
   handleCreateWorkspace
