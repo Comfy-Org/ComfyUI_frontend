@@ -98,6 +98,11 @@ export const usePromptStore = defineStore('prompt', () => {
     return fetchPromptVersions(id)
   }
 
+  /** Loads the content of a specific version asset (for history/restore). */
+  function loadVersion(assetId: string): Promise<PromptTemplate> {
+    return fetchPromptTemplate(assetId)
+  }
+
   return {
     prompts,
     isLoading,
@@ -109,6 +114,7 @@ export const usePromptStore = defineStore('prompt', () => {
     savePromptVersion,
     deletePrompt,
     renamePrompt,
-    getVersions
+    getVersions,
+    loadVersion
   }
 })

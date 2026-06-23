@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
-import { defineComponent, nextTick, shallowReactive } from 'vue'
+import { defineComponent, shallowReactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -159,9 +159,8 @@ describe('PromptNodeWidget', () => {
     expect(chip).toHaveClass('bg-destructive-background')
 
     g.promptNode.inputs.push({ name: 'animal', link: 1 })
-    await nextTick()
 
-    expect(chip).toHaveClass('bg-primary-background')
+    await waitFor(() => expect(chip).toHaveClass('bg-primary-background'))
     expect(chip).not.toHaveClass('bg-destructive-background')
   })
 

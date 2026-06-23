@@ -6,10 +6,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import PromptManagerDialogContent from '@/components/dialog/content/PromptManagerDialogContent.vue'
 import {
+  createPrompt,
   deletePrompt,
   fetchPromptTemplate,
+  fetchPromptVersions,
   fetchPrompts,
-  renamePrompt
+  renamePrompt,
+  savePromptVersion
 } from '@/platform/prompts/services/promptService'
 import type { Prompt } from '@/platform/prompts/schemas/promptTypes'
 
@@ -25,22 +28,35 @@ vi.mock('@/platform/prompts/services/promptService', () => ({
 
 const mockedFetch = vi.mocked(fetchPrompts)
 const mockedFetchTemplate = vi.mocked(fetchPromptTemplate)
+const mockedCreate = vi.mocked(createPrompt)
+const mockedSaveVersion = vi.mocked(savePromptVersion)
 const mockedDelete = vi.mocked(deletePrompt)
 const mockedRename = vi.mocked(renamePrompt)
+const mockedVersions = vi.mocked(fetchPromptVersions)
 
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
     en: {
-      g: { delete: 'Delete', cancel: 'Cancel' },
+      g: { delete: 'Delete', cancel: 'Cancel', save: 'Save' },
       promptNode: {
         searchPlaceholder: 'Search prompts',
         namePlaceholder: 'Prompt name',
+        editorPlaceholder:
+          "Write a prompt, or type {'@'} to reference a saved prompt",
         managerEmpty: 'No saved prompts yet',
         managerNoMatches: 'No prompts match your search',
-        managerSelectHint: 'Select a prompt to view its contents',
-        confirmDelete: 'Confirm delete'
+        managerSelectHint: 'Select a prompt, or create a new one',
+        confirmDelete: 'Confirm delete',
+        newPrompt: 'New prompt',
+        menuVariables: 'Variables',
+        menuSavedPrompts: 'Saved prompts',
+        noMatches: 'No matches',
+        historyTitle: 'History',
+        historyEmpty: 'No versions yet',
+        currentVersion: 'Current',
+        restore: 'Restore'
       }
     }
   }
@@ -60,6 +76,8 @@ beforeEach(() => {
   setActivePinia(createPinia())
   vi.clearAllMocks()
   mockedFetch.mockResolvedValue([])
+  mockedFetchTemplate.mockResolvedValue([])
+  mockedVersions.mockResolvedValue([])
 })
 
 describe('PromptManagerDialogContent', () => {
@@ -81,7 +99,7 @@ describe('PromptManagerDialogContent', () => {
     expect(screen.getByText('Beta')).toBeInTheDocument()
   })
 
-  it('previews a prompt with @ references on select', async () => {
+  it('loads the selected prompt into the editor', async () => {
     mockedFetch.mockResolvedValue([prompt('1', 'Alpha')])
     mockedFetchTemplate.mockResolvedValue([
       { type: 'text', value: 'a portrait in ' },
@@ -91,7 +109,33 @@ describe('PromptManagerDialogContent', () => {
 
     await userEvent.click(await screen.findByText('Alpha'))
 
-    expect(await screen.findByText('a portrait in @style')).toBeInTheDocument()
+    expect(await screen.findByText('@style')).toBeInTheDocument()
+  })
+
+  it('creates a new prompt', async () => {
+    mockedCreate.mockResolvedValue(prompt('new', 'Fresh'))
+    renderDialog()
+
+    await userEvent.click(screen.getByText('New prompt'))
+    await userEvent.type(screen.getByPlaceholderText('Prompt name'), 'Fresh')
+    await userEvent.click(screen.getByText('Save'))
+
+    expect(mockedCreate).toHaveBeenCalledWith({ name: 'Fresh', template: [] })
+  })
+
+  it('renames via the name field without creating a content version', async () => {
+    mockedFetch.mockResolvedValue([prompt('1', 'Alpha')])
+    mockedRename.mockResolvedValue()
+    renderDialog()
+    await userEvent.click(await screen.findByText('Alpha'))
+
+    const nameInput = await screen.findByDisplayValue('Alpha')
+    await userEvent.clear(nameInput)
+    await userEvent.type(nameInput, 'Renamed')
+    await userEvent.click(screen.getByText('Save'))
+
+    expect(mockedRename).toHaveBeenCalledWith('1', '1', 'Renamed')
+    expect(mockedSaveVersion).not.toHaveBeenCalled()
   })
 
   it('deletes a prompt after confirmation', async () => {
@@ -106,16 +150,22 @@ describe('PromptManagerDialogContent', () => {
     expect(mockedDelete).toHaveBeenCalledWith('1')
   })
 
-  it('renames a prompt when the name field is committed', async () => {
+  it('restores an older version as a new version', async () => {
     mockedFetch.mockResolvedValue([prompt('1', 'Alpha')])
-    mockedRename.mockResolvedValue()
+    mockedVersions.mockResolvedValue([
+      { assetId: 'v2', name: 'Alpha', createdAt: '2026-02-01T00:00:00Z' },
+      { assetId: 'v1', name: 'Alpha', createdAt: '2026-01-01T00:00:00Z' }
+    ])
+    mockedFetchTemplate.mockResolvedValue([{ type: 'text', value: 'old' }])
+    mockedSaveVersion.mockResolvedValue(prompt('1', 'Alpha'))
     renderDialog()
     await userEvent.click(await screen.findByText('Alpha'))
 
-    const nameInput = screen.getByDisplayValue('Alpha')
-    await userEvent.clear(nameInput)
-    await userEvent.type(nameInput, 'Renamed{enter}')
+    await userEvent.click(await screen.findByText('Restore'))
 
-    expect(mockedRename).toHaveBeenCalledWith('1', '1', 'Renamed')
+    expect(mockedSaveVersion).toHaveBeenCalledWith('1', {
+      name: 'Alpha',
+      template: [{ type: 'text', value: 'old' }]
+    })
   })
 })

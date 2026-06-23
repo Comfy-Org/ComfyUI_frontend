@@ -117,4 +117,14 @@ describe('usePromptStore', () => {
     expect(mockedRename).toHaveBeenCalledWith('1', '1', 'renamed')
     expect(store.getPrompt('1')?.name).toBe('renamed')
   })
+
+  it('loads a specific version template by asset id', async () => {
+    mockedFetchTemplate.mockResolvedValue([{ type: 'text', value: 'v1' }])
+    const store = usePromptStore()
+
+    const template = await store.loadVersion('asset-1')
+
+    expect(mockedFetchTemplate).toHaveBeenCalledWith('asset-1')
+    expect(template).toEqual([{ type: 'text', value: 'v1' }])
+  })
 })

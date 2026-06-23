@@ -12,8 +12,13 @@
     "managerTitle": "Manage prompts",
     "managerEmpty": "No saved prompts yet",
     "managerNoMatches": "No prompts match your search",
-    "managerSelectHint": "Select a prompt to view its contents",
-    "confirmDelete": "Confirm delete"
+    "managerSelectHint": "Select a prompt, or create a new one",
+    "confirmDelete": "Confirm delete",
+    "newPrompt": "New prompt",
+    "historyTitle": "History",
+    "historyEmpty": "No versions yet",
+    "currentVersion": "Current",
+    "restore": "Restore"
   },
   "g": {
     "shortcutSuffix": " ({shortcut})",

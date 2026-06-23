@@ -1,6 +1,15 @@
 <template>
   <div class="flex h-[60vh] min-h-80 gap-3 pt-2 text-sm">
     <div class="flex w-60 shrink-0 flex-col gap-2">
+      <Button
+        variant="secondary"
+        size="sm"
+        class="justify-start gap-2"
+        @click="startNew"
+      >
+        <i class="icon-[lucide--plus] size-4" />
+        {{ t('promptNode.newPrompt') }}
+      </Button>
       <Input
         v-model="search"
         :placeholder="t('promptNode.searchPlaceholder')"
@@ -34,45 +43,55 @@
     </div>
 
     <div class="flex min-w-0 flex-1 flex-col gap-3">
-      <template v-if="selected">
-        <div class="flex items-center gap-2">
-          <Input
-            v-model="nameDraft"
-            class="min-w-0 flex-1"
-            :placeholder="t('promptNode.namePlaceholder')"
-            @keyup.enter="commitRename"
-            @blur="commitRename"
+      <template v-if="isEditing">
+        <Input
+          v-model="nameDraft"
+          :placeholder="t('promptNode.namePlaceholder')"
+        />
+        <div class="min-h-0 flex-1">
+          <PromptEditor
+            v-model="editorTemplate"
+            :placeholder="t('promptNode.editorPlaceholder')"
           />
-          <template v-if="confirmingDelete">
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <Button
+            size="sm"
+            :disabled="!canSave"
+            :loading="isSaving"
+            @click="save"
+          >
+            {{ t('g.save') }}
+          </Button>
+          <template v-if="selectedId">
+            <template v-if="confirmingDelete">
+              <div class="flex gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  :loading="isDeleting"
+                  @click="remove"
+                >
+                  {{ t('promptNode.confirmDelete') }}
+                </Button>
+                <Button
+                  variant="textonly"
+                  size="sm"
+                  @click="confirmingDelete = false"
+                >
+                  {{ t('g.cancel') }}
+                </Button>
+              </div>
+            </template>
             <Button
-              variant="destructive"
+              v-else
+              variant="destructive-textonly"
               size="sm"
-              :loading="isDeleting"
-              @click="remove"
+              @click="confirmingDelete = true"
             >
-              {{ t('promptNode.confirmDelete') }}
-            </Button>
-            <Button
-              variant="textonly"
-              size="sm"
-              @click="confirmingDelete = false"
-            >
-              {{ t('g.cancel') }}
+              {{ t('g.delete') }}
             </Button>
           </template>
-          <Button
-            v-else
-            variant="destructive-textonly"
-            size="sm"
-            @click="confirmingDelete = true"
-          >
-            {{ t('g.delete') }}
-          </Button>
-        </div>
-        <div
-          class="min-h-0 flex-1 overflow-y-auto rounded-md border border-border-default bg-component-node-widget-background p-3 whitespace-pre-wrap"
-        >
-          {{ previewText }}
         </div>
       </template>
       <div
@@ -82,17 +101,59 @@
         {{ t('promptNode.managerSelectHint') }}
       </div>
     </div>
+
+    <div v-if="selectedId" class="flex w-48 shrink-0 flex-col gap-2">
+      <span
+        class="text-2xs font-medium tracking-wide text-muted-foreground uppercase"
+      >
+        {{ t('promptNode.historyTitle') }}
+      </span>
+      <div
+        class="min-h-0 flex-1 overflow-y-auto rounded-md border border-border-default p-1"
+      >
+        <div
+          v-for="(version, index) in versions"
+          :key="version.assetId"
+          class="flex items-center justify-between gap-1 px-2 py-1"
+        >
+          <span class="truncate text-xs text-muted-foreground">
+            {{ formatDate(version.createdAt) }}
+          </span>
+          <Button
+            v-if="index !== 0"
+            variant="textonly"
+            size="sm"
+            @click="restore(version)"
+          >
+            {{ t('promptNode.restore') }}
+          </Button>
+          <span v-else class="text-2xs text-muted-foreground">
+            {{ t('promptNode.currentVersion') }}
+          </span>
+        </div>
+        <p
+          v-if="!versions.length"
+          class="px-2 py-1.5 text-xs text-muted-foreground"
+        >
+          {{ t('promptNode.historyEmpty') }}
+        </p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import PromptEditor from '@/components/prompts/PromptEditor.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
-import type { PromptTemplate } from '@/platform/prompts/schemas/promptTypes'
+import type {
+  PromptTemplate,
+  PromptVersion
+} from '@/platform/prompts/schemas/promptTypes'
 import { usePromptStore } from '@/stores/promptStore'
 
 const { t } = useI18n()
@@ -100,10 +161,16 @@ const store = usePromptStore()
 
 const search = ref('')
 const selectedId = ref<string | null>(null)
+const creating = ref(false)
 const nameDraft = ref('')
-const previewText = ref('')
-const confirmingDelete = ref(false)
+const editorTemplate = ref<PromptTemplate>([])
+const snapshot = ref('')
+const versions = ref<PromptVersion[]>([])
+const isSaving = ref(false)
 const isDeleting = ref(false)
+const confirmingDelete = ref(false)
+
+const isEditing = computed(() => creating.value || selectedId.value !== null)
 
 const filtered = computed(() => {
   const query = search.value.trim().toLowerCase()
@@ -112,39 +179,93 @@ const filtered = computed(() => {
   )
 })
 
-const selected = computed(() =>
-  selectedId.value ? store.getPrompt(selectedId.value) : undefined
+function snapshotOf(name: string, template: PromptTemplate): string {
+  return JSON.stringify({ name, template })
+}
+
+const canSave = computed(
+  () =>
+    nameDraft.value.trim().length > 0 &&
+    !isSaving.value &&
+    snapshotOf(nameDraft.value.trim(), editorTemplate.value) !== snapshot.value
 )
 
-function toPreviewText(template: PromptTemplate): string {
-  return template
-    .map((segment) =>
-      segment.type === 'text' ? segment.value : `@${segment.name}`
-    )
-    .join('')
-}
-
-function select(id: string) {
-  selectedId.value = id
-}
-
-watch(selectedId, async (id) => {
+function startNew() {
+  creating.value = true
+  selectedId.value = null
   confirmingDelete.value = false
-  previewText.value = ''
-  nameDraft.value = (id ? store.getPrompt(id) : undefined)?.name ?? ''
-  if (!id) return
-  try {
-    previewText.value = toPreviewText(await store.resolveTemplate(id))
-  } catch {
-    previewText.value = ''
-  }
-})
+  nameDraft.value = ''
+  editorTemplate.value = []
+  snapshot.value = snapshotOf('', [])
+  versions.value = []
+}
 
-async function commitRename() {
+async function refreshVersions() {
+  versions.value = selectedId.value
+    ? await store.getVersions(selectedId.value)
+    : []
+}
+
+function formatDate(value: string): string {
+  if (!value) return ''
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString()
+}
+
+async function select(id: string) {
+  creating.value = false
+  confirmingDelete.value = false
+  selectedId.value = id
+  nameDraft.value = store.getPrompt(id)?.name ?? ''
+  editorTemplate.value = []
+  try {
+    const template = await store.resolveTemplate(id)
+    editorTemplate.value = JSON.parse(JSON.stringify(template))
+  } catch (error) {
+    console.error('[PromptManager] Failed to load prompt content', error)
+  }
+  snapshot.value = snapshotOf(nameDraft.value, editorTemplate.value)
+  await refreshVersions()
+}
+
+async function restore(version: PromptVersion) {
   const id = selectedId.value
+  if (!id) return
+  const template = await store.loadVersion(version.assetId)
+  await store.savePromptVersion(id, { name: nameDraft.value.trim(), template })
+  editorTemplate.value = JSON.parse(JSON.stringify(template))
+  snapshot.value = snapshotOf(nameDraft.value.trim(), template)
+  await refreshVersions()
+}
+
+async function save() {
+  if (!canSave.value) return
   const name = nameDraft.value.trim()
-  if (!id || !name || name === selected.value?.name) return
-  await store.renamePrompt(id, name)
+  const template = editorTemplate.value
+  isSaving.value = true
+  try {
+    if (creating.value) {
+      const created = await store.savePrompt({ name, template })
+      creating.value = false
+      selectedId.value = created.id
+    } else if (selectedId.value) {
+      const original = JSON.parse(snapshot.value) as {
+        template: PromptTemplate
+      }
+      const contentChanged =
+        JSON.stringify(template) !== JSON.stringify(original.template)
+      if (contentChanged) {
+        await store.savePromptVersion(selectedId.value, { name, template })
+      } else {
+        await store.renamePrompt(selectedId.value, name)
+      }
+    }
+    nameDraft.value = name
+    snapshot.value = snapshotOf(name, template)
+    await refreshVersions()
+  } finally {
+    isSaving.value = false
+  }
 }
 
 async function remove() {
@@ -154,6 +275,8 @@ async function remove() {
   try {
     await store.deletePrompt(id)
     selectedId.value = null
+    confirmingDelete.value = false
+    versions.value = []
   } finally {
     isDeleting.value = false
   }
