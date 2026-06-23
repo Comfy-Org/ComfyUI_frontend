@@ -128,7 +128,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function getNodeOutputByExecutionId(
-    executionId: NodeExecutionId | string
+    executionId: NodeExecutionId
   ): ExecutedWsMessage['output'] | undefined {
     const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!locatorId) return undefined
@@ -136,7 +136,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function getNodePreviewImagesByExecutionId(
-    executionId: NodeExecutionId | string
+    executionId: NodeExecutionId
   ): string[] | undefined {
     const locatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!locatorId) return undefined
@@ -144,7 +144,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function getNodeImageUrlsByExecutionId(
-    executionId: NodeExecutionId | string,
+    executionId: NodeExecutionId,
     node: LGraphNode
   ): string[] | undefined {
     const previews = getNodePreviewImagesByExecutionId(executionId)
@@ -233,7 +233,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function setNodeOutputsByExecutionId(
-    executionId: NodeExecutionId | string,
+    executionId: NodeExecutionId,
     outputs: ExecutedWsMessage['output'] | ResultItem,
     options: SetOutputOptions = {}
   ) {
@@ -243,7 +243,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function setNodePreviewsByExecutionId(
-    executionId: NodeExecutionId | string,
+    executionId: NodeExecutionId,
     previewImages: string[]
   ) {
     const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
@@ -280,7 +280,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     setNodePreviewsByLocatorId(nodeIdToNodeLocatorId(nodeId), previewImages)
   }
 
-  function revokePreviewsByExecutionId(executionId: NodeExecutionId | string) {
+  function revokePreviewsByExecutionId(executionId: NodeExecutionId) {
     const nodeLocatorId = executionIdToNodeLocatorId(app.rootGraph, executionId)
     if (!nodeLocatorId) return
     scheduleRevoke(nodeLocatorId, () =>

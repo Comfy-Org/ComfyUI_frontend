@@ -130,7 +130,7 @@ export function createNodeExecutionId(nodeIds: NodeId[]): NodeExecutionId {
  * Example: "65:70:63" → ["65", "65:70", "65:70:63"]
  */
 export function getAncestorExecutionIds(
-  executionId: string | NodeExecutionId
+  executionId: string
 ): NodeExecutionId[] {
   const parts = executionId.split(':')
   return Array.from({ length: parts.length }, (_, i) =>
@@ -143,9 +143,7 @@ export function getAncestorExecutionIds(
  *
  * Example: "65:70:63" → ["65", "65:70"]
  */
-export function getParentExecutionIds(
-  executionId: string | NodeExecutionId
-): NodeExecutionId[] {
+export function getParentExecutionIds(executionId: string): NodeExecutionId[] {
   return getAncestorExecutionIds(executionId).slice(0, -1)
 }
 

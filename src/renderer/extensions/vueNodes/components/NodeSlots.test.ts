@@ -16,6 +16,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { NodeId as VueNodeId } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import {
   createMockNodeInputSlot,
@@ -270,7 +271,7 @@ describe('NodeSlots.vue', () => {
     const { container } = renderSlots(nodeData)
     seedRequiredInputMissingNodeError(
       useExecutionErrorStore(),
-      nodeData.id,
+      createNodeExecutionId([nodeData.id]),
       'model'
     )
     await nextTick()
@@ -300,7 +301,7 @@ describe('NodeSlots.vue', () => {
     const { container } = renderSlots(nodeData)
     seedRequiredInputMissingNodeError(
       useExecutionErrorStore(),
-      '65:70',
+      createNodeExecutionId([65, 70]),
       'model'
     )
     await nextTick()
@@ -337,7 +338,7 @@ describe('NodeSlots.vue', () => {
     const { container } = renderSlots(nodeData)
     seedRequiredInputMissingNodeError(
       useExecutionErrorStore(),
-      '65:70:63',
+      createNodeExecutionId([65, 70, 63]),
       'mask'
     )
     await nextTick()

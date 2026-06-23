@@ -291,7 +291,7 @@ export function findSubgraphPathById(
  */
 export function getRootParentNode(
   rootGraph: LGraph,
-  executionId: NodeExecutionId | string
+  executionId: string
 ): LGraphNode | null {
   const parts = parseExecutionId(executionId)
   if (!parts || parts.length < 2) return null
@@ -312,7 +312,7 @@ export function getRootParentNode(
  */
 export function getNodeByExecutionId(
   rootGraph: LGraph,
-  executionId: NodeExecutionId | string
+  executionId: string
 ): LGraphNode | null {
   if (!rootGraph) return null
 
@@ -379,7 +379,7 @@ export function getExecutionIdByNode(
  */
 export function isAncestorPathActive(
   rootGraph: LGraph | null | undefined,
-  executionId: NodeExecutionId | string
+  executionId: string
 ): boolean {
   if (!rootGraph) return true
   for (const ancestorId of getParentExecutionIds(executionId)) {
@@ -471,7 +471,7 @@ export function getExecutionIdFromNodeData(
  */
 export function getNodeByLocatorId(
   rootGraph: LGraph,
-  locatorId: NodeLocatorId | string
+  locatorId: string
 ): LGraphNode | null {
   if (!rootGraph) return null
 

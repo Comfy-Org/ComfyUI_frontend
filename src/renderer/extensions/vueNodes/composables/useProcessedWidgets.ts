@@ -30,6 +30,8 @@ import {
 } from '@/stores/widgetValueStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
@@ -81,7 +83,7 @@ interface ComputeProcessedWidgetsOptions {
 function createWidgetUpdateHandler(
   widgetState: WidgetState | undefined,
   widget: SafeWidgetData,
-  nodeExecId: string,
+  nodeExecId: NodeExecutionId,
   widgetOptions: IWidgetOptions | Record<string, never>,
   executionErrorStore: ReturnType<typeof useExecutionErrorStore>
 ): (newValue: WidgetValue) => void {
@@ -101,7 +103,7 @@ function createWidgetUpdateHandler(
 
 export function hasWidgetError(
   widget: SafeWidgetData,
-  nodeExecId: string,
+  nodeExecId: NodeExecutionId,
   nodeErrors:
     | { errors: { extra_info?: { input_name?: string } }[] }
     | undefined,
@@ -178,7 +180,7 @@ export function computeProcessedWidgets({
   const nodeExecId =
     isGraphReady && rootGraph
       ? getExecutionIdFromNodeData(rootGraph, nodeData)
-      : String(nodeData.id ?? '')
+      : createNodeExecutionId([nodeData.id ?? ''])
 
   const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeExecId]
 

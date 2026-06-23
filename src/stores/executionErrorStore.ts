@@ -85,7 +85,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * types. When `slotName` is provided, only errors for that slot are checked.
    */
   function clearSimpleNodeErrors(
-    executionId: NodeExecutionId | string,
+    executionId: NodeExecutionId,
     slotName?: string
   ): void {
     if (!lastNodeErrors.value) return
@@ -134,7 +134,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    * (asset system vs objectInfo) making runtime validation non-trivial.
    */
   function clearSlotErrorsWithRangeCheck(
-    executionId: NodeExecutionId | string,
+    executionId: NodeExecutionId,
     widgetName: string,
     newValue: unknown,
     options?: { min?: number; max?: number }
@@ -160,7 +160,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
    *   At the legacy canvas call site both names are identical (`widget.name`).
    */
   function clearWidgetRelatedErrors(
-    executionId: NodeExecutionId | string,
+    executionId: NodeExecutionId,
     errorInputName: string,
     widgetName: string,
     newValue: unknown,

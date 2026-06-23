@@ -373,7 +373,7 @@ function isModelReferencedByActiveNode(
 }
 
 function isAncestorPathActiveInFlattened(
-  executionId: NodeExecutionId | string,
+  executionId: string,
   nodeById: Map<string, ReturnType<typeof flattenWorkflowNodes>[number]>
 ): boolean {
   for (const ancestorId of getParentExecutionIds(executionId)) {

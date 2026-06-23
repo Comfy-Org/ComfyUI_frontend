@@ -12,9 +12,12 @@ import type {
 } from '@/composables/graph/useGraphNodeManager'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
+const executionId = (id: string | number) =>
+  createNodeExecutionId(String(id).split(':'))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -231,13 +234,13 @@ describe('NodeWidgets', () => {
       nodeId: undefined,
       name: 'string_a',
       type: 'text',
-      sourceExecutionId: '65:18'
+      sourceExecutionId: executionId('65:18')
     })
     const secondTransientEntry = createMockWidget({
       nodeId: undefined,
       name: 'string_a',
       type: 'text',
-      sourceExecutionId: '65:19'
+      sourceExecutionId: executionId('65:19')
     })
     const nodeData = createMockNodeData('SubgraphNode', [
       firstTransientEntry,

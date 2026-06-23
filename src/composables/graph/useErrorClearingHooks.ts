@@ -34,6 +34,7 @@ import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacem
 import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import {
   collectAllNodes,
@@ -83,7 +84,10 @@ function installNodeHooks(node: LGraphNode): void {
 
       const promotedSource = widgetPromotedSource(node, widget)
       const executionId = promotedSource
-        ? `${hostExecId}:${promotedSource.nodeId}`
+        ? createNodeExecutionId([
+            ...hostExecId.split(':'),
+            promotedSource.nodeId
+          ])
         : hostExecId
       const widgetName = promotedSource?.widgetName ?? widget.name
 

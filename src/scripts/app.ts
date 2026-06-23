@@ -77,6 +77,7 @@ import { useExtensionStore } from '@/stores/extensionStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
@@ -772,7 +773,9 @@ export class ComfyApp {
 
     api.addEventListener('executed', ({ detail }) => {
       const nodeOutputStore = useNodeOutputStore()
-      const executionId = String(detail.display_node || detail.node)
+      const executionId = createNodeExecutionId(
+        String(detail.display_node || detail.node).split(':')
+      )
 
       nodeOutputStore.setNodeOutputsByExecutionId(executionId, detail.output, {
         merge: detail.merge
@@ -811,15 +814,19 @@ export class ComfyApp {
       const { setNodePreviewsByExecutionId, revokePreviewsByExecutionId } =
         useNodeOutputStore()
       const blobUrl = createSharedObjectUrl(blob)
+      const displayNodeExecutionId = createNodeExecutionId(
+        displayNodeId.split(':')
+      )
       useJobPreviewStore().setPreviewUrl(jobId, blobUrl, displayNodeId)
       // Ensure clean up if `executing` event is missed.
-      revokePreviewsByExecutionId(displayNodeId)
+      revokePreviewsByExecutionId(displayNodeExecutionId)
       // Preview cleanup is handled in progress_state event to support multiple concurrent previews
       const nodeParents = displayNodeId.split(':')
       for (let i = 1; i <= nodeParents.length; i++) {
-        setNodePreviewsByExecutionId(nodeParents.slice(0, i).join(':'), [
-          blobUrl
-        ])
+        setNodePreviewsByExecutionId(
+          createNodeExecutionId(nodeParents.slice(0, i)),
+          [blobUrl]
+        )
       }
       releaseSharedObjectUrl(blobUrl)
     })

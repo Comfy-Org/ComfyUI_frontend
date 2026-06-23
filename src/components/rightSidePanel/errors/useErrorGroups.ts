@@ -288,9 +288,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return map
   })
 
-  function isErrorInSelection(
-    executionNodeId: NodeExecutionId | string
-  ): boolean {
+  function isErrorInSelection(executionNodeId: string): boolean {
     const nodeIds = selectedNodeInfo.value.nodeIds
     if (!nodeIds) return true
 
@@ -671,9 +669,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     ]
   }
 
-  function isAssetErrorInSelection(
-    executionNodeId: NodeExecutionId | string
-  ): boolean {
+  function isAssetErrorInSelection(executionNodeId: string): boolean {
     const nodeIds = selectedNodeInfo.value.nodeIds
     if (!nodeIds) return true
 

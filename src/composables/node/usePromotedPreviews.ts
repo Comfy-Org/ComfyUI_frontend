@@ -6,7 +6,11 @@ import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { UUID } from '@/utils/uuid'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 
 interface PromotedPreview {
   sourceNodeId: string
@@ -38,7 +42,7 @@ export function usePromotedPreviews(
   function readReactivePreviewUrls(
     leafHost: SubgraphNode,
     leafSourceNodeId: string,
-    leafExecutionId: string,
+    leafExecutionId: NodeExecutionId,
     interiorNode: LGraphNode
   ): string[] | undefined {
     const locatorId = createNodeLocatorId(
@@ -121,7 +125,10 @@ export function usePromotedPreviews(
       const urls = readReactivePreviewUrls(
         leafHost,
         leaf.sourceNodeId,
-        `${leafHostLocator}:${leaf.sourceNodeId}`,
+        createNodeExecutionId([
+          ...leafHostLocator.split(':'),
+          leaf.sourceNodeId
+        ]),
         interiorNode
       )
       if (!urls?.length) return []
