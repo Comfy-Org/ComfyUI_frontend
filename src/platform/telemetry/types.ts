@@ -498,7 +498,7 @@ export interface OutputViewedMetadata {
   is_first_output: boolean
 }
 
-type OnboardingDestination = 'waitlist' | 'survey' | 'onboarded'
+type OnboardingDestination = 'login' | 'survey' | 'onboarded'
 
 export interface OnboardingRoutedMetadata {
   destination: OnboardingDestination

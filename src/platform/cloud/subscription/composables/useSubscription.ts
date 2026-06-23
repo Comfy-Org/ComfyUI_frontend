@@ -210,11 +210,10 @@ function useSubscriptionInternal() {
       return
     }
 
+    // Subscription-success analytics now come from the backend
+    // billing:subscription_created event (Stripe webhook); the FE only records
+    // that the user returned and clears the pending attempt.
     reportCheckoutReturned(metadata.checkout_attempt_id, 'success')
-    telemetry?.trackMonthlySubscriptionSucceeded({
-      ...(authStore.userId ? { user_id: authStore.userId } : {}),
-      ...metadata
-    })
     stopPendingCheckoutRecovery()
   }
 

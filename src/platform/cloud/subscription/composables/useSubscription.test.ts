@@ -415,7 +415,7 @@ describe('useSubscription', () => {
   })
 
   describe('pending checkout recovery', () => {
-    it('emits subscription_success when a pending new subscription becomes active', async () => {
+    it('records a success return and clears the pending attempt when a new subscription becomes active', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({
@@ -442,31 +442,22 @@ describe('useSubscription', () => {
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
-        expect(
-          mockTelemetry.trackMonthlySubscriptionSucceeded
-        ).toHaveBeenCalledWith(
-          expect.objectContaining({
-            user_id: 'user-123',
-            checkout_attempt_id: 'attempt-123',
-            tier: 'creator',
-            cycle: 'yearly',
-            checkout_type: 'new',
-            value: 336,
-            currency: 'USD'
-          })
-        )
+        expect(mockTelemetry.trackCheckoutReturned).toHaveBeenCalledWith({
+          checkout_attempt_id: 'attempt-123',
+          outcome: 'success'
+        })
       })
       expect(
         localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
       ).toBeNull()
 
-      expect(mockTelemetry.trackCheckoutReturned).toHaveBeenCalledWith({
-        checkout_attempt_id: 'attempt-123',
-        outcome: 'success'
-      })
+      // Subscription-success conversion is emitted by the backend, not the FE.
+      expect(
+        mockTelemetry.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
     })
 
-    it('emits subscription_success when a pending upgrade reaches the target tier', async () => {
+    it('records a success return when a pending upgrade reaches the target tier', async () => {
       localStorage.setItem(
         PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY,
         JSON.stringify({
@@ -495,19 +486,14 @@ describe('useSubscription', () => {
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
-        expect(
-          mockTelemetry.trackMonthlySubscriptionSucceeded
-        ).toHaveBeenCalledWith(
-          expect.objectContaining({
-            checkout_attempt_id: 'attempt-456',
-            tier: 'pro',
-            cycle: 'monthly',
-            checkout_type: 'change',
-            previous_tier: 'creator',
-            value: 100
-          })
-        )
+        expect(mockTelemetry.trackCheckoutReturned).toHaveBeenCalledWith({
+          checkout_attempt_id: 'attempt-456',
+          outcome: 'success'
+        })
       })
+      expect(
+        mockTelemetry.trackMonthlySubscriptionSucceeded
+      ).not.toHaveBeenCalled()
     })
 
     it('rechecks pending checkout attempts when the document becomes visible', async () => {

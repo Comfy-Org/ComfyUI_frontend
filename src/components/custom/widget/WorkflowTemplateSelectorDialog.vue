@@ -544,10 +544,9 @@ const allTemplates = computed(() => {
 // Navigation
 const selectedNavItem = ref<string | null>(initialCategory)
 
-// Track category/tab switches (e.g. "Getting Started" vs "All") so we can see
-// which curated entry points users browse before opening a template.
-watch(selectedNavItem, (to, from) => {
-  if (!to || to === from) return
+// Track which curated category users browse before opening a template.
+watch(selectedNavItem, (to) => {
+  if (!to) return
   useTelemetry()?.trackTemplateCategorySelected({ category_id: to })
 })
 

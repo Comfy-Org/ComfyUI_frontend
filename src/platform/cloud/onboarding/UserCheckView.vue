@@ -1,7 +1,6 @@
 <template>
   <CloudLoginViewSkeleton v-if="skeletonType === 'login'" />
   <CloudSurveyViewSkeleton v-else-if="skeletonType === 'survey'" />
-  <CloudWaitlistViewSkeleton v-else-if="skeletonType === 'waitlist'" />
   <div v-else-if="error" class="flex h-full items-center justify-center p-8">
     <div class="max-w-[100vw] p-2 text-center lg:w-96">
       <p class="mb-4 text-red-500">{{ errorMessage }}</p>
@@ -32,7 +31,6 @@ import {
   getSurveyCompletedStatus,
   getUserCloudStatus
 } from '@/platform/cloud/onboarding/auth'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 
 import CloudLoginViewSkeleton from './skeletons/CloudLoginViewSkeleton.vue'
@@ -44,9 +42,8 @@ const { flags } = useFeatureFlags()
 const onboardingSurveyEnabled = computed(
   () => flags.onboardingSurveyEnabled ?? true
 )
-const telemetry = isCloud ? useTelemetry() : undefined
 
-const skeletonType = ref<'login' | 'survey' | 'waitlist' | 'loading'>('loading')
+const skeletonType = ref<'login' | 'survey' | 'loading'>('loading')
 
 const {
   isLoading,
@@ -57,7 +54,7 @@ const {
     await nextTick()
 
     if (!onboardingSurveyEnabled.value) {
-      telemetry?.trackOnboardingRouted({
+      useTelemetry()?.trackOnboardingRouted({
         destination: 'onboarded',
         survey_completed: false,
         has_cloud_status: false
@@ -73,8 +70,8 @@ const {
 
     // Navigate based on user status
     if (!cloudUserStats) {
-      telemetry?.trackOnboardingRouted({
-        destination: 'waitlist',
+      useTelemetry()?.trackOnboardingRouted({
+        destination: 'login',
         survey_completed: !!surveyStatus,
         has_cloud_status: false
       })
@@ -85,7 +82,7 @@ const {
 
     // Survey is required for all users when feature flag is enabled
     if (!surveyStatus) {
-      telemetry?.trackOnboardingRouted({
+      useTelemetry()?.trackOnboardingRouted({
         destination: 'survey',
         survey_completed: false,
         has_cloud_status: true
@@ -96,7 +93,7 @@ const {
     }
 
     // User is fully onboarded (active or whitelist check disabled)
-    telemetry?.trackOnboardingRouted({
+    useTelemetry()?.trackOnboardingRouted({
       destination: 'onboarded',
       survey_completed: true,
       has_cloud_status: true
