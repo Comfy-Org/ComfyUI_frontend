@@ -16,8 +16,15 @@
             ${{ displayPrice }}
           </span>
           <span class="text-xl text-base-foreground">
-            {{ $t('subscription.usdPerMonthPerMember') }}
+            {{ $t('subscription.usdPerMonth') }}
           </span>
+        </div>
+        <div
+          v-if="teamPlan"
+          class="flex items-center gap-1 text-sm text-muted-foreground"
+        >
+          <i class="icon-[comfy--credits] size-3.5 shrink-0 bg-amber-400" />
+          <span>{{ displayCredits }} {{ $t('subscription.perMonth') }}</span>
         </div>
         <span class="text-muted-foreground">
           {{ $t('subscription.preview.startingToday') }}
@@ -31,12 +38,9 @@
             {{ $t('subscription.preview.eachMonthCreditsRefill') }}
           </span>
           <div class="flex items-center gap-1">
-            <i class="icon-[lucide--component] text-sm text-amber-400" />
+            <i class="icon-[comfy--credits] size-4 shrink-0 bg-amber-400" />
             <span class="font-bold text-base-foreground">
               {{ displayCredits }}
-            </span>
-            <span class="text-base-foreground">
-              {{ $t('subscription.preview.perMember') }}
             </span>
           </div>
         </div>
@@ -63,36 +67,48 @@
           />
         </button>
         <div v-show="!isFeaturesCollapsed" class="flex flex-col gap-2 pt-2">
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-base-foreground">
-              {{ $t('subscription.maxDurationLabel') }}
-            </span>
-            <span class="text-sm font-bold text-base-foreground">
-              {{ maxDuration }}
-            </span>
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-base-foreground">
-              {{ $t('subscription.gpuLabel') }}
-            </span>
-            <i class="pi pi-check text-success-foreground text-xs" />
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-base-foreground">
-              {{ $t('subscription.addCreditsLabel') }}
-            </span>
-            <i class="pi pi-check text-success-foreground text-xs" />
-          </div>
-          <div class="flex items-center justify-between">
-            <span class="text-sm text-base-foreground">
-              {{ $t('subscription.customLoRAsLabel') }}
-            </span>
-            <i
-              v-if="hasCustomLoRAs"
-              class="pi pi-check text-success-foreground text-xs"
-            />
-            <i v-else class="pi pi-times text-xs text-muted-foreground" />
-          </div>
+          <template v-if="teamPlan">
+            <div
+              v-for="perk in teamPerks"
+              :key="perk"
+              class="flex items-center gap-2"
+            >
+              <i class="pi pi-check text-success-foreground text-xs" />
+              <span class="text-sm text-base-foreground">{{ perk }}</span>
+            </div>
+          </template>
+          <template v-else>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-base-foreground">
+                {{ $t('subscription.maxDurationLabel') }}
+              </span>
+              <span class="text-sm font-bold text-base-foreground">
+                {{ maxDuration }}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-base-foreground">
+                {{ $t('subscription.gpuLabel') }}
+              </span>
+              <i class="pi pi-check text-success-foreground text-xs" />
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-base-foreground">
+                {{ $t('subscription.addCreditsLabel') }}
+              </span>
+              <i class="pi pi-check text-success-foreground text-xs" />
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-base-foreground">
+                {{ $t('subscription.customLoRAsLabel') }}
+              </span>
+              <i
+                v-if="hasCustomLoRAs"
+                class="pi pi-check text-success-foreground text-xs"
+              />
+              <i v-else class="pi pi-times text-xs text-muted-foreground" />
+            </div>
+          </template>
         </div>
       </div>
 
@@ -118,30 +134,7 @@
     <!-- Footer -->
     <div class="flex flex-col gap-2 pt-8">
       <!-- Terms Agreement -->
-      <p class="text-center text-xs text-muted-foreground">
-        <i18n-t keypath="subscription.preview.termsAgreement" tag="span">
-          <template #terms>
-            <a
-              href="https://www.comfy.org/terms"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="underline hover:text-base-foreground"
-            >
-              {{ $t('subscription.preview.terms') }}
-            </a>
-          </template>
-          <template #privacy>
-            <a
-              href="https://www.comfy.org/privacy"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="underline hover:text-base-foreground"
-            >
-              {{ $t('subscription.preview.privacyPolicy') }}
-            </a>
-          </template>
-        </i18n-t>
-      </p>
+      <SubscriptionTermsNote />
 
       <!-- Add Credit Card Button -->
       <Button
@@ -151,7 +144,7 @@
         :loading="isLoading"
         @click="$emit('addCreditCard')"
       >
-        {{ $t('subscription.preview.addCreditCard') }}
+        {{ $t('subscription.preview.subscribeToPlan', { plan: tierName }) }}
       </Button>
 
       <!-- Back Link -->
@@ -171,6 +164,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import {
   getTierCredits,
   getTierFeatures,
@@ -181,18 +175,24 @@ import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscript
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
+
 interface Props {
-  tierKey: Exclude<TierKey, 'free' | 'founder'>
+  /** Personal-tier checkout. Required unless `teamPlan` is set. */
+  tierKey?: Exclude<TierKey, 'free' | 'founder'>
   billingCycle?: BillingCycle
   isLoading?: boolean
   previewData?: PreviewSubscribeResponse | null
+  /** Team-plan checkout (selected slider stop); overrides tier-derived display. */
+  teamPlan?: TeamPlanSelection | null
 }
 
 const {
   tierKey,
   billingCycle = 'monthly',
   isLoading = false,
-  previewData = null
+  previewData = null,
+  teamPlan = null
 } = defineProps<Props>()
 
 defineEmits<{
@@ -204,24 +204,42 @@ const { t, n } = useI18n()
 
 const isFeaturesCollapsed = ref(true)
 
-const tierName = computed(() => t(`subscription.tiers.${tierKey}.name`))
+const tierName = computed(() =>
+  teamPlan
+    ? t('subscription.teamPlan.name')
+    : t(`subscription.tiers.${tierKey}.name`)
+)
 
 const displayPrice = computed(() => {
+  if (teamPlan) return teamPlan.discountedUsd
   if (previewData?.new_plan) {
     return (previewData.new_plan.price_cents / 100).toFixed(0)
   }
-  return getTierPrice(tierKey, billingCycle === 'yearly')
+  return tierKey ? getTierPrice(tierKey, billingCycle === 'yearly') : 0
 })
 
-const displayCredits = computed(() => n(getTierCredits(tierKey) ?? 0))
+const displayCredits = computed(() =>
+  n(teamPlan ? teamPlan.credits : tierKey ? (getTierCredits(tierKey) ?? 0) : 0)
+)
 
-const hasCustomLoRAs = computed(() => getTierFeatures(tierKey).customLoRAs)
+const teamPerks = computed(() => [
+  t('subscription.teamPlan.perkInviteMembers'),
+  t('subscription.teamPlan.perkConcurrentRuns'),
+  t('subscription.teamPlan.perkSharedPool'),
+  t('subscription.teamPlan.perkRolePermissions')
+])
+
+const hasCustomLoRAs = computed(() =>
+  tierKey ? getTierFeatures(tierKey).customLoRAs : false
+)
 const maxDuration = computed(() => t(`subscription.maxDuration.${tierKey}`))
 
 const totalDueToday = computed(() => {
+  if (teamPlan) return teamPlan.discountedUsd.toFixed(2)
   if (previewData) {
     return (previewData.cost_today_cents / 100).toFixed(2)
   }
+  if (!tierKey) return '0.00'
   const priceValue = getTierPrice(tierKey, billingCycle === 'yearly')
   if (billingCycle === 'yearly') {
     return (priceValue * 12).toFixed(2)
