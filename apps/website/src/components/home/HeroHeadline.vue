@@ -13,33 +13,51 @@ const { locale = 'en', compact = false } = defineProps<{
 
 const lines = computed(() => t('hero.title', locale).split('\n'))
 
-const block =
-  'inline-block rounded-2xl bg-primary-comfy-yellow px-5 pt-1.5 pb-2.5 font-formula-narrow leading-none font-semibold text-primary-comfy-ink uppercase'
+const size = computed(() => (compact ? 'text-3xl sm:text-4xl' : 'text-6xl'))
+
+const pill =
+  'inline-block rounded-2xl px-5 py-2 font-formula-narrow leading-none font-semibold uppercase'
 
 // PP Formula Narrow sits high in its em box; nudge the glyphs down so they read
-// optically centered inside the highlighter block without resizing the box.
-const inner = 'relative top-[0.07em] inline-block'
+// optically centered inside the highlighter block.
+const inner = 'relative top-[0.06em] inline-block'
 </script>
 
 <template>
   <div class="flex flex-col items-center text-center">
-    <h1 class="flex flex-col items-center">
-      <span class="relative">
-        <span :class="cn(block, compact ? 'text-3xl sm:text-4xl' : 'text-6xl')">
-          <span :class="inner">{{ lines[0] }}</span>
+    <div class="inline-grid">
+      <!-- Liquid yellow backing: the two pills merge through the goo filter
+           (defined once in HeroSection). Text is transparent here, present only
+           so each pill sizes to its line. -->
+      <div
+        class="col-start-1 row-start-1 flex flex-col items-center"
+        style="filter: url(#hero-goo)"
+        aria-hidden="true"
+      >
+        <span
+          :class="cn(pill, size, 'bg-primary-comfy-yellow text-transparent')"
+        >
+          {{ lines[0] }}
         </span>
         <span
-          class="bg-primary-comfy-yellow absolute -bottom-1.5 left-1/2 size-4 -translate-1/2 rotate-45 rounded-[3px]"
-        ></span>
-      </span>
-      <span
-        :class="
-          cn(block, 'mt-1.5', compact ? 'text-3xl sm:text-4xl' : 'text-6xl')
-        "
-      >
-        <span :class="inner">{{ lines[1] }}</span>
-      </span>
-    </h1>
+          :class="
+            cn(pill, size, 'bg-primary-comfy-yellow -mt-2 text-transparent')
+          "
+        >
+          {{ lines[1] }}
+        </span>
+      </div>
+
+      <!-- Crisp dark text on top of the liquid backing -->
+      <h1 class="col-start-1 row-start-1 flex flex-col items-center">
+        <span :class="cn(pill, size, 'text-primary-comfy-ink')">
+          <span :class="inner">{{ lines[0] }}</span>
+        </span>
+        <span :class="cn(pill, size, '-mt-2 text-primary-comfy-ink')">
+          <span :class="inner">{{ lines[1] }}</span>
+        </span>
+      </h1>
+    </div>
 
     <p
       :class="
