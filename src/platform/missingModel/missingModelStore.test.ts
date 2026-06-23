@@ -5,6 +5,10 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
+const mockNodeLocatorIdToNodeExecutionId = vi.hoisted(() =>
+  vi.fn((nodeLocatorId: string) => nodeLocatorId)
+)
+
 vi.mock('@/i18n', () => ({
   t: vi.fn((key: string) => `translated:${key}`),
   st: vi.fn((_key: string, fallback: string) => fallback)
@@ -12,6 +16,12 @@ vi.mock('@/i18n', () => ({
 
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: false
+}))
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({
+    nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId
+  })
 }))
 
 import { useMissingModelStore } from './missingModelStore'
@@ -41,6 +51,9 @@ describe('missingModelStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.restoreAllMocks()
+    mockNodeLocatorIdToNodeExecutionId.mockImplementation(
+      (nodeLocatorId: string) => nodeLocatorId
+    )
   })
 
   describe('setMissingModels', () => {
@@ -169,6 +182,20 @@ describe('missingModelStore', () => {
       expect(store.hasMissingModelOnNode(createNodeLocatorId(null, 1))).toBe(
         false
       )
+    })
+
+    it('compares subgraph locators against missing model execution IDs', () => {
+      const store = useMissingModelStore()
+      const locatorId = createNodeLocatorId(
+        '11111111-1111-1111-1111-111111111111',
+        63
+      )
+      mockNodeLocatorIdToNodeExecutionId.mockReturnValueOnce('65:70:63')
+      store.setMissingModels([
+        makeModelCandidate('model_a.safetensors', { nodeId: '65:70:63' })
+      ])
+
+      expect(store.hasMissingModelOnNode(locatorId)).toBe(true)
     })
   })
 

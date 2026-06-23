@@ -6,6 +6,7 @@ import { t } from '@/i18n'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
@@ -19,6 +20,7 @@ import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
  */
 export const useMissingModelStore = defineStore('missingModel', () => {
   const canvasStore = useCanvasStore()
+  const workflowStore = useWorkflowStore()
 
   const missingModelCandidates = ref<MissingModelCandidate[] | null>(null)
   const isRefreshingMissingModels = ref(false)
@@ -194,7 +196,9 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   }
 
   function hasMissingModelOnNode(nodeLocatorId: NodeLocatorId): boolean {
-    return missingModelNodeIds.value.has(nodeLocatorId)
+    const executionId =
+      workflowStore.nodeLocatorIdToNodeExecutionId(nodeLocatorId)
+    return executionId ? missingModelNodeIds.value.has(executionId) : false
   }
 
   function isWidgetMissingModel(nodeId: string, widgetName: string): boolean {
