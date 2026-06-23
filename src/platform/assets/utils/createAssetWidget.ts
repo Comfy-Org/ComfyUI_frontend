@@ -11,6 +11,7 @@ import {
   assetItemSchema
 } from '@/platform/assets/schemas/assetSchema'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 
 interface AssetWidgetNode {
@@ -133,6 +134,9 @@ function createAssetWidgetOptions({
             oldValue,
             widget
           )
+        }
+        if (oldValue !== validatedFilename.data) {
+          useWorkflowStore().activeWorkflow?.changeTracker?.captureCanvasState()
         }
       }
     })

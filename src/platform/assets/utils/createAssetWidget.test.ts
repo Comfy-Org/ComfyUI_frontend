@@ -91,9 +91,23 @@ function firstShowOptions() {
 }
 
 describe('createAssetWidget', () => {
+  let captureCanvasState: ReturnType<typeof vi.fn>
+
   beforeEach(() => {
     vi.resetAllMocks()
-    setActivePinia(createTestingPinia({ stubActions: false }))
+    captureCanvasState = vi.fn()
+    setActivePinia(
+      createTestingPinia({
+        stubActions: false,
+        initialState: {
+          workflow: {
+            activeWorkflow: {
+              changeTracker: { captureCanvasState }
+            }
+          }
+        }
+      })
+    )
   })
 
   it('preserves regular asset widget change handling for the owning widget', async () => {
@@ -129,6 +143,7 @@ describe('createAssetWidget', () => {
       'real_model.safetensors',
       'fake_model.safetensors'
     )
+    expect(captureCanvasState).toHaveBeenCalledOnce()
   })
 
   it('commits cloned asset modal selections through the promoted host widget', async () => {
@@ -179,5 +194,6 @@ describe('createAssetWidget', () => {
       'fake_model.safetensors',
       hostWidget
     )
+    expect(captureCanvasState).toHaveBeenCalledOnce()
   })
 })
