@@ -17,15 +17,17 @@ const activeVariant = computed(
 )
 
 // The desktop graph is authored in a fixed design coordinate space and scaled
-// as a single unit to fit any width, so node positions and wires never collide
-// and the OUTPUT bleed is preserved proportionally on every screen.
-const STAGE_W = 1440
-const STAGE_H = 760
-const MAX_SCALE = 1.2
+// as a single unit to fit the viewport width, so node positions and wires
+// never collide and the OUTPUT bleed is preserved on every screen.
+const STAGE_W = 1600
+const STAGE_H = 770
+const MAX_SCALE = 1.3
 
-interface Rect {
+interface Point {
   x: number
   y: number
+}
+interface Rect extends Point {
   w: number
   h: number
 }
@@ -71,100 +73,63 @@ const stageStyle = computed(() => ({
   transform: `translateX(-50%) scale(${scale.value})`
 }))
 
-function curve(
-  from: { x: number; y: number },
-  c1: { x: number; y: number },
-  c2: { x: number; y: number },
-  to: { x: number; y: number }
-): string {
-  return `M ${from.x} ${from.y} C ${c1.x} ${c1.y}, ${c2.x} ${c2.y}, ${to.x} ${to.y}`
+// Smooth cubic with tangents aligned to the dominant axis, matching the wire
+// style used elsewhere on the site — no hand-tuned control points, no wiggle.
+function spline(s: Point, e: Point): string {
+  const dx = e.x - s.x
+  const dy = e.y - s.y
+  if (Math.abs(dx) >= Math.abs(dy)) {
+    const mx = s.x + dx * 0.5
+    return `M ${s.x} ${s.y} C ${mx} ${s.y} ${mx} ${e.y} ${e.x} ${e.y}`
+  }
+  const my = s.y + dy * 0.5
+  return `M ${s.x} ${s.y} C ${s.x} ${my} ${e.x} ${my} ${e.x} ${e.y}`
 }
 
-interface Wire {
+interface Connection {
   d: string
-  accent: boolean
+  from: Point
+  to: Point
 }
 
-const wires = computed<Wire[]>(() => {
+// The IMAGE -> TEXTURE link rendered as a liquid (gooey) yellow tube.
+const liquidLink = computed<Connection | null>(() => {
+  const { image, texture } = anchors.value
+  if (!image || !texture) return null
+  const from = { x: image.x + image.w * 0.45, y: image.y + image.h }
+  const to = { x: texture.x + texture.w * 0.5, y: texture.y }
+  return { d: spline(from, to), from, to }
+})
+
+// Faint structural wires fanning toward the placeholder + output nodes.
+const faintWires = computed<Connection[]>(() => {
   const a = anchors.value
   const { image, texture, color, lighting, output } = a
-  if (!image || !texture || !output) return []
+  const out: Connection[] = []
+  const link = (from: Point, to: Point) =>
+    out.push({ from, to, d: spline(from, to) })
 
-  const result: Wire[] = []
-
-  // Prominent yellow loop: out of the IMAGE node's left side, bowing down and
-  // around into the bottom-left of the TEXTURE node.
-  const imgLeft = { x: image.x, y: image.y + image.h * 0.55 }
-  const texBottom = { x: texture.x + texture.w * 0.3, y: texture.y + texture.h }
-  result.push({
-    accent: true,
-    d: curve(
-      imgLeft,
-      { x: imgLeft.x - 90, y: imgLeft.y + 90 },
-      { x: texBottom.x - 150, y: texBottom.y + 70 },
-      texBottom
+  if (image && color)
+    link(
+      { x: image.x + image.w, y: image.y + image.h * 0.72 },
+      { x: color.x, y: color.y + color.h * 0.5 }
     )
-  })
-
-  // Short yellow connector: IMAGE bottom into TEXTURE top.
-  const imgBottom = { x: image.x + image.w * 0.4, y: image.y + image.h }
-  const texTop = { x: texture.x + texture.w * 0.5, y: texture.y }
-  result.push({
-    accent: true,
-    d: curve(
-      imgBottom,
-      { x: imgBottom.x, y: imgBottom.y + 60 },
-      { x: texTop.x - 40, y: texTop.y - 60 },
-      texTop
+  if (texture && lighting)
+    link(
+      { x: texture.x + texture.w, y: texture.y + texture.h * 0.4 },
+      { x: lighting.x, y: lighting.y + lighting.h * 0.5 }
     )
-  })
-
-  // Faint wires fanning toward the placeholder nodes.
-  if (color) {
-    const colorLeft = { x: color.x, y: color.y + color.h * 0.5 }
-    const imgRight = { x: image.x + image.w, y: image.y + image.h * 0.7 }
-    result.push({
-      accent: false,
-      d: curve(
-        imgRight,
-        { x: imgRight.x + 70, y: imgRight.y + 30 },
-        { x: colorLeft.x - 70, y: colorLeft.y + 20 },
-        colorLeft
-      )
-    })
-  }
-  if (lighting) {
-    const lightLeft = { x: lighting.x, y: lighting.y + lighting.h * 0.5 }
-    const texRight = {
-      x: texture.x + texture.w,
-      y: texture.y + texture.h * 0.3
-    }
-    result.push({
-      accent: false,
-      d: curve(
-        texRight,
-        { x: texRight.x + 80, y: texRight.y - 40 },
-        { x: lightLeft.x - 80, y: lightLeft.y + 40 },
-        lightLeft
-      )
-    })
-  }
-
-  // Faint sweep from the center of the hero into the OUTPUT node's left edge.
-  const center = { x: STAGE_W * 0.5, y: STAGE_H * 0.5 }
-  const outLeft = { x: output.x, y: output.y + output.h * 0.32 }
-  result.push({
-    accent: false,
-    d: curve(
-      center,
-      { x: center.x + 160, y: center.y - 40 },
-      { x: outLeft.x - 160, y: outLeft.y + 20 },
-      outLeft
+  if (lighting && output)
+    link(
+      { x: lighting.x + lighting.w, y: lighting.y + lighting.h * 0.5 },
+      { x: output.x, y: output.y + output.h * 0.34 }
     )
-  })
-
-  return result
+  return out
 })
+
+const faintDots = computed<Point[]>(() =>
+  faintWires.value.flatMap((w) => [w.from, w.to])
+)
 </script>
 
 <template>
@@ -172,7 +137,7 @@ const wires = computed<Wire[]>(() => {
     <!-- Desktop / large screens: a fixed design stage scaled to fit the width -->
     <div
       ref="frameRef"
-      class="relative hidden aspect-1440/760 max-h-[912px] w-full lg:block"
+      class="relative hidden aspect-1600/770 max-h-[1000px] w-full lg:block"
     >
       <div
         ref="stageRef"
@@ -185,25 +150,61 @@ const wires = computed<Wire[]>(() => {
           fill="none"
           aria-hidden="true"
         >
+          <defs>
+            <filter id="hero-goo">
+              <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b" />
+              <feColorMatrix
+                in="b"
+                mode="matrix"
+                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9"
+              />
+            </filter>
+          </defs>
+
           <path
-            v-for="(wire, i) in wires"
+            v-for="(wire, i) in faintWires"
             :key="i"
             :d="wire.d"
-            :stroke="
-              wire.accent
-                ? 'var(--color-primary-comfy-yellow)'
-                : 'rgba(255,255,255,0.16)'
-            "
-            :stroke-width="wire.accent ? 2 : 1.5"
+            stroke="rgba(255,255,255,0.16)"
+            stroke-width="1.5"
             stroke-linecap="round"
           />
+          <circle
+            v-for="(dot, i) in faintDots"
+            :key="`d${i}`"
+            :cx="dot.x"
+            :cy="dot.y"
+            r="3"
+            fill="rgba(255,255,255,0.3)"
+          />
+
+          <g v-if="liquidLink" filter="url(#hero-goo)">
+            <path
+              :d="liquidLink.d"
+              stroke="var(--color-primary-comfy-yellow)"
+              stroke-width="9"
+              stroke-linecap="round"
+            />
+            <circle
+              :cx="liquidLink.from.x"
+              :cy="liquidLink.from.y"
+              r="9"
+              fill="var(--color-primary-comfy-yellow)"
+            />
+            <circle
+              :cx="liquidLink.to.x"
+              :cy="liquidLink.to.y"
+              r="9"
+              fill="var(--color-primary-comfy-yellow)"
+            />
+          </g>
         </svg>
 
-        <div class="absolute top-[140px] left-1/2 z-20 -translate-x-1/2">
+        <div class="absolute top-[150px] left-[704px] z-20 -translate-x-1/2">
           <HeroHeadline :locale />
         </div>
 
-        <div data-node="image" class="absolute top-6 left-[5%] w-[310px]">
+        <div data-node="image" class="absolute top-7 left-[64px] w-[320px]">
           <HeroGraphNode :label="t('hero.node.image', locale)" accent>
             <HeroImagePicker
               :variants="imageVariants"
@@ -216,7 +217,7 @@ const wires = computed<Wire[]>(() => {
 
         <div
           data-node="texture"
-          class="absolute top-[470px] left-[19%] w-[200px]"
+          class="absolute top-[500px] left-[112px] w-[210px]"
         >
           <HeroGraphNode :label="t('hero.node.texture', locale)" accent>
             <div class="aspect-square w-full overflow-hidden rounded-xl">
@@ -231,7 +232,7 @@ const wires = computed<Wire[]>(() => {
 
         <div
           data-node="color"
-          class="absolute top-[244px] left-[30%] w-[150px]"
+          class="absolute top-[470px] left-[470px] w-[150px]"
         >
           <HeroGraphNode :label="t('hero.node.color', locale)">
             <div class="h-28 w-full rounded-lg"></div>
@@ -240,16 +241,19 @@ const wires = computed<Wire[]>(() => {
 
         <div
           data-node="lighting"
-          class="absolute top-[420px] left-[40%] w-[168px]"
+          class="absolute top-[520px] left-[700px] w-[168px]"
         >
           <HeroGraphNode :label="t('hero.node.lighting', locale)">
             <div class="h-32 w-full rounded-lg"></div>
           </HeroGraphNode>
         </div>
 
-        <div data-node="output" class="absolute top-24 left-[66%] w-[820px]">
+        <div
+          data-node="output"
+          class="absolute top-[100px] left-[1024px] w-[880px]"
+        >
           <HeroGraphNode :label="t('hero.node.output', locale)">
-            <div class="relative h-[540px] w-full overflow-hidden rounded-xl">
+            <div class="relative h-[560px] w-full overflow-hidden rounded-xl">
               <Transition name="hero-glitch">
                 <img
                   :key="activeVariant.output.src"
