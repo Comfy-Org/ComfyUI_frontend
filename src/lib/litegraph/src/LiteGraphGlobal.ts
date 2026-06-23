@@ -117,13 +117,12 @@ export class LiteGraphGlobal {
   ACTION = -1 as const
 
   /** helper, will add "On Request" and more in the future */
-  NODE_MODES = ['Always', 'On Event', 'Never', 'On Trigger']
+  NODE_MODES = ['Always', 'On Event', 'Never']
   /** use with node_box_coloured_by_mode */
   NODE_MODES_COLORS = ['#666', '#422', '#333', '#224', '#626']
   ALWAYS = LGraphEventMode.ALWAYS
   ON_EVENT = LGraphEventMode.ON_EVENT
   NEVER = LGraphEventMode.NEVER
-  ON_TRIGGER = LGraphEventMode.ON_TRIGGER
 
   UP = LinkDirection.UP
   DOWN = LinkDirection.DOWN
@@ -241,12 +240,6 @@ export class LiteGraphGlobal {
 
   /** [true!] very handy, ALT click to clone and drag the new node */
   alt_drag_do_clone_nodes = false
-
-  /**
-   * [true!] will create and connect event slots when using action/events connections,
-   * !WILL CHANGE node mode when using onTrigger (enable mode colors), onExecuted does not need this
-   */
-  do_add_triggers_slots = false
 
   /** [false!] being events, it is strongly recommended to use them sequentially, one by one */
   allow_multi_output_for_events = true
