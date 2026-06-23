@@ -122,7 +122,11 @@ const { onAuthSuccess } = usePostAuthRedirect({
   defaultRedirect: () => ({ name: 'cloud-user-check' })
 })
 
-void completeDesktopLoginForExistingSession(route.query, onAuthSuccess)
+void completeDesktopLoginForExistingSession(route.query, onAuthSuccess).catch(
+  (error) => {
+    authError.value = error instanceof Error ? error.message : t('g.error')
+  }
+)
 
 function switchToEmailForm() {
   showEmailForm.value = true

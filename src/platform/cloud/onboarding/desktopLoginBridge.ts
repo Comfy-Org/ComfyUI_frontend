@@ -7,6 +7,7 @@ import { identifyPostHogUser } from '@/platform/telemetry/providers/cloud/postho
 const CALLBACK_PARAM = 'desktop_login_callback'
 const STATE_PARAM = 'desktop_login_state'
 const MAX_STATE_LENGTH = 256
+const DESKTOP_LOGIN_CALLBACK_PORT = '9876'
 
 function firstQueryValue(value: LocationQuery[string]): string | null {
   if (Array.isArray(value)) return value[0] ?? null
@@ -23,6 +24,7 @@ function parseLoopbackCallback(rawUrl: string): URL | null {
 
   if (url.protocol !== 'http:') return null
   if (!['localhost', '127.0.0.1'].includes(url.hostname)) return null
+  if (url.port !== DESKTOP_LOGIN_CALLBACK_PORT) return null
   if (url.pathname !== '/callback') return null
 
   return url

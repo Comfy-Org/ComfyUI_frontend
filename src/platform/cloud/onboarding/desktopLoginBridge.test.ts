@@ -46,6 +46,21 @@ describe('desktopLoginBridge', () => {
     ).toBe(false)
   })
 
+  it('rejects callback requests without the Desktop callback port', () => {
+    expect(
+      hasDesktopLoginRequest({
+        desktop_login_callback: 'http://localhost:1234/callback',
+        desktop_login_state: 'state-123'
+      })
+    ).toBe(false)
+    expect(
+      hasDesktopLoginRequest({
+        desktop_login_callback: 'http://localhost/callback',
+        desktop_login_state: 'state-123'
+      })
+    ).toBe(false)
+  })
+
   it('identifies the browser PostHog user and posts Firebase user payload to Desktop', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204 })
     vi.stubGlobal('fetch', fetchMock)

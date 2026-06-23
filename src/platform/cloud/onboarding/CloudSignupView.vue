@@ -163,7 +163,11 @@ const { onAuthSuccess } = usePostAuthRedirect({
   defaultRedirect: () => ({ path: '/', query: route.query })
 })
 
-void completeDesktopLoginForExistingSession(route.query, onAuthSuccess)
+void completeDesktopLoginForExistingSession(route.query, onAuthSuccess).catch(
+  (error) => {
+    authError.value = error instanceof Error ? error.message : t('g.error')
+  }
+)
 
 const navigateToLogin = async () => {
   await router.push({ name: 'cloud-login', query: route.query })
