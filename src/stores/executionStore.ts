@@ -789,7 +789,9 @@ export const useExecutionStore = defineStore('execution', () => {
    * @param locatorId The NodeLocatorId
    * @returns The execution ID or null if conversion fails
    */
-  const nodeLocatorIdToExecutionId = (locatorId: string): string | null => {
+  const nodeLocatorIdToExecutionId = (
+    locatorId: NodeLocatorId
+  ): string | null => {
     const executionId = workflowStore.nodeLocatorIdToNodeExecutionId(locatorId)
     return executionId
   }

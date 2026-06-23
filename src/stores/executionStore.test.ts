@@ -236,23 +236,24 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
 
   describe('nodeLocatorIdToExecutionId', () => {
     it('should convert NodeLocatorId to execution ID', () => {
+      const locatorId = createNodeLocatorId(
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        456
+      )
       const mockExecutionId = '123:456'
       mockNodeLocatorIdToNodeExecutionId.mockReturnValue(mockExecutionId)
 
-      const result = store.nodeLocatorIdToExecutionId(
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
-      )
+      const result = store.nodeLocatorIdToExecutionId(locatorId)
 
-      expect(mockNodeLocatorIdToNodeExecutionId).toHaveBeenCalledWith(
-        'a1b2c3d4-e5f6-7890-abcd-ef1234567890:456'
-      )
+      expect(mockNodeLocatorIdToNodeExecutionId).toHaveBeenCalledWith(locatorId)
       expect(result).toBe(mockExecutionId)
     })
 
     it('should return null when conversion fails', () => {
+      const locatorId = createNodeLocatorId('unknown-subgraph-id', 456)
       mockNodeLocatorIdToNodeExecutionId.mockReturnValue(null)
 
-      const result = store.nodeLocatorIdToExecutionId('invalid:format')
+      const result = store.nodeLocatorIdToExecutionId(locatorId)
 
       expect(result).toBeNull()
     })

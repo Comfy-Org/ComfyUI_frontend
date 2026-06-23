@@ -83,9 +83,9 @@ interface WorkflowStore {
   executionIdToCurrentId: (id: string) => string | undefined
   nodeIdToNodeLocatorId: (nodeId: NodeId, subgraph?: Subgraph) => NodeLocatorId
   nodeToNodeLocatorId: (node: LGraphNode) => NodeLocatorId
-  nodeLocatorIdToNodeId: (locatorId: string) => NodeId | null
+  nodeLocatorIdToNodeId: (locatorId: NodeLocatorId) => NodeId
   nodeLocatorIdToNodeExecutionId: (
-    locatorId: string,
+    locatorId: NodeLocatorId,
     targetSubgraph?: Subgraph
   ) => NodeExecutionId | null
 }
@@ -648,11 +648,10 @@ export const useWorkflowStore = defineStore('workflow', () => {
   /**
    * Extract the node ID from a NodeLocatorId
    * @param locatorId The NodeLocatorId
-   * @returns The local node ID or null if invalid
+   * @returns The local node ID
    */
-  const nodeLocatorIdToNodeId = (locatorId: string): NodeId | null => {
-    const parsed = parseNodeLocatorId(locatorId)
-    return parsed?.localNodeId ?? null
+  const nodeLocatorIdToNodeId = (locatorId: NodeLocatorId): NodeId => {
+    return parseNodeLocatorId(locatorId)!.localNodeId
   }
 
   /**
@@ -662,7 +661,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @returns The execution ID or null if the node is not accessible from the target context
    */
   const nodeLocatorIdToNodeExecutionId = (
-    locatorId: string,
+    locatorId: NodeLocatorId,
     targetSubgraph?: Subgraph
   ): NodeExecutionId | null => {
     const parsed = parseNodeLocatorId(locatorId)
