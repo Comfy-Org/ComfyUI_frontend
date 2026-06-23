@@ -14,7 +14,6 @@ import type * as WorkflowStoreModule from '@/platform/workflow/management/stores
 import type { NodeProgressState } from '@/schemas/apiSchema'
 
 const {
-  mockNodeExecutionIdToNodeLocatorId,
   mockNodeIdToNodeLocatorId,
   mockNodeLocatorIdToNodeExecutionId,
   mockExecutionIdToCurrentId,
@@ -27,7 +26,6 @@ const {
 } = await vi.hoisted(async () => {
   const { shallowRef } = await import('vue')
   return {
-    mockNodeExecutionIdToNodeLocatorId: vi.fn(),
     mockNodeIdToNodeLocatorId: vi.fn(),
     mockNodeLocatorIdToNodeExecutionId: vi.fn(),
     mockExecutionIdToCurrentId: vi.fn(),
@@ -68,7 +66,6 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
   return {
     ComfyWorkflow,
     useWorkflowStore: vi.fn(() => ({
-      nodeExecutionIdToNodeLocatorId: mockNodeExecutionIdToNodeLocatorId,
       nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
       nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
       executionIdToCurrentId: mockExecutionIdToCurrentId,
@@ -184,7 +181,6 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     // Reset mock implementations
-    mockNodeExecutionIdToNodeLocatorId.mockReset()
     mockNodeIdToNodeLocatorId.mockReset()
     mockNodeLocatorIdToNodeExecutionId.mockReset()
     mockExecutionIdToCurrentId.mockReset()
@@ -268,7 +264,6 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
-    mockNodeExecutionIdToNodeLocatorId.mockReset()
     mockNodeIdToNodeLocatorId.mockReset()
     mockNodeLocatorIdToNodeExecutionId.mockReset()
     mockExecutionIdToCurrentId.mockReset()

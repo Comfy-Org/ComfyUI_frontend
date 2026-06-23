@@ -83,9 +83,6 @@ interface WorkflowStore {
   executionIdToCurrentId: (id: string) => string | undefined
   nodeIdToNodeLocatorId: (nodeId: NodeId, subgraph?: Subgraph) => NodeLocatorId
   nodeToNodeLocatorId: (node: LGraphNode) => NodeLocatorId
-  nodeExecutionIdToNodeLocatorId: (
-    nodeExecutionId: string
-  ) => NodeLocatorId | null
   nodeLocatorIdToNodeId: (locatorId: string) => NodeId | null
   nodeLocatorIdToNodeExecutionId: (
     locatorId: string,
@@ -649,39 +646,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
 
   /**
-   * Convert an execution ID to a NodeLocatorId
-   * @param nodeExecutionId The execution node ID (e.g., "123:456:789")
-   * @returns The NodeLocatorId or null if conversion fails
-   */
-  const nodeExecutionIdToNodeLocatorId = (
-    nodeExecutionId: string
-  ): NodeLocatorId | null => {
-    // Handle simple node IDs (root graph - no colons)
-    if (!nodeExecutionId.includes(':')) {
-      return createNodeLocatorId(null, nodeExecutionId)
-    }
-
-    const parts = parseNodeExecutionId(nodeExecutionId)
-    if (!parts || parts.length === 0) return null
-
-    const nodeId = parts[parts.length - 1]
-    const subgraphNodeIds = parts.slice(0, -1)
-
-    if (subgraphNodeIds.length === 0) {
-      // Node is in root graph, return the node ID as-is
-      return createNodeLocatorId(null, nodeId)
-    }
-    const subgraphs = getSubgraphsFromInstanceIds(
-      comfyApp.rootGraph,
-      subgraphNodeIds.map((id) => String(id))
-    )
-    const immediateSubgraph = subgraphs?.at(-1)
-    return immediateSubgraph
-      ? createNodeLocatorId(immediateSubgraph.id, nodeId)
-      : null
-  }
-
-  /**
    * Extract the node ID from a NodeLocatorId
    * @param locatorId The NodeLocatorId
    * @returns The local node ID or null if invalid
@@ -789,7 +753,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
     executionIdToCurrentId,
     nodeIdToNodeLocatorId,
     nodeToNodeLocatorId,
-    nodeExecutionIdToNodeLocatorId,
     nodeLocatorIdToNodeId,
     nodeLocatorIdToNodeExecutionId
   }

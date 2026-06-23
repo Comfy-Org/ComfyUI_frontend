@@ -903,23 +903,6 @@ describe('useWorkflowStore', () => {
         expect(store.executionIdToCurrentId('123::456')).toBeUndefined()
       })
     })
-    describe('nodeExecutionIdToNodeLocatorId', () => {
-      it('should convert execution ID to NodeLocatorId', () => {
-        const result = store.nodeExecutionIdToNodeLocatorId('123:456')
-        expect(result).toBe('a1b2c3d4-e5f6-7890-abcd-ef1234567890:456')
-      })
-
-      it('should return simple node ID for root level nodes', () => {
-        const result = store.nodeExecutionIdToNodeLocatorId('123')
-        expect(result).toBe('123')
-      })
-
-      it('should return null for invalid execution IDs', () => {
-        const result = store.nodeExecutionIdToNodeLocatorId('999:456')
-        expect(result).toBeNull()
-      })
-    })
-
     describe('nodeLocatorIdToNodeId', () => {
       it('should extract node ID from NodeLocatorId', () => {
         const result = store.nodeLocatorIdToNodeId(
