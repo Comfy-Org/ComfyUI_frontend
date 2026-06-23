@@ -38,7 +38,10 @@ import {
   resolveMissingErrorMessage,
   resolveRunErrorMessage
 } from '@/platform/errorCatalog/errorMessageResolver'
-import { compareExecutionId } from '@/types/nodeIdentification'
+import {
+  compareExecutionId,
+  normalizeNodeExecutionId
+} from '@/types/nodeIdentification'
 
 const PROMPT_CARD_ID = '__prompt__'
 
@@ -79,7 +82,7 @@ interface ErrorSearchItem {
 type CataloguedErrorItem = ErrorItem & ResolvedCatalogErrorMessage
 
 /** Resolve display info for a node by its execution ID. */
-function resolveNodeInfo(nodeId: string) {
+function resolveNodeInfo(nodeId: NodeExecutionId) {
   const graphNode = getNodeByExecutionId(app.rootGraph, nodeId)
 
   return {
@@ -116,7 +119,7 @@ function getOrCreateGroup(
 }
 
 function createErrorCard(
-  nodeId: string,
+  nodeId: NodeExecutionId,
   classType: string,
   idPrefix: string
 ): ErrorCardData {
@@ -285,7 +288,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return map
   })
 
-  function isErrorInSelection(executionNodeId: string): boolean {
+  function isErrorInSelection(executionNodeId: NodeExecutionId): boolean {
     const nodeIds = selectedNodeInfo.value.nodeIds
     if (!nodeIds) return true
 
@@ -302,7 +305,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   function addNodeErrorToGroup(
     groupsMap: Map<string, GroupEntry>,
-    nodeId: string,
+    nodeId: NodeExecutionId,
     classType: string,
     idPrefix: string,
     error: CataloguedErrorItem,
@@ -368,9 +371,10 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
   ) {
     if (!executionErrorStore.lastNodeErrors) return
 
-    for (const [nodeId, nodeError] of Object.entries(
+    for (const [rawNodeId, nodeError] of Object.entries(
       executionErrorStore.lastNodeErrors
     )) {
+      const nodeId = normalizeNodeExecutionId(rawNodeId)
       const nodeDisplayName =
         resolveNodeInfo(nodeId).title || nodeError.class_type
       for (const e of nodeError.errors) {
@@ -403,7 +407,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     const e = executionErrorStore.lastExecutionError
     addNodeErrorToGroup(
       groupsMap,
-      String(e.node_id),
+      normalizeNodeExecutionId(e.node_id),
       e.node_type,
       'exec',
       {
@@ -415,7 +419,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
           kind: 'execution',
           error: e,
           nodeDisplayName:
-            resolveNodeInfo(String(e.node_id)).title || e.node_type
+            resolveNodeInfo(normalizeNodeExecutionId(e.node_id)).title ||
+            e.node_type
         })
       },
       filterBySelection
@@ -666,7 +671,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     ]
   }
 
-  function isAssetErrorInSelection(executionNodeId: string): boolean {
+  function isAssetErrorInSelection(executionNodeId: NodeExecutionId): boolean {
     const nodeIds = selectedNodeInfo.value.nodeIds
     if (!nodeIds) return true
 
@@ -693,7 +698,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     const candidates = missingModelStore.missingModelCandidates
     if (!candidates?.length) return []
     const filtered = candidates.filter(
-      (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
+      (c) =>
+        c.nodeId != null &&
+        isAssetErrorInSelection(normalizeNodeExecutionId(c.nodeId))
     )
     if (!filtered.length) return []
     return groupMissingModelCandidates(filtered, isCloud)
@@ -704,7 +711,9 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     const candidates = missingMediaStore.missingMediaCandidates
     if (!candidates?.length) return []
     const filtered = candidates.filter(
-      (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
+      (c) =>
+        c.nodeId != null &&
+        isAssetErrorInSelection(normalizeNodeExecutionId(c.nodeId))
     )
     if (!filtered.length) return []
     return groupCandidatesByMediaType(filtered)

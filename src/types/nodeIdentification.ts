@@ -129,6 +129,12 @@ export function createNodeExecutionId<const T extends readonly NodeId[]>(
   return nodeIds.join(':') as NodeExecutionId
 }
 
+export function normalizeNodeExecutionId(
+  value: string | number
+): NodeExecutionId {
+  return String(value) as NodeExecutionId
+}
+
 export function appendNodeExecutionId(
   parentExecutionId: string,
   childNodeId: NodeId
