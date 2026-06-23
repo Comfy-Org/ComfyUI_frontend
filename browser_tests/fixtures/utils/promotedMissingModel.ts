@@ -24,10 +24,6 @@ export interface ResolvedPromotedModelWorkflow {
   }>
 }
 
-type LegacyPromotedWidgetOperation =
-  | { type: 'set-value'; value: string }
-  | { type: 'open-asset-modal' }
-
 export const NESTED_PROMOTED_MISSING_MODEL_WORKFLOW: PromotedMissingModelWorkflow =
   {
     workflowName: 'missing/missing_model_nested_promoted_widget',
@@ -130,10 +126,7 @@ export async function setLegacyPromotedComboModel(
   workflow: PromotedMissingModelWorkflow,
   modelName: string
 ) {
-  await runLegacyPromotedWidgetOperation(comfyPage, workflow, {
-    type: 'set-value',
-    value: modelName
-  })
+  await setLegacyPromotedWidgetValue(comfyPage, workflow, modelName)
 }
 
 export async function selectLegacyPromotedAssetModel(
@@ -142,9 +135,7 @@ export async function selectLegacyPromotedAssetModel(
   assetId: string
 ) {
   await expectLegacyPromotedWidgetType(comfyPage, workflow, 'asset')
-  await runLegacyPromotedWidgetOperation(comfyPage, workflow, {
-    type: 'open-asset-modal'
-  })
+  await clickLegacyPromotedWidget(comfyPage, workflow)
 
   const modal = comfyPage.page.locator(
     '[data-component-id="AssetBrowserModal"]'
@@ -268,13 +259,13 @@ async function expectLegacyPromotedWidgetType(
     .toBe(widgetType)
 }
 
-async function runLegacyPromotedWidgetOperation(
+async function setLegacyPromotedWidgetValue(
   comfyPage: ComfyPage,
   workflow: PromotedMissingModelWorkflow,
-  operation: LegacyPromotedWidgetOperation
+  value: string
 ) {
   await comfyPage.page.evaluate(
-    async ({ hostNodeId, sourceNodePath, widgetName, operation }) => {
+    async ({ hostNodeId, sourceNodePath, widgetName, value }) => {
       type LegacyPromotedWidget = {
         name?: string
         type?: string
@@ -286,9 +277,6 @@ async function runLegacyPromotedWidgetOperation(
             canvas: unknown
           }
         ) => void
-        options?: {
-          openModal?: (widget: LegacyPromotedWidget) => void | Promise<void>
-        }
       }
       type LegacyPromotedNode = {
         isSubgraphNode?: () => boolean
@@ -327,33 +315,33 @@ async function runLegacyPromotedWidgetOperation(
       if (!widget) {
         throw new Error(`Expected concrete ${widgetName} widget`)
       }
-
-      if (operation.type === 'set-value') {
-        if (!widget.setValue) {
-          throw new Error(`Expected settable ${widgetName} widget`)
-        }
-
-        widget.setValue(operation.value, {
-          e: new PointerEvent('pointerup'),
-          node: hostNode,
-          canvas: window.app!.canvas
-        })
-        return
+      if (!widget.setValue) {
+        throw new Error(`Expected settable ${widgetName} widget`)
       }
 
-      const openModal = widget.options?.openModal
-      if (widget.type !== 'asset' || !openModal) {
-        throw new Error(`Expected asset ${widgetName} widget`)
-      }
-      await openModal(widget)
+      widget.setValue(value, {
+        e: new PointerEvent('pointerup'),
+        node: hostNode,
+        canvas: window.app!.canvas
+      })
     },
     {
       hostNodeId: workflow.hostNodeId,
       sourceNodePath: workflow.sourceNodePath,
       widgetName: PROMOTED_MODEL_WIDGET_NAME,
-      operation
+      value
     }
   )
+}
+
+async function clickLegacyPromotedWidget(
+  comfyPage: ComfyPage,
+  workflow: PromotedMissingModelWorkflow
+) {
+  const hostNode = await comfyPage.nodeOps.getNodeRefById(workflow.hostNodeId)
+  await hostNode.centerOnNode()
+  const widget = await hostNode.getWidgetByName(PROMOTED_MODEL_WIDGET_NAME)
+  await widget.click()
 }
 
 async function enterSubgraphForStaleInteriorCheck(
