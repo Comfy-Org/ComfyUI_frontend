@@ -14,6 +14,7 @@ import { assetService } from '@/platform/assets/services/assetService'
 import type { ImportSource } from '@/platform/assets/types/importSource'
 import {
   getAssetFilename,
+  stripModelTypePrefix,
   toModelTypeTag
 } from '@/platform/assets/utils/assetMetadataUtils'
 import { validateSourceUrl } from '@/platform/assets/utils/importSourceUtil'
@@ -276,19 +277,22 @@ export function useUploadModelWizard(
   }
 
   function getImportedModelType(asset: AssetItem): string | undefined {
-    const knownType = asset.tags.find(
-      (tag) =>
-        tag !== MODEL_ROOT_TAG &&
+    const subtypeTags = asset.tags
+      .filter((tag) => tag !== MODEL_ROOT_TAG)
+      .map(stripModelTypePrefix)
+    return (
+      subtypeTags.find((tag) =>
         modelTypes.value.some((type) => type.value === tag)
+      ) ?? subtypeTags[0]
     )
-    return knownType ?? asset.tags.find((tag) => tag !== MODEL_ROOT_TAG)
   }
 
   function blockMismatchedImportedModel(
     asset: AssetItem,
     requiredType: string
   ): boolean {
-    if (asset.tags.includes(requiredType)) return false
+    if (asset.tags.map(stripModelTypePrefix).includes(requiredType))
+      return false
 
     const importedType = getImportedModelType(asset)
     uploadStatus.value = 'error'
