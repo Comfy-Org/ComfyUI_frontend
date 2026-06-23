@@ -7,7 +7,7 @@ import type { UUID } from '@/utils/uuid'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import {
-  createNodeExecutionId,
+  appendNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
@@ -125,10 +125,7 @@ export function usePromotedPreviews(
       const urls = readReactivePreviewUrls(
         leafHost,
         leaf.sourceNodeId,
-        createNodeExecutionId([
-          ...leafHostLocator.split(':'),
-          leaf.sourceNodeId
-        ]),
+        appendNodeExecutionId(leafHostLocator, leaf.sourceNodeId),
         interiorNode
       )
       if (!urls?.length) return []

@@ -141,7 +141,7 @@ export function useSlotLinkInteraction({
     const nodeId = link.node.id
     if (nodeId != null) {
       const isInputFrom = link.toType === 'output'
-      const key = getSlotKey(String(nodeId), link.fromSlotIndex, isInputFrom)
+      const key = getSlotKey(nodeId, link.fromSlotIndex, isInputFrom)
       const layout = layoutStore.getSlotLayout(key)
       if (layout) return layout.position
     }
@@ -218,7 +218,7 @@ export function useSlotLinkInteraction({
   ): { position: Point; direction: LinkDirection } | null => {
     if (!link) return null
 
-    const slotKey = getSlotKey(String(link.origin_id), link.origin_slot, false)
+    const slotKey = getSlotKey(link.origin_id, link.origin_slot, false)
     const layout = layoutStore.getSlotLayout(slotKey)
     if (!layout) return null
 
@@ -359,7 +359,7 @@ export function useSlotLinkInteraction({
 
       if (slotCandidate) {
         const key = getSlotKey(
-          String(slotCandidate.layout.nodeId),
+          slotCandidate.layout.nodeId,
           slotCandidate.layout.index,
           slotCandidate.layout.type === 'input'
         )
@@ -367,7 +367,7 @@ export function useSlotLinkInteraction({
       }
       if (nodeCandidate && !slotCandidate?.compatible) {
         const key = getSlotKey(
-          String(nodeCandidate.layout.nodeId),
+          nodeCandidate.layout.nodeId,
           nodeCandidate.layout.index,
           nodeCandidate.layout.type === 'input'
         )
@@ -378,7 +378,7 @@ export function useSlotLinkInteraction({
     const newCandidate = candidate?.compatible ? candidate : null
     const newCandidateKey = newCandidate
       ? getSlotKey(
-          String(newCandidate.layout.nodeId),
+          newCandidate.layout.nodeId,
           newCandidate.layout.index,
           newCandidate.layout.type === 'input'
         )

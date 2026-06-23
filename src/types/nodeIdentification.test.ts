@@ -12,13 +12,12 @@ import {
   parseNodeExecutionId,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
 
 describe('nodeIdentification', () => {
   describe('NodeLocatorId', () => {
     const validUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
     const validNodeId = '123'
-    const validNodeLocatorId = `${validUuid}:${validNodeId}` as NodeLocatorId
+    const validNodeLocatorId = createNodeLocatorId(validUuid, validNodeId)
 
     describe('isNodeLocatorId', () => {
       it('should return true for valid NodeLocatorId', () => {

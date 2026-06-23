@@ -129,6 +129,16 @@ export function createNodeExecutionId<const T extends readonly NodeId[]>(
   return nodeIds.join(':') as NodeExecutionId
 }
 
+export function appendNodeExecutionId(
+  parentExecutionId: string,
+  childNodeId: NodeId
+): NodeExecutionId {
+  if (!isNodeExecutionId(parentExecutionId)) {
+    throw new Error(`Invalid NodeExecutionId: ${parentExecutionId}`)
+  }
+  return createNodeExecutionId([...parentExecutionId.split(':'), childNodeId])
+}
+
 /**
  * Returns all ancestor execution IDs for a given execution ID, including itself.
  *
