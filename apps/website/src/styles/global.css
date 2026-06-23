@@ -216,6 +216,27 @@
   opacity: 0;
 }
 
+/* The two headline lines are split apart with a gap; #hero-goo only bridges
+   them where this blob sits, so as the blob glides side to side it drags a
+   liquid link back and forth between the words. Travel is kept well inside the
+   narrower lower line (~±72px) so the bridge glides through the centre without
+   reaching either edge and poking out past a line. */
+@keyframes hero-liquid-link {
+  0% {
+    transform: translate(calc(-50% - 72px), -50%) scale(1, 1.05);
+  }
+  50% {
+    transform: translate(calc(-50% + 72px), -50%) scale(1, 1.05);
+  }
+  100% {
+    transform: translate(calc(-50% - 72px), -50%) scale(1, 1.05);
+  }
+}
+
+.hero-liquid-link {
+  animation: hero-liquid-link 3.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

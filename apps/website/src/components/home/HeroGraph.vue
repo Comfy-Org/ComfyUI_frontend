@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import HeroGraphNode from './HeroGraphNode.vue'
 import HeroHeadline from './HeroHeadline.vue'
 import HeroImagePicker from './HeroImagePicker.vue'
 import { imageVariants, textureImage } from './heroGraphData'
+import { computeWires } from './heroGraphWires'
+import type { NodeId, Point, Rect } from './heroGraphWires'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
@@ -17,41 +20,46 @@ const activeVariant = computed(
 )
 
 // The desktop graph is authored in a fixed design coordinate space and scaled
-// as a single unit to fit the viewport width, so node positions and wires
-// never collide and the OUTPUT bleed is preserved on every screen.
+// as a single unit to fit the viewport width, so wires and the OUTPUT bleed are
+// preserved on every screen. Node positions are live state so they can be
+// dragged; widths are fixed per node and heights are measured once for wiring.
 const STAGE_W = 1600
 const STAGE_H = 780
 const MAX_SCALE = 1.3
 
-interface Point {
-  x: number
-  y: number
+const NODE_W: Record<NodeId, number> = {
+  image: 300,
+  texture: 200,
+  color: 150,
+  lighting: 168,
+  output: 760
 }
-interface Rect extends Point {
-  w: number
-  h: number
-}
+
+// Whole graph is nudged left of the stage centre so the OUTPUT node bleeds less
+// far off the right edge.
+const positions = ref<Record<NodeId, Point>>({
+  image: { x: 16, y: 28 },
+  texture: { x: 52, y: 500 },
+  color: { x: 426, y: 470 },
+  lighting: { x: 676, y: 500 },
+  output: { x: 956, y: 110 }
+})
 
 const frameRef = ref<HTMLElement>()
 const stageRef = ref<HTMLElement>()
 const scale = ref(1)
-const anchors = ref<Record<string, Rect>>({})
+const heights = ref<Record<string, number>>({})
 
-// Measured from layout offsets (not getBoundingClientRect), so the values stay
+// Heights are read from layout offsets (not getBoundingClientRect) so they stay
 // in unscaled design coordinates regardless of the stage's scale transform.
-function measure() {
+function measureHeights() {
   const stage = stageRef.value
   if (!stage) return
-  const next: Record<string, Rect> = {}
+  const next: Record<string, number> = {}
   stage.querySelectorAll<HTMLElement>('[data-node]').forEach((el) => {
-    next[el.dataset.node ?? ''] = {
-      x: el.offsetLeft,
-      y: el.offsetTop,
-      w: el.offsetWidth,
-      h: el.offsetHeight
-    }
+    next[el.dataset.node ?? ''] = el.offsetHeight
   })
-  anchors.value = next
+  heights.value = next
 }
 
 function updateScale() {
@@ -61,10 +69,9 @@ function updateScale() {
 
 function refresh() {
   updateScale()
-  measure()
+  measureHeights()
 }
 
-onMounted(() => void nextTick(refresh))
 useResizeObserver(frameRef, refresh)
 
 const stageStyle = computed(() => ({
@@ -73,56 +80,71 @@ const stageStyle = computed(() => ({
   transform: `translateX(-50%) scale(${scale.value})`
 }))
 
-// Gentle cubic with tangents along the dominant axis. The control offset is
-// capped so long runs stay soft and straight in the middle instead of swooping.
-function spline(s: Point, e: Point): string {
-  const dx = e.x - s.x
-  const dy = e.y - s.y
-  if (Math.abs(dx) >= Math.abs(dy)) {
-    const off = Math.sign(dx) * Math.min(Math.abs(dx) * 0.5, 90)
-    return `M ${s.x} ${s.y} C ${s.x + off} ${s.y} ${e.x - off} ${e.y} ${e.x} ${e.y}`
+function nodeStyle(id: NodeId) {
+  return {
+    left: `${positions.value[id].x}px`,
+    top: `${positions.value[id].y}px`,
+    width: `${NODE_W[id]}px`
   }
-  const off = Math.sign(dy) * Math.min(Math.abs(dy) * 0.5, 90)
-  return `M ${s.x} ${s.y} C ${s.x} ${s.y + off} ${e.x} ${e.y - off} ${e.x} ${e.y}`
 }
 
-interface Wire {
-  d: string
-  from: Point
-  to: Point
-  accent: boolean
-}
-
-const wires = computed<Wire[]>(() => {
-  const a = anchors.value
-  const { image, texture, color, lighting, output } = a
-  const out: Wire[] = []
-  const add = (from: Point, to: Point, accent = false) =>
-    out.push({ from, to, accent, d: spline(from, to) })
-
-  if (image && texture)
-    add(
-      { x: image.x + image.w * 0.4, y: image.y + image.h },
-      { x: texture.x + texture.w * 0.5, y: texture.y },
-      true
-    )
-  if (image && color)
-    add(
-      { x: image.x + image.w, y: image.y + image.h * 0.78 },
-      { x: color.x, y: color.y + color.h * 0.5 }
-    )
-  if (color && lighting)
-    add(
-      { x: color.x + color.w, y: color.y + color.h * 0.5 },
-      { x: lighting.x, y: lighting.y + lighting.h * 0.45 }
-    )
-  if (lighting && output)
-    add(
-      { x: lighting.x + lighting.w, y: lighting.y + lighting.h * 0.4 },
-      { x: output.x, y: output.y + output.h * 0.4 }
-    )
-  return out
+// Wires recompute from live positions + measured heights, so they track the
+// nodes synchronously while dragging with no measure round-trip.
+const anchors = computed<Record<NodeId, Rect>>(() => {
+  const ids = Object.keys(positions.value) as NodeId[]
+  return Object.fromEntries(
+    ids.map((id) => [
+      id,
+      { ...positions.value[id], w: NODE_W[id], h: heights.value[id] ?? 0 }
+    ])
+  ) as Record<NodeId, Rect>
 })
+
+const dragging = ref<NodeId | null>(null)
+let drag = { id: '' as NodeId, pointerId: -1, px: 0, py: 0, ox: 0, oy: 0 }
+
+function onPointerDown(id: NodeId, e: PointerEvent) {
+  if (e.button !== 0) return
+  drag = {
+    id,
+    pointerId: e.pointerId,
+    px: e.clientX,
+    py: e.clientY,
+    ox: positions.value[id].x,
+    oy: positions.value[id].y
+  }
+  dragging.value = id
+}
+
+// A small threshold keeps taps on the image picker from registering as drags.
+function onPointerMove(e: PointerEvent) {
+  if (dragging.value == null || e.pointerId !== drag.pointerId) return
+  const dx = e.clientX - drag.px
+  const dy = e.clientY - drag.py
+  if (Math.hypot(dx, dy) < 4) return
+  positions.value[drag.id] = {
+    x: drag.ox + dx / scale.value,
+    y: drag.oy + dy / scale.value
+  }
+}
+
+function onPointerUp() {
+  dragging.value = null
+}
+
+// Listeners live on window so a drag continues even when the pointer outruns the
+// node; registered in onMounted to keep window off the SSR path.
+onMounted(() => {
+  void nextTick(refresh)
+  window.addEventListener('pointermove', onPointerMove)
+  window.addEventListener('pointerup', onPointerUp)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('pointermove', onPointerMove)
+  window.removeEventListener('pointerup', onPointerUp)
+})
+
+const wires = computed(() => computeWires(anchors.value))
 
 const dots = computed<{ p: Point; accent: boolean }[]>(() =>
   wires.value.flatMap((w) => [
@@ -176,11 +198,21 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
           />
         </svg>
 
-        <div class="absolute top-[150px] left-[680px] z-20 -translate-x-1/2">
+        <div class="absolute top-[150px] left-[636px] z-20 -translate-x-1/2">
           <HeroHeadline :locale />
         </div>
 
-        <div data-node="image" class="absolute top-7 left-[60px] w-[300px]">
+        <div
+          data-node="image"
+          :class="
+            cn(
+              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              dragging === 'image' && 'z-30 cursor-grabbing'
+            )
+          "
+          :style="nodeStyle('image')"
+          @pointerdown="onPointerDown('image', $event)"
+        >
           <HeroGraphNode :label="t('hero.node.image', locale)" accent>
             <HeroImagePicker
               :variants="imageVariants"
@@ -193,13 +225,21 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
 
         <div
           data-node="texture"
-          class="absolute top-[500px] left-[96px] w-[200px]"
+          :class="
+            cn(
+              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              dragging === 'texture' && 'z-30 cursor-grabbing'
+            )
+          "
+          :style="nodeStyle('texture')"
+          @pointerdown="onPointerDown('texture', $event)"
         >
           <HeroGraphNode :label="t('hero.node.texture', locale)" accent>
             <div class="aspect-square w-full overflow-hidden rounded-xl">
               <img
                 :src="textureImage.src"
                 :alt="t(textureImage.altKey, locale)"
+                draggable="false"
                 class="size-full object-cover"
               />
             </div>
@@ -208,7 +248,14 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
 
         <div
           data-node="color"
-          class="absolute top-[440px] left-[460px] w-[150px]"
+          :class="
+            cn(
+              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              dragging === 'color' && 'z-30 cursor-grabbing'
+            )
+          "
+          :style="nodeStyle('color')"
+          @pointerdown="onPointerDown('color', $event)"
         >
           <HeroGraphNode :label="t('hero.node.color', locale)">
             <div class="h-28 w-full rounded-lg"></div>
@@ -217,7 +264,14 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
 
         <div
           data-node="lighting"
-          class="absolute top-[480px] left-[710px] w-[168px]"
+          :class="
+            cn(
+              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              dragging === 'lighting' && 'z-30 cursor-grabbing'
+            )
+          "
+          :style="nodeStyle('lighting')"
+          @pointerdown="onPointerDown('lighting', $event)"
         >
           <HeroGraphNode :label="t('hero.node.lighting', locale)">
             <div class="h-32 w-full rounded-lg"></div>
@@ -226,7 +280,14 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
 
         <div
           data-node="output"
-          class="absolute top-[100px] left-[1000px] w-[760px]"
+          :class="
+            cn(
+              'absolute cursor-grab touch-none select-none active:cursor-grabbing',
+              dragging === 'output' && 'z-30 cursor-grabbing'
+            )
+          "
+          :style="nodeStyle('output')"
+          @pointerdown="onPointerDown('output', $event)"
         >
           <HeroGraphNode :label="t('hero.node.output', locale)">
             <div class="relative h-[560px] w-full overflow-hidden rounded-xl">
@@ -236,6 +297,7 @@ const dots = computed<{ p: Point; accent: boolean }[]>(() =>
                   :src="activeVariant.output.src"
                   :alt="t(activeVariant.output.altKey, locale)"
                   data-testid="hero-output-image"
+                  draggable="false"
                   class="absolute inset-0 size-full object-cover"
                 />
               </Transition>

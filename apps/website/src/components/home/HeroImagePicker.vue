@@ -39,6 +39,7 @@ function selectOnHover(id: string, e: PointerEvent) {
           :src="active.src"
           :alt="t(active.altKey, locale)"
           data-testid="hero-active-image"
+          draggable="false"
           class="absolute inset-0 size-full object-cover"
         />
       </Transition>
@@ -71,6 +72,7 @@ function selectOnHover(id: string, e: PointerEvent) {
           :src="variant.src"
           alt=""
           aria-hidden="true"
+          draggable="false"
           class="size-full object-cover"
         />
       </button>
