@@ -26,6 +26,10 @@ export function useNodePointerInteractions(
     useNodeEventHandlers()
   const { nodeManager } = useVueNodeLifecycle()
 
+  function isPinnedNode(nodeId: NodeId): boolean {
+    return nodeManager.value?.getNode(String(nodeId))?.flags?.pinned ?? false
+  }
+
   const forwardMiddlePointerIfNeeded = (
     event: PointerEvent,
     isMiddleInput: (event: PointerEvent) => boolean
@@ -60,7 +64,7 @@ export function useNodePointerInteractions(
     }
 
     // IMPORTANT: Read from actual LGraphNode to get correct state
-    if (nodeManager.value?.getNode(String(nodeId))?.flags?.pinned) {
+    if (isPinnedNode(nodeId)) {
       return
     }
 
@@ -77,7 +81,7 @@ export function useNodePointerInteractions(
 
     const nodeId = toValue(nodeIdRef)
 
-    if (nodeManager.value?.getNode(String(nodeId))?.flags?.pinned) {
+    if (isPinnedNode(nodeId)) {
       return
     }
 
