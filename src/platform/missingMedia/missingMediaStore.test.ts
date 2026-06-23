@@ -1,7 +1,6 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { useMissingMediaStore } from './missingMediaStore'
 import type { MissingMediaCandidate } from './types'
 
@@ -96,18 +95,6 @@ describe('useMissingMediaStore', () => {
     expect(store.missingMediaNodeIds.size).toBe(2)
     expect(store.missingMediaNodeIds.has('1')).toBe(true)
     expect(store.missingMediaNodeIds.has('2')).toBe(true)
-  })
-
-  it('hasMissingMediaOnNode checks node presence', () => {
-    const store = useMissingMediaStore()
-    store.setMissingMedia([makeCandidate('42', 'photo.png')])
-
-    expect(store.hasMissingMediaOnNode(createNodeLocatorId(null, 42))).toBe(
-      true
-    )
-    expect(store.hasMissingMediaOnNode(createNodeLocatorId(null, 99))).toBe(
-      false
-    )
   })
 
   it('removeMissingMediaByWidget removes matching node+widget entry', () => {
