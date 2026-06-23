@@ -13,7 +13,10 @@ import {
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
@@ -400,6 +403,37 @@ describe('computeProcessedWidgets borderStyle', () => {
     })
   })
 
+  it('uses widget nodeId for simplified widget locator when present', () => {
+    const widget = createMockWidget({
+      name: 'text',
+      type: 'combo',
+      nodeId: 'inner-node'
+    })
+
+    const result = computeProcessedWidgets({
+      nodeData: {
+        id: 'host-node',
+        type: 'SubgraphNode',
+        widgets: [widget],
+        title: 'Test',
+        mode: 0,
+        selected: false,
+        executing: false,
+        inputs: [],
+        outputs: [],
+        subgraphId: 'subgraph-node'
+      },
+      graphId: GRAPH_ID,
+      showAdvanced: false,
+      isGraphReady: false,
+      rootGraph: null,
+      ui: noopUi
+    })
+
+    expect(result[0].simplified.nodeLocatorId).toBe(
+      createNodeLocatorId('subgraph-node', 'inner-node')
+    )
+  })
   it('deduplication keeps visible widget over hidden duplicate', () => {
     const sharedWidgetId = widgetId(GRAPH_ID, '1', 'text')
     const hiddenWidget = createMockWidget({

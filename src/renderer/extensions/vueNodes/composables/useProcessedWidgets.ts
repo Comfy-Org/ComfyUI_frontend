@@ -291,7 +291,10 @@ export function computeProcessedWidgets({
         : undefined
 
     const nodeLocatorId = nodeData
-      ? getLocatorIdFromNodeData(nodeData)
+      ? getLocatorIdFromNodeData({
+          ...nodeData,
+          id: widget.nodeId ?? nodeData.id
+        })
       : undefined
 
     const simplified: SimplifiedWidget = {
