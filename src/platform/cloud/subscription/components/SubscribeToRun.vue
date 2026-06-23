@@ -23,7 +23,6 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
@@ -51,14 +50,12 @@ const buttonTooltip = computed(() =>
 )
 
 function handleSubscribeToRun() {
-  if (isCloud) {
-    trackRunButton({ subscribe_to_run: true })
-    // Also count this as a subscribe-now click so the lock-button CTA shows up
-    // in the subscribe-click funnel alongside the pricing table and SubscribeButton.
-    useTelemetry()?.trackSubscription('subscribe_clicked', {
-      source: 'subscribe_to_run'
-    })
-  }
+  trackRunButton({ subscribe_to_run: true })
+  // Also count this as a subscribe-now click so the lock-button CTA shows up
+  // in the subscribe-click funnel alongside the pricing table and SubscribeButton.
+  useTelemetry()?.trackSubscription('subscribe_clicked', {
+    source: 'subscribe_to_run'
+  })
 
   showSubscriptionDialog()
 }
