@@ -2625,10 +2625,9 @@
       "perkProjectAssets": "Project & asset management",
       "cta": "Subscribe to Team Yearly",
       "ctaMonthly": "Subscribe to Team Monthly",
-      "creditsLocked": "Credits currently can't be changed",
-      "planLocked": "Team plan currently can't be changed",
-      "currentPlan": "Current plan",
-      "unavailable": "This team plan is not available right now."
+      "unavailable": "This team plan is not available right now.",
+      "changePlan": "Change plan",
+      "currentPlan": "Current plan"
     },
     "enterprise": {
       "name": "Enterprise",
@@ -2682,8 +2681,6 @@
     "upgradePlan": "Upgrade Plan",
     "upgradeTo": "Upgrade to {plan}",
     "changeTo": "Change to {plan}",
-    "notAvailableOnTeamPlan": "Not available while on a team plan",
-    "notAvailableOnPersonalPlan": "Not available while on a personal plan",
     "maxDuration": {
       "free": "10 min",
       "standard": "30 min",

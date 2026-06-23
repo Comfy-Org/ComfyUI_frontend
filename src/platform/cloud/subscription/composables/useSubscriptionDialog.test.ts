@@ -115,22 +115,16 @@ describe('useSubscriptionDialog', () => {
       expect(mockShowLayoutDialog).toHaveBeenCalled()
     })
 
-    it('wires onChooseTeam to the team upgrade flow on the unified table', () => {
+    it('does not wire onChooseTeam on the unified table (personal subscribes directly)', () => {
       mockTeamWorkspacesEnabled.value = true
       mockIsInPersonalWorkspace.value = true
-      mockShowTeamWorkspacesDialog.mockResolvedValue(undefined)
       const { showPricingTable } = useSubscriptionDialog()
 
       showPricingTable()
 
       expect(mockShowLayoutDialog).toHaveBeenCalledTimes(1)
       const props = mockShowLayoutDialog.mock.calls[0][0].props
-      expect(props.onChooseTeam).toEqual(expect.any(Function))
-
-      props.onChooseTeam()
-      expect(mockShowTeamWorkspacesDialog).toHaveBeenCalledWith(
-        expect.any(Function)
-      )
+      expect(props).not.toHaveProperty('onChooseTeam')
     })
 
     it('defaults to the personal tab in a personal workspace', () => {
