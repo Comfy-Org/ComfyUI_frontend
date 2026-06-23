@@ -49,6 +49,26 @@ vi.mock('@/stores/dialogStore', () => ({
   }))
 }))
 
+// Telemetry mirrors the real contract: a dispatcher in cloud, null in OSS.
+// mockIsCloud drives both the dispatcher and the isCloud flag together.
+const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
+  mockIsCloud: { value: true },
+  mockTrackTemplate: vi.fn()
+}))
+
+vi.mock('@/platform/telemetry', () => ({
+  useTelemetry: () =>
+    mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
+}))
+
+vi.mock('@/platform/distribution/types', () => ({
+  get isCloud() {
+    return mockIsCloud.value
+  },
+  isDesktop: false,
+  isNightly: false
+}))
+
 // Mock fetch
 global.fetch = vi.fn()
 
@@ -58,6 +78,9 @@ describe('useTemplateWorkflows', () => {
   let mockWorkflowTemplatesStore: MockWorkflowTemplatesStore
 
   beforeEach(() => {
+    mockIsCloud.value = true
+    mockTrackTemplate.mockClear()
+
     mockWorkflowTemplatesStore = {
       isLoaded: false,
       loadWorkflowTemplates: vi.fn().mockResolvedValue(true),
@@ -283,6 +306,30 @@ describe('useTemplateWorkflows', () => {
 
     expect(result).toBe(true)
     expect(fetch).toHaveBeenCalledWith('mock-file-url/templates/template1.json')
+  })
+
+  it('tracks template telemetry on load in cloud builds', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+
+    mockWorkflowTemplatesStore.isLoaded = true
+    await loadWorkflowTemplate('template1', 'default')
+    await flushPromises()
+
+    expect(mockTrackTemplate).toHaveBeenCalledWith({
+      workflow_name: 'template1',
+      template_source: 'default'
+    })
+  })
+
+  it('does not fire template telemetry in OSS builds', async () => {
+    mockIsCloud.value = false
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+
+    mockWorkflowTemplatesStore.isLoaded = true
+    await loadWorkflowTemplate('template1', 'default')
+    await flushPromises()
+
+    expect(mockTrackTemplate).not.toHaveBeenCalled()
   })
 
   it('should handle errors when loading templates', async () => {
