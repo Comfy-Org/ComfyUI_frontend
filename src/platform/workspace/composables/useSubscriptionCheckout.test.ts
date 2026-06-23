@@ -249,7 +249,7 @@ describe('useSubscriptionCheckout', () => {
     it('transitions to preview with the selected team stop and cycle', async () => {
       const checkout = await setup()
 
-      checkout.handleSubscribeTeamClick({
+      await checkout.handleSubscribeTeamClick({
         stop: { id: 'team_400', usd: 400, credits: 84_400, discountedUsd: 380 },
         billingCycle: 'yearly'
       })
@@ -357,7 +357,7 @@ describe('useSubscriptionCheckout', () => {
   describe('handleTeamSubscribe', () => {
     it('subscribes with the team plan slug, stop id and billing cycle', async () => {
       const checkout = await setup()
-      checkout.handleSubscribeTeamClick({
+      await checkout.handleSubscribeTeamClick({
         stop: {
           id: 'team_700',
           usd: 700,
@@ -386,7 +386,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('uses the annual plan slug for the yearly cycle', async () => {
       const checkout = await setup()
-      checkout.handleSubscribeTeamClick({
+      await checkout.handleSubscribeTeamClick({
         stop: {
           id: 'team_700',
           usd: 700,
@@ -415,7 +415,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('opens the payment URL when the team subscribe needs a payment method', async () => {
       const checkout = await setup()
-      checkout.handleSubscribeTeamClick({
+      await checkout.handleSubscribeTeamClick({
         stop: {
           id: 'team_700',
           usd: 700,
@@ -442,7 +442,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('does not subscribe and shows an error when the stop has no id', async () => {
       const checkout = await setup()
-      checkout.handleSubscribeTeamClick({
+      await checkout.handleSubscribeTeamClick({
         stop: { usd: 700, credits: 147_700, discountedUsd: 630 },
         billingCycle: 'yearly'
       })
@@ -457,7 +457,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('shows an error toast when the team subscribe fails', async () => {
       const checkout = await setup()
-      checkout.handleSubscribeTeamClick({
+      await checkout.handleSubscribeTeamClick({
         stop: {
           id: 'team_700',
           usd: 700,
@@ -493,7 +493,7 @@ describe('useSubscriptionCheckout', () => {
 
     it('clears the selected team stop', async () => {
       const checkout = await setup()
-      checkout.handleSubscribeTeamClick({
+      await checkout.handleSubscribeTeamClick({
         stop: { id: 'team_400', usd: 400, credits: 84_400, discountedUsd: 380 },
         billingCycle: 'yearly'
       })
