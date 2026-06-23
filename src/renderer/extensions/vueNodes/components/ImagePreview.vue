@@ -89,7 +89,6 @@
         >
           {{ $t('hdrViewer.openInHdrViewer') }}
         </span>
-        <span class="text-xs">{{ getImageFilename(currentImageUrl) }}</span>
       </button>
       <!-- Main Image -->
       <img
