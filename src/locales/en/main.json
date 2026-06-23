@@ -3341,7 +3341,7 @@
       "error": "Error"
     },
     "selection": {
-      "selectedCount": "Assets Selected: {count}",
+      "selectedCount": "{count} selected",
       "multipleSelectedAssets": "Multiple assets selected",
       "deselectAll": "Deselect all",
       "downloadSelected": "Download",
