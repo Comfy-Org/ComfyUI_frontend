@@ -28,13 +28,6 @@ type LegacyPromotedWidgetOperation =
   | { type: 'set-value'; value: string }
   | { type: 'open-asset-modal' }
 
-export const PROMOTED_MISSING_MODEL_WORKFLOW: PromotedMissingModelWorkflow = {
-  workflowName: 'missing/missing_model_promoted_widget',
-  hostNodeId: 2,
-  hostNodeTitle: 'Subgraph with Promoted Missing Model',
-  sourceNodePath: [1]
-}
-
 export const NESTED_PROMOTED_MISSING_MODEL_WORKFLOW: PromotedMissingModelWorkflow =
   {
     workflowName: 'missing/missing_model_nested_promoted_widget',

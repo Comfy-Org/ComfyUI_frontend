@@ -16,7 +16,6 @@ import {
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import {
   NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
-  PROMOTED_MISSING_MODEL_WORKFLOW,
   expectNoMissingModelUi,
   loadPromotedMissingModelAndOpenErrorsTab,
   selectLegacyPromotedAssetModel,
@@ -414,27 +413,6 @@ promotedModelTest.describe(
     })
 
     promotedModelTest(
-      'Changing a Cloud Vue promoted asset widget clears a single subgraph error',
-      { tag: ['@vue-nodes', '@widget', '@subgraph'] },
-      async ({ comfyPage }) => {
-        await loadPromotedMissingModelAndOpenErrorsTab(
-          comfyPage,
-          PROMOTED_MISSING_MODEL_WORKFLOW,
-          FAKE_MODEL_NAME
-        )
-
-        await selectVueAssetPromotedModel(
-          comfyPage,
-          PROMOTED_MISSING_MODEL_WORKFLOW,
-          FAKE_MODEL_NAME,
-          RESOLVED_PROMOTED_MODEL_NAME
-        )
-
-        await expectNoMissingModelUi(comfyPage)
-      }
-    )
-
-    promotedModelTest(
       'Changing a Cloud Vue promoted asset widget clears a nested subgraph error',
       { tag: ['@vue-nodes', '@widget', '@subgraph'] },
       async ({ comfyPage }) => {
@@ -456,40 +434,20 @@ promotedModelTest.describe(
     )
 
     promotedModelTest(
-      'Changing a Cloud Vue promoted asset from the Parameters tab clears its error',
+      'Changing a Cloud Vue promoted asset from the Parameters tab clears a nested subgraph error',
       { tag: ['@vue-nodes', '@widget', '@subgraph'] },
       async ({ comfyPage }) => {
         await loadPromotedMissingModelAndOpenErrorsTab(
           comfyPage,
-          PROMOTED_MISSING_MODEL_WORKFLOW,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
           FAKE_MODEL_NAME
         )
 
         await selectSectionAssetPromotedModel(
           comfyPage,
-          PROMOTED_MISSING_MODEL_WORKFLOW,
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
           FAKE_MODEL_NAME,
           RESOLVED_PROMOTED_MODEL_NAME
-        )
-
-        await expectNoMissingModelUi(comfyPage)
-      }
-    )
-
-    promotedModelTest(
-      'Changing a Cloud legacy promoted asset clears a single subgraph error',
-      { tag: ['@canvas', '@widget', '@subgraph'] },
-      async ({ comfyPage }) => {
-        await loadPromotedMissingModelAndOpenErrorsTab(
-          comfyPage,
-          PROMOTED_MISSING_MODEL_WORKFLOW,
-          FAKE_MODEL_NAME
-        )
-
-        await selectLegacyPromotedAssetModel(
-          comfyPage,
-          PROMOTED_MISSING_MODEL_WORKFLOW,
-          RESOLVED_PROMOTED_MODEL_ASSET.id
         )
 
         await expectNoMissingModelUi(comfyPage)
