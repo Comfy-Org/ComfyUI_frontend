@@ -14,7 +14,11 @@ const { locale = 'en', compact = false } = defineProps<{
 const lines = computed(() => t('hero.title', locale).split('\n'))
 
 const block =
-  'inline-block rounded-2xl bg-primary-comfy-yellow px-5 py-2 font-formula-narrow leading-none font-semibold text-primary-comfy-ink uppercase'
+  'inline-block rounded-2xl bg-primary-comfy-yellow px-5 pt-1.5 pb-2.5 font-formula-narrow leading-none font-semibold text-primary-comfy-ink uppercase'
+
+// PP Formula Narrow sits high in its em box; nudge the glyphs down so they read
+// optically centered inside the highlighter block without resizing the box.
+const inner = 'relative top-[0.07em] inline-block'
 </script>
 
 <template>
@@ -22,7 +26,7 @@ const block =
     <h1 class="flex flex-col items-center">
       <span class="relative">
         <span :class="cn(block, compact ? 'text-3xl sm:text-4xl' : 'text-6xl')">
-          {{ lines[0] }}
+          <span :class="inner">{{ lines[0] }}</span>
         </span>
         <span
           class="bg-primary-comfy-yellow absolute -bottom-1.5 left-1/2 size-4 -translate-1/2 rotate-45 rounded-[3px]"
@@ -33,7 +37,7 @@ const block =
           cn(block, 'mt-1.5', compact ? 'text-3xl sm:text-4xl' : 'text-6xl')
         "
       >
-        {{ lines[1] }}
+        <span :class="inner">{{ lines[1] }}</span>
       </span>
     </h1>
 
