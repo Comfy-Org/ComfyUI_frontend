@@ -9,7 +9,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
-import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
@@ -25,37 +25,6 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
     pendingSlotSync: false
   }
 }))
-
-function createMockCtx(): CanvasRenderingContext2D {
-  return createMockCanvas2DContext({
-    translate: vi.fn(),
-    scale: vi.fn(),
-    fillText: vi.fn(),
-    measureText: vi.fn().mockReturnValue({ width: 50 }),
-    closePath: vi.fn(),
-    rect: vi.fn(),
-    clip: vi.fn(),
-    setTransform: vi.fn(),
-    roundRect: vi.fn(),
-    getTransform: vi
-      .fn()
-      .mockReturnValue({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
-    createLinearGradient: vi.fn().mockReturnValue({
-      addColorStop: vi.fn()
-    }),
-    bezierCurveTo: vi.fn(),
-    quadraticCurveTo: vi.fn(),
-    isPointInStroke: vi.fn().mockReturnValue(false),
-    globalAlpha: 1,
-    textAlign: 'left' as CanvasTextAlign,
-    textBaseline: 'alphabetic' as CanvasTextBaseline,
-    shadowColor: '',
-    shadowBlur: 0,
-    shadowOffsetX: 0,
-    shadowOffsetY: 0,
-    imageSmoothingEnabled: true
-  })
-}
 
 /**
  * Creates a link between two nodes by directly mutating graph state,
@@ -96,7 +65,9 @@ describe('drawConnections widget-input slot positioning', () => {
     canvasElement = document.createElement('canvas')
     canvasElement.width = 800
     canvasElement.height = 600
-    canvasElement.getContext = vi.fn().mockReturnValue(createMockCtx())
+    canvasElement.getContext = vi
+      .fn()
+      .mockReturnValue(createMockCanvasRenderingContext2D())
     canvasElement.getBoundingClientRect = vi.fn().mockReturnValue({
       left: 0,
       top: 0,
@@ -136,7 +107,7 @@ describe('drawConnections widget-input slot positioning', () => {
     // Before drawConnections, input.pos should not be set
     expect(input.pos).toBeUndefined()
 
-    canvas.drawConnections(createMockCtx())
+    canvas.drawConnections(createMockCanvasRenderingContext2D())
 
     // After drawConnections, input.pos should be set to the widget row
     expect(input.pos).toBeDefined()
@@ -170,7 +141,7 @@ describe('drawConnections widget-input slot positioning', () => {
 
     const arrangeSpy = vi.spyOn(targetNode, 'arrange')
 
-    canvas.drawConnections(createMockCtx())
+    canvas.drawConnections(createMockCanvasRenderingContext2D())
 
     expect(arrangeSpy).not.toHaveBeenCalled()
   })
@@ -198,7 +169,7 @@ describe('drawConnections widget-input slot positioning', () => {
     graph.add(targetNode)
     createTestLink(graph, sourceNode, 0, targetNode, 0)
 
-    canvas.drawConnections(createMockCtx())
+    canvas.drawConnections(createMockCanvasRenderingContext2D())
 
     expect(input.pos).toBeDefined()
     const offset = LiteGraph.NODE_SLOT_HEIGHT * 0.5

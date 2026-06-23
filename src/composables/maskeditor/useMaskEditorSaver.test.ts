@@ -8,6 +8,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useMaskEditorSaver } from './useMaskEditorSaver'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 // ---- Module Mocks ----
 
@@ -21,24 +22,11 @@ vi.mock('@/stores/maskEditorDataStore', () => ({
   useMaskEditorDataStore: vi.fn(() => mockDataStore)
 }))
 
-function createMockCtx(): CanvasRenderingContext2D {
-  return fromPartial<CanvasRenderingContext2D>({
-    drawImage: vi.fn(),
-    getImageData: vi.fn(() => ({
-      data: new Uint8ClampedArray(4 * 4 * 4),
-      width: 4,
-      height: 4
-    })),
-    putImageData: vi.fn(),
-    globalCompositeOperation: 'source-over'
-  })
-}
-
 function createMockCanvas(): HTMLCanvasElement {
   return fromPartial<HTMLCanvasElement>({
     width: 4,
     height: 4,
-    getContext: vi.fn(() => createMockCtx()),
+    getContext: vi.fn(() => createMockCanvasRenderingContext2D()),
     toBlob: vi.fn((cb: BlobCallback) => {
       cb(new Blob(['x'], { type: 'image/png' }))
     }),

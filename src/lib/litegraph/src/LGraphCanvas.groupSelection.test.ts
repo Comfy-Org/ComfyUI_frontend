@@ -8,6 +8,7 @@ import {
   LGraphGroup,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
@@ -25,38 +26,7 @@ function createCanvas(graph: LGraph): LGraphCanvas {
   el.width = 800
   el.height = 600
 
-  const ctx = {
-    save: vi.fn(),
-    restore: vi.fn(),
-    translate: vi.fn(),
-    scale: vi.fn(),
-    fillRect: vi.fn(),
-    strokeRect: vi.fn(),
-    fillText: vi.fn(),
-    measureText: vi.fn().mockReturnValue({ width: 50 }),
-    beginPath: vi.fn(),
-    moveTo: vi.fn(),
-    lineTo: vi.fn(),
-    stroke: vi.fn(),
-    fill: vi.fn(),
-    closePath: vi.fn(),
-    arc: vi.fn(),
-    rect: vi.fn(),
-    clip: vi.fn(),
-    clearRect: vi.fn(),
-    setTransform: vi.fn(),
-    roundRect: vi.fn(),
-    getTransform: vi
-      .fn()
-      .mockReturnValue({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }),
-    font: '',
-    fillStyle: '',
-    strokeStyle: '',
-    lineWidth: 1,
-    globalAlpha: 1,
-    textAlign: 'left' as CanvasTextAlign,
-    textBaseline: 'alphabetic' as CanvasTextBaseline
-  } satisfies Partial<CanvasRenderingContext2D>
+  const ctx = createMockCanvasRenderingContext2D()
 
   el.getContext = vi
     .fn()

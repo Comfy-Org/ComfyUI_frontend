@@ -1,29 +1,32 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { cachedMeasureText, clearTextMeasureCache } from './textMeasureCache'
-
-function createMockCtx(font = '12px sans-serif'): CanvasRenderingContext2D {
-  return fromPartial<CanvasRenderingContext2D>({
-    font,
-    measureText: vi.fn((text: string) => ({ width: text.length * 7 }))
-  })
-}
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 describe('textMeasureCache', () => {
+  function createMeasuredCanvasContext(): CanvasRenderingContext2D {
+    return createMockCanvasRenderingContext2D({
+      measureText: vi.fn(
+        (text: string) =>
+          ({
+            width: text.length * 7
+          }) as TextMetrics
+      )
+    })
+  }
   beforeEach(() => {
     clearTextMeasureCache()
   })
 
   it('returns the measured width', () => {
-    const ctx = createMockCtx()
+    const ctx = createMeasuredCanvasContext()
     const width = cachedMeasureText(ctx, 'hello')
     expect(width).toBe(35)
     expect(ctx.measureText).toHaveBeenCalledWith('hello')
   })
 
   it('returns cached result on second call without re-measuring', () => {
-    const ctx = createMockCtx()
+    const ctx = createMockCanvasRenderingContext2D()
     const first = cachedMeasureText(ctx, 'hello')
     const second = cachedMeasureText(ctx, 'hello')
 
@@ -32,9 +35,17 @@ describe('textMeasureCache', () => {
   })
 
   it('uses font as part of the cache key', () => {
-    const ctx1 = createMockCtx('12px sans-serif')
-    const ctx2 = createMockCtx('24px monospace')
+    const ctx1 = createMeasuredCanvasContext()
 
+    const ctx2 = createMockCanvasRenderingContext2D({
+      font: '24px monospace',
+      measureText: vi.fn(
+        (text: string) =>
+          ({
+            width: text.length * 7
+          }) as TextMetrics
+      )
+    })
     cachedMeasureText(ctx1, 'hello')
     cachedMeasureText(ctx2, 'hello')
 
@@ -43,7 +54,7 @@ describe('textMeasureCache', () => {
   })
 
   it('clearTextMeasureCache resets the cache', () => {
-    const ctx = createMockCtx()
+    const ctx = createMeasuredCanvasContext()
     cachedMeasureText(ctx, 'hello')
     expect(ctx.measureText).toHaveBeenCalledTimes(1)
 
@@ -54,7 +65,7 @@ describe('textMeasureCache', () => {
   })
 
   it('caches different text strings separately', () => {
-    const ctx = createMockCtx()
+    const ctx = createMeasuredCanvasContext()
     const w1 = cachedMeasureText(ctx, 'abc')
     const w2 = cachedMeasureText(ctx, 'abcd')
 

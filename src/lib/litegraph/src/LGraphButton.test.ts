@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 import { LGraphButton, Rectangle } from '@/lib/litegraph/src/litegraph'
 
 describe('LGraphButton', () => {
@@ -56,18 +56,7 @@ describe('LGraphButton', () => {
         yOffset: 10
       })
 
-      const ctx = {
-        measureText: vi.fn().mockReturnValue({ width: 60 }),
-        fillRect: vi.fn(),
-        fillText: vi.fn(),
-        beginPath: vi.fn(),
-        roundRect: vi.fn(),
-        fill: vi.fn(),
-        font: '',
-        fillStyle: '',
-        globalAlpha: 1
-      } as Partial<CanvasRenderingContext2D> as CanvasRenderingContext2D
-
+      const ctx = createMockCanvasRenderingContext2D()
       const mockGetWidth = vi.fn().mockReturnValue(80)
       button.getWidth = mockGetWidth
 
