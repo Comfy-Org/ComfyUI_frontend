@@ -688,6 +688,45 @@ test.describe('Assets sidebar - bulk actions', () => {
     await expect(tab.selectionCountButton).toBeVisible()
     await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
   })
+
+  test('Selection bar stays capped, not stretched, on a wide panel', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.setViewportSize({ width: 1600, height: 900 })
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    const gutter = comfyPage.page.locator('.p-splitter-gutter').first()
+    await expect(gutter).toBeVisible()
+    const gutterBox = await gutter.boundingBox()
+    if (!gutterBox) {
+      throw new Error('sidebar splitter gutter has no bounding box')
+    }
+    await comfyPage.page.mouse.move(
+      gutterBox.x + gutterBox.width / 2,
+      gutterBox.y + gutterBox.height / 2
+    )
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.mouse.move(900, gutterBox.y + gutterBox.height / 2, {
+      steps: 12
+    })
+    await comfyPage.page.mouse.up()
+
+    await tab.assetCards.first().click()
+    await expect(tab.selectionFooter).toBeVisible()
+
+    const sidebar = comfyPage.page.locator('.side-bar-panel').first()
+    await expect
+      .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
+      .toBeGreaterThan(520)
+    await expect
+      .poll(async () => {
+        const bar = await tab.selectionFooter.boundingBox()
+        const side = await sidebar.boundingBox()
+        return bar && side ? side.width - bar.width : 0
+      })
+      .toBeGreaterThan(100)
+  })
 })
 
 cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
