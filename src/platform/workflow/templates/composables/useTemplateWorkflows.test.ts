@@ -49,8 +49,7 @@ vi.mock('@/stores/dialogStore', () => ({
   }))
 }))
 
-// Telemetry mirrors the real contract: a dispatcher in cloud, null in OSS.
-// mockIsCloud drives both the dispatcher and the isCloud flag together.
+// useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
 const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
   mockIsCloud: { value: true },
   mockTrackTemplate: vi.fn()
@@ -59,14 +58,6 @@ const { mockIsCloud, mockTrackTemplate } = vi.hoisted(() => ({
 vi.mock('@/platform/telemetry', () => ({
   useTelemetry: () =>
     mockIsCloud.value ? { trackTemplate: mockTrackTemplate } : null
-}))
-
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockIsCloud.value
-  },
-  isDesktop: false,
-  isNightly: false
 }))
 
 // Mock fetch
