@@ -11,8 +11,10 @@ const routes = getRoutes(locale)
 
 // TODO(drops-livestream): replace with the production stream ID + window.
 const youtubeVideoId = 'nlLZfNIqF8M'
-const startDateTime = '2026-06-24T17:00:00Z'
-const endDateTime = '2026-06-24T19:00:00Z'
+// const startDateTime = '2026-06-29T15:45:00Z'
+// const endDateTime = '2026-06-29T17:00:00Z'
+const startDateTime = '2026-06-23T19:15:50Z'
+const endDateTime = '2026-06-23T20:15:50Z'
 </script>
 
 <template>
