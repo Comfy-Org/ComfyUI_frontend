@@ -30,9 +30,9 @@ function toggle(index: number) {
     <div class="flex flex-col gap-6 md:flex-row md:gap-16">
       <!-- Left heading -->
       <div
-        class="bg-primary-comfy-ink sticky top-20 z-10 w-full shrink-0 self-start py-4 md:top-28 md:w-80 md:py-0"
+        class="sticky top-20 z-10 w-full shrink-0 self-start bg-primary-comfy-ink py-4 md:top-28 md:w-80 md:py-0"
       >
-        <h2 class="text-primary-comfy-canvas text-4xl font-light md:text-5xl">
+        <h2 class="text-4xl font-light text-primary-comfy-canvas md:text-5xl">
           {{ heading }}
         </h2>
       </div>
@@ -42,7 +42,7 @@ function toggle(index: number) {
         <div
           v-for="(faq, index) in faqs"
           :key="faq.id"
-          class="border-primary-comfy-canvas/20 border-b"
+          class="border-b border-primary-comfy-canvas/20"
         >
           <button
             :id="`faq-trigger-${faq.id}`"
@@ -83,7 +83,7 @@ function toggle(index: number) {
             :aria-labelledby="`faq-trigger-${faq.id}`"
             class="pb-6"
           >
-            <p class="text-primary-comfy-canvas/70 text-sm whitespace-pre-line">
+            <p class="text-sm whitespace-pre-line text-primary-comfy-canvas/70">
               {{ faq.answer }}
             </p>
           </section>
