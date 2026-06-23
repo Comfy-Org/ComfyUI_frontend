@@ -13,6 +13,7 @@ import ErrorOverlay from '@/components/error/ErrorOverlay.vue'
 import TopbarBadges from '@/components/topbar/TopbarBadges.vue'
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
@@ -147,6 +148,7 @@ function dragDrop(e: DragEvent) {
       </SplitterPanel>
       <SplitterPanel
         id="linearCenterPanel"
+        v-coachmark="'outputs'"
         data-testid="linear-center-panel"
         :size="CENTER_PANEL_SIZE"
         class="relative flex min-w-[20vw] flex-col gap-4 text-muted-foreground outline-none"

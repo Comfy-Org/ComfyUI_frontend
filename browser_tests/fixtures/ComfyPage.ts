@@ -535,6 +535,9 @@ export const comfyPageFixture = base.extend<{
         'Comfy.userId': userId,
         // Set tutorial completed to true to avoid loading the tutorial workflow.
         'Comfy.TutorialCompleted': true,
+        // Mark every coachmark tour as seen — detection or app-mode entry would
+        // otherwise start one whose blocker breaks unrelated tests.
+        'Comfy.OnboardingCoachmarks.Seen': ['blankCanvas', 'appMode'],
         'Comfy.Queue.MaxHistoryItems': 64,
         'Comfy.SnapToGrid.GridSize': testComfySnapToGridGridSize,
         'Comfy.VueNodes.AutoScaleLayout': false,

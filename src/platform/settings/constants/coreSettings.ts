@@ -977,6 +977,13 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.8.7'
   },
   {
+    id: 'Comfy.OnboardingCoachmarks.Seen',
+    name: 'Onboarding coachmark tours the user has already seen',
+    type: 'hidden',
+    defaultValue: [],
+    versionAdded: '1.48.0'
+  },
+  {
     id: 'Comfy.InstalledVersion',
     name: 'The frontend version that was running when the user first installed ComfyUI',
     type: 'hidden',

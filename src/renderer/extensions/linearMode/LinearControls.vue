@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n'
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import Loader from '@/components/loader/Loader.vue'
 import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -98,6 +99,7 @@ function handleDragDrop() {
       class="flex h-full flex-col gap-2 border-x border-(--interface-stroke) bg-comfy-menu-bg px-2 md:border-y"
     >
       <section
+        v-coachmark="'inputs-list'"
         data-testid="linear-widgets"
         class="grow scroll-shadows-comfy-menu-bg overflow-y-auto contain-size"
       >
@@ -134,6 +136,7 @@ function handleDragDrop() {
       <PartnerNodesList v-if="!mobile" />
       <section
         v-if="mobile"
+        v-coachmark="'app-run-button'"
         data-testid="linear-run-button"
         class="border-t border-node-component-border p-4 pb-6"
       >
@@ -175,6 +178,7 @@ function handleDragDrop() {
       </section>
       <section
         v-else
+        v-coachmark="'app-run-button'"
         data-testid="linear-run-button"
         class="border-t border-node-component-border p-4 pb-6"
       >

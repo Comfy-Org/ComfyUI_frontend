@@ -20,6 +20,8 @@ import type {
   HelpResourceClickedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OnboardingTourMetadata,
+  OnboardingTourStage,
   PageVisibilityMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
@@ -44,7 +46,8 @@ import type {
 } from '../../types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import { TelemetryEvents } from '../../types'
+import { OnboardingTourEvents, TelemetryEvents } from '../../types'
+import { getActionbarDockState } from '../../utils/getActionbarDockState'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
@@ -278,6 +281,13 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackRunButton(properties: RunButtonProperties): void {
     this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
+  }
+
+  trackOnboardingTour(
+    stage: OnboardingTourStage,
+    metadata: OnboardingTourMetadata
+  ): void {
+    this.trackEvent(OnboardingTourEvents[stage], metadata)
   }
 
   trackSurvey(

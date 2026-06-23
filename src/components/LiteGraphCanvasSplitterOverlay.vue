@@ -77,7 +77,10 @@
             state-storage="local"
             @resizestart="onResizestart"
           >
-            <SplitterPanel class="graph-canvas-panel relative overflow-visible">
+            <SplitterPanel
+              v-coachmark="'canvas'"
+              class="graph-canvas-panel relative overflow-visible"
+            >
               <slot name="graph-canvas-panel" />
             </SplitterPanel>
             <SplitterPanel
@@ -130,6 +133,7 @@ import SplitterPanel from 'primevue/splitterpanel'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useAppMode } from '@/composables/useAppMode'
 import {
   BUILDER_MIN_SIZE,

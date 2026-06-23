@@ -1,5 +1,6 @@
 <template>
   <SidebarIcon
+    v-coachmark="'templates-button'"
     icon="icon-[comfy--template]"
     :tooltip="$t('sideToolbar.templates')"
     :label="$t('sideToolbar.labels.templates')"
@@ -12,6 +13,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
