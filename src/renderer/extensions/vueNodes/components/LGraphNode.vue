@@ -270,8 +270,7 @@ import {
   LGraphCanvas,
   LGraphEventMode,
   LiteGraph,
-  RenderShape,
-  asNodeId
+  RenderShape
 } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
@@ -423,12 +422,12 @@ const badges = usePartitionedBadges(nodeData)
 async function nodeOnPointerdown(event: PointerEvent) {
   if (event.altKey && lgraphNode.value) {
     const result = LGraphCanvas.cloneNodes([lgraphNode.value])
-    if (result?.created?.length) {
-      const [newNode] = result.created
-      startDrag(event, asNodeId(newNode.id))
+    const [newNode] = result?.nodes.values() ?? []
+    if (newNode) {
+      startDrag(event, newNode.id)
       layoutStore.isDraggingVueNodes.value = true
       await nextTick()
-      bringNodeToFront(asNodeId(newNode.id))
+      bringNodeToFront(newNode.id)
       return
     }
   }

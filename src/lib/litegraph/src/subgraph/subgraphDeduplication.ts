@@ -68,7 +68,7 @@ function remapNodeIds(
   const remappedIds = new Map<NodeId, NodeId>()
 
   for (const node of nodes) {
-    const id = asNodeId(node.id)
+    const id = node.id
     if (!isNumericNodeId(id)) continue
 
     const numericId = nodeIdToNumber(id)
