@@ -48,7 +48,7 @@ describe('executionErrorStore — node error operations', () => {
       const store = useExecutionErrorStore()
       store.lastNodeErrors = null
       // Should not error
-      store.clearSimpleNodeErrors(createNodeExecutionId(['123']), 'widgetName')
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'widgetName')
       expect(store.lastNodeErrors).toBeNull()
     })
 
@@ -69,7 +69,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors(createNodeExecutionId(['123']), 'testSlot')
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'testSlot')
 
       // Should be entirely removed (empty object becomes null)
       expect(store.lastNodeErrors).toBeNull()
@@ -98,7 +98,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors(createNodeExecutionId(['123']), 'testSlot')
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'testSlot')
 
       // otherSlot error should still exist
       expect(store.lastNodeErrors).not.toBeNull()
@@ -125,7 +125,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors(createNodeExecutionId(['999']), 'testSlot')
+      store.clearSimpleNodeErrors(createNodeExecutionId([999]), 'testSlot')
 
       // Original error should remain untouched
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
@@ -154,7 +154,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors(createNodeExecutionId(['123']), 'testSlot')
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'testSlot')
 
       // Mixed simple+complex: not all are simple, so none are cleared
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(2)
@@ -189,7 +189,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors(createNodeExecutionId(['123']), 'steps')
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'steps')
 
       // Node 123 cleared, node 456 remains
       expect(store.lastNodeErrors?.['123']).toBeUndefined()
@@ -219,7 +219,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors(createNodeExecutionId(['123']))
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]))
 
       expect(store.lastNodeErrors).toBeNull()
     })
@@ -247,7 +247,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors(createNodeExecutionId(['123']))
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]))
 
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(2)
     })
@@ -269,7 +269,7 @@ describe('executionErrorStore — node error operations', () => {
         }
       }
 
-      store.clearSimpleNodeErrors(createNodeExecutionId(['123']), 'testSlot')
+      store.clearSimpleNodeErrors(createNodeExecutionId([123]), 'testSlot')
 
       // Error should remain
       expect(store.lastNodeErrors?.['123'].errors).toHaveLength(1)
@@ -296,7 +296,7 @@ describe('executionErrorStore — node error operations', () => {
 
       // Valid value (5 < 10)
       store.clearWidgetRelatedErrors(
-        createNodeExecutionId(['123']),
+        createNodeExecutionId([123]),
         'testWidget',
         'testWidget',
         5,
@@ -326,7 +326,7 @@ describe('executionErrorStore — node error operations', () => {
       }
 
       store.clearWidgetRelatedErrors(
-        createNodeExecutionId(['123']),
+        createNodeExecutionId([123]),
         'sampler',
         'sampler',
         'euler_a'
@@ -354,7 +354,7 @@ describe('executionErrorStore — node error operations', () => {
 
       // Invalid value (15 > 10)
       store.clearWidgetRelatedErrors(
-        createNodeExecutionId(['123']),
+        createNodeExecutionId([123]),
         'testWidget',
         'testWidget',
         15,

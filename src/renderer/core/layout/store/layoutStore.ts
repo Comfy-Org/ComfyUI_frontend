@@ -137,10 +137,10 @@ class LayoutStoreImpl implements LayoutStore {
   private rerouteLayouts = new Map<RerouteId, RerouteLayout>()
 
   // Spatial index managers
-  private spatialIndex: SpatialIndexManager // For nodes
-  private linkSegmentSpatialIndex: SpatialIndexManager // For link segments (single index for all link geometry)
-  private slotSpatialIndex: SpatialIndexManager // For slots
-  private rerouteSpatialIndex: SpatialIndexManager // For reroutes
+  private spatialIndex: SpatialIndexManager<NodeId> // For nodes
+  private linkSegmentSpatialIndex: SpatialIndexManager<string> // For link segments (single index for all link geometry)
+  private slotSpatialIndex: SpatialIndexManager<string> // For slots
+  private rerouteSpatialIndex: SpatialIndexManager<string> // For reroutes
 
   // Vue dragging state for selection toolbox (public ref for direct mutation)
   public isDraggingVueNodes = ref(false)
@@ -173,10 +173,10 @@ class LayoutStoreImpl implements LayoutStore {
     this.yoperations = this.ydoc.getArray('operations')
 
     // Initialize spatial index managers
-    this.spatialIndex = new SpatialIndexManager()
-    this.linkSegmentSpatialIndex = new SpatialIndexManager() // Single index for all link geometry
-    this.slotSpatialIndex = new SpatialIndexManager()
-    this.rerouteSpatialIndex = new SpatialIndexManager()
+    this.spatialIndex = new SpatialIndexManager<NodeId>()
+    this.linkSegmentSpatialIndex = new SpatialIndexManager<string>() // Single index for all link geometry
+    this.slotSpatialIndex = new SpatialIndexManager<string>()
+    this.rerouteSpatialIndex = new SpatialIndexManager<string>()
 
     // Listen for Yjs changes and trigger Vue reactivity
     this.ynodes.observe((event: Y.YMapEvent<NodeLayoutMap>) => {
@@ -240,14 +240,14 @@ class LayoutStoreImpl implements LayoutStore {
         return {
           get: () => {
             track()
-            const ynode = this.ynodes.get(nodeId)
+            const ynode = this.ynodes.get(String(nodeId))
             const layout = ynode ? yNodeToLayout(ynode) : null
             return layout
           },
           set: (newLayout: NodeLayout | null) => {
             if (newLayout === null) {
               // Delete operation
-              const existing = this.ynodes.get(nodeId)
+              const existing = this.ynodes.get(String(nodeId))
               if (existing) {
                 this.applyOperation({
                   type: 'deleteNode',
@@ -261,7 +261,7 @@ class LayoutStoreImpl implements LayoutStore {
               }
             } else {
               // Update operation - detect what changed
-              const existing = this.ynodes.get(nodeId)
+              const existing = this.ynodes.get(String(nodeId))
               if (!existing) {
                 // Create operation
                 this.applyOperation({
@@ -342,7 +342,7 @@ class LayoutStoreImpl implements LayoutStore {
 
       const result: NodeId[] = []
       for (const [nodeId] of this.ynodes) {
-        const ynode = this.ynodes.get(nodeId)
+        const ynode = this.ynodes.get(String(nodeId))
         if (ynode) {
           const layout = yNodeToLayout(ynode)
           if (layout && boundsIntersect(layout.bounds, bounds)) {
@@ -364,7 +364,7 @@ class LayoutStoreImpl implements LayoutStore {
 
       const result = new Map<NodeId, NodeLayout>()
       for (const [nodeId] of this.ynodes) {
-        const ynode = this.ynodes.get(nodeId)
+        const ynode = this.ynodes.get(String(nodeId))
         if (ynode) {
           const layout = yNodeToLayout(ynode)
           if (layout) {
@@ -390,7 +390,7 @@ class LayoutStoreImpl implements LayoutStore {
     const nodes: Array<[NodeId, NodeLayout]> = []
 
     for (const [nodeId] of this.ynodes) {
-      const ynode = this.ynodes.get(nodeId)
+      const ynode = this.ynodes.get(String(nodeId))
       if (ynode) {
         const layout = yNodeToLayout(ynode)
         if (layout) {
@@ -1032,7 +1032,7 @@ class LayoutStoreImpl implements LayoutStore {
           }
         }
 
-        this.ynodes.set(layout.id, layoutToYNode(layout))
+        this.ynodes.set(String(layout.id), layoutToYNode(layout))
 
         // Add to spatial index
         this.spatialIndex.insert(layout.id, layout.bounds)
@@ -1048,7 +1048,7 @@ class LayoutStoreImpl implements LayoutStore {
     operation: MoveNodeOperation,
     change: LayoutChange
   ): void {
-    const ynode = this.ynodes.get(operation.nodeId)
+    const ynode = this.ynodes.get(String(operation.nodeId))
     if (!ynode) {
       return
     }
@@ -1076,7 +1076,7 @@ class LayoutStoreImpl implements LayoutStore {
     operation: ResizeNodeOperation,
     change: LayoutChange
   ): void {
-    const ynode = this.ynodes.get(operation.nodeId)
+    const ynode = this.ynodes.get(String(operation.nodeId))
     if (!ynode) return
 
     const position = yNodeToLayout(ynode).position
@@ -1102,7 +1102,7 @@ class LayoutStoreImpl implements LayoutStore {
     operation: SetNodeZIndexOperation,
     change: LayoutChange
   ): void {
-    const ynode = this.ynodes.get(operation.nodeId)
+    const ynode = this.ynodes.get(String(operation.nodeId))
     if (!ynode) return
 
     ynode.set('zIndex', operation.zIndex)
@@ -1114,7 +1114,7 @@ class LayoutStoreImpl implements LayoutStore {
     change: LayoutChange
   ): void {
     const ynode = layoutToYNode(operation.layout)
-    this.ynodes.set(operation.nodeId, ynode)
+    this.ynodes.set(String(operation.nodeId), ynode)
 
     // Add to spatial index
     this.spatialIndex.insert(operation.nodeId, operation.layout.bounds)
@@ -1127,9 +1127,9 @@ class LayoutStoreImpl implements LayoutStore {
     operation: DeleteNodeOperation,
     change: LayoutChange
   ): void {
-    if (!this.ynodes.has(operation.nodeId)) return
+    if (!this.ynodes.has(String(operation.nodeId))) return
 
-    this.ynodes.delete(operation.nodeId)
+    this.ynodes.delete(String(operation.nodeId))
     // Note: We intentionally do NOT delete nodeRefs and nodeTriggers here.
     // During undo/redo, Vue components may still hold references to the old ref.
     // If we delete the trigger, Vue won't be notified when the node is re-created.
@@ -1162,7 +1162,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     for (const nodeId of operation.nodeIds) {
       const data = operation.bounds[nodeId]
-      const ynode = this.ynodes.get(nodeId)
+      const ynode = this.ynodes.get(String(nodeId))
       if (!ynode || !data) continue
 
       ynode.set('position', { x: data.bounds.x, y: data.bounds.y })
@@ -1509,7 +1509,7 @@ class LayoutStoreImpl implements LayoutStore {
     const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
     for (const { nodeId, bounds } of updates) {
-      const ynode = this.ynodes.get(nodeId)
+      const ynode = this.ynodes.get(String(nodeId))
       if (!ynode) continue
       const currentLayout = yNodeToLayout(ynode)
 

@@ -17,8 +17,6 @@ import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
 
 const GRAPH_ID = 'graph-test'
-const executionId = (id: string | number) =>
-  createNodeExecutionId(String(id).split(':'))
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
   useCanvasStore: () => ({
@@ -86,7 +84,7 @@ describe('getWidgetIdentity', () => {
   it('uses sourceExecutionId for identity when no nodeId', () => {
     const widget = createMockWidget({
       nodeId: undefined,
-      sourceExecutionId: executionId('65:18')
+      sourceExecutionId: createNodeExecutionId([65, 18])
     })
     const { dedupeIdentity } = getWidgetIdentity(widget, '1', 0)
     expect(dedupeIdentity).toBe('exec:65:18:test_widget:combo')
@@ -134,7 +132,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        executionId('1'),
+        createNodeExecutionId([1]),
         undefined,
         executionErrorStore,
         missingModelStore
@@ -150,7 +148,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        executionId('1'),
+        createNodeExecutionId([1]),
         nodeErrors,
         executionErrorStore,
         missingModelStore
@@ -161,7 +159,7 @@ describe('hasWidgetError', () => {
   it('returns true via sourceExecutionId when execution store has matching error', () => {
     const widget = createMockWidget({
       name: 'seed',
-      sourceExecutionId: executionId('65:18')
+      sourceExecutionId: createNodeExecutionId([65, 18])
     })
     executionErrorStore.lastNodeErrors = {
       '65:18': {
@@ -180,7 +178,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        executionId('1'),
+        createNodeExecutionId([1]),
         undefined,
         executionErrorStore,
         missingModelStore
@@ -194,7 +192,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        executionId('1'),
+        createNodeExecutionId([1]),
         undefined,
         executionErrorStore,
         missingModelStore
@@ -213,7 +211,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        executionId('1'),
+        createNodeExecutionId([1]),
         nodeErrors,
         executionErrorStore,
         missingModelStore
@@ -224,7 +222,7 @@ describe('hasWidgetError', () => {
   it('matches missing models by the interior source widget name', () => {
     const widget = createMockWidget({
       name: 'display_slot',
-      sourceExecutionId: executionId('65:18'),
+      sourceExecutionId: createNodeExecutionId([65, 18]),
       sourceWidgetName: 'ckpt_name'
     })
     const spy = vi
@@ -233,7 +231,7 @@ describe('hasWidgetError', () => {
     expect(
       hasWidgetError(
         widget,
-        executionId('1'),
+        createNodeExecutionId([1]),
         undefined,
         executionErrorStore,
         missingModelStore
@@ -483,9 +481,7 @@ describe('computeProcessedWidgets borderStyle', () => {
 
 describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
   const GRAPH_ID = 'graph-test'
-  const executionId = (id: string | number) =>
-    createNodeExecutionId(String(id).split(':'))
-  const NODE_ID = '1'
+  const NODE_ID = 1
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))
@@ -596,7 +592,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(
       hasWidgetError(
         widget,
-        executionId(NODE_ID),
+        createNodeExecutionId([NODE_ID]),
         executionErrorStore.lastNodeErrors[NODE_ID],
         executionErrorStore,
         missingModelStore
@@ -608,7 +604,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(
       hasWidgetError(
         widget,
-        executionId(NODE_ID),
+        createNodeExecutionId([NODE_ID]),
         executionErrorStore.lastNodeErrors?.[NODE_ID],
         executionErrorStore,
         missingModelStore

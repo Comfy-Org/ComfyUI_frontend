@@ -320,7 +320,7 @@ export function computeProcessedWidgets({
     const handleContextMenu = (e: PointerEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      if (nodeId !== undefined) ui.handleNodeRightClick(e, nodeId)
+      if (nodeId !== undefined) ui.handleNodeRightClick(e, String(nodeId))
       showNodeOptions(
         e,
         widget.name,
