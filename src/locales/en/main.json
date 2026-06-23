@@ -594,7 +594,6 @@
     "Copy (Clipspace)": "Copy (Clipspace)",
     "Add Node": "Add Node",
     "Add Group": "Add Group",
-    "Manage Group Nodes": "Manage Group Nodes",
     "Add Group For Selected Nodes": "Add Group For Selected Nodes",
     "Save Selected as Template": "Save Selected as Template",
     "Node Templates": "Node Templates",
@@ -1161,10 +1160,6 @@
     "showMinimap": "Show Minimap",
     "hideMinimap": "Hide Minimap"
   },
-  "groupNode": {
-    "create": "Create group node",
-    "enterName": "Enter name"
-  },
   "nodeTemplates": {
     "saveAsTemplate": "Save as template",
     "enterName": "Enter name"
@@ -1390,8 +1385,6 @@
     "Group Selected Nodes": "Group Selected Nodes",
     "Toggle promotion of hovered widget": "Toggle promotion of hovered widget",
     "Unpack the selected Subgraph": "Unpack the selected Subgraph",
-    "Manage group nodes": "Manage group nodes",
-    "Ungroup selected group nodes": "Ungroup selected group nodes",
     "About ComfyUI": "About ComfyUI",
     "Comfy-Org Discord": "Comfy-Org Discord",
     "ComfyUI Docs": "ComfyUI Docs",
@@ -2151,6 +2144,7 @@
     "errorCopyImage": "Error copying image: {error}",
     "errorOpenImage": "Error opening image: {error}",
     "noTemplatesToExport": "No templates to export",
+    "invalidTemplateData": "Failed to load node template: invalid data",
     "failedToFetchLogs": "Failed to fetch server logs",
     "migrateToLitegraphReroute": "Reroute nodes will be removed in future versions. Click to migrate to litegraph-native reroute.",
     "legacyMaskEditorDeprecated": "The legacy mask editor is deprecated and will be removed soon.",
@@ -3346,7 +3340,7 @@
     "mediaLabel": "{count} Media File | {count} Media Files",
     "modelsLabel": "{count} Model | {count} Models",
     "checkingAssets": "Checking media visibility…",
-    "acknowledgeCheckbox": "I understand these media items will be published and made public",
+    "acknowledgeCheckbox": "I understand anyone with the link can view these files",
     "inLibrary": "In library",
     "comfyHubTitle": "Upload to ComfyHub",
     "comfyHubDescription": "ComfyHub is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",

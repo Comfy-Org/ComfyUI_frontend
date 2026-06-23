@@ -712,7 +712,6 @@
     "Inputs": "输入",
     "Left": "左侧",
     "Manage": "管理",
-    "Manage Group Nodes": "管理组节点",
     "Minimize Node": "最小化节点",
     "Mode": "模式",
     "Node Info": "节点信息",
@@ -1830,10 +1829,6 @@
     "zoomOptions": "缩放选项",
     "zoomOut": "缩小"
   },
-  "groupNode": {
-    "create": "创建组节点",
-    "enterName": "输入名称"
-  },
   "help": {
     "helpCenterMenu": "帮助中心菜单",
     "recentReleases": "最近发布"
@@ -2563,7 +2558,6 @@
     "Job History": "任务历史",
     "Load Default Workflow": "加载默认工作流",
     "Lock Canvas": "锁定画布",
-    "Manage group nodes": "管理组节点",
     "Manager": "管理器",
     "Manager Menu (Legacy)": "管理菜单（旧版）",
     "Minimap": "小地图",
@@ -2629,7 +2623,6 @@
     "Toggle View Controls Bottom Panel": "切换视图控制底部面板",
     "Toggle promotion of hovered widget": "切换悬停小部件的提升",
     "Undo": "撤销",
-    "Ungroup selected group nodes": "解散选中组节点",
     "Unload Models": "卸载模型",
     "Unload Models and Execution Cache": "卸载模型和执行缓存",
     "Unlock Canvas": "解除锁定画布",

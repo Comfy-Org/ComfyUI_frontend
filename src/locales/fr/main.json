@@ -712,7 +712,6 @@
     "Inputs": "Entrées",
     "Left": "Gauche",
     "Manage": "Gérer",
-    "Manage Group Nodes": "Gérer les Nœuds de Groupe",
     "Minimize Node": "Réduire le nœud",
     "Mode": "Mode",
     "Node Info": "Informations du nœud",
@@ -1830,10 +1829,6 @@
     "zoomOptions": "Options de zoom",
     "zoomOut": "Zoom arrière"
   },
-  "groupNode": {
-    "create": "Créer un nœud de groupe",
-    "enterName": "Entrer le nom"
-  },
   "help": {
     "helpCenterMenu": "Menu du centre d’aide",
     "recentReleases": "Dernières versions"
@@ -2563,7 +2558,6 @@
     "Job History": "Historique des tâches",
     "Load Default Workflow": "Charger le flux de travail par défaut",
     "Lock Canvas": "Verrouiller le canevas",
-    "Manage group nodes": "Gérer les nœuds de groupe",
     "Manager": "Gestionnaire",
     "Manager Menu (Legacy)": "Menu du gestionnaire (héritage)",
     "Minimap": "Mini-carte",
@@ -2629,7 +2623,6 @@
     "Toggle View Controls Bottom Panel": "Basculer le panneau inférieur des contrôles d’affichage",
     "Toggle promotion of hovered widget": "Basculer la promotion du widget survolé",
     "Undo": "Annuler",
-    "Ungroup selected group nodes": "Dégrouper les nœuds de groupe sélectionnés",
     "Unload Models": "Décharger les modèles",
     "Unload Models and Execution Cache": "Décharger les modèles et le cache d'exécution",
     "Unlock Canvas": "Déverrouiller le canevas",
