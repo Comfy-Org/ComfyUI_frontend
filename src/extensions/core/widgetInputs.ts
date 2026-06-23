@@ -272,10 +272,7 @@ export class PrimitiveNode extends LGraphNode {
       widgetName: 'value',
       nodeTypeForBrowser: targetNode.comfyClass ?? '',
       inputNameForBrowser: targetInputName,
-      defaultValue,
-      onValueChange: (widget, newValue, oldValue) => {
-        this.onWidgetChanged?.(widget.name, newValue, oldValue, widget)
-      }
+      defaultValue
     })
   }
 

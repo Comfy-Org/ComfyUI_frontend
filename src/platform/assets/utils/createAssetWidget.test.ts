@@ -2,6 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IWidgetAssetOptions
@@ -19,22 +20,15 @@ vi.mock('@/platform/assets/composables/useAssetBrowserDialog', () => {
   }
 })
 
-type AssetWidgetNode = Parameters<typeof createAssetWidget>[0]['node']
-
 interface HostAssetWidget extends IBaseWidget<
   string,
   'asset',
   IWidgetAssetOptions
 > {
-  node: {
-    onWidgetChanged?: (
-      name: string,
-      value: unknown,
-      oldValue: unknown,
-      widget: IBaseWidget
-    ) => void
-  }
+  node: LGraphNode
 }
+
+type OnWidgetChanged = NonNullable<LGraphNode['onWidgetChanged']>
 
 function checkpointAsset(name: string): AssetItem {
   return {
@@ -47,28 +41,11 @@ function checkpointAsset(name: string): AssetItem {
 }
 
 function createAssetWidgetNode() {
-  const widgets: IBaseWidget<string, 'asset', IWidgetAssetOptions>[] = []
-  const node: AssetWidgetNode = {
-    addWidget(type, name, value, callback, options) {
-      if (type !== 'asset') throw new Error('Expected asset widget')
-      if (!options || typeof options === 'string') {
-        throw new Error('Expected asset widget options')
-      }
+  const node = new LGraphNode('TestNode')
+  const onWidgetChanged = vi.fn<OnWidgetChanged>()
+  node.onWidgetChanged = onWidgetChanged
 
-      const widget: IBaseWidget<string, 'asset', IWidgetAssetOptions> = {
-        type,
-        name,
-        value,
-        callback: typeof callback === 'function' ? callback : undefined,
-        options,
-        y: 0
-      }
-      widgets.push(widget)
-      return widget
-    }
-  }
-
-  return { node, widgets }
+  return { node, onWidgetChanged }
 }
 
 function assertAssetOptions(
@@ -111,18 +88,13 @@ describe('createAssetWidget', () => {
   })
 
   it('preserves regular asset widget change handling for the owning widget', async () => {
-    const { node } = createAssetWidgetNode()
-    const onValueChange =
-      vi.fn<
-        (widget: IBaseWidget, newValue: string, oldValue: unknown) => void
-      >()
+    const { node, onWidgetChanged } = createAssetWidgetNode()
     const widget = createAssetWidget({
       node,
       widgetName: 'ckpt_name',
       nodeTypeForBrowser: 'CheckpointLoaderSimple',
       inputNameForBrowser: 'ckpt_name',
-      defaultValue: 'fake_model.safetensors',
-      onValueChange
+      defaultValue: 'fake_model.safetensors'
     })
 
     assertAssetOptions(widget.options)
@@ -138,39 +110,37 @@ describe('createAssetWidget', () => {
     showOptions.onAssetSelected?.(checkpointAsset('real_model.safetensors'))
 
     expect(widget.value).toBe('real_model.safetensors')
-    expect(onValueChange).toHaveBeenCalledWith(
-      widget,
+    expect(onWidgetChanged).toHaveBeenCalledWith(
+      'ckpt_name',
       'real_model.safetensors',
-      'fake_model.safetensors'
+      'fake_model.safetensors',
+      widget
     )
     expect(captureCanvasState).toHaveBeenCalledOnce()
   })
 
   it('commits cloned asset modal selections through the promoted host widget', async () => {
-    const { node } = createAssetWidgetNode()
-    const sourceOnValueChange =
-      vi.fn<
-        (widget: IBaseWidget, newValue: string, oldValue: unknown) => void
-      >()
+    const { node, onWidgetChanged: sourceOnWidgetChanged } =
+      createAssetWidgetNode()
     const sourceWidget = createAssetWidget({
       node,
       widgetName: 'ckpt_name',
       nodeTypeForBrowser: 'CheckpointLoaderSimple',
       inputNameForBrowser: 'ckpt_name',
-      defaultValue: 'fake_model.safetensors',
-      onValueChange: sourceOnValueChange
+      defaultValue: 'fake_model.safetensors'
     })
     assertAssetOptions(sourceWidget.options)
     const hostCallback = vi.fn<NonNullable<IBaseWidget['callback']>>()
-    const hostOnWidgetChanged =
-      vi.fn<NonNullable<HostAssetWidget['node']['onWidgetChanged']>>()
+    const hostNode = new LGraphNode('PromotedHostNode')
+    const hostOnWidgetChanged = vi.fn<OnWidgetChanged>()
+    hostNode.onWidgetChanged = hostOnWidgetChanged
     const hostWidget: HostAssetWidget = {
       type: 'asset',
       name: 'host_ckpt_name',
       value: 'fake_model.safetensors',
       callback: hostCallback,
       options: sourceWidget.options,
-      node: { onWidgetChanged: hostOnWidgetChanged },
+      node: hostNode,
       y: 0
     }
 
@@ -185,7 +155,7 @@ describe('createAssetWidget', () => {
 
     showOptions.onAssetSelected?.(checkpointAsset('real_model.safetensors'))
 
-    expect(sourceOnValueChange).not.toHaveBeenCalled()
+    expect(sourceOnWidgetChanged).not.toHaveBeenCalled()
     expect(hostWidget.value).toBe('real_model.safetensors')
     expect(hostCallback).toHaveBeenCalledWith('real_model.safetensors')
     expect(hostOnWidgetChanged).toHaveBeenCalledWith(
