@@ -130,7 +130,6 @@ export function scanAllModelCandidates(
   const candidates: MissingModelCandidate[] = []
 
   for (const node of allNodes) {
-    if (!node.widgets?.length) continue
     if (isInactiveMode(node.mode)) continue
 
     candidates.push(
@@ -153,15 +152,15 @@ export function scanNodeModelCandidates(
   isAssetSupported: (nodeType: string, widgetName: string) => boolean,
   getDirectory?: (nodeType: string) => string | undefined
 ): MissingModelCandidate[] {
-  if (!node.widgets?.length) return []
+  const widgets = node.isSubgraphNode?.()
+    ? promotedInputWidgets(node)
+    : (node.widgets ?? [])
+  if (!widgets.length) return []
 
   const executionId = getExecutionIdByNode(rootGraph, node)
   if (!executionId) return []
 
   const candidates: MissingModelCandidate[] = []
-  const widgets = node.isSubgraphNode?.()
-    ? promotedInputWidgets(node)
-    : node.widgets
 
   for (const widget of widgets) {
     const target = getModelWidgetScanTarget(node, widget, executionId)
@@ -218,6 +217,7 @@ function getModelWidgetScanTarget(
   if (resolution.status !== 'resolved') return null
 
   const { node: sourceNode, widget: sourceWidget } = resolution.resolved
+  if (isInactiveMode(sourceNode.mode)) return null
 
   return {
     executionId,

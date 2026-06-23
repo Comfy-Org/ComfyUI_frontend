@@ -367,9 +367,16 @@ async function enterSubgraphForStaleInteriorCheck(
   comfyPage: ComfyPage,
   nodeId: string
 ) {
-  const enterButton = comfyPage.vueNodes.getSubgraphEnterButton(nodeId)
+  const numericNodeId = Number(nodeId)
+  if (Number.isNaN(numericNodeId)) {
+    throw new Error(`Expected numeric subgraph node id, got ${nodeId}`)
+  }
+
+  const normalizedNodeId = String(numericNodeId)
+  const enterButton =
+    comfyPage.vueNodes.getSubgraphEnterButton(normalizedNodeId)
   if ((await enterButton.count()) > 0) {
-    await comfyPage.vueNodes.enterSubgraph(nodeId)
+    await comfyPage.vueNodes.enterSubgraph(normalizedNodeId)
     return
   }
 
@@ -380,7 +387,7 @@ async function enterSubgraphForStaleInteriorCheck(
       throw new Error(`Expected visible subgraph node ${targetNodeId}`)
     }
     window.app!.canvas.setGraph(node.subgraph)
-  }, nodeId)
+  }, numericNodeId)
   await comfyPage.nextFrame()
   await comfyPage.vueNodes.waitForNodes()
 }

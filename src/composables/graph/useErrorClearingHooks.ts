@@ -6,13 +6,7 @@
  * works in legacy canvas mode as well.
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import {
-  inputForWidget,
-  promotedInputSource,
-  promotedInputWidgets,
-  widgetPromotedSource
-} from '@/core/graph/subgraph/promotedInputWidget'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -20,7 +14,6 @@ import {
   NodeSlotType
 } from '@/lib/litegraph/src/types/globalEnums'
 import type { LGraphTriggerEvent } from '@/lib/litegraph/src/types/graphTriggers'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { isCloud } from '@/platform/distribution/types'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -112,88 +105,8 @@ function installNodeHooks(node: LGraphNode): void {
         newValue,
         options
       )
-      clearPromotedHostWidgetErrors(
-        app.rootGraph,
-        node,
-        widget,
-        name,
-        newValue,
-        options
-      )
     }
   )
-}
-
-function clearPromotedHostWidgetErrors(
-  rootGraph: LGraph,
-  sourceNode: LGraphNode,
-  sourceWidget: IBaseWidget,
-  changedName: string,
-  newValue: unknown,
-  options: { min?: number; max?: number }
-): void {
-  if (sourceNode.graph === rootGraph || sourceNode.graph?.isRootGraph) return
-
-  const executionErrorStore = useExecutionErrorStore()
-  for (const target of getPromotedHostWidgetErrorTargets(
-    rootGraph,
-    sourceNode,
-    sourceWidget,
-    changedName
-  )) {
-    executionErrorStore.clearWidgetRelatedErrors(
-      target.executionId,
-      target.widgetName,
-      target.widgetName,
-      newValue,
-      options
-    )
-  }
-}
-
-function getPromotedHostWidgetErrorTargets(
-  rootGraph: LGraph,
-  sourceNode: LGraphNode,
-  sourceWidget: IBaseWidget,
-  changedName: string
-): Array<{ executionId: string; widgetName: string }> {
-  const changedNames = new Set([sourceWidget.name, changedName])
-  const targets: Array<{ executionId: string; widgetName: string }> = []
-
-  for (const hostNode of collectAllNodes(rootGraph)) {
-    if (!hostNode.isSubgraphNode?.()) continue
-
-    const executionId = getExecutionIdByNode(rootGraph, hostNode)
-    if (!executionId) continue
-
-    for (const hostWidget of promotedInputWidgets(hostNode)) {
-      const input = inputForWidget(hostNode, hostWidget)
-      if (!input || input.link != null) continue
-
-      const source = promotedInputSource(hostNode, input)
-      if (!source) continue
-
-      const resolution = resolveConcretePromotedWidget(
-        hostNode,
-        source.nodeId,
-        source.widgetName
-      )
-      if (resolution.status !== 'resolved') continue
-
-      const resolved = resolution.resolved
-      if (resolved.node !== sourceNode) continue
-      if (
-        resolved.widget !== sourceWidget &&
-        !changedNames.has(resolved.widget.name) &&
-        !changedNames.has(hostWidget.name)
-      )
-        continue
-
-      targets.push({ executionId, widgetName: hostWidget.name })
-    }
-  }
-
-  return targets
 }
 
 function restoreNodeHooks(node: LGraphNode): void {

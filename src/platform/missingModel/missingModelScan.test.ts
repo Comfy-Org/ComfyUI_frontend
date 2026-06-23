@@ -668,10 +668,6 @@ describe('scanAllModelCandidates', () => {
     })
 
     const hostWidgetId = widgetId('graph', 65, 'promoted_ckpt')
-    const hostWidget = fromAny<IComboWidget, unknown>({
-      ...makeComboWidget('promoted_ckpt', 'missing_model.safetensors', []),
-      widgetId: hostWidgetId
-    })
     useWidgetValueStore().registerWidget(hostWidgetId, {
       type: 'combo',
       value: 'missing_model.safetensors',
@@ -687,7 +683,6 @@ describe('scanAllModelCandidates', () => {
     const hostNode = fromAny<LGraphNode, unknown>({
       id: 65,
       type: 'abc-def-uuid',
-      widgets: [hostWidget],
       inputs: [hostInput],
       isSubgraphNode: () => true,
       getSlotFromWidget: (widget: IBaseWidget | undefined) =>
@@ -730,6 +725,70 @@ describe('scanAllModelCandidates', () => {
     )
   })
 
+  it('skips promoted subgraph widgets whose concrete source node is inactive', () => {
+    const linkId = 12
+    const sourceWidget = makeComboWidget('ckpt_name', 'stale_model.safetensors')
+    const sourceInput = fromAny({ name: 'ckpt_name', link: linkId })
+    const interiorNode = makeNode(
+      42,
+      'CheckpointLoaderSimple',
+      [sourceWidget],
+      '65:42'
+    )
+    interiorNode.mode = 4
+    Object.assign(interiorNode, {
+      inputs: [sourceInput],
+      isSubgraphNode: () => false,
+      getSlotFromWidget: (widget: IBaseWidget | undefined) =>
+        widget?.name === sourceWidget.name ? sourceInput : undefined,
+      getWidgetFromSlot: () => sourceWidget
+    })
+
+    const hostWidgetId = widgetId('graph', 65, 'promoted_ckpt')
+    useWidgetValueStore().registerWidget(hostWidgetId, {
+      type: 'combo',
+      value: 'missing_model.safetensors',
+      options: {},
+      label: 'Promoted checkpoint'
+    })
+    const hostInput = fromAny<INodeInputSlot, unknown>({
+      name: 'promoted_ckpt',
+      link: null,
+      widget: { name: 'promoted_ckpt' },
+      widgetId: hostWidgetId
+    })
+    const hostNode = fromAny<LGraphNode, unknown>({
+      id: 65,
+      type: 'abc-def-uuid',
+      inputs: [hostInput],
+      isSubgraphNode: () => true,
+      getSlotFromWidget: (widget: IBaseWidget | undefined) =>
+        widget?.widgetId === hostInput.widgetId ||
+        widget?.name === hostInput.name
+          ? hostInput
+          : undefined,
+      subgraph: {
+        inputNode: {
+          slots: [{ name: 'promoted_ckpt', linkIds: [linkId] }]
+        },
+        getLink: (id: number) =>
+          id === linkId
+            ? { resolve: () => ({ inputNode: interiorNode }) }
+            : null,
+        getNodeById: (id: string | number) =>
+          String(id) === String(interiorNode.id) ? interiorNode : null
+      },
+      _testExecutionId: '65'
+    })
+
+    const result = scanAllModelCandidates(
+      makeGraph([hostNode, interiorNode]),
+      noAssetSupport
+    )
+
+    expect(result).toHaveLength(0)
+  })
+
   it('scans nested promoted subgraph widgets through the outer host identity', () => {
     const outerLinkId = 12
     const innerLinkId = 13
@@ -767,10 +826,6 @@ describe('scanAllModelCandidates', () => {
     })
 
     const innerWidgetId = widgetId('graph', 77, 'inner_ckpt')
-    const innerWidget = fromAny<IComboWidget, unknown>({
-      ...makeComboWidget('inner_ckpt', 'stale_model.safetensors', []),
-      widgetId: innerWidgetId
-    })
     const innerInput = fromAny<INodeInputSlot, unknown>({
       name: 'inner_ckpt',
       link: outerLinkId,
@@ -780,7 +835,6 @@ describe('scanAllModelCandidates', () => {
     const innerNode = fromAny<LGraphNode, unknown>({
       id: 77,
       type: 'inner-subgraph-uuid',
-      widgets: [innerWidget],
       inputs: [innerInput],
       isSubgraphNode: () => true,
       getSlotFromWidget: (widget: IBaseWidget | undefined) =>
@@ -809,10 +863,6 @@ describe('scanAllModelCandidates', () => {
       options: {},
       label: 'Outer checkpoint'
     })
-    const outerWidget = fromAny<IComboWidget, unknown>({
-      ...makeComboWidget('outer_ckpt', 'missing_model.safetensors', []),
-      widgetId: outerWidgetId
-    })
     const outerInput = fromAny<INodeInputSlot, unknown>({
       name: 'outer_ckpt',
       link: null,
@@ -822,7 +872,6 @@ describe('scanAllModelCandidates', () => {
     const outerNode = fromAny<LGraphNode, unknown>({
       id: 65,
       type: 'outer-subgraph-uuid',
-      widgets: [outerWidget],
       inputs: [outerInput],
       isSubgraphNode: () => true,
       getSlotFromWidget: (widget: IBaseWidget | undefined) =>

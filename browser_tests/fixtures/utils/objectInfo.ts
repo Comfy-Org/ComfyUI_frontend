@@ -93,6 +93,7 @@ export async function routeObjectInfoFromSetupApi(
   const objectInfoUrl = new URL('/object_info', setupApiUrl).toString()
 
   const objectInfoRouteHandler = async (route: Route) => {
+    let objectInfo: ObjectInfoResponse
     try {
       const response = await fetch(objectInfoUrl, {
         signal: AbortSignal.timeout(5_000)
@@ -106,14 +107,7 @@ export async function routeObjectInfoFromSetupApi(
         return
       }
 
-      const objectInfo = (await response.json()) as ObjectInfoResponse
-      await customize?.(objectInfo)
-
-      await route.fulfill({
-        status: response.status,
-        contentType: 'application/json',
-        body: JSON.stringify(objectInfo)
-      })
+      objectInfo = (await response.json()) as ObjectInfoResponse
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       await route.fulfill({
@@ -123,7 +117,15 @@ export async function routeObjectInfoFromSetupApi(
           error: `Failed to fetch setup object_info from ${objectInfoUrl}: ${message}`
         })
       })
+      return
     }
+
+    await customize?.(objectInfo)
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(objectInfo)
+    })
   }
 
   await page.route(OBJECT_INFO_ROUTE, objectInfoRouteHandler)

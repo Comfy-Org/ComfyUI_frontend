@@ -613,7 +613,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
 
     expect(clearSpy).toHaveBeenCalledWith(
       '65:18',
-      'display_slot',
+      'ckpt_name',
       'ckpt_name',
       'real_model.safetensors',
       { min: undefined, max: undefined }

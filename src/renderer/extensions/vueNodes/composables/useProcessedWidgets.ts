@@ -92,10 +92,11 @@ function createWidgetUpdateHandler(
     widget.callback?.(newValue)
     const options = { min: widgetOptions?.min, max: widgetOptions?.max }
     if (widget.sourceExecutionId) {
+      const sourceWidgetName = widget.sourceWidgetName ?? widget.name
       executionErrorStore.clearWidgetRelatedErrors(
         widget.sourceExecutionId,
-        widget.name,
-        widget.sourceWidgetName ?? widget.name,
+        sourceWidgetName,
+        sourceWidgetName,
         newValue,
         options
       )
