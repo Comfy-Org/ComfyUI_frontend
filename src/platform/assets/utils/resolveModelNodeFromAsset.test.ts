@@ -4,9 +4,20 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
 
 const mockGetNodeProvider = vi.hoisted(() => vi.fn())
+const mockSupportsModelTypeTags = vi.hoisted(() => ({ value: false }))
 
 vi.mock('@/stores/modelToNodeStore', () => ({
   useModelToNodeStore: () => ({ getNodeProvider: mockGetNodeProvider })
+}))
+
+vi.mock('@/composables/useFeatureFlags', () => ({
+  useFeatureFlags: () => ({
+    flags: {
+      get supportsModelTypeTags() {
+        return mockSupportsModelTypeTags.value
+      }
+    }
+  })
 }))
 
 function createMockAsset(overrides: Partial<AssetItem> = {}): AssetItem {
@@ -49,6 +60,7 @@ describe('resolveModelNodeFromAsset', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.spyOn(console, 'error').mockImplementation(() => {})
+    mockSupportsModelTypeTags.value = false
   })
 
   describe('valid assets', () => {
@@ -66,6 +78,17 @@ describe('resolveModelNodeFromAsset', () => {
           'models/checkpoints/test-model.safetensors'
         )
       }
+    })
+
+    it('strips the model_type: prefix when resolving the provider in model_type mode', () => {
+      mockSupportsModelTypeTags.value = true
+      mockProvider(createMockNodeProvider())
+      const result = resolveModelNodeFromAsset(
+        createMockAsset({ tags: ['models', 'model_type:vae'] })
+      )
+
+      expect(result.success).toBe(true)
+      expect(mockGetNodeProvider).toHaveBeenCalledWith('vae')
     })
 
     it('falls back to metadata.filename when user_metadata.filename missing', () => {
