@@ -198,25 +198,19 @@ describe('useCustomerEventsService', () => {
   })
 
   describe('formatEventType', () => {
-    const knownEventTypes = [
-      'credit_added',
-      'topup_completed',
-      'account_created',
-      'api_usage_completed',
-      'gpu_usage',
-      'api_node_usage'
-    ]
+    const expectedByType: Record<string, string> = {
+      credit_added: 'credits.eventTypes.creditAdded',
+      topup_completed: 'credits.eventTypes.creditAdded',
+      account_created: 'credits.eventTypes.accountCreated',
+      api_usage_completed: 'credits.eventTypes.apiUsage',
+      gpu_usage: 'credits.eventTypes.gpuUsage',
+      api_node_usage: 'credits.eventTypes.apiNodeUsage'
+    }
 
-    it('maps known legacy and unified event types to a label, not the raw type', () => {
-      for (const eventType of knownEventTypes) {
-        expect(service.formatEventType(eventType)).not.toBe(eventType)
+    it('maps known legacy and unified event types to expected i18n keys', () => {
+      for (const [eventType, expectedKey] of Object.entries(expectedByType)) {
+        expect(service.formatEventType(eventType)).toBe(expectedKey)
       }
-    })
-
-    it('treats topup_completed as the unified alias of credit_added', () => {
-      expect(service.formatEventType('topup_completed')).toBe(
-        service.formatEventType('credit_added')
-      )
     })
 
     it('should return the original string for unknown event types', () => {
