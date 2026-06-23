@@ -1,8 +1,7 @@
 import type { Ref } from 'vue'
 import { onMounted, onUnmounted, ref } from 'vue'
 
-import * as THREE from 'three'
-import { SVGLoader } from 'three/addons/loaders/SVGLoader.js'
+import type * as THREE from 'three'
 
 import { prefersReducedMotion } from './useReducedMotion'
 
@@ -44,34 +43,12 @@ function buildImageUrls(): string[] {
   })
 }
 
-function parseShapes(): THREE.Shape[] {
-  const loader = new SVGLoader()
-  const svgData = loader.parse(SVG_MARKUP)
-  const shapes: THREE.Shape[] = []
-  svgData.paths.forEach((path) => {
-    shapes.push(...SVGLoader.createShapes(path))
-  })
-  return shapes
-}
-
-function loadTextures(urls: string[]): Promise<THREE.Texture[]> {
-  return Promise.all(
-    urls.map(
-      (url) =>
-        new Promise<THREE.Texture | null>((resolve) => {
-          const img = new Image()
-          img.crossOrigin = 'anonymous'
-          img.onload = () => {
-            const tex = new THREE.Texture(img)
-            tex.needsUpdate = true
-            tex.colorSpace = THREE.SRGBColorSpace
-            resolve(tex)
-          }
-          img.onerror = () => resolve(null)
-          img.src = url
-        })
-    )
-  ).then((results) => results.filter((t): t is THREE.Texture => t !== null))
+function yieldToMain(): Promise<void> {
+  const sched = (
+    window as unknown as { scheduler?: { yield?: () => Promise<void> } }
+  ).scheduler
+  if (sched && typeof sched.yield === 'function') return sched.yield()
+  return new Promise((resolve) => setTimeout(resolve, 0))
 }
 
 export function useHeroLogo(
@@ -81,11 +58,69 @@ export function useHeroLogo(
   const cfg = { ...DEFAULTS, ...config }
   const loaded = ref(false)
   let cleanup: (() => void) | undefined
+  let unmounted = false
+  let idleHandle: number | undefined
+  let timeoutHandle: number | undefined
 
-  onMounted(async () => {
+  const cancelScheduled = () => {
+    if (
+      idleHandle !== undefined &&
+      typeof window !== 'undefined' &&
+      typeof window.cancelIdleCallback === 'function'
+    ) {
+      window.cancelIdleCallback(idleHandle)
+    }
+    idleHandle = undefined
+    if (timeoutHandle !== undefined) {
+      window.clearTimeout(timeoutHandle)
+      timeoutHandle = undefined
+    }
+  }
+
+  const setup = async () => {
     try {
+      if (unmounted) return
       const container = containerRef.value
       if (!container || prefersReducedMotion()) return
+
+      const [THREE, svgLoaderMod] = await Promise.all([
+        import('three'),
+        import('three/addons/loaders/SVGLoader.js')
+      ])
+      if (unmounted) return
+
+      const parseShapes = (): THREE.Shape[] => {
+        const { SVGLoader } = svgLoaderMod
+        const loader = new SVGLoader()
+        const svgData = loader.parse(SVG_MARKUP)
+        const shapes: THREE.Shape[] = []
+        svgData.paths.forEach((path) => {
+          shapes.push(...SVGLoader.createShapes(path))
+        })
+        return shapes
+      }
+
+      const loadTextures = (urls: string[]): Promise<THREE.Texture[]> => {
+        return Promise.all(
+          urls.map(
+            (url) =>
+              new Promise<THREE.Texture | null>((resolve) => {
+                const img = new Image()
+                img.crossOrigin = 'anonymous'
+                img.onload = () => {
+                  const tex = new THREE.Texture(img)
+                  tex.needsUpdate = true
+                  tex.colorSpace = THREE.SRGBColorSpace
+                  resolve(tex)
+                }
+                img.onerror = () => resolve(null)
+                img.src = url
+              })
+          )
+        ).then((results) =>
+          results.filter((t): t is THREE.Texture => t !== null)
+        )
+      }
 
       const { width, height } = container.getBoundingClientRect()
 
@@ -125,6 +160,9 @@ export function useHeroLogo(
       )
       camera.position.z = cfg.zoom
 
+      await yieldToMain()
+      if (disposed) return
+
       // SVG shape
       const shapes = parseShapes()
       const tempGeo = new THREE.ShapeGeometry(shapes)
@@ -135,15 +173,15 @@ export function useHeroLogo(
       const scaleFactor = 3 / (bb.max.y - bb.min.y)
       tempGeo.dispose()
 
+      await yieldToMain()
+      if (disposed) return
+
       // Image sequence textures — load first frame eagerly, rest lazily
       const urls = buildImageUrls()
       const textures = await loadTextures(urls.slice(0, 1))
       if (disposed) return
 
-      renderer.domElement.style.opacity = '1'
-      loaded.value = true
-
-      loadTextures(urls.slice(1)).then((rest) => {
+      void loadTextures(urls.slice(1)).then((rest) => {
         if (!disposed) textures.push(...rest)
       })
 
@@ -167,6 +205,9 @@ export function useHeroLogo(
       bgPlane.scale.set(cfg.bgScale, cfg.bgScale, 1)
       scene.add(bgPlane)
 
+      await yieldToMain()
+      if (disposed) return
+
       // Logo group
       const group = new THREE.Group()
       scene.add(group)
@@ -188,6 +229,9 @@ export function useHeroLogo(
       const logoMesh = new THREE.Mesh(shapeGeo, shapeMat)
       logoMesh.renderOrder = 2
       group.add(logoMesh)
+
+      await yieldToMain()
+      if (disposed) return
 
       // Extrusion stencil mask
       const extrudeGeo = new THREE.ExtrudeGeometry(shapes, {
@@ -211,6 +255,9 @@ export function useHeroLogo(
       const extrudeMesh = new THREE.Mesh(extrudeGeo, extrudeMat)
       extrudeMesh.renderOrder = 0
       group.add(extrudeMesh)
+
+      await yieldToMain()
+      if (disposed) return
 
       // Interaction
       let isDragging = false
@@ -261,6 +308,7 @@ export function useHeroLogo(
       window.addEventListener('resize', onResize)
 
       const clock = new THREE.Clock()
+      let firstFrameRendered = false
 
       function animate() {
         if (disposed) return
@@ -294,6 +342,12 @@ export function useHeroLogo(
         }
 
         renderer.render(scene, camera)
+
+        if (!firstFrameRendered) {
+          firstFrameRendered = true
+          renderer.domElement.style.opacity = '1'
+          loaded.value = true
+        }
       }
 
       animate()
@@ -318,9 +372,29 @@ export function useHeroLogo(
       console.error('[useHeroLogo] initialization failed:', err)
       cleanup?.()
     }
+  }
+
+  onMounted(() => {
+    if (typeof window === 'undefined') return
+    if (typeof window.requestIdleCallback === 'function') {
+      idleHandle = window.requestIdleCallback(
+        () => {
+          idleHandle = undefined
+          void setup()
+        },
+        { timeout: 2000 }
+      )
+    } else {
+      timeoutHandle = window.setTimeout(() => {
+        timeoutHandle = undefined
+        void setup()
+      }, 200)
+    }
   })
 
   onUnmounted(() => {
+    unmounted = true
+    cancelScheduled()
     cleanup?.()
   })
 
