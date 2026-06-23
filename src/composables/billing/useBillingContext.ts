@@ -14,11 +14,9 @@ import type {
   BalanceInfo,
   BillingActions,
   BillingContext,
-  BillingPlanType,
   BillingType,
   BillingState,
-  SubscriptionInfo,
-  SubscriptionLock
+  SubscriptionInfo
 } from './types'
 import { useLegacyBilling } from './useLegacyBilling'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
@@ -28,7 +26,6 @@ import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspa
 // carries a team_credit_stop. The hyphen prefix alone separates the two, so a
 // new sub is never misrouted even before its credit stop is populated.
 const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
-const NEW_TEAM_PLAN_SLUG_PREFIX = 'team_per_credit'
 
 /**
  * Unified billing context that automatically switches between legacy (user-scoped)
@@ -151,52 +148,6 @@ function useBillingContextInternal(): BillingContext {
         .startsWith(LEGACY_TEAM_PLAN_SLUG_PREFIX) ??
         false)
   )
-
-  // Single classification of the active subscription. FREE and no-subscription
-  // both collapse to 'none' (free to subscribe to anything). new-team is keyed
-  // on the credit stop — there is no 'team' SubscriptionTier — with the
-  // underscore slug as a provisioning-lag fallback.
-  const planType = computed<BillingPlanType>(() => {
-    if (!isActiveSubscription.value || isFreeTier.value) return 'none'
-    if (isLegacyTeamPlan.value) return 'legacy-team'
-    const slug = currentPlanSlug.value?.toLowerCase() ?? ''
-    if (
-      currentTeamCreditStop.value !== null ||
-      slug.startsWith(NEW_TEAM_PLAN_SLUG_PREFIX)
-    ) {
-      return 'new-team'
-    }
-    return 'personal'
-  })
-
-  const subscriptionLock = computed<SubscriptionLock>(() => {
-    switch (planType.value) {
-      case 'personal':
-        return {
-          allowPersonalTiers: true,
-          allowTeamPlan: false,
-          resubscribeOnly: false
-        }
-      case 'new-team':
-        return {
-          allowPersonalTiers: false,
-          allowTeamPlan: false,
-          resubscribeOnly: true
-        }
-      case 'legacy-team':
-        return {
-          allowPersonalTiers: false,
-          allowTeamPlan: false,
-          resubscribeOnly: false
-        }
-      case 'none':
-        return {
-          allowPersonalTiers: true,
-          allowTeamPlan: true,
-          resubscribeOnly: false
-        }
-    }
-  })
 
   const billingStatus = computed(() =>
     toValue(activeContext.value.billingStatus)
@@ -333,8 +284,6 @@ function useBillingContextInternal(): BillingContext {
     isActiveSubscription,
     isFreeTier,
     isLegacyTeamPlan,
-    planType,
-    subscriptionLock,
     billingStatus,
     subscriptionStatus,
     tier,

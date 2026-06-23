@@ -2586,8 +2586,6 @@
       "ctaMonthly": "Subscribe to Team Monthly",
       "unavailable": "This team plan is not available right now.",
       "changePlan": "Change plan",
-      "creditsLocked": "Credits currently can't be changed",
-      "planLocked": "Team plan currently can't be changed",
       "currentPlan": "Current plan"
     },
     "enterprise": {
@@ -2643,8 +2641,6 @@
     "upgradePlan": "Upgrade Plan",
     "upgradeTo": "Upgrade to {plan}",
     "changeTo": "Change to {plan}",
-    "notAvailableOnTeamPlan": "Not available while on a team plan",
-    "notAvailableOnPersonalPlan": "Not available while on a personal plan",
     "maxDuration": {
       "free": "30 min",
       "standard": "30 min",

@@ -83,37 +83,33 @@ function renderComponent(props: Record<string, unknown> = {}) {
   })
 }
 
-describe('SubscriptionRequiredDialogContentUnified team-plan gate', () => {
+describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockIsInPersonalWorkspace.value = false
   })
 
-  it('routes a personal-workspace team-plan pick to onChooseTeam, not checkout', async () => {
-    const user = userEvent.setup()
-    const onChooseTeam = vi.fn()
-    mockIsInPersonalWorkspace.value = true
-    renderComponent({ onChooseTeam })
-
-    await user.click(screen.getByTestId('subscribe-team-btn'))
-
-    await vi.waitFor(() => {
-      expect(onChooseTeam).toHaveBeenCalledOnce()
-    })
-    expect(mockHandleSubscribeTeamClick).not.toHaveBeenCalled()
-  })
-
   it('advances to team checkout from a team workspace', async () => {
     const user = userEvent.setup()
-    const onChooseTeam = vi.fn()
     mockIsInPersonalWorkspace.value = false
-    renderComponent({ onChooseTeam })
+    renderComponent()
 
     await user.click(screen.getByTestId('subscribe-team-btn'))
 
     await vi.waitFor(() => {
       expect(mockHandleSubscribeTeamClick).toHaveBeenCalledWith(TEAM_PAYLOAD)
     })
-    expect(onChooseTeam).not.toHaveBeenCalled()
+  })
+
+  it('advances to team checkout from a personal workspace (no reroute)', async () => {
+    const user = userEvent.setup()
+    mockIsInPersonalWorkspace.value = true
+    renderComponent()
+
+    await user.click(screen.getByTestId('subscribe-team-btn'))
+
+    await vi.waitFor(() => {
+      expect(mockHandleSubscribeTeamClick).toHaveBeenCalledWith(TEAM_PAYLOAD)
+    })
   })
 })

@@ -126,11 +126,7 @@ export const useSubscriptionDialog = () => {
           // override via options.planMode.
           initialPlanMode:
             options?.planMode ??
-            (workspaceStore.isInPersonalWorkspace ? 'personal' : 'team'),
-          // A team plan can't be bought in place from a personal workspace, so a
-          // personal user picking a team plan is routed to create/switch a team
-          // workspace first instead of into team checkout.
-          onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
+            (workspaceStore.isInPersonalWorkspace ? 'personal' : 'team')
         },
         dialogComponentProps: {
           // The dialog hugs its content so each step sizes itself: the pricing
