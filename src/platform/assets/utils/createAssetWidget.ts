@@ -1,7 +1,6 @@
 import { fromZodError } from 'zod-validation-error'
 
 import { t } from '@/i18n'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   IWidgetAssetOptions
@@ -14,9 +13,34 @@ import {
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 
+interface AssetWidgetNode {
+  addWidget(
+    type: 'asset',
+    name: string,
+    value: string,
+    callback: IBaseWidget['callback'] | string | null,
+    options?: IWidgetAssetOptions | string
+  ): IBaseWidget
+}
+
+interface AssetWidgetOwnerNode {
+  onWidgetChanged?: (
+    name: string,
+    value: unknown,
+    oldValue: unknown,
+    widget: IBaseWidget
+  ) => void
+}
+
+type AssetWidgetValueChangeHandler = (
+  widget: IBaseWidget,
+  newValue: string,
+  oldValue: unknown
+) => void
+
 interface CreateAssetWidgetParams {
   /** The node to add the widget to */
-  node: LGraphNode
+  node: AssetWidgetNode
   /** The widget name */
   widgetName: string
   /** The node type to show in asset browser (may differ from node.comfyClass for PrimitiveNode) */
@@ -26,33 +50,33 @@ interface CreateAssetWidgetParams {
   /** Default value for the widget */
   defaultValue?: string
   /** Callback when widget value changes */
-  onValueChange?: (
-    widget: IBaseWidget,
-    newValue: string,
-    oldValue: unknown
-  ) => void
+  onValueChange?: AssetWidgetValueChangeHandler
 }
 
-/**
- * Creates an asset widget that opens the Asset Browser dialog for model selection.
- * Used by both regular nodes (via useComboWidget) and PrimitiveNode.
- *
- * @param params - Configuration for the asset widget
- * @returns The created asset widget
- */
-export function createAssetWidget(
-  params: CreateAssetWidgetParams
-): IBaseWidget {
-  const {
-    node,
-    widgetName,
-    nodeTypeForBrowser,
-    inputNameForBrowser,
-    defaultValue,
-    onValueChange
-  } = params
+interface CreateAssetWidgetOptionsParams {
+  widgetName: string
+  nodeTypeForBrowser: string
+  inputNameForBrowser?: string
+  getOwnerWidget?: () => IBaseWidget | undefined
+  onValueChange?: AssetWidgetValueChangeHandler
+}
 
-  const displayLabel = defaultValue ?? t('widgets.selectModel')
+function hasOwnerNode(
+  widget: IBaseWidget
+): widget is IBaseWidget & { node: AssetWidgetOwnerNode } {
+  return (
+    'node' in widget && typeof widget.node === 'object' && widget.node !== null
+  )
+}
+
+function createAssetWidgetOptions({
+  widgetName,
+  nodeTypeForBrowser,
+  inputNameForBrowser,
+  getOwnerWidget,
+  onValueChange
+}: CreateAssetWidgetOptionsParams): IWidgetAssetOptions {
+  const inputName = inputNameForBrowser ?? widgetName
   const assetBrowserDialog = useAssetBrowserDialog()
 
   async function openModal(widget: IBaseWidget) {
@@ -60,8 +84,8 @@ export function createAssetWidget(
 
     await assetBrowserDialog.show({
       nodeType: nodeTypeForBrowser,
-      inputName: inputNameForBrowser ?? widgetName,
-      currentValue: widget.value as string,
+      inputName,
+      currentValue: String(widget.value ?? ''),
       onAssetSelected: (asset) => {
         const validatedAsset = assetItemSchema.safeParse(asset)
 
@@ -98,15 +122,56 @@ export function createAssetWidget(
 
         const oldValue = widget.value
         widget.value = validatedFilename.data
-        onValueChange?.(widget, validatedFilename.data, oldValue)
+        widget.callback?.(widget.value)
+        const ownerWidget = getOwnerWidget?.()
+        if (widget === ownerWidget) {
+          onValueChange?.(widget, validatedFilename.data, oldValue)
+        } else if (hasOwnerNode(widget)) {
+          widget.node.onWidgetChanged?.(
+            widget.name,
+            validatedFilename.data,
+            oldValue,
+            widget
+          )
+        }
       }
     })
   }
 
-  const options: IWidgetAssetOptions = {
+  return {
     openModal,
     nodeType: nodeTypeForBrowser
   }
+}
 
-  return node.addWidget('asset', widgetName, displayLabel, () => {}, options)
+export function createAssetWidget(
+  params: CreateAssetWidgetParams
+): IBaseWidget {
+  const {
+    node,
+    widgetName,
+    nodeTypeForBrowser,
+    inputNameForBrowser,
+    defaultValue,
+    onValueChange
+  } = params
+
+  const displayLabel = defaultValue ?? t('widgets.selectModel')
+  const ownerWidgetRef: { current?: IBaseWidget } = {}
+  const options = createAssetWidgetOptions({
+    widgetName,
+    nodeTypeForBrowser,
+    inputNameForBrowser,
+    getOwnerWidget: () => ownerWidgetRef.current,
+    onValueChange
+  })
+  const ownerWidget = node.addWidget(
+    'asset',
+    widgetName,
+    displayLabel,
+    () => {},
+    options
+  )
+  ownerWidgetRef.current = ownerWidget
+  return ownerWidget
 }
