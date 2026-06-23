@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
@@ -61,6 +61,10 @@ describe('resolveModelNodeFromAsset', () => {
     vi.clearAllMocks()
     vi.spyOn(console, 'error').mockImplementation(() => {})
     mockSupportsModelTypeTags.value = false
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
   })
 
   describe('valid assets', () => {
