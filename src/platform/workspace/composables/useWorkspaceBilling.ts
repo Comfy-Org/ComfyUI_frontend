@@ -82,6 +82,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const currentPlanSlug = computed(
     () => statusData.value?.plan_slug ?? billingPlans.currentPlanSlug.value
   )
+  const teamCreditStops = computed(() => billingPlans.teamCreditStops.value)
+  const currentTeamCreditStop = computed(
+    () => statusData.value?.team_credit_stop ?? null
+  )
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
@@ -287,6 +291,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     balance,
     plans,
     currentPlanSlug,
+    teamCreditStops,
+    currentTeamCreditStop,
     isLoading,
     error,
     isActiveSubscription,
