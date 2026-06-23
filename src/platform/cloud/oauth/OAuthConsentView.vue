@@ -18,7 +18,7 @@
             aria-hidden="true"
           />
           <div
-            class="flex size-14 items-center justify-center rounded-2xl bg-[#5b54d6]"
+            class="flex size-14 items-center justify-center rounded-2xl bg-(--oauth-comfy-tile)"
           >
             <i
               class="icon-[comfy--comfy-c] size-8 text-white"
@@ -54,7 +54,7 @@
           v-else
           v-model="selectedWorkspaceId"
           :aria-label="t('oauth.consent.workspaceLabel')"
-          class="m-0 flex scrollbar-custom max-h-72 list-none flex-col divide-y divide-muted overflow-hidden overflow-y-auto rounded-xl border border-solid border-muted bg-secondary-background/40 p-0"
+          class="m-0 flex scrollbar-custom max-h-72 list-none flex-col divide-y divide-muted overflow-hidden overflow-y-auto rounded-xl border border-solid border-muted bg-(--oauth-box) p-0"
         >
           <RadioGroupItem
             v-for="workspace in challenge.workspaces"
@@ -96,7 +96,7 @@
           {{ t('oauth.consent.detailsHeader') }}
         </p>
         <div
-          class="flex flex-col gap-1.5 rounded-xl border border-solid border-muted bg-secondary-background/40 p-3"
+          class="flex flex-col gap-1.5 rounded-xl border border-solid border-muted bg-(--oauth-box) p-3"
         >
           <span class="text-xs text-muted">
             {{ t('oauth.consent.permissionsHeader') }}
@@ -119,13 +119,13 @@
         </div>
         <div
           v-if="challenge.redirect_uri"
-          class="flex flex-col gap-1.5 rounded-xl border border-solid border-muted bg-secondary-background/40 p-3"
+          class="flex flex-col gap-1.5 rounded-xl border border-solid border-muted bg-(--oauth-box) p-3"
         >
           <span class="text-xs text-muted">
             {{ t('oauth.consent.redirectNotice') }}
           </span>
           <code
-            class="m-0 block truncate rounded-lg bg-secondary-background px-3 py-2 font-mono text-xs text-base-foreground"
+            class="m-0 block truncate rounded-lg bg-(--oauth-inset) px-3 py-2 font-mono text-xs text-base-foreground"
             :title="challenge.redirect_uri"
           >
             {{ challenge.redirect_uri }}
@@ -145,7 +145,7 @@
         <Button
           variant="secondary"
           size="lg"
-          class="w-full"
+          class="w-full bg-(--oauth-button) hover:bg-(--oauth-box)"
           :loading="submitting === 'allow'"
           :disabled="isSubmitting || !selectedWorkspaceIsValid"
           @click="submit('allow')"
@@ -155,7 +155,7 @@
         <Button
           variant="secondary"
           size="lg"
-          class="w-full"
+          class="w-full bg-(--oauth-button-cancel) hover:bg-(--oauth-box)"
           :loading="submitting === 'deny'"
           :disabled="isSubmitting || challenge.workspaces.length === 0"
           @click="submit('deny')"
@@ -232,7 +232,10 @@ const resourceName = computed(
 const clientGlyph = computed(() => {
   const name = challenge.value?.client_display_name?.toLowerCase() ?? ''
   if (name.includes('claude') || name.includes('anthropic'))
-    return { icon: 'icon-[comfy--anthropic]', color: 'text-[#da7757]' }
+    return {
+      icon: 'icon-[comfy--anthropic]',
+      color: 'text-[var(--oauth-client-coral)]'
+    }
   if (name.includes('openai') || name.includes('chatgpt'))
     return { icon: 'icon-[comfy--openai]', color: 'text-black' }
   if (name.includes('gemini'))
