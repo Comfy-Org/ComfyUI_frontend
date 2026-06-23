@@ -127,8 +127,8 @@ class LayoutStoreImpl implements LayoutStore {
   private isGlobalDispatchQueued = false
 
   // CustomRef cache and trigger functions
-  private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
-  private nodeTriggers = new Map<NodeId, () => void>()
+  private nodeRefs = new Map<string, Ref<NodeLayout | null>>()
+  private nodeTriggers = new Map<string, () => void>()
 
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
@@ -230,24 +230,24 @@ class LayoutStoreImpl implements LayoutStore {
    * Get or create a customRef for a node layout
    */
   getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null> {
-    let nodeRef = this.nodeRefs.get(nodeId)
+    const nodeKey = String(nodeId)
+    let nodeRef = this.nodeRefs.get(nodeKey)
 
     if (!nodeRef) {
       nodeRef = customRef<NodeLayout | null>((track, trigger) => {
-        // Store the trigger so we can call it when Yjs changes
-        this.nodeTriggers.set(nodeId, trigger)
+        this.nodeTriggers.set(nodeKey, trigger)
 
         return {
           get: () => {
             track()
-            const ynode = this.ynodes.get(String(nodeId))
+            const ynode = this.ynodes.get(nodeKey)
             const layout = ynode ? yNodeToLayout(ynode) : null
             return layout
           },
           set: (newLayout: NodeLayout | null) => {
             if (newLayout === null) {
               // Delete operation
-              const existing = this.ynodes.get(String(nodeId))
+              const existing = this.ynodes.get(nodeKey)
               if (existing) {
                 this.applyOperation({
                   type: 'deleteNode',
@@ -261,7 +261,7 @@ class LayoutStoreImpl implements LayoutStore {
               }
             } else {
               // Update operation - detect what changed
-              const existing = this.ynodes.get(String(nodeId))
+              const existing = this.ynodes.get(nodeKey)
               if (!existing) {
                 // Create operation
                 this.applyOperation({
@@ -326,7 +326,7 @@ class LayoutStoreImpl implements LayoutStore {
         }
       })
 
-      this.nodeRefs.set(nodeId, nodeRef)
+      this.nodeRefs.set(nodeKey, nodeRef)
     }
 
     return nodeRef
@@ -917,7 +917,7 @@ class LayoutStoreImpl implements LayoutStore {
     // Manually trigger affected node refs after transaction
     // This is needed because Yjs observers don't fire for property changes
     change.nodeIds.forEach((nodeId) => {
-      const trigger = this.nodeTriggers.get(nodeId)
+      const trigger = this.nodeTriggers.get(String(nodeId))
       if (trigger) {
         trigger()
       }
@@ -989,8 +989,9 @@ class LayoutStoreImpl implements LayoutStore {
    * This should be called from the component's onUnmounted hook.
    */
   cleanupNodeRef(nodeId: NodeId): void {
-    this.nodeRefs.delete(nodeId)
-    this.nodeTriggers.delete(nodeId)
+    const nodeKey = String(nodeId)
+    this.nodeRefs.delete(nodeKey)
+    this.nodeTriggers.delete(nodeKey)
   }
 
   /**
