@@ -1,10 +1,11 @@
 <template>
-  <div class="flex h-[60vh] min-h-80 gap-3 pt-2 text-sm">
-    <div class="flex w-60 shrink-0 flex-col gap-2">
+  <div class="flex h-[60vh] min-h-80 gap-4 pt-2 text-sm">
+    <!-- Prompt list -->
+    <div class="flex w-56 shrink-0 flex-col gap-2">
       <Button
         variant="secondary"
         size="sm"
-        class="justify-start gap-2"
+        class="w-full justify-start gap-2"
         @click="startNew"
       >
         <i class="icon-[lucide--plus] size-4" />
@@ -15,7 +16,7 @@
         :placeholder="t('promptNode.searchPlaceholder')"
       />
       <div
-        class="min-h-0 flex-1 overflow-y-auto rounded-md border border-border-default p-1"
+        class="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto rounded-lg border border-border-default p-1"
       >
         <Button
           v-for="prompt in filtered"
@@ -24,15 +25,18 @@
           size="sm"
           :class="
             cn(
-              'w-full justify-start',
-              prompt.id === selectedId && 'bg-secondary-background-hover'
+              'w-full justify-start font-normal',
+              prompt.id === selectedId && 'bg-secondary-background-selected'
             )
           "
           @click="select(prompt.id)"
         >
           <span class="truncate">{{ prompt.name }}</span>
         </Button>
-        <p v-if="!filtered.length" class="px-2 py-1.5 text-muted-foreground">
+        <p
+          v-if="!filtered.length"
+          class="px-2 py-8 text-center text-muted-foreground"
+        >
           {{
             store.prompts.length
               ? t('promptNode.managerNoMatches')
@@ -42,10 +46,12 @@
       </div>
     </div>
 
-    <div class="flex min-w-0 flex-1 flex-col gap-3">
+    <!-- Detail / editor -->
+    <div class="flex min-w-0 flex-1 flex-col">
       <template v-if="isEditing">
         <Input
           v-model="nameDraft"
+          class="mb-2 font-medium"
           :placeholder="t('promptNode.namePlaceholder')"
         />
         <div class="min-h-0 flex-1">
@@ -54,7 +60,38 @@
             :placeholder="t('promptNode.editorPlaceholder')"
           />
         </div>
-        <div class="flex items-center justify-between gap-2">
+        <div
+          class="mt-3 flex items-center justify-between gap-2 border-t border-border-default pt-3"
+        >
+          <div class="flex items-center gap-2">
+            <template v-if="selectedId && confirmingDelete">
+              <Button
+                variant="destructive"
+                size="sm"
+                :loading="isDeleting"
+                @click="remove"
+              >
+                {{ t('promptNode.confirmDelete') }}
+              </Button>
+              <Button
+                variant="textonly"
+                size="sm"
+                @click="confirmingDelete = false"
+              >
+                {{ t('g.cancel') }}
+              </Button>
+            </template>
+            <Button
+              v-else-if="selectedId"
+              variant="destructive-textonly"
+              size="sm"
+              class="gap-1.5"
+              @click="confirmingDelete = true"
+            >
+              <i class="icon-[lucide--trash-2] size-4" />
+              {{ t('g.delete') }}
+            </Button>
+          </div>
           <Button
             size="sm"
             :disabled="!canSave"
@@ -63,77 +100,48 @@
           >
             {{ t('g.save') }}
           </Button>
-          <template v-if="selectedId">
-            <template v-if="confirmingDelete">
-              <div class="flex gap-2">
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  :loading="isDeleting"
-                  @click="remove"
-                >
-                  {{ t('promptNode.confirmDelete') }}
-                </Button>
-                <Button
-                  variant="textonly"
-                  size="sm"
-                  @click="confirmingDelete = false"
-                >
-                  {{ t('g.cancel') }}
-                </Button>
-              </div>
-            </template>
-            <Button
-              v-else
-              variant="destructive-textonly"
-              size="sm"
-              @click="confirmingDelete = true"
-            >
-              {{ t('g.delete') }}
-            </Button>
-          </template>
         </div>
       </template>
       <div
         v-else
-        class="flex flex-1 items-center justify-center text-muted-foreground"
+        class="flex flex-1 flex-col items-center justify-center gap-3 text-muted-foreground"
       >
+        <i class="icon-[lucide--text-cursor-input] size-8 opacity-40" />
         {{ t('promptNode.managerSelectHint') }}
       </div>
     </div>
 
-    <div v-if="selectedId" class="flex w-48 shrink-0 flex-col gap-2">
+    <!-- Version history -->
+    <div v-if="selectedId" class="flex w-52 shrink-0 flex-col gap-2">
       <span
-        class="text-2xs font-medium tracking-wide text-muted-foreground uppercase"
+        class="px-1 text-2xs font-medium tracking-wide text-muted-foreground uppercase"
       >
         {{ t('promptNode.historyTitle') }}
       </span>
       <div
-        class="min-h-0 flex-1 overflow-y-auto rounded-md border border-border-default p-1"
+        class="min-h-0 flex-1 overflow-y-auto rounded-lg border border-border-default"
       >
         <div
           v-for="(version, index) in versions"
           :key="version.assetId"
-          class="flex items-center justify-between gap-1 px-2 py-1"
+          class="flex items-center justify-between gap-2 border-b border-border-default px-3 py-2 last:border-b-0"
         >
           <span class="truncate text-xs text-muted-foreground">
             {{ formatDate(version.createdAt) }}
           </span>
-          <Button
-            v-if="index !== 0"
-            variant="textonly"
-            size="sm"
-            @click="restore(version)"
+          <span
+            v-if="index === 0"
+            class="shrink-0 rounded-sm bg-secondary-background px-1.5 py-0.5 text-2xs text-muted-foreground"
           >
-            {{ t('promptNode.restore') }}
-          </Button>
-          <span v-else class="text-2xs text-muted-foreground">
             {{ t('promptNode.currentVersion') }}
           </span>
+          <Button v-else variant="textonly" size="sm" @click="restore(version)">
+            {{ t('promptNode.restore') }}
+          </Button>
         </div>
         <p
           v-if="!versions.length"
-          class="px-2 py-1.5 text-xs text-muted-foreground"
+          class="px-3 py-8 text-center text-xs text-muted-foreground"
         >
           {{ t('promptNode.historyEmpty') }}
         </p>
