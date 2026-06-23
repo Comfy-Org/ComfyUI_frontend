@@ -34,6 +34,20 @@ const lazyCloudNotificationContent = () =>
 const lazyPublishDialog = () =>
   import('@/platform/workflow/sharing/components/publish/ComfyHubPublishDialog.vue')
 
+/**
+ * Shrink-wrap the Reka DialogContent around the content's intrinsic width,
+ * like the auto-sized PrimeVue root it replaces.
+ */
+const HUG_CONTENT_CLASS =
+  'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)]'
+
+/**
+ * Reka chrome for headless dialogs whose content draws its own panel
+ * (background/border/rounding) — neutralize the DialogContent box and
+ * shrink-wrap it around the content.
+ */
+const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-transparent shadow-none`
+
 export type ConfirmationDialogType =
   | 'default'
   | 'overwrite'
@@ -200,6 +214,8 @@ export const useDialogService = () => {
         },
         headerComponent: ComfyOrgHeader,
         dialogComponentProps: {
+          renderer: 'reka',
+          contentClass: HUG_CONTENT_CLASS,
           closable: false,
           onClose: () => resolve(false)
         }
@@ -223,6 +239,10 @@ export const useDialogService = () => {
           onSuccess: () => resolve(true)
         },
         dialogComponentProps: {
+          renderer: 'reka',
+          // SignInContent is a fixed w-96 — size 'sm' (max-w-sm) leaves only
+          // 352px after the body padding; hug the intrinsic width instead.
+          contentClass: HUG_CONTENT_CLASS,
           closable: true,
           onClose: () => resolve(false)
         }
@@ -328,12 +348,9 @@ export const useDialogService = () => {
       component,
       props: options,
       dialogComponentProps: {
+        renderer: 'reka',
         headless: true,
-        pt: {
-          header: { class: 'p-0! hidden' },
-          content: { class: 'p-0! m-0! rounded-2xl' },
-          root: { class: 'rounded-2xl' }
-        }
+        contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
       }
     })
   }
@@ -352,6 +369,10 @@ export const useDialogService = () => {
       props: {
         onSuccess: () =>
           dialogStore.closeDialog({ key: 'global-update-password' })
+      },
+      dialogComponentProps: {
+        renderer: 'reka',
+        contentClass: HUG_CONTENT_CLASS
       }
     })
   }
@@ -381,20 +402,10 @@ export const useDialogService = () => {
     dialogComponentProps?: DialogComponentProps
   }) {
     const layoutDefaultProps: DialogComponentProps = {
+      renderer: 'reka',
       headless: true,
       modal: true,
-      closable: true,
-      pt: {
-        root: {
-          class: 'rounded-2xl overflow-hidden'
-        },
-        header: {
-          class: 'p-0! hidden'
-        },
-        content: {
-          class: 'p-0! m-0!'
-        }
-      }
+      closable: true
     }
 
     return dialogStore.showDialog({
@@ -416,18 +427,15 @@ export const useDialogService = () => {
     return dialogStore.showDialog({
       ...rest,
       dialogComponentProps: {
+        renderer: 'reka',
         closable: true,
-        pt: {
-          root: { class: 'bg-base-background border-border-default' },
-          header: { class: '!p-0 !m-0' },
-          content: { class: '!p-0 overflow-y-hidden' },
-          footer: { class: '!p-0' },
-          pcCloseButton: {
-            root: {
-              class: '!w-7 !h-7 !border-none !outline-none !p-2 !m-1.5'
-            }
-          }
-        },
+        // Contents bring their own width and separators — shrink-wrap the
+        // chrome and zero the section padding.
+        contentClass:
+          'w-fit max-w-[calc(100vw-1rem)] sm:max-w-[calc(100vw-1rem)] border-border-default',
+        headerClass: 'p-0',
+        bodyClass: 'p-0 overflow-y-hidden',
+        footerClass: 'p-0',
         ...callerProps
       }
     })
@@ -447,13 +455,10 @@ export const useDialogService = () => {
   }
 
   // Workspace dialogs - dynamically imported to avoid bundling when feature flag is off
-  const workspaceDialogPt = {
+  const workspaceDialogProps = {
+    renderer: 'reka',
     headless: true,
-    pt: {
-      header: { class: 'p-0! hidden' },
-      content: { class: 'p-0! m-0! rounded-2xl' },
-      root: { class: 'rounded-2xl' }
-    }
+    contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
   } as const
 
   async function showDeleteWorkspaceDialog(options?: {
@@ -466,7 +471,7 @@ export const useDialogService = () => {
       key: 'delete-workspace',
       component,
       props: options,
-      dialogComponentProps: workspaceDialogPt
+      dialogComponentProps: workspaceDialogProps
     })
   }
 
@@ -480,7 +485,7 @@ export const useDialogService = () => {
       component,
       props: { onConfirm },
       dialogComponentProps: {
-        ...workspaceDialogPt
+        ...workspaceDialogProps
       }
     })
   }
@@ -499,7 +504,7 @@ export const useDialogService = () => {
       component,
       props: { onConfirm },
       dialogComponentProps: {
-        ...workspaceDialogPt
+        ...workspaceDialogProps
       }
     })
   }
@@ -510,7 +515,7 @@ export const useDialogService = () => {
     return dialogStore.showDialog({
       key: 'leave-workspace',
       component,
-      dialogComponentProps: workspaceDialogPt
+      dialogComponentProps: workspaceDialogProps
     })
   }
 
@@ -521,7 +526,7 @@ export const useDialogService = () => {
       key: 'edit-workspace',
       component,
       dialogComponentProps: {
-        ...workspaceDialogPt
+        ...workspaceDialogProps
       }
     })
   }
@@ -533,7 +538,7 @@ export const useDialogService = () => {
       key: 'remove-member',
       component,
       props: { memberId },
-      dialogComponentProps: workspaceDialogPt
+      dialogComponentProps: workspaceDialogProps
     })
   }
 
@@ -548,7 +553,7 @@ export const useDialogService = () => {
       key: 'change-member-role',
       component,
       props,
-      dialogComponentProps: workspaceDialogPt
+      dialogComponentProps: workspaceDialogProps
     })
   }
 
@@ -559,7 +564,7 @@ export const useDialogService = () => {
       key: 'invite-member',
       component,
       dialogComponentProps: {
-        ...workspaceDialogPt
+        ...workspaceDialogProps
       }
     })
   }
@@ -571,7 +576,7 @@ export const useDialogService = () => {
       key: 'invite-member-upsell',
       component,
       dialogComponentProps: {
-        ...workspaceDialogPt
+        ...workspaceDialogProps
       }
     })
   }
@@ -583,7 +588,7 @@ export const useDialogService = () => {
       key: 'revoke-invite',
       component,
       props: { inviteId },
-      dialogComponentProps: workspaceDialogPt
+      dialogComponentProps: workspaceDialogProps
     })
   }
 
@@ -613,7 +618,7 @@ export const useDialogService = () => {
       component,
       props: { cancelAt },
       dialogComponentProps: {
-        ...workspaceDialogPt
+        ...workspaceDialogProps
       }
     })
   }
@@ -628,9 +633,8 @@ export const useDialogService = () => {
         props: {},
         dialogComponentProps: {
           closable: false,
-          pt: {
-            root: { class: 'w-170 max-h-[85vh]' }
-          },
+          contentClass:
+            'w-170 max-w-[calc(100vw-1rem)] sm:max-w-[42.5rem] rounded-2xl overflow-hidden',
           onClose: () => resolve()
         }
       })
@@ -644,12 +648,13 @@ export const useDialogService = () => {
       key,
       component: ComfyHubPublishDialog,
       props: {
-        onClose: () => dialogStore.closeDialog({ key })
+        onClose: () => dialogStore.closeDialog({ key }),
+        // Falls through to the BaseModalLayout root — keeps the e2e
+        // publish-dialog selector working without the PrimeVue pt hook.
+        'data-testid': 'publish-dialog'
       },
       dialogComponentProps: {
-        pt: {
-          root: { 'data-testid': 'publish-dialog' }
-        }
+        contentClass: SELF_STYLED_PANEL_CONTENT_CLASS
       }
     })
   }

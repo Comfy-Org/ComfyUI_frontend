@@ -31,6 +31,10 @@ export interface Member {
   email: string
   joined_at: string
   role: WorkspaceRole
+  // True when this member is the workspace's original owner/creator
+  // (member.id == workspace.created_by_user_id). Gates the creator-only
+  // billing lifecycle actions (cancel / reactivate / downgrade).
+  // Optional: the cloud OpenAPI does not carry this field yet.
   is_original_owner?: boolean
 }
 

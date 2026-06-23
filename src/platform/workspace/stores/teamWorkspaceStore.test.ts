@@ -29,6 +29,15 @@ vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
   useWorkspaceAuthStore: () => mockWorkspaceAuthStore
 }))
 
+// Mock current user (drives the original-owner self-row match by email)
+const mockCurrentUser = vi.hoisted(() => ({
+  userEmail: { value: null as string | null }
+}))
+
+vi.mock('@/composables/auth/useCurrentUser', () => ({
+  useCurrentUser: () => ({ userEmail: mockCurrentUser.userEmail })
+}))
+
 // Mock workspaceApi
 const mockWorkspaceApi = vi.hoisted(() => ({
   list: vi.fn(),
@@ -123,6 +132,7 @@ describe('useTeamWorkspaceStore', () => {
     vi.clearAllMocks()
     vi.stubGlobal('localStorage', mockLocalStorage)
     sessionStorage.clear()
+    mockCurrentUser.userEmail.value = null
 
     // Reset workspaceAuthStore mock state
     mockWorkspaceAuthStore.currentWorkspace = null
@@ -858,6 +868,193 @@ describe('useTeamWorkspaceStore', () => {
         store.changeMemberRole('founder', 'member')
       ).rejects.toThrow()
       expect(mockWorkspaceApi.updateMemberRole).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('ensureMembersLoaded', () => {
+    const memberRow = {
+      id: 'user-1',
+      name: 'Owner',
+      email: 'owner@test.com',
+      joined_at: '2024-01-01T00:00:00Z'
+    }
+
+    function mockMembersResponse() {
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members: [memberRow],
+        pagination: { offset: 0, limit: 50, total: 1 }
+      })
+    }
+
+    async function activateTeamWorkspace() {
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      return store
+    }
+
+    it('loads members for a team workspace that is not yet loaded', async () => {
+      mockMembersResponse()
+      const store = await activateTeamWorkspace()
+
+      await store.ensureMembersLoaded()
+
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalledTimes(1)
+      expect(store.members).toHaveLength(1)
+    })
+
+    it('does not load members again once loaded', async () => {
+      mockMembersResponse()
+      const store = await activateTeamWorkspace()
+
+      await store.ensureMembersLoaded()
+      await store.ensureMembersLoaded()
+
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalledTimes(1)
+    })
+
+    it('dedupes concurrent calls into a single request', async () => {
+      mockMembersResponse()
+      const store = await activateTeamWorkspace()
+
+      await Promise.all([
+        store.ensureMembersLoaded(),
+        store.ensureMembersLoaded()
+      ])
+
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not load members for a personal workspace', async () => {
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      await store.ensureMembersLoaded()
+
+      expect(mockWorkspaceApi.listMembers).not.toHaveBeenCalled()
+    })
+
+    it('logs a failed request and retries on the next call', async () => {
+      const consoleError = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {})
+      mockWorkspaceApi.listMembers.mockRejectedValueOnce(new Error('boom'))
+      const store = await activateTeamWorkspace()
+
+      await store.ensureMembersLoaded()
+
+      expect(consoleError).toHaveBeenCalled()
+      expect(store.members).toHaveLength(0)
+
+      mockMembersResponse()
+      await store.ensureMembersLoaded()
+
+      expect(mockWorkspaceApi.listMembers).toHaveBeenCalledTimes(2)
+      expect(store.members).toHaveLength(1)
+
+      consoleError.mockRestore()
+    })
+  })
+
+  describe('isCurrentUserOriginalOwner', () => {
+    async function loadTeamWithMembers(
+      members: Array<{
+        id: string
+        name: string
+        email: string
+        joined_at: string
+        is_original_owner?: boolean
+      }>
+    ) {
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members,
+        pagination: { offset: 0, limit: 50, total: members.length }
+      })
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      await store.fetchMembers()
+      return store
+    }
+
+    const ownerSelf = {
+      id: 'user-1',
+      name: 'Owner',
+      email: 'owner@test.com',
+      joined_at: '2024-01-01T00:00:00Z',
+      role: 'owner' as const,
+      is_original_owner: true
+    }
+    const promotedSelf = { ...ownerSelf, is_original_owner: false }
+
+    it('is true when the self-row is the original owner', async () => {
+      mockCurrentUser.userEmail.value = 'owner@test.com'
+      const store = await loadTeamWithMembers([ownerSelf])
+      expect(store.isCurrentUserOriginalOwner).toBe(true)
+    })
+
+    it('matches the self-row by email case-insensitively', async () => {
+      mockCurrentUser.userEmail.value = 'OWNER@TEST.COM'
+      const store = await loadTeamWithMembers([ownerSelf])
+      expect(store.isCurrentUserOriginalOwner).toBe(true)
+    })
+
+    it('is false when the self-row is a promoted (non-creator) owner', async () => {
+      mockCurrentUser.userEmail.value = 'owner@test.com'
+      const store = await loadTeamWithMembers([promotedSelf])
+      expect(store.isCurrentUserOriginalOwner).toBe(false)
+    })
+
+    it('fails closed when the self-row omits is_original_owner', async () => {
+      mockCurrentUser.userEmail.value = 'owner@test.com'
+      const { is_original_owner: _omitted, ...selfWithoutFlag } = ownerSelf
+      const store = await loadTeamWithMembers([selfWithoutFlag])
+      expect(store.isCurrentUserOriginalOwner).toBe(false)
+    })
+
+    it('is false when no member row matches the current user', async () => {
+      mockCurrentUser.userEmail.value = 'someone-else@test.com'
+      const store = await loadTeamWithMembers([ownerSelf])
+      expect(store.isCurrentUserOriginalOwner).toBe(false)
+    })
+
+    it('fails closed when members are not loaded', async () => {
+      mockCurrentUser.userEmail.value = 'owner@test.com'
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      expect(store.isCurrentUserOriginalOwner).toBe(false)
+    })
+
+    it('fails closed when the current user email is unknown', async () => {
+      mockCurrentUser.userEmail.value = null
+      const store = await loadTeamWithMembers([ownerSelf])
+      expect(store.isCurrentUserOriginalOwner).toBe(false)
+    })
+
+    it('recomputes reactively when the self-row arrives after an empty read', async () => {
+      mockCurrentUser.userEmail.value = 'owner@test.com'
+      mockWorkspaceApi.listMembers.mockResolvedValue({
+        members: [ownerSelf],
+        pagination: { offset: 0, limit: 50, total: 1 }
+      })
+      mockWorkspaceAuthStore.initializeFromSession.mockReturnValue(true)
+      mockWorkspaceAuthStore.currentWorkspace = mockTeamWorkspace
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      expect(store.isCurrentUserOriginalOwner).toBe(false)
+
+      await store.fetchMembers()
+
+      expect(store.isCurrentUserOriginalOwner).toBe(true)
     })
   })
 
