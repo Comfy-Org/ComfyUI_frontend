@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
+import { ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import {
+  formatTypeformHiddenFields,
+  getSurveyIdentityTags
+} from './surveyIdentity'
 import { useTypeformEmbed } from './useTypeformEmbed'
 
 const {
@@ -25,6 +29,22 @@ const { typeformError, isValidTypeformId } = useTypeformEmbed(
   typeformRef,
   () => typeformId
 )
+
+const dataTfHidden = ref<string>()
+
+watch(
+  () => hiddenFields,
+  async (_, __, onCleanup) => {
+    let cancelled = false
+    onCleanup(() => {
+      cancelled = true
+    })
+    const identity = formatTypeformHiddenFields(await getSurveyIdentityTags())
+    if (cancelled) return
+    dataTfHidden.value = [hiddenFields, identity].filter(Boolean).join(',')
+  },
+  { immediate: true }
+)
 </script>
 
 <template>
@@ -36,11 +56,11 @@ const { typeformError, isValidTypeformId } = useTypeformEmbed(
   </div>
   <!-- `data-tf-auto-resize` is read by presence, so it must be absent (not "false") when disabled -->
   <div
-    v-else
+    v-else-if="dataTfHidden !== undefined"
     ref="typeformRef"
     data-testid="typeform-embed"
     :data-tf-widget="typeformId"
-    :data-tf-hidden="hiddenFields"
+    :data-tf-hidden="dataTfHidden"
     :data-tf-redirect-target="redirectTarget"
     :data-tf-auto-resize="autoResize || undefined"
     :class="autoResize ? 'w-full' : 'size-full'"

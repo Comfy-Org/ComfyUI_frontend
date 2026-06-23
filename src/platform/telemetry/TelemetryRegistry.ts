@@ -75,6 +75,23 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackUserLoggedIn?.())
   }
 
+  /**
+   * Returns the distinct id of the first provider that exposes one, in
+   * registration order. Providers opt in by implementing `getDistinctId`;
+   * registration order decides the winner.
+   */
+  getDistinctId(): string | null {
+    for (const provider of this.providers) {
+      try {
+        const distinctId = provider.getDistinctId?.()
+        if (distinctId) return distinctId
+      } catch (error) {
+        console.error('[Telemetry] getDistinctId failed', error)
+      }
+    }
+    return null
+  }
+
   trackSubscription(
     event: 'modal_opened' | 'subscribe_clicked',
     metadata?: SubscriptionMetadata

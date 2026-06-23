@@ -1,4 +1,8 @@
 import { isCloud, isNightly } from '@/platform/distribution/types'
+import {
+  formatTypeformHiddenFields,
+  getSurveyIdentityTags
+} from '@/platform/surveys/surveyIdentity'
 
 /**
  * Zendesk ticket form field IDs.
@@ -43,18 +47,18 @@ function getFeedbackTags(source: FeedbackSource): Record<string, string> {
  * (Typeform's hidden-field convention) so survey responses can be segmented
  * by distribution (cloud / oss-nightly / oss) and entry point.
  */
-export function buildFeedbackTypeformUrl(source: FeedbackSource): string {
-  const params = new URLSearchParams(getFeedbackTags(source))
+export async function buildFeedbackTypeformUrl(
+  source: FeedbackSource
+): Promise<string> {
+  const params = new URLSearchParams({
+    ...getFeedbackTags(source),
+    ...(await getSurveyIdentityTags())
+  })
   return `${FEEDBACK_TYPEFORM_BASE_URL}#${params.toString()}`
 }
 
-export function buildFeedbackHiddenFields(
-  source: FeedbackSource,
-  extraTags: Record<string, string> = {}
-): string {
-  return Object.entries({ ...getFeedbackTags(source), ...extraTags })
-    .map(([key, value]) => `${key}=${value}`)
-    .join(',')
+export function buildFeedbackHiddenFields(source: FeedbackSource): string {
+  return formatTypeformHiddenFields(getFeedbackTags(source))
 }
 
 /**

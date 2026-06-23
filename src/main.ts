@@ -43,6 +43,12 @@ if (requiresRemoteConfigBootstrap) {
 if (isCloud) {
   const { initTelemetry } = await import('@/platform/telemetry/initTelemetry')
   await initTelemetry()
+
+  const { setCurrentIdentityProvider } =
+    await import('@/platform/surveys/surveyIdentity')
+  const { cloudIdentityProvider } =
+    await import('@/platform/surveys/cloudSurveyIdentity')
+  setCurrentIdentityProvider(cloudIdentityProvider)
 }
 
 if (hasHostTelemetryBridge) {

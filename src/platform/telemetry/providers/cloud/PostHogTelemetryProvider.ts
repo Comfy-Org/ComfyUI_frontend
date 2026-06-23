@@ -334,6 +334,11 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.USER_LOGGED_IN)
   }
 
+  getDistinctId(): string | null {
+    if (!this.isEnabled || !this.isInitialized || !this.posthog) return null
+    return this.posthog.get_distinct_id()
+  }
+
   trackSubscription(
     event: 'modal_opened' | 'subscribe_clicked',
     metadata?: SubscriptionMetadata

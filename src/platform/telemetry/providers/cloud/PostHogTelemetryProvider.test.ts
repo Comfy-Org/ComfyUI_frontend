@@ -10,6 +10,7 @@ const hoisted = vi.hoisted(() => {
   const mockPeopleSetOnce = vi.fn()
   const mockRegister = vi.fn()
   const mockReset = vi.fn()
+  const mockGetDistinctId = vi.fn(() => 'distinct-xyz')
   const mockOnUserResolved = vi.fn()
   const mockOnUserLogout = vi.fn()
 
@@ -21,6 +22,7 @@ const hoisted = vi.hoisted(() => {
     mockPeopleSetOnce,
     mockRegister,
     mockReset,
+    mockGetDistinctId,
     mockOnUserResolved,
     mockOnUserLogout,
     mockPosthog: {
@@ -30,7 +32,8 @@ const hoisted = vi.hoisted(() => {
         identify: mockIdentify,
         register: mockRegister,
         people: { set: mockPeopleSet, set_once: mockPeopleSetOnce },
-        reset: mockReset
+        reset: mockReset,
+        get_distinct_id: mockGetDistinctId
       }
     }
   }
@@ -86,6 +89,21 @@ describe('PostHogTelemetryProvider', () => {
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
     } as typeof window.__CONFIG__
+  })
+
+  describe('getDistinctId', () => {
+    it('returns the PostHog distinct id once initialized', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      expect(provider.getDistinctId()).toBe('distinct-xyz')
+    })
+
+    it('returns null before initialization', () => {
+      const provider = createProvider()
+
+      expect(provider.getDistinctId()).toBeNull()
+    })
   })
 
   describe('initialization', () => {

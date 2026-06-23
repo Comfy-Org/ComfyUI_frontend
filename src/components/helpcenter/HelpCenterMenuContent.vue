@@ -306,11 +306,11 @@ const menuItems = computed<MenuItem[]>(() => {
       action: () => {
         trackResourceClick('help_feedback', isCloud || isNightly)
         if (isCloud || isNightly) {
-          window.open(
-            buildFeedbackTypeformUrl('help-center'),
-            '_blank',
-            'noopener,noreferrer'
-          )
+          // Identity resolves synchronously on web and Desktop is Electron, so
+          // the popup survives the microtask before window.open.
+          void buildFeedbackTypeformUrl('help-center').then((url) => {
+            window.open(url, '_blank', 'noopener,noreferrer')
+          })
         } else {
           void commandStore.execute('Comfy.ContactSupport')
         }

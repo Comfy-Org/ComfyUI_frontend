@@ -19,13 +19,6 @@ vi.mock('@/platform/telemetry', () => ({
   useTelemetry: vi.fn(() => ({ trackUiButtonClicked }))
 }))
 
-const userEmail = vi.hoisted((): { value: string | undefined } => ({
-  value: undefined
-}))
-vi.mock('@/composables/auth/useCurrentUser', () => ({
-  useCurrentUser: () => ({ userEmail })
-}))
-
 vi.mock('@/platform/distribution/types', () => ({
   isCloud: true,
   isNightly: false
@@ -34,7 +27,6 @@ vi.mock('@/platform/distribution/types', () => ({
 describe('openFeedbackDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    userEmail.value = undefined
   })
 
   it('opens the feedback form tagged with distribution and source', () => {
@@ -46,19 +38,6 @@ describe('openFeedbackDialog', () => {
       title: 'feedback.title',
       hiddenFields: 'distribution=ccloud,source=action-bar'
     })
-  })
-
-  it('includes the logged-in user email as a hidden field', () => {
-    userEmail.value = 'user@example.com'
-
-    openFeedbackDialog('action-bar')
-
-    expect(openTypeformDialog).toHaveBeenCalledWith(
-      expect.objectContaining({
-        hiddenFields:
-          'distribution=ccloud,source=action-bar,email=user@example.com'
-      })
-    )
   })
 
   it('tracks the button click tagged with the opening source', () => {
