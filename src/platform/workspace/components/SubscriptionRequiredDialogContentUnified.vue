@@ -59,9 +59,34 @@
     />
 
     <template v-if="checkoutStep === 'preview'">
-      <!-- New Subscription -->
+      <!-- Team credit-commit change: prorated transition. previewData is only
+           set here when the backend returns an immediate team transition;
+           labels/credits come from the stop, the money from previewData. -->
+      <SubscriptionTransitionPreviewWorkspace
+        v-if="selectedTeamStop && previewData"
+        :preview-data="previewData"
+        :team-plan="selectedTeamStop"
+        :is-loading="isSubscribing || isPolling"
+        @confirm="handleTeamSubscribe"
+        @back="handleBackToPricing"
+      />
+
+      <!-- Team fresh subscribe (display-only confirm; the slider stop and active
+           billing cycle drive the real subscribe). -->
       <SubscriptionAddPaymentPreviewWorkspace
-        v-if="previewData && previewData.transition_type === 'new_subscription'"
+        v-else-if="selectedTeamStop"
+        :team-plan="selectedTeamStop"
+        :billing-cycle="selectedBillingCycle"
+        :is-loading="isSubscribing || isPolling"
+        @add-credit-card="handleTeamSubscribe"
+        @back="handleBackToPricing"
+      />
+
+      <!-- Personal new subscription -->
+      <SubscriptionAddPaymentPreviewWorkspace
+        v-else-if="
+          previewData && previewData.transition_type === 'new_subscription'
+        "
         :preview-data="previewData"
         :tier-key="selectedTierKey!"
         :billing-cycle="selectedBillingCycle"
@@ -70,7 +95,7 @@
         @back="handleBackToPricing"
       />
 
-      <!-- Plan Transition -->
+      <!-- Personal plan transition -->
       <SubscriptionTransitionPreviewWorkspace
         v-else-if="
           previewData && previewData.transition_type !== 'new_subscription'
@@ -78,17 +103,6 @@
         :preview-data="previewData"
         :is-loading="isSubscribing || isPolling"
         @confirm="handleConfirmTransition"
-        @back="handleBackToPricing"
-      />
-
-      <!-- Team (display-only confirm; the slider stop and active billing cycle
-           drive the real subscribe). -->
-      <SubscriptionAddPaymentPreviewWorkspace
-        v-else-if="selectedTeamStop"
-        :team-plan="selectedTeamStop"
-        :billing-cycle="selectedBillingCycle"
-        :is-loading="isSubscribing || isPolling"
-        @add-credit-card="handleTeamSubscribe"
         @back="handleBackToPricing"
       />
     </template>

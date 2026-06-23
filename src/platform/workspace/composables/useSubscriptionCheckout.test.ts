@@ -265,6 +265,93 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.previewData.value).toBeNull()
       expect(checkout.selectedTierKey.value).toBeNull()
     })
+
+    it('previews a prorated transition when an existing subscriber changes stop', async () => {
+      const checkout = await setup()
+      const transition = {
+        allowed: true,
+        transition_type: 'upgrade' as const,
+        is_immediate: true,
+        cost_today_cents: 105_000
+      }
+      mockPreviewSubscribe.mockResolvedValueOnce(transition)
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(mockPreviewSubscribe).toHaveBeenCalledWith(
+        'team_per_credit_monthly',
+        { teamCreditStopId: 'team_1400', billingCycle: 'monthly' }
+      )
+      expect(checkout.previewData.value).toStrictEqual(transition)
+    })
+
+    it('falls back to the display-only confirm when the preview is a fresh subscription', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockResolvedValueOnce({
+        allowed: true,
+        transition_type: 'new_subscription',
+        is_immediate: true
+      })
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(checkout.previewData.value).toBeNull()
+    })
+
+    it('falls back to the display-only confirm when the preview request fails', async () => {
+      const checkout = await setup()
+      mockPreviewSubscribe.mockRejectedValueOnce(new Error('not supported'))
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        },
+        billingCycle: 'monthly',
+        isChange: true
+      })
+
+      expect(checkout.previewData.value).toBeNull()
+      expect(checkout.checkoutStep.value).toBe('preview')
+    })
+
+    it('does not preview a fresh team subscribe (nothing to prorate)', async () => {
+      const checkout = await setup()
+
+      await checkout.handleSubscribeTeamClick({
+        stop: {
+          id: 'team_700',
+          usd: 700,
+          credits: 147_700,
+          discountedUsd: 665
+        },
+        billingCycle: 'monthly',
+        isChange: false
+      })
+
+      expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+      expect(checkout.previewData.value).toBeNull()
+    })
   })
 
   describe('handleTeamSubscribe', () => {

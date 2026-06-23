@@ -7,6 +7,7 @@ import type {
   CreateTopupResponse,
   CurrentTeamCreditStop,
   Plan,
+  PreviewSubscribeOptions,
   PreviewSubscribeResponse,
   SubscribeOptions,
   SubscribeResponse,
@@ -47,7 +48,8 @@ export interface BillingActions {
     options?: SubscribeOptions
   ) => Promise<SubscribeResponse | void>
   previewSubscribe: (
-    planSlug: string
+    planSlug: string,
+    options?: PreviewSubscribeOptions
   ) => Promise<PreviewSubscribeResponse | null>
   manageSubscription: () => Promise<void>
   cancelSubscription: () => Promise<void>

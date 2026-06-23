@@ -153,4 +153,39 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
       screen.queryByText('subscription.preview.yearlySubscription')
     ).toBeNull()
   })
+
+  it('renders a team credit-commit change using the slider stop for name and credits', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 105_000,
+          current_plan: plan('PRO', 'MONTHLY', 70_000),
+          new_plan: plan('PRO', 'MONTHLY', 140_000)
+        }),
+        teamPlan: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        }
+      },
+      global: globalOptions
+    })
+    // Plan name and refill credits come from the team stop, not the personal
+    // tier table (which would yield 0 credits for a team plan).
+    expect(screen.getByText('subscription.teamPlan.name')).toBeTruthy()
+    expect(screen.getByText('295,400')).toBeTruthy()
+    // Proration money stays driven by previewData.
+    expect(
+      screen.getByText('subscription.preview.newMonthlySubscription')
+    ).toBeTruthy()
+    expect(screen.getByText('$1,400.00')).toBeTruthy()
+    expect(screen.getByText('− $350.00')).toBeTruthy()
+    expect(screen.getByText('$1,050.00')).toBeTruthy()
+    expect(
+      screen.getByText('subscription.preview.confirmUpgradeCta')
+    ).toBeTruthy()
+  })
 })

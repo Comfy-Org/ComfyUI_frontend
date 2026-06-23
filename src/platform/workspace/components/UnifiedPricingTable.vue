@@ -457,7 +457,13 @@ const emit = defineEmits<{
   subscribe: [payload: { tierKey: CheckoutTierKey; billingCycle: BillingCycle }]
   resubscribe: []
   subscribeTeam: [
-    payload: { stop: TeamPlanSelection; billingCycle: BillingCycle }
+    payload: {
+      stop: TeamPlanSelection
+      billingCycle: BillingCycle
+      /** True when an existing subscriber moves off their current plan (a
+       *  prorated change); false for a fresh team subscribe. */
+      isChange: boolean
+    }
   ]
 }>()
 
@@ -844,7 +850,8 @@ function handleSubscribeTeam() {
         currentBillingCycle.value
       )
     },
-    billingCycle: currentBillingCycle.value
+    billingCycle: currentBillingCycle.value,
+    isChange: isTeamSubscribed.value
   })
 }
 
