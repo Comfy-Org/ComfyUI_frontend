@@ -1,4 +1,3 @@
-import { isCloud } from '@/platform/distribution/types'
 import {
   configValueOrDefault,
   remoteConfig
@@ -12,15 +11,10 @@ import {
 const TURNSTILE_TEST_SITE_KEY = '1x00000000000000000000AA'
 
 // Public per-environment sitekeys, baked at build time so a cloud build renders
-// the widget even before (or without) remote config. They mirror the build-time
-// fallbacks in comfyApi.ts / firebase.ts; remote config still overrides them, so
-// keys rotate live without a rebuild.
+// the widget even before (or without) remote config; remote config still
+// overrides them, so keys rotate live without a rebuild.
 const PROD_TURNSTILE_SITE_KEY = '0x4AAAAAADnYZPVOpFCL_zeo'
 const STAGING_TURNSTILE_SITE_KEY = '0x4AAAAAADnYY4_Q0qxHZ5a7'
-
-const BUILD_TIME_TURNSTILE_SITE_KEY = __USE_PROD_CONFIG__
-  ? PROD_TURNSTILE_SITE_KEY
-  : STAGING_TURNSTILE_SITE_KEY
 
 /**
  * Returns the Cloudflare Turnstile sitekey for the current environment.
@@ -32,13 +26,18 @@ const BUILD_TIME_TURNSTILE_SITE_KEY = __USE_PROD_CONFIG__
  *   still renders during a remote-config gap rather than silently disappearing.
  */
 export function getTurnstileSiteKey(): string {
-  if (!isCloud) {
+  // Gate on the __DISTRIBUTION__ build define rather than the cross-module
+  // `isCloud` const so dead-code elimination strips the real per-env sitekeys
+  // from OSS/desktop bundles — same idiom as initTelemetry.ts, enforced by the
+  // dist scan in ci-dist-telemetry-scan.yaml.
+  const isCloudBuild = __DISTRIBUTION__ === 'cloud'
+  if (!isCloudBuild) {
     return import.meta.env.DEV ? TURNSTILE_TEST_SITE_KEY : ''
   }
 
   return configValueOrDefault(
     remoteConfig.value,
     'turnstile_sitekey',
-    BUILD_TIME_TURNSTILE_SITE_KEY
+    __USE_PROD_CONFIG__ ? PROD_TURNSTILE_SITE_KEY : STAGING_TURNSTILE_SITE_KEY
   )
 }

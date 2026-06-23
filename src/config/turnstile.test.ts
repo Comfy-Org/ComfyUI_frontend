@@ -10,9 +10,8 @@ const STAGING_TURNSTILE_SITE_KEY = '0x4AAAAAADnYY4_Q0qxHZ5a7'
 // Mutable containers go through vi.hoisted so the hoisted vi.mock factories can
 // reference them without a temporal-dead-zone crash (which surfaces under
 // coverage instrumentation, not a plain run).
-const { mockRemoteConfig, mockIsCloud } = vi.hoisted(() => ({
-  mockRemoteConfig: { value: {} as Record<string, unknown> },
-  mockIsCloud: { value: false }
+const { mockRemoteConfig } = vi.hoisted(() => ({
+  mockRemoteConfig: { value: {} as Record<string, unknown> }
 }))
 vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
   remoteConfig: mockRemoteConfig,
@@ -22,20 +21,16 @@ vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
     fallback: unknown
   ) => cfg[key] || fallback
 }))
-vi.mock('@/platform/distribution/types', () => ({
-  get isCloud() {
-    return mockIsCloud.value
-  }
-}))
 
 describe('getTurnstileSiteKey', () => {
   beforeEach(() => {
     mockRemoteConfig.value = {}
-    mockIsCloud.value = false
+    vi.stubGlobal('__DISTRIBUTION__', 'localhost')
   })
 
   afterEach(() => {
     vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
   })
 
   describe('OSS / non-cloud build', () => {
@@ -61,7 +56,7 @@ describe('getTurnstileSiteKey', () => {
 
   describe('cloud build', () => {
     beforeEach(() => {
-      mockIsCloud.value = true
+      vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     })
 
     it('returns the sitekey delivered via remote config', () => {
