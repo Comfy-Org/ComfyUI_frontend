@@ -51,10 +51,17 @@ export const useAuthActions = () => {
       error instanceof FirebaseError &&
       error.message.toLowerCase().includes('signup_blocked')
     ) {
-      // `signup_blocked` is a stable token from the auth backend's sign-up
-      // rejection response. Matched case-insensitively on the message (not
-      // error.code, which the Firebase SDK wraps inconsistently across
-      // versions).
+      // We match on `error.message` rather than `error.code` because a Firebase
+      // `beforeUserCreated` blocking-function rejection does not surface the
+      // thrown code to the client — the SDK collapses it into a generic,
+      // version-dependent code (typically `auth/internal-error`). Matching on
+      // `error.code` would therefore be either too broad (catching unrelated
+      // internal errors) or too brittle (a pinned specific code drifts across
+      // SDK versions). The message is the only channel that carries our intent
+      // through the SDK wrapping. `signup_blocked` is a stable, cross-repo
+      // contract token (a matching comment lives on the backend throw) that is
+      // distinctive enough to avoid false positives; we match it
+      // case-insensitively to tolerate any future backend recasing.
       toastStore.add({
         severity: 'error',
         summary: t('g.error'),
