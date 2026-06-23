@@ -273,6 +273,27 @@ describe('useWorkspaceBilling', () => {
       expect(billing.balance.value?.amountMicros).toBe(5_000_000)
     })
 
+    it('returns the successful response when the post-subscribe refresh fails', async () => {
+      mockWorkspaceApi.subscribe.mockResolvedValue({
+        billing_op_id: 'op-1',
+        status: 'subscribed'
+      })
+      mockWorkspaceApi.getBillingStatus.mockRejectedValue(
+        new Error('refresh down')
+      )
+      mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
+
+      const billing = setupBilling()
+
+      await expect(billing.subscribe('pro')).resolves.toStrictEqual({
+        billing_op_id: 'op-1',
+        status: 'subscribed'
+      })
+      expect(billing.error.value).toBe(
+        'Subscription succeeded, but billing state refresh failed'
+      )
+    })
+
     it('propagates error and records message when subscribe fails', async () => {
       mockWorkspaceApi.subscribe.mockRejectedValue(new Error('denied'))
 
