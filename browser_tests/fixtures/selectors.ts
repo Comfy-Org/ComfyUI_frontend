@@ -112,6 +112,10 @@ export const TestIds = {
     root: 'properties-panel',
     errorsTab: 'panel-tab-errors'
   },
+  assets: {
+    browserModal: 'asset-browser-modal',
+    card: 'asset-card'
+  },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',
     iconEye: 'icon-eye',

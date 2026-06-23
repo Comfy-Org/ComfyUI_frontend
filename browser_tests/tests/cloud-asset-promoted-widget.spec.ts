@@ -9,6 +9,7 @@ import {
   STABLE_CHECKPOINT,
   STABLE_CHECKPOINT_2
 } from '@e2e/fixtures/data/assetFixtures'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 const WORKFLOW = 'missing/missing_model_promoted_widget'
 const HOST_NODE_ID = 2
@@ -75,13 +76,11 @@ test.describe(
       const promotedWidget = await hostNode.getWidgetByName(WIDGET_NAME)
       await promotedWidget.click()
 
-      const modal = comfyPage.page.locator(
-        '[data-component-id="AssetBrowserModal"]'
-      )
+      const modal = comfyPage.page.getByTestId(TestIds.assets.browserModal)
       await expect(modal).toBeVisible()
 
       const assetCard = modal
-        .locator('[data-component-id="AssetCard"]')
+        .getByTestId(TestIds.assets.card)
         .filter({ hasText: SELECTED_MODEL })
         .first()
       await expect(assetCard).toBeVisible()
