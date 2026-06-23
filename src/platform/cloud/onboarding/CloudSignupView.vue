@@ -69,6 +69,7 @@
           </Message>
           <SignUpForm
             v-else
+            ref="signUpForm"
             :auth-error="authError"
             @submit="signUpWithEmail"
           />
@@ -180,6 +181,8 @@ const signInWithGithub = async () => {
   }
 }
 
+const signUpForm = ref<InstanceType<typeof SignUpForm> | null>(null)
+
 const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
   authError.value = ''
   if (
@@ -190,6 +193,10 @@ const signUpWithEmail = async (values: SignUpData, turnstileToken?: string) => {
     )
   ) {
     await onAuthSuccess()
+  } else {
+    // Signup failed while the form is still mounted: re-arm the single-use
+    // Turnstile token so the next attempt sends a fresh one.
+    signUpForm.value?.resetTurnstile()
   }
 }
 
