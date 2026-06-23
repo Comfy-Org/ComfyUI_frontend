@@ -47,6 +47,11 @@ test.describe('Download page @smoke', () => {
     const downloadBtn = hero.getByRole('link', { name: /DOWNLOAD DESKTOP/i })
     await expect(downloadBtn).toBeVisible()
     await expect(downloadBtn).toHaveAttribute('target', '_blank')
+    await expect(downloadBtn).toHaveAttribute(
+      'href',
+      'https://comfy.org/download/windows/nsis/x64'
+    )
+    await expect(downloadBtn).toHaveAttribute('data-astro-prefetch', 'false')
 
     const githubBtn = hero.getByRole('link', { name: /INSTALL FROM GITHUB/i })
     await expect(githubBtn).toBeVisible()
