@@ -15,7 +15,6 @@
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
-import type { AuditLog } from '@/services/customerEventsService'
 import type { AppMode } from '@/utils/appMode'
 
 /**
@@ -463,16 +462,8 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   ecommerce: EcommerceMetadata
 }
 
-type ApiCreditTopupFailureReason =
-  | 'sync_failed' // sync: topup() returned status 'failed'
-  | 'exception' // sync: topup() threw
-  | 'processing_failed' // async: the pending billing op resolved to failed
-  | 'processing_timeout' // async: the pending billing op timed out
-
-export interface ApiCreditTopupFailedMetadata {
-  reason: ApiCreditTopupFailureReason
-  error_message?: string
-}
+// Top-up success/failure analytics come from the backend
+// (billing:topup_completed / billing:topup_failed), not the client.
 
 /**
  * Telemetry provider interface for individual providers.
@@ -496,14 +487,7 @@ export interface TelemetryProvider {
   trackMonthlySubscriptionCancelled?(): void
   trackAddApiCreditButtonClicked?(): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
-  trackApiCreditTopupSucceeded?(): void
-  trackApiCreditTopupFailed?(metadata: ApiCreditTopupFailedMetadata): void
   trackRunButton?(properties: RunButtonProperties): void
-
-  // Credit top-up tracking (composition with internal utilities)
-  startTopupTracking?(): void
-  checkForCompletedTopup?(events: AuditLog[] | undefined | null): boolean
-  clearTopupTracking?(): void
 
   // Survey flow events
   trackSurvey?(stage: 'opened' | 'submitted', responses?: SurveyResponses): void
@@ -600,8 +584,6 @@ export const TelemetryEvents = {
   ADD_API_CREDIT_BUTTON_CLICKED: 'app:add_api_credit_button_clicked',
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
-  API_CREDIT_TOPUP_SUCCEEDED: 'app:api_credit_topup_succeeded',
-  API_CREDIT_TOPUP_FAILED: 'app:api_credit_topup_failed',
   BEGIN_CHECKOUT: 'begin_checkout',
 
   // Onboarding Survey
@@ -682,7 +664,6 @@ export type ExecutionTriggerSource =
  * Union type for all possible telemetry event properties
  */
 export type TelemetryEventProperties =
-  | ApiCreditTopupFailedMetadata
   | AuthMetadata
   | SurveyResponses
   | TemplateMetadata

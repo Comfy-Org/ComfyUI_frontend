@@ -17,13 +17,6 @@ vi.mock('@/composables/auth/useCurrentUser', () => ({
   useCurrentUser: () => ({ onUserResolved: mockOnUserResolved })
 }))
 
-const topupMocks = vi.hoisted(() => ({
-  startTopupTracking: vi.fn(),
-  clearTopupTracking: vi.fn(),
-  checkForCompletedTopup: vi.fn().mockReturnValue(true)
-}))
-vi.mock('@/platform/telemetry/topupTracker', () => topupMocks)
-
 const mockNormalizeSurveyResponses = vi.hoisted(() => vi.fn())
 vi.mock('@/platform/telemetry/utils/surveyNormalization', () => ({
   normalizeSurveyResponses: mockNormalizeSurveyResponses
@@ -101,7 +94,7 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     await waitForMixpanelInit()
 
     provider.trackUserLoggedIn()
-    provider.trackApiCreditTopupFailed({ reason: 'processing_failed' })
+    provider.trackAddApiCreditButtonClicked()
 
     expect(mockMixpanel.init).toHaveBeenCalledWith(
       'test-token',
@@ -112,8 +105,8 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
       {}
     )
     expect(mockMixpanel.track).toHaveBeenCalledWith(
-      TelemetryEvents.API_CREDIT_TOPUP_FAILED,
-      { reason: 'processing_failed' }
+      TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED,
+      {}
     )
   })
 
@@ -350,11 +343,6 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
       TelemetryEvents.MONTHLY_SUBSCRIPTION_CANCELLED
     ],
     [
-      'trackApiCreditTopupSucceeded',
-      (p) => p.trackApiCreditTopupSucceeded(),
-      TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED
-    ],
-    [
       'trackTemplate',
       (p) => p.trackTemplate(templateMetadata),
       TelemetryEvents.TEMPLATE_WORKFLOW_OPENED
@@ -506,25 +494,5 @@ describe('MixpanelTelemetryProvider — direct event tracking methods', () => {
         is_app_mode: true
       }
     )
-  })
-})
-
-describe('MixpanelTelemetryProvider — topup delegation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    delete (window as unknown as ConfigWindow).__CONFIG__
-  })
-
-  it('forwards topup lifecycle calls to the topupTracker utility', () => {
-    const provider = new MixpanelTelemetryProvider()
-
-    provider.startTopupTracking()
-    provider.clearTopupTracking()
-    const result = provider.checkForCompletedTopup([])
-
-    expect(topupMocks.startTopupTracking).toHaveBeenCalled()
-    expect(topupMocks.clearTopupTracking).toHaveBeenCalled()
-    expect(topupMocks.checkForCompletedTopup).toHaveBeenCalledWith([])
-    expect(result).toBe(true)
   })
 })

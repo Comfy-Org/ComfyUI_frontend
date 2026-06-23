@@ -99,7 +99,6 @@ import ProgressSpinner from 'primevue/progressspinner'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useTelemetry } from '@/platform/telemetry'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
   EventType,
@@ -163,9 +162,6 @@ const loadEvents = async () => {
       if (response.totalPages) {
         pagination.value.totalPages = response.totalPages
       }
-
-      // Check if a pending top-up has completed
-      useTelemetry()?.checkForCompletedTopup(response.events)
     } else {
       error.value = customerEventService.error.value || 'Failed to load events'
     }

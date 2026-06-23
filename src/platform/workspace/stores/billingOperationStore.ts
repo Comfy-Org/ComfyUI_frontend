@@ -155,8 +155,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     if (operation.type === 'subscription') {
       useTelemetry()?.trackMonthlySubscriptionSucceeded()
-    } else if (operation.type === 'topup') {
-      useTelemetry()?.trackApiCreditTopupSucceeded()
     }
 
     const billingContext = useBillingContext()
@@ -200,13 +198,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
     updateOperationStatus(opId, 'failed', errorMessage ?? defaultMessage)
     cleanup(opId)
 
-    if (operation.type === 'topup') {
-      useTelemetry()?.trackApiCreditTopupFailed({
-        reason: 'processing_failed',
-        ...(errorMessage ? { error_message: errorMessage } : {})
-      })
-    }
-
     if (operation.type !== 'cancel') {
       useToastStore().add({
         severity: 'error',
@@ -226,12 +217,6 @@ export const useBillingOperationStore = defineStore('billingOperation', () => {
 
     updateOperationStatus(opId, 'timeout', message)
     cleanup(opId)
-
-    if (operation.type === 'topup') {
-      useTelemetry()?.trackApiCreditTopupFailed({
-        reason: 'processing_timeout'
-      })
-    }
 
     if (operation.type !== 'cancel') {
       useToastStore().add({

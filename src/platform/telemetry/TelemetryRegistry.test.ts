@@ -30,20 +30,6 @@ describe('TelemetryRegistry', () => {
     expect(b.trackSearchQuery).toHaveBeenCalledExactlyOnceWith(payload)
   })
 
-  it('dispatches trackApiCreditTopupFailed to every registered provider', () => {
-    const a: TelemetryProvider = { trackApiCreditTopupFailed: vi.fn() }
-    const b: TelemetryProvider = { trackApiCreditTopupFailed: vi.fn() }
-    const registry = new TelemetryRegistry()
-    registry.registerProvider(a)
-    registry.registerProvider(b)
-
-    registry.trackApiCreditTopupFailed({ reason: 'processing_timeout' })
-
-    const payload = { reason: 'processing_timeout' }
-    expect(a.trackApiCreditTopupFailed).toHaveBeenCalledExactlyOnceWith(payload)
-    expect(b.trackApiCreditTopupFailed).toHaveBeenCalledExactlyOnceWith(payload)
-  })
-
   it('skips providers that do not implement trackSearchQuery', () => {
     const empty: TelemetryProvider = {}
     const registry = new TelemetryRegistry()

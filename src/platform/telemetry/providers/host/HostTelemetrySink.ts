@@ -2,15 +2,7 @@ import type {
   ComfyDesktop2TelemetryBridge,
   ComfyDesktop2TelemetryValue
 } from '@comfyorg/comfyui-desktop-bridge-types'
-import {
-  checkForCompletedTopup as checkTopupUtil,
-  clearTopupTracking as clearTopupUtil,
-  startTopupTracking as startTopupUtil
-} from '@/platform/telemetry/topupTracker'
-import type { AuditLog } from '@/services/customerEventsService'
-
 import type {
-  ApiCreditTopupFailedMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
@@ -137,28 +129,8 @@ export class HostTelemetrySink implements TelemetryProvider {
     })
   }
 
-  trackApiCreditTopupSucceeded(): void {
-    this.capture(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
-  }
-
-  trackApiCreditTopupFailed(metadata: ApiCreditTopupFailedMetadata): void {
-    this.capture(TelemetryEvents.API_CREDIT_TOPUP_FAILED, metadata)
-  }
-
   trackRunButton(properties: RunButtonProperties): void {
     this.capture(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
-  }
-
-  startTopupTracking(): void {
-    startTopupUtil()
-  }
-
-  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
-    return checkTopupUtil(events)
-  }
-
-  clearTopupTracking(): void {
-    clearTopupUtil()
   }
 
   trackSurvey(

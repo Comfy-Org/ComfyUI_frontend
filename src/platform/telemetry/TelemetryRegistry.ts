@@ -1,7 +1,4 @@
-import type { AuditLog } from '@/services/customerEventsService'
-
 import type {
-  ApiCreditTopupFailedMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
@@ -109,35 +106,8 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     )
   }
 
-  trackApiCreditTopupSucceeded(): void {
-    this.dispatch((provider) => provider.trackApiCreditTopupSucceeded?.())
-  }
-
-  trackApiCreditTopupFailed(metadata: ApiCreditTopupFailedMetadata): void {
-    this.dispatch((provider) => provider.trackApiCreditTopupFailed?.(metadata))
-  }
-
   trackRunButton(properties: RunButtonProperties): void {
     this.dispatch((provider) => provider.trackRunButton?.(properties))
-  }
-
-  startTopupTracking(): void {
-    this.dispatch((provider) => provider.startTopupTracking?.())
-  }
-
-  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
-    return this.providers.some((provider) => {
-      try {
-        return provider.checkForCompletedTopup?.(events) ?? false
-      } catch (error) {
-        console.error('[Telemetry] Provider dispatch failed', error)
-        return false
-      }
-    })
-  }
-
-  clearTopupTracking(): void {
-    this.dispatch((provider) => provider.clearTopupTracking?.())
   }
 
   trackSurvey(

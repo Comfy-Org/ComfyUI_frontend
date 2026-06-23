@@ -160,7 +160,6 @@ import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepp
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
-import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -241,10 +240,7 @@ function handlePresetClick(amount: number) {
   selectedPreset.value = amount
 }
 
-function handleClose(clearTracking = true) {
-  if (clearTracking) {
-    clearTopupTracking()
-  }
+function handleClose() {
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
 
@@ -260,20 +256,17 @@ async function handleBuy() {
     if (!response) return
 
     if (response.status === 'completed') {
-      telemetry?.trackApiCreditTopupSucceeded()
       toast.add({
         severity: 'success',
         summary: t('credits.topUp.purchaseSuccess'),
         life: 5000
       })
       await Promise.all([fetchBalance(), fetchStatus()])
-      handleClose(false)
+      handleClose()
       settingsDialog.show('workspace')
     } else if (response.status === 'pending') {
-      // Async outcome (success/failure) is tracked when the billing op resolves.
       billingOperationStore.startOperation(response.billing_op_id, 'topup')
     } else {
-      telemetry?.trackApiCreditTopupFailed({ reason: 'sync_failed' })
       toast.add({
         severity: 'error',
         summary: t('credits.topUp.purchaseError'),
@@ -285,10 +278,6 @@ async function handleBuy() {
 
     const errorMessage =
       error instanceof Error ? error.message : t('credits.topUp.unknownError')
-    telemetry?.trackApiCreditTopupFailed({
-      reason: 'exception',
-      error_message: errorMessage
-    })
     toast.add({
       severity: 'error',
       summary: t('credits.topUp.purchaseError'),

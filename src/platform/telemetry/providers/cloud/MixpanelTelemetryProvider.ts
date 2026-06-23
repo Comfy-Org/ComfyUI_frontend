@@ -3,15 +3,8 @@ import { omit } from 'es-toolkit'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import {
-  checkForCompletedTopup as checkTopupUtil,
-  clearTopupTracking as clearTopupUtil,
-  startTopupTracking as startTopupUtil
-} from '@/platform/telemetry/topupTracker'
-import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
-  ApiCreditTopupFailedMetadata,
   AuthMetadata,
   CreditTopupMetadata,
   DefaultViewSetMetadata,
@@ -253,27 +246,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
       TelemetryEvents.API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED,
       metadata
     )
-  }
-
-  trackApiCreditTopupSucceeded(): void {
-    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
-  }
-
-  trackApiCreditTopupFailed(metadata: ApiCreditTopupFailedMetadata): void {
-    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_FAILED, metadata)
-  }
-
-  // Credit top-up tracking methods (composition with utility functions)
-  startTopupTracking(): void {
-    startTopupUtil()
-  }
-
-  checkForCompletedTopup(events: AuditLog[] | undefined | null): boolean {
-    return checkTopupUtil(events)
-  }
-
-  clearTopupTracking(): void {
-    clearTopupUtil()
   }
 
   trackRunButton(properties: RunButtonProperties): void {

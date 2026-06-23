@@ -162,7 +162,6 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useTelemetry } from '@/platform/telemetry'
-import { clearTopupTracking } from '@/platform/telemetry/topupTracker'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -241,10 +240,7 @@ function handlePresetClick(amount: number) {
   selectedPreset.value = amount
 }
 
-function handleClose(clearTracking = true) {
-  if (clearTracking) {
-    clearTopupTracking()
-  }
+function handleClose() {
   dialogStore.closeDialog({ key: 'top-up-credits' })
 }
 
@@ -257,8 +253,8 @@ async function handleBuy() {
     telemetry?.trackApiCreditTopupButtonPurchaseClicked(payAmount.value)
     await authActions.purchaseCredits(payAmount.value)
 
-    // Close top-up dialog (keep tracking) and open credits panel to show updated balance
-    handleClose(false)
+    // Close top-up dialog and open credits panel to show updated balance
+    handleClose()
 
     // In workspace mode (personal workspace), show workspace settings panel
     // Otherwise, show legacy subscription/credits panel
