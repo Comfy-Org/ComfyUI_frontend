@@ -1,7 +1,4 @@
-import type {
-  ModelFile,
-  NodeId
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 /**
  * A single (node, widget, model) binding detected by the missing model pipeline.
@@ -26,13 +23,6 @@ export interface MissingModelCandidate {
    * - `undefined` — pending async verification (asset-supported nodes only)
    */
   isMissing: boolean | undefined
-}
-
-export interface EmbeddedModelWithSource extends ModelFile {
-  /** Undefined for workflow-level models not tied to a specific node. */
-  sourceNodeId?: NodeId
-  sourceNodeType: string
-  sourceWidgetName: string
 }
 
 /** View model grouping multiple candidate references under a single model name. */
