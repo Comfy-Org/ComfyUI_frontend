@@ -176,6 +176,43 @@ describe('useFeatureFlags', () => {
     })
   })
 
+  describe('assetBulkExportEnabled', () => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+      localStorage.clear()
+    })
+
+    it('defaults to isCloud when the backend does not advertise the flag', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+
+      vi.mocked(distributionTypes).isCloud = true
+      expect(useFeatureFlags().flags.assetBulkExportEnabled).toBe(true)
+
+      vi.mocked(distributionTypes).isCloud = false
+      expect(useFeatureFlags().flags.assetBulkExportEnabled).toBe(false)
+    })
+
+    it('lets the served flag value override the isCloud default', () => {
+      vi.mocked(distributionTypes).isCloud = true
+      vi.mocked(api.getServerFeature).mockImplementation((path) => {
+        if (path === ServerFeatureFlag.ASSET_BULK_EXPORT_ENABLED) return false
+        return undefined
+      })
+
+      expect(useFeatureFlags().flags.assetBulkExportEnabled).toBe(false)
+    })
+
+    it('prefers a localStorage dev override over the served value', () => {
+      vi.mocked(distributionTypes).isCloud = false
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+      localStorage.setItem('ff:asset_bulk_export_enabled', 'true')
+
+      expect(useFeatureFlags().flags.assetBulkExportEnabled).toBe(true)
+    })
+  })
+
   describe('dev override via localStorage', () => {
     afterEach(() => {
       localStorage.clear()
