@@ -181,7 +181,12 @@ export function useMediaAssetActions() {
   async function downloadAssetsIndividually(assets: AssetItem[]) {
     try {
       const expanded = await Promise.all(assets.map(expandAssetForDownload))
-      const filesToDownload = expanded.flat()
+      const seenAssetIds = new Set<string>()
+      const filesToDownload = expanded.flat().filter((asset) => {
+        if (seenAssetIds.has(asset.id)) return false
+        seenAssetIds.add(asset.id)
+        return true
+      })
 
       filesToDownload.forEach((asset) => downloadSingleAsset(asset))
 

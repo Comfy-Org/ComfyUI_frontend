@@ -732,6 +732,44 @@ describe('useMediaAssetActions', () => {
       expect(mockDownloadFile).toHaveBeenCalledTimes(2)
     })
 
+    it('deduplicates downloads when an expanded child is also selected alongside its parent', async () => {
+      const grouped = createOutputAsset('job1-cover', 'cover.png', 'job1', 3)
+      const child = createMockAsset({
+        id: 'job1-child-a',
+        name: 'out1.png',
+        tags: ['output'],
+        preview_url: 'https://example.com/out1.png',
+        user_metadata: { jobId: 'job1', nodeId: '1', subfolder: '' }
+      })
+
+      mockResolveOutputAssetItems.mockResolvedValueOnce([
+        createMockAsset({
+          id: 'job1-child-a',
+          name: 'out1.png',
+          tags: ['output'],
+          preview_url: 'https://example.com/out1.png',
+          user_metadata: { jobId: 'job1', nodeId: '1', subfolder: '' }
+        }),
+        createMockAsset({
+          id: 'job1-child-b',
+          name: 'out2.png',
+          tags: ['output'],
+          preview_url: 'https://example.com/out2.png',
+          user_metadata: { jobId: 'job1', nodeId: '1', subfolder: '' }
+        })
+      ])
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([grouped, child])
+
+      await vi.waitFor(() => {
+        expect(mockDownloadFile).toHaveBeenCalledTimes(2)
+      })
+
+      const filenames = mockDownloadFile.mock.calls.map((call) => call[1])
+      expect(filenames).toEqual(['out1.png', 'out2.png'])
+    })
+
     it('shows an error toast when resolveOutputAssetItems rejects', async () => {
       const grouped = createOutputAsset('g1', 'cover.png', 'job1', 3)
       mockResolveOutputAssetItems.mockRejectedValueOnce(new Error('boom'))
