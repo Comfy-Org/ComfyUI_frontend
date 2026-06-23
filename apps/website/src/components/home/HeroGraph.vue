@@ -20,7 +20,7 @@ const activeVariant = computed(
 // as a single unit to fit the viewport width, so node positions and wires
 // never collide and the OUTPUT bleed is preserved on every screen.
 const STAGE_W = 1600
-const STAGE_H = 770
+const STAGE_H = 780
 const MAX_SCALE = 1.3
 
 interface Point {
@@ -73,62 +73,62 @@ const stageStyle = computed(() => ({
   transform: `translateX(-50%) scale(${scale.value})`
 }))
 
-// Smooth cubic with tangents aligned to the dominant axis, matching the wire
-// style used elsewhere on the site — no hand-tuned control points, no wiggle.
+// Gentle cubic with tangents along the dominant axis. The control offset is
+// capped so long runs stay soft and straight in the middle instead of swooping.
 function spline(s: Point, e: Point): string {
   const dx = e.x - s.x
   const dy = e.y - s.y
   if (Math.abs(dx) >= Math.abs(dy)) {
-    const mx = s.x + dx * 0.5
-    return `M ${s.x} ${s.y} C ${mx} ${s.y} ${mx} ${e.y} ${e.x} ${e.y}`
+    const off = Math.sign(dx) * Math.min(Math.abs(dx) * 0.5, 90)
+    return `M ${s.x} ${s.y} C ${s.x + off} ${s.y} ${e.x - off} ${e.y} ${e.x} ${e.y}`
   }
-  const my = s.y + dy * 0.5
-  return `M ${s.x} ${s.y} C ${s.x} ${my} ${e.x} ${my} ${e.x} ${e.y}`
+  const off = Math.sign(dy) * Math.min(Math.abs(dy) * 0.5, 90)
+  return `M ${s.x} ${s.y} C ${s.x} ${s.y + off} ${e.x} ${e.y - off} ${e.x} ${e.y}`
 }
 
-interface Connection {
+interface Wire {
   d: string
   from: Point
   to: Point
+  accent: boolean
 }
 
-// The IMAGE -> TEXTURE link rendered as a liquid (gooey) yellow tube.
-const liquidLink = computed<Connection | null>(() => {
-  const { image, texture } = anchors.value
-  if (!image || !texture) return null
-  const from = { x: image.x + image.w * 0.45, y: image.y + image.h }
-  const to = { x: texture.x + texture.w * 0.5, y: texture.y }
-  return { d: spline(from, to), from, to }
-})
-
-// Faint structural wires fanning toward the placeholder + output nodes.
-const faintWires = computed<Connection[]>(() => {
+const wires = computed<Wire[]>(() => {
   const a = anchors.value
   const { image, texture, color, lighting, output } = a
-  const out: Connection[] = []
-  const link = (from: Point, to: Point) =>
-    out.push({ from, to, d: spline(from, to) })
+  const out: Wire[] = []
+  const add = (from: Point, to: Point, accent = false) =>
+    out.push({ from, to, accent, d: spline(from, to) })
 
+  if (image && texture)
+    add(
+      { x: image.x + image.w * 0.4, y: image.y + image.h },
+      { x: texture.x + texture.w * 0.5, y: texture.y },
+      true
+    )
   if (image && color)
-    link(
-      { x: image.x + image.w, y: image.y + image.h * 0.72 },
+    add(
+      { x: image.x + image.w, y: image.y + image.h * 0.78 },
       { x: color.x, y: color.y + color.h * 0.5 }
     )
-  if (texture && lighting)
-    link(
-      { x: texture.x + texture.w, y: texture.y + texture.h * 0.4 },
-      { x: lighting.x, y: lighting.y + lighting.h * 0.5 }
+  if (color && lighting)
+    add(
+      { x: color.x + color.w, y: color.y + color.h * 0.5 },
+      { x: lighting.x, y: lighting.y + lighting.h * 0.45 }
     )
   if (lighting && output)
-    link(
-      { x: lighting.x + lighting.w, y: lighting.y + lighting.h * 0.5 },
-      { x: output.x, y: output.y + output.h * 0.34 }
+    add(
+      { x: lighting.x + lighting.w, y: lighting.y + lighting.h * 0.4 },
+      { x: output.x, y: output.y + output.h * 0.4 }
     )
   return out
 })
 
-const faintDots = computed<Point[]>(() =>
-  faintWires.value.flatMap((w) => [w.from, w.to])
+const dots = computed<{ p: Point; accent: boolean }[]>(() =>
+  wires.value.flatMap((w) => [
+    { p: w.from, accent: w.accent },
+    { p: w.to, accent: w.accent }
+  ])
 )
 </script>
 
@@ -137,7 +137,7 @@ const faintDots = computed<Point[]>(() =>
     <!-- Desktop / large screens: a fixed design stage scaled to fit the width -->
     <div
       ref="frameRef"
-      class="relative hidden aspect-1600/770 max-h-[1000px] w-full lg:block"
+      class="relative hidden aspect-1600/780 max-h-[1000px] w-full lg:block"
     >
       <div
         ref="stageRef"
@@ -150,61 +150,37 @@ const faintDots = computed<Point[]>(() =>
           fill="none"
           aria-hidden="true"
         >
-          <defs>
-            <filter id="hero-goo">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b" />
-              <feColorMatrix
-                in="b"
-                mode="matrix"
-                values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -9"
-              />
-            </filter>
-          </defs>
-
           <path
-            v-for="(wire, i) in faintWires"
+            v-for="(wire, i) in wires"
             :key="i"
             :d="wire.d"
-            stroke="rgba(255,255,255,0.16)"
-            stroke-width="1.5"
+            :stroke="
+              wire.accent
+                ? 'var(--color-primary-comfy-yellow)'
+                : 'rgba(255,255,255,0.16)'
+            "
+            :stroke-width="wire.accent ? 2 : 1.5"
             stroke-linecap="round"
           />
           <circle
-            v-for="(dot, i) in faintDots"
+            v-for="(dot, i) in dots"
             :key="`d${i}`"
-            :cx="dot.x"
-            :cy="dot.y"
-            r="3"
-            fill="rgba(255,255,255,0.3)"
+            :cx="dot.p.x"
+            :cy="dot.p.y"
+            :r="dot.accent ? 4 : 3"
+            :fill="
+              dot.accent
+                ? 'var(--color-primary-comfy-yellow)'
+                : 'rgba(255,255,255,0.3)'
+            "
           />
-
-          <g v-if="liquidLink" filter="url(#hero-goo)">
-            <path
-              :d="liquidLink.d"
-              stroke="var(--color-primary-comfy-yellow)"
-              stroke-width="9"
-              stroke-linecap="round"
-            />
-            <circle
-              :cx="liquidLink.from.x"
-              :cy="liquidLink.from.y"
-              r="9"
-              fill="var(--color-primary-comfy-yellow)"
-            />
-            <circle
-              :cx="liquidLink.to.x"
-              :cy="liquidLink.to.y"
-              r="9"
-              fill="var(--color-primary-comfy-yellow)"
-            />
-          </g>
         </svg>
 
-        <div class="absolute top-[150px] left-[704px] z-20 -translate-x-1/2">
+        <div class="absolute top-[150px] left-[680px] z-20 -translate-x-1/2">
           <HeroHeadline :locale />
         </div>
 
-        <div data-node="image" class="absolute top-7 left-[64px] w-[320px]">
+        <div data-node="image" class="absolute top-7 left-[60px] w-[300px]">
           <HeroGraphNode :label="t('hero.node.image', locale)" accent>
             <HeroImagePicker
               :variants="imageVariants"
@@ -217,7 +193,7 @@ const faintDots = computed<Point[]>(() =>
 
         <div
           data-node="texture"
-          class="absolute top-[500px] left-[112px] w-[210px]"
+          class="absolute top-[500px] left-[96px] w-[200px]"
         >
           <HeroGraphNode :label="t('hero.node.texture', locale)" accent>
             <div class="aspect-square w-full overflow-hidden rounded-xl">
@@ -232,7 +208,7 @@ const faintDots = computed<Point[]>(() =>
 
         <div
           data-node="color"
-          class="absolute top-[470px] left-[470px] w-[150px]"
+          class="absolute top-[440px] left-[460px] w-[150px]"
         >
           <HeroGraphNode :label="t('hero.node.color', locale)">
             <div class="h-28 w-full rounded-lg"></div>
@@ -241,7 +217,7 @@ const faintDots = computed<Point[]>(() =>
 
         <div
           data-node="lighting"
-          class="absolute top-[520px] left-[700px] w-[168px]"
+          class="absolute top-[480px] left-[710px] w-[168px]"
         >
           <HeroGraphNode :label="t('hero.node.lighting', locale)">
             <div class="h-32 w-full rounded-lg"></div>
@@ -250,7 +226,7 @@ const faintDots = computed<Point[]>(() =>
 
         <div
           data-node="output"
-          class="absolute top-[100px] left-[1024px] w-[880px]"
+          class="absolute top-[100px] left-[1000px] w-[760px]"
         >
           <HeroGraphNode :label="t('hero.node.output', locale)">
             <div class="relative h-[560px] w-full overflow-hidden rounded-xl">
