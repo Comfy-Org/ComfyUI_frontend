@@ -2,7 +2,7 @@
   <div class="relative mx-2">
     <div
       data-testid="assets-selection-bar"
-      class="absolute bottom-6 left-1/2 z-40 flex w-fit max-w-full min-w-[min(312px,100%)] -translate-x-1/2 items-center gap-2 rounded-lg bg-base-foreground p-2 text-base-background shadow-interface"
+      class="absolute bottom-6 left-1/2 z-40 flex w-full max-w-78 -translate-x-1/2 items-center gap-2 rounded-lg bg-base-foreground p-2 text-base-background shadow-interface"
     >
       <Button
         v-tooltip.top="{
