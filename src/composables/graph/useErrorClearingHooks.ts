@@ -41,8 +41,10 @@ import {
   getExecutionIdByNode,
   getExecutionIdForNodeInGraph,
   getNodeByExecutionId,
-  isAncestorPathActive
+  isExecutionPathActive,
+  isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
+import { getParentExecutionIds } from '@/types/nodeIdentification'
 
 const hookedNodes = new WeakSet<LGraphNode>()
 
@@ -167,7 +169,7 @@ function getActiveExecutionId(node: LGraphNode): string | null {
   // execId means the node has no current graph (e.g. detached mid
   // lifecycle) — also skip, since we cannot verify its scope.
   const execId = getExecutionIdByNode(app.rootGraph, node)
-  if (!execId || !isAncestorPathActive(app.rootGraph, execId)) return null
+  if (!execId || !isExecutionPathActive(app.rootGraph, execId)) return null
   return execId
 }
 
@@ -252,17 +254,19 @@ function scanSingleNodeMedia(node: LGraphNode): void {
  * have been bypassed, deleted, or belong to a workflow that is no
  * longer current — any of which would reintroduce stale errors.
  */
-function isCandidateStillActive(nodeId: unknown): boolean {
-  if (!app.rootGraph || nodeId == null) return false
-  const execId = String(nodeId)
-  const node = getNodeByExecutionId(app.rootGraph, execId)
-  if (!node) return false
-  if (isNodeInactive(node.mode)) return false
-  // Also reject if any enclosing subgraph was bypassed between scan
-  // kick-off and verification resolving — mirrors the pipeline-level
-  // ancestor post-filter so realtime and initial-load paths stay
-  // symmetric.
-  return isAncestorPathActive(app.rootGraph, execId)
+function isModelCandidateStillActive(
+  candidate: MissingModelCandidate
+): boolean {
+  return isMissingCandidateActive(app.rootGraph, candidate)
+}
+
+function isNodeCandidateStillActive(nodeId: unknown): boolean {
+  return (
+    app.rootGraph !== null &&
+    app.rootGraph !== undefined &&
+    nodeId != null &&
+    isExecutionPathActive(app.rootGraph, String(nodeId))
+  )
 }
 
 async function verifyAndAddPendingModels(
@@ -276,7 +280,7 @@ async function verifyAndAddPendingModels(
     await verifyAssetSupportedCandidates(pending)
     if (app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
-      (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)
+      (c) => c.isMissing === true && isModelCandidateStillActive(c)
     )
     if (verified.length) useMissingModelStore().addMissingModels(verified)
   } catch (error: unknown) {
@@ -292,7 +296,7 @@ async function verifyAndAddPendingMedia(
     await verifyMediaCandidates(pending, { isCloud })
     if (app.rootGraph !== rootGraphAtScan) return
     const verified = pending.filter(
-      (c) => c.isMissing === true && isCandidateStillActive(c.nodeId)
+      (c) => c.isMissing === true && isNodeCandidateStillActive(c.nodeId)
     )
     if (verified.length) useMissingMediaStore().addMissingMedia(verified)
   } catch (error: unknown) {
@@ -344,6 +348,7 @@ function handleNodeModeChange(
     removeNodeErrors(node, execId)
   } else {
     scanAndAddNodeErrors(node)
+    scanAncestorSubgraphHosts(execId)
     if (
       useMissingModelStore().hasMissingModels ||
       useMissingMediaStore().hasMissingMedia ||
@@ -351,6 +356,15 @@ function handleNodeModeChange(
     ) {
       useExecutionErrorStore().showErrorOverlay()
     }
+  }
+}
+
+function scanAncestorSubgraphHosts(execId: string): void {
+  if (!app.rootGraph) return
+  for (const ancestorId of getParentExecutionIds(execId)) {
+    if (!isExecutionPathActive(app.rootGraph, ancestorId)) continue
+    const ancestor = getNodeByExecutionId(app.rootGraph, ancestorId)
+    if (ancestor?.isSubgraphNode?.()) scanSingleNodeErrors(ancestor)
   }
 }
 
@@ -362,6 +376,7 @@ function removeNodeErrors(node: LGraphNode, execId: string): void {
   const nodesStore = useMissingNodesErrorStore()
 
   modelStore.removeMissingModelsByNodeId(execId)
+  modelStore.removeMissingModelsBySourceScope(execId)
   mediaStore.removeMissingMediaByNodeId(execId)
   nodesStore.removeMissingNodesByNodeId(execId)
 

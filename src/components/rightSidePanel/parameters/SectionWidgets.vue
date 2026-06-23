@@ -14,6 +14,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { isWidgetPromotedOnSubgraphNode } from '@/core/graph/subgraph/promotionUtils'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -245,12 +246,24 @@ function clearWidgetErrors(
   const executionId = getExecutionIdByNode(rootGraph, widgetNode)
   if (!executionId) return
 
+  const options = { min: widget.options?.min, max: widget.options?.max }
+  const source = resolvePromotedWidgetSource(rootGraph, widgetNode, widget)
+  if (source?.sourceExecutionId) {
+    executionErrorStore.clearWidgetRelatedErrors(
+      source.sourceExecutionId,
+      source.sourceWidgetName,
+      source.sourceWidgetName,
+      value,
+      options
+    )
+  }
+
   executionErrorStore.clearWidgetRelatedErrors(
     executionId,
     widget.name,
     widget.name,
     value,
-    { min: widget.options?.min, max: widget.options?.max }
+    options
   )
 }
 

@@ -7,6 +7,7 @@ import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSche
 export interface MissingModelCandidate {
   /** Undefined for workflow-level models not tied to a specific node. */
   nodeId?: NodeId
+  sourceExecutionId?: string
   nodeType: string
   widgetName: string
   isAssetSupported: boolean

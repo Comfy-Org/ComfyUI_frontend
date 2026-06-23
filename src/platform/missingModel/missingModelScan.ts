@@ -22,7 +22,8 @@ import type {
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   collectAllNodes,
-  getExecutionIdByNode
+  getExecutionIdByNode,
+  isAncestorPathActive
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
@@ -82,6 +83,7 @@ interface ModelWidgetScanTarget {
   nodeType: string
   candidateWidgetName: string
   definitionWidgetName: string
+  sourceExecutionId?: string
   valueWidget: IBaseWidget
   definitionWidget: IBaseWidget
   embeddedModels?: ModelFile[]
@@ -163,7 +165,12 @@ export function scanNodeModelCandidates(
   const candidates: MissingModelCandidate[] = []
 
   for (const widget of widgets) {
-    const target = getModelWidgetScanTarget(node, widget, executionId)
+    const target = getModelWidgetScanTarget(
+      rootGraph,
+      node,
+      widget,
+      executionId
+    )
     if (!target) continue
 
     let candidate: MissingModelCandidate | null = null
@@ -185,6 +192,7 @@ export function scanNodeModelCandidates(
 }
 
 function getModelWidgetScanTarget(
+  rootGraph: LGraph,
   node: LGraphNode,
   widget: IBaseWidget,
   executionId: NodeExecutionId
@@ -217,13 +225,17 @@ function getModelWidgetScanTarget(
   if (resolution.status !== 'resolved') return null
 
   const { node: sourceNode, widget: sourceWidget } = resolution.resolved
+  const sourceExecutionId = getExecutionIdByNode(rootGraph, sourceNode)
+  if (!sourceExecutionId) return null
   if (isInactiveMode(sourceNode.mode)) return null
+  if (!isAncestorPathActive(rootGraph, sourceExecutionId)) return null
 
   return {
     executionId,
     nodeType: sourceNode.type,
     candidateWidgetName: widget.name,
     definitionWidgetName: sourceWidget.name,
+    sourceExecutionId,
     valueWidget: widget,
     definitionWidget: sourceWidget,
     embeddedModels: getEmbeddedModels(sourceNode)
@@ -261,6 +273,9 @@ function scanAssetWidget(
 
   return {
     nodeId: target.executionId,
+    ...(target.sourceExecutionId && {
+      sourceExecutionId: target.sourceExecutionId
+    }),
     nodeType: target.nodeType,
     widgetName: target.candidateWidgetName,
     isAssetSupported: true,
@@ -288,6 +303,9 @@ function scanComboWidget(
 
   return {
     nodeId: target.executionId,
+    ...(target.sourceExecutionId && {
+      sourceExecutionId: target.sourceExecutionId
+    }),
     nodeType: target.nodeType,
     widgetName: target.candidateWidgetName,
     isAssetSupported: nodeIsAssetSupported,

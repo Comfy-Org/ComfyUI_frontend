@@ -32,6 +32,7 @@ function makeModelCandidate(
   name: string,
   opts: {
     nodeId?: string | number
+    sourceExecutionId?: string
     nodeType?: string
     widgetName?: string
     isAssetSupported?: boolean
@@ -40,6 +41,9 @@ function makeModelCandidate(
   return {
     name,
     nodeId: opts.nodeId ?? '1',
+    ...(opts.sourceExecutionId !== undefined && {
+      sourceExecutionId: opts.sourceExecutionId
+    }),
     nodeType: opts.nodeType ?? 'CheckpointLoaderSimple',
     widgetName: opts.widgetName ?? 'ckpt_name',
     isAssetSupported: opts.isAssetSupported ?? false,
@@ -564,6 +568,38 @@ describe('missingModelStore', () => {
       expect(store.selectedLibraryModel['shared.safetensors']).toBe(
         'shared-replacement'
       )
+    })
+  })
+
+  describe('removeMissingModelsBySourceScope', () => {
+    it('removes host-keyed candidates whose source path is in the scope', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('a.safetensors', {
+          nodeId: '65',
+          sourceExecutionId: '65:77:42'
+        }),
+        makeModelCandidate('b.safetensors', {
+          nodeId: '80',
+          sourceExecutionId: '80:77:42'
+        })
+      ])
+
+      store.removeMissingModelsBySourceScope('65:77')
+
+      expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.missingModelCandidates![0].name).toBe('b.safetensors')
+    })
+
+    it('does not remove candidates by host nodeId alone', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('a.safetensors', { nodeId: '65' })
+      ])
+
+      store.removeMissingModelsBySourceScope('65')
+
+      expect(store.missingModelCandidates).toHaveLength(1)
     })
   })
 })

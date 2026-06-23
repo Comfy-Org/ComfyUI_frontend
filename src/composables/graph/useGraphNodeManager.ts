@@ -7,12 +7,8 @@ import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import { reactive, shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import {
-  inputForWidget,
-  promotedInputSource,
-  promotedInputWidgets
-} from '@/core/graph/subgraph/promotedInputWidget'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { promotedInputWidgets } from '@/core/graph/subgraph/promotedInputWidget'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -46,7 +42,6 @@ import type {
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { app } from '@/scripts/app'
-import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 export interface WidgetSlotMetadata {
   index: number
@@ -239,31 +234,20 @@ function resolvePromotedMetadata(
   node: SubgraphNode,
   widget: IBaseWidget
 ): PromotedWidgetMetadata | undefined {
-  const input = inputForWidget(node, widget)
-  if (!input?.widgetId) return undefined
-  const source = promotedInputSource(node, input)
+  const source = resolvePromotedWidgetSource(app.rootGraph, node, widget)
   if (!source) return undefined
 
-  const resolution = resolveConcretePromotedWidget(
-    node,
-    source.nodeId,
-    source.widgetName
+  ensurePromotedHostWidgetState(
+    source.input.widgetId,
+    source.input,
+    source.sourceWidget
   )
-  const resolved =
-    resolution.status === 'resolved' ? resolution.resolved : undefined
-  const sourceWidget = resolved?.widget
-  const sourceNode = resolved?.node
-
-  ensurePromotedHostWidgetState(input.widgetId, input, sourceWidget)
 
   return {
-    controlWidget: sourceWidget ? getControlWidget(sourceWidget) : undefined,
-    isDOMWidget: sourceWidget ? isDOMBackedWidget(sourceWidget) : false,
-    sourceExecutionId:
-      sourceNode && app.rootGraph
-        ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
-        : undefined,
-    sourceWidgetName: sourceWidget?.name
+    controlWidget: getControlWidget(source.sourceWidget),
+    isDOMWidget: isDOMBackedWidget(source.sourceWidget),
+    sourceExecutionId: source.sourceExecutionId,
+    sourceWidgetName: source.sourceWidgetName
   }
 }
 
