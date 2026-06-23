@@ -46,7 +46,7 @@
         </p>
         <div
           v-if="challenge.workspaces.length === 0"
-          class="rounded-xl border border-solid border-muted p-3 text-sm text-muted"
+          class="rounded-lg bg-(--oauth-box) p-3 text-sm text-muted"
         >
           {{ t('oauth.consent.noWorkspaces') }}
         </div>
@@ -54,7 +54,7 @@
           v-else
           v-model="selectedWorkspaceId"
           :aria-label="t('oauth.consent.workspaceLabel')"
-          class="m-0 flex scrollbar-custom max-h-72 list-none flex-col divide-y divide-muted overflow-hidden overflow-y-auto rounded-xl border border-solid border-muted bg-(--oauth-box) p-0"
+          class="m-0 flex scrollbar-custom max-h-72 list-none flex-col divide-y divide-white/10 overflow-hidden overflow-y-auto rounded-lg bg-(--oauth-box) p-0"
         >
           <RadioGroupItem
             v-for="workspace in challenge.workspaces"
@@ -95,9 +95,7 @@
         <p class="m-0 text-sm font-medium">
           {{ t('oauth.consent.detailsHeader') }}
         </p>
-        <div
-          class="flex flex-col gap-1.5 rounded-xl border border-solid border-muted bg-(--oauth-box) p-3"
-        >
+        <div class="flex flex-col gap-1.5 rounded-lg bg-(--oauth-box) p-3">
           <span class="text-xs text-muted">
             {{ t('oauth.consent.permissionsHeader') }}
           </span>
@@ -119,13 +117,13 @@
         </div>
         <div
           v-if="challenge.redirect_uri"
-          class="flex flex-col gap-1.5 rounded-xl border border-solid border-muted bg-(--oauth-box) p-3"
+          class="flex flex-col gap-1.5 rounded-lg bg-(--oauth-box) p-3"
         >
           <span class="text-xs text-muted">
             {{ t('oauth.consent.redirectNotice') }}
           </span>
           <code
-            class="m-0 block truncate rounded-lg bg-(--oauth-inset) px-3 py-2 font-mono text-xs text-base-foreground"
+            class="m-0 block truncate rounded-md bg-(--oauth-inset) px-3 py-2 font-mono text-xs text-base-foreground"
             :title="challenge.redirect_uri"
           >
             {{ challenge.redirect_uri }}
