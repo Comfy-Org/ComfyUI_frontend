@@ -115,7 +115,6 @@
       </div>
     </template>
     <template #body>
-      <NodeDragPreview />
       <div class="flex h-full flex-col">
         <div
           v-if="hasNoMatches"
@@ -215,7 +214,6 @@ import type {
 import AllNodesPanel from './nodeLibrary/AllNodesPanel.vue'
 import BlueprintsPanel from './nodeLibrary/BlueprintsPanel.vue'
 import EssentialNodesPanel from './nodeLibrary/EssentialNodesPanel.vue'
-import NodeDragPreview from './nodeLibrary/NodeDragPreview.vue'
 import SidebarTabTemplate from './SidebarTabTemplate.vue'
 
 const { flags } = useFeatureFlags()
