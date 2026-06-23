@@ -95,8 +95,9 @@
 </template>
 
 <script setup lang="ts">
+import { until } from '@vueuse/core'
 import Message from 'primevue/message'
-import { ref, watch } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -118,24 +119,25 @@ const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const showEmailForm = ref(false)
 const googleSsoBlockedReason = getGoogleSsoBlockedReason()
-let desktopLoginCompletionStarted = false
 const { onAuthSuccess } = usePostAuthRedirect({
   authError,
   successSummary: 'Login Completed',
   defaultRedirect: () => ({ name: 'cloud-user-check' })
 })
 
-watch(
-  () => [authStore.isInitialized, authStore.currentUser] as const,
-  ([isInitialized, user]) => {
-    if (!isInitialized || !user) return
-    if (!hasDesktopLoginRequest(route.query)) return
-    if (desktopLoginCompletionStarted) return
-    desktopLoginCompletionStarted = true
-    void onAuthSuccess()
-  },
-  { immediate: true }
-)
+void completeDesktopLoginForExistingSession()
+
+async function completeDesktopLoginForExistingSession() {
+  if (!hasDesktopLoginRequest(route.query)) return
+
+  if (!authStore.isInitialized) {
+    await until(() => authStore.isInitialized).toBe(true)
+  }
+
+  if (!authStore.currentUser) return
+
+  await onAuthSuccess()
+}
 
 function switchToEmailForm() {
   showEmailForm.value = true
