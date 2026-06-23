@@ -14,7 +14,7 @@ import type {
 import { LegacyWidget } from '@/lib/litegraph/src/widgets/LegacyWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { generateUUID } from '@/utils/formatUtil'
+import { generateUUID } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 export interface BaseDOMWidget<
   V extends object | string = object | string

@@ -55,7 +55,10 @@ import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
+import {
+  ensureWorkflowSuffix,
+  getWorkflowSuffix
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import {
   getAllNonIoNodesInSubgraph,
   getExecutionIdsForSelectedNodes

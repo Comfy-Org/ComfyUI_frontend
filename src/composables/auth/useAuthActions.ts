@@ -14,7 +14,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import type { BillingPortalTargetTier } from '@/stores/authStore'
-import { usdToMicros } from '@/utils/formatUtil'
+import { usdToMicros } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 /**
  * Service for Firebase Auth actions.

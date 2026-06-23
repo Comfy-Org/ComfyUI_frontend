@@ -61,7 +61,7 @@ import { useI18n } from 'vue-i18n'
 
 import ModelInfoField from '@/platform/assets/components/modelInfo/ModelInfoField.vue'
 import type { components } from '@/types/comfyRegistryTypes'
-import { isValidUrl } from '@/utils/formatUtil'
+import { isValidUrl } from '@comfyorg/shared-frontend-utils/formatUtil'
 import MarkdownText from '@/workbench/extensions/manager/components/manager/infoPanel/MarkdownText.vue'
 
 const { t } = useI18n()

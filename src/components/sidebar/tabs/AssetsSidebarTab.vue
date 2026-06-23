@@ -256,7 +256,7 @@ import {
   formatDuration,
   getMediaTypeFromFilename,
   isPreviewableMediaType
-} from '@/utils/formatUtil'
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const Load3dViewerContent = defineAsyncComponent(

@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { getMediaTypeFromFilename } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 import { useMediaAssetGalleryStore } from '../composables/useMediaAssetGalleryStore'
 import type { AssetItem } from '../schemas/assetSchema'

@@ -122,7 +122,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useAuthStore } from '@/stores/authStore'
-import { formatMetronomeCurrency } from '@/utils/formatUtil'
+import { formatMetronomeCurrency } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 interface CreditHistoryItemData {
   title: string

@@ -211,7 +211,7 @@ import {
   isModelDownloadable,
   toBrowsableUrl
 } from '@/platform/missingModel/missingModelDownload'
-import { formatSize } from '@/utils/formatUtil'
+import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 const {
   model,

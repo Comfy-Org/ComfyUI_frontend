@@ -56,7 +56,10 @@ import Button from '@/components/ui/button/Button.vue'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { isCloud } from '@/platform/distribution/types'
 import type { SystemStats } from '@/schemas/apiSchema'
-import { formatCommitHash, formatSize } from '@/utils/formatUtil'
+import {
+  formatCommitHash,
+  formatSize
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const frontendCommit = __COMFYUI_FRONTEND_COMMIT__

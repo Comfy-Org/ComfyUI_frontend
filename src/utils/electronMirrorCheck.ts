@@ -1,5 +1,5 @@
 import { electronAPI } from '@/utils/envUtil'
-import { isValidUrl } from '@/utils/formatUtil'
+import { isValidUrl } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 /**
  * Check if a mirror is reachable from the electron App.

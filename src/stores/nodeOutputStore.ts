@@ -15,7 +15,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { clone } from '@/scripts/utils'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
-import { parseFilePath } from '@/utils/formatUtil'
+import { parseFilePath } from '@comfyorg/shared-frontend-utils/formatUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import {
   isAnimatedOutput,

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, test, vi } from 'vitest'
 
-import { processDynamicPrompt } from '@/utils/formatUtil'
+import { processDynamicPrompt } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 describe('dynamic prompts', () => {
   afterEach(() => {

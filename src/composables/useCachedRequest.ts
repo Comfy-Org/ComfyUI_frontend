@@ -1,6 +1,6 @@
 import QuickLRU from '@alloc/quick-lru'
 
-import { paramsToCacheKey } from '@/utils/formatUtil'
+import { paramsToCacheKey } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 const DEFAULT_MAX_SIZE = 50
 

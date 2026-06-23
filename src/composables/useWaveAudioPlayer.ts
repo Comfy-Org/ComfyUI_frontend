@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { api } from '@/scripts/api'
-import { formatTime } from '@/utils/formatUtil'
+import { formatTime } from '@comfyorg/shared-frontend-utils/formatUtil'
 
 interface WaveformBar {
   height: number

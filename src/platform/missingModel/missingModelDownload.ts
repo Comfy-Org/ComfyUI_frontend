@@ -1,4 +1,7 @@
-import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
+import {
+  downloadUrlToHfRepoUrl,
+  isCivitaiModelUrl
+} from '@comfyorg/shared-frontend-utils/formatUtil'
 import { isDesktop } from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
