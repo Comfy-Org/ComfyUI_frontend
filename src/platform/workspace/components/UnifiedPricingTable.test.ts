@@ -104,6 +104,19 @@ describe('UnifiedPricingTable plan CTA labels', () => {
       screen.getByRole('button', { name: 'Change to Pro Yearly' })
     ).toBeTruthy()
   })
+
+  it('keeps personal tier cards actionable for a team subscriber', () => {
+    mockSubscription.value = { tier: 'TEAM', duration: 'ANNUAL' }
+    mockCurrentTeamCreditStop.value = {
+      id: 'team_700',
+      credits_monthly: 147_700,
+      stop_usd: 700
+    }
+
+    renderComponent()
+
+    expect(screen.queryByRole('button', { name: /Not available/ })).toBeNull()
+  })
 })
 
 describe('UnifiedPricingTable team plan CTA', () => {
@@ -120,7 +133,7 @@ describe('UnifiedPricingTable team plan CTA', () => {
     mockTeamFlag.value = true
   })
 
-  it('disables the CTA while sitting on the active current stop', () => {
+  it('disables the CTA while sitting on the active current plan', () => {
     mockSubscription.value = {
       tier: 'TEAM',
       duration: 'ANNUAL',
@@ -134,7 +147,7 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(cta).toBeDisabled()
   })
 
-  it('enables "Change plan" once a different stop is selected', async () => {
+  it('lets an active sub change to a different stop', async () => {
     const user = userEvent.setup()
     mockSubscription.value = {
       tier: 'TEAM',
@@ -151,6 +164,26 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(cta).toBeEnabled()
     await user.click(cta)
     expect(emitted().subscribeTeam).toBeTruthy()
+  })
+
+  it('lets an active sub change billing cycle at the current stop', async () => {
+    const user = userEvent.setup()
+    mockSubscription.value = {
+      tier: 'TEAM',
+      duration: 'MONTHLY',
+      isCancelled: false
+    }
+    mockCurrentTeamCreditStop.value = TEAM_STOP
+
+    const { emitted } = renderComponent({ initialPlanMode: 'team' })
+
+    // The subscription is monthly; the default view is yearly, so the same stop
+    // on the other cycle is a change, not the current plan.
+    const cta = screen.getByRole('button', { name: 'Change plan' })
+    expect(cta).toBeEnabled()
+    await user.click(cta)
+    expect(emitted().subscribeTeam).toBeTruthy()
+    expect(emitted().resubscribe).toBeFalsy()
   })
 
   it('re-subscribes (not change) for a cancelled team subscription', async () => {
@@ -170,7 +203,7 @@ describe('UnifiedPricingTable team plan CTA', () => {
     expect(emitted().resubscribe).toBeTruthy()
   })
 
-  it('changes plan (not re-subscribe) when a cancelled sub picks a different stop', async () => {
+  it('lets a cancelled sub change to a different stop (not re-subscribe)', async () => {
     const user = userEvent.setup()
     mockSubscription.value = {
       tier: 'TEAM',
