@@ -580,17 +580,16 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   const getSubgraphsFromInstanceIds = (
     currentGraph: LGraph | Subgraph,
-    subgraphNodeIds: string[],
-    subgraphs: Subgraph[] = []
-  ): Subgraph[] => {
-    const currentPart = subgraphNodeIds.shift()
-    if (currentPart === undefined) return subgraphs
+    subgraphNodeIds: string[]
+  ): Subgraph[] | undefined => {
+    const [currentPart, ...remainingParts] = subgraphNodeIds
+    if (currentPart === undefined) return []
 
     const subgraph = subgraphNodeIdToSubgraph(currentPart, currentGraph)
-    if (subgraph === undefined) throw new Error('Subgraph not found')
+    if (subgraph === undefined) return
 
-    subgraphs.push(subgraph)
-    return getSubgraphsFromInstanceIds(subgraph, subgraphNodeIds, subgraphs)
+    const childSubgraphs = getSubgraphsFromInstanceIds(subgraph, remainingParts)
+    return childSubgraphs ? [subgraph, ...childSubgraphs] : undefined
   }
 
   //FIXME: use existing util function
@@ -604,17 +603,17 @@ export const useWorkflowStore = defineStore('workflow', () => {
       return
     }
 
-    // Parse the execution ID (e.g., "123:456:789")
-    const subgraphNodeIds = id.split(':')
+    const executionPath = parseNodeExecutionId(id)?.map(String)
+    if (!executionPath) return
 
-    // Start from the root graph
-    const graph = comfyApp.rootGraph
+    const nodeId = executionPath.at(-1)
+    if (nodeId === undefined) return
 
-    // If the last subgraph is the active subgraph, return the node ID
-    const subgraphs = getSubgraphsFromInstanceIds(graph, subgraphNodeIds)
-    if (subgraphs.at(-1) === subgraph) {
-      return subgraphNodeIds.at(-1)
-    }
+    const subgraphs = getSubgraphsFromInstanceIds(
+      comfyApp.rootGraph,
+      executionPath.slice(0, -1)
+    )
+    if (subgraphs?.at(-1) === subgraph) return nodeId
   }
 
   watch(activeWorkflow, updateActiveGraph)
@@ -672,17 +671,14 @@ export const useWorkflowStore = defineStore('workflow', () => {
       // Node is in root graph, return the node ID as-is
       return createNodeLocatorId(null, nodeId)
     }
-
-    try {
-      const subgraphs = getSubgraphsFromInstanceIds(
-        comfyApp.rootGraph,
-        subgraphNodeIds.map((id) => String(id))
-      )
-      const immediateSubgraph = subgraphs[subgraphs.length - 1]
-      return createNodeLocatorId(immediateSubgraph.id, nodeId)
-    } catch {
-      return null
-    }
+    const subgraphs = getSubgraphsFromInstanceIds(
+      comfyApp.rootGraph,
+      subgraphNodeIds.map((id) => String(id))
+    )
+    const immediateSubgraph = subgraphs?.at(-1)
+    return immediateSubgraph
+      ? createNodeLocatorId(immediateSubgraph.id, nodeId)
+      : null
   }
 
   /**
@@ -749,7 +745,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
           comfyApp.rootGraph,
           path.slice(0, idx + 1).map((id) => String(id))
         )
-        return subgraphs[subgraphs.length - 1] === targetSubgraph
+        return subgraphs?.at(-1) === targetSubgraph
       })
     ) {
       return null

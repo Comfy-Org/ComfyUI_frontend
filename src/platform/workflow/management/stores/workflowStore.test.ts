@@ -887,6 +887,22 @@ describe('useWorkflowStore', () => {
       })
     })
 
+    describe('executionIdToCurrentId', () => {
+      it('should convert an execution ID to the active subgraph node ID', () => {
+        const result = store.executionIdToCurrentId('123:456')
+        expect(result).toBe('456')
+      })
+
+      it('should return undefined for execution IDs outside the active subgraph', () => {
+        expect(() => store.executionIdToCurrentId('999:456')).not.toThrow()
+        expect(store.executionIdToCurrentId('999:456')).toBeUndefined()
+      })
+
+      it('should return undefined for malformed execution IDs', () => {
+        expect(() => store.executionIdToCurrentId('123::456')).not.toThrow()
+        expect(store.executionIdToCurrentId('123::456')).toBeUndefined()
+      })
+    })
     describe('nodeExecutionIdToNodeLocatorId', () => {
       it('should convert execution ID to NodeLocatorId', () => {
         const result = store.nodeExecutionIdToNodeLocatorId('123:456')

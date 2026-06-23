@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import ErrorNodeCard from './ErrorNodeCard.vue'
 import type { ErrorCardData } from './types'
-import { normalizeNodeExecutionId } from '@/types/nodeIdentification'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 const meta: Meta<typeof ErrorNodeCard> = {
   title: 'RightSidePanel/Errors/ErrorNodeCard',
@@ -24,7 +24,7 @@ type Story = StoryObj<typeof meta>
 const singleErrorCard: ErrorCardData = {
   id: 'node-10',
   title: 'CLIPTextEncode',
-  nodeId: normalizeNodeExecutionId('10'),
+  nodeId: createNodeExecutionId([10]),
   nodeTitle: 'CLIP Text Encode (Prompt)',
   isSubgraphNode: false,
   errors: [
@@ -38,7 +38,7 @@ const singleErrorCard: ErrorCardData = {
 const multipleErrorsCard: ErrorCardData = {
   id: 'node-24',
   title: 'VAEDecode',
-  nodeId: normalizeNodeExecutionId('24'),
+  nodeId: createNodeExecutionId([24]),
   nodeTitle: 'VAE Decode',
   isSubgraphNode: false,
   errors: [
@@ -56,7 +56,7 @@ const multipleErrorsCard: ErrorCardData = {
 const runtimeErrorCard: ErrorCardData = {
   id: 'exec-45',
   title: 'KSampler',
-  nodeId: normalizeNodeExecutionId('45'),
+  nodeId: createNodeExecutionId([45]),
   nodeTitle: 'KSampler',
   isSubgraphNode: false,
   errors: [
@@ -76,7 +76,7 @@ const runtimeErrorCard: ErrorCardData = {
 const subgraphErrorCard: ErrorCardData = {
   id: 'node-3:15',
   title: 'KSampler',
-  nodeId: normalizeNodeExecutionId('3:15'),
+  nodeId: createNodeExecutionId([3, 15]),
   nodeTitle: 'Nested KSampler',
   isSubgraphNode: true,
   errors: [

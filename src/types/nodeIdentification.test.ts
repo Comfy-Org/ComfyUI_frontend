@@ -10,7 +10,8 @@ import {
   isNodeExecutionId,
   isNodeLocatorId,
   parseNodeExecutionId,
-  parseNodeLocatorId
+  parseNodeLocatorId,
+  tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 
 describe('nodeIdentification', () => {
@@ -141,6 +142,20 @@ describe('nodeIdentification', () => {
       })
     })
 
+    describe('tryNormalizeNodeExecutionId', () => {
+      it('should return a branded ID for valid execution IDs', () => {
+        expect(tryNormalizeNodeExecutionId(123)).toBe('123')
+        expect(tryNormalizeNodeExecutionId('123:456')).toBe('123:456')
+      })
+
+      it('should return null for malformed execution IDs', () => {
+        expect(tryNormalizeNodeExecutionId('')).toBeNull()
+        expect(tryNormalizeNodeExecutionId(':123')).toBeNull()
+        expect(tryNormalizeNodeExecutionId('123:')).toBeNull()
+        expect(tryNormalizeNodeExecutionId('123::456')).toBeNull()
+      })
+    })
+
     describe('parseNodeExecutionId', () => {
       it('should parse execution IDs correctly', () => {
         expect(parseNodeExecutionId('123:456')).toEqual([123, 456])
@@ -190,6 +205,11 @@ describe('nodeIdentification', () => {
           'NodeExecutionId requires at least one node ID'
         )
       })
+
+      it('should preserve empty path segments', () => {
+        expect(createNodeExecutionId([''])).toBe('')
+        expect(createNodeExecutionId([123, ''])).toBe('123:')
+      })
     })
   })
 
@@ -219,6 +239,10 @@ describe('nodeIdentification', () => {
   describe('getAncestorExecutionIds', () => {
     it('returns only itself for a root node', () => {
       expect(getAncestorExecutionIds('65')).toEqual(['65'])
+    })
+
+    it('returns an empty list for malformed execution IDs', () => {
+      expect(getAncestorExecutionIds('65::70')).toEqual([])
     })
 
     it('returns all ancestors including self for nested IDs', () => {

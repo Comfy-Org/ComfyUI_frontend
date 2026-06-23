@@ -17,6 +17,7 @@ const {
   mockNodeExecutionIdToNodeLocatorId,
   mockNodeIdToNodeLocatorId,
   mockNodeLocatorIdToNodeExecutionId,
+  mockExecutionIdToCurrentId,
   mockActiveWorkflow,
   mockOpenWorkflows,
   mockShowTextPreview,
@@ -29,6 +30,7 @@ const {
     mockNodeExecutionIdToNodeLocatorId: vi.fn(),
     mockNodeIdToNodeLocatorId: vi.fn(),
     mockNodeLocatorIdToNodeExecutionId: vi.fn(),
+    mockExecutionIdToCurrentId: vi.fn(),
     mockActiveWorkflow: shallowRef<{ path?: string } | null>(null),
     mockOpenWorkflows: shallowRef<{ path: string }[]>([]),
     mockShowTextPreview: vi.fn(),
@@ -69,6 +71,7 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
       nodeExecutionIdToNodeLocatorId: mockNodeExecutionIdToNodeLocatorId,
       nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
       nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
+      executionIdToCurrentId: mockExecutionIdToCurrentId,
       get activeWorkflow() {
         return mockActiveWorkflow.value
       },
@@ -184,6 +187,7 @@ describe('useExecutionStore - NodeLocatorId conversions', () => {
     mockNodeExecutionIdToNodeLocatorId.mockReset()
     mockNodeIdToNodeLocatorId.mockReset()
     mockNodeLocatorIdToNodeExecutionId.mockReset()
+    mockExecutionIdToCurrentId.mockReset()
 
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
@@ -267,6 +271,7 @@ describe('useExecutionStore - nodeLocationProgressStates caching', () => {
     mockNodeExecutionIdToNodeLocatorId.mockReset()
     mockNodeIdToNodeLocatorId.mockReset()
     mockNodeLocatorIdToNodeExecutionId.mockReset()
+    mockExecutionIdToCurrentId.mockReset()
 
     setActivePinia(createTestingPinia({ stubActions: false }))
     store = useExecutionStore()
@@ -877,6 +882,21 @@ describe('useExecutionStore - progress_text startup guard', () => {
     fireProgressText({ nodeId: '1', text: 'warming up' })
 
     expect(mockShowTextPreview).toHaveBeenCalledWith(mockNode, 'warming up')
+  })
+  it('should ignore nested progress_text when the execution ID cannot be mapped', async () => {
+    const { useCanvasStore } =
+      await import('@/renderer/core/canvas/canvasStore')
+    useCanvasStore().canvas = {
+      graph: { getNodeById: vi.fn() }
+    } as unknown as LGraphCanvas
+    mockExecutionIdToCurrentId.mockReturnValue(undefined)
+
+    expect(() =>
+      fireProgressText({ nodeId: '1:2', text: 'warming up' })
+    ).not.toThrow()
+
+    expect(mockExecutionIdToCurrentId).toHaveBeenCalledWith('1:2')
+    expect(mockShowTextPreview).not.toHaveBeenCalled()
   })
 })
 

@@ -33,7 +33,7 @@ import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
@@ -488,7 +488,8 @@ export const useExecutionStore = defineStore('execution', () => {
         // here intentionally. That way, we don't clear the preview every time a new node
         // within an expanded graph starts executing.
         const { revokePreviewsByExecutionId } = useNodeOutputStore()
-        revokePreviewsByExecutionId(createNodeExecutionId(nodeId.split(':')))
+        const executionId = tryNormalizeNodeExecutionId(nodeId)
+        if (executionId) revokePreviewsByExecutionId(executionId)
       }
     }
 

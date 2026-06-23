@@ -21,7 +21,7 @@ import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -442,9 +442,8 @@ export class TaskItemImpl {
     const nodeOutputsStore = useNodeOutputStore()
     const rawOutputs = toRaw(outputsToLoad)
     for (const rawNodeExecutionId in rawOutputs) {
-      const nodeExecutionId = createNodeExecutionId(
-        rawNodeExecutionId.split(':')
-      )
+      const nodeExecutionId = tryNormalizeNodeExecutionId(rawNodeExecutionId)
+      if (!nodeExecutionId) continue
       nodeOutputsStore.setNodeOutputsByExecutionId(
         nodeExecutionId,
         rawOutputs[rawNodeExecutionId]

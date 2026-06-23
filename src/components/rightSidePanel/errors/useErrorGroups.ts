@@ -40,7 +40,7 @@ import {
 } from '@/platform/errorCatalog/errorMessageResolver'
 import {
   compareExecutionId,
-  normalizeNodeExecutionId
+  tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 
 const PROMPT_CARD_ID = '__prompt__'
@@ -374,7 +374,8 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     for (const [rawNodeId, nodeError] of Object.entries(
       executionErrorStore.lastNodeErrors
     )) {
-      const nodeId = normalizeNodeExecutionId(rawNodeId)
+      const nodeId = tryNormalizeNodeExecutionId(rawNodeId)
+      if (!nodeId) continue
       const nodeDisplayName =
         resolveNodeInfo(nodeId).title || nodeError.class_type
       for (const e of nodeError.errors) {
@@ -405,9 +406,12 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     if (!executionErrorStore.lastExecutionError) return
 
     const e = executionErrorStore.lastExecutionError
+    const nodeId = tryNormalizeNodeExecutionId(e.node_id)
+    if (!nodeId) return
+
     addNodeErrorToGroup(
       groupsMap,
-      normalizeNodeExecutionId(e.node_id),
+      nodeId,
       e.node_type,
       'exec',
       {
@@ -418,9 +422,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
         ...resolveRunErrorMessage({
           kind: 'execution',
           error: e,
-          nodeDisplayName:
-            resolveNodeInfo(normalizeNodeExecutionId(e.node_id)).title ||
-            e.node_type
+          nodeDisplayName: resolveNodeInfo(nodeId).title || e.node_type
         })
       },
       filterBySelection
@@ -693,14 +695,17 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return false
   }
 
+  function isAssetCandidateInSelection(nodeId: string | number): boolean {
+    const executionNodeId = tryNormalizeNodeExecutionId(nodeId)
+    return executionNodeId ? isAssetErrorInSelection(executionNodeId) : false
+  }
+
   const filteredMissingModelGroups = computed(() => {
     if (!selectedNodeInfo.value.nodeIds) return missingModelGroups.value
     const candidates = missingModelStore.missingModelCandidates
     if (!candidates?.length) return []
     const filtered = candidates.filter(
-      (c) =>
-        c.nodeId != null &&
-        isAssetErrorInSelection(normalizeNodeExecutionId(c.nodeId))
+      (c) => c.nodeId != null && isAssetCandidateInSelection(c.nodeId)
     )
     if (!filtered.length) return []
     return groupMissingModelCandidates(filtered, isCloud)
@@ -711,9 +716,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     const candidates = missingMediaStore.missingMediaCandidates
     if (!candidates?.length) return []
     const filtered = candidates.filter(
-      (c) =>
-        c.nodeId != null &&
-        isAssetErrorInSelection(normalizeNodeExecutionId(c.nodeId))
+      (c) => c.nodeId != null && isAssetCandidateInSelection(c.nodeId)
     )
     if (!filtered.length) return []
     return groupCandidatesByMediaType(filtered)

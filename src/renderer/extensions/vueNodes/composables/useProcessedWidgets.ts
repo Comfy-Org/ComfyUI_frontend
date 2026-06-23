@@ -180,7 +180,7 @@ export function computeProcessedWidgets({
   const nodeExecId =
     isGraphReady && rootGraph
       ? getExecutionIdFromNodeData(rootGraph, nodeData)
-      : createNodeExecutionId([nodeData.id ?? ''])
+      : createNodeExecutionId([nodeData.id])
 
   const nodeErrors = executionErrorStore.lastNodeErrors?.[nodeExecId]
 
