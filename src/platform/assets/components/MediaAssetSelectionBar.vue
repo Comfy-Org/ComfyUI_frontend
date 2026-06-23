@@ -2,7 +2,7 @@
   <div class="relative mx-2">
     <div
       data-testid="assets-selection-bar"
-      class="absolute bottom-6 left-1/2 z-40 flex w-fit max-w-2xl -translate-x-1/2 items-center gap-2 rounded-lg bg-base-foreground p-2 text-base-background shadow-interface"
+      class="absolute bottom-6 left-1/2 z-40 flex w-fit max-w-full min-w-[min(312px,100%)] -translate-x-1/2 items-center gap-2 rounded-lg bg-base-foreground p-2 text-base-background shadow-interface"
     >
       <Button
         v-tooltip.top="{
@@ -22,7 +22,7 @@
       <span class="pr-6 text-sm font-bold whitespace-nowrap tabular-nums">
         {{ $t('mediaAsset.selection.selectedCount', { count }) }}
       </span>
-      <div class="flex shrink-0 items-center gap-1">
+      <div class="ml-auto flex shrink-0 items-center gap-1">
         <Button
           v-tooltip.top="{
             value: $t('mediaAsset.selection.downloadSelected'),
