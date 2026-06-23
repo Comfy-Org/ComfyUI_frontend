@@ -1,10 +1,11 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-import {
-  MISSING_TAG,
-  MODELS_TAG
-} from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
 import { isCivitaiUrl } from '@/utils/formatUtil'
+
+// Reserved tag literals (mirror assetService's MODELS_TAG/MISSING_TAG). Kept
+// local so this leaf util doesn't pull the heavier assetService -> i18n chain.
+const MODELS_TAG = 'models'
+const MISSING_TAG = 'missing'
 
 /**
  * Type-safe utilities for extracting metadata from assets.
