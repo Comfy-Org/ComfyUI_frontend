@@ -448,7 +448,11 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!activeJob.value) return
     activeJob.value.nodes[e.detail.node] = true
 
-    if (isCloud) {
+    // First media output of a run is the activation moment. Gate the dedup
+    // state on the live registry (not the enabled flag) so it isn't spent when
+    // nothing would actually be sent (flag on but host bridge absent).
+    const telemetry = useTelemetry()
+    if (telemetry) {
       const runId = e.detail.prompt_id
       const mediaType = firstOutputMediaType(e.detail.output)
       if (mediaType && !outputViewedRuns.has(runId)) {
@@ -460,7 +464,7 @@ export const useExecutionStore = defineStore('execution', () => {
         outputViewedRuns.add(runId)
         const isFirstOutput = !sessionHasViewedOutput
         sessionHasViewedOutput = true
-        useTelemetry()?.trackOutputViewed({
+        telemetry.trackOutputViewed({
           workflow_run_id: runId,
           media_type: mediaType,
           is_first_output: isFirstOutput
@@ -478,9 +482,11 @@ export const useExecutionStore = defineStore('execution', () => {
       telemetry?.trackExecutionSuccess({
         jobId
       })
-      // isCloud short-circuits first so the durable claim isn't spent off-cloud.
-      if (isCloud && claimFirstExecutionCompleted()) {
-        telemetry?.trackFirstExecutionCompleted({
+      // Activation moment, once ever per browser profile. Gate the claim on the
+      // live registry (not just the enabled flag) so the once-ever flag isn't
+      // spent when nothing would send.
+      if (telemetry && claimFirstExecutionCompleted()) {
+        telemetry.trackFirstExecutionCompleted({
           workflow_run_id: jobId
         })
       }

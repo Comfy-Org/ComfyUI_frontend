@@ -23,6 +23,7 @@ import { useFirebaseAuth } from 'vuefire'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { isTelemetryEnabled } from '@/platform/telemetry/telemetryEnabled'
 import {
   clearPreservedQuery,
   getPreservedQueryParam
@@ -353,7 +354,7 @@ export const useAuthStore = defineStore('auth', () => {
   ): Promise<T> => {
     loading.value = true
 
-    const telemetry = isCloud ? useTelemetry() : undefined
+    const telemetry = isTelemetryEnabled() ? useTelemetry() : undefined
     const telemetryContext = options.telemetry
 
     if (telemetryContext) {
@@ -419,7 +420,8 @@ export const useAuthStore = defineStore('auth', () => {
 
       return result
     } catch (error) {
-      if (isCloud && options?.authError) {
+      // Surface the auth failure leak that trackAuth (success-only) misses.
+      if (isTelemetryEnabled() && options?.authError) {
         useTelemetry()?.trackAuthError({
           method: options.authError.method,
           is_sign_up: options.authError.isSignUp,
@@ -447,7 +449,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
     )
 
-    if (isCloud) {
+    if (isTelemetryEnabled()) {
       useTelemetry()?.trackAuth({
         method: 'email',
         is_new_user: false,
@@ -475,7 +477,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
     )
 
-    if (isCloud) {
+    if (isTelemetryEnabled()) {
       useTelemetry()?.trackAuth({
         method: 'email',
         is_new_user: true,
@@ -505,7 +507,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
     )
 
-    if (isCloud) {
+    if (isTelemetryEnabled()) {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser =
         options?.isNewUser || additionalUserInfo?.isNewUser || false
@@ -538,7 +540,7 @@ export const useAuthStore = defineStore('auth', () => {
       }
     )
 
-    if (isCloud) {
+    if (isTelemetryEnabled()) {
       const additionalUserInfo = getAdditionalUserInfo(result)
       const isNewUser =
         options?.isNewUser || additionalUserInfo?.isNewUser || false

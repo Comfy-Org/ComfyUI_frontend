@@ -377,7 +377,7 @@ const currentBillingCycle = ref<BillingCycle>('yearly')
 // Track monthly/yearly toggles so we can see whether the annual-discount
 // nudge actually moves the cycle selection before checkout.
 watch(currentBillingCycle, (to, from) => {
-  if (!isCloud || to === from) return
+  if (to === from) return
   telemetry?.trackBillingCycleToggled({ from, to })
 })
 

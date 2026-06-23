@@ -4,6 +4,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
+import { isTelemetryEnabled } from '@/platform/telemetry/telemetryEnabled'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -29,8 +30,14 @@ export const useSubscriptionDialog = () => {
   const { permissions } = useWorkspaceUI()
   const { isFreeTier, subscriptionTier } = useSubscription()
 
+  /**
+   * Emit paywall_viewed when a paywall surface opens (FreeTierDialog.show(), the
+   * pricing table), once per surface. Each surface keeps its own visibility gate
+   * (FreeTierDialog on isFreeTier, pricing table on isCloud), so on desktop this
+   * only fires if a surface actually opens.
+   */
   function trackPaywallViewed(reason?: SubscriptionDialogReason) {
-    if (!isCloud) return
+    if (!isTelemetryEnabled()) return
     useTelemetry()?.trackPaywallViewed({
       reason: reason ?? 'subscription_required',
       ...(subscriptionTier.value

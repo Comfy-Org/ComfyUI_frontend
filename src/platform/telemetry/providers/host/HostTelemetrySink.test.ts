@@ -123,4 +123,96 @@ describe('HostTelemetrySink', () => {
     ).not.toThrow()
     expect(state.capture).not.toHaveBeenCalled()
   })
+
+  // Activation / auth / monetization funnel events: now forwarded to the host
+  // bridge so the desktop-embedded frontend reaches cloud-funnel parity.
+  it.for([
+    ['trackCanvasReady', { is_new_user: true }, TelemetryEvents.CANVAS_READY],
+    [
+      'trackOutputViewed',
+      { workflow_run_id: 'r1', media_type: 'image', is_first_output: true },
+      TelemetryEvents.OUTPUT_VIEWED
+    ],
+    [
+      'trackFirstExecutionCompleted',
+      { workflow_run_id: 'r1' },
+      TelemetryEvents.FIRST_EXECUTION_COMPLETED
+    ],
+    [
+      'trackAuthMethodSelected',
+      { method: 'google', view: 'login' },
+      TelemetryEvents.AUTH_METHOD_SELECTED
+    ],
+    [
+      'trackOAuthPopupResult',
+      { provider: 'google', result: 'success' },
+      TelemetryEvents.OAUTH_POPUP_RESULT
+    ],
+    [
+      'trackAuthFailed',
+      { method: 'email', stage: 'firebase' },
+      TelemetryEvents.AUTH_FAILED
+    ],
+    [
+      'trackAuthError',
+      { method: 'email', is_sign_up: false },
+      TelemetryEvents.AUTH_ERROR
+    ],
+    [
+      'trackOnboardingRouted',
+      {
+        destination: 'survey',
+        survey_completed: false,
+        has_cloud_status: false
+      },
+      TelemetryEvents.ONBOARDING_ROUTED
+    ],
+    [
+      'trackPaywallViewed',
+      { reason: 'subscription_required' },
+      TelemetryEvents.PAYWALL_VIEWED
+    ],
+    [
+      'trackCheckoutViewed',
+      { checkout_attempt_id: 'c1', tier: 'pro', cycle: 'monthly' },
+      TelemetryEvents.CHECKOUT_VIEWED
+    ],
+    [
+      'trackTemplateCategorySelected',
+      { category_id: 'image' },
+      TelemetryEvents.TEMPLATE_CATEGORY_SELECTED
+    ],
+    [
+      'trackCheckoutReturned',
+      { checkout_attempt_id: 'c1', outcome: 'success' },
+      TelemetryEvents.CHECKOUT_RETURNED
+    ],
+    [
+      'trackCheckoutInitiateFailed',
+      { stage: 'no_url' },
+      TelemetryEvents.CHECKOUT_INITIATE_FAILED
+    ],
+    ['trackCheckoutWindowBlocked', {}, TelemetryEvents.CHECKOUT_WINDOW_BLOCKED],
+    [
+      'trackBillingCycleToggled',
+      { from: 'monthly', to: 'yearly' },
+      TelemetryEvents.BILLING_CYCLE_TOGGLED
+    ],
+    [
+      'trackShellLayout',
+      {
+        view_mode: 'graph',
+        is_app_mode: false,
+        dock_state: 'docked',
+        actionbar_position: 'Top',
+        active_sidebar_tab: null
+      },
+      TelemetryEvents.SHELL_LAYOUT
+    ]
+  ] as const)('forwards %s to the host bridge', ([method, metadata, event]) => {
+    const sink = new HostTelemetrySink()
+    ;(sink[method] as (m: object) => void)(metadata)
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(event, metadata)
+  })
 })

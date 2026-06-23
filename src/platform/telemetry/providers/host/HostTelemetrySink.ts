@@ -10,32 +10,48 @@ import {
 import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
+  AuthErrorMetadata,
+  AuthFailedMetadata,
   AuthMetadata,
+  AuthMethodSelectedMetadata,
   BeginCheckoutMetadata,
+  BillingCycleToggledMetadata,
+  CanvasReadyMetadata,
+  CheckoutInitiateFailedMetadata,
+  CheckoutReturnedMetadata,
+  CheckoutViewedMetadata,
+  CheckoutWindowBlockedMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ExecutionErrorMetadata,
   ExecutionSuccessMetadata,
+  FirstExecutionCompletedMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  OAuthPopupResultMetadata,
+  OnboardingRoutedMetadata,
+  OutputViewedMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
+  PaywallViewedMetadata,
   RunButtonProperties,
   SearchQueryMetadata,
   SettingChangedMetadata,
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
   SharedWorkflowRunMetadata,
+  ShellLayoutMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
   TabCountMetadata,
   TelemetryEventName,
   TelemetryProvider,
+  TemplateCategorySelectedMetadata,
   TemplateFilterMetadata,
   TemplateLibraryClosedMetadata,
   TemplateLibraryMetadata,
@@ -291,5 +307,73 @@ export class HostTelemetrySink implements TelemetryProvider {
       page_name: pageName,
       ...properties
     })
+  }
+
+  trackAuthMethodSelected(metadata: AuthMethodSelectedMetadata): void {
+    this.capture(TelemetryEvents.AUTH_METHOD_SELECTED, metadata)
+  }
+
+  trackOAuthPopupResult(metadata: OAuthPopupResultMetadata): void {
+    this.capture(TelemetryEvents.OAUTH_POPUP_RESULT, metadata)
+  }
+
+  trackAuthFailed(metadata: AuthFailedMetadata): void {
+    this.capture(TelemetryEvents.AUTH_FAILED, metadata)
+  }
+
+  trackAuthError(metadata: AuthErrorMetadata): void {
+    this.capture(TelemetryEvents.AUTH_ERROR, metadata)
+  }
+
+  trackCanvasReady(metadata: CanvasReadyMetadata): void {
+    this.capture(TelemetryEvents.CANVAS_READY, metadata)
+  }
+
+  trackOnboardingRouted(metadata: OnboardingRoutedMetadata): void {
+    this.capture(TelemetryEvents.ONBOARDING_ROUTED, metadata)
+  }
+
+  trackShellLayout(metadata: ShellLayoutMetadata): void {
+    this.capture(TelemetryEvents.SHELL_LAYOUT, metadata)
+  }
+
+  trackPaywallViewed(metadata: PaywallViewedMetadata): void {
+    this.capture(TelemetryEvents.PAYWALL_VIEWED, metadata)
+  }
+
+  trackCheckoutViewed(metadata: CheckoutViewedMetadata): void {
+    this.capture(TelemetryEvents.CHECKOUT_VIEWED, metadata)
+  }
+
+  trackCheckoutReturned(metadata: CheckoutReturnedMetadata): void {
+    this.capture(TelemetryEvents.CHECKOUT_RETURNED, metadata)
+  }
+
+  trackCheckoutInitiateFailed(metadata: CheckoutInitiateFailedMetadata): void {
+    this.capture(TelemetryEvents.CHECKOUT_INITIATE_FAILED, metadata)
+  }
+
+  trackCheckoutWindowBlocked(metadata?: CheckoutWindowBlockedMetadata): void {
+    this.capture(TelemetryEvents.CHECKOUT_WINDOW_BLOCKED, metadata)
+  }
+
+  trackBillingCycleToggled(metadata: BillingCycleToggledMetadata): void {
+    this.capture(TelemetryEvents.BILLING_CYCLE_TOGGLED, metadata)
+  }
+
+  trackTemplateCategorySelected(
+    metadata: TemplateCategorySelectedMetadata
+  ): void {
+    this.capture(TelemetryEvents.TEMPLATE_CATEGORY_SELECTED, metadata)
+  }
+
+  trackFirstExecutionCompleted(
+    metadata: FirstExecutionCompletedMetadata
+  ): void {
+    this.capture(TelemetryEvents.FIRST_EXECUTION_COMPLETED, metadata)
+  }
+
+  trackOutputViewed(metadata: OutputViewedMetadata): void {
+    this.capture(TelemetryEvents.OUTPUT_VIEWED, metadata)
   }
 }
