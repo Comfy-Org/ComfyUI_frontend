@@ -5,7 +5,11 @@ import { computed, ref } from 'vue'
 import { Clock, Component as ComponentIcon } from '@lucide/vue'
 
 import { externalLinks } from '../../config/routes'
-import { teamCreditTiers } from '../../data/teamCreditTiers'
+import {
+  formatTeamCreditsLong,
+  formatTeamCreditsShort,
+  teamCreditTiers
+} from '../../data/teamCreditTiers'
 import { t } from '../../i18n/translations'
 import Button from '../ui/button/Button.vue'
 import Slider from '../ui/slider/Slider.vue'
@@ -116,14 +120,14 @@ const ctaHref = `${externalLinks.cloud}/cloud/subscribe?tier=team&cycle=monthly`
                     : 'text-primary-warm-gray'
                 "
               >
-                {{ tier.credits }}
+                {{ formatTeamCreditsShort(tier.credits) }}
               </span>
             </div>
           </div>
         </div>
 
         <PricingCredits
-          :credits="selectedTeamTier.credits"
+          :credits="formatTeamCreditsLong(selectedTeamTier.credits)"
           :label="t('pricing.creditsLabel', locale)"
           estimate-key="pricing.team.videosEstimate"
           :estimate-count="selectedTeamTier.videos.toLocaleString('en-US')"

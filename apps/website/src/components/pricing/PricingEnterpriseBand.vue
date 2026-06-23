@@ -12,7 +12,7 @@ const { locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-const ctaHref = computed(() => getRoutes(locale).cloudEnterprise)
+const ctaHref = computed(() => getRoutes(locale).contact)
 </script>
 
 <template>
