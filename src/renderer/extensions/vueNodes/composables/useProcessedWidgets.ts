@@ -13,7 +13,6 @@ import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { isNodeLocatorId } from '@/types/nodeIdentification'
 import { app } from '@/scripts/app'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
@@ -289,11 +288,9 @@ export function computeProcessedWidgets({
           }
         : undefined
 
-    const nodeLocatorId = isNodeLocatorId(widget.nodeId)
-      ? widget.nodeId
-      : nodeData
-        ? getLocatorIdFromNodeData(nodeData)
-        : undefined
+    const nodeLocatorId = nodeData
+      ? getLocatorIdFromNodeData(nodeData)
+      : undefined
 
     const simplified: SimplifiedWidget = {
       name: widgetState?.name ?? widget.name,
