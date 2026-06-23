@@ -9,7 +9,7 @@
             class="flex size-14 items-center justify-center rounded-2xl bg-white"
           >
             <i
-              :class="cn('size-8 text-black', clientIconClass)"
+              :class="cn('size-8', clientGlyph.icon, clientGlyph.color)"
               aria-hidden="true"
             />
           </div>
@@ -18,7 +18,7 @@
             aria-hidden="true"
           />
           <div
-            class="flex size-14 items-center justify-center rounded-2xl bg-primary-background"
+            class="flex size-14 items-center justify-center rounded-2xl bg-[#5b54d6]"
           >
             <i
               class="icon-[comfy--comfy-c] size-8 text-white"
@@ -54,7 +54,7 @@
           v-else
           v-model="selectedWorkspaceId"
           :aria-label="t('oauth.consent.workspaceLabel')"
-          class="m-0 flex scrollbar-custom max-h-72 list-none flex-col divide-y divide-muted overflow-hidden overflow-y-auto rounded-xl border border-solid border-muted p-0"
+          class="m-0 flex scrollbar-custom max-h-72 list-none flex-col divide-y divide-muted overflow-hidden overflow-y-auto rounded-xl border border-solid border-muted bg-secondary-background/40 p-0"
         >
           <RadioGroupItem
             v-for="workspace in challenge.workspaces"
@@ -89,9 +89,6 @@
             />
           </RadioGroupItem>
         </RadioGroupRoot>
-        <p class="m-0 text-xs text-muted">
-          {{ t('oauth.consent.workspaceHelp') }}
-        </p>
       </section>
 
       <section class="flex flex-col gap-3">
@@ -156,7 +153,7 @@
           {{ t('oauth.consent.allow') }}
         </Button>
         <Button
-          variant="textonly"
+          variant="secondary"
           size="lg"
           class="w-full"
           :loading="submitting === 'deny'"
@@ -232,15 +229,17 @@ const resourceName = computed(
 )
 
 // Stopgap until the consent challenge carries a client logo_uri.
-const clientIconClass = computed(() => {
+const clientGlyph = computed(() => {
   const name = challenge.value?.client_display_name?.toLowerCase() ?? ''
   if (name.includes('claude') || name.includes('anthropic'))
-    return 'icon-[comfy--anthropic]'
+    return { icon: 'icon-[comfy--anthropic]', color: 'text-[#da7757]' }
   if (name.includes('openai') || name.includes('chatgpt'))
-    return 'icon-[comfy--openai]'
-  if (name.includes('gemini')) return 'icon-[comfy--gemini]'
-  if (name.includes('grok')) return 'icon-[comfy--grok]'
-  return 'icon-[lucide--app-window]'
+    return { icon: 'icon-[comfy--openai]', color: 'text-black' }
+  if (name.includes('gemini'))
+    return { icon: 'icon-[comfy--gemini]', color: 'text-black' }
+  if (name.includes('grok'))
+    return { icon: 'icon-[comfy--grok]', color: 'text-black' }
+  return { icon: 'icon-[lucide--app-window]', color: 'text-black' }
 })
 
 const selectedWorkspaceIsValid = computed(() =>
