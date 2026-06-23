@@ -36,7 +36,7 @@ const meta: Meta<typeof OAuthConsentView> = {
         return { oauthDuskSurfaces }
       },
       template:
-        '<div class="dark-theme min-h-screen bg-primary-comfy-ink p-6" :style="oauthDuskSurfaces"><story /></div>'
+        '<div class="dark-theme relative min-h-screen bg-primary-comfy-ink font-sans text-primary-comfy-canvas" :style="oauthDuskSurfaces"><i class="icon-[comfy--comfy-logo] absolute top-6 left-6 h-6 w-26 text-brand-yellow" aria-hidden="true" /><story /></div>'
     })
   ]
 }

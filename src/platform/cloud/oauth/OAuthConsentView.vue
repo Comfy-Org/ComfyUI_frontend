@@ -27,7 +27,7 @@
           />
         </div>
         <div class="flex flex-col items-center gap-1.5">
-          <h1 class="m-0 text-xl/tight font-semibold">
+          <h1 class="m-0 text-xl/tight font-semibold text-base-foreground">
             {{
               t('oauth.consent.title', {
                 client: challenge.client_display_name
