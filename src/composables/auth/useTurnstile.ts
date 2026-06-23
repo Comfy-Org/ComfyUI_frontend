@@ -27,10 +27,11 @@ function resolveTurnstileMode(): TurnstileMode {
 
 /**
  * Whether the signup Turnstile widget should render. Purely config-driven: the
- * flag must be shadow/enforce and a sitekey must be configured. Both come only
- * from cloud remote config, so OSS / local builds get neither and the widget
- * never renders — no origin or `isCloud` dependency. The local-OSS exemption
- * lives server-side (loopback-IP check in CreateCustomer).
+ * flag must be shadow/enforce and a sitekey must be configured. OSS / local
+ * builds resolve no sitekey — the real per-env keys are tree-shaken out via the
+ * __DISTRIBUTION__ build define (see config/turnstile.ts) — so the widget never
+ * renders. The local-OSS exemption lives server-side (loopback-IP check in
+ * CreateCustomer).
  */
 export function isTurnstileEnabled(
   mode: TurnstileMode,

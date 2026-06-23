@@ -70,7 +70,7 @@ import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
 import ProgressSpinner from 'primevue/progressspinner'
-import { computed, ref } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -89,7 +89,8 @@ const loading = computed(() => authStore.loading)
 const { enabled: turnstileEnabled, enforced: turnstileEnforced } =
   useTurnstile()
 const turnstileToken = ref('')
-const turnstileWidget = ref<InstanceType<typeof TurnstileWidget> | null>(null)
+const turnstileWidget =
+  useTemplateRef<InstanceType<typeof TurnstileWidget>>('turnstileWidget')
 const submitBlockedByTurnstile = computed(
   () => turnstileEnforced.value && !turnstileToken.value
 )
