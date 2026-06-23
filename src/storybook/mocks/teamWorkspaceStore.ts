@@ -5,6 +5,8 @@
  * Storybook. This stub resolves invites locally so the post-upgrade invite
  * block can be exercised without a backend.
  */
+export const MAX_WORKSPACE_MEMBERS = 50
+
 export function useTeamWorkspaceStore() {
   return {
     createInvite: async (email: string) => ({
