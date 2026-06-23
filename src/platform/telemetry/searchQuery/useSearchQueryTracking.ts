@@ -3,7 +3,10 @@ import { onScopeDispose, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
-import type { SearchSurface } from '@/platform/telemetry/types'
+import type {
+  SearchQueryContextMetadata,
+  SearchSurface
+} from '@/platform/telemetry/types'
 
 const DEBOUNCE_MS = 500
 const MAX_QUERY_CHARS = 100
@@ -24,7 +27,8 @@ const MAX_QUERY_CHARS = 100
 export function useSearchQueryTracking(
   surface: SearchSurface,
   query: Ref<string>,
-  results: Ref<{ length: number }>
+  results: Ref<{ length: number }>,
+  context?: Ref<SearchQueryContextMetadata>
 ): void {
   const fire = debounce((value: string) => {
     const trimmed = value.trim()
@@ -35,7 +39,8 @@ export function useSearchQueryTracking(
       query: trimmed.slice(0, MAX_QUERY_CHARS),
       query_length: trimmed.length,
       result_count: count,
-      has_results: count > 0
+      has_results: count > 0,
+      ...context?.value
     })
   }, DEBOUNCE_MS)
 

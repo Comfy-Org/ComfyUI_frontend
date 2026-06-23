@@ -294,7 +294,12 @@ export type SearchSurface =
   | 'templates'
   | 'settings'
 
-export interface SearchQueryMetadata {
+export interface SearchQueryContextMetadata {
+  filters_applied?: string[]
+  sort?: string
+}
+
+export interface SearchQueryMetadata extends SearchQueryContextMetadata {
   surface: SearchSurface
   query: string
   query_length: number

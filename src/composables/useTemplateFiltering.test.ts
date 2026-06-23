@@ -6,6 +6,7 @@ import type { IFuseOptions } from 'fuse.js'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 
 const defaultSettingStore = {
   get: vi.fn((key: string) => {
@@ -184,6 +185,47 @@ describe('useTemplateFiltering', () => {
       'portrait-flow',
       'landscape-lite'
     ])
+  })
+
+  it('passes active template filters and sort to search query tracking', async () => {
+    const templates = ref<TemplateInfo[]>([
+      {
+        name: 'api-template',
+        description: 'Enterprise API workflow for video',
+        mediaType: 'image',
+        mediaSubtype: 'png',
+        tags: ['Video'],
+        models: ['Flux'],
+        openSource: false
+      }
+    ])
+
+    const { selectedModels, selectedUseCases, selectedRunsOn, sortBy } =
+      useTemplateFiltering(templates)
+
+    const calls = vi.mocked(useSearchQueryTracking).mock.calls
+    const context = calls[calls.length - 1][3]
+
+    expect(calls[calls.length - 1][0]).toBe('templates')
+    expect(context?.value).toEqual({
+      filters_applied: [],
+      sort: 'newest'
+    })
+
+    selectedModels.value = ['Flux', 'SDXL']
+    selectedUseCases.value = ['Video', 'Portrait']
+    selectedRunsOn.value = ['External or Remote API']
+    sortBy.value = 'popular'
+    await nextTick()
+
+    expect(context?.value).toEqual({
+      filters_applied: [
+        'model:Flux',
+        'use_case:Video',
+        'runs_on:External or Remote API'
+      ],
+      sort: 'popular'
+    })
   })
 
   it('supports alphabetical, newest, and size-based sorting options', async () => {

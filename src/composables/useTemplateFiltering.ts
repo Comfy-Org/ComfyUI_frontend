@@ -7,6 +7,7 @@ import type { Ref } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
+import type { SearchQueryContextMetadata } from '@/platform/telemetry/types'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -286,6 +287,15 @@ export function useTemplateFiltering(
 
   const filteredTemplates = computed(() => sortedTemplates.value)
 
+  const searchQueryContext = computed<SearchQueryContextMetadata>(() => ({
+    filters_applied: [
+      ...activeModels.value.map((model) => `model:${model}`),
+      ...activeUseCases.value.map((useCase) => `use_case:${useCase}`),
+      ...selectedRunsOn.value.map((runsOn) => `runs_on:${runsOn}`)
+    ],
+    sort: sortBy.value
+  }))
+
   const resetFilters = () => {
     searchQuery.value = ''
     selectedModels.value = []
@@ -308,7 +318,12 @@ export function useTemplateFiltering(
 
   const filteredCount = computed(() => filteredTemplates.value.length)
   const totalCount = computed(() => visibleTemplates.value.length)
-  useSearchQueryTracking('templates', searchQuery, filteredTemplates)
+  useSearchQueryTracking(
+    'templates',
+    searchQuery,
+    filteredTemplates,
+    searchQueryContext
+  )
 
   // Template filter tracking (debounced to avoid excessive events)
   const debouncedTrackFilterChange = debounce(() => {

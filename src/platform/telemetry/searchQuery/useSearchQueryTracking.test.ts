@@ -2,6 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { EffectScope, Ref } from 'vue'
 import { effectScope, ref } from 'vue'
 
+import type { SearchQueryContextMetadata } from '@/platform/telemetry/types'
+
 const hoisted = vi.hoisted(() => ({
   trackSearchQuery: vi.fn()
 }))
@@ -20,11 +22,12 @@ describe('useSearchQueryTracking', () => {
 
   function track(
     query: Ref<string>,
-    results: Ref<{ length: number }>
+    results: Ref<{ length: number }>,
+    context?: Ref<SearchQueryContextMetadata>
   ): EffectScope {
     const scope = effectScope()
     scope.run(() => {
-      useSearchQueryTracking('node_sidebar', query, results)
+      useSearchQueryTracking('node_sidebar', query, results, context)
     })
     scopes.push(scope)
     return scope
@@ -102,6 +105,31 @@ describe('useSearchQueryTracking', () => {
       query_length: 250,
       result_count: 1,
       has_results: true
+    })
+  })
+
+  it('includes the latest optional search context', async () => {
+    const query = ref('')
+    const results = ref<string[]>(['a'])
+    const context = ref<SearchQueryContextMetadata>({
+      filters_applied: ['model:Flux'],
+      sort: 'newest'
+    })
+    track(query, results, context)
+    query.value = 'flux'
+    context.value = {
+      filters_applied: ['model:SDXL', 'use_case:Video'],
+      sort: 'popular'
+    }
+    await flush()
+    expect(hoisted.trackSearchQuery).toHaveBeenCalledExactlyOnceWith({
+      surface: 'node_sidebar',
+      query: 'flux',
+      query_length: 4,
+      result_count: 1,
+      has_results: true,
+      filters_applied: ['model:SDXL', 'use_case:Video'],
+      sort: 'popular'
     })
   })
 })
