@@ -9,6 +9,7 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
+  ApiCreditTopupFailedMetadata,
   AuthMetadata,
   DefaultViewSetMetadata,
   EnterLinearMetadata,
@@ -368,6 +369,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackApiCreditTopupSucceeded(): void {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
+  }
+
+  trackApiCreditTopupFailed(metadata: ApiCreditTopupFailedMetadata): void {
+    this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_FAILED, metadata)
   }
 
   trackRunButton(properties: RunButtonProperties): void {

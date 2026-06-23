@@ -10,6 +10,7 @@ import {
 import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
+  ApiCreditTopupFailedMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
@@ -138,6 +139,10 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackApiCreditTopupSucceeded(): void {
     this.capture(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
+  }
+
+  trackApiCreditTopupFailed(metadata: ApiCreditTopupFailedMetadata): void {
+    this.capture(TelemetryEvents.API_CREDIT_TOPUP_FAILED, metadata)
   }
 
   trackRunButton(properties: RunButtonProperties): void {

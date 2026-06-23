@@ -123,4 +123,20 @@ describe('HostTelemetrySink', () => {
     ).not.toThrow()
     expect(state.capture).not.toHaveBeenCalled()
   })
+
+  it('forwards api-credit topup success and failure to the host bridge', () => {
+    const sink = new HostTelemetrySink()
+
+    sink.trackApiCreditTopupSucceeded()
+    expect(state.capture).toHaveBeenCalledWith(
+      TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED,
+      undefined
+    )
+
+    sink.trackApiCreditTopupFailed({ reason: 'processing_failed' })
+    expect(state.capture).toHaveBeenCalledWith(
+      TelemetryEvents.API_CREDIT_TOPUP_FAILED,
+      { reason: 'processing_failed' }
+    )
+  })
 })

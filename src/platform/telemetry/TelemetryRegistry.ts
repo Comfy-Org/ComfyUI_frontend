@@ -1,6 +1,7 @@
 import type { AuditLog } from '@/services/customerEventsService'
 
 import type {
+  ApiCreditTopupFailedMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   DefaultViewSetMetadata,
@@ -110,6 +111,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackApiCreditTopupSucceeded(): void {
     this.dispatch((provider) => provider.trackApiCreditTopupSucceeded?.())
+  }
+
+  trackApiCreditTopupFailed(metadata: ApiCreditTopupFailedMetadata): void {
+    this.dispatch((provider) => provider.trackApiCreditTopupFailed?.(metadata))
   }
 
   trackRunButton(properties: RunButtonProperties): void {

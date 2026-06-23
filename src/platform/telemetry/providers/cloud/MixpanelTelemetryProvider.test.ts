@@ -101,6 +101,7 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     await waitForMixpanelInit()
 
     provider.trackUserLoggedIn()
+    provider.trackApiCreditTopupFailed({ reason: 'processing_failed' })
 
     expect(mockMixpanel.init).toHaveBeenCalledWith(
       'test-token',
@@ -109,6 +110,10 @@ describe('MixpanelTelemetryProvider — with configured token', () => {
     expect(mockMixpanel.track).toHaveBeenCalledWith(
       TelemetryEvents.USER_LOGGED_IN,
       {}
+    )
+    expect(mockMixpanel.track).toHaveBeenCalledWith(
+      TelemetryEvents.API_CREDIT_TOPUP_FAILED,
+      { reason: 'processing_failed' }
     )
   })
 

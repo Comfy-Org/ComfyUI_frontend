@@ -464,6 +464,17 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   ecommerce: EcommerceMetadata
 }
 
+type ApiCreditTopupFailureReason =
+  | 'sync_failed' // sync: topup() returned status 'failed'
+  | 'exception' // sync: topup() threw
+  | 'processing_failed' // async: the pending billing op resolved to failed
+  | 'processing_timeout' // async: the pending billing op timed out
+
+export interface ApiCreditTopupFailedMetadata {
+  reason: ApiCreditTopupFailureReason
+  error_message?: string
+}
+
 /**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
@@ -487,6 +498,7 @@ export interface TelemetryProvider {
   trackAddApiCreditButtonClicked?(): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void
+  trackApiCreditTopupFailed?(metadata: ApiCreditTopupFailedMetadata): void
   trackRunButton?(properties: RunButtonProperties): void
 
   // Credit top-up tracking (composition with internal utilities)
@@ -590,6 +602,7 @@ export const TelemetryEvents = {
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
   API_CREDIT_TOPUP_SUCCEEDED: 'app:api_credit_topup_succeeded',
+  API_CREDIT_TOPUP_FAILED: 'app:api_credit_topup_failed',
   BEGIN_CHECKOUT: 'begin_checkout',
 
   // Onboarding Survey
@@ -670,6 +683,7 @@ export type ExecutionTriggerSource =
  * Union type for all possible telemetry event properties
  */
 export type TelemetryEventProperties =
+  | ApiCreditTopupFailedMetadata
   | AuthMetadata
   | SurveyResponses
   | TemplateMetadata
