@@ -35,14 +35,27 @@
 
     <!-- Slot Name -->
     <div class="flex h-full min-w-0 items-center">
+      <input
+        v-if="editing"
+        ref="titleInputEl"
+        v-model="draft"
+        class="min-w-0 rounded-sm border border-border-default bg-base-background px-1 text-node-component-slot-text outline-none"
+        @keydown="onTitleKeydown"
+        @blur="commit"
+        @pointerdown.stop
+        @click.stop
+        @dblclick.stop
+      />
       <span
-        v-if="!props.dotOnly && !hasNoLabel"
+        v-else-if="!props.dotOnly && !hasNoLabel"
         :class="
           cn(
             'truncate text-node-component-slot-text',
-            hasError && 'font-medium text-error'
+            hasError && 'font-medium text-error',
+            isEditable && 'cursor-text'
           )
         "
+        @dblclick.stop="startEdit"
       >
         {{
           slotData.label ||
@@ -55,13 +68,21 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onErrorCaptured, ref, watchEffect } from 'vue'
+import {
+  computed,
+  nextTick,
+  onErrorCaptured,
+  ref,
+  watch,
+  watchEffect
+} from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { useEditableSlotTitle } from '@/renderer/extensions/vueNodes/composables/useEditableSlotTitle'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotElementTracking } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
@@ -82,6 +103,31 @@ interface InputSlotProps {
 }
 
 const props = defineProps<InputSlotProps>()
+
+const { editing, draft, isEditable, startEdit, commit, cancel } =
+  useEditableSlotTitle(
+    () => props.nodeId ?? '',
+    () => props.slotData.name ?? ''
+  )
+
+const titleInputEl = ref<HTMLInputElement | null>(null)
+watch(editing, async (active) => {
+  if (!active) return
+  await nextTick()
+  titleInputEl.value?.focus()
+  titleInputEl.value?.select()
+})
+
+function onTitleKeydown(event: KeyboardEvent) {
+  event.stopPropagation()
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    commit()
+  } else if (event.key === 'Escape') {
+    event.preventDefault()
+    cancel()
+  }
+}
 
 const hasNoLabel = computed(
   () =>

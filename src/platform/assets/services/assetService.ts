@@ -797,9 +797,12 @@ function createAssetService() {
     // Create FormData and append the blob
     const formData = new FormData()
     formData.append('file', blob, params.name)
+    formData.append('name', params.name)
 
-    if (params.tags) {
-      formData.append('tags', JSON.stringify(params.tags))
+    // Send tags as repeated fields, not a JSON-encoded array, so the backend
+    // parses a real list instead of one literal tag.
+    for (const tag of params.tags ?? []) {
+      formData.append('tags', tag)
     }
 
     if (params.user_metadata) {

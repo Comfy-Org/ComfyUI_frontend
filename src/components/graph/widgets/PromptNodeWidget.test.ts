@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { createPinia, setActivePinia } from 'pinia'
-import { defineComponent } from 'vue'
+import { defineComponent, nextTick, shallowReactive } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -18,24 +18,28 @@ vi.mock('@/platform/prompts/services/promptService', () => ({
 }))
 
 const g = vi.hoisted(() => {
-  const graph = {
-    links: {} as Record<number, { origin_id: string }>,
-    nodes: {} as Record<string, { id: string; title?: string }>,
-    getNodeById(id: string) {
-      return graph.nodes[id]
-    }
+  const promptNode = {
+    id: '1',
+    inputs: [] as { name?: string; link: number | null }[],
+    syncVariableInputs: vi.fn()
   }
-  const promptNode = { id: '1', inputs: [] as { link: number | null }[], graph }
-  graph.nodes['1'] = promptNode as { id: string; title?: string }
+  const graph = {
+    getNodeById: (id: string) => (id === '1' ? promptNode : undefined)
+  }
   return { graph, promptNode }
 })
 
-function connectSources(titles: string[]) {
-  g.promptNode.inputs = titles.map((_, i) => ({ link: i + 1 }))
-  titles.forEach((title, i) => {
-    g.graph.links[i + 1] = { origin_id: `src${i}` }
-    g.graph.nodes[`src${i}`] = { id: `src${i}`, title }
-  })
+// Mirror the real node manager, which exposes node.inputs as a reactive array,
+// so the widget's connection watcher fires when sockets change.
+g.promptNode.inputs = shallowReactive(g.promptNode.inputs)
+
+/** Sets the node's connected variable input sockets by name (mutates in place). */
+function connectSockets(names: string[]) {
+  g.promptNode.inputs.splice(
+    0,
+    g.promptNode.inputs.length,
+    ...names.map((name, i) => ({ name, link: i + 1 }))
+  )
 }
 
 vi.mock('@/renderer/core/canvas/canvasStore', () => ({
@@ -56,7 +60,8 @@ const i18n = createI18n({
         namePlaceholder: 'Prompt name',
         editorPlaceholder:
           "Write a prompt, or type {'@'} to reference a saved prompt or connected input",
-        noMatches: 'No matches'
+        noMatches: 'No matches',
+        createVariable: 'Create variable: {name}'
       }
     }
   }
@@ -81,7 +86,7 @@ interface MountOptions {
 }
 
 function renderWidget({ template = [], connected = [] }: MountOptions = {}) {
-  connectSources(connected)
+  connectSockets(connected)
   return render(PromptNodeWidget, {
     props: { modelValue: template, nodeId: '1' },
     global: {
@@ -98,12 +103,7 @@ beforeEach(() => {
   setActivePinia(createPinia())
   vi.clearAllMocks()
   mockedFetch.mockResolvedValue([])
-  g.promptNode.inputs = []
-  for (const key of Object.keys(g.graph.links))
-    delete g.graph.links[Number(key)]
-  for (const key of Object.keys(g.graph.nodes)) {
-    if (key !== '1') delete g.graph.nodes[key]
-  }
+  g.promptNode.inputs.splice(0, g.promptNode.inputs.length)
 })
 
 describe('PromptNodeWidget', () => {
@@ -128,24 +128,39 @@ describe('PromptNodeWidget', () => {
     renderWidget({ template: [{ type: 'asset', id: 'p1', name: 'style' }] })
 
     const chip = screen.getByText('@style')
-    expect(chip).toHaveClass('text-danger')
-    await waitFor(() => expect(chip).not.toHaveClass('text-danger'))
+    expect(chip).toHaveClass('bg-destructive-background')
+    await waitFor(() => expect(chip).toHaveClass('bg-primary-background'))
+    expect(chip).not.toHaveClass('bg-destructive-background')
   })
 
-  it('marks a variable chip unresolved when no matching node is connected', () => {
+  it('marks a variable chip unresolved when no socket with that name is connected', () => {
     renderWidget({
       template: [{ type: 'var', name: 'setting' }],
       connected: []
     })
-    expect(screen.getByText('@setting')).toHaveClass('text-danger')
+    expect(screen.getByText('@setting')).toHaveClass(
+      'bg-destructive-background'
+    )
   })
 
-  it('offers a connected node title as a variable and resolves it', () => {
+  it('resolves a variable chip when a socket with that name is connected', () => {
     renderWidget({
       template: [{ type: 'var', name: 'setting' }],
       connected: ['setting']
     })
-    expect(screen.getByText('@setting')).not.toHaveClass('text-danger')
+    expect(screen.getByText('@setting')).toHaveClass('bg-primary-background')
+  })
+
+  it('turns a variable chip blue when its socket becomes connected', async () => {
+    renderWidget({ template: [{ type: 'var', name: 'animal' }] })
+    const chip = screen.getByText('@animal')
+    expect(chip).toHaveClass('bg-destructive-background')
+
+    g.promptNode.inputs.push({ name: 'animal', link: 1 })
+    await nextTick()
+
+    expect(chip).toHaveClass('bg-primary-background')
+    expect(chip).not.toHaveClass('bg-destructive-background')
   })
 
   it('shows a placeholder with a literal @ when empty', () => {
@@ -165,7 +180,7 @@ describe('PromptNodeWidget', () => {
     renderWidget({ template: [{ type: 'asset', id: 'p1', name: 'style' }] })
 
     const chip = screen.getByText('@style')
-    await waitFor(() => expect(chip).not.toHaveClass('text-danger'))
+    await waitFor(() => expect(chip).toHaveClass('bg-primary-background'))
 
     await userEvent.dblClick(chip)
 

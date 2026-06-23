@@ -82,31 +82,26 @@
         @mousedown.prevent
       >
         <template v-if="menuItems.length">
-          <button
+          <Button
             v-for="(item, index) in menuItems"
             :key="`${item.kind}:${item.id ?? item.name}`"
-            type="button"
+            variant="textonly"
+            size="sm"
             :class="
               cn(
-                'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left',
+                'w-full justify-start',
                 index === highlighted && 'bg-secondary-background-hover'
               )
             "
             @mouseenter="highlighted = index"
             @click="selectItem(item)"
           >
-            <i
-              :class="
-                cn(
-                  'size-3.5 shrink-0 text-muted-foreground',
-                  item.kind === 'var'
-                    ? 'icon-[lucide--variable]'
-                    : 'icon-[lucide--file-text]'
-                )
-              "
-            />
-            <span class="truncate">{{ item.name }}</span>
-          </button>
+            <span class="truncate">{{
+              item.create
+                ? t('promptNode.createVariable', { name: item.name })
+                : item.name
+            }}</span>
+          </Button>
         </template>
         <div v-else class="px-2 py-1.5 text-muted-foreground">
           {{ t('promptNode.noMatches') }}
@@ -164,27 +159,53 @@ function getNode(): LGraphNode | undefined {
   return canvasStore.canvas?.graph?.getNodeById(nodeId) ?? undefined
 }
 
-/**
- * Variable options offered by `@`: the title of each connected upstream node.
- * Read live from the graph so a renamed source updates the available reference.
- */
-function variableNames(): string[] {
-  const node = getNode()
-  const graph = node?.graph
-  if (!node || !graph) return []
+type VariableSyncNode = LGraphNode & {
+  syncVariableInputs: (names: string[]) => void
+}
 
+function variableSyncNode(): VariableSyncNode | undefined {
+  const node = getNode()
+  return node && 'syncVariableInputs' in node
+    ? (node as VariableSyncNode)
+    : undefined
+}
+
+/** Names of the node's variable input sockets, offered as `@` references. */
+function variableSocketNames(): string[] {
   const names = new Set<string>()
-  for (const input of node.inputs ?? []) {
-    if (input.link == null) continue
-    const link = graph.links[input.link]
-    const source = link ? graph.getNodeById(link.origin_id) : null
-    const title = source?.title?.trim()
-    if (title) names.add(title)
+  for (const input of getNode()?.inputs ?? []) {
+    if (input.name) names.add(input.name)
   }
   return [...names]
 }
 
+/** Variable sockets that are wired up, so their `@` chips resolve to a value. */
+function connectedVariableNames(): Set<string> {
+  const names = new Set<string>()
+  for (const input of getNode()?.inputs ?? []) {
+    if (input.link != null && input.name) names.add(input.name)
+  }
+  return names
+}
+
+/** Mirrors the variables declared in the editor onto the node as input sockets. */
+function syncVariableInputs(template: PromptTemplate) {
+  const node = variableSyncNode()
+  if (!node) return
+  const names: string[] = []
+  for (const segment of template) {
+    if (segment.type === 'var' && !names.includes(segment.name)) {
+      names.push(segment.name)
+    }
+  }
+  const key = JSON.stringify(names)
+  if (key === lastVarKey) return
+  lastVarKey = key
+  node.syncVariableInputs(names)
+}
+
 let lastSerialized = ''
+let lastVarKey = ''
 
 function renderFromModel() {
   if (!editorEl.value) return
@@ -197,6 +218,7 @@ function syncFromEditor() {
   const template = parseElementToTemplate(editorEl.value)
   lastSerialized = JSON.stringify(template)
   modelValue.value = template
+  syncVariableInputs(template)
   refreshChipStates()
 }
 
@@ -209,6 +231,16 @@ watch(modelValue, (value) => {
 
 watch(() => store.prompts, refreshChipStates, { deep: true })
 
+// Recolor chips when the node's input sockets change — e.g. a variable's
+// upstream connection is made or removed — not only on text edits.
+watch(
+  () =>
+    (getNode()?.inputs ?? [])
+      .map((input) => `${input.name ?? ''}:${input.link ?? ''}`)
+      .join('|'),
+  () => refreshChipStates()
+)
+
 onMounted(() => {
   renderFromModel()
   lastSerialized = JSON.stringify(modelValue.value ?? [])
@@ -220,14 +252,15 @@ onMounted(() => {
 function refreshChipStates() {
   const host = editorEl.value
   if (!host) return
-  const connected = new Set(variableNames())
+  const connected = connectedVariableNames()
   for (const chip of host.querySelectorAll<HTMLElement>(CHIP_SELECTOR)) {
     const type = chip.getAttribute('data-chip-type')
     const resolvable =
       type === 'asset'
         ? !!store.getPrompt(chip.getAttribute('data-chip-id') ?? '')
         : connected.has(chip.getAttribute('data-chip-name') ?? '')
-    chip.classList.toggle('text-danger', !resolvable)
+    chip.classList.toggle('bg-primary-background', resolvable)
+    chip.classList.toggle('bg-destructive-background', !resolvable)
   }
 }
 
@@ -249,6 +282,7 @@ async function applySelectedPrompt(prompt: Prompt) {
   const cloned: PromptTemplate = JSON.parse(JSON.stringify(template))
   lastSerialized = JSON.stringify(cloned)
   modelValue.value = cloned
+  syncVariableInputs(cloned)
   if (editorEl.value) {
     renderTemplateToElement(editorEl.value, cloned)
     refreshChipStates()
@@ -328,6 +362,7 @@ interface MenuItem {
   kind: 'asset' | 'var'
   id?: string
   name: string
+  create?: boolean
 }
 
 const menuOpen = ref(false)
@@ -350,15 +385,22 @@ function closeMenu() {
 }
 
 function recomputeMenu() {
-  const query = menuQuery.value.toLowerCase()
-  const matches = (name: string) => name.toLowerCase().includes(query)
-  const vars: MenuItem[] = variableNames()
+  const query = menuQuery.value
+  const lower = query.toLowerCase()
+  const matches = (name: string) => name.toLowerCase().includes(lower)
+  const existing = variableSocketNames()
+  const vars: MenuItem[] = existing
     .filter(matches)
     .map((name) => ({ kind: 'var', name }))
   const prompts: MenuItem[] = store.prompts
     .filter((prompt) => matches(prompt.name))
     .map((prompt) => ({ kind: 'asset', id: prompt.id, name: prompt.name }))
-  menuItems.value = [...vars, ...prompts]
+  const trimmed = query.trim()
+  const create: MenuItem[] =
+    trimmed && !existing.includes(trimmed)
+      ? [{ kind: 'var', name: trimmed, create: true }]
+      : []
+  menuItems.value = [...create, ...vars, ...prompts]
   highlighted.value = 0
 }
 

@@ -10,6 +10,10 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { resolvePromptTemplate } from '@/platform/prompts/promptResolution'
 import type { PromptTemplate } from '@/platform/prompts/schemas/promptTypes'
+import {
+  planVariableSockets,
+  renameVariableInTemplate
+} from '@/platform/prompts/variableInputs'
 import { app } from '@/scripts/app'
 import { usePromptStore } from '@/stores/promptStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -93,20 +97,21 @@ class PromptNode extends LGraphNode {
     const { graph } = this
     if (!graph) return ''
 
-    for (const input of this.inputs ?? []) {
-      if (input.link == null) continue
-      const link = graph.links[input.link]
-      const source = link ? graph.getNodeById(link.origin_id) : null
-      if (source?.title?.trim() !== name) continue
+    const input = (this.inputs ?? []).find(
+      (slot) => slot.name === name && slot.link != null
+    )
+    if (!input || input.link == null) return ''
 
-      const key = `node:${source.id}`
-      if (visited.has(key)) return ''
-      const next = new Set(visited).add(key)
-      return source instanceof PromptNode
-        ? source.resolvePromptText(next)
-        : readStaticString(source)
-    }
-    return ''
+    const link = graph.links[input.link]
+    const source = link ? graph.getNodeById(link.origin_id) : null
+    if (!source) return ''
+
+    const key = `node:${source.id}`
+    if (visited.has(key)) return ''
+    const next = new Set(visited).add(key)
+    return source instanceof PromptNode
+      ? source.resolvePromptText(next)
+      : readStaticString(source)
   }
 
   override applyToGraph(extraLinks: LLink[] = []) {
@@ -121,40 +126,71 @@ class PromptNode extends LGraphNode {
   ) {
     if (app.configuringGraph) return
     if (type !== LiteGraph.INPUT) return
-    this.syncDynamicInputs()
+    this.reconcileVariableInputs(this.declaredVarNames())
   }
 
   override onAfterGraphConfigured() {
-    this.syncDynamicInputs()
+    this.reconcileVariableInputs(this.declaredVarNames())
+  }
+
+  /** Reconciles input sockets to the variables declared in the editor text. */
+  syncVariableInputs(declared: readonly string[]) {
+    this.reconcileVariableInputs(declared)
   }
 
   /**
-   * Keeps the variable inputs in sync with connections: names newly connected
-   * slots from their source node, drops disconnected ones, and keeps a single
-   * empty trailing slot to receive the next connection.
+   * Renames a variable input socket in place (preserving its link) and updates
+   * every matching `@reference` in the editor text. No-ops on an empty name or a
+   * collision with an existing socket.
    */
-  private syncDynamicInputs() {
-    const inputs = this.inputs ?? []
+  renameVariableInput(oldName: string, newName: string) {
+    const name = newName.trim()
+    if (!name || name === oldName) return
+    if ((this.inputs ?? []).some((slot) => slot.name === name)) return
 
-    for (let i = inputs.length - 1; i >= 0; i--) {
-      const input = inputs[i]
-      if (input.link == null && input.name) this.removeInput(i)
+    const input = (this.inputs ?? []).find((slot) => slot.name === oldName)
+    if (!input) return
+    input.name = name
+
+    const widget = this.widgets?.find((w) => w.name === PROMPT_WIDGET_NAME)
+    if (widget) {
+      widget.value = renameVariableInTemplate(this.getTemplate(), oldName, name)
     }
+  }
 
+  private declaredVarNames(): string[] {
+    const names: string[] = []
+    for (const segment of this.getTemplate()) {
+      if (segment.type === 'var' && !names.includes(segment.name)) {
+        names.push(segment.name)
+      }
+    }
+    return names
+  }
+
+  /**
+   * Makes input sockets mirror the declared variables: one named socket per
+   * variable, freshly connected sockets named after their source, and a single
+   * trailing placeholder for ad-hoc wiring. Sockets that are neither declared
+   * nor connected are dropped.
+   */
+  private reconcileVariableInputs(declared: readonly string[]) {
     for (const input of this.inputs ?? []) {
       if (input.link != null && !input.name) {
         input.name = this.uniqueVarName(input)
       }
     }
 
-    this.ensureTrailingPlaceholder()
-  }
+    const { namesToAdd, indicesToRemove } = planVariableSockets(
+      (this.inputs ?? []).map((slot) => ({
+        name: slot.name ?? '',
+        connected: slot.link != null
+      })),
+      declared
+    )
 
-  private ensureTrailingPlaceholder() {
-    for (let i = (this.inputs?.length ?? 0) - 1; i >= 0; i--) {
-      const input = this.inputs![i]
-      if (input.link == null && !input.name) this.removeInput(i)
-    }
+    for (const index of [...indicesToRemove].reverse()) this.removeInput(index)
+    for (const name of namesToAdd) this.addInput(name, 'STRING')
     this.addInput('', 'STRING')
   }
 

@@ -1,5 +1,6 @@
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
+import { isCloud } from '@/platform/distribution/types'
 import {
   PROMPT_TAG,
   promptTemplateSchema
@@ -87,10 +88,14 @@ export async function createPrompt(input: {
     ...(input.description ? { description: input.description } : {})
   })
 
+  // Self-hosted asset APIs require the first tag to be a known category
+  // (models/input/output); cloud accepts the bare prompt tag.
+  const tags = isCloud ? [PROMPT_TAG] : ['input', PROMPT_TAG]
+
   const uploaded = await assetService.uploadAssetFromBase64({
     data: `data:text/plain;charset=utf-8,${encodeURIComponent(content)}`,
     name: toFileName(input.name),
-    tags: [PROMPT_TAG],
+    tags,
     user_metadata: { name: input.name }
   })
 

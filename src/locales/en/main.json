@@ -4,7 +4,8 @@
     "saveAsPrompt": "Save as prompt",
     "namePlaceholder": "Prompt name",
     "editorPlaceholder": "Write a prompt, or type {'@'} to reference a saved prompt or connected input",
-    "noMatches": "No matches"
+    "noMatches": "No matches",
+    "createVariable": "Create variable: {name}"
   },
   "g": {
     "shortcutSuffix": " ({shortcut})",

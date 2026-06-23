@@ -17,6 +17,8 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
+vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
+
 const mockedAssetService = vi.mocked(assetService)
 
 function asset(overrides: Partial<AssetItem>): AssetItem {
@@ -133,7 +135,7 @@ describe('createPrompt', () => {
 
     const payload = mockedAssetService.uploadAssetFromBase64.mock.calls[0][0]
     expect(payload.name).toBe('My Prompt.txt')
-    expect(payload.tags).toEqual(['prompt'])
+    expect(payload.tags).toEqual(['input', 'prompt'])
     const stored = JSON.parse(decodeURIComponent(payload.data.split(',')[1]))
     expect(stored).toMatchObject({ name: 'My Prompt', template: [...template] })
 
