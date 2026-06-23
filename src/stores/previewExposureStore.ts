@@ -20,13 +20,6 @@ export type NormalizedPreviewExposure = Omit<
   sourceNodeId: NodeId
 }
 
-type NormalizedPromotedWidgetSource = Omit<
-  PromotedWidgetSource,
-  'sourceNodeId'
-> & {
-  sourceNodeId: NodeId
-}
-
 const EMPTY_EXPOSURES: readonly NormalizedPreviewExposure[] = Object.freeze([])
 
 type ResolveNestedHostFn = NonNullable<
@@ -123,7 +116,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   function getExposuresAsPromotionShape(
     rootGraphId: UUID,
     hostNodeLocator: string
-  ): NormalizedPromotedWidgetSource[] {
+  ): PromotedWidgetSource[] {
     return getExposures(rootGraphId, hostNodeLocator).map((exposure) => ({
       sourceNodeId: exposure.sourceNodeId,
       sourceWidgetName: exposure.sourcePreviewName
