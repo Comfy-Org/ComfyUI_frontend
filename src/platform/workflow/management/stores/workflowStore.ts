@@ -632,7 +632,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     const targetSubgraph = subgraph ?? activeSubgraph.value
     if (!targetSubgraph) {
       // Node is in the root graph, return the node ID as-is
-      return String(nodeId)
+      return createNodeLocatorId(null, nodeId)
     }
 
     return createNodeLocatorId(targetSubgraph.id, nodeId)
@@ -646,7 +646,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const nodeToNodeLocatorId = (node: LGraphNode): NodeLocatorId => {
     if (isSubgraph(node.graph))
       return createNodeLocatorId(node.graph.id, node.id)
-    return String(node.id)
+    return createNodeLocatorId(null, node.id)
   }
 
   /**
@@ -659,7 +659,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   ): NodeLocatorId | null => {
     // Handle simple node IDs (root graph - no colons)
     if (!nodeExecutionId.includes(':')) {
-      return nodeExecutionId
+      return createNodeLocatorId(null, nodeExecutionId)
     }
 
     const parts = parseNodeExecutionId(nodeExecutionId)
@@ -670,7 +670,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     if (subgraphNodeIds.length === 0) {
       // Node is in root graph, return the node ID as-is
-      return String(nodeId)
+      return createNodeLocatorId(null, nodeId)
     }
 
     try {
@@ -714,7 +714,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
     // If no subgraph UUID, this is a root graph node
     if (!subgraphUuid) {
-      return String(localNodeId)
+      return createNodeExecutionId([localNodeId])
     }
 
     // Find the path from root to the subgraph with this UUID

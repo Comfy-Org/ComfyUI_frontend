@@ -33,7 +33,7 @@ import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import type { AppMode } from '@/utils/appMode'
@@ -220,7 +220,7 @@ export const useExecutionStore = defineStore('execution', () => {
   const executionIdToLocatorCache = new Map<string, NodeLocatorId | undefined>()
 
   function cachedExecutionIdToLocator(
-    executionId: string
+    executionId: NodeExecutionId | string
   ): NodeLocatorId | undefined {
     if (executionIdToLocatorCache.has(executionId)) {
       return executionIdToLocatorCache.get(executionId)

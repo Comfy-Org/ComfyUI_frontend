@@ -1,6 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createNodeLocatorId } from '@/types/nodeIdentification'
+
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
 vi.mock('@/i18n', () => ({
@@ -146,7 +148,9 @@ describe('missingModelStore', () => {
         makeModelCandidate('model_a.safetensors', { nodeId: '5' })
       ])
 
-      expect(store.hasMissingModelOnNode('5')).toBe(true)
+      expect(store.hasMissingModelOnNode(createNodeLocatorId(null, 5))).toBe(
+        true
+      )
     })
 
     it('returns false when node has no missing model', () => {
@@ -155,12 +159,16 @@ describe('missingModelStore', () => {
         makeModelCandidate('model_a.safetensors', { nodeId: '5' })
       ])
 
-      expect(store.hasMissingModelOnNode('99')).toBe(false)
+      expect(store.hasMissingModelOnNode(createNodeLocatorId(null, 99))).toBe(
+        false
+      )
     })
 
     it('returns false when no models are missing', () => {
       const store = useMissingModelStore()
-      expect(store.hasMissingModelOnNode('1')).toBe(false)
+      expect(store.hasMissingModelOnNode(createNodeLocatorId(null, 1))).toBe(
+        false
+      )
     })
   })
 

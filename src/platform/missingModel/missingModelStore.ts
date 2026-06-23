@@ -9,7 +9,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 
 /**
@@ -193,7 +193,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     missingModelCandidates.value = [...existing, ...newModels]
   }
 
-  function hasMissingModelOnNode(nodeLocatorId: string): boolean {
+  function hasMissingModelOnNode(nodeLocatorId: NodeLocatorId): boolean {
     return missingModelNodeIds.value.has(nodeLocatorId)
   }
 

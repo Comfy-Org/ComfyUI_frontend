@@ -6,7 +6,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { getAncestorExecutionIds } from '@/types/nodeIdentification'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import { getActiveGraphNodeIds } from '@/utils/graphTraversalUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
@@ -68,7 +68,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     missingMediaCandidates.value = media.length ? media : null
   }
 
-  function hasMissingMediaOnNode(nodeLocatorId: string): boolean {
+  function hasMissingMediaOnNode(nodeLocatorId: NodeLocatorId): boolean {
     return missingMediaNodeIds.value.has(nodeLocatorId)
   }
 

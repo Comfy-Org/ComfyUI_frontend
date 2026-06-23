@@ -15,7 +15,7 @@ import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSche
  * Unlike execution IDs which change based on the instance path,
  * NodeLocatorId remains the same for all instances of a particular node.
  */
-export type NodeLocatorId = string
+export type NodeLocatorId = string & { readonly __brand: 'NodeLocatorId' }
 
 /**
  * An execution identifier representing a node's position in nested subgraphs.
@@ -24,7 +24,7 @@ export type NodeLocatorId = string
  * Format: Colon-separated path of node IDs
  * Example: "123:456:789" (node 789 in subgraph 456 in subgraph 123)
  */
-export type NodeExecutionId = string
+export type NodeExecutionId = string & { readonly __brand: 'NodeExecutionId' }
 
 /**
  * Type guard to check if a value is a NodeLocatorId
@@ -94,10 +94,12 @@ export function parseNodeLocatorId(
  * @returns A properly formatted NodeLocatorId
  */
 export function createNodeLocatorId(
-  subgraphUuid: string,
+  subgraphUuid: string | null,
   localNodeId: NodeId
 ): NodeLocatorId {
-  return `${subgraphUuid}:${localNodeId}`
+  return (
+    subgraphUuid ? `${subgraphUuid}:${localNodeId}` : String(localNodeId)
+  ) as NodeLocatorId
 }
 
 /**
@@ -119,7 +121,7 @@ export function parseNodeExecutionId(id: string): NodeId[] | null {
  * @returns A properly formatted NodeExecutionId
  */
 export function createNodeExecutionId(nodeIds: NodeId[]): NodeExecutionId {
-  return nodeIds.join(':')
+  return nodeIds.join(':') as NodeExecutionId
 }
 
 /**
@@ -133,7 +135,7 @@ export function getAncestorExecutionIds(
   const parts = executionId.split(':')
   return Array.from({ length: parts.length }, (_, i) =>
     parts.slice(0, i + 1).join(':')
-  )
+  ) as NodeExecutionId[]
 }
 
 /**
