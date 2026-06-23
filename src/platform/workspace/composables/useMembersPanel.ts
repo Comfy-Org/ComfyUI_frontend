@@ -111,7 +111,8 @@ export function useMembersPanel() {
     name: userDisplayName.value ?? '',
     email: userEmail.value ?? '',
     role: 'owner' as const,
-    joinDate: new Date(0)
+    joinDate: new Date(0),
+    isOriginalOwner: true
   }))
 
   const searchQuery = ref('')
