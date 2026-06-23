@@ -133,6 +133,7 @@ import { useRoute, useRouter } from 'vue-router'
 import SignUpForm from '@/components/dialog/content/signin/SignUpForm.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { completeDesktopLoginForExistingSession } from '@/platform/cloud/onboarding/composables/useDesktopLoginCompletion'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import { isCloud } from '@/platform/distribution/types'
@@ -161,6 +162,8 @@ const { onAuthSuccess } = usePostAuthRedirect({
   successSummary: 'Sign up Completed',
   defaultRedirect: () => ({ path: '/', query: route.query })
 })
+
+void completeDesktopLoginForExistingSession(route.query, onAuthSuccess)
 
 const navigateToLogin = async () => {
   await router.push({ name: 'cloud-login', query: route.query })

@@ -95,7 +95,6 @@
 </template>
 
 <script setup lang="ts">
-import { until } from '@vueuse/core'
 import Message from 'primevue/message'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -103,18 +102,16 @@ import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { hasDesktopLoginRequest } from '@/platform/cloud/onboarding/desktopLoginBridge'
 import CloudSignInForm from '@/platform/cloud/onboarding/components/CloudSignInForm.vue'
+import { completeDesktopLoginForExistingSession } from '@/platform/cloud/onboarding/composables/useDesktopLoginCompletion'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
 import type { SignInData } from '@/schemas/signInSchema'
 import { getGoogleSsoBlockedReason } from '@/base/webviewDetection'
-import { useAuthStore } from '@/stores/authStore'
 
 const { t } = useI18n()
 const router = useRouter()
 const route = useRoute()
 const authActions = useAuthActions()
-const authStore = useAuthStore()
 const isSecureContext = globalThis.isSecureContext
 const authError = ref('')
 const showEmailForm = ref(false)
@@ -125,19 +122,7 @@ const { onAuthSuccess } = usePostAuthRedirect({
   defaultRedirect: () => ({ name: 'cloud-user-check' })
 })
 
-void completeDesktopLoginForExistingSession()
-
-async function completeDesktopLoginForExistingSession() {
-  if (!hasDesktopLoginRequest(route.query)) return
-
-  if (!authStore.isInitialized) {
-    await until(() => authStore.isInitialized).toBe(true)
-  }
-
-  if (!authStore.currentUser) return
-
-  await onAuthSuccess()
-}
+void completeDesktopLoginForExistingSession(route.query, onAuthSuccess)
 
 function switchToEmailForm() {
   showEmailForm.value = true
