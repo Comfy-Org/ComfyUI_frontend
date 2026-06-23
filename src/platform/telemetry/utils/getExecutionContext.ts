@@ -9,7 +9,10 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeSourceType } from '@/types/nodeSource'
 import { reduceAllNodes } from '@/utils/graphTraversalUtil'
 
-import type { ExecutionContext } from '../types'
+import type { ExecutionContext, TemplateChangeType } from '../types'
+import { classifyTemplateChange } from './classifyTemplateChange'
+import type { LiveNodeLookup } from './classifyTemplateChange'
+import { getTemplateBaseline } from './templateBaselineStore'
 
 type NodeMetrics = {
   custom_node_count: number
@@ -21,6 +24,41 @@ type NodeMetrics = {
   api_node_names: string[]
   has_toolkit_nodes: boolean
   toolkit_node_names: string[]
+}
+
+function buildLiveNodeLookup(): LiveNodeLookup {
+  return reduceAllNodes<LiveNodeLookup>(
+    app.rootGraph,
+    (acc, node) => {
+      if (node?.id !== undefined) {
+        acc.set(node.id, {
+          widgets: node.widgets?.map((w) => ({
+            name: w?.name,
+            type: w?.type
+          }))
+        })
+      }
+      return acc
+    },
+    new Map()
+  )
+}
+
+function getTemplateChangeType(
+  templateName: string
+): TemplateChangeType | undefined {
+  const baseline = getTemplateBaseline(templateName)
+  if (!baseline) return undefined
+
+  const currentState =
+    useWorkflowStore().activeWorkflow?.changeTracker?.activeState
+  if (!currentState) return undefined
+
+  try {
+    return classifyTemplateChange(baseline, currentState, buildLiveNodeLookup())
+  } catch {
+    return undefined
+  }
 }
 
 export function getExecutionContext(): ExecutionContext {
@@ -101,6 +139,7 @@ export function getExecutionContext(): ExecutionContext {
         template_models: englishMetadata?.models ?? template?.models,
         template_use_case: englishMetadata?.useCase ?? template?.useCase,
         template_license: englishMetadata?.license ?? template?.license,
+        template_change_type: getTemplateChangeType(templateName),
         ...nodeCounts
       }
     }

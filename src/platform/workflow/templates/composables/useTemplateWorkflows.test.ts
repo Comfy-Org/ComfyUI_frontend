@@ -1,7 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { setTemplateBaseline } from '@/platform/telemetry/utils/templateBaselineStore'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
+
+const hoisted = vi.hoisted(() => ({
+  mockActiveWorkflow: {
+    changeTracker: { activeState: { nodes: [], links: [] } as unknown }
+  } as
+    | { changeTracker?: { activeState?: unknown } | undefined }
+    | null
+    | undefined
+}))
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
@@ -47,6 +57,18 @@ vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: vi.fn(() => ({
     closeDialog: vi.fn()
   }))
+}))
+
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({
+    get activeWorkflow() {
+      return hoisted.mockActiveWorkflow
+    }
+  })
+}))
+
+vi.mock('@/platform/telemetry/utils/templateBaselineStore', () => ({
+  setTemplateBaseline: vi.fn()
 }))
 
 // Mock fetch
@@ -115,6 +137,11 @@ describe('useTemplateWorkflows', () => {
     vi.mocked(fetch).mockResolvedValue({
       json: vi.fn().mockResolvedValue({ workflow: 'data' })
     } as Partial<Response> as Response)
+
+    hoisted.mockActiveWorkflow = {
+      changeTracker: { activeState: { nodes: [], links: [] } as unknown }
+    }
+    vi.mocked(setTemplateBaseline).mockClear()
   })
 
   it('should load templates from store', async () => {
@@ -283,6 +310,40 @@ describe('useTemplateWorkflows', () => {
 
     expect(result).toBe(true)
     expect(fetch).toHaveBeenCalledWith('mock-file-url/templates/template1.json')
+  })
+
+  it('captures the normalized active state as the template baseline', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+
+    const normalizedState = {
+      nodes: [{ id: 1, type: 'KSampler', widgets_values: [42] }],
+      links: []
+    }
+    hoisted.mockActiveWorkflow = {
+      changeTracker: { activeState: normalizedState }
+    }
+
+    await loadWorkflowTemplate('template1', 'default')
+    await flushPromises()
+
+    expect(setTemplateBaseline).toHaveBeenCalledWith(
+      'template1',
+      normalizedState
+    )
+  })
+
+  it('falls back to fetched JSON when no active state is available', async () => {
+    const { loadWorkflowTemplate } = useTemplateWorkflows()
+    mockWorkflowTemplatesStore.isLoaded = true
+    hoisted.mockActiveWorkflow = undefined
+
+    await loadWorkflowTemplate('template1', 'default')
+    await flushPromises()
+
+    expect(setTemplateBaseline).toHaveBeenCalledWith('template1', {
+      workflow: 'data'
+    })
   })
 
   it('should handle errors when loading templates', async () => {
