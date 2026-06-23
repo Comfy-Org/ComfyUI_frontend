@@ -13,6 +13,7 @@ import {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { asNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 
 function promotedInputNames(host: {
@@ -543,20 +544,20 @@ describe('isLinkedPromotion', () => {
     const host = createTestSubgraphNode(createTestSubgraph())
     const node = promoteSource(host, 'text')
 
-    expect(isLinkedPromotion(host, String(node.id), 'text')).toBe(true)
+    expect(isLinkedPromotion(host, node.id, 'text')).toBe(true)
   })
 
   it('returns false when no promotion exists', () => {
     const host = createTestSubgraphNode(createTestSubgraph())
 
-    expect(isLinkedPromotion(host, '999', 'nonexistent')).toBe(false)
+    expect(isLinkedPromotion(host, asNodeId(999), 'nonexistent')).toBe(false)
   })
 
   it('returns false when sourceWidgetName does not match', () => {
     const host = createTestSubgraphNode(createTestSubgraph())
     const node = promoteSource(host, 'text')
 
-    expect(isLinkedPromotion(host, String(node.id), 'wrong_name')).toBe(false)
+    expect(isLinkedPromotion(host, node.id, 'wrong_name')).toBe(false)
   })
 
   it('identifies linked widgets across different inputs', () => {
@@ -564,10 +565,10 @@ describe('isLinkedPromotion', () => {
     const nodeA = promoteSource(host, 'string_a')
     const nodeB = promoteSource(host, 'value')
 
-    expect(isLinkedPromotion(host, String(nodeA.id), 'string_a')).toBe(true)
-    expect(isLinkedPromotion(host, String(nodeB.id), 'value')).toBe(true)
-    expect(isLinkedPromotion(host, String(nodeA.id), 'value')).toBe(false)
-    expect(isLinkedPromotion(host, '5', 'string_a')).toBe(false)
+    expect(isLinkedPromotion(host, nodeA.id, 'string_a')).toBe(true)
+    expect(isLinkedPromotion(host, nodeB.id, 'value')).toBe(true)
+    expect(isLinkedPromotion(host, nodeA.id, 'value')).toBe(false)
+    expect(isLinkedPromotion(host, asNodeId(5), 'string_a')).toBe(false)
   })
 })
 
@@ -795,9 +796,9 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     expect(host.subgraph.inputs).toHaveLength(1)
     expect(host.inputs[0]?.link).toBe(9999)
     expect(host.inputs[0]?._widget).toBeUndefined()
-    expect(
-      isLinkedPromotion(host, String(interiorNode.id), interiorWidget.name)
-    ).toBe(false)
+    expect(isLinkedPromotion(host, interiorNode.id, interiorWidget.name)).toBe(
+      false
+    )
     expect(host.widgets).toHaveLength(0)
     if (!promotedInputId) throw new Error('Missing promoted input widgetId')
     expect(useWidgetValueStore().getWidget(promotedInputId)).toBeUndefined()
@@ -821,8 +822,8 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     demoteWidget(nodeB, widgetB, [host])
 
     expect(host.subgraph.inputs.map((i) => i.name)).toEqual(['text'])
-    expect(isLinkedPromotion(host, String(nodeB.id), widgetB.name)).toBe(false)
-    expect(isLinkedPromotion(host, String(nodeA.id), widgetA.name)).toBe(true)
+    expect(isLinkedPromotion(host, nodeB.id, widgetB.name)).toBe(false)
+    expect(isLinkedPromotion(host, nodeA.id, widgetA.name)).toBe(true)
   })
 
   it('demotes the correct slot when widget lives on a nested SubgraphNode with same-named deep sources', () => {
@@ -849,12 +850,8 @@ describe('demoteWidget — axiomatic projection retraction', () => {
     demoteWidget(innerHost, promotedWidgetRef(innerHost, 'text_1'), [outerHost])
 
     expect(outerHost.subgraph.inputs.map((i) => i.name)).toEqual(['text'])
-    expect(isLinkedPromotion(outerHost, String(innerHost.id), 'text_1')).toBe(
-      false
-    )
-    expect(isLinkedPromotion(outerHost, String(innerHost.id), 'text')).toBe(
-      true
-    )
+    expect(isLinkedPromotion(outerHost, innerHost.id, 'text_1')).toBe(false)
+    expect(isLinkedPromotion(outerHost, innerHost.id, 'text')).toBe(true)
   })
 })
 

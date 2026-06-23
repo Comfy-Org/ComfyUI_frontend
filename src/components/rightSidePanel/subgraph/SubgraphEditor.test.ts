@@ -172,7 +172,7 @@ describe('SubgraphEditor', () => {
       const input = host.inputs.find((input) => {
         if (!input.widgetId) return false
         const target = resolveSubgraphInputTarget(host, input.name)
-        return target?.nodeId === String(sourceNode.id)
+        return target?.nodeId === sourceNode.id
       })!
       return {
         kind: 'promoted',

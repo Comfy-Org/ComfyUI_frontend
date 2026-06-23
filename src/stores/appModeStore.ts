@@ -124,10 +124,7 @@ export const useAppModeStore = defineStore('appMode', () => {
       return node.inputs.flatMap((inputSlot): LinearInput[] => {
         if (!inputSlot.widgetId) return []
         const target = resolveSubgraphInputTarget(node, inputSlot.name)
-        if (
-          target?.nodeId !== String(storedId) ||
-          target.widgetName !== widgetName
-        ) {
+        if (target?.nodeId !== storedId || target.widgetName !== widgetName) {
           return []
         }
         return [buildEntry(inputSlot.widgetId, inputSlot.name, config)]

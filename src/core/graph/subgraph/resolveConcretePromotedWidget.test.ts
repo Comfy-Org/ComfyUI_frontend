@@ -46,11 +46,7 @@ describe('resolveConcretePromotedWidget', () => {
     const concreteNode = addNodeToHost(host, 'leaf')
     addConcreteWidget(concreteNode, 'seed')
 
-    const result = resolveConcretePromotedWidget(
-      host,
-      String(concreteNode.id),
-      'seed'
-    )
+    const result = resolveConcretePromotedWidget(host, concreteNode.id, 'seed')
 
     expect(result.status).toBe('resolved')
     if (result.status !== 'resolved') return
@@ -86,11 +82,7 @@ describe('resolveConcretePromotedWidget', () => {
       id: asNodeId(22)
     })
 
-    const result = resolveConcretePromotedWidget(
-      outerNode,
-      String(innerNode.id),
-      'x'
-    )
+    const result = resolveConcretePromotedWidget(outerNode, innerNode.id, 'x')
 
     expect(result.status).toBe('resolved')
     if (result.status !== 'resolved') return
@@ -102,7 +94,7 @@ describe('resolveConcretePromotedWidget', () => {
   test('returns cycle when nested promoted widget traversal revisits the same input', () => {
     const recursiveInput = { name: 'x', link: 1 }
     const recursiveNode = fromAny<LGraphNode, unknown>({
-      id: 11,
+      id: asNodeId(11),
       inputs: [recursiveInput],
       isSubgraphNode: () => true,
       subgraph: {
@@ -110,17 +102,17 @@ describe('resolveConcretePromotedWidget', () => {
         getLink: () => ({
           resolve: () => ({ inputNode: recursiveNode })
         }),
-        getNodeById: () => recursiveNode
+        getNodeByRawId: () => recursiveNode
       }
     })
     const host = fromAny<SubgraphNode, unknown>({
       isSubgraphNode: () => true,
       subgraph: {
-        getNodeById: () => recursiveNode
+        getNodeByRawId: () => recursiveNode
       }
     })
 
-    const result = resolveConcretePromotedWidget(host, '11', 'x')
+    const result = resolveConcretePromotedWidget(host, asNodeId(11), 'x')
 
     expect(result).toEqual({ status: 'failure', failure: 'cycle' })
   })
@@ -141,7 +133,7 @@ describe('resolveConcretePromotedWidget', () => {
 
     const host = createTestSubgraphNode(subgraphs[0], { id: asNodeId(200) })
 
-    const result = resolveConcretePromotedWidget(host, '1', 'x')
+    const result = resolveConcretePromotedWidget(host, asNodeId(1), 'x')
     expect(result).toEqual({
       status: 'failure',
       failure: 'max-depth-exceeded'
@@ -151,7 +143,7 @@ describe('resolveConcretePromotedWidget', () => {
   test('returns invalid-host for non-subgraph host node', () => {
     const host = new LGraphNode('plain-host')
 
-    const result = resolveConcretePromotedWidget(host, 'x', 'y')
+    const result = resolveConcretePromotedWidget(host, asNodeId(1), 'y')
 
     expect(result).toEqual({
       status: 'failure',
@@ -162,7 +154,7 @@ describe('resolveConcretePromotedWidget', () => {
   test('returns missing-node when source node does not exist in host subgraph', () => {
     const host = createHostNode(100)
 
-    const result = resolveConcretePromotedWidget(host, '999', 'seed')
+    const result = resolveConcretePromotedWidget(host, asNodeId(999), 'seed')
 
     expect(result).toEqual({
       status: 'failure',
@@ -177,7 +169,7 @@ describe('resolveConcretePromotedWidget', () => {
 
     const result = resolveConcretePromotedWidget(
       host,
-      String(sourceNode.id),
+      sourceNode.id,
       'missing-widget'
     )
 

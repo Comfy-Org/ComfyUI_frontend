@@ -64,8 +64,8 @@ function canResolveLegacyProxy(
   widgetName: string
 ): boolean {
   return (
-    resolveConcretePromotedWidget(hostNode, String(sourceNodeId), widgetName)
-      .status === 'resolved'
+    resolveConcretePromotedWidget(hostNode, sourceNodeId, widgetName).status ===
+    'resolved'
   )
 }
 
@@ -110,7 +110,7 @@ function resolveSourceWidget(
       if (disambiguatingSourceNodeId) {
         return (
           target?.widgetName === sourceWidgetName &&
-          target.nodeId === disambiguatingSourceNodeId
+          String(target.nodeId) === disambiguatingSourceNodeId
         )
       }
       if (input.name === sourceWidgetName) return true
@@ -313,7 +313,7 @@ function classify(
 ): Plan {
   const linkedInput = findHostInputForPromotion(
     hostNode,
-    String(normalized.sourceNodeId),
+    normalized.sourceNodeId,
     normalized.sourceWidgetName
   )
   if (linkedInput) {

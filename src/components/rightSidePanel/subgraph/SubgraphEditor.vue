@@ -254,7 +254,7 @@ function isRowLinked(row: ActiveRow): boolean {
   return (
     !!activeNode.value &&
     !!source &&
-    isLinkedPromotion(activeNode.value, String(row.node.id), source.widgetName)
+    isLinkedPromotion(activeNode.value, row.node.id, source.widgetName)
   )
 }
 

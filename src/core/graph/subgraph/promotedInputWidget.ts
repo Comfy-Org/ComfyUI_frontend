@@ -3,6 +3,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { NodeId } from '@/types/nodeId'
 
 import { resolveSubgraphInputTarget } from './resolveSubgraphInputTarget'
 
@@ -13,7 +14,7 @@ import { resolveSubgraphInputTarget } from './resolveSubgraphInputTarget'
  * on the projected widget.
  */
 export interface PromotedSource {
-  nodeId: string
+  nodeId: NodeId
   widgetName: string
 }
 

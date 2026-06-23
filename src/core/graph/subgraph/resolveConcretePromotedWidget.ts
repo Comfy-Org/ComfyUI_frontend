@@ -2,6 +2,7 @@ import type { ResolvedPromotedWidget } from '@/core/graph/subgraph/promotedWidge
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { NodeId } from '@/types/nodeId'
 
 type PromotedWidgetResolutionFailure =
   | 'invalid-host'
@@ -18,7 +19,7 @@ const MAX_PROMOTED_WIDGET_CHAIN_DEPTH = 100
 
 function traversePromotedWidgetChain(
   hostNode: SubgraphNode,
-  nodeId: string,
+  nodeId: NodeId,
   widgetName: string
 ): PromotedWidgetResolutionResult {
   const visitedByHost = new WeakMap<SubgraphNode, Set<string>>()
@@ -69,7 +70,7 @@ function traversePromotedWidgetChain(
 
 export function resolveConcretePromotedWidget(
   hostNode: LGraphNode,
-  nodeId: string,
+  nodeId: NodeId,
   widgetName: string
 ): PromotedWidgetResolutionResult {
   if (!hostNode.isSubgraphNode()) {
