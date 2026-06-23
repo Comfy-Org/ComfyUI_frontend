@@ -309,6 +309,7 @@ export interface SearchQueryMetadata {
  */
 export type NodeAddSource =
   | 'sidebar_drag'
+  | 'asset_browser'
   | 'search_modal'
   | 'paste'
   | 'programmatic'

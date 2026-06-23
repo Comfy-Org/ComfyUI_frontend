@@ -21,10 +21,10 @@ type DialogPosition =
   | 'bottomright'
 
 /**
- * Selects the dialog renderer used by `GlobalDialog`. `'primevue'` is the
- * current default and runs the legacy PrimeVue `Dialog` path. `'reka'` opts
- * into the Reka-UI primitive set under `src/components/ui/dialog/`. Migration
- * tracked in `temp/plans/adr-0009-dialog-reka-migration-DRAFT.md`.
+ * Selects the dialog renderer used by `GlobalDialog`. `'reka'` (the default)
+ * renders the Reka-UI primitive set under `src/components/ui/dialog/`.
+ * `'primevue'` is the legacy PrimeVue `Dialog` escape hatch, kept only until
+ * the branch is deleted in the Phase 6 cleanup (FE-578).
  */
 type DialogRenderer = 'primevue' | 'reka'
 
@@ -201,6 +201,7 @@ export const useDialogStore = defineStore('dialog', () => {
         closable: true,
         closeOnEscape: true,
         dismissableMask: true,
+        renderer: 'reka' as DialogRenderer,
         ...options.dialogComponentProps,
         maximized: false,
         onMaximize: () => {

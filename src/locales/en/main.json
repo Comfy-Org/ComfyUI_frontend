@@ -2474,6 +2474,19 @@
       "confirmCancel": "Cancel subscription",
       "failed": "Failed to cancel subscription"
     },
+    "downgrade": {
+      "title": "Change to {plan} plan?",
+      "body": "All other members of this workspace will be immediately removed.",
+      "confirmationPhrase": "I understand",
+      "confirmationPrompt": "Type \"{phrase}\" to confirm.",
+      "confirm": "Change plan",
+      "failed": "Failed to change plan",
+      "notAllowed": "This plan change is not available",
+      "paymentMethodRequired": "A payment method is required to change plans",
+      "paymentPageBlocked": "Couldn't open the payment page — please try again",
+      "memberRemovalFailed": "Couldn't remove {email} from the team — some members may already be removed and your plan was not changed",
+      "failedAfterMemberRemoval": "Team members were removed, but the plan change didn't complete — please try again or contact support"
+    },
     "partnerNodesBalance": "\"Partner Nodes\" Credit Balance",
     "partnerNodesDescription": "For running commercial/proprietary models",
     "totalCredits": "Total credits",
@@ -2516,13 +2529,17 @@
         "name": "Founder's Edition"
       },
       "standard": {
-        "name": "Standard"
+        "name": "Standard",
+        "feature1": "30 minute max workflow runtime",
+        "feature2": "Add more credits anytime"
       },
       "creator": {
-        "name": "Creator"
+        "name": "Creator",
+        "feature1": "Import your own models"
       },
       "pro": {
-        "name": "Pro"
+        "name": "Pro",
+        "feature1": "Longer workflow runtime (up to 1 hr)"
       }
     },
     "required": {
@@ -2550,10 +2567,52 @@
     "subscriptionRequiredMessage": "A subscription is required for members to run workflows on Cloud and invite members",
     "contactOwnerToSubscribe": "Contact the workspace owner to subscribe",
     "description": "Choose the best plan for you",
-    "descriptionWorkspace": "Choose the best plan for your workspace",
+    "descriptionWorkspace": "Choose a Plan",
     "haveQuestions": "Have questions or wondering about enterprise?",
     "contactUs": "Contact us",
     "viewEnterprise": "View enterprise",
+    "planScope": {
+      "personal": "For Personal",
+      "team": "For Teams"
+    },
+    "teamHeader": "For teams wanting to collaborate. Need more members? {learnMore} about enterprise.",
+    "teamHeaderLearnMore": "Learn more",
+    "personalHeader": "Personal plans are for individual use only. {action}",
+    "personalHeaderAction": "To add teammates, subscribe to the team plan.",
+    "whatsIncluded": "What's included:",
+    "everythingInPlus": "Everything in {plan}, plus:",
+    "monthlyCredits": "monthly credits",
+    "videoEstimate": "Generates ~{count} 5s videos*",
+    "saveYearly": "Save 20%",
+    "saveYearlyUpTo": "Save up to 20%",
+    "teamPlan": {
+      "name": "Team Plan",
+      "tagline": "Choose your own monthly credit subscription. Get a larger discount with a larger credit subscription.",
+      "detailsTitle": "Details",
+      "perkInviteMembers": "Invite team members",
+      "perkConcurrentRuns": "Members can run workflows concurrently",
+      "perkSharedPool": "Shared credit pool for all members",
+      "perkRolePermissions": "Role-based permissions",
+      "comingSoonLabel": "Coming soon:",
+      "perkProjectAssets": "Project & asset management",
+      "cta": "Subscribe to Team Yearly",
+      "ctaMonthly": "Subscribe to Team Monthly",
+      "changePlan": "Change plan",
+      "currentPlan": "Current plan",
+      "checkoutComingSoon": "Team plan checkout is coming soon."
+    },
+    "enterprise": {
+      "name": "Enterprise",
+      "needMoreMembers": "Need more members?",
+      "flexibility": "Looking for more flexibility or custom features?",
+      "reachOut": "Reach out to us and let's schedule a chat.",
+      "cta": "Learn more"
+    },
+    "pricingBlurb": "*Based on this template, {seeDetails}. Contact us for {questions} or {enterpriseDiscussions}. For more pricing details, {clickHere}.",
+    "pricingBlurbSeeDetails": "see details",
+    "pricingBlurbQuestions": "questions",
+    "pricingBlurbEnterprise": "enterprise discussions",
+    "pricingBlurbClickHere": "click here",
     "freeTier": {
       "title": "You're on the Free plan",
       "description": "Your free plan includes {credits} credits each month to try Comfy Cloud.",
@@ -2613,6 +2672,9 @@
       "starting": "Starting {date}",
       "ends": "Ends {date}",
       "eachMonthCreditsRefill": "Each month credits refill to",
+      "everyMonthStarting": "Every month starting {date}",
+      "creditsRefillTo": "Credits refill to",
+      "youllBeCharged": "You'll be charged",
       "perMember": "/ member",
       "showMoreFeatures": "Show more features",
       "hideFeatures": "Hide features",
@@ -2625,7 +2687,14 @@
       "privacyPolicy": "Privacy Policy",
       "addCreditCard": "Add credit card",
       "confirm": "Confirm",
+      "subscribeToPlan": "Subscribe to {plan}",
+      "switchToPlan": "Switch to {plan}",
       "backToAllPlans": "Back to all plans"
+    },
+    "success": {
+      "allSet": "You're all set",
+      "planUpdated": "Your plan has been successfully updated.",
+      "receiptEmailed": "A receipt has been emailed to you."
     }
   },
   "userSettings": {
@@ -3113,6 +3182,7 @@
     "invalidFilename": "Invalid Filename",
     "invalidFilenameDetail": "The asset filename could not be determined. Please try again.",
     "failedToCreateNode": "Failed to create node. Please try again or check console for details.",
+    "failedToSetModelValue": "Node added, but its model could not be set automatically. Check the console for details.",
     "fileFormats": "File formats",
     "fileName": "File Name",
     "fileSize": "File Size",
@@ -3345,7 +3415,7 @@
     "mediaLabel": "{count} Media File | {count} Media Files",
     "modelsLabel": "{count} Model | {count} Models",
     "checkingAssets": "Checking media visibility…",
-    "acknowledgeCheckbox": "I understand these media items will be published and made public",
+    "acknowledgeCheckbox": "I understand anyone with the link can view these files",
     "inLibrary": "In library",
     "comfyHubTitle": "Upload to ComfyHub",
     "comfyHubDescription": "ComfyHub is ComfyUI's official community hub.\nYour workflow will have a public page viewable by all.",

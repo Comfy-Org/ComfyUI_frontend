@@ -51,6 +51,10 @@ vi.mock('@/composables/useFeatureFlags', () => ({
   useFeatureFlags: () => ({ flags: { showSignInButton: false } })
 }))
 
+vi.mock('@/composables/useWorkflowStatusDismissal', () => ({
+  useWorkflowStatusDismissal: vi.fn()
+}))
+
 vi.mock('@/composables/element/useOverflowObserver', () => ({
   useOverflowObserver: () => ({
     isOverflowing: { value: false },
