@@ -40,7 +40,8 @@ const i18n = createI18n({
           noWorkspaces: 'No eligible workspaces are available.',
           title: '{client} wants access',
           subtitle: 'Sign in to {resource} to continue',
-          workspaceLabel: 'Workspace',
+          workspaceLabel: 'Your Workspaces',
+          detailsHeader: 'Details',
           permissionsHeader: 'Permissions',
           workspaceHelp: 'Permissions apply to this workspace only.',
           redirectNotice: "You'll be redirected to",
@@ -114,7 +115,8 @@ describe('OAuthConsentView', () => {
     // to continue". Both are short and avoid repeating any brand name twice.
     expect(screen.getByText('Comfy Desktop wants access')).toBeVisible()
     expect(screen.getByText('Sign in to Comfy Cloud to continue')).toBeVisible()
-    // Permissions section header is just the static word "Permissions".
+    // Permissions and the redirect notice sit under the "Details" group.
+    expect(screen.getByText('Details')).toBeVisible()
     expect(screen.getByText('Permissions')).toBeVisible()
     // Known scopes render their human-readable labels. We deliberately
     // avoid MCP jargon ("tools", "metadata") — the user thinks in

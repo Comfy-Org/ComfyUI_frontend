@@ -6,13 +6,24 @@
       v-if="challenge"
       class="flex flex-col gap-6 rounded-2xl border border-solid border-muted bg-secondary-background p-6 shadow-sm"
     >
-      <header class="flex flex-col items-center gap-3 pt-2 text-center">
-        <div
-          class="flex size-12 items-center justify-center rounded-2xl bg-secondary-background"
-        >
+      <header class="flex flex-col items-center gap-4 pt-2 text-center">
+        <div class="flex items-center gap-3">
+          <div
+            class="flex size-12 items-center justify-center rounded-2xl border border-solid border-muted bg-secondary-background"
+          >
+            <i
+              class="icon-[lucide--app-window] size-6 text-base-foreground"
+              aria-hidden="true"
+            />
+          </div>
           <i
-            class="icon-[lucide--key] size-5 text-base-foreground"
+            class="icon-[lucide--arrow-right-left] size-5 text-muted"
             aria-hidden="true"
+          />
+          <img
+            src="/assets/images/comfy-logo-single.svg"
+            alt=""
+            class="size-12 rounded-2xl"
           />
         </div>
         <div class="flex flex-col items-center gap-1.5">
@@ -35,7 +46,7 @@
         </p>
         <div
           v-if="challenge.workspaces.length === 0"
-          class="p-3 text-sm text-muted"
+          class="rounded-xl border border-solid border-muted p-3 text-sm text-muted"
         >
           {{ t('oauth.consent.noWorkspaces') }}
         </div>
@@ -43,7 +54,7 @@
           v-else
           v-model="selectedWorkspaceId"
           :aria-label="t('oauth.consent.workspaceLabel')"
-          class="m-0 flex scrollbar-custom max-h-72 list-none flex-col gap-1 overflow-y-auto p-0"
+          class="m-0 flex scrollbar-custom max-h-72 list-none flex-col divide-y divide-muted overflow-hidden overflow-y-auto rounded-xl border border-solid border-muted p-0"
         >
           <RadioGroupItem
             v-for="workspace in challenge.workspaces"
@@ -51,11 +62,11 @@
             :value="workspace.id"
             :class="
               cn(
-                'flex w-full cursor-pointer items-center gap-3 rounded-md border-none bg-transparent px-3 py-2 text-left transition-colors',
+                'flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-3 text-left transition-colors',
                 'hover:bg-secondary-background-hover',
-                'focus-visible:ring-ring focus-visible:ring-1 focus-visible:outline-none',
+                'focus-visible:ring-ring focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset',
                 selectedWorkspaceId === workspace.id &&
-                  'bg-secondary-background'
+                  'bg-secondary-background-selected'
               )
             "
           >
@@ -85,38 +96,44 @@
 
       <section class="flex flex-col gap-3">
         <p class="m-0 text-sm font-medium">
-          {{ t('oauth.consent.permissionsHeader') }}
+          {{ t('oauth.consent.detailsHeader') }}
         </p>
-        <ul class="m-0 flex list-none flex-col gap-1.5 p-0">
-          <li
-            v-for="scope in challenge.scopes"
-            :key="scope"
-            class="flex items-center gap-2"
-          >
-            <i
-              class="icon-[lucide--check] size-4 shrink-0 text-primary-background"
-              aria-hidden="true"
-            />
-            <span class="text-sm">
-              {{ scopeLabel(scope) }}
-            </span>
-          </li>
-        </ul>
-      </section>
-
-      <section
-        v-if="challenge.redirect_uri"
-        class="flex flex-col gap-1.5 rounded-lg border border-solid border-muted bg-secondary-background/40 p-3"
-      >
-        <span class="text-xs text-muted">
-          {{ t('oauth.consent.redirectNotice') }}
-        </span>
-        <code
-          class="m-0 truncate font-mono text-xs text-base-foreground"
-          :title="challenge.redirect_uri"
+        <div
+          class="flex flex-col gap-1.5 rounded-xl border border-solid border-muted bg-secondary-background/40 p-3"
         >
-          {{ challenge.redirect_uri }}
-        </code>
+          <span class="text-xs text-muted">
+            {{ t('oauth.consent.permissionsHeader') }}
+          </span>
+          <ul class="m-0 flex list-none flex-col gap-1.5 p-0">
+            <li
+              v-for="scope in challenge.scopes"
+              :key="scope"
+              class="flex items-center gap-2"
+            >
+              <i
+                class="icon-[lucide--check] size-4 shrink-0 text-primary-background"
+                aria-hidden="true"
+              />
+              <span class="text-sm">
+                {{ scopeLabel(scope) }}
+              </span>
+            </li>
+          </ul>
+        </div>
+        <div
+          v-if="challenge.redirect_uri"
+          class="flex flex-col gap-1.5 rounded-xl border border-solid border-muted bg-secondary-background/40 p-3"
+        >
+          <span class="text-xs text-muted">
+            {{ t('oauth.consent.redirectNotice') }}
+          </span>
+          <code
+            class="m-0 truncate font-mono text-xs text-base-foreground"
+            :title="challenge.redirect_uri"
+          >
+            {{ challenge.redirect_uri }}
+          </code>
+        </div>
       </section>
 
       <p
