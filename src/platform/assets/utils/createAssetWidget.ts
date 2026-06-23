@@ -98,6 +98,7 @@ export function createAssetWidget(
 
         const oldValue = widget.value
         widget.value = validatedFilename.data
+        widget.callback?.(widget.value)
         onValueChange?.(widget, validatedFilename.data, oldValue)
       }
     })
