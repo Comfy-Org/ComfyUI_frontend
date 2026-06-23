@@ -258,15 +258,15 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
-    it('captures events with metadata', async () => {
+    it('captures auth events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
 
-      provider.trackAuth({ method: 'google' })
+      provider.trackAuth({ method: 'google', share_id: 'share-1' })
 
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         TelemetryEvents.USER_AUTH_COMPLETED,
-        { method: 'google' }
+        { method: 'google', share_id: 'share-1' }
       )
     })
 
