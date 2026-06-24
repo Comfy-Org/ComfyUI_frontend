@@ -55,14 +55,14 @@ export async function completeDesktopLoginIfNeeded(
   const request = getDesktopLoginRequest(query)
   if (!request || !user) return false
 
-  // Queue-safe: if PostHog has not finished initializing yet, the cloud
-  // provider flushes this identify call once the browser cookie store is ready.
-  identifyPostHogUser(user.uid)
-
   const firebaseConfig = getFirebaseConfig()
   if (!firebaseConfig.apiKey) {
     throw new Error('Firebase API key missing')
   }
+
+  // Queue-safe: if PostHog has not finished initializing yet, the cloud
+  // provider flushes this identify call once the browser cookie store is ready.
+  identifyPostHogUser(user.uid)
 
   const response = await fetch(request.callbackUrl.href, {
     method: 'POST',

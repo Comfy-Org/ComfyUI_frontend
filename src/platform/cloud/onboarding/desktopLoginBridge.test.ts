@@ -7,6 +7,9 @@ import {
 } from './desktopLoginBridge'
 
 const hoisted = vi.hoisted(() => ({
+  firebaseConfig: {
+    apiKey: 'firebase-api-key'
+  } as { apiKey?: string },
   identifyPostHogUser: vi.fn()
 }))
 
@@ -15,11 +18,19 @@ vi.mock('@/platform/telemetry/providers/cloud/posthogIdentity', () => ({
 }))
 
 vi.mock('@/config/firebase', () => ({
-  getFirebaseConfig: () => ({ apiKey: 'firebase-api-key' })
+  getFirebaseConfig: () => hoisted.firebaseConfig
 }))
+
+function createFirebaseUser() {
+  return {
+    uid: 'user-123',
+    toJSON: () => ({ uid: 'user-123', email: 'person@example.com' })
+  } as NonNullable<Parameters<typeof completeDesktopLoginIfNeeded>[1]>
+}
 
 describe('desktopLoginBridge', () => {
   beforeEach(() => {
+    hoisted.firebaseConfig.apiKey = 'firebase-api-key'
     hoisted.identifyPostHogUser.mockClear()
     vi.unstubAllGlobals()
   })
@@ -70,10 +81,7 @@ describe('desktopLoginBridge', () => {
         desktop_login_callback: 'http://localhost:9876/callback',
         desktop_login_state: 'state-123'
       },
-      {
-        uid: 'user-123',
-        toJSON: () => ({ uid: 'user-123', email: 'person@example.com' })
-      } as never
+      createFirebaseUser()
     )
 
     expect(completed).toBe(true)
@@ -91,5 +99,43 @@ describe('desktopLoginBridge', () => {
         })
       })
     )
+  })
+
+  it('throws before identifying when the Firebase API key is missing', async () => {
+    hoisted.firebaseConfig.apiKey = undefined
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(
+      completeDesktopLoginIfNeeded(
+        {
+          desktop_login_callback: 'http://localhost:9876/callback',
+          desktop_login_state: 'state-123'
+        },
+        createFirebaseUser()
+      )
+    ).rejects.toThrow('Firebase API key missing')
+
+    expect(hoisted.identifyPostHogUser).not.toHaveBeenCalled()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('throws when Desktop rejects the login callback', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 500 })
+    )
+
+    await expect(
+      completeDesktopLoginIfNeeded(
+        {
+          desktop_login_callback: 'http://localhost:9876/callback',
+          desktop_login_state: 'state-123'
+        },
+        createFirebaseUser()
+      )
+    ).rejects.toThrow('Desktop login callback returned 500')
+
+    expect(hoisted.identifyPostHogUser).toHaveBeenCalledWith('user-123')
   })
 })

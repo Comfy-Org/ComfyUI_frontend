@@ -1,3 +1,4 @@
+import type * as VueUseCore from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useDesktopLoginCompletion } from './useDesktopLoginCompletion'
@@ -6,8 +7,19 @@ const hoisted = vi.hoisted(() => ({
   authStore: {
     isInitialized: true,
     currentUser: null as unknown
-  }
+  },
+  untilToBe: vi.fn()
 }))
+
+vi.mock('@vueuse/core', async () => {
+  const actual = await vi.importActual<typeof VueUseCore>('@vueuse/core')
+  return {
+    ...actual,
+    until: vi.fn(() => ({
+      toBe: hoisted.untilToBe
+    }))
+  }
+})
 
 vi.mock('@/stores/authStore', () => ({
   useAuthStore: () => hoisted.authStore
@@ -17,6 +29,7 @@ describe('completeDesktopLoginForExistingSession', () => {
   beforeEach(() => {
     hoisted.authStore.isInitialized = true
     hoisted.authStore.currentUser = null
+    hoisted.untilToBe.mockResolvedValue(true)
   })
 
   it('does nothing without a desktop login request', async () => {
@@ -59,6 +72,26 @@ describe('completeDesktopLoginForExistingSession', () => {
       onAuthSuccess
     )
 
+    expect(onAuthSuccess).toHaveBeenCalledOnce()
+  })
+
+  it('waits for auth initialization before completing an existing session', async () => {
+    hoisted.authStore.isInitialized = false
+    hoisted.authStore.currentUser = { uid: 'user-123' }
+    const onAuthSuccess = vi.fn().mockResolvedValue(undefined)
+    const { completeDesktopLoginForExistingSession } =
+      useDesktopLoginCompletion()
+
+    const completion = completeDesktopLoginForExistingSession(
+      {
+        desktop_login_callback: 'http://localhost:9876/callback',
+        desktop_login_state: 'state-123'
+      },
+      onAuthSuccess
+    )
+    await completion
+
+    expect(hoisted.untilToBe).toHaveBeenCalledWith(true)
     expect(onAuthSuccess).toHaveBeenCalledOnce()
   })
 
