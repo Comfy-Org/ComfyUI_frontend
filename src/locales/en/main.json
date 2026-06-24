@@ -2256,6 +2256,11 @@
     "slots": "Node Slots Error",
     "widgets": "Node Widgets Error"
   },
+  "dynamicGroup": {
+    "addRow": "Add row",
+    "removeRow": "Remove row",
+    "row": "Row {index}"
+  },
   "oauth": {
     "consent": {
       "allow": "Continue",

@@ -75,6 +75,7 @@ export interface IWidgetOptions<TValues = unknown> {
 
   // Vue widget options
   disabled?: boolean
+  removable?: boolean
   useGrouping?: boolean
   placeholder?: string
   showThumbnails?: boolean
