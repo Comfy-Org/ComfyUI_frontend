@@ -23,7 +23,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/renderer/core/layout/types'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { isDOMWidget } from '@/scripts/domWidget'
+import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -73,6 +73,12 @@ export interface SafeWidgetData {
   hasLayoutSize?: boolean
   /** Whether widget is a DOM widget */
   isDOMWidget?: boolean
+  /**
+   * Whether widget is a Vue component-backed widget (e.g. `multi_select`
+   * combos). Rendered through `WidgetComponent` so the widget's own Vue
+   * component is mounted inside the Nodes 2.0 tree.
+   */
+  isComponentWidget?: boolean
   /**
    * Widget options needed for render decisions.
    * Note: Most metadata should be accessed via widgetValueStore.getWidget().
@@ -225,6 +231,7 @@ function isDOMBackedWidget(widget: IBaseWidget): boolean {
 interface PromotedWidgetMetadata {
   controlWidget?: SafeControlWidget
   isDOMWidget: boolean
+  isComponentWidget: boolean
   sourceExecutionId?: string
   sourceWidgetName?: string
 }
@@ -259,6 +266,7 @@ function resolvePromotedMetadata(
   return {
     controlWidget: sourceWidget ? getControlWidget(sourceWidget) : undefined,
     isDOMWidget: sourceWidget ? isDOMBackedWidget(sourceWidget) : false,
+    isComponentWidget: sourceWidget ? isComponentWidget(sourceWidget) : false,
     sourceExecutionId:
       sourceNode && app.rootGraph
         ? (getExecutionIdByNode(app.rootGraph, sourceNode) ?? undefined)
@@ -296,6 +304,9 @@ function safeWidgetMapper(
         ? resolvePromotedMetadata(node, widget)
         : undefined
 
+      const isComponentBackedWidget =
+        isComponentWidget(widget) || (promoted?.isComponentWidget ?? false)
+
       return {
         widgetId: getWidgetIdForNode(node, widget, duplicateIndex),
         name: widget.name,
@@ -306,7 +317,10 @@ function safeWidgetMapper(
         }),
         callback,
         hasLayoutSize: typeof widget.computeLayoutSize === 'function',
-        isDOMWidget: promoted?.isDOMWidget ?? isDOMWidget(widget),
+        isDOMWidget:
+          !isComponentBackedWidget &&
+          (promoted?.isDOMWidget ?? isDOMWidget(widget)),
+        isComponentWidget: isComponentBackedWidget,
         options: extractWidgetDisplayOptions(widget),
         slotMetadata: slotInfo,
         sourceExecutionId: promoted?.sourceExecutionId,

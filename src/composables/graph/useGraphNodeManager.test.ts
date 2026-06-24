@@ -210,6 +210,43 @@ describe('Widget slotMetadata reactivity on link disconnect', () => {
     expect(widgetData?.slotMetadata?.linked).toBe(true)
   })
 
+  it('marks promoted component widgets as component-backed instead of DOM-backed', () => {
+    // A subgraph input promotes an interior component-backed widget (e.g. a
+    // `multi_select` combo). The projected host widget must surface as
+    // component-backed, not DOM-backed, so it renders through WidgetComponent.
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'value', type: 'STRING' }]
+    })
+    const interiorNode = new LGraphNode('interior')
+    const interiorInput = interiorNode.addInput('value', 'STRING')
+    const componentWidget = interiorNode.addWidget(
+      'custom',
+      'prompt',
+      'hello',
+      () => undefined,
+      {}
+    )
+    Object.defineProperty(componentWidget, 'component', {
+      value: {},
+      enumerable: true
+    })
+    interiorInput.widget = { name: 'prompt' }
+    subgraph.add(interiorNode)
+    subgraph.inputNode.slots[0].connect(interiorInput, interiorNode)
+
+    const subgraphNode = createTestSubgraphNode(subgraph, { id: 123 })
+    subgraphNode._internalConfigureAfterSlots()
+    const graph = subgraphNode.graph as LGraph
+    graph.add(subgraphNode)
+
+    const { vueNodeData } = useGraphNodeManager(graph)
+    const nodeData = vueNodeData.get(String(subgraphNode.id))
+    const widgetData = nodeData?.widgets?.find((w) => w.name === 'value')
+
+    expect(widgetData?.isComponentWidget).toBe(true)
+    expect(widgetData?.isDOMWidget).toBe(false)
+  })
+
   it('names promoted widgets after the subgraph input slot and exposes the interior source name', () => {
     // Subgraph input named "value" promotes an interior "prompt" widget. The
     // projected widget's name is the input slot name "value"; the interior
