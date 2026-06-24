@@ -348,7 +348,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await test.step('move outside pan range and cancel drag', async () => {
       await comfyPage.page.mouse.move(400, 400, { steps: 20 })
       await ksampler.header.evaluate((node) =>
-        node.dispatchEvent(new PointerEvent('pointercancel'))
+        node.dispatchEvent(new PointerEvent('pointercancel', { bubbles: true }))
       )
     })
 
@@ -356,7 +356,7 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
 
     await comfyPage.page.mouse.move(10, 10, { steps: 20 })
     await comfyPage.nextFrame()
-    expect(await getOffset, 'drag canceled').toEqual(secondaryOffset)
+    expect(await getOffset(), 'drag canceled').toEqual(secondaryOffset)
   })
 
   test(
