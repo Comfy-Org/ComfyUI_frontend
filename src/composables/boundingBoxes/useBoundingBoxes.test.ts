@@ -6,6 +6,7 @@ import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 
 import { useBoundingBoxes } from './useBoundingBoxes'
 import type { BoundingBox } from '@/types/boundingBoxes'
+import { nodeId as toNodeId } from '@/types/nodeId'
 
 const { appState } = vi.hoisted(() => ({
   appState: { node: null as unknown }
@@ -103,7 +104,7 @@ function setup(initial: BoundingBox[] = []) {
       const canvasContainer = shallowRef<HTMLDivElement | null>(null)
       const inlineEditorEl = shallowRef<HTMLTextAreaElement | null>(null)
       const modelValue = ref(initial)
-      const api = useBoundingBoxes('1', {
+      const api = useBoundingBoxes(toNodeId('1'), {
         canvasEl,
         canvasContainer,
         inlineEditorEl,

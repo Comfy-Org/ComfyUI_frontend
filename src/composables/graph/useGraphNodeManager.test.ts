@@ -715,12 +715,13 @@ describe('Pre-remove vueNodeData drain', () => {
     const node = new LGraphNode('test')
     graph.add(node)
     const { vueNodeData } = useGraphNodeManager(graph)
+    const id = toNodeId(node.id)
 
-    expect(vueNodeData.has(String(node.id))).toBe(true)
+    expect(vueNodeData.has(id)).toBe(true)
 
     let dataPresentInOnRemoved: boolean | undefined
     node.onRemoved = () => {
-      dataPresentInOnRemoved = vueNodeData.has(String(node.id))
+      dataPresentInOnRemoved = vueNodeData.has(id)
     }
 
     graph.remove(node)
