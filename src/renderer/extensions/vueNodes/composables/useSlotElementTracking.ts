@@ -15,8 +15,7 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { app } from '@/scripts/app'
 import type { SlotLayout } from '@/renderer/core/layout/types'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import {
   isBoundsEqual,
   isPointEqual,
@@ -262,14 +261,12 @@ function updateNodeSlotsFromCache(nodeId: NodeId) {
 }
 
 export function useSlotElementTracking(options: {
-  nodeId?: SerializedNodeId
+  nodeId?: NodeId
   index: number
   type: 'input' | 'output'
   element: Ref<HTMLElement | null>
 }) {
-  const { nodeId: rawNodeId, index, type, element } = options
-  const nodeId =
-    rawNodeId === undefined || rawNodeId === '' ? null : toNodeId(rawNodeId)
+  const { nodeId, index, type, element } = options
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
 
   onMounted(() => {

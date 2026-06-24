@@ -33,11 +33,11 @@ import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/compos
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
 import { nodeId as toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { createRafBatch } from '@/utils/rafBatch'
 
 interface SlotInteractionOptions {
-  nodeId?: SerializedNodeId
+  nodeId?: NodeId
   index: number
   type: 'input' | 'output'
 }
@@ -111,12 +111,10 @@ export function resolvePointerTarget(
 }
 
 export function useSlotLinkInteraction({
-  nodeId: rawNodeId,
+  nodeId,
   index,
   type
 }: SlotInteractionOptions): SlotInteractionHandlers {
-  const nodeId =
-    rawNodeId === undefined || rawNodeId === '' ? null : toNodeId(rawNodeId)
   const {
     state,
     beginDrag,

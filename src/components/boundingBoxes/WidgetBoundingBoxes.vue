@@ -145,11 +145,10 @@ import Button from '@/components/ui/button/Button.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
 import { useBoundingBoxes } from '@/composables/boundingBoxes/useBoundingBoxes'
 import type { BoundingBox } from '@/types/boundingBoxes'
-import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
-const { nodeId } = defineProps<{ nodeId: string }>()
+const { nodeId } = defineProps<{ nodeId: NodeId }>()
 const modelValue = defineModel<BoundingBox[]>({ default: () => [] })
-const normalizedNodeId = toNodeId(nodeId)
 
 const canvasEl = useTemplateRef<HTMLCanvasElement>('canvasEl')
 const canvasContainer = useTemplateRef<HTMLDivElement>('canvasContainer')
@@ -174,7 +173,7 @@ const {
   setActiveType,
   clearAll,
   syncState
-} = useBoundingBoxes(normalizedNodeId, {
+} = useBoundingBoxes(nodeId, {
   canvasEl,
   canvasContainer,
   inlineEditorEl,
