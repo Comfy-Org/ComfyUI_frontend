@@ -2,6 +2,7 @@ issue_enrichment:
   auto_enrich:
     enabled: true
 reviews:
+  profile: assertive
   high_level_summary: false
   request_changes_workflow: true
   auto_review:
