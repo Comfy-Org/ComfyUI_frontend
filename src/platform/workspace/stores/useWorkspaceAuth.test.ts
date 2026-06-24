@@ -195,6 +195,51 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(result).toBe(false)
     })
+
+    it('preserves valid token context on transient refresh failure after session restore', async () => {
+      mockGetIdToken.mockResolvedValue('firebase-token-xyz')
+      const futureExpiry = Date.now() + 3600 * 1000
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE,
+        JSON.stringify(mockWorkspaceWithRole)
+      )
+      sessionStorage.setItem(WORKSPACE_STORAGE_KEYS.TOKEN, 'session-token')
+      sessionStorage.setItem(
+        WORKSPACE_STORAGE_KEYS.EXPIRES_AT,
+        futureExpiry.toString()
+      )
+
+      const store = useWorkspaceAuthStore()
+      const { currentWorkspace, workspaceToken } = storeToRefs(store)
+
+      store.initializeFromSession()
+
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+          json: () => Promise.resolve({ message: 'Server error' })
+        })
+      )
+
+      const consoleWarnSpy = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+
+      const refreshPromise = store.refreshToken()
+      // Drain the exponential backoff delays inside refreshToken's retry loop.
+      await vi.advanceTimersByTimeAsync(1000)
+      await vi.advanceTimersByTimeAsync(2000)
+      await vi.advanceTimersByTimeAsync(4000)
+      await refreshPromise
+
+      expect(currentWorkspace.value).toEqual(mockWorkspaceWithRole)
+      expect(workspaceToken.value).toBe('session-token')
+
+      consoleWarnSpy.mockRestore()
+    })
   })
 
   describe('switchWorkspace', () => {
@@ -244,7 +289,7 @@ describe('useWorkspaceAuthStore', () => {
       )
     })
 
-    it('sets isLoading to true during operation', async () => {
+    it('sets isLoading to true during operation and commits workspace on success', async () => {
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
       let resolveResponse: (value: unknown) => void
       const responsePromise = new Promise((resolve) => {
@@ -253,7 +298,7 @@ describe('useWorkspaceAuthStore', () => {
       vi.stubGlobal('fetch', vi.fn().mockReturnValue(responsePromise))
 
       const store = useWorkspaceAuthStore()
-      const { isLoading } = storeToRefs(store)
+      const { currentWorkspace, workspaceToken, isLoading } = storeToRefs(store)
 
       const switchPromise = store.switchWorkspace('workspace-123')
       expect(isLoading.value).toBe(true)
@@ -265,9 +310,11 @@ describe('useWorkspaceAuthStore', () => {
       await switchPromise
 
       expect(isLoading.value).toBe(false)
+      expect(currentWorkspace.value).toEqual(mockWorkspaceWithRole)
+      expect(workspaceToken.value).toBe('workspace-token-abc')
     })
 
-    it('keeps isLoading true until overlapping switches settle', async () => {
+    it('keeps isLoading true until overlapping switches settle and last switch wins', async () => {
       mockGetIdToken.mockResolvedValue('firebase-token-xyz')
       let resolveFirstSwitch: (value: unknown) => void = () => {}
       let resolveSecondSwitch: (value: unknown) => void = () => {}
@@ -284,7 +331,7 @@ describe('useWorkspaceAuthStore', () => {
       vi.stubGlobal('fetch', mockFetch)
 
       const store = useWorkspaceAuthStore()
-      const { isLoading } = storeToRefs(store)
+      const { currentWorkspace, workspaceToken, isLoading } = storeToRefs(store)
 
       const firstSwitch = store.switchWorkspace('workspace-123')
       const secondSwitch = store.switchWorkspace('workspace-other')
@@ -299,17 +346,23 @@ describe('useWorkspaceAuthStore', () => {
 
       expect(isLoading.value).toBe(true)
 
+      const otherWorkspace = { ...mockWorkspace, id: 'workspace-other' }
       resolveSecondSwitch({
         ok: true,
         json: () =>
           Promise.resolve({
             ...mockTokenResponse,
-            workspace: { ...mockWorkspace, id: 'workspace-other' }
+            token: 'other-token',
+            workspace: otherWorkspace
           })
       })
       await secondSwitch
 
+      // The first switch committed and bumped refreshRequestId, so the second
+      // switch's response is treated as stale and discarded. The first switch wins.
       expect(isLoading.value).toBe(false)
+      expect(currentWorkspace.value?.id).toBe('workspace-123')
+      expect(workspaceToken.value).toBe('workspace-token-abc')
     })
 
     it('throws WorkspaceAuthError with code NOT_AUTHENTICATED when Firebase token unavailable', async () => {
@@ -857,8 +910,8 @@ describe('useWorkspaceAuthStore', () => {
           Promise.resolve({ ...mockTokenResponse, token: 'retry-token' })
       })
 
-      // Retry is scheduled at baseDelayMs * 2^maxRetries = 8000ms.
-      await vi.advanceTimersByTimeAsync(7999)
+      // First scheduled retry: scheduledRefreshRetryCount=0 → delay = baseDelayMs * 2^0 = 1000ms.
+      await vi.advanceTimersByTimeAsync(999)
       expect(mockFetch).toHaveBeenCalledTimes(5)
 
       await vi.advanceTimersByTimeAsync(1)
@@ -866,6 +919,7 @@ describe('useWorkspaceAuthStore', () => {
       await vi.waitFor(() => {
         expect(workspaceToken.value).toBe('retry-token')
       })
+      expect(error.value).toBeNull()
 
       consoleErrorSpy.mockRestore()
       consoleWarnSpy.mockRestore()
