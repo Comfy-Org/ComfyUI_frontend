@@ -1331,6 +1331,18 @@ const translations = {
     en: 'Projects',
     'zh-CN': '项目'
   },
+  'pricing.plan.feature.status.coming': {
+    en: 'Coming soon',
+    'zh-CN': '即将推出'
+  },
+  'pricing.plan.feature.status.included': {
+    en: 'Included',
+    'zh-CN': '已包含'
+  },
+  'pricing.plan.feature.status.notIncluded': {
+    en: 'Not included',
+    'zh-CN': '未包含'
+  },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },
   'pricing.enterprise.description': {

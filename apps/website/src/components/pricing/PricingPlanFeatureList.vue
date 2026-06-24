@@ -48,11 +48,22 @@ const { locale = 'en' } = defineProps<{
           <Check
             v-else-if="feature.included !== false"
             class="text-primary-comfy-yellow mt-0.5 size-4 shrink-0"
+            aria-hidden="true"
           />
           <X
             v-else
             class="mt-0.5 size-4 shrink-0 text-primary-comfy-canvas/40"
+            aria-hidden="true"
           />
+          <span class="sr-only">
+            {{
+              feature.type === 'coming'
+                ? t('pricing.plan.feature.status.coming', locale)
+                : feature.included === false
+                  ? t('pricing.plan.feature.status.notIncluded', locale)
+                  : t('pricing.plan.feature.status.included', locale)
+            }}:
+          </span>
           <span
             class="ppformula-text-center text-sm"
             :class="
