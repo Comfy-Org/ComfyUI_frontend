@@ -712,7 +712,6 @@
     "Inputs": "Girdiler",
     "Left": "Sol",
     "Manage": "Yönet",
-    "Manage Group Nodes": "Grup Düğümlerini Yönet",
     "Minimize Node": "Düğümü Küçült",
     "Mode": "Mod",
     "Node Info": "Düğüm Bilgisi",
@@ -872,6 +871,7 @@
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "KAYIP_HARITASI",
     "LUMA_CONCEPTS": "LUMA_KAVRAMLARI",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "LUMA_REF",
     "MASK": "MASKE",
     "MESH": "MESH",
@@ -1830,10 +1830,6 @@
     "zoomOptions": "Yakınlaştırma Seçenekleri",
     "zoomOut": "Uzaklaştır"
   },
-  "groupNode": {
-    "create": "Grup düğümü oluştur",
-    "enterName": "İsim girin"
-  },
   "help": {
     "helpCenterMenu": "Yardım Merkezi Menüsü",
     "recentReleases": "Son sürümler"
@@ -2563,7 +2559,6 @@
     "Job History": "İş Geçmişi",
     "Load Default Workflow": "Varsayılan İş Akışını Yükle",
     "Lock Canvas": "Tuvali Kilitle",
-    "Manage group nodes": "Grup düğümlerini yönet",
     "Manager": "Yönetici",
     "Manager Menu (Legacy)": "Yönetici Menüsü (Eski)",
     "Minimap": "Mini Harita",
@@ -2629,7 +2624,6 @@
     "Toggle View Controls Bottom Panel": "Görünüm Kontrolleri Alt Panelini Aç/Kapat",
     "Toggle promotion of hovered widget": "Üzerine gelinen widget'ı yükseltmeyi aç/kapat",
     "Undo": "Geri Al",
-    "Ungroup selected group nodes": "Seçili grup düğümlerinin grubunu çöz",
     "Unload Models": "Modelleri Boşalt",
     "Unload Models and Execution Cache": "Modelleri ve Yürütme Önbelleğini Boşalt",
     "Unlock Canvas": "Tuvalin Kilidini Aç",
@@ -3986,6 +3980,7 @@
     "fileTooLarge": "Dosya çok büyük ({size} MB). Desteklenen maksimum boyut {maxSize} MB",
     "fileUploadFailed": "Dosya yükleme başarısız oldu",
     "interrupted": "Yürütme kesintiye uğradı",
+    "invalidTemplateData": "Düğüm şablonu yüklenemedi: geçersiz veri",
     "legacyMaskEditorDeprecated": "Klasik maske düzenleyici kullanımdan kaldırıldı ve yakında kaldırılacak.",
     "migrateToLitegraphReroute": "Yeniden yönlendirme düğümleri gelecekteki sürümlerde kaldırılacaktır. Litegraph yerel yeniden yönlendirmeye geçmek için tıklayın.",
     "missingModelVerificationFailed": "Eksik modeller doğrulanamadı. Bazı modeller Hatalar sekmesinde gösterilmeyebilir.",

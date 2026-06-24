@@ -712,7 +712,6 @@
     "Inputs": "Entradas",
     "Left": "Izquierda",
     "Manage": "Administrar",
-    "Manage Group Nodes": "Administrar Nodos de Grupo",
     "Minimize Node": "Minimizar Nodo",
     "Mode": "Modo",
     "Node Info": "Información del Nodo",
@@ -872,6 +871,7 @@
     "LORA_MODEL": "MODELO_LORA",
     "LOSS_MAP": "MAPA_PÉRDIDAS",
     "LUMA_CONCEPTS": "CONCEPTOS LUMA",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "REFERENCIA LUMA",
     "MASK": "MASK",
     "MESH": "MALLA",
@@ -1830,10 +1830,6 @@
     "zoomOptions": "Opciones de Zoom",
     "zoomOut": "Alejar"
   },
-  "groupNode": {
-    "create": "Crear nodo de grupo",
-    "enterName": "Introduzca el nombre"
-  },
   "help": {
     "helpCenterMenu": "Menú del Centro de Ayuda",
     "recentReleases": "Lanzamientos recientes"
@@ -2563,7 +2559,6 @@
     "Job History": "Historial de trabajos",
     "Load Default Workflow": "Cargar flujo de trabajo predeterminado",
     "Lock Canvas": "Bloquear Lienzo",
-    "Manage group nodes": "Gestionar nodos de grupo",
     "Manager": "Administrador",
     "Manager Menu (Legacy)": "Menú de gestión (heredado)",
     "Minimap": "Minimapa",
@@ -2629,7 +2624,6 @@
     "Toggle View Controls Bottom Panel": "Alternar panel inferior de controles de vista",
     "Toggle promotion of hovered widget": "Alternar promoción del widget sobre el que se pasa el cursor",
     "Undo": "Deshacer",
-    "Ungroup selected group nodes": "Desagrupar nodos de grupo seleccionados",
     "Unload Models": "Descargar modelos",
     "Unload Models and Execution Cache": "Descargar modelos y caché de ejecución",
     "Unlock Canvas": "Desbloquear lienzo",
@@ -3986,6 +3980,7 @@
     "fileTooLarge": "Archivo demasiado grande ({size} MB). El tamaño máximo soportado es {maxSize} MB",
     "fileUploadFailed": "Error al subir el archivo",
     "interrupted": "La ejecución ha sido interrumpida",
+    "invalidTemplateData": "No se pudo cargar la plantilla de nodo: datos no válidos",
     "legacyMaskEditorDeprecated": "El editor de máscaras heredado está obsoleto y se eliminará pronto.",
     "migrateToLitegraphReroute": "Los nodos de reroute se eliminarán en futuras versiones. Haz clic para migrar a reroute nativo de litegraph.",
     "missingModelVerificationFailed": "No se pudo verificar los modelos faltantes. Algunos modelos pueden no aparecer en la pestaña de Errores.",

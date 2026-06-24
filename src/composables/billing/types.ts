@@ -5,11 +5,13 @@ import type {
   BillingStatus,
   BillingSubscriptionStatus,
   CreateTopupResponse,
+  CurrentTeamCreditStop,
   Plan,
   PreviewSubscribeResponse,
   SubscribeResponse,
   SubscriptionDuration,
-  SubscriptionTier
+  SubscriptionTier,
+  TeamCreditStops
 } from '@/platform/workspace/api/workspaceApi'
 
 export type BillingType = 'legacy' | 'workspace'
@@ -71,6 +73,10 @@ export interface BillingState {
   balance: ComputedRef<BalanceInfo | null>
   plans: ComputedRef<Plan[]>
   currentPlanSlug: ComputedRef<string | null>
+  /** Team per-credit pricing ladder; null for personal/legacy. */
+  teamCreditStops: ComputedRef<TeamCreditStops | null>
+  /** The team's currently-subscribed credit stop; null for personal/legacy. */
+  currentTeamCreditStop: ComputedRef<CurrentTeamCreditStop | null>
   isLoading: Ref<boolean>
   error: Ref<string | null>
   isActiveSubscription: ComputedRef<boolean>
@@ -83,5 +89,10 @@ export interface BillingState {
 
 export interface BillingContext extends BillingState, BillingActions {
   type: ComputedRef<BillingType>
+  /**
+   * True when the active team workspace is still on a pre-credit-slider
+   * (legacy) per-member tier plan, which keeps the old team pricing table.
+   */
+  isLegacyTeamPlan: ComputedRef<boolean>
   getMaxSeats: (tierKey: TierKey) => number
 }

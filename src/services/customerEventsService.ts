@@ -3,7 +3,7 @@ import axios from 'axios'
 import { ref, watch } from 'vue'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
-import { d } from '@/i18n'
+import { d, t } from '@/i18n'
 import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
@@ -93,11 +93,16 @@ export const useCustomerEventsService = () => {
   function formatEventType(eventType: string) {
     switch (eventType) {
       case 'credit_added':
-        return 'Credits Added'
+      case 'topup_completed':
+        return t('credits.eventTypes.creditAdded')
       case 'account_created':
-        return 'Account Created'
+        return t('credits.eventTypes.accountCreated')
       case 'api_usage_completed':
-        return 'API Usage'
+        return t('credits.eventTypes.apiUsage')
+      case 'gpu_usage':
+        return t('credits.eventTypes.gpuUsage')
+      case 'api_node_usage':
+        return t('credits.eventTypes.apiNodeUsage')
       default:
         return eventType
     }
@@ -137,10 +142,13 @@ export const useCustomerEventsService = () => {
   function getEventSeverity(eventType: string) {
     switch (eventType) {
       case 'credit_added':
+      case 'topup_completed':
         return 'success'
       case 'account_created':
         return 'info'
       case 'api_usage_completed':
+      case 'gpu_usage':
+      case 'api_node_usage':
         return 'warning'
       default:
         return 'info'
