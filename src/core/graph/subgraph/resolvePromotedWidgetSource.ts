@@ -20,7 +20,7 @@ function hasWidgetId(
   return input?.widgetId !== undefined
 }
 
-export interface ResolvedPromotedWidgetSource {
+interface ResolvedPromotedWidgetSource {
   input: PromotedWidgetInput
   sourceExecutionId?: NodeExecutionId
   sourceNode: LGraphNode

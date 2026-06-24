@@ -117,18 +117,6 @@ export async function expectNoMissingModelUi(comfyPage: ComfyPage) {
   ).toBeHidden()
 }
 
-export async function selectVueComboPromotedModel(
-  comfyPage: ComfyPage,
-  workflow: PromotedMissingModelWorkflow,
-  modelName: string
-) {
-  await selectVueComboPromotedModelByTitle(
-    comfyPage,
-    workflow.hostNodeTitle,
-    modelName
-  )
-}
-
 export async function selectVueComboPromotedModelByTitle(
   comfyPage: ComfyPage,
   nodeTitle: string,
@@ -191,7 +179,73 @@ export async function setLegacyPromotedComboModel(
   workflow: PromotedMissingModelWorkflow,
   modelName: string
 ) {
-  await setLegacyHostPromotedWidgetValue(comfyPage, workflow, modelName)
+  await comfyPage.page.evaluate(
+    ({ hostNodeId, widgetName, value }) => {
+      type LegacyPromotedWidget = {
+        name?: string
+        value?: unknown
+        callback?: (value: string) => void
+        setValue?: (
+          value: string,
+          options: {
+            e: PointerEvent
+            node: unknown
+            canvas: unknown
+          }
+        ) => void
+      }
+      type LegacyPromotedNode = {
+        onWidgetChanged?: (
+          name: string,
+          newValue: string,
+          oldValue: unknown,
+          widget: LegacyPromotedWidget
+        ) => void
+        widgets?: LegacyPromotedWidget[]
+      }
+      type LegacyPromotedGraph = {
+        getNodeById: (nodeId: number) => LegacyPromotedNode | undefined
+      }
+
+      const currentGraph = window.app?.graph as LegacyPromotedGraph | undefined
+      const hostNode: LegacyPromotedNode | undefined =
+        currentGraph?.getNodeById(hostNodeId)
+      if (!hostNode) {
+        throw new Error(`Expected subgraph host node ${hostNodeId}`)
+      }
+
+      const widget = hostNode.widgets?.find(
+        (entry) => entry.name === widgetName
+      ) as LegacyPromotedWidget | undefined
+      if (!widget) {
+        throw new Error(`Expected host ${widgetName} widget`)
+      }
+
+      const oldValue = widget.value
+      if (widget.setValue) {
+        widget.setValue(value, {
+          e: new PointerEvent('pointerup'),
+          node: hostNode,
+          canvas: window.app!.canvas
+        })
+        return
+      }
+
+      widget.value = value
+      widget.callback?.(value)
+      hostNode.onWidgetChanged?.(
+        widget.name ?? widgetName,
+        value,
+        oldValue,
+        widget
+      )
+    },
+    {
+      hostNodeId: workflow.hostNodeId,
+      widgetName: PROMOTED_MODEL_WIDGET_NAME,
+      value: modelName
+    }
+  )
 }
 
 export async function selectLegacyPromotedAssetModel(
@@ -327,80 +381,6 @@ async function selectModelFromFormDropdown(
   await expect(menu).toBeVisible()
   await menu.getByText(nextModelName, { exact: true }).click()
   await expect(menu).toBeHidden()
-}
-
-async function setLegacyHostPromotedWidgetValue(
-  comfyPage: ComfyPage,
-  workflow: PromotedMissingModelWorkflow,
-  value: string
-) {
-  await comfyPage.page.evaluate(
-    ({ hostNodeId, widgetName, value }) => {
-      type LegacyPromotedWidget = {
-        name?: string
-        value?: unknown
-        callback?: (value: string) => void
-        setValue?: (
-          value: string,
-          options: {
-            e: PointerEvent
-            node: unknown
-            canvas: unknown
-          }
-        ) => void
-      }
-      type LegacyPromotedNode = {
-        onWidgetChanged?: (
-          name: string,
-          newValue: string,
-          oldValue: unknown,
-          widget: LegacyPromotedWidget
-        ) => void
-        widgets?: LegacyPromotedWidget[]
-      }
-      type LegacyPromotedGraph = {
-        getNodeById: (nodeId: number) => LegacyPromotedNode | undefined
-      }
-
-      const currentGraph = window.app?.graph as LegacyPromotedGraph | undefined
-      const hostNode: LegacyPromotedNode | undefined =
-        currentGraph?.getNodeById(hostNodeId)
-      if (!hostNode) {
-        throw new Error(`Expected subgraph host node ${hostNodeId}`)
-      }
-
-      const widget = hostNode.widgets?.find(
-        (entry) => entry.name === widgetName
-      ) as LegacyPromotedWidget | undefined
-      if (!widget) {
-        throw new Error(`Expected host ${widgetName} widget`)
-      }
-
-      const oldValue = widget.value
-      if (widget.setValue) {
-        widget.setValue(value, {
-          e: new PointerEvent('pointerup'),
-          node: hostNode,
-          canvas: window.app!.canvas
-        })
-        return
-      }
-
-      widget.value = value
-      widget.callback?.(value)
-      hostNode.onWidgetChanged?.(
-        widget.name ?? widgetName,
-        value,
-        oldValue,
-        widget
-      )
-    },
-    {
-      hostNodeId: workflow.hostNodeId,
-      widgetName: PROMOTED_MODEL_WIDGET_NAME,
-      value
-    }
-  )
 }
 
 async function clickLegacyHostPromotedWidget(

@@ -8,13 +8,9 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import {
   inputForWidget,
-  promotedInputSource,
   promotedInputWidgets
 } from '@/core/graph/subgraph/promotedInputWidget'
-import {
-  buildPromotedSourceExecutionId,
-  resolveConcretePromotedWidget
-} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
@@ -217,33 +213,20 @@ function getModelWidgetScanTarget(
 
   if (!input) return null
 
-  const source = promotedInputSource(node, input)
-  if (!source) return null
-
-  const resolution = resolveConcretePromotedWidget(
-    node,
-    source.nodeId,
-    source.widgetName
-  )
-  if (resolution.status !== 'resolved') return null
-
-  const { node: sourceNode, widget: sourceWidget } = resolution.resolved
-  const sourceExecutionId = buildPromotedSourceExecutionId(
-    executionId,
-    resolution.resolved.nodePath
-  )
+  const source = resolvePromotedWidgetSource(rootGraph, node, widget)
+  const sourceExecutionId = source?.sourceExecutionId
   if (!sourceExecutionId) return null
   if (!isExecutionPathActive(rootGraph, sourceExecutionId)) return null
 
   return {
     executionId,
-    nodeType: sourceNode.type,
+    nodeType: source.sourceNode.type,
     candidateWidgetName: widget.name,
-    definitionWidgetName: sourceWidget.name,
+    definitionWidgetName: source.sourceWidgetName,
     sourceExecutionId,
     valueWidget: widget,
-    definitionWidget: sourceWidget,
-    embeddedModels: getEmbeddedModels(sourceNode)
+    definitionWidget: source.sourceWidget,
+    embeddedModels: getEmbeddedModels(source.sourceNode)
   }
 }
 

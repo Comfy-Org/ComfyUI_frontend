@@ -22,7 +22,6 @@ import {
   loadPromotedMissingModelAndOpenErrorsTab,
   loadPromotedMissingModelWithHostValuesAndOpenErrorsTab,
   selectSectionComboPromotedModel,
-  selectVueComboPromotedModel,
   selectVueComboPromotedModelByTitle,
   setLegacyPromotedComboModel
 } from '@e2e/fixtures/utils/promotedMissingModel'
@@ -460,9 +459,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
             NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.hostNodeId
           )
           await activeHost.centerOnNode()
-          await selectVueComboPromotedModel(
+          await selectVueComboPromotedModelByTitle(
             comfyPage,
-            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.hostNodeTitle,
             RESOLVED_PROMOTED_MODEL_NAME
           )
         })
@@ -493,9 +492,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         })
 
         await test.step('F: changing one missing host leaves the other missing reference', async () => {
-          await selectVueComboPromotedModel(
+          await selectVueComboPromotedModelByTitle(
             comfyPage,
-            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.hostNodeTitle,
             RESOLVED_PROMOTED_MODEL_NAME
           )
           await expectMissingModelReferenceCount(
