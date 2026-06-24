@@ -133,11 +133,12 @@ function renderWidget(
   initialModel: Bounds = { x: 0, y: 0, width: 512, height: 512 }
 ) {
   const value = ref<Bounds>(initialModel)
+  const nodeId = toNodeId(1)
   const Harness = defineComponent({
     components: { WidgetImageCrop },
-    setup: () => ({ value, widget }),
+    setup: () => ({ value, widget, nodeId }),
     template:
-      '<WidgetImageCrop v-model="value" :widget="widget" :node-id="1" />'
+      '<WidgetImageCrop v-model="value" :widget="widget" :node-id="nodeId" />'
   })
   const utils = render(Harness, {
     global: {

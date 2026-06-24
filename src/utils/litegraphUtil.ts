@@ -20,13 +20,13 @@ import type {
   IComboWidget,
   WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { nodeId as toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
@@ -323,7 +323,7 @@ export function getLinkTypeColor(typeName: string): string {
 }
 
 export function resolveNode(
-  nodeId: NodeId,
+  nodeId: SerializedNodeId,
   graph: LGraph | null | undefined = app.rootGraph
 ): LGraphNode | undefined {
   if (!graph) return undefined
@@ -336,7 +336,7 @@ export function resolveNode(
   return undefined
 }
 export function resolveNodeWidget(
-  nodeId: NodeId,
+  nodeId: SerializedNodeId,
   widgetName?: string,
   graph: LGraph = app.rootGraph
 ): [LGraphNode, IBaseWidget] | [LGraphNode] | [] {
