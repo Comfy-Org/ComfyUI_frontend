@@ -1,9 +1,11 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 import { resolveSubgraphInputLink } from './resolveSubgraphInputLink'
 
 type ResolvedSubgraphInputTarget = {
-  nodeId: string
+  nodeId: NodeId
   widgetName: string
 }
 
@@ -17,7 +19,7 @@ export function resolveSubgraphInputTarget(
     ({ inputNode, targetInput, getTargetWidget }) => {
       if (inputNode.isSubgraphNode()) {
         return {
-          nodeId: String(inputNode.id),
+          nodeId: toNodeId(inputNode.id),
           widgetName: targetInput.name
         }
       }
@@ -26,7 +28,7 @@ export function resolveSubgraphInputTarget(
       if (!targetWidget) return undefined
 
       return {
-        nodeId: String(inputNode.id),
+        nodeId: toNodeId(inputNode.id),
         widgetName: targetWidget.name
       }
     }

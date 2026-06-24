@@ -179,6 +179,9 @@ This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g
 23. Favor pure functions (especially testable ones)
 24. Do not use function expressions if it's possible to use function declarations instead
 25. Watch out for [Code Smells](https://wiki.c2.com/?CodeSmell) and refactor to avoid them
+26. Do not add alias helpers whose implementation is just a single-line call to another function
+    - Bad: `function id(value) { return nodeId(value) }`
+    - Use the real function directly, or introduce a named helper only when it adds validation, branching, domain meaning, or shared behavior beyond renaming
 
 ## Design Standards
 

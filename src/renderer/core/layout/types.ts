@@ -266,7 +266,7 @@ export interface LayoutChange {
 // Store interfaces
 export interface LayoutStore {
   // CustomRef accessors for shared write access
-  getNodeLayoutRef(nodeId: SerializedNodeId): Ref<NodeLayout | null>
+  getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
   getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]>
   getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
   getVersion(): ComputedRef<number>
@@ -321,7 +321,7 @@ export interface LayoutStore {
   // Change subscription
   onChange(callback: (change: LayoutChange) => void): () => void
   onNodeChange(
-    nodeId: SerializedNodeId,
+    nodeId: NodeId,
     callback: (change: LayoutChange) => void
   ): () => void
 

@@ -682,9 +682,11 @@ describe('layoutStore getNodeLayoutRef setter', () => {
     layoutStore.initializeFromLiteGraph([])
   })
 
+  const REF_NODE = toNodeId('ref-node')
+
   function baseLayout(): NodeLayout {
     return {
-      id: toNodeId('ref-node'),
+      id: REF_NODE,
       position: { x: 10, y: 20 },
       size: { width: 100, height: 50 },
       zIndex: 0,
@@ -694,7 +696,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
   }
 
   it('creates a node when setter receives a layout for an unknown id', () => {
-    const ref = layoutStore.getNodeLayoutRef('ref-node')
+    const ref = layoutStore.getNodeLayoutRef(REF_NODE)
     const layout = baseLayout()
     expect(ref.value).toBeNull()
 
@@ -704,7 +706,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
 
     expectSingleOperation(operations, {
       type: 'createNode',
-      nodeId: toNodeId('ref-node'),
+      nodeId: REF_NODE,
       layout
     })
     expect(ref.value).toEqual(layout)
@@ -724,7 +726,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       },
       expectedOperation: {
         type: 'moveNode',
-        nodeId: toNodeId('ref-node'),
+        nodeId: REF_NODE,
         position: { x: 99, y: 88 },
         previousPosition: baseLayout().position
       }
@@ -738,7 +740,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       },
       expectedOperation: {
         type: 'resizeNode',
-        nodeId: toNodeId('ref-node'),
+        nodeId: REF_NODE,
         size: { width: 200, height: 80 },
         previousSize: baseLayout().size
       }
@@ -748,7 +750,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       nextLayout: { ...baseLayout(), zIndex: 5 },
       expectedOperation: {
         type: 'setNodeZIndex',
-        nodeId: toNodeId('ref-node'),
+        nodeId: REF_NODE,
         zIndex: 5,
         previousZIndex: 0
       }
@@ -756,7 +758,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
   ])(
     'emits a $name operation for layout-only updates',
     ({ nextLayout, expectedOperation }) => {
-      const ref = layoutStore.getNodeLayoutRef('ref-node')
+      const ref = layoutStore.getNodeLayoutRef(REF_NODE)
       ref.value = baseLayout()
 
       const operations = getOperationsAddedBy(() => {
@@ -769,7 +771,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
   )
 
   it('emits a deleteNode operation when setter receives null', () => {
-    const ref = layoutStore.getNodeLayoutRef('ref-node')
+    const ref = layoutStore.getNodeLayoutRef(REF_NODE)
     const layout = baseLayout()
     ref.value = layout
 
@@ -779,7 +781,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
 
     expectSingleOperation(operations, {
       type: 'deleteNode',
-      nodeId: toNodeId('ref-node'),
+      nodeId: REF_NODE,
       previousLayout: layout
     })
     expect(ref.value).toBeNull()

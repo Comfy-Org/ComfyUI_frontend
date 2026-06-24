@@ -12,6 +12,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
@@ -100,8 +101,7 @@ export function useSelectionToolboxPosition(
       if (item.id == null) continue
 
       if (shouldRenderVueNodes.value && typeof item.id === 'string') {
-        // Use layout store for Vue nodes (only works with string IDs)
-        const layout = layoutStore.getNodeLayoutRef(item.id).value
+        const layout = layoutStore.getNodeLayoutRef(toNodeId(item.id)).value
         if (layout) {
           allBounds.push([
             layout.bounds.x,

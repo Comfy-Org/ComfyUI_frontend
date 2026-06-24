@@ -161,7 +161,7 @@ describe('cloned node z-index in Vue renderer', () => {
     expect(result!.created.length).toBe(1)
 
     const clonedNode = result!.created[0] as LGraphNode
-    const clonedNodeId = String(clonedNode.id)
+    const clonedNodeId = toNodeId(clonedNode.id)
 
     // The cloned node should have a z-index higher than the original
     const clonedLayout = layoutStore.getNodeLayoutRef(clonedNodeId).value
@@ -188,8 +188,8 @@ describe('cloned node z-index in Vue renderer', () => {
 
     const clonedA = result!.created[0] as LGraphNode
     const clonedB = result!.created[1] as LGraphNode
-    const layoutA = layoutStore.getNodeLayoutRef(String(clonedA.id)).value!
-    const layoutB = layoutStore.getNodeLayoutRef(String(clonedB.id)).value!
+    const layoutA = layoutStore.getNodeLayoutRef(toNodeId(clonedA.id)).value!
+    const layoutB = layoutStore.getNodeLayoutRef(toNodeId(clonedB.id)).value!
 
     // Both cloned nodes should be above the highest original (z-index 7)
     expect(layoutA.zIndex).toBeGreaterThan(7)

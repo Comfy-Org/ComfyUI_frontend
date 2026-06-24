@@ -8,6 +8,7 @@ import {
 import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import {
@@ -501,7 +502,7 @@ export class LGraphNode
 
     const mutations = useLayoutMutations()
     mutations.setSource(LayoutSource.Canvas)
-    mutations.moveNode(String(this.id), { x: value[0], y: value[1] })
+    mutations.moveNode(toNodeId(this.id), { x: value[0], y: value[1] })
   }
 
   /**
@@ -523,7 +524,7 @@ export class LGraphNode
 
     const mutations = useLayoutMutations()
     mutations.setSource(LayoutSource.Canvas)
-    mutations.resizeNode(String(this.id), {
+    mutations.resizeNode(toNodeId(this.id), {
       width: value[0],
       height: value[1]
     })
@@ -2947,9 +2948,9 @@ export class LGraphNode
     layoutMutations.setSource(LayoutSource.Canvas)
     layoutMutations.createLink(
       link.id,
-      this.id,
+      toNodeId(this.id),
       outputIndex,
-      inputNode.id,
+      toNodeId(inputNode.id),
       inputIndex
     )
 

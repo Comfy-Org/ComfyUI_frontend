@@ -129,8 +129,8 @@ class LayoutStoreImpl implements LayoutStore {
   private isGlobalDispatchQueued = false
 
   // CustomRef cache and trigger functions
-  private nodeRefs = new Map<string, Ref<NodeLayout | null>>()
-  private nodeTriggers = new Map<string, () => void>()
+  private nodeRefs = new Map<NodeId, Ref<NodeLayout | null>>()
+  private nodeTriggers = new Map<NodeId, () => void>()
 
   // New data structures for hit testing
   private linkLayouts = new Map<LinkId, LinkLayout>()
@@ -186,7 +186,7 @@ class LayoutStoreImpl implements LayoutStore {
 
       // Trigger all affected node refs
       event.changes.keys.forEach((_change: YEventChange, key: string) => {
-        const trigger = this.nodeTriggers.get(key)
+        const trigger = this.nodeTriggers.get(toNodeId(key))
         if (trigger) {
           trigger()
         }
@@ -231,9 +231,8 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Get or create a customRef for a node layout
    */
-  getNodeLayoutRef(rawNodeId: SerializedNodeId): Ref<NodeLayout | null> {
-    const nodeId = toNodeId(rawNodeId)
-    const nodeKey = String(nodeId)
+  getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null> {
+    const nodeKey = nodeId
     let nodeRef = this.nodeRefs.get(nodeKey)
 
     if (!nodeRef) {
@@ -899,7 +898,7 @@ class LayoutStoreImpl implements LayoutStore {
     // Manually trigger affected node refs after transaction
     // This is needed because Yjs observers don't fire for property changes
     change.nodeIds.forEach((nodeId) => {
-      const trigger = this.nodeTriggers.get(String(nodeId))
+      const trigger = this.nodeTriggers.get(nodeId)
       if (trigger) {
         trigger()
       }
@@ -920,10 +919,9 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   onNodeChange(
-    rawNodeId: SerializedNodeId,
+    nodeId: NodeId,
     callback: (change: LayoutChange) => void
   ): () => void {
-    const nodeId = toNodeId(rawNodeId)
     const listenersForNode = this.nodeChangeListeners.get(nodeId) ?? new Set()
     listenersForNode.add(callback)
     this.nodeChangeListeners.set(nodeId, listenersForNode)
@@ -971,10 +969,9 @@ class LayoutStoreImpl implements LayoutStore {
    * Clean up refs and triggers for a node when its Vue component unmounts.
    * This should be called from the component's onUnmounted hook.
    */
-  cleanupNodeRef(rawNodeId: SerializedNodeId): void {
-    const nodeKey = String(toNodeId(rawNodeId))
-    this.nodeRefs.delete(nodeKey)
-    this.nodeTriggers.delete(nodeKey)
+  cleanupNodeRef(nodeId: NodeId): void {
+    this.nodeRefs.delete(nodeId)
+    this.nodeTriggers.delete(nodeId)
   }
 
   /**

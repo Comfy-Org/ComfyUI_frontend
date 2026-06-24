@@ -17,7 +17,7 @@ import type {
 } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
@@ -29,32 +29,34 @@ import type {
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 interface LegacyProxyEntrySource extends PromotedWidgetSource {
-  disambiguatingSourceNodeId?: string
+  disambiguatingSourceNodeId?: NodeId
 }
 
 const LEGACY_PROXY_WIDGET_PREFIX_PATTERN = /^\s*(\d+)\s*:\s*(.+)$/
 
 interface StrippedPrefix {
   sourceWidgetName: string
-  deepestPrefixId?: string
+  deepestPrefixId?: NodeId
 }
 
 function stripLegacyPrefixes(sourceWidgetName: string): StrippedPrefix {
   let remaining = sourceWidgetName
-  let deepestPrefixId: string | undefined
+  let deepestPrefixId: NodeId | undefined
   while (true) {
     const match = LEGACY_PROXY_WIDGET_PREFIX_PATTERN.exec(remaining)
     if (!match) return { sourceWidgetName: remaining, deepestPrefixId }
-    deepestPrefixId = match[1]
+    deepestPrefixId = toNodeId(match[1])
     remaining = match[2]
   }
 }
 
 function canResolveLegacyProxy(
   hostNode: SubgraphNode,
-  sourceNodeId: string,
+  sourceNodeId: SerializedNodeId,
   widgetName: string
 ): boolean {
   return (
@@ -65,24 +67,32 @@ function canResolveLegacyProxy(
 
 export function normalizeLegacyProxyWidgetEntry(
   hostNode: SubgraphNode,
-  sourceNodeId: string,
+  sourceNodeId: SerializedNodeId,
   sourceWidgetName: string,
-  disambiguatingSourceNodeId?: string
+  disambiguatingSourceNodeId?: SerializedNodeId
 ): LegacyProxyEntrySource {
+  const normalizedSourceNodeId = toNodeId(sourceNodeId)
+  const normalizedDisambiguatingSourceNodeId =
+    disambiguatingSourceNodeId === undefined
+      ? undefined
+      : toNodeId(disambiguatingSourceNodeId)
+
   if (canResolveLegacyProxy(hostNode, sourceNodeId, sourceWidgetName)) {
     return {
-      sourceNodeId,
+      sourceNodeId: normalizedSourceNodeId,
       sourceWidgetName,
-      ...(disambiguatingSourceNodeId && { disambiguatingSourceNodeId })
+      ...(normalizedDisambiguatingSourceNodeId && {
+        disambiguatingSourceNodeId: normalizedDisambiguatingSourceNodeId
+      })
     }
   }
 
   const stripped = stripLegacyPrefixes(sourceWidgetName)
   const patchDisambiguatingSourceNodeId =
-    stripped.deepestPrefixId ?? disambiguatingSourceNodeId
+    stripped.deepestPrefixId ?? normalizedDisambiguatingSourceNodeId
 
   return {
-    sourceNodeId,
+    sourceNodeId: normalizedSourceNodeId,
     sourceWidgetName: stripped.sourceWidgetName,
     ...(patchDisambiguatingSourceNodeId && {
       disambiguatingSourceNodeId: patchDisambiguatingSourceNodeId
@@ -262,7 +272,7 @@ function collectTargetsStrict(
     const link = subgraph.links.get(linkId)
     if (!link) return undefined
     targets.push({
-      targetNodeId: link.target_id,
+      targetNodeId: toNodeId(link.target_id),
       targetSlot: link.target_slot
     })
   }
@@ -278,14 +288,19 @@ function collectTargetsSkippingDangling(
   return linkIds.flatMap((linkId) => {
     const link = subgraph.links.get(linkId)
     return link
-      ? [{ targetNodeId: link.target_id, targetSlot: link.target_slot }]
+      ? [
+          {
+            targetNodeId: toNodeId(link.target_id),
+            targetSlot: link.target_slot
+          }
+        ]
       : []
   })
 }
 
 function cohortDuplicatesPrimitive(
   cohort: readonly LegacyProxyEntrySource[],
-  primitiveNodeId: string
+  primitiveNodeId: NodeId
 ): boolean {
   return (
     cohort.filter((entry) => entry.sourceNodeId === primitiveNodeId).length >= 2
@@ -330,7 +345,7 @@ function classify(
     if (targets.length >= 1 || cohortDuplicated) {
       return {
         kind: 'primitiveBypass',
-        primitiveNodeId: sourceNode.id,
+        primitiveNodeId: toNodeId(sourceNode.id),
         sourceWidgetName: normalized.sourceWidgetName,
         targets
       }
@@ -603,7 +618,7 @@ function repairPrimitive(
     .filter((l): l is NonNullable<typeof l> => l !== undefined)
     .map((l) => ({
       primitiveSlot: l.origin_slot,
-      targetNodeId: l.target_id,
+      targetNodeId: toNodeId(l.target_id),
       targetSlot: l.target_slot
     }))
 

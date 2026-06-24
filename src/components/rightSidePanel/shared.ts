@@ -5,8 +5,10 @@ import type { IFuseOptions } from 'fuse.js'
 
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
@@ -92,7 +94,7 @@ export function searchWidgetsAndNodes(
   }
 
   const searchableList: NodeSearchItem[] = list.map((item) => ({
-    nodeId: item.node.id,
+    nodeId: toNodeId(item.node.id),
     searchableTitle: (item.node.getTitle() ?? '').toLowerCase()
   }))
 
@@ -108,8 +110,8 @@ export function searchWidgetsAndNodes(
   )
 
   return list
-    .map((item) => {
-      if (matchedNodeIds.has(item.node.id)) {
+    .map((item, index) => {
+      if (matchedNodeIds.has(searchableList[index].nodeId)) {
         return { ...item, keep: true }
       }
       return {

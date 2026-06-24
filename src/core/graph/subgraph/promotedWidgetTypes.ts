@@ -1,5 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { NodeId } from '@/types/nodeId'
 
 export interface ResolvedPromotedWidget {
   node: LGraphNode
@@ -12,6 +13,6 @@ export interface ResolvedPromotedWidget {
  * the source is a stored tuple rather than something link-derivable.
  */
 export interface PromotedWidgetSource {
-  sourceNodeId: string
+  sourceNodeId: NodeId
   sourceWidgetName: string
 }

@@ -18,6 +18,8 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -33,7 +35,7 @@ export function getWidgetName(w: IBaseWidget): string {
 
 export function isLinkedPromotion(
   subgraphNode: SubgraphNode,
-  sourceNodeId: string,
+  sourceNodeId: SerializedNodeId,
   sourceWidgetName: string
 ): boolean {
   return (
@@ -44,9 +46,10 @@ export function isLinkedPromotion(
 
 export function findHostInputForPromotion(
   subgraphNode: SubgraphNode,
-  sourceNodeId: string,
+  rawSourceNodeId: SerializedNodeId,
   sourceWidgetName: string
 ) {
+  const sourceNodeId = toNodeId(rawSourceNodeId)
   return subgraphNode.inputs.find((input) => {
     const source = input._subgraphSlot
       ? resolvePromotionSource(subgraphNode, input._subgraphSlot)
@@ -74,7 +77,7 @@ function resolvePromotionSource(
 
     if (inputNode.isSubgraphNode()) {
       return {
-        sourceNodeId: String(inputNode.id),
+        sourceNodeId: toNodeId(inputNode.id),
         sourceWidgetName: targetInput.name
       }
     }
@@ -83,7 +86,7 @@ function resolvePromotionSource(
     if (!targetWidget) continue
 
     return {
-      sourceNodeId: String(inputNode.id),
+      sourceNodeId: toNodeId(inputNode.id),
       sourceWidgetName: targetWidget.name
     }
   }
@@ -212,7 +215,7 @@ function toPromotionSource(
   widget: IBaseWidget
 ): PromotedWidgetSource {
   return {
-    sourceNodeId: String(node.id),
+    sourceNodeId: toNodeId(node.id),
     sourceWidgetName: getWidgetName(widget)
   }
 }
@@ -235,9 +238,7 @@ export function promoteValueWidgetViaSubgraphInput(
   sourceWidget: IBaseWidget
 ): CanonicalPromotionResult {
   const sourceWidgetName = getWidgetName(sourceWidget)
-  if (
-    isLinkedPromotion(subgraphNode, String(sourceNode.id), sourceWidgetName)
-  ) {
+  if (isLinkedPromotion(subgraphNode, sourceNode.id, sourceWidgetName)) {
     return { ok: true }
   }
 
@@ -315,7 +316,7 @@ function promotePreviewViaExposure(
   if (existing) return
 
   store.addExposure(rootGraphId, hostLocator, {
-    sourceNodeId: String(sourceNode.id),
+    sourceNodeId: sourceNode.id,
     sourcePreviewName
   })
 }
@@ -603,7 +604,7 @@ export function pruneDisconnected(subgraphNode: SubgraphNode) {
     if (!hostInput?.widgetId && !hostInput?._widget) return false
 
     removedEntries.push({
-      sourceNodeId: String(subgraphNode.id),
+      sourceNodeId: toNodeId(subgraphNode.id),
       sourceWidgetName: input.name
     })
     return true
@@ -643,7 +644,7 @@ export function hasUnpromotedWidgets(subgraphNode: SubgraphNode): boolean {
         !isWidgetPromotedOnSubgraphNode(
           subgraphNode,
           {
-            sourceNodeId: String(interiorNode.id),
+            sourceNodeId: toNodeId(interiorNode.id),
             sourceWidgetName: widget.name
           },
           widget

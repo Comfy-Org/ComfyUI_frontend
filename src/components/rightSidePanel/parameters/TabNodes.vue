@@ -4,11 +4,13 @@ import { computed, reactive, ref, shallowRef, watch } from 'vue'
 
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
@@ -56,12 +58,12 @@ function setSectionCollapsed(nodeId: NodeId, collapsed: boolean) {
 const isAllCollapsed = computed({
   get() {
     return searchedWidgetsSectionDataList.value.every(({ node }) =>
-      isSectionCollapsed(node.id)
+      isSectionCollapsed(toNodeId(node.id))
     )
   },
   set(collapse: boolean) {
     for (const { node } of widgetsSectionDataList.value) {
-      setSectionCollapsed(node.id, collapse)
+      setSectionCollapsed(toNodeId(node.id), collapse)
     }
   }
 })
@@ -101,7 +103,7 @@ async function searcher(query: string) {
       :key="node.id"
       :node
       :widgets
-      :collapse="isSectionCollapsed(node.id) && !isSearching"
+      :collapse="isSectionCollapsed(toNodeId(node.id)) && !isSearching"
       :tooltip="
         isSearching || widgets.length
           ? ''
@@ -109,7 +111,7 @@ async function searcher(query: string) {
       "
       show-locate-button
       class="border-b border-interface-stroke"
-      @update:collapse="setSectionCollapsed(node.id, $event)"
+      @update:collapse="setSectionCollapsed(toNodeId(node.id), $event)"
     />
   </TransitionGroup>
 </template>

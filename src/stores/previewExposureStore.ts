@@ -9,6 +9,8 @@ import { resolvePreviewExposureChain } from '@/core/graph/subgraph/preview/previ
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { PreviewExposure } from '@/core/schemas/previewExposureSchema'
 import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 const EMPTY_EXPOSURES: readonly PreviewExposure[] = Object.freeze([])
@@ -62,7 +64,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
   function addExposure(
     rootGraphId: UUID,
     hostNodeLocator: string,
-    source: { sourceNodeId: string; sourcePreviewName: string }
+    source: { sourceNodeId: SerializedNodeId; sourcePreviewName: string }
   ): PreviewExposure {
     const hosts = _getHostsForGraph(rootGraphId)
     const current = hosts.get(hostNodeLocator) ?? []
@@ -70,7 +72,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     const name = nextUniqueName(source.sourcePreviewName, existingNames)
     const entry: PreviewExposure = {
       name,
-      sourceNodeId: source.sourceNodeId,
+      sourceNodeId: toNodeId(source.sourceNodeId),
       sourcePreviewName: source.sourcePreviewName
     }
     hosts.set(hostNodeLocator, [...current, entry])
@@ -98,7 +100,7 @@ export const usePreviewExposureStore = defineStore('previewExposure', () => {
     hostNodeLocator: string
   ): PromotedWidgetSource[] {
     return getExposures(rootGraphId, hostNodeLocator).map((exposure) => ({
-      sourceNodeId: exposure.sourceNodeId,
+      sourceNodeId: toNodeId(exposure.sourceNodeId),
       sourceWidgetName: exposure.sourcePreviewName
     }))
   }

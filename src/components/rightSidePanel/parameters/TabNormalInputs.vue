@@ -3,11 +3,13 @@ import { storeToRefs } from 'pinia'
 import { computed, reactive, ref, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
 import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 import { computedSectionDataList, searchWidgetsAndNodes } from '../shared'
 import type { NodeWidgetsListList } from '../shared'
@@ -80,7 +82,7 @@ function setSectionCollapsed(nodeId: NodeId, collapsed: boolean) {
 const isAllCollapsed = computed({
   get() {
     const normalAllCollapsed = searchedWidgetsSectionDataList.value.every(
-      ({ node }) => isSectionCollapsed(node.id)
+      ({ node }) => isSectionCollapsed(toNodeId(node.id))
     )
     const hasAdvanced = advancedWidgetsSectionDataList.value.length > 0
     return hasAdvanced
@@ -89,7 +91,7 @@ const isAllCollapsed = computed({
   },
   set(collapse: boolean) {
     for (const { node } of widgetsSectionDataList.value) {
-      setSectionCollapsed(node.id, collapse)
+      setSectionCollapsed(toNodeId(node.id), collapse)
     }
     advancedCollapsed.value = collapse
   }
@@ -154,7 +156,7 @@ const advancedLabel = computed(() => {
       :node
       :label
       :widgets
-      :collapse="isSectionCollapsed(node.id) && !isSearching"
+      :collapse="isSectionCollapsed(toNodeId(node.id)) && !isSearching"
       :show-locate-button="isMultipleNodesSelected"
       :tooltip="
         isSearching || widgets.length
@@ -162,7 +164,7 @@ const advancedLabel = computed(() => {
           : t('rightSidePanel.inputsNoneTooltip')
       "
       class="border-b border-interface-stroke"
-      @update:collapse="setSectionCollapsed(node.id, $event)"
+      @update:collapse="setSectionCollapsed(toNodeId(node.id), $event)"
     />
   </TransitionGroup>
   <template v-if="advancedWidgetsSectionDataList.length > 0 && !isSearching">

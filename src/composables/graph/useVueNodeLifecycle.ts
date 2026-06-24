@@ -10,6 +10,7 @@ import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMuta
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLayoutSync } from '@/renderer/core/layout/sync/useLayoutSync'
 import { app as comfyApp } from '@/scripts/app'
+import { nodeId as toNodeId } from '@/types/nodeId'
 
 function useVueNodeLifecycleIndividual() {
   const canvasStore = useCanvasStore()
@@ -47,9 +48,9 @@ function useVueNodeLifecycleIndividual() {
     for (const link of activeGraph._links.values()) {
       layoutMutations.createLink(
         link.id,
-        link.origin_id,
+        toNodeId(link.origin_id),
         link.origin_slot,
-        link.target_id,
+        toNodeId(link.target_id),
         link.target_slot
       )
     }
