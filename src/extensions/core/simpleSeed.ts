@@ -15,13 +15,13 @@ useExtensionService().registerExtension({
 
     nodeType.prototype.onNodeCreated = useChainCallback(
       nodeType.prototype.onNodeCreated,
-      function (this: any) {
+      function (this: LGraphNode) {
         this.addWidget(
           'button',
           t('g.randomizeSeed'),
           '',
           () => {
-            const seedWidget = this.widgets?.find((w: any) => w.name === 'seed')
+            const seedWidget = this.widgets?.find((w) => w.name === 'seed')
 
             if (seedWidget) {
               const min = typeof seedWidget.options?.min === 'number' ? seedWidget.options.min : 0
