@@ -38,18 +38,26 @@ const billingNote = computed(() => {
       <span class="font-formula text-5xl font-light text-primary-comfy-canvas">
         {{ price }}
       </span>
-      <span
-        v-if="originalPrice"
-        class="font-formula text-primary-warm-gray text-sm font-light line-through"
-      >
-        {{ originalPrice }}
-      </span>
-      <span class="text-primary-warm-white text-sm">
-        {{ period }}
-      </span>
-      <span v-if="discount" class="text-primary-comfy-yellow ml-2 text-sm">
-        {{ discount }}
-      </span>
+      <div class="flex gap-2 max-sm:flex-col">
+        <div class="flex items-baseline gap-2">
+          <span
+            v-if="originalPrice"
+            class="font-formula text-primary-warm-gray text-sm font-light line-through"
+          >
+            {{ originalPrice }}
+          </span>
+          <span class="text-primary-warm-white text-sm">
+            {{ period }}
+          </span>
+        </div>
+
+        <span
+          v-if="discount"
+          class="text-primary-comfy-yellow text-sm max-sm:text-xs sm:ml-2"
+        >
+          {{ discount }}
+        </span>
+      </div>
     </div>
     <p v-if="billingNote" class="text-primary-warm-gray mt-2 text-sm">
       {{ billingNote }}

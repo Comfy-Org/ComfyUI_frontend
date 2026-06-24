@@ -112,7 +112,10 @@ const ctaHref = `${externalLinks.cloud}/cloud/subscribe?tier=team&cycle=monthly`
             <div
               v-for="(tier, i) in teamCreditTiers"
               :key="tier.credits"
-              class="absolute top-0 flex items-center gap-1.5"
+              :class="[
+                'absolute top-0 inline-flex items-center gap-1.5',
+                'max-lg:-translate-x-[calc(50%-8px)]'
+              ]"
               :style="{
                 left: `calc(${i / (teamCreditTiers.length - 1)} * (100% - 16px))`
               }"
@@ -126,7 +129,7 @@ const ctaHref = `${externalLinks.cloud}/cloud/subscribe?tier=team&cycle=monthly`
                 "
               />
               <span
-                class="text-sm"
+                class="text-[10px]"
                 :class="
                   i === teamCreditTierIndex[0]
                     ? 'text-primary-warm-white'
