@@ -35,9 +35,10 @@ defineProps<{
             {{ faq.question }}
           </AccordionTrigger>
           <AccordionContent>
-            <p class="text-sm whitespace-pre-line text-primary-comfy-canvas/70">
-              {{ faq.answer }}
-            </p>
+            <p
+              class="text-sm whitespace-pre-line text-primary-comfy-canvas/70"
+              v-html="faq.answer"
+            />
           </AccordionContent>
         </AccordionItem>
       </Accordion>

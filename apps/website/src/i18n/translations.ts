@@ -1465,6 +1465,11 @@ const translations = {
     'zh-CN': '并行运行多个工作流，加速你的流程。'
   },
 
+  'pricing.faq.heading': {
+    en: 'Q&A',
+    'zh-CN': '问答'
+  },
+
   // VideoPlayer
   'player.play': { en: 'Play', 'zh-CN': '播放' },
   'player.pause': { en: 'Pause', 'zh-CN': '暂停' },
