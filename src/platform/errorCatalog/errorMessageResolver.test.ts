@@ -7,31 +7,32 @@ import {
 import type { NodeValidationError } from './types'
 import { i18n } from '@/i18n'
 
-function requiredInputMissing(inputName?: string): NodeValidationError {
-  return {
-    type: 'required_input_missing',
-    message: 'Required input is missing',
-    details: inputName ?? '',
-    extra_info: inputName
+function nodeValidationError(
+  type: string,
+  inputName?: string,
+  details = inputName ?? '',
+  extraInfo: Record<string, unknown> = {}
+): NodeValidationError {
+  const extra_info =
+    inputName || Object.keys(extraInfo).length > 0
       ? {
-          input_name: inputName
+          ...(inputName ? { input_name: inputName } : {}),
+          ...extraInfo
         }
       : undefined
+
+  return {
+    type,
+    message: 'Validation failed',
+    details,
+    extra_info
   }
 }
 
-function runtimeError() {
+function requiredInputMissing(inputName?: string): NodeValidationError {
   return {
-    prompt_id: 'test',
-    timestamp: Date.now(),
-    node_id: 1,
-    node_type: 'KSampler',
-    executed: [],
-    exception_type: 'RuntimeError',
-    exception_message: 'CUDA out of memory',
-    traceback: [],
-    current_inputs: {},
-    current_outputs: {}
+    ...nodeValidationError('required_input_missing', inputName),
+    message: 'Required input is missing'
   }
 }
 
@@ -68,7 +69,7 @@ describe('errorMessageResolver', () => {
     })
   })
 
-  it('interpolates fallback templates when catalog keys are missing in the active locale', () => {
+  it('falls back to raw API copy when catalog keys are missing in the active locale', () => {
     const originalLocale = i18n.global.locale.value
     const originalKoMessages = i18n.global.getLocaleMessage('ko')
 
@@ -83,9 +84,12 @@ describe('errorMessageResolver', () => {
           nodeDisplayName: '0'
         })
       ).toMatchObject({
-        displayDetails: '0 is missing a required input: seed',
+        displayTitle: 'Required input is missing',
+        displayMessage: 'Required input is missing',
+        displayDetails: 'seed',
         displayItemLabel: '0 - seed',
-        toastMessage: '0 is missing a required input: seed'
+        toastTitle: 'Required input is missing',
+        toastMessage: 'Required input is missing'
       })
     } finally {
       i18n.global.setLocaleMessage('ko', originalKoMessages)
@@ -93,34 +97,348 @@ describe('errorMessageResolver', () => {
     }
   })
 
-  it('resolves runtime errors with item labels and toast copy', () => {
+  it.for([
+    {
+      type: 'bad_linked_input',
+      inputName: 'model',
+      expected: {
+        catalogId: 'bad_linked_input',
+        displayTitle: 'Invalid connection',
+        displayMessage: 'A node connection could not be read correctly.',
+        displayDetails: 'KSampler has an invalid connection for model.',
+        displayItemLabel: 'KSampler - model',
+        toastTitle: 'Invalid connection',
+        toastMessage: 'KSampler has an invalid connection for model.'
+      }
+    },
+    {
+      type: 'value_not_in_list',
+      inputName: 'scheduler',
+      expected: {
+        catalogId: 'value_not_in_list',
+        displayTitle: 'Invalid input',
+        displayMessage: 'Some input values are not available for this node.',
+        displayDetails: 'KSampler has an unsupported value for scheduler.',
+        displayItemLabel: 'KSampler - scheduler',
+        toastTitle: 'Invalid input',
+        toastMessage: 'KSampler has an unsupported value for scheduler.'
+      }
+    },
+    {
+      type: 'value_smaller_than_min',
+      inputName: 'steps',
+      expected: {
+        catalogId: 'value_smaller_than_min',
+        displayTitle: 'Input out of range',
+        displayMessage: 'Some input values are outside the allowed range.',
+        displayDetails: 'KSampler has a value below the minimum for steps.',
+        displayItemLabel: 'KSampler - steps',
+        toastTitle: 'Input out of range',
+        toastMessage: 'KSampler has a value below the minimum for steps.'
+      }
+    },
+    {
+      type: 'return_type_mismatch',
+      inputName: 'model',
+      expected: {
+        catalogId: 'return_type_mismatch',
+        displayTitle: 'Invalid connection',
+        displayMessage:
+          'Connected nodes are using incompatible input and output types.',
+        displayDetails: 'KSampler has an incompatible connection for model.',
+        displayItemLabel: 'KSampler - model',
+        toastTitle: 'Invalid connection',
+        toastMessage: 'KSampler has an incompatible connection for model.'
+      }
+    }
+  ])('resolves $type validation errors', ({ type, inputName, expected }) => {
     expect(
       resolveRunErrorMessage({
-        kind: 'execution',
-        isCloud: true,
-        nodeDisplayName: 'KSampler',
-        error: runtimeError()
+        kind: 'node_validation',
+        error: nodeValidationError(type, inputName),
+        nodeDisplayName: 'KSampler'
       })
-    ).toEqual({
-      catalogId: 'execution_failed',
-      displayItemLabel: 'KSampler',
-      toastTitle: 'KSampler failed',
+    ).toEqual(expected)
+  })
+
+  it('includes received values in validation range and option details', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'return_type_mismatch',
+          'images',
+          'images, received_type(LATENT) mismatch input_type(IMAGE)',
+          {
+            input_config: ['IMAGE', {}],
+            received_type: 'LATENT'
+          }
+        ),
+        nodeDisplayName: 'Preview Image'
+      })
+    ).toMatchObject({
+      displayDetails:
+        "Preview Image's images input expects IMAGE, but the connected output is LATENT.",
       toastMessage:
-        'This node threw an error during execution. Check its inputs or try a different configuration. No credits charged.'
+        "Preview Image's images input expects IMAGE, but the connected output is LATENT."
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'invalid_input_type',
+          'steps',
+          "steps, abc, invalid literal for int() with base 10: 'abc'",
+          {
+            input_config: ['INT', {}],
+            received_value: 'abc'
+          }
+        ),
+        nodeDisplayName: 'KSampler'
+      })
+    ).toMatchObject({
+      displayDetails:
+        "The value abc for KSampler's steps couldn't be converted to INT.",
+      toastMessage:
+        "The value abc for KSampler's steps couldn't be converted to INT."
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError('value_smaller_than_min', 'steps', 'steps', {
+          input_config: ['INT', { min: 1 }],
+          received_value: 0
+        }),
+        nodeDisplayName: 'KSampler'
+      })
+    ).toMatchObject({
+      displayDetails:
+        "The value 0 for KSampler's steps is below the minimum 1.",
+      toastMessage: "The value 0 for KSampler's steps is below the minimum 1."
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError('value_bigger_than_max', 'cfg', 'cfg', {
+          input_config: ['FLOAT', { max: 30 }],
+          received_value: 40
+        }),
+        nodeDisplayName: 'KSampler'
+      })
+    ).toMatchObject({
+      displayDetails:
+        "The value 40 for KSampler's cfg is above the maximum 30.",
+      toastMessage: "The value 40 for KSampler's cfg is above the maximum 30."
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'value_not_in_list',
+          'scheduler',
+          'scheduler',
+          {
+            received_value: 'not-a-scheduler'
+          }
+        ),
+        nodeDisplayName: 'KSampler'
+      })
+    ).toMatchObject({
+      displayDetails:
+        "The value not-a-scheduler for KSampler's scheduler is not available.",
+      toastMessage:
+        "The value not-a-scheduler for KSampler's scheduler is not available."
     })
   })
 
-  it('resolves local runtime errors without cloud credit copy', () => {
+  it('falls back to generic copy when structured values cannot be formatted', () => {
+    const circularValue: Record<string, unknown> = {}
+    circularValue.self = circularValue
+
     expect(
       resolveRunErrorMessage({
-        kind: 'execution',
-        isCloud: false,
-        nodeDisplayName: 'KSampler',
-        error: runtimeError()
-      }).toastMessage
-    ).toBe(
-      'This node threw an error during execution. Check its inputs or try a different configuration.'
-    )
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'invalid_input_type',
+          'steps',
+          "steps, [object Object], invalid literal for int() with base 10: 'abc'",
+          {
+            input_config: ['INT', {}],
+            received_value: circularValue
+          }
+        ),
+        nodeDisplayName: 'KSampler'
+      })
+    ).toMatchObject({
+      displayDetails: "KSampler couldn't convert steps to the expected type.",
+      toastMessage: "KSampler couldn't convert steps to the expected type."
+    })
+  })
+
+  it('includes raw details when validation itself fails unexpectedly', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'exception_during_inner_validation',
+          'images',
+          'list index out of range'
+        ),
+        nodeDisplayName: 'Image Scale'
+      })
+    ).toMatchObject({
+      displayTitle: 'Validation failed',
+      displayMessage: "The workflow couldn't validate a connected node.",
+      displayDetails:
+        "Image Scale couldn't validate images: list index out of range",
+      displayItemLabel: 'Image Scale - images',
+      toastTitle: 'Validation failed',
+      toastMessage:
+        "Image Scale couldn't validate images: list index out of range"
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'exception_during_validation',
+          undefined,
+          'tuple index out of range'
+        ),
+        nodeDisplayName: 'Preview Image'
+      })
+    ).toMatchObject({
+      displayTitle: 'Validation failed',
+      displayMessage:
+        'The workflow could not be validated because a node validation check failed unexpectedly.',
+      displayDetails:
+        'Preview Image failed during validation: tuple index out of range',
+      displayItemLabel: 'Preview Image',
+      toastTitle: 'Validation failed',
+      toastMessage:
+        'Preview Image failed during validation: tuple index out of range'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'exception_during_validation',
+          undefined,
+          ''
+        ),
+        nodeDisplayName: 'Preview Image'
+      })
+    ).toMatchObject({
+      displayDetails: 'Preview Image failed during validation.',
+      toastMessage: 'Preview Image failed during validation.'
+    })
+  })
+
+  it('resolves custom validation image failures as image-not-loaded copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'custom_validation_failed',
+          'image',
+          'image - Invalid image file: broken.png'
+        ),
+        nodeDisplayName: 'Load Image'
+      })
+    ).toMatchObject({
+      catalogId: 'image_not_loaded',
+      displayTitle: 'Image not loaded',
+      displayMessage: "The system couldn't load this image.",
+      displayDetails:
+        "The image for Load Image couldn't be loaded. Try adding it again.",
+      displayItemLabel: 'Load Image',
+      toastTitle: "Input image couldn't be loaded"
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'custom_validation_failed',
+          'image',
+          "[Errno 21] Is a directory: '/app/comfyui/input'"
+        ),
+        nodeDisplayName: 'Load Image'
+      })
+    ).toMatchObject({
+      catalogId: 'image_not_loaded',
+      displayTitle: 'Image not loaded',
+      displayMessage: "The system couldn't load this image.",
+      displayItemLabel: 'Load Image'
+    })
+  })
+
+  it('includes raw details for generic custom validation failures', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'custom_validation_failed',
+          'setting',
+          'setting - Unsupported lab value: bad-value'
+        ),
+        nodeDisplayName: 'Custom Validation Error'
+      })
+    ).toMatchObject({
+      catalogId: 'custom_validation_failed',
+      displayTitle: 'Invalid input',
+      displayMessage: 'A node rejected one or more input values.',
+      displayDetails:
+        'Custom Validation Error failed custom validation: setting - Unsupported lab value: bad-value',
+      displayItemLabel: 'Custom Validation Error - setting',
+      toastTitle: 'Invalid input',
+      toastMessage: 'Custom Validation Error rejected the value for setting.'
+    })
+  })
+
+  it('does not treat raw details as the input name when input metadata is missing', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'custom_validation_failed',
+          undefined,
+          'Traceback line 1\nTraceback line 2'
+        ),
+        nodeDisplayName: 'Custom Validation Error'
+      })
+    ).toMatchObject({
+      displayItemLabel: 'Custom Validation Error - unknown input',
+      toastMessage:
+        'Custom Validation Error rejected the value for unknown input.'
+    })
+  })
+
+  it('includes raw cycle paths for dependency cycle details', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'node_validation',
+        error: nodeValidationError(
+          'dependency_cycle',
+          undefined,
+          '7 (ImageScale) -> 7 (ImageScale)'
+        ),
+        nodeDisplayName: 'Image Scale'
+      })
+    ).toMatchObject({
+      displayTitle: 'Invalid workflow',
+      displayMessage: 'The workflow has a circular node connection.',
+      displayDetails:
+        'Image Scale is part of a circular connection: 7 (ImageScale) to 7 (ImageScale)',
+      displayItemLabel: 'Image Scale',
+      toastTitle: 'Invalid workflow',
+      toastMessage: 'Image Scale is part of a circular connection.'
+    })
   })
 
   it('resolves known prompt errors with run error rules', () => {
@@ -135,6 +453,7 @@ describe('errorMessageResolver', () => {
         }
       })
     ).toEqual({
+      displayTitle: 'Prompt has no outputs',
       displayMessage:
         'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
     })
@@ -180,6 +499,91 @@ describe('errorMessageResolver', () => {
         }
       })
     ).toEqual({})
+  })
+
+  it('resolves newly cataloged prompt-level errors', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'missing_node_type',
+          message:
+            "Node 'ID #4' has no class_type. The workflow may be corrupted or a custom node is missing.",
+          details: "Node ID '#4'"
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Missing node type',
+      displayMessage:
+        'A node type is missing or unavailable. The workflow may be corrupted or require a custom node.'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'OOMError',
+          message: 'OOMError: Workflow execution failed',
+          details: ''
+        }
+      })
+    ).toEqual({
+      catalogId: 'out_of_memory',
+      displayTitle: 'Generation failed',
+      displayMessage:
+        'Not enough GPU memory. Try reducing complexity and run again. No credits charged.'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: false,
+        error: {
+          type: 'OOMError',
+          message: 'OOMError: Workflow execution failed',
+          details: ''
+        }
+      })
+    ).toEqual({
+      catalogId: 'out_of_memory',
+      displayTitle: 'Generation failed',
+      displayMessage:
+        'Not enough GPU memory. Try reducing complexity and run again.'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'ImageDownloadError',
+          message: 'ImageDownloadError: Failed to validate images',
+          details: ''
+        }
+      })
+    ).toEqual({
+      catalogId: 'image_not_loaded',
+      displayTitle: 'Image not loaded',
+      displayMessage: "The system couldn't load this image."
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'prompt_outputs_failed_validation',
+          message: 'Prompt outputs failed validation',
+          details: ''
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Prompt validation failed',
+      displayMessage:
+        'The workflow has invalid node inputs. Fix the highlighted nodes before running it again.'
+    })
   })
 
   it('resolves missing error group display copy', () => {
