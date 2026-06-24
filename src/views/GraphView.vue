@@ -24,7 +24,7 @@
       <BuilderMenu />
       <BuilderFooterToolbar />
     </template>
-    <Teleport v-if="actionsToggleVisible" :to="actionsToggleTarget">
+    <Teleport v-if="actionsToggleVisible" defer :to="actionsToggleTarget">
       <WorkflowActionsDropdown :source="actionsToggleSource" />
     </Teleport>
   </div>

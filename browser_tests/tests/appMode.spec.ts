@@ -211,6 +211,22 @@ test.describe('App mode usage', () => {
     ).toHaveAttribute('data-identity', 'persist')
   })
 
+  test('Mode toggle returns to app mode after exiting the builder', async ({
+    comfyPage
+  }) => {
+    const toggle = comfyPage.page.getByTestId('view-mode-toggle')
+    await comfyPage.appMode.enableLinearMode()
+    await expect(toggle).toBeVisible()
+
+    await comfyPage.appMode.enterBuilder()
+    await expect(toggle).toBeHidden()
+
+    // The builder host unmounts the toggle; on exit the teleport must re-resolve
+    // its app-mode host even though that host re-mounts after GraphView updates.
+    await comfyPage.appMode.footer.exitButton.click()
+    await expect(toggle).toBeVisible()
+  })
+
   test.describe('Mobile', { tag: ['@mobile'] }, () => {
     test('panel navigation', async ({ comfyPage }) => {
       const { mobile } = comfyPage.appMode
