@@ -601,7 +601,7 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     const widget = createMockWidget({
       name: 'display_slot',
       nodeId: NODE_ID,
-      sourceExecutionId: '65:18',
+      sourceExecutionId: createNodeExecutionId([65, 18]),
       sourceWidgetName: 'ckpt_name'
     })
 
@@ -612,14 +612,14 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     processed.updateHandler('real_model.safetensors')
 
     expect(clearSpy).toHaveBeenCalledWith(
-      '65:18',
+      createNodeExecutionId([65, 18]),
       'ckpt_name',
       'ckpt_name',
       'real_model.safetensors',
       { min: undefined, max: undefined }
     )
     expect(clearSpy).toHaveBeenCalledWith(
-      NODE_ID,
+      createNodeExecutionId([NODE_ID]),
       'display_slot',
       'display_slot',
       'real_model.safetensors',

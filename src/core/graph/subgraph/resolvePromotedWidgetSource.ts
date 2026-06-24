@@ -1,10 +1,14 @@
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 import { inputForWidget, promotedInputSource } from './promotedInputWidget'
-import { resolveConcretePromotedWidget } from './resolveConcretePromotedWidget'
+import {
+  buildPromotedSourceExecutionId,
+  resolveConcretePromotedWidget
+} from './resolveConcretePromotedWidget'
 
 type PromotedWidgetInput = INodeInputSlot & {
   widgetId: NonNullable<INodeInputSlot['widgetId']>
@@ -18,7 +22,7 @@ function hasWidgetId(
 
 export interface ResolvedPromotedWidgetSource {
   input: PromotedWidgetInput
-  sourceExecutionId?: string
+  sourceExecutionId?: NodeExecutionId
   sourceNode: LGraphNode
   sourceWidget: IBaseWidget
   sourceWidgetName: string
@@ -45,10 +49,16 @@ export function resolvePromotedWidgetSource(
   if (resolution.status !== 'resolved') return undefined
 
   const { node: sourceNode, widget: sourceWidget } = resolution.resolved
+  const hostExecutionId = rootGraph
+    ? getExecutionIdByNode(rootGraph, node)
+    : undefined
   return {
     input,
-    sourceExecutionId: rootGraph
-      ? (getExecutionIdByNode(rootGraph, sourceNode) ?? undefined)
+    sourceExecutionId: hostExecutionId
+      ? buildPromotedSourceExecutionId(
+          hostExecutionId,
+          resolution.resolved.nodePath
+        )
       : undefined,
     sourceNode,
     sourceWidget,

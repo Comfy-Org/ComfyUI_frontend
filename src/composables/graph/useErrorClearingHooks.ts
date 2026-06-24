@@ -6,7 +6,7 @@
  * works in legacy canvas mode as well.
  */
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -34,7 +34,6 @@ import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacem
 import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { appendNodeExecutionId } from '@/types/nodeIdentification'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import {
   collectAllNodes,
@@ -85,16 +84,12 @@ function installNodeHooks(node: LGraphNode): void {
       if (!hostExecId) return
 
       const options = { min: widget.options?.min, max: widget.options?.max }
-      const promotedSource = widgetPromotedSource(node, widget)
-      if (promotedSource) {
-        const sourceExecutionId = appendNodeExecutionId(
-          hostExecId,
-          promotedSource.nodeId
-        )
+      const source = resolvePromotedWidgetSource(app.rootGraph, node, widget)
+      if (source?.sourceExecutionId) {
         useExecutionErrorStore().clearWidgetRelatedErrors(
-          sourceExecutionId,
-          promotedSource.widgetName,
-          promotedSource.widgetName,
+          source.sourceExecutionId,
+          source.sourceWidgetName,
+          source.sourceWidgetName,
           newValue,
           options
         )

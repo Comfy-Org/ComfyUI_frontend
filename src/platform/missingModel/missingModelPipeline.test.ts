@@ -10,6 +10,7 @@ import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
 } from '@/platform/missingModel/missingModelPipeline'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 const { mockHandles } = vi.hoisted(() => {
   const isAncestorPathActive = vi.fn((_graph: LGraph, _nodeId: string) => true)
@@ -549,7 +550,7 @@ describe('missingModelPipeline', () => {
     it('drops host-keyed promoted candidates whose source path is inactive', async () => {
       const promotedCandidate = {
         nodeId: '65',
-        sourceExecutionId: '65:77:42',
+        sourceExecutionId: createNodeExecutionId([65, 77, 42]),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'outer_ckpt',
         name: 'inactive-source.safetensors',

@@ -27,28 +27,45 @@ beforeEach(() => {
   setActivePinia(createTestingPinia({ stubActions: false }))
 })
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
-  collectAllNodes: (graph: { _testNodes: LGraphNode[] }) => graph._testNodes,
-  getExecutionIdByNode: (
-    _graph: unknown,
-    node: { _testExecutionId?: string; id: number }
-  ) => node._testExecutionId ?? String(node.id),
-  isAncestorPathActive: (
-    graph: { _testNodes: Array<LGraphNode & { _testExecutionId?: string }> },
-    executionId: string
-  ) => {
+vi.mock('@/utils/graphTraversalUtil', () => {
+  type TestNode = LGraphNode & {
+    _testExecutionId?: string
+    _testActiveExecutionIds?: string[]
+  }
+  type TestGraph = { _testNodes: TestNode[] }
+  const getNodeExecutionIds = (node: TestNode) => [
+    node._testExecutionId ?? String(node.id),
+    ...(node._testActiveExecutionIds ?? [])
+  ]
+  const findNodeByExecutionId = (graph: TestGraph, executionId: string) =>
+    graph._testNodes.find((node) =>
+      getNodeExecutionIds(node).includes(executionId)
+    )
+  const isInactive = (node: LGraphNode | undefined) =>
+    node?.mode === 2 || node?.mode === 4
+  const isAncestorPathActive = (graph: TestGraph, executionId: string) => {
     const path = executionId.split(':')
     const prefixes = path
       .slice(0, -1)
       .map((_, index) => path.slice(0, index + 1).join(':'))
     return prefixes.every((prefix) => {
-      const node = graph._testNodes.find(
-        (entry) => (entry._testExecutionId ?? String(entry.id)) === prefix
-      )
-      return !node || (node.mode !== 2 && node.mode !== 4)
+      const node = findNodeByExecutionId(graph, prefix)
+      return !isInactive(node)
     })
   }
-}))
+  return {
+    collectAllNodes: (graph: TestGraph) => graph._testNodes,
+    getExecutionIdByNode: (_graph: unknown, node: TestNode) =>
+      node._testExecutionId ?? String(node.id),
+    isAncestorPathActive,
+    isExecutionPathActive: (graph: TestGraph, executionId: string) => {
+      const node = findNodeByExecutionId(graph, executionId)
+      return (
+        !!node && !isInactive(node) && isAncestorPathActive(graph, executionId)
+      )
+    }
+  }
+})
 
 /** Helper: create a combo widget mock */
 function makeComboWidget(
@@ -106,12 +123,18 @@ function makeGraph(nodes: LGraphNode[]): LGraph {
 
 function makeNestedPromotedModelGraph({
   hostValue = 'missing_model.safetensors',
+  leafActiveExecutionIds,
+  leafExecutionId = '65:77:42',
   innerMode = 0,
+  innerExecutionId = '65:77',
   sourceOptions = ['existing_model.safetensors'],
   sourceValue = 'stale_model.safetensors'
 }: {
   hostValue?: string
+  leafActiveExecutionIds?: string[]
+  leafExecutionId?: string
   innerMode?: number
+  innerExecutionId?: string
   sourceOptions?: string[]
   sourceValue?: string
 } = {}): LGraph {
@@ -126,9 +149,10 @@ function makeNestedPromotedModelGraph({
     42,
     'CheckpointLoaderSimple',
     [sourceWidget],
-    '65:77:42'
+    leafExecutionId
   )
   Object.assign(leafNode, {
+    _testActiveExecutionIds: leafActiveExecutionIds,
     inputs: [sourceInput],
     isSubgraphNode: () => false,
     getSlotFromWidget: (widget: IBaseWidget | undefined) =>
@@ -166,7 +190,7 @@ function makeNestedPromotedModelGraph({
       getNodeById: (id: string | number) =>
         String(id) === String(leafNode.id) ? leafNode : null
     },
-    _testExecutionId: '65:77'
+    _testExecutionId: innerExecutionId
   })
 
   const outerWidgetId = widgetId('graph', 65, 'outer_ckpt')
@@ -1062,6 +1086,24 @@ describe('scanAllModelCandidates', () => {
       widgetName: 'outer_ckpt',
       name: 'existing_model.safetensors',
       isMissing: false
+    })
+  })
+
+  it('uses the host-relative path when the source node is shared by another host instance', () => {
+    const graph = makeNestedPromotedModelGraph({
+      leafExecutionId: '3:77:42',
+      leafActiveExecutionIds: ['65:77:42']
+    })
+
+    const result = scanAllModelCandidates(graph, noAssetSupport)
+
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      nodeId: '65',
+      sourceExecutionId: '65:77:42',
+      widgetName: 'outer_ckpt',
+      name: 'missing_model.safetensors',
+      isMissing: true
     })
   })
 })

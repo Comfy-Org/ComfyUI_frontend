@@ -11,7 +11,10 @@ import {
   promotedInputSource,
   promotedInputWidgets
 } from '@/core/graph/subgraph/promotedInputWidget'
-import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import {
+  buildPromotedSourceExecutionId,
+  resolveConcretePromotedWidget
+} from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
@@ -23,7 +26,7 @@ import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   collectAllNodes,
   getExecutionIdByNode,
-  isAncestorPathActive
+  isExecutionPathActive
 } from '@/utils/graphTraversalUtil'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
@@ -83,7 +86,7 @@ interface ModelWidgetScanTarget {
   nodeType: string
   candidateWidgetName: string
   definitionWidgetName: string
-  sourceExecutionId?: string
+  sourceExecutionId?: NodeExecutionId
   valueWidget: IBaseWidget
   definitionWidget: IBaseWidget
   embeddedModels?: ModelFile[]
@@ -225,10 +228,12 @@ function getModelWidgetScanTarget(
   if (resolution.status !== 'resolved') return null
 
   const { node: sourceNode, widget: sourceWidget } = resolution.resolved
-  const sourceExecutionId = getExecutionIdByNode(rootGraph, sourceNode)
+  const sourceExecutionId = buildPromotedSourceExecutionId(
+    executionId,
+    resolution.resolved.nodePath
+  )
   if (!sourceExecutionId) return null
-  if (isInactiveMode(sourceNode.mode)) return null
-  if (!isAncestorPathActive(rootGraph, sourceExecutionId)) return null
+  if (!isExecutionPathActive(rootGraph, sourceExecutionId)) return null
 
   return {
     executionId,

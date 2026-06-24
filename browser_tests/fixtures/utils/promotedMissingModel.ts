@@ -1,10 +1,15 @@
+import { readFileSync } from 'fs'
+
 import { expect } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const PROMOTED_MODEL_WIDGET_NAME = 'ckpt_name'
 
@@ -12,28 +17,51 @@ export interface PromotedMissingModelWorkflow {
   workflowName: string
   hostNodeId: number
   hostNodeTitle: string
-  sourceNodePath: number[]
+  sharedDefinitionSiblingHostNodeId?: number
+  sharedDefinitionSiblingHostNodeTitle?: string
 }
 
-export interface ResolvedPromotedModelWorkflow {
-  workflowName: string
-  hostNodeTitle: string
-  expectedStaleInteriorWidgets: Array<{
-    subgraphNodeIdToEnter: string
-    nodeTitle: string
-  }>
+type RootWorkflowNode = {
+  id: number | string
+  widgets_values?: unknown[] | Record<string, unknown>
+}
+
+type RootWorkflowData = ComfyWorkflowJSON & {
+  nodes?: RootWorkflowNode[]
 }
 
 export const NESTED_PROMOTED_MISSING_MODEL_WORKFLOW: PromotedMissingModelWorkflow =
   {
     workflowName: 'missing/missing_model_nested_promoted_widget',
-    hostNodeId: 3,
+    hostNodeId: 4,
     hostNodeTitle: 'Outer Subgraph with Promoted Missing Model',
-    sourceNodePath: [2, 1]
+    sharedDefinitionSiblingHostNodeId: 3,
+    sharedDefinitionSiblingHostNodeTitle: 'Resolved Shared Outer Subgraph'
   }
 
 export function getMissingModelLabel(group: Locator, modelName: string) {
   return group.getByRole('button', { name: modelName, exact: true })
+}
+
+export async function expectSingleMissingModelReference(
+  group: Locator,
+  modelName: string
+) {
+  await expectMissingModelReferenceCount(group, modelName, 1)
+}
+
+export async function expectMissingModelReferenceCount(
+  group: Locator,
+  modelName: string,
+  count: number
+) {
+  await expect(getMissingModelLabel(group, modelName)).toHaveCount(1)
+  const badge = group.getByTestId(TestIds.dialogs.missingModelReferenceCount)
+  if (count === 1) {
+    await expect(badge).toBeHidden()
+    return
+  }
+  await expect(badge).toHaveText(String(count))
 }
 
 export async function loadPromotedMissingModelAndOpenErrorsTab(
@@ -46,7 +74,32 @@ export async function loadPromotedMissingModelAndOpenErrorsTab(
   const missingModelGroup = comfyPage.page.getByTestId(
     TestIds.dialogs.missingModelsGroup
   )
-  await expect(getMissingModelLabel(missingModelGroup, modelName)).toBeVisible()
+  await expectSingleMissingModelReference(missingModelGroup, modelName)
+  return missingModelGroup
+}
+
+export async function loadPromotedMissingModelWithHostValuesAndOpenErrorsTab(
+  comfyPage: ComfyPage,
+  workflow: PromotedMissingModelWorkflow,
+  hostValues: Record<number, string>,
+  modelName: string,
+  expectedReferenceCount: number
+): Promise<Locator> {
+  await loadPromotedMissingModelWithHostValues(comfyPage, workflow, hostValues)
+
+  const errorOverlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+  await expect(errorOverlay).toBeVisible()
+  await errorOverlay.getByTestId(TestIds.dialogs.errorOverlaySeeErrors).click()
+  await expect(errorOverlay).toBeHidden()
+
+  const missingModelGroup = comfyPage.page.getByTestId(
+    TestIds.dialogs.missingModelsGroup
+  )
+  await expectMissingModelReferenceCount(
+    missingModelGroup,
+    modelName,
+    expectedReferenceCount
+  )
   return missingModelGroup
 }
 
@@ -69,8 +122,20 @@ export async function selectVueComboPromotedModel(
   workflow: PromotedMissingModelWorkflow,
   modelName: string
 ) {
-  await comfyPage.vueNodes.selectComboOption(
+  await selectVueComboPromotedModelByTitle(
+    comfyPage,
     workflow.hostNodeTitle,
+    modelName
+  )
+}
+
+export async function selectVueComboPromotedModelByTitle(
+  comfyPage: ComfyPage,
+  nodeTitle: string,
+  modelName: string
+) {
+  await comfyPage.vueNodes.selectComboOption(
+    nodeTitle,
     PROMOTED_MODEL_WIDGET_NAME,
     modelName
   )
@@ -82,7 +147,7 @@ export async function selectVueAssetPromotedModel(
   currentModelName: string,
   modelName: string
 ) {
-  await selectFormDropdownModel(
+  await selectModelFromFormDropdown(
     comfyPage,
     comfyPage.vueNodes.getNodeByTitle(workflow.hostNodeTitle),
     currentModelName,
@@ -95,7 +160,7 @@ export async function selectSectionComboPromotedModel(
   workflow: PromotedMissingModelWorkflow,
   modelName: string
 ) {
-  const panel = await openHostParametersPanel(comfyPage, workflow)
+  const panel = await openHostNodeParametersPanel(comfyPage, workflow)
   const combo = panel.contentArea.getByRole('combobox', {
     name: PROMOTED_MODEL_WIDGET_NAME,
     exact: true
@@ -112,8 +177,8 @@ export async function selectSectionAssetPromotedModel(
   currentModelName: string,
   modelName: string
 ) {
-  const panel = await openHostParametersPanel(comfyPage, workflow)
-  await selectFormDropdownModel(
+  const panel = await openHostNodeParametersPanel(comfyPage, workflow)
+  await selectModelFromFormDropdown(
     comfyPage,
     panel.contentArea,
     currentModelName,
@@ -126,7 +191,7 @@ export async function setLegacyPromotedComboModel(
   workflow: PromotedMissingModelWorkflow,
   modelName: string
 ) {
-  await setLegacyPromotedWidgetValue(comfyPage, workflow, modelName)
+  await setLegacyHostPromotedWidgetValue(comfyPage, workflow, modelName)
 }
 
 export async function selectLegacyPromotedAssetModel(
@@ -134,8 +199,7 @@ export async function selectLegacyPromotedAssetModel(
   workflow: PromotedMissingModelWorkflow,
   assetId: string
 ) {
-  await expectLegacyPromotedWidgetType(comfyPage, workflow, 'asset')
-  await clickLegacyPromotedWidget(comfyPage, workflow)
+  await clickLegacyHostPromotedWidget(comfyPage, workflow)
 
   const modal = comfyPage.page.locator(
     '[data-component-id="AssetBrowserModal"]'
@@ -149,11 +213,17 @@ export async function selectLegacyPromotedAssetModel(
 
 export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
   comfyPage: ComfyPage,
-  workflow: ResolvedPromotedModelWorkflow,
+  workflow: PromotedMissingModelWorkflow,
+  expectedStaleInteriorWidgets: Array<{
+    subgraphNodeIdToEnter: string
+    nodeTitle: string
+  }>,
   resolvedModelName: string,
   staleModelName: string
 ) {
-  await comfyPage.workflow.loadWorkflow(workflow.workflowName)
+  await loadPromotedMissingModelWithHostValues(comfyPage, workflow, {
+    [workflow.hostNodeId]: resolvedModelName
+  })
 
   const promotedModelCombo = comfyPage.vueNodes
     .getNodeByTitle(workflow.hostNodeTitle)
@@ -161,7 +231,7 @@ export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
   await expect(promotedModelCombo).toContainText(resolvedModelName)
   await expectNoMissingModelUi(comfyPage)
 
-  for (const step of workflow.expectedStaleInteriorWidgets) {
+  for (const step of expectedStaleInteriorWidgets) {
     await enterSubgraphForStaleInteriorCheck(
       comfyPage,
       step.subgraphNodeIdToEnter
@@ -188,7 +258,7 @@ export async function expectResolvedPromotedModelSuppressesStaleInteriorErrors(
   }
 }
 
-async function openHostParametersPanel(
+async function openHostNodeParametersPanel(
   comfyPage: ComfyPage,
   workflow: PromotedMissingModelWorkflow
 ): Promise<PropertiesPanelHelper> {
@@ -200,11 +270,52 @@ async function openHostParametersPanel(
   return panel
 }
 
-async function selectFormDropdownModel(
+async function loadPromotedMissingModelWithHostValues(
+  comfyPage: ComfyPage,
+  workflow: PromotedMissingModelWorkflow,
+  hostValues: Record<number, string>
+) {
+  const graphData = readPromotedMissingModelWorkflow(workflow.workflowName)
+  for (const [hostNodeId, value] of Object.entries(hostValues)) {
+    setRootHostWidgetValue(graphData, Number(hostNodeId), value)
+  }
+
+  await comfyPage.workflow.loadGraphData(graphData)
+  await comfyPage.vueNodes.waitForNodes()
+}
+
+function readPromotedMissingModelWorkflow(workflowName: string) {
+  return JSON.parse(
+    readFileSync(assetPath(`${workflowName}.json`), 'utf-8')
+  ) as RootWorkflowData
+}
+
+function setRootHostWidgetValue(
+  graphData: RootWorkflowData,
+  hostNodeId: number,
+  value: string
+) {
+  const hostNode = graphData.nodes?.find(
+    (node) => Number(node.id) === hostNodeId
+  )
+  if (!hostNode) throw new Error(`Expected host node ${hostNodeId}`)
+
+  if (Array.isArray(hostNode.widgets_values)) {
+    hostNode.widgets_values[0] = value
+    return
+  }
+
+  hostNode.widgets_values = {
+    ...(hostNode.widgets_values ?? {}),
+    [PROMOTED_MODEL_WIDGET_NAME]: value
+  }
+}
+
+async function selectModelFromFormDropdown(
   comfyPage: ComfyPage,
   root: Locator,
   currentModelName: string,
-  modelName: string
+  nextModelName: string
 ) {
   const trigger = root
     .getByRole('button', { name: currentModelName, exact: true })
@@ -214,61 +325,21 @@ async function selectFormDropdownModel(
 
   const menu = comfyPage.page.getByTestId('form-dropdown-menu')
   await expect(menu).toBeVisible()
-  await menu.getByText(modelName, { exact: true }).click()
+  await menu.getByText(nextModelName, { exact: true }).click()
   await expect(menu).toBeHidden()
 }
 
-async function expectLegacyPromotedWidgetType(
-  comfyPage: ComfyPage,
-  workflow: PromotedMissingModelWorkflow,
-  widgetType: string
-) {
-  await expect
-    .poll(
-      () =>
-        comfyPage.page.evaluate(
-          ({ hostNodeId, sourceNodePath, widgetName }) => {
-            let currentGraph = window.app?.graph
-            const hostNode = currentGraph?.getNodeById(hostNodeId)
-            if (!hostNode?.isSubgraphNode()) return undefined
-
-            currentGraph = hostNode.subgraph
-            for (const nodeId of sourceNodePath.slice(0, -1)) {
-              const node = currentGraph?.getNodeById(nodeId)
-              if (!node?.isSubgraphNode()) return undefined
-              currentGraph = node.subgraph
-            }
-
-            const sourceNodeId = sourceNodePath.at(-1)
-            const sourceNode =
-              sourceNodeId === undefined
-                ? undefined
-                : currentGraph?.getNodeById(sourceNodeId)
-            return sourceNode?.widgets?.find(
-              (widget) => widget.name === widgetName
-            )?.type
-          },
-          {
-            hostNodeId: workflow.hostNodeId,
-            sourceNodePath: workflow.sourceNodePath,
-            widgetName: PROMOTED_MODEL_WIDGET_NAME
-          }
-        ),
-      { timeout: 10_000 }
-    )
-    .toBe(widgetType)
-}
-
-async function setLegacyPromotedWidgetValue(
+async function setLegacyHostPromotedWidgetValue(
   comfyPage: ComfyPage,
   workflow: PromotedMissingModelWorkflow,
   value: string
 ) {
   await comfyPage.page.evaluate(
-    async ({ hostNodeId, sourceNodePath, widgetName, value }) => {
+    ({ hostNodeId, widgetName, value }) => {
       type LegacyPromotedWidget = {
         name?: string
-        type?: string
+        value?: unknown
+        callback?: (value: string) => void
         setValue?: (
           value: string,
           options: {
@@ -279,62 +350,60 @@ async function setLegacyPromotedWidgetValue(
         ) => void
       }
       type LegacyPromotedNode = {
-        isSubgraphNode?: () => boolean
-        subgraph?: LegacyPromotedGraph
+        onWidgetChanged?: (
+          name: string,
+          newValue: string,
+          oldValue: unknown,
+          widget: LegacyPromotedWidget
+        ) => void
         widgets?: LegacyPromotedWidget[]
       }
       type LegacyPromotedGraph = {
         getNodeById: (nodeId: number) => LegacyPromotedNode | undefined
       }
 
-      let currentGraph = window.app?.graph as LegacyPromotedGraph | undefined
+      const currentGraph = window.app?.graph as LegacyPromotedGraph | undefined
       const hostNode: LegacyPromotedNode | undefined =
         currentGraph?.getNodeById(hostNodeId)
-      if (!hostNode?.isSubgraphNode?.() || !hostNode.subgraph) {
+      if (!hostNode) {
         throw new Error(`Expected subgraph host node ${hostNodeId}`)
       }
 
-      currentGraph = hostNode.subgraph
-      for (const nodeId of sourceNodePath.slice(0, -1)) {
-        const node: LegacyPromotedNode | undefined =
-          currentGraph?.getNodeById(nodeId)
-        if (!node?.isSubgraphNode?.() || !node.subgraph) {
-          throw new Error(`Expected nested subgraph node ${nodeId}`)
-        }
-        currentGraph = node.subgraph
-      }
-
-      const sourceNodeId = sourceNodePath.at(-1)
-      const sourceNode =
-        sourceNodeId === undefined
-          ? undefined
-          : currentGraph?.getNodeById(sourceNodeId)
-      const widget = sourceNode?.widgets?.find(
+      const widget = hostNode.widgets?.find(
         (entry) => entry.name === widgetName
       ) as LegacyPromotedWidget | undefined
       if (!widget) {
-        throw new Error(`Expected concrete ${widgetName} widget`)
-      }
-      if (!widget.setValue) {
-        throw new Error(`Expected settable ${widgetName} widget`)
+        throw new Error(`Expected host ${widgetName} widget`)
       }
 
-      widget.setValue(value, {
-        e: new PointerEvent('pointerup'),
-        node: hostNode,
-        canvas: window.app!.canvas
-      })
+      const oldValue = widget.value
+      if (widget.setValue) {
+        widget.setValue(value, {
+          e: new PointerEvent('pointerup'),
+          node: hostNode,
+          canvas: window.app!.canvas
+        })
+        return
+      }
+
+      widget.value = value
+      widget.callback?.(value)
+      hostNode.onWidgetChanged?.(
+        widget.name ?? widgetName,
+        value,
+        oldValue,
+        widget
+      )
     },
     {
       hostNodeId: workflow.hostNodeId,
-      sourceNodePath: workflow.sourceNodePath,
       widgetName: PROMOTED_MODEL_WIDGET_NAME,
       value
     }
   )
 }
 
-async function clickLegacyPromotedWidget(
+async function clickLegacyHostPromotedWidget(
   comfyPage: ComfyPage,
   workflow: PromotedMissingModelWorkflow
 ) {

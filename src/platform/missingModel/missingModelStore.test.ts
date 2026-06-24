@@ -1,7 +1,11 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
@@ -32,7 +36,7 @@ function makeModelCandidate(
   name: string,
   opts: {
     nodeId?: string | number
-    sourceExecutionId?: string
+    sourceExecutionId?: NodeExecutionId
     nodeType?: string
     widgetName?: string
     isAssetSupported?: boolean
@@ -577,11 +581,11 @@ describe('missingModelStore', () => {
       store.setMissingModels([
         makeModelCandidate('a.safetensors', {
           nodeId: '65',
-          sourceExecutionId: '65:77:42'
+          sourceExecutionId: createNodeExecutionId([65, 77, 42])
         }),
         makeModelCandidate('b.safetensors', {
           nodeId: '80',
-          sourceExecutionId: '80:77:42'
+          sourceExecutionId: createNodeExecutionId([80, 77, 42])
         })
       ])
 

@@ -1013,7 +1013,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     modelStore.setMissingModels([
       fromAny<MissingModelCandidate, unknown>({
         nodeId: '65',
-        sourceExecutionId: '65:77:1',
+        sourceExecutionId: createNodeExecutionId([65, 77, 1]),
         nodeType: 'CheckpointLoaderSimple',
         widgetName: 'outer_ckpt',
         isAssetSupported: false,
@@ -1040,7 +1040,7 @@ describe('scan skips interior of bypassed subgraph containers', () => {
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
     const hostCandidate = fromAny<MissingModelCandidate, unknown>({
       nodeId: '65',
-      sourceExecutionId: '65:77:1',
+      sourceExecutionId: createNodeExecutionId([65, 77, 1]),
       nodeType: 'CheckpointLoaderSimple',
       widgetName: 'outer_ckpt',
       isAssetSupported: false,

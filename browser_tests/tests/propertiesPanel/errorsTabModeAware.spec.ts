@@ -14,12 +14,16 @@ import {
 } from '@e2e/fixtures/utils/objectInfo'
 import {
   NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+  expectMissingModelReferenceCount,
   expectNoMissingModelUi,
   expectResolvedPromotedModelSuppressesStaleInteriorErrors,
+  expectSingleMissingModelReference,
   getMissingModelLabel,
   loadPromotedMissingModelAndOpenErrorsTab,
+  loadPromotedMissingModelWithHostValuesAndOpenErrorsTab,
   selectSectionComboPromotedModel,
   selectVueComboPromotedModel,
+  selectVueComboPromotedModelByTitle,
   setLegacyPromotedComboModel
 } from '@e2e/fixtures/utils/promotedMissingModel'
 
@@ -420,19 +424,101 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       'Changing an OSS Vue promoted model clears a nested subgraph error',
       { tag: ['@vue-nodes', '@widget', '@subgraph'] },
       async ({ comfyPage }) => {
-        await loadPromotedMissingModelAndOpenErrorsTab(
-          comfyPage,
-          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
-          FAKE_MODEL_NAME
-        )
+        let missingModelGroup: Locator
 
-        await selectVueComboPromotedModel(
-          comfyPage,
-          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
-          RESOLVED_PROMOTED_MODEL_NAME
-        )
+        await test.step('A: shared-definition active host reports the missing model', async () => {
+          missingModelGroup = await loadPromotedMissingModelAndOpenErrorsTab(
+            comfyPage,
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+            FAKE_MODEL_NAME
+          )
+        })
 
-        await expectNoMissingModelUi(comfyPage)
+        await test.step('B: bypassing the resolved sibling host keeps the active host error visible', async () => {
+          const siblingHostNodeId =
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.sharedDefinitionSiblingHostNodeId
+          if (siblingHostNodeId === undefined) {
+            throw new Error('Expected a shared-definition sibling host')
+          }
+
+          const siblingHost =
+            await comfyPage.nodeOps.getNodeRefById(siblingHostNodeId)
+          await siblingHost.centerOnNode()
+          await siblingHost.click('title')
+          await comfyPage.keyboard.bypass()
+          await expect.poll(() => siblingHost.isBypassed()).toBeTruthy()
+          await comfyPage.canvas.click({ position: { x: 700, y: 650 } })
+          await openErrorsTab(comfyPage)
+          await expectSingleMissingModelReference(
+            missingModelGroup,
+            FAKE_MODEL_NAME
+          )
+        })
+
+        await test.step('C: changing the active host promoted widget resolves the model', async () => {
+          const activeHost = await comfyPage.nodeOps.getNodeRefById(
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.hostNodeId
+          )
+          await activeHost.centerOnNode()
+          await selectVueComboPromotedModel(
+            comfyPage,
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+            RESOLVED_PROMOTED_MODEL_NAME
+          )
+        })
+
+        await test.step('D: the missing model UI clears', async () => {
+          await expectNoMissingModelUi(comfyPage)
+        })
+
+        await test.step('E: two missing shared-definition hosts report two references', async () => {
+          const siblingHostNodeId =
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.sharedDefinitionSiblingHostNodeId
+          if (siblingHostNodeId === undefined) {
+            throw new Error('Expected a shared-definition sibling host')
+          }
+
+          missingModelGroup =
+            await loadPromotedMissingModelWithHostValuesAndOpenErrorsTab(
+              comfyPage,
+              NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+              {
+                [siblingHostNodeId]: FAKE_MODEL_NAME,
+                [NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.hostNodeId]:
+                  FAKE_MODEL_NAME
+              },
+              FAKE_MODEL_NAME,
+              2
+            )
+        })
+
+        await test.step('F: changing one missing host leaves the other missing reference', async () => {
+          await selectVueComboPromotedModel(
+            comfyPage,
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+            RESOLVED_PROMOTED_MODEL_NAME
+          )
+          await expectMissingModelReferenceCount(
+            missingModelGroup,
+            FAKE_MODEL_NAME,
+            1
+          )
+        })
+
+        await test.step('G: changing the remaining missing host clears the model error', async () => {
+          const siblingHostTitle =
+            NESTED_PROMOTED_MISSING_MODEL_WORKFLOW.sharedDefinitionSiblingHostNodeTitle
+          if (siblingHostTitle === undefined) {
+            throw new Error('Expected a shared-definition sibling host title')
+          }
+
+          await selectVueComboPromotedModelByTitle(
+            comfyPage,
+            siblingHostTitle,
+            RESOLVED_PROMOTED_MODEL_NAME
+          )
+          await expectNoMissingModelUi(comfyPage)
+        })
       }
     )
 
@@ -456,12 +542,10 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       }
     )
 
-    test(
+    promotedModelTest(
       'Changing an OSS legacy promoted model clears a nested subgraph error',
       { tag: ['@canvas', '@widget', '@subgraph'] },
       async ({ comfyPage }) => {
-        const resolvedModelName = 'v1-5-pruned-emaonly-fp16.safetensors'
-
         await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', false)
         await loadPromotedMissingModelAndOpenErrorsTab(
           comfyPage,
@@ -472,14 +556,14 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
         await setLegacyPromotedComboModel(
           comfyPage,
           NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
-          resolvedModelName
+          RESOLVED_PROMOTED_MODEL_NAME
         )
 
         await expectNoMissingModelUi(comfyPage)
       }
     )
 
-    test(
+    promotedModelTest(
       'Refreshing a resolved promoted missing model clears the combo invalid state',
       { tag: ['@widget', '@subgraph'] },
       async ({ comfyPage }) => {
@@ -509,7 +593,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
               objectInfo,
               'CheckpointLoaderSimple',
               'ckpt_name',
-              [FAKE_MODEL_NAME]
+              [FAKE_MODEL_NAME, RESOLVED_PROMOTED_MODEL_NAME]
             )
         )
 
@@ -536,18 +620,14 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       async ({ comfyPage }) => {
         await expectResolvedPromotedModelSuppressesStaleInteriorErrors(
           comfyPage,
-          {
-            workflowName:
-              'missing/missing_model_nested_promoted_widget_resolved_host',
-            hostNodeTitle: 'Outer Subgraph with Promoted Missing Model',
-            expectedStaleInteriorWidgets: [
-              {
-                subgraphNodeIdToEnter: '3',
-                nodeTitle: 'Inner Subgraph with Promoted Missing Model'
-              },
-              { subgraphNodeIdToEnter: '2', nodeTitle: 'Load Checkpoint' }
-            ]
-          },
+          NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
+          [
+            {
+              subgraphNodeIdToEnter: '4',
+              nodeTitle: 'Inner Subgraph with Promoted Missing Model'
+            },
+            { subgraphNodeIdToEnter: '2', nodeTitle: 'Load Checkpoint' }
+          ],
           RESOLVED_PROMOTED_MODEL_NAME,
           FAKE_MODEL_NAME
         )

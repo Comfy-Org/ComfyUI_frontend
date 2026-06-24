@@ -5,7 +5,6 @@ import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
-import type { PropType } from 'vue'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -17,6 +16,7 @@ import {
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 import SectionWidgets from './SectionWidgets.vue'
@@ -38,10 +38,7 @@ vi.mock('@/stores/nodeDefStore', () => ({
 }))
 
 const WidgetItemStub = defineComponent({
-  props: {
-    widget: { type: Object as PropType<IBaseWidget>, required: true },
-    node: { type: Object as PropType<LGraphNode>, required: true }
-  },
+  inheritAttrs: false,
   emits: ['update:widget-value', 'reset-to-default'],
   template: `
     <button
@@ -52,13 +49,7 @@ const WidgetItemStub = defineComponent({
 })
 
 const PropertiesAccordionItemStub = defineComponent({
-  props: {
-    collapse: Boolean,
-    enableEmptyState: Boolean,
-    disabled: Boolean,
-    tooltip: String,
-    size: String
-  },
+  inheritAttrs: false,
   emits: ['update:collapse'],
   template: '<section><slot name="label" /><slot /></section>'
 })
@@ -81,8 +72,8 @@ function createHostWithPromotedModel(): {
   host: SubgraphNode
   promotedWidget: IBaseWidget
   sourceWidget: IBaseWidget
-  sourceExecutionId: string
-  hostExecutionId: string
+  sourceExecutionId: NodeExecutionId
+  hostExecutionId: NodeExecutionId
 } {
   const subgraph = createTestSubgraph()
   const host = createTestSubgraphNode(subgraph, { id: 65 })
