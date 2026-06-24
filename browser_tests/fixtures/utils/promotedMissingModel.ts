@@ -61,6 +61,7 @@ export async function expectMissingModelReferenceCount(
     await expect(badge).toBeHidden()
     return
   }
+  await expect(badge).toBeVisible()
   await expect(badge).toHaveText(String(count))
 }
 
