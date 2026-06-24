@@ -439,7 +439,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
           if (isTransientError && hasValidWorkspaceToken()) {
             error.value = null
             const retryScheduled = scheduleTokenRefreshRetry(
-              baseDelayMs * Math.pow(2, maxRetries)
+              baseDelayMs * Math.pow(2, scheduledRefreshRetryCount)
             )
             console.warn(
               retryScheduled
