@@ -341,7 +341,6 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
     inFlightSwitchCount += 1
     isLoading.value = true
-    error.value = null
 
     try {
       const { token, expiresAt, workspace } = await requestToken(workspaceId)
@@ -356,6 +355,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       if (currentWorkspace.value?.id !== workspaceId) {
         refreshRequestId++
       }
+      error.value = null
       currentWorkspace.value = workspace
       workspaceToken.value = token
       workspaceTokenExpiresAt.value = expiresAt
