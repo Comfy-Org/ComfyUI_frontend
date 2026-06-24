@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 
@@ -121,7 +122,7 @@ describe('createNode', () => {
 
     expect(result).toBe(newNode)
     expect(mockBringNodeToFront).toHaveBeenCalledTimes(1)
-    expect(mockBringNodeToFront).toHaveBeenCalledWith(newNode.id)
+    expect(mockBringNodeToFront).toHaveBeenCalledWith(toNodeId(newNode.id))
     spy.mockRestore()
   })
 

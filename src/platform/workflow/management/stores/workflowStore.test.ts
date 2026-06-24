@@ -17,6 +17,7 @@ import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
@@ -909,7 +910,7 @@ describe('useWorkflowStore', () => {
         const result = store.nodeLocatorIdToNodeId(
           createNodeLocatorId('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 456)
         )
-        expect(result).toBe(456)
+        expect(result).toBe(toNodeId(456))
       })
 
       it('should handle string node IDs', () => {
@@ -923,7 +924,7 @@ describe('useWorkflowStore', () => {
         const result = store.nodeLocatorIdToNodeId(
           createNodeLocatorId(null, 123)
         )
-        expect(result).toBe(123)
+        expect(result).toBe(toNodeId(123))
 
         const stringResult = store.nodeLocatorIdToNodeId(
           createNodeLocatorId(null, 'node_1')

@@ -8,12 +8,17 @@ export function useWorkflowStatusDismissal() {
   const executionStore = useExecutionStore()
 
   watch(
-    () => workflowStore.activeWorkflow,
-    (workflow) => {
-      if (
-        workflow &&
-        executionStore.getWorkflowStatus(workflow) !== 'running'
-      ) {
+    () => {
+      const workflow = workflowStore.activeWorkflow
+      return {
+        workflow,
+        status: workflow
+          ? executionStore.getWorkflowStatus(workflow)
+          : undefined
+      }
+    },
+    ({ workflow, status }) => {
+      if (workflow && status && status !== 'running') {
         executionStore.clearWorkflowStatus(workflow)
       }
     },

@@ -704,7 +704,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
 
     expectSingleOperation(operations, {
       type: 'createNode',
-      nodeid: toNodeId('ref-node'),
+      nodeId: toNodeId('ref-node'),
       layout
     })
     expect(ref.value).toEqual(layout)
@@ -724,7 +724,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       },
       expectedOperation: {
         type: 'moveNode',
-        nodeid: toNodeId('ref-node'),
+        nodeId: toNodeId('ref-node'),
         position: { x: 99, y: 88 },
         previousPosition: baseLayout().position
       }
@@ -738,7 +738,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       },
       expectedOperation: {
         type: 'resizeNode',
-        nodeid: toNodeId('ref-node'),
+        nodeId: toNodeId('ref-node'),
         size: { width: 200, height: 80 },
         previousSize: baseLayout().size
       }
@@ -748,7 +748,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
       nextLayout: { ...baseLayout(), zIndex: 5 },
       expectedOperation: {
         type: 'setNodeZIndex',
-        nodeid: toNodeId('ref-node'),
+        nodeId: toNodeId('ref-node'),
         zIndex: 5,
         previousZIndex: 0
       }
@@ -779,7 +779,7 @@ describe('layoutStore getNodeLayoutRef setter', () => {
 
     expectSingleOperation(operations, {
       type: 'deleteNode',
-      nodeid: toNodeId('ref-node'),
+      nodeId: toNodeId('ref-node'),
       previousLayout: layout
     })
     expect(ref.value).toBeNull()

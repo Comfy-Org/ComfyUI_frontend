@@ -854,40 +854,37 @@ class LayoutStoreImpl implements LayoutStore {
   ): void {
     switch (operation.type) {
       case 'moveNode':
-        this.handleMoveNode(operation as MoveNodeOperation, change)
+        this.handleMoveNode(operation, change)
         break
       case 'resizeNode':
-        this.handleResizeNode(operation as ResizeNodeOperation, change)
+        this.handleResizeNode(operation, change)
         break
       case 'setNodeZIndex':
-        this.handleSetNodeZIndex(operation as SetNodeZIndexOperation, change)
+        this.handleSetNodeZIndex(operation, change)
         break
       case 'createNode':
-        this.handleCreateNode(operation as CreateNodeOperation, change)
+        this.handleCreateNode(operation, change)
         break
       case 'deleteNode':
-        this.handleDeleteNode(operation as DeleteNodeOperation, change)
+        this.handleDeleteNode(operation, change)
         break
       case 'batchUpdateBounds':
-        this.handleBatchUpdateBounds(
-          operation as BatchUpdateBoundsOperation,
-          change
-        )
+        this.handleBatchUpdateBounds(operation, change)
         break
       case 'createLink':
-        this.handleCreateLink(operation as CreateLinkOperation, change)
+        this.handleCreateLink(operation, change)
         break
       case 'deleteLink':
-        this.handleDeleteLink(operation as DeleteLinkOperation, change)
+        this.handleDeleteLink(operation, change)
         break
       case 'createReroute':
-        this.handleCreateReroute(operation as CreateRerouteOperation, change)
+        this.handleCreateReroute(operation, change)
         break
       case 'deleteReroute':
-        this.handleDeleteReroute(operation as DeleteRerouteOperation, change)
+        this.handleDeleteReroute(operation, change)
         break
       case 'moveReroute':
-        this.handleMoveReroute(operation as MoveRerouteOperation, change)
+        this.handleMoveReroute(operation, change)
         break
     }
   }
@@ -1041,7 +1038,7 @@ class LayoutStoreImpl implements LayoutStore {
     operation: MoveNodeOperation,
     change: LayoutChange
   ): void {
-    const nodeId = toNodeId(operation.nodeId)
+    const { nodeId } = operation
     const ynode = this.ynodes.get(String(nodeId))
     if (!ynode) {
       return
@@ -1070,7 +1067,7 @@ class LayoutStoreImpl implements LayoutStore {
     operation: ResizeNodeOperation,
     change: LayoutChange
   ): void {
-    const nodeId = toNodeId(operation.nodeId)
+    const { nodeId } = operation
     const ynode = this.ynodes.get(String(nodeId))
     if (!ynode) return
 
@@ -1097,7 +1094,7 @@ class LayoutStoreImpl implements LayoutStore {
     operation: SetNodeZIndexOperation,
     change: LayoutChange
   ): void {
-    const nodeId = toNodeId(operation.nodeId)
+    const { nodeId } = operation
     const ynode = this.ynodes.get(String(nodeId))
     if (!ynode) return
 
@@ -1109,7 +1106,7 @@ class LayoutStoreImpl implements LayoutStore {
     operation: CreateNodeOperation,
     change: LayoutChange
   ): void {
-    const nodeId = toNodeId(operation.nodeId)
+    const { nodeId } = operation
     const ynode = layoutToYNode(operation.layout)
     this.ynodes.set(String(nodeId), ynode)
 
@@ -1124,7 +1121,7 @@ class LayoutStoreImpl implements LayoutStore {
     operation: DeleteNodeOperation,
     change: LayoutChange
   ): void {
-    const nodeId = toNodeId(operation.nodeId)
+    const { nodeId } = operation
     const nodeKey = String(nodeId)
     if (!this.ynodes.has(nodeKey)) return
 
@@ -1160,9 +1157,8 @@ class LayoutStoreImpl implements LayoutStore {
   ): void {
     const spatialUpdates: Array<{ nodeId: NodeId; bounds: Bounds }> = []
 
-    for (const rawNodeId of operation.nodeIds) {
-      const nodeId = toNodeId(rawNodeId)
-      const data = operation.bounds[rawNodeId]
+    for (const nodeId of operation.nodeIds) {
+      const data = operation.bounds[nodeId]
       const ynode = this.ynodes.get(String(nodeId))
       if (!ynode || !data) continue
 
@@ -1193,9 +1189,9 @@ class LayoutStoreImpl implements LayoutStore {
   ): void {
     const linkData = new Y.Map<unknown>()
     linkData.set('id', operation.linkId)
-    linkData.set('sourceNodeId', toNodeId(operation.sourceNodeId))
+    linkData.set('sourceNodeId', operation.sourceNodeId)
     linkData.set('sourceSlot', operation.sourceSlot)
-    linkData.set('targetNodeId', toNodeId(operation.targetNodeId))
+    linkData.set('targetNodeId', operation.targetNodeId)
     linkData.set('targetSlot', operation.targetSlot)
 
     const linkKey = String(operation.linkId)
