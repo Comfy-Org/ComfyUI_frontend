@@ -1,3 +1,4 @@
+import { t } from '@/i18n'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
@@ -17,7 +18,7 @@ app.registerExtension({
 
       this.addWidget(
         'button',
-        '🎲 Randomize Seed',
+        t('g.randomizeSeed'),
         '',
         () => {
           const seedWidget = this.widgets?.find((w) => w.name === 'seed')
