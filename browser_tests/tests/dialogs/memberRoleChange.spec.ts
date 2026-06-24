@@ -1,25 +1,23 @@
 import { expect } from '@playwright/test'
-import type { Page, Route } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 
-import type {
-  BillingStatusResponse,
-  Member,
-  Plan,
-  WorkspaceWithRole
-} from '@/platform/workspace/api/workspaceApi'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { Member } from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
-import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
+import {
+  CREATOR,
+  MEMBER_JANE,
+  MEMBER_JOHN,
+  VIEWER
+} from '@e2e/fixtures/data/cloudWorkspace'
+import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 
 // Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
 // against fully mocked endpoints; `comfyPage` would try to reach the OSS
 // devtools backend during setup.
 
 /**
- * Member role change (Settings ▸ Workspace ▸ Members) — FE-770 / Figma
- * 2993-15512.
+ * Member role change (Settings ▸ Workspace ▸ Members) — Figma 2993-15512.
  *
  * The viewer is a promoted owner (not the workspace creator), so the spec can
  * distinguish the creator guard from the self guard: the creator row and the
@@ -30,180 +28,7 @@ import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
-const jsonRoute = (body: unknown) => ({
-  status: 200,
-  contentType: 'application/json',
-  body: JSON.stringify(body)
-})
-
-const CREATOR: Member = {
-  id: 'u-liz',
-  name: 'Liz',
-  email: 'liz@test.comfy.org',
-  joined_at: '2025-01-01T00:00:00Z',
-  role: 'owner',
-  is_original_owner: true
-}
-// Matches the CloudAuthHelper mock user so this row counts as "(You)".
-const VIEWER: Member = {
-  id: 'u-me',
-  name: 'E2E Test User',
-  email: 'e2e@test.comfy.org',
-  joined_at: '2025-01-02T00:00:00Z',
-  role: 'owner',
-  is_original_owner: false
-}
-const JANE: Member = {
-  id: 'u-jane',
-  name: 'Jane',
-  email: 'jane@test.comfy.org',
-  joined_at: '2025-01-03T00:00:00Z',
-  role: 'member',
-  is_original_owner: false
-}
-const JOHN: Member = {
-  id: 'u-john',
-  name: 'John',
-  email: 'john@test.comfy.org',
-  joined_at: '2025-01-04T00:00:00Z',
-  role: 'member',
-  is_original_owner: false
-}
-
-interface RoleChangeRequest {
-  url: string
-  role: string
-}
-
-interface MemberMockState {
-  members: Member[]
-  patches: RoleChangeRequest[]
-}
-
-async function mockCloudBoot(page: Page): Promise<MemberMockState> {
-  const state: MemberMockState = {
-    members: [CREATOR, VIEWER, JANE, JOHN].map((m) => ({ ...m })),
-    patches: []
-  }
-
-  // `/api/features` is the remote-config source: production builds resolve
-  // the workspaces flag from it (the `ff:` localStorage override is dev-only).
-  await page.route('**/api/features', (r) =>
-    r.fulfill(
-      jsonRoute({ team_workspaces_enabled: true } satisfies RemoteConfig)
-    )
-  )
-  await page.route('**/api/system_stats', (r) =>
-    r.fulfill(jsonRoute(mockSystemStats))
-  )
-  await page.route('**/api/users', (r) =>
-    r.fulfill(
-      jsonRoute({
-        storage: 'server',
-        migrated: true,
-        users: { 'test-user-e2e': 'E2E Test User' }
-      })
-    )
-  )
-  await page.route('**/api/settings', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
-  await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
-  await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/auth/session', (r) =>
-    r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-  )
-  await page.route('**/api/auth/token', (r) =>
-    r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-  )
-  await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
-
-  const teamWorkspace: WorkspaceWithRole = {
-    id: 'ws-team',
-    name: 'Team Comfy',
-    type: 'team',
-    created_at: '2025-01-01T00:00:00Z',
-    joined_at: '2025-01-02T00:00:00Z',
-    role: 'owner',
-    subscription_tier: 'PRO'
-  }
-  await page.route('**/api/workspaces', (r) =>
-    r.fulfill(jsonRoute({ workspaces: [teamWorkspace] }))
-  )
-
-  await page.route('**/api/workspace/members**', (route: Route) => {
-    const request = route.request()
-    if (request.method() === 'PATCH') {
-      const url = request.url()
-      const id = url.match(/\/api\/workspace\/members\/([^/?]+)/)?.[1]
-      const { role } = request.postDataJSON() as { role: Member['role'] }
-      state.patches.push({ url, role })
-      const member = state.members.find((m) => m.id === id)
-      if (member) member.role = role
-      // The store applies the returned Member to local state; echo the full
-      // updated row so role/id survive the round trip.
-      return route.fulfill(jsonRoute(member))
-    }
-    return route.fulfill(
-      jsonRoute({
-        members: state.members,
-        pagination: { offset: 0, limit: 50, total: state.members.length }
-      })
-    )
-  })
-  await page.route('**/api/workspace/invites', (r) =>
-    r.fulfill(jsonRoute({ invites: [] }))
-  )
-
-  const billingStatus: BillingStatusResponse = {
-    is_active: true,
-    subscription_status: 'active',
-    subscription_tier: 'PRO',
-    subscription_duration: 'MONTHLY',
-    plan_slug: 'pro-monthly',
-    billing_status: 'paid',
-    has_funds: true,
-    renewal_date: '2099-02-20T00:00:00Z'
-  }
-  await page.route('**/api/billing/status', (r) =>
-    r.fulfill(jsonRoute(billingStatus))
-  )
-  await page.route('**/api/billing/balance', (r) =>
-    r.fulfill(
-      jsonRoute({
-        amount_micros: 6000,
-        currency: 'usd',
-        effective_balance_micros: 6000,
-        cloud_credit_balance_micros: 5000,
-        prepaid_balance_micros: 1000
-      })
-    )
-  )
-  // `max_seats > 1` on the current plan is what flips `isOnTeamPlan`,
-  // which gates the whole role-management UI.
-  const proPlan: Plan = {
-    slug: 'pro-monthly',
-    tier: 'PRO',
-    duration: 'MONTHLY',
-    price_cents: 10000,
-    credits_cents: 21100,
-    max_seats: 30,
-    availability: { available: true },
-    seat_summary: {
-      seat_count: 4,
-      total_cost_cents: 40000,
-      total_credits_cents: 0
-    }
-  }
-  await page.route('**/api/billing/plans', (r) =>
-    r.fulfill(jsonRoute({ current_plan_slug: 'pro-monthly', plans: [proPlan] }))
-  )
-
-  return state
-}
-
-async function openMembersTab(page: Page) {
+async function openMembersTab(page: Page): Promise<Locator> {
   await page.goto(APP_URL)
   await page.waitForFunction(() => !!window.app?.extensionManager, null, {
     timeout: 45_000
@@ -223,10 +48,14 @@ async function openMembersTab(page: Page) {
   return content
 }
 
-function memberRow(content: ReturnType<Page['locator']>, email: string) {
+function memberRow(content: Locator, email: string): Locator {
   return content
     .locator('div.grid')
     .filter({ has: content.page().getByText(email, { exact: true }) })
+}
+
+function menuButton(row: Locator): Locator {
+  return row.getByRole('button', { name: 'More Options' })
 }
 
 // Reka submenus open on real pointer travel or keyboard; Playwright's
@@ -241,50 +70,26 @@ async function openChangeRoleSubmenu(page: Page) {
   ).toBeVisible()
 }
 
-async function setupCloudPage(page: Page): Promise<MemberMockState> {
-  const state = await mockCloudBoot(page)
-  const auth = new CloudAuthHelper(page)
-  await auth.mockAuth()
-  await page.addInitScript(() => {
-    localStorage.setItem('Comfy.userId', 'test-user-e2e')
-    localStorage.setItem('Comfy.Workspace.LastWorkspaceId', 'ws-team')
-  })
-  return state
-}
-
 test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
+  test.describe.configure({ timeout: 60_000 })
+
   test('row menus respect creator and self guards', async ({ page }) => {
-    test.setTimeout(60_000)
-    await setupCloudPage(page)
+    await new CloudWorkspaceMockHelper(page).setup()
     const content = await openMembersTab(page)
 
     // US8/US9 — no row actions on the creator row (Liz) nor on the viewer's
     // own row; the two plain members each expose a menu.
     await expect(
-      memberRow(content, 'john@test.comfy.org').getByRole('button', {
-        name: 'More Options'
-      })
+      menuButton(memberRow(content, MEMBER_JOHN.email))
     ).toBeVisible()
     await expect(
-      memberRow(content, 'jane@test.comfy.org').getByRole('button', {
-        name: 'More Options'
-      })
+      menuButton(memberRow(content, MEMBER_JANE.email))
     ).toBeVisible()
-    await expect(
-      memberRow(content, 'liz@test.comfy.org').getByRole('button', {
-        name: 'More Options'
-      })
-    ).toHaveCount(0)
-    await expect(
-      memberRow(content, 'e2e@test.comfy.org').getByRole('button', {
-        name: 'More Options'
-      })
-    ).toHaveCount(0)
+    await expect(menuButton(memberRow(content, CREATOR.email))).toHaveCount(0)
+    await expect(menuButton(memberRow(content, VIEWER.email))).toHaveCount(0)
 
     // US1/US12 — the row menu exposes Change role and the FE-768 remove flow.
-    await memberRow(content, 'jane@test.comfy.org')
-      .getByRole('button', { name: 'More Options' })
-      .click()
+    await menuButton(memberRow(content, MEMBER_JANE.email)).click()
     await expect(
       page.getByRole('menuitem', { name: 'Change role' })
     ).toBeVisible()
@@ -292,36 +97,32 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     await expect(page.getByText('Remove this member?')).toBeVisible()
   })
 
-  test('promote and demote round trip updates the Role column', async ({
-    page
-  }) => {
-    test.setTimeout(90_000)
-    const state = await setupCloudPage(page)
+  test('selecting the current role is a no-op', async ({ page }) => {
+    const state = await new CloudWorkspaceMockHelper(page).setup()
     const content = await openMembersTab(page)
 
-    const emails = content.getByText(/@test\.comfy\.org/)
-    await expect(emails).toHaveText([
-      'liz@test.comfy.org',
-      'e2e@test.comfy.org',
-      'john@test.comfy.org',
-      'jane@test.comfy.org'
-    ])
-
-    const janeRow = memberRow(content, 'jane@test.comfy.org')
-    await janeRow.getByRole('button', { name: 'More Options' }).click()
+    const janeRow = memberRow(content, MEMBER_JANE.email)
+    await menuButton(janeRow).click()
     await openChangeRoleSubmenu(page)
-
-    // US3 — picking the current role is a no-op.
     await page.getByRole('menuitem', { name: 'Member', exact: true }).click()
+
     await expect(page.getByRole('heading', { name: /an owner\?/ })).toHaveCount(
       0
     )
     expect(state.patches).toHaveLength(0)
+  })
 
-    // US4 — promote dialog copy straight from Figma.
-    await janeRow.getByRole('button', { name: 'More Options' }).click()
+  test('promote dialog shows the Figma copy and cancelling keeps the role', async ({
+    page
+  }) => {
+    const state = await new CloudWorkspaceMockHelper(page).setup()
+    const content = await openMembersTab(page)
+
+    const janeRow = memberRow(content, MEMBER_JANE.email)
+    await menuButton(janeRow).click()
     await openChangeRoleSubmenu(page)
     await page.getByRole('menuitem', { name: 'Owner', exact: true }).click()
+
     await expect(
       page.getByRole('heading', { name: 'Make Jane an owner?' })
     ).toBeVisible()
@@ -336,17 +137,30 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
       )
     ).toBeVisible()
 
-    // US5 — cancel leaves the role untouched.
     await page.getByRole('button', { name: 'Cancel', exact: true }).click()
     await expect(
       page.getByRole('heading', { name: 'Make Jane an owner?' })
     ).toHaveCount(0)
     await expect(janeRow.getByText('Member', { exact: true })).toBeVisible()
     expect(state.patches).toHaveLength(0)
+  })
 
-    // US6 — confirming PATCHes the proposed contract and re-sorts the row
-    // under the creator; the promoted owner keeps its row menu.
-    await janeRow.getByRole('button', { name: 'More Options' }).click()
+  test('promoting a member re-sorts the row under the creator and stays demotable', async ({
+    page
+  }) => {
+    const state = await new CloudWorkspaceMockHelper(page).setup()
+    const content = await openMembersTab(page)
+
+    const emails = content.getByText(/@test\.comfy\.org/)
+    await expect(emails).toHaveText([
+      CREATOR.email,
+      VIEWER.email,
+      MEMBER_JOHN.email,
+      MEMBER_JANE.email
+    ])
+
+    const janeRow = memberRow(content, MEMBER_JANE.email)
+    await menuButton(janeRow).click()
     await openChangeRoleSubmenu(page)
     await page.getByRole('menuitem', { name: 'Owner', exact: true }).click()
     await page.getByRole('button', { name: 'Make owner' }).click()
@@ -354,10 +168,10 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     await expect(page.getByText('Role updated')).toBeVisible()
     await expect(janeRow.getByText('Owner', { exact: true })).toBeVisible()
     await expect(emails).toHaveText([
-      'liz@test.comfy.org',
-      'e2e@test.comfy.org',
-      'jane@test.comfy.org',
-      'john@test.comfy.org'
+      CREATOR.email,
+      VIEWER.email,
+      MEMBER_JANE.email,
+      MEMBER_JOHN.email
     ])
     expect(state.patches).toEqual([
       {
@@ -366,8 +180,24 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
       }
     ])
 
-    // US7 — demote round trip from the promoted owner row.
-    await janeRow.getByRole('button', { name: 'More Options' }).click()
+    // The promoted owner keeps its row menu (still demotable).
+    await expect(menuButton(janeRow)).toBeVisible()
+  })
+
+  test('demoting an owner returns them to member', async ({ page }) => {
+    const ownerJane: Member = { ...MEMBER_JANE, role: 'owner' }
+    const state = await new CloudWorkspaceMockHelper(page).setup([
+      CREATOR,
+      VIEWER,
+      ownerJane,
+      MEMBER_JOHN
+    ])
+    const content = await openMembersTab(page)
+
+    const janeRow = memberRow(content, MEMBER_JANE.email)
+    await expect(janeRow.getByText('Owner', { exact: true })).toBeVisible()
+
+    await menuButton(janeRow).click()
     await openChangeRoleSubmenu(page)
     await page.getByRole('menuitem', { name: 'Member', exact: true }).click()
     await expect(
@@ -377,25 +207,28 @@ test.describe('Member role change (Members tab)', { tag: '@cloud' }, () => {
     await page.getByRole('button', { name: 'Demote to member' }).click()
 
     await expect(janeRow.getByText('Member', { exact: true })).toBeVisible()
-    expect(state.patches).toHaveLength(2)
-    expect(state.patches[1].role).toBe('member')
+    expect(state.patches).toEqual([
+      {
+        url: expect.stringContaining('/api/workspace/members/u-jane'),
+        role: 'member'
+      }
+    ])
   })
 
   test('failed role change keeps the dialog open with an error toast', async ({
     page
   }) => {
-    test.setTimeout(60_000)
-    await setupCloudPage(page)
+    await new CloudWorkspaceMockHelper(page).setup()
     // Override the member route so PATCH fails after boot succeeds.
-    await page.route('**/api/workspace/members/**', (route: Route) =>
+    await page.route('**/api/workspace/members/**', (route) =>
       route.request().method() === 'PATCH'
         ? route.fulfill({ status: 500, body: '{}' })
         : route.fallback()
     )
     const content = await openMembersTab(page)
 
-    const janeRow = memberRow(content, 'jane@test.comfy.org')
-    await janeRow.getByRole('button', { name: 'More Options' }).click()
+    const janeRow = memberRow(content, MEMBER_JANE.email)
+    await menuButton(janeRow).click()
     await openChangeRoleSubmenu(page)
     await page.getByRole('menuitem', { name: 'Owner', exact: true }).click()
     await page.getByRole('button', { name: 'Make owner' }).click()

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex w-full max-w-[360px] flex-col rounded-2xl border border-border-default bg-base-background"
+    class="flex w-full max-w-90 flex-col rounded-2xl border border-border-default bg-base-background"
   >
     <!-- Header -->
     <div
