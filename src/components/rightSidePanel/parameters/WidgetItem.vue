@@ -21,6 +21,7 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
@@ -70,7 +71,7 @@ const widgetComponent = computed(() => {
 
 const isLinked = computed(() => {
   const safeWidget = useVueNodeLifecycle()
-    .nodeManager.value?.vueNodeData.get(String(node.id))
+    .nodeManager.value?.vueNodeData.get(toNodeId(node.id))
     ?.widgets?.find((w) => w.name === widget.name)
   return safeWidget?.slotMetadata
     ? !!safeWidget.slotMetadata.linked

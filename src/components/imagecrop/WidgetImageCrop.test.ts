@@ -5,6 +5,7 @@ import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { Bounds } from '@/renderer/core/layout/types'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import type { Ref } from 'vue'
 
@@ -233,7 +234,7 @@ describe('WidgetImageCrop', () => {
       renderWidget(
         makeWidget({
           options: { disabled: true },
-          linkedUpstream: { nodeId: 'n1' }
+          linkedUpstream: { nodeId: toNodeId('n1') }
         }),
         { x: 0, y: 0, width: 512, height: 512 }
       )

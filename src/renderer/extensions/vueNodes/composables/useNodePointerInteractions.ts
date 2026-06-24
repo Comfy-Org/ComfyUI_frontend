@@ -27,7 +27,7 @@ export function useNodePointerInteractions(
   const { nodeManager } = useVueNodeLifecycle()
 
   function isPinnedNode(nodeId: NodeId): boolean {
-    return nodeManager.value?.getNode(String(nodeId))?.flags?.pinned ?? false
+    return nodeManager.value?.getNode(nodeId)?.flags?.pinned ?? false
   }
 
   const forwardMiddlePointerIfNeeded = (

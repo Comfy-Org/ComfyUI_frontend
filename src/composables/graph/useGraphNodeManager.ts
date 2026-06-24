@@ -31,7 +31,6 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue, SafeControlWidget } from '@/types/simplifiedWidget'
 import { normalizeControlOption } from '@/types/simplifiedWidget'
 import { getWidgetIdForNode } from '@/utils/litegraphUtil'
-import type { NodeId as WorkflowNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { WidgetId } from '@/types/widgetId'
 
@@ -52,7 +51,7 @@ import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 export interface WidgetSlotMetadata {
   index: number
   linked: boolean
-  originNodeId?: string
+  originNodeId?: NodeId
   originOutputName?: string
   type: string
 }
@@ -137,10 +136,10 @@ export interface VueNodeData {
 
 export interface GraphNodeManager {
   // Reactive state - safe data extracted from LiteGraph nodes
-  vueNodeData: ReadonlyMap<string, VueNodeData>
+  vueNodeData: ReadonlyMap<NodeId, VueNodeData>
 
   // Access to original LiteGraph nodes (non-reactive)
-  getNode(id: WorkflowNodeId): LGraphNode | undefined
+  getNode(id: NodeId): LGraphNode | undefined
 
   // Lifecycle methods
   cleanup(): void
@@ -354,14 +353,14 @@ function buildSlotMetadata(
 ): Map<string, WidgetSlotMetadata> {
   const metadata = new Map<string, WidgetSlotMetadata>()
   inputs?.forEach((input, index) => {
-    let originNodeId: string | undefined
+    let originNodeId: NodeId | undefined
     let originOutputName: string | undefined
 
     if (input.link != null && graphRef) {
       const link = graphRef.getLink(input.link)
       const originNode = link ? graphRef.getNodeById(link.origin_id) : null
       if (link && originNode) {
-        originNodeId = String(link.origin_id)
+        originNodeId = toNodeId(link.origin_id)
         originOutputName = originNode.outputs?.[link.origin_slot]?.name
       }
     }
@@ -499,12 +498,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   // Get layout mutations composable
   const { createNode, deleteNode, setSource } = useLayoutMutations()
   // Safe reactive data extracted from LiteGraph nodes
-  const vueNodeData = reactive(new Map<string, VueNodeData>())
+  const vueNodeData = reactive(new Map<NodeId, VueNodeData>())
 
   // Non-reactive storage for original LiteGraph nodes
-  const nodeRefs = new Map<string, LGraphNode>()
+  const nodeRefs = new Map<NodeId, LGraphNode>()
 
-  const refreshNodeSlots = (nodeId: string) => {
+  const refreshNodeSlots = (nodeId: NodeId) => {
     const nodeRef = nodeRefs.get(nodeId)
     const currentData = vueNodeData.get(nodeId)
 
@@ -519,14 +518,14 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
   }
 
   // Get access to original LiteGraph node (non-reactive)
-  const getNode = (id: WorkflowNodeId): LGraphNode | undefined => {
-    return nodeRefs.get(String(id))
+  const getNode = (id: NodeId): LGraphNode | undefined => {
+    return nodeRefs.get(id)
   }
 
   const syncWithGraph = () => {
     if (!graph?._nodes) return
 
-    const currentNodes = new Set(graph._nodes.map((n) => String(n.id)))
+    const currentNodes = new Set(graph._nodes.map((n) => toNodeId(n.id)))
 
     // Remove deleted nodes
     for (const id of Array.from(vueNodeData.keys())) {
@@ -538,7 +537,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
     // Add/update existing nodes
     graph._nodes.forEach((node) => {
-      const id = String(node.id)
+      const id = toNodeId(node.id)
 
       // Store non-reactive reference
       nodeRefs.set(id, node)
@@ -556,8 +555,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
-    const id = String(node.id)
-    const normalizedId = toNodeId(node.id)
+    const id = toNodeId(node.id)
 
     // Store non-reactive reference to original node
     nodeRefs.set(id, node)
@@ -575,12 +573,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
       // Skip layout creation if it already exists
       // (e.g. in-place node replacement where the old node's layout is reused for the new node with the same ID).
-      const existingLayout = layoutStore.getNodeLayoutRef(normalizedId).value
+      const existingLayout = layoutStore.getNodeLayoutRef(id).value
       if (existingLayout) return
 
       // Add node to layout store with final positions
       setSource(LayoutSource.Canvas)
-      void createNode(normalizedId, {
+      void createNode(id, {
         position: nodePosition,
         size: nodeSize,
         zIndex: node.order || 0,
@@ -612,8 +610,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     }
   }
 
-  const dropNodeReferences = (node: LGraphNode) => {
-    const id = String(node.id)
+  const dropNodeReferences = (id: NodeId) => {
     nodeRefs.delete(id)
     vueNodeData.delete(id)
   }
@@ -622,12 +619,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
-    const normalizedId = toNodeId(node.id)
+    const id = toNodeId(node.id)
 
     // Remove node from layout store
     setSource(LayoutSource.Canvas)
-    void deleteNode(normalizedId)
-    dropNodeReferences(node)
+    void deleteNode(id)
+    dropNodeReferences(id)
     originalCallback?.(node)
   }
 
@@ -675,7 +672,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     const beforeNodeRemovedListener = (
       e: CustomEvent<{ node: LGraphNode }>
     ) => {
-      dropNodeReferences(e.detail.node)
+      dropNodeReferences(toNodeId(e.detail.node.id))
     }
     graph.events.addEventListener(
       'node:before-removed',
@@ -686,7 +683,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
       [K in LGraphTriggerAction]: (event: LGraphTriggerParam<K>) => void
     } = {
       'node:property:changed': (propertyEvent) => {
-        const nodeId = String(propertyEvent.nodeId)
+        const nodeId = toNodeId(propertyEvent.nodeId)
         const currentData = vueNodeData.get(nodeId)
 
         if (currentData) {
@@ -782,15 +779,15 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
         }
       },
       'node:slot-errors:changed': (slotErrorsEvent) => {
-        refreshNodeSlots(String(slotErrorsEvent.nodeId))
+        refreshNodeSlots(toNodeId(slotErrorsEvent.nodeId))
       },
       'node:slot-links:changed': (slotLinksEvent) => {
         if (slotLinksEvent.slotType === NodeSlotType.INPUT) {
-          refreshNodeSlots(String(slotLinksEvent.nodeId))
+          refreshNodeSlots(toNodeId(slotLinksEvent.nodeId))
         }
       },
       'node:slot-label:changed': (slotLabelEvent) => {
-        const nodeId = String(slotLabelEvent.nodeId)
+        const nodeId = toNodeId(slotLabelEvent.nodeId)
         const nodeRef = nodeRefs.get(nodeId)
         if (!nodeRef) return
 
