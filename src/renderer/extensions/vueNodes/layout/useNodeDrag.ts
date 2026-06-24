@@ -1,3 +1,4 @@
+import { createSharedComposable, whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { toValue } from 'vue'
 
@@ -16,7 +17,6 @@ import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeS
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
-import { createSharedComposable } from '@vueuse/core'
 
 export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
 
@@ -282,27 +282,29 @@ function useNodeDragIndividual() {
       }
     }
 
+    resetDragState()
+  }
+
+  function resetDragState() {
     dragStartPos = null
     dragStartMouse = null
     otherSelectedNodesStartPositions = null
     selectedGroups = null
     lastCanvasDelta = null
 
-    // Stop auto-pan
     autoPan?.stop()
     autoPan = null
 
-    // Stop tracking shift key state
     stopShiftSync?.()
     stopShiftSync = null
 
-    // Cancel any pending animation frame
     if (rafId !== null) {
       cancelAnimationFrame(rafId)
       rafId = null
     }
   }
 
+  whenever(() => !layoutStore.isDraggingVueNodes.value, resetDragState)
   return {
     startDrag,
     handleDrag,

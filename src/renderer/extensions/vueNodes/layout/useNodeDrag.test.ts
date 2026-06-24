@@ -113,7 +113,8 @@ vi.mock('@/utils/litegraphUtil', () => ({
 }))
 
 vi.mock('@vueuse/core', () => ({
-  createSharedComposable: (fn: () => unknown) => fn
+  createSharedComposable: (fn: () => unknown) => fn,
+  whenever: vi.fn()
 }))
 
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
