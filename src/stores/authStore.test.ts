@@ -6,7 +6,10 @@ import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as vuefire from 'vuefire'
 
-import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
+import {
+  capturePreservedQuery,
+  clearPreservedQuery
+} from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
@@ -687,30 +690,105 @@ describe('useAuthStore', () => {
           )
         }
       )
+    })
+  })
 
-      it('includes preserved share id on new-user social auth', async () => {
-        sessionStorage.setItem(
-          'Comfy.PreservedQuery.share_auth',
-          JSON.stringify({ share: 'share-1' })
-        )
-        vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
-          isNewUser: true,
-          providerId: 'google.com',
-          profile: null
-        })
+  describe('share auth attribution', () => {
+    const mockUserCredential = {
+      user: mockUser,
+      providerId: null,
+      operationType: 'signIn'
+    } satisfies UserCredential
 
-        await store.loginWithGoogle()
+    const preserveShareAuth = () => {
+      capturePreservedQuery(
+        PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
+        { share: 'share-1' },
+        ['share']
+      )
+    }
 
-        expect(mockTrackAuth).toHaveBeenCalledWith(
-          expect.objectContaining({
-            is_new_user: true,
-            share_id: 'share-1'
-          })
-        )
-        expect(
-          sessionStorage.getItem('Comfy.PreservedQuery.share_auth')
-        ).toBeNull()
+    const expectShareAuthConsumed = () => {
+      expect(
+        sessionStorage.getItem('Comfy.PreservedQuery.share_auth')
+      ).toBeNull()
+    }
+
+    beforeEach(() => {
+      vi.mocked(firebaseAuth.signInWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential
+      )
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential
+      )
+      vi.mocked(firebaseAuth.signInWithPopup).mockResolvedValue(
+        mockUserCredential
+      )
+      vi.mocked(firebaseAuth.getAdditionalUserInfo).mockReturnValue({
+        isNewUser: true,
+        providerId: 'google.com',
+        profile: null
       })
+    })
+
+    it('includes share_id on email signup auth completion', async () => {
+      preserveShareAuth()
+
+      await store.register('new@example.com', 'password')
+
+      expect(mockTrackAuth).toHaveBeenCalledWith({
+        method: 'email',
+        is_new_user: true,
+        user_id: 'test-user-id',
+        email: 'test@example.com',
+        share_id: 'share-1'
+      })
+      expectShareAuthConsumed()
+    })
+
+    it('includes share_id on email login auth completion', async () => {
+      preserveShareAuth()
+
+      await store.login('test@example.com', 'password')
+
+      expect(mockTrackAuth).toHaveBeenCalledWith({
+        method: 'email',
+        is_new_user: false,
+        user_id: 'test-user-id',
+        email: 'test@example.com',
+        share_id: 'share-1'
+      })
+      expectShareAuthConsumed()
+    })
+
+    it('includes share_id on Google auth completion', async () => {
+      preserveShareAuth()
+
+      await store.loginWithGoogle()
+
+      expect(mockTrackAuth).toHaveBeenCalledWith({
+        method: 'google',
+        is_new_user: true,
+        user_id: 'test-user-id',
+        email: 'test@example.com',
+        share_id: 'share-1'
+      })
+      expectShareAuthConsumed()
+    })
+
+    it('includes share_id on GitHub auth completion', async () => {
+      preserveShareAuth()
+
+      await store.loginWithGithub()
+
+      expect(mockTrackAuth).toHaveBeenCalledWith({
+        method: 'github',
+        is_new_user: true,
+        user_id: 'test-user-id',
+        email: 'test@example.com',
+        share_id: 'share-1'
+      })
+      expectShareAuthConsumed()
     })
   })
 

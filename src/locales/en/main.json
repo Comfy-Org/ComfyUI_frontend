@@ -1859,6 +1859,7 @@
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
     "LUMA_CONCEPTS": "LUMA_CONCEPTS",
+    "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
     "LUMA_REF": "LUMA_REF",
     "MASK": "MASK",
     "MESH": "MESH",
@@ -2343,7 +2344,8 @@
       "auth/network-request-failed": "Network error. Please check your connection and try again.",
       "auth/popup-closed-by-user": "Sign-in was cancelled. Please try again.",
       "auth/cancelled-popup-request": "Sign-in was cancelled. Please try again.",
-      "generic": "Something went wrong while signing you in. Please try again."
+      "generic": "Something went wrong while signing you in. Please try again.",
+      "signupBlocked": "We couldn't create your account right now. Please try again later. If this keeps happening, email support@comfy.org."
     },
     "deleteAccount": {
       "contactSupport": "To delete your account, please contact {email}"
@@ -2433,6 +2435,13 @@
     "model": "Model",
     "added": "Added",
     "accountInitialized": "Account initialized",
+    "eventTypes": {
+      "creditAdded": "Credits Added",
+      "accountCreated": "Account Created",
+      "apiUsage": "API Usage",
+      "gpuUsage": "GPU Usage",
+      "apiNodeUsage": "Partner Node Usage"
+    },
     "unified": {
       "message": "Credits have been unified",
       "tooltip": "We've unified payments across Comfy. Everything now runs on Comfy Credits:\n- Partner Nodes (formerly API nodes)\n- Cloud workflows\n\nYour existing Partner node balance has been converted into credits."
@@ -3347,7 +3356,7 @@
       "error": "Error"
     },
     "selection": {
-      "selectedCount": "Assets Selected: {count}",
+      "selectedCount": "{count} selected",
       "multipleSelectedAssets": "Multiple assets selected",
       "deselectAll": "Deselect all",
       "downloadSelected": "Download",
