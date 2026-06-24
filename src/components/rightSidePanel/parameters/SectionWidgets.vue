@@ -12,18 +12,18 @@ import {
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { widgetPromotedSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { isWidgetPromotedOnSubgraphNode } from '@/core/graph/subgraph/promotionUtils'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { DraggableList } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'
-import { isGroupNode } from '@/utils/executableGroupNodeDto'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getWidgetDefaultValue } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
@@ -146,16 +146,17 @@ function isWidgetShownOnParents(
   widgetNode: LGraphNode,
   widget: IBaseWidget
 ): boolean {
+  const source = widgetPromotedSource(widgetNode, widget)
   return parents.some((parent) => {
-    if (isPromotedWidgetView(widget)) {
+    if (source) {
       const interiorNodeId =
         String(widgetNode.id) === String(parent.id)
-          ? widget.sourceNodeId
+          ? source.nodeId
           : String(widgetNode.id)
 
       return isWidgetPromotedOnSubgraphNode(parent, {
         sourceNodeId: interiorNodeId,
-        sourceWidgetName: widget.sourceWidgetName
+        sourceWidgetName: source.widgetName
       })
     }
     return isWidgetPromotedOnSubgraphNode(parent, {
@@ -190,9 +191,7 @@ const hasDirectError = computed(() => {
 
 const hasContainerInternalError = computed(() => {
   if (!targetNode.value) return false
-  const isContainer =
-    targetNode.value instanceof SubgraphNode || isGroupNode(targetNode.value)
-  if (!isContainer) return false
+  if (!(targetNode.value instanceof SubgraphNode)) return false
 
   return executionErrorStore.isContainerWithInternalError(targetNode.value)
 })
@@ -234,7 +233,10 @@ function navigateToErrorTab() {
   rightSidePanelStore.openPanel('errors')
 }
 
-function writeWidgetValue(widget: IBaseWidget, value: WidgetValue) {
+function setWidgetValue(widget: IBaseWidget, value: WidgetValue) {
+  // Store-backed widgets (interior node widgets and promoted subgraph inputs)
+  // are addressed by widgetId; writing there keeps the displayed value in sync.
+  if (widget.widgetId) useWidgetValueStore().setValue(widget.widgetId, value)
   widget.value = value
   widget.callback?.(value)
   canvasStore.canvas?.setDirty(true, true)
@@ -245,18 +247,18 @@ function handleResetAllWidgets() {
     const spec = nodeDefStore.getInputSpecForWidget(widgetNode, widget.name)
     const defaultValue = getWidgetDefaultValue(spec)
     if (defaultValue !== undefined) {
-      writeWidgetValue(widget, defaultValue)
+      setWidgetValue(widget, defaultValue)
     }
   }
 }
 
 function handleWidgetValueUpdate(widget: IBaseWidget, newValue: WidgetValue) {
   if (newValue === undefined) return
-  writeWidgetValue(widget, newValue)
+  setWidgetValue(widget, newValue)
 }
 
 function handleWidgetReset(widget: IBaseWidget, newValue: WidgetValue) {
-  writeWidgetValue(widget, newValue)
+  setWidgetValue(widget, newValue)
 }
 
 defineExpose({

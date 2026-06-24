@@ -4,8 +4,8 @@ import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
 import { t } from '@/i18n'
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
+import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
+import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveInputType } from '@/core/graph/widgets/dynamicTypes'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -137,8 +137,8 @@ export class ComfyNodeDefImpl
     const obj = ComfyNodeDefImpl._migrateDefaultInput(def)
 
     /**
-     * Assign extra fields to `this` for compatibility with group node feature.
-     * TODO: Remove this once group node feature is removed.
+     * Copy fields that are declared on this class but not explicitly assigned
+     * below (e.g. `search_aliases`) straight from the source definition.
      */
     Object.assign(this, obj)
 
@@ -427,13 +427,22 @@ export const useNodeDefStore = defineStore('nodeDef', () => {
 
       return nodeDef.inputs[widgetName]
     }
-    const widget = node.widgets?.find((w) => w.name === widgetName)
-    if (!widget || !isPromotedWidgetView(widget)) return undefined
-
-    const sourceWidget = resolvePromotedWidgetSource(node, widget)
-    if (!sourceWidget) return undefined
-
-    return getInputSpecForWidget(sourceWidget.node, sourceWidget.widget.name)
+    // A subgraph node's widget is a promoted input named after its slot; resolve
+    // the interior source and read its real spec instead of fabricating one.
+    const input = node.inputs.find((i) => i.name === widgetName)
+    if (!input) return undefined
+    const source = promotedInputSource(node, input)
+    if (!source) return undefined
+    const resolution = resolveConcretePromotedWidget(
+      node,
+      source.nodeId,
+      source.widgetName
+    )
+    if (resolution.status !== 'resolved') return undefined
+    return getInputSpecForWidget(
+      resolution.resolved.node,
+      resolution.resolved.widget.name
+    )
   }
 
   /**

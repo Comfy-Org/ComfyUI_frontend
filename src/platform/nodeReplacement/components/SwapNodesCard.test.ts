@@ -10,8 +10,8 @@ vi.mock('./SwapNodeGroupRow.vue', () => ({
   default: {
     name: 'SwapNodeGroupRow',
     template:
-      '<div class="swap-row" :data-show-node-id-badge="showNodeIdBadge" :data-group-type="group?.type"><button class="locate-trigger" @click="$emit(\'locate-node\', group?.nodeTypes?.[0]?.nodeId)">Locate</button><button class="replace-trigger" @click="$emit(\'replace\', group)">Replace</button></div>',
-    props: ['group', 'showNodeIdBadge'],
+      '<div class="swap-row" :data-group-type="group?.type"><button class="locate-trigger" @click="$emit(\'locate-node\', group?.nodeTypes?.[0]?.nodeId)">Locate</button><button class="replace-trigger" @click="$emit(\'replace\', group)">Replace</button></div>',
+    props: ['group'],
     emits: ['locate-node', 'replace']
   }
 }))
@@ -29,7 +29,6 @@ function makeGroups(count = 2): SwapNodeGroup[] {
 function mountCard(
   props: Partial<{
     swapNodeGroups: SwapNodeGroup[]
-    showNodeIdBadge: boolean
   }> = {},
   callbacks?: {
     onLocateNode?: (nodeId: string) => void
@@ -39,7 +38,6 @@ function mountCard(
   return render(SwapNodesCard, {
     props: {
       swapNodeGroups: makeGroups(),
-      showNodeIdBadge: false,
       ...props,
       ...(callbacks?.onLocateNode
         ? { 'onLocate-node': callbacks.onLocateNode }
@@ -70,16 +68,6 @@ describe('SwapNodesCard', () => {
       const { container } = mountCard({ swapNodeGroups: makeGroups(1) })
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.swap-row')).toHaveLength(1)
-    })
-
-    it('passes showNodeIdBadge to children', () => {
-      const { container } = mountCard({
-        swapNodeGroups: makeGroups(1),
-        showNodeIdBadge: true
-      })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
-      const row = container.querySelector('.swap-row')
-      expect(row!.getAttribute('data-show-node-id-badge')).toBe('true')
     })
 
     it('passes group prop to children', () => {
