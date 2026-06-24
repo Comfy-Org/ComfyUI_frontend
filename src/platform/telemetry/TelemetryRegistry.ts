@@ -99,6 +99,10 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackMonthlySubscriptionCancelled?.())
   }
 
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    this.dispatch((provider) => provider.trackWorkspaceInviteSent?.(metadata))
+  }
+
   trackAddApiCreditButtonClicked(): void {
     this.dispatch((provider) => provider.trackAddApiCreditButtonClicked?.())
   }
@@ -113,15 +117,8 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackApiCreditTopupSucceeded?.())
   }
 
-  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
-    this.dispatch((provider) => provider.trackWorkspaceInviteSent?.(metadata))
-  }
-
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
-    this.dispatch((provider) => provider.trackRunButton?.(options))
+  trackRunButton(properties: RunButtonProperties): void {
+    this.dispatch((provider) => provider.trackRunButton?.(properties))
   }
 
   startTopupTracking(): void {

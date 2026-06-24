@@ -39,8 +39,7 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata,
-  WorkspaceInviteMetadata
+  WorkflowSavedMetadata
 } from '../../types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
@@ -257,10 +256,6 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
 
   trackApiCreditTopupSucceeded(): void {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
-  }
-
-  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
-    this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
   }
 
   // Credit top-up tracking methods (composition with utility functions)

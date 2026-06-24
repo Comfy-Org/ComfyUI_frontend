@@ -19,13 +19,6 @@
             {{ $t('subscription.usdPerMonth') }}
           </span>
         </div>
-        <div
-          v-if="teamPlan"
-          class="flex items-center gap-1 text-sm text-muted-foreground"
-        >
-          <i class="icon-[comfy--credits] size-3.5 shrink-0 bg-amber-400" />
-          <span>{{ displayCredits }} {{ $t('subscription.perMonth') }}</span>
-        </div>
         <span class="text-muted-foreground">
           {{
             isYearly

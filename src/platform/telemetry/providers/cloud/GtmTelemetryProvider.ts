@@ -27,8 +27,7 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata,
-  WorkspaceInviteMetadata
+  WorkflowSavedMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 
@@ -183,16 +182,7 @@ export class GtmTelemetryProvider implements TelemetryProvider {
     )
   }
 
-  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
-    this.pushEvent('workspace_invite_sent', { ...metadata })
-  }
-
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
-    const { mode, isAppMode } = useAppMode()
-
+  trackRunButton(properties: RunButtonProperties): void {
     this.pushEvent('run_workflow', {
       subscribe_to_run: properties.subscribe_to_run,
       trigger_source: properties.trigger_source ?? 'unknown',

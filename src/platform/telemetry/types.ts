@@ -489,14 +489,11 @@ export interface TelemetryProvider {
     metadata?: SubscriptionSuccessMetadata
   ): void
   trackMonthlySubscriptionCancelled?(): void
+  trackWorkspaceInviteSent?(metadata: WorkspaceInviteMetadata): void
   trackAddApiCreditButtonClicked?(): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void
-  trackWorkspaceInviteSent?(metadata: WorkspaceInviteMetadata): void
-  trackRunButton?(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void
+  trackRunButton?(properties: RunButtonProperties): void
 
   // Credit top-up tracking (composition with internal utilities)
   startTopupTracking?(): void
@@ -599,7 +596,7 @@ export const TelemetryEvents = {
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
   API_CREDIT_TOPUP_SUCCEEDED: 'app:api_credit_topup_succeeded',
-  WORKSPACE_INVITE_SENT: 'app:workspace_invite_sent',
+  BEGIN_CHECKOUT: 'begin_checkout',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',

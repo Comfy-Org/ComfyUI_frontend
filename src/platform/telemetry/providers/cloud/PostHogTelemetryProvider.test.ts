@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { watch } from 'vue'
 
 import { TelemetryEvents } from '../../types'
 
@@ -13,7 +12,6 @@ const hoisted = vi.hoisted(() => {
   const mockReset = vi.fn()
   const mockOnUserResolved = vi.fn()
   const mockOnUserLogout = vi.fn()
-  const mockTier = { value: null as string | null }
 
   return {
     mockCapture,
@@ -25,7 +23,6 @@ const hoisted = vi.hoisted(() => {
     mockReset,
     mockOnUserResolved,
     mockOnUserLogout,
-    mockTier,
     mockPosthog: {
       default: {
         init: mockInit,
@@ -64,15 +61,13 @@ vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
 
 vi.mock('posthog-js', () => hoisted.mockPosthog)
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    tier: hoisted.mockTier
+vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
+  useSubscription: () => ({
+    subscriptionTier: { value: null }
   })
 }))
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
-
-const watchMock = vi.mocked(watch)
 
 function createProvider(
   config: Partial<typeof window.__CONFIG__> = {}
@@ -154,30 +149,6 @@ describe('PostHogTelemetryProvider', () => {
       callback({ id: 'user-123' })
 
       expect(hoisted.mockIdentify).toHaveBeenCalledWith('user-123')
-    })
-
-    it('sets the subscription_tier person property from the facade tier', async () => {
-      createProvider()
-      await vi.dynamicImportSettled()
-
-      const onResolved = hoisted.mockOnUserResolved.mock.calls[0][0]
-      onResolved({ id: 'user-123' })
-
-      const tierWatch = watchMock.mock.calls.find(
-        ([source]) => source === hoisted.mockTier
-      )
-      expect(tierWatch).toBeDefined()
-
-      const handler = tierWatch?.[1] as unknown as (
-        value: string | null
-      ) => void
-      handler('PRO')
-      expect(hoisted.mockPeopleSet).toHaveBeenCalledWith({
-        subscription_tier: 'PRO'
-      })
-
-      handler(null)
-      expect(hoisted.mockPeopleSet).toHaveBeenCalledOnce()
     })
   })
 
