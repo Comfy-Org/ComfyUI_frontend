@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTeamPlan } from '@/platform/workspace/composables/useTeamPlan'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type {
@@ -92,8 +92,8 @@ export function useMembersPanel() {
   } = storeToRefs(workspaceStore)
   const { resendInvite } = workspaceStore
   const { permissions, uiConfig } = useWorkspaceUI()
-  const { showSubscriptionDialog } = useBillingContext()
   const { isOnTeamPlan, isCancelled, hasLapsedTeamPlan } = useTeamPlan()
+  const subscriptionDialog = useSubscriptionDialog()
 
   // The team plan caps members at a flat MAX_WORKSPACE_MEMBERS, independent of
   // the subscription tier.
@@ -220,6 +220,10 @@ export function useMembersPanel() {
     void showRemoveMemberDialog(member.id)
   }
 
+  function showTeamPlans() {
+    subscriptionDialog.show({ planMode: 'team' })
+  }
+
   return {
     searchQuery,
     activeView,
@@ -249,7 +253,7 @@ export function useMembersPanel() {
     isCurrentUser,
     selectMember,
     toggleSort,
-    showSubscriptionDialog,
+    showTeamPlans,
     handleResendInvite,
     handleRevokeInvite,
     handleRemoveMember

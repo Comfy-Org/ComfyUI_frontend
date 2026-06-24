@@ -14,7 +14,7 @@ import type {
 
 const mockHandleResendInvite = vi.fn()
 const mockHandleRevokeInvite = vi.fn()
-const mockShowSubscriptionDialog = vi.fn()
+const mockShowTeamPlans = vi.fn()
 const mockSelectMember = vi.fn()
 const mockToggleSort = vi.fn()
 const mockHandleInviteMember = vi.fn()
@@ -113,7 +113,7 @@ vi.mock('@/platform/workspace/composables/useMembersPanel', () => ({
       m.email.toLowerCase() === 'owner@example.com',
     selectMember: mockSelectMember,
     toggleSort: mockToggleSort,
-    showSubscriptionDialog: mockShowSubscriptionDialog,
+    showTeamPlans: mockShowTeamPlans,
     handleResendInvite: mockHandleResendInvite,
     handleRevokeInvite: mockHandleRevokeInvite,
     handleRemoveMember: vi.fn()
@@ -249,14 +249,14 @@ describe('MembersPanelContent', () => {
       ).toBeTruthy()
     })
 
-    it('opens subscription dialog on upgrade click', async () => {
+    it('opens team plans on upgrade click', async () => {
       renderComponent()
       await userEvent.click(
         screen.getByRole('button', {
           name: /workspacePanel\.members\.upgradeToTeam/
         })
       )
-      expect(mockShowSubscriptionDialog).toHaveBeenCalled()
+      expect(mockShowTeamPlans).toHaveBeenCalled()
     })
 
     it('does not show search input', () => {
@@ -424,7 +424,7 @@ describe('MembersPanelContent', () => {
         name: /workspacePanel\.members\.upgradeToTeam/
       })
       await userEvent.click(upgradeBtn)
-      expect(mockShowSubscriptionDialog).toHaveBeenCalled()
+      expect(mockShowTeamPlans).toHaveBeenCalled()
     })
 
     it('hides search input', () => {

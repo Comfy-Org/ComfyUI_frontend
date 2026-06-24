@@ -331,6 +331,13 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
+vi.mock(
+  '@/platform/cloud/subscription/composables/useSubscriptionDialog',
+  () => ({
+    useSubscriptionDialog: () => ({ show: vi.fn() })
+  })
+)
+
 vi.mock('@/services/dialogService', () => ({
   useDialogService: () => ({
     showRemoveMemberDialog: mockShowRemoveMemberDialog,

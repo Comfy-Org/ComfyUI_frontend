@@ -2,6 +2,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations'
+import { startModelNodeDragFromAsset } from '@/composables/node/startModelNodeDragFromAsset'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useModelSelectorDialog } from '@/composables/useModelSelectorDialog'
 import { useRunButtonTelemetry } from '@/composables/useRunButtonTelemetry'
@@ -21,7 +22,6 @@ import {
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
-import { createModelNodeFromAsset } from '@/platform/assets/utils/createModelNodeFromAsset'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { buildSupportUrl } from '@/platform/support/config'
 import { useTelemetry } from '@/platform/telemetry'
@@ -1307,14 +1307,14 @@ export function useCoreCommands(): ComfyCommand[] {
           assetType: 'models',
           title: t('sideToolbar.modelLibrary'),
           onAssetSelected: (asset) => {
-            const result = createModelNodeFromAsset(asset)
-            if (!result.success) {
+            const error = startModelNodeDragFromAsset(asset, 'asset_browser')
+            if (error) {
               toastStore.add({
                 severity: 'error',
                 summary: t('g.error'),
                 detail: t('assetBrowser.failedToCreateNode')
               })
-              console.error('Node creation failed:', result.error)
+              console.error('Node creation failed:', error)
             }
           }
         })

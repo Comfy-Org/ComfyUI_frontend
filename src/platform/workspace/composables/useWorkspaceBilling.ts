@@ -82,6 +82,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const currentPlanSlug = computed(
     () => statusData.value?.plan_slug ?? billingPlans.currentPlanSlug.value
   )
+  const teamCreditStops = computed(() => billingPlans.teamCreditStops.value)
+  const currentTeamCreditStop = computed(
+    () => statusData.value?.team_credit_stop ?? null
+  )
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
@@ -146,8 +150,18 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         cancelUrl
       )
 
-      // Refresh status and balance after subscription
-      await Promise.all([fetchStatus(), fetchBalance()])
+      // Refresh is non-fatal: the subscribe write already succeeded, so a failed
+      // refresh must not reject and prompt a retry of an active subscription.
+      const [statusResult, balanceResult] = await Promise.allSettled([
+        fetchStatus(),
+        fetchBalance()
+      ])
+      if (
+        statusResult.status === 'rejected' ||
+        balanceResult.status === 'rejected'
+      ) {
+        error.value = 'Subscription succeeded, but billing state refresh failed'
+      }
 
       return response
     } catch (err) {
@@ -277,6 +291,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     balance,
     plans,
     currentPlanSlug,
+    teamCreditStops,
+    currentTeamCreditStop,
     isLoading,
     error,
     isActiveSubscription,
