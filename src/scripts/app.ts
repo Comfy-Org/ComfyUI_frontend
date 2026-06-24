@@ -303,7 +303,7 @@ export class ComfyApp {
    * The node errors from the previous execution.
    * @deprecated Use app.extensionManager.lastNodeErrors instead
    */
-  get lastNodeErrors(): Record<NodeId, NodeError> | null {
+  get lastNodeErrors(): Record<string, NodeError> | null {
     return useExecutionErrorStore().lastNodeErrors
   }
 
