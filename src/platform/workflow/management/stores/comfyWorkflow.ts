@@ -16,7 +16,7 @@ export interface InputWidgetConfig {
   height?: number
 }
 
-export type LinearInputId = WidgetId | NodeLocatorId | SerializedNodeId
+type LinearInputId = WidgetId | NodeLocatorId | SerializedNodeId
 export type LinearOutputNodeId = SerializedNodeId
 export type LinearInput = [LinearInputId, string, InputWidgetConfig?]
 
