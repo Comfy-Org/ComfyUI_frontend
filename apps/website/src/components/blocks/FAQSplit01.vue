@@ -1,28 +1,15 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-import { reactive, watch } from 'vue'
+import Accordion from '../ui/accordion/Accordion.vue'
+import AccordionContent from '../ui/accordion/AccordionContent.vue'
+import AccordionItem from '../ui/accordion/AccordionItem.vue'
+import AccordionTrigger from '../ui/accordion/AccordionTrigger.vue'
 
 type Faq = { id: string; question: string; answer: string }
 
-const { faqs } = defineProps<{
+defineProps<{
   heading: string
   faqs: readonly Faq[]
 }>()
-
-const expanded = reactive<boolean[]>(faqs.map(() => false))
-
-watch(
-  () => faqs.length,
-  (length) => {
-    if (length === expanded.length) return
-    expanded.length = 0
-    for (let i = 0; i < length; i += 1) expanded.push(false)
-  }
-)
-
-function toggle(index: number) {
-  expanded[index] = !expanded[index]
-}
 </script>
 
 <template>
@@ -30,65 +17,30 @@ function toggle(index: number) {
     <div class="flex flex-col gap-6 md:flex-row md:gap-16">
       <!-- Left heading -->
       <div
-        class="bg-primary-comfy-ink sticky top-20 z-10 w-full shrink-0 self-start py-4 md:top-28 md:w-80 md:py-0"
+        class="sticky top-20 z-10 w-full shrink-0 self-start bg-primary-comfy-ink py-4 md:top-28 md:w-80 md:py-0"
       >
-        <h2 class="text-primary-comfy-canvas text-4xl font-light md:text-5xl">
+        <h2 class="text-4xl font-light text-primary-comfy-canvas md:text-5xl">
           {{ heading }}
         </h2>
       </div>
 
       <!-- Right FAQ list -->
-      <div class="flex-1">
-        <div
+      <Accordion type="multiple" class="flex-1">
+        <AccordionItem
           v-for="(faq, index) in faqs"
           :key="faq.id"
-          class="border-primary-comfy-canvas/20 border-b"
+          :value="faq.id"
         >
-          <button
-            :id="`faq-trigger-${faq.id}`"
-            type="button"
-            :aria-expanded="expanded[index]"
-            :aria-controls="`faq-panel-${faq.id}`"
-            :class="
-              cn(
-                'flex w-full cursor-pointer items-center justify-between text-left',
-                index === 0 ? 'pb-6' : 'py-6'
-              )
-            "
-            @click="toggle(index)"
-          >
-            <span
-              :class="
-                cn(
-                  'text-lg font-light md:text-xl',
-                  expanded[index]
-                    ? 'text-primary-comfy-yellow'
-                    : 'text-primary-comfy-canvas'
-                )
-              "
-            >
-              {{ faq.question }}
-            </span>
-            <span
-              class="text-primary-comfy-yellow ml-4 shrink-0 text-2xl"
-              aria-hidden="true"
-            >
-              {{ expanded[index] ? '−' : '+' }}
-            </span>
-          </button>
-          <section
-            v-show="expanded[index]"
-            :id="`faq-panel-${faq.id}`"
-            role="region"
-            :aria-labelledby="`faq-trigger-${faq.id}`"
-            class="pb-6"
-          >
-            <p class="text-primary-comfy-canvas/70 text-sm whitespace-pre-line">
+          <AccordionTrigger :class="index === 0 ? 'pt-0' : ''">
+            {{ faq.question }}
+          </AccordionTrigger>
+          <AccordionContent>
+            <p class="text-sm whitespace-pre-line text-primary-comfy-canvas/70">
               {{ faq.answer }}
             </p>
-          </section>
-        </div>
-      </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   </section>
 </template>
