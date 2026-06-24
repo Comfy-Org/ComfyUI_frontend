@@ -52,10 +52,11 @@ const billingNote = computed(() => {
         </div>
 
         <span
-          v-if="discount"
           class="text-primary-comfy-yellow text-sm max-sm:text-xs sm:ml-2"
+          :class="{ 'opacity-0': !discount }"
+          :aria-hidden="!discount || undefined"
         >
-          {{ discount }}
+          {{ discount || ' ' }}
         </span>
       </div>
     </div>
