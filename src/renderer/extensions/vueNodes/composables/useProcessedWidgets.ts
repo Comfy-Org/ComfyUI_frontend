@@ -46,12 +46,11 @@ import {
   getLocatorIdFromNodeData
 } from '@/utils/graphTraversalUtil'
 
-const TOOLTIP_VALUE_TYPES: Readonly<string[]> = [
-  'asset',
-  'combo',
-  'number',
-  'text'
-]
+const TOOLTIP_VALUE_TYPES = ['asset', 'combo', 'number', 'text'] as const
+type TooltipValueType = (typeof TOOLTIP_VALUE_TYPES)[number]
+function isTooltipValueType(val: unknown): val is TooltipValueType {
+  return TOOLTIP_VALUE_TYPES.includes(val as TooltipValueType)
+}
 
 interface ProcessedWidget {
   advanced: boolean
@@ -327,7 +326,7 @@ export function computeProcessedWidgets({
     )
 
     const valueTooltip =
-      TOOLTIP_VALUE_TYPES.includes(widget.type) && String(value).length > 10
+      isTooltipValueType(widget.type) && String(value).length > 10
         ? String(value)
         : undefined
     const tooltipConfig = ui.getTooltipConfig(widget, valueTooltip)
