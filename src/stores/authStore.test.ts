@@ -30,6 +30,8 @@ const { mockFeatureFlags } = vi.hoisted(() => ({
   }
 }))
 
+const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
+
 type MockUser = Omit<User, 'getIdToken'> & {
   getIdToken: Mock
 }
@@ -111,9 +113,9 @@ vi.mock('@/platform/telemetry', () => ({
 }))
 
 // Mock useToastStore
-vi.mock('@/stores/toastStore', () => ({
+vi.mock('@/platform/updates/common/toastStore', () => ({
   useToastStore: () => ({
-    add: vi.fn()
+    add: mockToastAdd
   })
 }))
 
@@ -399,6 +401,162 @@ describe('useAuthStore', () => {
         'password'
       )
       expect(store.loading).toBe(false)
+    })
+
+    it('creates the account once for concurrent same-email sign-ups (incl. case/whitespace)', async () => {
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockClear()
+
+      const results = await Promise.all([
+        store.register('Race@Example.com', 'password'),
+        store.register('  race@example.com  ', 'password'),
+        store.register('RACE@EXAMPLE.COM', 'password')
+      ])
+
+      expect(firebaseAuth.createUserWithEmailAndPassword).toHaveBeenCalledTimes(
+        1
+      )
+      expect(results[0]).toBe(results[1])
+      expect(results[1]).toBe(results[2])
+    })
+
+    it('does not create a second account on a duplicate submit after success', async () => {
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockClear()
+
+      await store.register('keep@example.com', 'password')
+      await store.register('keep@example.com', 'password')
+
+      expect(firebaseAuth.createUserWithEmailAndPassword).toHaveBeenCalledTimes(
+        1
+      )
+    })
+
+    it('keeps the user signed in but warns when account setup fails', async () => {
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+      mockToastAdd.mockClear()
+      // Make the createCustomer (POST /customers) call fail.
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/customers')) {
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+            json: () => Promise.resolve({ message: 'boom' })
+          })
+        }
+        return Promise.reject(new Error('Unexpected API call'))
+      })
+
+      const result = await store.register('setup-fail@example.com', 'password')
+
+      // Sign-up still resolves (provisioning is best-effort)...
+      expect(result).toEqual(mockUserCredential)
+      expect(store.loading).toBe(false)
+      // ...and the failure is surfaced to the user, not swallowed silently.
+      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'warn' })
+      )
+    })
+
+    it('allows a genuine retry after a failed sign-up', async () => {
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockClear()
+      vi.mocked(
+        firebaseAuth.createUserWithEmailAndPassword
+      ).mockRejectedValueOnce(new Error('network blip'))
+
+      await expect(
+        store.register('retry@example.com', 'password')
+      ).rejects.toThrow('network blip')
+
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(
+        firebaseAuth.createUserWithEmailAndPassword
+      ).mockResolvedValueOnce(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+
+      await store.register('retry@example.com', 'password')
+
+      expect(firebaseAuth.createUserWithEmailAndPassword).toHaveBeenCalledTimes(
+        2
+      )
+    })
+
+    it('evicts the dedup entry after the retention window so a later sign-up re-runs', async () => {
+      vi.useFakeTimers()
+      try {
+        const mockUserCredential = { user: mockUser }
+        vi.mocked(
+          firebaseAuth.createUserWithEmailAndPassword
+        ).mockResolvedValue(
+          mockUserCredential as Partial<UserCredential> as UserCredential
+        )
+        vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockClear()
+
+        await store.register('evict@example.com', 'password')
+        await store.register('evict@example.com', 'password')
+        expect(
+          firebaseAuth.createUserWithEmailAndPassword
+        ).toHaveBeenCalledTimes(1)
+
+        await vi.advanceTimersByTimeAsync(10_001)
+        await store.register('evict@example.com', 'password')
+        expect(
+          firebaseAuth.createUserWithEmailAndPassword
+        ).toHaveBeenCalledTimes(2)
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
+    it('keeps a successful sign-up even when createCustomer (POST /customers) fails', async () => {
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/customers')) {
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+            statusText: '',
+            json: () => Promise.resolve({ message: 'provisioning blip' })
+          })
+        }
+        return Promise.resolve(mockFetchBalanceResponse)
+      })
+
+      const result = await store.register('besteffort@example.com', 'password')
+
+      expect(result).toEqual(mockUserCredential)
+      expect(store.loading).toBe(false)
+    })
+
+    it('clears the register dedup on logout so a later sign-up re-runs', async () => {
+      const mockUserCredential = { user: mockUser }
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockResolvedValue(
+        mockUserCredential as Partial<UserCredential> as UserCredential
+      )
+      vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
+      vi.mocked(firebaseAuth.createUserWithEmailAndPassword).mockClear()
+
+      await store.register('clear@example.com', 'password')
+      await store.logout()
+      await store.register('clear@example.com', 'password')
+
+      expect(firebaseAuth.createUserWithEmailAndPassword).toHaveBeenCalledTimes(
+        2
+      )
     })
   })
 

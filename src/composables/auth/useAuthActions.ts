@@ -28,8 +28,31 @@ export const useAuthActions = () => {
 
   const accessError = ref(false)
 
+  // Matches both the Firebase SDK code and the raw EMAIL_EXISTS REST message.
+  const isEmailAlreadyInUse = (error: unknown): boolean => {
+    if (
+      error instanceof FirebaseError &&
+      error.code === AuthErrorCodes.EMAIL_EXISTS
+    ) {
+      return true
+    }
+    const message = error instanceof Error ? error.message : String(error ?? '')
+    return /email[-_ ]?already[-_ ]?in[-_ ]?use|\bEMAIL_EXISTS\b/i.test(message)
+  }
+
   const reportError = (error: unknown) => {
     // Ref: https://firebase.google.com/docs/auth/admin/errors
+    if (isEmailAlreadyInUse(error)) {
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: st(
+          'auth.errors.auth/email-already-in-use',
+          t('auth.errors.generic')
+        )
+      })
+      return
+    }
     if (
       error instanceof FirebaseError &&
       [

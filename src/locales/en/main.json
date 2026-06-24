@@ -2152,6 +2152,7 @@
     "userNotAuthenticated": "User not authenticated",
     "failedToFetchBalance": "Failed to fetch balance: {error}",
     "failedToCreateCustomer": "Failed to create customer: {error}",
+    "accountSetupIncomplete": "We couldn't finish setting up your account. You're signed in, and we'll keep retrying automatically.",
     "failedToInitiateCreditPurchase": "Failed to initiate credit purchase: {error}",
     "failedToAccessBillingPortal": "Failed to access billing portal: {error}",
     "failedToPurchaseCredits": "Failed to purchase credits: {error}",

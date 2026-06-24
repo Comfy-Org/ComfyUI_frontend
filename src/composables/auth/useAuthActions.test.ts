@@ -281,4 +281,30 @@ describe('useAuthActions.reportError', () => {
     expect(mockToastErrorHandler).toHaveBeenCalledWith(networkError)
     expect(mockToastStore.add).not.toHaveBeenCalled()
   })
+
+  it('shows the friendly "account exists" message for a Firebase email-already-in-use code', () => {
+    const { reportError } = useAuthActions()
+
+    reportError(new FirebaseError('auth/email-already-in-use', 'raw firebase'))
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.auth/email-already-in-use'
+    })
+    expect(mockToastErrorHandler).not.toHaveBeenCalled()
+  })
+
+  it('maps a raw/wrapped EMAIL_EXISTS error to the friendly message, not the generic fallback', () => {
+    const { reportError } = useAuthActions()
+
+    reportError(new Error('Identity Toolkit error: EMAIL_EXISTS'))
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.auth/email-already-in-use'
+    })
+    expect(mockToastErrorHandler).not.toHaveBeenCalled()
+  })
 })

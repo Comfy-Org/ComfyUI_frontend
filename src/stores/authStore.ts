@@ -29,6 +29,7 @@ import {
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
@@ -61,8 +62,11 @@ export class AuthStoreError extends Error {
   }
 }
 
+const REGISTER_DEDUP_RETENTION_MS = 10_000
+
 export const useAuthStore = defineStore('auth', () => {
   const { flags } = useFeatureFlags()
+  const toastStore = useToastStore()
 
   // State
   const loading = ref(false)
@@ -305,10 +309,23 @@ export const useAuthStore = defineStore('auth', () => {
       }
     })
     if (!createCustomerRes.ok) {
+      // statusText is empty under HTTP/2; use the body message, then the status.
+      let detail = `HTTP ${createCustomerRes.status}`
+      try {
+        const body: unknown = await createCustomerRes.json()
+        if (
+          body &&
+          typeof body === 'object' &&
+          'message' in body &&
+          body.message
+        ) {
+          detail = String(body.message)
+        }
+      } catch {
+        // Non-JSON body; keep the status code.
+      }
       throw new AuthStoreError(
-        t('toastMessages.failedToCreateCustomer', {
-          error: createCustomerRes.statusText
-        })
+        t('toastMessages.failedToCreateCustomer', { error: detail })
       )
     }
 
@@ -336,13 +353,29 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const result = await action(auth)
 
-      // Create customer if needed
+      // Provisioning is best-effort (the server also provisions on the next
+      // authenticated request), so surface failures without blocking sign-in.
       if (options?.createCustomer) {
-        const token = await getIdToken()
-        if (!token) {
-          throw new Error('Cannot create customer: User not authenticated')
+        try {
+          const token = await getIdToken()
+          if (token) {
+            await createCustomer()
+          } else {
+            console.warn(
+              '[auth] skipped account setup: no ID token available after sign-in'
+            )
+          }
+        } catch (error) {
+          console.warn('[auth] account setup failed after sign-in', error)
+          if (isCloud) {
+            toastStore.add({
+              severity: 'warn',
+              summary: t('g.warning'),
+              detail: t('toastMessages.accountSetupIncomplete'),
+              life: 8000
+            })
+          }
         }
-        await createCustomer()
       }
 
       return result
@@ -374,17 +407,26 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const register = async (
+  // Single-flight per email: one signup creates the account at most once.
+  const inFlightRegister = new Map<string, Promise<UserCredential>>()
+
+  const register = (
     email: string,
     password: string
   ): Promise<UserCredential> => {
-    const result = await executeAuthAction(
-      (authInstance) =>
-        createUserWithEmailAndPassword(authInstance, email, password),
-      { createCustomer: true }
-    )
+    const key = email.trim().toLowerCase()
 
-    if (isCloud) {
+    const existing = inFlightRegister.get(key)
+    if (existing) return existing
+
+    const pending = (async () => {
+      const result = await executeAuthAction(
+        (authInstance) =>
+          createUserWithEmailAndPassword(authInstance, email, password),
+        { createCustomer: true }
+      )
+
+      // useTelemetry() is null off-cloud, so this is already a no-op there.
       useTelemetry()?.trackAuth({
         method: 'email',
         is_new_user: true,
@@ -392,9 +434,24 @@ export const useAuthStore = defineStore('auth', () => {
         email: result.user.email ?? undefined,
         ...getShareAuthMetadata()
       })
-    }
 
-    return result
+      return result
+    })()
+
+    inFlightRegister.set(key, pending)
+    // Drop on failure (allow retry); on success keep through the redirect window,
+    // then evict to keep the map bounded (sign-out also clears it; see logout).
+    pending
+      .then(() => {
+        setTimeout(() => {
+          // Only evict if this is still our entry; a re-registration of the same
+          // email (e.g. after a no-reload sign-out) may have replaced it.
+          if (inFlightRegister.get(key) === pending)
+            inFlightRegister.delete(key)
+        }, REGISTER_DEDUP_RETENTION_MS)
+      })
+      .catch(() => inFlightRegister.delete(key))
+    return pending
   }
 
   const loginWithGoogle = async (options?: {
@@ -443,8 +500,13 @@ export const useAuthStore = defineStore('auth', () => {
     return result
   }
 
-  const logout = async (): Promise<void> =>
-    executeAuthAction((authInstance) => signOut(authInstance))
+  const logout = async (): Promise<void> => {
+    // Sign-out (which on desktop/localhost doesn't reload) invalidates any
+    // retained register() dedup entries; clear them so a later sign-up can't get
+    // a stale credential back.
+    inFlightRegister.clear()
+    await executeAuthAction((authInstance) => signOut(authInstance))
+  }
 
   const sendPasswordReset = async (email: string): Promise<void> =>
     executeAuthAction((authInstance) =>
