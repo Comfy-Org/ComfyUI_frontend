@@ -188,4 +188,41 @@ describe('SubscriptionTransitionPreviewWorkspace', () => {
       screen.getByText('subscription.preview.confirmUpgradeCta')
     ).toBeTruthy()
   })
+
+  it('renders a yearly team credit-commit change with annual refill and yearly labels', () => {
+    render(SubscriptionTransitionPreviewWorkspace, {
+      props: {
+        previewData: preview({
+          transition_type: 'upgrade',
+          is_immediate: true,
+          cost_today_cents: 1_260_000,
+          current_plan: plan('PRO', 'MONTHLY', 70_000),
+          new_plan: plan('PRO', 'ANNUAL', 1_680_000)
+        }),
+        teamPlan: {
+          id: 'team_1400',
+          usd: 1400,
+          credits: 295_400,
+          discountedUsd: 1295
+        }
+      },
+      global: globalOptions
+    })
+    // Yearly grants 12 months of the stop's monthly credits up front.
+    expect(screen.getByText('subscription.teamPlan.name')).toBeTruthy()
+    expect(screen.getByText('3,544,800')).toBeTruthy()
+    expect(
+      screen.getByText('subscription.preview.creditsYoullGetToday')
+    ).toBeTruthy()
+    expect(
+      screen.getByText('subscription.preview.refillReplacesNote')
+    ).toBeTruthy()
+    // Yearly line label; proration money stays driven by previewData.
+    expect(
+      screen.getByText('subscription.preview.yearlySubscription')
+    ).toBeTruthy()
+    expect(screen.getByText('$16,800.00')).toBeTruthy()
+    expect(screen.getByText('− $4,200.00')).toBeTruthy()
+    expect(screen.getByText('$12,600.00')).toBeTruthy()
+  })
 })
