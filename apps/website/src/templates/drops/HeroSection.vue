@@ -4,15 +4,11 @@ import type { Locale } from '../../i18n/translations'
 import HeroLivestream01 from '../../components/blocks/HeroLivestream01.vue'
 import { externalLinks, getRoutes } from '../../config/routes'
 import { t } from '../../i18n/translations'
+import { livestream } from './livestream'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const routes = getRoutes(locale)
-
-// TODO(drops-livestream): replace with the production stream ID + window.
-const youtubeVideoId = 'nlLZfNIqF8M'
-const startDateTime = '2026-06-29T15:00:00Z'
-const endDateTime = '2026-06-29T17:15:00Z'
 </script>
 
 <template>
@@ -34,8 +30,8 @@ const endDateTime = '2026-06-29T17:15:00Z'
       href: externalLinks.cloud,
       target: '_blank'
     }"
-    :youtube-video-id="youtubeVideoId"
-    :start-date-time="startDateTime"
-    :end-date-time="endDateTime"
+    :youtube-video-id="livestream.youtubeVideoId"
+    :start-date-time="livestream.startDateTime"
+    :end-date-time="livestream.endDateTime"
   />
 </template>

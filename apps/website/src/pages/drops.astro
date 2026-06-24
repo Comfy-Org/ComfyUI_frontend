@@ -13,7 +13,7 @@ const locale = 'en' as const
   title={t('drops.page.title', locale)}
   description={t('drops.page.description', locale)}
 >
-  <SubscribeBanner locale={locale} />
+  <SubscribeBanner locale={locale} client:idle />
   <HeroSection locale={locale} client:load />
   <DropsSection locale={locale} />
   <CtaSection locale={locale} />
