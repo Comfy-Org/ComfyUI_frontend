@@ -45,7 +45,11 @@ async function mockCloudBoot(
       })
     )
   )
-  await page.route('**/api/settings', (r) => r.fulfill(jsonRoute({})))
+  // TutorialCompleted suppresses the new-user template browser, whose modal
+  // overlay would otherwise intercept clicks on the topbar.
+  await page.route('**/api/settings', (r) =>
+    r.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
+  )
   await page.route('**/api/userdata**', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/extensions', (r) => r.fulfill(jsonRoute([])))
   await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
@@ -130,14 +134,12 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
   }) => {
     test.setTimeout(60_000)
 
-    // Subscription gating is config-driven: with subscription_required on,
-    // the cloud subscription extension calls requireActiveSubscription() at
-    // boot, which opens the free-tier dialog for an inactive FREE user.
-    // (refreshRemoteConfig overwrites window.__CONFIG__ from /api/features,
-    // so the flag must come from the features mock, not an init script.)
-    // The free-tier dialog branch additionally requires an active personal
-    // workspace, so this boots with team workspaces enabled (production
-    // shape) — the facade still routes personal through `/customers/*`.
+    // Boots with team workspaces enabled (production shape); the facade still
+    // routes a personal workspace through `/customers/*`. With subscription
+    // gating on, an inactive FREE user gets the "Subscribe to run" button,
+    // which opens the free-tier dialog on click. (refreshRemoteConfig
+    // overwrites window.__CONFIG__ from /api/features, so the flags must come
+    // from the features mock, not an init script.)
     await mockCloudBoot(
       page,
       {
@@ -151,6 +153,8 @@ test.describe('Billing facade consumers (FE-933)', { tag: '@cloud' }, () => {
       { team_workspaces_enabled: true, subscription_required: true }
     )
     await bootApp(page)
+
+    await page.getByTestId('subscribe-to-run-button').click()
 
     // T5: the dialog must source the date from facade renewalDate — when this
     // line read the legacy store it silently vanished for team users.
