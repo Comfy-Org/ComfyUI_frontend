@@ -6,6 +6,8 @@ import { createI18n } from 'vue-i18n'
 
 import Load3D from '@/components/load3d/Load3D.vue'
 import type { ComponentWidget } from '@/scripts/domWidget'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 const { load3dState, resolveNodeMock, settingGetMock } = vi.hoisted(() => ({
   load3dState: {
@@ -83,7 +85,7 @@ const i18n = createI18n({
 
 type RenderOptions = {
   widget?: unknown
-  nodeId?: number | string
+  nodeId?: NodeId
   stateOverrides?: Partial<ReturnType<typeof buildLoad3dStub>>
   enable3DViewer?: boolean
 }
@@ -165,16 +167,17 @@ describe('Load3D', () => {
     })
 
     it('falls back to resolveNode(nodeId) when the widget lacks a node', async () => {
+      const nodeId = toNodeId(42)
       resolveNodeMock.mockReturnValue(MOCK_NODE)
-      renderLoad3D({ widget: {}, nodeId: 42 })
+      renderLoad3D({ widget: {}, nodeId })
 
-      expect(resolveNodeMock).toHaveBeenCalledWith(42)
+      expect(resolveNodeMock).toHaveBeenCalledWith(nodeId)
       expect(await screen.findByTestId('load3d-scene')).toBeInTheDocument()
     })
 
     it('does not render Load3DScene when no node can be resolved', async () => {
       resolveNodeMock.mockReturnValue(null)
-      renderLoad3D({ widget: {}, nodeId: 99 })
+      renderLoad3D({ widget: {}, nodeId: toNodeId(99) })
 
       await Promise.resolve()
       expect(screen.queryByTestId('load3d-scene')).not.toBeInTheDocument()
@@ -219,7 +222,11 @@ describe('Load3D', () => {
 
     it('hides ViewerControls when there is no node even if the setting is on', () => {
       resolveNodeMock.mockReturnValue(null)
-      renderLoad3D({ widget: {}, nodeId: 1, enable3DViewer: true })
+      renderLoad3D({
+        widget: {},
+        nodeId: toNodeId(1),
+        enable3DViewer: true
+      })
       expect(screen.queryByTestId('viewer-controls')).not.toBeInTheDocument()
     })
   })
