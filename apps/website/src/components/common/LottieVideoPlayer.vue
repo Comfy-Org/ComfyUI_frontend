@@ -22,6 +22,14 @@ const emit = defineEmits<{ ready: [] }>()
 const SVG_NS = 'http://www.w3.org/2000/svg'
 const XLINK_NS = 'http://www.w3.org/1999/xlink'
 
+// WebKit does not propagate SVG <mask> to <foreignObject> HTML content
+// (webkit.org/b/23113), so the video would overpaint lottie track-matte layers.
+// On Safari we skip the image→foreignObject swap; the poster covers the static
+// <image> placeholder until the user navigates away.
+const isWebKit =
+  typeof CSS !== 'undefined' && CSS.supports('-webkit-hyphens', 'none') &&
+  !/chrome|crios|fxios/i.test(typeof navigator !== 'undefined' ? navigator.userAgent : '')
+
 const lottieContainer = useTemplateRef<HTMLDivElement>('lottieContainer')
 const assetsLoaded = ref(false)
 let anim: AnimationItem | null = null
@@ -88,7 +96,7 @@ function prepareAssets(container: HTMLElement): {
     const href =
       image.getAttribute('href') ?? image.getAttributeNS(XLINK_NS, 'href') ?? ''
     if (!href) continue
-    if (/\.(webm|mp4)$/i.test(href)) {
+    if (/\.(webm|mp4)$/i.test(href) && !isWebKit) {
       const v = swapImageForVideo(image, href)
       collectedVideos.push(v)
       pending.push(whenLoaded(v))
