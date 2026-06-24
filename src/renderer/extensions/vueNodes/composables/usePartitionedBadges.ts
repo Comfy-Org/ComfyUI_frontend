@@ -12,6 +12,7 @@ import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import { widgetId } from '@/types/widgetId'
 
 function splitAroundFirstSpace(text: string): [string, string | undefined] {
   const index = text.indexOf(' ')
@@ -46,7 +47,7 @@ export function trackNodePrice(node: TrackableNode) {
     for (const name of relevantNames) {
       // Access value from store to create reactive dependency
       if (!graphId) continue
-      void widgetStore.getWidget(graphId, node.id, name)?.value
+      void widgetStore.getWidget(widgetId(graphId, node.id, name))?.value
     }
   }
   // Access input connections for regular inputs
@@ -148,7 +149,8 @@ export function usePartitionedBadges(nodeData: VueNodeData) {
           for (const name of relevantNames) {
             // Access value from store to create reactive dependency
             if (!graphId) continue
-            void widgetStore.getWidget(graphId, nodeData.id, name)?.value
+            void widgetStore.getWidget(widgetId(graphId, nodeData.id, name))
+              ?.value
           }
         }
         // Access input connections for regular inputs

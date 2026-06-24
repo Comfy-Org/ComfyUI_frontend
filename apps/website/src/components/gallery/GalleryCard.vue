@@ -7,12 +7,16 @@ const {
   item,
   locale = 'en',
   aspect = 'var(--aspect-ratio-gallery-card)',
-  mobile = false
+  mobile = false,
+  objectPosition = 'center',
+  objectFit = 'cover'
 } = defineProps<{
   item: GalleryItem
   locale?: Locale
   aspect?: string
   mobile?: boolean
+  objectPosition?: string
+  objectFit?: string
 }>()
 
 defineEmits<{ click: [] }>()
@@ -31,13 +35,15 @@ defineEmits<{ click: [] }>()
         loop
         muted
         playsinline
-        class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+        class="size-full transition-transform duration-300 group-hover:scale-105"
+        :style="{ objectPosition, objectFit }"
       />
       <img
         v-else
         :src="item.image"
         :alt="item.title"
-        class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
+        class="size-full transition-transform duration-300 group-hover:scale-105"
+        :style="{ objectPosition, objectFit }"
       />
       <!-- Desktop hover overlay -->
       <div
@@ -47,7 +53,7 @@ defineEmits<{ click: [] }>()
         <div class="flex w-full items-end justify-between p-4">
           <div class="gap-2">
             <p class="text-sm font-bold text-white">{{ item.title }}</p>
-            <p class="text-primary-comfy-canvas text-xs">
+            <p class="text-xs text-primary-comfy-canvas">
               <GalleryItemAttribution :item :locale />
             </p>
           </div>
@@ -76,7 +82,7 @@ defineEmits<{ click: [] }>()
     <!-- Mobile metadata -->
     <div v-if="mobile" class="mt-2 gap-2">
       <p class="text-sm font-bold text-white">{{ item.title }}</p>
-      <p class="text-primary-comfy-canvas text-xs">
+      <p class="text-xs text-primary-comfy-canvas">
         <GalleryItemAttribution :item :locale />
       </p>
     </div>

@@ -3,7 +3,6 @@ import { watch } from 'vue'
 
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
-import { useAppMode } from '@/composables/useAppMode'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -14,20 +13,20 @@ import type {
   DefaultViewSetMetadata,
   EnterLinearMetadata,
   ShareFlowMetadata,
-  ExecutionContext,
-  ExecutionErrorMetadata,
-  ExecutionSuccessMetadata,
-  ExecutionTriggerSource,
+  ShareLinkOpenedMetadata,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
   NodeAddedMetadata,
   NodeSearchMetadata,
   NodeSearchResultMetadata,
+  SearchQueryMetadata,
   PageViewMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
   SettingChangedMetadata,
+  SharedWorkflowRunMetadata,
+  ShellLayoutMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -45,7 +44,6 @@ import type {
   WorkflowSavedMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
-import { getExecutionContext } from '../../utils/getExecutionContext'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
@@ -54,13 +52,10 @@ const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.TAB_COUNT_TRACKING,
   TelemetryEvents.NODE_SEARCH,
   TelemetryEvents.NODE_SEARCH_RESULT_SELECTED,
-  TelemetryEvents.TEMPLATE_FILTER_CHANGED,
-  TelemetryEvents.SETTING_CHANGED,
   TelemetryEvents.HELP_CENTER_OPENED,
   TelemetryEvents.HELP_RESOURCE_CLICKED,
   TelemetryEvents.HELP_CENTER_CLOSED,
-  TelemetryEvents.WORKFLOW_CREATED,
-  TelemetryEvents.UI_BUTTON_CLICKED
+  TelemetryEvents.WORKFLOW_CREATED
 ] as const satisfies TelemetryEventName[]
 
 const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
@@ -101,7 +96,6 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   private eventQueue: QueuedEvent[] = []
   private pendingFirstAuthAt = new Map<string, string>()
   private isInitialized = false
-  private lastTriggerSource: ExecutionTriggerSource | undefined
   private disabledEvents = new Set<TelemetryEventName>(DEFAULT_DISABLED_EVENTS)
   private desktopEntryProps: DesktopEntryProps | null = null
 
@@ -376,31 +370,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
   }
 
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
-    const executionContext = getExecutionContext()
-    const { mode, isAppMode } = useAppMode()
-
-    const runButtonProperties: RunButtonProperties = {
-      subscribe_to_run: options?.subscribe_to_run || false,
-      workflow_type: executionContext.is_template ? 'template' : 'custom',
-      workflow_name: executionContext.workflow_name ?? 'untitled',
-      custom_node_count: executionContext.custom_node_count,
-      total_node_count: executionContext.total_node_count,
-      subgraph_count: executionContext.subgraph_count,
-      has_api_nodes: executionContext.has_api_nodes,
-      api_node_names: executionContext.api_node_names,
-      has_toolkit_nodes: executionContext.has_toolkit_nodes,
-      toolkit_node_names: executionContext.toolkit_node_names,
-      trigger_source: options?.trigger_source,
-      view_mode: mode.value,
-      is_app_mode: isAppMode.value
-    }
-
-    this.lastTriggerSource = options?.trigger_source
-    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
+  trackRunButton(properties: RunButtonProperties): void {
+    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
   }
 
   trackSurvey(
@@ -487,6 +458,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.SHARE_FLOW, metadata)
   }
 
+  trackShareLinkOpened(metadata: ShareLinkOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.SHARE_LINK_OPENED, metadata)
+  }
+
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
     this.trackEvent(TelemetryEvents.PAGE_VISIBILITY_CHANGED, metadata)
   }
@@ -495,12 +470,20 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.TAB_COUNT_TRACKING, metadata)
   }
 
+  trackShellLayout(metadata: ShellLayoutMetadata): void {
+    this.trackEvent(TelemetryEvents.SHELL_LAYOUT, metadata)
+  }
+
   trackNodeSearch(metadata: NodeSearchMetadata): void {
     this.trackEvent(TelemetryEvents.NODE_SEARCH, metadata)
   }
 
   trackNodeSearchResultSelected(metadata: NodeSearchResultMetadata): void {
     this.trackEvent(TelemetryEvents.NODE_SEARCH_RESULT_SELECTED, metadata)
+  }
+
+  trackSearchQuery(metadata: SearchQueryMetadata): void {
+    this.trackEvent(TelemetryEvents.SEARCH_QUERY, metadata)
   }
 
   trackNodeAdded(metadata: NodeAddedMetadata): void {
@@ -527,22 +510,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKFLOW_CREATED, metadata)
   }
 
-  trackWorkflowExecution(): void {
-    const context = getExecutionContext()
-    const eventContext: ExecutionContext = {
-      ...context,
-      trigger_source: this.lastTriggerSource ?? 'unknown'
-    }
-    this.trackEvent(TelemetryEvents.EXECUTION_START, eventContext)
-    this.lastTriggerSource = undefined
-  }
-
-  trackExecutionError(metadata: ExecutionErrorMetadata): void {
-    this.trackEvent(TelemetryEvents.EXECUTION_ERROR, metadata)
-  }
-
-  trackExecutionSuccess(metadata: ExecutionSuccessMetadata): void {
-    this.trackEvent(TelemetryEvents.EXECUTION_SUCCESS, metadata)
+  trackSharedWorkflowRun(metadata: SharedWorkflowRunMetadata): void {
+    this.trackEvent(TelemetryEvents.SHARED_WORKFLOW_RUN, metadata)
   }
 
   trackSettingChanged(metadata: SettingChangedMetadata): void {

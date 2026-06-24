@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -44,23 +45,28 @@ const mockSubscription = vi.hoisted(() => ({
   value: null as { endDate: string | null } | null
 }))
 
+const mockCancelSubscription = vi.hoisted(() => vi.fn())
+const mockFetchStatus = vi.hoisted(() => vi.fn())
+const mockCloseDialog = vi.hoisted(() => vi.fn())
+const mockToastAdd = vi.hoisted(() => vi.fn())
+
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: vi.fn(() => ({
-    cancelSubscription: vi.fn(),
-    fetchStatus: vi.fn(),
+    cancelSubscription: mockCancelSubscription,
+    fetchStatus: mockFetchStatus,
     subscription: mockSubscription
   }))
 }))
 
 vi.mock('@/stores/dialogStore', () => ({
   useDialogStore: vi.fn(() => ({
-    closeDialog: vi.fn()
+    closeDialog: mockCloseDialog
   }))
 }))
 
 vi.mock('primevue/usetoast', () => ({
   useToast: vi.fn(() => ({
-    add: vi.fn()
+    add: mockToastAdd
   }))
 }))
 
@@ -86,6 +92,54 @@ function renderComponent(props: { cancelAt?: string } = {}) {
 }
 
 describe('CancelSubscriptionDialogContent', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  describe('cancel flow', () => {
+    it('shows an error toast and keeps the dialog open when cancellation fails', async () => {
+      mockSubscription.value = null
+      mockCancelSubscription.mockRejectedValueOnce(
+        new Error('Subscription cancellation timed out')
+      )
+
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      await waitFor(() =>
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({
+            severity: 'error',
+            detail: 'Subscription cancellation timed out'
+          })
+        )
+      )
+      expect(mockCloseDialog).not.toHaveBeenCalled()
+    })
+
+    it('closes the dialog and shows a success toast when cancellation succeeds', async () => {
+      mockSubscription.value = null
+      mockCancelSubscription.mockResolvedValueOnce(undefined)
+
+      renderComponent()
+      await userEvent.click(
+        screen.getByRole('button', { name: /^cancel subscription$/i })
+      )
+
+      await waitFor(() =>
+        expect(mockCloseDialog).toHaveBeenCalledWith({
+          key: 'cancel-subscription'
+        })
+      )
+      expect(mockFetchStatus).toHaveBeenCalled()
+      expect(mockToastAdd).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+    })
+  })
+
   describe('formattedEndDate fallbacks', () => {
     it('uses the localized fallback when no cancel timestamp is available', () => {
       mockSubscription.value = { endDate: null }
