@@ -32,6 +32,7 @@ import './uploadAudio'
 import './uploadImage'
 import './webcamCapture'
 import './widgetInputs'
+import './globalSeed'
 
 // Cloud-only extensions - tree-shaken in OSS builds
 if (isCloud) {
