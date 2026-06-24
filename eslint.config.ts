@@ -420,7 +420,6 @@ export default defineConfig([
       '@intlify/vue-i18n/no-raw-text': 'off'
     }
   },
-
   // i18n import enforcement
   // Vue components must use the useI18n() composable, not the global t/d/st/te
   {

@@ -40,12 +40,12 @@ const {
       <div class="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
         <div class="flex flex-col gap-8">
           <h2
-            class="text-primary-comfy-canvas text-4xl font-light tracking-tight lg:text-6xl"
+            class="text-4xl font-light tracking-tight text-primary-comfy-canvas lg:text-6xl"
           >
             {{ t(headingKey, locale) }}
           </h2>
           <p
-            class="text-primary-comfy-canvas max-w-sm text-sm/relaxed lg:text-base"
+            class="max-w-sm text-sm/relaxed text-primary-comfy-canvas lg:text-base"
           >
             {{ t(descriptionKey, locale) }}
           </p>
@@ -66,10 +66,10 @@ const {
             v-for="(event, i) in events"
             :key="i"
             :href="event.href"
-            class="group border-primary-comfy-canvas/15 flex items-center gap-4 border-b py-6 lg:gap-8"
+            class="group flex items-center gap-4 border-b border-primary-comfy-canvas/15 py-6 lg:gap-8"
           >
             <span
-              class="text-primary-comfy-canvas shrink-0 text-sm font-medium"
+              class="shrink-0 text-sm font-medium text-primary-comfy-canvas"
             >
               {{ event.label[locale] }}
             </span>
