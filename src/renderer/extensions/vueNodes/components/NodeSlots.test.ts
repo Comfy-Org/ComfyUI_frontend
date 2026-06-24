@@ -14,6 +14,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { NodeId as VueNodeId } from '@/renderer/core/layout/types'
+import { nodeId } from '@/types/nodeId'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
@@ -25,7 +26,7 @@ import {
 
 import NodeSlots from './NodeSlots.vue'
 
-const toVueNodeId = (id: string | number): VueNodeId => String(id)
+const toVueNodeId = (id: string | number): VueNodeId => nodeId(id)
 
 const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
   id: '123',

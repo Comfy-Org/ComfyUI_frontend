@@ -6,7 +6,7 @@
  */
 import type { ComputedRef, Ref } from 'vue'
 
-import type { NodeId as WorkflowNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 // Enum for layout source types
 export enum LayoutSource {
@@ -35,17 +35,17 @@ export interface Bounds {
 }
 
 export interface NodeBoundsUpdate {
-  nodeId: NodeId
+  nodeId: SerializedNodeId
   bounds: Bounds
 }
 
-export type NodeId = WorkflowNodeId
+export type { NodeId }
 export type LinkId = number
 export type RerouteId = number
 
 // Layout data structures
 export interface NodeLayout {
-  id: NodeId
+  id: SerializedNodeId
   position: Point
   size: Size
   zIndex: number
@@ -55,7 +55,7 @@ export interface NodeLayout {
 }
 
 export interface SlotLayout {
-  nodeId: NodeId
+  nodeId: SerializedNodeId
   index: number
   type: 'input' | 'output'
   position: Point
@@ -67,8 +67,8 @@ export interface LinkLayout {
   path: Path2D
   bounds: Bounds
   centerPos: Point
-  sourceNodeId: NodeId
-  targetNodeId: NodeId
+  sourceNodeId: SerializedNodeId
+  targetNodeId: SerializedNodeId
   sourceSlot: number
   targetSlot: number
 }
@@ -108,7 +108,7 @@ interface OperationMeta {
 /**
  * Entity-specific base types for proper type discrimination
  */
-type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
+type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: SerializedNodeId }
 type LinkOpBase = OperationMeta & { entity: 'link'; linkId: LinkId }
 type RerouteOpBase = OperationMeta & {
   entity: 'reroute'
@@ -190,8 +190,8 @@ interface SetNodeVisibilityOperation extends NodeOpBase {
 export interface BatchUpdateBoundsOperation extends OperationMeta {
   entity: 'node'
   type: 'batchUpdateBounds'
-  nodeIds: NodeId[]
-  bounds: Record<NodeId, { bounds: Bounds; previousBounds: Bounds }>
+  nodeIds: SerializedNodeId[]
+  bounds: Record<string, { bounds: Bounds; previousBounds: Bounds }>
 }
 
 /**
@@ -199,9 +199,9 @@ export interface BatchUpdateBoundsOperation extends OperationMeta {
  */
 export interface CreateLinkOperation extends LinkOpBase {
   type: 'createLink'
-  sourceNodeId: NodeId
+  sourceNodeId: SerializedNodeId
   sourceSlot: number
-  targetNodeId: NodeId
+  targetNodeId: SerializedNodeId
   targetSlot: number
 }
 
@@ -266,7 +266,7 @@ export interface LayoutChange {
 // Store interfaces
 export interface LayoutStore {
   // CustomRef accessors for shared write access
-  getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null>
+  getNodeLayoutRef(nodeId: SerializedNodeId): Ref<NodeLayout | null>
   getNodesInBounds(bounds: Bounds): ComputedRef<NodeId[]>
   getAllNodes(): ComputedRef<ReadonlyMap<NodeId, NodeLayout>>
   getVersion(): ComputedRef<number>
@@ -321,13 +321,17 @@ export interface LayoutStore {
   // Change subscription
   onChange(callback: (change: LayoutChange) => void): () => void
   onNodeChange(
-    nodeId: NodeId,
+    nodeId: SerializedNodeId,
     callback: (change: LayoutChange) => void
   ): () => void
 
   // Initialization
   initializeFromLiteGraph(
-    nodes: Array<{ id: string; pos: [number, number]; size: [number, number] }>
+    nodes: Array<{
+      id: SerializedNodeId
+      pos: [number, number]
+      size: [number, number]
+    }>
   ): void
 
   // Source and actor management
@@ -337,9 +341,7 @@ export interface LayoutStore {
   getCurrentActor(): string
 
   // Batch updates
-  batchUpdateNodeBounds(
-    updates: Array<{ nodeId: NodeId; bounds: Bounds }>
-  ): void
+  batchUpdateNodeBounds(updates: NodeBoundsUpdate[]): void
 
   batchUpdateSlotLayouts(
     updates: Array<{ key: string; layout: SlotLayout }>

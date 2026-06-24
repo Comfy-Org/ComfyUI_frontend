@@ -4,7 +4,7 @@
  * Provides focused functionality for managing node layering through z-index.
  * Integrates with the layout system to ensure proper visual ordering.
  */
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -25,7 +25,7 @@ export function useNodeZIndex(options: NodeZIndexOptions = {}) {
    * @param nodeId - The node to bring to front
    * @param source - Optional source override
    */
-  function bringNodeToFront(nodeId: NodeId, source?: LayoutSource) {
+  function bringNodeToFront(nodeId: SerializedNodeId, source?: LayoutSource) {
     layoutMutations.setSource(source ?? layoutSource)
     layoutMutations.bringNodeToFront(nodeId)
   }

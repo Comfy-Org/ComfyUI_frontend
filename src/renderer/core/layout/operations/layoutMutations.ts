@@ -6,7 +6,8 @@
  */
 import log from 'loglevel'
 
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type {
   LayoutSource,
@@ -21,21 +22,23 @@ const logger = log.getLogger('LayoutMutations')
 
 interface LayoutMutations {
   // Single node operations (synchronous, CRDT-ready)
-  moveNode(nodeId: NodeId, position: Point): void
-  batchMoveNodes(updates: Array<{ nodeId: NodeId; position: Point }>): void
-  resizeNode(nodeId: NodeId, size: Size): void
-  setNodeZIndex(nodeId: NodeId, zIndex: number): void
+  moveNode(nodeId: SerializedNodeId, position: Point): void
+  batchMoveNodes(
+    updates: Array<{ nodeId: SerializedNodeId; position: Point }>
+  ): void
+  resizeNode(nodeId: SerializedNodeId, size: Size): void
+  setNodeZIndex(nodeId: SerializedNodeId, zIndex: number): void
 
   // Node lifecycle operations
-  createNode(nodeId: NodeId, layout: Partial<NodeLayout>): void
-  deleteNode(nodeId: NodeId): void
+  createNode(nodeId: SerializedNodeId, layout: Partial<NodeLayout>): void
+  deleteNode(nodeId: SerializedNodeId): void
 
   // Link operations
   createLink(
     linkId: LinkId,
-    sourceNodeId: NodeId,
+    sourceNodeId: SerializedNodeId,
     sourceSlot: number,
-    targetNodeId: NodeId,
+    targetNodeId: SerializedNodeId,
     targetSlot: number
   ): void
   deleteLink(linkId: LinkId): void
@@ -55,7 +58,7 @@ interface LayoutMutations {
   ): void
 
   // Stacking operations
-  bringNodeToFront(nodeId: NodeId): void
+  bringNodeToFront(nodeId: SerializedNodeId): void
 
   // Source tracking
   setSource(source: LayoutSource): void
@@ -83,8 +86,8 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Move a node to a new position
    */
-  const moveNode = (nodeId: NodeId, position: Point): void => {
-    const normalizedNodeId = String(nodeId)
+  const moveNode = (rawNodeId: SerializedNodeId, position: Point): void => {
+    const normalizedNodeId = toNodeId(rawNodeId)
     const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
     if (!existing) return
 
@@ -101,12 +104,12 @@ export function useLayoutMutations(): LayoutMutations {
   }
 
   function batchMoveNodes(
-    updates: Array<{ nodeId: NodeId; position: Point }>
+    updates: Array<{ nodeId: SerializedNodeId; position: Point }>
   ): void {
     if (updates.length === 0) return
 
     const nodeBoundsUpdates = updates.flatMap(({ nodeId, position }) => {
-      const normalizedNodeId = String(nodeId)
+      const normalizedNodeId = toNodeId(nodeId)
       const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
       if (!existing) return []
 
@@ -130,8 +133,8 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Resize a node
    */
-  const resizeNode = (nodeId: NodeId, size: Size): void => {
-    const normalizedNodeId = String(nodeId)
+  const resizeNode = (rawNodeId: SerializedNodeId, size: Size): void => {
+    const normalizedNodeId = toNodeId(rawNodeId)
     const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
     if (!existing) return
 
@@ -150,8 +153,8 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Set node z-index
    */
-  const setNodeZIndex = (nodeId: NodeId, zIndex: number): void => {
-    const normalizedNodeId = String(nodeId)
+  const setNodeZIndex = (rawNodeId: SerializedNodeId, zIndex: number): void => {
+    const normalizedNodeId = toNodeId(rawNodeId)
     const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
     if (!existing) return
 
@@ -170,8 +173,11 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Create a new node
    */
-  const createNode = (nodeId: NodeId, layout: Partial<NodeLayout>): void => {
-    const normalizedNodeId = String(nodeId)
+  const createNode = (
+    rawNodeId: SerializedNodeId,
+    layout: Partial<NodeLayout>
+  ): void => {
+    const normalizedNodeId = toNodeId(rawNodeId)
     const fullLayout: NodeLayout = {
       id: normalizedNodeId,
       position: layout.position ?? { x: 0, y: 0 },
@@ -200,8 +206,8 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Delete a node
    */
-  const deleteNode = (nodeId: NodeId): void => {
-    const normalizedNodeId = String(nodeId)
+  const deleteNode = (rawNodeId: SerializedNodeId): void => {
+    const normalizedNodeId = toNodeId(rawNodeId)
     const existing = layoutStore.getNodeLayoutRef(normalizedNodeId).value
     if (!existing) return
 
@@ -219,7 +225,7 @@ export function useLayoutMutations(): LayoutMutations {
   /**
    * Bring a node to the front (highest z-index)
    */
-  const bringNodeToFront = (nodeId: NodeId): void => {
+  const bringNodeToFront = (nodeId: SerializedNodeId): void => {
     // Get all nodes to find the highest z-index
     const allNodes = layoutStore.getAllNodes().value
     let maxZIndex = 0
@@ -239,14 +245,14 @@ export function useLayoutMutations(): LayoutMutations {
    */
   const createLink = (
     linkId: LinkId,
-    sourceNodeId: NodeId,
+    sourceNodeId: SerializedNodeId,
     sourceSlot: number,
-    targetNodeId: NodeId,
+    targetNodeId: SerializedNodeId,
     targetSlot: number
   ): void => {
     // Normalize node IDs to strings for layout store consistency
-    const normalizedSourceNodeId = String(sourceNodeId)
-    const normalizedTargetNodeId = String(targetNodeId)
+    const normalizedSourceNodeId = toNodeId(sourceNodeId)
+    const normalizedTargetNodeId = toNodeId(targetNodeId)
 
     logger.debug('Creating link:', {
       linkId,

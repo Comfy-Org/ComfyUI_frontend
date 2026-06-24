@@ -5,7 +5,11 @@ import type { ComputedRef } from 'vue'
 import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { NodeLayout } from '@/renderer/core/layout/types'
+import type {
+  NodeId as LayoutNodeId,
+  NodeLayout
+} from '@/renderer/core/layout/types'
+import { nodeId as layoutNodeId } from '@/types/nodeId'
 import { MinimapDataSourceFactory } from '@/renderer/extensions/minimap/data/MinimapDataSourceFactory'
 
 // Mock layoutStore
@@ -32,9 +36,9 @@ describe('MinimapDataSource', () => {
   describe('MinimapDataSourceFactory', () => {
     it('should create LayoutStoreDataSource when LayoutStore has data', () => {
       // Arrange
-      const mockNodes = new Map<string, NodeLayout>([
+      const mockNodes = new Map<LayoutNodeId, NodeLayout>([
         [
-          'node1',
+          layoutNodeId('node1'),
           {
             id: 'node1',
             position: { x: 0, y: 0 },
@@ -47,7 +51,7 @@ describe('MinimapDataSource', () => {
       ])
 
       // Create a computed ref that returns the map
-      const computedNodes: ComputedRef<ReadonlyMap<string, NodeLayout>> =
+      const computedNodes: ComputedRef<ReadonlyMap<LayoutNodeId, NodeLayout>> =
         computed(() => mockNodes)
       vi.mocked(layoutStore.getAllNodes).mockReturnValue(computedNodes)
 
@@ -68,8 +72,8 @@ describe('MinimapDataSource', () => {
 
     it('should create LiteGraphDataSource when LayoutStore is empty', () => {
       // Arrange
-      const emptyMap = new Map<string, NodeLayout>()
-      const computedEmpty: ComputedRef<ReadonlyMap<string, NodeLayout>> =
+      const emptyMap = new Map<LayoutNodeId, NodeLayout>()
+      const computedEmpty: ComputedRef<ReadonlyMap<LayoutNodeId, NodeLayout>> =
         computed(() => emptyMap)
       vi.mocked(layoutStore.getAllNodes).mockReturnValue(computedEmpty)
 
@@ -113,8 +117,8 @@ describe('MinimapDataSource', () => {
 
     it('should handle empty graph correctly', () => {
       // Arrange
-      const emptyMap = new Map<string, NodeLayout>()
-      const computedEmpty: ComputedRef<ReadonlyMap<string, NodeLayout>> =
+      const emptyMap = new Map<LayoutNodeId, NodeLayout>()
+      const computedEmpty: ComputedRef<ReadonlyMap<LayoutNodeId, NodeLayout>> =
         computed(() => emptyMap)
       vi.mocked(layoutStore.getAllNodes).mockReturnValue(computedEmpty)
 
@@ -139,8 +143,8 @@ describe('MinimapDataSource', () => {
   describe('Bounds calculation', () => {
     it('should calculate correct bounds from nodes', () => {
       // Arrange
-      const emptyMap = new Map<string, NodeLayout>()
-      const computedEmpty: ComputedRef<ReadonlyMap<string, NodeLayout>> =
+      const emptyMap = new Map<LayoutNodeId, NodeLayout>()
+      const computedEmpty: ComputedRef<ReadonlyMap<LayoutNodeId, NodeLayout>> =
         computed(() => emptyMap)
       vi.mocked(layoutStore.getAllNodes).mockReturnValue(computedEmpty)
 

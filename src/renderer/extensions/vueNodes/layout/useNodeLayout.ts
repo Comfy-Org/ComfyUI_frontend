@@ -4,13 +4,14 @@ import type { MaybeRefOrGetter } from 'vue'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { NodeId, Point } from '@/renderer/core/layout/types'
+import type { Point } from '@/renderer/core/layout/types'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 /**
  * Composable for individual Vue node components
  * Uses customRef for shared write access with Canvas renderer
  */
-export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<NodeId>) {
+export function useNodeLayout(nodeIdMaybe: MaybeRefOrGetter<SerializedNodeId>) {
   const nodeId = toValue(nodeIdMaybe)
   const mutations = useLayoutMutations()
 

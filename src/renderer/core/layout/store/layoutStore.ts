@@ -10,6 +10,8 @@ import type { ComputedRef, Ref } from 'vue'
 import * as Y from 'yjs'
 
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
@@ -229,7 +231,8 @@ class LayoutStoreImpl implements LayoutStore {
   /**
    * Get or create a customRef for a node layout
    */
-  getNodeLayoutRef(nodeId: NodeId): Ref<NodeLayout | null> {
+  getNodeLayoutRef(rawNodeId: SerializedNodeId): Ref<NodeLayout | null> {
+    const nodeId = toNodeId(rawNodeId)
     const nodeKey = String(nodeId)
     let nodeRef = this.nodeRefs.get(nodeKey)
 
@@ -341,7 +344,8 @@ class LayoutStoreImpl implements LayoutStore {
       void this.version
 
       const result: NodeId[] = []
-      for (const [nodeId, ynode] of this.ynodes) {
+      for (const [rawNodeId, ynode] of this.ynodes) {
+        const nodeId = toNodeId(rawNodeId)
         const layout = yNodeToLayout(ynode)
         if (boundsIntersect(layout.bounds, bounds)) {
           result.push(nodeId)
@@ -360,7 +364,8 @@ class LayoutStoreImpl implements LayoutStore {
       void this.version
 
       const result = new Map<NodeId, NodeLayout>()
-      for (const [nodeId, ynode] of this.ynodes) {
+      for (const [rawNodeId, ynode] of this.ynodes) {
+        const nodeId = toNodeId(rawNodeId)
         const layout = yNodeToLayout(ynode)
         result.set(nodeId, layout)
       }
@@ -381,7 +386,8 @@ class LayoutStoreImpl implements LayoutStore {
   queryNodeAtPoint(point: Point): NodeId | null {
     const nodes: Array<[NodeId, NodeLayout]> = []
 
-    for (const [nodeId, ynode] of this.ynodes) {
+    for (const [rawNodeId, ynode] of this.ynodes) {
+      const nodeId = toNodeId(rawNodeId)
       const layout = yNodeToLayout(ynode)
       nodes.push([nodeId, layout])
     }
@@ -917,9 +923,10 @@ class LayoutStoreImpl implements LayoutStore {
   }
 
   onNodeChange(
-    nodeId: NodeId,
+    rawNodeId: SerializedNodeId,
     callback: (change: LayoutChange) => void
   ): () => void {
+    const nodeId = toNodeId(rawNodeId)
     const listenersForNode = this.nodeChangeListeners.get(nodeId) ?? new Set()
     listenersForNode.add(callback)
     this.nodeChangeListeners.set(nodeId, listenersForNode)
@@ -967,8 +974,8 @@ class LayoutStoreImpl implements LayoutStore {
    * Clean up refs and triggers for a node when its Vue component unmounts.
    * This should be called from the component's onUnmounted hook.
    */
-  cleanupNodeRef(nodeId: NodeId): void {
-    const nodeKey = String(nodeId)
+  cleanupNodeRef(rawNodeId: SerializedNodeId): void {
+    const nodeKey = String(toNodeId(rawNodeId))
     this.nodeRefs.delete(nodeKey)
     this.nodeTriggers.delete(nodeKey)
   }
@@ -977,7 +984,11 @@ class LayoutStoreImpl implements LayoutStore {
    * Initialize store with existing nodes
    */
   initializeFromLiteGraph(
-    nodes: Array<{ id: string; pos: [number, number]; size: [number, number] }>
+    nodes: Array<{
+      id: SerializedNodeId
+      pos: [number, number]
+      size: [number, number]
+    }>
   ): void {
     this.ydoc.transact(() => {
       this.ynodes.clear()
@@ -998,7 +1009,8 @@ class LayoutStoreImpl implements LayoutStore {
       this.isGlobalDispatchQueued = false
 
       nodes.forEach((node, index) => {
-        const nodeId = String(node.id)
+        const nodeId = toNodeId(node.id)
+        const nodeKey = String(nodeId)
         const layout: NodeLayout = {
           id: nodeId,
           position: { x: node.pos[0], y: node.pos[1] },
@@ -1013,7 +1025,7 @@ class LayoutStoreImpl implements LayoutStore {
           }
         }
 
-        this.ynodes.set(nodeId, layoutToYNode(layout))
+        this.ynodes.set(nodeKey, layoutToYNode(layout))
 
         // Add to spatial index
         this.spatialIndex.insert(nodeId, layout.bounds)
@@ -1029,7 +1041,8 @@ class LayoutStoreImpl implements LayoutStore {
     operation: MoveNodeOperation,
     change: LayoutChange
   ): void {
-    const ynode = this.ynodes.get(String(operation.nodeId))
+    const nodeId = toNodeId(operation.nodeId)
+    const ynode = this.ynodes.get(String(nodeId))
     if (!ynode) {
       return
     }
@@ -1044,20 +1057,21 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Update spatial index FIRST, synchronously to prevent race conditions
     // Hit detection queries can run before CRDT updates complete
-    this.spatialIndex.update(operation.nodeId, newBounds)
+    this.spatialIndex.update(nodeId, newBounds)
 
     // Then update CRDT
     ynode.set('position', operation.position)
     this.updateNodeBounds(ynode, operation.position, size)
 
-    change.nodeIds.push(operation.nodeId)
+    change.nodeIds.push(nodeId)
   }
 
   private handleResizeNode(
     operation: ResizeNodeOperation,
     change: LayoutChange
   ): void {
-    const ynode = this.ynodes.get(String(operation.nodeId))
+    const nodeId = toNodeId(operation.nodeId)
+    const ynode = this.ynodes.get(String(nodeId))
     if (!ynode) return
 
     const position = yNodeToLayout(ynode).position
@@ -1070,45 +1084,48 @@ class LayoutStoreImpl implements LayoutStore {
 
     // Update spatial index FIRST, synchronously to prevent race conditions
     // Hit detection queries can run before CRDT updates complete
-    this.spatialIndex.update(operation.nodeId, newBounds)
+    this.spatialIndex.update(nodeId, newBounds)
 
     // Then update CRDT
     ynode.set('size', operation.size)
     this.updateNodeBounds(ynode, position, operation.size)
 
-    change.nodeIds.push(operation.nodeId)
+    change.nodeIds.push(nodeId)
   }
 
   private handleSetNodeZIndex(
     operation: SetNodeZIndexOperation,
     change: LayoutChange
   ): void {
-    const ynode = this.ynodes.get(String(operation.nodeId))
+    const nodeId = toNodeId(operation.nodeId)
+    const ynode = this.ynodes.get(String(nodeId))
     if (!ynode) return
 
     ynode.set('zIndex', operation.zIndex)
-    change.nodeIds.push(operation.nodeId)
+    change.nodeIds.push(nodeId)
   }
 
   private handleCreateNode(
     operation: CreateNodeOperation,
     change: LayoutChange
   ): void {
+    const nodeId = toNodeId(operation.nodeId)
     const ynode = layoutToYNode(operation.layout)
-    this.ynodes.set(String(operation.nodeId), ynode)
+    this.ynodes.set(String(nodeId), ynode)
 
     // Add to spatial index
-    this.spatialIndex.insert(operation.nodeId, operation.layout.bounds)
+    this.spatialIndex.insert(nodeId, operation.layout.bounds)
 
     change.type = 'create'
-    change.nodeIds.push(operation.nodeId)
+    change.nodeIds.push(nodeId)
   }
 
   private handleDeleteNode(
     operation: DeleteNodeOperation,
     change: LayoutChange
   ): void {
-    const nodeKey = String(operation.nodeId)
+    const nodeId = toNodeId(operation.nodeId)
+    const nodeKey = String(nodeId)
     if (!this.ynodes.has(nodeKey)) return
 
     this.ynodes.delete(nodeKey)
@@ -1119,9 +1136,9 @@ class LayoutStoreImpl implements LayoutStore {
     // We also intentionally do NOT delete slot layouts here for the same reason,
     // and cleanup is handled by onUnmounted in useSlotElementTracking.
     // Remove from spatial index
-    this.spatialIndex.remove(operation.nodeId)
+    this.spatialIndex.remove(nodeId)
     // Clean up associated links
-    const linksToDelete = this.findLinksConnectedToNode(operation.nodeId)
+    const linksToDelete = this.findLinksConnectedToNode(nodeId)
 
     // Delete the associated links
     for (const linkId of linksToDelete) {
@@ -1134,7 +1151,7 @@ class LayoutStoreImpl implements LayoutStore {
     }
 
     change.type = 'delete'
-    change.nodeIds.push(operation.nodeId)
+    change.nodeIds.push(nodeId)
   }
 
   private handleBatchUpdateBounds(
@@ -1143,8 +1160,9 @@ class LayoutStoreImpl implements LayoutStore {
   ): void {
     const spatialUpdates: Array<{ nodeId: NodeId; bounds: Bounds }> = []
 
-    for (const nodeId of operation.nodeIds) {
-      const data = operation.bounds[nodeId]
+    for (const rawNodeId of operation.nodeIds) {
+      const nodeId = toNodeId(rawNodeId)
+      const data = operation.bounds[String(rawNodeId)]
       const ynode = this.ynodes.get(String(nodeId))
       if (!ynode || !data) continue
 
@@ -1175,9 +1193,9 @@ class LayoutStoreImpl implements LayoutStore {
   ): void {
     const linkData = new Y.Map<unknown>()
     linkData.set('id', operation.linkId)
-    linkData.set('sourceNodeId', operation.sourceNodeId)
+    linkData.set('sourceNodeId', toNodeId(operation.sourceNodeId))
     linkData.set('sourceSlot', operation.sourceSlot)
-    linkData.set('targetNodeId', operation.targetNodeId)
+    linkData.set('targetNodeId', toNodeId(operation.targetNodeId))
     linkData.set('targetSlot', operation.targetSlot)
 
     const linkKey = String(operation.linkId)
@@ -1499,7 +1517,8 @@ class LayoutStoreImpl implements LayoutStore {
     const nodeIds: NodeId[] = []
     const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
-    for (const { nodeId, bounds } of updates) {
+    for (const { nodeId: rawNodeId, bounds } of updates) {
+      const nodeId = toNodeId(rawNodeId)
       const ynode = this.ynodes.get(String(nodeId))
       if (!ynode) continue
       const currentLayout = yNodeToLayout(ynode)

@@ -4,6 +4,8 @@ import type { Ref } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { NodeId, NodeLayout } from '@/renderer/core/layout/types'
 
 type ResizeEntryLike = Pick<
@@ -68,8 +70,10 @@ vi.mock('@/renderer/core/layout/store/layoutStore', () => ({
   layoutStore: {
     batchUpdateNodeBounds: testState.batchUpdateNodeBounds,
     setSource: testState.setSource,
-    getNodeLayoutRef: (nodeId: NodeId): Ref<NodeLayout | null> =>
-      ref<NodeLayout | null>(testState.nodeLayouts.get(nodeId) ?? null)
+    getNodeLayoutRef: (rawNodeId: SerializedNodeId): Ref<NodeLayout | null> =>
+      ref<NodeLayout | null>(
+        testState.nodeLayouts.get(toNodeId(rawNodeId)) ?? null
+      )
   }
 }))
 
@@ -81,7 +85,7 @@ vi.mock('./useSlotElementTracking', () => ({
 import './useVueNodeResizeTracking'
 
 function createResizeEntry(options?: {
-  nodeId?: NodeId
+  nodeId?: SerializedNodeId
   width?: number
   height?: number
   left?: number
@@ -129,7 +133,7 @@ function createObserverMock(): ResizeObserver {
 }
 
 function seedNodeLayout(options: {
-  nodeId: NodeId
+  nodeId: SerializedNodeId
   left: number
   top: number
   width: number
@@ -139,7 +143,7 @@ function seedNodeLayout(options: {
   const titleHeight = LiteGraph.NODE_TITLE_HEIGHT
   const contentHeight = height - titleHeight
 
-  testState.nodeLayouts.set(nodeId, {
+  testState.nodeLayouts.set(toNodeId(nodeId), {
     id: nodeId,
     position: { x: left, y: top + titleHeight },
     size: { width, height: contentHeight },
@@ -322,7 +326,7 @@ describe('useVueNodeResizeTracking', () => {
   })
 
   it('widgets-grid resize schedules a slot resync without writing node bounds', () => {
-    const parentNodeId: NodeId = 'parent-node'
+    const parentNodeId = 'parent-node'
     const element = document.createElement('div')
     element.dataset.widgetsGridNodeId = parentNodeId
     const boxSizes = [{ inlineSize: 200, blockSize: 80 }]

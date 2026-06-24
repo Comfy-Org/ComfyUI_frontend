@@ -17,6 +17,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId } from '@/renderer/core/layout/types'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import {
   isBoundsEqual,
@@ -150,7 +151,7 @@ const resizeObserver = new ResizeObserver((entries) => {
 
     if (!elementType || !elementId) continue
     const nodeId: NodeId | undefined =
-      elementType === 'node' ? elementId : undefined
+      elementType === 'node' ? toNodeId(elementId) : undefined
 
     // Use borderBoxSize when available; fall back to contentRect for older engines/tests
     // Border box is the border included FULL wxh DOM value.

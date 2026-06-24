@@ -11,6 +11,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/renderer/core/layout/types'
+import { nodeId } from '@/types/nodeId'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 
 const mockApp = vi.hoisted(() => ({
@@ -69,7 +70,7 @@ class MockNode implements Positionable {
   ) {
     this.pos = pos
     this.size = size
-    this.id = 'mock-node'
+    this.id = nodeId('mock-node')
     this.boundingRect = [0, 0, 0, 0]
   }
 

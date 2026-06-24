@@ -21,7 +21,7 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { NodeId } from '@/renderer/core/layout/types'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
@@ -64,7 +64,7 @@ type Badges = (LGraphBadge | (() => LGraphBadge))[]
  */
 export interface SafeWidgetData {
   widgetId?: WidgetId
-  nodeId?: NodeId
+  nodeId?: SerializedNodeId
   name: string
   type: string
   /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
@@ -109,7 +109,7 @@ export interface SafeWidgetData {
 
 export interface VueNodeData {
   executing: boolean
-  id: NodeId
+  id: SerializedNodeId
   mode: number
   selected: boolean
   title: string

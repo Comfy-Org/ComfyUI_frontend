@@ -8,11 +8,8 @@ import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type {
-  NodeBoundsUpdate,
-  NodeId,
-  Point
-} from '@/renderer/core/layout/types'
+import type { NodeBoundsUpdate, Point } from '@/renderer/core/layout/types'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
@@ -51,7 +48,7 @@ function useNodeDragIndividual() {
   let lastPointerX = 0
   let lastPointerY = 0
 
-  function startDrag(event: PointerEvent, nodeId: NodeId) {
+  function startDrag(event: PointerEvent, nodeId: SerializedNodeId) {
     const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
     if (!layout) return
     const position = layout.position ?? { x: 0, y: 0 }
@@ -100,7 +97,7 @@ function useNodeDragIndividual() {
     mutations.setSource(LayoutSource.Vue)
   }
 
-  function startAutoPan(event: PointerEvent, nodeId: NodeId) {
+  function startAutoPan(event: PointerEvent, nodeId: SerializedNodeId) {
     if (autoPan) {
       autoPan.updatePointer(event.clientX, event.clientY)
       return
@@ -139,7 +136,7 @@ function useNodeDragIndividual() {
    * Recalculates all dragged node positions based on the current mouse
    * position and canvas transform.
    */
-  function updateNodePositions(nodeId: NodeId) {
+  function updateNodePositions(rawNodeId: SerializedNodeId) {
     if (!dragStartPos || !dragStartMouse) return
 
     const mouseDelta = {
@@ -157,7 +154,7 @@ function useNodeDragIndividual() {
     // Move drag updates in one transaction to avoid per-node notify fan-out.
     const updates = [
       {
-        nodeId,
+        nodeId: rawNodeId,
         position: {
           x: dragStartPos.x + canvasDelta.x,
           y: dragStartPos.y + canvasDelta.y
@@ -196,7 +193,7 @@ function useNodeDragIndividual() {
     lastCanvasDelta = canvasDelta
   }
 
-  function handleDrag(event: PointerEvent, nodeId: NodeId) {
+  function handleDrag(event: PointerEvent, nodeId: SerializedNodeId) {
     if (!dragStartPos || !dragStartMouse) {
       return
     }
@@ -220,7 +217,7 @@ function useNodeDragIndividual() {
     })
   }
 
-  function endDrag(event: PointerEvent, nodeId: NodeId | undefined) {
+  function endDrag(event: PointerEvent, nodeId: SerializedNodeId | undefined) {
     // Apply snap to final position if snap was active (matches LiteGraph behavior)
     if (shouldSnap(event) && nodeId) {
       const boundsUpdates: NodeBoundsUpdate[] = []

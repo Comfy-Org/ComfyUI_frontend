@@ -1,4 +1,4 @@
-import type { NodeId } from '@/renderer/core/layout/types'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 /**
  * Slot identifier utilities for consistent slot key generation and parsing
@@ -9,7 +9,7 @@ import type { NodeId } from '@/renderer/core/layout/types'
  */
 
 interface SlotIdentifier {
-  nodeId: NodeId
+  nodeId: SerializedNodeId
   index: number
   isInput: boolean
 }
@@ -20,12 +20,12 @@ interface SlotIdentifier {
  */
 export function getSlotKey(identifier: SlotIdentifier): string
 export function getSlotKey(
-  nodeId: NodeId,
+  nodeId: SerializedNodeId,
   index: number,
   isInput: boolean
 ): string
 export function getSlotKey(
-  nodeIdOrIdentifier: NodeId | SlotIdentifier,
+  nodeIdOrIdentifier: SerializedNodeId | SlotIdentifier,
   index?: number,
   isInput?: boolean
 ): string {

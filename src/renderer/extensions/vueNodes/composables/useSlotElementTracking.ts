@@ -15,6 +15,7 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { app } from '@/scripts/app'
 import type { SlotLayout } from '@/renderer/core/layout/types'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import {
   isBoundsEqual,
   isPointEqual,
@@ -80,7 +81,7 @@ function createSlotLayout(options: {
   const half = size / 2
 
   return {
-    nodeId,
+    nodeId: toNodeId(nodeId),
     index,
     type,
     position: { x: centerCanvas.x, y: centerCanvas.y },

@@ -10,13 +10,13 @@ import { useClickDragGuard } from '@/composables/useClickDragGuard'
 import { useVueNodeLifecycle } from '@/composables/graph/useVueNodeLifecycle'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { NodeId } from '@/renderer/core/layout/types'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
 
 export function useNodePointerInteractions(
-  nodeIdRef: MaybeRefOrGetter<NodeId>
+  nodeIdRef: MaybeRefOrGetter<SerializedNodeId>
 ) {
   const { startDrag, endDrag, handleDrag } = useNodeDrag()
   // Use canvas interactions for proper wheel event handling and pointer event capture control
@@ -26,7 +26,7 @@ export function useNodePointerInteractions(
     useNodeEventHandlers()
   const { nodeManager } = useVueNodeLifecycle()
 
-  function isPinnedNode(nodeId: NodeId): boolean {
+  function isPinnedNode(nodeId: SerializedNodeId): boolean {
     return nodeManager.value?.getNode(String(nodeId))?.flags?.pinned ?? false
   }
 
@@ -116,7 +116,7 @@ export function useNodePointerInteractions(
     layoutStore.isDraggingVueNodes.value = false
   }
 
-  function safeDragStart(event: PointerEvent, nodeId: NodeId) {
+  function safeDragStart(event: PointerEvent, nodeId: SerializedNodeId) {
     try {
       startDrag(event, nodeId)
     } finally {
