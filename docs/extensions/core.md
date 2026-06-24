@@ -29,31 +29,30 @@ The following table lists ALL core extensions in the system as of 2025-01-30:
 
 ### Main Extensions
 
-| Extension               | Description                                                   | Category  |
-| ----------------------- | ------------------------------------------------------------- | --------- |
-| clipspace.ts            | Implements the Clipspace feature for temporary image storage  | Image     |
-| contextMenuFilter.ts    | Provides context menu filtering capabilities                  | UI        |
-| dynamicPrompts.ts       | Provides dynamic prompt generation capabilities               | Prompts   |
-| editAttention.ts        | Implements attention editing functionality                    | Text      |
-| electronAdapter.ts      | Adapts functionality for Electron environment                 | Platform  |
-| groupNode.ts            | Implements the group node functionality to organize workflows | Graph     |
-| groupNodeManage.ts      | Provides group node management operations                     | Graph     |
-| groupOptions.ts         | Handles group node configuration options                      | Graph     |
-| index.ts                | Main extension registration and coordination                  | Core      |
-| load3d.ts               | Supports 3D model loading and visualization                   | 3D        |
-| maskeditor.ts           | Implements the mask editor for image masking operations       | Image     |
-| nodeTemplates.ts        | Provides node template functionality                          | Templates |
-| noteNode.ts             | Adds note nodes for documentation within workflows            | Graph     |
-| previewAny.ts           | Universal preview functionality for various data types        | Preview   |
-| rerouteNode.ts          | Implements reroute nodes for cleaner workflow connections     | Graph     |
-| saveImageExtraOutput.ts | Handles additional image output saving                        | Image     |
-| saveMesh.ts             | Implements 3D mesh saving functionality                       | 3D        |
-| simpleTouchSupport.ts   | Provides basic touch interaction support                      | Input     |
-| slotDefaults.ts         | Manages default values for node slots                         | Nodes     |
-| uploadAudio.ts          | Handles audio file upload functionality                       | Audio     |
-| uploadImage.ts          | Handles image upload functionality                            | Image     |
-| webcamCapture.ts        | Provides webcam capture capabilities                          | Media     |
-| widgetInputs.ts         | Implements various widget input types                         | Widgets   |
+| Extension               | Description                                                  | Category  |
+| ----------------------- | ------------------------------------------------------------ | --------- |
+| clipspace.ts            | Implements the Clipspace feature for temporary image storage | Image     |
+| contextMenuFilter.ts    | Provides context menu filtering capabilities                 | UI        |
+| dynamicPrompts.ts       | Provides dynamic prompt generation capabilities              | Prompts   |
+| editAttention.ts        | Implements attention editing functionality                   | Text      |
+| electronAdapter.ts      | Adapts functionality for Electron environment                | Platform  |
+| groupNode.ts            | Migrates deprecated group nodes to subgraphs on load         | Graph     |
+| groupOptions.ts         | Handles group node configuration options                     | Graph     |
+| index.ts                | Main extension registration and coordination                 | Core      |
+| load3d.ts               | Supports 3D model loading and visualization                  | 3D        |
+| maskeditor.ts           | Implements the mask editor for image masking operations      | Image     |
+| nodeTemplates.ts        | Provides node template functionality                         | Templates |
+| noteNode.ts             | Adds note nodes for documentation within workflows           | Graph     |
+| previewAny.ts           | Universal preview functionality for various data types       | Preview   |
+| rerouteNode.ts          | Implements reroute nodes for cleaner workflow connections    | Graph     |
+| saveImageExtraOutput.ts | Handles additional image output saving                       | Image     |
+| saveMesh.ts             | Implements 3D mesh saving functionality                      | 3D        |
+| simpleTouchSupport.ts   | Provides basic touch interaction support                     | Input     |
+| slotDefaults.ts         | Manages default values for node slots                        | Nodes     |
+| uploadAudio.ts          | Handles audio file upload functionality                      | Audio     |
+| uploadImage.ts          | Handles image upload functionality                           | Image     |
+| webcamCapture.ts        | Provides webcam capture capabilities                         | Media     |
+| widgetInputs.ts         | Implements various widget input types                        | Widgets   |
 
 ### Conditional Lines Subdirectory
 

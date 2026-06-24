@@ -5,6 +5,10 @@ import { nextTick, watch } from 'vue'
 
 import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
+import type {
+  AssetItem,
+  AssetResponse
+} from '@/platform/assets/schemas/assetSchema'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { assetService } from '@/platform/assets/services/assetService'
 
@@ -24,13 +28,16 @@ vi.mock('@/scripts/api', () => ({
 vi.mock('@/platform/assets/services/assetService', () => ({
   assetService: {
     getAssetsByTag: vi.fn(),
+    getAssetsPageByTag: vi.fn(),
     getAllAssetsByTag: vi.fn(),
     getAssetsForNodeType: vi.fn(),
     invalidateInputAssetsIncludingPublic: vi.fn(),
     updateAsset: vi.fn(),
     addAssetTags: vi.fn(),
     removeAssetTags: vi.fn()
-  }
+  },
+  INPUT_TAG: 'input',
+  OUTPUT_TAG: 'output'
 }))
 
 // Mock distribution type - hoisted so it can be changed per test
@@ -1460,7 +1467,7 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
           {
             id: 'input-1',
             name: 'cute-puppy.png',
-            asset_hash: 'abc123def.png',
+            hash: 'abc123def.png',
             tags: ['input']
           }
         ])
@@ -1500,5 +1507,297 @@ describe('assetsStore - Deletion State and Input Mapping', () => {
         mockIsCloud.value = false
       }
     })
+  })
+})
+
+describe('assetsStore - Flat Output Assets (cloud-only)', () => {
+  const FLAT_OUTPUT_PAGE_SIZE = 200
+
+  const makeAsset = (id: string, name: string, hash?: string): AssetItem => ({
+    id,
+    name,
+    hash,
+    size: 0,
+    tags: ['output']
+  })
+
+  const makePage = (
+    assets: AssetItem[],
+    {
+      hasMore = false,
+      nextCursor
+    }: { hasMore?: boolean; nextCursor?: string } = {}
+  ): AssetResponse => ({
+    assets,
+    total: assets.length,
+    has_more: hasMore,
+    ...(nextCursor === undefined ? {} : { next_cursor: nextCursor })
+  })
+
+  beforeEach(() => {
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    vi.resetAllMocks()
+  })
+
+  it('fetches the first page via getAssetsPageByTag with the output tag and page size', async () => {
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+      makePage([
+        makeAsset('a1', 'image1.png', 'hash1.png'),
+        makeAsset('a2', 'image2.png', 'hash2.png')
+      ])
+    )
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+
+    expect(assetService.getAssetsPageByTag).toHaveBeenCalledWith(
+      'output',
+      true,
+      {
+        limit: FLAT_OUTPUT_PAGE_SIZE,
+        offset: 0
+      }
+    )
+    expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['a1', 'a2'])
+  })
+
+  it('trusts server has_more over page size for a short page', async () => {
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+      makePage([makeAsset('a1', 'one.png')], { hasMore: true })
+    )
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+
+    expect(store.flatOutputHasMore).toBe(true)
+  })
+
+  it('marks hasMore=false when the server reports the last page', async () => {
+    const fullPage = Array.from({ length: FLAT_OUTPUT_PAGE_SIZE }, (_, i) =>
+      makeAsset(`a${i}`, `f${i}.png`)
+    )
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+      makePage(fullPage, { hasMore: false })
+    )
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+
+    expect(store.flatOutputHasMore).toBe(false)
+  })
+
+  it('threads the minted cursor into after on loadMore and omits offset', async () => {
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png')], {
+          hasMore: true,
+          nextCursor: 'cursor-1'
+        })
+      )
+      .mockResolvedValueOnce(makePage([makeAsset('a2', 'f2.png')]))
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+    await store.loadMoreFlatOutputs()
+
+    expect(assetService.getAssetsPageByTag).toHaveBeenLastCalledWith(
+      'output',
+      true,
+      { limit: FLAT_OUTPUT_PAGE_SIZE, after: 'cursor-1' }
+    )
+  })
+
+  it('falls back to offset paging when the server mints no cursor', async () => {
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png'), makeAsset('a2', 'f2.png')], {
+          hasMore: true
+        })
+      )
+      .mockResolvedValueOnce(makePage([makeAsset('a3', 'f3.png')]))
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+    await store.loadMoreFlatOutputs()
+
+    expect(assetService.getAssetsPageByTag).toHaveBeenLastCalledWith(
+      'output',
+      true,
+      { limit: FLAT_OUTPUT_PAGE_SIZE, offset: 2 }
+    )
+  })
+
+  it('stops when the server returns a non-advancing cursor', async () => {
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png')], {
+          hasMore: true,
+          nextCursor: 'stuck'
+        })
+      )
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a2', 'f2.png')], {
+          hasMore: true,
+          nextCursor: 'stuck'
+        })
+      )
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+    await store.loadMoreFlatOutputs()
+
+    expect(store.flatOutputHasMore).toBe(false)
+  })
+
+  it('treats an empty page as terminal even when has_more is true', async () => {
+    vi.mocked(assetService.getAssetsPageByTag).mockResolvedValueOnce(
+      makePage([], { hasMore: true })
+    )
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+
+    expect(store.flatOutputHasMore).toBe(false)
+  })
+
+  it('appends and dedupes on loadMoreFlatOutputs', async () => {
+    const firstPage = Array.from({ length: FLAT_OUTPUT_PAGE_SIZE }, (_, i) =>
+      makeAsset(`a${i}`, `f${i}.png`)
+    )
+    const secondPage = [
+      makeAsset('a0', 'duplicate.png'),
+      makeAsset('newId', 'new.png')
+    ]
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(makePage(firstPage, { hasMore: true }))
+      .mockResolvedValueOnce(makePage(secondPage))
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+    await store.loadMoreFlatOutputs()
+
+    expect(store.flatOutputAssets).toHaveLength(FLAT_OUTPUT_PAGE_SIZE + 1)
+    expect(store.flatOutputAssets.at(-1)?.id).toBe('newId')
+  })
+
+  it('records error and resolves to an empty list on initial-fetch failure', async () => {
+    const err = new Error('network down')
+    vi.mocked(assetService.getAssetsPageByTag).mockRejectedValueOnce(err)
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    try {
+      const store = useAssetsStore()
+      const result = await store.updateFlatOutputs()
+
+      expect(result).toEqual([])
+      expect(store.flatOutputError).toBe(err)
+      expect(store.flatOutputLoading).toBe(false)
+    } finally {
+      consoleSpy.mockRestore()
+    }
+  })
+
+  it('preserves the cursor for retry when loadMore fails', async () => {
+    const err = new Error('network down')
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png')], {
+          hasMore: true,
+          nextCursor: 'cursor-1'
+        })
+      )
+      .mockRejectedValueOnce(err)
+      .mockResolvedValueOnce(makePage([makeAsset('a2', 'f2.png')]))
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    try {
+      const store = useAssetsStore()
+      await store.updateFlatOutputs()
+      await store.loadMoreFlatOutputs()
+
+      expect(store.flatOutputError).toBe(err)
+      expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['a1'])
+      expect(store.flatOutputHasMore).toBe(true)
+
+      await store.loadMoreFlatOutputs()
+
+      expect(assetService.getAssetsPageByTag).toHaveBeenLastCalledWith(
+        'output',
+        true,
+        { limit: FLAT_OUTPUT_PAGE_SIZE, after: 'cursor-1' }
+      )
+    } finally {
+      consoleSpy.mockRestore()
+    }
+  })
+
+  it('restarts from the head when loadMore follows a failed refresh', async () => {
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png')], {
+          hasMore: true,
+          nextCursor: 'cursor-1'
+        })
+      )
+      .mockRejectedValueOnce(new Error('network down'))
+      .mockResolvedValueOnce(makePage([makeAsset('a2', 'f2.png')]))
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    try {
+      const store = useAssetsStore()
+      await store.updateFlatOutputs()
+      await store.updateFlatOutputs()
+      await store.loadMoreFlatOutputs()
+
+      expect(assetService.getAssetsPageByTag).toHaveBeenLastCalledWith(
+        'output',
+        true,
+        { limit: FLAT_OUTPUT_PAGE_SIZE, offset: 0 }
+      )
+    } finally {
+      consoleSpy.mockRestore()
+    }
+  })
+
+  it('refresh resets pagination', async () => {
+    vi.mocked(assetService.getAssetsPageByTag)
+      .mockResolvedValueOnce(
+        makePage([makeAsset('a1', 'f1.png')], {
+          hasMore: true,
+          nextCursor: 'cursor-1'
+        })
+      )
+      .mockResolvedValueOnce(makePage([makeAsset('fresh', 'fresh.png')]))
+
+    const store = useAssetsStore()
+    await store.updateFlatOutputs()
+    await store.updateFlatOutputs()
+
+    expect(assetService.getAssetsPageByTag).toHaveBeenLastCalledWith(
+      'output',
+      true,
+      { limit: FLAT_OUTPUT_PAGE_SIZE, offset: 0 }
+    )
+    expect(store.flatOutputAssets.map((a) => a.id)).toEqual(['fresh'])
+    expect(store.flatOutputHasMore).toBe(false)
+  })
+
+  it('dedupes concurrent fetches into a single request', async () => {
+    let resolvePage!: (page: AssetResponse) => void
+    const pagePromise = new Promise<AssetResponse>((res) => {
+      resolvePage = res
+    })
+    vi.mocked(assetService.getAssetsPageByTag).mockReturnValueOnce(pagePromise)
+
+    const store = useAssetsStore()
+    const p1 = store.updateFlatOutputs()
+    const p2 = store.updateFlatOutputs()
+
+    expect(vi.mocked(assetService.getAssetsPageByTag)).toHaveBeenCalledTimes(1)
+
+    resolvePage(makePage([makeAsset('shared-1', 'shared.png', 'h.png')]))
+    await Promise.all([p1, p2])
+
+    expect(store.flatOutputAssets.map((x) => x.id)).toEqual(['shared-1'])
   })
 })

@@ -250,5 +250,5 @@ interactions (e.g., `comfyPage.settings.setSetting`, `comfyPage.nodeOps`,
 
 ```bash
 pnpm test:browser:local                 # Run all E2E tests
-pnpm test:browser:local -- --ui         # Interactive UI mode
+pnpm test:browser:local --ui            # Interactive UI mode
 ```

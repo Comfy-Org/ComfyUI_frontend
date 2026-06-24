@@ -20,6 +20,12 @@ import type {
 import { useLegacyBilling } from './useLegacyBilling'
 import { useWorkspaceBilling } from '@/platform/workspace/composables/useWorkspaceBilling'
 
+// Legacy per-member team plans use a hyphenated `team-{tier}-{cycle}` slug; the
+// new credit-slider plan uses an underscore `team_per_credit_{cycle}` slug and
+// carries a team_credit_stop. The hyphen prefix alone separates the two, so a
+// new sub is never misrouted even before its credit stop is populated.
+const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
+
 /**
  * Unified billing context that automatically switches between legacy (user-scoped)
  * and workspace billing based on the active workspace type.
@@ -116,11 +122,40 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.currentPlanSlug)
   )
 
+  const teamCreditStops = computed(() =>
+    toValue(activeContext.value.teamCreditStops)
+  )
+
+  const currentTeamCreditStop = computed(() =>
+    toValue(activeContext.value.currentTeamCreditStop)
+  )
+
   const isActiveSubscription = computed(() =>
     toValue(activeContext.value.isActiveSubscription)
   )
 
   const isFreeTier = computed(() => subscription.value?.tier === 'FREE')
+
+  const isLegacyTeamPlan = computed(
+    () =>
+      type.value === 'workspace' &&
+      isActiveSubscription.value &&
+      !isFreeTier.value &&
+      currentTeamCreditStop.value === null &&
+      (currentPlanSlug.value
+        ?.toLowerCase()
+        .startsWith(LEGACY_TEAM_PLAN_SLUG_PREFIX) ??
+        false)
+  )
+
+  const billingStatus = computed(() =>
+    toValue(activeContext.value.billingStatus)
+  )
+  const subscriptionStatus = computed(() =>
+    toValue(activeContext.value.subscriptionStatus)
+  )
+  const tier = computed(() => toValue(activeContext.value.tier))
+  const renewalDate = computed(() => toValue(activeContext.value.renewalDate))
 
   function getMaxSeats(tierKey: TierKey): number {
     if (type.value === 'legacy') return 1
@@ -218,6 +253,14 @@ function useBillingContextInternal(): BillingContext {
     return activeContext.value.cancelSubscription()
   }
 
+  async function resubscribe() {
+    return activeContext.value.resubscribe()
+  }
+
+  async function topup(amountCents: number) {
+    return activeContext.value.topup(amountCents)
+  }
+
   async function fetchPlans() {
     return activeContext.value.fetchPlans()
   }
@@ -237,10 +280,17 @@ function useBillingContextInternal(): BillingContext {
     balance,
     plans,
     currentPlanSlug,
+    teamCreditStops,
+    currentTeamCreditStop,
     isLoading,
     error,
     isActiveSubscription,
     isFreeTier,
+    isLegacyTeamPlan,
+    billingStatus,
+    subscriptionStatus,
+    tier,
+    renewalDate,
     getMaxSeats,
 
     initialize,
@@ -250,6 +300,8 @@ function useBillingContextInternal(): BillingContext {
     previewSubscribe,
     manageSubscription,
     cancelSubscription,
+    resubscribe,
+    topup,
     fetchPlans,
     requireActiveSubscription,
     showSubscriptionDialog

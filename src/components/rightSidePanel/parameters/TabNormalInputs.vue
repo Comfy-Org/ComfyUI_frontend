@@ -5,7 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode, NodeId } from '@/lib/litegraph/src/litegraph'
 import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
-import FormSearchInput from '@/renderer/extensions/vueNodes/widgets/components/form/FormSearchInput.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
 
@@ -122,7 +122,7 @@ const advancedLabel = computed(() => {
   <div
     class="flex items-center border-b border-interface-stroke px-4 pt-1 pb-4"
   >
-    <FormSearchInput
+    <AsyncSearchInput
       v-model="searchQuery"
       :searcher
       :update-key="widgetsSectionDataList"

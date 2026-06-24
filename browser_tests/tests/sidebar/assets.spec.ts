@@ -10,9 +10,8 @@ import type {
   RawJobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 
-// ---------------------------------------------------------------------------
-// Shared fixtures
-// ---------------------------------------------------------------------------
+// Legacy coverage backed by AssetsHelper's shadow backend. New assets-sidebar
+// browser coverage should use typed route mocks in assetsSidebarTab.spec.ts.
 
 const SAMPLE_JOBS: RawJobListItem[] = [
   createMockJob({
@@ -82,6 +81,19 @@ const JOB_GAMMA_DETAIL: JobDetail = {
         }
       ]
     }
+  },
+  workflow: {
+    extra_data: {
+      extra_pnginfo: {
+        workflow: {
+          version: 0.4,
+          last_node_id: 0,
+          last_link_id: 0,
+          nodes: [],
+          links: []
+        }
+      }
+    }
   }
 }
 
@@ -112,7 +124,7 @@ test.describe('Assets sidebar - empty states', () => {
 
   test('Shows empty-state copy for generated tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
-    await tab.open()
+    await tab.open({ waitForAssets: false })
 
     await expect(tab.emptyStateTitle('No generated files found')).toBeVisible()
     await expect(tab.emptyStateMessage).toBeVisible()
@@ -120,7 +132,7 @@ test.describe('Assets sidebar - empty states', () => {
 
   test('Shows empty-state copy for imported tab', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
-    await tab.open()
+    await tab.open({ waitForAssets: false })
     await tab.switchToImported()
 
     await expect(tab.emptyStateTitle('No imported files found')).toBeVisible()
@@ -129,7 +141,7 @@ test.describe('Assets sidebar - empty states', () => {
 
   test('No asset cards are rendered when empty', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
-    await tab.open()
+    await tab.open({ waitForAssets: false })
 
     await expect(tab.assetCards).toHaveCount(0)
   })
@@ -164,12 +176,10 @@ test.describe('Assets sidebar - tab navigation', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // Switch to Imported
     await tab.switchToImported()
     await expect(tab.importedTab).toHaveAttribute('aria-selected', 'true')
     await expect(tab.generatedTab).toHaveAttribute('aria-selected', 'false')
 
-    // Switch back to Generated
     await tab.switchToGenerated()
     await expect(tab.generatedTab).toHaveAttribute('aria-selected', 'true')
   })
@@ -178,11 +188,9 @@ test.describe('Assets sidebar - tab navigation', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    // Type search in Generated tab
     await tab.searchInput.fill('landscape')
     await expect(tab.searchInput).toHaveValue('landscape')
 
-    // Switch to Imported tab
     await tab.switchToImported()
     await expect(tab.searchInput).toHaveValue('')
   })
@@ -209,7 +217,6 @@ test.describe('Assets sidebar - grid view display', () => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
 
-    await tab.waitForAssets()
     await expect.poll(() => tab.assetCards.count()).toBeGreaterThanOrEqual(1)
   })
 
@@ -220,10 +227,8 @@ test.describe('Assets sidebar - grid view display', () => {
     await tab.open()
     await tab.switchToImported()
 
-    // Wait for imported assets to render
     await expect(tab.assetCards.first()).toBeVisible()
 
-    // Imported tab should show the mocked files
     await expect.poll(() => tab.assetCards.count()).toBeGreaterThanOrEqual(1)
   })
 
@@ -270,31 +275,24 @@ test.describe('Assets sidebar - view mode toggle', () => {
   test('Can switch to list view via settings menu', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
-    // Open settings menu and select list view
     await tab.openSettingsMenu()
     await tab.listViewOption.click()
 
-    // List view items should now be visible
     await expect(tab.listViewItems.first()).toBeVisible()
   })
 
   test('Can switch back to grid view', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
-    // Switch to list view
     await tab.openSettingsMenu()
     await tab.listViewOption.click()
     await expect(tab.listViewItems.first()).toBeVisible()
 
-    // Switch back to grid view (settings popover is still open)
     await tab.gridViewOption.click()
     await tab.waitForAssets()
 
-    // Grid cards (with data-selected attribute) should be visible again
     await expect(tab.assetCards.first()).toBeVisible()
   })
 })
@@ -326,25 +324,20 @@ test.describe('Assets sidebar - search', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     const initialCount = await tab.assetCards.count()
 
-    // Search for a specific filename that matches only one asset
     await tab.searchInput.fill('landscape')
 
-    // Wait for filter to reduce the count
     await expect.poll(() => tab.assetCards.count()).toBeLessThan(initialCount)
   })
 
   test('Clearing search restores all assets', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     const initialCount = await tab.assetCards.count()
 
-    // Filter then clear
     await tab.searchInput.fill('landscape')
     await expect.poll(() => tab.assetCards.count()).toBeLessThan(initialCount)
 
@@ -355,7 +348,6 @@ test.describe('Assets sidebar - search', () => {
   test('Search with no matches shows empty state', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     await tab.searchInput.fill('nonexistent_file_xyz')
     await expect(tab.assetCards).toHaveCount(0)
@@ -380,28 +372,22 @@ test.describe('Assets sidebar - selection', () => {
   test('Clicking an asset card selects it', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
-    // Click first asset card
     await tab.assetCards.first().click()
 
-    // Should have data-selected="true"
     await expect(tab.selectedCards).toHaveCount(1)
   })
 
   test('Ctrl+click adds to selection', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     const cards = tab.assetCards
     await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
 
-    // Click first card
     await cards.first().click()
     await expect(tab.selectedCards).toHaveCount(1)
 
-    // Ctrl+click second card
     await cards.nth(1).click({ modifiers: ['ControlOrMeta'] })
     await expect(tab.selectedCards).toHaveCount(2)
   })
@@ -411,29 +397,20 @@ test.describe('Assets sidebar - selection', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
-    // Select an asset
     await tab.assetCards.first().click()
 
-    // Footer should show selection count
     await expect(tab.selectionCountButton).toBeVisible()
   })
 
   test('Deselect all clears selection', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
-    // Select an asset
     await tab.assetCards.first().click()
     await expect(tab.selectedCards).toHaveCount(1)
 
-    // Hover over the selection count button to reveal "Deselect all"
-    await tab.selectionCountButton.hover()
     await expect(tab.deselectAllButton).toBeVisible()
-
-    // Click "Deselect all"
     await tab.deselectAllButton.click()
     await expect(tab.selectedCards).toHaveCount(0)
   })
@@ -441,16 +418,12 @@ test.describe('Assets sidebar - selection', () => {
   test('Selection is cleared when switching tabs', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
-    // Select an asset
     await tab.assetCards.first().click()
     await expect(tab.selectedCards).toHaveCount(1)
 
-    // Switch to Imported tab
     await tab.switchToImported()
 
-    // Switch back - selection should be cleared
     await tab.switchToGenerated()
     await tab.waitForAssets()
     await expect(tab.selectedCards).toHaveCount(0)
@@ -475,12 +448,9 @@ test.describe('Assets sidebar - context menu', () => {
   test('Right-clicking an asset shows context menu', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
-    // Right-click first asset
     await tab.assetCards.first().click({ button: 'right' })
 
-    // Context menu should appear with standard items
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
     await expect(contextMenu).toBeVisible()
   })
@@ -490,7 +460,6 @@ test.describe('Assets sidebar - context menu', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
@@ -505,7 +474,6 @@ test.describe('Assets sidebar - context menu', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
@@ -520,7 +488,6 @@ test.describe('Assets sidebar - context menu', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
@@ -535,7 +502,6 @@ test.describe('Assets sidebar - context menu', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     await tab.assetCards.first().click({ button: 'right' })
     await comfyPage.page
@@ -550,7 +516,6 @@ test.describe('Assets sidebar - context menu', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     await tab.assetCards.first().click({ button: 'right' })
 
@@ -563,33 +528,90 @@ test.describe('Assets sidebar - context menu', () => {
     await expect(tab.contextMenuItem('Export workflow')).toBeVisible()
   })
 
+  test('Cancelling export-workflow filename prompt does not show an error toast', async ({
+    comfyPage
+  }) => {
+    await comfyPage.assets.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
+
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    await tab.assetCards.first().click({ button: 'right' })
+    await tab.contextMenuItem('Export workflow').click()
+
+    const promptDialog = comfyPage.page.getByRole('dialog', {
+      name: 'Export Workflow'
+    })
+    await expect(promptDialog).toBeVisible()
+
+    await comfyPage.page.keyboard.press('Escape')
+    await expect(promptDialog).toBeHidden()
+
+    await expect(comfyPage.toast.toastErrors).toBeHidden({ timeout: 1500 })
+  })
+
+  test('Confirming export-workflow prompt downloads the file and shows a success toast', async ({
+    comfyPage
+  }) => {
+    await comfyPage.assets.mockJobDetail('job-gamma', JOB_GAMMA_DETAIL)
+
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    await tab.assetCards.first().click({ button: 'right' })
+    await tab.contextMenuItem('Export workflow').click()
+
+    const promptDialog = comfyPage.page.getByRole('dialog', {
+      name: 'Export Workflow'
+    })
+    await expect(promptDialog).toBeVisible()
+
+    const downloadPromise = comfyPage.page.waitForEvent('download')
+    await promptDialog.getByRole('button', { name: 'Confirm' }).click()
+
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toBe('abstract_art.json')
+
+    await expect(comfyPage.toast.toastSuccesses).toBeVisible()
+  })
+
+  test('Export-workflow shows a warning toast when the asset has no workflow', async ({
+    comfyPage
+  }) => {
+    const { workflow: _, ...detailWithoutWorkflow } = JOB_GAMMA_DETAIL
+    await comfyPage.assets.mockJobDetail('job-gamma', detailWithoutWorkflow)
+
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    await tab.assetCards.first().click({ button: 'right' })
+    await tab.contextMenuItem('Export workflow').click()
+
+    await expect(comfyPage.toast.toastWarnings).toBeVisible()
+    await expect(comfyPage.toast.toastSuccesses).toBeHidden({ timeout: 1500 })
+  })
+
   test('Bulk context menu shows when multiple assets selected', async ({
     comfyPage
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     const cards = tab.assetCards
     await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(2)
 
-    // Dismiss any toasts that appeared after asset loading
     await tab.dismissToasts()
 
-    // Multi-select: use keyboard.down/up so useKeyModifier('Control') detects
-    // the modifier — click({ modifiers }) only sets the mouse event flag and
-    // does not fire a keydown event that VueUse tracks.
+    // useKeyModifier('Control') needs keyboard events, not click modifiers.
     await cards.first().click()
     await comfyPage.page.keyboard.down('Control')
     await cards.nth(1).click()
     await comfyPage.page.keyboard.up('Control')
 
-    // Verify multi-selection took effect and footer is stable before right-clicking
     await expect(tab.selectedCards).toHaveCount(2)
     await expect(tab.selectionFooter).toBeVisible()
 
-    // Use dispatchEvent instead of click({ button: 'right' }) to avoid any
-    // overlay intercepting the event, and assert directly without toPass.
+    // dispatchEvent avoids the selection footer intercepting a right click.
     const contextMenu = comfyPage.page.locator('.p-contextmenu')
     await cards.first().dispatchEvent('contextmenu', {
       bubbles: true,
@@ -598,7 +620,6 @@ test.describe('Assets sidebar - context menu', () => {
     })
     await expect(contextMenu).toBeVisible()
 
-    // Bulk menu should show bulk download action
     await expect(tab.contextMenuItem('Download all')).toBeVisible()
   })
 })
@@ -623,11 +644,9 @@ test.describe('Assets sidebar - bulk actions', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     await tab.assetCards.first().click()
 
-    // Download button in footer should be visible
     await expect(tab.downloadSelectedButton).toBeVisible()
   })
 
@@ -636,34 +655,77 @@ test.describe('Assets sidebar - bulk actions', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     await tab.assetCards.first().click()
 
-    // Delete button in footer should be visible
     await expect(tab.deleteSelectedButton).toBeVisible()
   })
 
   test('Selection count displays correct number', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
-    // Select the two single-output assets (job-alpha, job-beta).
-    // The count reflects total outputs, not cards — job-gamma has
-    // outputs_count: 2 which would inflate the total.
     const cards = tab.assetCards
     await expect.poll(() => cards.count()).toBeGreaterThanOrEqual(3)
 
-    // Cards are sorted newest-first: gamma (idx 0), beta (1), alpha (2)
     await cards.nth(1).click()
     await comfyPage.page.keyboard.down('Control')
     await cards.nth(2).click()
     await comfyPage.page.keyboard.up('Control')
 
-    // Selection count should show the count
     await expect(tab.selectionCountButton).toBeVisible()
-    await expect(tab.selectionCountButton).toHaveText(/Assets Selected:\s*2\b/)
+    await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
+  })
+
+  test('Selection count sums the outputs of a stacked asset', async ({
+    comfyPage
+  }) => {
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    await tab.assetCards.first().click()
+
+    await expect(tab.selectionCountButton).toBeVisible()
+    await expect(tab.selectionCountButton).toHaveText(/\b2 selected\b/)
+  })
+
+  test('Selection bar stays capped, not stretched, on a wide panel', async ({
+    comfyPage
+  }) => {
+    await comfyPage.page.setViewportSize({ width: 1600, height: 900 })
+    const tab = comfyPage.menu.assetsTab
+    await tab.open()
+
+    const gutter = comfyPage.page.locator('.p-splitter-gutter').first()
+    await expect(gutter).toBeVisible()
+    const gutterBox = await gutter.boundingBox()
+    if (!gutterBox) {
+      throw new Error('sidebar splitter gutter has no bounding box')
+    }
+    await comfyPage.page.mouse.move(
+      gutterBox.x + gutterBox.width / 2,
+      gutterBox.y + gutterBox.height / 2
+    )
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.mouse.move(900, gutterBox.y + gutterBox.height / 2, {
+      steps: 12
+    })
+    await comfyPage.page.mouse.up()
+
+    await tab.assetCards.first().click()
+    await expect(tab.selectionFooter).toBeVisible()
+
+    const sidebar = comfyPage.page.locator('.side-bar-panel').first()
+    await expect
+      .poll(async () => (await sidebar.boundingBox())?.width ?? 0)
+      .toBeGreaterThan(520)
+    await expect
+      .poll(async () => {
+        const bar = await tab.selectionFooter.boundingBox()
+        const side = await sidebar.boundingBox()
+        return bar && side ? side.width - bar.width : 0
+      })
+      .toBeGreaterThan(100)
   })
 })
 
@@ -676,7 +738,6 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
 
       const tab = comfyPage.menu.assetsTab
       await tab.open()
-      await tab.waitForAssets()
 
       await tab.assetCards.first().click()
       await expect(tab.downloadSelectedButton).toBeVisible()
@@ -701,7 +762,6 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
 
       const tab = comfyPage.menu.assetsTab
       await tab.open()
-      await tab.waitForAssets()
 
       await tab.assetCards
         .first()
@@ -737,7 +797,6 @@ cloudTest.describe('Assets sidebar - cloud exports', { tag: '@cloud' }, () => {
 
       const tab = comfyPage.menu.assetsTab
       await tab.open()
-      await tab.waitForAssets()
 
       await tab.assetCards.nth(1).click()
       await comfyPage.page.keyboard.down('Control')
@@ -773,8 +832,7 @@ test.describe('Assets sidebar - pagination', () => {
     await comfyPage.assets.mockOutputHistory(manyJobs)
     await comfyPage.setup()
 
-    // Capture the first history fetch (terminal statuses only).
-    // Queue polling also hits /jobs but with status=in_progress,pending.
+    // Queue polling also calls /jobs, so wait for completed history only.
     const firstRequest = comfyPage.page.waitForRequest((req) => {
       if (!/\/api\/jobs\?/.test(req.url())) return false
       const url = new URL(req.url())
@@ -784,7 +842,6 @@ test.describe('Assets sidebar - pagination', () => {
 
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     const req = await firstRequest
     const url = new URL(req.url())
@@ -840,7 +897,6 @@ test.describe('Assets sidebar - delete confirmation', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     await tab.assetCards.first().click({ button: 'right' })
     await tab.contextMenuItem('Delete').click()
@@ -858,7 +914,6 @@ test.describe('Assets sidebar - delete confirmation', () => {
   }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     const initialCount = await tab.assetCards.count()
 
@@ -880,7 +935,6 @@ test.describe('Assets sidebar - delete confirmation', () => {
   test('Cancelling delete preserves asset', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     const initialCount = await tab.assetCards.count()
 
@@ -946,9 +1000,7 @@ const MIXED_MEDIA_JOBS: RawJobListItem[] = [
   })
 ]
 
-// Filter button is guarded by isCloud (compile-time). The cloud CI project
-// cannot use comfyPageFixture (auth required). Enable once cloud E2E infra
-// supports authenticated comfyPage setup.
+// Filter button is guarded by isCloud; cloud CI needs authenticated setup.
 test.describe('Assets sidebar - media type filter', () => {
   test.fixme(true, 'Requires DISTRIBUTION=cloud build with auth bypass')
 
@@ -977,7 +1029,6 @@ test.describe('Assets sidebar - media type filter', () => {
   test('Unchecking image filter hides image assets', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     const initialCount = tab.assetCards
     await expect(
@@ -985,12 +1036,9 @@ test.describe('Assets sidebar - media type filter', () => {
       'All three mixed-media jobs should render'
     ).toHaveCount(3)
 
-    // Open filter menu and enable only image filter (selecting a filter
-    // restricts to that type only, hiding unselected types)
     await tab.openFilterMenu()
     await tab.filterCheckbox('Image').click()
 
-    // Only the image asset should remain
     await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
     await expect(tab.getAssetCardByName('photo.png')).toBeVisible()
   })
@@ -998,16 +1046,13 @@ test.describe('Assets sidebar - media type filter', () => {
   test('Re-enabling filter restores hidden assets', async ({ comfyPage }) => {
     const tab = comfyPage.menu.assetsTab
     await tab.open()
-    await tab.waitForAssets()
 
     const initialCount = await tab.assetCards.count()
 
-    // Enable image filter to restrict to images only
     await tab.openFilterMenu()
     await tab.filterCheckbox('Image').click()
     await expect(tab.assetCards).toHaveCount(1, { timeout: 5000 })
 
-    // Uncheck image filter to remove all filters (restores all assets)
     await tab.filterCheckbox('Image').click()
     await expect(tab.assetCards).toHaveCount(initialCount, { timeout: 5000 })
   })
@@ -1050,4 +1095,57 @@ test.describe('Assets sidebar - drag and drop', () => {
     const fileComboWidget = await nodes[0].getWidget(0)
     await expect.poll(() => fileComboWidget.getValue()).toBe('test.png [temp]')
   })
+})
+
+test('Insert as node', { tag: '@vue-nodes' }, async ({ comfyPage }) => {
+  await comfyPage.assets.mockOutputHistory([
+    createMockJob({
+      id: 'job1',
+      preview_output: {
+        filename: `1.png`,
+        type: 'temp',
+        nodeId: '1',
+        mediaType: 'images'
+      }
+    }),
+    createMockJob({
+      id: 'job2',
+      preview_output: {
+        filename: `2.png`,
+        type: 'output',
+        nodeId: '1',
+        mediaType: 'images'
+      }
+    }),
+    createMockJob({
+      id: 'job2',
+      preview_output: {
+        filename: `3.png`,
+        type: 'input',
+        nodeId: '1',
+        mediaType: 'images'
+      }
+    })
+  ])
+  const { assetsTab } = comfyPage.menu
+  await assetsTab.open()
+  await assetsTab.waitForAssets()
+  await expect(assetsTab.assetCards).toHaveCount(3)
+  for (const [index, expectedName] of [
+    [0, '1.png [temp]'],
+    [1, '2.png [output]'],
+    [2, '3.png']
+  ] as const) {
+    await comfyPage.nodeOps.clearGraph()
+    await assetsTab.assetCards.nth(index).scrollIntoViewIfNeeded()
+    await assetsTab.assetCards.nth(index).click({ button: 'right' })
+
+    await expect(comfyPage.contextMenu.primeVueMenu).toBeVisible()
+    await comfyPage.contextMenu.primeVueMenu.getByText('Insert as node').click()
+
+    await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(1)
+    const nodes = await comfyPage.nodeOps.getNodeRefsByType('LoadImage')
+    const fileWidget = await nodes[0].getWidget(0)
+    await expect.poll(() => fileWidget.getValue()).toBe(expectedName)
+  }
 })

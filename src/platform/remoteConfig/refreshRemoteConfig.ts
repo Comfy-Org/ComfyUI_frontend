@@ -1,6 +1,8 @@
-import { api } from '@/scripts/api'
-
-import { remoteConfig, remoteConfigState } from './remoteConfig'
+import {
+  cachedTeamWorkspacesEnabled,
+  remoteConfig,
+  remoteConfigState
+} from './remoteConfig'
 
 interface RefreshRemoteConfigOptions {
   /**
@@ -8,6 +10,13 @@ interface RefreshRemoteConfigOptions {
    * Set to false during bootstrap before auth is initialized.
    */
   useAuth?: boolean
+}
+
+async function fetchRemoteConfig(useAuth: boolean): Promise<Response> {
+  if (!useAuth) return fetch('/api/features', { cache: 'no-store' })
+
+  const { api } = await import('@/scripts/api')
+  return api.fetchApi('/features', { cache: 'no-store' })
 }
 
 /**
@@ -25,15 +34,17 @@ export async function refreshRemoteConfig(
   const { useAuth = true } = options
 
   try {
-    const response = useAuth
-      ? await api.fetchApi('/features', { cache: 'no-store' })
-      : await fetch('/api/features', { cache: 'no-store' })
+    const response = await fetchRemoteConfig(useAuth)
 
     if (response.ok) {
       const config = await response.json()
       window.__CONFIG__ = config
       remoteConfig.value = config
       remoteConfigState.value = useAuth ? 'authenticated' : 'anonymous'
+      if (useAuth)
+        cachedTeamWorkspacesEnabled.value = Boolean(
+          config.team_workspaces_enabled
+        )
       return
     }
 

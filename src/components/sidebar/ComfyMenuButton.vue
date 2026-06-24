@@ -150,7 +150,8 @@ const telemetry = useTelemetry()
 
 function onLogoMenuClick(event: MouseEvent) {
   telemetry?.trackUiButtonClicked({
-    button_id: 'sidebar_comfy_menu_opened'
+    button_id: 'sidebar_comfy_menu_opened',
+    element_group: 'sidebar'
   })
   menuRef.value?.toggle(event)
 }
@@ -217,7 +218,8 @@ const extraMenuItems = computed(() => [
     icon: 'icon-[lucide--settings]',
     command: () => {
       telemetry?.trackUiButtonClicked({
-        button_id: 'sidebar_settings_menu_opened'
+        button_id: 'sidebar_settings_menu_opened',
+        element_group: 'sidebar'
       })
       showSettings()
     }
@@ -329,7 +331,8 @@ const handleNodes2ToggleClick = () => {
 const onNodes2ToggleChange = async (value: boolean) => {
   await settingStore.set('Comfy.VueNodes.Enabled', value)
   telemetry?.trackUiButtonClicked({
-    button_id: `menu_nodes_2.0_toggle_${value ? 'enabled' : 'disabled'}`
+    button_id: `menu_nodes_2.0_toggle_${value ? 'enabled' : 'disabled'}`,
+    element_group: 'sidebar'
   })
 }
 </script>

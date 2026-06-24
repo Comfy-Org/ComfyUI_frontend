@@ -61,16 +61,16 @@ const i18n = createI18n({
   messages: {
     en: {
       g: {
-        loading: 'Loading'
+        install: 'Install',
+        loading: 'Loading',
+        search: 'Search'
       },
       rightSidePanel: {
         locateNode: 'Locate node on canvas',
         missingNodePacks: {
           unknownPack: 'Unknown pack',
-          installNodePack: 'Install node pack',
           installing: 'Installing...',
           installed: 'Installed',
-          searchInManager: 'Search in Node Manager',
           viewInManager: 'View in Manager',
           collapse: 'Collapse',
           expand: 'Expand'
@@ -100,7 +100,6 @@ function renderRow(
   props: Partial<{
     group: MissingPackGroup
     showInfoButton: boolean
-    showNodeIdBadge: boolean
   }> = {}
 ) {
   const user = userEvent.setup()
@@ -110,7 +109,6 @@ function renderRow(
     props: {
       group: makeGroup(),
       showInfoButton: false,
-      showNodeIdBadge: false,
       onLocateNode,
       onOpenManagerInfo,
       ...props
@@ -118,7 +116,6 @@ function renderRow(
     global: {
       plugins: [createTestingPinia({ createSpy: vi.fn }), PrimeVue, i18n],
       stubs: {
-        TransitionCollapse: { template: '<div><slot /></div>' },
         DotSpinner: {
           template: '<span role="status" aria-label="loading" />'
         }
@@ -156,9 +153,22 @@ describe('MissingPackGroupRow', () => {
       expect(screen.getByText(/Loading/)).toBeInTheDocument()
     })
 
+    it('does not render header locate while pack metadata is resolving', () => {
+      renderRow({
+        group: makeGroup({
+          isResolving: true,
+          nodeTypes: [{ type: 'OnlyNode', nodeId: '100', isReplaceable: false }]
+        })
+      })
+
+      expect(
+        screen.queryByRole('button', { name: 'Locate node on canvas' })
+      ).not.toBeInTheDocument()
+    })
+
     it('renders node count', () => {
       renderRow()
-      expect(screen.getByText(/\(2\)/)).toBeInTheDocument()
+      expect(screen.getByText('2')).toBeInTheDocument()
     })
 
     it('renders count of 5 for 5 nodeTypes', () => {
@@ -171,38 +181,29 @@ describe('MissingPackGroupRow', () => {
           }))
         })
       })
-      expect(screen.getByText(/\(5\)/)).toBeInTheDocument()
-    })
-  })
-
-  describe('Expand / Collapse', () => {
-    it('starts collapsed', () => {
-      renderRow()
-      expect(screen.queryByText('MissingA')).not.toBeInTheDocument()
-    })
-
-    it('expands when chevron is clicked', async () => {
-      const { user } = renderRow()
-      await user.click(screen.getByRole('button', { name: 'Expand' }))
-      expect(screen.getByText('MissingA')).toBeInTheDocument()
-      expect(screen.getByText('MissingB')).toBeInTheDocument()
-    })
-
-    it('collapses when chevron is clicked again', async () => {
-      const { user } = renderRow()
-      await user.click(screen.getByRole('button', { name: 'Expand' }))
-      expect(screen.getByText('MissingA')).toBeInTheDocument()
-      await user.click(screen.getByRole('button', { name: 'Collapse' }))
-      expect(screen.queryByText('MissingA')).not.toBeInTheDocument()
+      expect(screen.getByText('5')).toBeInTheDocument()
     })
   })
 
   describe('Node Type List', () => {
-    async function expand(user: ReturnType<typeof userEvent.setup>) {
-      await user.click(screen.getByRole('button', { name: 'Expand' }))
-    }
+    it('hides multiple nodeTypes behind the expand control by default', () => {
+      renderRow()
+      expect(screen.queryByText('MissingA')).not.toBeInTheDocument()
+      expect(screen.queryByText('MissingB')).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Expand' })).toBeInTheDocument()
+    })
 
-    it('renders all nodeTypes when expanded', async () => {
+    it('shows unknown pack nodeTypes by default', () => {
+      renderRow({ group: makeGroup({ packId: null }) })
+
+      expect(
+        screen.getByRole('button', { name: 'Collapse' })
+      ).toBeInTheDocument()
+      expect(screen.getByText('MissingA')).toBeInTheDocument()
+      expect(screen.getByText('MissingB')).toBeInTheDocument()
+    })
+
+    it('renders all nodeTypes after expanding', async () => {
       const { user } = renderRow({
         group: makeGroup({
           nodeTypes: [
@@ -212,40 +213,87 @@ describe('MissingPackGroupRow', () => {
           ]
         })
       })
-      await expand(user)
+
+      await user.click(screen.getByRole('button', { name: 'Expand' }))
+
       expect(screen.getByText('NodeA')).toBeInTheDocument()
       expect(screen.getByText('NodeB')).toBeInTheDocument()
       expect(screen.getByText('NodeC')).toBeInTheDocument()
     })
 
-    it('shows nodeId badge when showNodeIdBadge is true', async () => {
-      const { user } = renderRow({ showNodeIdBadge: true })
-      await expand(user)
-      expect(screen.getByText('#10')).toBeInTheDocument()
+    it('hides multiple nodeTypes again after collapsing', async () => {
+      const { user } = renderRow()
+
+      await user.click(screen.getByRole('button', { name: 'Expand' }))
+      expect(screen.getByText('MissingA')).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: 'Collapse' }))
+      expect(screen.queryByText('MissingA')).not.toBeInTheDocument()
     })
 
-    it('hides nodeId badge when showNodeIdBadge is false', async () => {
-      const { user } = renderRow({ showNodeIdBadge: false })
-      await expand(user)
-      expect(screen.queryByText('#10')).not.toBeInTheDocument()
+    it('hides a single nodeType without an expand control', () => {
+      renderRow({
+        group: makeGroup({
+          nodeTypes: [{ type: 'OnlyNode', nodeId: '1', isReplaceable: false }]
+        })
+      })
+
+      expect(screen.queryByText('OnlyNode')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Expand' })
+      ).not.toBeInTheDocument()
     })
 
-    it('emits locateNode when Locate button is clicked', async () => {
-      const { user, onLocateNode } = renderRow({ showNodeIdBadge: true })
-      await expand(user)
+    it('emits locateNode when the pack label is clicked for one nodeType', async () => {
+      const { user, onLocateNode } = renderRow({
+        group: makeGroup({
+          nodeTypes: [{ type: 'OnlyNode', nodeId: '100', isReplaceable: false }]
+        })
+      })
+
+      await user.click(screen.getByRole('button', { name: 'my-pack' }))
+
+      expect(onLocateNode).toHaveBeenCalledWith('100')
+    })
+
+    it('moves locate to the header when there is one nodeType', async () => {
+      const { user, onLocateNode } = renderRow({
+        group: makeGroup({
+          nodeTypes: [{ type: 'OnlyNode', nodeId: '100', isReplaceable: false }]
+        })
+      })
+
+      await user.click(
+        screen.getByRole('button', { name: 'Locate node on canvas' })
+      )
+
+      expect(onLocateNode).toHaveBeenCalledWith('100')
+    })
+
+    it('emits locateNode when expanded child Locate button is clicked', async () => {
+      const { user, onLocateNode } = renderRow()
+      await user.click(screen.getByRole('button', { name: 'Expand' }))
+
       await user.click(
         screen.getAllByRole('button', { name: 'Locate node on canvas' })[0]
       )
+
       expect(onLocateNode).toHaveBeenCalledWith('10')
     })
 
-    it('does not show Locate for nodeType without nodeId', async () => {
-      const { user } = renderRow({
+    it('emits locateNode when node label is clicked', async () => {
+      const { user, onLocateNode } = renderRow()
+      await user.click(screen.getByRole('button', { name: 'Expand' }))
+      await user.click(screen.getByRole('button', { name: 'MissingA' }))
+      expect(onLocateNode).toHaveBeenCalledWith('10')
+    })
+
+    it('does not show Locate for nodeType without nodeId', () => {
+      renderRow({
         group: makeGroup({
           nodeTypes: [{ type: 'NoId', isReplaceable: false } as never]
         })
       })
-      await expand(user)
       expect(
         screen.queryByRole('button', { name: 'Locate node on canvas' })
       ).not.toBeInTheDocument()
@@ -253,7 +301,6 @@ describe('MissingPackGroupRow', () => {
 
     it('handles mixed nodeTypes with and without nodeId', async () => {
       const { user } = renderRow({
-        showNodeIdBadge: true,
         group: makeGroup({
           nodeTypes: [
             { type: 'WithId', nodeId: '100', isReplaceable: false },
@@ -261,7 +308,7 @@ describe('MissingPackGroupRow', () => {
           ]
         })
       })
-      await expand(user)
+      await user.click(screen.getByRole('button', { name: 'Expand' }))
       expect(screen.getByText('WithId')).toBeInTheDocument()
       expect(screen.getByText('WithoutId')).toBeInTheDocument()
       expect(
@@ -274,21 +321,25 @@ describe('MissingPackGroupRow', () => {
     it('hides install UI when shouldShowManagerButtons is false', () => {
       mockShouldShowManagerButtons.value = false
       renderRow()
-      expect(screen.queryByText('Install node pack')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Install' })
+      ).not.toBeInTheDocument()
     })
 
     it('hides install UI when packId is null', () => {
       mockShouldShowManagerButtons.value = true
       renderRow({ group: makeGroup({ packId: null }) })
-      expect(screen.queryByText('Install node pack')).not.toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: 'Install' })
+      ).not.toBeInTheDocument()
     })
 
-    it('shows "Search in Node Manager" when packId exists but pack not in registry', () => {
+    it('shows Search when packId exists but pack not in registry', () => {
       mockShouldShowManagerButtons.value = true
       mockIsPackInstalled.mockReturnValue(false)
       mockMissingNodePacks.value = []
       renderRow()
-      expect(screen.getByText('Search in Node Manager')).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Search' })).toBeInTheDocument()
     })
 
     it('shows "Installed" state when pack is installed', () => {
@@ -312,7 +363,9 @@ describe('MissingPackGroupRow', () => {
       mockIsPackInstalled.mockReturnValue(false)
       mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
       renderRow()
-      expect(screen.getByText('Install node pack')).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Install' })
+      ).toBeInTheDocument()
     })
 
     it('calls installAllPacks when Install button is clicked', async () => {
@@ -320,9 +373,7 @@ describe('MissingPackGroupRow', () => {
       mockIsPackInstalled.mockReturnValue(false)
       mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
       const { user } = renderRow()
-      await user.click(
-        screen.getByRole('button', { name: /Install node pack/ })
-      )
+      await user.click(screen.getByRole('button', { name: 'Install' }))
       expect(mockInstallAllPacks).toHaveBeenCalledOnce()
     })
 
@@ -369,7 +420,7 @@ describe('MissingPackGroupRow', () => {
   describe('Edge Cases', () => {
     it('handles empty nodeTypes array', () => {
       renderRow({ group: makeGroup({ nodeTypes: [] }) })
-      expect(screen.getByText(/\(0\)/)).toBeInTheDocument()
+      expect(screen.getByText('0')).toBeInTheDocument()
     })
   })
 })

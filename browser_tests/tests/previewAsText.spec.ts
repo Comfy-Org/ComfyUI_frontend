@@ -1,7 +1,7 @@
 import {
   comfyPageFixture as test,
   comfyExpect as expect
-} from '../fixtures/ComfyPage'
+} from '@e2e/fixtures/ComfyPage'
 
 test.describe('Preview as Text node', () => {
   test('does not include preview widget values in the API prompt', async ({

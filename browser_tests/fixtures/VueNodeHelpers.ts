@@ -59,7 +59,7 @@ export class VueNodeHelpers {
    * Matches against the actual title element, not the full node body.
    * Use `.first()` for unique titles, `.nth(n)` for duplicates.
    */
-  getNodeByTitle(title: string): Locator {
+  getNodeByTitle(title: string | RegExp): Locator {
     return this.page.locator('[data-node-id]').filter({
       has: this.page.getByTestId('node-title').filter({ hasText: title })
     })
@@ -145,7 +145,7 @@ export class VueNodeHelpers {
   /**
    * Resolve the data-node-id of the first rendered node matching the title.
    */
-  async getNodeIdByTitle(title: string): Promise<string> {
+  async getNodeIdByTitle(title: string | RegExp): Promise<string> {
     const node = this.getNodeByTitle(title).first()
     await node.waitFor({ state: 'visible' })
 
@@ -163,7 +163,7 @@ export class VueNodeHelpers {
    * Return a DOM-focused VueNodeFixture for the first node matching the title.
    * Resolves the node id up front so subsequent interactions survive title changes.
    */
-  async getFixtureByTitle(title: string): Promise<VueNodeFixture> {
+  async getFixtureByTitle(title: string | RegExp): Promise<VueNodeFixture> {
     const nodeId = await this.getNodeIdByTitle(title)
     return new VueNodeFixture(this.getNodeLocator(nodeId))
   }
@@ -213,7 +213,8 @@ export class VueNodeHelpers {
     return {
       input: widget.locator('input'),
       decrementButton: widget.getByTestId(TestIds.widgets.decrement),
-      incrementButton: widget.getByTestId(TestIds.widgets.increment)
+      incrementButton: widget.getByTestId(TestIds.widgets.increment),
+      valueControl: widget.getByTestId(TestIds.widgets.valueControl)
     }
   }
 
@@ -245,5 +246,19 @@ export class VueNodeHelpers {
     await editButton.click({
       position: { x: box.width / 2, y: box.height * 0.75 }
     })
+  }
+  async isSlotConnected(slot: Locator) {
+    const key = await slot.getByTestId('slot-dot').getAttribute('data-slot-key')
+    if (!key) return false
+
+    return await this.page.evaluate((key) => {
+      const [nodeId, type, slotId] = key.split('-')
+      const node = app?.canvas?.graph?.getNodeById(nodeId)
+      if (!node) return false
+
+      return type === 'in'
+        ? node.inputs[Number(slotId)]?.link !== null
+        : !!node.outputs[Number(slotId)].links?.length
+    }, key)
   }
 }
