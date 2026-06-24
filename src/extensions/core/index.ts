@@ -21,7 +21,6 @@ if (!isCloud) {
 import './noteNode'
 import './painter'
 import './previewAny'
-import './saveText'
 import './rerouteNode'
 import './saveImageExtraOutput'
 // saveMesh is loaded on-demand with load3d (see load3dLazy.ts)
