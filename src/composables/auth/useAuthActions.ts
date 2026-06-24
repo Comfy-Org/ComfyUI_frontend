@@ -70,6 +70,19 @@ export const useAuthActions = () => {
           email: 'support@comfy.org'
         })
       })
+    } else if (
+      error instanceof FirebaseError &&
+      error.message.toLowerCase().includes('signup_blocked')
+    ) {
+      // Match on `error.message`, not `error.code`: Firebase `beforeUserCreated`
+      // rejections collapse the thrown code into a generic `auth/internal-error`,
+      // so the message is the only reliable channel. `signup_blocked` is a
+      // cross-repo contract token; matched case-insensitively.
+      toastStore.add({
+        severity: 'error',
+        summary: t('g.error'),
+        detail: t('auth.errors.signupBlocked')
+      })
     } else if (error instanceof FirebaseError) {
       toastStore.add({
         severity: 'error',
