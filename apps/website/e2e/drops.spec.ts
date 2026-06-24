@@ -10,6 +10,7 @@ import { test } from './fixtures/blockExternalMedia'
 const PATH_EN = '/drops'
 const PATH_ZH = '/zh-CN/drops'
 const CLOUD_URL = 'https://cloud.comfy.org'
+const SUBSCRIBE_SIGN_UP_URL = 'https://luma.com/l7c5z4gp'
 
 const LOCALES: ReadonlyArray<readonly [string, Locale]> = [
   [PATH_EN, 'en'],
@@ -122,7 +123,7 @@ test.describe('Drops landing — desktop @smoke', () => {
         name: t('drops.banner.cta', locale)
       })
       await expect(signUp).toBeVisible()
-      await expect(signUp).toHaveAttribute('href', externalLinks.youtube)
+      await expect(signUp).toHaveAttribute('href', SUBSCRIBE_SIGN_UP_URL)
       await expect(signUp).toHaveAttribute('target', '_blank')
       await expect(signUp).toHaveAttribute('rel', 'noopener noreferrer')
     }
