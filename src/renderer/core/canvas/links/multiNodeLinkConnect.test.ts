@@ -1,5 +1,7 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { ToInputRenderLink } from '@/lib/litegraph/src/canvas/ToInputRenderLink'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
@@ -16,8 +18,6 @@ import {
   connectImageBatchToCreatedNode,
   connectImagesToDynamicInput,
   createBatchImagesNode,
-  getSelectedNodes,
-  isImageType,
   toImageBatchSources
 } from './multiNodeLinkConnect'
 
@@ -44,31 +44,6 @@ function addAutogrowImageNode(graph: LGraph, slotCount = 3): LGraphNode {
   graph.add(node)
   return node
 }
-
-describe('isImageType', () => {
-  it('matches the IMAGE type case-insensitively', () => {
-    expect(isImageType('IMAGE')).toBe(true)
-    expect(isImageType('image')).toBe(true)
-  })
-
-  it('rejects other types', () => {
-    expect(isImageType('MASK')).toBe(false)
-    expect(isImageType(0)).toBe(false)
-  })
-})
-
-describe('getSelectedNodes', () => {
-  it('returns only LGraphNode items from the canvas selection', () => {
-    const graph = new LGraph()
-    const a = addImageSource(graph)
-    const b = addImageSource(graph)
-    const canvas = {
-      selectedItems: new Set([a, {}, b])
-    } as unknown as LGraphCanvas
-
-    expect(getSelectedNodes(canvas)).toEqual([a, b])
-  })
-})
 
 describe('collectFanOutputs', () => {
   it('returns the grabbed source first, then matching selected nodes', () => {
@@ -231,7 +206,7 @@ describe('createBatchImagesNode', () => {
     const target = new LGraphNode('TargetNode')
 
     const result = await createBatchImagesNode(
-      { setDirty: vi.fn() } as unknown as LGraphCanvas,
+      fromPartial({ setDirty: vi.fn() }),
       [],
       target,
       0
@@ -242,16 +217,16 @@ describe('createBatchImagesNode', () => {
 })
 
 function fakeCanvas(
-  renderLinks: unknown[],
+  renderLinks: Partial<ToInputRenderLink>[],
   connectingTo: 'input' | 'output'
 ): LGraphCanvas {
-  return {
+  return fromPartial({
     linkConnector: { renderLinks, state: { connectingTo } },
     setDirty: vi.fn()
-  } as unknown as LGraphCanvas
+  })
 }
 
-function imageOutputLink(node: LGraphNode) {
+function imageOutputLink(node: LGraphNode): Partial<ToInputRenderLink> {
   return { toType: 'input', node, fromSlot: node.outputs[0], fromSlotIndex: 0 }
 }
 

@@ -1,6 +1,7 @@
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/interfaces'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { createNode, isLGraphNode } from '@/utils/litegraphUtil'
 
 export interface FanSource {
@@ -13,21 +14,8 @@ export interface FanInput {
   inputIndex: number
 }
 
-const IMAGE_SLOT_TYPE = 'IMAGE'
 const BATCH_IMAGES_NODE = 'BatchImagesNode'
 const BATCH_NODE_GAP_X = 100
-
-export function isImageType(type: ISlotType): boolean {
-  return typeof type === 'string' && type.toUpperCase() === IMAGE_SLOT_TYPE
-}
-
-export function getSelectedNodes(canvas: LGraphCanvas): LGraphNode[] {
-  return Array.from(canvas.selectedItems).filter(isLGraphNode)
-}
-
-function typesMatch(a: ISlotType, b: ISlotType): boolean {
-  return String(a).toLowerCase() === String(b).toLowerCase()
-}
 
 function findMatchingSlotIndex(
   slots: ReadonlyArray<{ type: ISlotType }> | undefined,
@@ -35,9 +23,12 @@ function findMatchingSlotIndex(
   type: ISlotType
 ): number | undefined {
   const preferred = slots?.[preferredIndex]
-  if (preferred && typesMatch(preferred.type, type)) return preferredIndex
+  if (preferred && LiteGraph.isValidConnection(preferred.type, type))
+    return preferredIndex
 
-  const index = slots?.findIndex((slot) => typesMatch(slot.type, type))
+  const index = slots?.findIndex((slot) =>
+    LiteGraph.isValidConnection(slot.type, type)
+  )
   return index !== undefined && index >= 0 ? index : undefined
 }
 
@@ -226,10 +217,10 @@ export function connectImageBatchToCreatedNode(
   if (state.connectingTo !== 'input' || renderLinks.length <= 1) return false
 
   const fromSlot = renderLinks[0]?.fromSlot
-  if (!fromSlot || !isImageType(fromSlot.type)) return false
+  if (!fromSlot || fromSlot.type !== 'IMAGE') return false
 
   const target = createdNode.findInputByType(fromSlot.type)
-  if (!target || !isImageType(target.slot.type)) return false
+  if (!target || target.slot.type !== 'IMAGE') return false
 
   const sources = toImageBatchSources(renderLinks)
   if (sources.length <= 1) return false

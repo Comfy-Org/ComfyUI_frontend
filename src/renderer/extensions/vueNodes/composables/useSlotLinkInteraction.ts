@@ -28,8 +28,6 @@ import {
   collectFanOutputs,
   connectImagesToDynamicInput,
   createBatchImagesNode,
-  getSelectedNodes,
-  isImageType,
   toImageBatchSources
 } from '@/renderer/core/canvas/links/multiNodeLinkConnect'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
@@ -44,6 +42,7 @@ import { app } from '@/scripts/app'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createRafBatch } from '@/utils/rafBatch'
+import { isLGraphNode } from '@/utils/litegraphUtil'
 
 interface SlotInteractionOptions {
   nodeId?: NodeId
@@ -219,8 +218,8 @@ export function useSlotLinkInteraction({
     if (
       canvas &&
       inputIndex >= 0 &&
-      isImageType(inputSlot.type) &&
-      isImageType(grabbedLink.fromSlot.type)
+      inputSlot.type === 'IMAGE' &&
+      grabbedLink.fromSlot.type === 'IMAGE'
     ) {
       void createBatchImagesNode(canvas, sources, node, inputIndex).catch(
         (error) => {
@@ -727,7 +726,7 @@ export function useSlotLinkInteraction({
       const adapter = activeAdapter
       if (!adapter || !resolvedNode) return
 
-      const selectedNodes = getSelectedNodes(canvas)
+      const selectedNodes = [...canvas.selectedItems].filter(isLGraphNode)
       if (selectedNodes.length <= 1 || !selectedNodes.includes(resolvedNode)) {
         return
       }
@@ -736,7 +735,7 @@ export function useSlotLinkInteraction({
         // Forward fan-out only resolves for images (auto-created batch node),
         // so only show the multi-link UI when dragging an image output.
         const grabbedOutput = resolvedNode.outputs?.[index]
-        if (!grabbedOutput || !isImageType(grabbedOutput.type)) return
+        if (!grabbedOutput || grabbedOutput.type !== 'IMAGE') return
 
         const fanSources = collectFanOutputs(resolvedNode, index, selectedNodes)
         adapter.addOutputRenderLinks(fanSources.slice(1))

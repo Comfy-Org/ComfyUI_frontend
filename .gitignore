@@ -30,9 +30,6 @@ dist-ssr
 .claude/worktrees
 CLAUDE.local.md
 
-# Local agent skills (not checked in)
-.agents/skills/
-
 # Editor directories and files
 .vscode/*
 *.code-workspace
