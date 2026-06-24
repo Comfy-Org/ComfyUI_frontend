@@ -209,12 +209,13 @@ test.describe('Drops landing — mobile @mobile', () => {
     const cards = dropsSection(page, 'en').locator('[data-slot="card"]')
     await expect(cards).toHaveCount(drops.length)
 
-    const viewportWidth = page.viewportSize()!.width
+    const viewport = page.viewportSize()
+    expect(viewport, 'viewport size').not.toBeNull()
     const firstBox = await cards.nth(0).boundingBox()
     const secondBox = await cards.nth(1).boundingBox()
     expect(firstBox, 'first card bounding box').not.toBeNull()
     expect(secondBox, 'second card bounding box').not.toBeNull()
-    expect(firstBox!.width).toBeGreaterThanOrEqual(viewportWidth * 0.7)
+    expect(firstBox!.width).toBeGreaterThanOrEqual(viewport!.width * 0.7)
     expect(secondBox!.y).toBeGreaterThanOrEqual(firstBox!.y + firstBox!.height)
   })
 
@@ -229,8 +230,8 @@ test.describe('Drops landing — mobile @mobile', () => {
 
     const box = await heading.boundingBox()
     expect(box, 'CTA heading bounding box').not.toBeNull()
-    expect(box!.x + box!.width).toBeLessThanOrEqual(
-      page.viewportSize()!.width + 1
-    )
+    const viewport = page.viewportSize()
+    expect(viewport, 'viewport size').not.toBeNull()
+    expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1)
   })
 })
