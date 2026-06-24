@@ -1,4 +1,4 @@
-import { nodeId } from '@/types/nodeId'
+import { nodeId, parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 
 const NODE_EXECUTION_ID_PATTERN = /^[^:]+(?::[^:]+)*$/
@@ -31,6 +31,12 @@ export type NodeExecutionId = string & { readonly __brand: 'NodeExecutionId' }
 
 function parseNodeIdSegment(part: string): NodeId {
   return nodeId(part)
+}
+
+function requireNodeIdSegment(value: SerializedNodeId): NodeId {
+  const parsed = parseNodeId(value)
+  if (!parsed) throw new Error('Node ID segment must be non-empty')
+  return parsed
 }
 
 function nodeExecutionIdFromString(value: string): NodeExecutionId | null {
@@ -108,8 +114,9 @@ export function createNodeLocatorId(
   subgraphUuid: string | null,
   localNodeId: SerializedNodeId
 ): NodeLocatorId {
+  const localId = requireNodeIdSegment(localNodeId)
   return (
-    subgraphUuid ? `${subgraphUuid}:${localNodeId}` : String(localNodeId)
+    subgraphUuid ? `${subgraphUuid}:${localId}` : localId
   ) as NodeLocatorId
 }
 
@@ -136,7 +143,11 @@ export function createNodeExecutionId<
   if (nodeIds.length === 0) {
     throw new Error('NodeExecutionId requires at least one node ID')
   }
-  return nodeIds.map(String).join(':') as NodeExecutionId
+  const executionId = nodeExecutionIdFromString(
+    nodeIds.map(requireNodeIdSegment).join(':')
+  )
+  if (!executionId) throw new Error('Invalid NodeExecutionId components')
+  return executionId
 }
 
 export function tryNormalizeNodeExecutionId(

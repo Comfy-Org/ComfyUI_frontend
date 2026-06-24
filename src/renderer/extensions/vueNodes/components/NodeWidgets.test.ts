@@ -25,7 +25,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
     canvas: {
       graph: {
         rootGraph: {
-          id: toNodeId('graph-test')
+          id: GRAPH_ID
         }
       }
     }

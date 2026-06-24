@@ -498,6 +498,7 @@ export class LGraphNode
 
     this._pos[0] = value[0]
     this._pos[1] = value[1]
+    if (this.id === -1 || !this.graph) return
 
     const mutations = useLayoutMutations()
     mutations.setSource(LayoutSource.Canvas)
@@ -520,6 +521,7 @@ export class LGraphNode
 
     this._size[0] = value[0]
     this._size[1] = value[1]
+    if (this.id === -1 || !this.graph) return
 
     const mutations = useLayoutMutations()
     mutations.setSource(LayoutSource.Canvas)

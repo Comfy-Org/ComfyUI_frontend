@@ -211,9 +211,13 @@ describe('nodeIdentification', () => {
         )
       })
 
-      it('should preserve empty path segments', () => {
-        expect(createNodeExecutionId([''])).toBe('')
-        expect(createNodeExecutionId([123, ''])).toBe('123:')
+      it('should reject empty path segments', () => {
+        expect(() => createNodeExecutionId([''])).toThrow(
+          'Node ID segment must be non-empty'
+        )
+        expect(() => createNodeExecutionId([123, ''])).toThrow(
+          'Node ID segment must be non-empty'
+        )
       })
     })
   })

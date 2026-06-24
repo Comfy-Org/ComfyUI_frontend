@@ -422,14 +422,14 @@ export function useSlotLinkInteraction({
   const raf = createRafBatch(processPointerMoveFrame)
 
   const canvas = app.canvas
-  const node = nodeId ? canvas.graph?.getNodeById(nodeId) : null
+  const node = nodeId && canvas ? canvas.graph?.getNodeById(nodeId) : null
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
     event.stopPropagation()
 
     autoPan?.updatePointer(event.clientX, event.clientY)
 
-    if (canvas.subgraph && node) {
+    if (canvas?.subgraph && node) {
       augmentToCanvasPointerEvent(event, node, canvas)
       canvas.subgraph.inputNode.onPointerMove(event)
       canvas.subgraph.outputNode.onPointerMove(event)
