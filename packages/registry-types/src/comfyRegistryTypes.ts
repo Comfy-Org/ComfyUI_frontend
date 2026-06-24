@@ -36,7 +36,7 @@ export interface paths {
         put?: never;
         /**
          * Create a new customer
-         * @description Creates a new customer using the provided token. No request body is needed as user information is extracted from the token.
+         * @description Creates a new customer. User identity is taken from the bearer token; the optional request body carries a Cloudflare Turnstile token used for server-side bot verification at signup (BE-1490). The body is optional — clients that do not run the Turnstile widget (e.g. the local OSS build) may omit it.
          */
         post: operations["createCustomer"];
         delete?: never;
@@ -239,6 +239,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/sync-api-key-deletion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Revoke a registry API key by hash (reverse delete-sync)
+         * @description Reverse-direction delete-sync (cloud → comfy-api registry, BE-1542). When a
+         *     workspace API key is deleted in cloud (the new source of truth), cloud calls
+         *     this endpoint so the comfy-api registry's api_keys row is removed too,
+         *     keeping the two stores convergent. Idempotent: deleting an unknown hash is a
+         *     no_op. M2M/admin-only; carries the key hash, never plaintext.
+         */
+        post: operations["SyncApiKeyDeletion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/generate-token": {
         parameters: {
             query?: never;
@@ -355,6 +379,26 @@ export interface paths {
          * @description Returns the customer's as a dashboard URL.
          */
         post: operations["GetCustomerUsage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/customers/usage/timeseries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get customer's usage time series
+         * @description Returns the authenticated customer's gross usage spend, grouped by model, endpoint, or product, as one stacked data point per billing period, plus a per-group breakdown and a summary, for rendering a custom usage dashboard. Sourced from invoice line items (real USD). Replaces the embeddable iframe.
+         */
+        get: operations["GetCustomerUsageTimeSeries"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1808,6 +1852,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxy/ideogram/ideogram-v4/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Proxy request to Ideogram 4.0 for image generation
+         * @description Forwards text-to-image generation requests to Ideogram's 4.0 API and returns the results.
+         */
+        post: operations["ideogramV4Generate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/proxy/kling/v1/account/costs": {
         parameters: {
             query?: never;
@@ -1885,6 +1949,57 @@ export interface paths {
         };
         /** KlingAI Query Single Image2Video Task */
         get: operations["klingImage2VideoQuerySingleTask"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/kling/text-to-video/kling-3.0-turbo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** KlingAI 3.0 Turbo Create Video from Text */
+        post: operations["klingV2CreateVideoFromText"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/kling/image-to-video/kling-3.0-turbo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** KlingAI 3.0 Turbo Create Video from Image */
+        post: operations["klingV2CreateVideoFromImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/kling/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** KlingAI 3.0 Turbo Query Task by ID */
+        get: operations["klingV2QueryTask"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2378,6 +2493,46 @@ export interface paths {
          * @description Forwards image generation requests to BFL's Flux 2 Max API and returns the results. Supports image-to-image generation with up to 8 input images.
          */
         post: operations["bflFlux2MaxGenerate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/bfl/v1/flux-tools/vto-v1": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Proxy request to BFL Flux Tools VTO v1 for virtual try-on
+         * @description Forwards virtual try-on requests to BFL's Flux Tools VTO v1 API and returns the results. Person and garment images are mapped to the underlying input image slots.
+         */
+        post: operations["bflVtoV1Generate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/bfl/v1/flux-tools/erase-v1": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Proxy request to BFL Flux Tools Erase v1 for object removal
+         * @description Forwards erase requests to BFL's Flux Tools Erase v1 API and returns the results. Uses an input image and a mask identifying the object or region to remove.
+         */
+        post: operations["bflEraseV1Generate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2913,6 +3068,26 @@ export interface paths {
          * @description Generates an image from text using Runway's API
          */
         post: operations["runwayTextToImage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/runway/video_to_video": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Runway Video to Video Generation
+         * @description Edits a video into a new video using Runway's API
+         */
+        post: operations["runwayVideoToVideo"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3658,6 +3833,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxy/tripo/v2/openapi/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import an External 3D Model into Tripo
+         * @description Composite endpoint for Tripo model import (PN-328). The client first uploads the
+         *     model file to ComfyUI API storage (POST /customers/storage) and then calls this
+         *     endpoint with the resulting download URL. The backend performs the full Tripo
+         *     import flow server-side: downloads the file from storage, obtains short-lived STS
+         *     upload credentials from Tripo, uploads the file to Tripo's object storage (SigV4),
+         *     and creates an import_model task referencing the uploaded object. Returns Tripo's
+         *     create-task response; poll /proxy/tripo/v2/openapi/task/{task_id} for completion.
+         *     The resulting task id is usable with Tripo post-processing tasks (texture_model,
+         *     animate_rig, convert_model, ...).
+         *
+         *     This is a synthetic comfy-api route (Tripo has no single-call equivalent); it
+         *     exists so that Tripo's temporary storage credentials never leave the backend and
+         *     no model binary ever travels inside this request.
+         *
+         *     The url host must be ComfyUI API storage (storage.googleapis.com).
+         *     Supported formats: glb, fbx, obj, stl. Maximum file size: 150MB.
+         */
+        post: operations["tripoImportModel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/proxy/tripo/v2/openapi/task": {
         parameters: {
             query?: never;
@@ -4032,6 +4242,66 @@ export interface paths {
         get: operations["byteplusSeedance2VideoGenerationQuery"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/byteplus/api/v3/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a file to BytePlus ModelArk
+         * @description Proxies POST https://ark.ap-southeast.bytepluses.com/api/v3/files. Uploads a binary file to ModelArk for later use (e.g. video understanding). See https://docs.byteplus.com/en/docs/ModelArk/1870405 for upstream details.
+         */
+        post: operations["byteplusFileUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/byteplus/api/v3/files/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve BytePlus ModelArk file information
+         * @description Proxies GET https://ark.ap-southeast.bytepluses.com/api/v3/files/{id}. See https://docs.byteplus.com/en/docs/ModelArk/1870406 for upstream details.
+         */
+        get: operations["byteplusFileGet"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/byteplus/api/v3/responses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a BytePlus ModelArk model response
+         * @description Proxies POST https://ark.ap-southeast.bytepluses.com/api/v3/responses. Creates a model response that supports text, image, video and file inputs, tool calls, structured output and deep-reasoning. See https://docs.byteplus.com/en/docs/ModelArk/1585128 for the upstream tutorial and request reference; the response object is documented at https://docs.byteplus.com/en/docs/ModelArk/1783703.
+         */
+        post: operations["byteplusResponseCreate"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4755,6 +5025,212 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/proxy/anthropic/v1/messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a message via Anthropic Claude
+         * @description Forwards a Messages API request to Anthropic's `/v1/messages` endpoint
+         *     and returns the model's reply. Supports both JSON responses and
+         *     Server-Sent Events streaming (selected via `stream: true` in the body).
+         */
+        post: operations["anthropicCreateMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/openrouter/api/v1/chat/completions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a chat completion via OpenRouter
+         * @description Forwards a Chat Completions request to OpenRouter's `/api/v1/chat/completions`
+         *     endpoint and returns the model's reply. Streaming (`stream: true`) is
+         *     rejected: billing relies on the `usage.cost` value OpenRouter returns,
+         *     which is not guaranteed on every SSE stream. Billing is based on the
+         *     `usage.cost` field in the response body.
+         */
+        post: operations["openrouterCreateChatCompletion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/krea/generate/image/krea/krea-2/medium": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Krea 2 Medium
+         * @description Best for expressive illustrations.
+         */
+        post: operations["kreaGenerateImageMedium"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/krea/generate/image/krea/krea-2/medium-turbo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Krea 2 Medium Turbo
+         * @description Faster, more affordable variant of Krea 2 Medium.
+         */
+        post: operations["kreaGenerateImageMediumTurbo"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/krea/generate/image/krea/krea-2/large": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Krea 2 Large
+         * @description Best for expressive photorealism.
+         */
+        post: operations["kreaGenerateImageLarge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/krea/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload an asset
+         * @description Upload an asset
+         */
+        post: operations["kreaUploadAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/krea/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a job by ID
+         * @description Get a job by ID
+         */
+        get: operations["kreaGetJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/beeble/v1/switchx/generations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start SwitchX Generation
+         * @description Start a SwitchX compositing job.
+         */
+        post: operations["beebleCreateSwitchXJob"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/beeble/v1/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Beeble Upload URL
+         * @description Create a presigned upload URL for a media file. The returned beeble_uri can be used as source_uri, reference_image_uri, or alpha_uri in SwitchX generation calls.
+         */
+        post: operations["beebleCreateUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/beeble/v1/switchx/generations/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get SwitchX Job Status
+         * @description Poll the status of a SwitchX job.
+         */
+        get: operations["beebleGetSwitchXStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/proxy/quiver/v1/svgs/generations": {
         parameters: {
             query?: never;
@@ -4957,6 +5433,63 @@ export interface paths {
          *     Max input duration: 60 seconds. Input resolution up to 16000x16000.
          */
         post: operations["briaVideoRemoveBackground"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/bria/v2/video/edit/green_screen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply a green screen to a video using Bria
+         * @description Initiates an asynchronous green-screen (chroma key) job for a video using Bria's API.
+         *     The original background is replaced with a solid broadcast-green, chroma-green, or blue
+         *     screen suitable for compositing.
+         *
+         *     Returns HTTP 202 with request_id and status_url. Poll the status endpoint for results.
+         *
+         *     Supported input containers: .mp4, .mov, .webm, .avi, .gif
+         *     Supported input codecs: H.264, H.265 (HEVC), VP9, AV1, PhotoJPEG
+         *     Max input duration: 60 seconds. Input resolution up to 16000x16000.
+         */
+        post: operations["briaVideoGreenScreen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/proxy/bria/v2/video/edit/replace_background": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Replace the background of a video using Bria
+         * @description Initiates an asynchronous background-replacement job for a video using Bria's API.
+         *     The original background is composited out and replaced with the supplied background
+         *     image or video.
+         *
+         *     Returns HTTP 202 with request_id and status_url. Poll the status endpoint for results.
+         *
+         *     Supported input containers: .mp4, .mov, .webm, .avi, .gif
+         *     Supported input codecs: H.264, H.265 (HEVC), VP9, AV1, PhotoJPEG
+         *     Max input duration: 60 seconds. Input resolution up to 16000x16000.
+         *     The background asset must match the foreground aspect ratio.
+         */
+        post: operations["briaVideoReplaceBackground"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5878,8 +6411,9 @@ export interface paths {
          * Generate music from video
          * @description Generate music from a video using Sonilo video-to-music AI.
          *     Accepts either a video file upload or a video URL, with an optional prompt.
-         *     Returns a streaming NDJSON response with duration, titles, audio chunks, and completion events.
-         *     Max video duration: 6 minutes. Max upload size: 1024MB.
+         *     Returns a streaming NDJSON response with one or more parallel audio streams
+         *     (titles, audio chunks, and completion events).
+         *     Max video duration: 6 minutes. Max upload size: 300MB.
          */
         post: operations["soniloVideoToMusicGenerate"];
         delete?: never;
@@ -5900,8 +6434,8 @@ export interface paths {
         /**
          * Generate music from text prompt
          * @description Generate music from a text prompt using Sonilo text-to-music AI.
-         *     Requires a prompt describing the desired music. Duration is optional and will be inferred if not provided.
-         *     Returns a streaming NDJSON response with duration, titles, audio chunks, and completion events.
+         *     Requires a prompt describing the desired music and a caller-specified duration.
+         *     Returns a streaming NDJSON response with titles, audio chunks, and completion events.
          */
         post: operations["soniloTextToMusicGenerate"];
         delete?: never;
@@ -5914,6 +6448,16 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description One of a customer's API keys, for cloud's migrate-on-miss to seed into
+         *     workspace_api_keys by hash. M2M/admin-only; carries the hash, never plaintext.
+         */
+        MigrationAPIKey: {
+            key_hash: string;
+            key_prefix?: string;
+            name?: string;
+            description?: string;
+        };
         FreepikMagnificUpscalerCreativeRequest: {
             /** @description Base64 image or URL to upscale. The resulted image can't exceed maximum allowed size of 25.3 million pixels. */
             image: string;
@@ -6270,6 +6814,11 @@ export interface components {
          * @enum {string}
          */
         SubscriptionDuration: "MONTHLY" | "ANNUAL";
+        /**
+         * @description State of a withheld first-time free tier credit grant. "verification_required" means the grant was denied pending account verification (e.g. unverified email or a blocked email domain). "deferred" means the grant was temporarily deferred and may succeed on a later request. Absent when no grant was withheld.
+         * @enum {string}
+         */
+        FreeTierGrantState: "verification_required" | "deferred";
         FeaturesResponse: {
             /**
              * @description The conversion rate for partner nodes
@@ -6388,6 +6937,86 @@ export interface components {
         ErrorResponse: {
             error: string;
             message: string;
+        };
+        /** @description Grouped gross spend per billing period, breakdown, and summary for a customer. */
+        CustomerUsageTimeSeries: {
+            /**
+             * @description Dimension the spend is grouped by.
+             * @enum {string}
+             */
+            group_by: "model" | "endpoint" | "product";
+            /**
+             * @description Bucket size of the time series.
+             * @enum {string}
+             */
+            granularity: "hour" | "day" | "month";
+            /**
+             * Format: date-time
+             * @description Inclusive start of the returned range.
+             */
+            starting_on: string;
+            /**
+             * Format: date-time
+             * @description Exclusive end of the returned range.
+             */
+            ending_before: string;
+            /** @description Distinct group keys present in the range, ordered by spend descending. */
+            groups: string[];
+            /** @description One entry per (billing period, group) with non-zero gross spend. */
+            buckets: components["schemas"]["UsageBucket"][];
+            /** @description Per-group totals over the whole range, ordered by spend descending. */
+            breakdown: components["schemas"]["UsageBreakdownRow"][];
+            summary: components["schemas"]["UsageSummary"];
+        };
+        UsageBucket: {
+            /**
+             * Format: date-time
+             * @description Start of the billing period this bucket belongs to.
+             */
+            period_start: string;
+            /**
+             * Format: date-time
+             * @description End of the billing period this bucket belongs to.
+             */
+            period_end: string;
+            /** @description Group value (e.g. model name) this bucket belongs to. */
+            group_key: string;
+            /**
+             * Format: double
+             * @description Gross spend in this period for this group, in microamount (1/1,000,000 USD).
+             */
+            cost_micros: number;
+        };
+        UsageBreakdownRow: {
+            group_key: string;
+            /**
+             * Format: double
+             * @description Total gross spend for this group over the range, in microamount.
+             */
+            cost_micros: number;
+            /**
+             * Format: double
+             * @description Fraction of total spend attributable to this group (0-1).
+             */
+            share: number;
+        };
+        UsageSummary: {
+            /**
+             * Format: double
+             * @description Total gross spend over the range, in microamount.
+             */
+            spend_micros: number;
+            balance?: components["schemas"]["UsageBalance"];
+        };
+        /** @description Current remaining balance, mirroring /customers/balance. */
+        UsageBalance: {
+            /** Format: double */
+            amount_micros?: number;
+            /** Format: double */
+            prepaid_balance_micros?: number;
+            /** Format: double */
+            cloud_credit_balance_micros?: number;
+            currency?: string;
         };
         CreateCouponRequest: {
             /** @description Name of the coupon displayed to customers */
@@ -6822,6 +7451,11 @@ export interface components {
             /** @description The pip freeze output */
             pip_freeze?: string;
         };
+        /** @description Optional request body for customer creation (BE-1490). Carries the Cloudflare Turnstile token produced by the frontend widget, verified server-side at signup. All fields are optional; clients that do not run the Turnstile widget may send an empty body or omit the body entirely. */
+        CreateCustomerRequest: {
+            /** @description The Cloudflare Turnstile token (cf-turnstile-response) produced by the frontend widget. Verified server-side against Cloudflare siteverify. Omit or leave empty for clients without Turnstile (e.g. local OSS), which are exempt from the verification requirement. */
+            turnstile_token?: string;
+        };
         Customer: {
             /** @description The firebase UID of the user */
             id: string;
@@ -7050,6 +7684,23 @@ export interface components {
                 /** @description The style type used for generation (e.g., 'REALISTIC', 'ANIME'). */
                 style_type?: string;
             }[];
+        };
+        /** @description Parameters for the Ideogram 4.0 (V4) text-to-image generation proxy request. Supply exactly one of text_prompt or json_prompt. */
+        IdeogramV4Request: {
+            /** @description Natural-language prompt. Enables Magic Prompt automatically. Supply exactly one of text_prompt or json_prompt. */
+            text_prompt?: string;
+            /** @description Structured V4 prompt. Disables Magic Prompt; consumed directly. Supply exactly one of text_prompt or json_prompt. */
+            json_prompt?: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description Output resolution in WIDTHxHEIGHT. Omit to let the model pick an aspect ratio. Supported 2K values: 2048x2048, 1440x2880, 2880x1440, 1664x2496, 2496x1664, 1792x2240, 2240x1792, 1440x2560, 2560x1440, 1600x2560, 2560x1600, 1728x2304, 2304x1728, 1296x3168, 3168x1296, 1152x2944, 2944x1152, 1248x3328, 3328x1248, 1280x3072, 3072x1280.
+             * @example 2048x2048
+             */
+            resolution?: string;
+            rendering_speed?: components["schemas"]["RenderingSpeed"];
+            /** @description Opt into post-generation copyright detection (Hive likeness and logo checks). */
+            enable_copyright_detection?: boolean;
         };
         IdeogramV3RemixRequest: {
             /** Format: binary */
@@ -7424,6 +8075,150 @@ export interface components {
             callback_url?: string;
             /** @description Customized Task ID. Must be unique within a single user account. */
             external_task_id?: string;
+        };
+        /** @description General configuration such as callback address and watermark options. */
+        KlingV2Options: {
+            /** @description Callback notification URL for task results. The server notifies when the task status changes. */
+            callback_url?: string;
+            /** @description Customized Task ID. Does not overwrite the system-generated task ID but can be used for queries. Must be unique within a single user account. */
+            external_task_id?: string;
+            /** @description Whether to generate watermarked results simultaneously. Custom watermarks are not supported. */
+            watermark_info?: {
+                /** @description true means generate watermarked result, false means do not generate. Default false. */
+                enabled?: boolean;
+            };
+        };
+        KlingV2Text2VideoRequest: {
+            /** @description Prompt that may include both positive and negative descriptions. Recommended length under 2500 characters. Multi-shot videos use the format "shot n, m, words; shot n, m, words;". */
+            prompt: string;
+            /** @description Output configuration such as resolution, aspect ratio and duration. */
+            settings?: {
+                /** @description Clarity of the generated video. One of "720p" or "1080p". Default "720p". */
+                resolution?: string;
+                /** @description Aspect ratio (width:height) of the generated frames. One of "16:9", "9:16" or "1:1". Default "16:9". */
+                aspect_ratio?: string;
+                /** @description Video length in seconds. Supported values 3 through 15. Default 5. */
+                duration?: number;
+            };
+            options?: components["schemas"]["KlingV2Options"];
+        };
+        KlingV2Image2VideoRequest: {
+            /** @description Collection of references such as prompts and images. Fields related to the same material belong in the same object. */
+            contents: {
+                /** @description Reference type. One of "prompt" or "first_frame". */
+                type?: string;
+                /** @description Text prompt. Provided when type is "prompt". May include positive and negative descriptions; cannot exceed 2500 characters. */
+                text?: string;
+                /** @description First-frame material. Provided when type is "first_frame". May be a URL or Base64 content. Supports .jpg, .jpeg and .png up to 50MB; width and height must be at least 300px with an aspect ratio between 1:2.5 and 2.5:1. */
+                url?: string;
+            }[];
+            /** @description Output configuration such as resolution and duration. */
+            settings?: {
+                /** @description Clarity of the generated video. One of "720p" or "1080p". Default "720p". */
+                resolution?: string;
+                /** @description Video length in seconds. Supported values 3 through 15. Default 5. */
+                duration?: number;
+            };
+            options?: components["schemas"]["KlingV2Options"];
+        };
+        /** @description Response returned when a Kling 3.0 Turbo task is created. */
+        KlingV2CreateTaskResponse: {
+            /** @description Error code. 0 indicates success. */
+            code?: number;
+            /** @description Error message. */
+            message?: string;
+            /** @description Request ID generated by the system. */
+            request_id?: string;
+            data?: {
+                /** @description The created task ID. */
+                id?: string;
+                /** @description Task status. One of "submitted", "processing", "succeeded" or "failed". */
+                status?: string;
+                /**
+                 * Format: int64
+                 * @description Task creation time. Unix timestamp in milliseconds.
+                 */
+                create_time?: number;
+                /**
+                 * Format: int64
+                 * @description Task update time. Unix timestamp in milliseconds.
+                 */
+                update_time?: number;
+                /** @description The custom task ID for this task, if any. */
+                external_id?: string;
+            };
+        };
+        /** @description A generated output. The fields present depend on `type` (video, image, audio, voice or element). */
+        KlingV2Output: {
+            /** @description Output content type. One of "video", "image", "audio", "voice" or "element". */
+            type?: string;
+            /** @description Output ID generated by the system. */
+            id?: string;
+            /** @description URL of the generated result (hotlink-protected). Cleared after 30 days. */
+            url?: string;
+            /** @description URL of the watermarked result (hotlink-protected). */
+            watermark_url?: string;
+            /** @description Duration of the generated video in seconds. */
+            duration?: string;
+            /** @description Grouping marker, present only for grouped images. */
+            group_id?: string;
+            /** @description MP3 URL of the generated audio (hotlink-protected). */
+            mp3_url?: string;
+            /** @description WAV URL of the generated audio (hotlink-protected). */
+            wav_url?: string;
+            /** @description Duration of the generated MP3 audio in seconds. */
+            mp3_duration?: string;
+            /** @description Duration of the generated WAV audio in seconds. */
+            wav_duration?: string;
+            /** @description Name of the generated material. */
+            name?: string;
+            /** @description Source of the material. "kling" denotes the official library; numbers are creator IDs. */
+            owned_by?: string;
+            /** @description Status of the material. One of "succeeded" or "deleted". */
+            status?: string;
+        };
+        /** @description A single Kling 3.0 Turbo task record. */
+        KlingV2Task: {
+            /** @description The task ID. */
+            id?: string;
+            /** @description Task status. One of "submitted", "processing", "succeeded" or "failed". */
+            status?: string;
+            /** @description Task status information, displaying the failure reason when the task fails. */
+            message?: string;
+            /**
+             * Format: int64
+             * @description Task creation time. Unix timestamp in milliseconds.
+             */
+            create_time?: number;
+            /**
+             * Format: int64
+             * @description Task update time. Unix timestamp in milliseconds.
+             */
+            update_time?: number;
+            /** @description The custom task ID for this task, if any. */
+            external_id?: string;
+            /** @description Generated outputs for the task. */
+            outputs?: components["schemas"]["KlingV2Output"][];
+            /** @description Billing details for the task. */
+            billing?: {
+                /** @description Consumption account type. "cash" for balance, "unit" for a resource package. */
+                charge_type?: string;
+                /** @description Consumption amount, accurate to two decimal places. */
+                amount?: string;
+                /** @description Consumable resource bundle type (only present when charge_type is "unit"). One of "video", "image" or "audio". */
+                package_type?: string;
+            }[];
+        };
+        /** @description Response returned when querying Kling 3.0 Turbo tasks by ID. */
+        KlingV2QueryTaskResponse: {
+            /** @description Error code. 0 indicates success. */
+            code?: number;
+            /** @description Error message. */
+            message?: string;
+            /** @description Request ID generated by the system. */
+            request_id?: string;
+            /** @description Tasks matching the query. */
+            data?: components["schemas"]["KlingV2Task"][];
         };
         KlingVideoExtendRequest: {
             /** @description The ID of the video to be extended. Supports videos generated by text-to-video, image-to-video, and previous video extension operations. Cannot exceed 3 minutes total duration after extension. */
@@ -8366,6 +9161,74 @@ export interface components {
          * @enum {string}
          */
         BFLStatus: "Task not found" | "Pending" | "Request Moderated" | "Content Moderated" | "Ready" | "Error";
+        /** @description Request body for the BFL Flux Tools VTO v1 virtual try-on API. */
+        BFLVtoV1Request: {
+            /**
+             * @description Text prompt for VTO generation.
+             * @example TRY-ON: The person of image 1 wearing the garments of image 2.
+             */
+            prompt: string;
+            /** @description Person image (maps internally to input_image). */
+            person: string;
+            /** @description Image of one or more garments (maps internally to input_image_2). */
+            garment: string;
+            /**
+             * @description Optional seed for reproducibility.
+             * @example 42
+             */
+            seed?: number;
+            /**
+             * @description Tolerance level for input and output moderation. Between 0 and 5 for public use.
+             * @default 2
+             */
+            safety_tolerance: number;
+            /**
+             * @description Output format for the generated image.
+             * @default jpeg
+             */
+            output_format: components["schemas"]["BFLOutputFormat"];
+            /**
+             * Format: uri
+             * @description URL to receive webhook notifications.
+             */
+            webhook_url?: string;
+            /** @description Optional secret for webhook signature verification. */
+            webhook_secret?: string;
+        };
+        /** @description Request body for the BFL Flux Tools Erase v1 object removal API. */
+        BFLEraseV1Request: {
+            /** @description Base64-encoded input image or HTTP(S) image URL. */
+            image: string;
+            /** @description Base64-encoded black/white mask or HTTP(S) image URL. White pixels indicate the object to remove; black pixels are preserved. Must have the same dimensions as the input image. */
+            mask: string;
+            /**
+             * @description Number of pixels to dilate the mask by before removal. Dilation helps cover object edges. Maximum is 25 pixels.
+             * @default 10
+             */
+            dilate_pixels: number;
+            /**
+             * @description Optional seed for reproducibility.
+             * @example 42
+             */
+            seed?: number;
+            /**
+             * @description Tolerance level for input and output moderation. Between 0 and 5, 0 being most strict, 5 being least strict.
+             * @default 2
+             */
+            safety_tolerance: number;
+            /**
+             * @description Output format for the generated image.
+             * @default png
+             */
+            output_format: components["schemas"]["BFLOutputFormat"];
+            /**
+             * Format: uri
+             * @description URL to receive webhook notifications.
+             */
+            webhook_url?: string;
+            /** @description Optional secret for webhook signature verification. */
+            webhook_secret?: string;
+        };
         /** @description Request body for the BFL Flux 2 Pro image generation API. */
         BFLFlux2ProGenerateRequest: {
             /** @description Text description of the image to generate. */
@@ -8733,7 +9596,7 @@ export interface components {
          * OutputFormat
          * @enum {string}
          */
-        BFLOutputFormat: "jpeg" | "png";
+        BFLOutputFormat: "jpeg" | "png" | "webp";
         /** ValidationError */
         BFLValidationError: {
             /** Location */
@@ -10424,10 +11287,10 @@ export interface components {
             request?: components["schemas"]["LumaGenerationRequest"] | components["schemas"]["LumaImageGenerationRequest"] | components["schemas"]["LumaUpscaleVideoGenerationRequest"] | components["schemas"]["LumaAudioGenerationRequest"];
         };
         /**
-         * @description Output aspect ratio
+         * @description Output aspect ratio. The ray-3.2 video models support the subset 9:16, 3:4, 1:1, 4:3, 16:9, 21:9.
          * @enum {string}
          */
-        LumaAgentsAspectRatio: "3:1" | "2:1" | "16:9" | "3:2" | "1:1" | "2:3" | "9:16" | "1:2" | "1:3";
+        LumaAgentsAspectRatio: "3:1" | "2:1" | "21:9" | "16:9" | "3:2" | "4:3" | "1:1" | "3:4" | "2:3" | "9:16" | "1:2" | "1:3";
         /**
          * @description Style preset
          * @enum {string}
@@ -10439,10 +11302,10 @@ export interface components {
          */
         LumaAgentsOutputFormat: "png" | "jpeg";
         /**
-         * @description The kind of generation to perform
+         * @description The kind of generation to perform. image/image_edit are produced by the uni-1 / uni-1-max models; video/video_edit/video_reframe are produced by the ray-3.2 model.
          * @enum {string}
          */
-        LumaAgentsGenerationType: "image" | "image_edit";
+        LumaAgentsGenerationType: "image" | "image_edit" | "video" | "video_edit" | "video_reframe";
         /**
          * @description Current state of the generation
          * @enum {string}
@@ -10453,14 +11316,16 @@ export interface components {
          * @enum {string}
          */
         LumaAgentsFailureCode: "content_moderated" | "generation_failed" | "budget_exhausted" | "output_not_found";
-        /** @description Reference image for style/content guidance or guided generation */
+        /** @description Reference to an image or video. Used for style/content guidance, guided generation, video-edit/video-reframe sources, and guide keyframes. Provide exactly one of generation_id, url, or data. */
         LumaAgentsImageRef: {
-            /** @description Base64-encoded image data */
+            /** @description Base64-encoded image or video data */
             data?: string;
-            /** @description MIME type (e.g. image/jpeg). Required with data. */
+            /** @description MIME type. Required with data (and with url for video sources, e.g. video/mp4 on video_edit / video_reframe). */
             media_type?: string;
-            /** @description Publicly accessible image URL */
+            /** @description Publicly accessible image or video URL */
             url?: string;
+            /** @description UUID of a prior completed generation to reuse as the source. Used by ray-3.2 video_edit / video_reframe. */
+            generation_id?: string;
         };
         /** @description The Luma Agents generation request object */
         LumaAgentsGenerationRequest: {
@@ -10469,14 +11334,39 @@ export interface components {
             aspect_ratio?: components["schemas"]["LumaAgentsAspectRatio"];
             /** @description Reference images for style/content guidance. Up to 9 for type 'image', up to 8 for type 'image_edit'. */
             image_ref?: components["schemas"]["LumaAgentsImageRef"][];
-            /** @description Model to use */
+            /** @description Model to use. uni-1 / uni-1-max for image generation, ray-3.2 for video generation, editing, and reframing. */
             model?: string;
             output_format?: components["schemas"]["LumaAgentsOutputFormat"];
             source?: components["schemas"]["LumaAgentsImageRef"];
             style?: components["schemas"]["LumaAgentsStyle"];
             type?: components["schemas"]["LumaAgentsGenerationType"];
+            video?: components["schemas"]["LumaAgentsVideoOptions"];
             /** @description Enable web search grounding */
             web_search?: boolean;
+        };
+        /**
+         * @description Output resolution for ray-3.2 video. Defaults to 720p. 360p is the draft tier. HDR requires 720p or 1080p.
+         * @enum {string}
+         */
+        LumaAgentsVideoResolution: "360p" | "540p" | "720p" | "1080p";
+        /**
+         * @description Clip duration for ray-3.2 video / video_edit. Defaults to 5s. HDR generation (type video) is restricted to 5s.
+         * @enum {string}
+         */
+        LumaAgentsVideoDuration: "5s" | "10s";
+        /** @description Video output settings for ray-3.2. Only the fields that affect validation and billing are modelled here; additional fields (edit controls, end_frame, loop, source_position) are forwarded to Luma untouched. */
+        LumaAgentsVideoOptions: {
+            resolution?: components["schemas"]["LumaAgentsVideoResolution"];
+            duration?: components["schemas"]["LumaAgentsVideoDuration"];
+            /** @description Render in HDR. Requires 720p/1080p. Rejected for video_reframe. */
+            hdr?: boolean;
+            /** @description Export an EXR file alongside the MP4. Requires hdr true. Rejected for video_reframe. */
+            exr_export?: boolean;
+            /** @description Loop the generated clip. Create-only (type video). */
+            loop?: boolean;
+            start_frame?: components["schemas"]["LumaAgentsImageRef"];
+            /** @description Guide-frame images. A single keyframe makes a type "video" request a single-keyframe extend, which always bills as one 5s block. */
+            keyframes?: components["schemas"]["LumaAgentsImageRef"][];
         };
         /** @description A generated output entry */
         LumaAgentsGenerationOutput: {
@@ -10887,6 +11777,68 @@ export interface components {
             /** @description Task ID */
             id?: string;
         };
+        /** @description Request to edit an input video into a new video using Runway's API. */
+        RunwayVideoToVideoRequest: {
+            /** @description Model to use for generation */
+            model: components["schemas"]["RunwayVideoToVideoModelEnum"];
+            /** @description A non-empty string up to 1000 characters describing what should appear in the output. */
+            promptText: string;
+            /** @description The input video to edit (HTTPS URL, Runway upload URI, or data URI). Must be 30 seconds or shorter. */
+            videoUri: string;
+            /** @description Timed guidance images placed at specific points in the input video. Up to 5 keyframes. */
+            keyframes?: components["schemas"]["RunwayVideoToVideoKeyframe"][];
+            /** @description A list of up to 5 image keyframes for guiding the edit at specific points in the video. */
+            promptImage?: components["schemas"]["RunwayVideoToVideoPromptImage"][];
+            /**
+             * Format: int64
+             * @description Random seed for generation.
+             */
+            seed?: number;
+            /** @description Settings that affect the behavior of the content moderation system. */
+            contentModeration?: components["schemas"]["RunwayContentModeration"];
+        };
+        /** @description Timed guidance image placed at a specific point in the input video. */
+        RunwayVideoToVideoKeyframe: {
+            /** @description A HTTPS URL, Runway or data URI containing an encoded image. */
+            uri: string;
+            /** @description Absolute timestamp in seconds from the start of the input video when this guidance image should apply. */
+            seconds: number;
+        } | {
+            /** @description A HTTPS URL, Runway or data URI containing an encoded image. */
+            uri: string;
+            /** @description Position as a fraction [0.0, 1.0] of the input video duration when this guidance image should apply. */
+            at: number;
+        };
+        /** @description An image keyframe for guiding the edit at a specific point in the video. */
+        RunwayVideoToVideoPromptImage: {
+            /** @description A HTTPS URL, Runway or data URI containing an encoded image. */
+            uri: string;
+            position: components["schemas"]["RunwayVideoToVideoPromptImagePosition"];
+        };
+        /** @description The position in the output video where the image should apply. */
+        RunwayVideoToVideoPromptImagePosition: ("first" | "last") | {
+            /** @enum {string} */
+            type: "timestamp";
+            /** @description Absolute timestamp in seconds from the start of the output video. */
+            timestampSeconds: number;
+        } | {
+            /** @enum {string} */
+            type: "position";
+            /** @description Position as a fraction [0.0, 1.0] of the total video duration. */
+            positionPercentage: number;
+        };
+        /** @description Settings that affect the behavior of the content moderation system. */
+        RunwayContentModeration: {
+            /**
+             * @description When set to `low`, the content moderation system will be less strict about preventing generations that include recognizable public figures.
+             * @enum {string}
+             */
+            publicFigureThreshold?: "auto" | "low";
+        };
+        RunwayVideoToVideoResponse: {
+            /** @description Task ID */
+            id?: string;
+        };
         RunwayTextToImageResponse: {
             /** @description Task ID */
             id?: string;
@@ -10919,6 +11871,11 @@ export interface components {
          * @enum {string}
          */
         RunwayModelEnum: "gen4_turbo" | "gen3a_turbo";
+        /**
+         * @description Available Runway models for video-to-video generation.
+         * @enum {string}
+         */
+        RunwayVideoToVideoModelEnum: "aleph2";
         /** @description Represents an image with its position in the video sequence. */
         RunwayPromptImageDetailedObject: {
             /** @description A HTTPS URL or data URI containing an encoded image. */
@@ -12575,39 +13532,90 @@ export interface components {
             authors?: string[];
         };
         Rodin3DGenerateRequest: {
-            /** @description The reference images to generate 3D Assets. */
-            images: string;
-            /** @description Text prompt used by the upstream Rodin API. Required by upstream for text-to-3D requests (no images uploaded); optional for image-to-3D requests where it acts as additional guidance. */
+            /** @description Images to be used in generation, up to 5 images. As the form data request will preserve the order of the images, the first image will be the image for material generation. For Image-to-3D generation: required (one or more images are needed, maximum 5 images). For Text-to-3D generation: null. */
+            images?: string;
+            /** @description A textual prompt to guide the model generation. For Image-to-3D generation: optional (if not provided, an AI-generated prompt based on the provided images will be used). For Text-to-3D generation: required. */
             prompt?: string;
-            /** @description Seed. */
+            /** @description Default is false. If true, the original transparency channel of the images will be used when processing the image. */
+            use_original_alpha?: boolean;
+            condition_mode?: components["schemas"]["RodinConditionModeType"];
+            /** @description Optional. A seed value for randomization in the mesh generation, ranging from 0 to 65535 (both inclusive). If not provided, the seed will be randomly generated. */
             seed?: number;
-            tier?: components["schemas"]["RodinTierType"];
+            geometry_file_format?: components["schemas"]["RodinGeometryFileFormatType"];
             material?: components["schemas"]["RodinMaterialType"];
             quality?: components["schemas"]["RodinQualityType"];
+            /** @description Optional. Customize poly count for generation, providing more accurate control over mesh face count. When mesh_mode = Raw: range from 500 to 1,000,000 (default 500,000). When mesh_mode = Quad: range from 1,000 to 200,000 (default 18,000). When this parameter is invoked, the `quality` parameter will not take effect. */
+            quality_override?: number;
+            tier?: components["schemas"]["RodinTierType"];
+            /** @description Optional. When generating the human-like model, this parameter controls the generation result to T/A pose. When true, your model will be either T pose or A pose. */
+            TAPose?: boolean;
+            /** @description Optional. This is a controlnet that controls the maximum size of the generated model. This array must contain 3 elements, Width (Y-axis), Height (Z-axis), and Length (X-axis), in this exact fixed sequence (y, z, x). */
+            bbox_condition?: number[];
             mesh_mode?: components["schemas"]["RodinMeshModeType"];
-            /** @description Optional list of upstream addon flags (e.g. "HighPack"). */
-            addons?: string[];
+            /** @description Optional. Default is true. If true, the generated models will be simplified. This parameter takes effect when mesh_mode is set to Raw. */
+            mesh_simplify?: boolean;
+            /** @description Optional. Default is false. If true, the generated models will be smoothed (similar to Rodin Gen-1). This parameter takes effect when mesh_mode is set to Quad. */
+            mesh_smooth?: boolean;
+            /** @description Optional. The default is []. Possible value is `HighPack`. By selecting HighPack: generate 4K resolution texture instead of the default 2K. If Quad mode, the number of faces will be ~16 times the number of faces selected in the `quality` parameter. */
+            addons?: components["schemas"]["RodinAddonType"][];
+            /** @description Optional. Default is false. If true, an additional high-quality render image will be provided in the download list. */
+            preview_render?: boolean;
+            /** @description Optional. Default is false. If true, high-quality texture will be provided. */
+            hd_texture?: boolean;
+            /** @description Optional. Default is false. If true, this parameter applies images preprocessing to remove lighting information from textures. */
+            texture_delight?: boolean;
+            texture_mode?: components["schemas"]["RodinTextureModeType"];
+            /** @description Optional. Default is false. If true, micro detail scale is applied. This parameter is only available in the Gen-2.5-Extreme-High tier. */
+            is_micro?: boolean;
+            /** @description Optional. Default is false. If true, this parameter will determine whether the generated model is symmetric. */
+            is_symmetric?: boolean;
+            geometry_instruct_mode?: components["schemas"]["RodinGeometryInstructModeType"];
         };
         /**
-         * @description Rodin Tier para options
+         * @description Tier of generation. The default value is Regular. Sketch: fast generation with basic details, suitable for initial concepts. Regular: balanced quality and speed, ideal for general use. Detail: enhanced details compared to Regular, recommended for intricate results (longer processing time). Smooth: clearer and sharper output than Regular, with slightly longer processing time. Set the value to `Gen-2` to invoke Gen-2 generation. Use the `Gen-2.5-*` values to invoke Gen-2.5 generation: Gen-2.5-Extreme-Low (quick simple assets), Gen-2.5-Low (clean assets and small hardsurface props), Gen-2.5-Medium (moderately complex models), Gen-2.5-High (high-quality assets with richer structural representation and smooth surfaces), Gen-2.5-Extreme-High (high-frequency detail reproduction).
          * @enum {string}
          */
-        RodinTierType: "Regular" | "Sketch" | "Detail" | "Smooth";
+        RodinTierType: "Regular" | "Sketch" | "Detail" | "Smooth" | "Gen-2" | "Gen-2.5-Extreme-Low" | "Gen-2.5-Low" | "Gen-2.5-Medium" | "Gen-2.5-High" | "Gen-2.5-Extreme-High";
         /**
-         * @description Rodin Material para options
+         * @description Optional. The material type. Default is PBR. PBR: Physically Based Materials, including base color texture, metallicness texture, normal texture and roughness texture, providing high realism and physically accurate behavior over dynamic lighting. Shaded: only base color texture with baked lighting, providing stylized visuals. All: both PBR and Shaded will be delivered. None: asset without material.
          * @enum {string}
          */
-        RodinMaterialType: "PBR" | "Shaded";
+        RodinMaterialType: "PBR" | "Shaded" | "All" | "None";
         /**
-         * @description Rodin Quality para options
+         * @description Optional. The face count of the generated model. Default is medium.
          * @enum {string}
          */
         RodinQualityType: "extra-low" | "low" | "medium" | "high";
         /**
-         * @description Rodin Mesh_Mode para options
+         * @description Optional. It controls the type of faces of generated models. Default is Quad. The Raw mode generates triangular face models. The Quad mode generates quadrilateral face models. When its value is Raw, `quality` will be fixed to medium and `addons` will be fixed to []. For Rodin Sketch tier, only triangular faces can be generated.
          * @enum {string}
          */
         RodinMeshModeType: "Quad" | "Raw";
+        /**
+         * @description Useful only for multi-image 3D generation. Optional. Chooses the mode of the multi-image generation. Default is concat. For `fuse` mode (uploading images of multiple objects), fuse mode will extract and fuse all the features of all the objects from the images for generation. For `concat` mode (uploading images of a single object), concat mode will inform the Rodin model to expect these images to be multi-view images of a single object.
+         * @enum {string}
+         */
+        RodinConditionModeType: "fuse" | "concat";
+        /**
+         * @description Optional. The format of the output geometry file. Default is glb.
+         * @enum {string}
+         */
+        RodinGeometryFileFormatType: "glb" | "usdz" | "fbx" | "obj" | "stl";
+        /**
+         * @description Optional. Higher values invest more thinking effort and produce better results, at the cost of longer generation time.
+         * @enum {string}
+         */
+        RodinTextureModeType: "legacy" | "extreme-low" | "low" | "medium" | "high";
+        /**
+         * @description Optional. Default is `faithful`. The Creative mode enhances generative robustness while ensuring output consistency, allowing for more flexible and creative generation while maintaining quality and consistency across outputs. Available for Gen-2.5-Medium and Gen-2.5-High tiers.
+         * @enum {string}
+         */
+        RodinGeometryInstructModeType: "faithful" | "creative";
+        /**
+         * @description Possible value is `HighPack`. By selecting HighPack: generate 4K resolution texture instead of the default 2K. If Quad mode, the number of faces will be ~16 times the number of faces selected in the `quality` parameter. Additional 1 credit per generation.
+         * @enum {string}
+         */
+        RodinAddonType: "HighPack";
         Rodin3DCheckStatusRequest: {
             /** @description subscription from generate endpoint */
             subscription_key: string;
@@ -12617,13 +13625,15 @@ export interface components {
             task_uuid: string;
         };
         Rodin3DGenerateResponse: {
-            /** @description message */
+            /** @description Error message, if any. Possible values include NO_ACTIVE_SUBSCRIPTION, SUBSCRIPTION_PLAN_TOO_LOW, INSUFFICIENT_FUND, INVALID_REQUEST, USER_NOT_FOUND, GROUP_NOT_FOUND, PERMISSION_DENIED, UNKNOWN. */
+            error?: string | null;
+            /** @description Success message or detailed error information. */
             message?: string;
-            /** @description prompt */
+            /** @description Echoed prompt (when applicable). */
             prompt?: string;
-            /** @description Time */
+            /** @description Submission timestamp. */
             submit_time?: string;
-            /** @description Task UUID */
+            /** @description Task UUID. Use this for status/download requests. */
             uuid?: string;
             jobs?: components["schemas"]["RodinGenerateJobsData"];
         };
@@ -14446,7 +15456,7 @@ export interface components {
              * @description The ID of the model to call. Available models include seedance-1-5-pro-251215, seedance-1-0-pro-250528, seedance-1-0-pro-fast-251015, seedance-1-0-lite-t2v-250428, seedance-1-0-lite-i2v-250428
              * @enum {string}
              */
-            model: "seedance-1-5-pro-251215" | "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428" | "seedance-1-0-pro-fast-251015" | "dreamina-seedance-2-0-260128" | "dreamina-seedance-2-0-fast-260128";
+            model: "seedance-1-5-pro-251215" | "seedance-1-0-pro-250528" | "seedance-1-0-lite-t2v-250428" | "seedance-1-0-lite-i2v-250428" | "seedance-1-0-pro-fast-251015" | "dreamina-seedance-2-0-260128" | "dreamina-seedance-2-0-fast-260128" | "dreamina-seedance-2-0-mini";
             /** @description The input content for the model to generate a video */
             content: components["schemas"]["BytePlusVideoGenerationContent"][];
             /**
@@ -14473,7 +15483,7 @@ export interface components {
              *     Note: Seedance 2.0 & 2.0 fast do not support 1080p.
              * @enum {string}
              */
-            resolution?: "480p" | "720p" | "1080p";
+            resolution?: "480p" | "720p" | "1080p" | "4k";
             /**
              * @description Aspect ratio of the generated video. Seedance 2.0 & 2.0 fast, 1.5 pro default: adaptive.
              * @enum {string}
@@ -14594,6 +15604,679 @@ export interface components {
                 total_tokens?: number;
             };
         };
+        /** @description Multipart upload payload for POST /api/v3/files. The binary `file` is required; everything else mirrors the upstream optional fields. See https://docs.byteplus.com/en/docs/ModelArk/1870405. */
+        BytePlusFileUploadRequest: {
+            /**
+             * Format: binary
+             * @description The binary file to upload.
+             */
+            file: string;
+            /**
+             * @description Purpose of the uploaded file. `user_data` is a general-purpose value
+             *     and the only one currently documented by BytePlus.
+             * @default user_data
+             */
+            purpose: string;
+            /**
+             * @description Unix timestamp (seconds, UTC) at which the file should be expired.
+             *     Range: [now + 86400, now + 2592000] (1 day to 30 days).
+             *     Default: now + 604800 (7 days).
+             */
+            expire_at?: number;
+            preprocess_configs?: components["schemas"]["BytePlusFilePreprocessConfigs"];
+        };
+        /** @description Preprocessing rules applied to the uploaded file by file type. */
+        BytePlusFilePreprocessConfigs: {
+            video?: {
+                /**
+                 * Format: float
+                 * @description Number of frames per second sampled from the video at upload
+                 *     time. Higher values capture more detail but consume more tokens
+                 *     during inference (range [10k, 80k] tokens per video).
+                 * @default 1
+                 */
+                fps: number | null;
+                /**
+                 * @description Video-understanding model ID or endpoint ID whose frame-sampling
+                 *     strategy should be applied during preprocessing. If omitted, the
+                 *     pre-`seed-1.8` default strategy is used.
+                 */
+                model?: string;
+            } | null;
+        } | null;
+        /** @description File object returned by POST /api/v3/files and GET /api/v3/files/{id}. See https://docs.byteplus.com/en/docs/ModelArk/1873424. */
+        BytePlusFile: {
+            /** @description Fixed to `file`. */
+            object?: string;
+            /** @description The unique ID of the file. */
+            id?: string;
+            /** @description The purpose of the file. */
+            purpose?: string;
+            /** @description File size in bytes. Returned only when status is `active`. */
+            bytes?: number;
+            /** @description Unix timestamp (seconds) when the file was uploaded. */
+            created_at?: number;
+            /** @description Unix timestamp (seconds) when the file expires. */
+            expire_at?: number;
+            /** @description MIME type of the file. Returned only when status is `active`. */
+            mime_type?: string;
+            /**
+             * @description Processing status of the file.
+             * @enum {string}
+             */
+            status?: "processing" | "active" | "failed";
+            /** @description Error details returned only when status is `failed`. */
+            error?: {
+                /** @description Error code. */
+                code?: string;
+                /** @description Error description. */
+                message?: string;
+            } | null;
+            preprocess_configs?: components["schemas"]["BytePlusFilePreprocessConfigs"];
+        };
+        /** @description One entry in the `input` array of a Responses request. Discriminated by the `type` field. See https://docs.byteplus.com/en/docs/ModelArk/1585128. */
+        BytePlusResponseInputItem: components["schemas"]["BytePlusResponseInputMessage"] | components["schemas"]["BytePlusResponseInputFunctionCall"] | components["schemas"]["BytePlusResponseInputFunctionCallOutput"] | components["schemas"]["BytePlusResponseInputReasoning"];
+        /** @description A message sent to the model (or a stored prior message when `status` is set). Role precedence: developer/system > user; assistant messages represent prior model output. */
+        BytePlusResponseInputMessage: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "message";
+            /** @enum {string} */
+            role: "user" | "system" | "assistant" | "developer";
+            content: string | components["schemas"]["BytePlusResponseMessageContent"][];
+            /** @description Enables Continuation mode. Set the last message's role to `assistant` and `partial` to true; the model continues from its existing content. */
+            partial?: boolean;
+            /**
+             * @description Status of a previously stored message. Only used when echoing previous inputs back to the model.
+             * @enum {string}
+             */
+            status?: "in_progress" | "completed" | "incomplete";
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description One content item inside a message. Discriminated by `type`: `input_text` for text, `input_image` for images, `input_video` for videos, `input_file` for PDF/file uploads. File-backed types may reference a Files API id via `file_id`. */
+        BytePlusResponseMessageContent: components["schemas"]["BytePlusResponseInputText"] | components["schemas"]["BytePlusResponseInputImage"] | components["schemas"]["BytePlusResponseInputVideo"] | components["schemas"]["BytePlusResponseInputFile"];
+        BytePlusResponseInputText: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "input_text";
+            text: string;
+            /** @description Translation-scenario configuration. Only supported by seed-translation-250728. */
+            translation_options?: {
+                source_language?: string;
+                target_language: string;
+            } & {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        BytePlusResponseInputImage: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "input_image";
+            /** @description ID of a file uploaded via the Files API. Must be `active`. */
+            file_id?: string;
+            /** @description Image URL or `data:image/...;base64,...` payload. */
+            image_url?: string;
+            /**
+             * @default auto
+             * @enum {string}
+             */
+            detail: "high" | "low" | "auto";
+            /** @description Optional pixel-count bounds. Overrides `detail` when set. Image pixel count must stay in [196, 36_000_000]. */
+            image_pixel_limit?: ({
+                max_pixels?: number;
+                min_pixels?: number;
+            } & {
+                [key: string]: unknown;
+            }) | null;
+        } & {
+            [key: string]: unknown;
+        };
+        BytePlusResponseInputVideo: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "input_video";
+            /** @description ID of a file uploaded via the Files API. Must be `active`. */
+            file_id?: string;
+            /** @description Video URL or `data:video/...;base64,...` payload. */
+            video_url?: string;
+            /**
+             * Format: float
+             * @description Frames-per-second extracted from the video.
+             */
+            fps?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description File input (currently PDF only). Provide exactly one of `file_id`, `file_data`, or `file_url`. `filename` is required with `file_data`. */
+        BytePlusResponseInputFile: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "input_file";
+            /** @description ID of a file uploaded via the Files API. Must be `active`. */
+            file_id?: string;
+            /** @description Base64-encoded file (single file <= 50 MB). */
+            file_data?: string;
+            /** @description Required when `file_data` is set. */
+            filename?: string;
+            /** @description Publicly accessible URL (single file <= 50 MB). */
+            file_url?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description A tool/function invocation produced by the model in a prior turn. */
+        BytePlusResponseInputFunctionCall: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "function_call";
+            /** @description JSON-encoded string of the function arguments. */
+            arguments: string;
+            /** @description Unique ID of the tool call generated by the model. */
+            call_id: string;
+            name: string;
+            status?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Output returned by a tool, paired with the function_call via call_id. */
+        BytePlusResponseInputFunctionCallOutput: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "function_call_output";
+            call_id: string;
+            output: string;
+            status?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Chain-of-thought block. Used both as input (manual reasoning injection for seed-1-8, seed-2-0, deepseek-v3-2) and as a response output item. As input, prefer `previous_response_id` in multi-turn conversations. */
+        BytePlusResponseInputReasoning: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "reasoning";
+            id?: string;
+            /** @enum {string} */
+            status?: "in_progress" | "completed" | "incomplete";
+            summary?: ({
+                /**
+                 * @default summary_text
+                 * @enum {string}
+                 */
+                type: "summary_text";
+                text?: string;
+            } & {
+                [key: string]: unknown;
+            })[];
+            /** @description Original (un-summarized) reasoning content. Returned on output items; not used on input. */
+            content?: ({
+                /**
+                 * @default reasoning_text
+                 * @enum {string}
+                 */
+                type: "reasoning_text";
+                text?: string;
+            } & {
+                [key: string]: unknown;
+            })[];
+            /** @description Encrypted+compressed original reasoning content. Returned only when `reasoning.encrypted_content` is in the request's `include` list. Supported from seed-2-0-pro-260328. */
+            encrypted_content?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        BytePlusResponseCreateRequest: {
+            /** @description Model ID or Endpoint ID. See https://docs.byteplus.com/en/docs/ModelArk/1330310 for the model list and https://docs.byteplus.com/en/docs/ModelArk/1099522 for Endpoint IDs. */
+            model: string;
+            /** @description Text content or list of input items provided to the model. */
+            input: string | components["schemas"]["BytePlusResponseInputItem"][];
+            /** @description System/developer message prepended as the first instruction. Not compatible with `caching` — if `caching.type` is `enabled`, setting `instructions` returns an error. */
+            instructions?: string | null;
+            /** @description ID of the previous response, used to continue a multi-turn conversation. Insert ~100ms between requests to avoid failures. */
+            previous_response_id?: string | null;
+            /** @description Unix timestamp (seconds, UTC) at which the stored response and cache expire. Range (creation_time, creation_time + 604800]. Default: creation_time + 259200 (3 days). */
+            expire_at?: number;
+            /** @description Maximum output tokens (response + chain-of-thought). */
+            max_output_tokens?: number | null;
+            /** @description Controls deep-thinking mode. */
+            thinking?: {
+                /**
+                 * @description `enabled`: always reason before responding.
+                 *     `disabled`: respond without additional reasoning.
+                 *     `auto`: model decides per-query.
+                 * @enum {string}
+                 */
+                type?: "enabled" | "disabled" | "auto";
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description Limits the workload of deep thinking. */
+            reasoning?: {
+                /**
+                 * @description `minimal` disables thinking entirely. With `thinking.type =
+                 *     disabled`, only `minimal` is allowed.
+                 * @enum {string}
+                 */
+                effort?: "minimal" | "low" | "medium" | "high";
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description Additional output fields to include. Currently supported: `reasoning.encrypted_content` (encrypted+compressed reasoning for manual multi-turn reuse). */
+            include?: string[];
+            /** @description Context-cache configuration. */
+            caching?: {
+                /** @enum {string} */
+                type?: "enabled" | "disabled";
+                /**
+                 * @description When true, only create the public prefix cache; the model does not respond.
+                 * @default false
+                 */
+                prefix: boolean;
+            } & {
+                [key: string]: unknown;
+            };
+            /**
+             * @description When true, the response is persisted and retrievable by ID for multi-turn use.
+             * @default true
+             */
+            store: boolean | null;
+            /**
+             * Format: float
+             * @default 1
+             */
+            temperature: number | null;
+            /**
+             * Format: float
+             * @default 0.7
+             */
+            top_p: number | null;
+            /** @description Output-format configuration. */
+            text?: {
+                format?: components["schemas"]["BytePlusResponseTextFormat"];
+            } & {
+                [key: string]: unknown;
+            };
+            tools?: components["schemas"]["BytePlusResponseTool"][];
+            /** @description Tool-selection mode. Only seed-1-6 models support this field. */
+            tool_choice?: ("none" | "auto" | "required") | components["schemas"]["BytePlusResponseToolChoiceObject"];
+            max_tool_calls?: number;
+            context_management?: components["schemas"]["BytePlusResponseContextManagement"];
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description A tool the model may invoke. Currently only `function` is supported. */
+        BytePlusResponseTool: {
+            /**
+             * @default function
+             * @enum {string}
+             */
+            type: "function";
+            name: string;
+            description?: string;
+            /** @description JSON Schema describing the function's parameters. */
+            parameters: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Forces the model to call a specific tool. When `type` is `function`, `name` is required. */
+        BytePlusResponseToolChoiceObject: {
+            /** @enum {string} */
+            type: "function";
+            name?: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Text-output format discriminated by `type`. `text` returns natural language, `json_object` returns a free-form JSON object, `json_schema` constrains output to a caller-supplied JSON Schema. */
+        BytePlusResponseTextFormat: components["schemas"]["BytePlusResponseTextFormatText"] | components["schemas"]["BytePlusResponseTextFormatJSONObject"] | components["schemas"]["BytePlusResponseTextFormatJSONSchema"];
+        BytePlusResponseTextFormatText: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "text";
+        } & {
+            [key: string]: unknown;
+        };
+        BytePlusResponseTextFormatJSONObject: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "json_object";
+        } & {
+            [key: string]: unknown;
+        };
+        BytePlusResponseTextFormatJSONSchema: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "json_schema";
+            /** @description Caller-defined name for the JSON structure. */
+            name: string;
+            /** @description JSON Schema the model output must conform to. */
+            schema: {
+                [key: string]: unknown;
+            };
+            /** @description Hint the model uses when generating the response. */
+            description?: string | null;
+            /** @default false */
+            strict: boolean | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Context-management strategies (`clear_thinking`, `clear_tool_uses`) applied to keep the context window manageable. */
+        BytePlusResponseContextManagement: {
+            edits?: components["schemas"]["BytePlusResponseContextEdit"][];
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description A single context-edit strategy, discriminated by `type`. */
+        BytePlusResponseContextEdit: components["schemas"]["BytePlusResponseContextEditClearThinking"] | components["schemas"]["BytePlusResponseContextEditClearToolUses"];
+        /** @description Clears chain-of-thought content per the `keep` strategy. */
+        BytePlusResponseContextEditClearThinking: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "clear_thinking";
+            keep: ({
+                /**
+                 * @default thinking_turns
+                 * @enum {string}
+                 */
+                type: "thinking_turns";
+                /**
+                 * @description Retain chain-of-thought for the most recent N turns.
+                 * @default 1
+                 */
+                value: number;
+            } & {
+                [key: string]: unknown;
+            }) | "all";
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Clears tool-call content when the conversation exceeds a threshold. */
+        BytePlusResponseContextEditClearToolUses: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "clear_tool_uses";
+            keep: {
+                /**
+                 * @default tool_uses
+                 * @enum {string}
+                 */
+                type: "tool_uses";
+                /**
+                 * @description Retain tool-call content for the most recent N turns.
+                 * @default 3
+                 */
+                value: number;
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description Tool names that are never cleared. */
+            exclude_tools?: string[];
+            /**
+             * @description Whether to clear tool-call parameters.
+             * @default false
+             */
+            clear_tool_input: boolean;
+            trigger: {
+                /**
+                 * @default tool_uses
+                 * @enum {string}
+                 */
+                type: "tool_uses";
+                /** @description Trigger cleanup when tool-call turns reach N. */
+                value: number;
+            } & {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Non-streaming response body returned by POST /api/v3/responses. See https://docs.byteplus.com/en/docs/ModelArk/1783703. */
+        BytePlusResponseObject: {
+            /** @description Unique ID of the response. Use as `previous_response_id` to continue the conversation. */
+            id: string;
+            /**
+             * @default response
+             * @enum {string}
+             */
+            object: "response";
+            /** @description Unix timestamp (seconds) when the response was created. */
+            created_at: number;
+            /** @description Model ID that generated the response. */
+            model: string;
+            /** @enum {string} */
+            status: "in_progress" | "completed" | "incomplete" | "failed" | "cancelled";
+            /**
+             * @description TPM-guarantee-package usage. `default` means none.
+             * @enum {string}
+             */
+            service_tier?: "default";
+            error?: components["schemas"]["BytePlusResponseError"];
+            /** @description Populated when `status` is `incomplete`. */
+            incomplete_details?: ({
+                /** @description e.g. `max_output_tokens`, `content_filter`. */
+                reason?: string;
+            } & {
+                [key: string]: unknown;
+            }) | null;
+            /** @description Echo of the request's `instructions` field. */
+            instructions?: string | null;
+            previous_response_id?: string | null;
+            max_output_tokens?: number | null;
+            max_tool_calls?: number | null;
+            /** Format: float */
+            temperature?: number | null;
+            /** Format: float */
+            top_p?: number | null;
+            store?: boolean | null;
+            stream?: boolean | null;
+            /** @description Echo of the request's `text` field. */
+            text?: {
+                format?: components["schemas"]["BytePlusResponseTextFormat"];
+            } & {
+                [key: string]: unknown;
+            };
+            tools?: components["schemas"]["BytePlusResponseTool"][];
+            tool_choice?: ("none" | "auto" | "required") | components["schemas"]["BytePlusResponseToolChoiceObject"];
+            thinking?: {
+                /** @enum {string} */
+                type?: "enabled" | "disabled" | "auto";
+            } & {
+                [key: string]: unknown;
+            };
+            reasoning?: {
+                /** @enum {string} */
+                effort?: "minimal" | "low" | "medium" | "high";
+            } & {
+                [key: string]: unknown;
+            };
+            caching?: {
+                /** @enum {string} */
+                type?: "enabled" | "disabled";
+                prefix?: boolean;
+            } & {
+                [key: string]: unknown;
+            };
+            context_management?: components["schemas"]["BytePlusResponseAppliedContextManagement"];
+            /** @description Ordered output items produced by the model. */
+            output: components["schemas"]["BytePlusResponseOutputItem"][];
+            usage?: components["schemas"]["BytePlusResponseUsage"];
+            /** @description Unix timestamp (seconds) when the stored response expires. */
+            expire_at?: number;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** @description Error details. Null when the response succeeded. */
+        BytePlusResponseError: {
+            code: string;
+            message: string;
+        } | null;
+        /** @description One item in a response's `output` array. Discriminated by `type`: `message` for assistant messages, `function_call` for tool invocations, `reasoning` for chain-of-thought blocks. Mirrors the input item shapes the model can read back via `previous_response_id`. */
+        BytePlusResponseOutputItem: components["schemas"]["BytePlusResponseOutputMessage"] | components["schemas"]["BytePlusResponseInputFunctionCall"] | components["schemas"]["BytePlusResponseInputReasoning"];
+        /** @description An assistant message produced by the model. */
+        BytePlusResponseOutputMessage: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "message";
+            id: string;
+            /**
+             * @default assistant
+             * @enum {string}
+             */
+            role: "assistant";
+            /** @enum {string} */
+            status?: "in_progress" | "completed" | "incomplete";
+            /** @description True when this message is a continuation-mode partial reply. */
+            partial?: boolean;
+            content: components["schemas"]["BytePlusResponseOutputContent"][];
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description One content block in an assistant message. `output_text` carries natural-language text and optional annotations; `refusal` carries a refusal message. */
+        BytePlusResponseOutputContent: components["schemas"]["BytePlusResponseOutputText"] | components["schemas"]["BytePlusResponseOutputRefusal"];
+        BytePlusResponseOutputText: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "output_text";
+            text: string;
+            annotations?: {
+                [key: string]: unknown;
+            }[];
+        } & {
+            [key: string]: unknown;
+        };
+        BytePlusResponseOutputRefusal: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "refusal";
+            refusal: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Token-usage breakdown for billing and observability. */
+        BytePlusResponseUsage: {
+            /** @description Total tokens in the request. */
+            input_tokens: number;
+            /** @description Breakdown of input tokens (cache hits, etc). */
+            input_tokens_details?: {
+                /** @description Tokens served from the context cache. */
+                cached_tokens?: number;
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description Total tokens generated by the model. */
+            output_tokens: number;
+            /** @description Breakdown of output tokens (reasoning, etc). */
+            output_tokens_details?: {
+                /** @description Tokens consumed by chain-of-thought. */
+                reasoning_tokens?: number;
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description input_tokens + output_tokens. */
+            total_tokens: number;
+            /** @description Per-tool invocation counts. */
+            tool_usage?: {
+                /** @description Number of image-processing tool calls. */
+                image_process?: number;
+                /** @description Number of MCP tool calls. */
+                mcp?: number;
+                /** @description Number of web-search tool invocations. */
+                web_search?: number;
+            } & {
+                [key: string]: unknown;
+            };
+            /** @description Per-tool breakdown of sub-tool invocation counts. */
+            tool_usage_details?: {
+                /** @description e.g. `{"zoom":1,"point":1,"grounding":1}`. */
+                image_process?: {
+                    [key: string]: unknown;
+                };
+                /** @description e.g. `{"mcp_server_tos":1,"mcp_server_tls":1}`. */
+                mcp?: {
+                    [key: string]: unknown;
+                };
+                /** @description e.g. `{"toutiao":1,"moji":1,"search_engine":1}`. */
+                web_search?: {
+                    [key: string]: unknown;
+                };
+            } & {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Context-management strategies that were actually applied during this response. Unlike the request-side `BytePlusResponseContextManagement` (which configures strategies), this echoes the strategies the server invoked, with counts of what was cleared. */
+        BytePlusResponseAppliedContextManagement: {
+            applied_edits?: components["schemas"]["BytePlusResponseAppliedContextEdit"][];
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description One applied context-edit, discriminated by `type`. */
+        BytePlusResponseAppliedContextEdit: components["schemas"]["BytePlusResponseAppliedContextEditClearThinking"] | components["schemas"]["BytePlusResponseAppliedContextEditClearToolUses"];
+        BytePlusResponseAppliedContextEditClearThinking: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "clear_thinking";
+            /** @description Number of reasoning turns that were removed. */
+            cleared_thinking_turns?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        BytePlusResponseAppliedContextEditClearToolUses: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "clear_tool_uses";
+            /** @description Number of tool invocations that were removed. */
+            cleared_tool_uses?: number;
+        } & {
+            [key: string]: unknown;
+        };
+        BytePlusResponseReasoningSummaryPart: {
+            /**
+             * @default summary_text
+             * @enum {string}
+             */
+            type: "summary_text";
+            text?: string;
+        } & {
+            [key: string]: unknown;
+        };
         SeedanceCreateVisualValidateSessionRequest: {
             /** @description Optional human-readable label for the asset group that will be created by this verification. Stored locally and returned by seedanceListVisualValidationGroups so users can identify their groups in selectors. */
             name?: string;
@@ -14696,10 +16379,16 @@ export interface components {
             message: string;
         };
         SeedanceVirtualLibraryCreateAssetRequest: {
-            /** @description Publicly accessible URL of the image asset to upload to the caller's virtual portrait library. */
+            /** @description Publicly accessible URL of the asset to upload to the caller's virtual portrait library. */
             url: string;
             /** @description Client-supplied content hash used as the per-customer dedup key. Re-submitting the same hash returns the existing asset id without re-uploading to BytePlus. */
             hash: string;
+            /**
+             * @description BytePlus asset type. The AIGC virtual library accepts both Image and Video. Defaults to Image for backward compatibility with existing clients.
+             * @default Image
+             * @enum {string}
+             */
+            asset_type: "Image" | "Video";
         };
         SeedanceVirtualLibraryCreateAssetResponse: {
             /** @description BytePlus-issued asset id. Clients poll seedanceGetAsset with this until status == Active. */
@@ -14710,7 +16399,7 @@ export interface components {
              * @description The ID of the model to call
              * @enum {string}
              */
-            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview" | "wan2.6-t2v" | "wan2.6-i2v" | "wan2.6-r2v" | "wan2.7-i2v" | "wan2.7-t2v" | "wan2.7-r2v" | "wan2.7-videoedit" | "happyhorse-1.0-t2v" | "happyhorse-1.0-i2v" | "happyhorse-1.0-r2v" | "happyhorse-1.0-video-edit";
+            model: "wan2.5-t2v-preview" | "wan2.5-i2v-preview" | "wan2.6-t2v" | "wan2.6-i2v" | "wan2.6-r2v" | "wan2.7-i2v" | "wan2.7-t2v" | "wan2.7-r2v" | "wan2.7-videoedit" | "happyhorse-1.0-t2v" | "happyhorse-1.0-i2v" | "happyhorse-1.0-r2v" | "happyhorse-1.0-video-edit" | "happyhorse-1.1-t2v" | "happyhorse-1.1-i2v" | "happyhorse-1.1-r2v";
             /** @description Enter basic information, such as prompt words, etc. */
             input: {
                 /**
@@ -16716,6 +18405,1704 @@ export interface components {
             /** @description A url to the generated video */
             url?: string | null;
         };
+        /** @description Request body for Anthropic Messages API (`/v1/messages`). Mirrors the upstream schema with strict typing only on fields the proxy reads (model, prompt extraction, streaming, billing). Other top-level fields (`tools`, `temperature`, `top_p`, `thinking`, `metadata`, etc.) pass through unchanged via `additionalProperties`. */
+        AnthropicCreateMessageRequest: {
+            /** @description Anthropic model identifier (e.g. `claude-sonnet-4-5`, `claude-opus-4-7`). */
+            model: string;
+            /** @description Maximum number of tokens to generate before stopping. */
+            max_tokens: number;
+            /** @description When true, the response is a `text/event-stream` of Anthropic message events instead of a single JSON body. */
+            stream?: boolean;
+            /** @description Top-level system prompt. Anthropic also accepts an array form via passthrough. */
+            system?: string;
+            /** @description Conversation turns. See Anthropic Messages API docs for the full content-block taxonomy. */
+            messages: components["schemas"]["AnthropicMessageParam"][];
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description A single conversation turn. The proxy only reads `role` and `content` (string or array of content blocks) for prompt capture; additional fields pass through. */
+        AnthropicMessageParam: {
+            /** @enum {string} */
+            role: "user" | "assistant";
+            /** @description Either a string shorthand or an array of content blocks (text, image, document, tool_use, tool_result, ...). */
+            content: unknown;
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description JSON shape of a non-streaming Messages API response. Most fields pass through; the proxy reads `usage` for billing. */
+        AnthropicCreateMessageResponse: {
+            id?: string;
+            type?: string;
+            role?: string;
+            model?: string;
+            stop_reason?: string | null;
+            stop_sequence?: string | null;
+            usage?: components["schemas"]["AnthropicMessagesUsage"];
+        } & {
+            [key: string]: unknown;
+        };
+        /** @description Token usage for an Anthropic Messages API call. */
+        AnthropicMessagesUsage: {
+            input_tokens?: number;
+            output_tokens?: number;
+            cache_creation_input_tokens?: number;
+            cache_read_input_tokens?: number;
+            cache_creation?: components["schemas"]["AnthropicCacheCreationUsage"];
+        };
+        /** @description Per-TTL breakdown of cache-write input tokens for an Anthropic Messages API call. */
+        AnthropicCacheCreationUsage: {
+            ephemeral_5m_input_tokens?: number;
+            ephemeral_1h_input_tokens?: number;
+        };
+        /**
+         * MetadataLevel
+         * @description Opt-in level for surfacing routing metadata on the response under `openrouter_metadata`.
+         * @enum {string}
+         */
+        OpenRouterMetadataLevel: "disabled" | "enabled";
+        /**
+         * AnthropicCacheControlTtl
+         * @enum {string}
+         */
+        OpenRouterAnthropicCacheControlTtl: "5m" | "1h";
+        /**
+         * AnthropicCacheControlDirectiveType
+         * @enum {string}
+         */
+        OpenRouterAnthropicCacheControlDirectiveType: "ephemeral";
+        /**
+         * AnthropicCacheControlDirective
+         * @description Enable automatic prompt caching. When set at the top level, the system automatically applies cache breakpoints to the last cacheable block in the request. Currently supported for Anthropic Claude models.
+         */
+        OpenRouterAnthropicCacheControlDirective: {
+            ttl?: components["schemas"]["OpenRouterAnthropicCacheControlTtl"];
+            type: components["schemas"]["OpenRouterAnthropicCacheControlDirectiveType"];
+        };
+        /**
+         * ChatDebugOptions
+         * @description Debug options for inspecting request transformations (streaming only)
+         */
+        OpenRouterChatDebugOptions: {
+            /** @description If true, includes the transformed upstream request body in a debug chunk at the start of the stream. Only works with streaming mode. */
+            echo_upstream_body?: boolean;
+        };
+        /** ImageConfig */
+        OpenRouterImageConfig: string | number | unknown[];
+        /**
+         * ChatAudioOutput
+         * @description Audio output data or reference
+         */
+        OpenRouterChatAudioOutput: {
+            /** @description Base64 encoded audio data */
+            data?: string;
+            /** @description Audio expiration timestamp */
+            expires_at?: number;
+            /** @description Audio output identifier */
+            id?: string;
+            /** @description Audio transcript */
+            transcript?: string;
+        };
+        /** ChatContentItemsDiscriminatorMappingFileFile */
+        OpenRouterChatContentItemsDiscriminatorMappingFileFile: {
+            /** @description File content as base64 data URL or URL */
+            file_data?: string;
+            /** @description File ID for previously uploaded files */
+            file_id?: string;
+            /** @description Original filename */
+            filename?: string;
+        };
+        /**
+         * ChatContentItemsDiscriminatorMappingImageUrlImageUrlDetail
+         * @description Image detail level for vision models
+         * @enum {string}
+         */
+        OpenRouterChatContentItemsDiscriminatorMappingImageUrlImageUrlDetail: "auto" | "low" | "high";
+        /** ChatContentItemsDiscriminatorMappingImageUrlImageUrl */
+        OpenRouterChatContentItemsDiscriminatorMappingImageUrlImageUrl: {
+            /** @description Image detail level for vision models */
+            detail?: components["schemas"]["OpenRouterChatContentItemsDiscriminatorMappingImageUrlImageUrlDetail"];
+            /** @description URL of the image (data: URLs supported) */
+            url: string;
+        };
+        /** ChatContentItemsDiscriminatorMappingInputAudioInputAudio */
+        OpenRouterChatContentItemsDiscriminatorMappingInputAudioInputAudio: {
+            /** @description Base64 encoded audio data */
+            data: string;
+            /** @description Audio format (e.g., wav, mp3, flac, m4a, ogg, aiff, aac, pcm16, pcm24). Supported formats vary by provider. */
+            format: string;
+        };
+        /**
+         * LegacyChatContentVideoType
+         * @enum {string}
+         */
+        OpenRouterLegacyChatContentVideoType: "input_video";
+        /**
+         * ChatContentVideoInput
+         * @description Video input object
+         */
+        OpenRouterChatContentVideoInput: {
+            /** @description URL of the video (data: URLs supported) */
+            url: string;
+        };
+        /**
+         * ChatContentCacheControlType
+         * @enum {string}
+         */
+        OpenRouterChatContentCacheControlType: "ephemeral";
+        /**
+         * ChatContentCacheControl
+         * @description Cache control for the content part
+         */
+        OpenRouterChatContentCacheControl: {
+            ttl?: components["schemas"]["OpenRouterAnthropicCacheControlTtl"];
+            type: components["schemas"]["OpenRouterChatContentCacheControlType"];
+        };
+        /**
+         * ChatContentTextType
+         * @enum {string}
+         */
+        OpenRouterChatContentTextType: "text";
+        /**
+         * ChatContentVideoType
+         * @enum {string}
+         */
+        OpenRouterChatContentVideoType: "video_url";
+        /**
+         * ChatContentItems
+         * @description Content part for chat completion messages
+         */
+        OpenRouterChatContentItems: {
+            /**
+             * @description Discriminator value: file
+             * @enum {string}
+             */
+            type: "file";
+            file: components["schemas"]["OpenRouterChatContentItemsDiscriminatorMappingFileFile"];
+        } | {
+            /**
+             * @description Discriminator value: image_url
+             * @enum {string}
+             */
+            type: "image_url";
+            image_url: components["schemas"]["OpenRouterChatContentItemsDiscriminatorMappingImageUrlImageUrl"];
+        } | {
+            /**
+             * @description Discriminator value: input_audio
+             * @enum {string}
+             */
+            type: "input_audio";
+            input_audio: components["schemas"]["OpenRouterChatContentItemsDiscriminatorMappingInputAudioInputAudio"];
+        } | {
+            type: components["schemas"]["OpenRouterLegacyChatContentVideoType"];
+            video_url: components["schemas"]["OpenRouterChatContentVideoInput"];
+        } | {
+            type: components["schemas"]["OpenRouterChatContentTextType"];
+            cache_control?: components["schemas"]["OpenRouterChatContentCacheControl"];
+            text: string;
+        } | {
+            type: components["schemas"]["OpenRouterChatContentVideoType"];
+            video_url: components["schemas"]["OpenRouterChatContentVideoInput"];
+        };
+        /** ChatMessagesDiscriminatorMappingAssistantContent1 */
+        OpenRouterChatMessagesDiscriminatorMappingAssistantContent1: components["schemas"]["OpenRouterChatContentItems"][];
+        /**
+         * ChatMessagesDiscriminatorMappingAssistantContent
+         * @description Assistant message content
+         */
+        OpenRouterChatMessagesDiscriminatorMappingAssistantContent: string | components["schemas"]["OpenRouterChatMessagesDiscriminatorMappingAssistantContent1"] | unknown;
+        /** ChatAssistantImagesItemsImageUrl */
+        OpenRouterChatAssistantImagesItemsImageUrl: {
+            /** @description URL or base64-encoded data of the generated image */
+            url: string;
+        };
+        /** ChatAssistantImagesItems */
+        OpenRouterChatAssistantImagesItems: {
+            image_url: components["schemas"]["OpenRouterChatAssistantImagesItemsImageUrl"];
+        };
+        /**
+         * ChatAssistantImages
+         * @description Generated images from image generation models
+         */
+        OpenRouterChatAssistantImages: components["schemas"]["OpenRouterChatAssistantImagesItems"][];
+        /**
+         * ReasoningFormat
+         * @enum {string}
+         */
+        OpenRouterReasoningFormat: "unknown" | "openai-responses-v1" | "azure-openai-responses-v1" | "xai-responses-v1" | "anthropic-claude-v1" | "google-gemini-v1";
+        /**
+         * ReasoningDetailUnion
+         * @description Reasoning detail union schema
+         */
+        OpenRouterReasoningDetailUnion: {
+            /** @description Discriminator value: reasoning.encrypted */
+            type: string;
+            data: string;
+            format?: components["schemas"]["OpenRouterReasoningFormat"];
+            id?: string | null;
+            index?: number;
+        } | {
+            /** @description Discriminator value: reasoning.summary */
+            type: string;
+            format?: components["schemas"]["OpenRouterReasoningFormat"];
+            id?: string | null;
+            index?: number;
+            summary: string;
+        } | {
+            /** @description Discriminator value: reasoning.text */
+            type: string;
+            format?: components["schemas"]["OpenRouterReasoningFormat"];
+            id?: string | null;
+            index?: number;
+            signature?: string | null;
+            text?: string | null;
+        };
+        /**
+         * ChatReasoningDetails
+         * @description Reasoning details for extended thinking models
+         */
+        OpenRouterChatReasoningDetails: components["schemas"]["OpenRouterReasoningDetailUnion"][];
+        /** ChatToolCallFunction */
+        OpenRouterChatToolCallFunction: {
+            /** @description Function arguments as JSON string */
+            arguments: string;
+            /** @description Function name to call */
+            name: string;
+        };
+        /**
+         * ChatToolCallType
+         * @enum {string}
+         */
+        OpenRouterChatToolCallType: "function";
+        /**
+         * ChatToolCall
+         * @description Tool call made by the assistant
+         */
+        OpenRouterChatToolCall: {
+            function: components["schemas"]["OpenRouterChatToolCallFunction"];
+            /** @description Tool call identifier */
+            id: string;
+            type: components["schemas"]["OpenRouterChatToolCallType"];
+        };
+        /**
+         * ChatContentText
+         * @description Text content part
+         */
+        OpenRouterChatContentText: {
+            cache_control?: components["schemas"]["OpenRouterChatContentCacheControl"];
+            text: string;
+            type: components["schemas"]["OpenRouterChatContentTextType"];
+        };
+        /** ChatMessagesDiscriminatorMappingDeveloperContent1 */
+        OpenRouterChatMessagesDiscriminatorMappingDeveloperContent1: components["schemas"]["OpenRouterChatContentText"][];
+        /**
+         * ChatMessagesDiscriminatorMappingDeveloperContent
+         * @description Developer message content
+         */
+        OpenRouterChatMessagesDiscriminatorMappingDeveloperContent: string | components["schemas"]["OpenRouterChatMessagesDiscriminatorMappingDeveloperContent1"];
+        /** ChatSystemMessageContent1 */
+        OpenRouterChatSystemMessageContent1: components["schemas"]["OpenRouterChatContentText"][];
+        /**
+         * ChatSystemMessageContent
+         * @description System message content
+         */
+        OpenRouterChatSystemMessageContent: string | components["schemas"]["OpenRouterChatSystemMessageContent1"];
+        /**
+         * ChatSystemMessageRole
+         * @enum {string}
+         */
+        OpenRouterChatSystemMessageRole: "system";
+        /** ChatToolMessageContent1 */
+        OpenRouterChatToolMessageContent1: components["schemas"]["OpenRouterChatContentItems"][];
+        /**
+         * ChatToolMessageContent
+         * @description Tool response content
+         */
+        OpenRouterChatToolMessageContent: string | components["schemas"]["OpenRouterChatToolMessageContent1"];
+        /**
+         * ChatToolMessageRole
+         * @enum {string}
+         */
+        OpenRouterChatToolMessageRole: "tool";
+        /** ChatUserMessageContent1 */
+        OpenRouterChatUserMessageContent1: components["schemas"]["OpenRouterChatContentItems"][];
+        /**
+         * ChatUserMessageContent
+         * @description User message content
+         */
+        OpenRouterChatUserMessageContent: string | components["schemas"]["OpenRouterChatUserMessageContent1"];
+        /**
+         * ChatUserMessageRole
+         * @enum {string}
+         */
+        OpenRouterChatUserMessageRole: "user";
+        /**
+         * ChatMessages
+         * @description Chat completion message with role-based discrimination
+         */
+        OpenRouterChatMessages: {
+            /**
+             * @description Discriminator value: assistant
+             * @enum {string}
+             */
+            role: "assistant";
+            audio?: components["schemas"]["OpenRouterChatAudioOutput"];
+            /** @description Assistant message content */
+            content?: components["schemas"]["OpenRouterChatMessagesDiscriminatorMappingAssistantContent"];
+            images?: components["schemas"]["OpenRouterChatAssistantImages"];
+            /** @description Optional name for the assistant */
+            name?: string;
+            /** @description Reasoning output */
+            reasoning?: string | null;
+            reasoning_details?: components["schemas"]["OpenRouterChatReasoningDetails"];
+            /** @description Refusal message if content was refused */
+            refusal?: string | null;
+            /** @description Tool calls made by the assistant */
+            tool_calls?: components["schemas"]["OpenRouterChatToolCall"][];
+        } | {
+            /**
+             * @description Discriminator value: developer
+             * @enum {string}
+             */
+            role: "developer";
+            /** @description Developer message content */
+            content: components["schemas"]["OpenRouterChatMessagesDiscriminatorMappingDeveloperContent"];
+            /** @description Optional name for the developer message */
+            name?: string;
+        } | {
+            role: components["schemas"]["OpenRouterChatSystemMessageRole"];
+            /** @description System message content */
+            content: components["schemas"]["OpenRouterChatSystemMessageContent"];
+            /** @description Optional name for the system message */
+            name?: string;
+        } | {
+            role: components["schemas"]["OpenRouterChatToolMessageRole"];
+            /** @description Tool response content */
+            content: components["schemas"]["OpenRouterChatToolMessageContent"];
+            /** @description ID of the assistant message tool call this message responds to */
+            tool_call_id: string;
+        } | {
+            role: components["schemas"]["OpenRouterChatUserMessageRole"];
+            /** @description User message content */
+            content: components["schemas"]["OpenRouterChatUserMessageContent"];
+            /** @description Optional name for the user */
+            name?: string;
+        };
+        /**
+         * ChatRequestModalitiesItems
+         * @enum {string}
+         */
+        OpenRouterChatRequestModalitiesItems: "text" | "image" | "audio";
+        /**
+         * ModelName
+         * @description Model to use for completion
+         */
+        OpenRouterModelName: string;
+        /**
+         * ChatModelNames
+         * @description Models to use for completion
+         */
+        OpenRouterChatModelNames: components["schemas"]["OpenRouterModelName"][];
+        /**
+         * ContextCompressionEngine
+         * @description The compression engine to use. Defaults to "middle-out".
+         * @enum {string}
+         */
+        OpenRouterContextCompressionEngine: "middle-out";
+        /**
+         * PdfParserEngine0
+         * @enum {string}
+         */
+        OpenRouterPdfParserEngine0: "mistral-ocr" | "native" | "cloudflare-ai";
+        /**
+         * PdfParserEngine1
+         * @enum {string}
+         */
+        OpenRouterPdfParserEngine1: "pdf-text";
+        /**
+         * PDFParserEngine
+         * @description The engine to use for parsing PDF files. "pdf-text" is deprecated and automatically redirected to "cloudflare-ai".
+         */
+        OpenRouterPDFParserEngine: components["schemas"]["OpenRouterPdfParserEngine0"] | components["schemas"]["OpenRouterPdfParserEngine1"];
+        /**
+         * PDFParserOptions
+         * @description Options for PDF parsing.
+         */
+        OpenRouterPDFParserOptions: {
+            engine?: components["schemas"]["OpenRouterPDFParserEngine"];
+        };
+        /**
+         * WebSearchEngine
+         * @description The search engine to use for web search.
+         * @enum {string}
+         */
+        OpenRouterWebSearchEngine: "native" | "exa" | "firecrawl" | "parallel";
+        /**
+         * WebSearchPluginId
+         * @enum {string}
+         */
+        OpenRouterWebSearchPluginId: "web";
+        /**
+         * WebSearchPluginUserLocationType
+         * @enum {string}
+         */
+        OpenRouterWebSearchPluginUserLocationType: "approximate";
+        /**
+         * WebSearchPluginUserLocation
+         * @description Approximate user location for location-biased search results. Passed through to native providers that support it (e.g. Anthropic).
+         */
+        OpenRouterWebSearchPluginUserLocation: {
+            city?: string | null;
+            country?: string | null;
+            region?: string | null;
+            timezone?: string | null;
+            type: components["schemas"]["OpenRouterWebSearchPluginUserLocationType"];
+        };
+        /**
+         * WebFetchPluginId
+         * @enum {string}
+         */
+        OpenRouterWebFetchPluginId: "web-fetch";
+        /** ChatRequestPluginsItems */
+        OpenRouterChatRequestPluginsItems: {
+            /**
+             * @description Discriminator value: auto-router
+             * @enum {string}
+             */
+            id: "auto-router";
+            /** @description List of model patterns to filter which models the auto-router can route between. Supports wildcards (e.g., "anthropic/*" matches all Anthropic models). When not specified, uses the default supported models list. */
+            allowed_models?: string[];
+            /** @description Set to false to disable the auto-router plugin for this request. Defaults to true. */
+            enabled?: boolean;
+        } | {
+            /**
+             * @description Discriminator value: context-compression
+             * @enum {string}
+             */
+            id: "context-compression";
+            /** @description Set to false to disable the context-compression plugin for this request. Defaults to true. */
+            enabled?: boolean;
+            engine?: components["schemas"]["OpenRouterContextCompressionEngine"];
+        } | {
+            /**
+             * @description Discriminator value: file-parser
+             * @enum {string}
+             */
+            id: "file-parser";
+            /** @description Set to false to disable the file-parser plugin for this request. Defaults to true. */
+            enabled?: boolean;
+            pdf?: components["schemas"]["OpenRouterPDFParserOptions"];
+        } | {
+            /**
+             * @description Discriminator value: fusion
+             * @enum {string}
+             */
+            id: "fusion";
+            /** @description Slugs of models to run in parallel as the "expert panel" the judge analyzes. Each model receives the same user prompt with web_search + web_fetch enabled. Capped at 8 models to bound cost amplification. When omitted, defaults to the Quality preset from the /labs/fusion UI (~anthropic/claude-opus-latest, ~openai/gpt-latest, ~google/gemini-pro-latest). */
+            analysis_models?: string[];
+            /** @description Set to false to disable the fusion plugin for this request. Defaults to true. */
+            enabled?: boolean;
+            /** @description Maximum number of tool-calling steps each panelist (analysis model) and the judge model may take during their agentic web-research loop. Models with web_search/web_fetch enabled iterate until they produce a text response or hit this ceiling. Defaults to 8. Capped at 16. */
+            max_tool_calls?: number;
+            /** @description Slug of the model that performs both the judge step (with web_search + web_fetch) and the final synthesis. When omitted, defaults to the first model in the Quality preset. */
+            model?: string;
+        } | {
+            /**
+             * @description Discriminator value: moderation
+             * @enum {string}
+             */
+            id: "moderation";
+        } | {
+            /**
+             * @description Discriminator value: pareto-router
+             * @enum {string}
+             */
+            id: "pareto-router";
+            /** @description Set to false to disable the pareto-router plugin for this request. Defaults to true. */
+            enabled?: boolean;
+            /**
+             * Format: double
+             * @description Minimum desired coding score between 0 and 1, where 1 is best. Higher values select from stronger coding models (sourced from Artificial Analysis coding percentiles). Maps internally to one of three tiers (low, medium, high). Omit to use the router default tier.
+             */
+            min_coding_score?: number;
+        } | {
+            /**
+             * @description Discriminator value: response-healing
+             * @enum {string}
+             */
+            id: "response-healing";
+            /** @description Set to false to disable the response-healing plugin for this request. Defaults to true. */
+            enabled?: boolean;
+        } | {
+            id: components["schemas"]["OpenRouterWebSearchPluginId"];
+            /** @description Set to false to disable the web-search plugin for this request. Defaults to true. */
+            enabled?: boolean;
+            engine?: components["schemas"]["OpenRouterWebSearchEngine"];
+            /** @description A list of domains to exclude from web search results. Supports wildcards (e.g. "*.substack.com") and path filtering (e.g. "openai.com/blog"). */
+            exclude_domains?: string[];
+            /** @description A list of domains to restrict web search results to. Supports wildcards (e.g. "*.substack.com") and path filtering (e.g. "openai.com/blog"). */
+            include_domains?: string[];
+            max_results?: number;
+            /** @description Maximum number of times the model can invoke web search in a single turn. Passed through to native providers that support it (e.g. Anthropic). */
+            max_uses?: number;
+            search_prompt?: string;
+            user_location?: components["schemas"]["OpenRouterWebSearchPluginUserLocation"];
+        } | {
+            id: components["schemas"]["OpenRouterWebFetchPluginId"];
+            /** @description Only fetch from these domains. */
+            allowed_domains?: string[];
+            /** @description Never fetch from these domains. */
+            blocked_domains?: string[];
+            /** @description Maximum content length in approximate tokens. Content exceeding this limit is truncated. */
+            max_content_tokens?: number;
+            /** @description Maximum number of web fetches per request. Once exceeded, the tool returns an error. */
+            max_uses?: number;
+        };
+        /**
+         * ProviderPreferencesDataCollection
+         * @description Data collection setting. If no available model provider meets the requirement, your request will return an error.
+         *     - allow: (default) allow providers which store user data non-transiently and may train on it
+         *
+         *     - deny: use only providers which do not collect user data.
+         * @enum {string}
+         */
+        OpenRouterProviderPreferencesDataCollection: "deny" | "allow";
+        /**
+         * ProviderName
+         * @enum {string}
+         */
+        OpenRouterProviderName: "AkashML" | "AI21" | "AionLabs" | "Alibaba" | "Ambient" | "Baidu" | "Amazon Bedrock" | "Amazon Nova" | "Anthropic" | "Arcee AI" | "AtlasCloud" | "Avian" | "Azure" | "BaseTen" | "BytePlus" | "Black Forest Labs" | "Cerebras" | "Chutes" | "Cirrascale" | "Clarifai" | "Cloudflare" | "Cohere" | "Crucible" | "Crusoe" | "DeepInfra" | "DeepSeek" | "DekaLLM" | "Featherless" | "Fireworks" | "Friendli" | "GMICloud" | "Google" | "Google AI Studio" | "Groq" | "Hyperbolic" | "Inception" | "Inceptron" | "InferenceNet" | "Ionstream" | "Infermatic" | "Io Net" | "Inflection" | "Liquid" | "Mara" | "Mancer 2" | "Minimax" | "ModelRun" | "Mistral" | "Modular" | "Moonshot AI" | "Morph" | "NCompass" | "Nebius" | "Nex AGI" | "NextBit" | "Novita" | "Nvidia" | "OpenAI" | "OpenInference" | "Parasail" | "Poolside" | "Perceptron" | "Perplexity" | "Phala" | "Recraft" | "Reka" | "Relace" | "SambaNova" | "Seed" | "SiliconFlow" | "Sourceful" | "StepFun" | "Stealth" | "StreamLake" | "Switchpoint" | "Together" | "Upstage" | "Venice" | "WandB" | "Xiaomi" | "xAI" | "Z.AI" | "FakeProvider";
+        /** ProviderPreferencesIgnoreItems */
+        OpenRouterProviderPreferencesIgnoreItems: components["schemas"]["OpenRouterProviderName"] | string;
+        /**
+         * BigNumberUnion
+         * @description Price per million prompt tokens
+         */
+        OpenRouterBigNumberUnion: string;
+        /**
+         * ProviderPreferencesMaxPrice
+         * @description The object specifying the maximum price you want to pay for this request. USD price per million tokens, for prompt and completion.
+         */
+        OpenRouterProviderPreferencesMaxPrice: {
+            audio?: components["schemas"]["OpenRouterBigNumberUnion"];
+            completion?: components["schemas"]["OpenRouterBigNumberUnion"];
+            image?: components["schemas"]["OpenRouterBigNumberUnion"];
+            prompt?: components["schemas"]["OpenRouterBigNumberUnion"];
+            request?: components["schemas"]["OpenRouterBigNumberUnion"];
+        };
+        /** ProviderPreferencesOnlyItems */
+        OpenRouterProviderPreferencesOnlyItems: components["schemas"]["OpenRouterProviderName"] | string;
+        /** ProviderPreferencesOrderItems */
+        OpenRouterProviderPreferencesOrderItems: components["schemas"]["OpenRouterProviderName"] | string;
+        /**
+         * PercentileLatencyCutoffs
+         * @description Percentile-based latency cutoffs. All specified cutoffs must be met for an endpoint to be preferred.
+         */
+        OpenRouterPercentileLatencyCutoffs: {
+            /**
+             * Format: double
+             * @description Maximum p50 latency (seconds)
+             */
+            p50?: number | null;
+            /**
+             * Format: double
+             * @description Maximum p75 latency (seconds)
+             */
+            p75?: number | null;
+            /**
+             * Format: double
+             * @description Maximum p90 latency (seconds)
+             */
+            p90?: number | null;
+            /**
+             * Format: double
+             * @description Maximum p99 latency (seconds)
+             */
+            p99?: number | null;
+        };
+        /**
+         * PreferredMaxLatency
+         * @description Preferred maximum latency (in seconds). Can be a number (applies to p50) or an object with percentile-specific cutoffs. Endpoints above the threshold(s) may still be used, but are deprioritized in routing. When using fallback models, this may cause a fallback model to be used instead of the primary model if it meets the threshold.
+         */
+        OpenRouterPreferredMaxLatency: number | components["schemas"]["OpenRouterPercentileLatencyCutoffs"] | unknown;
+        /**
+         * PercentileThroughputCutoffs
+         * @description Percentile-based throughput cutoffs. All specified cutoffs must be met for an endpoint to be preferred.
+         */
+        OpenRouterPercentileThroughputCutoffs: {
+            /**
+             * Format: double
+             * @description Minimum p50 throughput (tokens/sec)
+             */
+            p50?: number | null;
+            /**
+             * Format: double
+             * @description Minimum p75 throughput (tokens/sec)
+             */
+            p75?: number | null;
+            /**
+             * Format: double
+             * @description Minimum p90 throughput (tokens/sec)
+             */
+            p90?: number | null;
+            /**
+             * Format: double
+             * @description Minimum p99 throughput (tokens/sec)
+             */
+            p99?: number | null;
+        };
+        /**
+         * PreferredMinThroughput
+         * @description Preferred minimum throughput (in tokens per second). Can be a number (applies to p50) or an object with percentile-specific cutoffs. Endpoints below the threshold(s) may still be used, but are deprioritized in routing. When using fallback models, this may cause a fallback model to be used instead of the primary model if it meets the threshold.
+         */
+        OpenRouterPreferredMinThroughput: number | components["schemas"]["OpenRouterPercentileThroughputCutoffs"] | unknown;
+        /**
+         * Quantization
+         * @enum {string}
+         */
+        OpenRouterQuantization: "int4" | "int8" | "fp4" | "fp6" | "fp8" | "fp16" | "bf16" | "fp32" | "unknown";
+        /**
+         * ProviderSort
+         * @description The provider sorting strategy (price, throughput, latency)
+         * @enum {string}
+         */
+        OpenRouterProviderSort: "price" | "throughput" | "latency" | "exacto";
+        /**
+         * ProviderSortConfigBy
+         * @description The provider sorting strategy (price, throughput, latency)
+         * @enum {string}
+         */
+        OpenRouterProviderSortConfigBy: "price" | "throughput" | "latency" | "exacto";
+        /**
+         * ProviderSortConfigPartition
+         * @description Partitioning strategy for sorting: "model" (default) groups endpoints by model before sorting (fallback models remain fallbacks), "none" sorts all endpoints together regardless of model.
+         * @enum {string}
+         */
+        OpenRouterProviderSortConfigPartition: "model" | "none";
+        /**
+         * ProviderSortConfig
+         * @description The provider sorting strategy (price, throughput, latency)
+         */
+        OpenRouterProviderSortConfig: {
+            /** @description The provider sorting strategy (price, throughput, latency) */
+            by?: components["schemas"]["OpenRouterProviderSortConfigBy"];
+            /** @description Partitioning strategy for sorting: "model" (default) groups endpoints by model before sorting (fallback models remain fallbacks), "none" sorts all endpoints together regardless of model. */
+            partition?: components["schemas"]["OpenRouterProviderSortConfigPartition"];
+        };
+        /**
+         * ProviderPreferencesSort
+         * @description The sorting strategy to use for this request, if "order" is not specified. When set, no load balancing is performed.
+         */
+        OpenRouterProviderPreferencesSort: components["schemas"]["OpenRouterProviderSort"] | components["schemas"]["OpenRouterProviderSortConfig"] | unknown;
+        /**
+         * ProviderPreferences
+         * @description When multiple model providers are available, optionally indicate your routing preference.
+         */
+        OpenRouterProviderPreferences: {
+            /**
+             * @description Whether to allow backup providers to serve requests
+             *     - true: (default) when the primary provider (or your custom providers in "order") is unavailable, use the next best provider.
+             *     - false: use only the primary/custom provider, and return the upstream error if it's unavailable.
+             */
+            allow_fallbacks?: boolean | null;
+            /**
+             * @description Data collection setting. If no available model provider meets the requirement, your request will return an error.
+             *     - allow: (default) allow providers which store user data non-transiently and may train on it
+             *
+             *     - deny: use only providers which do not collect user data.
+             */
+            data_collection?: components["schemas"]["OpenRouterProviderPreferencesDataCollection"];
+            /** @description Whether to restrict routing to only models that allow text distillation. When true, only models where the author has allowed distillation will be used. */
+            enforce_distillable_text?: boolean | null;
+            /** @description List of provider slugs to ignore. If provided, this list is merged with your account-wide ignored provider settings for this request. */
+            ignore?: components["schemas"]["OpenRouterProviderPreferencesIgnoreItems"][] | null;
+            /** @description The object specifying the maximum price you want to pay for this request. USD price per million tokens, for prompt and completion. */
+            max_price?: components["schemas"]["OpenRouterProviderPreferencesMaxPrice"];
+            /** @description List of provider slugs to allow. If provided, this list is merged with your account-wide allowed provider settings for this request. */
+            only?: components["schemas"]["OpenRouterProviderPreferencesOnlyItems"][] | null;
+            /** @description An ordered list of provider slugs. The router will attempt to use the first provider in the subset of this list that supports your requested model, and fall back to the next if it is unavailable. If no providers are available, the request will fail with an error message. */
+            order?: components["schemas"]["OpenRouterProviderPreferencesOrderItems"][] | null;
+            preferred_max_latency?: components["schemas"]["OpenRouterPreferredMaxLatency"];
+            preferred_min_throughput?: components["schemas"]["OpenRouterPreferredMinThroughput"];
+            /** @description A list of quantization levels to filter the provider by. */
+            quantizations?: components["schemas"]["OpenRouterQuantization"][] | null;
+            /** @description Whether to filter providers to only those that support the parameters you've provided. If this setting is omitted or set to false, then providers will receive only the parameters they support, and ignore the rest. */
+            require_parameters?: boolean | null;
+            /** @description The sorting strategy to use for this request, if "order" is not specified. When set, no load balancing is performed. */
+            sort?: components["schemas"]["OpenRouterProviderPreferencesSort"];
+            /** @description Whether to restrict routing to only ZDR (Zero Data Retention) endpoints. When true, only endpoints that do not retain prompts will be used. */
+            zdr?: boolean | null;
+        };
+        /**
+         * ChatRequestReasoningEffort
+         * @description Constrains effort on reasoning for reasoning models
+         * @enum {string}
+         */
+        OpenRouterChatRequestReasoningEffort: "xhigh" | "high" | "medium" | "low" | "minimal" | "none";
+        /**
+         * ChatReasoningSummaryVerbosityEnum
+         * @enum {string}
+         */
+        OpenRouterChatReasoningSummaryVerbosityEnum: "auto" | "concise" | "detailed";
+        /**
+         * ChatRequestReasoning
+         * @description Configuration options for reasoning models
+         */
+        OpenRouterChatRequestReasoning: {
+            /** @description Constrains effort on reasoning for reasoning models */
+            effort?: components["schemas"]["OpenRouterChatRequestReasoningEffort"];
+            summary?: components["schemas"]["OpenRouterChatReasoningSummaryVerbosityEnum"];
+        };
+        /**
+         * FormatJsonObjectConfigType
+         * @enum {string}
+         */
+        OpenRouterFormatJsonObjectConfigType: "json_object";
+        /**
+         * ChatJsonSchemaConfig
+         * @description JSON Schema configuration object
+         */
+        OpenRouterChatJsonSchemaConfig: {
+            /** @description Schema description for the model */
+            description?: string;
+            /** @description Schema name (a-z, A-Z, 0-9, underscores, dashes, max 64 chars) */
+            name: string;
+            /** @description JSON Schema object */
+            schema?: {
+                [key: string]: unknown;
+            };
+            /** @description Enable strict schema adherence */
+            strict?: boolean | null;
+        };
+        /**
+         * ChatRequestResponseFormat
+         * @description Response format configuration
+         */
+        OpenRouterChatRequestResponseFormat: {
+            /**
+             * @description Discriminator value: grammar
+             * @enum {string}
+             */
+            type: "grammar";
+            /** @description Custom grammar for text generation */
+            grammar: string;
+        } | {
+            type: components["schemas"]["OpenRouterFormatJsonObjectConfigType"];
+        } | {
+            /**
+             * @description Discriminator value: json_schema
+             * @enum {string}
+             */
+            type: "json_schema";
+            json_schema: components["schemas"]["OpenRouterChatJsonSchemaConfig"];
+        } | {
+            /**
+             * @description Discriminator value: python
+             * @enum {string}
+             */
+            type: "python";
+        } | {
+            /**
+             * @description Discriminator value: text
+             * @enum {string}
+             */
+            type: "text";
+        };
+        /**
+         * ChatRequestServiceTier
+         * @description The service tier to use for processing this request.
+         * @enum {string}
+         */
+        OpenRouterChatRequestServiceTier: "auto" | "default" | "flex" | "priority" | "scale";
+        /**
+         * ChatRequestStop
+         * @description Stop sequences (up to 4)
+         */
+        OpenRouterChatRequestStop: string | string[] | unknown;
+        /**
+         * StopServerToolsWhenFinishReasonIsType
+         * @enum {string}
+         */
+        OpenRouterStopServerToolsWhenFinishReasonIsType: "finish_reason_is";
+        /**
+         * StopServerToolsWhenHasToolCallType
+         * @enum {string}
+         */
+        OpenRouterStopServerToolsWhenHasToolCallType: "has_tool_call";
+        /**
+         * StopServerToolsWhenMaxCostType
+         * @enum {string}
+         */
+        OpenRouterStopServerToolsWhenMaxCostType: "max_cost";
+        /**
+         * StopServerToolsWhenMaxTokensUsedType
+         * @enum {string}
+         */
+        OpenRouterStopServerToolsWhenMaxTokensUsedType: "max_tokens_used";
+        /**
+         * StopServerToolsWhenStepCountIsType
+         * @enum {string}
+         */
+        OpenRouterStopServerToolsWhenStepCountIsType: "step_count_is";
+        /**
+         * StopServerToolsWhenCondition
+         * @description A single condition that, when met, halts the server-tool agent loop.
+         */
+        OpenRouterStopServerToolsWhenCondition: {
+            type: components["schemas"]["OpenRouterStopServerToolsWhenFinishReasonIsType"];
+            reason: string;
+        } | {
+            type: components["schemas"]["OpenRouterStopServerToolsWhenHasToolCallType"];
+            tool_name: string;
+        } | {
+            type: components["schemas"]["OpenRouterStopServerToolsWhenMaxCostType"];
+            /** Format: double */
+            max_cost_in_dollars: number;
+        } | {
+            type: components["schemas"]["OpenRouterStopServerToolsWhenMaxTokensUsedType"];
+            max_tokens: number;
+        } | {
+            type: components["schemas"]["OpenRouterStopServerToolsWhenStepCountIsType"];
+            step_count: number;
+        };
+        /**
+         * StopServerToolsWhen
+         * @description Stop conditions for the server-tool agent loop. Any condition firing halts the loop (OR logic). When set, this overrides `max_tool_calls`.
+         */
+        OpenRouterStopServerToolsWhen: components["schemas"]["OpenRouterStopServerToolsWhenCondition"][];
+        /**
+         * ChatStreamOptions
+         * @description Streaming configuration options
+         */
+        OpenRouterChatStreamOptions: {
+            /** @description Deprecated: This field has no effect. Full usage details are always included. */
+            include_usage?: boolean;
+        };
+        /**
+         * ChatToolChoice0
+         * @enum {string}
+         */
+        OpenRouterChatToolChoice0: "none";
+        /**
+         * ChatToolChoice1
+         * @enum {string}
+         */
+        OpenRouterChatToolChoice1: "auto";
+        /**
+         * ChatToolChoice2
+         * @enum {string}
+         */
+        OpenRouterChatToolChoice2: "required";
+        /** ChatNamedToolChoiceFunction */
+        OpenRouterChatNamedToolChoiceFunction: {
+            /** @description Function name to call */
+            name: string;
+        };
+        /**
+         * ChatNamedToolChoiceType
+         * @enum {string}
+         */
+        OpenRouterChatNamedToolChoiceType: "function";
+        /**
+         * ChatNamedToolChoice
+         * @description Named tool choice for specific function
+         */
+        OpenRouterChatNamedToolChoice: {
+            function: components["schemas"]["OpenRouterChatNamedToolChoiceFunction"];
+            type: components["schemas"]["OpenRouterChatNamedToolChoiceType"];
+        };
+        /**
+         * ChatToolChoice
+         * @description Tool choice configuration
+         */
+        OpenRouterChatToolChoice: components["schemas"]["OpenRouterChatToolChoice0"] | components["schemas"]["OpenRouterChatToolChoice1"] | components["schemas"]["OpenRouterChatToolChoice2"] | components["schemas"]["OpenRouterChatNamedToolChoice"];
+        /**
+         * ChatFunctionToolOneOf0Function
+         * @description Function definition for tool calling
+         */
+        OpenRouterChatFunctionToolOneOf0Function: {
+            /** @description Function description for the model */
+            description?: string;
+            /** @description Function name (a-z, A-Z, 0-9, underscores, dashes, max 64 chars) */
+            name: string;
+            /** @description Function parameters as JSON Schema object */
+            parameters?: {
+                [key: string]: unknown;
+            };
+            /** @description Enable strict schema adherence */
+            strict?: boolean | null;
+        };
+        /**
+         * ChatFunctionToolOneOf0Type
+         * @enum {string}
+         */
+        OpenRouterChatFunctionToolOneOf0Type: "function";
+        /** ChatFunctionTool0 */
+        OpenRouterChatFunctionTool0: {
+            cache_control?: components["schemas"]["OpenRouterChatContentCacheControl"];
+            /** @description Function definition for tool calling */
+            function: components["schemas"]["OpenRouterChatFunctionToolOneOf0Function"];
+            type: components["schemas"]["OpenRouterChatFunctionToolOneOf0Type"];
+        };
+        /**
+         * DatetimeServerToolConfig
+         * @description Configuration for the openrouter:datetime server tool
+         */
+        OpenRouterDatetimeServerToolConfig: {
+            /** @description IANA timezone name (e.g. "America/New_York"). Defaults to UTC. */
+            timezone?: string;
+        };
+        /**
+         * DatetimeServerToolType
+         * @enum {string}
+         */
+        OpenRouterDatetimeServerToolType: "openrouter:datetime";
+        /**
+         * DatetimeServerTool
+         * @description OpenRouter built-in server tool: returns the current date and time
+         */
+        OpenRouterDatetimeServerTool: {
+            parameters?: components["schemas"]["OpenRouterDatetimeServerToolConfig"];
+            type: components["schemas"]["OpenRouterDatetimeServerToolType"];
+        };
+        /**
+         * ImageGenerationServerToolConfig
+         * @description Configuration for the openrouter:image_generation server tool. Accepts all image_config params (aspect_ratio, quality, size, background, output_format, output_compression, moderation, etc.) plus a model field.
+         */
+        OpenRouterImageGenerationServerToolConfig: {
+            /** @description Which image generation model to use (e.g. "openai/gpt-5-image"). Defaults to "openai/gpt-5-image". */
+            model?: string;
+        };
+        /**
+         * ImageGenerationServerToolOpenRouterType
+         * @enum {string}
+         */
+        OpenRouterImageGenerationServerToolOpenRouterType: "openrouter:image_generation";
+        /**
+         * ImageGenerationServerTool_OpenRouter
+         * @description OpenRouter built-in server tool: generates images from text prompts using an image generation model
+         */
+        ImageGenerationServerTool_OpenRouter: {
+            parameters?: components["schemas"]["OpenRouterImageGenerationServerToolConfig"];
+            type: components["schemas"]["OpenRouterImageGenerationServerToolOpenRouterType"];
+        };
+        /**
+         * SearchModelsServerToolConfig
+         * @description Configuration for the openrouter:experimental__search_models server tool
+         */
+        OpenRouterSearchModelsServerToolConfig: {
+            /** @description Maximum number of models to return. Defaults to 5, max 20. */
+            max_results?: number;
+        };
+        /**
+         * ChatSearchModelsServerToolType
+         * @enum {string}
+         */
+        OpenRouterChatSearchModelsServerToolType: "openrouter:experimental__search_models";
+        /**
+         * ChatSearchModelsServerTool
+         * @description OpenRouter built-in server tool: searches and filters AI models available on OpenRouter
+         */
+        OpenRouterChatSearchModelsServerTool: {
+            parameters?: components["schemas"]["OpenRouterSearchModelsServerToolConfig"];
+            type: components["schemas"]["OpenRouterChatSearchModelsServerToolType"];
+        };
+        /**
+         * WebFetchEngineEnum
+         * @description Which fetch engine to use. "auto" (default) uses native if the provider supports it, otherwise Exa. "native" forces the provider's built-in fetch. "exa" uses Exa Contents API. "openrouter" uses direct HTTP fetch. "firecrawl" uses Firecrawl scrape (requires BYOK).
+         * @enum {string}
+         */
+        OpenRouterWebFetchEngineEnum: "auto" | "native" | "openrouter" | "firecrawl" | "exa";
+        /**
+         * WebFetchServerToolConfig
+         * @description Configuration for the openrouter:web_fetch server tool
+         */
+        OpenRouterWebFetchServerToolConfig: {
+            /** @description Only fetch from these domains. */
+            allowed_domains?: string[];
+            /** @description Never fetch from these domains. */
+            blocked_domains?: string[];
+            engine?: components["schemas"]["OpenRouterWebFetchEngineEnum"];
+            /** @description Maximum content length in approximate tokens. Content exceeding this limit is truncated. */
+            max_content_tokens?: number;
+            /** @description Maximum number of web fetches per request. Once exceeded, the tool returns an error. */
+            max_uses?: number;
+        };
+        /**
+         * WebFetchServerToolType
+         * @enum {string}
+         */
+        OpenRouterWebFetchServerToolType: "openrouter:web_fetch";
+        /**
+         * WebFetchServerTool
+         * @description OpenRouter built-in server tool: fetches full content from a URL (web page or PDF)
+         */
+        OpenRouterWebFetchServerTool: {
+            parameters?: components["schemas"]["OpenRouterWebFetchServerToolConfig"];
+            type: components["schemas"]["OpenRouterWebFetchServerToolType"];
+        };
+        /**
+         * WebSearchEngineEnum
+         * @description Which search engine to use. "auto" (default) uses native if the provider supports it, otherwise Exa. "native" forces the provider's built-in search. "exa" forces the Exa search API. "firecrawl" uses Firecrawl (requires BYOK). "parallel" uses the Parallel search API.
+         * @enum {string}
+         */
+        OpenRouterWebSearchEngineEnum: "auto" | "native" | "exa" | "firecrawl" | "parallel";
+        /**
+         * SearchQualityLevel
+         * @description How much context to retrieve per result. Applies to Exa and Parallel engines; ignored with native provider search and Firecrawl. For Exa, pins a fixed per-result character cap (low=5,000, medium=15,000, high=30,000); when omitted, Exa picks an adaptive size per query and document (typically ~2,000–4,000 characters per result). For Parallel, controls the total characters across all results; when omitted, Parallel uses its own default size.
+         * @enum {string}
+         */
+        OpenRouterSearchQualityLevel: "low" | "medium" | "high";
+        /**
+         * WebSearchUserLocationServerToolType
+         * @enum {string}
+         */
+        OpenRouterWebSearchUserLocationServerToolType: "approximate";
+        /**
+         * WebSearchUserLocationServerTool
+         * @description Approximate user location for location-biased results.
+         */
+        OpenRouterWebSearchUserLocationServerTool: {
+            city?: string | null;
+            country?: string | null;
+            region?: string | null;
+            timezone?: string | null;
+            type?: components["schemas"]["OpenRouterWebSearchUserLocationServerToolType"];
+        };
+        /** WebSearchConfig */
+        OpenRouterWebSearchConfig: {
+            /** @description Limit search results to these domains. Supported by Exa, Firecrawl, Parallel, and most native providers (Anthropic, OpenAI, xAI). Not supported with Perplexity. Cannot be used with excluded_domains. */
+            allowed_domains?: string[];
+            engine?: components["schemas"]["OpenRouterWebSearchEngineEnum"];
+            /** @description Exclude search results from these domains. Supported by Exa, Firecrawl, Parallel, Anthropic, and xAI. Not supported with OpenAI (silently ignored) or Perplexity. Cannot be used with allowed_domains. */
+            excluded_domains?: string[];
+            /** @description Maximum number of search results to return per search call. Defaults to 5. Applies to Exa, Firecrawl, and Parallel engines; ignored with native provider search. */
+            max_results?: number;
+            /** @description Maximum total number of search results across all search calls in a single request. Once this limit is reached, the tool will stop returning new results. Useful for controlling cost and context size in agentic loops. Defaults to 50 when not specified. */
+            max_total_results?: number;
+            search_context_size?: components["schemas"]["OpenRouterSearchQualityLevel"];
+            user_location?: components["schemas"]["OpenRouterWebSearchUserLocationServerTool"];
+        };
+        /**
+         * OpenRouterWebSearchServerToolType
+         * @enum {string}
+         */
+        OpenRouterWebSearchServerToolType: "openrouter:web_search";
+        /**
+         * OpenRouterWebSearchServerTool
+         * @description OpenRouter built-in server tool: searches the web for current information
+         */
+        OpenRouterWebSearchServerTool: {
+            parameters?: components["schemas"]["OpenRouterWebSearchConfig"];
+            type: components["schemas"]["OpenRouterWebSearchServerToolType"];
+        };
+        /**
+         * ChatWebSearchShorthandType
+         * @enum {string}
+         */
+        OpenRouterChatWebSearchShorthandType: "web_search" | "web_search_preview" | "web_search_preview_2025_03_11" | "web_search_2025_08_26";
+        /**
+         * ChatWebSearchShorthand
+         * @description Web search tool using OpenAI Responses API syntax. Automatically converted to openrouter:web_search.
+         */
+        OpenRouterChatWebSearchShorthand: {
+            /** @description Limit search results to these domains. Supported by Exa, Firecrawl, Parallel, and most native providers (Anthropic, OpenAI, xAI). Not supported with Perplexity. Cannot be used with excluded_domains. */
+            allowed_domains?: string[];
+            engine?: components["schemas"]["OpenRouterWebSearchEngineEnum"];
+            /** @description Exclude search results from these domains. Supported by Exa, Firecrawl, Parallel, Anthropic, and xAI. Not supported with OpenAI (silently ignored) or Perplexity. Cannot be used with allowed_domains. */
+            excluded_domains?: string[];
+            /** @description Maximum number of search results to return per search call. Defaults to 5. Applies to Exa, Firecrawl, and Parallel engines; ignored with native provider search. */
+            max_results?: number;
+            /** @description Maximum total number of search results across all search calls in a single request. Once this limit is reached, the tool will stop returning new results. Useful for controlling cost and context size in agentic loops. Defaults to 50 when not specified. */
+            max_total_results?: number;
+            parameters?: components["schemas"]["OpenRouterWebSearchConfig"];
+            search_context_size?: components["schemas"]["OpenRouterSearchQualityLevel"];
+            type: components["schemas"]["OpenRouterChatWebSearchShorthandType"];
+            user_location?: components["schemas"]["OpenRouterWebSearchUserLocationServerTool"];
+        };
+        /**
+         * ChatFunctionTool
+         * @description Tool definition for function calling (regular function or OpenRouter built-in server tool)
+         */
+        OpenRouterChatFunctionTool: components["schemas"]["OpenRouterChatFunctionTool0"] | components["schemas"]["OpenRouterDatetimeServerTool"] | components["schemas"]["ImageGenerationServerTool_OpenRouter"] | components["schemas"]["OpenRouterChatSearchModelsServerTool"] | components["schemas"]["OpenRouterWebFetchServerTool"] | components["schemas"]["OpenRouterWebSearchServerTool"] | components["schemas"]["OpenRouterChatWebSearchShorthand"];
+        /**
+         * TraceConfig
+         * @description Metadata for observability and tracing. Known keys (trace_id, trace_name, span_name, generation_name, parent_span_id) have special handling. Additional keys are passed through as custom metadata to configured broadcast destinations.
+         */
+        OpenRouterTraceConfig: {
+            generation_name?: string;
+            parent_span_id?: string;
+            span_name?: string;
+            trace_id?: string;
+            trace_name?: string;
+        };
+        /**
+         * ChatRequest
+         * @description Chat completion request parameters
+         */
+        OpenRouterChatRequest: {
+            cache_control?: components["schemas"]["OpenRouterAnthropicCacheControlDirective"];
+            debug?: components["schemas"]["OpenRouterChatDebugOptions"];
+            /**
+             * Format: double
+             * @description Frequency penalty (-2.0 to 2.0)
+             */
+            frequency_penalty?: number | null;
+            image_config?: components["schemas"]["OpenRouterImageConfig"];
+            /** @description Token logit bias adjustments */
+            logit_bias?: {
+                [key: string]: number;
+            } | null;
+            /** @description Return log probabilities */
+            logprobs?: boolean | null;
+            /** @description Maximum tokens in completion */
+            max_completion_tokens?: number | null;
+            /** @description Maximum tokens (deprecated, use max_completion_tokens). Note: some providers enforce a minimum of 16. */
+            max_tokens?: number | null;
+            /** @description List of messages for the conversation */
+            messages: components["schemas"]["OpenRouterChatMessages"][];
+            /** @description Key-value pairs for additional object information (max 16 pairs, 64 char keys, 512 char values) */
+            metadata?: {
+                [key: string]: string;
+            };
+            /** @description Output modalities for the response. Supported values are "text", "image", and "audio". */
+            modalities?: components["schemas"]["OpenRouterChatRequestModalitiesItems"][];
+            model?: components["schemas"]["OpenRouterModelName"];
+            models?: components["schemas"]["OpenRouterChatModelNames"];
+            /** @description Whether to enable parallel function calling during tool use. When true, the model may generate multiple tool calls in a single response. */
+            parallel_tool_calls?: boolean | null;
+            /** @description Plugins you want to enable for this request, including their settings. */
+            plugins?: components["schemas"]["OpenRouterChatRequestPluginsItems"][];
+            /**
+             * Format: double
+             * @description Presence penalty (-2.0 to 2.0)
+             */
+            presence_penalty?: number | null;
+            provider?: components["schemas"]["OpenRouterProviderPreferences"];
+            /** @description Configuration options for reasoning models */
+            reasoning?: components["schemas"]["OpenRouterChatRequestReasoning"];
+            /** @description Response format configuration */
+            response_format?: components["schemas"]["OpenRouterChatRequestResponseFormat"];
+            /** @description Any type */
+            route?: unknown;
+            /** @description Random seed for deterministic outputs */
+            seed?: number | null;
+            /** @description The service tier to use for processing this request. */
+            service_tier?: components["schemas"]["OpenRouterChatRequestServiceTier"];
+            /** @description A unique identifier for grouping related requests (e.g., a conversation or agent workflow) for observability. If provided in both the request body and the x-session-id header, the body value takes precedence. Maximum of 256 characters. */
+            session_id?: string;
+            /** @description Stop sequences (up to 4) */
+            stop?: components["schemas"]["OpenRouterChatRequestStop"];
+            stop_server_tools_when?: components["schemas"]["OpenRouterStopServerToolsWhen"];
+            /**
+             * @description Enable streaming response
+             * @default false
+             */
+            stream: boolean;
+            stream_options?: components["schemas"]["OpenRouterChatStreamOptions"];
+            /**
+             * Format: double
+             * @description Sampling temperature (0-2)
+             */
+            temperature?: number | null;
+            tool_choice?: components["schemas"]["OpenRouterChatToolChoice"];
+            /** @description Available tools for function calling */
+            tools?: components["schemas"]["OpenRouterChatFunctionTool"][];
+            /** @description Number of top log probabilities to return (0-20) */
+            top_logprobs?: number | null;
+            /**
+             * Format: double
+             * @description Nucleus sampling parameter (0-1)
+             */
+            top_p?: number | null;
+            trace?: components["schemas"]["OpenRouterTraceConfig"];
+            /** @description Unique user identifier */
+            user?: string;
+        };
+        /**
+         * ChatFinishReasonEnum
+         * @enum {string}
+         */
+        OpenRouterChatFinishReasonEnum: "tool_calls" | "stop" | "length" | "content_filter" | "error";
+        /** ChatTokenLogprobTopLogprobsItems */
+        OpenRouterChatTokenLogprobTopLogprobsItems: {
+            bytes: number[] | null;
+            /** Format: double */
+            logprob: number;
+            token: string;
+        };
+        /**
+         * ChatTokenLogprob
+         * @description Token log probability information
+         */
+        OpenRouterChatTokenLogprob: {
+            /** @description UTF-8 bytes of the token */
+            bytes: number[] | null;
+            /**
+             * Format: double
+             * @description Log probability of the token
+             */
+            logprob: number;
+            /** @description The token */
+            token: string;
+            /** @description Top alternative tokens with probabilities */
+            top_logprobs: components["schemas"]["OpenRouterChatTokenLogprobTopLogprobsItems"][];
+        };
+        /**
+         * ChatTokenLogprobs
+         * @description Log probabilities for the completion
+         */
+        OpenRouterChatTokenLogprobs: {
+            /** @description Log probabilities for content tokens */
+            content: components["schemas"]["OpenRouterChatTokenLogprob"][] | null;
+            /** @description Log probabilities for refusal tokens */
+            refusal?: components["schemas"]["OpenRouterChatTokenLogprob"][] | null;
+        };
+        /**
+         * ChatAssistantMessage
+         * @description Assistant message for requests and responses
+         */
+        OpenRouterChatAssistantMessage: {
+            audio?: components["schemas"]["OpenRouterChatAudioOutput"];
+            /** @description Assistant message content */
+            content?: components["schemas"]["OpenRouterChatMessagesDiscriminatorMappingAssistantContent"];
+            images?: components["schemas"]["OpenRouterChatAssistantImages"];
+            /** @description Optional name for the assistant */
+            name?: string;
+            /** @description Reasoning output */
+            reasoning?: string | null;
+            reasoning_details?: components["schemas"]["OpenRouterChatReasoningDetails"];
+            /** @description Refusal message if content was refused */
+            refusal?: string | null;
+            /** @description Tool calls made by the assistant */
+            tool_calls?: components["schemas"]["OpenRouterChatToolCall"][];
+        };
+        /**
+         * ChatChoice
+         * @description Chat completion choice
+         */
+        OpenRouterChatChoice: {
+            finish_reason: components["schemas"]["OpenRouterChatFinishReasonEnum"];
+            /** @description Choice index */
+            index: number;
+            logprobs?: components["schemas"]["OpenRouterChatTokenLogprobs"];
+            message: components["schemas"]["OpenRouterChatAssistantMessage"];
+        };
+        /**
+         * ChatResultObject
+         * @enum {string}
+         */
+        OpenRouterChatResultObject: "chat.completion";
+        /** RouterAttempt */
+        OpenRouterRouterAttempt: {
+            model: string;
+            provider: string;
+            status: number;
+        };
+        /** EndpointInfo */
+        OpenRouterEndpointInfo: {
+            model: string;
+            provider: string;
+            selected: boolean;
+        };
+        /** EndpointsMetadata */
+        OpenRouterEndpointsMetadata: {
+            available: components["schemas"]["OpenRouterEndpointInfo"][];
+            total: number;
+        };
+        /** RouterParams */
+        OpenRouterRouterParams: {
+            /** Format: double */
+            quality_floor?: number;
+            /** Format: double */
+            throughput_floor?: number;
+            version_group?: string;
+        };
+        /**
+         * PipelineStageType
+         * @description Categorical kind of a pipeline stage. Multiple plugins can share a type (e.g. all guardrail-level plugins emit `guardrail`); the `name` field disambiguates which plugin emitted it.
+         * @enum {string}
+         */
+        OpenRouterPipelineStageType: "guardrail" | "plugin" | "server_tools" | "response_healing" | "context_compression";
+        /** PipelineStage */
+        OpenRouterPipelineStage: {
+            /** Format: double */
+            cost_usd?: number | null;
+            data?: {
+                [key: string]: unknown;
+            };
+            guardrail_id?: string;
+            guardrail_scope?: string;
+            name: string;
+            summary?: string;
+            type: components["schemas"]["OpenRouterPipelineStageType"];
+        };
+        /**
+         * RoutingStrategy
+         * @enum {string}
+         */
+        OpenRouterRoutingStrategy: "direct" | "auto" | "free" | "latest" | "alias" | "fallback" | "pareto" | "bodybuilder" | "fusion";
+        /** OpenRouterMetadata */
+        OpenRouterMetadata: {
+            attempt: number;
+            attempts?: components["schemas"]["OpenRouterRouterAttempt"][];
+            endpoints: components["schemas"]["OpenRouterEndpointsMetadata"];
+            is_byok: boolean;
+            params?: components["schemas"]["OpenRouterRouterParams"];
+            pipeline?: components["schemas"]["OpenRouterPipelineStage"][];
+            region: string | null;
+            requested: string;
+            strategy: components["schemas"]["OpenRouterRoutingStrategy"];
+            summary: string;
+        };
+        /**
+         * ChatUsageCompletionTokensDetails
+         * @description Detailed completion token usage
+         */
+        OpenRouterChatUsageCompletionTokensDetails: {
+            /** @description Accepted prediction tokens */
+            accepted_prediction_tokens?: number | null;
+            /** @description Tokens used for audio output */
+            audio_tokens?: number | null;
+            /** @description Tokens used for reasoning */
+            reasoning_tokens?: number | null;
+            /** @description Rejected prediction tokens */
+            rejected_prediction_tokens?: number | null;
+        };
+        /**
+         * CostDetails
+         * @description Breakdown of upstream inference costs
+         */
+        OpenRouterCostDetails: {
+            /** Format: double */
+            upstream_inference_completions_cost: number;
+            /** Format: double */
+            upstream_inference_cost?: number | null;
+            /** Format: double */
+            upstream_inference_prompt_cost: number;
+        };
+        /**
+         * ChatUsagePromptTokensDetails
+         * @description Detailed prompt token usage
+         */
+        OpenRouterChatUsagePromptTokensDetails: {
+            /** @description Audio input tokens */
+            audio_tokens?: number;
+            /** @description Tokens written to cache. Only returned for models with explicit caching and cache write pricing. */
+            cache_write_tokens?: number;
+            /** @description Cached prompt tokens */
+            cached_tokens?: number;
+            /** @description Video input tokens */
+            video_tokens?: number;
+        };
+        /**
+         * ChatUsage
+         * @description Token usage statistics
+         */
+        OpenRouterChatUsage: {
+            /** @description Number of tokens in the completion */
+            completion_tokens: number;
+            /** @description Detailed completion token usage */
+            completion_tokens_details?: components["schemas"]["OpenRouterChatUsageCompletionTokensDetails"];
+            /**
+             * Format: double
+             * @description Cost of the completion
+             */
+            cost?: number | null;
+            cost_details?: components["schemas"]["OpenRouterCostDetails"];
+            /** @description Whether a request was made using a Bring Your Own Key configuration */
+            is_byok?: boolean;
+            /** @description Number of tokens in the prompt */
+            prompt_tokens: number;
+            /** @description Detailed prompt token usage */
+            prompt_tokens_details?: components["schemas"]["OpenRouterChatUsagePromptTokensDetails"];
+            /** @description Total number of tokens */
+            total_tokens: number;
+        };
+        /**
+         * ChatResult
+         * @description Chat completion response
+         */
+        OpenRouterChatResult: {
+            /** @description List of completion choices */
+            choices: components["schemas"]["OpenRouterChatChoice"][];
+            /** @description Unix timestamp of creation */
+            created: number;
+            /** @description Unique completion identifier */
+            id: string;
+            /** @description Model used for completion */
+            model: string;
+            object: components["schemas"]["OpenRouterChatResultObject"];
+            openrouter_metadata?: components["schemas"]["OpenRouterMetadata"];
+            /** @description The service tier used by the upstream provider for this request */
+            service_tier?: string | null;
+            /** @description System fingerprint */
+            system_fingerprint: string | null;
+            usage?: components["schemas"]["OpenRouterChatUsage"];
+        };
+        /**
+         * BadRequestResponseErrorData
+         * @description Error data for BadRequestResponse
+         */
+        OpenRouterBadRequestResponseErrorData: {
+            code: number;
+            message: string;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * BadRequestResponse
+         * @description Bad Request - Invalid request parameters or malformed input
+         */
+        OpenRouterBadRequestResponse: {
+            error: components["schemas"]["OpenRouterBadRequestResponseErrorData"];
+            openrouter_metadata?: {
+                [key: string]: unknown;
+            } | null;
+            user_id?: string | null;
+        };
+        /**
+         * UnauthorizedResponseErrorData
+         * @description Error data for UnauthorizedResponse
+         */
+        OpenRouterUnauthorizedResponseErrorData: {
+            code: number;
+            message: string;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * UnauthorizedResponse
+         * @description Unauthorized - Authentication required or invalid credentials
+         */
+        OpenRouterUnauthorizedResponse: {
+            error: components["schemas"]["OpenRouterUnauthorizedResponseErrorData"];
+            openrouter_metadata?: {
+                [key: string]: unknown;
+            } | null;
+            user_id?: string | null;
+        };
+        /**
+         * PaymentRequiredResponseErrorData
+         * @description Error data for PaymentRequiredResponse
+         */
+        OpenRouterPaymentRequiredResponseErrorData: {
+            code: number;
+            message: string;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * PaymentRequiredResponse
+         * @description Payment Required - Insufficient credits or quota to complete request
+         */
+        OpenRouterPaymentRequiredResponse: {
+            error: components["schemas"]["OpenRouterPaymentRequiredResponseErrorData"];
+            openrouter_metadata?: {
+                [key: string]: unknown;
+            } | null;
+            user_id?: string | null;
+        };
+        /**
+         * ForbiddenResponseErrorData
+         * @description Error data for ForbiddenResponse
+         */
+        OpenRouterForbiddenResponseErrorData: {
+            code: number;
+            message: string;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * ForbiddenResponse
+         * @description Forbidden - Authentication successful but insufficient permissions
+         */
+        OpenRouterForbiddenResponse: {
+            error: components["schemas"]["OpenRouterForbiddenResponseErrorData"];
+            openrouter_metadata?: {
+                [key: string]: unknown;
+            } | null;
+            user_id?: string | null;
+        };
+        /**
+         * NotFoundResponseErrorData
+         * @description Error data for NotFoundResponse
+         */
+        OpenRouterNotFoundResponseErrorData: {
+            code: number;
+            message: string;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * NotFoundResponse
+         * @description Not Found - Resource does not exist
+         */
+        OpenRouterNotFoundResponse: {
+            error: components["schemas"]["OpenRouterNotFoundResponseErrorData"];
+            openrouter_metadata?: {
+                [key: string]: unknown;
+            } | null;
+            user_id?: string | null;
+        };
+        /**
+         * RequestTimeoutResponseErrorData
+         * @description Error data for RequestTimeoutResponse
+         */
+        OpenRouterRequestTimeoutResponseErrorData: {
+            code: number;
+            message: string;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * RequestTimeoutResponse
+         * @description Request Timeout - Operation exceeded time limit
+         */
+        OpenRouterRequestTimeoutResponse: {
+            error: components["schemas"]["OpenRouterRequestTimeoutResponseErrorData"];
+            openrouter_metadata?: {
+                [key: string]: unknown;
+            } | null;
+            user_id?: string | null;
+        };
+        /**
+         * PayloadTooLargeResponseErrorData
+         * @description Error data for PayloadTooLargeResponse
+         */
+        OpenRouterPayloadTooLargeResponseErrorData: {
+            code: number;
+            message: string;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * PayloadTooLargeResponse
+         * @description Payload Too Large - Request payload exceeds size limits
+         */
+        OpenRouterPayloadTooLargeResponse: {
+            error: components["schemas"]["OpenRouterPayloadTooLargeResponseErrorData"];
+            openrouter_metadata?: {
+                [key: string]: unknown;
+            } | null;
+            user_id?: string | null;
+        };
+        /**
+         * UnprocessableEntityResponseErrorData
+         * @description Error data for UnprocessableEntityResponse
+         */
+        OpenRouterUnprocessableEntityResponseErrorData: {
+            code: number;
+            message: string;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * UnprocessableEntityResponse
+         * @description Unprocessable Entity - Semantic validation failure
+         */
+        OpenRouterUnprocessableEntityResponse: {
+            error: components["schemas"]["OpenRouterUnprocessableEntityResponseErrorData"];
+            openrouter_metadata?: {
+                [key: string]: unknown;
+            } | null;
+            user_id?: string | null;
+        };
+        /**
+         * TooManyRequestsResponseErrorData
+         * @description Error data for TooManyRequestsResponse
+         */
+        OpenRouterTooManyRequestsResponseErrorData: {
+            code: number;
+            message: string;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * TooManyRequestsResponse
+         * @description Too Many Requests - Rate limit exceeded
+         */
+        OpenRouterTooManyRequestsResponse: {
+            error: components["schemas"]["OpenRouterTooManyRequestsResponseErrorData"];
+            openrouter_metadata?: {
+                [key: string]: unknown;
+            } | null;
+            user_id?: string | null;
+        };
+        /**
+         * InternalServerResponseErrorData
+         * @description Error data for InternalServerResponse
+         */
+        OpenRouterInternalServerResponseErrorData: {
+            code: number;
+            message: string;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * InternalServerResponse
+         * @description Internal Server Error - Unexpected server error
+         */
+        OpenRouterInternalServerResponse: {
+            error: components["schemas"]["OpenRouterInternalServerResponseErrorData"];
+            openrouter_metadata?: {
+                [key: string]: unknown;
+            } | null;
+            user_id?: string | null;
+        };
+        /**
+         * BadGatewayResponseErrorData
+         * @description Error data for BadGatewayResponse
+         */
+        OpenRouterBadGatewayResponseErrorData: {
+            code: number;
+            message: string;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * BadGatewayResponse
+         * @description Bad Gateway - Provider/upstream API failure
+         */
+        OpenRouterBadGatewayResponse: {
+            error: components["schemas"]["OpenRouterBadGatewayResponseErrorData"];
+            openrouter_metadata?: {
+                [key: string]: unknown;
+            } | null;
+            user_id?: string | null;
+        };
+        /**
+         * ServiceUnavailableResponseErrorData
+         * @description Error data for ServiceUnavailableResponse
+         */
+        OpenRouterServiceUnavailableResponseErrorData: {
+            code: number;
+            message: string;
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * ServiceUnavailableResponse
+         * @description Service Unavailable - Service temporarily unavailable
+         */
+        OpenRouterServiceUnavailableResponse: {
+            error: components["schemas"]["OpenRouterServiceUnavailableResponseErrorData"];
+            openrouter_metadata?: {
+                [key: string]: unknown;
+            } | null;
+            user_id?: string | null;
+        };
         /** @description A postprocessing operation to apply after image generation. */
         RevePostprocessingOperation: {
             /**
@@ -16812,6 +20199,187 @@ export interface components {
             version?: string;
             /** @description Indicates whether the generated image violates the content policy. */
             content_violation?: boolean;
+        };
+        KreaGenerateImageRequest: {
+            prompt: string;
+            /**
+             * @description Aspect ratio. One of: 1:1, 4:3, 3:2, 16:9, 2.35:1, 4:5, 2:3, 9:16.
+             * @enum {string}
+             */
+            aspect_ratio: "1:1" | "4:3" | "3:2" | "16:9" | "2.35:1" | "4:5" | "2:3" | "9:16";
+            /**
+             * @description Resolution scale. One of: 1K.
+             * @enum {string}
+             */
+            resolution: "1K";
+            seed?: number | null;
+            /** @description Styles (typically LoRAs) to use for the generation */
+            styles?: components["schemas"]["KreaStyle"][];
+            /**
+             * @description Prompt interpretation strength: raw=0, low=10, medium=50, high=100.
+             * @default medium
+             * @enum {string}
+             */
+            creativity: "raw" | "low" | "medium" | "high";
+            /** @description Moodboards to use for generation. Currently limited to one moodboard. */
+            moodboards?: components["schemas"]["KreaMoodboard"][];
+            /** @description Style references to use for the generation */
+            image_style_references?: components["schemas"]["KreaImageStyleReference"][];
+        };
+        KreaStyle: {
+            id: string;
+            /** Format: double */
+            strength: number;
+        };
+        KreaMoodboard: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * Format: double
+             * @default 0.35
+             */
+            strength: number;
+        };
+        KreaImageStyleReference: {
+            /** Format: double */
+            strength: number;
+            /** Format: uri */
+            url?: string;
+        };
+        KreaJob: {
+            /** Format: uuid */
+            job_id: string;
+            /**
+             * @description Available options: backlogged, queued, scheduled, processing, sampling, intermediate-complete, completed, failed, cancelled
+             * @enum {string}
+             */
+            status: "backlogged" | "queued" | "scheduled" | "processing" | "sampling" | "intermediate-complete" | "completed" | "failed" | "cancelled";
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            completed_at: string | null;
+            result: components["schemas"]["KreaJobResult"] | null;
+        };
+        KreaJobResult: {
+            urls?: string[];
+            style_id?: string;
+        };
+        KreaAssetUploadRequest: {
+            /**
+             * Format: binary
+             * @description The file to upload (JPEG, PNG, WebP, HEIC, MP4, MOV, WebM, GLB, WAV, MP3). Maximum size: 75MB.
+             */
+            file: string;
+            /** @description Optional description for the asset */
+            description?: string;
+        };
+        KreaAsset: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uri */
+            image_url: string;
+            /** Format: date-time */
+            uploaded_at: string;
+            width?: number | null;
+            height?: number | null;
+            size_bytes?: number | null;
+            mime_type?: string | null;
+            description?: string;
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
+        /** @description Request to create and start a SwitchX generation job. */
+        BeebleCreateSwitchXRequest: {
+            generation_type: components["schemas"]["BeebleGenerationType"];
+            /** @description URI of the source image or video. Accepts beeble://uploads/{id}/{filename}, https URLs, or data:{mime};base64 URIs (max 50 MB). */
+            source_uri: string;
+            /** @description Text description of desired output (max 2,000 chars). At least one of prompt or reference_image_uri is required. */
+            prompt?: string | null;
+            /** @description URI of the reference image for style transfer. Accepts the same URI types as source_uri. */
+            reference_image_uri?: string | null;
+            alpha_mode: components["schemas"]["BeebleAlphaMode"];
+            /** @description URI of a custom alpha matte. Required when alpha_mode is custom or select. Ignored for auto or fill. */
+            alpha_uri?: string | null;
+            /**
+             * @description Maximum output resolution: 720 or 1080 (default: 1080).
+             * @default 1080
+             */
+            max_resolution: number | null;
+            /** @description HTTPS URL for webhook notification on completion or failure. */
+            callback_url?: string | null;
+            /** @description Idempotency key for safe retries. If a job with the same key already exists for your account, the API returns the existing job's status instead of creating a duplicate. */
+            idempotency_key?: string | null;
+        };
+        /**
+         * @description Output type: image or video
+         * @enum {string}
+         */
+        BeebleGenerationType: "image" | "video";
+        /**
+         * @description Alpha mode: auto, fill, custom, or select
+         * @enum {string}
+         */
+        BeebleAlphaMode: "auto" | "fill" | "custom" | "select";
+        /** @description Status response for a SwitchX job. */
+        BeebleSwitchXStatusResponse: {
+            /** @description Job identifier (swx_...) */
+            id: string;
+            /**
+             * @description Current job status.
+             * @enum {string}
+             */
+            status: "in_queue" | "processing" | "completed" | "failed";
+            /** @description Progress percentage (0-100). */
+            progress?: number | null;
+            /** @description image or video */
+            generation_type?: string | null;
+            /** @description auto, fill, custom, or select */
+            alpha_mode?: string | null;
+            /** @description Output URLs (present when status is completed). URLs are signed and expire after 72 hours; re-fetch this endpoint for fresh URLs. */
+            output?: components["schemas"]["BeebleSwitchXOutputUrls"] | null;
+            /** @description Error message (present when status is failed). */
+            error?: string | null;
+            /** @description ISO 8601 timestamp when the job was created. */
+            created_at?: string | null;
+            /** @description ISO 8601 timestamp of the last status change. */
+            modified_at?: string | null;
+            /** @description ISO 8601 timestamp when the job completed or failed. */
+            completed_at?: string | null;
+            /** @description Webhook delivery status (present only when callback_url was provided). */
+            webhook?: components["schemas"]["BeebleWebhookStatus"] | null;
+        };
+        /** @description Signed URLs for SwitchX job outputs. */
+        BeebleSwitchXOutputUrls: {
+            /** @description Composited output URL. */
+            render?: string | null;
+            /** @description Preprocessed source URL. */
+            source?: string | null;
+            /** @description Alpha matte URL. */
+            alpha?: string | null;
+        };
+        /** @description Webhook delivery status for a SwitchX job. */
+        BeebleWebhookStatus: {
+            /** @description pending, delivered, or failed */
+            status?: string | null;
+            /** @description Number of delivery attempts so far. */
+            attempts?: number | null;
+            /** @description Error message from the last failed delivery attempt. */
+            last_error?: string | null;
+        };
+        /** @description Request to create a presigned upload URL. */
+        BeebleUploadRequest: {
+            /** @description Filename with extension. Accepted: .mp4, .mov, .png, .jpg, .jpeg, .webp */
+            filename: string;
+        };
+        /** @description Response with presigned upload URL and beeble:// URI. */
+        BeebleUploadResponse: {
+            /** @description Upload ID (upload_...) */
+            id: string;
+            /** @description Presigned PUT URL for uploading your file. Expires after 1 hour. */
+            upload_url: string;
+            /** @description beeble:// URI to reference this file in SwitchX generation calls (source_uri, reference_image_uri, or alpha_uri). */
+            beeble_uri: string;
         };
         /** @description Request body for Bria FIBO Edit API */
         BriaFiboEditRequest: {
@@ -16964,6 +20532,37 @@ export interface components {
             /** @description Whether to preserve audio from the input video. */
             preserve_audio?: boolean;
         };
+        /** @description Request body for Bria Video Green Screen API */
+        BriaVideoGreenScreenRequest: {
+            /** @description Publicly accessible URL of the input video. Input resolution supported up to 16000x16000 (16K). Max duration 60 seconds. */
+            video: string;
+            /**
+             * @description The solid background shade applied behind the foreground for chroma keying. Defaults to broadcast_green.
+             * @enum {string}
+             */
+            green_shade?: "broadcast_green" | "chroma_green" | "blue_screen";
+            /**
+             * @description Output container and codec preset.
+             * @enum {string}
+             */
+            output_container_and_codec?: "mp4_h264" | "mp4_h265" | "webm_vp9" | "mov_h265" | "mov_proresks" | "mkv_h264" | "mkv_h265" | "mkv_vp9" | "gif";
+            /** @description Whether to preserve audio from the input video. */
+            preserve_audio?: boolean;
+        };
+        /** @description Request body for Bria Video Replace Background API */
+        BriaVideoReplaceBackgroundRequest: {
+            /** @description Publicly accessible URL of the input (foreground) video. Input resolution supported up to 16000x16000 (16K). Max duration 60 seconds. */
+            video: string;
+            /** @description Publicly accessible URL of the background asset (image or video) to composite behind the foreground. Must match the foreground aspect ratio. */
+            background_url: string;
+            /**
+             * @description Output container and codec preset.
+             * @enum {string}
+             */
+            output_container_and_codec?: "mp4_h264" | "mp4_h265" | "webm_vp9" | "mov_h265" | "mov_proresks" | "mkv_h264" | "mkv_h265" | "mkv_vp9" | "gif";
+            /** @description Whether to preserve audio from the input (foreground) video. */
+            preserve_audio?: boolean;
+        };
         /** @description Request body for Bria Image Remove Background API */
         BriaImageRemoveBackgroundRequest: {
             /** @description The image to remove background from. Supported input types are Base64-encoded string or URL pointing to a publicly accessible image file. Accepted formats JPEG, JPG, PNG, WEBP. */
@@ -17086,7 +20685,7 @@ export interface components {
         SoniloVideoToMusicRequest: {
             /**
              * Format: binary
-             * @description Multipart file part; e.g. video/mp4.
+             * @description Multipart file part; e.g. video/mp4. Max file size 300MB.
              */
             video: string;
             /** @description Optional text prompt to guide music generation. */
@@ -17094,19 +20693,19 @@ export interface components {
         } | {
             /**
              * Format: uri
-             * @description Public http(s) URL of the video.
+             * @description Public http:// or https:// URL of the video. Private/internal addresses are rejected.
              */
             video_url: string;
             /** @description Optional text prompt to guide music generation. */
             prompt?: string;
         };
         SoniloTextToMusicRequest: {
-            /** @description Text prompt describing the desired music. */
+            /** @description Text prompt describing the desired music. Max length 1000 characters. */
             prompt: string;
-            /** @description Target duration in seconds. Will be inferred if not provided. */
-            duration?: number;
+            /** @description Desired duration of the output track in seconds. */
+            duration: number;
         };
-        /** @description A single NDJSON event from the Sonilo streaming response. */
+        /** @description A single NDJSON event from the Sonilo streaming response. Additional event types beyond those listed may appear; unknown types should be ignored by clients. */
         SoniloStreamEvent: {
             /** @enum {string} */
             type: "title";
@@ -17114,6 +20713,8 @@ export interface components {
             prompt_index: number;
             copy_index: number;
             title: string;
+            /** @description Short natural-language description of the generated track. */
+            summary?: string;
             display_tags: string[];
         } | {
             /** @enum {string} */
@@ -17124,14 +20725,6 @@ export interface components {
             num_streams: number;
             /** @description Base64-encoded AAC in fMP4 fragments; concatenate per stream_index. */
             data: string;
-        } | {
-            /** @enum {string} */
-            type: "generated_audio";
-            sample_rate: number;
-            channels: number;
-            duration_sec_by_stream: number[];
-            billing_rate_per_sec: number;
-            billing: number;
         } | {
             /** @enum {string} */
             type: "complete";
@@ -17279,7 +20872,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CreateCustomerRequest"];
+            };
+        };
         responses: {
             /** @description Customer already exists */
             200: {
@@ -17720,6 +21317,8 @@ export interface operations {
                     utm_content?: string;
                     /** @description Impact.com click ID for affiliate conversion tracking */
                     im_ref?: string;
+                    /** @description Rewardful referral UUID (window.Rewardful.referral), passed to Stripe as client_reference_id for affiliate conversion tracking */
+                    rewardful_referral?: string;
                 };
             };
         };
@@ -17800,6 +21399,8 @@ export interface operations {
                     utm_content?: string;
                     /** @description Impact.com click ID for affiliate conversion tracking */
                     im_ref?: string;
+                    /** @description Rewardful referral UUID (window.Rewardful.referral), passed to Stripe as client_reference_id for affiliate conversion tracking */
+                    rewardful_referral?: string;
                 };
             };
         };
@@ -17877,6 +21478,7 @@ export interface operations {
                          * @description The date when the subscription is set to end (ISO 8601 format)
                          */
                         end_date?: string | null;
+                        free_tier_grant_state?: components["schemas"]["FreeTierGrantState"] | null;
                     };
                 };
             };
@@ -17913,6 +21515,14 @@ export interface operations {
                 "application/json": {
                     /** @description The ComfyUI API key to verify (e.g., comfy_xxx...) */
                     api_key: string;
+                    /**
+                     * @description When true, the response also includes customer_api_keys: the
+                     *     full set of the customer's API keys (hash + prefix + name +
+                     *     description) so cloud's migrate-on-miss can seed ALL of the
+                     *     customer's keys into workspace_api_keys, not just the one being
+                     *     verified. M2M/admin-only; carries hashes, never plaintext.
+                     */
+                    include_customer_keys?: boolean;
                 };
             };
         };
@@ -17934,6 +21544,26 @@ export interface operations {
                         name?: string;
                         /** @description Whether the customer is an admin */
                         is_admin?: boolean;
+                        /**
+                         * @description The api_keys row's own name (display label). Returned so that
+                         *     cloud's migrate-on-miss path can preserve it on the cached
+                         *     workspace_api_keys row instead of writing a placeholder.
+                         */
+                        key_name?: string;
+                        /**
+                         * @description The api_keys row's own description. Returned so that cloud's
+                         *     migrate-on-miss path can preserve it on the cached
+                         *     workspace_api_keys row instead of writing a placeholder.
+                         */
+                        key_description?: string;
+                        /**
+                         * @description All of the customer's API keys — returned ONLY when the
+                         *     request sets include_customer_keys=true. Lets cloud's
+                         *     migrate-on-miss seed every key into workspace_api_keys (by
+                         *     hash) so the cloud key list matches the customer's full set,
+                         *     not just the one verified. M2M/admin-only; hashes, no plaintext.
+                         */
+                        customer_api_keys?: components["schemas"]["MigrationAPIKey"][];
                     };
                 };
             };
@@ -17955,6 +21585,81 @@ export interface operations {
             };
             /** @description API key not found or invalid */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    SyncApiKeyDeletion: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Admin API secret used to authorize this request */
+                "X-Comfy-Admin-Secret": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /**
+                     * @description Sync event type; only "delete" is supported.
+                     * @example delete
+                     * @enum {string}
+                     */
+                    event: "delete";
+                    /** @description SHA-256 hex hash of the API key to revoke. */
+                    key_hash: string;
+                    /**
+                     * @description Firebase UID of the key's owner, for mismatch detection. The
+                     *     deletion proceeds by hash regardless (mirrors cloud's inbound
+                     *     RevokeByHash semantics).
+                     */
+                    customer_id: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Delete-sync processed */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /**
+                         * @description revoked when a matching key was deleted; no_op when no key
+                         *     matched the hash (already deleted or never existed).
+                         */
+                        result: string;
+                    };
+                };
+            };
+            /** @description Invalid request (missing fields or unsupported event) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized or missing admin API secret */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18312,6 +22017,60 @@ export interface operations {
                         /** @description The dashboard URL for the customer's usage */
                         url?: string;
                     };
+                };
+            };
+            /** @description Unauthorized or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Customer not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    GetCustomerUsageTimeSeries: {
+        parameters: {
+            query?: {
+                /** @description Dimension to group spend by. Falls back to product name when the chosen key is absent on a line item. */
+                group_by?: "model" | "endpoint" | "product";
+                /** @description Bucket size for the time series. "month" uses monthly invoice line items; "day" and "hour" use invoice breakdowns (provide starting_on/ending_before). */
+                granularity?: "hour" | "day" | "month";
+                /** @description RFC 3339 start of the range (inclusive). Defaults to months before ending_before. */
+                starting_on?: string;
+                /** @description RFC 3339 end of the range (exclusive). Defaults to now. */
+                ending_before?: string;
+                /** @description Lookback window in months, used when starting_on is omitted. */
+                months?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Customer usage time series retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerUsageTimeSeries"];
                 };
             };
             /** @description Unauthorized or invalid token */
@@ -22759,6 +26518,90 @@ export interface operations {
             };
         };
     };
+    ideogramV4Generate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Parameters for Ideogram 4.0 image generation */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdeogramV4Request"];
+            };
+        };
+        responses: {
+            /** @description Successful response from Ideogram proxy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdeogramGenerateResponse"];
+                };
+            };
+            /** @description Bad Request (invalid input to proxy) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rate limit exceeded (either from proxy or Ideogram) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error (proxy or upstream issue) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway (error communicating with Ideogram) */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gateway Timeout (Ideogram took too long to respond) */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     klingQueryResourcePackages: {
         parameters: {
             query: {
@@ -23230,6 +27073,216 @@ export interface operations {
             };
             /** @description Server timeout */
             504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+        };
+    };
+    klingV2CreateVideoFromText: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Create a Kling 3.0 Turbo text-to-video task */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KlingV2Text2VideoRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response (Request successful) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingV2CreateTaskResponse"];
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Unauthorized access to requested resource */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Account exception or Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+        };
+    };
+    klingV2CreateVideoFromImage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Create a Kling 3.0 Turbo image-to-video task */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KlingV2Image2VideoRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response (Request successful) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingV2CreateTaskResponse"];
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Unauthorized access to requested resource */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Account exception or Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+        };
+    };
+    klingV2QueryTask: {
+        parameters: {
+            query?: {
+                /** @description System task IDs to query. Supports batch queries separated by ",". Mutually exclusive with external_task_ids. */
+                task_ids?: string;
+                /** @description Custom task IDs to query. Supports batch queries separated by ",". Mutually exclusive with task_ids. */
+                external_task_ids?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful response (Request successful) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingV2QueryTaskResponse"];
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Unauthorized access to requested resource */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Account exception or Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KlingErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -26079,6 +30132,172 @@ export interface operations {
             };
         };
     };
+    bflVtoV1Generate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BFLVtoV1Request"];
+            };
+        };
+        responses: {
+            /** @description Successful response from BFL Flux Tools VTO v1 proxy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BFLFluxProGenerateResponse"];
+                };
+            };
+            /** @description Bad Request (invalid input to proxy) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rate limit exceeded (either from proxy or BFL) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error (proxy or upstream issue) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway (error communicating with BFL) */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gateway Timeout (BFL took too long to respond) */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    bflEraseV1Generate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BFLEraseV1Request"];
+            };
+        };
+        responses: {
+            /** @description Successful response from BFL Flux Tools Erase v1 proxy */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BFLFluxProGenerateResponse"];
+                };
+            };
+            /** @description Bad Request (invalid input to proxy) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rate limit exceeded (either from proxy or BFL) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error (proxy or upstream issue) */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway (error communicating with BFL) */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Gateway Timeout (BFL took too long to respond) */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     BFLExpand_v1_flux_pro_1_0_expand_post: {
         parameters: {
             query?: never;
@@ -27318,6 +31537,64 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RunwayTextToImageResponse"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    runwayVideoToVideo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RunwayVideoToVideoRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunwayVideoToVideoResponse"];
                 };
             };
             /** @description Bad request */
@@ -29432,6 +33709,116 @@ export interface operations {
             };
         };
     };
+    tripoImportModel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description Download URL of the model file previously uploaded to ComfyUI API storage. */
+                    url: string;
+                    /** @description File format ("glb", "fbx", "obj", "stl"). Optional; derived from the URL path extension when omitted. */
+                    format?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Import task created */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripoSuccessTask"];
+                };
+            };
+            /** @description Invalid request parameters */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripoErrorResponse"];
+                };
+            };
+            /** @description Authentication failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripoErrorResponse"];
+                };
+            };
+            /** @description Unauthorized access to requested resource */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripoErrorResponse"];
+                };
+            };
+            /** @description File exceeds the 150MB limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripoErrorResponse"];
+                };
+            };
+            /** @description Account exception or Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripoErrorResponse"];
+                };
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripoErrorResponse"];
+                };
+            };
+            /** @description Upstream upload or task creation failed */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripoErrorResponse"];
+                };
+            };
+            /** @description Service temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripoErrorResponse"];
+                };
+            };
+            /** @description Server timeout */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripoErrorResponse"];
+                };
+            };
+        };
+    };
     tripoCreateTask: {
         parameters: {
             query?: never;
@@ -30510,6 +34897,104 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BytePlusVideoGenerationQueryResponse"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    byteplusFileUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["BytePlusFileUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description File uploaded successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BytePlusFile"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    byteplusFileGet: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the file to retrieve. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description File information retrieved successfully */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BytePlusFile"];
+                };
+            };
+            /** @description Error 4xx/5xx */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    byteplusResponseCreate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BytePlusResponseCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Model response body (BytePlusResponseObject). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BytePlusResponseObject"];
                 };
             };
             /** @description Error 4xx/5xx */
@@ -32122,6 +36607,575 @@ export interface operations {
             };
         };
     };
+    anthropicCreateMessage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnthropicCreateMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response from Anthropic Messages API. JSON shape when `stream` is omitted or false; otherwise a `text/event-stream` of message events. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnthropicCreateMessageResponse"];
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required - Insufficient credits */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too Many Requests - Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    openrouterCreateChatCompletion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenRouterChatRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful response from OpenRouter Chat Completions API. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenRouterChatResult"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required - Insufficient credits */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too Many Requests - Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    kreaGenerateImageMedium: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KreaGenerateImageRequest"];
+            };
+        };
+        responses: {
+            /** @description The resulting job data. This will be returned in a pending state until the job is completed. See /jobs/{id} for retrieving the results. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KreaJob"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required - Insufficient credits */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too Many Requests - Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    kreaGenerateImageMediumTurbo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KreaGenerateImageRequest"];
+            };
+        };
+        responses: {
+            /** @description The resulting job data. This will be returned in a pending state until the job is completed. See /jobs/{id} for retrieving the results. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KreaJob"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required - Insufficient credits */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too Many Requests - Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    kreaGenerateImageLarge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KreaGenerateImageRequest"];
+            };
+        };
+        responses: {
+            /** @description The resulting job data. This will be returned in a pending state until the job is completed. See /jobs/{id} for retrieving the results. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KreaJob"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required - Insufficient credits */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too Many Requests - Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    kreaUploadAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["KreaAssetUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description The uploaded asset. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KreaAsset"];
+                };
+            };
+            /** @description Invalid file type/size */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    kreaGetJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique identifier for a job */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The most up-to-date state of the job. You can check when the job is completed by checking the status field. For completed loraTraining jobs, the result will include a style_id field. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KreaJob"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    beebleCreateSwitchXJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BeebleCreateSwitchXRequest"];
+            };
+        };
+        responses: {
+            /** @description The resulting job data. This will be returned in a pending state until the job is completed. See /v1/switchx/generations/{job_id} for retrieving the results. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BeebleSwitchXStatusResponse"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required - Insufficient credits */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Too Many Requests - Rate limit exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    beebleCreateUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BeebleUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Presigned upload URL and beeble:// URI. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BeebleUploadResponse"];
+                };
+            };
+            /** @description Bad request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    beebleGetSwitchXStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Job identifier (swx_...) */
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The most up-to-date state of the job. Check the status field to determine completion. Output URLs are signed and expire after 72 hours; each call returns freshly signed URLs. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BeebleSwitchXStatusResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Job not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Internal server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     quiverTextToSVG: {
         parameters: {
             query?: never;
@@ -32644,6 +37698,140 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BriaVideoRemoveBackgroundRequest"];
+            };
+        };
+        responses: {
+            /** @description Request accepted, processing asynchronously */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BriaAsyncResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BriaErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BriaErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    briaVideoGreenScreen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BriaVideoGreenScreenRequest"];
+            };
+        };
+        responses: {
+            /** @description Request accepted, processing asynchronously */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BriaAsyncResponse"];
+                };
+            };
+            /** @description Bad Request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BriaErrorResponse"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Payment Required */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BriaErrorResponse"];
+                };
+            };
+            /** @description Internal Server Error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    briaVideoReplaceBackground: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BriaVideoReplaceBackgroundRequest"];
             };
         };
         responses: {
@@ -34774,8 +39962,8 @@ export interface operations {
                     "application/json": components["schemas"]["SoniloErrorResponse"];
                 };
             };
-            /** @description Payload Too Large - Video exceeds size limit */
-            413: {
+            /** @description Payment Required - Insufficient funds */
+            402: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -34783,8 +39971,26 @@ export interface operations {
                     "application/json": components["schemas"]["SoniloErrorResponse"];
                 };
             };
-            /** @description Internal Server Error */
-            500: {
+            /** @description Unprocessable Entity - Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoniloErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests - Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoniloErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway - Upstream generation error */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -34834,8 +40040,35 @@ export interface operations {
                     "application/json": components["schemas"]["SoniloErrorResponse"];
                 };
             };
-            /** @description Internal Server Error */
-            500: {
+            /** @description Payment Required - Insufficient funds */
+            402: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoniloErrorResponse"];
+                };
+            };
+            /** @description Unprocessable Entity - Validation error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoniloErrorResponse"];
+                };
+            };
+            /** @description Too Many Requests - Rate limited */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoniloErrorResponse"];
+                };
+            };
+            /** @description Bad Gateway - Upstream generation error */
+            502: {
                 headers: {
                     [name: string]: unknown;
                 };
