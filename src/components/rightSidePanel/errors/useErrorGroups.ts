@@ -16,23 +16,22 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import {
   getNodeByExecutionId,
-  getExecutionIdByNode,
-  getRootParentNode
+  getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { isGroupNode } from '@/utils/executableGroupNodeDto'
 import { st } from '@/i18n'
 import type { MissingNodeType } from '@/types/comfy'
 import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
+import { shouldRenderExecutionItemList } from './executionItemList'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
-import type {
-  MissingModelCandidate,
-  MissingModelGroup
-} from '@/platform/missingModel/types'
+import type { MissingModelGroup } from '@/platform/missingModel/types'
 import type { ResolvedCatalogErrorMessage } from '@/platform/errorCatalog/types'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
-import { groupCandidatesByName } from '@/platform/missingModel/missingModelScan'
+import {
+  countMissingModels,
+  groupMissingModelCandidates
+} from '@/platform/missingModel/missingModelGrouping'
 import { groupCandidatesByMediaType } from '@/platform/missingMedia/missingMediaScan'
 import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
 import {
@@ -48,9 +47,6 @@ const PROMPT_CARD_ID = '__prompt__'
 
 /** Sentinel: distinguishes "fetch in-flight" from "fetch done, pack not found (null)". */
 const RESOLVING = '__RESOLVING__'
-
-/** Sentinel key for grouping non-asset-supported missing models. */
-const UNSUPPORTED = Symbol('unsupported')
 
 export interface MissingPackGroup {
   packId: string | null
@@ -85,26 +81,17 @@ interface ErrorSearchItem {
 
 type CataloguedErrorItem = ErrorItem & ResolvedCatalogErrorMessage
 
-/**
- * Resolve display info for a node by its execution ID.
- * For group node internals, resolves the parent group node's title instead.
- */
+/** Resolve display info for a node by its execution ID. */
 function resolveNodeInfo(nodeId: string) {
   const graphNode = getNodeByExecutionId(app.rootGraph, nodeId)
 
-  const parentNode = getRootParentNode(app.rootGraph, nodeId)
-  const isParentGroupNode = parentNode ? isGroupNode(parentNode) : false
-
   return {
-    title: isParentGroupNode
-      ? parentNode?.title || ''
-      : resolveNodeDisplayName(graphNode, {
-          emptyLabel: '',
-          untitledLabel: '',
-          st
-        }),
-    graphNodeId: graphNode ? String(graphNode.id) : undefined,
-    isParentGroupNode
+    title: resolveNodeDisplayName(graphNode, {
+      emptyLabel: '',
+      untitledLabel: '',
+      st
+    }),
+    graphNodeId: graphNode ? String(graphNode.id) : undefined
   }
 }
 
@@ -143,7 +130,7 @@ function createErrorCard(
     nodeId,
     nodeTitle: nodeInfo.title,
     graphNodeId: nodeInfo.graphNodeId,
-    isSubgraphNode: isNodeExecutionId(nodeId) && !nodeInfo.isParentGroupNode,
+    isSubgraphNode: isNodeExecutionId(nodeId),
     errors: []
   }
 }
@@ -152,16 +139,28 @@ function compareNodeId(a: ErrorCardData, b: ErrorCardData): number {
   return compareExecutionId(a.nodeId, b.nodeId)
 }
 
+function countExecutionCards(cards: ErrorCardData[]): number {
+  if (shouldRenderExecutionItemList(cards)) {
+    return cards.reduce((count, card) => count + card.errors.length, 0)
+  }
+
+  return cards.length
+}
+
 function toSortedGroups(groupsMap: Map<string, GroupEntry>): ErrorGroup[] {
   return Array.from(groupsMap.entries())
-    .map(([rawGroupKey, groupData]) => ({
-      type: 'execution' as const,
-      groupKey: `execution:${rawGroupKey}`,
-      displayTitle: groupData.displayTitle,
-      displayMessage: groupData.displayMessage,
-      cards: Array.from(groupData.cards.values()).sort(compareNodeId),
-      priority: groupData.priority
-    }))
+    .map(([rawGroupKey, groupData]) => {
+      const cards = Array.from(groupData.cards.values()).sort(compareNodeId)
+      return {
+        type: 'execution' as const,
+        groupKey: `execution:${rawGroupKey}`,
+        displayTitle: groupData.displayTitle,
+        displayMessage: groupData.displayMessage,
+        count: countExecutionCards(cards),
+        cards,
+        priority: groupData.priority
+      }
+    })
     .sort((a, b) => {
       if (a.priority !== b.priority) return a.priority - b.priority
       return a.displayTitle.localeCompare(b.displayTitle)
@@ -220,11 +219,13 @@ function searchErrorGroups(groups: ErrorGroup[], query: string) {
   return groups
     .map((group, gi) => {
       if (group.type !== 'execution') return group
+      const cards = group.cards.filter((_: ErrorCardData, ci: number) =>
+        matchedCardKeys.has(`${gi}:${ci}`)
+      )
       return {
         ...group,
-        cards: group.cards.filter((_: ErrorCardData, ci: number) =>
-          matchedCardKeys.has(`${gi}:${ci}`)
-        )
+        cards,
+        count: countExecutionCards(cards)
       }
     })
     .filter((group) => group.type !== 'execution' || group.cards.length > 0)
@@ -247,10 +248,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     for (const item of items) {
       if (!isLGraphNode(item)) continue
       nodeIds.add(String(item.id))
-      if (
-        (item instanceof SubgraphNode || isGroupNode(item)) &&
-        app.rootGraph
-      ) {
+      if (item instanceof SubgraphNode && app.rootGraph) {
         const execId = getExecutionIdByNode(app.rootGraph, item)
         if (execId) containerExecutionIds.add(execId)
       }
@@ -591,6 +589,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       groups.push({
         type: 'swap_nodes' as const,
         groupKey: 'swap_nodes',
+        count: swapNodeGroups.value.length,
         priority: 0,
         ...resolveMissingErrorMessage({
           kind: 'swap_nodes',
@@ -605,6 +604,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       groups.push({
         type: 'missing_node' as const,
         groupKey: 'missing_node',
+        count: missingPackGroups.value.length,
         priority: 1,
         ...resolveMissingErrorMessage({
           kind: 'missing_node',
@@ -618,60 +618,21 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return groups.sort((a, b) => a.priority - b.priority)
   }
 
-  /** Groups missing models. Asset-supported models group by directory; others go into a separate group.
-   *  Within each group, candidates with the same model name are merged into a single view model. */
   const missingModelGroups = computed<MissingModelGroup[]>(() => {
-    const candidates = missingModelStore.missingModelCandidates
-    if (!candidates?.length) return []
-
-    type GroupKey = string | null | typeof UNSUPPORTED
-    const map = new Map<
-      GroupKey,
-      { candidates: MissingModelCandidate[]; isAssetSupported: boolean }
-    >()
-
-    for (const c of candidates) {
-      const groupKey: GroupKey =
-        c.isAssetSupported || !isCloud ? c.directory || null : UNSUPPORTED
-
-      const existing = map.get(groupKey)
-      if (existing) {
-        existing.candidates.push(c)
-      } else {
-        // All candidates in the same directory share the same isAssetSupported
-        // value in practice (a directory is either asset-supported or not).
-        map.set(groupKey, {
-          candidates: [c],
-          isAssetSupported: c.isAssetSupported
-        })
-      }
-    }
-
-    return Array.from(map.entries())
-      .sort(([dirA], [dirB]) => {
-        if (dirA === UNSUPPORTED) return 1
-        if (dirB === UNSUPPORTED) return -1
-        if (dirA === null) return 1
-        if (dirB === null) return -1
-        return dirA.localeCompare(dirB)
-      })
-      .map(([key, { candidates: groupCandidates, isAssetSupported }]) => ({
-        directory: typeof key === 'string' ? key : null,
-        models: groupCandidatesByName(groupCandidates),
-        isAssetSupported
-      }))
+    return groupMissingModelCandidates(
+      missingModelStore.missingModelCandidates,
+      isCloud
+    )
   })
 
   function buildMissingModelGroups(): ErrorGroup[] {
     if (!missingModelGroups.value.length) return []
-    const count = missingModelGroups.value.reduce(
-      (total, group) => total + group.models.length,
-      0
-    )
+    const count = countMissingModels(missingModelGroups.value)
     return [
       {
         type: 'missing_model' as const,
         groupKey: 'missing_model',
+        count,
         priority: 2,
         ...resolveMissingErrorMessage({
           kind: 'missing_model',
@@ -696,6 +657,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       {
         type: 'missing_media' as const,
         groupKey: 'missing_media',
+        count: totalRows,
         priority: 3,
         ...resolveMissingErrorMessage({
           kind: 'missing_media',
@@ -737,37 +699,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       (c) => c.nodeId != null && isAssetErrorInSelection(String(c.nodeId))
     )
     if (!filtered.length) return []
-
-    const map = new Map<
-      string | null | typeof UNSUPPORTED,
-      { candidates: MissingModelCandidate[]; isAssetSupported: boolean }
-    >()
-    for (const c of filtered) {
-      const groupKey =
-        c.isAssetSupported || !isCloud ? c.directory || null : UNSUPPORTED
-      const existing = map.get(groupKey)
-      if (existing) {
-        existing.candidates.push(c)
-      } else {
-        map.set(groupKey, {
-          candidates: [c],
-          isAssetSupported: c.isAssetSupported
-        })
-      }
-    }
-    return Array.from(map.entries())
-      .sort(([dirA], [dirB]) => {
-        if (dirA === UNSUPPORTED) return 1
-        if (dirB === UNSUPPORTED) return -1
-        if (dirA === null) return 1
-        if (dirB === null) return -1
-        return dirA.localeCompare(dirB)
-      })
-      .map(([key, { candidates: groupCandidates, isAssetSupported }]) => ({
-        directory: typeof key === 'string' ? key : null,
-        models: groupCandidatesByName(groupCandidates),
-        isAssetSupported
-      }))
+    return groupMissingModelCandidates(filtered, isCloud)
   })
 
   const filteredMissingMediaGroups = computed(() => {
@@ -783,14 +715,12 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
 
   function buildMissingModelGroupsFiltered(): ErrorGroup[] {
     if (!filteredMissingModelGroups.value.length) return []
-    const count = filteredMissingModelGroups.value.reduce(
-      (total, group) => total + group.models.length,
-      0
-    )
+    const count = countMissingModels(filteredMissingModelGroups.value)
     return [
       {
         type: 'missing_model' as const,
         groupKey: 'missing_model',
+        count,
         priority: 2,
         ...resolveMissingErrorMessage({
           kind: 'missing_model',
@@ -811,6 +741,7 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
       {
         type: 'missing_media' as const,
         groupKey: 'missing_media',
+        count: totalRows,
         priority: 3,
         ...resolveMissingErrorMessage({
           kind: 'missing_media',
@@ -865,22 +796,6 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     return searchErrorGroups(tabErrorGroups.value, query)
   })
 
-  const groupedErrorMessages = computed<string[]>(() => {
-    const messages = new Set<string>()
-    for (const group of allErrorGroups.value) {
-      if (group.type === 'execution') {
-        for (const card of group.cards) {
-          for (const err of card.errors) {
-            messages.add(err.displayMessage ?? err.message)
-          }
-        }
-      } else {
-        messages.add(group.displayMessage ?? group.displayTitle)
-      }
-    }
-    return Array.from(messages)
-  })
-
   return {
     allErrorGroups,
     tabErrorGroups,
@@ -889,7 +804,6 @@ export function useErrorGroups(searchQuery: MaybeRefOrGetter<string>) {
     isSingleNodeSelected,
     errorNodeCache,
     missingNodeCache,
-    groupedErrorMessages,
     missingPackGroups,
     missingModelGroups,
     missingMediaGroups,

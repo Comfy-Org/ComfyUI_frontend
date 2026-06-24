@@ -125,6 +125,10 @@ export const useAuthStore = defineStore('auth', () => {
     if (user === null) {
       lastTokenUserId.value = null
       useWorkspaceAuthStore().clearWorkspaceContext()
+    } else if (isCloud) {
+      // Mint the single Cloud JWT at login (flag-guarded inside the store; a
+      // no-op when unified_cloud_auth is off).
+      void useWorkspaceAuthStore().mintAtLogin()
     }
 
     // Reset balance when auth state changes
@@ -140,9 +144,24 @@ export const useAuthStore = defineStore('auth', () => {
         lastTokenUserId.value = user.uid
         return
       }
-      tokenRefreshTrigger.value++
+      // Under unified_cloud_auth the Cloud-JWT refresh lifecycle drives session
+      // cookie rotation (workspaceAuthStore.refreshUnified → notifyTokenRefreshed),
+      // so gate this Firebase-driven bump off to avoid a double rotation.
+      if (!flags.unifiedCloudAuthEnabled) {
+        tokenRefreshTrigger.value++
+      }
     }
   })
+
+  /**
+   * Bumps the token-refresh trigger so downstream consumers (e.g. session
+   * cookie rotation via useCurrentUser) react to a fresh Cloud JWT. Called by
+   * the unified refresh lifecycle; under unified_cloud_auth it replaces the
+   * Firebase onIdTokenChanged bump above as the sole rotation driver.
+   */
+  const notifyTokenRefreshed = (): void => {
+    tokenRefreshTrigger.value++
+  }
 
   const getIdToken = async (): Promise<string | undefined> => {
     if (!currentUser.value) return
@@ -342,15 +361,13 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    if (isCloud) {
-      useTelemetry()?.trackAuth({
-        method: 'email',
-        is_new_user: false,
-        user_id: result.user.uid,
-        email: result.user.email ?? undefined,
-        ...getShareAuthMetadata()
-      })
-    }
+    useTelemetry()?.trackAuth({
+      method: 'email',
+      is_new_user: false,
+      user_id: result.user.uid,
+      email: result.user.email ?? undefined,
+      ...getShareAuthMetadata()
+    })
 
     return result
   }
@@ -365,15 +382,13 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    if (isCloud) {
-      useTelemetry()?.trackAuth({
-        method: 'email',
-        is_new_user: true,
-        user_id: result.user.uid,
-        email: result.user.email ?? undefined,
-        ...getShareAuthMetadata()
-      })
-    }
+    useTelemetry()?.trackAuth({
+      method: 'email',
+      is_new_user: true,
+      user_id: result.user.uid,
+      email: result.user.email ?? undefined,
+      ...getShareAuthMetadata()
+    })
 
     return result
   }
@@ -386,17 +401,14 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    if (isCloud) {
-      const additionalUserInfo = getAdditionalUserInfo(result)
-      useTelemetry()?.trackAuth({
-        method: 'google',
-        is_new_user:
-          options?.isNewUser || additionalUserInfo?.isNewUser || false,
-        user_id: result.user.uid,
-        email: result.user.email ?? undefined,
-        ...getShareAuthMetadata()
-      })
-    }
+    const additionalUserInfo = getAdditionalUserInfo(result)
+    useTelemetry()?.trackAuth({
+      method: 'google',
+      is_new_user: options?.isNewUser || additionalUserInfo?.isNewUser || false,
+      user_id: result.user.uid,
+      email: result.user.email ?? undefined,
+      ...getShareAuthMetadata()
+    })
 
     return result
   }
@@ -409,17 +421,14 @@ export const useAuthStore = defineStore('auth', () => {
       { createCustomer: true }
     )
 
-    if (isCloud) {
-      const additionalUserInfo = getAdditionalUserInfo(result)
-      useTelemetry()?.trackAuth({
-        method: 'github',
-        is_new_user:
-          options?.isNewUser || additionalUserInfo?.isNewUser || false,
-        user_id: result.user.uid,
-        email: result.user.email ?? undefined,
-        ...getShareAuthMetadata()
-      })
-    }
+    const additionalUserInfo = getAdditionalUserInfo(result)
+    useTelemetry()?.trackAuth({
+      method: 'github',
+      is_new_user: options?.isNewUser || additionalUserInfo?.isNewUser || false,
+      user_id: result.user.uid,
+      email: result.user.email ?? undefined,
+      ...getShareAuthMetadata()
+    })
 
     return result
   }
@@ -543,6 +552,7 @@ export const useAuthStore = defineStore('auth', () => {
     getAuthHeaderOrThrow,
     getFirebaseAuthHeader,
     getFirebaseAuthHeaderOrThrow,
-    getAuthToken
+    getAuthToken,
+    notifyTokenRefreshed
   }
 })

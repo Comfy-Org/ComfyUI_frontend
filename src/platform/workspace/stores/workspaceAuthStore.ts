@@ -37,6 +37,8 @@ export type WorkspaceTokenResponse = z.infer<
   typeof WorkspaceTokenResponseSchema
 >
 
+const MAX_SCHEDULED_REFRESH_RETRIES = 3
+
 export class WorkspaceAuthError extends Error {
   constructor(
     message: string,
@@ -47,20 +49,38 @@ export class WorkspaceAuthError extends Error {
   }
 }
 
+interface MintedToken {
+  token: string
+  expiresAt: number
+  workspace: WorkspaceWithRole
+}
+
 export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   const { flags } = useFeatureFlags()
 
   // State
   const currentWorkspace = shallowRef<WorkspaceWithRole | null>(null)
   const workspaceToken = ref<string | null>(null)
+  const workspaceTokenExpiresAt = ref<number | null>(null)
   const isLoading = ref(false)
   const error = ref<Error | null>(null)
 
+  // Unified Cloud-JWT slot (flag-gated: unified_cloud_auth). Dormant in this PR:
+  // populated by the unified mint lifecycle below but read by no consumer until
+  // the PR 3 consumer flip, so it cannot change which token requests carry.
+  const unifiedToken = ref<string | null>(null)
+
   // Timer state
   let refreshTimerId: ReturnType<typeof setTimeout> | null = null
+  let inFlightSwitchCount = 0
+  let scheduledRefreshRetryCount = 0
+  // The unified lifecycle keeps its own timer + request-id so it never shares
+  // mutable state with the legacy switchWorkspace/refreshToken machinery.
+  let unifiedRefreshTimerId: ReturnType<typeof setTimeout> | null = null
 
   // Request ID to prevent stale refresh operations from overwriting newer workspace contexts
   let refreshRequestId = 0
+  let unifiedRefreshRequestId = 0
 
   // Getters
   const isAuthenticated = computed(
@@ -77,6 +97,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
   function scheduleTokenRefresh(expiresAt: number): void {
     stopRefreshTimer()
+    scheduledRefreshRetryCount = 0
     const now = Date.now()
     const refreshAt = expiresAt - TOKEN_REFRESH_BUFFER_MS
     const delay = Math.max(0, refreshAt - now)
@@ -84,6 +105,60 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     refreshTimerId = setTimeout(() => {
       void refreshToken()
     }, delay)
+  }
+
+  function scheduleClearAtExpiry(): void {
+    if (workspaceTokenExpiresAt.value === null) {
+      clearWorkspaceContext()
+      return
+    }
+
+    const timeUntilExpiry = workspaceTokenExpiresAt.value - Date.now()
+    if (timeUntilExpiry <= 0) {
+      clearWorkspaceContext()
+      return
+    }
+
+    stopRefreshTimer()
+    refreshTimerId = setTimeout(() => {
+      clearWorkspaceContext()
+    }, timeUntilExpiry)
+  }
+
+  function scheduleTokenRefreshRetry(delayMs: number): boolean {
+    if (workspaceTokenExpiresAt.value === null) {
+      clearWorkspaceContext()
+      return false
+    }
+
+    const timeUntilExpiry = workspaceTokenExpiresAt.value - Date.now()
+    if (timeUntilExpiry <= 0) {
+      clearWorkspaceContext()
+      return false
+    }
+
+    if (scheduledRefreshRetryCount >= MAX_SCHEDULED_REFRESH_RETRIES) {
+      scheduleClearAtExpiry()
+      return false
+    }
+
+    scheduledRefreshRetryCount += 1
+    stopRefreshTimer()
+    const timeUntilRefreshBuffer = Math.max(
+      0,
+      timeUntilExpiry - TOKEN_REFRESH_BUFFER_MS
+    )
+    refreshTimerId = setTimeout(
+      () => {
+        void refreshToken()
+      },
+      Math.min(delayMs, timeUntilRefreshBuffer)
+    )
+    return true
+  }
+
+  function isStaleWorkspaceRequest(capturedRequestId: number): boolean {
+    return capturedRequestId !== refreshRequestId
   }
 
   function persistToSession(
@@ -149,8 +224,9 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
         return false
       }
 
-      const parsedWorkspace = JSON.parse(workspaceJson)
-      const parseResult = WorkspaceWithRoleSchema.safeParse(parsedWorkspace)
+      const parseResult = WorkspaceWithRoleSchema.safeParse(
+        JSON.parse(workspaceJson)
+      )
 
       if (!parseResult.success) {
         clearSessionStorage()
@@ -159,6 +235,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
 
       currentWorkspace.value = parseResult.data
       workspaceToken.value = token
+      workspaceTokenExpiresAt.value = expiresAt
       error.value = null
 
       scheduleTokenRefresh(expiresAt)
@@ -169,108 +246,137 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
   }
 
+  /**
+   * Exchanges the Firebase identity for a Cloud JWT via POST /auth/token.
+   * An id-less body ({}) mints the caller's personal-workspace token; a
+   * concrete workspace_id mints that workspace's token. Pure network + parse:
+   * it writes no store state, schedules no timer, and reads no flag, so both
+   * the legacy switch path and the unified path can reuse it without inheriting
+   * each other's gates.
+   */
+  async function requestToken(workspaceId?: string): Promise<MintedToken> {
+    const firebaseToken = await useAuthStore().getIdToken()
+    if (!firebaseToken) {
+      throw new WorkspaceAuthError(
+        t('workspaceAuth.errors.notAuthenticated'),
+        'NOT_AUTHENTICATED'
+      )
+    }
+
+    const response = await fetch(api.apiURL('/auth/token'), {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${firebaseToken}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(workspaceId ? { workspace_id: workspaceId } : {})
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      const message = errorData.message || response.statusText
+
+      if (response.status === 401) {
+        throw new WorkspaceAuthError(
+          t('workspaceAuth.errors.invalidFirebaseToken'),
+          'INVALID_FIREBASE_TOKEN'
+        )
+      }
+      if (response.status === 403) {
+        throw new WorkspaceAuthError(
+          t('workspaceAuth.errors.accessDenied'),
+          'ACCESS_DENIED'
+        )
+      }
+      if (response.status === 404) {
+        throw new WorkspaceAuthError(
+          t('workspaceAuth.errors.workspaceNotFound'),
+          'WORKSPACE_NOT_FOUND'
+        )
+      }
+
+      throw new WorkspaceAuthError(
+        t('workspaceAuth.errors.tokenExchangeFailed', { error: message }),
+        'TOKEN_EXCHANGE_FAILED'
+      )
+    }
+
+    const rawData = await response.json()
+    const parseResult = WorkspaceTokenResponseSchema.safeParse(rawData)
+
+    if (!parseResult.success) {
+      throw new WorkspaceAuthError(
+        t('workspaceAuth.errors.tokenExchangeFailed', {
+          error: fromZodError(parseResult.error).message
+        }),
+        'TOKEN_EXCHANGE_FAILED'
+      )
+    }
+
+    const data = parseResult.data
+    const expiresAt = new Date(data.expires_at).getTime()
+
+    if (isNaN(expiresAt)) {
+      throw new WorkspaceAuthError(
+        t('workspaceAuth.errors.tokenExchangeFailed', {
+          error: 'Invalid expiry timestamp'
+        }),
+        'TOKEN_EXCHANGE_FAILED'
+      )
+    }
+
+    return {
+      token: data.token,
+      expiresAt,
+      workspace: { ...data.workspace, role: data.role }
+    }
+  }
+
   async function switchWorkspace(workspaceId: string): Promise<void> {
     if (!flags.teamWorkspacesEnabled) {
       return
     }
 
-    // Only increment request ID when switching to a different workspace
-    // This invalidates stale refresh operations for the old workspace
-    // but allows refresh operations for the same workspace to complete
-    if (currentWorkspace.value?.id !== workspaceId) {
-      refreshRequestId++
-    }
+    const capturedRequestId = refreshRequestId
 
+    inFlightSwitchCount += 1
     isLoading.value = true
     error.value = null
 
     try {
-      const authStore = useAuthStore()
-      const firebaseToken = await authStore.getIdToken()
-      if (!firebaseToken) {
-        throw new WorkspaceAuthError(
-          t('workspaceAuth.errors.notAuthenticated'),
-          'NOT_AUTHENTICATED'
+      const { token, expiresAt, workspace } = await requestToken(workspaceId)
+
+      if (isStaleWorkspaceRequest(capturedRequestId)) {
+        console.warn(
+          'Aborting stale workspace switch: workspace context changed before commit'
         )
+        return
       }
 
-      const response = await fetch(api.apiURL('/auth/token'), {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${firebaseToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ workspace_id: workspaceId })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        const message = errorData.message || response.statusText
-
-        if (response.status === 401) {
-          throw new WorkspaceAuthError(
-            t('workspaceAuth.errors.invalidFirebaseToken'),
-            'INVALID_FIREBASE_TOKEN'
-          )
-        }
-        if (response.status === 403) {
-          throw new WorkspaceAuthError(
-            t('workspaceAuth.errors.accessDenied'),
-            'ACCESS_DENIED'
-          )
-        }
-        if (response.status === 404) {
-          throw new WorkspaceAuthError(
-            t('workspaceAuth.errors.workspaceNotFound'),
-            'WORKSPACE_NOT_FOUND'
-          )
-        }
-
-        throw new WorkspaceAuthError(
-          t('workspaceAuth.errors.tokenExchangeFailed', { error: message }),
-          'TOKEN_EXCHANGE_FAILED'
-        )
+      if (currentWorkspace.value?.id !== workspaceId) {
+        refreshRequestId++
       }
+      currentWorkspace.value = workspace
+      workspaceToken.value = token
+      workspaceTokenExpiresAt.value = expiresAt
+      scheduledRefreshRetryCount = 0
 
-      const rawData = await response.json()
-      const parseResult = WorkspaceTokenResponseSchema.safeParse(rawData)
-
-      if (!parseResult.success) {
-        throw new WorkspaceAuthError(
-          t('workspaceAuth.errors.tokenExchangeFailed', {
-            error: fromZodError(parseResult.error).message
-          }),
-          'TOKEN_EXCHANGE_FAILED'
-        )
-      }
-
-      const data = parseResult.data
-      const expiresAt = new Date(data.expires_at).getTime()
-
-      if (isNaN(expiresAt)) {
-        throw new WorkspaceAuthError(
-          t('workspaceAuth.errors.tokenExchangeFailed', {
-            error: 'Invalid expiry timestamp'
-          }),
-          'TOKEN_EXCHANGE_FAILED'
-        )
-      }
-
-      const workspaceWithRole: WorkspaceWithRole = {
-        ...data.workspace,
-        role: data.role
-      }
-
-      currentWorkspace.value = workspaceWithRole
-      workspaceToken.value = data.token
-
-      persistToSession(workspaceWithRole, data.token, expiresAt)
+      persistToSession(workspace, token, expiresAt)
       scheduleTokenRefresh(expiresAt)
     } catch (err) {
+      if (isStaleWorkspaceRequest(capturedRequestId)) {
+        console.warn(
+          'Aborting stale workspace switch: workspace context changed before error commit',
+          err
+        )
+        return
+      }
+
       error.value = err instanceof Error ? err : new Error(String(err))
       throw error.value
     } finally {
-      isLoading.value = false
+      inFlightSwitchCount = Math.max(0, inFlightSwitchCount - 1)
+      isLoading.value = inFlightSwitchCount > 0
     }
   }
 
@@ -280,14 +386,15 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     }
 
     const workspaceId = currentWorkspace.value.id
-    // Capture the current request ID to detect if workspace context changed during refresh
     const capturedRequestId = refreshRequestId
     const maxRetries = 3
     const baseDelayMs = 1000
+    // Clear any previous error optimistically; a stale-aborted refresh should
+    // not leave a stale error visible on the new workspace's context.
+    error.value = null
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      // Check if workspace context changed since refresh started (user switched workspaces)
-      if (capturedRequestId !== refreshRequestId) {
+      if (isStaleWorkspaceRequest(capturedRequestId)) {
         console.warn(
           'Aborting stale token refresh: workspace context changed during refresh'
         )
@@ -308,8 +415,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
             err.code === 'NOT_AUTHENTICATED')
 
         if (isPermanentError) {
-          // Only clear context if this refresh is still for the current workspace
-          if (capturedRequestId === refreshRequestId) {
+          if (!isStaleWorkspaceRequest(capturedRequestId)) {
             console.error('Workspace access revoked or auth invalid:', err)
             clearWorkspaceContext()
           }
@@ -329,13 +435,147 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
           continue
         }
 
-        // Only clear context if this refresh is still for the current workspace
-        if (capturedRequestId === refreshRequestId) {
+        if (!isStaleWorkspaceRequest(capturedRequestId)) {
+          if (isTransientError && hasValidWorkspaceToken()) {
+            error.value = null
+            const retryScheduled = scheduleTokenRefreshRetry(
+              baseDelayMs * Math.pow(2, maxRetries)
+            )
+            console.warn(
+              retryScheduled
+                ? 'Failed to refresh workspace token after retries; preserving existing valid token and retrying later:'
+                : 'Failed to refresh workspace token after retries; preserving existing valid token until expiry:',
+              err
+            )
+            return
+          }
+
           console.error('Failed to refresh workspace token after retries:', err)
           clearWorkspaceContext()
         }
       }
     }
+  }
+
+  // --- Unified Cloud-JWT lifecycle (flag-gated: unified_cloud_auth) ----------
+  //
+  // A parallel mint/refresh lifecycle that writes to the dormant `unifiedToken`
+  // slot. The legacy switchWorkspace/refreshToken machinery above is untouched.
+
+  // The mint body the unified session re-mints against. `{}` is the personal
+  // default (the backend resolves the personal workspace from the Firebase
+  // identity); `{ workspace_id }` targets a concrete workspace. `null` means no
+  // active unified session.
+  type UnifiedMintBody = Record<string, never> | { workspace_id: string }
+  let unifiedTarget: UnifiedMintBody | null = null
+
+  function personalWorkspaceTarget(): UnifiedMintBody {
+    return {}
+  }
+
+  function currentUnifiedTarget(): UnifiedMintBody | null {
+    return unifiedTarget
+  }
+
+  function stopUnifiedRefreshTimer(): void {
+    if (unifiedRefreshTimerId !== null) {
+      clearTimeout(unifiedRefreshTimerId)
+      unifiedRefreshTimerId = null
+    }
+  }
+
+  function scheduleUnifiedRefresh(expiresAt: number): void {
+    stopUnifiedRefreshTimer()
+    const now = Date.now()
+    const refreshAt = expiresAt - TOKEN_REFRESH_BUFFER_MS
+    const delay = Math.max(0, refreshAt - now)
+
+    unifiedRefreshTimerId = setTimeout(() => {
+      void refreshUnified()
+    }, delay)
+  }
+
+  function clearUnifiedContext(): void {
+    unifiedRefreshRequestId++
+    stopUnifiedRefreshTimer()
+    unifiedToken.value = null
+    unifiedTarget = null
+  }
+
+  async function mintUnified(target: UnifiedMintBody): Promise<boolean> {
+    // Stale-guard: bump and capture the request id so a 401-driven re-mint and
+    // a timer-driven re-mint cannot clobber each other's write — the last mint
+    // to start wins.
+    const capturedRequestId = ++unifiedRefreshRequestId
+    const workspaceId =
+      'workspace_id' in target ? target.workspace_id : undefined
+
+    const { token, expiresAt } = await requestToken(workspaceId)
+
+    if (capturedRequestId !== unifiedRefreshRequestId) {
+      return false
+    }
+
+    unifiedToken.value = token
+    unifiedTarget = target
+    scheduleUnifiedRefresh(expiresAt)
+    return true
+  }
+
+  async function refreshUnified(): Promise<void> {
+    if (!flags.unifiedCloudAuthEnabled) {
+      return
+    }
+    const target = currentUnifiedTarget()
+    if (!target) {
+      return
+    }
+
+    try {
+      const minted = await mintUnified(target)
+      // Only a refresh re-mint rotates the session cookie; the initial login
+      // mint and workspace switches do not. A stale (discarded) re-mint does not
+      // rotate either.
+      if (minted) {
+        useAuthStore().notifyTokenRefreshed()
+      }
+    } catch (err) {
+      const isPermanentError =
+        err instanceof WorkspaceAuthError &&
+        (err.code === 'ACCESS_DENIED' ||
+          err.code === 'WORKSPACE_NOT_FOUND' ||
+          err.code === 'INVALID_FIREBASE_TOKEN' ||
+          err.code === 'NOT_AUTHENTICATED')
+
+      if (isPermanentError) {
+        console.error('Unified workspace auth revoked or invalid:', err)
+        clearUnifiedContext()
+      } else {
+        console.warn('Unified token refresh failed:', err)
+      }
+    }
+  }
+
+  const mintAtLogin = async (): Promise<boolean> => {
+    if (!flags.unifiedCloudAuthEnabled) {
+      return false
+    }
+    if (unifiedToken.value) {
+      return true
+    }
+    return mintUnified(personalWorkspaceTarget())
+  }
+
+  const remintUnifiedOnce = async (): Promise<string | null> => {
+    if (!flags.unifiedCloudAuthEnabled) {
+      return null
+    }
+    const target = currentUnifiedTarget()
+    if (!target) {
+      return null
+    }
+    await mintUnified(target)
+    return unifiedToken.value
   }
 
   function getWorkspaceAuthHeader(): AuthHeader | null {
@@ -351,20 +591,31 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     return workspaceToken.value ?? undefined
   }
 
+  function hasValidWorkspaceToken(): boolean {
+    return (
+      workspaceToken.value !== null &&
+      workspaceTokenExpiresAt.value !== null &&
+      workspaceTokenExpiresAt.value > Date.now()
+    )
+  }
+
   function clearWorkspaceContext(): void {
-    // Increment request ID to invalidate any in-flight stale refresh operations
     refreshRequestId++
     stopRefreshTimer()
     currentWorkspace.value = null
     workspaceToken.value = null
+    workspaceTokenExpiresAt.value = null
+    scheduledRefreshRetryCount = 0
     error.value = null
     clearSessionStorage()
+    clearUnifiedContext()
   }
 
   return {
     // State
     currentWorkspace,
     workspaceToken,
+    unifiedToken,
     isLoading,
     error,
 
@@ -377,6 +628,8 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     initializeFromSession,
     switchWorkspace,
     refreshToken,
+    mintAtLogin,
+    remintUnifiedOnce,
     getWorkspaceAuthHeader,
     getWorkspaceToken,
     clearWorkspaceContext

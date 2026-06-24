@@ -135,7 +135,6 @@ import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFreeTierOnboarding } from '@/platform/cloud/onboarding/composables/useFreeTierOnboarding'
 import { usePostAuthRedirect } from '@/platform/cloud/onboarding/composables/usePostAuthRedirect'
-import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { SignUpData } from '@/schemas/signInSchema'
 import { isInChina } from '@/utils/networkUtil'
@@ -188,9 +187,7 @@ const signUpWithEmail = async (values: SignUpData) => {
 }
 
 onMounted(async () => {
-  if (isCloud) {
-    telemetry?.trackSignupOpened()
-  }
+  telemetry?.trackSignupOpened()
 
   userIsInChina.value = await isInChina()
 })

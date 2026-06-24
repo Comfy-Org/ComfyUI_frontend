@@ -53,6 +53,22 @@ test.describe(
       await SubgraphHelper.expectWidgetBelowHeader(nodeLocator, seedWidget)
     })
 
+    test('Promoted textarea materializes once when a node is converted to a subgraph', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('default')
+
+      const clipNode = await comfyPage.nodeOps.getNodeRefById('6')
+      await clipNode.click('title')
+      const subgraphNode = await clipNode.convertToSubgraph()
+
+      const promotedTextarea = comfyPage.vueNodes
+        .getNodeLocator(String(subgraphNode.id))
+        .getByRole('textbox', { name: 'text', exact: true })
+      await expect(promotedTextarea).toHaveCount(1)
+      await expect(promotedTextarea).toBeVisible()
+    })
+
     test.describe(
       'Promoted Text Widget Lifecycle',
       { tag: ['@vue-nodes'] },

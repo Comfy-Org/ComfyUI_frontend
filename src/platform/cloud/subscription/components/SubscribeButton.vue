@@ -52,11 +52,9 @@ watch(
 )
 
 const handleSubscribe = () => {
-  if (isCloud) {
-    useTelemetry()?.trackSubscription('subscribe_clicked', {
-      current_tier: tier.value?.toLowerCase()
-    })
-  }
+  useTelemetry()?.trackSubscription('subscribe_clicked', {
+    current_tier: tier.value?.toLowerCase()
+  })
   isAwaitingStripeSubscription.value = true
   showSubscriptionDialog()
 }

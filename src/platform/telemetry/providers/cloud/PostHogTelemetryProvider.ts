@@ -4,7 +4,6 @@ import type { WatchStopHandle } from 'vue'
 
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
-import { useAppMode } from '@/composables/useAppMode'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -16,7 +15,6 @@ import type {
   EnterLinearMetadata,
   ShareFlowMetadata,
   ShareLinkOpenedMetadata,
-  ExecutionTriggerSource,
   HelpCenterClosedMetadata,
   HelpCenterOpenedMetadata,
   HelpResourceClickedMetadata,
@@ -29,6 +27,7 @@ import type {
   RunButtonProperties,
   SettingChangedMetadata,
   SharedWorkflowRunMetadata,
+  ShellLayoutMetadata,
   SubscriptionMetadata,
   SubscriptionSuccessMetadata,
   SurveyResponses,
@@ -46,7 +45,6 @@ import type {
   WorkflowSavedMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
-import { getExecutionContext } from '../../utils/getExecutionContext'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
 
 const DEFAULT_DISABLED_EVENTS = [
@@ -55,13 +53,10 @@ const DEFAULT_DISABLED_EVENTS = [
   TelemetryEvents.TAB_COUNT_TRACKING,
   TelemetryEvents.NODE_SEARCH,
   TelemetryEvents.NODE_SEARCH_RESULT_SELECTED,
-  TelemetryEvents.TEMPLATE_FILTER_CHANGED,
-  TelemetryEvents.SETTING_CHANGED,
   TelemetryEvents.HELP_CENTER_OPENED,
   TelemetryEvents.HELP_RESOURCE_CLICKED,
   TelemetryEvents.HELP_CENTER_CLOSED,
-  TelemetryEvents.WORKFLOW_CREATED,
-  TelemetryEvents.UI_BUTTON_CLICKED
+  TelemetryEvents.WORKFLOW_CREATED
 ] as const satisfies TelemetryEventName[]
 
 const TELEMETRY_EVENT_SET = new Set<TelemetryEventName>(
@@ -378,30 +373,8 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
   }
 
-  trackRunButton(options?: {
-    subscribe_to_run?: boolean
-    trigger_source?: ExecutionTriggerSource
-  }): void {
-    const executionContext = getExecutionContext()
-    const { mode, isAppMode } = useAppMode()
-
-    const runButtonProperties: RunButtonProperties = {
-      subscribe_to_run: options?.subscribe_to_run || false,
-      workflow_type: executionContext.is_template ? 'template' : 'custom',
-      workflow_name: executionContext.workflow_name ?? 'untitled',
-      custom_node_count: executionContext.custom_node_count,
-      total_node_count: executionContext.total_node_count,
-      subgraph_count: executionContext.subgraph_count,
-      has_api_nodes: executionContext.has_api_nodes,
-      api_node_names: executionContext.api_node_names,
-      has_toolkit_nodes: executionContext.has_toolkit_nodes,
-      toolkit_node_names: executionContext.toolkit_node_names,
-      trigger_source: options?.trigger_source,
-      view_mode: mode.value,
-      is_app_mode: isAppMode.value
-    }
-
-    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
+  trackRunButton(properties: RunButtonProperties): void {
+    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
   }
 
   trackSurvey(
@@ -498,6 +471,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackTabCount(metadata: TabCountMetadata): void {
     this.trackEvent(TelemetryEvents.TAB_COUNT_TRACKING, metadata)
+  }
+
+  trackShellLayout(metadata: ShellLayoutMetadata): void {
+    this.trackEvent(TelemetryEvents.SHELL_LAYOUT, metadata)
   }
 
   trackNodeSearch(metadata: NodeSearchMetadata): void {

@@ -1,5 +1,6 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { app } from '@/scripts/app'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
@@ -11,24 +12,48 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type * as WorkflowStoreModule from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeProgressState } from '@/schemas/apiSchema'
 
-// Create mock functions that will be shared
 const {
   mockNodeExecutionIdToNodeLocatorId,
   mockNodeIdToNodeLocatorId,
   mockNodeLocatorIdToNodeExecutionId,
+  mockActiveWorkflow,
+  mockOpenWorkflows,
   mockShowTextPreview,
   mockTrackExecutionError,
   mockTrackExecutionSuccess,
   mockTrackSharedWorkflowRun
-} = vi.hoisted(() => ({
-  mockNodeExecutionIdToNodeLocatorId: vi.fn(),
-  mockNodeIdToNodeLocatorId: vi.fn(),
-  mockNodeLocatorIdToNodeExecutionId: vi.fn(),
-  mockShowTextPreview: vi.fn(),
-  mockTrackExecutionError: vi.fn(),
-  mockTrackExecutionSuccess: vi.fn(),
-  mockTrackSharedWorkflowRun: vi.fn()
+} = await vi.hoisted(async () => {
+  const { shallowRef } = await import('vue')
+  return {
+    mockNodeExecutionIdToNodeLocatorId: vi.fn(),
+    mockNodeIdToNodeLocatorId: vi.fn(),
+    mockNodeLocatorIdToNodeExecutionId: vi.fn(),
+    mockActiveWorkflow: shallowRef<{ path?: string } | null>(null),
+    mockOpenWorkflows: shallowRef<{ path: string }[]>([]),
+    mockShowTextPreview: vi.fn(),
+    mockTrackExecutionError: vi.fn(),
+    mockTrackExecutionSuccess: vi.fn(),
+    mockTrackSharedWorkflowRun: vi.fn()
+  }
+})
+
+const mockAppModeState = vi.hoisted(() => ({
+  mode: { value: 'graph' },
+  isAppMode: { value: false }
 }))
+
+vi.mock('@/composables/useAppMode', async (importOriginal) => {
+  const actual = (await importOriginal()) as Record<string, unknown>
+  return {
+    ...actual,
+    useAppMode: () => mockAppModeState
+  }
+})
+
+beforeEach(() => {
+  mockAppModeState.mode.value = 'graph'
+  mockAppModeState.isAppMode.value = false
+})
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createTestingPinia } from '@pinia/testing'
 
@@ -42,7 +67,15 @@ vi.mock('@/platform/workflow/management/stores/workflowStore', async () => {
     useWorkflowStore: vi.fn(() => ({
       nodeExecutionIdToNodeLocatorId: mockNodeExecutionIdToNodeLocatorId,
       nodeIdToNodeLocatorId: mockNodeIdToNodeLocatorId,
-      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId
+      nodeLocatorIdToNodeExecutionId: mockNodeLocatorIdToNodeExecutionId,
+      get activeWorkflow() {
+        return mockActiveWorkflow.value
+      },
+      get openWorkflows() {
+        return mockOpenWorkflows.value
+      },
+      isOpen: (workflow: { path?: string }) =>
+        mockOpenWorkflows.value.some((w) => w.path === workflow.path)
     }))
   }
 })
@@ -115,6 +148,11 @@ vi.mock('@/scripts/app', () => ({
     nodePreviewImages: {}
   }
 }))
+
+beforeEach(() => {
+  mockActiveWorkflow.value = null
+  mockOpenWorkflows.value = []
+})
 
 function createQueuedWorkflow(path: string = 'workflows/test.json') {
   return {
@@ -479,6 +517,254 @@ describe('useExecutionStore - reconcileInitializingJobs', () => {
     store.reconcileInitializingJobs(new Set())
 
     expect(store.initializingJobIds).toEqual(new Set())
+  })
+})
+
+describe('useExecutionStore - workflowStatus', () => {
+  let store: ReturnType<typeof useExecutionStore>
+  type Workflow = Parameters<typeof store.storeJob>[0]['workflow']
+  const makeWorkflow = (path: string): Workflow => {
+    const workflow: Partial<Workflow> = {
+      path,
+      filename: path.split('/').pop()
+    }
+    return workflow as Workflow
+  }
+  const workflowA = makeWorkflow('/workflows/a.json')
+  const workflowB = makeWorkflow('/workflows/b.json')
+
+  function fireExecutionStart(jobId: string) {
+    const handler = apiEventHandlers.get('execution_start')
+    if (!handler) throw new Error('execution_start handler not bound')
+    handler(
+      new CustomEvent('execution_start', { detail: { prompt_id: jobId } })
+    )
+  }
+
+  function fireExecutionSuccess(jobId: string) {
+    const handler = apiEventHandlers.get('execution_success')
+    if (!handler) throw new Error('execution_success handler not bound')
+    handler(
+      new CustomEvent('execution_success', { detail: { prompt_id: jobId } })
+    )
+  }
+
+  function fireExecutionError(jobId: string) {
+    const handler = apiEventHandlers.get('execution_error')
+    if (!handler) throw new Error('execution_error handler not bound')
+    handler(
+      new CustomEvent('execution_error', {
+        detail: {
+          prompt_id: jobId,
+          node_id: '1',
+          node_type: 'TestNode',
+          exception_message: 'fail',
+          exception_type: 'Error',
+          traceback: []
+        }
+      })
+    )
+  }
+
+  function fireExecutionInterrupted(jobId: string) {
+    const handler = apiEventHandlers.get('execution_interrupted')
+    if (!handler) throw new Error('execution_interrupted handler not bound')
+    handler(
+      new CustomEvent('execution_interrupted', {
+        detail: { prompt_id: jobId }
+      })
+    )
+  }
+
+  function callStoreJob(jobId: string, workflow: Workflow) {
+    store.storeJob({
+      nodes: ['1'],
+      id: jobId,
+      promptOutput: { '1': createPromptNode('Node', 'TestNode') },
+      workflow
+    })
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    apiEventHandlers.clear()
+    mockOpenWorkflows.value = [workflowA, workflowB]
+    setActivePinia(createTestingPinia({ stubActions: false }))
+    store = useExecutionStore()
+    store.bindExecutionEvents()
+  })
+
+  it('sets running on execution_start when storeJob already ran', () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+  })
+
+  it('flushes running status when storeJob arrives after WS', () => {
+    fireExecutionStart('job-1')
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+
+    callStoreJob('job-1', workflowA)
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+  })
+
+  it('flushes terminal completed when WS finishes before storeJob', () => {
+    // Instant-finish race: WS fires start+success before HTTP response.
+    fireExecutionStart('job-1')
+    fireExecutionSuccess('job-1')
+
+    callStoreJob('job-1', workflowA)
+    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+  })
+
+  it('flushes terminal failed when WS errors before storeJob', () => {
+    // Invalid-workflow path: execution_error fires before HTTP response.
+    fireExecutionError('job-1')
+
+    callStoreJob('job-1', workflowA)
+    expect(store.getWorkflowStatus(workflowA)).toBe('failed')
+  })
+
+  it('drops pending status on interrupt before storeJob', () => {
+    fireExecutionStart('job-1')
+    fireExecutionInterrupted('job-1')
+
+    callStoreJob('job-1', workflowA)
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+  })
+
+  it('sets completed on execution_success', () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+    fireExecutionSuccess('job-1')
+
+    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+  })
+
+  it('sets failed on execution_error', () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+    fireExecutionError('job-1')
+
+    expect(store.getWorkflowStatus(workflowA)).toBe('failed')
+  })
+
+  it('skips status badge on user-initiated interrupt', () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+    fireExecutionInterrupted('job-1')
+
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+  })
+
+  it('evicts the oldest pending status once the buffer cap is exceeded', () => {
+    // Each start with no matching storeJob buffers a 'running' status. One
+    // past the cap evicts the oldest so the buffer can't grow unbounded.
+    for (let i = 0; i <= MAX_PROGRESS_JOBS; i++) fireExecutionStart(`job-${i}`)
+
+    callStoreJob('job-0', workflowA)
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+
+    callStoreJob(`job-${MAX_PROGRESS_JOBS}`, workflowB)
+    expect(store.getWorkflowStatus(workflowB)).toBe('running')
+  })
+
+  it('overwrites stale terminal with running on re-queue', () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+    fireExecutionSuccess('job-1')
+    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+
+    // Re-queue the same workflow under a fresh jobId.
+    callStoreJob('job-2', workflowA)
+    fireExecutionStart('job-2')
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+  })
+
+  it('ignores status events for unknown prompt ids', () => {
+    fireExecutionSuccess('unknown-job')
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+    expect(store.getWorkflowStatus(workflowB)).toBeUndefined()
+  })
+
+  it('prunes only closed workflows, leaving open ones intact', async () => {
+    callStoreJob('job-a', workflowA)
+    callStoreJob('job-b', workflowB)
+    fireExecutionSuccess('job-a')
+    fireExecutionSuccess('job-b')
+
+    mockOpenWorkflows.value = [workflowB]
+    await nextTick()
+
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+    expect(store.getWorkflowStatus(workflowB)).toBe('completed')
+  })
+
+  it('ignores terminal events for a workflow closed mid-run', async () => {
+    callStoreJob('job-a', workflowA)
+    fireExecutionStart('job-a')
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+
+    // Close the tab while the job is still running.
+    mockOpenWorkflows.value = [workflowB]
+    await nextTick()
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+
+    // A late success must not resurrect an entry for the closed workflow.
+    fireExecutionSuccess('job-a')
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+  })
+
+  it('drops service-level errors without writing failed', () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+
+    // Service-level error: empty node_id triggers the short-circuit branch.
+    const handler = apiEventHandlers.get('execution_error')
+    handler!(
+      new CustomEvent('execution_error', {
+        detail: {
+          prompt_id: 'job-1',
+          node_id: '',
+          node_type: '',
+          exception_message: 'Job has stagnated',
+          exception_type: 'StagnationError',
+          traceback: []
+        }
+      })
+    )
+
+    expect(store.getWorkflowStatus(workflowA)).toBe('running')
+  })
+
+  it('drops pending failed when service-level error fires before storeJob', () => {
+    apiEventHandlers.get('execution_error')!(
+      new CustomEvent('execution_error', {
+        detail: {
+          prompt_id: 'job-1',
+          node_id: '',
+          node_type: '',
+          exception_message: 'Job has stagnated',
+          exception_type: 'StagnationError',
+          traceback: []
+        }
+      })
+    )
+
+    callStoreJob('job-1', workflowA)
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
+  })
+
+  it('clears workflowStatus on unbindExecutionEvents', () => {
+    callStoreJob('job-1', workflowA)
+    fireExecutionStart('job-1')
+    fireExecutionSuccess('job-1')
+    expect(store.getWorkflowStatus(workflowA)).toBe('completed')
+
+    store.unbindExecutionEvents()
+    expect(store.getWorkflowStatus(workflowA)).toBeUndefined()
   })
 })
 
@@ -1108,6 +1394,13 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.queuedJobs['job-1']).toBeUndefined()
     })
 
+    it('does not track success for jobs this client did not queue', () => {
+      fire('execution_success', { prompt_id: 'foreign-job', timestamp: 0 })
+
+      expect(mockTrackExecutionSuccess).not.toHaveBeenCalled()
+      expect(mockTrackSharedWorkflowRun).not.toHaveBeenCalled()
+    })
+
     it('tracks shared workflow run when the queued workflow has share attribution', () => {
       const workflow = createQueuedWorkflow()
       workflow.shareId = 'share-1'
@@ -1128,7 +1421,9 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       })
       expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
         job_id: 'job-1',
-        share_id: 'share-1'
+        share_id: 'share-1',
+        view_mode: 'graph',
+        is_app_mode: false
       })
     })
 
@@ -1148,7 +1443,56 @@ describe('useExecutionStore - WebSocket event handlers', () => {
 
       expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
         job_id: 'job-1',
-        share_id: 'share-1'
+        share_id: 'share-1',
+        view_mode: 'graph',
+        is_app_mode: false
+      })
+    })
+
+    it('attributes shared workflow run to queue-time mode, not completion-time mode', () => {
+      const workflow = createQueuedWorkflow()
+      workflow.shareId = 'share-1'
+      store.storeJob({
+        nodes: ['a'],
+        id: 'job-1',
+        promptOutput: {
+          a: createPromptNode('Node A', 'NodeA')
+        },
+        workflow
+      })
+
+      mockAppModeState.mode.value = 'app'
+      mockAppModeState.isAppMode.value = true
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
+        job_id: 'job-1',
+        share_id: 'share-1',
+        view_mode: 'graph',
+        is_app_mode: false
+      })
+    })
+
+    it('attributes shared workflow run to the queued workflow, not the active one', () => {
+      const workflow = createQueuedWorkflow()
+      workflow.shareId = 'share-1'
+      workflow.activeMode = 'app'
+      store.storeJob({
+        nodes: ['a'],
+        id: 'job-1',
+        promptOutput: {
+          a: createPromptNode('Node A', 'NodeA')
+        },
+        workflow
+      })
+
+      fire('execution_success', { prompt_id: 'job-1', timestamp: 0 })
+
+      expect(mockTrackSharedWorkflowRun).toHaveBeenCalledWith({
+        job_id: 'job-1',
+        share_id: 'share-1',
+        view_mode: 'app',
+        is_app_mode: true
       })
     })
   })
@@ -1228,6 +1572,75 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         node_id: 'n1',
         exception_message: 'CUDA OOM'
       })
+    })
+
+    it('keeps a subscription precondition (no node_id) out of the error panel and count', () => {
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: null,
+        exception_type: 'InactiveSubscriptionError',
+        exception_message:
+          'User has no active subscription. Please subscribe to a plan to continue.',
+        traceback: []
+      })
+
+      expect(errorStore.lastExecutionError).toBeNull()
+      expect(errorStore.lastPromptError).toBeNull()
+      expect(errorStore.lastNodeErrors).toBeNull()
+      expect(errorStore.totalErrorCount).toBe(0)
+    })
+
+    it('keeps a sign-in precondition out of the error panel and count', () => {
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: 'n1',
+        node_type: 'ApiNode',
+        exception_type: 'RuntimeError',
+        exception_message: 'Unauthorized: Please login first to use this node.',
+        traceback: []
+      })
+
+      expect(errorStore.lastExecutionError).toBeNull()
+      expect(errorStore.lastPromptError).toBeNull()
+      expect(errorStore.totalErrorCount).toBe(0)
+    })
+
+    it('keeps a runtime credit precondition at a node out of the error panel and count', () => {
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: 'n1',
+        node_type: 'PartnerApiNode',
+        exception_type: 'InsufficientFundsError',
+        exception_message:
+          'Payment Required: Please add credits to your account to use this node.',
+        traceback: []
+      })
+
+      expect(errorStore.lastExecutionError).toBeNull()
+      expect(errorStore.lastPromptError).toBeNull()
+      expect(errorStore.totalErrorCount).toBe(0)
+    })
+
+    it('still routes an ordinary node runtime error to the error panel', () => {
+      const errorStore = useExecutionErrorStore()
+
+      fire('execution_error', {
+        prompt_id: 'job-1',
+        node_id: 'n1',
+        node_type: 'KSampler',
+        exception_type: 'RuntimeError',
+        exception_message: 'Something unrelated broke',
+        traceback: []
+      })
+
+      expect(errorStore.lastExecutionError).not.toBeNull()
+      expect(errorStore.totalErrorCount).toBe(1)
     })
   })
 

@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref, shallowRef } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -10,7 +10,7 @@ import type {
   SubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 
 import type {
   BalanceInfo,
@@ -26,7 +26,7 @@ import type {
  */
 export function useWorkspaceBilling(): BillingState & BillingActions {
   const billingPlans = useBillingPlans()
-  const workspaceStore = useTeamWorkspaceStore()
+  const billingOperationStore = useBillingOperationStore()
 
   const isInitialized = ref(false)
   const isLoading = ref(false)
@@ -82,68 +82,10 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   const currentPlanSlug = computed(
     () => statusData.value?.plan_slug ?? billingPlans.currentPlanSlug.value
   )
-
-  const pendingCancelOpId = ref<string | null>(null)
-  let cancelPollTimeout: number | null = null
-
-  const stopCancelPolling = () => {
-    if (cancelPollTimeout !== null) {
-      window.clearTimeout(cancelPollTimeout)
-      cancelPollTimeout = null
-    }
-  }
-
-  async function pollCancelStatus(opId: string): Promise<void> {
-    stopCancelPolling()
-
-    const maxAttempts = 30
-    let attempt = 0
-    const poll = async () => {
-      if (pendingCancelOpId.value !== opId) return
-
-      try {
-        const response = await workspaceApi.getBillingOpStatus(opId)
-        if (response.status === 'succeeded') {
-          pendingCancelOpId.value = null
-          stopCancelPolling()
-          await fetchStatus()
-          workspaceStore.updateActiveWorkspace({
-            isSubscribed: false
-          })
-          return
-        }
-
-        if (response.status === 'failed') {
-          pendingCancelOpId.value = null
-          stopCancelPolling()
-          throw new Error(
-            response.error_message ?? 'Failed to cancel subscription'
-          )
-        }
-
-        attempt += 1
-        if (attempt >= maxAttempts) {
-          pendingCancelOpId.value = null
-          stopCancelPolling()
-          await fetchStatus()
-          return
-        }
-      } catch (err) {
-        pendingCancelOpId.value = null
-        stopCancelPolling()
-        throw err
-      }
-
-      cancelPollTimeout = window.setTimeout(
-        () => {
-          void poll()
-        },
-        Math.min(1000 * 2 ** attempt, 5000)
-      )
-    }
-
-    await poll()
-  }
+  const teamCreditStops = computed(() => billingPlans.teamCreditStops.value)
+  const currentTeamCreditStop = computed(
+    () => statusData.value?.team_credit_stop ?? null
+  )
 
   async function initialize(): Promise<void> {
     if (isInitialized.value) return
@@ -208,8 +150,18 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
         cancelUrl
       )
 
-      // Refresh status and balance after subscription
-      await Promise.all([fetchStatus(), fetchBalance()])
+      // Refresh is non-fatal: the subscribe write already succeeded, so a failed
+      // refresh must not reject and prompt a retry of an active subscription.
+      const [statusResult, balanceResult] = await Promise.allSettled([
+        fetchStatus(),
+        fetchBalance()
+      ])
+      if (
+        statusResult.status === 'rejected' ||
+        balanceResult.status === 'rejected'
+      ) {
+        error.value = 'Subscription succeeded, but billing state refresh failed'
+      }
 
       return response
     } catch (err) {
@@ -259,8 +211,16 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     error.value = null
     try {
       const response = await workspaceApi.cancelSubscription()
-      pendingCancelOpId.value = response.billing_op_id
-      await pollCancelStatus(response.billing_op_id)
+      const operation = await billingOperationStore.startOperation(
+        response.billing_op_id,
+        'cancel'
+      )
+
+      if (operation.status !== 'succeeded') {
+        throw new Error(
+          operation.errorMessage ?? 'Failed to cancel subscription'
+        )
+      }
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to cancel subscription'
@@ -324,10 +284,6 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     subscriptionDialog.show()
   }
 
-  onBeforeUnmount(() => {
-    stopCancelPolling()
-  })
-
   return {
     // State
     isInitialized,
@@ -335,6 +291,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     balance,
     plans,
     currentPlanSlug,
+    teamCreditStops,
+    currentTeamCreditStop,
     isLoading,
     error,
     isActiveSubscription,

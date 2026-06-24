@@ -181,4 +181,24 @@ describe('useMaskEditorSaver', () => {
     expect(store.nodeOutputs[locatorId]).toBeDefined()
     expect(store.nodeOutputs[locatorId]?.images?.length).toBeGreaterThan(0)
   })
+
+  it('omits subfolder from the upload FormData under the unified contract', async () => {
+    const fetchApiMock = vi.mocked(api.fetchApi)
+
+    const { save } = useMaskEditorSaver()
+    await save()
+
+    // The unified contract uploads to /upload/image with only image + type;
+    // subfolder is intentionally omitted (the server assigns it). Assert it
+    // here so the next reader knows the omission is deliberate, not accidental.
+    expect(fetchApiMock).toHaveBeenCalledWith(
+      '/upload/image',
+      expect.objectContaining({ method: 'POST' })
+    )
+    const [, init] = fetchApiMock.mock.calls[0]
+    const body = init?.body as FormData
+    expect(body).toBeInstanceOf(FormData)
+    expect(body.get('type')).toBe('input')
+    expect(body.get('subfolder')).toBeNull()
+  })
 })
