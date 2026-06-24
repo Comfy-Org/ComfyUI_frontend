@@ -8,16 +8,12 @@ export class Topbar {
   private readonly menuTrigger: Locator
   readonly newWorkflowButton: Locator
   readonly workflowTabs: Locator
-  readonly integratedTabBarActions: Locator
 
   constructor(public readonly page: Page) {
     this.menuLocator = page.locator('.comfy-command-menu')
     this.menuTrigger = page.locator('.comfy-menu-button-wrapper')
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
     this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
-    this.integratedTabBarActions = this.workflowTabs.getByTestId(
-      TestIds.topbar.integratedTabBarActions
-    )
   }
 
   async getTabNames(): Promise<string[]> {

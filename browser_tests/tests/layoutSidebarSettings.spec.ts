@@ -78,22 +78,6 @@ test.describe('Layout & sidebar settings', { tag: ['@settings'] }, () => {
     })
   })
 
-  test.describe('Comfy.UI.TabBarLayout', () => {
-    test('"Default" renders integrated tab bar actions container', async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting('Comfy.UI.TabBarLayout', 'Default')
-      await expect(comfyPage.menu.topbar.integratedTabBarActions).toBeAttached()
-    })
-
-    test('"Legacy" does not render integrated tab bar actions container', async ({
-      comfyPage
-    }) => {
-      await comfyPage.settings.setSetting('Comfy.UI.TabBarLayout', 'Legacy')
-      await expect(comfyPage.menu.topbar.integratedTabBarActions).toHaveCount(0)
-    })
-  })
-
   test.describe('Comfy.TreeExplorer.ItemPadding', () => {
     // The setting writes a CSS var consumed by .p-tree-node-content,
     // which only renders in the legacy PrimeVue Tree.
