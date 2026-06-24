@@ -172,10 +172,15 @@ export function useMediaAssetActions() {
       return [asset]
     }
 
-    const resolved = await resolveOutputAssetItems(metadata, {
-      createdAt: asset.created_at
-    })
-    return resolved.length > 0 ? resolved : [asset]
+    try {
+      const resolved = await resolveOutputAssetItems(metadata, {
+        createdAt: asset.created_at
+      })
+      return resolved.length > 0 ? resolved : [asset]
+    } catch (error) {
+      console.error('Failed to expand grouped asset for download:', error)
+      return [asset]
+    }
   }
 
   async function downloadAssetsIndividually(assets: AssetItem[]) {

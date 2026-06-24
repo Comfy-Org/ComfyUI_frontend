@@ -770,23 +770,59 @@ describe('useMediaAssetActions', () => {
       expect(filenames).toEqual(['out1.png', 'out2.png'])
     })
 
-    it('shows an error toast when resolveOutputAssetItems rejects', async () => {
-      const grouped = createOutputAsset('g1', 'cover.png', 'job1', 3)
+    it('falls back to the preview download when resolveOutputAssetItems rejects', async () => {
+      const grouped = createOutputAsset(
+        'g1',
+        'cover.png',
+        'job1',
+        3,
+        'https://example.com/cover.png'
+      )
       mockResolveOutputAssetItems.mockRejectedValueOnce(new Error('boom'))
 
       const actions = useMediaAssetActions()
       actions.downloadAssets([grouped])
 
-      const { add } = useToast()
       await vi.waitFor(() => {
-        expect(add).toHaveBeenCalledWith(
-          expect.objectContaining({
-            severity: 'error',
-            detail: 'g.failedToDownloadImage'
-          })
-        )
+        expect(mockDownloadFile).toHaveBeenCalledTimes(1)
       })
-      expect(mockDownloadFile).not.toHaveBeenCalled()
+      expect(mockDownloadFile).toHaveBeenCalledWith(
+        'https://example.com/cover.png',
+        'cover.png'
+      )
+    })
+
+    it('still downloads resolvable assets when one grouped asset fails to expand', async () => {
+      const failingGrouped = createOutputAsset(
+        'g1',
+        'cover1.png',
+        'job1',
+        3,
+        'https://example.com/cover1.png'
+      )
+      const okGrouped = createOutputAsset('g2', 'cover2.png', 'job2', 2)
+
+      mockResolveOutputAssetItems.mockImplementation(
+        (metadata: { jobId: string }) => {
+          if (metadata.jobId === 'job1') {
+            return Promise.reject(new Error('job1 lookup failed'))
+          }
+          return Promise.resolve([
+            createOutputAsset('g2-a', 'out2a.png', 'job2'),
+            createOutputAsset('g2-b', 'out2b.png', 'job2')
+          ])
+        }
+      )
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([failingGrouped, okGrouped])
+
+      await vi.waitFor(() => {
+        expect(mockDownloadFile).toHaveBeenCalledTimes(3)
+      })
+
+      const filenames = mockDownloadFile.mock.calls.map((call) => call[1])
+      expect(filenames).toEqual(['cover1.png', 'out2a.png', 'out2b.png'])
     })
   })
 
