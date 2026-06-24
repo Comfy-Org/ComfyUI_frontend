@@ -157,7 +157,7 @@ describe('EssentialNodeCard', () => {
 
       expect(mockStartDrag).toHaveBeenCalledWith(
         expect.objectContaining({ name: 'LoadImage' }),
-        'native'
+        { mode: 'native' }
       )
     })
 
