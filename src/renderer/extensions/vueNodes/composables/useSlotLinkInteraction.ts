@@ -4,7 +4,7 @@ import type { Fn } from '@vueuse/core'
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
@@ -32,10 +32,12 @@ import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { createRafBatch } from '@/utils/rafBatch'
 
 interface SlotInteractionOptions {
-  nodeId: string
+  nodeId?: SerializedNodeId
   index: number
   type: 'input' | 'output'
 }
@@ -109,10 +111,12 @@ export function resolvePointerTarget(
 }
 
 export function useSlotLinkInteraction({
-  nodeId,
+  nodeId: rawNodeId,
   index,
   type
 }: SlotInteractionOptions): SlotInteractionHandlers {
+  const nodeId =
+    rawNodeId === undefined || rawNodeId === '' ? null : toNodeId(rawNodeId)
   const {
     state,
     beginDrag,
@@ -141,7 +145,7 @@ export function useSlotLinkInteraction({
     const nodeId = link.node.id
     if (nodeId != null) {
       const isInputFrom = link.toType === 'output'
-      const key = getSlotKey(nodeId, link.fromSlotIndex, isInputFrom)
+      const key = getSlotKey(toNodeId(nodeId), link.fromSlotIndex, isInputFrom)
       const layout = layoutStore.getSlotLayout(key)
       if (layout) return layout.position
     }
@@ -218,7 +222,11 @@ export function useSlotLinkInteraction({
   ): { position: Point; direction: LinkDirection } | null => {
     if (!link) return null
 
-    const slotKey = getSlotKey(link.origin_id, link.origin_slot, false)
+    const slotKey = getSlotKey(
+      toNodeId(link.origin_id),
+      link.origin_slot,
+      false
+    )
     const layout = layoutStore.getSlotLayout(slotKey)
     if (!layout) return null
 
@@ -335,7 +343,9 @@ export function useSlotLinkInteraction({
         ?.querySelector<HTMLElement>('[data-slot-key]')
       const elWithNode = target.closest<HTMLElement>('[data-node-id]')
       hoveredSlotKey = elWithSlot?.dataset['slotKey'] ?? null
-      hoveredNodeId = elWithNode?.dataset['nodeId'] ?? null
+      hoveredNodeId = elWithNode?.dataset['nodeId']
+        ? toNodeId(elWithNode.dataset['nodeId'])
+        : null
       dragContext.lastPointerEventTarget = target
       dragContext.lastPointerTargetSlotKey = hoveredSlotKey
       dragContext.lastPointerTargetNodeId = hoveredNodeId
@@ -412,7 +422,7 @@ export function useSlotLinkInteraction({
   const raf = createRafBatch(processPointerMoveFrame)
 
   const canvas = app.canvas
-  const node = canvas.graph?.getNodeById(nodeId)
+  const node = nodeId ? canvas.graph?.getNodeById(nodeId) : null
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
     event.stopPropagation()
@@ -786,6 +796,7 @@ export function useSlotLinkInteraction({
   })
 
   function onDoubleClick(e: PointerEvent) {
+    if (!nodeId) return
     if (!app.canvas) return
     const { graph } = app.canvas
     if (!graph) return
@@ -795,6 +806,7 @@ export function useSlotLinkInteraction({
     node.onInputDblClick?.(index, e)
   }
   function onClick(e: PointerEvent) {
+    if (!nodeId) return
     if (!app.canvas) return
     const { graph } = app.canvas
     if (!graph) return

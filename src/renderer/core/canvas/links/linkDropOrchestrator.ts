@@ -1,11 +1,12 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { SlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 interface DropResolutionContext {
   adapter: LinkConnectorAdapter | null
@@ -63,7 +64,7 @@ export const resolveNodeSurfaceSlotCandidate = (
 
   if (!adapter || !graph) return null
 
-  const nodeId: NodeId = nodeIdAttr
+  const nodeId: NodeId = toNodeId(nodeIdAttr)
 
   const cachedPreferredSlotForNode = session.preferredSlotForNode.get(nodeId)
   if (cachedPreferredSlotForNode !== undefined) {
@@ -94,7 +95,7 @@ export const resolveNodeSurfaceSlotCandidate = (
     return null
   }
 
-  const key = getSlotKey(String(nodeId), index, isInput)
+  const key = getSlotKey(nodeId, index, isInput)
   const layout = layoutStore.getSlotLayout(key)
   if (!layout) {
     session.preferredSlotForNode.set(nodeId, null)

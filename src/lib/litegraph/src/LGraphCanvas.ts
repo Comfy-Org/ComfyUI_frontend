@@ -11,6 +11,7 @@ import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculatio
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -4311,7 +4312,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const newPositions = created
       .filter((item): item is LGraphNode => item instanceof LGraphNode)
       .map((node) => ({
-        nodeId: String(node.id),
+        nodeId: toNodeId(node.id),
         bounds: {
           x: node.pos[0],
           y: node.pos[1],

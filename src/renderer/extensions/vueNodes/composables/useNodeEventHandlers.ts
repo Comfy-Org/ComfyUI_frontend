@@ -15,7 +15,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
@@ -23,7 +23,7 @@ function useNodeEventHandlersIndividual() {
   const { bringNodeToFront } = useNodeZIndex()
   const { shouldHandleNodePointerEvents } = useCanvasInteractions()
 
-  function getNode(nodeId: SerializedNodeId) {
+  function getNode(nodeId: NodeId) {
     return nodeManager.value?.getNode(String(nodeId))
   }
 
@@ -31,7 +31,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node selection events
    * Supports single selection and multi-select with Ctrl/Cmd
    */
-  function handleNodeSelect(event: PointerEvent, nodeId: SerializedNodeId) {
+  function handleNodeSelect(event: PointerEvent, nodeId: NodeId) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas) return
@@ -68,7 +68,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node collapse/expand state changes
    * Uses LiteGraph's native collapse method for proper state management
    */
-  function handleNodeCollapse(nodeId: SerializedNodeId, collapsed: boolean) {
+  function handleNodeCollapse(nodeId: NodeId, collapsed: boolean) {
     if (!shouldHandleNodePointerEvents.value) return
 
     const node = getNode(nodeId)
@@ -85,7 +85,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node title updates
    * Updates the title in LiteGraph for persistence across sessions
    */
-  function handleNodeTitleUpdate(nodeId: SerializedNodeId, newTitle: string) {
+  function handleNodeTitleUpdate(nodeId: NodeId, newTitle: string) {
     if (!shouldHandleNodePointerEvents.value) return
 
     const node = getNode(nodeId)
@@ -104,7 +104,7 @@ function useNodeEventHandlersIndividual() {
    * Handle node right-click context menu events
    * Integrates with LiteGraph's context menu system
    */
-  function handleNodeRightClick(event: PointerEvent, nodeId: SerializedNodeId) {
+  function handleNodeRightClick(event: PointerEvent, nodeId: NodeId) {
     if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas) return
@@ -125,7 +125,7 @@ function useNodeEventHandlersIndividual() {
   }
 
   function toggleNodeSelectionAfterPointerUp(
-    nodeId: SerializedNodeId,
+    nodeId: NodeId,
     multiSelect: boolean
   ) {
     if (!shouldHandleNodePointerEvents.value) return

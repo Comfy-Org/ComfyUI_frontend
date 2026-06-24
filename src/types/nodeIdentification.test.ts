@@ -205,7 +205,7 @@ describe('nodeIdentification', () => {
       })
 
       it('should reject an empty array', () => {
-        const emptyNodeIds = [] as NodeId[]
+        const emptyNodeIds: NodeId[] = []
         expect(() => createNodeExecutionId(emptyNodeIds)).toThrow(
           'NodeExecutionId requires at least one node ID'
         )

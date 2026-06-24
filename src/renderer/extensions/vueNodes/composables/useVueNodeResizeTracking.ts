@@ -65,7 +65,7 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
       dataAttribute: 'nodeId',
       updateHandler: (updates) => {
         const nodeUpdates = updates.map(({ id, bounds }) => ({
-          nodeId: id as NodeId,
+          nodeId: toNodeId(id),
           bounds
         }))
         layoutStore.batchUpdateNodeBounds(nodeUpdates)
@@ -132,7 +132,7 @@ const resizeObserver = new ResizeObserver((entries) => {
     // slot-layout pipeline and skip bounds processing entirely.
     const widgetsGridParentNodeId = element.dataset.widgetsGridNodeId
     if (widgetsGridParentNodeId) {
-      scheduleSlotLayoutSync(widgetsGridParentNodeId)
+      scheduleSlotLayoutSync(toNodeId(widgetsGridParentNodeId))
       continue
     }
 
@@ -260,7 +260,7 @@ const resizeObserver = new ResizeObserver((entries) => {
   // After node bounds are updated, refresh slot cached offsets and layouts
   if (nodesNeedingSlotResync.size > 0) {
     for (const nodeId of nodesNeedingSlotResync) {
-      syncNodeSlotLayoutsFromDOM(String(nodeId))
+      syncNodeSlotLayoutsFromDOM(nodeId)
     }
   }
 })

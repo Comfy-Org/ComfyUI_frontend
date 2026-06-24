@@ -15,6 +15,7 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { app } from '@/scripts/app'
 import type { SlotLayout } from '@/renderer/core/layout/types'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { nodeId as toNodeId } from '@/types/nodeId'
 import {
   isBoundsEqual,
@@ -25,12 +26,12 @@ import { useNodeSlotRegistryStore } from '@/renderer/extensions/vueNodes/stores/
 import { createRafBatch } from '@/utils/rafBatch'
 
 // RAF batching
-const pendingNodes = new Set<string>()
+const pendingNodes = new Set<NodeId>()
 const raf = createRafBatch(() => {
   flushScheduledSlotLayoutSync()
 })
 
-export function scheduleSlotLayoutSync(nodeId: string) {
+export function scheduleSlotLayoutSync(nodeId: NodeId) {
   // Drop signals for unregistered nodes (e.g. preview nodes with synthetic
   // ids from LGraphNodePreview) - they'd otherwise pump setDirty per RAF.
   if (!useNodeSlotRegistryStore().getNode(nodeId)) return
@@ -71,7 +72,7 @@ export function requestSlotLayoutSyncForAllNodes(): void {
 }
 
 function createSlotLayout(options: {
-  nodeId: string
+  nodeId: NodeId
   index: number
   type: 'input' | 'output'
   centerCanvas: { x: number; y: number }
@@ -81,7 +82,7 @@ function createSlotLayout(options: {
   const half = size / 2
 
   return {
-    nodeId: toNodeId(nodeId),
+    nodeId,
     index,
     type,
     position: { x: centerCanvas.x, y: centerCanvas.y },
@@ -119,7 +120,7 @@ export function flushScheduledSlotLayoutSync() {
   completePendingSlotSync()
 }
 
-export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
+export function syncNodeSlotLayoutsFromDOM(nodeId: NodeId) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node) return
@@ -225,7 +226,7 @@ export function syncNodeSlotLayoutsFromDOM(nodeId: string) {
   if (batch.length) layoutStore.batchUpdateSlotLayouts(batch)
 }
 
-function updateNodeSlotsFromCache(nodeId: string) {
+function updateNodeSlotsFromCache(nodeId: NodeId) {
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
   const node = nodeSlotRegistryStore.getNode(nodeId)
   if (!node) return
@@ -261,12 +262,14 @@ function updateNodeSlotsFromCache(nodeId: string) {
 }
 
 export function useSlotElementTracking(options: {
-  nodeId: string
+  nodeId?: SerializedNodeId
   index: number
   type: 'input' | 'output'
   element: Ref<HTMLElement | null>
 }) {
-  const { nodeId, index, type, element } = options
+  const { nodeId: rawNodeId, index, type, element } = options
+  const nodeId =
+    rawNodeId === undefined || rawNodeId === '' ? null : toNodeId(rawNodeId)
   const nodeSlotRegistryStore = useNodeSlotRegistryStore()
 
   onMounted(() => {
@@ -308,7 +311,7 @@ export function useSlotElementTracking(options: {
         }
 
         // Register slot
-        const slotKey = getSlotKey(toNodeId(nodeId), index, type === 'input')
+        const slotKey = getSlotKey(nodeId, index, type === 'input')
 
         // Defensive cleanup: remove stale entry if it exists with different element
         // This handles edge cases where Vue component reuse prevents proper unmount
@@ -337,7 +340,7 @@ export function useSlotElementTracking(options: {
     if (!node) return
 
     // Remove this slot from registry and layout
-    const slotKey = getSlotKey(toNodeId(nodeId), index, type === 'input')
+    const slotKey = getSlotKey(nodeId, index, type === 'input')
     const entry = node.slots.get(slotKey)
     if (entry) {
       delete entry.el.dataset.slotKey
@@ -353,6 +356,8 @@ export function useSlotElementTracking(options: {
   })
 
   return {
-    requestSlotLayoutSync: () => scheduleSlotLayoutSync(nodeId)
+    requestSlotLayoutSync: () => {
+      if (nodeId) scheduleSlotLayoutSync(nodeId)
+    }
   }
 }

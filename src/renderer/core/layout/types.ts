@@ -35,7 +35,7 @@ export interface Bounds {
 }
 
 export interface NodeBoundsUpdate {
-  nodeId: SerializedNodeId
+  nodeId: NodeId
   bounds: Bounds
 }
 

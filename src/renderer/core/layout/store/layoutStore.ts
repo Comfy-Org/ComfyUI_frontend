@@ -1513,8 +1513,7 @@ class LayoutStoreImpl implements LayoutStore {
     const nodeIds: NodeId[] = []
     const boundsRecord: BatchUpdateBoundsOperation['bounds'] = {}
 
-    for (const { nodeId: rawNodeId, bounds } of updates) {
-      const nodeId = toNodeId(rawNodeId)
+    for (const { nodeId, bounds } of updates) {
       const ynode = this.ynodes.get(String(nodeId))
       if (!ynode) continue
       const currentLayout = yNodeToLayout(ynode)

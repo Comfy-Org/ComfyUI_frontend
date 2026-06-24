@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 
 import type { ComputedRef } from 'vue'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@/utils/uuid'
@@ -11,6 +11,8 @@ import { isCurveData } from '@/components/curve/curveUtils'
 import type { CurveData } from '@/components/curve/types'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import { hexToInt } from '@/utils/colorUtil'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 interface AutogrowGroup {
@@ -92,7 +94,7 @@ export function extractUniformSources(
     if (link.origin_slot >= sourceNode.widgets.length) continue
     const widget = sourceNode.widgets[link.origin_slot]
     const source: UniformSource = {
-      nodeId: sourceNode.id as NodeId,
+      nodeId: toNodeId(sourceNode.id),
       widgetName: widget.name,
       directValue: () => widget.value
     }
@@ -162,7 +164,7 @@ export function useGLSLUniforms(
       if (!upstreamNode) break
       const upstreamWidgets = widgetValueStore.getNodeWidgets(
         gId,
-        upstreamNode.id as NodeId
+        toNodeId(upstreamNode.id)
       )
       if (
         upstreamWidgets.length === 0 ||
@@ -249,7 +251,7 @@ export function useGLSLUniforms(
 
       const upstreamWidgets = widgetValueStore.getNodeWidgets(
         gId,
-        upstreamNode.id as NodeId
+        toNodeId(upstreamNode.id)
       )
       const curveWidget = upstreamWidgets.find((w) => isCurveData(w.value))
       if (!curveWidget) break

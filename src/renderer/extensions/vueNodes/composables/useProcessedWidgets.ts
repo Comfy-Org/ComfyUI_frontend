@@ -32,6 +32,7 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
@@ -68,7 +69,7 @@ interface ProcessedWidget {
 
 interface WidgetUiCallbacks {
   getTooltipConfig: (widget: SafeWidgetData) => TooltipOptions
-  handleNodeRightClick: (e: PointerEvent, nodeId: string) => void
+  handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
 }
 
 interface ComputeProcessedWidgetsOptions {
@@ -323,7 +324,7 @@ export function computeProcessedWidgets({
     const handleContextMenu = (e: PointerEvent) => {
       e.preventDefault()
       e.stopPropagation()
-      if (nodeId !== undefined) ui.handleNodeRightClick(e, String(nodeId))
+      if (nodeId !== undefined) ui.handleNodeRightClick(e, nodeId)
       showNodeOptions(
         e,
         widget.name,
