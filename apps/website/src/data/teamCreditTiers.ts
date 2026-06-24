@@ -45,7 +45,7 @@ export const teamCreditTiers: readonly TeamCreditTier[] = [
 ] as const
 
 export function formatTeamCreditsLong(n: number): string {
-  return n.toLocaleString('en-US').replace(/,/g, ' ')
+  return n.toLocaleString('en-US')
 }
 
 export function formatTeamCreditsShort(n: number): string {
