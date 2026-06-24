@@ -25,7 +25,11 @@ export function useNodePreviewAndDrag(
   nodeDef: Ref<ComfyNodeDefImpl | undefined>,
   panelRef?: Ref<HTMLElement | null>
 ): UseNodePreviewAndDragReturn {
-  const { startDrag, handleNativeDrop } = useNodeDragToCanvas()
+  const {
+    startDrag,
+    handleNativeDrop,
+    isDragging: isPlacingNode
+  } = useNodeDragToCanvas()
   const settingStore = useSettingStore()
   const sidebarLocation = computed<'left' | 'right'>(() =>
     settingStore.get('Comfy.Sidebar.Location')
@@ -34,7 +38,11 @@ export function useNodePreviewAndDrag(
   const previewRef = ref<HTMLElement | null>(null)
   const isHovered = ref(false)
   const isDragging = ref(false)
-  const showPreview = computed(() => isHovered.value && !isDragging.value)
+  // Hide the hover preview while a node is being placed (click or drag) so it
+  // doesn't compete with the cursor-following placement preview.
+  const showPreview = computed(
+    () => isHovered.value && !isDragging.value && !isPlacingNode.value
+  )
 
   const nodePreviewStyle = ref<CSSProperties>({
     position: 'fixed',

@@ -14,6 +14,12 @@ vi.mock(
   })
 )
 
+// startDrag/cancelDrag toggle the litegraph ghost-placement flag; stub the
+// store so the composable runs without an active Pinia in this component test.
+vi.mock('@/renderer/core/canvas/canvasStore', () => ({
+  useCanvasStore: vi.fn(() => ({ isGhostPlacing: false, canvas: undefined }))
+}))
+
 const nodeDef = fromPartial<ComfyNodeDefImpl>({ name: 'TestNode' })
 
 function moveMouse(clientX: number, clientY: number) {

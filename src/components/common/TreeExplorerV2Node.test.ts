@@ -51,7 +51,8 @@ const mockHandleNativeDrop = vi.fn()
 vi.mock('@/composables/node/useNodeDragToCanvas', () => ({
   useNodeDragToCanvas: () => ({
     startDrag: mockStartDrag,
-    handleNativeDrop: mockHandleNativeDrop
+    handleNativeDrop: mockHandleNativeDrop,
+    isDragging: ref(false)
   })
 }))
 

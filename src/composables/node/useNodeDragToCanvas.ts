@@ -66,6 +66,17 @@ function isOverCanvas(clientX: number, clientY: number): boolean {
   )
 }
 
+// The canvas is full-bleed and sidebar/properties panels are pointer-events-auto
+// overlays painted on top of it, so a point inside the canvas rect can still be
+// over a panel. Hit-test the actual event target instead, mirroring how native
+// drag treats the canvas as its only drop target: releasing over a panel cancels.
+function isCanvasTarget(target: EventTarget | null): boolean {
+  const canvasElement = useCanvasStore().canvas?.canvas
+  return (
+    !!canvasElement && target instanceof Node && canvasElement.contains(target)
+  )
+}
+
 function addNodeAtPosition(clientX: number, clientY: number): boolean {
   const nodeDef = draggedNode.value
   if (!nodeDef) return false
@@ -101,7 +112,7 @@ function endDrag(e: PointerEvent) {
   if (dragMode.value !== 'click') return
 
   try {
-    addNodeAtPosition(e.clientX, e.clientY)
+    if (isCanvasTarget(e.target)) addNodeAtPosition(e.clientX, e.clientY)
   } finally {
     cancelDrag()
   }
@@ -114,7 +125,7 @@ function handleKeydown(e: KeyboardEvent) {
 // Prevent LiteGraph's empty-canvas hit-test from deselecting the placed node on pointerup.
 function blockCommitPointerDown(e: PointerEvent) {
   if (!isDragging.value || dragMode.value !== 'click') return
-  if (!isOverCanvas(e.clientX, e.clientY)) return
+  if (!isCanvasTarget(e.target)) return
   e.stopImmediatePropagation()
 }
 
@@ -139,6 +150,7 @@ function cleanupGlobalListeners() {
 }
 
 function cancelDrag() {
+  if (isDragging.value) useCanvasStore().isGhostPlacing = false
   isDragging.value = false
   draggedNode.value = null
   dragMode.value = 'click'
@@ -162,6 +174,10 @@ export function useNodeDragToCanvas() {
     dragMode.value = mode
     pendingWidgetValues.value = widgetValues
     pendingSource.value = source
+    // Reuse the litegraph ghost-placement flag: Vue nodes render inert while
+    // it is set, so the release hit-tests the canvas instead of an existing
+    // node's DOM and placement over occupied areas isn't silently cancelled.
+    useCanvasStore().isGhostPlacing = true
     setupGlobalListeners()
   }
 
