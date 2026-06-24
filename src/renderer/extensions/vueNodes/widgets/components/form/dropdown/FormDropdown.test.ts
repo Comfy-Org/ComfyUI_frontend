@@ -1,11 +1,13 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import FormDropdown from './FormDropdown.vue'
+import { DROPDOWN_PANEL_CLASS } from './shared'
 import type { FormDropdownItem } from './types'
 
 function createItem(id: string, name: string): FormDropdownItem {
@@ -101,7 +103,7 @@ function mountDropdown(
       'onUpdate:isOpen': options.onUpdateIsOpen
     },
     global: {
-      plugins: [PrimeVue, i18n],
+      plugins: [PrimeVue, i18n, createPinia()],
       stubs: {
         FormDropdownInput: MockFormDropdownInput,
         Popover: MockPopover,
@@ -133,6 +135,12 @@ async function openDropdown(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('FormDropdown', () => {
+  beforeEach(() => {
+    transformState.camera.x = 0
+    transformState.camera.y = 0
+    transformState.camera.z = 1
+  })
+
   describe('filteredItems updates when items prop changes', () => {
     it('updates displayed items when items prop changes', async () => {
       const { rerender } = mountDropdown([
@@ -390,6 +398,21 @@ describe('FormDropdown', () => {
     outside.remove()
   })
 
+  it('closes when the canvas viewport moves', async () => {
+    const onUpdateIsOpen = vi.fn()
+    const { user } = mountDropdown([createItem('1', 'alpha')], {
+      onUpdateIsOpen
+    })
+    await openDropdown(user)
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+
+    transformState.camera.x += 77
+    await flushPromises()
+
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
+  })
+
   it('stays open on a pointerdown inside the menu', async () => {
     const onUpdateIsOpen = vi.fn()
     const { user } = mountDropdown([createItem('1', 'alpha')], {
@@ -405,19 +428,24 @@ describe('FormDropdown', () => {
     expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
   })
 
-  it('closes when the canvas viewport moves', async () => {
+  it('stays open on a pointerdown inside a body-teleported sub-popover panel', async () => {
     const onUpdateIsOpen = vi.fn()
     const { user } = mountDropdown([createItem('1', 'alpha')], {
       onUpdateIsOpen
     })
     await openDropdown(user)
 
-    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+    const panel = document.createElement('div')
+    panel.classList.add(DROPDOWN_PANEL_CLASS)
+    const option = document.createElement('button')
+    panel.appendChild(option)
+    document.body.appendChild(panel)
 
-    transformState.camera.x += 25
+    option.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     await flushPromises()
 
-    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(false)
+    expect(onUpdateIsOpen).toHaveBeenLastCalledWith(true)
+    panel.remove()
   })
 
   it('does not select a search result from multi-select dropdowns', async () => {

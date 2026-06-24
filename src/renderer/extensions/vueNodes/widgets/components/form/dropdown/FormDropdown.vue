@@ -7,11 +7,11 @@ import {
 } from '@vueuse/core'
 import Popover from 'primevue/popover'
 import type { ComponentPublicInstance } from 'vue'
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
 
 import type {
   FilterOption,
@@ -21,7 +21,11 @@ import type {
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'
-import { defaultSearcher, getDefaultSortOptions } from './shared'
+import {
+  DROPDOWN_PANEL_CLASS,
+  defaultSearcher,
+  getDefaultSortOptions
+} from './shared'
 import type { FormDropdownItem, LayoutMode, SortOption } from './types'
 
 interface Props {
@@ -214,10 +218,10 @@ const closeDropdown = ({ restoreFocus = false } = {}) => {
 
 /**
  * Dismiss on `pointerdown` rather than PrimeVue's default `click` (mouseup) so
- * the dropdown closes the instant the press lands. Closing on mouseup let a
- * press-and-drag start before dismissal, leaving the body-teleported popover
- * stranded while its node moved, and made a focused inner scrollbar swallow the
- * first outside click. The trigger is excluded so its own click still toggles.
+ * the dropdown closes the instant an outside press lands, and a focused inner
+ * scrollbar cannot swallow the first outside click. Presses on the trigger and
+ * on the menu's body-teleported sub-popovers (Sort / Ownership / Base-model)
+ * are excluded so they keep working instead of closing the parent.
  */
 useEventListener(
   window,
@@ -229,22 +233,25 @@ useEventListener(
     const path = event.composedPath()
     if (menuEl && path.includes(menuEl)) return
     if (triggerEl && path.includes(triggerEl)) return
+    if (path.some(isInsideDropdownPanel)) return
     closeDropdown()
   },
   { capture: true }
 )
 
-const { camera } = useTransformState()
+function isInsideDropdownPanel(target: EventTarget): boolean {
+  return (
+    target instanceof HTMLElement &&
+    target.classList.contains(DROPDOWN_PANEL_CLASS)
+  )
+}
 
 /**
- * The popover is teleported to the document body, so it cannot follow the
- * canvas viewport. Close it whenever the viewport moves — pan or zoom from
- * any input device (pointer drag, trackpad, wheel) — rather than inferring
- * a drag from low-level pointer events.
+ * The popover is teleported to `document.body`, so canvas gestures (pan, zoom,
+ * box select — any input device) move the node while the popover stays put.
+ * Dismiss as soon as such a gesture begins.
  */
-watch(camera, () => {
-  if (isOpen.value) closeDropdown()
-})
+useDismissOnCanvasGesture(isOpen, () => closeDropdown())
 
 function handleFileChange(event: Event) {
   if (disabled) return
