@@ -79,6 +79,7 @@ export interface SafeWidgetData {
     advanced?: boolean
     hidden?: boolean
     read_only?: boolean
+    removable?: boolean
     values?: unknown
   }
   /** Input specification from node definition */
@@ -206,7 +207,8 @@ function extractWidgetDisplayOptions(
     canvasOnly: widget.options.canvasOnly,
     advanced: widget.options?.advanced ?? widget.advanced,
     hidden: widget.options.hidden,
-    read_only: widget.options.read_only
+    read_only: widget.options.read_only,
+    removable: widget.options.removable
   }
 }
 
