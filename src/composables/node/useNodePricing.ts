@@ -25,7 +25,7 @@ import type {
 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { nodeId as toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { Expression } from 'jsonata'
 import jsonata from 'jsonata'
 
@@ -460,8 +460,7 @@ const nodeRevisions = new Map<NodeId, Ref<number>>()
  * Get or create a revision ref for a specific node.
  * Each node has its own independent ref, so updates to one won't trigger others.
  */
-const getNodeRevisionRef = (rawNodeId: SerializedNodeId): Ref<number> => {
-  const nodeId = toNodeId(rawNodeId)
+const getNodeRevisionRef = (nodeId: NodeId): Ref<number> => {
   let rev = nodeRevisions.get(nodeId)
   if (!rev) {
     rev = ref(0)
@@ -513,7 +512,7 @@ const scheduleEvaluation = (
 
       if (LiteGraph.vueNodesMode) {
         // VueNodes mode: bump per-node revision (only this node re-renders)
-        getNodeRevisionRef(node.id).value++
+        getNodeRevisionRef(toNodeId(node.id)).value++
       }
       pricingTick.value++
     })
