@@ -40,7 +40,7 @@ jobs:
 
           # Allowlist bots so they don't need to sign (optional, comma-separated).
           # *[bot] is a catch-all for any GitHub App bot account.
-          allowlist: ampagent,claude,coderabbitai[bot],comfy-pr-bot,dependabot[bot],github-actions[bot],copilot-swe-agent[bot],devin-ai-integration[bot],*[bot]
+          allowlist: actions-user,ampagent,claude,coderabbitai[bot],comfy-pr-bot,dependabot[bot],github-actions[bot],copilot-swe-agent[bot],devin-ai-integration[bot],*[bot]
 
           # Custom PR comment messages
           custom-notsigned-prcomment: |
