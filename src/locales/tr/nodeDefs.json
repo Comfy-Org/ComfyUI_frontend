@@ -700,6 +700,36 @@
       }
     }
   },
+  "BriaVideoReplaceBackground": {
+    "description": "Bir videonun arka planını, Bria kullanarak sağlanan bir görsel veya video ile değiştirin. Çıktı, ön planın çözünürlüğünü ve kare hızını korur; farklı en-boy oranına sahip bir arka plan sığdırmak için uzatılır, bu yüzden bozulmamış sonuçlar için eşleştirin.",
+    "display_name": "Bria Video Arka Plan Değiştir",
+    "inputs": {
+      "background_image": {
+        "name": "background_image",
+        "tooltip": "Ön planın arkasına yerleştirilecek arka plan görseli. Sadece bir arka plan görseli veya bir arka plan videosu sağlayın, ikisini birden değil."
+      },
+      "background_video": {
+        "name": "background_video",
+        "tooltip": "Ön planın arkasına yerleştirilecek arka plan videosu. Sadece bir arka plan görseli veya bir arka plan videosu sağlayın, ikisini birden değil."
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed, düğümün tekrar çalıştırılıp çalıştırılmayacağını kontrol eder; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Arka planı değiştirilecek ön plan videosu."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "ByteDance2FirstLastFrameNode": {
     "description": "Seedance 2.0 kullanarak bir ilk kare görseli ve isteğe bağlı son kare görseli ile video oluşturun.",
     "display_name": "ByteDance Seedance 2.0 İlk-Son-Kareden Videoya",
@@ -2441,6 +2471,10 @@
         "name": "birleştirme yöntemi",
         "tooltip": "Bağlam pencerelerini birleştirmek için kullanılacak yöntem."
       },
+      "latent_retain_index_list": {
+        "name": "latent_retain_index_list",
+        "tooltip": "Her pencere için gürültü latent'inde tutulacak latent indekslerinin listesi. Referans içeriğin (ör. başlangıç görseli) ayrı koşullandırma kanallarında değil, doğrudan gürültü latent'inde bulunduğu iş akışlarında kullanılır (ör. inplace tarzı I2V, LTXV, AnimateDiff gibi). cond_retain_index_list'ten bağımsızdır."
+      },
       "model": {
         "name": "model",
         "tooltip": "Örnekleme sırasında bağlam pencerelerinin uygulanacağı model."
@@ -2873,6 +2907,10 @@
       "audio": {
         "name": "ses",
         "tooltip": "Videoya eklenecek ses."
+      },
+      "bit_depth": {
+        "name": "bit_depth",
+        "tooltip": "Oluşturulan videonun bit derinliği. 10-bit, daha az bantlanma ile daha yumuşak geçişler sağlar, ancak bazı oynatıcılar ve sonraki düğümler bunu desteklemeyebilir."
       },
       "fps": {
         "name": "fps"
@@ -5189,6 +5227,10 @@
       },
       "2": {
         "name": "fps",
+        "tooltip": null
+      },
+      "3": {
+        "name": "bit_depth",
         "tooltip": null
       }
     }
@@ -7996,7 +8038,8 @@
         "name": "oluşturduktan sonra kontrol et"
       },
       "generate_audio": {
-        "name": "ses oluştur"
+        "name": "ses oluştur",
+        "tooltip": "'kling-3.0-turbo' her zaman yerel ses üretir, bu nedenle ses seçeneği dikkate alınmaz."
       },
       "model": {
         "name": "model",
@@ -8282,6 +8325,57 @@
       "1": {
         "name": "negatif",
         "tooltip": null
+      }
+    }
+  },
+  "LTXVContextWindows": {
+    "description": "LTXV benzeri modeller için bağlam pencerelerini ayarlayın.",
+    "display_name": "LTXV Bağlam Pencereleri",
+    "inputs": {
+      "closed_loop": {
+        "name": "closed_loop",
+        "tooltip": "Bağlam penceresi döngüsünün kapatılıp kapatılmayacağı; yalnızca döngülü zamanlamalar için geçerlidir."
+      },
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "Bağlam penceresinin gerçek karelerdeki uzunluğu. 8*n + 1 olmalıdır."
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "Bağlam penceresinin gerçek karelerdeki örtüşme miktarı."
+      },
+      "context_schedule": {
+        "name": "context_schedule",
+        "tooltip": "Bağlam pencereleri için adıma bağlı zamanlama algoritması."
+      },
+      "context_stride": {
+        "name": "context_stride",
+        "tooltip": "Bağlam penceresinin adım aralığı; yalnızca uniform zamanlamalar için geçerlidir."
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "FreeNoise gürültü karıştırmasını uygulayıp uygulamama; pencere karışımını iyileştirir."
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "Bağlam pencerelerini birleştirmek için kullanılacak yöntem."
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "Örnekleme sırasında bağlam pencereleri uygulanacak model."
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "Her bağlam penceresinde ilk latent kareyi tut (ilk referansın korunmasına yardımcı olabilir)."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Birden fazla koşullandırmanın (ConditionCombine ile oluşturulan) pencere başına bölünüp bölünmeyeceği; bölge indeksine göre."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "Örnekleme sırasında bağlam pencereleri uygulanmış model."
       }
     }
   },
@@ -9045,6 +9139,45 @@
       }
     }
   },
+  "Load3DAdvanced": {
+    "display_name": "3D Yükle (Gelişmiş)",
+    "inputs": {
+      "height": {
+        "name": "height"
+      },
+      "model_file": {
+        "name": "model_file"
+      },
+      "viewport_state": {
+        "name": "viewport_state"
+      },
+      "width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model_3d",
+        "tooltip": null
+      },
+      "1": {
+        "name": "model_3d_info",
+        "tooltip": null
+      },
+      "2": {
+        "name": "camera_info",
+        "tooltip": null
+      },
+      "3": {
+        "name": "width",
+        "tooltip": null
+      },
+      "4": {
+        "name": "height",
+        "tooltip": null
+      }
+    }
+  },
   "LoadAudio": {
     "display_name": "Ses Yükle",
     "inputs": {
@@ -9704,6 +9837,262 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ExtendVideoNode": {
+    "description": "Önceki bir Ray 3.2 üretimini ileriye (sonrasına devam) veya geriye (öncesine giriş) doğru uzatın. Önceki bir Luma Ray 3.2 düğümünün generation_id çıktısını bağlayın. Uzatmalar her zaman 5 saniyedir.",
+    "display_name": "Luma Ray 3.2 Video Uzat",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "direction": {
+        "name": "direction",
+        "tooltip": "İleri, önceki clip'ten sonra devam eder; geri, onun önüne eklenir."
+      },
+      "direction_loop": {
+        "name": "döngü"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Yeni içerik için metin istemi."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirlemek için seed; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "source_generation_id": {
+        "name": "source_generation_id",
+        "tooltip": "Uzatılacak önceki Ray 3.2 videonun generation_id'si. Başka bir Luma Ray 3.2 düğümünün generation_id çıktısını bağlayın."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32ImageToVideoNode": {
+    "description": "Luma'nın Ray 3.2 modeliyle bir başlangıç ve/veya bitiş karesi kullanarak video oluşturun. Görsele sabitlenen üretimler her zaman 5 saniyedir.",
+    "display_name": "Luma Ray 3.2 Görselden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "end_frame": {
+        "name": "end_frame",
+        "tooltip": "Oluşturulan videonun son karesi."
+      },
+      "loop": {
+        "name": "döngü",
+        "tooltip": "Videoyu kusursuz bir şekilde döngüye sokar. end_frame ayarlandığında kullanılamaz."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Video üretimi için metin istemi."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirlemek için seed; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "start_frame": {
+        "name": "start_frame",
+        "tooltip": "Oluşturulan videonun ilk karesi."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframeNode": {
+    "description": "Bir rehber görseli Ray 3.2 çıktı videosu zaman çizelgesinde bir konuma sabitleyin. Bunu Luma Ray 3.2 Ana Karelerden Videoya düğümünün 'keyframes' girişine bağlayın; aşağıdaki isteğe bağlı 'keyframes' girişiyle birkaçını zincirleyin.",
+    "display_name": "Luma Ray 3.2 Ana Kare",
+    "inputs": {
+      "image": {
+        "name": "image",
+        "tooltip": "Çıktı videosunun seçilen anına yerleştirilecek rehber görsel."
+      },
+      "keyframes": {
+        "name": "keyframes",
+        "tooltip": "Bununla zincirlenebilecek isteğe bağlı önceki ana kareler."
+      },
+      "position": {
+        "name": "position",
+        "tooltip": "Bu görselin çıktı video zaman çizelgesinde nasıl yerleştirileceği."
+      },
+      "position_fraction": {
+        "name": "fraction"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "keyframes",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32KeyframesToVideoNode": {
+    "description": "Her biri zaman çizelgesinde bir konuma sabitlenmiş rehber görseller dizisi arasında geçiş yapan bir video oluşturun. Luma Ray 3.2 Anahtar Kare düğümleriyle (en az 2 adet) diziyi oluşturun.",
+    "display_name": "Luma Ray 3.2 Anahtar Karelerden Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "duration": {
+        "name": "süre"
+      },
+      "keyframes": {
+        "name": "anahtar kareler",
+        "tooltip": "Luma Ray 3.2 Anahtar Kare düğümlerinden anahtar kare dizisi (en az 2 adet)."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Video oluşturma için metin istemi."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen seed; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "oluşturma_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32TextToVideoNode": {
+    "description": "Luma'nın Ray 3.2 modeliyle bir metin isteminden video oluşturun.",
+    "display_name": "Luma Ray 3.2 Metinden Videoya",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en-boy oranı"
+      },
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "duration": {
+        "name": "süre"
+      },
+      "loop": {
+        "name": "döngü",
+        "tooltip": "Videoyu kusursuz bir şekilde döngüye sok. Sadece 5 saniyelik sürede kullanılabilir."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Video oluşturma için metin istemi."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen seed; seed ne olursa olsun sonuçlar deterministik değildir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "oluşturma_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoEditNode": {
+    "description": "Mevcut bir videoyu yeni bir istemle Luma Ray 3.2 kullanarak yeniden oluşturun (yeniden stillendir, yeniden ışıklandır, öğe ekle veya çıkar) ve orijinal hareketi koruyun. Kaynak video en fazla 18 saniye olabilir; düzenlenen video kaynağın süresini korur.",
+    "display_name": "Luma Ray 3.2 Video Düzenle",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol et"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "İstenen düzenlemeyi tanımlar."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen seed; seed ne olursa olsun sonuçlar deterministik değildir."
+      },
+      "strength": {
+        "name": "güç",
+        "tooltip": "Kaynağı ne kadar koruyacağı veya yeniden hayal edeceği. 'auto' Ray 3.2'nin seçmesine izin verir; adhere_* en çok korur, flex_* dengelidir, reimagine_* en çok değiştirir."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Düzenlenecek kaynak video. En fazla 18 saniye."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "oluşturma_id",
+        "tooltip": null
+      }
+    }
+  },
+  "LumaRay32VideoReframeNode": {
+    "description": "Mevcut bir videonun en-boy oranını değiştirin, yeni açığa çıkan tuval alanlarını doldurmak için Luma Ray 3.2 kullanılır. Kaynak video en fazla 30 saniye. Çıktı süresi başına ücretlendirilir.",
+    "display_name": "Luma Ray 3.2 Video Yeniden Çerçeveleme",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Yeni açığa çıkan tuval alanlarının nasıl doldurulacağını açıklar."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Yeniden çerçevelenecek kaynak video. En fazla 30 saniye."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "generation_id",
         "tooltip": null
       }
     }
@@ -14036,6 +14425,12 @@
       "audioUI": {
         "name": "sesArayüzü"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "PreviewGaussianSplat": {
@@ -14090,6 +14485,11 @@
     "inputs": {
       "images": {
         "name": "görüntüler"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
       }
     }
   },
@@ -15825,6 +16225,98 @@
       }
     }
   },
+  "RunwayAleph2KeyframeNode": {
+    "description": "Bir rehber görseli, giriş (kaynak) videosunun bir anına sabitleyin, böylece Aleph2 düzenlemeyi o anda yönlendirir. Bunu Runway Aleph2 Video to Video düğümünün 'keyframes' girişine bağlayın; aşağıdaki isteğe bağlı 'keyframes' girişiyle birkaçını (en fazla 5) zincirleyin.",
+    "display_name": "Runway Aleph2 Anahtar Kare",
+    "inputs": {
+      "image": {
+        "name": "görsel",
+        "tooltip": "Giriş videosunun seçilen anında uygulanacak rehber görsel."
+      },
+      "keyframes": {
+        "name": "anahtar kareler",
+        "tooltip": "Bununla zincirlenebilecek isteğe bağlı önceki anahtar kareler."
+      },
+      "timing": {
+        "name": "zamanlama",
+        "tooltip": "Bu görselin giriş videosunun zaman çizelgesine nasıl yerleştirileceği."
+      },
+      "timing_seconds": {
+        "name": "saniye"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "anahtar kareler",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2PromptImageNode": {
+    "description": "Bir rehber görseli, çıktı (sonuç) videosunun bir anına sabitleyin, böylece düzenlenen videonun o anda nasıl görüneceğini yönlendirin. Bunu Runway Aleph2 Video to Video düğümünün 'prompt_images' girişine bağlayın; aşağıdaki isteğe bağlı 'prompt_images' girişiyle birkaçını (en fazla 5) zincirleyin.",
+    "display_name": "Runway Aleph2 Rehber Görsel",
+    "inputs": {
+      "image": {
+        "name": "görsel",
+        "tooltip": "Çıktı videosunun seçilen anına yerleştirilecek rehber görsel."
+      },
+      "position": {
+        "name": "konum",
+        "tooltip": "Bu görselin çıktı videosunun zaman çizelgesine nasıl yerleştirileceği."
+      },
+      "position_seconds": {
+        "name": "saniye"
+      },
+      "prompt_images": {
+        "name": "rehber görseller",
+        "tooltip": "Bununla zincirlenebilecek isteğe bağlı önceki rehber görseller."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "rehber görseller",
+        "tooltip": null
+      }
+    }
+  },
+  "RunwayAleph2VideoToVideoNode": {
+    "description": "Runway'in Aleph2 modeliyle bir metin istemi kullanarak videoyu düzenleyin. Aleph2, orijinal hareketi ve zamanlamayı koruyarak görüntünüzü dönüştürür (yeniden stil verme, yeniden aydınlatma, öğe ekleme veya kaldırma, bakış açısını değiştirme); çıktı çözünürlüğü, giriş videosuyla eşleşir ve video 2-30 saniye uzunluğunda ve en fazla 30 fps olmalıdır. Düzenlemeyi isteğe bağlı olarak anahtar karelerle (giriş videosuna sabitlenmiş) veya istem görselleriyle (çıktı videosuna sabitlenmiş) yönlendirebilirsiniz - ikisinden birini kullanın, ikisini birden değil.",
+    "display_name": "Runway Aleph2 Video'dan Video'ya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturduktan sonra kontrol"
+      },
+      "keyframes": {
+        "name": "anahtar kareler",
+        "tooltip": "Aleph2 Anahtar Kare düğümlerinden (en fazla 5) giriş videosuna sabitlenmiş rehber görseller. Anahtar kareleri veya istem görsellerini kullanın, ikisini birden değil."
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Çıktıda neyin görünmesi gerektiğini açıklar (1-1000 karakter)."
+      },
+      "prompt_images": {
+        "name": "istem görselleri",
+        "tooltip": "Aleph2 İstem Görseli düğümlerinden (en fazla 5) çıktı videosuna sabitlenmiş rehber görseller. Anahtar kareleri veya istem görsellerini kullanın, ikisini birden değil."
+      },
+      "public_figure_threshold": {
+        "name": "tanınmış kişi eşiği",
+        "tooltip": "Tanıdık kamuya mal olmuş kişiler için içerik denetimi."
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Oluşturma için rastgele tohum"
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Düzenlenecek giriş videosu. 2-30 saniye uzunluğunda ve en fazla 30 fps olmalıdır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "RunwayFirstLastFrameNode": {
     "description": "İlk ve son anahtar kareleri yükleyin, bir prompt taslağı oluşturun ve video üretin. Son karenin İlk kareden tamamen farklı olduğu durumlar gibi daha karmaşık geçişler, daha uzun 10 saniyelik süreden faydalanabilir. Bu, üretimin iki girdi arasında daha pürüzsüz geçiş yapması için daha fazla zaman tanır. Başlamadan önce, girdi seçimlerinizin üretiminizi başarıya ulaştıracağından emin olmak için bu en iyi uygulamaları gözden geçirin: https://help.runwayml.com/hc/en-us/articles/34170748696595-Creating-with-Keyframes-on-Gen-3.",
     "display_name": "Runway İlk-Son-Kare'den Videoya",
@@ -16117,6 +16609,9 @@
       },
       "draw_hands": {
         "name": "elleri_çiz"
+      },
+      "draw_head": {
+        "name": "Kafa Çiz"
       },
       "face_point_size": {
         "name": "yüz_nokta_boyutu"
@@ -16791,6 +17286,12 @@
       "images": {
         "name": "görüntüler"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      }
     }
   },
   "SaveAnimatedWEBP": {
@@ -16814,6 +17315,12 @@
       "quality": {
         "name": "kalite"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
+      }
     }
   },
   "SaveAudio": {
@@ -16827,6 +17334,12 @@
       },
       "filename_prefix": {
         "name": "dosyaadı_öneki"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -16849,6 +17362,12 @@
         "name": "format",
         "tooltip": "Sesin kaydedileceği dosya formatı."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioMP3": {
@@ -16866,6 +17385,12 @@
       "quality": {
         "name": "kalite"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
+      }
     }
   },
   "SaveAudioOpus": {
@@ -16882,6 +17407,12 @@
       },
       "quality": {
         "name": "kalite"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "audio",
+        "tooltip": null
       }
     }
   },
@@ -16912,6 +17443,11 @@
         "name": "görüntüler",
         "tooltip": "Kaydedilecek görüntüler."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "images"
+      }
     }
   },
   "SaveImageAdvanced": {
@@ -16935,6 +17471,12 @@
       "images": {
         "name": "görüntüler",
         "tooltip": "Kaydedilecek görüntüler."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -17003,6 +17545,11 @@
       "samples": {
         "name": "örnekler"
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "samples"
+      }
     }
   },
   "SaveLoRA": {
@@ -17032,6 +17579,12 @@
       },
       "svg": {
         "name": "svg"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "svg",
+        "tooltip": null
       }
     }
   },
@@ -17077,6 +17630,12 @@
         "name": "video",
         "tooltip": "Kaydedilecek video."
       }
+    },
+    "outputs": {
+      "0": {
+        "name": "video",
+        "tooltip": null
+      }
     }
   },
   "SaveWEBM": {
@@ -17098,6 +17657,12 @@
       "images": {
         "name": "görüntüler",
         "tooltip": "RGBA görseller, alfa kanalıyla şeffaf olarak kaydedilir (yalnızca vp9 codec)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "images",
+        "tooltip": null
       }
     }
   },
@@ -18677,6 +19242,37 @@
       }
     }
   },
+  "TextEncodeBooguEdit": {
+    "display_name": "TextEncodeBooguEdit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Düzenlenecek referans görsel(ler)i. Boogu, örnek başına bir referansa odaklanır; daha fazlasına da izin verilir."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeHunyuanVideo_ImageToVideo": {
     "display_name": "MetinKodlamaHunyuanVideo_GörüntüdenVideoya",
     "inputs": {
@@ -19464,6 +20060,22 @@
       }
     }
   },
+  "TripoImportModelNode": {
+    "description": "Harici bir 3D modeli (ör. Rodin, Hunyuan3D veya yerel bir dosyadan) Tripo'ya aktararak Tripo'nun son işlem düğümleriyle kullanın: Texture, Rig, Convert. GLB önerilir: dokular yalnızca dosyaya gömülü olduğunda aktarımda korunur. Aktarılan bir modelin dokulandırılması için bir doku istemi gerektiğini unutmayın.",
+    "display_name": "Tripo: Model İçe Aktar",
+    "inputs": {
+      "model_3d": {
+        "name": "model_3d",
+        "tooltip": "İçe aktarılacak 3D model (GLB / FBX / OBJ / STL, en fazla 150 MB). OBJ ve STL dosyalarında gömülü doku bulunmaz."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "model task_id",
+        "tooltip": null
+      }
+    }
+  },
   "TripoMultiviewToModelNode": {
     "display_name": "Tripo: Çok Bakışlıdan Modele",
     "inputs": {
@@ -19931,6 +20543,10 @@
       },
       "texture_alignment": {
         "name": "doku_hizalama"
+      },
+      "texture_prompt": {
+        "name": "texture_prompt",
+        "tooltip": "Dokulandırma için isteğe bağlı metin rehberi. Pratikte, renkleri çıkarmak için kaynak görseli olmayan aktarılan modeller (Tripo: Model İçe Aktar) için gereklidir."
       },
       "texture_quality": {
         "name": "doku_kalitesi"
@@ -21750,6 +22366,14 @@
       "model": {
         "name": "model",
         "tooltip": "Örnekleme sırasında bağlam pencerelerinin uygulanacağı model."
+      },
+      "retain_first_frame": {
+        "name": "retain_first_frame",
+        "tooltip": "Her bağlam penceresinde ilk I2V karesini koru (ilk referansın korunmasına yardımcı olabilir)."
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "Birden fazla koşullandırmanın (ConditionCombine tarafından oluşturulan) her pencereye bölge indeksine göre bölünüp bölünmeyeceği."
       }
     },
     "outputs": {

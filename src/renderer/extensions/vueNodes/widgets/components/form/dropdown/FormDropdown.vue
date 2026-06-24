@@ -44,11 +44,13 @@ interface Props {
   ownershipOptions?: OwnershipFilterOption[]
   showBaseModelFilter?: boolean
   baseModelOptions?: FilterOption[]
+  loadingMore?: boolean
   isSelected?: (
     selected: Set<string>,
     item: FormDropdownItem,
     index: number
   ) => boolean
+  isUploading?: boolean
   searcher?: (
     query: string,
     items: FormDropdownItem[],
@@ -70,10 +72,15 @@ const {
   ownershipOptions,
   showBaseModelFilter,
   baseModelOptions,
+  loadingMore = false,
   isSelected = (selected, item, _index) => selected.has(item.id),
   searcher = defaultSearcher,
   items
 } = defineProps<Props>()
+
+const emit = defineEmits<{
+  (e: 'approach-end'): void
+}>()
 
 const placeholderText = computed(
   () => placeholder ?? t('widgets.uploadSelect.placeholder')
@@ -319,6 +326,7 @@ function handleSearchEnter() {
       :uploadable
       :disabled
       :accept
+      :is-uploading
       @select-click="toggleDropdown"
       @file-change="handleFileChange"
     />
@@ -357,9 +365,11 @@ function handleSearchEnter() {
         :candidate-label
         :is-selected="internalIsSelected"
         :max-selectable
+        :loading-more="loadingMore"
         @close="closeDropdown"
         @search-enter="handleSearchEnter"
         @item-click="handleSelection"
+        @approach-end="emit('approach-end')"
       />
     </Popover>
   </div>

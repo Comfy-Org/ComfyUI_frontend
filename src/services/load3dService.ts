@@ -37,6 +37,7 @@ type UseLoad3dViewerFn = (node?: LGraphNode) => {
   isStandaloneMode: { value: boolean }
   isSplatModel: { value: boolean }
   isPlyModel: { value: boolean }
+  sourceFormat: { value: string | null }
   animations: { value: AnimationItem[] }
   playing: { value: boolean }
   selectedSpeed: { value: number }

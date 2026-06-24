@@ -65,7 +65,8 @@ describe('InfoButton', () => {
 
     expect(openNodeInfoMock).toHaveBeenCalled()
     expect(trackUiButtonClickedMock).toHaveBeenCalledWith({
-      button_id: 'selection_toolbox_node_info_opened'
+      button_id: 'selection_toolbox_node_info_opened',
+      element_group: 'selection_toolbox'
     })
   })
 

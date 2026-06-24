@@ -6,7 +6,7 @@
  * input key where the model name is inserted.
  *
  * An empty key ('') means the node auto-loads models without a widget
- * selector (createModelNodeFromAsset skips widget assignment).
+ * selector, so no widget value is assigned when the node is added.
  *
  * Hierarchical fallback is handled by the store: "a/b/c" tries
  * "a/b/c" → "a/b" → "a", so registering a parent directory covers
@@ -223,8 +223,18 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
   ['film', 'FILM VFI', 'ckpt_name'],
 
   // ---- Ultralytics YOLO detectors (ComfyUI-Impact-Pack) ----
-  ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
-  ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name'],
+  // Intentionally NOT mapped to the asset-picker. The cloud asset-ingestion
+  // metadata for nested model folders (`ultralytics/bbox`, `ultralytics/segm`)
+  // still has the two known half-bugs described in #12075:
+  //   1. Tag lookup mismatch (cloud stores combined tags, picker queries split).
+  //   2. Submitted value mismatch (picker returns basenames, ingest expects
+  //      subdirectory-prefixed `bbox/<file>` / `segm/<file>`).
+  // PR #12151 re-added the bbox/segm entries before either half was fixed,
+  // reintroducing the FaceDetailer breakage. Until BE-689 lands the cloud-side
+  // fixes, leave these disabled so the node falls back to the static combo
+  // populated from `/api/object_info`.
+  // ['ultralytics/bbox', 'UltralyticsDetectorProvider', 'model_name'],
+  // ['ultralytics/segm', 'UltralyticsDetectorProvider', 'model_name'],
 
   // ---- Mel-Band RoFormer audio separation (ComfyUI-MelBandRoFormer) ----
   ['diffusion_models', 'MelBandRoFormerModelLoader', 'model_name'],

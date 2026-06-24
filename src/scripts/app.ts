@@ -9,7 +9,8 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncLayoutStoreNodeBoundsFromGraph } from '@/renderer/core/layout/sync/syncLayoutStoreFromGraph'
 import { flushScheduledSlotLayoutSync } from '@/renderer/extensions/vueNodes/composables/useSlotElementTracking'
 
-import { isPromotedWidgetView } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
+import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { st, t } from '@/i18n'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
@@ -60,6 +61,8 @@ import {
   ComponentWidgetImpl,
   DOMWidgetImpl
 } from '@/scripts/domWidget'
+import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
+import { resolveAccountPrecondition } from '@/platform/errorCatalog/accountPreconditionRouting'
 import { useDialogService } from '@/services/dialogService'
 import { useExtensionService } from '@/services/extensionService'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -82,6 +85,7 @@ import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacem
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useWidgetStore } from '@/stores/widgetStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { ExtensionManager } from '@/types/extensionTypes'
@@ -128,11 +132,11 @@ import {
   noNativeReroutes
 } from '@/utils/migration/migrateReroute'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
-import { getWidgetState } from '@/world/widgetValueIO'
 
 import { type ComfyApi, PromptExecutionError, api } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
+import { applyPromotedWidgetControl } from './promotedWidgetControl'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
@@ -173,14 +177,29 @@ export function sanitizeNodeName(string: string) {
 }
 
 function syncPromotedComboHostOptions(rootGraph: LGraph): void {
+  const widgetValueStore = useWidgetValueStore()
   forEachNode(rootGraph, (node) => {
-    for (const widget of node.widgets ?? []) {
-      if (!isPromotedWidgetView(widget) || widget.type !== 'combo') continue
+    if (!node.isSubgraphNode()) return
+    for (const input of node.inputs) {
+      if (!input.widgetId) continue
 
-      const state = getWidgetState(widget.entityId)
+      const source = promotedInputSource(node, input)
+      if (!source) continue
+
+      const resolution = resolveConcretePromotedWidget(
+        node,
+        source.nodeId,
+        source.widgetName
+      )
+      if (resolution.status !== 'resolved') continue
+
+      const sourceWidget = resolution.resolved.widget
+      if (sourceWidget.type !== 'combo') continue
+
+      const state = widgetValueStore.getWidget(input.widgetId)
       if (!state) continue
 
-      state.options = { ...(widget.options ?? {}) }
+      state.options = { ...(sourceWidget.options ?? {}) }
     }
   })
 }
@@ -770,20 +789,13 @@ export class ComfyApp {
     })
 
     api.addEventListener('execution_error', ({ detail }) => {
-      // Check if this is an auth-related error or credits-related error
-      if (
-        detail.exception_message?.includes(
-          'Unauthorized: Please login first to use this node.'
-        )
-      ) {
-        useDialogService().showApiNodesSignInDialog([detail.node_type])
-      } else if (
-        detail.exception_message?.includes(
-          'Payment Required: Please add credits to your account to use this node.'
-        )
-      ) {
-        useDialogService().showTopUpCreditsDialog({
-          isInsufficientCredits: true
+      const precondition = resolveAccountPrecondition({
+        exceptionType: detail.exception_type ?? '',
+        exceptionMessage: detail.exception_message ?? ''
+      })
+      if (precondition) {
+        useAccountPreconditionDialog().open(precondition, {
+          nodeType: detail.node_type
         })
       } else if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) {
         useExecutionErrorStore().showErrorOverlay()
@@ -1170,7 +1182,7 @@ export class ComfyApp {
     useWorkflowService().beforeLoadNewGraph()
 
     if (skipAssetScans) {
-      // Only reset candidates; preserve UI state (fileSizes, urlInputs, etc.)
+      // Only reset candidates; preserve UI state (fileSizes, etc.)
       // so cached results restored by showPendingWarnings still display sizes.
       // Abort any in-flight verification from the outgoing workflow so a late
       // result cannot repopulate the store after we've switched workflows.
@@ -1632,6 +1644,9 @@ export class ComfyApp {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
+            applyPromotedWidgetControl(node, 'beforeQueued', {
+              isPartialExecution
+            })
           })
 
           // Capture workflow before await — activeWorkflow may change if the
@@ -1677,6 +1692,24 @@ export class ComfyApp {
               this.canvas.draw(true, true)
             }
           } catch (error: unknown) {
+            const preconditionResponseError =
+              error instanceof PromptExecutionError &&
+              typeof error.response.error === 'object'
+                ? error.response.error
+                : undefined
+            const promptPrecondition = preconditionResponseError
+              ? resolveAccountPrecondition({
+                  exceptionType: preconditionResponseError.type,
+                  exceptionMessage: preconditionResponseError.message
+                })
+              : undefined
+            // Account preconditions (sign-in, subscription, credits) open their
+            // own modal and must stay out of the error panel and error count.
+            if (promptPrecondition) {
+              useAccountPreconditionDialog().open(promptPrecondition)
+              console.error(error)
+              break
+            }
             if (
               error instanceof PromptExecutionError &&
               typeof error.response.error === 'object' &&
@@ -1766,6 +1799,11 @@ export class ComfyApp {
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
           })
+          for (const node of queuedNodes) {
+            applyPromotedWidgetControl(node, 'afterQueued', {
+              isPartialExecution
+            })
+          }
           this.canvas.draw(true, true)
           await this.ui.queue.update()
         }

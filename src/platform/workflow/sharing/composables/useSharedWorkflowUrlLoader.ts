@@ -3,18 +3,19 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 import {
-  capturePreservedQuery,
   clearPreservedQuery,
   hydratePreservedQuery,
   mergePreservedQueryIntoQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
+import { isValidShareId } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -45,11 +46,8 @@ export function useSharedWorkflowUrlLoader() {
   const dialogStore = useDialogStore()
   const templateSelectorDialog = useWorkflowTemplateSelectorDialog()
   const { isLoggedIn } = useCurrentUser()
+  const { mode, isAppMode } = useAppMode()
   const SHARE_NAMESPACE = PRESERVED_QUERY_NAMESPACES.SHARE
-
-  function isValidParameter(param: string): boolean {
-    return /^[a-zA-Z0-9_.-]+$/.test(param)
-  }
 
   async function ensureShareQueryFromIntent() {
     hydratePreservedQuery(SHARE_NAMESPACE)
@@ -108,11 +106,7 @@ export function useSharedWorkflowUrlLoader() {
         },
         dialogComponentProps: {
           onClose: () => resolve({ action: 'cancel' }),
-          pt: {
-            root: {
-              class: 'rounded-2xl overflow-hidden w-full sm:w-176 max-w-full'
-            }
-          }
+          contentClass: 'sm:max-w-176 rounded-2xl overflow-hidden'
         }
       })
     })
@@ -131,7 +125,7 @@ export function useSharedWorkflowUrlLoader() {
       return 'not-present'
     }
 
-    if (!isValidParameter(shareParam)) {
+    if (!isValidShareId(shareParam)) {
       console.warn(
         `[useSharedWorkflowUrlLoader] Invalid share parameter format: ${shareParam}`
       )
@@ -146,15 +140,10 @@ export function useSharedWorkflowUrlLoader() {
 
     useTelemetry()?.trackShareLinkOpened({
       share_id: shareParam,
-      is_authenticated: isLoggedIn.value
+      is_authenticated: isLoggedIn.value,
+      view_mode: mode.value,
+      is_app_mode: isAppMode.value
     })
-    if (!isLoggedIn.value) {
-      capturePreservedQuery(
-        PRESERVED_QUERY_NAMESPACES.SHARE_AUTH,
-        { share: shareParam },
-        ['share']
-      )
-    }
 
     const result = await showOpenSharedWorkflowDialog(shareParam)
 
