@@ -5,7 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 
 import { pricingPlans } from '../../data/pricingPlans'
-import type { PricingPlan } from '../../data/pricingPlans'
+import type { BillingCycle, PricingPlan } from '../../data/pricingPlans'
 import { t } from '../../i18n/translations'
 import Badge from '../ui/badge/Badge.vue'
 import Button from '../ui/button/Button.vue'
@@ -21,8 +21,7 @@ import PricingTeamCard from './PricingTeamCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-type BillingPeriod = 'monthly' | 'yearly'
-const billingPeriod = ref<BillingPeriod>('yearly')
+const billingPeriod = ref<BillingCycle>('yearly')
 
 function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
   if (billingPeriod.value === 'yearly' && plan.yearlyPriceKey) {
@@ -121,7 +120,7 @@ function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
         <!-- CTA -->
         <div class="mt-8 flex self-end">
           <Button
-            :href="plan.ctaHref"
+            :href="plan.ctaHref(billingPeriod)"
             as="a"
             variant="outline"
             class="w-full text-center"

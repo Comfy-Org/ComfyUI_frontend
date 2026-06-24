@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 
 import { Component as ComponentIcon } from '@lucide/vue'
 
-import { externalLinks } from '../../config/routes'
+import { subscribeUrl } from '../../data/pricingPlans'
 import {
   formatTeamCreditsLong,
   formatTeamCreditsShort,
@@ -69,7 +69,13 @@ const featureGroups: PlanFeatureGroup[] = [
   }
 ]
 
-const ctaHref = `${externalLinks.cloud}/cloud/subscribe?tier=team&cycle=monthly`
+const ctaHref = computed(() =>
+  subscribeUrl(
+    'team',
+    billingPeriod,
+    `team_${selectedTeamTier.value.basePrice}`
+  )
+)
 </script>
 
 <template>
