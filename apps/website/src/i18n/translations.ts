@@ -1426,9 +1426,9 @@ const translations = {
     'zh-CN': '自定义节点支持'
   },
   'pricing.included.feature7.description': {
-    en: 'Comfy Cloud currently supports a variety of the most-used custom nodes from the ComfyUI community. <a href="#" class="text-primary-comfy-yellow underline">Check out which nodes we support currently</a>. We\'re expanding support regularly based on demand and compatibility. <a href="#" class="text-primary-comfy-yellow underline">See which nodes we\'re working on adding</a>.',
+    en: "Comfy Cloud currently supports a variety of the most-used custom nodes from the ComfyUI community. We're expanding support regularly based on demand and compatibility.",
     'zh-CN':
-      'Comfy Cloud 目前支持 ComfyUI 社区中最常用的多种自定义节点。<a href="#" class="text-primary-comfy-yellow underline">查看当前支持的节点</a>。我们会根据需求和兼容性持续扩展支持范围。<a href="#" class="text-primary-comfy-yellow underline">查看我们正在添加的节点</a>。'
+      'Comfy Cloud 目前支持 ComfyUI 社区中最常用的多种自定义节点。我们会根据需求和兼容性持续扩展支持范围。'
   },
   'pricing.included.feature8.title': {
     en: 'Partner Nodes',
