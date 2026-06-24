@@ -335,6 +335,30 @@ test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
     await comfyPage.canvasOps.moveMouseToEmptyArea()
   })
 
+  test('pointerCancel stops autopan', async ({ comfyPage }) => {
+    const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+    await ksampler.header.click({ trial: true })
+    await comfyPage.page.mouse.down()
+
+    const getOffset = () => comfyPage.canvasOps.getOffset()
+    const initialOffset = await getOffset()
+    await comfyPage.page.mouse.move(10, 10, { steps: 20 })
+    await expect.poll(getOffset, 'drag with autopan').not.toEqual(initialOffset)
+
+    await test.step('move outside pan range and cancel drag', async () => {
+      await comfyPage.page.mouse.move(400, 400, { steps: 20 })
+      await ksampler.header.evaluate((node) =>
+        node.dispatchEvent(new PointerEvent('pointercancel'))
+      )
+    })
+
+    const secondaryOffset = await getOffset()
+
+    await comfyPage.page.mouse.move(10, 10, { steps: 20 })
+    await comfyPage.nextFrame()
+    expect(await getOffset, 'drag canceled').toEqual(secondaryOffset)
+  })
+
   test(
     '@mobile should allow moving nodes by dragging on touch devices',
     { tag: '@screenshot' },
