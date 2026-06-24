@@ -27,8 +27,6 @@ const {
   appendIcon,
   href
 } = defineProps<Props>()
-
-const resolvedAs = as ?? (href != null ? 'a' : 'button')
 </script>
 
 <template>
@@ -36,10 +34,10 @@ const resolvedAs = as ?? (href != null ? 'a' : 'button')
     data-slot="button"
     :data-variant="variant"
     :data-size="size"
-    :as="resolvedAs"
+    :as="as ?? (href != null && !disabled ? 'a' : 'button')"
     :as-child
     :disabled
-    :href
+    :href="disabled ? undefined : href"
     :class="cn(buttonVariants({ variant, size }), className)"
   >
     <slot name="prepend">
