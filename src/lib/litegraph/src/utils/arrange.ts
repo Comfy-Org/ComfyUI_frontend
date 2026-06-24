@@ -19,11 +19,19 @@ export function getBoundaryNodes(nodes: LGraphNode[]): IBoundaryNodes | null {
   for (const node of nodes) {
     if (!node) continue
     const [x, y] = node.pos
-    const [width, height] = node.size
+    const [width, height] = node.flags.collapsed
+      ? node.renderingSize
+      : node.size
+    const [rightWidth] = right.flags.collapsed
+      ? right.renderingSize
+      : right.size
+    const [, bottomHeight] = bottom.flags.collapsed
+      ? bottom.renderingSize
+      : bottom.size
 
     if (y < top.pos[1]) top = node
-    if (x + width > right.pos[0] + right.size[0]) right = node
-    if (y + height > bottom.pos[1] + bottom.size[1]) bottom = node
+    if (x + width > right.pos[0] + rightWidth) right = node
+    if (y + height > bottom.pos[1] + bottomHeight) bottom = node
     if (x < left.pos[0]) left = node
   }
 
@@ -53,9 +61,12 @@ export function distributeNodes(
   let highest = -Infinity
 
   for (const node of nodes) {
-    total += node.size[index]
+    const [width, height] = node.flags.collapsed
+      ? node.renderingSize
+      : node.size
+    total += index === 0 ? width : height
 
-    const high = node.pos[index] + node.size[index]
+    const high = node.pos[index] + (index === 0 ? width : height)
     if (high > highest) highest = high
   }
   const sorted = [...nodes].sort((a, b) => a.pos[index] - b.pos[index])
@@ -65,8 +76,11 @@ export function distributeNodes(
   let startAt = lowest
   for (let i = 0; i < nodeCount; i++) {
     const node = sorted[i]
+    const [nodeWidth, nodeHeight] = node.flags.collapsed
+      ? node.renderingSize
+      : node.size
     node.pos[index] = startAt + gap * i
-    startAt += node.size[index]
+    startAt += index === 0 ? nodeWidth : nodeHeight
   }
   const newPositions = sorted.map(
     (node): NewNodePosition => ({
@@ -101,12 +115,21 @@ export function alignNodes(
   if (boundary === null) return []
 
   const nodePositions = nodes.map((node): NewNodePosition => {
+    const nodeWidth = node.flags.collapsed
+      ? node.renderingSize[0]
+      : node.size[0]
+    const nodeHeight = node.flags.collapsed
+      ? node.renderingSize[1]
+      : node.size[1]
     switch (direction) {
       case 'right':
         return {
           node,
           newPos: {
-            x: boundary.right.pos[0] + boundary.right.size[0] - node.size[0],
+            x:
+              boundary.right.pos[0] +
+              boundary.right.renderingSize[0] -
+              nodeWidth,
             y: node.pos[1]
           }
         }
@@ -131,7 +154,10 @@ export function alignNodes(
           node,
           newPos: {
             x: node.pos[0],
-            y: boundary.bottom.pos[1] + boundary.bottom.size[1] - node.size[1]
+            y:
+              boundary.bottom.pos[1] +
+              boundary.bottom.renderingSize[1] -
+              nodeHeight
           }
         }
     }
