@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   completeDesktopLoginIfNeeded,
@@ -33,6 +33,10 @@ describe('desktopLoginBridge', () => {
     hoisted.firebaseConfig.apiKey = 'firebase-api-key'
     hoisted.identifyPostHogUser.mockClear()
     vi.unstubAllGlobals()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('accepts localhost callback requests with state', () => {
@@ -92,6 +96,7 @@ describe('desktopLoginBridge', () => {
         method: 'POST',
         mode: 'cors',
         credentials: 'omit',
+        signal: expect.any(AbortSignal),
         body: JSON.stringify({
           state: 'state-123',
           apiKey: 'firebase-api-key',
@@ -135,6 +140,57 @@ describe('desktopLoginBridge', () => {
         createFirebaseUser()
       )
     ).rejects.toThrow('Desktop login callback returned 500')
+
+    expect(hoisted.identifyPostHogUser).toHaveBeenCalledWith('user-123')
+  })
+
+  it('aborts the callback request when Desktop does not respond', async () => {
+    vi.useFakeTimers()
+    const fetchMock = vi.fn<typeof fetch>(
+      (_input, init) =>
+        new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('The operation was aborted.', 'AbortError'))
+          })
+        })
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const completion = completeDesktopLoginIfNeeded(
+      {
+        desktop_login_callback: 'http://localhost:9876/callback',
+        desktop_login_state: 'state-123'
+      },
+      createFirebaseUser()
+    )
+    const completionResult = completion.catch((error: unknown) => error)
+
+    await vi.advanceTimersByTimeAsync(10_000)
+
+    const completionError = await completionResult
+    expect(completionError).toBeInstanceOf(Error)
+    if (!(completionError instanceof Error)) {
+      throw new Error('Expected Desktop login completion to fail')
+    }
+    expect(completionError.message).toBe('Desktop login callback timed out')
+    expect(completionError.cause).toBeInstanceOf(DOMException)
+    expect(fetchMock.mock.calls[0]?.[1]?.signal?.aborted).toBe(true)
+    expect(hoisted.identifyPostHogUser).toHaveBeenCalledWith('user-123')
+  })
+
+  it('rethrows callback request failures before the timeout elapses', async () => {
+    const requestError = new TypeError('Failed to fetch')
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(requestError))
+
+    await expect(
+      completeDesktopLoginIfNeeded(
+        {
+          desktop_login_callback: 'http://localhost:9876/callback',
+          desktop_login_state: 'state-123'
+        },
+        createFirebaseUser()
+      )
+    ).rejects.toBe(requestError)
 
     expect(hoisted.identifyPostHogUser).toHaveBeenCalledWith('user-123')
   })

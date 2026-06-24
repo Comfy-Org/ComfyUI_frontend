@@ -8,6 +8,7 @@ const CALLBACK_PARAM = 'desktop_login_callback'
 const STATE_PARAM = 'desktop_login_state'
 const MAX_STATE_LENGTH = 256
 const DESKTOP_LOGIN_CALLBACK_PORT = '9876'
+const DESKTOP_LOGIN_CALLBACK_TIMEOUT_MS = 10_000
 
 function firstQueryValue(value: LocationQuery[string]): string | null {
   if (Array.isArray(value)) return value[0] ?? null
@@ -64,19 +65,36 @@ export async function completeDesktopLoginIfNeeded(
   // provider flushes this identify call once the browser cookie store is ready.
   identifyPostHogUser(user.uid)
 
-  const response = await fetch(request.callbackUrl.href, {
-    method: 'POST',
-    mode: 'cors',
-    credentials: 'omit',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      state: request.state,
-      apiKey: firebaseConfig.apiKey,
-      user: user.toJSON()
+  const controller = new AbortController()
+  const timeoutId = globalThis.setTimeout(
+    () => controller.abort(),
+    DESKTOP_LOGIN_CALLBACK_TIMEOUT_MS
+  )
+
+  let response: Response
+  try {
+    response = await fetch(request.callbackUrl.href, {
+      method: 'POST',
+      mode: 'cors',
+      credentials: 'omit',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        state: request.state,
+        apiKey: firebaseConfig.apiKey,
+        user: user.toJSON()
+      })
     })
-  })
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error('Desktop login callback timed out', { cause: error })
+    }
+    throw error
+  } finally {
+    globalThis.clearTimeout(timeoutId)
+  }
 
   if (!response.ok) {
     throw new Error(`Desktop login callback returned ${response.status}`)
