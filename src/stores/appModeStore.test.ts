@@ -4,7 +4,8 @@ import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { SerializedNodeId } from '@/types/nodeId'
 import {
   LGraphNode as LGraphNodeClass,
   SubgraphNode
@@ -47,7 +48,7 @@ vi.mock('@/scripts/app', () => ({
 }))
 
 const mockResolveNode = vi.hoisted(() =>
-  vi.fn<(id: NodeId) => LGraphNode | undefined>(() => undefined)
+  vi.fn<(id: SerializedNodeId) => LGraphNode | undefined>(() => undefined)
 )
 vi.mock('@/utils/litegraphUtil', async (importOriginal) => ({
   ...(await importOriginal()),
@@ -115,7 +116,7 @@ function createBuilderWorkflowWithOutputs(
 function createWorkflowWithLinearData(
   activeMode: string,
   inputs: LinearInput[],
-  outputs: NodeId[]
+  outputs: SerializedNodeId[]
 ): LoadedComfyWorkflow {
   const workflow = createBuilderWorkflow(activeMode)
   workflow.changeTracker = createMockChangeTracker(
@@ -840,7 +841,7 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).id = rootGraph.id
       vi.mocked(app.rootGraph).nodes = rootGraph.nodes
       vi.mocked(app.rootGraph).getNodeById = vi.fn(
-        (id: NodeId | null | undefined) => rootGraph.getNodeById(id as NodeId)
+        (id: SerializedNodeId | null | undefined) => rootGraph.getNodeById(id)
       )
 
       expect(rootGraph.getNodeById(interior.id)).toBeUndefined()
@@ -881,7 +882,7 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [rootNode, hostNode]
       vi.mocked(app.rootGraph).getNodeById = vi.fn(
-        (id: NodeId | null | undefined) =>
+        (id: SerializedNodeId | null | undefined) =>
           id == sourceNodeId ? rootNode : id == hostId ? hostNode : null
       )
 
@@ -902,7 +903,7 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).getNodeById = vi.fn(() => null)
 
       const result = store.pruneLinearData({
-        inputs: [[42 as NodeId, 'widget-name', { height: 42 }]],
+        inputs: [[42, 'widget-name', { height: 42 }]],
         outputs: []
       })
 
@@ -932,7 +933,8 @@ describe('appModeStore', () => {
       vi.mocked(app.rootGraph).id = rootGraphId
       vi.mocked(app.rootGraph).nodes = [hostNode]
       vi.mocked(app.rootGraph).getNodeById = vi.fn(
-        (id: NodeId | null | undefined) => (id == hostId ? hostNode : null)
+        (id: SerializedNodeId | null | undefined) =>
+          id == hostId ? hostNode : null
       )
 
       const result = store.pruneLinearData({

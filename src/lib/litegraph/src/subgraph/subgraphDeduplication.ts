@@ -1,5 +1,5 @@
 import type { LGraphState } from '../LGraph'
-import type { NodeId } from '../LGraphNode'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   ExportedSubgraph,
   ExposedWidget,
@@ -31,7 +31,10 @@ export function deduplicateSubgraphNodeIds(
 
   const usedNodeIds = new Set(reservedNodeIds)
   const subgraphIdSet = new Set(clonedSubgraphs.map((sg) => sg.id))
-  const remapBySubgraph = new Map<string, Map<NodeId, NodeId>>()
+  const remapBySubgraph = new Map<
+    string,
+    Map<SerializedNodeId, SerializedNodeId>
+  >()
 
   for (const subgraph of clonedSubgraphs) {
     const remappedIds = remapNodeIds(subgraph.nodes ?? [], usedNodeIds, state)
@@ -64,8 +67,8 @@ function remapNodeIds(
   nodes: ISerialisedNode[],
   usedNodeIds: Set<number>,
   state: LGraphState
-): Map<NodeId, NodeId> {
-  const remappedIds = new Map<NodeId, NodeId>()
+): Map<SerializedNodeId, SerializedNodeId> {
+  const remappedIds = new Map<SerializedNodeId, SerializedNodeId>()
 
   for (const node of nodes) {
     const id = node.id
@@ -95,21 +98,21 @@ function remapNodeIds(
 function findNextAvailableId(
   usedNodeIds: Set<number>,
   state: LGraphState
-): NodeId {
+): SerializedNodeId {
   while (true) {
     const nextId = state.lastNodeId + 1
     if (nextId > MAX_NODE_ID) {
       throw new Error('Node ID space exhausted')
     }
     state.lastNodeId = nextId
-    if (!usedNodeIds.has(nextId)) return nextId as NodeId
+    if (!usedNodeIds.has(nextId)) return nextId
   }
 }
 
 /** Patches origin_id / target_id in serialized links. */
 function patchSerialisedLinks(
   links: SerialisableLLink[],
-  remappedIds: Map<NodeId, NodeId>
+  remappedIds: Map<SerializedNodeId, SerializedNodeId>
 ): void {
   for (const link of links) {
     const newOrigin = remappedIds.get(link.origin_id)
@@ -123,7 +126,7 @@ function patchSerialisedLinks(
 /** Patches promoted widget node references. */
 function patchPromotedWidgets(
   widgets: ExposedWidget[],
-  remappedIds: Map<NodeId, NodeId>
+  remappedIds: Map<SerializedNodeId, SerializedNodeId>
 ): void {
   for (const widget of widgets) {
     const newId = remappedIds.get(widget.id)
@@ -192,7 +195,7 @@ export function topologicalSortSubgraphs(
 function patchProxyWidgets(
   rootNodes: ISerialisedNode[],
   subgraphIdSet: Set<string>,
-  remapBySubgraph: Map<string, Map<NodeId, NodeId>>
+  remapBySubgraph: Map<string, Map<SerializedNodeId, SerializedNodeId>>
 ): void {
   for (const node of rootNodes) {
     if (!subgraphIdSet.has(node.type)) continue
@@ -204,7 +207,7 @@ function patchProxyWidgets(
 
     for (const entry of proxyWidgets) {
       if (!Array.isArray(entry)) continue
-      const oldId = Number(entry[0]) as NodeId
+      const oldId = Number(entry[0])
       const newId = remappedIds.get(oldId)
       if (newId !== undefined) entry[0] = String(newId)
     }

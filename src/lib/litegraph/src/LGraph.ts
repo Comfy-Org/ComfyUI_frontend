@@ -25,7 +25,7 @@ import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import type { GroupId } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
-import type { NodeId } from './LGraphNode'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink } from './LLink'
 import type { LinkId } from './LLink'
 import { MapProxyHandler } from './MapProxyHandler'
@@ -244,7 +244,7 @@ export class LGraph
   readonly _subgraphs: Map<SubgraphId, Subgraph> = new Map()
 
   _nodes: (LGraphNode | SubgraphNode)[] = []
-  _nodes_by_id: Record<NodeId, LGraphNode> = {}
+  _nodes_by_id: Record<SerializedNodeId, LGraphNode> = {}
   _nodes_in_order: LGraphNode[] = []
   _nodes_executable: LGraphNode[] | null = null
   _groups: LGraphGroup[] = []
@@ -638,8 +638,8 @@ export class LGraph
     const S: LGraphNode[] = []
     const M: Dictionary<LGraphNode> = {}
     // to avoid repeating links
-    const visited_links: Record<NodeId, boolean> = {}
-    const remaining_links: Record<NodeId, number> = {}
+    const visited_links: Record<SerializedNodeId, boolean> = {}
+    const remaining_links: Record<SerializedNodeId, number> = {}
 
     // search for the nodes without inputs (starting nodes)
     for (const node of this._nodes) {
@@ -1133,7 +1133,7 @@ export class LGraph
   /**
    * Returns a node by its id.
    */
-  getNodeById(id: NodeId | null | undefined): LGraphNode | null {
+  getNodeById(id: SerializedNodeId | null | undefined): LGraphNode | null {
     return id != null ? this._nodes_by_id[id] : null
   }
 
@@ -1948,7 +1948,7 @@ export class LGraph
     const offsetX = subgraphNode.pos[0] - center[0] + subgraphNode.size[0] / 2
     const offsetY = subgraphNode.pos[1] - center[1] + subgraphNode.size[1] / 2
     const movedNodes = multiClone(subgraphNode.subgraph.nodes)
-    const nodeIdMap = new Map<NodeId, NodeId>()
+    const nodeIdMap = new Map<SerializedNodeId, SerializedNodeId>()
     for (const n_info of movedNodes) {
       let node = LiteGraph.createNode(String(n_info.type), n_info.title)
       if (!node) {
@@ -2023,9 +2023,9 @@ export class LGraph
       }
     }
     const newLinks: {
-      oid: NodeId
+      oid: SerializedNodeId
       oslot: number
-      tid: NodeId
+      tid: SerializedNodeId
       tslot: number
       id: LinkId
       iparent?: RerouteId
@@ -2239,7 +2239,7 @@ export class LGraph
    * @param nodeIds An ordered list of node IDs, from the root graph to the most nested subgraph node
    * @returns An ordered list of nested subgraph nodes.
    */
-  resolveSubgraphIdPath(nodeIds: readonly NodeId[]): SubgraphNode[] {
+  resolveSubgraphIdPath(nodeIds: readonly SerializedNodeId[]): SubgraphNode[] {
     const result: SubgraphNode[] = []
     let currentGraph: GraphOrSubgraph = this.rootGraph
 
@@ -2538,7 +2538,7 @@ export class LGraph
       }
 
       let error = false
-      const nodeDataMap = new Map<NodeId, ISerialisedNode>()
+      const nodeDataMap = new Map<SerializedNodeId, ISerialisedNode>()
 
       // create nodes
       this._nodes = []
@@ -2678,7 +2678,7 @@ export class LGraph
 
     const usedNodeIds = new Set<number>(reservedNodeIds)
     for (const graph of allGraphs) {
-      const remappedIds = new Map<NodeId, NodeId>()
+      const remappedIds = new Map<SerializedNodeId, SerializedNodeId>()
 
       for (const node of graph._nodes) {
         if (typeof node.id !== 'number') continue
@@ -3106,7 +3106,7 @@ export class Subgraph
 
 function patchLinkNodeIds(
   links: Map<LinkId, LLink>,
-  remappedIds: Map<NodeId, NodeId>
+  remappedIds: Map<SerializedNodeId, SerializedNodeId>
 ): void {
   for (const link of links.values()) {
     const newOrigin = remappedIds.get(link.origin_id)

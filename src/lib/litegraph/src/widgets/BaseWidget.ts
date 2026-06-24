@@ -3,7 +3,7 @@ import { drawTextInArea } from '@/lib/litegraph/src/draw'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
 import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   CanvasPointer,
   LGraphCanvas,
@@ -143,7 +143,7 @@ export abstract class BaseWidget<TWidget extends IBaseWidget = IBaseWidget>
    * Associates this widget with a node ID and registers it in the WidgetValueStore.
    * Once set, value reads/writes will be delegated to the store.
    */
-  setNodeId(nodeId: NodeId): void {
+  setNodeId(nodeId: SerializedNodeId): void {
     const graphId = this.node.graph?.rootGraph.id
     if (!graphId) return
 

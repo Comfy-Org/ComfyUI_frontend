@@ -7,7 +7,8 @@ import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
-import type { LGraphNode, NodeId } from './LGraphNode'
+import type { LGraphNode } from './LGraphNode'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type { Reroute, RerouteId } from './Reroute'
 import type {
   CanvasColour,
@@ -27,9 +28,9 @@ export type LinkId = number
 
 export type SerialisedLLinkArray = [
   id: LinkId,
-  origin_id: NodeId,
+  origin_id: SerializedNodeId,
   origin_slot: number,
-  target_id: NodeId,
+  target_id: SerializedNodeId,
   target_slot: number,
   type: ISlotType
 ]
@@ -97,11 +98,11 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   parentId?: RerouteId
   type: ISlotType
   /** Output node ID */
-  origin_id: NodeId
+  origin_id: SerializedNodeId
   /** Output slot index */
   origin_slot: number
   /** Input node ID */
-  target_id: NodeId
+  target_id: SerializedNodeId
   /** Input slot index */
   target_slot: number
 
@@ -154,9 +155,9 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
   constructor(
     id: LinkId,
     type: ISlotType,
-    origin_id: NodeId,
+    origin_id: SerializedNodeId,
     origin_slot: number,
-    target_id: NodeId,
+    target_id: SerializedNodeId,
     target_slot: number,
     parentId?: RerouteId
   ) {
@@ -373,7 +374,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @param outputIndex The array index of the node output
    * @returns `true` if the origin matches, otherwise `false`.
    */
-  hasOrigin(nodeId: NodeId, outputIndex: number): boolean {
+  hasOrigin(nodeId: SerializedNodeId, outputIndex: number): boolean {
     return this.origin_id === nodeId && this.origin_slot === outputIndex
   }
 
@@ -383,7 +384,7 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
    * @param inputIndex The array index of the node input
    * @returns `true` if the target matches, otherwise `false`.
    */
-  hasTarget(nodeId: NodeId, inputIndex: number): boolean {
+  hasTarget(nodeId: SerializedNodeId, inputIndex: number): boolean {
     return this.target_id === nodeId && this.target_slot === inputIndex
   }
 

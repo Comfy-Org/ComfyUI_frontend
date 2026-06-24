@@ -23,9 +23,9 @@ import type {
 } from '@/platform/workflow/templates/types/template'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  NodeId
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
@@ -221,7 +221,7 @@ type ApiToEventType<T = ApiCalls> = {
   [K in keyof T]: K extends 'status'
     ? StatusWsMessageStatus
     : K extends 'executing'
-      ? NodeId
+      ? SerializedNodeId
       : T[K]
 }
 

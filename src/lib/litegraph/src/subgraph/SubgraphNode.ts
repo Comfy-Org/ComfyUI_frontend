@@ -13,13 +13,10 @@ import type {
   IWidgetLocator
 } from '@/lib/litegraph/src/interfaces'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type {
-  INodeInputSlot,
-  ISlotType,
-  NodeId
-} from '@/lib/litegraph/src/litegraph'
+import type { INodeInputSlot, ISlotType } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import type { SerializedNodeId } from '@/types/nodeId'
 import type {
   GraphOrSubgraph,
   Subgraph
@@ -778,7 +775,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override getInnerNodes(
     executableNodes: Map<ExecutionId, ExecutableLGraphNode>,
-    subgraphNodePath: readonly NodeId[] = [],
+    subgraphNodePath: readonly SerializedNodeId[] = [],
     nodes: ExecutableLGraphNode[] = [],
     visited = new Set<SubgraphNode>()
   ): ExecutableLGraphNode[] {

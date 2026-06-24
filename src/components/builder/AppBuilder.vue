@@ -12,8 +12,9 @@ import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelec
 import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
 import type { WidgetId } from '@/types/widgetId'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphNode, NodeId } from '@/lib/litegraph/src/LGraphNode'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { SerializedNodeId } from '@/types/nodeId'
 import {
   LGraphEventMode,
   TitleMode
@@ -50,7 +51,7 @@ workflowStore.activeWorkflow?.changeTracker?.reset()
 
 const resolvedInputs = useResolvedSelectedInputs()
 
-const outputsWithState = computed<[NodeId, string][]>(() =>
+const outputsWithState = computed<[SerializedNodeId, string][]>(() =>
   appModeStore.selectedOutputs.map((nodeId) => [
     nodeId,
     app.rootGraph.getNodeById(nodeId)?.title ?? String(nodeId)
@@ -75,7 +76,7 @@ function getHovered(
   if (widget || node.constructor.nodeData?.output_node) return [node, widget]
 }
 
-function getNodeBounding(nodeId: NodeId) {
+function getNodeBounding(nodeId: SerializedNodeId) {
   if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
   const node = app.rootGraph.getNodeById(nodeId)
   if (!node) return
@@ -149,7 +150,7 @@ function handleClick(e: MouseEvent) {
 
 function nodeToDisplayTuple(
   n: LGraphNode
-): [NodeId, MaybeRef<BoundStyle> | undefined, boolean] {
+): [SerializedNodeId, MaybeRef<BoundStyle> | undefined, boolean] {
   return [
     n.id,
     getNodeBounding(n.id),

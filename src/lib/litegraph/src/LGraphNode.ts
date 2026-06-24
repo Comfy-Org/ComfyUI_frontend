@@ -9,6 +9,7 @@ import type { SlotPositionContext } from '@/renderer/core/canvas/litegraph/slotC
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { nodeId as toNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import {
@@ -98,8 +99,6 @@ import { toConcreteWidget } from './widgets/widgetMap'
 import type { WidgetTypeMap } from './widgets/widgetMap'
 
 // #region Types
-
-export type NodeId = number | string
 
 export type NodeProperty = string | number | boolean | object
 
@@ -275,7 +274,7 @@ export class LGraphNode
   }
 
   graph: LGraph | Subgraph | null = null
-  id: NodeId
+  id: SerializedNodeId
   type: string = ''
   inputs: INodeInputSlot[] = []
   outputs: INodeOutputSlot[] = []

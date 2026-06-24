@@ -11,9 +11,9 @@ import type {
   ExportedSubgraph,
   ExportedSubgraphInstance,
   ISlotType,
-  NodeId,
   UUID
 } from '@/lib/litegraph/src/litegraph'
+import type { SerializedNodeId } from '@/types/nodeId'
 import {
   LGraph,
   LGraphNode,
@@ -77,7 +77,7 @@ interface TestSubgraphOptions {
 
 interface TestSubgraphNodeOptions {
   parentGraph?: LGraph | Subgraph
-  id?: NodeId
+  id?: SerializedNodeId
   pos?: [number, number]
   size?: [number, number]
 }

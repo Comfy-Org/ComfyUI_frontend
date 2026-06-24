@@ -10,9 +10,9 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyApiWorkflow,
-  NodeId,
   WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type {
   ExecutedWsMessage,
@@ -50,7 +50,7 @@ interface QueuedJob {
    * The nodes that are queued to be executed. The key is the node id and the
    * value is a boolean indicating if the node has been executed.
    */
-  nodes: Record<NodeId, boolean>
+  nodes: Record<SerializedNodeId, boolean>
   /**
    * The workflow that is queued to be executed
    */
@@ -113,7 +113,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   const clientId = ref<string | null>(null)
   const activeJobId = ref<JobId | null>(null)
-  const queuedJobs = ref<Record<NodeId, QueuedJob>>({})
+  const queuedJobs = ref<Record<SerializedNodeId, QueuedJob>>({})
   // This is the progress of all nodes in the currently executing workflow
   const nodeProgressStates = ref<Record<string, NodeProgressState>>({})
   const nodeProgressStatesByJob = ref<
@@ -284,14 +284,14 @@ export const useExecutionStore = defineStore('execution', () => {
   })
 
   // Easily access all currently executing node IDs
-  const executingNodeIds = computed<NodeId[]>(() => {
+  const executingNodeIds = computed<SerializedNodeId[]>(() => {
     return Object.entries(nodeProgressStates.value)
       .filter(([_, state]) => state.state === 'running')
       .map(([nodeId, _]) => nodeId)
   })
 
   // @deprecated For backward compatibility - stores the primary executing node ID
-  const executingNodeId = computed<NodeId | null>(() => {
+  const executingNodeId = computed<SerializedNodeId | null>(() => {
     return executingNodeIds.value[0] ?? null
   })
 
@@ -432,7 +432,7 @@ export const useExecutionStore = defineStore('execution', () => {
     resetExecutionState(jobId)
   }
 
-  function handleExecuting(e: CustomEvent<NodeId | null>): void {
+  function handleExecuting(e: CustomEvent<SerializedNodeId | null>): void {
     // Clear the current node progress when a new node starts executing
     _executingNodeProgress.value = null
 

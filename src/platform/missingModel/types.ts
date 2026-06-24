@@ -1,4 +1,4 @@
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 /**
  * A single (node, widget, model) binding detected by the missing model pipeline.
@@ -6,7 +6,7 @@ import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSche
  */
 export interface MissingModelCandidate {
   /** Undefined for workflow-level models not tied to a specific node. */
-  nodeId?: NodeId
+  nodeId?: SerializedNodeId
   nodeType: string
   widgetName: string
   isAssetSupported: boolean
@@ -30,7 +30,7 @@ export interface MissingModelViewModel {
   name: string
   representative: MissingModelCandidate
   referencingNodes: Array<{
-    nodeId: NodeId
+    nodeId: SerializedNodeId
     widgetName: string
   }>
 }

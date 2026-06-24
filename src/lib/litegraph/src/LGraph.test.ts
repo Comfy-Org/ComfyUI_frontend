@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeId, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
   LGraphGroup,
@@ -298,7 +298,7 @@ describe('Graph Clearing and Callbacks', () => {
     })
 
     const widgetValueStore = useWidgetValueStore()
-    const seedWidgetId = widgetId(graphId, '10' as NodeId, 'seed')
+    const seedWidgetId = widgetId(graphId, '10', 'seed')
     widgetValueStore.registerWidget(seedWidgetId, {
       type: 'number',
       value: 1,
@@ -1053,7 +1053,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     const idsB = nodeIdSet(graph, SUBGRAPH_B)
 
     for (const id of SHARED_NODE_IDS) {
-      expect(idsA.has(id as NodeId)).toBe(true)
+      expect(idsA.has(id)).toBe(true)
     }
     for (const id of idsA) {
       expect(idsB.has(id)).toBe(false)
@@ -1089,14 +1089,14 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
       graph.subgraphs.get(SUBGRAPH_B)!.nodes.map((n) => String(n.id))
     )
 
-    const pw102 = graph.getNodeById(102 as NodeId)?.properties?.proxyWidgets
+    const pw102 = graph.getNodeById(102)?.properties?.proxyWidgets
     expect(Array.isArray(pw102)).toBe(true)
     for (const entry of pw102 as unknown[][]) {
       expect(Array.isArray(entry)).toBe(true)
       expect(idsA.has(String(entry[0]))).toBe(true)
     }
 
-    const pw103 = graph.getNodeById(103 as NodeId)?.properties?.proxyWidgets
+    const pw103 = graph.getNodeById(103)?.properties?.proxyWidgets
     expect(Array.isArray(pw103)).toBe(true)
     for (const entry of pw103 as unknown[][]) {
       expect(Array.isArray(entry)).toBe(true)
@@ -1114,7 +1114,7 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 
     const innerNode = graph.subgraphs
       .get(SUBGRAPH_A)!
-      .nodes.find((n) => n.id === (50 as NodeId))
+      .nodes.find((n) => n.id === 50)
     const pw = innerNode?.properties?.proxyWidgets
     expect(Array.isArray(pw)).toBe(true)
     for (const entry of pw as unknown[][]) {

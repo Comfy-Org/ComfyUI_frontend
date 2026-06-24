@@ -37,9 +37,9 @@ import { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowSto
 import { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import type {
   ComfyApiWorkflow,
-  ComfyWorkflowJSON,
-  NodeId
+  ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { SerializedNodeId } from '@/types/nodeId'
 import {
   collectSubgraphDefinitions,
   buildSubgraphExecutionPaths
@@ -320,7 +320,7 @@ export class ComfyApp {
    * TODO: Update to support multiple executing nodes. This getter returns only the first executing node.
    * Consider updating consumers to handle multiple nodes or use executingNodeIds array.
    */
-  get runningNodeId(): NodeId | null {
+  get runningNodeId(): SerializedNodeId | null {
     return useExecutionStore().executingNodeId
   }
 
