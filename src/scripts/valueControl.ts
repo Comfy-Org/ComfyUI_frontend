@@ -36,7 +36,7 @@ export function nextValueForLinkedTarget(params: {
   })
 }
 
-const SAFE_INTEGER_MAX = 1125899906842624
+export const SAFE_INTEGER_MAX = 1125899906842624
 const SAFE_INTEGER_MIN = -1125899906842624
 
 export function isValueControlWidget(widget: IBaseWidget): boolean {
