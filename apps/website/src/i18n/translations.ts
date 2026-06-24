@@ -1323,9 +1323,13 @@ const translations = {
     en: 'Coming soon...',
     'zh-CN': '即将推出…'
   },
-  'pricing.plan.team.projectAssetManagement': {
-    en: 'Project & asset management',
-    'zh-CN': '项目与资产管理'
+  'pricing.plan.team.sharedWorkflowsAndAssets': {
+    en: 'Shared workflows & assets',
+    'zh-CN': '共享工作流与资产'
+  },
+  'pricing.plan.team.projects': {
+    en: 'Projects',
+    'zh-CN': '项目'
   },
 
   'pricing.enterprise.label': { en: 'ENTERPRISE', 'zh-CN': '企业版' },

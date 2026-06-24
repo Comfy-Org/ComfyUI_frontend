@@ -103,7 +103,10 @@ function displayPriceKey(plan: PricingPlan): TranslationKey | undefined {
 
         <!-- Features -->
         <div v-if="plan.features.length" class="mt-8">
-          <PricingPlanFeatureList :features="plan.features" :locale />
+          <PricingPlanFeatureList
+            :features="[{ features: plan.features }]"
+            :locale
+          />
         </div>
 
         <!-- Credits -->

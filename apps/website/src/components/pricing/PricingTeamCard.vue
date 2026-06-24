@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
+import type { PlanFeatureGroup } from './PricingPlanFeatureList.vue'
 import { computed, ref } from 'vue'
 
-import { Clock, Component as ComponentIcon } from '@lucide/vue'
+import { Component as ComponentIcon } from '@lucide/vue'
 
 import { externalLinks } from '../../config/routes'
 import {
@@ -49,12 +50,24 @@ const teamSaving = computed<string | undefined>(() => {
     .replace('{amount}', fmtPrice(base - discounted))
 })
 
-const features = [
-  { text: 'pricing.feature.inviteMembers' },
-  { text: 'pricing.feature.concurrentWorkflows' },
-  { text: 'pricing.feature.sharedCreditPool' },
-  { text: 'pricing.feature.roleBasedPermissions' }
-] as const
+const featureGroups: PlanFeatureGroup[] = [
+  {
+    titleKey: 'pricing.plan.team.everythingInProPlus',
+    features: [
+      { text: 'pricing.feature.inviteMembers' },
+      { text: 'pricing.feature.concurrentWorkflows' },
+      { text: 'pricing.feature.sharedCreditPool' },
+      { text: 'pricing.feature.roleBasedPermissions' }
+    ]
+  },
+  {
+    titleKey: 'pricing.plan.team.comingSoon',
+    features: [
+      { text: 'pricing.plan.team.sharedWorkflowsAndAssets', type: 'coming' },
+      { text: 'pricing.plan.team.projects', type: 'coming' }
+    ]
+  }
+]
 
 const ctaHref = `${externalLinks.cloud}/cloud/subscribe?tier=team&cycle=monthly`
 </script>
@@ -136,25 +149,12 @@ const ctaHref = `${externalLinks.cloud}/cloud/subscribe?tier=team&cycle=monthly`
       </div>
 
       <div>
-        <PricingPlanFeatureList
-          :features="[...features]"
-          title-key="pricing.plan.team.everythingInProPlus"
-          :locale
-        />
+        <PricingPlanFeatureList :features="featureGroups" :locale />
 
-        <div class="mt-5">
-          <div class="text-primary-warm-gray flex flex-col gap-2 text-sm">
-            <span>{{ t('pricing.plan.team.comingSoon', locale) }}</span>
-            <span>
-              <Clock class="inline size-4" />
-              {{ t('pricing.plan.team.projectAssetManagement', locale) }}
-            </span>
-          </div>
-          <div class="mt-8">
-            <Button :href="ctaHref" class="w-full" variant="outline">
-              {{ t('pricing.plan.team.cta', locale) }}
-            </Button>
-          </div>
+        <div class="mt-8">
+          <Button :href="ctaHref" class="w-full" variant="outline">
+            {{ t('pricing.plan.team.cta', locale) }}
+          </Button>
         </div>
       </div>
     </div>
