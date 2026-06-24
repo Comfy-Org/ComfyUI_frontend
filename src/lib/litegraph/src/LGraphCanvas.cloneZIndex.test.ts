@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@/renderer/core/layout/types'
@@ -74,7 +77,7 @@ function createCanvas(graph: LGraph): LGraphCanvas {
 }
 
 function createLayoutEntry(node: LGraphNode, zIndex: number) {
-  const nodeId = String(node.id)
+  const nodeId = toNodeId(node.id)
   const layout: NodeLayout = {
     id: nodeId,
     position: { x: node.pos[0], y: node.pos[1] },
@@ -99,7 +102,7 @@ function createLayoutEntry(node: LGraphNode, zIndex: number) {
   })
 }
 
-function setZIndex(nodeId: string, zIndex: number, previousZIndex: number) {
+function setZIndex(nodeId: NodeId, zIndex: number, previousZIndex: number) {
   layoutStore.applyOperation({
     type: 'setNodeZIndex',
     entity: 'node',
@@ -145,7 +148,7 @@ describe('cloned node z-index in Vue renderer', () => {
     originalNode.size = [200, 100]
     graph.add(originalNode)
 
-    const originalNodeId = String(originalNode.id)
+    const originalNodeId = toNodeId(originalNode.id)
 
     setZIndex(originalNodeId, 5, 0)
 
@@ -171,13 +174,13 @@ describe('cloned node z-index in Vue renderer', () => {
     nodeA.pos = [100, 100]
     nodeA.size = [200, 100]
     graph.add(nodeA)
-    setZIndex(String(nodeA.id), 3, 0)
+    setZIndex(toNodeId(nodeA.id), 3, 0)
 
     const nodeB = new TestNode()
     nodeB.pos = [400, 100]
     nodeB.size = [200, 100]
     graph.add(nodeB)
-    setZIndex(String(nodeB.id), 7, 0)
+    setZIndex(toNodeId(nodeB.id), 7, 0)
 
     const result = LGraphCanvas.cloneNodes([nodeA, nodeB])
     expect(result).toBeDefined()

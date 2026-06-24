@@ -2,6 +2,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { render } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { nodeId as toNodeId } from '@/types/nodeId'
 import { defineComponent, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -14,7 +16,6 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { NodeId as VueNodeId } from '@/renderer/core/layout/types'
-import { nodeId } from '@/types/nodeId'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
@@ -26,10 +27,10 @@ import {
 
 import NodeSlots from './NodeSlots.vue'
 
-const toVueNodeId = (id: string | number): VueNodeId => nodeId(id)
+const toVueNodeId = (id: string | number): VueNodeId => toNodeId(id)
 
 const makeNodeData = (overrides: Partial<VueNodeData> = {}): VueNodeData => ({
-  id: '123',
+  id: toNodeId('123'),
   title: 'Test Node',
   type: 'TestType',
   mode: 0,
@@ -223,14 +224,14 @@ describe('NodeSlots.vue', () => {
       {
         index: 0,
         name: 'objNoWidget',
-        nodeId: '123',
+        nodeId: toNodeId('123'),
         type: 'number',
         readonly: false
       },
       {
         index: 2,
         name: 'stringInput',
-        nodeId: '123',
+        nodeId: toNodeId('123'),
         type: 'string',
         readonly: false
       }
@@ -258,8 +259,20 @@ describe('NodeSlots.vue', () => {
       readonly: el.dataset.readonly === 'true'
     }))
     expect(outInfo).toEqual([
-      { index: 0, name: 'outA', nodeId: '123', type: 'any', readonly: false },
-      { index: 1, name: 'outB', nodeId: '123', type: 'any', readonly: false }
+      {
+        index: 0,
+        name: 'outA',
+        nodeId: toNodeId('123'),
+        type: 'any',
+        readonly: false
+      },
+      {
+        index: 1,
+        name: 'outB',
+        nodeId: toNodeId('123'),
+        type: 'any',
+        readonly: false
+      }
     ])
   })
 
@@ -321,7 +334,7 @@ describe('NodeSlots.vue', () => {
 
     const outerSubgraph = createTestSubgraph()
     const innerSubgraphNode = createTestSubgraphNode(innerSubgraph, {
-      id: 70,
+      id: toNodeId(70),
       parentGraph: outerSubgraph
     })
     outerSubgraph.add(innerSubgraphNode)

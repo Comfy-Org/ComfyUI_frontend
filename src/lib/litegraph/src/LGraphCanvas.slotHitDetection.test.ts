@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { nodeId as toNodeId } from '@/types/nodeId'
+
 import {
   LGraph,
   LGraphCanvas,
@@ -107,7 +109,7 @@ describe('LGraphCanvas slot hit detection', () => {
 
       // Mock the slot query to return our node's slot
       vi.mocked(layoutStore.querySlotAtPoint).mockReturnValue({
-        nodeId: String(node.id),
+        nodeId: toNodeId(node.id),
         index: 0,
         type: 'output',
         position: { x: 252, y: 120 },
@@ -188,7 +190,7 @@ describe('LGraphCanvas slot hit detection', () => {
       expect(node.isPointInside(clickX, clickY)).toBe(false)
 
       vi.mocked(layoutStore.querySlotAtPoint).mockReturnValue({
-        nodeId: String(node.id),
+        nodeId: toNodeId(node.id),
         index: 0,
         type: 'input',
         position: { x: 98, y: 140 },

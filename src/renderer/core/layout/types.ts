@@ -45,7 +45,7 @@ export type RerouteId = number
 
 // Layout data structures
 export interface NodeLayout {
-  id: SerializedNodeId
+  id: NodeId
   position: Point
   size: Size
   zIndex: number
@@ -55,7 +55,7 @@ export interface NodeLayout {
 }
 
 export interface SlotLayout {
-  nodeId: SerializedNodeId
+  nodeId: NodeId
   index: number
   type: 'input' | 'output'
   position: Point
@@ -67,8 +67,8 @@ export interface LinkLayout {
   path: Path2D
   bounds: Bounds
   centerPos: Point
-  sourceNodeId: SerializedNodeId
-  targetNodeId: SerializedNodeId
+  sourceNodeId: NodeId
+  targetNodeId: NodeId
   sourceSlot: number
   targetSlot: number
 }
@@ -108,7 +108,7 @@ interface OperationMeta {
 /**
  * Entity-specific base types for proper type discrimination
  */
-type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: SerializedNodeId }
+type NodeOpBase = OperationMeta & { entity: 'node'; nodeId: NodeId }
 type LinkOpBase = OperationMeta & { entity: 'link'; linkId: LinkId }
 type RerouteOpBase = OperationMeta & {
   entity: 'reroute'
@@ -190,8 +190,8 @@ interface SetNodeVisibilityOperation extends NodeOpBase {
 export interface BatchUpdateBoundsOperation extends OperationMeta {
   entity: 'node'
   type: 'batchUpdateBounds'
-  nodeIds: SerializedNodeId[]
-  bounds: Record<string, { bounds: Bounds; previousBounds: Bounds }>
+  nodeIds: NodeId[]
+  bounds: Record<NodeId, { bounds: Bounds; previousBounds: Bounds }>
 }
 
 /**
@@ -199,9 +199,9 @@ export interface BatchUpdateBoundsOperation extends OperationMeta {
  */
 export interface CreateLinkOperation extends LinkOpBase {
   type: 'createLink'
-  sourceNodeId: SerializedNodeId
+  sourceNodeId: NodeId
   sourceSlot: number
-  targetNodeId: SerializedNodeId
+  targetNodeId: NodeId
   targetSlot: number
 }
 

@@ -28,6 +28,7 @@ import { app } from '@/scripts/app'
 import { t } from '@/i18n'
 import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { WidgetId } from '@/types/widgetId'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 type ImageNode = LGraphNode & { imgs: HTMLImageElement[] | undefined }
@@ -61,7 +62,7 @@ export async function createNode(
     const addedNode = graph.add(newNode) ?? null
 
     if (addedNode) {
-      useNodeZIndex().bringNodeToFront(addedNode.id)
+      useNodeZIndex().bringNodeToFront(toNodeId(addedNode.id))
       graph.change()
     }
     return addedNode

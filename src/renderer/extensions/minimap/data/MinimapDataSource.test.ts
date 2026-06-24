@@ -40,7 +40,7 @@ describe('MinimapDataSource', () => {
         [
           layoutNodeId('node1'),
           {
-            id: 'node1',
+            id: layoutNodeId('node1'),
             position: { x: 0, y: 0 },
             size: { width: 100, height: 50 },
             zIndex: 0,
@@ -107,7 +107,7 @@ describe('MinimapDataSource', () => {
       const nodes = dataSource.getNodes()
       expect(nodes).toHaveLength(1)
       expect(nodes[0]).toMatchObject({
-        id: 'node1',
+        id: layoutNodeId('node1'),
         x: 0,
         y: 0,
         width: 100,

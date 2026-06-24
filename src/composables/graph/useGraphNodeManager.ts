@@ -21,7 +21,8 @@ import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import type { SerializedNodeId } from '@/types/nodeId'
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { IS_CONTROL_WIDGET } from '@/scripts/widgets'
@@ -64,7 +65,7 @@ type Badges = (LGraphBadge | (() => LGraphBadge))[]
  */
 export interface SafeWidgetData {
   widgetId?: WidgetId
-  nodeId?: SerializedNodeId
+  nodeId?: NodeId
   name: string
   type: string
   /** Callback to invoke when widget value changes (wraps LiteGraph callback + triggerDraw) */
@@ -109,7 +110,7 @@ export interface SafeWidgetData {
 
 export interface VueNodeData {
   executing: boolean
-  id: SerializedNodeId
+  id: NodeId
   mode: number
   selected: boolean
   title: string
@@ -471,7 +472,7 @@ export function extractVueNodeData(node: LGraphNode): VueNodeData {
   const badges = node.badges
 
   return {
-    id: String(node.id),
+    id: toNodeId(node.id),
     title: typeof node.title === 'string' ? node.title : '',
     type: nodeType,
     mode: node.mode || 0,
@@ -556,6 +557,7 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     originalCallback?: (node: LGraphNode) => void
   ) => {
     const id = String(node.id)
+    const normalizedId = toNodeId(node.id)
 
     // Store non-reactive reference to original node
     nodeRefs.set(id, node)
@@ -573,12 +575,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
 
       // Skip layout creation if it already exists
       // (e.g. in-place node replacement where the old node's layout is reused for the new node with the same ID).
-      const existingLayout = layoutStore.getNodeLayoutRef(id).value
+      const existingLayout = layoutStore.getNodeLayoutRef(normalizedId).value
       if (existingLayout) return
 
       // Add node to layout store with final positions
       setSource(LayoutSource.Canvas)
-      void createNode(id, {
+      void createNode(normalizedId, {
         position: nodePosition,
         size: nodeSize,
         zIndex: node.order || 0,
@@ -620,9 +622,12 @@ export function useGraphNodeManager(graph: LGraph): GraphNodeManager {
     node: LGraphNode,
     originalCallback?: (node: LGraphNode) => void
   ) => {
-    const id = String(node.id)
+    const normalizedId = toNodeId(node.id)
+
+    // Remove node from layout store
     setSource(LayoutSource.Canvas)
-    void deleteNode(id)
+    void deleteNode(normalizedId)
+    dropNodeReferences(node)
     originalCallback?.(node)
   }
 

@@ -309,6 +309,7 @@ import {
   getNodeByLocatorId
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import { isTransparent } from '@/utils/colorUtil'
 
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -426,10 +427,10 @@ async function nodeOnPointerdown(event: PointerEvent) {
     const result = LGraphCanvas.cloneNodes([lgraphNode.value])
     if (result?.created?.length) {
       const [newNode] = result.created
-      startDrag(event, `${newNode.id}`)
+      startDrag(event, toNodeId(newNode.id))
       layoutStore.isDraggingVueNodes.value = true
       await nextTick()
-      bringNodeToFront(`${newNode.id}`)
+      bringNodeToFront(toNodeId(newNode.id))
       return
     }
   }

@@ -1,5 +1,7 @@
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { nodeId as toNodeId } from '@/types/nodeId'
 import { nextTick, ref } from 'vue'
 
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
@@ -75,7 +77,7 @@ vi.mock('@/composables/graph/useVueNodeLifecycle', () => ({
 
 const mockData = vi.hoisted(() => {
   const fakeNodeLayout: NodeLayout = {
-    id: '',
+    id: toNodeId(''),
     position: { x: 0, y: 0 },
     size: { width: 100, height: 100 },
     zIndex: 1,

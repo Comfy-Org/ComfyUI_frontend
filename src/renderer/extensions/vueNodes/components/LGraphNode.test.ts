@@ -2,6 +2,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { nodeId as toNodeId } from '@/types/nodeId'
 import { computed } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
@@ -152,7 +154,7 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
   })
 }
 const mockNodeData: VueNodeData = {
-  id: 'test-node-123',
+  id: toNodeId('test-node-123'),
   title: 'Test Node',
   type: 'TestNode',
   mode: 0,
@@ -166,7 +168,7 @@ const mockNodeData: VueNodeData = {
 
 const mockRerouteNodeData: VueNodeData = {
   ...mockNodeData,
-  id: 'reroute-node-1',
+  id: toNodeId('reroute-node-1'),
   title: '',
   type: 'Reroute',
   titleMode: TitleMode.NO_TITLE

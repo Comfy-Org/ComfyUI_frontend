@@ -3,11 +3,11 @@ import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 export const useNodePreviewState = (
-  nodeIdMaybe: MaybeRefOrGetter<SerializedNodeId>,
+  nodeIdMaybe: MaybeRefOrGetter<NodeId>,
   options?: {
     isCollapsed?: Ref<boolean>
   }

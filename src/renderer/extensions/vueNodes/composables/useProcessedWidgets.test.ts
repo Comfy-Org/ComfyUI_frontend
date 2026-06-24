@@ -3,6 +3,8 @@ import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { nodeId as toNodeId } from '@/types/nodeId'
+
 import type { SafeWidgetData } from '@/composables/graph/useGraphNodeManager'
 import {
   computeProcessedWidgets,
@@ -26,7 +28,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
     canvas: {
       graph: {
         rootGraph: {
-          id: 'graph-test'
+          id: toNodeId('graph-test')
         }
       }
     }
@@ -36,7 +38,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
 const createMockWidget = (
   overrides: Partial<SafeWidgetData> = {}
 ): SafeWidgetData => ({
-  nodeId: 'test_node',
+  nodeId: toNodeId('test_node'),
   name: 'test_widget',
   type: 'combo',
   options: undefined,
@@ -265,13 +267,13 @@ describe('computeProcessedWidgets borderStyle', () => {
     const promotedWidget = createMockWidget({
       name: 'text',
       type: 'combo',
-      nodeId: 'inner-subgraph:1',
+      nodeId: toNodeId('inner-subgraph:1'),
       widgetId: id
     })
 
     const result = computeProcessedWidgets({
       nodeData: {
-        id: '3',
+        id: toNodeId('3'),
         type: 'SubgraphNode',
         widgets: [promotedWidget],
         title: 'Test',
@@ -296,13 +298,13 @@ describe('computeProcessedWidgets borderStyle', () => {
     const widget = createMockWidget({
       name: 'text',
       type: 'combo',
-      nodeId: 'inner-subgraph:1',
+      nodeId: toNodeId('inner-subgraph:1'),
       widgetId: widgetId(GRAPH_ID, 'inner-subgraph:1', 'text')
     })
 
     const result = computeProcessedWidgets({
       nodeData: {
-        id: '4',
+        id: toNodeId('4'),
         type: 'SubgraphNode',
         widgets: [widget],
         title: 'Test',
@@ -333,7 +335,7 @@ describe('computeProcessedWidgets borderStyle', () => {
 
     const result = computeProcessedWidgets({
       nodeData: {
-        id: '1',
+        id: toNodeId('1'),
         type: 'TestNode',
         widgets: [advancedWidget],
         title: 'Test',
@@ -365,7 +367,7 @@ describe('computeProcessedWidgets borderStyle', () => {
     })
     const widget = createMockWidget({
       widgetId: id,
-      nodeId: 'host',
+      nodeId: toNodeId('host'),
       name: 'stale name',
       type: 'combo',
       options: { values: ['stale value'] }
@@ -373,7 +375,7 @@ describe('computeProcessedWidgets borderStyle', () => {
 
     const result = computeProcessedWidgets({
       nodeData: {
-        id: '3',
+        id: toNodeId('3'),
         type: 'SubgraphNode',
         widgets: [widget],
         title: 'Test',
@@ -407,12 +409,12 @@ describe('computeProcessedWidgets borderStyle', () => {
     const widget = createMockWidget({
       name: 'text',
       type: 'combo',
-      nodeId: 'inner-node'
+      nodeId: toNodeId('inner-node')
     })
 
     const result = computeProcessedWidgets({
       nodeData: {
-        id: 'host-node',
+        id: toNodeId('host-node'),
         type: 'SubgraphNode',
         widgets: [widget],
         title: 'Test',
@@ -439,7 +441,7 @@ describe('computeProcessedWidgets borderStyle', () => {
     const hiddenWidget = createMockWidget({
       name: 'text',
       type: 'combo',
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       widgetId: sharedWidgetId,
       options: { hidden: true }
     })
@@ -447,13 +449,13 @@ describe('computeProcessedWidgets borderStyle', () => {
     const visibleWidget = createMockWidget({
       name: 'text',
       type: 'combo',
-      nodeId: '1',
+      nodeId: toNodeId('1'),
       widgetId: sharedWidgetId
     })
 
     const result = computeProcessedWidgets({
       nodeData: {
-        id: '1',
+        id: toNodeId('1'),
         type: 'TestNode',
         widgets: [hiddenWidget, visibleWidget],
         title: 'Test',
@@ -490,7 +492,7 @@ describe('computeProcessedWidgets borderStyle', () => {
 
     const result = computeProcessedWidgets({
       nodeData: {
-        id: '1',
+        id: toNodeId('1'),
         type: 'ColorToRGBInt',
         widgets: [colorA, colorB],
         title: 'Color to RGB Int',
@@ -515,7 +517,7 @@ describe('computeProcessedWidgets borderStyle', () => {
 
 describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
   const GRAPH_ID = 'graph-test'
-  const NODE_ID = 1
+  const NODE_ID = toNodeId(1)
 
   beforeEach(() => {
     setActivePinia(createTestingPinia({ stubActions: false }))

@@ -23,6 +23,7 @@ import { useAppModeStore } from '@/stores/appModeStore'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { HideLayoutFieldKey } from '@/types/widgetTypes'
+import { nodeId as toNodeId } from '@/types/nodeId'
 import { promptRenameWidget } from '@/utils/widgetUtil'
 
 interface WidgetEntry {
@@ -75,7 +76,7 @@ const mappedSelections = computed((): WidgetEntry[] => {
     if (!matchingWidget) return []
 
     matchingWidget.slotMetadata = undefined
-    matchingWidget.nodeId = String(node.id)
+    matchingWidget.nodeId = toNodeId(node.id)
 
     return [
       {

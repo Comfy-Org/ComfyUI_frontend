@@ -6,13 +6,15 @@ import { setActivePinia } from 'pinia'
 import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
+import { nodeId as toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+
 import type {
   SafeWidgetData,
   VueNodeData
 } from '@/composables/graph/useGraphNodeManager'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { NodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
 
@@ -23,7 +25,7 @@ vi.mock('@/renderer/core/canvas/canvasStore', () => ({
     canvas: {
       graph: {
         rootGraph: {
-          id: 'graph-test'
+          id: toNodeId('graph-test')
         }
       }
     }
@@ -52,7 +54,7 @@ describe('NodeWidgets', () => {
   const createMockWidget = (
     overrides: Partial<SafeWidgetData> = {}
   ): SafeWidgetData => ({
-    nodeId: 'test_node',
+    nodeId: toNodeId('test_node'),
     name: 'test_widget',
     type: 'combo',
     options: undefined,
@@ -66,7 +68,7 @@ describe('NodeWidgets', () => {
   const createMockNodeData = (
     nodeType: string = 'TestNode',
     widgets: SafeWidgetData[] = [],
-    id: NodeId = 1
+    id: NodeId = toNodeId(1)
   ): VueNodeData => ({
     id,
     type: nodeType,
@@ -144,19 +146,19 @@ describe('NodeWidgets', () => {
     const duplicateA = createMockWidget({
       name: 'string_a',
       type: 'text',
-      nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      nodeId: toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
       widgetId: duplicateEntityId
     })
     const duplicateB = createMockWidget({
       name: 'string_a',
       type: 'text',
-      nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      nodeId: toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
       widgetId: duplicateEntityId
     })
     const distinct = createMockWidget({
       name: 'string_a',
       type: 'text',
-      nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:20',
+      nodeId: toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:20'),
       widgetId: distinctEntityId
     })
     const nodeData = createMockNodeData('SubgraphNode', [
@@ -179,14 +181,14 @@ describe('NodeWidgets', () => {
     const hiddenDuplicate = createMockWidget({
       name: 'string_a',
       type: 'text',
-      nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      nodeId: toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
       widgetId: sharedEntityId,
       options: { hidden: true }
     })
     const visibleDuplicate = createMockWidget({
       name: 'string_a',
       type: 'text',
-      nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      nodeId: toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
       widgetId: sharedEntityId,
       options: { hidden: false }
     })
@@ -209,13 +211,13 @@ describe('NodeWidgets', () => {
     const textWidget = createMockWidget({
       name: 'string_a',
       type: 'text',
-      nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      nodeId: toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
       widgetId: sharedEntityId
     })
     const comboWidget = createMockWidget({
       name: 'string_a',
       type: 'combo',
-      nodeId: '5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19',
+      nodeId: toNodeId('5e0670b8-ea2c-4fb6-8b73-a1100a2d4f8f:19'),
       widgetId: sharedEntityId
     })
     const nodeData = createMockNodeData('SubgraphNode', [
@@ -255,13 +257,13 @@ describe('NodeWidgets', () => {
     const firstPromoted = createMockWidget({
       name: 'text',
       type: 'text',
-      nodeId: 'outer-subgraph:1',
+      nodeId: toNodeId('outer-subgraph:1'),
       widgetId: widgetId(GRAPH_ID, 'outer-subgraph:1', 'text')
     })
     const secondPromoted = createMockWidget({
       name: 'text',
       type: 'text',
-      nodeId: 'outer-subgraph:2',
+      nodeId: toNodeId('outer-subgraph:2'),
       widgetId: widgetId(GRAPH_ID, 'outer-subgraph:2', 'text')
     })
 
@@ -277,7 +279,7 @@ describe('NodeWidgets', () => {
   it('hides widgets when merged store options mark them hidden', async () => {
     const nodeData = createMockNodeData('TestNode', [
       createMockWidget({
-        nodeId: 'test_node',
+        nodeId: toNodeId('test_node'),
         name: 'test_widget',
         options: { hidden: false }
       })
@@ -307,13 +309,13 @@ describe('NodeWidgets', () => {
     const seedBEntityId = widgetId(GRAPH_ID, 'test_node', 'seed_b')
     const nodeData = createMockNodeData('TestNode', [
       createMockWidget({
-        nodeId: 'test_node',
+        nodeId: toNodeId('test_node'),
         name: 'seed_a',
         type: 'text',
         widgetId: seedAEntityId
       }),
       createMockWidget({
-        nodeId: 'test_node',
+        nodeId: toNodeId('test_node'),
         name: 'seed_b',
         type: 'text',
         widgetId: seedBEntityId

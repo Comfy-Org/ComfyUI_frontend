@@ -1162,7 +1162,7 @@ class LayoutStoreImpl implements LayoutStore {
 
     for (const rawNodeId of operation.nodeIds) {
       const nodeId = toNodeId(rawNodeId)
-      const data = operation.bounds[String(rawNodeId)]
+      const data = operation.bounds[rawNodeId]
       const ynode = this.ynodes.get(String(nodeId))
       if (!ynode || !data) continue
 
