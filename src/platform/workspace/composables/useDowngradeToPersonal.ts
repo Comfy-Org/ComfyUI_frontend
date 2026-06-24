@@ -42,31 +42,16 @@ export function useDowngradeToPersonal() {
       throw new Error(preview?.reason || t('subscription.downgrade.notAllowed'))
     }
 
-    const membersToRemove = removableMembers.value
-    for (const member of membersToRemove) {
-      try {
-        await workspaceStore.removeMember(member.id)
-      } catch (error) {
-        throw new Error(
-          t('subscription.downgrade.memberRemovalFailed', {
-            email: member.email
-          }),
-          { cause: error }
-        )
-      }
+    for (const member of removableMembers.value) {
+      await workspaceStore.removeMember(member.id)
     }
 
-    const response = await subscribe(
-      planSlug,
-      `${getComfyPlatformBaseUrl()}/payment/success`,
-      `${getComfyPlatformBaseUrl()}/payment/failed`
-    )
+    const response = await subscribe(planSlug, {
+      returnUrl: `${getComfyPlatformBaseUrl()}/payment/success`,
+      cancelUrl: `${getComfyPlatformBaseUrl()}/payment/failed`
+    })
     if (!response) {
-      throw new Error(
-        membersToRemove.length > 0
-          ? t('subscription.downgrade.failedAfterMemberRemoval')
-          : t('subscription.downgrade.failed')
-      )
+      throw new Error(t('subscription.downgrade.failed'))
     }
 
     if (response.status === 'needs_payment_method') {

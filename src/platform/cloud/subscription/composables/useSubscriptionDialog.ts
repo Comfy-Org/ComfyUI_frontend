@@ -16,6 +16,17 @@ export type SubscriptionDialogReason =
   | 'subscription_required'
   | 'out_of_credits'
   | 'top_up_blocked'
+  | 'deep_link'
+
+export interface SubscriptionDialogOptions {
+  reason?: SubscriptionDialogReason
+  /**
+   * Forces the unified pricing dialog to open on a specific plan tab,
+   * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
+   * always lands on the team tab even from a personal workspace).
+   */
+  planMode?: 'personal' | 'team'
+}
 
 export interface SubscriptionDialogOptions {
   reason?: SubscriptionDialogReason
@@ -63,6 +74,84 @@ export const useSubscriptionDialog = () => {
           renderer: 'reka',
           contentClass:
             'w-[min(360px,95vw)] max-w-[min(360px,95vw)] sm:max-w-[min(360px,95vw)] border-0 bg-transparent shadow-none'
+        }
+      })
+      return
+    }
+
+    // Shared dialog shell styling for both variants.
+    const dialogComponentProps = {
+      style: 'width: min(1328px, 95vw); max-height: 958px;',
+      pt: {
+        root: {
+          class: 'rounded-2xl bg-transparent h-full'
+        },
+        content: {
+          class:
+            '!p-0 rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)] h-full'
+        }
+      }
+    }
+
+    // Jun-5 model: a single unified pricing table (personal/team plan toggle on
+    // one workspace) when team workspaces are enabled. Replaces the old
+    // personal-vs-team workspace fork. Flag-off keeps the legacy table.
+    if (flags.teamWorkspacesEnabled) {
+      // Existing per-member (legacy) team subscribers keep the old tier-based
+      // team table; the unified credit-slider table is for everyone else.
+      // Resolved lazily (not at composable setup): these three composables form
+      // an import cycle (useBillingContext -> useWorkspaceBilling ->
+      // useSubscriptionDialog), so a setup-time read would deref the shared
+      // context before its state is constructed.
+      const { isLegacyTeamPlan } = useBillingContext()
+      if (isLegacyTeamPlan.value) {
+        dialogService.showLayoutDialog({
+          key: DIALOG_KEY,
+          component: defineAsyncComponent(
+            () =>
+              import('@/platform/workspace/components/SubscriptionRequiredDialogContentWorkspace.vue')
+          ),
+          props: {
+            onClose: hide,
+            reason: options?.reason
+          },
+          // The legacy table hosts a PrimeVue Popover teleported to body; Reka
+          // modal mode traps focus and disables body pointer-events, making it
+          // unclickable. The unified table has no such overlay.
+          dialogComponentProps: { ...dialogComponentProps, modal: false }
+        })
+        return
+      }
+
+      dialogService.showLayoutDialog({
+        key: DIALOG_KEY,
+        component: defineAsyncComponent(
+          () =>
+            import('@/platform/workspace/components/SubscriptionRequiredDialogContentUnified.vue')
+        ),
+        props: {
+          onClose: hide,
+          reason: options?.reason,
+          // A team workspace lands on the For Teams tab; personal on For
+          // Personal. An explicit caller (e.g. an "Upgrade to Team" CTA) can
+          // override via options.planMode.
+          initialPlanMode:
+            options?.planMode ??
+            (workspaceStore.isInPersonalWorkspace ? 'personal' : 'team')
+        },
+        dialogComponentProps: {
+          // The dialog hugs its content so each step sizes itself: the pricing
+          // table stays wide/fixed (cards fill it, DES QA 2026-06-13) while the
+          // compact confirm/success steps shrink instead of floating in the big
+          // pricing modal. Sizes are set on the content root per checkoutStep.
+          style: 'max-width: 95vw; max-height: 90vh;',
+          pt: {
+            root: { class: 'rounded-2xl bg-transparent' },
+            content: {
+              class:
+                '!p-0 rounded-2xl border border-border-default bg-secondary-background shadow-[0_25px_80px_rgba(5,6,12,0.45)]'
+            }
+          }
         }
       })
       return

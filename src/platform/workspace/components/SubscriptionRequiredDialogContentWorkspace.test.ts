@@ -2,7 +2,7 @@ import { createTestingPinia } from '@pinia/testing'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -17,6 +17,7 @@ const mockHandleResubscribe = vi.fn()
 const mockHandleSuccessClose = vi.fn()
 const mockCheckoutStep = ref<'pricing' | 'preview' | 'success'>('pricing')
 const mockPreviewData = ref<{ transition_type: string } | null>(null)
+const mockCanManageSubscription = ref(true)
 
 vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
   useSubscriptionCheckout: () => ({
@@ -38,6 +39,14 @@ vi.mock('@/platform/workspace/composables/useSubscriptionCheckout', () => ({
   })
 }))
 
+vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
+  useWorkspaceUI: () => ({
+    permissions: computed(() => ({
+      canManageSubscription: mockCanManageSubscription.value
+    }))
+  })
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -46,7 +55,12 @@ const i18n = createI18n({
       g: { back: 'Back', close: 'Close' },
       subscription: {
         plansForWorkspace: 'Plans for {workspace}',
-        teamWorkspace: 'Team'
+        teamWorkspace: 'Team',
+        inactive: {
+          memberTitle: 'This workspace is paused',
+          memberDescription:
+            'Contact your workspace owner to resubscribe and continue running workflows.'
+        }
       },
       credits: {
         topUp: {
@@ -115,6 +129,7 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     vi.clearAllMocks()
     mockCheckoutStep.value = 'pricing'
     mockPreviewData.value = null
+    mockCanManageSubscription.value = true
   })
 
   it('shows pricing table on pricing step', () => {
@@ -206,20 +221,67 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     expect(mockHandleBackToPricing).toHaveBeenCalled()
   })
 
-  it('shows the success screen on the success step', () => {
-    mockCheckoutStep.value = 'success'
-    renderComponent()
-    expect(screen.getByTestId('success')).toBeInTheDocument()
-    expect(screen.queryByTestId('pricing-table')).not.toBeInTheDocument()
+  describe('member (cannot manage subscription)', () => {
+    beforeEach(() => {
+      mockCanManageSubscription.value = false
+    })
+
+    it('shows the contact-owner resubscribe message instead of the pricing table', () => {
+      renderComponent()
+
+      expect(
+        screen.getByTestId('member-resubscribe-message')
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(
+          'Contact your workspace owner to resubscribe and continue running workflows.'
+        )
+      ).toBeInTheDocument()
+    })
+
+    it('does not expose any subscribe affordance to members', () => {
+      renderComponent()
+
+      expect(screen.queryByTestId('pricing-table')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('subscribe-btn')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('resubscribe-btn')).not.toBeInTheDocument()
+    })
+
+    it('falls back to the credits flow when the reason is out_of_credits', () => {
+      renderComponent({ reason: 'out_of_credits' })
+
+      expect(
+        screen.queryByTestId('member-resubscribe-message')
+      ).not.toBeInTheDocument()
+      expect(screen.getByText('Insufficient Credits')).toBeInTheDocument()
+    })
   })
 
-  it('wires the success close event to handleSuccessClose', async () => {
-    const user = userEvent.setup()
-    mockCheckoutStep.value = 'success'
-    renderComponent()
+  describe('owner (can manage subscription)', () => {
+    it('shows the pricing table and hides the member message', () => {
+      renderComponent()
 
-    await user.click(screen.getByTestId('success-close-btn'))
+      expect(screen.getByTestId('pricing-table')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('member-resubscribe-message')
+      ).not.toBeInTheDocument()
+    })
 
-    expect(mockHandleSuccessClose).toHaveBeenCalled()
+    it('shows the success screen on the success step', () => {
+      mockCheckoutStep.value = 'success'
+      renderComponent()
+      expect(screen.getByTestId('success')).toBeInTheDocument()
+      expect(screen.queryByTestId('pricing-table')).not.toBeInTheDocument()
+    })
+
+    it('wires the success close event to handleSuccessClose', async () => {
+      const user = userEvent.setup()
+      mockCheckoutStep.value = 'success'
+      renderComponent()
+
+      await user.click(screen.getByTestId('success-close-btn'))
+
+      expect(mockHandleSuccessClose).toHaveBeenCalled()
+    })
   })
 })

@@ -116,6 +116,10 @@ installPreservedQueryTracker(router, [
   {
     namespace: PRESERVED_QUERY_NAMESPACES.OAUTH,
     keys: ['oauth_request_id']
+  },
+  {
+    namespace: PRESERVED_QUERY_NAMESPACES.PRICING,
+    keys: ['pricing']
   }
 ])
 

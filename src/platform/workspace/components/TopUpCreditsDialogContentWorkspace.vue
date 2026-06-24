@@ -176,7 +176,7 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance, fetchStatus, topup } = useBillingContext()
+const { fetchBalance, topup, fetchStatus } = useBillingContext()
 
 const billingOperationStore = useBillingOperationStore()
 const isPolling = computed(() => billingOperationStore.hasPendingOperations)
@@ -269,7 +269,7 @@ async function handleBuy() {
       handleClose(false)
       settingsDialog.show('workspace')
     } else if (response.status === 'pending') {
-      billingOperationStore.startOperation(response.billing_op_id, 'topup')
+      void billingOperationStore.startOperation(response.billing_op_id, 'topup')
     } else {
       toast.add({
         severity: 'error',

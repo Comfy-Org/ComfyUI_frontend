@@ -464,6 +464,11 @@ export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   ecommerce: EcommerceMetadata
 }
 
+export interface WorkspaceInviteMetadata extends Record<string, unknown> {
+  source: 'post_upgrade_success' | 'settings_members'
+  count: number
+}
+
 /**
  * Telemetry provider interface for individual providers.
  * All methods are optional - providers only implement what they need.
@@ -487,7 +492,11 @@ export interface TelemetryProvider {
   trackAddApiCreditButtonClicked?(): void
   trackApiCreditTopupButtonPurchaseClicked?(amount: number): void
   trackApiCreditTopupSucceeded?(): void
-  trackRunButton?(properties: RunButtonProperties): void
+  trackWorkspaceInviteSent?(metadata: WorkspaceInviteMetadata): void
+  trackRunButton?(options?: {
+    subscribe_to_run?: boolean
+    trigger_source?: ExecutionTriggerSource
+  }): void
 
   // Credit top-up tracking (composition with internal utilities)
   startTopupTracking?(): void
@@ -590,7 +599,7 @@ export const TelemetryEvents = {
   API_CREDIT_TOPUP_BUTTON_PURCHASE_CLICKED:
     'app:api_credit_topup_button_purchase_clicked',
   API_CREDIT_TOPUP_SUCCEEDED: 'app:api_credit_topup_succeeded',
-  BEGIN_CHECKOUT: 'begin_checkout',
+  WORKSPACE_INVITE_SENT: 'app:workspace_invite_sent',
 
   // Onboarding Survey
   USER_SURVEY_OPENED: 'app:user_survey_opened',

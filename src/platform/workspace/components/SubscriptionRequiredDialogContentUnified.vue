@@ -44,9 +44,11 @@
       </p>
     </div>
 
-    <!-- Pricing Table Step (unified: personal/team plan toggle) -->
+    <!-- Pricing Table Step. v-show (not v-if) keeps it mounted so the plan,
+         billing cycle, and credit-stop selection survive a round trip to the
+         confirm step and back. -->
     <UnifiedPricingTable
-      v-if="checkoutStep === 'pricing'"
+      v-show="checkoutStep === 'pricing'"
       class="xl:flex-1"
       :initial-plan-mode="initialPlanMode"
       :is-loading="isLoadingPreview || isResubscribing"
@@ -56,48 +58,48 @@
       @subscribe-team="handleSubscribeTeamClick"
     />
 
-    <!-- Subscription Preview Step - New Subscription -->
-    <SubscriptionAddPaymentPreviewWorkspace
-      v-else-if="
-        checkoutStep === 'preview' &&
-        previewData &&
-        previewData.transition_type === 'new_subscription'
-      "
-      :preview-data="previewData"
-      :tier-key="selectedTierKey!"
-      :billing-cycle="selectedBillingCycle"
-      :is-loading="isSubscribing || isPolling"
-      @add-credit-card="handleAddCreditCard"
-      @back="handleBackToPricing"
-    />
+    <template v-if="checkoutStep === 'preview'">
+      <!-- New Subscription -->
+      <SubscriptionAddPaymentPreviewWorkspace
+        v-if="previewData && previewData.transition_type === 'new_subscription'"
+        :preview-data="previewData"
+        :tier-key="selectedTierKey!"
+        :billing-cycle="selectedBillingCycle"
+        :is-loading="isSubscribing || isPolling"
+        @add-credit-card="handleAddCreditCard"
+        @back="handleBackToPricing"
+      />
 
-    <!-- Subscription Preview Step - Plan Transition -->
-    <SubscriptionTransitionPreviewWorkspace
-      v-else-if="
-        checkoutStep === 'preview' &&
-        previewData &&
-        previewData.transition_type !== 'new_subscription'
-      "
-      :preview-data="previewData"
-      :is-loading="isSubscribing || isPolling"
-      @confirm="handleConfirmTransition"
-      @back="handleBackToPricing"
-    />
+      <!-- Plan Transition -->
+      <SubscriptionTransitionPreviewWorkspace
+        v-else-if="
+          previewData && previewData.transition_type !== 'new_subscription'
+        "
+        :preview-data="previewData"
+        :is-loading="isSubscribing || isPolling"
+        @confirm="handleConfirmTransition"
+        @back="handleBackToPricing"
+      />
 
-    <!-- Subscription Preview Step - Team (display-only until the BE slider
-         contract lands; the confirm CTA is stubbed below) -->
-    <SubscriptionAddPaymentPreviewWorkspace
-      v-else-if="checkoutStep === 'preview' && selectedTeamStop"
-      :team-plan="selectedTeamStop"
-      @add-credit-card="handleTeamSubscribe"
-      @back="handleBackToPricing"
-    />
+      <!-- Team (display-only confirm; the slider stop and active billing cycle
+           drive the real subscribe). -->
+      <SubscriptionAddPaymentPreviewWorkspace
+        v-else-if="selectedTeamStop"
+        :team-plan="selectedTeamStop"
+        :billing-cycle="selectedBillingCycle"
+        :is-loading="isSubscribing || isPolling"
+        @add-credit-card="handleTeamSubscribe"
+        @back="handleBackToPricing"
+      />
+    </template>
 
     <!-- Success Step - "You're all set" -->
     <SubscriptionSuccessWorkspace
-      v-else-if="checkoutStep === 'success' && selectedTierKey"
+      v-if="checkoutStep === 'success' && (selectedTierKey || isTeamCheckout)"
       :tier-key="selectedTierKey"
+      :team-plan="selectedTeamStop"
       :preview-data="previewData"
+      :is-team="isTeamCheckout"
       @close="handleSuccessClose"
     />
   </div>
@@ -105,8 +107,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useToast } from 'primevue/usetoast'
-import { useI18n } from 'vue-i18n'
+import { useEventListener } from '@vueuse/core'
 
 import Button from '@/components/ui/button/Button.vue'
 import type { SubscriptionDialogReason } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
@@ -127,9 +128,6 @@ const emit = defineEmits<{
   close: [subscribed: boolean]
 }>()
 
-const { t } = useI18n()
-const toast = useToast()
-
 const {
   checkoutStep,
   isLoadingPreview,
@@ -141,26 +139,31 @@ const {
   selectedTeamStop,
   selectedBillingCycle,
   isPolling,
+  isTeamCheckout,
   handleSubscribeClick,
   handleSubscribeTeamClick,
   handleBackToPricing,
   handleSuccessClose,
   handleAddCreditCard,
   handleConfirmTransition,
+  handleTeamSubscribe,
   handleResubscribe
 } = useSubscriptionCheckout(emit)
 
-// Personal-tier checkout reuses the full useSubscriptionCheckout flow above.
-// Team-plan checkout renders the confirm step from the selected slider stop,
-// but the final subscribe is blocked on the BE discount-breakpoint contract
-// (FE-934 / doc Open Q#2: the slider stop -> plan-slug / subscribe-request shape
-// is undefined), so the confirm CTA is stubbed until that lands.
-function handleTeamSubscribe() {
-  toast.add({
-    severity: 'info',
-    summary: t('subscription.teamPlan.name'),
-    detail: t('subscription.teamPlan.checkoutComingSoon'),
-    life: 4000
-  })
-}
+// Backspace mirrors the back arrow on the confirm step, but never while an
+// editable element is focused (let it delete text there).
+useEventListener(window, 'keydown', (event: KeyboardEvent) => {
+  if (event.key !== 'Backspace' || checkoutStep.value !== 'preview') return
+  const target = event.target
+  if (
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    (target instanceof HTMLElement && target.isContentEditable)
+  ) {
+    return
+  }
+  event.preventDefault()
+  handleBackToPricing()
+})
 </script>

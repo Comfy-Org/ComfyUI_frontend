@@ -4,7 +4,7 @@ import { watch } from 'vue'
 import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
@@ -41,7 +41,8 @@ import type {
   UiButtonClickMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
-  WorkflowSavedMetadata
+  WorkflowSavedMetadata,
+  WorkspaceInviteMetadata
 } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { normalizeSurveyResponses } from '../../utils/surveyNormalization'
@@ -307,12 +308,12 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   private setSubscriptionProperties(): void {
-    const { subscriptionTier } = useSubscription()
+    const { tier } = useBillingContext()
     watch(
-      subscriptionTier,
-      (tier) => {
-        if (tier && this.posthog) {
-          this.posthog.people.set({ subscription_tier: tier })
+      tier,
+      (value) => {
+        if (value && this.posthog) {
+          this.posthog.people.set({ subscription_tier: value })
         }
       },
       { immediate: true }
@@ -370,8 +371,35 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.API_CREDIT_TOPUP_SUCCEEDED)
   }
 
-  trackRunButton(properties: RunButtonProperties): void {
-    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, properties)
+  trackWorkspaceInviteSent(metadata: WorkspaceInviteMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKSPACE_INVITE_SENT, metadata)
+  }
+
+  trackRunButton(options?: {
+    subscribe_to_run?: boolean
+    trigger_source?: ExecutionTriggerSource
+  }): void {
+    const executionContext = getExecutionContext()
+    const { mode, isAppMode } = useAppMode()
+
+    const runButtonProperties: RunButtonProperties = {
+      subscribe_to_run: options?.subscribe_to_run || false,
+      workflow_type: executionContext.is_template ? 'template' : 'custom',
+      workflow_name: executionContext.workflow_name ?? 'untitled',
+      custom_node_count: executionContext.custom_node_count,
+      total_node_count: executionContext.total_node_count,
+      subgraph_count: executionContext.subgraph_count,
+      has_api_nodes: executionContext.has_api_nodes,
+      api_node_names: executionContext.api_node_names,
+      has_toolkit_nodes: executionContext.has_toolkit_nodes,
+      toolkit_node_names: executionContext.toolkit_node_names,
+      trigger_source: options?.trigger_source,
+      view_mode: mode.value,
+      is_app_mode: isAppMode.value,
+      dock_state: getActionbarDockState()
+    }
+
+    this.trackEvent(TelemetryEvents.RUN_BUTTON_CLICKED, runButtonProperties)
   }
 
   trackSurvey(

@@ -316,6 +316,9 @@ export class PromptExecutionError extends Error {
   }
 }
 
+// Preview-only backend pin; throwaway, do not merge
+const PREVIEW_BACKEND_ORIGIN = 'https://pr-4378.testenvs.comfy.org'
+
 export class ComfyApi extends EventTarget {
   private _registered = new Set()
   /**
@@ -386,7 +389,7 @@ export class ComfyApi extends EventTarget {
     this.user = ''
     this.api_host = location.host
     this.api_base = isCloud
-      ? ''
+      ? PREVIEW_BACKEND_ORIGIN
       : location.pathname.split('/').slice(0, -1).join('/')
     this.initialClientId = sessionStorage.getItem('clientId')
   }
@@ -671,7 +674,9 @@ export class ComfyApi extends EventTarget {
     }
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
-    const baseUrl = `${protocol}://${this.api_host}${this.api_base}/ws`
+    const baseUrl = this.api_base.startsWith('http')
+      ? `${this.api_base.replace(/^http/, 'ws')}/ws`
+      : `${protocol}://${this.api_host}${this.api_base}/ws`
     const query = params.toString()
     const wsUrl = query ? `${baseUrl}?${query}` : baseUrl
 

@@ -26,8 +26,7 @@ interface WorkspaceUIConfig {
   showMembersList: boolean
   showPendingTab: boolean
   showSearch: boolean
-  showDateColumn: boolean
-  showRoleBadge: boolean
+  showRoleColumn: boolean
   membersGridCols: string
   pendingGridCols: string
   headerGridCols: string
@@ -96,12 +95,11 @@ function getUIConfig(
       showMembersList: false,
       showPendingTab: false,
       showSearch: false,
-      showDateColumn: false,
-      showRoleBadge: false,
+      showRoleColumn: false,
       membersGridCols: 'grid-cols-1',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-1',
-      showEditWorkspaceMenuItem: false,
+      showEditWorkspaceMenuItem: true,
       workspaceMenuAction: null,
       workspaceMenuDisabledTooltip: null
     }
@@ -112,8 +110,7 @@ function getUIConfig(
       showMembersList: true,
       showPendingTab: true,
       showSearch: true,
-      showDateColumn: true,
-      showRoleBadge: true,
+      showRoleColumn: true,
       membersGridCols: 'grid-cols-[50%_40%_10%]',
       pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
       headerGridCols: 'grid-cols-[50%_40%_10%]',
@@ -129,8 +126,7 @@ function getUIConfig(
     showMembersList: true,
     showPendingTab: false,
     showSearch: true,
-    showDateColumn: true,
-    showRoleBadge: true,
+    showRoleColumn: true,
     membersGridCols: 'grid-cols-[1fr_auto]',
     pendingGridCols: 'grid-cols-[50%_20%_20%_10%]',
     headerGridCols: 'grid-cols-[1fr_auto]',

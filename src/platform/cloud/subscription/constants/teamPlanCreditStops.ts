@@ -1,4 +1,7 @@
 export interface CreditStop {
+  /** Backend stop identifier (e.g. "team_700"), sent on subscribe. Absent for
+   *  the hardcoded fallback stops until the API contract reaches prod. */
+  id?: string
   /** Monthly subscription price in USD (pre-discount). */
   usd: number
   /** Monthly credit grant at this stop. */
@@ -17,6 +20,9 @@ export interface CreditStop {
 
 /** A selected slider stop, as emitted by the pricing table's team column. */
 export interface TeamPlanSelection {
+  /** Backend stop identifier (e.g. "team_700"), sent on subscribe. Absent for
+   *  the hardcoded fallback stops until the API contract reaches prod. */
+  id?: string
   /** Pre-discount monthly price in USD (the struck-through list price). */
   usd: number
   /** Monthly credit grant at this stop. */
@@ -48,6 +54,41 @@ export const TEAM_PLAN_CREDIT_STOPS: readonly CreditStop[] = [
 
 /** Default stop per DES-197: index 2 = $700 / 147,700 credits. */
 export const DEFAULT_TEAM_PLAN_STOP_INDEX = 2
+
+/** Plan slugs for the per-credit Team plan, keyed by billing cycle. */
+export const TEAM_PLAN_SLUG_BY_CYCLE = {
+  monthly: 'team_per_credit_monthly',
+  yearly: 'team_per_credit_annual'
+} as const
+
+/**
+ * Map the backend `team_credit_stops` payload to the slider's `CreditStop[]`.
+ * The pre-discount monthly `usd` is the yearly list price; the yearly discount
+ * percent is derived from the struck (`list_price_cents`) vs discounted
+ * (`price_cents`) yearly figures. The backend `id` is carried so a selected stop
+ * can be sent on subscribe.
+ */
+export function mapApiTeamCreditStops(
+  stops: readonly {
+    id: string
+    credits: number
+    yearly: { list_price_cents: number; price_cents: number }
+  }[]
+): CreditStop[] {
+  return stops.map((stop) => {
+    const listCents = stop.yearly.list_price_cents
+    const discountPercentYearly =
+      listCents > 0
+        ? Math.round(((listCents - stop.yearly.price_cents) / listCents) * 100)
+        : 0
+    return {
+      id: stop.id,
+      usd: Math.round(listCents / 100),
+      credits: stop.credits,
+      discountPercentYearly
+    }
+  })
+}
 
 /**
  * Discounted monthly price for a stop's list `usd`, applying the billing-cycle

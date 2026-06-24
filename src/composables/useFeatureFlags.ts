@@ -2,6 +2,7 @@ import { computed, reactive, readonly } from 'vue'
 
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
+  cachedPersonalWorkspaceBillingReady,
   cachedTeamWorkspacesEnabled,
   isAuthenticatedConfigLoaded,
   remoteConfig
@@ -22,6 +23,7 @@ export enum ServerFeatureFlag {
   ONBOARDING_SURVEY_ENABLED = 'onboarding_survey_enabled',
   LINEAR_TOGGLE_ENABLED = 'linear_toggle_enabled',
   TEAM_WORKSPACES_ENABLED = 'team_workspaces_enabled',
+  PERSONAL_WORKSPACE_BILLING_READY = 'personal_workspace_billing_ready',
   USER_SECRETS_ENABLED = 'user_secrets_enabled',
   NODE_REPLACEMENTS = 'node_replacements',
   NODE_LIBRARY_ESSENTIALS_ENABLED = 'node_library_essentials_enabled',
@@ -115,6 +117,33 @@ export function useFeatureFlags() {
       return (
         remoteConfig.value.team_workspaces_enabled ??
         api.getServerFeature(ServerFeatureFlag.TEAM_WORKSPACES_ENABLED, false)
+      )
+    },
+    /**
+     * Whether the backend is ready to serve personal billing over the
+     * workspace path (/api/billing/*). Gates the personal cutover so personal
+     * subscribers stay on legacy billing until the backend emits this key,
+     * even when team workspaces are already enabled.
+     * IMPORTANT: Defaults false until authenticated remote config is loaded,
+     * matching teamWorkspacesEnabled, so we never route personal billing to a
+     * blank workspace identity before the backend is live.
+     */
+    get personalWorkspaceBillingReady() {
+      const override = getDevOverride<boolean>(
+        ServerFeatureFlag.PERSONAL_WORKSPACE_BILLING_READY
+      )
+      if (override !== undefined) return override
+
+      if (!isCloud) return false
+      if (!isAuthenticatedConfigLoaded.value)
+        return cachedPersonalWorkspaceBillingReady.value ?? false
+
+      return (
+        remoteConfig.value.personal_workspace_billing_ready ??
+        api.getServerFeature(
+          ServerFeatureFlag.PERSONAL_WORKSPACE_BILLING_READY,
+          false
+        )
       )
     },
     get userSecretsEnabled() {

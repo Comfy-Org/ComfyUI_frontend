@@ -28,7 +28,6 @@ export interface WorkspaceMember {
 export interface PendingInvite {
   id: string
   email: string
-  token: string
   inviteDate: Date
   expiryDate: Date
 }
@@ -60,7 +59,6 @@ function mapApiInviteToPendingInvite(invite: ApiPendingInvite): PendingInvite {
   return {
     id: invite.id,
     email: invite.email,
-    token: invite.token,
     inviteDate: new Date(invite.invited_at),
     expiryDate: new Date(invite.expires_at)
   }
@@ -106,7 +104,7 @@ function setLastWorkspaceId(workspaceId: string): void {
 }
 
 const MAX_OWNED_WORKSPACES = 10
-const MAX_WORKSPACE_MEMBERS = 50
+export const MAX_WORKSPACE_MEMBERS = 30
 const MAX_INIT_RETRIES = 3
 const BASE_RETRY_DELAY_MS = 1000
 
@@ -164,6 +162,15 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   const pendingInvites = computed<PendingInvite[]>(
     () => activeWorkspace.value?.pendingInvites ?? []
   )
+
+  const originalOwnerId = computed<string | null>(() => {
+    if (members.value.length === 0) return null
+    const flagged = members.value.find((m) => m.isOriginalOwner)
+    if (flagged) return flagged.id
+    return members.value.reduce((earliest, m) =>
+      m.joinDate < earliest.joinDate ? m : earliest
+    ).id
+  })
 
   const totalMemberSlots = computed(
     () => members.value.length + pendingInvites.value.length
@@ -566,6 +573,28 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   /**
+   * Change a member's role in the current workspace.
+   */
+  async function changeMemberRole(
+    userId: string,
+    role: WorkspaceMember['role']
+  ): Promise<void> {
+    if (userId === originalOwnerId.value) {
+      throw new Error("Cannot change the workspace creator's role")
+    }
+    const updated = await workspaceApi.updateMemberRole(userId, role)
+    const updatedMember = mapApiMemberToWorkspaceMember(updated)
+    const current = activeWorkspace.value
+    if (current) {
+      updateActiveWorkspace({
+        members: current.members.map((m) =>
+          m.id === userId ? updatedMember : m
+        )
+      })
+    }
+  }
+
+  /**
    * Fetch pending invites for the current workspace.
    */
   async function fetchPendingInvites(): Promise<PendingInvite[]> {
@@ -609,6 +638,26 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
   }
 
   /**
+   * Resend a pending invite by issuing a fresh one before revoking the old.
+   * Create-first so a failed resend never destroys the original invite.
+   */
+  async function resendInvite(inviteId: string): Promise<PendingInvite> {
+    const invite = activeWorkspace.value?.pendingInvites.find(
+      (i) => i.id === inviteId
+    )
+    if (!invite) {
+      throw new Error('Invite not found')
+    }
+    const newInvite = await createInvite(invite.email)
+    try {
+      await revokeInvite(inviteId)
+    } catch {
+      await fetchPendingInvites()
+    }
+    return newInvite
+  }
+
+  /**
    * Accept a workspace invite.
    * Returns workspace info so UI can offer "View Workspace" button.
    */
@@ -624,44 +673,6 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
       workspaceId: response.workspace_id,
       workspaceName: response.workspace_name
     }
-  }
-
-  function buildInviteLink(token: string): string {
-    const baseUrl = window.location.origin
-    return `${baseUrl}?invite=${encodeURIComponent(token)}`
-  }
-
-  /**
-   * Get the invite link for a pending invite.
-   */
-  function getInviteLink(inviteId: string): string | null {
-    const invite = activeWorkspace.value?.pendingInvites.find(
-      (i) => i.id === inviteId
-    )
-    return invite ? buildInviteLink(invite.token) : null
-  }
-
-  /**
-   * Create an invite link for a given email.
-   */
-  async function createInviteLink(email: string): Promise<string> {
-    const invite = await createInvite(email)
-    return buildInviteLink(invite.token)
-  }
-
-  /**
-   * Copy an invite link to clipboard.
-   */
-  async function copyInviteLink(inviteId: string): Promise<string> {
-    const invite = activeWorkspace.value?.pendingInvites.find(
-      (i) => i.id === inviteId
-    )
-    if (!invite) {
-      throw new Error('Invite not found')
-    }
-    const inviteLink = buildInviteLink(invite.token)
-    await navigator.clipboard.writeText(inviteLink)
-    return inviteLink
   }
 
   //TODO: when billing lands update this
@@ -699,6 +710,7 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     members,
     isCurrentUserOriginalOwner,
     pendingInvites,
+    originalOwnerId,
     totalMemberSlots,
     isInviteLimitReached,
     workspaceId,
@@ -723,15 +735,14 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     fetchMembers,
     ensureMembersLoaded,
     removeMember,
+    changeMemberRole,
 
     // Invite Actions
     fetchPendingInvites,
     createInvite,
     revokeInvite,
+    resendInvite,
     acceptInvite,
-    getInviteLink,
-    createInviteLink,
-    copyInviteLink,
 
     // Subscription
     subscribeWorkspace,

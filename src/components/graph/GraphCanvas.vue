@@ -197,6 +197,7 @@ import { forEachNode } from '@/utils/graphTraversalUtil'
 import SelectionRectangle from './SelectionRectangle.vue'
 import { isCloud } from '@/platform/distribution/types'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { usePricingTableUrlLoader } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
 import { useCreateWorkspaceUrlLoader } from '@/platform/workspace/composables/useCreateWorkspaceUrlLoader'
 import { useInviteUrlLoader } from '@/platform/workspace/composables/useInviteUrlLoader'
 
@@ -461,6 +462,7 @@ const { flags } = useFeatureFlags()
 // Set up URL loaders during setup phase so useRoute/useRouter work correctly
 const inviteUrlLoader = isCloud ? useInviteUrlLoader() : null
 const createWorkspaceUrlLoader = isCloud ? useCreateWorkspaceUrlLoader() : null
+const pricingTableUrlLoader = isCloud ? usePricingTableUrlLoader() : null
 useCanvasDrop(canvasRef)
 useLitegraphSettings()
 useNodeBadge()
@@ -582,6 +584,19 @@ onMounted(async () => {
     } catch (error) {
       console.error(
         '[GraphCanvas] Failed to load create workspace from URL:',
+        error
+      )
+    }
+  }
+
+  // Open the pricing table from URL if present (e.g., ?pricing=1 / ?pricing=team).
+  // Not gated on the team-workspaces flag: it also drives personal/legacy users.
+  if (pricingTableUrlLoader) {
+    try {
+      await pricingTableUrlLoader.loadPricingTableFromUrl()
+    } catch (error) {
+      console.error(
+        '[GraphCanvas] Failed to load pricing table from URL:',
         error
       )
     }

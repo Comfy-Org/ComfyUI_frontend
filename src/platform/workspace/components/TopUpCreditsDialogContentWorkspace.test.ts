@@ -3,13 +3,20 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-
 import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
+
+type TopupStatus = 'pending' | 'completed' | 'failed'
+
+interface CreateTopupResponse {
+  billing_op_id: string
+  topup_id: string
+  status: TopupStatus
+  amount_cents: number
+}
 
 const mockFetchBalance = vi.fn()
 const mockFetchStatus = vi.fn()
-const mockTopup = vi.fn<(amountCents: number) => Promise<CreateTopupResponse>>()
+const mockCreateTopup = vi.fn<() => Promise<CreateTopupResponse>>()
 const mockStartOperation = vi.fn()
 const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
@@ -17,9 +24,14 @@ const mockToastAdd = vi.fn()
 vi.mock('@/composables/billing/useBillingContext', () => ({
   useBillingContext: () => ({
     fetchBalance: mockFetchBalance,
-    fetchStatus: mockFetchStatus,
-    topup: (amountCents: number) => mockTopup(amountCents)
+    fetchStatus: mockFetchStatus
   })
+}))
+
+vi.mock('@/platform/workspace/api/workspaceApi', () => ({
+  workspaceApi: {
+    createTopup: () => mockCreateTopup()
+  }
 }))
 
 vi.mock('@/platform/workspace/stores/billingOperationStore', () => ({
@@ -132,7 +144,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('refreshes both balance and status after a completed top-up', async () => {
-    mockTopup.mockResolvedValue(topupResponse('completed'))
+    mockCreateTopup.mockResolvedValue(topupResponse('completed'))
 
     renderDialog()
     await clickAddCredits()
@@ -143,7 +155,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('does not refresh balance or status for a pending top-up', async () => {
-    mockTopup.mockResolvedValue(topupResponse('pending'))
+    mockCreateTopup.mockResolvedValue(topupResponse('pending'))
 
     renderDialog()
     await clickAddCredits()
@@ -154,7 +166,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
   })
 
   it('does not refresh balance or status for a failed top-up', async () => {
-    mockTopup.mockResolvedValue(topupResponse('failed'))
+    mockCreateTopup.mockResolvedValue(topupResponse('failed'))
 
     renderDialog()
     await clickAddCredits()

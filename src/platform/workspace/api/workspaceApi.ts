@@ -151,11 +151,22 @@ interface PreviewSubscribeRequest {
   plan_slug: string
 }
 
+type SubscribeBillingCycle = 'monthly' | 'yearly'
+
 interface SubscribeRequest {
   plan_slug: string
   idempotency_key?: string
   return_url?: string
   cancel_url?: string
+  team_credit_stop_id?: string
+  billing_cycle?: SubscribeBillingCycle
+}
+
+export interface SubscribeOptions {
+  returnUrl?: string
+  cancelUrl?: string
+  teamCreditStopId?: string
+  billingCycle?: SubscribeBillingCycle
 }
 
 type SubscribeStatus = 'subscribed' | 'needs_payment_method' | 'pending_payment'
@@ -458,6 +469,24 @@ export const workspaceApi = {
   },
 
   /**
+   * Change a member's role (member ↔ owner).
+   * PATCH /api/workspace/members/:userId
+   */
+  async updateMemberRole(userId: UserId, role: WorkspaceRole): Promise<Member> {
+    const headers = await getAuthHeaderOrThrow()
+    try {
+      const response = await workspaceApiClient.patch<Member>(
+        api.apiURL(`/workspace/members/${userId}`),
+        { role },
+        { headers }
+      )
+      return response.data
+    } catch (err) {
+      handleAxiosError(err)
+    }
+  },
+
+  /**
    * List pending invites for the workspace.
    * GET /api/workspace/invites
    */
@@ -602,8 +631,7 @@ export const workspaceApi = {
    */
   async subscribe(
     planSlug: string,
-    returnUrl?: string,
-    cancelUrl?: string
+    options: SubscribeOptions = {}
   ): Promise<SubscribeResponse> {
     const headers = await getAuthHeaderOrThrow()
     try {
@@ -611,8 +639,10 @@ export const workspaceApi = {
         api.apiURL('/billing/subscribe'),
         {
           plan_slug: planSlug,
-          return_url: returnUrl,
-          cancel_url: cancelUrl
+          return_url: options.returnUrl,
+          cancel_url: options.cancelUrl,
+          team_credit_stop_id: options.teamCreditStopId,
+          billing_cycle: options.billingCycle
         } satisfies SubscribeRequest,
         { headers }
       )
