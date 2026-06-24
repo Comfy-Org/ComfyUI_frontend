@@ -866,8 +866,8 @@
       "nodes": "Nodes",
       "models": "Models",
       "assets": "Assets",
-      "workflows": "Workflows",
-      "templates": "Templates",
+      "workflows": "Work\u00adflows",
+      "templates": "Tem\u00adplates",
       "console": "Console",
       "menu": "Menu",
       "imported": "Imported",
@@ -2946,7 +2946,7 @@
     "share": "Share"
   },
   "shortcuts": {
-    "shortcuts": "Shortcuts",
+    "shortcuts": "Short\u00adcuts",
     "essentials": "Essential",
     "viewControls": "View Controls",
     "manageShortcuts": "Manage Shortcuts",
