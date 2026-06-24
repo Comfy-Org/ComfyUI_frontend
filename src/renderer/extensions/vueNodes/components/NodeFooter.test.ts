@@ -1,11 +1,43 @@
-import { render, screen } from '@testing-library/vue'
+import { cleanup, render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi, afterEach } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+import PrimeVue from 'primevue/config'
+import { createTestingPinia } from '@pinia/testing'
 
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
+import { app } from '@/scripts/app'
 import NodeFooter from '@/renderer/extensions/vueNodes/components/NodeFooter.vue'
+
+vi.hoisted(() => {
+  const localStorageMock = (() => {
+    let store: Record<string, string> = {}
+    return {
+      getItem: (key: string) => store[key] || null,
+      setItem: (key: string, value: string) => {
+        store[key] = value.toString()
+      },
+      removeItem: (key: string) => {
+        delete store[key]
+      },
+      clear: () => {
+        store = {}
+      }
+    }
+  })()
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: localStorageMock,
+    writable: true
+  })
+})
+
+const mockSettingsDialogShow = vi.fn()
+vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
+  useSettingsDialog: () => ({
+    show: mockSettingsDialogShow
+  })
+}))
 
 vi.mock('@/renderer/core/layout/store/layoutStore', () => {
   const isDraggingVueNodes = ref(false)
@@ -51,24 +83,31 @@ const baseProps: Props = {
 }
 
 function renderFooter(overrides: Partial<Props> = {}) {
+  const pinia = createTestingPinia({ stubActions: false })
   return render(NodeFooter, {
-    global: { plugins: [i18n] },
+    global: { plugins: [i18n, pinia, PrimeVue] },
     props: { ...baseProps, ...overrides }
   })
 }
 
-function allButtonClasses(): string {
-  return screen
-    .getAllByRole('button')
+function allButtonClasses(container: Element): string {
+  return within(container as HTMLElement)
+    .queryAllByRole('button')
     .map((b) => b.className)
     .join(' ')
 }
 
 describe('NodeFooter', () => {
+  afterEach(() => {
+    cleanup()
+  })
+
   describe('rendering branches', () => {
     it('renders nothing when no relevant flags are set', () => {
-      renderFooter()
-      expect(screen.queryAllByRole('button')).toHaveLength(0)
+      const { container } = renderFooter()
+      expect(
+        within(container as HTMLElement).queryAllByRole('button')
+      ).toHaveLength(0)
     })
 
     it('renders error + enter tabs for subgraph with error (Case 1)', () => {
@@ -182,25 +221,34 @@ describe('NodeFooter', () => {
 
   describe('shape-based radius classes (getBottomRadius)', () => {
     it('BOX shape renders no rounded-b* class on the single-tab footer', () => {
-      renderFooter({ isSubgraph: true, shape: RenderShape.BOX })
-      expect(allButtonClasses()).not.toMatch(/rounded-b/)
+      const { container } = renderFooter({
+        isSubgraph: true,
+        shape: RenderShape.BOX
+      })
+      expect(allButtonClasses(container)).not.toMatch(/rounded-b/)
     })
 
     it('CARD shape emits rounded-br variant on the single-tab footer', () => {
-      renderFooter({ isSubgraph: true, shape: RenderShape.CARD })
-      const classes = allButtonClasses()
+      const { container } = renderFooter({
+        isSubgraph: true,
+        shape: RenderShape.CARD
+      })
+      const classes = allButtonClasses(container)
       expect(classes).toMatch(/rounded-br-\[17px\]/)
       expect(classes).not.toMatch(/rounded-b-\[/)
     })
 
     it('default shape emits rounded-b variant on the single-tab footer', () => {
-      renderFooter({ isSubgraph: true })
-      expect(allButtonClasses()).toMatch(/rounded-b-\[17px\]/)
+      const { container } = renderFooter({ isSubgraph: true })
+      expect(allButtonClasses(container)).toMatch(/rounded-b-\[17px\]/)
     })
 
     it('upgrades to 20px radius when the error tab is present', () => {
-      renderFooter({ hasAnyError: true, showErrorsTabEnabled: true })
-      expect(allButtonClasses()).toMatch(/rounded-b-\[20px\]/)
+      const { container } = renderFooter({
+        hasAnyError: true,
+        showErrorsTabEnabled: true
+      })
+      expect(allButtonClasses(container)).toMatch(/rounded-b-\[20px\]/)
     })
 
     it('enter tab uses right-only rounding in dual-tab mode (Case 1)', () => {
@@ -229,6 +277,69 @@ describe('NodeFooter', () => {
       expect(enterBtn.getAttribute('style') ?? '').not.toMatch(
         /background-color/
       )
+    })
+  })
+
+  describe('advanced settings button', () => {
+    let user: ReturnType<typeof userEvent.setup>
+
+    beforeEach(() => {
+      user = userEvent.setup()
+      vi.clearAllMocks()
+    })
+
+    it('renders the gear settings button next to advanced inputs button when expanded', () => {
+      renderFooter({ showAdvancedInputsButton: true, showAdvancedState: true })
+      expect(screen.getByTestId('advanced-settings-button')).toBeTruthy()
+    })
+
+    it('opens settings dialog when clicked in legacy menu mode', async () => {
+      renderFooter({ showAdvancedInputsButton: true, showAdvancedState: true })
+      const settingStore = (
+        await import('@/platform/settings/settingStore')
+      ).useSettingStore()
+      vi.mocked(settingStore.get).mockImplementation((key) => {
+        if (key === 'Comfy.UseNewMenu') return 'Disabled'
+        return false
+      })
+
+      const settingsBtn = screen.getByTestId('advanced-settings-button')
+      await user.click(settingsBtn)
+
+      expect(mockSettingsDialogShow).toHaveBeenCalledWith(
+        undefined,
+        'Comfy.Node.AlwaysShowAdvancedWidgets'
+      )
+    })
+
+    it('opens right side settings panel when clicked in new menu mode', async () => {
+      const deselectAllSpy = vi.fn()
+      const originalCanvas = app.canvas
+      app.canvas = {
+        deselectAll: deselectAllSpy
+      } as unknown as typeof app.canvas
+
+      renderFooter({ showAdvancedInputsButton: true, showAdvancedState: true })
+      const settingStore = (
+        await import('@/platform/settings/settingStore')
+      ).useSettingStore()
+      vi.mocked(settingStore.get).mockImplementation((key) => {
+        if (key === 'Comfy.UseNewMenu') return 'Enabled'
+        return false
+      })
+
+      const rightSidePanelStore = (
+        await import('@/stores/workspace/rightSidePanelStore')
+      ).useRightSidePanelStore()
+      const openPanelSpy = vi.spyOn(rightSidePanelStore, 'openPanel')
+
+      const settingsBtn = screen.getByTestId('advanced-settings-button')
+      await user.click(settingsBtn)
+
+      expect(deselectAllSpy).toHaveBeenCalledOnce()
+      expect(openPanelSpy).toHaveBeenCalledWith('settings')
+
+      app.canvas = originalCanvas
     })
   })
 })
